@@ -152,7 +152,7 @@ fn blog_locking_owner_not_found() {
         TestBlogModule::create_blog(Origin::signed(FIRST_OWNER_ORIGIN));
         // Non owner attemt to lock blog
         let lock_result = TestBlogModule::lock_blog(Origin::signed(SECOND_OWNER_ORIGIN), FIRST_ID);
-        assert!(matches!(lock_result, Err(lock_err) if lock_err == BLOG_OWNER_NOT_FOUND));
+        assert!(matches!(lock_result, Err(lock_err) if lock_err == BLOG_NOT_FOUND));
         // Remain unlocked
         let is_locked = TestBlogModule::blog_locked(FIRST_ID);
         assert_eq!(is_locked, false);
@@ -206,7 +206,7 @@ fn blog_unlocking_owner_not_found() {
         // Non owner attemt to unlock blog
         let unlock_result =
             TestBlogModule::unlock_blog(Origin::signed(SECOND_OWNER_ORIGIN), FIRST_ID);
-        assert!(matches!(unlock_result, Err(unlock_err) if unlock_err == BLOG_OWNER_NOT_FOUND));
+        assert!(matches!(unlock_result, Err(unlock_err) if unlock_err == BLOG_NOT_FOUND));
         // Remain locked
         let is_locked = TestBlogModule::blog_locked(FIRST_ID);
         assert_eq!(is_locked, true);
@@ -274,7 +274,7 @@ fn post_creation_success() {
 fn post_creation_blog_owner_not_found() {
     ExtBuilder::default().build().execute_with(|| {
         let create_result = create_post(FIRST_OWNER_ORIGIN, FIRST_ID, PostType::Valid);
-        assert!(matches!(create_result, Err(create_err) if create_err == BLOG_OWNER_NOT_FOUND));
+        assert!(matches!(create_result, Err(create_err) if create_err == BLOG_NOT_FOUND));
         // Check if related runtime storage left unchanged
         assert!(post_storage_unchanged(FIRST_ID, FIRST_ID));
         // Event absence checked
@@ -393,7 +393,7 @@ fn post_locking_owner_not_found() {
             TestBlogModule::lock_post(Origin::signed(SECOND_OWNER_ORIGIN), FIRST_ID, FIRST_ID);
         // Remain unlocked
         assert_eq!(TestBlogModule::post_locked((FIRST_ID, FIRST_ID)), false);
-        assert!(matches!(lock_result, Err(lock_err) if lock_err == BLOG_OWNER_NOT_FOUND));
+        assert!(matches!(lock_result, Err(lock_err) if lock_err == BLOG_NOT_FOUND));
         // Event absence checked
         assert!(post_locking_event_failure(FIRST_ID, FIRST_ID))
     })
@@ -465,7 +465,7 @@ fn post_unlocking_owner_not_found() {
             TestBlogModule::unlock_post(Origin::signed(SECOND_OWNER_ORIGIN), FIRST_ID, FIRST_ID);
         // Remain locked
         assert_eq!(TestBlogModule::post_locked((FIRST_ID, FIRST_ID)), true);
-        assert!(matches!(unlock_result, Err(unlock_err) if unlock_err == BLOG_OWNER_NOT_FOUND));
+        assert!(matches!(unlock_result, Err(unlock_err) if unlock_err == BLOG_NOT_FOUND));
         // Event absence checked
         assert!(post_unlocking_event_failure(FIRST_ID, FIRST_ID))
     })
@@ -545,7 +545,7 @@ fn post_editing_owner_not_found() {
         let edit_result = edit_post(SECOND_OWNER_ORIGIN, FIRST_ID, FIRST_ID, PostType::Valid);
         // Remain unedited
         let post = TestBlogModule::post_by_id((FIRST_ID, FIRST_ID));
-        assert!(matches!(edit_result, Err(edit_err) if edit_err == BLOG_OWNER_NOT_FOUND));
+        assert!(matches!(edit_result, Err(edit_err) if edit_err == BLOG_NOT_FOUND));
         // Compare with default unedited post
         assert!(matches!(post, Some(post) if post == get_post(PostType::Valid, false)));
         // Event absence checked
@@ -815,7 +815,7 @@ fn reply_creation_limit_reached() {
             ) {
                 assert_eq!(create_reply_err, REPLIES_LIMIT_REACHED);
                 let replies_count = TestBlogModule::replies_count((FIRST_ID, FIRST_ID));
-                // Reply counter & reply max number contraint equality checked
+                // ReplyById counter & reply max number contraint equality checked
                 assert_eq!(replies_count, RepliesMaxNumber::get());
                 // Last reply creation, before limit reached, event absence checked
                 assert!(reply_creation_event_failure(
@@ -914,7 +914,7 @@ fn reply_editing_success() {
             FIRST_ID,
             ReplyType::Valid,
         );
-        // Reply after editing checked
+        // ReplyById after editing checked
         let reply = TestBlogModule::reply_by_id((FIRST_ID, FIRST_ID, FIRST_ID));
         assert!(matches!(reply, Some(reply) if reply == get_reply(ReplyType::Valid, true)));
         // Event checked
