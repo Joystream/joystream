@@ -632,7 +632,7 @@ impl stake::StakingEventsHandler<Runtime> for ContentWorkingGroupStakingEventHan
     // Handler for slashing event
     fn slashed(
         _id: &<Runtime as stake::Trait>::StakeId,
-        _slash_id: &<Runtime as stake::Trait>::SlashId,
+        _slash_id: Option<<Runtime as stake::Trait>::SlashId>,
         _slashed_amount: stake::BalanceOf<Runtime>,
         _remaining_stake: stake::BalanceOf<Runtime>,
         remaining_imbalance: stake::NegativeImbalance<Runtime>,
