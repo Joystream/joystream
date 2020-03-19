@@ -2,12 +2,19 @@ import React from "react";
 
 import { css } from "@emotion/core";
 
+type ContentLabelProps = {
+  label: string;
+  data: string | number;
+  withProgress?: boolean;
+  maxProgress?: number;
+};
+
 export default function ContentLabel({
   label,
   data,
-  withProgress,
+  withProgress = false,
   maxProgress,
-}) {
+}: ContentLabelProps) {
   return (
     <div
       css={css`

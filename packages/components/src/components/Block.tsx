@@ -1,6 +1,14 @@
 import React from "react";
 import { css } from "@emotion/core";
 
+type BlockProps = {
+  blockNum: number;
+  hash: number | string;
+  parentHash: number | string;
+  stateRoot: number | string;
+  extrinsictRoot: number | string;
+  isExpanded: boolean;
+};
 export default function Block({
   blockNum,
   hash,
@@ -8,7 +16,7 @@ export default function Block({
   stateRoot,
   extrinsictRoot,
   isExpanded,
-}) {
+}: BlockProps) {
   return (
     <article
       css={css`

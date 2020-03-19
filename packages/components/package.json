@@ -5,8 +5,13 @@
   "author": "Gamaranto <gamarantor@gmail.com>",
   "homepage": "https://github.com/Joystream/atlas#readme",
   "license": "ISC",
+<<<<<<< HEAD
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
+=======
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.es.js",
+>>>>>>> develop
   "directories": {
     "src": "src",
     "test": "__tests__"
@@ -33,5 +38,9 @@
     "@emotion/core": "^10.0.28",
     "react": "^16.13.0",
     "react-dom": "^16.13.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.8.7",
+    "ts-loader": "^6.2.1"
   }
 }
