@@ -238,7 +238,7 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   private renderComputingHash() {
-    return <em>Processing file please wait...</em>
+    return <em>Processing your file. Please wait...</em>
   }
 
   private buildTxParams = () => {
