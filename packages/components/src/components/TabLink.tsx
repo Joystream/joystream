@@ -1,7 +1,20 @@
 import React from "react";
 import { css } from "@emotion/core";
 
-export default function TabLink({ to, label, isSelected = false }) {
+export type LinkType = {
+  label: string;
+  to: string;
+};
+
+type TabLinkProps = LinkType & {
+  isSelected?: boolean;
+};
+
+export default function TabLink({
+  to,
+  label,
+  isSelected = false,
+}: TabLinkProps) {
   return (
     <div
       css={css`

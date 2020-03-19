@@ -1,7 +1,11 @@
 import React from "react";
 import { css } from "@emotion/core";
 
-export default function Card({ children }) {
+type CardProps = {
+  children: React.ElementType;
+};
+
+export default function Card({ children }: CardProps) {
   return (
     <article
       css={css`

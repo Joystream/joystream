@@ -18,6 +18,17 @@ let Grid = styled.section`
   grid-column-gap: 2rem;
 `;
 
+type BlockDetailsProps = {
+  blockNum: number;
+  hash: number | string;
+  parentHash: number | string;
+  stateRoot: number | string;
+  extrinsictRoot: number | string;
+  events: React.ElementType[];
+  logs: React.ElementType[];
+  extrinsic: React.ElementType[];
+};
+
 export default function BlockDetails({
   blockNum,
   hash,
@@ -27,7 +38,7 @@ export default function BlockDetails({
   events,
   logs,
   extrinsic,
-}) {
+}: BlockDetailsProps) {
   return (
     <Grid>
       <Column span="1 / 3">

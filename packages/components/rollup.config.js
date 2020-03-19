@@ -1,5 +1,6 @@
 import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
+import typescript from "rollup-plugin-typescript2";
 import babel from "rollup-plugin-babel";
 import { DEFAULT_EXTENSIONS } from "@babel/core";
 import react from "react";
@@ -8,15 +9,15 @@ import reactDom from "react-dom";
 import pkg from "./package.json";
 
 export default {
-  input: pkg.main,
+  input: "src/index.ts",
   output: [
     {
       format: "cjs",
-      file: "./dist/index.cjs.js",
+      file: pkg.main,
     },
     {
-      format: "es",
-      file: "./dist/index.es.js",
+      format: "esm",
+      file: pkg.module,
     },
   ],
   plugins: [
@@ -29,9 +30,9 @@ export default {
         "react-dom": Object.keys(reactDom),
       },
     }),
+    typescript(),
     babel({
-      runtimeHelpers: true,
-      exclude: "../../node_modules/**",
+      exclude: ["../../node_modules/**", "node_modules/**"],
       extensions: [...DEFAULT_EXTENSIONS, ".ts", ".tsx"],
     }),
   ],

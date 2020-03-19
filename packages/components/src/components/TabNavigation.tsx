@@ -1,9 +1,14 @@
 import React from "react";
 import { css } from "@emotion/core";
 
-import TabLink from "./TabLink";
+import TabLink, { LinkType } from "./TabLink";
 
-export default function TabNavigation({ links, selected }) {
+type TabNavigationProps = {
+  selected: number;
+  links: LinkType[];
+};
+
+export default function TabNavigation({ links, selected }: TabNavigationProps) {
   return (
     <div
       css={css`
