@@ -19,7 +19,7 @@ export default function Block({
         css={css`
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          justify-content: space-around;
         `}
       >
         <span
