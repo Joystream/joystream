@@ -195,7 +195,7 @@ class Component extends React.PureComponent<Props, State> {
     </div>;
   }
 
-  private onFileSelected = async (file: File /*data: Uint8Array, file_name: string*/) => {
+  private onFileSelected = async (file: File) => {
     if (!file.size) {
       this.setState({ error: `You cannot upload an empty file.` });
     } else if (file.size > MAX_FILE_SIZE_BYTES) {
