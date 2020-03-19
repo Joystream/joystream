@@ -224,6 +224,7 @@ decl_storage! {
         ReplyById get (fn reply_by_id): linked_map (T::BlogId, T::PostId, T::ReplyId) => Option<Reply<T>>;
 
         // Overall blogs counter
+
         BlogsCount get(fn blogs_count): T::BlogId;
     }
 }
@@ -236,11 +237,16 @@ decl_module! {
 
         // Security/configuration constraints
         const POST_TITLE_MAX_LENGTH: MaxLength = T::PostTitleMaxLength::get();
+
         const POST_BODY_MAX_LENGTH: MaxLength = T::PostBodyMaxLength::get();
+
         const REPLY_MAX_LENGTH: MaxLength = T::ReplyMaxLength::get();
 
+
         const POSTS_MAX_NUMBER: MaxNumber = T::PostsMaxNumber::get();
+
         const REPLIES_MAX_NUMBER: MaxNumber  = T::RepliesMaxNumber::get();
+
         const DIRECT_REPLIES_MAX_NUMBER: MaxNumber = T::DirectRepliesMaxNumber::get();
 
         const CONSECUTIVE_REPLIES_MAX_NUMBER: MaxConsecutiveRepliesNumber = T::ConsecutiveRepliesMaxNumber::get();
@@ -267,8 +273,10 @@ decl_module! {
 
         pub fn lock_blog(origin, blog_id: T::BlogId) -> dispatch::Result {
             let blog_owner = ensure_signed(origin)?;
+
             // Ensure blog with given id exists
             let mut blog = Self::ensure_blog_exists(blog_id)?;
+
             // Ensure blog -> owner relation exists
             Self::ensure_blog_ownership(&blog, &blog_owner)?;
 
@@ -288,14 +296,19 @@ decl_module! {
 
         pub fn unlock_blog(origin, blog_id: T::BlogId) -> dispatch::Result {
             let blog_owner = ensure_signed(origin)?;
+
             // Ensure blog with given id exists
             let mut blog = Self::ensure_blog_exists(blog_id)?;
+
             // Ensure blog -> owner relation exists
             Self::ensure_blog_ownership(&blog, &blog_owner)?;
+
             //
             // == MUTATION SAFE ==
             //
+        
             blog.unlock();
+
             // Update blog lock status, associated with given id
             <BlogById<T>>::mutate(&blog_id, |inner_blog| *inner_blog = Some(blog));
             Self::deposit_event(RawEvent::BlogUnlocked(blog_owner, blog_id));
@@ -315,12 +328,19 @@ decl_module! {
             Self::ensure_blog_unlocked(&blog)?;
 
             // Check security/configuration constraints
+
+
+            // Ensure post title length is valid
             Self::ensure_post_title_is_valid(&title)?;
+
+            // Ensure post body length is valid
             Self::ensure_post_body_is_valid(&body)?;
             let posts_count = Self::ensure_posts_limit_not_reached(&blog)?;
+
             //
             // == MUTATION SAFE ==
             //
+            
             // New post creation
             let post = Post::new(title, body);
             <PostById<T>>::insert((blog_id, posts_count), post);
@@ -393,6 +413,7 @@ decl_module! {
             new_title: Option<Vec<u8>>,
             new_body: Option<Vec<u8>>
         ) -> dispatch::Result {
+
             // Nothing to edit
             if matches!((&new_title, &new_body), (None, None)) {
                 return Ok(())
@@ -415,9 +436,13 @@ decl_module! {
             Self::ensure_post_unlocked(&post)?;
 
             // Check security/configuration constraints
+
+            // Ensure post title length is valid
             if let Some(ref new_title) = new_title {
                 Self::ensure_post_title_is_valid(&new_title)?;
             }
+
+            // Ensure post body length is valid
             if let Some(ref new_body) = new_body {
                 Self::ensure_post_body_is_valid(&new_body)?;
             }
@@ -457,6 +482,7 @@ decl_module! {
             // Ensure post unlocked, so mutations can be performed
             Self::ensure_post_unlocked(&post)?;
 
+            // Ensure reply text length is valid
             Self::ensure_reply_text_is_valid(&text)?;
 
             // New reply creation
