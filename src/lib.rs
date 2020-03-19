@@ -75,9 +75,11 @@ pub trait Trait: system::Trait {
 #[derive(Encode, Decode, Clone, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct Blog <T: Trait> {
+    // Locking status
     locked: bool,
     // Overall posts counter, associated with blog
     posts_count: T::PostId,
+    // Account id, associated with blog owner
     owner: T::AccountId
 }
 
@@ -92,6 +94,7 @@ impl <T: Trait> Blog <T> {
         }
     }
 
+    // Make all data, associated with this blog immutable
     fn lock(&mut self) {
         self.locked = true;
     }
@@ -100,14 +103,17 @@ impl <T: Trait> Blog <T> {
         self.locked = false;
     }
 
+    // Get current locking status
     fn is_locked(&self) -> bool {
         self.locked
     }
 
+    // Check if account_id is blog owner
     fn is_owner(&self, account_id: &T::AccountId) -> bool {
         self.owner == *account_id
     }
 
+    // Get overall posts count, associated with this blog
     fn posts_count(&self) ->  T::PostId {
         self.posts_count
     }
@@ -121,6 +127,7 @@ impl <T: Trait> Blog <T> {
 #[derive(Encode, Decode, Clone, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct Post <T: Trait> {
+    // Locking status
     locked: bool,
     title: Vec<u8>,
     body: Vec<u8>,
@@ -139,6 +146,7 @@ impl <T: Trait> Post <T> {
         }
     }
 
+    // Make all data, associated with this post immutable
     fn lock(&mut self) {
         self.locked = true;
     }
@@ -147,10 +155,12 @@ impl <T: Trait> Post <T> {
         self.locked = false;
     }
 
+    // Get current locking status
     fn is_locked(&self) -> bool {
         self.locked
     }
 
+    // Get overall replies count, associated with this post
     fn replies_count(&self) ->  T::ReplyId {
         self.replies_count
     }
@@ -160,6 +170,7 @@ impl <T: Trait> Post <T> {
         self.replies_count += T::ReplyId::one()
     }
 
+    // Updates post title and body, if Option::Some(_)
     fn update(&mut self, new_title: Option<Vec<u8>>, new_body: Option<Vec<u8>>) {
         if let Some(new_title) = new_title {
             self.title = new_title
@@ -178,10 +189,19 @@ pub enum Parent <T: Trait> {
     Post(T::PostId)
 }
 
+// Get default parent representation
+impl <T: Trait> Default for Parent <T> {
+    fn default() -> Self {
+        Parent::Post(T::PostId::default())
+    }
+}
+
 #[derive(Encode, Decode, Clone, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct Reply <T: Trait> {
+    // Reply text content
     text: Vec<u8>,
+    // Account id, associated with reply owner
     owner: T::AccountId,
     // Reply`s parent id
     parent_id: Parent<T>,
@@ -196,14 +216,17 @@ impl <T: Trait> Reply <T> {
         }
     }
 
+    // Check if account_id is blog owner
     fn is_owner(&self, account_id: &T::AccountId) -> bool {
         self.owner == *account_id
     }
 
-    fn is_parent(&self, parent_id: &Parent<T>) -> bool {
-        core::mem::discriminant(&self.parent_id) == core::mem::discriminant(parent_id)
+    // Check if account_id is parent
+    fn is_parent(&self, account_id: &Parent<T>) -> bool {
+        core::mem::discriminant(&self.parent_id) == core::mem::discriminant(account_id)
     }
 
+    // Update reply text
     fn update(&mut self, new_text: Vec<u8>) {
         self.text = new_text
     }
@@ -232,6 +255,7 @@ decl_storage! {
 // Blog`s pallet dispatchable functions.
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+
         // Initializing events
         fn deposit_event() = default;
 
@@ -644,7 +668,6 @@ impl<T: Trait> Module<T> {
         
         // Calculate direct replies count, iterating through all post
         // related replies and checking if reply parent is given reply
-
         let direct_replies_count = <ReplyById<T>>::enumerate()
             .filter(|(id, _)| blog_id == id.0 && post_id == id.1)
             .filter(|(_, reply)| reply.is_parent(&Parent::Reply(reply_id)))
@@ -684,7 +707,6 @@ impl<T: Trait> Module<T> {
     }
 }
 
-//TODO: Some additional information
 decl_event!(
     pub enum Event<T>
     where

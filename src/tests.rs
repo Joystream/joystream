@@ -22,7 +22,7 @@ enum ReplyType {
     Invalid,
 }
 
-fn get_post(post_type: PostType, editing: bool) -> Post {
+fn get_post(post_type: PostType, editing: bool) -> Post<Runtime> {
     let (title, body);
     match post_type {
         // Make them different
