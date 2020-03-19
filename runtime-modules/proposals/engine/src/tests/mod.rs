@@ -1019,7 +1019,7 @@ fn create_proposal_fais_with_invalid_stake_parameters() {
         dummy_proposal.create_proposal_and_assert(Err(Error::StakeDiffersFromRequired.into()));
     });
 }
-/* TODO: restore after the https://github.com/Joystream/substrate-runtime-joystream/issues/161
+//  TODO: restore after the https://github.com/Joystream/substrate-runtime-joystream/issues/161
 // issue will be fixed: "Fix stake module and allow slashing and unstaking in the same block."
 #[test]
 fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succeeds() {
@@ -1050,7 +1050,7 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
             account_balance
         );
 
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(())).unwrap();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
         assert_eq!(
             <Test as stake::Trait>::Currency::total_balance(&account_id),
             account_balance - stake_amount
@@ -1059,17 +1059,17 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
         let mut proposal = <crate::Proposals<Test>>::get(proposal_id);
 
         let mut expected_proposal = Proposal {
-            proposal_type: 1,
             parameters,
             proposer_id: 1,
             created_at: 1,
             status: ProposalStatus::Active,
             title: b"title".to_vec(),
-            body: b"body".to_vec(),
-            approved_at: None,
+            description: b"description".to_vec(),
             voting_results: VotingResults::default(),
-            finalized_at: None,
-            stake_id: Some(0), // valid stake_id
+            stake_data: Some(StakeData {
+                stake_id: 0,
+                source_account_id: 1,
+            }),
         };
 
         assert_eq!(proposal, expected_proposal);
@@ -1078,23 +1078,23 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
 
         proposal = <crate::Proposals<Test>>::get(proposal_id);
 
-        expected_proposal.stake_id = None;
-        expected_proposal.finalized_at = Some(4);
-        expected_proposal.status = ProposalStatus::Finalized(FinalizationStatus {
+        expected_proposal.status = ProposalStatus::Finalized(FinalizationData {
             proposal_status: ProposalDecisionStatus::Expired,
+            finalized_at: 4,
             finalization_error: None,
         });
+        expected_proposal.stake_data = None;
 
         assert_eq!(proposal, expected_proposal);
 
-        let rejection_fee = <RejectionFee<Test>>::get();
+        let rejection_fee = RejectionFee::get();
         assert_eq!(
             <Test as stake::Trait>::Currency::total_balance(&account_id),
             account_balance - rejection_fee
         );
     });
 }
-*/
+
 #[test]
 fn finalize_proposal_using_stake_mocks_succeeds() {
     handle_mock(|| {

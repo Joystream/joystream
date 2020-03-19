@@ -3,7 +3,6 @@ use crate::Trait;
 use rstd::convert::From;
 use rstd::marker::PhantomData;
 use rstd::rc::Rc;
-use sr_primitives::traits::Zero;
 use srml_support::traits::{Currency, ExistenceRequirement, Imbalance, WithdrawReasons};
 use srml_support::StorageMap;
 
@@ -127,8 +126,7 @@ impl<T: Trait> StakeHandler<T> for DefaultStakeHandler<T> {
 
     /// Execute unstaking
     fn unstake(&self, stake_id: <T as stake::Trait>::StakeId) -> Result<(), &'static str> {
-        stake::Module::<T>::initiate_unstaking(&stake_id, Some(T::BlockNumber::zero()))
-            .map_err(WrappedError)?;
+        stake::Module::<T>::initiate_unstaking(&stake_id, None).map_err(WrappedError)?;
 
         Ok(())
     }
@@ -139,7 +137,6 @@ impl<T: Trait> StakeHandler<T> for DefaultStakeHandler<T> {
         stake_id: <T as stake::Trait>::StakeId,
         slash_balance: BalanceOf<T>,
     ) -> Result<(), &'static str> {
-
         let _ignored_successful_result =
             stake::Module::<T>::slash_immediate(&stake_id, slash_balance, false)
                 .map_err(WrappedError)?;
@@ -277,7 +274,7 @@ impl From<WrappedError<stake::StakeActionError<stake::ImmediateSlashingError>>> 
                     stake::ImmediateSlashingError::SlashAmountShouldBeGreaterThanZero => {
                         "SlashAmountShouldBeGreaterThanZero"
                     }
-                }
+                },
             }
         }
     }
