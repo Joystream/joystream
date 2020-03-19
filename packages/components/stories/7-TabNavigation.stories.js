@@ -1,5 +1,6 @@
 import React from "react";
 import TabNavigation from "../src/components/TabNavigation";
+import { number } from "@storybook/addon-knobs";
 
 export default {
   title: "Tab Links",
@@ -8,16 +9,15 @@ export default {
 };
 
 export const tabNavigationData = {
+  selected: number("Selected", 2),
   links: [
     {
       label: "Chain Info",
       to: "#",
-      isSelected: false,
     },
     {
       label: "Block Details",
       to: "#",
-      isSelected: false,
     },
     {
       label: "Forks",
@@ -27,7 +27,6 @@ export const tabNavigationData = {
     {
       label: "Node Info",
       to: "#",
-      isSelected: false,
     },
   ],
 };

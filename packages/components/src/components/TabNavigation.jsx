@@ -3,7 +3,7 @@ import { css } from "@emotion/core";
 
 import TabLink from "./TabLink";
 
-export default function TabNavigation({ links }) {
+export default function TabNavigation({ links, selected }) {
   return (
     <div
       css={css`
@@ -12,10 +12,10 @@ export default function TabNavigation({ links }) {
         border-bottom: 1px solid #eee;
       `}
     >
-      {links.map(link => (
+      {links.map((link, idx) => (
         <TabLink
           key={link.label}
-          isSelected={link.isSelected}
+          isSelected={idx === selected}
           to={link.to}
           label={link.label}
         />
