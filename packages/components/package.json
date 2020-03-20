@@ -5,13 +5,8 @@
   "author": "Gamaranto <gamarantor@gmail.com>",
   "homepage": "https://github.com/Joystream/atlas#readme",
   "license": "ISC",
-<<<<<<< HEAD
-  "main": "dist/index.js",
-  "module": "dist/index.esm.js",
-=======
   "main": "dist/index.cjs.js",
   "module": "dist/index.es.js",
->>>>>>> develop
   "directories": {
     "src": "src",
     "test": "__tests__"
@@ -24,7 +19,9 @@
     "url": "git+https://github.com/Joystream/atlas.git"
   },
   "scripts": {
-    "build": "rollup -c",
+    "start": "rollup -wc",
+    "index": "node scripts/build-index.js",
+    "build": "yarn run index && rollup -c",
     "storybook": "start-storybook -p 6006",
     "build-storybook": "build-storybook",
     "now-build": "build-storybook",
@@ -41,6 +38,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.8.7",
+    "react-docgen-typescript-loader": "^3.7.1",
     "ts-loader": "^6.2.1"
   }
 }

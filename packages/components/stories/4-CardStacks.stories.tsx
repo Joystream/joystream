@@ -1,7 +1,7 @@
 import React from "react";
 
-import CardStack from "../src/components/CardStack";
-import Block from "../src/components/Block";
+import { CardStack, Block } from "../src";
+
 import { blockData } from "./1-Block.stories";
 
 export default {
@@ -11,7 +11,9 @@ export default {
 };
 
 export const cardStackData = {
-  items: Array.from({ length: 5 }, (_, i) => `Card number: ${i}`),
+  items: Array.from({ length: 5 }, (_, i) => (
+    <span>{`Card number: ${i}`}</span>
+  )),
 };
 
 export const cardStackBlockData = {

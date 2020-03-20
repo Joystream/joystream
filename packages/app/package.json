@@ -26,6 +26,7 @@
     "url": "https://github.com/Gamaranto/atlas/issues"
   },
   "dependencies": {
+    "normalize.css": "^8.0.1",
     "react": "^16.13.0",
     "react-dom": "^16.13.0"
   },

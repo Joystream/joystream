@@ -1,7 +1,6 @@
 import React from "react";
 
-import Card from "../src/components/Card";
-import Block from "../src/components/Block";
+import { Card, Block } from "../src";
 import { blockData } from "./1-Block.stories";
 import { text } from "@storybook/addon-knobs";
 

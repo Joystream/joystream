@@ -2,7 +2,7 @@ import React from "react";
 import { css } from "@emotion/core";
 
 type CardProps = {
-  children: React.ElementType;
+  children: JSX.Element;
 };
 
 export default function Card({ children }: CardProps) {

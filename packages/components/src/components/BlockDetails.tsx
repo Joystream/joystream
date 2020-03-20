@@ -1,6 +1,6 @@
 import React from "react";
 import Block from "./Block";
-import Column from "./Column";
+import GridItem from "./GridItem";
 
 import { css } from "@emotion/core";
 import styled from "@emotion/styled";
@@ -24,9 +24,9 @@ type BlockDetailsProps = {
   parentHash: number | string;
   stateRoot: number | string;
   extrinsictRoot: number | string;
-  events: React.ElementType[];
-  logs: React.ElementType[];
-  extrinsic: React.ElementType[];
+  events: JSX.Element[];
+  logs: JSX.Element[];
+  extrinsic: JSX.Element[];
 };
 
 export default function BlockDetails({
@@ -41,7 +41,7 @@ export default function BlockDetails({
 }: BlockDetailsProps) {
   return (
     <Grid>
-      <Column span="1 / 3">
+      <GridItem gridColumn="1 / 3">
         <Block
           hash={hash}
           parentHash={parentHash}
@@ -50,19 +50,19 @@ export default function BlockDetails({
           blockNum={blockNum}
           isExpanded={true}
         />
-      </Column>
-      <Column span="1">
+      </GridItem>
+      <GridItem gridColumn="1">
         <h3>Extrinsic</h3>
         <CardStack items={extrinsic} />
-      </Column>
-      <Column span="2">
+      </GridItem>
+      <GridItem gridColumn="2">
         <h3>Events</h3>
         <CardStack items={events} />
-      </Column>
-      <Column span="1">
+      </GridItem>
+      <GridItem gridColumn="1">
         <h3>Logs</h3>
         <CardStack items={logs} />
-      </Column>
+      </GridItem>
     </Grid>
   );
 }

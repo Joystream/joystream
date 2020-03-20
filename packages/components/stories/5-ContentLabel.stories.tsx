@@ -1,6 +1,6 @@
 import React from "react";
 
-import ContentLabel from "../src/components/ContentLabel";
+import { ContentLabel } from "../src";
 import { text } from "@storybook/addon-knobs";
 
 export default {
