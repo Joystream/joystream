@@ -20,7 +20,8 @@
   },
   "scripts": {
     "start": "rollup -wc",
-    "build": "rollup -c",
+    "index": "node scripts/build-index.js",
+    "build": "yarn run index && rollup -c",
     "storybook": "start-storybook -p 6006",
     "now-build": "build-storybook",
     "test": "echo \"Error: run tests from root\" && exit 1"
