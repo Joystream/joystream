@@ -14,4 +14,5 @@ joystream_runtime.wasm
 # Vim
 .*.sw*
 
-**/Cargo.lock
+# Visual Studio Code
+.vscode
