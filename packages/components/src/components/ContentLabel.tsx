@@ -56,7 +56,7 @@ export default function ContentLabel({
             css={css`
               display: block;
               height: 100%;
-              width: ${(data * 100) / maxProgress}%;
+              width: ${(+data * 100) / maxProgress}%;
               background-color: blue;
               border-radius: 25px;
             `}

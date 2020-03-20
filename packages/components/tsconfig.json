@@ -2,6 +2,8 @@
   "extends": "../../tsconfig.json",
 
   "compilerOptions": {
-    "module": "esnext"
+    "module": "esnext",
+    "rootDirs": ["src", "stories"],
+    "baseUrl": "src"
   }
 }

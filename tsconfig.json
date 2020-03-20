@@ -7,7 +7,6 @@
     "paths": {
       "*": ["*", "packages/*"]
     },
-    "traceResolution": true,
     "noImplicitAny": true,
     "jsx": "react",
     "esModuleInterop": true
