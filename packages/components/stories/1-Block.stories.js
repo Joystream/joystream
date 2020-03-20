@@ -1,5 +1,5 @@
 import React from "react";
-import Block from "../src/components/Block";
+import { Block } from "../src/";
 import { text } from "@storybook/addon-knobs";
 
 export default {

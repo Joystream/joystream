@@ -1,5 +1,5 @@
 import React from "react";
-import TabNavigation from "../src/components/TabNavigation";
+import { TabNavigation } from "../src";
 import { number } from "@storybook/addon-knobs";
 
 export default {

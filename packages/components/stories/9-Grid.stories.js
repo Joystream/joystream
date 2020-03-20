@@ -1,6 +1,6 @@
 import React from "react";
 
-import Grid from "../src/components/Grid";
+import { Grid } from "../src";
 import { text } from "@storybook/addon-knobs";
 import styled from "@emotion/styled";
 

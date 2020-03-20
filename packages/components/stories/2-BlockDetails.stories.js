@@ -1,6 +1,6 @@
 import React from "react";
 
-import BlockDetails from "../src/components/BlockDetails";
+import { BlockDetails } from "../src";
 import { blockData } from "./1-Block.stories";
 
 export default {

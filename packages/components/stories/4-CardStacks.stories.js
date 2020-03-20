@@ -1,7 +1,7 @@
 import React from "react";
 
-import CardStack from "../src/components/CardStack";
-import Block from "../src/components/Block";
+import { CardStack, Block } from "../src";
+
 import { blockData } from "./1-Block.stories";
 
 export default {

@@ -1,5 +1,5 @@
 import React from "react";
-import TabLink from "../src/components/TabLink";
+import { TabLink } from "../src";
 import { boolean, text } from "@storybook/addon-knobs";
 
 export default {

@@ -1,5 +1,5 @@
 import React from "react";
-import SearchBar from "../src/components/SearchBar";
+import { SearchBar } from "../src";
 import { text } from "@storybook/addon-knobs";
 
 export default {
