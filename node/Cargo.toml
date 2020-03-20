@@ -32,12 +32,7 @@ hex = '0.4'
 
 [dependencies.node-runtime]
 package = 'joystream-node-runtime'
-git = 'https://github.com/joystream/substrate-runtime-joystream'
-tag = 'v6.8.0'
-# rev = '620094ef5f393180284aab2e5516f854694f009b' # development branch: v6.8.0
-# branch = 'development'
-# local development...
-# path = '/Users/mokhtar/joystream/runtime'
+path = '../runtime'
 
 [dependencies.substrate-basic-authorship]
 git = 'https://github.com/paritytech/substrate.git'
@@ -156,9 +151,6 @@ rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 [dependencies.libp2p]
 version = '0.13.2'
 default-features = false
-
-[profile.release]
-panic = 'unwind'
 
 [build-dependencies]
 vergen = '3'
