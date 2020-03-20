@@ -11,7 +11,9 @@ export default {
 };
 
 export const cardStackData = {
-  items: Array.from({ length: 5 }, (_, i) => `Card number: ${i}`),
+  items: Array.from({ length: 5 }, (_, i) => (
+    <span>{`Card number: ${i}`}</span>
+  )),
 };
 
 export const cardStackBlockData = {

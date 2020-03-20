@@ -2,7 +2,7 @@ import React from "react";
 import Card from "./Card";
 
 type CardStackProps = {
-  items: React.ElementType[];
+  items: JSX.Element[];
 };
 
 export default function CardStack({ items }: CardStackProps) {

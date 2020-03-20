@@ -24,9 +24,9 @@ type BlockDetailsProps = {
   parentHash: number | string;
   stateRoot: number | string;
   extrinsictRoot: number | string;
-  events: React.ElementType[];
-  logs: React.ElementType[];
-  extrinsic: React.ElementType[];
+  events: JSX.Element[];
+  logs: JSX.Element[];
+  extrinsic: JSX.Element[];
 };
 
 export default function BlockDetails({

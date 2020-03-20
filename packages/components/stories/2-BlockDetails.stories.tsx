@@ -18,8 +18,14 @@ export const BlockDetailsData = {
 export const Default = () => (
   <BlockDetails
     {...blockData}
-    events={BlockDetailsData.events}
-    logs={BlockDetailsData.logs}
-    extrinsic={BlockDetailsData.extrinsic}
+    events={BlockDetailsData.events.map(item => (
+      <span>{item}</span>
+    ))}
+    logs={BlockDetailsData.logs.map(item => (
+      <span>{item}</span>
+    ))}
+    extrinsic={BlockDetailsData.extrinsic.map(item => (
+      <span>{item}</span>
+    ))}
   />
 );

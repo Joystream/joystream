@@ -7,7 +7,7 @@ type BlockProps = {
   parentHash: number | string;
   stateRoot: number | string;
   extrinsictRoot: number | string;
-  isExpanded: boolean;
+  isExpanded?: boolean;
 };
 export default function Block({
   blockNum,
@@ -15,7 +15,7 @@ export default function Block({
   parentHash,
   stateRoot,
   extrinsictRoot,
-  isExpanded,
+  isExpanded = false,
 }: BlockProps) {
   return (
     <article
