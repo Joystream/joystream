@@ -20,3 +20,6 @@ members = [
 	"utils/chain-spec-builder/"
 ]
 
+[profile.release]
+# Substrate runtime requires unwinding.
+panic = "unwind"
