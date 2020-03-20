@@ -35,6 +35,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.8.7",
+    "react-docgen-typescript-loader": "^3.7.1",
     "ts-loader": "^6.2.1"
   }
 }
