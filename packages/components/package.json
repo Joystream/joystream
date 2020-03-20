@@ -19,6 +19,7 @@
     "url": "git+https://github.com/Joystream/atlas.git"
   },
   "scripts": {
+    "start": "rollup -wc",
     "build": "rollup -c",
     "storybook": "start-storybook -p 6006",
     "now-build": "build-storybook",
