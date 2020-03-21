@@ -4,7 +4,8 @@ use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
 use srml_support::{
-    decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter, StorageDoubleMap, StorageLinkedMap, StorageMap, StorageValue,
+    decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter,
+    StorageDoubleMap, StorageLinkedMap, StorageMap, StorageValue,
 };
 use system::{self, ensure_signed};
 
@@ -22,11 +23,10 @@ type MaxConsecutiveRepliesNumber = u16;
 
 /// The pallet's configuration trait.
 pub trait Trait: system::Trait {
-
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    //Security/configuration constraints
+    /// Security/configuration constraints
     type PostTitleMaxLength: Get<MaxLength>;
 
     type PostBodyMaxLength: Get<MaxLength>;
@@ -74,23 +74,22 @@ pub trait Trait: system::Trait {
 
 #[derive(Encode, Decode, Clone, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub struct Blog <T: Trait> {
+pub struct Blog<T: Trait> {
     // Locking status
     locked: bool,
     // Overall posts counter, associated with blog
     posts_count: T::PostId,
     // Account id, associated with blog owner
-    owner: T::AccountId
+    owner: T::AccountId,
 }
 
-impl <T: Trait> Blog <T> {
-
+impl<T: Trait> Blog<T> {
     fn new(owner: T::AccountId) -> Self {
         Self {
             // Blog default locking status
             locked: false,
             posts_count: T::PostId::default(),
-            owner
+            owner,
         }
     }
 
@@ -114,7 +113,7 @@ impl <T: Trait> Blog <T> {
     }
 
     // Get overall posts count, associated with this blog
-    fn posts_count(&self) ->  T::PostId {
+    fn posts_count(&self) -> T::PostId {
         self.posts_count
     }
 
@@ -126,23 +125,23 @@ impl <T: Trait> Blog <T> {
 
 #[derive(Encode, Decode, Clone, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub struct Post <T: Trait> {
+pub struct Post<T: Trait> {
     // Locking status
     locked: bool,
     title: Vec<u8>,
     body: Vec<u8>,
     // Overall replies counter, associated with post
-    replies_count: T::ReplyId
+    replies_count: T::ReplyId,
 }
 
-impl <T: Trait> Post <T> {
+impl<T: Trait> Post<T> {
     fn new(title: Vec<u8>, body: Vec<u8>) -> Self {
-        Self { 
+        Self {
             // Post default locking status
             locked: false,
-            title, 
+            title,
             body,
-            replies_count: T::ReplyId::default()
+            replies_count: T::ReplyId::default(),
         }
     }
 
@@ -161,7 +160,7 @@ impl <T: Trait> Post <T> {
     }
 
     // Get overall replies count, associated with this post
-    fn replies_count(&self) ->  T::ReplyId {
+    fn replies_count(&self) -> T::ReplyId {
         self.replies_count
     }
 
@@ -181,16 +180,16 @@ impl <T: Trait> Post <T> {
     }
 }
 
-// Enum variant, representing reply`s parent type
+/// Enum variant, representing reply`s parent type
 #[derive(Encode, Decode, Clone, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub enum Parent <T: Trait> {
+pub enum Parent<T: Trait> {
     Reply(T::ReplyId),
-    Post(T::PostId)
+    Post(T::PostId),
 }
 
-// Get default parent representation
-impl <T: Trait> Default for Parent <T> {
+/// Default parent representation
+impl<T: Trait> Default for Parent<T> {
     fn default() -> Self {
         Parent::Post(T::PostId::default())
     }
@@ -198,7 +197,7 @@ impl <T: Trait> Default for Parent <T> {
 
 #[derive(Encode, Decode, Clone, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub struct Reply <T: Trait> {
+pub struct Reply<T: Trait> {
     // Reply text content
     text: Vec<u8>,
     // Account id, associated with reply owner
@@ -207,12 +206,12 @@ pub struct Reply <T: Trait> {
     parent_id: Parent<T>,
 }
 
-impl <T: Trait> Reply <T> {
+impl<T: Trait> Reply<T> {
     fn new(text: Vec<u8>, owner: T::AccountId, parent_id: Parent<T>) -> Self {
-        Self { 
+        Self {
             text,
             owner,
-            parent_id
+            parent_id,
         }
     }
 
@@ -237,12 +236,12 @@ decl_storage! {
     trait Store for Module<T: Trait> as BlogModule {
 
         // Wrap in option, as default representation can be be qual to newly created one
-        
+
         // Maps, representing id => item relationship for blogs, posts and replies related structures
 
         BlogById get(fn blog_by_id): map T::BlogId => Option<Blog<T>>;
 
-        PostById: double_map hasher(blake2_256) T::BlogId, blake2_256(T::PostId) => Option<Post<T>>;
+        PostById get(fn post_by_id): double_map hasher(blake2_256) T::BlogId, blake2_256(T::PostId) => Option<Post<T>>;
 
         ReplyById get (fn reply_by_id): linked_map (T::BlogId, T::PostId, T::ReplyId) => Option<Reply<T>>;
 
@@ -330,7 +329,7 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
-        
+
             blog.unlock();
 
             // Update blog lock status, associated with given id
@@ -364,7 +363,7 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
-            
+
             // New post creation
             let post = Post::new(title, body);
             <PostById<T>>::insert(blog_id, posts_count, post);
@@ -475,7 +474,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Update post with new text 
+            // Update post with new text
             post.update(new_title, new_body);
             <PostById<T>>::mutate(blog_id, post_id, |inner_post|  *inner_post = Some(post));
 
@@ -511,6 +510,7 @@ decl_module! {
 
             // New reply creation
             let reply = if let Some(reply_id) = reply_id {
+
                 // Check reply existance in case of direct reply
                 Self::ensure_reply_exists(blog_id, post_id, reply_id)?;
                 Self::ensure_direct_replies_limit_not_reached(blog_id, post_id, reply_id)?;
@@ -531,7 +531,7 @@ decl_module! {
             // Increment replies counter, associated with given post
             post.increment_replies_counter();
 
-            // Update post related runtime storage 
+            // Update post related runtime storage
             <PostById<T>>::mutate(blog_id, post_id, |new_post| *new_post = Some(post));
 
             // Trigger event
@@ -572,13 +572,14 @@ decl_module! {
 
             // Check security/configuration constraint
             Self::ensure_reply_text_is_valid(&new_text)?;
-            
+
             //
             // == MUTATION SAFE ==
             //
-        
-            // Update reply with new text 
+
+            // Update reply with new text
             reply.update(new_text);
+
             // Update reply related runtime storage
             <ReplyById<T>>::mutate((blog_id, post_id, reply_id), |inner_reply| *inner_reply = Some(reply));
 
@@ -590,54 +591,51 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-
-    fn ensure_blog_exists(blog_id: T::BlogId) -> Result<Blog<T>, &'static str>  {
+    fn ensure_blog_exists(blog_id: T::BlogId) -> Result<Blog<T>, &'static str> {
         Self::blog_by_id(blog_id).ok_or(BLOG_NOT_FOUND)
     }
 
-    fn ensure_post_exists(blog_id: T::BlogId, post_id: T::PostId) -> Result<Post<T>, &'static str>  {
+    fn ensure_post_exists(blog_id: T::BlogId, post_id: T::PostId) -> Result<Post<T>, &'static str> {
         <PostById<T>>::get(blog_id, post_id).ok_or(POST_NOT_FOUND)
     }
 
-    fn ensure_reply_exists(blog_id: T::BlogId, post_id: T::PostId, reply_id: T::ReplyId) -> Result<Reply<T>, &'static str>  {
+    fn ensure_reply_exists(
+        blog_id: T::BlogId,
+        post_id: T::PostId,
+        reply_id: T::ReplyId,
+    ) -> Result<Reply<T>, &'static str> {
         Self::reply_by_id((blog_id, post_id, reply_id)).ok_or(REPLY_NOT_FOUND)
     }
 
-    fn ensure_blog_ownership(blog: &Blog<T>, blog_owner: &T::AccountId) -> Result<(), &'static str>  {
-        ensure!(
-            blog.is_owner(&blog_owner),
-            BLOG_OWNERSHIP_ERROR
-        );
+    fn ensure_blog_ownership(
+        blog: &Blog<T>,
+        blog_owner: &T::AccountId,
+    ) -> Result<(), &'static str> {
+        ensure!(blog.is_owner(&blog_owner), BLOG_OWNERSHIP_ERROR);
         Ok(())
     }
 
-    fn ensure_reply_ownership(reply: &Reply<T>, reply_owner: &T::AccountId) -> Result<(), &'static str>  {
-        ensure!(
-            reply.is_owner(&reply_owner),
-            REPLY_OWNERSHIP_ERROR
-        );
+    fn ensure_reply_ownership(
+        reply: &Reply<T>,
+        reply_owner: &T::AccountId,
+    ) -> Result<(), &'static str> {
+        ensure!(reply.is_owner(&reply_owner), REPLY_OWNERSHIP_ERROR);
         Ok(())
     }
 
     fn ensure_blog_unlocked(blog: &Blog<T>) -> Result<(), &'static str> {
-        ensure!(
-            !blog.is_locked(),
-            BLOG_LOCKED_ERROR
-        );
+        ensure!(!blog.is_locked(), BLOG_LOCKED_ERROR);
         Ok(())
     }
 
     fn ensure_post_unlocked(post: &Post<T>) -> Result<(), &'static str> {
-        ensure!(
-            !post.is_locked(),
-            POST_LOCKED_ERROR
-        );
+        ensure!(!post.is_locked(), POST_LOCKED_ERROR);
         Ok(())
     }
 
     fn ensure_post_title_is_valid(title: &[u8]) -> Result<(), &'static str> {
         ensure!(
-            title.len() <= T::PostTitleMaxLength::get() as usize, 
+            title.len() <= T::PostTitleMaxLength::get() as usize,
             POST_TITLE_TOO_LONG
         );
         Ok(())
@@ -645,62 +643,79 @@ impl<T: Trait> Module<T> {
 
     fn ensure_post_body_is_valid(body: &[u8]) -> Result<(), &'static str> {
         ensure!(
-            body.len() <= T::PostBodyMaxLength::get() as usize, 
+            body.len() <= T::PostBodyMaxLength::get() as usize,
             POST_BODY_TOO_LONG
         );
         Ok(())
     }
 
-    fn ensure_posts_limit_not_reached(blog: &Blog<T>) -> Result<T::PostId, &'static str> {   
-        
+    fn ensure_posts_limit_not_reached(blog: &Blog<T>) -> Result<T::PostId, &'static str> {
         // Get posts count, associated with given blog
         let posts_count = blog.posts_count();
 
         ensure!(
-            posts_count < T::PostsMaxNumber::get().into(),  
+            posts_count < T::PostsMaxNumber::get().into(),
             POSTS_LIMIT_REACHED
         );
 
         Ok(posts_count)
     }
 
-    fn ensure_direct_replies_limit_not_reached(blog_id: T::BlogId, post_id: T::PostId, reply_id: T::ReplyId) -> Result<(), &'static str> {
-        
+    fn get_direct_replies_count(
+        blog_id: T::BlogId,
+        post_id: T::PostId,
+        reply_id: T::ReplyId,
+    ) -> usize {
         // Calculate direct replies count, iterating through all post
         // related replies and checking if reply parent is given reply
-        let direct_replies_count = <ReplyById<T>>::enumerate()
+        <ReplyById<T>>::enumerate()
             .filter(|(id, _)| blog_id == id.0 && post_id == id.1)
             .filter(|(_, reply)| reply.is_parent(&Parent::Reply(reply_id)))
-            .count() as u32;
+            .count()
+    }
+
+    fn get_replies_count(blog_id: T::BlogId, post_id: T::PostId) -> usize {
+        // Calculate replies count, iterating through all post
+        // related replies and checking if reply parent is given post
+        <ReplyById<T>>::enumerate()
+            .filter(|(id, _)| blog_id == id.0 && post_id == id.1)
+            .filter(|(_, reply)| reply.is_parent(&Parent::Post(post_id)))
+            .count()
+    }
+
+    fn ensure_direct_replies_limit_not_reached(
+        blog_id: T::BlogId,
+        post_id: T::PostId,
+        reply_id: T::ReplyId,
+    ) -> Result<(), &'static str> {
+        let direct_replies_count =
+            Self::get_direct_replies_count(blog_id, post_id, reply_id) as u32;
 
         ensure!(
-            direct_replies_count < T::DirectRepliesMaxNumber::get().into(),  
+            direct_replies_count < T::DirectRepliesMaxNumber::get().into(),
             DIRECT_REPLIES_LIMIT_REACHED
         );
 
         Ok(())
     }
 
-    fn ensure_replies_limit_not_reached(blog_id: T::BlogId, post_id: T::PostId) -> Result<(), &'static str> {
-        
-        // Calculate replies count, iterating through all post
-        // related replies and checking if reply parent is given post
-        let replies_count = <ReplyById<T>>::enumerate()
-            .filter(|(id, _)| blog_id == id.0 && post_id == id.1)
-            .filter(|(_, reply)| reply.is_parent(&Parent::Post(post_id)))
-            .count() as u32;
+    fn ensure_replies_limit_not_reached(
+        blog_id: T::BlogId,
+        post_id: T::PostId,
+    ) -> Result<(), &'static str> {
+        let replies_count = Self::get_replies_count(blog_id, post_id) as u32;
 
         ensure!(
-            replies_count < T::RepliesMaxNumber::get().into(),  
+            replies_count < T::RepliesMaxNumber::get().into(),
             REPLIES_LIMIT_REACHED
         );
-        
+
         Ok(())
     }
 
     fn ensure_reply_text_is_valid(reply_text: &[u8]) -> Result<(), &'static str> {
         ensure!(
-            reply_text.len() <= T::ReplyMaxLength::get() as usize, 
+            reply_text.len() <= T::ReplyMaxLength::get() as usize,
             REPLY_TEXT_TOO_LONG
         );
         Ok(())
