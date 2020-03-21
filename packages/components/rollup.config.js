@@ -9,37 +9,22 @@ import reactDom from "react-dom";
 import pkg from "./package.json";
 
 export default {
-<<<<<<< HEAD
-  input: "./src/index.js",
-=======
   input: "src/index.ts",
->>>>>>> develop
   output: [
     {
       file: pkg.main,
       format: "cjs",
-<<<<<<< HEAD
-    },
-    {
-      file: pkg.module,
-      format: "es",
-=======
       file: pkg.main,
     },
     {
       format: "esm",
       file: pkg.module,
->>>>>>> develop
     },
   ],
   plugins: [
     resolve({
       extensions: [".js", ".jsx", ".ts", ".tsx"],
       preferBuiltins: true,
-    }),
-    babel({
-      exclude: "../../node_modules",
-      extensions: [...DEFAULT_EXTENSIONS, ".ts", ".tsx"],
     }),
     commonjs({
       exclude: "../../node_modules",
@@ -48,13 +33,10 @@ export default {
         "react-dom": Object.keys(reactDom),
       },
     }),
-<<<<<<< HEAD
-=======
     typescript(),
     babel({
       exclude: ["../../node_modules/**", "node_modules/**"],
       extensions: [...DEFAULT_EXTENSIONS, ".ts", ".tsx"],
     }),
->>>>>>> develop
   ],
 };
