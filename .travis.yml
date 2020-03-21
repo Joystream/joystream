@@ -16,8 +16,9 @@ matrix:
 before_install:
   - rustup component add rustfmt
   - cargo fmt --all -- --check
-    # Tests do not depend on nightly or was targets. We do them
-    # here so the arm build doesn't proceed unless tests pass
+  - rustup default stable
+  - rustup update nightly
+  - rustup target add wasm32-unknown-unknown --toolchain nightly
   - cargo test --verbose --all
 
 install:
@@ -25,10 +26,6 @@ install:
     if [ "$TARGET" = "arm-unknown-linux-gnueabihf" ]
     then
       docker pull joystream/rust-raspberry
-    else
-      rustup update nightly
-      rustup target add ${TARGET}
-      rustup target add wasm32-unknown-unknown --toolchain nightly
     fi
 
 script:
