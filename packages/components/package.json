@@ -21,7 +21,7 @@
   "scripts": {
     "start": "rollup -wc",
     "index": "node scripts/build-index.js",
-    "build": "yarn run index && rollup -c",
+    "build": "rollup -c",
     "storybook": "start-storybook -p 6006",
     "build-storybook": "build-storybook",
     "now-build": "build-storybook",
