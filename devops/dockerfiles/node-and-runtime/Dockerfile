@@ -1,5 +1,5 @@
 FROM joystream/rust-builder AS builder
-LABEL description="compiles and caches dependencies, artifacts and node"
+LABEL description="Compiles all workspace artifacts"
 WORKDIR /joystream
 COPY . /joystream
 
@@ -9,6 +9,7 @@ FROM debian:stretch
 LABEL description="Joystream node"
 WORKDIR /joystream
 COPY --from=builder /joystream/target/release/joystream-node /joystream/node
+COPY --from=builder /joystream/target/release/wbuild/joystream-node-runtime/joystream_node_runtime.compact.wasm /joystream/runtime.compact.wasm
 
 # confirm it works
 RUN /joystream/node --version

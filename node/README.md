@@ -11,7 +11,7 @@ For setting up a full node and valiador review the [advanced guide from the help
 
 ##  Binary releases
 
-The latest pre build binaries can be downloads from the [releases](https://github.com/Joystream/substrate-node-joystream/releases) page.
+The latest pre build binaries can be downloads from the [releases](https://github.com/Joystream/substrate-runtime-joystream/releases) page.
 
 
 ## Building from source
