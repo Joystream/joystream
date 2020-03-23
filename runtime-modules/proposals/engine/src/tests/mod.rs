@@ -1019,8 +1019,7 @@ fn create_proposal_fais_with_invalid_stake_parameters() {
         dummy_proposal.create_proposal_and_assert(Err(Error::StakeDiffersFromRequired.into()));
     });
 }
-//  TODO: restore after the https://github.com/Joystream/substrate-runtime-joystream/issues/161
-// issue will be fixed: "Fix stake module and allow slashing and unstaking in the same block."
+
 #[test]
 fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succeeds() {
     initial_test_ext().execute_with(|| {
@@ -1091,6 +1090,82 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
         assert_eq!(
             <Test as stake::Trait>::Currency::total_balance(&account_id),
             account_balance - rejection_fee
+        );
+    });
+}
+
+#[test]
+fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let account_id = 1;
+
+        let stake_amount = 200;
+        let parameters = ProposalParameters {
+            voting_period: 3,
+            approval_quorum_percentage: 50,
+            approval_threshold_percentage: 60,
+            slashing_quorum_percentage: 60,
+            slashing_threshold_percentage: 60,
+            grace_period: 5,
+            required_stake: Some(stake_amount),
+        };
+        let dummy_proposal = DummyProposalFixture::default()
+            .with_parameters(parameters)
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_stake(stake_amount);
+
+        let account_balance = 500;
+        let _imbalance =
+            <Test as stake::Trait>::Currency::deposit_creating(&account_id, account_balance);
+
+        assert_eq!(
+            <Test as stake::Trait>::Currency::total_balance(&account_id),
+            account_balance
+        );
+
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+        assert_eq!(
+            <Test as stake::Trait>::Currency::total_balance(&account_id),
+            account_balance - stake_amount
+        );
+
+        let mut proposal = <crate::Proposals<Test>>::get(proposal_id);
+
+        let mut expected_proposal = Proposal {
+            parameters,
+            proposer_id: 1,
+            created_at: 1,
+            status: ProposalStatus::Active,
+            title: b"title".to_vec(),
+            description: b"description".to_vec(),
+            voting_results: VotingResults::default(),
+            stake_data: Some(StakeData {
+                stake_id: 0,
+                source_account_id: 1,
+            }),
+        };
+
+        assert_eq!(proposal, expected_proposal);
+
+        let cancel_proposal_fixture = CancelProposalFixture::new(proposal_id);
+
+        cancel_proposal_fixture.cancel_and_assert(Ok(()));
+
+        proposal = <crate::Proposals<Test>>::get(proposal_id);
+
+        expected_proposal.status = ProposalStatus::Finalized(FinalizationData {
+            proposal_status: ProposalDecisionStatus::Canceled,
+            finalized_at: 1,
+            finalization_error: None,
+        });
+        expected_proposal.stake_data = None;
+
+        assert_eq!(proposal, expected_proposal);
+
+        let cancellation_fee = CancellationFee::get();
+        assert_eq!(
+            <Test as stake::Trait>::Currency::total_balance(&account_id),
+            account_balance - cancellation_fee
         );
     });
 }

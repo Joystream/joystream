@@ -17,9 +17,6 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
-// TODO: Test module after the https://github.com/Joystream/substrate-runtime-joystream/issues/161
-// issue will be fixed: "Fix stake module and allow slashing and unstaking in the same block."
-// TODO: Test cancellation, rejection fees
 // TODO: Test StakingEventHandler
 // TODO: Test refund_proposal_stake()
 
