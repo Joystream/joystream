@@ -1,14 +1,17 @@
 import React from "react";
 import { css } from "@emotion/core";
 
-import TabLink, { LinkType } from "./TabLink";
-
 type TabNavigationProps = {
   selected: number;
-  links: LinkType[];
+  links: JSX.Element[];
+  onClick: (n: number) => void;
 };
 
-export default function TabNavigation({ links, selected }: TabNavigationProps) {
+export default function TabNavigation({
+  links,
+  selected,
+  onClick,
+}: TabNavigationProps) {
   return (
     <div
       css={css`
@@ -18,12 +21,26 @@ export default function TabNavigation({ links, selected }: TabNavigationProps) {
       `}
     >
       {links.map((link, idx) => (
-        <TabLink
-          key={link.label}
-          isSelected={idx === selected}
-          to={link.to}
-          label={link.label}
-        />
+        <div
+          css={css`
+            border-bottom: ${idx === selected
+              ? "2px solid rgb(241, 145, 53)"
+              : "none"};
+            font-weight: ${idx === selected ? "bold" : "normal"};
+            padding: 0.825rem;
+            margin-right: 0.5rem;
+            max-width: 8rem;
+            text-align: center;
+
+            &:hover {
+              cursor: pointer;
+            }
+          `}
+          onClick={e => onClick(idx)}
+          key={`${idx}-link`}
+        >
+          {link}
+        </div>
       ))}
     </div>
   );

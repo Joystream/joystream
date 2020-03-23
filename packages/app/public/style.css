@@ -16,6 +16,11 @@ body {
   line-height: 1.4285em;
 }
 
+a {
+  color: unset;
+  text-decoration: none;
+}
+
 main {
   padding: 0 4vw;
 }

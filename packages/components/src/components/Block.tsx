@@ -62,7 +62,8 @@ export default function Block({
           css={css`
             display: flex;
             flex-direction: column;
-            margin: 0.5rem;
+            margin-top: 0.5rem;
+            text-align: center;
 
             & > div {
               margin-bottom: 0.125rem;

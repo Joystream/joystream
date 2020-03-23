@@ -11,23 +11,10 @@ export default {
 export const tabNavigationData = {
   selected: number("Selected", 2),
   links: [
-    {
-      label: "Chain Info",
-      to: "#",
-    },
-    {
-      label: "Block Details",
-      to: "#",
-    },
-    {
-      label: "Forks",
-      to: "#",
-      isSelected: true,
-    },
-    {
-      label: "Node Info",
-      to: "#",
-    },
+    <a href="to">Chain Info</a>,
+    <a href="to">Block Details</a>,
+    <a href="to">Forks</a>,
+    <a href="to">Node</a>,
   ],
 };
 
