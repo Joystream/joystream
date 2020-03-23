@@ -7,6 +7,7 @@
   "license": "ISC",
   "main": "dist/index.cjs.js",
   "module": "dist/index.es.js",
+  "types": "dist/types",
   "directories": {
     "src": "src",
     "test": "__tests__"

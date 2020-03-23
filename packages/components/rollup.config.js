@@ -33,7 +33,9 @@ export default {
         "react-dom": Object.keys(reactDom),
       },
     }),
-    typescript(),
+    typescript({
+      useTsconfigDeclarationDir: true,
+    }),
     babel({
       exclude: ["../../node_modules/**", "node_modules/**"],
       extensions: [...DEFAULT_EXTENSIONS, ".ts", ".tsx"],

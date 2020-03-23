@@ -5,6 +5,8 @@
     "module": "esnext",
     "rootDirs": ["src", "stories"],
     "baseUrl": "src",
-    "jsx": "preserve"
+    "jsx": "preserve",
+    "declaration": true,
+    "declarationDir": "dist/types"
   }
 }
