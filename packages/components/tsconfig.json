@@ -4,6 +4,7 @@
   "compilerOptions": {
     "module": "esnext",
     "rootDirs": ["src", "stories"],
-    "baseUrl": "src"
+    "baseUrl": "src",
+    "jsx": "preserve"
   }
 }
