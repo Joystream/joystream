@@ -11,4 +11,7 @@ html {
 
 body {
   font-family: var(--font);
+  color: rgb(78, 78, 78);
+  font-size: 14px;
+  line-height: 1.4285em;
 }

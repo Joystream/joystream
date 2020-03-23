@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { TabNavigation, SearchBar, CardStack, Block } from "components";
 
+import "./explorer.css";
+
 let links = [
   {
     label: "Chain Info",
@@ -54,10 +56,16 @@ export default function Explorer() {
         <TabNavigation selected={tab} links={links} />
         <SearchBar placeholder={"block hash or number to query..."} />
       </header>
-      <main>
-        <div>
-          <CardStack items={recentBlocks} />
-          <CardStack items={recentEvents} />
+      <main className="explorer-grid">
+        <div className="explorer-columnar">
+          <div className="explorer-column">
+            <h1 className="column-header">Recent Blocks</h1>
+            <CardStack items={recentBlocks} />
+          </div>
+          <div className="explorer-column">
+            <h1 className="column-header">Recent Events</h1>
+            <CardStack items={recentEvents} className="events-col" />
+          </div>
         </div>
       </main>
     </>

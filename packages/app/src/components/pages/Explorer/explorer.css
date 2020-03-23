@@ -1,0 +1,15 @@
+.explorer-columnar {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.explorer-column {
+  min-width: 50%;
+  max-width: 50%;
+}
+
+.column-header {
+  text-transform: lowercase;
+  min-height: 2.75rem;
+  margin-bottom: 0.5rem;
+}

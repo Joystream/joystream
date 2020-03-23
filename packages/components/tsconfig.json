@@ -8,5 +8,7 @@
     "jsx": "preserve",
     "declaration": true,
     "declarationDir": "dist/types"
-  }
+  },
+
+  "exclude": ["node_modules", "dist"]
 }

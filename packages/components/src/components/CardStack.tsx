@@ -7,10 +7,10 @@ type CardStackProps = {
 
 export default function CardStack({ items }: CardStackProps) {
   return (
-    <>
+    <div>
       {items.map((item, key) => (
-        <Card key={key}>{item}</Card>
+        <div key={key}>{item}</div>
       ))}
-    </>
+    </div>
   );
 }

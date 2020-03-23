@@ -1,6 +1,9 @@
 import React from "react";
 import { css } from "@emotion/core";
 
+import Link from "./Link";
+import Card from "./Card";
+
 type BlockProps = {
   blockNum: number;
   hash: number | string;
@@ -18,27 +21,40 @@ export default function Block({
   isExpanded = false,
 }: BlockProps) {
   return (
-    <article
-      css={css`
-        text-align: left;
-      `}
-    >
+    <Card>
       <header
         css={css`
           display: flex;
           align-items: center;
-          justify-content: space-around;
+          justify-content: space-between;
+          white-space: nowrap;
+          color: rgba(0, 0, 0, 0.6);
+
+          & > div {
+            font-weight: 100;
+          }
         `}
       >
-        <span
+        <div
           css={css`
             font-size: 2.25rem;
+            display: inline-block;
+            margin-right: 0.5rem;
             color: rgb(46, 134, 171);
           `}
         >
-          {blockNum}
-        </span>
-        <h2>{hash}</h2>
+          <Link to={``}>{blockNum}</Link>
+        </div>
+        <div
+          css={css`
+            font-size: 1.5rem;
+            display: inline-block;
+            text-overflow: ellipsis;
+            overflow: hidden;
+          `}
+        >
+          {hash}
+        </div>
         <div>Copy</div>
       </header>
       {isExpanded && (
@@ -46,45 +62,84 @@ export default function Block({
           css={css`
             display: flex;
             flex-direction: column;
-            text-align: center;
-            margin: 0.5rem auto;
+            margin: 0.5rem;
           `}
         >
-          <div>
+          <div
+            css={css`
+              margin-bottom: 0.125rem;
+              overflow: hidden;
+              white-space: nowrap;
+              text-overflow: ellipsis;
+            `}
+          >
+            <label
+              css={css`
+                margin-right: 0.5rem;
+                min-width: 10rem;
+                text-align: right;
+                font-weight: 100;
+              `}
+            >
+              parentHash
+            </label>
             <span
               css={css`
                 color: rgb(46, 134, 171);
-                margin-right: 8px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                font-family: monospace;
               `}
             >
-              Parent Hash:
+              {parentHash}
             </span>
-            <span>{parentHash}</span>
           </div>
           <div>
-            <span
+            <label
               css={css`
-                color: rgb(46, 134, 171);
-                margin-right: 8px;
+                margin-right: 0.5rem;
+                min-width: 10rem;
+                text-align: right;
+                font-weight: 100;
               `}
             >
-              Extrinsict Root:
+              extrinsicsRoot
+            </label>
+            <span
+              css={css`
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                font-family: monospace;
+              `}
+            >
+              {extrinsictRoot}
             </span>
-            <span>{extrinsictRoot}</span>
           </div>
           <div>
-            <span
+            <label
               css={css`
-                color: rgb(46, 134, 171);
-                margin-right: 8px;
+                margin-right: 0.5rem;
+                min-width: 10rem;
+                text-align: right;
+                font-weight: 100;
               `}
             >
-              State Root:
+              stateRoot
+            </label>
+            <span
+              css={css`
+                overflow: hidden;
+                text-overflow: ellipsis;
+                font-family: monospace;
+              `}
+            >
+              {stateRoot}
             </span>
-            <span>{stateRoot}</span>
           </div>
         </div>
       )}
-    </article>
+    </Card>
   );
 }

@@ -1,8 +1,8 @@
-import React from "react";
+import React, { FunctionComponent } from "react";
 import { css } from "@emotion/core";
 
 type CardProps = {
-  children: JSX.Element;
+  children: JSX.Element | JSX.Element[];
 };
 
 export default function Card({ children }: CardProps) {
@@ -11,8 +11,11 @@ export default function Card({ children }: CardProps) {
       css={css`
         border: 1px solid rgb(242, 242, 242);
         border-radius: 0.25rem;
-        padding: 0.825rem;
-        margin-top: 0.25rem;
+        text-align: left;
+        padding: 1.25rem;
+        margin: 0.25rem;
+        line-height: 1.4285em;
+        box-sizing: border-box;
       `}
     >
       {children}
