@@ -120,13 +120,18 @@ impl Get<u16> for ConsecutiveRepliesMaxNumber {
 
 impl Trait for Runtime {
     type Event = TestEvent;
+
     type PostTitleMaxLength = PostTitleMaxLength;
     type PostBodyMaxLength = PostBodyMaxLength;
     type ReplyMaxLength = ReplyMaxLength;
+    
     type PostsMaxNumber = PostsMaxNumber;
     type RepliesMaxNumber = RepliesMaxNumber;
     type DirectRepliesMaxNumber = DirectRepliesMaxNumber;
     type ConsecutiveRepliesMaxNumber = ConsecutiveRepliesMaxNumber;
+
+    type BlogOwnerEnsureOrigin = system::EnsureSigned<Self::AccountId>;
+    type BlogOwnerId = u64;
 
     type BlogId = u32;
     type PostId = u32;
@@ -236,6 +241,7 @@ pub fn generate_text(len: usize) -> Vec<u8> {
 
 type RawTestEvent = RawEvent<
     <Runtime as system::Trait>::AccountId,
+    <Runtime as Trait>::BlogOwnerId,
     <Runtime as Trait>::BlogId,
     <Runtime as Trait>::PostId,
     <Runtime as Trait>::ReplyId,
