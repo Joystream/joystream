@@ -29,7 +29,8 @@ This is the index of past meetings with itineraries, they should all be stored i
 
 | Meeting Identifier                             | Invitation sent  | Scheduled   (held)    | Itinerary and Minutes                              | Notes                         |
 | :-----------------------------------------: | :---------------:|-----------------------| :------------------------------------------------: | :----------------------------:|
-| Rome Sprint in London                                   | N/A              | 21.10.19-25.10.19   (x) | [link](../meetings/rome#sprint-in-london)          |Unlike our standard release meetings via ZOOM, this is a week long sprint in London   |
+| Rome Release Status Meeting                         | 10.02.20         | 10.02.20-12:00GMT+1   (x) | [link](../meetings/rome#rome-release-status-meeting)          | Understanding the current status of the Rome Release   |
+| Rome Sprint in London                               | N/A              | 21.10.19-25.10.19   (x) | [link](../meetings/rome#sprint-in-london)          |Unlike our standard release meetings via ZOOM, this is a week long sprint in London   |
 | Rome Release Plan Finalization Meeting              | 19.08.19         | 20.08.19-11:15GMT+2 (x) | [link](../meetings/rome#release-plan-finalization-meeting)          |- |
 | Rome User Stories Meeting                           | 10.07.19         | 16.07.19-11:00GMT+2 (x) | [link](../meetings/rome#user-stories-meeting)                            | Due to complexity and logistics, the meeting took place over several days |  
 | Rome Launch Meeting                                 | 09.07.19         | 09.07.19-11:30GMT+2 (x) | [link](../meetings/rome#launch-meeting)                                  |              -                |  
