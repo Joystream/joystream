@@ -12,3 +12,5 @@ pub const REPLY_TEXT_TOO_LONG: &str = "ReplyById text too long";
 pub const POSTS_LIMIT_REACHED: &str = "Posts limit in a blog reached";
 pub const REPLIES_LIMIT_REACHED: &str = "Replies limit in a post reached";
 pub const DIRECT_REPLIES_LIMIT_REACHED: &str = "Direct replies limit reached";
+pub const CONSECUTIVE_REPLIES_LIMIT_REACHED: &str =
+    "The maximum number of consecutive (in time) replies by the same actor constraint violated";

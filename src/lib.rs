@@ -2,7 +2,7 @@
 
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
-use runtime_primitives::traits::{MaybeSerialize, EnsureOrigin, Member, One, SimpleArithmetic};
+use runtime_primitives::traits::{EnsureOrigin, MaybeSerialize, Member, One, SimpleArithmetic};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter,
     StorageDoubleMap, StorageLinkedMap, StorageMap, StorageValue,
@@ -21,9 +21,10 @@ type MaxNumber = u32;
 
 type MaxConsecutiveRepliesNumber = u16;
 
-/// The pallet's configuration trait.
-pub trait Trait: system::Trait {
+type ConsecutiveRepliesPeriod = u32;
 
+/// The pallet's configuration trait.
+pub trait Trait: system::Trait + timestamp::Trait {
     /// Origin from which blog owner must come.
     type BlogOwnerEnsureOrigin: EnsureOrigin<Self::Origin, Success = Self::AccountId>;
 
@@ -31,6 +32,7 @@ pub trait Trait: system::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     /// Security/configuration constraints
+
     type PostTitleMaxLength: Get<MaxLength>;
 
     type PostBodyMaxLength: Get<MaxLength>;
@@ -44,6 +46,9 @@ pub trait Trait: system::Trait {
     type DirectRepliesMaxNumber: Get<MaxNumber>;
 
     type ConsecutiveRepliesMaxNumber: Get<MaxConsecutiveRepliesNumber>;
+
+    /// Max cosecutive replies interval in milliseconds
+    type ConsecutiveRepliesPeriod: Get<ConsecutiveRepliesPeriod>;
 
     /// Type for the blog owner id. Should be authenticated by account id.
     type BlogOwnerId: From<Self::AccountId> + Parameter + Default;
@@ -86,7 +91,7 @@ pub struct Blog<T: Trait> {
     locked: bool,
     // Overall posts counter, associated with blog
     posts_count: T::PostId,
-    // Account id, associated with blog owner
+    // Blog owner id, associated with blog owner
     owner: T::BlogOwnerId,
 }
 
@@ -211,6 +216,8 @@ pub struct Reply<T: Trait> {
     owner: T::AccountId,
     // Reply`s parent id
     parent_id: Parent<T>,
+    // Reply creation timestamp
+    timestamp: T::Moment,
 }
 
 impl<T: Trait> Reply<T> {
@@ -219,10 +226,11 @@ impl<T: Trait> Reply<T> {
             text,
             owner,
             parent_id,
+            timestamp: <timestamp::Module<T>>::get(),
         }
     }
 
-    // Check if account_id is blog owner
+    // Check if account_id is reply owner
     fn is_owner(&self, account_id: &T::AccountId) -> bool {
         self.owner == *account_id
     }
@@ -235,6 +243,11 @@ impl<T: Trait> Reply<T> {
     // Update reply text
     fn update(&mut self, new_text: Vec<u8>) {
         self.text = new_text
+    }
+
+    // Returns reply creation timestamp
+    fn timestamp(&self) -> T::Moment {
+        self.timestamp
     }
 }
 
@@ -451,6 +464,9 @@ decl_module! {
             // Ensure reply text length is valid
             Self::ensure_reply_text_is_valid(&text)?;
 
+            // Ensure, that maximum number of consecutive replies in time limit not reached
+            Self::ensure_consecutive_replies_limit_not_reached(blog_id, post_id, reply_id)?;
+
             // New reply creation
             let reply = if let Some(reply_id) = reply_id {
 
@@ -534,7 +550,6 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-
     fn get_blog_owner(origin: T::Origin) -> Result<T::BlogOwnerId, &'static str> {
         let account_id = T::BlogOwnerEnsureOrigin::ensure_origin(origin)?;
         Ok(T::BlogOwnerId::from(account_id))
@@ -663,7 +678,6 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_posts_limit_not_reached(blog: &Blog<T>) -> Result<T::PostId, &'static str> {
-
         // Get posts count, associated with given blog
         let posts_count = blog.posts_count();
 
@@ -680,21 +694,23 @@ impl<T: Trait> Module<T> {
         post_id: T::PostId,
         reply_id: T::ReplyId,
     ) -> usize {
-
         // Calculate direct replies count, iterating through all post
         // related replies and checking if reply parent is given reply
         <ReplyById<T>>::enumerate()
+            // Get replies, related to given post
             .filter(|(id, _)| blog_id == id.0 && post_id == id.1)
+            // Get replies, related to given parent reply
             .filter(|(_, reply)| reply.is_parent(&Parent::Reply(reply_id)))
             .count()
     }
 
     fn get_replies_count(blog_id: T::BlogId, post_id: T::PostId) -> usize {
-
         // Calculate replies count, iterating through all post
         // related replies and checking if reply parent is given post
         <ReplyById<T>>::enumerate()
+            // Get replies, related to given post
             .filter(|(id, _)| blog_id == id.0 && post_id == id.1)
+            // Get replies, related to given parent post
             .filter(|(_, reply)| reply.is_parent(&Parent::Post(post_id)))
             .count()
     }
@@ -723,6 +739,46 @@ impl<T: Trait> Module<T> {
 
         ensure!(
             replies_count < T::RepliesMaxNumber::get().into(),
+            REPLIES_LIMIT_REACHED
+        );
+
+        Ok(())
+    }
+
+    fn get_consecutive_replies_count(
+        blog_id: T::BlogId,
+        post_id: T::PostId,
+        reply_id: Option<T::ReplyId>,
+    ) -> usize {
+        <ReplyById<T>>::enumerate()
+            // Get replies, related to given post
+            .filter(|(id, _)| blog_id == id.0 && post_id == id.1)
+            // Get replies, related to given parent
+            .filter(|(_, reply)| {
+                if let Some(reply_id) = reply_id {
+                    reply.is_parent(&Parent::Reply(reply_id))
+                } else {
+                    reply.is_parent(&Parent::Post(post_id))
+                }
+            })
+            // Get all replies, created in given time period
+            .filter(|(_, reply)| {
+                reply.timestamp
+                    >= <timestamp::Module<T>>::get() - T::ConsecutiveRepliesPeriod::get().into()
+            })
+            .count()
+    }
+
+    fn ensure_consecutive_replies_limit_not_reached(
+        blog_id: T::BlogId,
+        post_id: T::PostId,
+        reply_id: Option<T::ReplyId>,
+    ) -> Result<(), &'static str> {
+        let consecutive_replies_count =
+            Self::get_consecutive_replies_count(blog_id, post_id, reply_id);
+
+        ensure!(
+            consecutive_replies_count < T::ConsecutiveRepliesMaxNumber::get().into(),
             REPLIES_LIMIT_REACHED
         );
 

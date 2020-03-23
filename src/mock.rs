@@ -47,6 +47,12 @@ impl system::Trait for Runtime {
     type Version = ();
 }
 
+impl timestamp::Trait for Runtime {
+    type Moment = u64;
+    type OnTimestampSet = ();
+    type MinimumPeriod = ();
+}
+
 mod test_events {
     pub use crate::Event;
 }
@@ -67,6 +73,7 @@ thread_local! {
     static DIRECT_REPLIES_MAX_NUMBER: RefCell<u32> = RefCell::new(0);
 
     static CONSECUTIVE_REPLIES_MAX_NUMBER: RefCell<u16> = RefCell::new(0);
+    static CONSECUTIVE_REPLIES_PERIOD: RefCell<u32> = RefCell::new(0);
 }
 
 pub struct PostTitleMaxLength;
@@ -118,17 +125,25 @@ impl Get<u16> for ConsecutiveRepliesMaxNumber {
     }
 }
 
+pub struct ConsecutiveRepliesPeriod;
+impl Get<u32> for ConsecutiveRepliesPeriod {
+    fn get() -> u32 {
+        CONSECUTIVE_REPLIES_PERIOD.with(|v| *v.borrow())
+    }
+}
+
 impl Trait for Runtime {
     type Event = TestEvent;
 
     type PostTitleMaxLength = PostTitleMaxLength;
     type PostBodyMaxLength = PostBodyMaxLength;
     type ReplyMaxLength = ReplyMaxLength;
-    
+
     type PostsMaxNumber = PostsMaxNumber;
     type RepliesMaxNumber = RepliesMaxNumber;
     type DirectRepliesMaxNumber = DirectRepliesMaxNumber;
     type ConsecutiveRepliesMaxNumber = ConsecutiveRepliesMaxNumber;
+    type ConsecutiveRepliesPeriod = ConsecutiveRepliesPeriod;
 
     type BlogOwnerEnsureOrigin = system::EnsureSigned<Self::AccountId>;
     type BlogOwnerId = u64;
@@ -146,6 +161,7 @@ pub struct ExtBuilder {
     replies_max_number: u32,
     direct_replies_max_number: u32,
     consecutive_replies_max_number: u16,
+    consecutive_replies_period: u32,
 }
 
 impl Default for ExtBuilder {
@@ -157,7 +173,8 @@ impl Default for ExtBuilder {
             posts_max_number: 20,
             replies_max_number: 100,
             direct_replies_max_number: 10,
-            consecutive_replies_max_number: 3,
+            consecutive_replies_max_number: 5,
+            consecutive_replies_period: 10_000,
         }
     }
 }
@@ -198,6 +215,11 @@ impl ExtBuilder {
         self
     }
 
+    pub fn consecutive_replies_max_period(mut self, consecutive_replies_period: u32) -> Self {
+        self.consecutive_replies_period = consecutive_replies_period;
+        self
+    }
+
     pub fn set_associated_consts(&self) {
         POST_TITLE_MAX_LENGTH.with(|v| *v.borrow_mut() = self.post_title_max_length);
         POST_BODY_MAX_LENGTH.with(|v| *v.borrow_mut() = self.post_body_max_length);
@@ -209,6 +231,7 @@ impl ExtBuilder {
 
         CONSECUTIVE_REPLIES_MAX_NUMBER
             .with(|v| *v.borrow_mut() = self.consecutive_replies_max_number);
+        CONSECUTIVE_REPLIES_PERIOD.with(|v| *v.borrow_mut() = self.consecutive_replies_period);
     }
 
     pub fn build(self) -> TestExternalities {

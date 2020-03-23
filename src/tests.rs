@@ -15,7 +15,7 @@ fn assert_event_success(tested_event: TestEvent, number_of_events_after_call: us
     // Ensure, that runtime events length is equal to expected number of events after call
     assert_eq!(System::events().len(), number_of_events_after_call);
 
-    // Ensure that last emitted event is equal to expected one
+    // Ensure, that last emitted event is equal to expected one
     assert!(matches!(
             System::events()
                 .iter()
@@ -74,8 +74,6 @@ fn blog_creation() {
 #[test]
 fn blog_locking_success() {
     ExtBuilder::default().build().execute_with(|| {
-        let first_origin_signed = Origin::signed(FIRST_OWNER_ORIGIN);
-
         create_blog(FIRST_OWNER_ORIGIN);
 
         // Runtime tested state before call
