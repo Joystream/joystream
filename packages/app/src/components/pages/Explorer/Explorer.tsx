@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { TabNavigation, SearchBar, CardStack, Block } from "components";
+import {
+  TabNavigation,
+  SearchBar,
+  CardStack,
+  Block,
+  ContentLabel,
+  Event,
+} from "components";
 
 import "./explorer.css";
 
@@ -45,8 +52,15 @@ let recentBlocks = [
 ];
 
 let recentEvents = Array.from({ length: 5 }, (_, i) => (
-  <span>{`Card number: ${i}`}</span>
+  <Event
+    title={`imOnline.HeartbeatReceived (#${i})`}
+    summary={`a new hearthbeat was received from Authority Id`}
+  />
 ));
+
+let lastBlockTime = "4.6s";
+let timeTarget = "6s";
+let totalIssuance = "10.674M";
 
 export default function Explorer() {
   let [tab, setTab] = useState(0);
@@ -54,9 +68,36 @@ export default function Explorer() {
     <>
       <header>
         <TabNavigation selected={tab} links={links} />
-        <SearchBar placeholder={"block hash or number to query..."} />
+        <div className="explorer-searchbar">
+          <SearchBar placeholder="block hash or number to query" value="" />
+        </div>
       </header>
-      <main className="explorer-grid">
+      <main className="explorer-main">
+        <div className="explorer-summary">
+          <section>
+            <ContentLabel
+              label="Last Block"
+              data={lastBlockTime}
+            ></ContentLabel>
+            <ContentLabel label="Target" data={timeTarget}></ContentLabel>
+            <ContentLabel
+              label="total issuance"
+              data={totalIssuance}
+            ></ContentLabel>
+          </section>
+          <section>
+            <ContentLabel
+              label="Epoch"
+              data={79}
+              maxProgress={100}
+              withProgress={true}
+            />
+          </section>
+          <section>
+            <ContentLabel label="finalized" data={84158}></ContentLabel>
+            <ContentLabel label="best" data={84167}></ContentLabel>
+          </section>
+        </div>
         <div className="explorer-columnar">
           <div className="explorer-column">
             <h1 className="column-header">Recent Blocks</h1>

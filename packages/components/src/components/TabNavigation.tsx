@@ -13,7 +13,7 @@ export default function TabNavigation({ links, selected }: TabNavigationProps) {
     <div
       css={css`
         display: flex;
-        justify-content: space-evenly;
+        justify-content: flex-start;
         border-bottom: 1px solid #eee;
       `}
     >

@@ -15,3 +15,7 @@ body {
   font-size: 14px;
   line-height: 1.4285em;
 }
+
+main {
+  padding: 0 4vw;
+}

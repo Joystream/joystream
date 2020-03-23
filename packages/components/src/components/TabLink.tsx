@@ -21,6 +21,7 @@ export default function TabLink({
         border-bottom: ${isSelected ? "2px solid rgb(241, 145, 53)" : "none"};
         font-weight: ${isSelected ? "bold" : "normal"};
         padding: 0.825rem;
+        margin-right: 0.5rem;
         max-width: 8rem;
         text-align: center;
       `}

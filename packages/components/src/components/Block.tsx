@@ -63,16 +63,16 @@ export default function Block({
             display: flex;
             flex-direction: column;
             margin: 0.5rem;
-          `}
-        >
-          <div
-            css={css`
+
+            & > div {
               margin-bottom: 0.125rem;
               overflow: hidden;
               white-space: nowrap;
               text-overflow: ellipsis;
-            `}
-          >
+            }
+          `}
+        >
+          <div>
             <label
               css={css`
                 margin-right: 0.5rem;

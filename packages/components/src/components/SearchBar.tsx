@@ -45,7 +45,7 @@ export default function SearchBar({
           border: unset;
           padding: 0.5rem;
           color: #eee;
-          margin-left: 0.25rem;
+          margin-left: 0.125rem;
         `}
       >
         {cta}
