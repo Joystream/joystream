@@ -151,7 +151,7 @@ fn blog_locking_ownership_error() {
         let lock_result = lock_blog(SECOND_OWNER_ORIGIN, FIRST_ID);
 
         // Check related state after extrinsic performed
-        let blog = TestBlogModule::blog_by_id(FIRST_ID).unwrap();
+        let blog = blog_by_id(FIRST_ID).unwrap();
 
         // Remain unlocked
         assert_eq!(blog.is_locked(), false);
@@ -852,7 +852,10 @@ fn reply_creation_success() {
         assert_eq!(post.replies_count(), 1);
 
         // Root replies counter updated
-        assert_eq!(TestBlogModule::get_replies_count(FIRST_ID, FIRST_ID, None), 1);
+        assert_eq!(
+            TestBlogModule::get_replies_count(FIRST_ID, FIRST_ID, None),
+            1
+        );
 
         // Event checked
         let reply_created_event = get_test_event(RawEvent::ReplyCreated(
@@ -1479,9 +1482,9 @@ fn post_storage_unchanged(
     post_id: <Runtime as Trait>::PostId,
 ) -> bool {
     if let Some(blog) = blog_by_id(blog_id) {
-        blog.posts_count() == 0 && TestBlogModule::post_by_id(blog_id, post_id).is_none()
+        blog.posts_count() == 0 && post_by_id(blog_id, post_id).is_none()
     } else {
-        TestBlogModule::post_by_id(blog_id, post_id).is_none()
+        post_by_id(blog_id, post_id).is_none()
     }
 }
 

@@ -229,7 +229,10 @@ impl<T: Trait> ExtBuilder<T> {
         self
     }
 
-    pub fn consecutive_replies_max_period(mut self, consecutive_replies_interval: <Runtime as system::Trait>::BlockNumber) -> Self {
+    pub fn consecutive_replies_max_period(
+        mut self,
+        consecutive_replies_interval: <Runtime as system::Trait>::BlockNumber,
+    ) -> Self {
         self.consecutive_replies_interval = consecutive_replies_interval;
         self
     }
@@ -296,6 +299,7 @@ type RawTestEvent = RawEvent<
     <Runtime as Trait>::BlogId,
     <Runtime as Trait>::PostId,
     <Runtime as Trait>::ReplyId,
+    <Runtime as Trait>::ReactionsNumber,
 >;
 
 pub fn get_test_event(raw_event: RawTestEvent) -> TestEvent {
@@ -308,7 +312,10 @@ pub fn blogs_count() -> <Runtime as Trait>::BlogId {
 }
 
 pub fn blog_by_id(blog_id: <Runtime as Trait>::BlogId) -> Option<Blog<Runtime>> {
-    TestBlogModule::blog_by_id(blog_id)
+    match TestBlogModule::blog_by_id(blog_id) {
+        blog if blog != Blog::<Runtime>::default() => Some(blog),
+        _ => None,
+    }
 }
 
 pub fn create_blog(origin_id: u64) -> Result<(), &'static str> {
@@ -331,7 +338,10 @@ pub fn post_by_id(
     post_id: <Runtime as Trait>::PostId,
     blog_id: <Runtime as Trait>::BlogId,
 ) -> Option<Post<Runtime>> {
-    TestBlogModule::post_by_id(blog_id, post_id)
+    match TestBlogModule::post_by_id(blog_id, post_id) {
+        post if post != Post::<Runtime>::default() => Some(post),
+        _ => None,
+    }
 }
 
 pub fn get_post(post_type: PostType, editing: bool, locked: bool) -> Post<Runtime> {
@@ -409,7 +419,10 @@ pub fn reply_by_id(
     post_id: <Runtime as Trait>::PostId,
     reply_id: <Runtime as Trait>::ReplyId,
 ) -> Option<Reply<Runtime>> {
-    TestBlogModule::reply_by_id((blog_id, post_id, reply_id))
+    match TestBlogModule::reply_by_id((blog_id, post_id, reply_id)) {
+        reply if reply != Reply::<Runtime>::default() => Some(reply),
+        _ => None,
+    }
 }
 
 pub fn get_reply_text(reply_type: ReplyType, editing: bool) -> Vec<u8> {

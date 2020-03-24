@@ -3,12 +3,19 @@
 use codec::{Codec, Decode, Encode};
 use rstd::collections::btree_map::BTreeMap;
 use rstd::prelude::*;
-use runtime_primitives::traits::{EnsureOrigin, MaybeSerialize, Member, One, SimpleArithmetic};
+use runtime_primitives::traits::{
+    EnsureOrigin, MaybeSerialize, Member, One, SimpleArithmetic, Zero,
+};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter,
     StorageDoubleMap, StorageLinkedMap, StorageMap, StorageValue,
 };
 use system::{self, ensure_signed};
+
+use rstd::{
+    self,
+    convert::{TryFrom, TryInto},
+};
 
 mod error_messages;
 mod mock;
@@ -24,7 +31,6 @@ type MaxConsecutiveRepliesNumber = u16;
 
 /// The pallet's configuration trait.
 pub trait Trait: system::Trait {
-
     /// Origin from which blog owner must come.
     type BlogOwnerEnsureOrigin: EnsureOrigin<Self::Origin, Success = Self::AccountId>;
 
@@ -45,11 +51,13 @@ pub trait Trait: system::Trait {
 
     type DirectRepliesMaxNumber: Get<MaxNumber>;
 
+    /// Max number of consecutive (in time) replies to the same post/reply by the same actor
     type ConsecutiveRepliesMaxNumber: Get<MaxConsecutiveRepliesNumber>;
 
     /// Max cosecutive replies interval in blocks passed
     type ConsecutiveRepliesInterval: Get<Self::BlockNumber>;
 
+    // Type, representing reactions number
     type ReactionsNumber: Parameter
         + Member
         + SimpleArithmetic
@@ -57,7 +65,9 @@ pub trait Trait: system::Trait {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + Into<u32>
+        + From<u32>;
 
     /// Number of reactions, presented in runtime
     type ReactionsMaxNumber: Get<Self::ReactionsNumber>;
@@ -107,6 +117,18 @@ pub struct Blog<T: Trait> {
     owner: T::BlogOwnerId,
 }
 
+/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED DUE TO A BAD STORAGE MODEL IN SUBSTRATE***
+impl<T: Trait> Default for Blog<T> {
+    fn default() -> Self {
+        Self {
+            // Blog default locking status
+            locked: false,
+            posts_count: T::PostId::default(),
+            owner: T::BlogOwnerId::default(),
+        }
+    }
+}
+
 impl<T: Trait> Blog<T> {
     fn new(owner: T::BlogOwnerId) -> Self {
         Self {
@@ -117,7 +139,7 @@ impl<T: Trait> Blog<T> {
         }
     }
 
-    // Make all data, associated with this blog immutable
+    /// Make all data, associated with this blog immutable
     fn lock(&mut self) {
         self.locked = true;
     }
@@ -126,22 +148,22 @@ impl<T: Trait> Blog<T> {
         self.locked = false;
     }
 
-    // Get current locking status
+    /// Get current locking status
     fn is_locked(&self) -> bool {
         self.locked
     }
 
-    // Check if account_id is blog owner
+    /// Check if account_id is blog owner
     fn is_owner(&self, account_id: &T::BlogOwnerId) -> bool {
         self.owner == *account_id
     }
 
-    // Get overall posts count, associated with this blog
+    /// Get overall posts count, associated with this blog
     fn posts_count(&self) -> T::PostId {
         self.posts_count
     }
 
-    // Increases posts count, associated with given blog by 1
+    /// Increase posts count, associated with given blog by 1
     fn increment_posts_counter(&mut self) {
         self.posts_count += T::PostId::one()
     }
@@ -157,7 +179,21 @@ pub struct Post<T: Trait> {
     // Overall replies counter, associated with post
     replies_count: T::ReplyId,
     // AccountId -> All presented reactions state mapping
-    reactions: BTreeMap<T::AccountId, Vec<bool>>
+    reactions: BTreeMap<T::AccountId, Vec<bool>>,
+}
+
+/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED DUE TO A BAD STORAGE MODEL IN SUBSTRATE***
+impl<T: Trait> Default for Post<T> {
+    fn default() -> Self {
+        Self {
+            // Post default locking status
+            locked: false,
+            title: vec![],
+            body: vec![],
+            replies_count: T::ReplyId::default(),
+            reactions: BTreeMap::default(),
+        }
+    }
 }
 
 impl<T: Trait> Post<T> {
@@ -168,11 +204,11 @@ impl<T: Trait> Post<T> {
             title,
             body,
             replies_count: T::ReplyId::default(),
-            reactions: BTreeMap::new()
+            reactions: BTreeMap::new(),
         }
     }
 
-    // Make all data, associated with this post immutable
+    /// Make all data, associated with this post immutable
     fn lock(&mut self) {
         self.locked = true;
     }
@@ -181,22 +217,22 @@ impl<T: Trait> Post<T> {
         self.locked = false;
     }
 
-    // Get current locking status
+    /// Get current locking status
     fn is_locked(&self) -> bool {
         self.locked
     }
 
-    // Get overall replies count, associated with this post
+    /// Get overall replies count, associated with this post
     fn replies_count(&self) -> T::ReplyId {
         self.replies_count
     }
 
-    // Increases replies count, associated with given post by 1
+    /// Increase replies count, associated with given post by 1
     fn increment_replies_counter(&mut self) {
         self.replies_count += T::ReplyId::one()
     }
 
-    // Updates post title and body, if Option::Some(_)
+    /// Update post title and body, if Option::Some(_)
     fn update(&mut self, new_title: Option<Vec<u8>>, new_body: Option<Vec<u8>>) {
         if let Some(new_title) = new_title {
             self.title = new_title
@@ -204,6 +240,27 @@ impl<T: Trait> Post<T> {
         if let Some(new_body) = new_body {
             self.body = new_body
         }
+    }
+
+    /// Update reactions state
+    fn update_reactions(&mut self, owner: &T::AccountId, index: T::ReactionsNumber) {
+        mutate_reactions::<T>(&mut self.reactions, owner, index)
+    }
+}
+
+fn mutate_reactions<T: Trait>(
+    reactions: &mut BTreeMap<T::AccountId, Vec<bool>>,
+    owner: &T::AccountId,
+    index: T::ReactionsNumber,
+) {
+    if let Some(reactions_array) = reactions.get_mut(owner) {
+        // Flip reaction value under given index
+        reactions_array[index.into() as usize] ^= true;
+    } else {
+        let mut reactions_array = vec![false; T::ReactionsMaxNumber::get().into() as usize];
+        // Flip reaction value under given index
+        reactions_array[index.into() as usize] ^= true;
+        reactions.insert(owner.clone(), reactions_array);
     }
 }
 
@@ -234,7 +291,20 @@ pub struct Reply<T: Trait> {
     // Reply creation block number
     block_number: T::BlockNumber,
     // AccountId -> All presented reactions state mapping
-    reactions: BTreeMap<T::AccountId, Vec<bool>>
+    reactions: BTreeMap<T::AccountId, Vec<bool>>,
+}
+
+/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED DUE TO A BAD STORAGE MODEL IN SUBSTRATE***
+impl<T: Trait> Default for Reply<T> {
+    fn default() -> Self {
+        Self {
+            text: vec![],
+            owner: T::AccountId::default(),
+            parent_id: Parent::<T>::default(),
+            block_number: T::BlockNumber::default(),
+            reactions: BTreeMap::default(),
+        }
+    }
 }
 
 impl<T: Trait> Reply<T> {
@@ -244,26 +314,31 @@ impl<T: Trait> Reply<T> {
             owner,
             parent_id,
             block_number: <system::Module<T>>::block_number(),
-            reactions: BTreeMap::new()
+            reactions: BTreeMap::new(),
         }
     }
 
-    // Check if account_id is reply owner
+    /// Check if account_id is reply owner
     fn is_owner(&self, account_id: &T::AccountId) -> bool {
         self.owner == *account_id
     }
 
-    // Check if account_id is parent
+    /// Check if account_id is parent
     fn is_parent(&self, account_id: &Parent<T>) -> bool {
         core::mem::discriminant(&self.parent_id) == core::mem::discriminant(account_id)
     }
 
-    // Update reply text
+    /// Update reply text
     fn update(&mut self, new_text: Vec<u8>) {
         self.text = new_text
     }
 
-    // Returns reply creation timestamp
+    /// Update reactions state
+    fn update_reactions(&mut self, owner: &T::AccountId, index: T::ReactionsNumber) {
+        mutate_reactions::<T>(&mut self.reactions, owner, index)
+    }
+
+    /// Return reply creation timestamp
     fn block_number(&self) -> T::BlockNumber {
         self.block_number
     }
@@ -275,15 +350,15 @@ decl_storage! {
 
         // Wrap in option, as default representation can be be qual to newly created one
 
-        // Maps, representing id => item relationship for blogs, posts and replies related structures
+        /// Maps, representing id => item relationship for blogs, posts and replies related structures
 
-        BlogById get(fn blog_by_id): map T::BlogId => Option<Blog<T>>;
+        BlogById get(fn blog_by_id): map T::BlogId => Blog<T>;
 
-        PostById get(fn post_by_id): double_map hasher(blake2_256) T::BlogId, blake2_256(T::PostId) => Option<Post<T>>;
+        PostById get(fn post_by_id): double_map hasher(blake2_256) T::BlogId, blake2_256(T::PostId) => Post<T>;
 
-        ReplyById get (fn reply_by_id): linked_map (T::BlogId, T::PostId, T::ReplyId) => Option<Reply<T>>;
+        ReplyById get (fn reply_by_id): linked_map (T::BlogId, T::PostId, T::ReplyId) => Reply<T>;
 
-        // Overall blogs counter
+        /// Overall blogs counter
 
         BlogsCount get(fn blogs_count): T::BlogId;
     }
@@ -300,7 +375,7 @@ decl_module! {
             let blog_owner = Self::get_blog_owner(origin)?;
 
             // Ensure blog with given id exists
-            let mut blog = Self::ensure_blog_exists(blog_id)?;
+            let blog = Self::ensure_blog_exists(blog_id)?;
 
             // Ensure blog -> owner relation exists
             Self::ensure_blog_ownership(&blog, &blog_owner)?;
@@ -327,8 +402,7 @@ decl_module! {
             <PostById<T>>::insert(blog_id, posts_count, post);
 
             // Increment blog posts counter, associated with given blog
-            blog.increment_posts_counter();
-            <BlogById<T>>::mutate(blog_id, |inner_blog| *inner_blog = Some(blog));
+            <BlogById<T>>::mutate(blog_id, |inner_blog| inner_blog.increment_posts_counter());
 
             // Trigger event
             Self::deposit_event(RawEvent::PostCreated(blog_id, posts_count));
@@ -345,16 +419,14 @@ decl_module! {
             Self::ensure_blog_ownership(&blog, &blog_owner)?;
 
             // Ensure post with given id exists
-            let mut post = Self::ensure_post_exists(blog_id, post_id)?;
+            Self::ensure_post_exists(blog_id, post_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            post.lock();
-
             // Update post lock status, associated with given id
-            <PostById<T>>::mutate(blog_id, post_id, |new_post| *new_post = Some(post));
+            <PostById<T>>::mutate(blog_id, post_id, |inner_post| inner_post.lock());
 
             // Trigger event
             Self::deposit_event(RawEvent::PostLocked(blog_id, post_id));
@@ -371,16 +443,14 @@ decl_module! {
             Self::ensure_blog_ownership(&blog, &blog_owner)?;
 
             // Ensure post with given id exists
-            let mut post = Self::ensure_post_exists(blog_id, post_id)?;
+            Self::ensure_post_exists(blog_id, post_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            post.unlock();
-
             // Update post lock status, associated with given id
-            <PostById<T>>::mutate(blog_id, post_id, |new_post| *new_post = Some(post));
+            <PostById<T>>::mutate(blog_id, post_id, |inner_post| inner_post.unlock());
 
             // Trigger event
             Self::deposit_event(RawEvent::PostUnlocked(blog_id, post_id));
@@ -411,7 +481,7 @@ decl_module! {
             Self::ensure_blog_unlocked(&blog)?;
 
             // Ensure post with given id exists
-            let mut post = Self::ensure_post_exists(blog_id, post_id)?;
+            let post = Self::ensure_post_exists(blog_id, post_id)?;
 
             // Ensure post unlocked, so mutations can be performed
             Self::ensure_post_unlocked(&post)?;
@@ -433,15 +503,14 @@ decl_module! {
             //
 
             // Update post with new text
-            post.update(new_title, new_body);
-            <PostById<T>>::mutate(blog_id, post_id, |inner_post|  *inner_post = Some(post));
+            <PostById<T>>::mutate(blog_id, post_id, |inner_post| inner_post.update(new_title, new_body));
 
             // Trigger event
             Self::deposit_event(RawEvent::PostEdited(blog_id, post_id));
             Ok(())
         }
 
-        // Either root post reply or direct reply to reply
+        /// Either root post reply or direct reply to reply
         pub fn create_reply(
             origin,
             blog_id: T::BlogId,
@@ -458,7 +527,7 @@ decl_module! {
             Self::ensure_blog_unlocked(&blog)?;
 
             // Ensure post with given id exists
-            let mut post = Self::ensure_post_exists(blog_id, post_id)?;
+            let post = Self::ensure_post_exists(blog_id, post_id)?;
 
             // Ensure post unlocked, so mutations can be performed
             Self::ensure_post_unlocked(&post)?;
@@ -490,10 +559,7 @@ decl_module! {
             <ReplyById<T>>::insert((blog_id, post_id, post_replies_count), reply);
 
             // Increment replies counter, associated with given post
-            post.increment_replies_counter();
-
-            // Update post related runtime storage
-            <PostById<T>>::mutate(blog_id, post_id, |new_post| *new_post = Some(post));
+            <PostById<T>>::mutate(blog_id, post_id, |inner_post| inner_post.increment_replies_counter());
 
             // Trigger event
             if let Some(reply_id) = reply_id {
@@ -526,7 +592,7 @@ decl_module! {
             Self::ensure_post_unlocked(&post)?;
 
             // Ensure reply with given id exists
-            let mut reply = Self::ensure_reply_exists(blog_id, post_id, reply_id)?;
+            let reply = Self::ensure_reply_exists(blog_id, post_id, reply_id)?;
 
             // Ensure reply -> owner relation exists
             Self::ensure_reply_ownership(&reply, &reply_owner)?;
@@ -539,16 +605,60 @@ decl_module! {
             //
 
             // Update reply with new text
-            reply.update(new_text);
-
-            // Update reply related runtime storage
-            <ReplyById<T>>::mutate((blog_id, post_id, reply_id), |inner_reply| *inner_reply = Some(reply));
+            <ReplyById<T>>::mutate((blog_id, post_id, reply_id), |inner_reply| inner_reply.update(new_text));
 
             // Trigger event
             Self::deposit_event(RawEvent::ReplyEdited(blog_id, post_id, reply_id));
             Ok(())
         }
 
+        /// Either post reaction or reply reaction
+        pub fn react(
+            origin,
+            // reaction index in array
+            index: T::ReactionsNumber,
+            blog_id: T::BlogId,
+            post_id: T::PostId,
+            reply_id: Option<T::ReplyId>
+        ) {
+            let owner = ensure_signed(origin)?;
+
+            // Ensure index is valid & reaction under given index exists
+            Self::ensure_reaction_index_is_valid(index)?;
+
+            // Ensure blog with given id exists
+            let blog = Self::ensure_blog_exists(blog_id)?;
+
+            // Ensure blog unlocked, so mutations can be performed
+            Self::ensure_blog_unlocked(&blog)?;
+
+            // Ensure post with given id exists
+            let post = Self::ensure_post_exists(blog_id, post_id)?;
+
+            // Ensure post unlocked, so mutations can be performed
+            Self::ensure_post_unlocked(&post)?;
+
+            // Ensure reply with given id exists
+            if let Some(reply_id) = reply_id {
+                Self::ensure_reply_exists(blog_id, post_id, reply_id)?;
+            }
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            if let Some(reply_id) = reply_id {
+                // Update reply reactions
+                <ReplyById<T>>::mutate((blog_id, post_id, reply_id), |inner_reply| inner_reply.update_reactions(&owner, index));
+                // Trigger event
+                Self::deposit_event(RawEvent::ReplyReactionsUpdated(owner, blog_id, post_id, reply_id, index));
+            } else {
+                // Update post reactions
+                <PostById<T>>::mutate(blog_id, post_id, |inner_post| inner_post.update_reactions(&owner, index));
+                // Trigger event
+                Self::deposit_event(RawEvent::PostReactionsUpdated(owner, blog_id, post_id, index));
+            }
+        }
 
     }
 }
@@ -583,7 +693,7 @@ impl<T: Trait> Module<T> {
         let blog_owner = Self::get_blog_owner(origin)?;
 
         // Ensure blog with given id exists
-        let mut blog = Self::ensure_blog_exists(blog_id)?;
+        let blog = Self::ensure_blog_exists(blog_id)?;
 
         // Ensure blog -> owner relation exists
         Self::ensure_blog_ownership(&blog, &blog_owner)?;
@@ -592,10 +702,8 @@ impl<T: Trait> Module<T> {
         // == MUTATION SAFE ==
         //
 
-        blog.lock();
-
         // Update blog lock status, associated with given id
-        <BlogById<T>>::mutate(&blog_id, |inner_blog| *inner_blog = Some(blog));
+        <BlogById<T>>::mutate(&blog_id, |inner_blog| inner_blog.lock());
 
         // Trigger event
         Self::deposit_event(RawEvent::BlogLocked(blog_owner, blog_id));
@@ -606,7 +714,7 @@ impl<T: Trait> Module<T> {
         let blog_owner = Self::get_blog_owner(origin)?;
 
         // Ensure blog with given id exists
-        let mut blog = Self::ensure_blog_exists(blog_id)?;
+        let blog = Self::ensure_blog_exists(blog_id)?;
 
         // Ensure blog -> owner relation exists
         Self::ensure_blog_ownership(&blog, &blog_owner)?;
@@ -615,20 +723,20 @@ impl<T: Trait> Module<T> {
         // == MUTATION SAFE ==
         //
 
-        blog.unlock();
-
         // Update blog lock status, associated with given id
-        <BlogById<T>>::mutate(&blog_id, |inner_blog| *inner_blog = Some(blog));
+        <BlogById<T>>::mutate(&blog_id, |inner_blog| inner_blog.unlock());
         Self::deposit_event(RawEvent::BlogUnlocked(blog_owner, blog_id));
         Ok(())
     }
 
     fn ensure_blog_exists(blog_id: T::BlogId) -> Result<Blog<T>, &'static str> {
-        Self::blog_by_id(blog_id).ok_or(BLOG_NOT_FOUND)
+        ensure!(<BlogById<T>>::exists(blog_id), BLOG_NOT_FOUND);
+        Ok(Self::blog_by_id(blog_id))
     }
 
     fn ensure_post_exists(blog_id: T::BlogId, post_id: T::PostId) -> Result<Post<T>, &'static str> {
-        <PostById<T>>::get(blog_id, post_id).ok_or(POST_NOT_FOUND)
+        ensure!(<PostById<T>>::exists(blog_id, post_id), POST_NOT_FOUND);
+        Ok(Self::post_by_id(blog_id, post_id))
     }
 
     fn ensure_reply_exists(
@@ -636,7 +744,11 @@ impl<T: Trait> Module<T> {
         post_id: T::PostId,
         reply_id: T::ReplyId,
     ) -> Result<Reply<T>, &'static str> {
-        Self::reply_by_id((blog_id, post_id, reply_id)).ok_or(REPLY_NOT_FOUND)
+        ensure!(
+            <ReplyById<T>>::exists((blog_id, post_id, reply_id)),
+            REPLY_NOT_FOUND
+        );
+        Ok(Self::reply_by_id((blog_id, post_id, reply_id)))
     }
 
     fn ensure_blog_ownership(
@@ -694,7 +806,11 @@ impl<T: Trait> Module<T> {
     }
 
     /// Get either replies count or direct replies count by given parent post/blog.
-    fn get_replies_count(blog_id: T::BlogId, post_id: T::PostId, reply_id: Option<T::ReplyId>) -> usize {
+    fn get_replies_count(
+        blog_id: T::BlogId,
+        post_id: T::PostId,
+        reply_id: Option<T::ReplyId>,
+    ) -> usize {
         // Calculate replies count, iterating through all post
         // related replies and checking if reply parent is given parent post/reply
         <ReplyById<T>>::enumerate()
@@ -716,8 +832,7 @@ impl<T: Trait> Module<T> {
         post_id: T::PostId,
         reply_id: T::ReplyId,
     ) -> Result<(), &'static str> {
-        let direct_replies_count =
-            Self::get_replies_count(blog_id, post_id, Some(reply_id)) as u32;
+        let direct_replies_count = Self::get_replies_count(blog_id, post_id, Some(reply_id)) as u32;
 
         ensure!(
             direct_replies_count < T::DirectRepliesMaxNumber::get().into(),
@@ -797,6 +912,14 @@ impl<T: Trait> Module<T> {
         );
         Ok(())
     }
+
+    fn ensure_reaction_index_is_valid(index: T::ReactionsNumber) -> Result<(), &'static str> {
+        ensure!(
+            index >= T::ReactionsNumber::zero() && index < T::ReactionsMaxNumber::get(),
+            INVALID_REACTION_INDEX
+        );
+        Ok(())
+    }
 }
 
 decl_event!(
@@ -807,6 +930,7 @@ decl_event!(
         BlogId = <T as Trait>::BlogId,
         PostId = <T as Trait>::PostId,
         ReplyId = <T as Trait>::ReplyId,
+        ReactionsNumber = <T as Trait>::ReactionsNumber,
     {
         BlogCreated(BlogOwnerId, BlogId),
         BlogLocked(BlogOwnerId, BlogId),
@@ -818,5 +942,7 @@ decl_event!(
         ReplyCreated(AccountId, BlogId, PostId, ReplyId),
         DirectReplyCreated(AccountId, BlogId, PostId, ReplyId, ReplyId),
         ReplyEdited(BlogId, PostId, ReplyId),
+        PostReactionsUpdated(AccountId, BlogId, PostId, ReactionsNumber),
+        ReplyReactionsUpdated(AccountId, BlogId, PostId, ReplyId, ReactionsNumber),
     }
 );
