@@ -29,7 +29,6 @@
     <a href="https://github.com/Joystream/helpdesk/blob/master/README.md">
       Helpdesk
     </a>
-    <span> | </span>
   </h3>
 </div>
 
