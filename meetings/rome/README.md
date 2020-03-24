@@ -236,7 +236,7 @@ NB2: These stories are kind of hand wavy. Many of the stories may be better suit
 - Get usage stats:
    - number of objects served/uploaded, total data transferred
 - Check if there is a version update available
-- Enter a test mode - non-operational mode for testing setup and configuration
+- Enter a test mode - non operational mode for testing setup and configuration
 - Configure a remote IPFS node to use
 - Configure a remote endpoint as joystream full node
 - Gracefully shutdown node
@@ -426,7 +426,7 @@ NB2: These stories are kind of hand wavy. Many of the stories may be better suit
 - Check if there is a version update available
 - Get usage stats:
    - number of objects served/uploaded, total data transferred
-- Enter a test mode - non-operational mode for testing setup and configuration *x*
+- Enter a test mode - non operational mode for testing setup and configuration *x*
 - Configure a remote endpoint as joystream full node *x*
 *x these two combined would mean users could test on a "reckless" testnet*
 - Gracefully shutdown node *(Refers to announcing you are down for maintenance)*

@@ -8,7 +8,7 @@
 
 # Reports
 
-Reports are documents describing the discussion and decision making that results from meetings which were not scheduled to have note taking, yet ended up being very significant in technical or organizational respects.
+Reports are documents describing the discussion and decision making that results from meetings which were not scheduled to have note taking, yet ended up being very significant in technical or organisational respects.
 
 # Format
 

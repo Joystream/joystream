@@ -69,14 +69,14 @@ Table of Contents
 
 # Overview
 
-This landing repo is intended to be the best starting place to get a coherent view of how information is organized in this GitHub organization.
+This landing repo is intended to be the best starting place to get a coherent view of how information is organised in this GitHub organization.
 
 # Contribute
 
 For software development we try to follow the [git-flow](https://nvie.com/posts/a-successful-git-branching-model/) branching [model](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow) with some minor differences:
   - `development` branch instead of `develop`.
   - feature branches should be created in contributors' own fork of the repo.
-  - for more collaborative long-running feature development, a feature branch may be created by the maintainer on the central repo.
+  - for more collaborative long running feature development, a feature branch may be created by the maintainer on the central repo.
 
 The central repos will have multiple members of the core team with write access, but there will be one designated maintainer or "product owner" and responsible for the final product. The maintainer must approve either directly or by delegation (accepting other members' reviews) PRs to be merged.
 
@@ -86,7 +86,7 @@ The core team, maintainers and outside contributors are encouraged to follow the
 * Do not create arbitrary branches or push directly to the central repo `master` or `development` branches.
 * Do not force push branches.
 * Avoid rebasing branches of open PRs to help preserve conversation history.
-* Authors must always request a review for their PRs, Exception: It does not alter any logic (e.g. comments, dependencies, docs, file organization), then it may be merged once CI checks are complete.
+* Authors must always request a review for their PRs, Exception: It does not alter any logic (e.g. comments, dependencies, docs, file organisation), then it may be merged once CI checks are complete.
 * Author should avoid merging their own PR, if it hasn't been reviewed and approved.
 * If travis or other CI integrations are configured for the repo, avoid merging PRs that fail checks.
 * When the maintainer is opening a PRs they must still request a review from a core team member.
@@ -165,10 +165,10 @@ Constantinople
 
 | Network         | Started           | Ended         | Release Plan    |
 | -------------   | -------------     | -----         | -----           |
+| Acropolis       | 24.06.19          |   13.03.20    | [Link](/testnets/acropolis/README.md)        |
 | Athens          | 17.04.19          |   24.06.19    | [Link](/testnets/athens/README.md)        |
 | Sparta          | 28.02.19          |   29.03.19    |       N/A        |
 | Mesopotamia     | 21.12.18          |   28.02.19    |       N/A        |
-| Acropolis       | 24.06.19          |   13.03.20    | [Link](/testnets/acropolis/README.md)        |
 
 <br />
 <img src="img/pm-section_new.svg" id="project-management"/>
@@ -226,7 +226,7 @@ Project management is primarily centered around planning and tracking OKRs. OKRs
 
 ### Assignment
 
-A key result can be _assigned_ to a mix of people or other objectives. The _assignment set_ of a key result constitutes the set of relevant actors, directly or indirectly - for OKRs, that are working to satisfy the result. Each assignment is given a weight from 0 to 1, and the total weight across an assignment set is 1. Some key results, in particular for very higher-order OKRs, may not have assignments at all times.
+A key result can be _assigned_ to a mix of people or other objectives. The _assignment set_ of a key result constitutes the set of relevant actors, directly or indirectly - for OKRs, that are working to satisfy the result. Each assignment is given a weight from 0 to 1, and the total weight across an assignment set is 1. Some key results, in particular for very higher order OKRs, may not have assignments at all times.
 
 ### OKR types
 
@@ -240,7 +240,7 @@ The OKRs can be classified into two separate families of types, first:
 
 and then second:
 
-- **Group OKRs**: Group OKRs are defined by the set of stakeholders assigned to the key results, and in particular that there is more than one person involved. Typically this could be a set of people working as a team on some topic or problem. In principle, such an OKR can be rationalized by a mix of release and quarterly OKRs, but in practice, it will most often just be one or the other. These OKRs should be flexible in time scope and should be reorganized if circumstances change. The current set of such OKRs can be found [below](#group-okrs).
+- **Group OKRs**: Group OKRs are defined by the set of stakeholders assigned to the key results, and in particular that there is more than one person involved. Typically this could be a set of people working as a team on some topic or problem. In principle, such an OKR can be rationalised by a mix of release and quarterly OKRs, but in practice, it will most often just be one or the other. These OKRs should be flexible in time scope and should be reorganized if circumstances change. The current set of such OKRs can be found [below](#group-okrs).
 
 - **Personal OKRs**: The exact same thing as group OKRs, only applying to a single person only. The current set of such OKRs can be found [below](#personal-okrs).
 
@@ -256,7 +256,7 @@ The following figure attempts to summarise how these OKR families and types are 
 
 ### Hierarchy
 
-All OKRs, except the project OKR, should be derived, in terms of its objective, from one or more key results of already existing higher-order OKRs.
+All OKRs, except the project OKR, should be derived, in terms of its objective, from one or more key results of already existing higher order OKRs.
 
 ### Tracking
 
@@ -266,7 +266,7 @@ In order to keep track of whether a key result and thus the corresponding object
 
 Briefly, do a topological sort of the key result graph, where having an objective in the result assignment set counts towards the indegree. Then just do ascending weighted averaging of scores, where key results are simply averaged into objective scores. Importantly, in order to do this, one has to get personal scores on key results, and there are two modes of doing this:
 
-- **Naive (n)**: Simply evaluate the key result statement directly based on available data at the time. For example, if the result is `Get $100 in revenue`, and one has $20 so far, then the score would be 0.2. This method is often suitable, but no if partial work is unlikely to have had any real-world effects while tracking.
+- **Naive (n)**: Simply evaluate the key result statement directly based on available data at the time. For example, if the result is `Get $100 in revenue`, and one has $20 so far, then the score would be 0.2. This method is often suitable, but no if partial work is unlikely to have had any real world effects while tracking.
 
 - **Estimate of Work Done (ewd)**: Fraction of estimated total hours required that have been completed. This means that, if the estimate of total time required changes, then the score can change, even there is not change in actual hours completed.
 
