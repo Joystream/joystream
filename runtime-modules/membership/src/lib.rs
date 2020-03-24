@@ -3,7 +3,6 @@
 
 pub mod genesis;
 pub mod members;
-pub mod origin_validator;
 pub mod role_types;
 
 pub(crate) mod mock;

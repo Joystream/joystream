@@ -1,8 +1,9 @@
 use rstd::marker::PhantomData;
 
-use crate::VotersParameters;
+use proposals_engine::VotersParameters;
 use common::origin_validator::ActorOriginValidator;
-use membership::origin_validator::{MemberId, MembershipOriginValidator};
+
+use super::{MembershipOriginValidator, MemberId};
 
 /// Handles work with the council.
 /// Provides implementations for ActorOriginValidator and VotersParameters.
@@ -10,7 +11,7 @@ pub struct CouncilManager<T> {
     marker: PhantomData<T>,
 }
 
-impl<T: crate::Trait>
+impl<T: governance::council::Trait + membership::members::Trait>
     ActorOriginValidator<<T as system::Trait>::Origin, MemberId<T>, <T as system::Trait>::AccountId>
     for CouncilManager<T>
 {
@@ -30,7 +31,7 @@ impl<T: crate::Trait>
     }
 }
 
-impl<T: crate::Trait> VotersParameters for CouncilManager<T> {
+impl<T: governance::council::Trait> VotersParameters for CouncilManager<T> {
     /// Implement total_voters_count() as council size
     fn total_voters_count() -> u32 {
         <governance::council::Module<T>>::active_council().len() as u32
@@ -40,8 +41,8 @@ impl<T: crate::Trait> VotersParameters for CouncilManager<T> {
 #[cfg(test)]
 mod tests {
     use crate::tests::mock::{initial_test_ext, Test};
-    use crate::CouncilManager;
-    use crate::VotersParameters;
+    use super::CouncilManager;
+    use proposals_engine::VotersParameters;
     use common::origin_validator::ActorOriginValidator;
     use membership::members::UserInfo;
     use system::RawOrigin;

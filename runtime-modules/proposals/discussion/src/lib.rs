@@ -28,7 +28,8 @@ use srml_support::traits::Get;
 use types::{Post, Thread, ThreadCounter};
 
 use common::origin_validator::ActorOriginValidator;
-use membership::origin_validator::MemberId;
+
+type MemberId<T> = <T as  membership::members::Trait>::MemberId;
 
 decl_event!(
     /// Proposals engine events

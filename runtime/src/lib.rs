@@ -13,6 +13,8 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+mod integration;
+
 use authority_discovery_primitives::{
     AuthorityId as EncodedAuthorityId, Signature as EncodedSignature,
 };
@@ -54,7 +56,7 @@ pub use srml_support::{
 pub use staking::StakerStatus;
 pub use timestamp::Call as TimestampCall;
 
-use membership::origin_validator::MembershipOriginValidator;
+use integration::proposals::{MembershipOriginValidator, CouncilManager};
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -816,8 +818,8 @@ parameter_types! {
 impl proposals_engine::Trait for Runtime {
     type Event = Event;
     type ProposerOriginValidator = MembershipOriginValidator<Self>;
-    type VoterOriginValidator = proposals_engine::CouncilManager<Self>;
-    type TotalVotersCounter = proposals_engine::CouncilManager<Self>;
+    type VoterOriginValidator = CouncilManager<Self>;
+    type TotalVotersCounter = CouncilManager<Self>;
     type ProposalId = u32;
     type StakeHandlerProvider = proposals_engine::DefaultStakeHandlerProvider;
     type CancellationFee = ProposalCancellationFee;

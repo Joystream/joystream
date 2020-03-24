@@ -23,7 +23,6 @@
 // TODO: Test StakingEventHandler
 // TODO: Test refund_proposal_stake()
 
-pub use types::CouncilManager;
 use types::FinalizedProposalData;
 use types::ProposalStakeManager;
 pub use types::{
@@ -50,8 +49,9 @@ use srml_support::{
 use system::{ensure_root, RawOrigin};
 
 use common::origin_validator::ActorOriginValidator;
-use membership::origin_validator::MemberId;
 use srml_support::dispatch::Dispatchable;
+
+type MemberId<T> = <T as  membership::members::Trait>::MemberId;
 
 /// Proposals engine trait.
 pub trait Trait:
@@ -59,7 +59,6 @@ pub trait Trait:
     + timestamp::Trait
     + stake::Trait
     + membership::members::Trait
-    + governance::council::Trait
 {
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
