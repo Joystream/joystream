@@ -1,8 +1,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Codec, Decode, Encode};
+use rstd::collections::btree_map::BTreeMap;
 use rstd::prelude::*;
-use runtime_primitives::traits::{EnsureOrigin, CheckedSub, MaybeSerialize, Member, One, SimpleArithmetic};
+use runtime_primitives::traits::{EnsureOrigin, MaybeSerialize, Member, One, SimpleArithmetic};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter,
     StorageDoubleMap, StorageLinkedMap, StorageMap, StorageValue,
@@ -21,10 +22,9 @@ type MaxNumber = u32;
 
 type MaxConsecutiveRepliesNumber = u16;
 
-type ConsecutiveRepliesInterval = u32;
-
 /// The pallet's configuration trait.
-pub trait Trait: system::Trait + timestamp::Trait {
+pub trait Trait: system::Trait {
+
     /// Origin from which blog owner must come.
     type BlogOwnerEnsureOrigin: EnsureOrigin<Self::Origin, Success = Self::AccountId>;
 
@@ -48,7 +48,19 @@ pub trait Trait: system::Trait + timestamp::Trait {
     type ConsecutiveRepliesMaxNumber: Get<MaxConsecutiveRepliesNumber>;
 
     /// Max cosecutive replies interval in blocks passed
-    type ConsecutiveRepliesInterval: Get<ConsecutiveRepliesInterval>;
+    type ConsecutiveRepliesInterval: Get<Self::BlockNumber>;
+
+    type ReactionsNumber: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
+
+    /// Number of reactions, presented in runtime
+    type ReactionsMaxNumber: Get<Self::ReactionsNumber>;
 
     /// Type for the blog owner id. Should be authenticated by account id.
     type BlogOwnerId: From<Self::AccountId> + Parameter + Default;
@@ -144,6 +156,8 @@ pub struct Post<T: Trait> {
     body: Vec<u8>,
     // Overall replies counter, associated with post
     replies_count: T::ReplyId,
+    // AccountId -> All presented reactions state mapping
+    reactions: BTreeMap<T::AccountId, Vec<bool>>
 }
 
 impl<T: Trait> Post<T> {
@@ -154,6 +168,7 @@ impl<T: Trait> Post<T> {
             title,
             body,
             replies_count: T::ReplyId::default(),
+            reactions: BTreeMap::new()
         }
     }
 
@@ -216,8 +231,10 @@ pub struct Reply<T: Trait> {
     owner: T::AccountId,
     // Reply`s parent id
     parent_id: Parent<T>,
-    // Reply creation block)number
+    // Reply creation block number
     block_number: T::BlockNumber,
+    // AccountId -> All presented reactions state mapping
+    reactions: BTreeMap<T::AccountId, Vec<bool>>
 }
 
 impl<T: Trait> Reply<T> {
@@ -227,6 +244,7 @@ impl<T: Trait> Reply<T> {
             owner,
             parent_id,
             block_number: <system::Module<T>>::block_number(),
+            reactions: BTreeMap::new()
         }
     }
 
@@ -277,22 +295,6 @@ decl_module! {
 
         // Initializing events
         fn deposit_event() = default;
-
-        // Security/configuration constraints
-        const POST_TITLE_MAX_LENGTH: MaxLength = T::PostTitleMaxLength::get();
-
-        const POST_BODY_MAX_LENGTH: MaxLength = T::PostBodyMaxLength::get();
-
-        const REPLY_MAX_LENGTH: MaxLength = T::ReplyMaxLength::get();
-
-
-        const POSTS_MAX_NUMBER: MaxNumber = T::PostsMaxNumber::get();
-
-        const REPLIES_MAX_NUMBER: MaxNumber  = T::RepliesMaxNumber::get();
-
-        const DIRECT_REPLIES_MAX_NUMBER: MaxNumber = T::DirectRepliesMaxNumber::get();
-
-        const CONSECUTIVE_REPLIES_MAX_NUMBER: MaxConsecutiveRepliesNumber = T::ConsecutiveRepliesMaxNumber::get();
 
         pub fn create_post(origin, blog_id: T::BlogId, title: Vec<u8>, body: Vec<u8>) -> dispatch::Result  {
             let blog_owner = Self::get_blog_owner(origin)?;
@@ -764,9 +766,12 @@ impl<T: Trait> Module<T> {
             // Get all replies, created in given interval
             .filter(|(_, reply)| {
                 // Overflow protection
-                if <system::Module<T>>::block_number() < T::ConsecutiveRepliesInterval::get().into() {
+                if <system::Module<T>>::block_number() < T::ConsecutiveRepliesInterval::get().into()
+                {
                     true
-                } else if reply.block_number() > (<system::Module<T>>::block_number() - T::ConsecutiveRepliesInterval::get().into()) {
+                } else if reply.block_number()
+                    > <system::Module<T>>::block_number() - T::ConsecutiveRepliesInterval::get()
+                {
                     true
                 } else {
                     false

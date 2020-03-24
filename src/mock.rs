@@ -73,7 +73,9 @@ thread_local! {
     static DIRECT_REPLIES_MAX_NUMBER: RefCell<u32> = RefCell::new(0);
 
     static CONSECUTIVE_REPLIES_MAX_NUMBER: RefCell<u16> = RefCell::new(0);
-    static CONSECUTIVE_REPLIES_INTERVAL: RefCell<u32> = RefCell::new(0);
+    static CONSECUTIVE_REPLIES_INTERVAL: RefCell<<Runtime as system::Trait>::BlockNumber> = RefCell::new(0);
+
+    static REACTIONS_MAX_NUMBER: RefCell<<Runtime as Trait>::ReactionsNumber> = RefCell::new(0);
 }
 
 pub struct PostTitleMaxLength;
@@ -126,9 +128,16 @@ impl Get<u16> for ConsecutiveRepliesMaxNumber {
 }
 
 pub struct ConsecutiveRepliesInterval;
-impl Get<u32> for ConsecutiveRepliesInterval {
-    fn get() -> u32 {
+impl Get<<Runtime as system::Trait>::BlockNumber> for ConsecutiveRepliesInterval {
+    fn get() -> <Runtime as system::Trait>::BlockNumber {
         CONSECUTIVE_REPLIES_INTERVAL.with(|v| *v.borrow())
+    }
+}
+
+pub struct ReactionsMaxNumber;
+impl Get<<Runtime as Trait>::ReactionsNumber> for ReactionsMaxNumber {
+    fn get() -> <Runtime as Trait>::ReactionsNumber {
+        REACTIONS_MAX_NUMBER.with(|v| *v.borrow())
     }
 }
 
@@ -148,12 +157,15 @@ impl Trait for Runtime {
     type BlogOwnerEnsureOrigin = system::EnsureSigned<Self::AccountId>;
     type BlogOwnerId = u64;
 
+    type ReactionsMaxNumber = ReactionsMaxNumber;
+    type ReactionsNumber = u32;
+
     type BlogId = u32;
     type PostId = u32;
     type ReplyId = u32;
 }
 
-pub struct ExtBuilder {
+pub struct ExtBuilder<T: Trait> {
     post_title_max_length: u32,
     post_body_max_length: u32,
     reply_max_length: u32,
@@ -161,10 +173,11 @@ pub struct ExtBuilder {
     replies_max_number: u32,
     direct_replies_max_number: u32,
     consecutive_replies_max_number: u16,
-    consecutive_replies_interval: u32,
+    consecutive_replies_interval: <Runtime as system::Trait>::BlockNumber,
+    reactions_number: T::ReactionsNumber,
 }
 
-impl Default for ExtBuilder {
+impl<T: Trait> Default for ExtBuilder<T> {
     fn default() -> Self {
         Self {
             post_title_max_length: 200,
@@ -175,11 +188,12 @@ impl Default for ExtBuilder {
             direct_replies_max_number: 10,
             consecutive_replies_max_number: 200,
             consecutive_replies_interval: 10,
+            reactions_number: 10.into(),
         }
     }
 }
 
-impl ExtBuilder {
+impl<T: Trait> ExtBuilder<T> {
     pub fn post_title_max_length(mut self, post_title_max_length: u32) -> Self {
         self.post_title_max_length = post_title_max_length;
         self
@@ -215,8 +229,13 @@ impl ExtBuilder {
         self
     }
 
-    pub fn consecutive_replies_max_period(mut self, consecutive_replies_interval: u32) -> Self {
+    pub fn consecutive_replies_max_period(mut self, consecutive_replies_interval: <Runtime as system::Trait>::BlockNumber) -> Self {
         self.consecutive_replies_interval = consecutive_replies_interval;
+        self
+    }
+
+    pub fn reactions_max_number(mut self, reactions_number: T::ReactionsNumber) -> Self {
+        self.reactions_number = reactions_number;
         self
     }
 
