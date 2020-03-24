@@ -7,8 +7,8 @@
     "baseUrl": "src",
     "jsx": "preserve",
     "declaration": true,
-    "declarationDir": "dist/types"
+    "declarationDir": "dist"
   },
 
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "dist", "stories"]
 }
