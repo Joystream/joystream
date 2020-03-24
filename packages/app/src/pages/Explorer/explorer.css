@@ -32,3 +32,7 @@
   justify-content: flex-end;
   top: -3.75rem;
 }
+
+.explorer-node-table {
+  width: max-content;
+}

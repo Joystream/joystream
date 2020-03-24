@@ -4,6 +4,7 @@ import { TabNavigation, SearchBar } from "components";
 
 import ChainInfo from "../../components/ChainInfo";
 import BlockDetails from "../../components/BlockDetails";
+import NodeInfo from "../../components/NodeInfo";
 import "./explorer.css";
 
 let links = [
@@ -32,7 +33,7 @@ export default function Explorer() {
           <ChainInfo path="/" />
           <BlockDetails path="/query" />
           <ChainInfo path="/forks" />
-          <ChainInfo path="/node" />
+          <NodeInfo path="/node" />
         </Router>
       </main>
     </>

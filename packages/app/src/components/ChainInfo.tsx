@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { CardStack, Block, ContentLabel, Event } from "components";
 
 const blockData = {
@@ -34,7 +34,6 @@ let timeTarget = "6s";
 let totalIssuance = "10.674M";
 
 export default function Explorer() {
-  let [tab, setTab] = useState(0);
   return (
     <>
       <div className="explorer-summary">

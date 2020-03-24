@@ -9,3 +9,4 @@ export { default as Label } from "./components/Label";
 export { default as Link } from "./components/Link";
 export { default as SearchBar } from "./components/SearchBar";
 export { default as TabNavigation } from "./components/TabNavigation";
+export { default as Table } from "./components/Table";
