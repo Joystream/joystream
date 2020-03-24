@@ -79,7 +79,7 @@ This Release Plan is considered "final" once merged to master, and anything belo
 <br />
 
 
-### Objective: `Engage community to understand Rome and join us in the future`
+### Objective: `Engage the community to understand Rome and join us in the future`
 - **Active from:** 20.08.19
 - **KR Measurement Deadline**: 7 days after Rome launch
 - **Tracked**: Every Tuesday
@@ -105,10 +105,10 @@ This Release Plan is considered "final" once merged to master, and anything belo
 
 * [Community OKR](#objective-engage-community-to-understand-rome-and-join-us-in-the-future)
   * `2.` "Active" means Content Curators that are not fired as a result of not following their responsibilities.
-  * `3. & 4.`: Content "items" means number of entries in the content directory, not the data objects associated with the entry.
+  * `3. & 4.`: Content "items" means the number of entries in the content directory, not the data objects associated with the entry.
 
 ##### General
-* For previous testnet, we have tried making each KR be a mix of pure technical implementation, and community engagement in one single release OKR. This lead to:
+* For the previous testnet, we have tried making each KR be a mix of pure technical implementation, and community engagement in one single release OKR. This lead to:
   * confusion during tracking
   * unclear responsibilities and primary focus (ie. make it work, or make it user friendly)
   * ambiguity around time and deadlines

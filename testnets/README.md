@@ -21,17 +21,18 @@ It also contains templates for planning releases.
 
 ## Live Testnet
 
-[Acropolis](acropolis)
+[Rome](rome)
 
 ## Next Testnet
 
-[Rome](rome)
+Constantinople
 
 
 ## Past Testnets
 
 | Network         | Started           | Ended         | Release Plan    |
 | -------------   | -------------     | -----         | -----           |
+| Acropolis       | 24.06.19          |   13.03.20    | [Link](acropolis)        |
 | Athens          | 27.04.19          |   24.06.19    | [Link](athens)  |
 | Sparta          | 28.02.19          |   29.03.19    |       NA        |
 | Mesopotamia     | 21.12.18          |   28.02.19    |       NA        |

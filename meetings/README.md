@@ -21,7 +21,7 @@ Table of Contents
 
 # Meeting Archiving
 
-Each meeting which will be archived has a _meeting identifier_, which should reflect the topics covered, as seen in the template [below](#meeting-itinerary-archive-index). The itinerary, and any other related assets, for a meeting should be placed in a subdirectory of this directory with the same name as this identifier.
+Each meeting that will be archived has a _meeting identifier_, which should reflect the topics covered, as seen in the template [below](#meeting-itinerary-archive-index). The itinerary, and any other related assets, for a meeting, should be placed in a subdirectory of this directory with the same name as this identifier.
 
 # Archive Index
 
