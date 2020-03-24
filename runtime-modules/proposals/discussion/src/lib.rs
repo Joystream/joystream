@@ -29,7 +29,7 @@ use types::{Post, Thread, ThreadCounter};
 
 use common::origin_validator::ActorOriginValidator;
 
-type MemberId<T> = <T as  membership::members::Trait>::MemberId;
+type MemberId<T> = <T as membership::members::Trait>::MemberId;
 
 decl_event!(
     /// Proposals engine events

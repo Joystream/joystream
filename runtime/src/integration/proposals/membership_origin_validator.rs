@@ -42,27 +42,32 @@ impl<T: crate::members::Trait>
 
 #[cfg(test)]
 mod tests {
-    use crate::members::UserInfo;
-    use crate::mock::{Test, TestExternalitiesBuilder};
-    use crate::origin_validator::MembershipOriginValidator;
+    use super::MembershipOriginValidator;
+    use crate::Runtime;
     use common::origin_validator::ActorOriginValidator;
+    use membership::members::UserInfo;
+    use sr_primitives::AccountId32;
     use system::RawOrigin;
 
-    type Membership = crate::members::Module<Test>;
+    type Membership = crate::members::Module<Runtime>;
 
-    pub fn initial_test_ext() -> runtime_io::TestExternalities {
-        TestExternalitiesBuilder::<Test>::default().build()
+    fn initial_test_ext() -> runtime_io::TestExternalities {
+        let t = system::GenesisConfig::default()
+            .build_storage::<Runtime>()
+            .unwrap();
+
+        t.into()
     }
 
     #[test]
     fn membership_origin_validator_fails_with_unregistered_member() {
         initial_test_ext().execute_with(|| {
-            let origin = RawOrigin::Signed(1);
+            let origin = RawOrigin::Signed(AccountId32::default());
             let member_id = 1;
             let error = "Membership validation failed: cannot find a profile for a member";
 
             let validation_result =
-                MembershipOriginValidator::<Test>::ensure_actor_origin(origin.into(), member_id);
+                MembershipOriginValidator::<Runtime>::ensure_actor_origin(origin.into(), member_id);
 
             assert_eq!(validation_result, Err(error));
         });
@@ -71,15 +76,18 @@ mod tests {
     #[test]
     fn membership_origin_validator_succeeds() {
         initial_test_ext().execute_with(|| {
-            let account_id = 1;
-            let origin = RawOrigin::Signed(account_id);
-            let authority_account_id = 10;
-            Membership::set_screening_authority(RawOrigin::Root.into(), authority_account_id)
-                .unwrap();
+            let account_id = AccountId32::default();
+            let origin = RawOrigin::Signed(account_id.clone());
+            let authority_account_id = AccountId32::default();
+            Membership::set_screening_authority(
+                RawOrigin::Root.into(),
+                authority_account_id.clone(),
+            )
+            .unwrap();
 
             Membership::add_screened_member(
                 RawOrigin::Signed(authority_account_id).into(),
-                account_id,
+                account_id.clone(),
                 UserInfo {
                     handle: Some(b"handle".to_vec()),
                     avatar_uri: None,
@@ -90,7 +98,7 @@ mod tests {
             let member_id = 0; // newly created member_id
 
             let validation_result =
-                MembershipOriginValidator::<Test>::ensure_actor_origin(origin.into(), member_id);
+                MembershipOriginValidator::<Runtime>::ensure_actor_origin(origin.into(), member_id);
 
             assert_eq!(validation_result, Ok(account_id));
         });
@@ -99,12 +107,15 @@ mod tests {
     #[test]
     fn membership_origin_validator_fails_with_incompatible_account_id_and_member_id() {
         initial_test_ext().execute_with(|| {
-            let account_id = 1;
+            let account_id = AccountId32::default();
             let error =
                 "Membership validation failed: given account doesn't match with profile accounts";
-            let authority_account_id = 10;
-            Membership::set_screening_authority(RawOrigin::Root.into(), authority_account_id)
-                .unwrap();
+            let authority_account_id = AccountId32::default();
+            Membership::set_screening_authority(
+                RawOrigin::Root.into(),
+                authority_account_id.clone(),
+            )
+            .unwrap();
 
             Membership::add_screened_member(
                 RawOrigin::Signed(authority_account_id).into(),
@@ -118,9 +129,9 @@ mod tests {
             .unwrap();
             let member_id = 0; // newly created member_id
 
-            let invalid_account_id = 2;
-            let validation_result = MembershipOriginValidator::<Test>::ensure_actor_origin(
-                RawOrigin::Signed(invalid_account_id).into(),
+            let invalid_account_id: [u8; 32] = [2; 32];
+            let validation_result = MembershipOriginValidator::<Runtime>::ensure_actor_origin(
+                RawOrigin::Signed(invalid_account_id.into()).into(),
                 member_id,
             );
 

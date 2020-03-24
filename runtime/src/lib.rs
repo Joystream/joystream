@@ -56,7 +56,7 @@ pub use srml_support::{
 pub use staking::StakerStatus;
 pub use timestamp::Call as TimestampCall;
 
-use integration::proposals::{MembershipOriginValidator, CouncilManager};
+use integration::proposals::{CouncilManager, MembershipOriginValidator};
 
 /// An index to a block.
 pub type BlockNumber = u32;

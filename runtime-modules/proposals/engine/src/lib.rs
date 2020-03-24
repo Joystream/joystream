@@ -51,14 +51,11 @@ use system::{ensure_root, RawOrigin};
 use common::origin_validator::ActorOriginValidator;
 use srml_support::dispatch::Dispatchable;
 
-type MemberId<T> = <T as  membership::members::Trait>::MemberId;
+type MemberId<T> = <T as membership::members::Trait>::MemberId;
 
 /// Proposals engine trait.
 pub trait Trait:
-    system::Trait
-    + timestamp::Trait
-    + stake::Trait
-    + membership::members::Trait
+    system::Trait + timestamp::Trait + stake::Trait + membership::members::Trait
 {
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
