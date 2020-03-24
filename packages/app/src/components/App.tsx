@@ -1,6 +1,16 @@
 import React from "react";
-import Explorer from "../pages/Explorer/Explorer";
+import { SearchBar } from "components";
 
 export default function App() {
-  return <Explorer />;
+  return (
+    <>
+      <h1>Atlas</h1>
+      <SearchBar
+        placeholder=""
+        value=""
+        onChange={() => {}}
+        onSubmit={() => {}}
+      />
+    </>
+  );
 }
