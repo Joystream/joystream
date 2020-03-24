@@ -99,7 +99,7 @@ TBD
 
 <br />
 
-## Objective: `Engage community to understand Rome and join us in the future`
+## Objective: `Engage the community to understand Rome and join us in the future`
 - **Active from:** 20.08.19
 - **KR Measurement Deadline**: 7 days after Rome launch
 - **Tracked**: Every Tuesday
@@ -154,7 +154,7 @@ TBD
 
 * [Community OKR](#objective-engage-community-to-understand-rome-and-join-us-in-the-future)
   * `2.` "Active" means Content Curators that are not fired as a result of not following their responsibilities.
-  * `3. & 4.`: Content "items" means number of entries in the content directory, not the data objects associated with the entry.
+  * `3. & 4.`: Content "items" means a number of entries in the content directory, not the data objects associated with the entry.
 
 See [Release Plan](/testnets/rome/README.md#general) for general notes on the Release OKRs.
 

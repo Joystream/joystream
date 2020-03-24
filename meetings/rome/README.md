@@ -44,8 +44,8 @@ Table of Contents
 
 ### Agenda
 #### Item 1
-1. Review the [Release Checklist](../../testnet#release-checklist) draft, and compare to the release plan.
-2. Land a final Release Checklist, that contains all items, and sorted it in order of deployment.
+1. Review the [Release Checklist](../../testnet#release-checklist) draft, and compare it to the release plan.
+2. Land a final Release Checklist, that contains all items and sorted it in order of deployment.
 
 
 ### Minutes
@@ -134,7 +134,7 @@ Schedule [user stories meeting](#user-stories-meeting)
 
 #### Item 1
 1. Went through the draft Release plan point by point
-2. Points that were unclear, inaccurate, missing or wrong, was corrected or marked for change.
+2. Points that were unclear, inaccurate, missing or wrong, were corrected or marked for change.
 
 #### Item 2
 1. Martin presented a draft OKR, with an emphasis on a proposed new way of making, tracking and grading the KRs using github issues, as discussed in the [Acropolis Lessons Learned Meeting](../acropolis#lessons-learned).
@@ -143,7 +143,7 @@ Schedule [user stories meeting](#user-stories-meeting)
     - Each task could (optionally) be assigned a weighting, to get an objective tracking of the progress.
         - Each KR issue would also include an objective and pre-defined formulae for finally grading the KR. This would not necessarily be mapped to the same tasks.
     - Each Monday, all affected parties would have a meeting, evaluating progress and checking off completed tasks.
-    - A summary of that weeks meeting, alongside a tracking grade, would be added as comment by the release manager.
+    - A summary of that weeks meeting, alongside a tracking grade, would be added as a comment by the release manager.
     - This summary would be presented on the [Weekly All Hands](https://github.com/Joystream/joystream#monday-all-hands), which would be moved to Tuesday.
 
 2. The general sentiment was that the concept seemed like an improvement in certain areas, but the presented draft was not sufficient to convince all attendees that it sufficiently addressed the problems with the old release OKR system.
@@ -209,8 +209,8 @@ NB2: These stories are kind of hand wavy. Many of the stories may be better suit
 - slash a provider from a position
 - evict a provider from a position
 - get in touch with a provider out of band
-- add obligation to provider
-- remove obligation from provider
+- add an obligation to the provider
+- remove the obligation from provider
 - quickly determine if a new accepted provider is correctly configured
 
 ---
@@ -229,20 +229,20 @@ NB2: These stories are kind of hand wavy. Many of the stories may be better suit
 
 ##### As a node operator I should be able to:
 - (Stake) Configure and enter storage role entirely from the command line, in an interactive process, where only essential secret keys are required on the node running the storage node software.
-- (Unstake) leave the role easily without loosing access to staked (stash) keys
+- (Unstake) leave the role easily without losing access to staked (stash) keys
 - Re-enter the role after unstaking without overwriting old staking keys
 - Get status of my node:
   - Sync status, IPNS publishing status. Total storage consumed...
 - Get usage stats:
    - number of objects served/uploaded, total data transferred
 - Check if there is a version update available
-- Enter a test mode - non operational mode for testing setup and configuration
+- Enter a test mode - non-operational mode for testing setup and configuration
 - Configure a remote IPFS node to use
 - Configure a remote endpoint as joystream full node
 - Gracefully shutdown node
 
 ##### The node itself should:
-- Not enter operational status until chain is fully synced
+- Not enter operational status until the chain is fully synced
 - Synchronize data objects over IPFS from other storage providers
 - Provide a REST API for receiving new data objects from publishers, and accepting transfers to distributors nodes
 - Provide a REST API for service resolution
@@ -251,7 +251,7 @@ NB2: These stories are kind of hand wavy. Many of the stories may be better suit
 
 #### 4. Content Directory
 
-These stories describe functionality of a general purpose Versioned Object Database system upon which the content directory for the platform will be constructed.
+These stories describe the functionality of a general purpose Versioned Object Database system upon which the content directory for the platform will be constructed.
 
 ##### As system sudo I can:
 - create a new `class group` x1
@@ -360,7 +360,7 @@ PodcastGuestAppearance {
 
 #### Item 1
 
-NB1: provider refers to either storage provider or distributor.
+NB1: provider refers to either a storage provider or distributor.
 
 NB2: These stories are kind of hand wavy. Many of the stories may be better suited off chain, e.g. coordinated through a server run by conductor. But it remains to be seen.
 
@@ -378,8 +378,8 @@ NB2: These stories are kind of hand wavy. Many of the stories may be better suit
 - close an open position
 - slash a provider from a position *(without evicting, ie. only slash part of their stake)*
 - evict a provider from a position
-- add obligation to provider *(content)*
-- remove obligation from provider *(content)*
+- add an obligation to provider *(content)*
+- remove the obligation from provider *(content)*
 - quickly determine if a new accepted provider is correctly configured
 
 *As above: It was decided to make the general `actor/working group` signup module small and generic. As a consequence, a lot of this will be off-chain. It was not resolved how much of this was going to be in Pioneer, and how to represent it.*
@@ -426,7 +426,7 @@ NB2: These stories are kind of hand wavy. Many of the stories may be better suit
 - Check if there is a version update available
 - Get usage stats:
    - number of objects served/uploaded, total data transferred
-- Enter a test mode - non operational mode for testing setup and configuration *x*
+- Enter a test mode - non-operational mode for testing setup and configuration *x*
 - Configure a remote endpoint as joystream full node *x*
 *x these two combined would mean users could test on a "reckless" testnet*
 - Gracefully shutdown node *(Refers to announcing you are down for maintenance)*
@@ -461,7 +461,7 @@ More specifically, should we optimize to make it easy for actors, that are well 
 
 #### Item 4
 
-These stories describe functionality of a general purpose Versioned Object Database system upon which the content directory for the platform will be constructed.
+These stories describe the functionality of a general purpose Versioned Object Database system upon which the content directory for the platform will be constructed.
 
 ##### As system sudo I can:
 - create a new `content directory sudo`
@@ -488,7 +488,7 @@ These stories describe functionality of a general purpose Versioned Object Datab
 
 ##### As an uploader I can:
 - create a subset of Entities and Objects which the permissions module will limit to Members
-- update a subset of Entities and Objects which permissions module will limit to content owner
+- update a subset of Entities and Objects which permissions module will limit to the content owner
 
 *Added so that uploaders can actually add metadata (such as "title" and "description" without extra permissions)*
 
@@ -597,7 +597,7 @@ Started with a brief introduction of the Tracking Issues.
 - Two main issues raised:
   - Should we add tentative dates to all tasks?
     - We decided not to for now.
-  - Not everyone was convinced the Tracking Issues was split correctly.
+  - Not everyone was convinced the Tracking Issues were split correctly.
     - We decided to leave them as is unless a detailed counter proposal was made.
 - Due to time constraints, we only looked at their structure.
 - Everyone is responsible for reviewing the Tracking Issues, and propose improvements and additions.
@@ -647,7 +647,7 @@ We kept quite strictly to the schedule laid out [here](sprint-in-london.md) for 
 - There was a lot of value in lots of the work conducted in smaller groups and one-on-one.
 - Cross-communication was also very useful and was enabled by the physical nature of the meeting.
 - Smaller gatherings are often better than larger ones (i.e. sprint) for productivity.
-- Time spent programming etc. was occasionally not best deployment of time. Some team members felt that we should have exclusively focussed team and pair activities made much easier by "being in a room together"
+- Time spent programming etc. was occasionally not the best deployment of time. Some team members felt that we should have exclusively focussed team and pair activities made much easier by "being in a room together"
 - Whiteboard time was very useful and could not be easily replicated using video conference etc.
 - Some wondered whether the trip was cost-effective.
 - Some felt that the itinerary could have been better organized e.g. mealtimes.
@@ -656,7 +656,7 @@ We kept quite strictly to the schedule laid out [here](sprint-in-london.md) for 
 - We should have avoided excessive focus on tracking progress, no fun, adds little value.
 - We should have had daily "standup" at a specific time to help efficiently starting collaboration each day.
 - Best time for a sprint is perhaps super early in a release, or with more RnD/experimental focus, rather than tied to shipping.
-- We didn't always stick to schedule.
+- We didn't always stick to the schedule.
 - It was very good for morale for everyone to meet each other.
 - Some of the early meetings involved people who were not relevant to the topics discussed, wasting time.
 
@@ -795,7 +795,7 @@ We kept quite strictly to the schedule laid out [here](sprint-in-london.md) for 
 1. In terms of `schemas`, we still need to implement channel as a property of a video (`channel-id`).
 2. Alex needs 1-2 more days of work on channel creation/editing for Pioneer.
 3. Channel curation and moderation does not need to be implemented in Pioneer. The ability to delete channels through `sudo` will be added post Rome release.
-4. Content creation and editing in Pioneer needs 3 more days of work by Alex. The UI and styling is already complete.
+4. Content creation and editing in Pioneer needs 3 more days of work by Alex. The UI and styling are already complete.
 5. Content consumption and exploration on Pioneer will need about half a day more work. We will not be including pagination on launch.
 
 
@@ -816,7 +816,7 @@ We kept quite strictly to the schedule laid out [here](sprint-in-london.md) for 
 2. We won't be implementing support for "cleaning" content from storage nodes until after release.
 3. Mokhtar has finished migration.
 4. We also agreed that Aracus should be killed and replaced with some new Joystream-hosted nodes. Provisionally we agreed that these might be made up of 2 bootnodes, 1 also performing media discovery, 1 also acting as our storage provider and 1 or more nodes hosting Pioneer, with load balancing if applicable.
-5. The following `genesis config paramaters` need to be re-evaluated:
+5. The following `genesis config parameters` need to be re-evaluated:
 - Balances for existing members
 - Payouts (JOY) for Storage Providers, Validators and Curators
 - Open slots for Storage Providers, Validators and Curators

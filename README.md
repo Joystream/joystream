@@ -14,8 +14,8 @@
 
 <div align="center">
   <h3>
-    <a href="/testnets/acropolis">
-      Acropolis Testnet
+    <a href="/testnets/rome">
+      Rome Testnet
     </a>
     <span> | </span>
     <a href="/okrs">
@@ -30,9 +30,6 @@
       Helpdesk
     </a>
     <span> | </span>
-    <a href="/testnets/rome">
-      Rome Testnet
-    </a>
   </h3>
 </div>
 
@@ -73,14 +70,14 @@ Table of Contents
 
 # Overview
 
-This landing repo is intended to be the best starting place to get a coherent view of how information is organised in this GitHub organization.
+This landing repo is intended to be the best starting place to get a coherent view of how information is organized in this GitHub organization.
 
 # Contribute
 
 For software development we try to follow the [git-flow](https://nvie.com/posts/a-successful-git-branching-model/) branching [model](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow) with some minor differences:
   - `development` branch instead of `develop`.
   - feature branches should be created in contributors' own fork of the repo.
-  - for more collaborative long running feature development, a feature branch may be created by the maintainer on the central repo.
+  - for more collaborative long-running feature development, a feature branch may be created by the maintainer on the central repo.
 
 The central repos will have multiple members of the core team with write access, but there will be one designated maintainer or "product owner" and responsible for the final product. The maintainer must approve either directly or by delegation (accepting other members' reviews) PRs to be merged.
 
@@ -90,7 +87,7 @@ The core team, maintainers and outside contributors are encouraged to follow the
 * Do not create arbitrary branches or push directly to the central repo `master` or `development` branches.
 * Do not force push branches.
 * Avoid rebasing branches of open PRs to help preserve conversation history.
-* Authors must always request a review for their PRs, Exception: It does not alter any logic (e.g. comments, dependencies, docs, file organisation), then it may be merged once CI checks are complete.
+* Authors must always request a review for their PRs, Exception: It does not alter any logic (e.g. comments, dependencies, docs, file organization), then it may be merged once CI checks are complete.
 * Author should avoid merging their own PR, if it hasn't been reviewed and approved.
 * If travis or other CI integrations are configured for the repo, avoid merging PRs that fail checks.
 * When the maintainer is opening a PRs they must still request a review from a core team member.
@@ -98,7 +95,7 @@ The core team, maintainers and outside contributors are encouraged to follow the
 Each repository may have contributing guidelines detailed in their README files.
 The maintainer must ensure this contribution section is linked to as the base guideline.
 
-Documentation, project management and other or non-code repositories should try to follow similar PR etiquette if it makes sense but exceptions can be made as changes usually don't require the same level of review.
+Documentation, project management, and other or non-code repositories should try to follow similar PR etiquette if it makes sense but exceptions can be made as changes usually don't require the same level of review.
 
 # Repository Index
 
@@ -125,6 +122,7 @@ This is the set of active repos to which this document refers:
 | [bounties](https://github.com/Joystream/bounties)                             | Bounties and testnet payout overview.    | @blrhc           |
 | [design](https://github.com/Joystream/design)                             | Joystream brand guide and assets.    | @bwhm           |
 | [manifesto](https://github.com/Joystream/manifesto)                             | The Joystream manifesto.    | @bedeho           |
+| [joystream-content-system](https://github.com/Joystream/joystream-content-system)                             | A repo containing information and resources about the Joystream content system.     | @bwhm           |
 
 ## Runtime Repos
 
@@ -157,11 +155,11 @@ Until the Joystream mainnet goes live, a sequence of test networks will be rolle
 
 ## Live Testnet
 
-[Acropolis](/testnets/acropolis/README.md)
+[Rome](/testnets/rome/README.md)
 
 ## Next Testnet
 
-[Rome](testnets/rome)
+Constantinople
 
 
 ## Past Testnets
@@ -171,6 +169,7 @@ Until the Joystream mainnet goes live, a sequence of test networks will be rolle
 | Athens          | 17.04.19          |   24.06.19    | [Link](/testnets/athens/README.md)        |
 | Sparta          | 28.02.19          |   29.03.19    |       N/A        |
 | Mesopotamia     | 21.12.18          |   28.02.19    |       N/A        |
+| Acropolis       | 24.06.19          |   13.03.20    | [Link](/testnets/acropolis/README.md)        |
 
 <br />
 <img src="img/pm-section_new.svg" id="project-management"/>
@@ -198,7 +197,7 @@ Meeting itineraries are prepared on a case by case basis, depending on the conte
 - **Description:** Everyone states, within 1 minute, what they accomplished the prior day, and what the goals are for the day. After this, people can start separate calls which need not be conducted in plenum.
 - **When:** Every day at 10am (GMT)
 - **Where:** Zoom
-- **Participant:** Core Jsgenesis team _must_ be present, any one else is welcome (join Telegram for invite).
+- **Participant:** Core Jsgenesis team _must_ be present, anyone else is welcome (join Telegram for invite).
 - **Record&Publish:** YES, if no participant objects.
 
 #### Tuesday all-hands
@@ -210,7 +209,7 @@ Meeting itineraries are prepared on a case by case basis, depending on the conte
   4. **Announcements:** Anything you think should be brought to everyone's attention.
 - **When:** Every working Tuesday at 10am (GMT)
 - **Where:** Zoom
-- **Participant:** Core Jsgenesis team _must_ be present, any one else is welcome (join Telegram for invite).
+- **Participant:** Core Jsgenesis team _must_ be present, anyone else is welcome (join Telegram for invite).
 - **Record&Publish:** YES, if no participant objects.
 
 #### Release meeting
@@ -218,17 +217,17 @@ Meeting itineraries are prepared on a case by case basis, depending on the conte
 - **Description:** Discussion concerning testnet planning and release.
 - **When:** On-demand
 - **Where:** Zoom
-- **Participant:** Core release team _must_ be present, any one else is welcome (join Telegram for invite).
+- **Participant:** Core release team _must_ be present, anyone else is welcome (join Telegram for invite).
 - **Record&Publish:** YES, if no participant objects.
 
 <br />
 <img src="img/okr-section_new.svg" id="okr-system"/>
 
-Project management is primarily centred around planning and tracking OKRs. OKRs is a planning and project management system, which can be reviewed in further detail [here](https://en.wikipedia.org/wiki/OKR).
+Project management is primarily centered around planning and tracking OKRs. OKRs is a planning and project management system, which can be reviewed in further detail [here](https://en.wikipedia.org/wiki/OKR).
 
 ### Assignment
 
-A key result can be _assigned_ to a mix of people or other objectives. The _assignment set_ of a key result constitutes the set of relevant actors, directly or indirectly - for OKRs, that are working to satisfy the result. Each assignment is given a weight from 0 to 1, and the total weight across an assignment set is 1. Some key results, in particular for very higher order OKRs, may not have assignments at all times.
+A key result can be _assigned_ to a mix of people or other objectives. The _assignment set_ of a key result constitutes the set of relevant actors, directly or indirectly - for OKRs, that are working to satisfy the result. Each assignment is given a weight from 0 to 1, and the total weight across an assignment set is 1. Some key results, in particular for very higher-order OKRs, may not have assignments at all times.
 
 ### OKR types
 
@@ -242,7 +241,7 @@ The OKRs can be classified into two separate families of types, first:
 
 and then second:
 
-- **Group OKRs**: Group OKRs are defined by the set of stakeholders assigned to the key results, and in particular that there is more than one person involved. Typically this could be a set of people working as a team on some topic or problem. In principle, such an OKR can be rationalised by a mix of release and quarterly OKRs, but in practice it will most often just be one or the other. These OKRs should be flexible in time scope, and should be reorganized if circumstances change. The current set of such OKRs can be found [below](#group-okrs).
+- **Group OKRs**: Group OKRs are defined by the set of stakeholders assigned to the key results, and in particular that there is more than one person involved. Typically this could be a set of people working as a team on some topic or problem. In principle, such an OKR can be rationalized by a mix of release and quarterly OKRs, but in practice, it will most often just be one or the other. These OKRs should be flexible in time scope and should be reorganized if circumstances change. The current set of such OKRs can be found [below](#group-okrs).
 
 - **Personal OKRs**: The exact same thing as group OKRs, only applying to a single person only. The current set of such OKRs can be found [below](#personal-okrs).
 
@@ -258,17 +257,17 @@ The following figure attempts to summarise how these OKR families and types are 
 
 ### Hierarchy
 
-All OKRs, except the project OKR, should be derived, in terms of its objective, from one or more key results of already existing higher order OKRs.
+All OKRs, except the project OKR, should be derived, in terms of its objective, from one or more key results of already existing higher-order OKRs.
 
 ### Tracking
 
-In order to keep track of whether a key result, and thus the corresponding objective, will in the end be satisfied, forecasts are tracked throughout the lifetime of an OKR. Each OKR has its own periodic tracking of progress, and to compute the its forecasted value, do as indicated in the example figure below.
+In order to keep track of whether a key result and thus the corresponding objective will in the end, be satisfied, forecasts are tracked throughout the lifetime of an OKR. Each OKR has its own periodic tracking of progress, and to compute its forecasted value, do as indicated in the example figure below.
 
 ![alt text](img/KR-Weighting.svg "Key Result ")
 
 Briefly, do a topological sort of the key result graph, where having an objective in the result assignment set counts towards the indegree. Then just do ascending weighted averaging of scores, where key results are simply averaged into objective scores. Importantly, in order to do this, one has to get personal scores on key results, and there are two modes of doing this:
 
-- **Naive (n)**: Simply evaluate the key result statement directly based on available data at the time. For example, if the result is `Get $100 in revenue`, and one has $20 so far, then the score would be 0.2. This method is often suitable, but no if partial work is unlikely to have had any real world effects while tracking.
+- **Naive (n)**: Simply evaluate the key result statement directly based on available data at the time. For example, if the result is `Get $100 in revenue`, and one has $20 so far, then the score would be 0.2. This method is often suitable, but no if partial work is unlikely to have had any real-world effects while tracking.
 
 - **Estimate of Work Done (ewd)**: Fraction of estimated total hours required that have been completed. This means that, if the estimate of total time required changes, then the score can change, even there is not change in actual hours completed.
 
@@ -282,8 +281,8 @@ The template used for recording and tracking OKRs has the following form:
  - **Active from:** `<When the OKR is set/live>`
  - **KR Measurement Deadline**: `<When the final grading is conducted>`
  - **Tracked**: `<Time interval at which OKR is tracked>`
- - **Tracking Manager**: `<Name of person responsible for doing tracking, at given interval, and final grading>`
- - **Key Results**: `<If all key results have same assignment set, write here>`
+ - **Tracking Manager**: `<Name of person responsible for doing tracking, at a given interval, and final grading>`
+ - **Key Results**: `<If all key results have the same assignment set, write here>`
    1. `<Statement of Key result>` `<n/ewd>`
      - `<Name of assignee>`: `<assignment weight>`
      - ...
@@ -340,17 +339,17 @@ Each release is directed by a _Release Manager_ (**RM**) who is responsible for:
 
 ### Tracking Issues
 
-A Tracking Issue is a GitHub issue which **evolves**, and at any given time holds a list of TODO items, with a corresponding completion status and possibly responsibility indicator (i.e. each item has one responsible actor). TODO items are grouped into Tracking Issues based on what most deeply facilitates effective collaboration and progress tracking.
+A Tracking Issue is a GitHub issue which **evolves**, and at any given time holds a list of TODO items, with corresponding completion status and possibly responsibility indicator (i.e. each item has one responsible actor). TODO items are grouped into Tracking Issues based on what most deeply facilitates effective collaboration and progress tracking.
 
 - Every Monday, each Tracking Issue will be discussed in a video meeting between all assigned team members and the Release Manager.
-- These meetings should be highly focused, and kept at a reasonably high level.
+- These meetings should be highly focused and kept at a reasonably high level.
 - If a discussion gets to deep, the **RM** can request that the relevant participants schedule a new meeting to address the issue.
 - The Release Manager will then update the Tracking Issue if necessary by changing/adding/removing/reassigning tasks, and checking off concluded tasks.
 - A concise summary of the meeting shall be added as a comment.
 
 ### Milestones
 
-As part of the Release Plan, a set of Milestones are set, with a "target date". Similar to the concept of [Tracking Issues](#tracking-issues), the "Live Milestones" is a GitHub issue which **evolves**. Experience have shown, that during a release cycle:
+As part of the Release Plan, a set of Milestones are set, with a "target date". Similar to the concept of [Tracking Issues](#tracking-issues), the "Live Milestones" is a GitHub issue which **evolves**. Experience has shown, that during a release cycle:
 - we may require adjusting the target date(s)
 - we may want to add or remove certain Milestones
 - we may want to adjust the scope of certain Milestones

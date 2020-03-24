@@ -30,9 +30,9 @@ Table of Contents
 
 During the planning stages of a new testnet, we produce a new release plan.
 
-While working on [Acropolis](/testnets/acropolis), we decided to abandon the approach of creating a single `Release Project` kanban board on GitHub. These quickly became bloated, and created more confusion than value. We instead created [Tracking Issues](#tracking-issues) for the two major component of the release - the [forum](https://github.com/Joystream/joystream/issues/47) and the [storage node](https://github.com/Joystream/joystream/issues/57). These made it far simpler to get a good grasp of completed and outstanding items at a high level.
+While working on [Acropolis](/testnets/acropolis), we decided to abandon the approach of creating a single `Release Project` kanban board on GitHub. These quickly became bloated and created more confusion than value. We instead created [Tracking Issues](#tracking-issues) for the two major component of the release - the [forum](https://github.com/Joystream/joystream/issues/47) and the [storage node](https://github.com/Joystream/joystream/issues/57). These made it far simpler to get a good grasp of completed and outstanding items at a high level.
 
-After the [Acropolis Lessons Learned Meeting](/meetings/acropolis#lessons-learned), and thinking about our approach to project management and progress tracking, we have decided to expand on this concept. The release plan will no longer contain a "todo" list, but instead link to "live" [Tracking Issues](#tracking-issues) covering all aspects and actions of the release. Each of these will be as contained as they can, to avoid the need for all team members to be present and listening to in-depth technical and organizational conversations outside of their scope.
+After the [Acropolis Lessons Learned Meeting](/meetings/acropolis#lessons-learned), and thinking about our approach to project management and progress tracking, we have decided to expand on this concept. The release plan will no longer contain a "todo" list but instead link to "live" [Tracking Issues](#tracking-issues) covering all aspects and actions of the release. Each of these will be as contained as they can, to avoid the need for all team members to be present and listening to in-depth technical and organizational conversations outside of their scope.
 
 #  Specification
 
@@ -79,7 +79,7 @@ This Release Plan is considered "final" once merged to master, and anything belo
 <br />
 
 
-### Objective: `Engage community to understand Rome and join us in the future`
+### Objective: `Engage the community to understand Rome and join us in the future`
 - **Active from:** 20.08.19
 - **KR Measurement Deadline**: 7 days after Rome launch
 - **Tracked**: Every Tuesday
@@ -105,10 +105,10 @@ This Release Plan is considered "final" once merged to master, and anything belo
 
 * [Community OKR](#objective-engage-community-to-understand-rome-and-join-us-in-the-future)
   * `2.` "Active" means Content Curators that are not fired as a result of not following their responsibilities.
-  * `3. & 4.`: Content "items" means number of entries in the content directory, not the data objects associated with the entry.
+  * `3. & 4.`: Content "items" means the number of entries in the content directory, not the data objects associated with the entry.
 
 ##### General
-* For previous testnet, we have tried making each KR be a mix of pure technical implementation, and community engagement in one single release OKR. This lead to:
+* For the previous testnet, we have tried making each KR be a mix of pure technical implementation, and community engagement in one single release OKR. This lead to:
   * confusion during tracking
   * unclear responsibilities and primary focus (ie. make it work, or make it user friendly)
   * ambiguity around time and deadlines
