@@ -548,6 +548,8 @@ decl_module! {
             Self::deposit_event(RawEvent::ReplyEdited(blog_id, post_id, reply_id));
             Ok(())
         }
+
+
     }
 }
 
@@ -691,29 +693,21 @@ impl<T: Trait> Module<T> {
         Ok(posts_count)
     }
 
-    fn get_direct_replies_count(
-        blog_id: T::BlogId,
-        post_id: T::PostId,
-        reply_id: T::ReplyId,
-    ) -> usize {
-        // Calculate direct replies count, iterating through all post
-        // related replies and checking if reply parent is given reply
-        <ReplyById<T>>::enumerate()
-            // Get replies, related to given post
-            .filter(|(id, _)| blog_id == id.0 && post_id == id.1)
-            // Get replies, related to given parent reply
-            .filter(|(_, reply)| reply.is_parent(&Parent::Reply(reply_id)))
-            .count()
-    }
-
-    fn get_replies_count(blog_id: T::BlogId, post_id: T::PostId) -> usize {
+    /// Get either replies count or direct replies count by given parent post/blog.
+    fn get_replies_count(blog_id: T::BlogId, post_id: T::PostId, reply_id: Option<T::ReplyId>) -> usize {
         // Calculate replies count, iterating through all post
-        // related replies and checking if reply parent is given post
+        // related replies and checking if reply parent is given parent post/reply
         <ReplyById<T>>::enumerate()
             // Get replies, related to given post
             .filter(|(id, _)| blog_id == id.0 && post_id == id.1)
-            // Get replies, related to given parent post
-            .filter(|(_, reply)| reply.is_parent(&Parent::Post(post_id)))
+            // Get replies, related to given parent
+            .filter(|(_, reply)| {
+                if let Some(reply_id) = reply_id {
+                    reply.is_parent(&Parent::Reply(reply_id))
+                } else {
+                    reply.is_parent(&Parent::Post(post_id))
+                }
+            })
             .count()
     }
 
@@ -723,7 +717,7 @@ impl<T: Trait> Module<T> {
         reply_id: T::ReplyId,
     ) -> Result<(), &'static str> {
         let direct_replies_count =
-            Self::get_direct_replies_count(blog_id, post_id, reply_id) as u32;
+            Self::get_replies_count(blog_id, post_id, Some(reply_id)) as u32;
 
         ensure!(
             direct_replies_count < T::DirectRepliesMaxNumber::get().into(),
@@ -737,7 +731,7 @@ impl<T: Trait> Module<T> {
         blog_id: T::BlogId,
         post_id: T::PostId,
     ) -> Result<(), &'static str> {
-        let replies_count = Self::get_replies_count(blog_id, post_id) as u32;
+        let replies_count = Self::get_replies_count(blog_id, post_id, None) as u32;
 
         ensure!(
             replies_count < T::RepliesMaxNumber::get().into(),

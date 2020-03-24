@@ -852,7 +852,7 @@ fn reply_creation_success() {
         assert_eq!(post.replies_count(), 1);
 
         // Root replies counter updated
-        assert_eq!(TestBlogModule::get_replies_count(FIRST_ID, FIRST_ID), 1);
+        assert_eq!(TestBlogModule::get_replies_count(FIRST_ID, FIRST_ID, None), 1);
 
         // Event checked
         let reply_created_event = get_test_event(RawEvent::ReplyCreated(
@@ -909,7 +909,7 @@ fn direct_reply_creation_success() {
 
         // Direct replies counter updated
         assert_eq!(
-            TestBlogModule::get_direct_replies_count(FIRST_ID, FIRST_ID, FIRST_ID),
+            TestBlogModule::get_replies_count(FIRST_ID, FIRST_ID, Some(FIRST_ID)),
             1
         );
 
@@ -1069,7 +1069,7 @@ fn reply_creation_limit_reached() {
                 ReplyType::Valid,
             ) {
                 let root_replies_count =
-                    TestBlogModule::get_replies_count(FIRST_ID, FIRST_ID) as u32;
+                    TestBlogModule::get_replies_count(FIRST_ID, FIRST_ID, None) as u32;
 
                 // Root post replies counter & reply root max number contraint equality checked
                 assert_eq!(root_replies_count, RepliesMaxNumber::get());
@@ -1147,7 +1147,7 @@ fn direct_reply_creation_limit_reached() {
                 ReplyType::Valid,
             ) {
                 let direct_replies_count =
-                    TestBlogModule::get_direct_replies_count(FIRST_ID, FIRST_ID, FIRST_ID) as u32;
+                    TestBlogModule::get_replies_count(FIRST_ID, FIRST_ID, Some(FIRST_ID)) as u32;
 
                 // Direct replies counter & max number contraint equality checked
                 assert_eq!(direct_replies_count, DirectRepliesMaxNumber::get());
