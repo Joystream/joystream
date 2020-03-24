@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use crate::mock::*;
+use crate::mock::{ConsecutiveRepliesInterval, *};
 use crate::*;
 use srml_support::assert_ok;
 
@@ -1144,6 +1144,54 @@ fn direct_reply_creation_limit_reached() {
                 assert_failure(
                     Err(create_reply_err),
                     DIRECT_REPLIES_LIMIT_REACHED,
+                    number_of_events_before_call,
+                );
+                break;
+            }
+        }
+    })
+}
+
+#[test]
+fn consecutive_reply_creation_limit_reached() {
+    ExtBuilder::default()
+        .consecutive_replies_max_number(5)
+        .build()
+        .execute_with(|| {
+        // Create blog for future posts
+        create_blog(FIRST_OWNER_ORIGIN);
+
+        // Create post for future replies
+        create_post(FIRST_OWNER_ORIGIN, FIRST_ID, PostType::Valid);
+
+        // Create reply and move to given block to show, that restriction removed
+        create_reply(
+            FIRST_OWNER_ORIGIN,
+            FIRST_ID,
+            FIRST_ID,
+            None,
+            ReplyType::Valid,
+        );
+        run_to_block((ConsecutiveRepliesInterval::get() + 1) as u64);
+        loop {
+            // Events number before tested call
+            let number_of_events_before_call = System::events().len();
+            if let Err(create_reply_err) = create_reply(
+                FIRST_OWNER_ORIGIN,
+                FIRST_ID,
+                FIRST_ID,
+                None,
+                ReplyType::Valid,
+            ) {
+                let replies_count =
+                    TestBlogModule::get_consecutive_replies_count(FIRST_ID, FIRST_ID, None);
+
+                // Consecutive replies counter & consecutive replies max number contraint equality checked
+                assert_eq!(replies_count, ConsecutiveRepliesMaxNumber::get().into());
+                // Last reply creation, before max consecutive replies limit reached, failure checked
+                assert_failure(
+                    Err(create_reply_err),
+                    CONSECUTIVE_REPLIES_LIMIT_REACHED,
                     number_of_events_before_call,
                 );
                 break;

@@ -5,7 +5,7 @@ use primitives::H256;
 use runtime_io::TestExternalities;
 use runtime_primitives::{
     testing::Header,
-    traits::{BlakeTwo256, IdentityLookup},
+    traits::{BlakeTwo256, IdentityLookup, OnFinalize, OnInitialize},
     Perbill,
 };
 use srml_support::{impl_outer_event, impl_outer_origin, parameter_types, traits::Get};
@@ -73,7 +73,7 @@ thread_local! {
     static DIRECT_REPLIES_MAX_NUMBER: RefCell<u32> = RefCell::new(0);
 
     static CONSECUTIVE_REPLIES_MAX_NUMBER: RefCell<u16> = RefCell::new(0);
-    static CONSECUTIVE_REPLIES_PERIOD: RefCell<u32> = RefCell::new(0);
+    static CONSECUTIVE_REPLIES_INTERVAL: RefCell<u32> = RefCell::new(0);
 }
 
 pub struct PostTitleMaxLength;
@@ -125,10 +125,10 @@ impl Get<u16> for ConsecutiveRepliesMaxNumber {
     }
 }
 
-pub struct ConsecutiveRepliesPeriod;
-impl Get<u32> for ConsecutiveRepliesPeriod {
+pub struct ConsecutiveRepliesInterval;
+impl Get<u32> for ConsecutiveRepliesInterval {
     fn get() -> u32 {
-        CONSECUTIVE_REPLIES_PERIOD.with(|v| *v.borrow())
+        CONSECUTIVE_REPLIES_INTERVAL.with(|v| *v.borrow())
     }
 }
 
@@ -143,7 +143,7 @@ impl Trait for Runtime {
     type RepliesMaxNumber = RepliesMaxNumber;
     type DirectRepliesMaxNumber = DirectRepliesMaxNumber;
     type ConsecutiveRepliesMaxNumber = ConsecutiveRepliesMaxNumber;
-    type ConsecutiveRepliesPeriod = ConsecutiveRepliesPeriod;
+    type ConsecutiveRepliesInterval = ConsecutiveRepliesInterval;
 
     type BlogOwnerEnsureOrigin = system::EnsureSigned<Self::AccountId>;
     type BlogOwnerId = u64;
@@ -161,7 +161,7 @@ pub struct ExtBuilder {
     replies_max_number: u32,
     direct_replies_max_number: u32,
     consecutive_replies_max_number: u16,
-    consecutive_replies_period: u32,
+    consecutive_replies_interval: u32,
 }
 
 impl Default for ExtBuilder {
@@ -173,8 +173,8 @@ impl Default for ExtBuilder {
             posts_max_number: 20,
             replies_max_number: 100,
             direct_replies_max_number: 10,
-            consecutive_replies_max_number: 5,
-            consecutive_replies_period: 10_000,
+            consecutive_replies_max_number: 200,
+            consecutive_replies_interval: 10,
         }
     }
 }
@@ -215,8 +215,8 @@ impl ExtBuilder {
         self
     }
 
-    pub fn consecutive_replies_max_period(mut self, consecutive_replies_period: u32) -> Self {
-        self.consecutive_replies_period = consecutive_replies_period;
+    pub fn consecutive_replies_max_period(mut self, consecutive_replies_interval: u32) -> Self {
+        self.consecutive_replies_interval = consecutive_replies_interval;
         self
     }
 
@@ -231,7 +231,7 @@ impl ExtBuilder {
 
         CONSECUTIVE_REPLIES_MAX_NUMBER
             .with(|v| *v.borrow_mut() = self.consecutive_replies_max_number);
-        CONSECUTIVE_REPLIES_PERIOD.with(|v| *v.borrow_mut() = self.consecutive_replies_period);
+        CONSECUTIVE_REPLIES_INTERVAL.with(|v| *v.borrow_mut() = self.consecutive_replies_interval);
     }
 
     pub fn build(self) -> TestExternalities {
@@ -260,6 +260,15 @@ pub enum ReplyType {
 
 pub fn generate_text(len: usize) -> Vec<u8> {
     vec![b'x'; len]
+}
+
+// Auxiliary method for simulating block time passing
+pub fn run_to_block(n: u64) {
+    while System::block_number() < n {
+        TestBlogModule::on_finalize(System::block_number());
+        System::set_block_number(System::block_number() + 1);
+        TestBlogModule::on_initialize(System::block_number() + 1);
+    }
 }
 
 type RawTestEvent = RawEvent<

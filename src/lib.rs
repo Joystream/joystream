@@ -2,7 +2,7 @@
 
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
-use runtime_primitives::traits::{EnsureOrigin, MaybeSerialize, Member, One, SimpleArithmetic};
+use runtime_primitives::traits::{EnsureOrigin, CheckedSub, MaybeSerialize, Member, One, SimpleArithmetic};
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter,
     StorageDoubleMap, StorageLinkedMap, StorageMap, StorageValue,
@@ -21,7 +21,7 @@ type MaxNumber = u32;
 
 type MaxConsecutiveRepliesNumber = u16;
 
-type ConsecutiveRepliesPeriod = u32;
+type ConsecutiveRepliesInterval = u32;
 
 /// The pallet's configuration trait.
 pub trait Trait: system::Trait + timestamp::Trait {
@@ -47,8 +47,8 @@ pub trait Trait: system::Trait + timestamp::Trait {
 
     type ConsecutiveRepliesMaxNumber: Get<MaxConsecutiveRepliesNumber>;
 
-    /// Max cosecutive replies interval in milliseconds
-    type ConsecutiveRepliesPeriod: Get<ConsecutiveRepliesPeriod>;
+    /// Max cosecutive replies interval in blocks passed
+    type ConsecutiveRepliesInterval: Get<ConsecutiveRepliesInterval>;
 
     /// Type for the blog owner id. Should be authenticated by account id.
     type BlogOwnerId: From<Self::AccountId> + Parameter + Default;
@@ -216,8 +216,8 @@ pub struct Reply<T: Trait> {
     owner: T::AccountId,
     // Reply`s parent id
     parent_id: Parent<T>,
-    // Reply creation timestamp
-    timestamp: T::Moment,
+    // Reply creation block)number
+    block_number: T::BlockNumber,
 }
 
 impl<T: Trait> Reply<T> {
@@ -226,7 +226,7 @@ impl<T: Trait> Reply<T> {
             text,
             owner,
             parent_id,
-            timestamp: <timestamp::Module<T>>::get(),
+            block_number: <system::Module<T>>::block_number(),
         }
     }
 
@@ -246,8 +246,8 @@ impl<T: Trait> Reply<T> {
     }
 
     // Returns reply creation timestamp
-    fn timestamp(&self) -> T::Moment {
-        self.timestamp
+    fn block_number(&self) -> T::BlockNumber {
+        self.block_number
     }
 }
 
@@ -761,10 +761,16 @@ impl<T: Trait> Module<T> {
                     reply.is_parent(&Parent::Post(post_id))
                 }
             })
-            // Get all replies, created in given time period
+            // Get all replies, created in given interval
             .filter(|(_, reply)| {
-                reply.timestamp
-                    >= <timestamp::Module<T>>::get() - T::ConsecutiveRepliesPeriod::get().into()
+                // Overflow protection
+                if <system::Module<T>>::block_number() < T::ConsecutiveRepliesInterval::get().into() {
+                    true
+                } else if reply.block_number() > (<system::Module<T>>::block_number() - T::ConsecutiveRepliesInterval::get().into()) {
+                    true
+                } else {
+                    false
+                }
             })
             .count()
     }
@@ -779,7 +785,7 @@ impl<T: Trait> Module<T> {
 
         ensure!(
             consecutive_replies_count < T::ConsecutiveRepliesMaxNumber::get().into(),
-            REPLIES_LIMIT_REACHED
+            CONSECUTIVE_REPLIES_LIMIT_REACHED
         );
 
         Ok(())
