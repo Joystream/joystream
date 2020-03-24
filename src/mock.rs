@@ -315,7 +315,7 @@ pub fn post_by_id(
     TestBlogModule::post_by_id(blog_id, post_id)
 }
 
-pub fn get_post(post_type: PostType, editing: bool) -> Post<Runtime> {
+pub fn get_post(post_type: PostType, editing: bool, locked: bool) -> Post<Runtime> {
     let (title, body);
     match post_type {
         // Make them different
@@ -336,7 +336,11 @@ pub fn get_post(post_type: PostType, editing: bool) -> Post<Runtime> {
             body = generate_text((PostBodyMaxLength::get() + 1) as usize);
         }
     }
-    Post::new(title, body)
+    let mut post = Post::new(title, body);
+    if locked {
+        post.lock()
+    }
+    post
 }
 
 pub fn create_post(
@@ -344,7 +348,7 @@ pub fn create_post(
     blog_id: <Runtime as Trait>::BlogId,
     post_type: PostType,
 ) -> Result<(), &'static str> {
-    let post = get_post(post_type, false);
+    let post = get_post(post_type, false, false);
     TestBlogModule::create_post(Origin::signed(origin_id), blog_id, post.title, post.body)
 }
 
@@ -370,7 +374,7 @@ pub fn edit_post(
     post_id: <Runtime as Trait>::PostId,
     post_type: PostType,
 ) -> Result<(), &'static str> {
-    let post = get_post(post_type, true);
+    let post = get_post(post_type, true, false);
     TestBlogModule::edit_post(
         Origin::signed(origin_id),
         blog_id,

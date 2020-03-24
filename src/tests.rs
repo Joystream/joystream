@@ -50,6 +50,15 @@ fn ensure_replies_equality(reply: Option<Reply<Runtime>>, reply_owner_id: <Runti
     );
 }
 
+fn ensure_posts_equality(post: Option<Post<Runtime>>, editing: bool, locked: bool) {
+
+    // Ensure, that stored post is equal to expected one 
+    assert!(matches!(
+        post,
+        Some(post) if post == get_post(PostType::Valid, editing, locked)
+    ));
+}
+
 // Blogs
 #[test]
 fn blog_creation() {
@@ -245,10 +254,7 @@ fn post_creation_success() {
         // Posts storage updated succesfully
         let post = post_by_id(FIRST_ID, FIRST_ID);
 
-        assert!(matches!(
-            post,
-            Some(post) if post == get_post(PostType::Valid, false)
-        ));
+        ensure_posts_equality(post, false, false);
 
         let blog = blog_by_id(FIRST_ID).unwrap();
 
@@ -622,8 +628,6 @@ fn post_editing_success() {
             create_blog(FIRST_OWNER_ORIGIN);
             create_post(FIRST_OWNER_ORIGIN, FIRST_ID, PostType::Valid);
 
-            let valid_post_after_editing = get_post(PostType::Valid, true);
-
             // Events number before tested call
             let number_of_events_before_call = System::events().len();
 
@@ -635,13 +639,9 @@ fn post_editing_success() {
             ));
 
             // Post after editing checked
-            let post = post_by_id(FIRST_ID, FIRST_ID);
-            assert!(
-                matches!(
-                    post, 
-                    Some(post) if post.title == valid_post_after_editing.title && post.body == valid_post_after_editing.body
-                )
-            );
+            let post_after_editing = post_by_id(FIRST_ID, FIRST_ID);
+            
+            ensure_posts_equality(post_after_editing, true, false);
 
             let post_edited_event =
                 TestEvent::test_events(RawEvent::PostEdited(FIRST_ID, FIRST_ID));
@@ -668,10 +668,7 @@ fn post_editing_ownership_error() {
         let post = post_by_id(FIRST_ID, FIRST_ID);
 
         // Compare with default unedited post
-        assert!(matches!(
-            post,
-            Some(post) if post == get_post(PostType::Valid, false)
-        ));
+        ensure_posts_equality(post, false, false);
 
         // Failure checked
         assert_failure(
@@ -719,10 +716,7 @@ fn post_editing_blog_locked_error() {
         let post = post_by_id(FIRST_ID, FIRST_ID);
 
         // Compare with default unedited post
-        assert!(matches!(
-            post,
-            Some(post) if post == get_post(PostType::Valid, false)
-        ));
+        ensure_posts_equality(post, false, false);
 
         // Failure checked
         assert_failure(edit_result, BLOG_LOCKED_ERROR, number_of_events_before_call);
@@ -749,12 +743,7 @@ fn post_editing_post_locked_error() {
         let post = post_by_id(FIRST_ID, FIRST_ID);
 
         // Compare with default unedited locked post
-        let mut unedited_post_locked = get_post(PostType::Valid, false);
-        unedited_post_locked.lock();
-        assert!(matches!(
-            post,
-            Some(post) if post == unedited_post_locked
-        ));
+        ensure_posts_equality(post, false, true);
 
         // Failure checked
         assert_failure(edit_result, POST_LOCKED_ERROR, number_of_events_before_call);
@@ -783,10 +772,7 @@ fn post_editing_title_invalid_error() {
         let post = post_by_id(FIRST_ID, FIRST_ID);
 
         // Compare with default unedited post
-        assert!(matches!(
-            post,
-            Some(post) if post == get_post(PostType::Valid, false)
-        ));
+        ensure_posts_equality(post, false, false);
 
         // Failure checked
         assert_failure(
@@ -819,10 +805,7 @@ fn post_editing_body_invalid_error() {
         let post = post_by_id(FIRST_ID, FIRST_ID);
 
         // Compare with default unedited post
-        assert!(matches!(
-            post,
-            Some(post) if post == get_post(PostType::Valid, false)
-        ));
+        ensure_posts_equality(post, false, false);
 
         // Failure checked
         assert_failure(
