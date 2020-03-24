@@ -1,23 +1,88 @@
 language: rust
 
 rust:
-  - 1.41.1
-# Caching saves a lot of time but often causes stalled builds...
-# disabled for now
-# look into solution here: https://levans.fr/rust_travis_cache.html
-# cache:
-#  - cargo
+  - 1.42.0
 
-before_script:
-  - rustup component add rustfmt --toolchain 1.41.1-x86_64-unknown-linux-gnu
+matrix:
+  include:
+    - os: linux
+      env: TARGET=x86_64-unknown-linux-gnu
+    - os: linux
+      env: TARGET=arm-unknown-linux-gnueabihf
+      services: docker
+    - os: osx
+      env: TARGET=x86_64-apple-darwin
+
+before_install:
+  - rustup component add rustfmt
+  - cargo fmt --all -- --check
+  - rustup default stable
   - rustup update nightly
   - rustup target add wasm32-unknown-unknown --toolchain nightly
-  - cargo +nightly install --git https://github.com/alexcrichton/wasm-gc --force
+  - cargo test --verbose --all
+
+install:
+  - |
+    if [ "$TARGET" = "arm-unknown-linux-gnueabihf" ]
+    then
+      docker pull joystream/rust-raspberry
+    fi
 
 script:
-  # Ensure all checked in code is cargo-fmt'ed
-  - cargo fmt --all -- --check
-  # Native build and unit tests check
-  - cargo test --verbose --all
-  # WASM build check
-  - cargo build
+  - |
+    if [ "$TARGET" = "arm-unknown-linux-gnueabihf" ]
+    then
+      docker run -u root \
+        --volume ${TRAVIS_BUILD_DIR}:/home/cross/project \
+          joystream/rust-raspberry \
+        build --release
+      sudo chmod a+r ${TRAVIS_BUILD_DIR}/target/${TARGET}/release/joystream-node
+    else
+      cargo build --release --target=${TARGET}
+    fi
+
+before_deploy:
+  - cp ./target/${TARGET}/release/joystream-node .
+  - |
+    if [ "$TARGET" = "arm-unknown-linux-gnueabihf" ]
+    then
+      export FILENAME="joystream-node-armv7-linux-gnueabihf"
+    else
+      export FILENAME=`./joystream-node --version | sed -e "s/ /-/g"`
+    fi
+  - tar -cf ${FILENAME}.tar ./joystream-node
+  - gzip ${FILENAME}.tar
+
+deploy:
+  - provider: releases
+    api_key:
+      secure: QTna4XzKmPrXNA5KnYfLsH8cAKxESLdFbQ5HJ6nvB9reE10SVtg8lZ+ShL+no7TACNBUNt09Qv9HNgs6JcNRJ9QMHEJHKIbMyjplhBtZ+W3l0k+6TL0yeKHZ/OvddDF+vDbpN+y4xBfOf0xqZcNH3lZJTms/NPBn/KT5DpQ3JZ8bibdMP2HSCazfvHLwj38OuLX6VWbFcmN2RAmUR9AXYvk5wWYVw8g1VDzTCxjH1G+dGWH1L9+ZDgFfv7BNSNhPc6V9GghgLVZ+37r/STzTTAQ/gPv+yruglEWUhSAngFfVYUegvTmIeQLi/V+g0tKUS+l7eNX08xz6eZcn0+/32V7P+oEN/dhU84E0kgmiOsiUEGI/KFM+qw9TyX3GtD67UmG5TZrD7OUMIu1qCuPSetsTOK2kvpwlYAn+j5iFB30Uz4hXhOH5dib2zz2I7cYHi1kvzeNQqQOPNDCmaO48bcbRIaeqMAHdsb6scGzh/+CD2V2HOmHlhd+4o1PpX6hAMwmOXAu3bMDi4zlB9Hb1cSZnsYNBHawkD6y45QGepFKpGW/6u5VRPeMK62Gm9wu815C36B4mVg6CVqtZMbk0WYPIk6zfoTft3i04YthKbRO96a5VD9LssVbiSYnudXuZJjSllSZVCi9AKS8JVIS2jC2z+tWkquAesSrwztriRcs=
+    file: ${FILENAME}.tar.gz
+    on:
+      tags: true
+      repo: Joystream/substrate-node-joystream
+    draft: true
+    overwrite: true
+    skip_cleanup: true
+  - provider: releases
+    api_key:
+      secure: QTna4XzKmPrXNA5KnYfLsH8cAKxESLdFbQ5HJ6nvB9reE10SVtg8lZ+ShL+no7TACNBUNt09Qv9HNgs6JcNRJ9QMHEJHKIbMyjplhBtZ+W3l0k+6TL0yeKHZ/OvddDF+vDbpN+y4xBfOf0xqZcNH3lZJTms/NPBn/KT5DpQ3JZ8bibdMP2HSCazfvHLwj38OuLX6VWbFcmN2RAmUR9AXYvk5wWYVw8g1VDzTCxjH1G+dGWH1L9+ZDgFfv7BNSNhPc6V9GghgLVZ+37r/STzTTAQ/gPv+yruglEWUhSAngFfVYUegvTmIeQLi/V+g0tKUS+l7eNX08xz6eZcn0+/32V7P+oEN/dhU84E0kgmiOsiUEGI/KFM+qw9TyX3GtD67UmG5TZrD7OUMIu1qCuPSetsTOK2kvpwlYAn+j5iFB30Uz4hXhOH5dib2zz2I7cYHi1kvzeNQqQOPNDCmaO48bcbRIaeqMAHdsb6scGzh/+CD2V2HOmHlhd+4o1PpX6hAMwmOXAu3bMDi4zlB9Hb1cSZnsYNBHawkD6y45QGepFKpGW/6u5VRPeMK62Gm9wu815C36B4mVg6CVqtZMbk0WYPIk6zfoTft3i04YthKbRO96a5VD9LssVbiSYnudXuZJjSllSZVCi9AKS8JVIS2jC2z+tWkquAesSrwztriRcs=
+    file: ${FILENAME}.tar.gz
+    on:
+      branch: development
+      repo: Joystream/substrate-node-joystream
+    draft: true
+    prerelease: true
+    overwrite: true
+    skip_cleanup: true
+  - provider: releases
+    api_key:
+      secure: ZoEXp8g+yZOEG8JZ1Fg6tWnW3aYDfupFbZflEejYaAdXhj1nw7G9N10ZX5VDdb/O1iFx8BhfFymQxk0ynxNC8c52LzOjKIhXEporxgvEPdnoPS/N1JhfsOUV0ragwZDLv2tFVi2AT0K4w8WJFJDzrK4qHOMMQgVbVQZtFmDL1whHdfBD5FyFyKmMdZdWBtTGy4s7X0LnmxjNB4/3AMa540T3LowZ5H66MYZkQmAbtg8ib93WomVanhS23vbjNaH9x1Kmzxd2B3pCSgI8uaxBrpmzINvAeSusYVJQt0EF/cAPXmq0+JmGoocvcS1ecg/SNZoKUNmeElB4ns/obg/QAyE+fyQtyl+iDYBilhFLm5xRMUnqkpyeUUD3u824i/Z+/tfLvtm5Egg1QAiXtIIJMeAj1nN8OIeSlHR4phnSTA3jl2PZw9QYidtV9WCqHC0qxtpkYSKkC8ItaefScPB1AuvOvVx8xvnIxfR/tXvL8Y3Y2BvhiLgpky9JkbdMln1b0m0E5c4vyGCEVqHqpbxM63VJkpct8sVx0atGvipWEelVjz5XpkxW2PYbgg4EKUzl3FiYcXwf5Y/ykxaZNZt7I4gv9nz2KkVwUCCPqdwWF7ww1shFWW5tCoCmJuUESOdPFx0jQ7LVWz7SDLDsqvvaW2c2OPxG6DIx9BiTeAE4qIQ=
+    file: "${FILENAME}.tar.gz"
+    skip_cleanup: true
+    draft: true
+    prerelease: true
+    overwrite: true
+    on:
+      repo: mnaamani/substrate-node-joystream
+      branch: deploy
