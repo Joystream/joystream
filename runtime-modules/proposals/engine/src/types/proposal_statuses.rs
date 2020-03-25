@@ -33,12 +33,13 @@ impl<BlockNumber> ProposalStatus<BlockNumber> {
     /// Creates finalized proposal status with provided ProposalDecisionStatus and error
     pub fn finalized_with_error(
         decision_status: ProposalDecisionStatus,
-        finalization_error: Option<&str>,
+        encoded_unstaking_error_due_to_broken_runtime: Option<&str>,
         now: BlockNumber,
     ) -> ProposalStatus<BlockNumber> {
         ProposalStatus::Finalized(FinalizationData {
             proposal_status: decision_status,
-            finalization_error: finalization_error.map(|err| err.as_bytes().to_vec()),
+            encoded_unstaking_error_due_to_broken_runtime:
+                encoded_unstaking_error_due_to_broken_runtime.map(|err| err.as_bytes().to_vec()),
             finalized_at: now,
         })
     }
@@ -50,7 +51,7 @@ impl<BlockNumber> ProposalStatus<BlockNumber> {
     ) -> ProposalStatus<BlockNumber> {
         ProposalStatus::Finalized(FinalizationData {
             proposal_status: ProposalDecisionStatus::Approved(approved_status),
-            finalization_error: None,
+            encoded_unstaking_error_due_to_broken_runtime: None,
             finalized_at: now,
         })
     }
@@ -66,8 +67,8 @@ pub struct FinalizationData<BlockNumber> {
     /// Proposal finalization block number
     pub finalized_at: BlockNumber,
 
-    /// Error occured during the proposal finalization
-    pub finalization_error: Option<Vec<u8>>,
+    /// Error occured during the proposal finalization - unstaking failed in the stake module
+    pub encoded_unstaking_error_due_to_broken_runtime: Option<Vec<u8>>,
 }
 
 impl<BlockNumber> FinalizationData<BlockNumber> {

@@ -726,7 +726,7 @@ fn cancel_proposal_event_emitted() {
                 1,
                 ProposalStatus::Finalized(FinalizationData {
                     proposal_status: ProposalDecisionStatus::Canceled,
-                    finalization_error: None,
+                    encoded_unstaking_error_due_to_broken_runtime: None,
                     finalized_at: 1,
                 }),
             ),
@@ -1160,7 +1160,7 @@ fn proposal_slashing_succeeds() {
             proposal.status,
             ProposalStatus::Finalized(FinalizationData {
                 proposal_status: ProposalDecisionStatus::Slashed,
-                finalization_error: None,
+                encoded_unstaking_error_due_to_broken_runtime: None,
                 finalized_at: 1,
             }),
         );
