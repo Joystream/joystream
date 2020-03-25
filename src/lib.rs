@@ -32,24 +32,31 @@ pub trait Trait: system::Trait + Default {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    // Security/configuration constraints
+    /// Security/configuration constraints
 
+    /// The maximum length of each post`s title.
     type PostTitleMaxLength: Get<MaxLength>;
 
+    /// The maximum length of each post`s body.
     type PostBodyMaxLength: Get<MaxLength>;
 
+    /// The maximum length of each reply.
     type ReplyMaxLength: Get<MaxLength>;
 
+    /// The maximum number of posts in a blog.
     type PostsMaxNumber: Get<MaxNumber>;
 
+    /// The maximum number of replies to a post.
     type RepliesMaxNumber: Get<MaxNumber>;
 
+    /// The maximum number of direct replies to a reply.
     type DirectRepliesMaxNumber: Get<MaxNumber>;
 
-    /// Max number of consecutive (in time) replies to the same post/reply by the same actor
+    /// The maximum number of consecutive (in time) replies by
+    /// the same actor (reader or author) to the same post or reply.
     type ConsecutiveRepliesMaxNumber: Get<MaxConsecutiveRepliesNumber>;
 
-    /// Max cosecutive replies interval in blocks passed
+    /// The maximum cosecutive replies interval in blocks passed
     type ConsecutiveRepliesInterval: Get<Self::BlockNumber>;
 
     /// Type, representing reactions number
@@ -101,22 +108,25 @@ pub trait Trait: system::Trait + Default {
         + PartialEq;
 }
 
+/// Type, representing blog structure
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq)]
 pub struct Blog<T: Trait> {
-    // Locking status
+    /// Locking status
     locked: bool,
-    // Overall posts counter, associated with blog
+    /// Overall posts counter, associated with blog
     posts_count: T::PostId,
-    // Blog owner id, associated with blog owner
+    /// Blog owner id, associated with blog owner
     owner: T::BlogOwnerId,
 }
 
 impl<T: Trait> Blog<T> {
+    /// Create a new blog, related to a given blog owner
     fn new(owner: T::BlogOwnerId) -> Self {
         Self {
             // Blog default locking status
             locked: false,
+            // Set posts count of newly created blog to zero
             posts_count: T::PostId::default(),
             owner,
         }
@@ -127,6 +137,7 @@ impl<T: Trait> Blog<T> {
         self.locked = true;
     }
 
+    /// Inverse to lock
     fn unlock(&mut self) {
         self.locked = false;
     }
@@ -152,28 +163,32 @@ impl<T: Trait> Blog<T> {
     }
 }
 
+/// Type, representing blog related post structure
 #[derive(Encode, Default, Decode, Clone, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct Post<T: Trait> {
-    // Locking status
+    /// Locking status
     locked: bool,
     title: Vec<u8>,
     body: Vec<u8>,
-    // Overall replies counter, associated with post
+    /// Overall replies counter, associated with post
     replies_count: T::ReplyId,
-    // AccountId -> All presented reactions state mapping
+    /// AccountId -> All presented reactions state mapping
     reactions: BTreeMap<T::AccountId, Vec<bool>>,
 }
 
 impl<T: Trait> Post<T> {
+    /// Create a new post with given title and body
     fn new(title: Vec<u8>, body: Vec<u8>) -> Self {
         Self {
             // Post default locking status
             locked: false,
             title,
             body,
+            // Set replies count of newly created post to zero
             replies_count: T::ReplyId::default(),
-            reactions: BTreeMap::new(),
+            // Initialize with blank (default) collection
+            reactions: BTreeMap::default(),
         }
     }
 
@@ -182,6 +197,7 @@ impl<T: Trait> Post<T> {
         self.locked = true;
     }
 
+    /// Inverse to lock
     fn unlock(&mut self) {
         self.locked = false;
     }
@@ -221,6 +237,7 @@ impl<T: Trait> Post<T> {
         self.reactions.get(owner)
     }
 
+    /// Get reference to all rections, associated with post
     pub fn get_reactions_map(&self) -> &BTreeMap<T::AccountId, Vec<bool>> {
         &self.reactions
     }
@@ -241,18 +258,19 @@ impl<T: Trait> Default for Parent<T> {
     }
 }
 
+/// Type, representing either root post reply or direct reply to reply
 #[derive(Encode, Decode, Clone, Default, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct Reply<T: Trait> {
-    // Reply text content
+    /// Reply text content
     text: Vec<u8>,
-    // Account id, associated with reply owner
+    /// Account id, associated with a reply owner
     owner: T::AccountId,
-    // Reply`s parent id
+    /// Reply`s parent id
     parent_id: Parent<T>,
-    // Reply creation block number
+    /// Reply creation block number
     block_number: T::BlockNumber,
-    // AccountId -> All presented reactions state mapping
+    /// AccountId -> All presented reactions state mapping
     reactions: BTreeMap<T::AccountId, Vec<bool>>,
 }
 
@@ -263,6 +281,7 @@ impl<T: Trait> Reply<T> {
             owner,
             parent_id,
             block_number: <system::Module<T>>::block_number(),
+            // Initialize with blank (default) collection
             reactions: BTreeMap::new(),
         }
     }
@@ -277,7 +296,7 @@ impl<T: Trait> Reply<T> {
         core::mem::discriminant(&self.parent_id) == core::mem::discriminant(account_id)
     }
 
-    /// Update reply text
+    /// Update reply`s text
     fn update(&mut self, new_text: Vec<u8>) {
         self.text = new_text
     }
@@ -292,6 +311,7 @@ impl<T: Trait> Reply<T> {
         self.reactions.get(owner)
     }
 
+    /// Get reference to all rections, associated with reply
     pub fn get_reactions_map(&self) -> &BTreeMap<T::AccountId, Vec<bool>> {
         &self.reactions
     }
@@ -302,8 +322,8 @@ impl<T: Trait> Reply<T> {
     }
 }
 
-/// Flips reaction status under given index and returns the result of this flip.
-/// If there is no reactions for this AccountId entry yet,
+/// Flips reaction status under given index and returns the result of that flip.
+/// If there is no reactions under this AccountId entry yet,
 /// initialize a new reactions array and set reaction under given index
 fn mutate_reactions<T: Trait>(
     reactions: &mut BTreeMap<T::AccountId, Vec<bool>>,
@@ -315,6 +335,7 @@ fn mutate_reactions<T: Trait>(
         reactions_array[index.into() as usize] ^= true;
         reactions_array[index.into() as usize]
     } else {
+        // Initialize reactions array with all reactions unset (false)
         let mut reactions_array = vec![false; T::ReactionsMaxNumber::get().into() as usize];
         // Flip reaction value under given index
         reactions_array[index.into() as usize] ^= true;
@@ -350,6 +371,7 @@ decl_module! {
         // Initializing events
         fn deposit_event() = default;
 
+        /// Blog owner can create posts, related to a given blog, if related blog is unlocked
         pub fn create_post(origin, blog_id: T::BlogId, title: Vec<u8>, body: Vec<u8>) -> dispatch::Result  {
             let blog_owner = Self::get_blog_owner(origin)?;
 
@@ -388,6 +410,8 @@ decl_module! {
             Ok(())
         }
 
+        /// Blog owner can lock posts, related to a given blog,
+        /// making post immutable to any actions (replies creation, post editing, reactions, etc.)
         pub fn lock_post(origin, blog_id: T::BlogId, post_id: T::PostId) -> dispatch::Result {
             let blog_owner = Self::get_blog_owner(origin)?;
 
@@ -412,6 +436,8 @@ decl_module! {
             Ok(())
         }
 
+        /// Blog owner can unlock posts, related to a given blog,
+        /// making post accesible to previously forbidden actions
         pub fn unlock_post(origin, blog_id: T::BlogId, post_id: T::PostId) -> dispatch::Result {
             let blog_owner = Self::get_blog_owner(origin)?;
 
@@ -436,6 +462,8 @@ decl_module! {
             Ok(())
         }
 
+        /// Blog owner can edit post, related to a given blog (if unlocked)
+        /// with a new title and/or body
         pub fn edit_post(
             origin,
             blog_id: T::BlogId,
@@ -489,7 +517,8 @@ decl_module! {
             Ok(())
         }
 
-        /// Either root post reply or direct reply to reply
+        /// Create either root post reply or direct reply to reply
+        /// (Only accessible, if related blog and post are unlocked)
         pub fn create_reply(
             origin,
             blog_id: T::BlogId,
@@ -514,7 +543,7 @@ decl_module! {
             // Ensure reply text length is valid
             Self::ensure_reply_text_is_valid(&text)?;
 
-            // Ensure, that maximum number of consecutive replies in time limit not reached
+            // Ensure  maximum number of consecutive replies in time limit not reached
             Self::ensure_consecutive_replies_limit_not_reached(blog_id, post_id, reply_id)?;
 
             // New reply creation
@@ -549,6 +578,8 @@ decl_module! {
             Ok(())
         }
 
+        /// Reply owner can edit reply with a new text
+        /// (Only accessible, if related blog and post are unlocked)
         pub fn edit_reply(
             origin,
             blog_id: T::BlogId,
@@ -591,7 +622,8 @@ decl_module! {
             Ok(())
         }
 
-        /// Either post reaction or reply reaction
+        /// Submit either post reaction or reply reaction
+        /// In case, when you resubmit reaction, it`s status will be changed to an opposite one
         pub fn react(
             origin,
             // reaction index in array
@@ -656,6 +688,7 @@ impl<T: Trait> Module<T> {
         Ok(T::BlogOwnerId::from(account_id))
     }
 
+    /// Create blog via an extrinsic where access is gated by a dedicated EnsureOrigin runtime trait
     pub fn create_blog(origin: T::Origin) -> dispatch::Result {
         let blog_owner = Self::get_blog_owner(origin)?;
 
@@ -676,6 +709,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    /// Lock blog to forbid mutations in all posts, related to given blog
     pub fn lock_blog(origin: T::Origin, blog_id: T::BlogId) -> dispatch::Result {
         let blog_owner = Self::get_blog_owner(origin)?;
 
@@ -697,6 +731,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    /// Unlock blog to allow mutations in all posts, related to given blog (If was locked previously)
     pub fn unlock_blog(origin: T::Origin, blog_id: T::BlogId) -> dispatch::Result {
         let blog_owner = Self::get_blog_owner(origin)?;
 
@@ -793,7 +828,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Get either replies count or direct replies count by given parent post/blog.
-    fn get_replies_count(
+    pub fn get_replies_count(
         blog_id: T::BlogId,
         post_id: T::PostId,
         reply_id: Option<T::ReplyId>,
@@ -843,7 +878,9 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn get_consecutive_replies_count(
+    /// Get number of consecutive (in time) replies by
+    /// the same actor (reader or author) to the same post or reply.
+    pub fn get_consecutive_replies_count(
         blog_id: T::BlogId,
         post_id: T::PostId,
         reply_id: Option<T::ReplyId>,
@@ -862,11 +899,11 @@ impl<T: Trait> Module<T> {
             // Get all replies, created in given interval
             .filter(|(_, reply)| {
                 // Overflow protection
-                if <system::Module<T>>::block_number() < T::ConsecutiveRepliesInterval::get()
-                {
+                if <system::Module<T>>::block_number() < T::ConsecutiveRepliesInterval::get() {
                     true
-                } else { reply.block_number()
-                     > <system::Module<T>>::block_number() - T::ConsecutiveRepliesInterval::get()
+                } else {
+                    reply.block_number()
+                        > <system::Module<T>>::block_number() - T::ConsecutiveRepliesInterval::get()
                 }
             })
             .count()

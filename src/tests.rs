@@ -12,10 +12,10 @@ const FIRST_OWNER_ORIGIN: u64 = 1;
 const SECOND_OWNER_ORIGIN: u64 = 2;
 
 fn assert_event_success(tested_event: TestEvent, number_of_events_after_call: usize) {
-    // Ensure, that runtime events length is equal to expected number of events after call
+    // Ensure  runtime events length is equal to expected number of events after call
     assert_eq!(System::events().len(), number_of_events_after_call);
 
-    // Ensure, that last emitted event is equal to expected one
+    // Ensure  last emitted event is equal to expected one
     assert!(matches!(
             System::events()
                 .iter()
@@ -29,13 +29,13 @@ fn assert_failure(
     expected_error: &str,
     number_of_events_before_call: usize,
 ) {
-    // Ensure, that call result is equal to expected error
+    // Ensure  call result is equal to expected error
     assert!(matches!(
         call_result,
         Err(call_result) if call_result == expected_error
     ));
 
-    // Ensure, that no other events emitted after call
+    // Ensure  no other events emitted after call
     assert_eq!(System::events().len(), number_of_events_before_call);
 }
 
@@ -45,7 +45,7 @@ fn ensure_replies_equality(
     parent: Parent<Runtime>,
     editing: bool,
 ) {
-    // Ensure, that stored reply is equal to expected one
+    // Ensure  stored reply is equal to expected one
     assert!(matches!(
         reply,
         Some(reply) if reply == get_reply(ReplyType::Valid, reply_owner_id, parent, editing)
@@ -53,7 +53,7 @@ fn ensure_replies_equality(
 }
 
 fn ensure_posts_equality(post: Option<Post<Runtime>>, editing: bool, locked: bool) {
-    // Ensure, that stored post is equal to expected one
+    // Ensure  stored post is equal to expected one
     assert!(matches!(
         post,
         Some(post) if post == get_post(PostType::Valid, editing, locked)
@@ -65,7 +65,7 @@ fn ensure_reaction_status(
     index: <Runtime as Trait>::ReactionsNumber,
     status: bool,
 ) {
-    // Ensure, that reaction status at given index is equal to expected one
+    // Ensure  reaction status at given index is equal to expected one
     assert!(matches!(
         reactions,
         Some(reactions) if reactions[index as usize] == status
@@ -1603,7 +1603,7 @@ fn reaction_invalid_index() {
                 None,
             );
 
-            // Ensure, that reactions related state left unchanged
+            // Ensure  reactions related state left unchanged
             assert!(reactions_state_left_unchanged(FIRST_ID, FIRST_ID, None));
 
             // Failure checked
@@ -1632,7 +1632,7 @@ fn reaction_blog_not_found() {
             None,
         );
 
-        // Ensure, that reactions related state left unchanged
+        // Ensure  reactions related state left unchanged
         assert!(reactions_state_left_unchanged(FIRST_ID, FIRST_ID, None));
 
         // Failure checked
@@ -1659,7 +1659,7 @@ fn reaction_post_not_found() {
             None,
         );
 
-        // Ensure, that reactions related state left unchanged
+        // Ensure  reactions related state left unchanged
         assert!(reactions_state_left_unchanged(FIRST_ID, FIRST_ID, None));
 
         // Failure checked
@@ -1689,7 +1689,7 @@ fn reaction_reply_not_found() {
             Some(FIRST_ID),
         );
 
-        // Ensure, that reactions related state left unchanged
+        // Ensure  reactions related state left unchanged
         assert!(reactions_state_left_unchanged(
             FIRST_ID,
             FIRST_ID,
@@ -1726,7 +1726,7 @@ fn reaction_blog_locked_error() {
             None,
         );
 
-        // Ensure, that reactions related state left unchanged
+        // Ensure  reactions related state left unchanged
         assert!(reactions_state_left_unchanged(FIRST_ID, FIRST_ID, None));
 
         // Failure checked
@@ -1763,7 +1763,7 @@ fn reaction_post_locked_error() {
             None,
         );
 
-        // Ensure, that reactions related state left unchanged
+        // Ensure  reactions related state left unchanged
         assert!(reactions_state_left_unchanged(FIRST_ID, FIRST_ID, None));
 
         // Failure checked
