@@ -313,7 +313,7 @@ decl_module! {
 impl<T: Trait> Module<T> {
     /// Create proposal. Requires 'proposal origin' membership.
     pub fn create_proposal(
-        origin: T::Origin,
+        account_id: T::AccountId,
         proposer_id: MemberId<T>,
         parameters: ProposalParameters<T::BlockNumber, types::BalanceOf<T>>,
         title: Vec<u8>,
@@ -321,9 +321,6 @@ impl<T: Trait> Module<T> {
         stake_balance: Option<types::BalanceOf<T>>,
         encoded_dispatchable_call_code: Vec<u8>,
     ) -> Result<T::ProposalId, Error> {
-        let account_id =
-            T::ProposerOriginValidator::ensure_actor_origin(origin, proposer_id.clone())?;
-
         Self::ensure_create_proposal_parameters_are_valid(
             &parameters,
             &title,
@@ -376,6 +373,85 @@ impl<T: Trait> Module<T> {
         Self::deposit_event(RawEvent::ProposalCreated(proposer_id, proposal_id));
 
         Ok(proposal_id)
+    }
+
+    /// Performs all checks for the proposal creation:
+    /// - title, body lengths
+    /// - mac active proposal
+    /// - provided parameters: approval_threshold_percentage and slashing_threshold_percentage > 0
+    /// - provided stake balance and parameters.required_stake are valid
+    pub fn ensure_create_proposal_parameters_are_valid(
+        parameters: &ProposalParameters<T::BlockNumber, types::BalanceOf<T>>,
+        title: &[u8],
+        description: &[u8],
+        stake_balance: Option<types::BalanceOf<T>>,
+    ) -> DispatchResult<Error> {
+        ensure!(!title.is_empty(), Error::EmptyTitleProvided);
+        ensure!(
+            title.len() as u32 <= T::TitleMaxLength::get(),
+            Error::TitleIsTooLong
+        );
+
+        ensure!(!description.is_empty(), Error::EmptyDescriptionProvided);
+        ensure!(
+            description.len() as u32 <= T::DescriptionMaxLength::get(),
+            Error::DescriptionIsTooLong
+        );
+
+        ensure!(
+            (Self::active_proposal_count()) < T::MaxActiveProposalLimit::get(),
+            Error::MaxActiveProposalNumberExceeded
+        );
+
+        ensure!(
+            parameters.approval_threshold_percentage > 0,
+            Error::InvalidParameterApprovalThreshold
+        );
+
+        ensure!(
+            parameters.slashing_threshold_percentage > 0,
+            Error::InvalidParameterSlashingThreshold
+        );
+
+        // check stake parameters
+        if let Some(required_stake) = parameters.required_stake {
+            if let Some(staked_balance) = stake_balance {
+                ensure!(
+                    required_stake == staked_balance,
+                    Error::StakeDiffersFromRequired
+                );
+            } else {
+                return Err(Error::EmptyStake);
+            }
+        }
+
+        if stake_balance.is_some() && parameters.required_stake.is_none() {
+            return Err(Error::StakeShouldBeEmpty);
+        }
+
+        Ok(())
+    }
+
+    //TODO: candidate for invariant break or error saving to the state
+    /// Callback from StakingEventsHandler. Refunds unstaked imbalance back to the source account
+    pub fn refund_proposal_stake(stake_id: T::StakeId, imbalance: NegativeImbalance<T>) {
+        if <StakesProposals<T>>::exists(stake_id) {
+            //TODO: handle non existence
+
+            let proposal_id = Self::stakes_proposals(stake_id);
+
+            if <Proposals<T>>::exists(proposal_id) {
+                let proposal = Self::proposals(proposal_id);
+
+                if let Some(stake_data) = proposal.stake_data {
+                    //TODO: handle the result
+                    let _ = CurrencyOf::<T>::resolve_into_existing(
+                        &stake_data.source_account_id,
+                        imbalance,
+                    );
+                }
+            }
+        }
     }
 }
 
@@ -558,85 +634,6 @@ impl<T: Trait> Module<T> {
             let next_active_proposal_count_value = current_active_proposal_counter - 1;
             ActiveProposalCount::put(next_active_proposal_count_value);
         };
-    }
-
-    /// Performs all checks for the proposal creation:
-    /// - title, body lengths
-    /// - mac active proposal
-    /// - provided parameters: approval_threshold_percentage and slashing_threshold_percentage > 0
-    /// - provided stake balance and parameters.required_stake are valid
-    pub fn ensure_create_proposal_parameters_are_valid(
-        parameters: &ProposalParameters<T::BlockNumber, types::BalanceOf<T>>,
-        title: &[u8],
-        description: &[u8],
-        stake_balance: Option<types::BalanceOf<T>>,
-    ) -> DispatchResult<Error> {
-        ensure!(!title.is_empty(), Error::EmptyTitleProvided);
-        ensure!(
-            title.len() as u32 <= T::TitleMaxLength::get(),
-            Error::TitleIsTooLong
-        );
-
-        ensure!(!description.is_empty(), Error::EmptyDescriptionProvided);
-        ensure!(
-            description.len() as u32 <= T::DescriptionMaxLength::get(),
-            Error::DescriptionIsTooLong
-        );
-
-        ensure!(
-            (Self::active_proposal_count()) < T::MaxActiveProposalLimit::get(),
-            Error::MaxActiveProposalNumberExceeded
-        );
-
-        ensure!(
-            parameters.approval_threshold_percentage > 0,
-            Error::InvalidParameterApprovalThreshold
-        );
-
-        ensure!(
-            parameters.slashing_threshold_percentage > 0,
-            Error::InvalidParameterSlashingThreshold
-        );
-
-        // check stake parameters
-        if let Some(required_stake) = parameters.required_stake {
-            if let Some(staked_balance) = stake_balance {
-                ensure!(
-                    required_stake == staked_balance,
-                    Error::StakeDiffersFromRequired
-                );
-            } else {
-                return Err(Error::EmptyStake);
-            }
-        }
-
-        if stake_balance.is_some() && parameters.required_stake.is_none() {
-            return Err(Error::StakeShouldBeEmpty);
-        }
-
-        Ok(())
-    }
-
-    //TODO: candidate for invariant break or error saving to the state
-    /// Callback from StakingEventsHandler. Refunds unstaked imbalance back to the source account
-    pub fn refund_proposal_stake(stake_id: T::StakeId, imbalance: NegativeImbalance<T>) {
-        if <StakesProposals<T>>::exists(stake_id) {
-            //TODO: handle non existence
-
-            let proposal_id = Self::stakes_proposals(stake_id);
-
-            if <Proposals<T>>::exists(proposal_id) {
-                let proposal = Self::proposals(proposal_id);
-
-                if let Some(stake_data) = proposal.stake_data {
-                    //TODO: handle the result
-                    let _ = CurrencyOf::<T>::resolve_into_existing(
-                        &stake_data.source_account_id,
-                        imbalance,
-                    );
-                }
-            }
-        }
     }
 }
 

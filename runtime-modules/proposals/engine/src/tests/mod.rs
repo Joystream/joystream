@@ -58,7 +58,7 @@ impl Default for ProposalParametersFixture {
 #[derive(Clone)]
 struct DummyProposalFixture {
     parameters: ProposalParameters<u64, u64>,
-    origin: RawOrigin<u64>,
+    account_id: u64,
     proposer_id: u64,
     proposal_code: Vec<u8>,
     title: Vec<u8>,
@@ -83,7 +83,7 @@ impl Default for DummyProposalFixture {
                 grace_period: 0,
                 required_stake: None,
             },
-            origin: RawOrigin::Signed(1),
+            account_id: 1,
             proposer_id: 1,
             proposal_code: dummy_proposal.encode(),
             title,
@@ -106,8 +106,8 @@ impl DummyProposalFixture {
         DummyProposalFixture { parameters, ..self }
     }
 
-    fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        DummyProposalFixture { origin, ..self }
+    fn with_account_id(self, account_id: u64) -> Self {
+        DummyProposalFixture { account_id, ..self }
     }
 
     fn with_stake(self, stake_balance: BalanceOf<Test>) -> Self {
@@ -126,7 +126,7 @@ impl DummyProposalFixture {
 
     fn create_proposal_and_assert(self, result: Result<u32, Error>) -> Option<u32> {
         let proposal_id_result = ProposalsEngine::create_proposal(
-            self.origin.into(),
+            self.account_id,
             self.proposer_id,
             self.parameters,
             self.title,
@@ -280,14 +280,6 @@ fn create_dummy_proposal_succeeds() {
         let dummy_proposal = DummyProposalFixture::default();
 
         dummy_proposal.create_proposal_and_assert(Ok(1));
-    });
-}
-
-#[test]
-fn create_dummy_proposal_fails_with_insufficient_rights() {
-    initial_test_ext().execute_with(|| {
-        let dummy_proposal = DummyProposalFixture::default().with_origin(RawOrigin::None);
-        dummy_proposal.create_proposal_and_assert(Err(Error::Other("RequireSignedOrigin")));
     });
 }
 
@@ -948,7 +940,7 @@ fn create_dummy_proposal_succeeds_with_stake() {
 
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters_fixture.params())
-            .with_origin(RawOrigin::Signed(account_id))
+            .with_account_id(account_id)
             .with_stake(200);
 
         let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&account_id, 500);
@@ -986,7 +978,7 @@ fn create_dummy_proposal_fail_with_stake_on_empty_account() {
             ProposalParametersFixture::default().with_required_stake(required_stake);
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters_fixture.params())
-            .with_origin(RawOrigin::Signed(account_id))
+            .with_account_id(account_id)
             .with_stake(required_stake);
 
         dummy_proposal
@@ -1126,7 +1118,7 @@ fn finalize_proposal_using_stake_mocks_succeeds() {
                 ProposalParametersFixture::default().with_required_stake(stake_amount);
             let dummy_proposal = DummyProposalFixture::default()
                 .with_parameters(parameters_fixture.params())
-                .with_origin(RawOrigin::Signed(account_id))
+                .with_account_id(account_id)
                 .with_stake(stake_amount);
 
             let _proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
@@ -1209,7 +1201,7 @@ fn finalize_proposal_using_stake_mocks_failed() {
                 ProposalParametersFixture::default().with_required_stake(stake_amount);
             let dummy_proposal = DummyProposalFixture::default()
                 .with_parameters(parameters_fixture.params())
-                .with_origin(RawOrigin::Signed(account_id))
+                .with_account_id(account_id)
                 .with_stake(stake_amount);
 
             let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();

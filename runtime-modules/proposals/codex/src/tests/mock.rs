@@ -129,7 +129,6 @@ parameter_types! {
 
 impl proposal_discussion::Trait for Test {
     type Event = ();
-    type ThreadAuthorOriginValidator = ();
     type PostAuthorOriginValidator = ();
     type ThreadId = u32;
     type PostId = u32;
@@ -154,6 +153,7 @@ parameter_types! {
 impl crate::Trait for Test {
     type TextProposalMaxLength = TextProposalMaxLength;
     type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
+    type MembershipOriginValidator = ();
 }
 
 impl system::Trait for Test {

@@ -23,6 +23,7 @@ use rstd::vec::Vec;
 use srml_support::{decl_error, decl_module, decl_storage, ensure, print};
 use system::{ensure_root, RawOrigin};
 
+use common::origin_validator::ActorOriginValidator;
 use proposal_engine::ProposalParameters;
 
 /// 'Proposals codex' substrate module Trait
@@ -34,6 +35,13 @@ pub trait Trait:
 
     /// Defines max wasm code length of the runtime upgrade proposal.
     type RuntimeUpgradeWasmProposalMaxLength: Get<u32>;
+
+    /// Validates member id and origin combination
+    type MembershipOriginValidator: ActorOriginValidator<
+        Self::Origin,
+        MemberId<Self>,
+        Self::AccountId,
+    >;
 }
 use srml_support::traits::{Currency, Get};
 
@@ -123,6 +131,8 @@ decl_module! {
             text: Vec<u8>,
             stake_balance: Option<BalanceOf<T>>,
         ) {
+            let account_id = T::MembershipOriginValidator::ensure_actor_origin(origin, member_id.clone())?;
+
             let parameters = proposal_types::parameters::text_proposal::<T>();
 
             ensure!(!text.is_empty(), Error::TextProposalIsEmpty);
@@ -143,16 +153,13 @@ decl_module! {
 
             let proposal_code = <Call<T>>::text_proposal(title.clone(), description.clone(), text);
 
-            let (cloned_origin1, cloned_origin2) =  Self::double_origin(origin);
-
             let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
-                cloned_origin1,
                 member_id,
                 title.clone(),
             )?;
 
             let proposal_id = <proposal_engine::Module<T>>::create_proposal(
-                cloned_origin2,
+                account_id,
                 member_id,
                 parameters,
                 title,
@@ -173,6 +180,8 @@ decl_module! {
             wasm: Vec<u8>,
             stake_balance: Option<BalanceOf<T>>,
         ) {
+            let account_id = T::MembershipOriginValidator::ensure_actor_origin(origin, member_id.clone())?;
+
             let parameters = proposal_types::parameters::upgrade_runtime::<T>();
 
             ensure!(!wasm.is_empty(), Error::RuntimeProposalIsEmpty);
@@ -193,16 +202,13 @@ decl_module! {
 
             let proposal_code = <Call<T>>::text_proposal(title.clone(), description.clone(), wasm);
 
-            let (cloned_origin1, cloned_origin2) =  Self::double_origin(origin);
-
             let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
-                cloned_origin1,
                 member_id,
                 title.clone(),
             )?;
 
             let proposal_id = <proposal_engine::Module<T>>::create_proposal(
-                cloned_origin2,
+                account_id,
                 member_id,
                 parameters,
                 title,

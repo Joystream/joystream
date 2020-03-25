@@ -844,7 +844,6 @@ parameter_types! {
 
 impl proposals_discussion::Trait for Runtime {
     type Event = Event;
-    type ThreadAuthorOriginValidator = MembershipOriginValidator<Self>;
     type PostAuthorOriginValidator = MembershipOriginValidator<Self>;
     type ThreadId = u32;
     type PostId = u32;
@@ -860,6 +859,7 @@ parameter_types! {
 }
 
 impl proposals_codex::Trait for Runtime {
+    type MembershipOriginValidator = MembershipOriginValidator<Self>;
     type TextProposalMaxLength = TextProposalMaxLength;
     type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
 }

@@ -56,13 +56,6 @@ pub trait Trait: system::Trait + membership::members::Trait {
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    /// Validates thread author id and origin combination
-    type ThreadAuthorOriginValidator: ActorOriginValidator<
-        Self::Origin,
-        MemberId<Self>,
-        Self::AccountId,
-    >;
-
     /// Validates post author id and origin combination
     type PostAuthorOriginValidator: ActorOriginValidator<
         Self::Origin,
@@ -259,12 +252,9 @@ impl<T: Trait> Module<T> {
     /// Create the discussion thread. Cannot add more threads than 'predefined limit = MaxThreadInARowNumber'
     /// times in a row by the same author.
     pub fn create_thread(
-        origin: T::Origin,
         thread_author_id: MemberId<T>,
         title: Vec<u8>,
     ) -> Result<T::ThreadId, Error> {
-        T::ThreadAuthorOriginValidator::ensure_actor_origin(origin, thread_author_id.clone())?;
-
         Self::ensure_can_create_thread(&title, thread_author_id.clone())?;
 
         let next_thread_count_value = Self::thread_count() + 1;
