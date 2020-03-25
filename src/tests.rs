@@ -1491,8 +1491,10 @@ fn reply_editing_ownership_error() {
 
 #[test]
 fn reaction_success() {
+
+    const REACTION_INDEX: <Runtime as Trait>::ReactionsNumber = 4;
+
     ExtBuilder::<Runtime>::default().build().execute_with(|| {
-        const REACTION_INDEX: <Runtime as Trait>::ReactionsNumber = 4;
 
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
@@ -1542,15 +1544,15 @@ fn reaction_success() {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        // React to a reply twice to check flipping performed
+        // React to a reply twice to check, that flipping performed
         for _ in 0..2 {
-            react(
+            assert_ok!(react(
                 SECOND_OWNER_ORIGIN,
                 REACTION_INDEX,
                 FIRST_ID,
                 FIRST_ID,
                 Some(FIRST_ID),
-            );
+            ));
         }
 
         // Reply state after reaction extrinsic performed
@@ -1574,6 +1576,214 @@ fn reaction_success() {
             reply_reactions_updated_event,
             number_of_events_before_call + 2,
         )
+    })
+}
+
+#[test]
+fn reaction_invalid_index() {
+
+    const REACTIONS_MAX_NUMBER:  <Runtime as Trait>::ReactionsNumber = 5;
+
+    ExtBuilder::<Runtime>::default()
+    .reactions_max_number(REACTIONS_MAX_NUMBER)
+    .build()
+    .execute_with(|| {
+        // Create blog for future posts
+        create_blog(FIRST_OWNER_ORIGIN);
+
+        create_post(FIRST_OWNER_ORIGIN, FIRST_ID, PostType::Valid);
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // React to a post
+        // Should fail, as last index in configured reactions array is less by one than array length
+        let react_result = react(
+            SECOND_OWNER_ORIGIN,
+            REACTIONS_MAX_NUMBER,
+            FIRST_ID,
+            FIRST_ID,
+            None,
+        );
+
+        // Failure checked
+        assert_failure(
+            react_result,
+            INVALID_REACTION_INDEX,
+            number_of_events_before_call,
+        );
+    })
+}
+
+#[test]
+fn reaction_blog_not_found() {
+
+    const REACTION_INDEX: <Runtime as Trait>::ReactionsNumber = 4;
+
+    ExtBuilder::<Runtime>::default()
+        .build()
+        .execute_with(|| {
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // React to a post
+        let react_result = react(
+            SECOND_OWNER_ORIGIN,
+            REACTION_INDEX,
+            FIRST_ID,
+            FIRST_ID,
+            None,
+        );
+
+        // Failure checked
+        assert_failure(
+            react_result,
+            BLOG_NOT_FOUND,
+            number_of_events_before_call,
+        );
+    })
+}
+
+#[test]
+fn reaction_post_not_found() {
+
+    const REACTION_INDEX: <Runtime as Trait>::ReactionsNumber = 4;
+
+    ExtBuilder::<Runtime>::default()
+        .build()
+        .execute_with(|| {
+
+        create_blog(FIRST_OWNER_ORIGIN);
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // React to a post
+        let react_result = react(
+            SECOND_OWNER_ORIGIN,
+            REACTION_INDEX,
+            FIRST_ID,
+            FIRST_ID,
+            None,
+        );
+
+        // Failure checked
+        assert_failure(
+            react_result,
+            POST_NOT_FOUND,
+            number_of_events_before_call,
+        );
+    })
+}
+
+#[test]
+fn reaction_reply_not_found() {
+
+    const REACTION_INDEX: <Runtime as Trait>::ReactionsNumber = 4;
+
+    ExtBuilder::<Runtime>::default()
+        .build()
+        .execute_with(|| {
+        // Create blog for future posts
+        create_blog(FIRST_OWNER_ORIGIN);
+
+        create_post(FIRST_OWNER_ORIGIN, FIRST_ID, PostType::Valid);
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // React to a reply
+        let react_result = react(
+            SECOND_OWNER_ORIGIN,
+            REACTION_INDEX,
+            FIRST_ID,
+            FIRST_ID,
+            Some(FIRST_ID),
+        );
+
+        // Failure checked
+        assert_failure(
+            react_result,
+            REPLY_NOT_FOUND,
+            number_of_events_before_call,
+        );
+    })
+}
+
+#[test]
+fn reaction_blog_locked_error() {
+
+    const REACTION_INDEX: <Runtime as Trait>::ReactionsNumber = 4;
+
+    ExtBuilder::<Runtime>::default()
+        .build()
+        .execute_with(|| {
+
+        // Create blog for future posts
+        create_blog(FIRST_OWNER_ORIGIN);
+
+        create_post(FIRST_OWNER_ORIGIN, FIRST_ID, PostType::Valid);
+
+        // Lock block to forbid mutations
+        lock_blog(FIRST_OWNER_ORIGIN, FIRST_ID);
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // React to a post
+        let react_result = react(
+            SECOND_OWNER_ORIGIN,
+            REACTION_INDEX,
+            FIRST_ID,
+            FIRST_ID,
+            None,
+        );
+
+        // Failure checked
+        assert_failure(
+            react_result,
+            BLOG_LOCKED_ERROR,
+            number_of_events_before_call,
+        );
+    })
+}
+
+#[test]
+fn reaction_post_locked_error() {
+
+    const REACTION_INDEX: <Runtime as Trait>::ReactionsNumber = 4;
+
+    ExtBuilder::<Runtime>::default()
+        .build()
+        .execute_with(|| {
+
+        // Create blog for future posts
+        create_blog(FIRST_OWNER_ORIGIN);
+
+        create_post(FIRST_OWNER_ORIGIN, FIRST_ID, PostType::Valid);
+
+        // Lock block to forbid mutations
+        lock_post(FIRST_OWNER_ORIGIN, FIRST_ID, FIRST_ID);
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // React to a post
+        let react_result = react(
+            SECOND_OWNER_ORIGIN,
+            REACTION_INDEX,
+            FIRST_ID,
+            FIRST_ID,
+            None,
+        );
+
+        // Failure checked
+        assert_failure(
+            react_result,
+            POST_LOCKED_ERROR,
+            number_of_events_before_call,
+        );
     })
 }
 
