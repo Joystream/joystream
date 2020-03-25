@@ -337,6 +337,25 @@ pub(crate) struct FinalizedProposalData<
     pub finalized_at: BlockNumber,
 }
 
+/// Data container for the approved proposal results
+pub(crate) struct ApprovedProposalData<
+    ProposalId,
+    BlockNumber,
+    ProposerId,
+    Balance,
+    StakeId,
+    AccountId,
+> {
+    /// Proposal id
+    pub proposal_id: ProposalId,
+
+    /// Proposal to be finalized
+    pub proposal: Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId>,
+
+    /// Proposal finalisation status data
+    pub finalisation_status_data: FinalizationData<BlockNumber>,
+}
+
 #[cfg(test)]
 mod tests {
     use crate::*;

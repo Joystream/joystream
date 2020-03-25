@@ -48,6 +48,7 @@ use srml_support::{
 };
 use system::{ensure_root, RawOrigin};
 
+use crate::types::ApprovedProposalData;
 use common::origin_validator::ActorOriginValidator;
 use srml_support::dispatch::Dispatchable;
 
@@ -299,12 +300,12 @@ decl_module! {
                 Self::finalize_proposal(proposal_data.proposal_id, proposal_data.status);
             }
 
-            let executable_proposal_ids =
-                Self::get_approved_proposal_with_expired_grace_period_ids();
+            let executable_proposals =
+                Self::get_approved_proposal_with_expired_grace_period();
 
             // Execute approved proposals with expired grace period
-            for  proposal_id in executable_proposal_ids {
-                Self::execute_proposal(proposal_id);
+            for approved_proosal in executable_proposals {
+                Self::execute_proposal(approved_proosal);
             }
         }
     }
@@ -490,43 +491,38 @@ impl<T: Trait> Module<T> {
     }
 
     // Executes approved proposal code
-    fn execute_proposal(proposal_id: T::ProposalId) {
-        let mut proposal = Self::proposals(proposal_id);
+    fn execute_proposal(approved_proposal: ApprovedProposal<T>) {
+        let proposal_code = Self::proposal_codes(approved_proposal.proposal_id);
 
-        // Execute only proposals with correct status
-        if let ProposalStatus::Finalized(finalized_status) = proposal.status.clone() {
-            let proposal_code = Self::proposal_codes(proposal_id);
+        let proposal_code_result = T::DispatchableCallCode::decode(&mut &proposal_code[..]);
 
-            let proposal_code_result = T::DispatchableCallCode::decode(&mut &proposal_code[..]);
-
-            let approved_proposal_status = match proposal_code_result {
-                Ok(proposal_code) => {
-                    if let Err(error) = proposal_code.dispatch(T::Origin::from(RawOrigin::Root)) {
-                        ApprovedProposalStatus::failed_execution(
-                            error.into().message.unwrap_or("Dispatch error"),
-                        )
-                    } else {
-                        ApprovedProposalStatus::Executed
-                    }
+        let approved_proposal_status = match proposal_code_result {
+            Ok(proposal_code) => {
+                if let Err(error) = proposal_code.dispatch(T::Origin::from(RawOrigin::Root)) {
+                    ApprovedProposalStatus::failed_execution(
+                        error.into().message.unwrap_or("Dispatch error"),
+                    )
+                } else {
+                    ApprovedProposalStatus::Executed
                 }
-                Err(error) => ApprovedProposalStatus::failed_execution(error.what()),
-            };
+            }
+            Err(error) => ApprovedProposalStatus::failed_execution(error.what()),
+        };
 
-            let proposal_execution_status =
-                finalized_status.create_approved_proposal_status(approved_proposal_status);
+        let proposal_execution_status = approved_proposal
+            .finalisation_status_data
+            .create_approved_proposal_status(approved_proposal_status);
 
-            proposal.status = proposal_execution_status.clone();
-            <Proposals<T>>::insert(proposal_id, proposal);
+        let mut proposal = approved_proposal.proposal;
+        proposal.status = proposal_execution_status.clone();
+        <Proposals<T>>::insert(approved_proposal.proposal_id, proposal);
 
-            Self::deposit_event(RawEvent::ProposalStatusUpdated(
-                proposal_id,
-                proposal_execution_status,
-            ));
-        }
+        Self::deposit_event(RawEvent::ProposalStatusUpdated(
+            approved_proposal.proposal_id,
+            proposal_execution_status,
+        ));
 
-        // Remove proposals from the 'pending execution' queue even in case of not finalized status
-        // to prevent eternal cycles.
-        <PendingExecutionProposalIds<T>>::remove(&proposal_id);
+        <PendingExecutionProposalIds<T>>::remove(&approved_proposal.proposal_id);
     }
 
     // Performs all actions on proposal finalization:
@@ -606,13 +602,22 @@ impl<T: Trait> Module<T> {
     }
 
     // Enumerates approved proposals and checks their grace period expiration
-    fn get_approved_proposal_with_expired_grace_period_ids() -> Vec<T::ProposalId> {
+    fn get_approved_proposal_with_expired_grace_period() -> Vec<ApprovedProposal<T>> {
         <PendingExecutionProposalIds<T>>::enumerate()
             .filter_map(|(proposal_id, _)| {
                 let proposal = Self::proposals(proposal_id);
 
                 if proposal.is_grace_period_expired(Self::current_block()) {
-                    Some(proposal_id)
+                    // this should be true, because it was tested inside is_grace_period_expired()
+                    if let ProposalStatus::Finalized(finalisation_data) = proposal.status.clone() {
+                        Some(ApprovedProposalData {
+                            proposal_id,
+                            proposal,
+                            finalisation_status_data: finalisation_data,
+                        })
+                    } else {
+                        None
+                    }
                 } else {
                     None
                 }
@@ -639,6 +644,16 @@ impl<T: Trait> Module<T> {
 
 // Simplification of the 'FinalizedProposalData' type
 type FinalizedProposal<T> = FinalizedProposalData<
+    <T as Trait>::ProposalId,
+    <T as system::Trait>::BlockNumber,
+    MemberId<T>,
+    types::BalanceOf<T>,
+    <T as stake::Trait>::StakeId,
+    <T as system::Trait>::AccountId,
+>;
+
+// Simplification of the 'ApprovedProposalData' type
+type ApprovedProposal<T> = ApprovedProposalData<
     <T as Trait>::ProposalId,
     <T as system::Trait>::BlockNumber,
     MemberId<T>,
