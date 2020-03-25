@@ -28,6 +28,7 @@ use srml_support::traits::Get;
 use types::{Post, Thread, ThreadCounter};
 
 use common::origin_validator::ActorOriginValidator;
+use srml_support::dispatch::DispatchResult;
 
 type MemberId<T> = <T as membership::members::Trait>::MemberId;
 
@@ -264,19 +265,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<T::ThreadId, Error> {
         T::ThreadAuthorOriginValidator::ensure_actor_origin(origin, thread_author_id.clone())?;
 
-        ensure!(!title.is_empty(), Error::EmptyTitleProvided);
-        ensure!(
-            title.len() as u32 <= T::ThreadTitleLengthLimit::get(),
-            Error::TitleIsTooLong
-        );
-
-        // get new 'threads in a row' counter for the author
-        let current_thread_counter = Self::get_updated_thread_counter(thread_author_id.clone());
-
-        ensure!(
-            current_thread_counter.counter as u32 <= T::MaxThreadInARowNumber::get(),
-            Error::MaxThreadInARowLimitExceeded
-        );
+        Self::ensure_can_create_thread(&title, thread_author_id.clone())?;
 
         let next_thread_count_value = Self::thread_count() + 1;
         let new_thread_id = next_thread_count_value;
@@ -286,6 +275,9 @@ impl<T: Trait> Module<T> {
             created_at: Self::current_block(),
             author_id: thread_author_id.clone(),
         };
+
+        // get new 'threads in a row' counter for the author
+        let current_thread_counter = Self::get_updated_thread_counter(thread_author_id.clone());
 
         // mutation
 
@@ -310,5 +302,30 @@ impl<T: Trait> Module<T> {
 
         // else return new counter (set with 1 thread number)
         ThreadCounter::new(author_id)
+    }
+
+    /// Ensures thread can be created.
+    /// Checks:
+    /// - title is valid
+    /// - max thread in a row by the same author
+    pub fn ensure_can_create_thread(
+        title: &[u8],
+        thread_author_id: MemberId<T>,
+    ) -> DispatchResult<Error> {
+        ensure!(!title.is_empty(), Error::EmptyTitleProvided);
+        ensure!(
+            title.len() as u32 <= T::ThreadTitleLengthLimit::get(),
+            Error::TitleIsTooLong
+        );
+
+        // get new 'threads in a row' counter for the author
+        let current_thread_counter = Self::get_updated_thread_counter(thread_author_id.clone());
+
+        ensure!(
+            current_thread_counter.counter as u32 <= T::MaxThreadInARowNumber::get(),
+            Error::MaxThreadInARowLimitExceeded
+        );
+
+        Ok(())
     }
 }

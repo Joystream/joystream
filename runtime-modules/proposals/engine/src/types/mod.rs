@@ -18,9 +18,7 @@ pub use proposal_statuses::{
     ApprovedProposalStatus, FinalizationData, ProposalDecisionStatus, ProposalStatus,
 };
 pub(crate) use stakes::ProposalStakeManager;
-pub use stakes::{
-    DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider,
-};
+pub use stakes::{DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider};
 
 #[cfg(test)]
 pub(crate) use stakes::DefaultStakeHandler;

@@ -129,6 +129,18 @@ decl_module! {
             ensure!(text.len() as u32 <=  T::TextProposalMaxLength::get(),
                 Error::TextProposalSizeExceeded);
 
+            <proposal_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
+                &parameters,
+                &title,
+                &description,
+                stake_balance,
+            )?;
+
+            <proposal_discussion::Module<T>>::ensure_can_create_thread(
+                &title,
+                member_id.clone(),
+            )?;
+
             let proposal_code = <Call<T>>::text_proposal(title.clone(), description.clone(), text);
 
             let (cloned_origin1, cloned_origin2) =  Self::double_origin(origin);
@@ -166,6 +178,18 @@ decl_module! {
             ensure!(!wasm.is_empty(), Error::RuntimeProposalIsEmpty);
             ensure!(wasm.len() as u32 <= T::RuntimeUpgradeWasmProposalMaxLength::get(),
                 Error::RuntimeProposalSizeExceeded);
+
+            <proposal_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
+                &parameters,
+                &title,
+                &description,
+                stake_balance,
+            )?;
+
+            <proposal_discussion::Module<T>>::ensure_can_create_thread(
+                &title,
+                member_id.clone(),
+            )?;
 
             let proposal_code = <Call<T>>::text_proposal(title.clone(), description.clone(), wasm);
 

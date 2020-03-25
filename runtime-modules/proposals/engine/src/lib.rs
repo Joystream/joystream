@@ -26,8 +26,8 @@
 use types::FinalizedProposalData;
 use types::ProposalStakeManager;
 pub use types::{
-    ApprovedProposalStatus, FinalizationData, Proposal, ProposalDecisionStatus, ProposalParameters,
-    ProposalStatus, ActiveStake, VotingResults,
+    ActiveStake, ApprovedProposalStatus, FinalizationData, Proposal, ProposalDecisionStatus,
+    ProposalParameters, ProposalStatus, VotingResults,
 };
 pub use types::{BalanceOf, CurrencyOf, NegativeImbalance};
 pub use types::{DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider};
@@ -560,12 +560,12 @@ impl<T: Trait> Module<T> {
         };
     }
 
-    // Performs all checks for the proposal creation:
-    // - title, body lengths
-    // - mac active proposal
-    // - provided parameters: approval_threshold_percentage and slashing_threshold_percentage > 0
-    // - provided stake balance and parameters.required_stake are valid
-    fn ensure_create_proposal_parameters_are_valid(
+    /// Performs all checks for the proposal creation:
+    /// - title, body lengths
+    /// - mac active proposal
+    /// - provided parameters: approval_threshold_percentage and slashing_threshold_percentage > 0
+    /// - provided stake balance and parameters.required_stake are valid
+    pub fn ensure_create_proposal_parameters_are_valid(
         parameters: &ProposalParameters<T::BlockNumber, types::BalanceOf<T>>,
         title: &[u8],
         description: &[u8],

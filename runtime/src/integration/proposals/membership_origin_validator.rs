@@ -19,7 +19,7 @@ impl<T: crate::members::Trait>
     /// the membership module
     fn ensure_actor_origin(
         origin: <T as system::Trait>::Origin,
-        actor_id: MemberId<T>,
+        actor_id: MemberId<T>, // From<u64>
     ) -> Result<<T as system::Trait>::AccountId, &'static str> {
         // check valid signed account_id
         let account_id = ensure_signed(origin)?;
