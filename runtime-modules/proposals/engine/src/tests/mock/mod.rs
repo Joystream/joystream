@@ -115,7 +115,7 @@ impl crate::Trait for Test {
     type TitleMaxLength = TitleMaxLength;
     type DescriptionMaxLength = DescriptionMaxLength;
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
-    type ProposalCode = proposals::Call<Test>;
+    type DispatchableCallCode = proposals::Call<Test>;
 }
 
 impl Default for proposals::Call<Test> {

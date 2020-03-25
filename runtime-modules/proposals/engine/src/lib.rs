@@ -27,7 +27,7 @@ use types::FinalizedProposalData;
 use types::ProposalStakeManager;
 pub use types::{
     ApprovedProposalStatus, FinalizationData, Proposal, ProposalDecisionStatus, ProposalParameters,
-    ProposalStatus, StakeData, VotingResults,
+    ProposalStatus, ActiveStake, VotingResults,
 };
 pub use types::{BalanceOf, CurrencyOf, NegativeImbalance};
 pub use types::{DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider};
@@ -95,7 +95,7 @@ pub trait Trait:
     type MaxActiveProposalLimit: Get<u32>;
 
     /// Proposals executable code. Can be instantiated by external module Call enum members.
-    type ProposalCode: Parameter + Dispatchable<Origin = Self::Origin> + Default;
+    type DispatchableCallCode: Parameter + Dispatchable<Origin = Self::Origin> + Default;
 }
 
 decl_event!(
@@ -190,13 +190,13 @@ impl From<system::Error> for Error {
 decl_storage! {
     pub trait Store for Module<T: Trait> as ProposalEngine{
         /// Map proposal by its id.
-        pub Proposals get(fn proposals): map T::ProposalId => ProposalObject<T>;
+        pub Proposals get(fn proposals): map T::ProposalId => ProposalOf<T>;
 
         /// Count of all proposals that have been created.
         pub ProposalCount get(fn proposal_count): u32;
 
         /// Map proposal executable code by proposal id.
-        pub ProposalCode get(fn proposal_codes): map T::ProposalId =>  Vec<u8>;
+        pub DispatchableCallCode get(fn proposal_codes): map T::ProposalId =>  Vec<u8>;
 
         /// Count of active proposals.
         pub ActiveProposalCount get(fn active_proposal_count): u32;
@@ -319,7 +319,7 @@ impl<T: Trait> Module<T> {
         title: Vec<u8>,
         description: Vec<u8>,
         stake_balance: Option<types::BalanceOf<T>>,
-        proposal_code: Vec<u8>,
+        encoded_dispatchable_call_code: Vec<u8>,
     ) -> Result<T::ProposalId, Error> {
         let account_id =
             T::ProposerOriginValidator::ensure_actor_origin(origin, proposer_id.clone())?;
@@ -348,7 +348,7 @@ impl<T: Trait> Module<T> {
 
         let mut stake_data = None;
         if let Some(stake_id) = stake_id_result {
-            stake_data = Some(StakeData {
+            stake_data = Some(ActiveStake {
                 stake_id,
                 source_account_id: account_id,
             });
@@ -368,7 +368,7 @@ impl<T: Trait> Module<T> {
         };
 
         <Proposals<T>>::insert(proposal_id, new_proposal);
-        <ProposalCode<T>>::insert(proposal_id, proposal_code);
+        <DispatchableCallCode<T>>::insert(proposal_id, encoded_dispatchable_call_code);
         <ActiveProposalIds<T>>::insert(proposal_id, ());
         ProposalCount::put(next_proposal_count_value);
         Self::increase_active_proposal_counter();
@@ -421,7 +421,7 @@ impl<T: Trait> Module<T> {
         if let ProposalStatus::Finalized(finalized_status) = proposal.status.clone() {
             let proposal_code = Self::proposal_codes(proposal_id);
 
-            let proposal_code_result = T::ProposalCode::decode(&mut &proposal_code[..]);
+            let proposal_code_result = T::DispatchableCallCode::decode(&mut &proposal_code[..]);
 
             let approved_proposal_status = match proposal_code_result {
                 Ok(proposal_code) => {
@@ -494,7 +494,7 @@ impl<T: Trait> Module<T> {
 
     // Slashes the stake and perform unstake only in case of existing stake
     fn slash_and_unstake(
-        current_stake_data: Option<StakeData<T::StakeId, T::AccountId>>,
+        current_stake_data: Option<ActiveStake<T::StakeId, T::AccountId>>,
         slash_balance: BalanceOf<T>,
     ) -> Result<(), &'static str> {
         // only if stake exists
@@ -651,7 +651,7 @@ type FinalizedProposal<T> = FinalizedProposalData<
 >;
 
 // Simplification of the 'Proposal' type
-type ProposalObject<T> = Proposal<
+type ProposalOf<T> = Proposal<
     <T as system::Trait>::BlockNumber,
     MemberId<T>,
     types::BalanceOf<T>,

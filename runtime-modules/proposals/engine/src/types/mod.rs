@@ -116,7 +116,7 @@ impl VotingResults {
 /// Contains created stake id and source account for the stake balance
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, Copy, PartialEq, Eq, Debug)]
-pub struct StakeData<StakeId, AccountId> {
+pub struct ActiveStake<StakeId, AccountId> {
     /// Created stake id for the proposal
     pub stake_id: StakeId,
 
@@ -150,7 +150,7 @@ pub struct Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId> {
     pub voting_results: VotingResults,
 
     /// Stake data for the proposal
-    pub stake_data: Option<StakeData<StakeId, AccountId>>,
+    pub stake_data: Option<ActiveStake<StakeId, AccountId>>,
 }
 
 impl<BlockNumber, ProposerId, Balance, StakeId, AccountId>

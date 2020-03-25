@@ -967,7 +967,7 @@ fn create_dummy_proposal_succeeds_with_stake() {
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
-                stake_data: Some(StakeData {
+                stake_data: Some(ActiveStake {
                     stake_id: 0, // valid stake_id
                     source_account_id: 1
                 }),
@@ -1231,7 +1231,7 @@ fn finalize_proposal_using_stake_mocks_failed() {
                     title: b"title".to_vec(),
                     description: b"description".to_vec(),
                     voting_results: VotingResults::default(),
-                    stake_data: Some(StakeData {
+                    stake_data: Some(ActiveStake {
                         stake_id: 1,
                         source_account_id: 1
                     }),

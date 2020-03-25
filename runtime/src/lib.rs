@@ -827,7 +827,7 @@ impl proposals_engine::Trait for Runtime {
     type TitleMaxLength = ProposalTitleMaxLength;
     type DescriptionMaxLength = ProposalDescriptionMaxLength;
     type MaxActiveProposalLimit = ProposalMaxActiveProposalLimit;
-    type ProposalCode = Call;
+    type DispatchableCallCode = Call;
 }
 impl Default for Call {
     fn default() -> Self {
