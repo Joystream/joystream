@@ -30,7 +30,7 @@ type MaxNumber = u32;
 type MaxConsecutiveRepliesNumber = u16;
 
 /// The pallet's configuration trait.
-pub trait Trait: system::Trait {
+pub trait Trait: system::Trait + Default {
     /// Origin from which blog owner must come.
     type BlogOwnerEnsureOrigin: EnsureOrigin<Self::Origin, Success = Self::AccountId>;
 
@@ -106,8 +106,8 @@ pub trait Trait: system::Trait {
         + PartialEq;
 }
 
-#[derive(Encode, Decode, Clone, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq)]
 pub struct Blog<T: Trait> {
     // Locking status
     locked: bool,
@@ -115,18 +115,6 @@ pub struct Blog<T: Trait> {
     posts_count: T::PostId,
     // Blog owner id, associated with blog owner
     owner: T::BlogOwnerId,
-}
-
-/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED DUE TO A BAD STORAGE MODEL IN SUBSTRATE***
-impl<T: Trait> Default for Blog<T> {
-    fn default() -> Self {
-        Self {
-            // Blog default locking status
-            locked: false,
-            posts_count: T::PostId::default(),
-            owner: T::BlogOwnerId::default(),
-        }
-    }
 }
 
 impl<T: Trait> Blog<T> {
@@ -169,7 +157,7 @@ impl<T: Trait> Blog<T> {
     }
 }
 
-#[derive(Encode, Decode, Clone, PartialEq)]
+#[derive(Encode, Default, Decode, Clone, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct Post<T: Trait> {
     // Locking status
@@ -180,20 +168,6 @@ pub struct Post<T: Trait> {
     replies_count: T::ReplyId,
     // AccountId -> All presented reactions state mapping
     reactions: BTreeMap<T::AccountId, Vec<bool>>,
-}
-
-/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED DUE TO A BAD STORAGE MODEL IN SUBSTRATE***
-impl<T: Trait> Default for Post<T> {
-    fn default() -> Self {
-        Self {
-            // Post default locking status
-            locked: false,
-            title: vec![],
-            body: vec![],
-            replies_count: T::ReplyId::default(),
-            reactions: BTreeMap::default(),
-        }
-    }
 }
 
 impl<T: Trait> Post<T> {
@@ -279,7 +253,7 @@ impl<T: Trait> Default for Parent<T> {
     }
 }
 
-#[derive(Encode, Decode, Clone, PartialEq)]
+#[derive(Encode, Decode, Clone, Default, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct Reply<T: Trait> {
     // Reply text content
@@ -292,19 +266,6 @@ pub struct Reply<T: Trait> {
     block_number: T::BlockNumber,
     // AccountId -> All presented reactions state mapping
     reactions: BTreeMap<T::AccountId, Vec<bool>>,
-}
-
-/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED DUE TO A BAD STORAGE MODEL IN SUBSTRATE***
-impl<T: Trait> Default for Reply<T> {
-    fn default() -> Self {
-        Self {
-            text: vec![],
-            owner: T::AccountId::default(),
-            parent_id: Parent::<T>::default(),
-            block_number: T::BlockNumber::default(),
-            reactions: BTreeMap::default(),
-        }
-    }
 }
 
 impl<T: Trait> Reply<T> {

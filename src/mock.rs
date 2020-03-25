@@ -16,7 +16,7 @@ impl_outer_origin! {
     pub enum Origin for Runtime {}
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, Default, PartialEq, Eq, Debug)]
 pub struct Runtime;
 
 parameter_types! {
