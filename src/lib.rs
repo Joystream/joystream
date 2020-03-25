@@ -12,11 +12,6 @@ use srml_support::{
 };
 use system::{self, ensure_signed};
 
-use rstd::{
-    self,
-    convert::{TryFrom, TryInto},
-};
-
 mod error_messages;
 mod mock;
 mod tests;
@@ -220,26 +215,10 @@ impl<T: Trait> Post<T> {
     fn update_reactions(&mut self, owner: &T::AccountId, index: T::ReactionsNumber) -> bool {
         mutate_reactions::<T>(&mut self.reactions, owner, index)
     }
-}
 
-/// Flips reaction status under given index and returns the result of this flip.
-/// If there is no reactions for this AccountId entry yet, 
-/// initialize a new reactions array and set reaction under given index
-fn mutate_reactions<T: Trait>(
-    reactions: &mut BTreeMap<T::AccountId, Vec<bool>>,
-    owner: &T::AccountId,
-    index: T::ReactionsNumber,
-) -> bool {
-    if let Some(reactions_array) = reactions.get_mut(owner) {
-        // Flip reaction value under given index
-        reactions_array[index.into() as usize] ^= true;
-        reactions_array[index.into() as usize]
-    } else {
-        let mut reactions_array = vec![false; T::ReactionsMaxNumber::get().into() as usize];
-        // Flip reaction value under given index
-        reactions_array[index.into() as usize] ^= true;
-        reactions.insert(owner.clone(), reactions_array);
-        true
+    /// Get reactions state, associated with reaction owner
+    pub fn get_reactions(&self, owner: &T::AccountId) -> Option<&Vec<bool>> {
+        self.reactions.get(owner)
     }
 }
 
@@ -304,9 +283,35 @@ impl<T: Trait> Reply<T> {
         mutate_reactions::<T>(&mut self.reactions, owner, index)
     }
 
+    /// Get reactions state, associated with reaction owner
+    pub fn get_reactions(&self, owner: &T::AccountId) -> Option<&Vec<bool>> {
+        self.reactions.get(owner)
+    }
+
     /// Return reply creation timestamp
     fn block_number(&self) -> T::BlockNumber {
         self.block_number
+    }
+}
+
+/// Flips reaction status under given index and returns the result of this flip.
+/// If there is no reactions for this AccountId entry yet,
+/// initialize a new reactions array and set reaction under given index
+fn mutate_reactions<T: Trait>(
+    reactions: &mut BTreeMap<T::AccountId, Vec<bool>>,
+    owner: &T::AccountId,
+    index: T::ReactionsNumber,
+) -> bool {
+    if let Some(reactions_array) = reactions.get_mut(owner) {
+        // Flip reaction value under given index
+        reactions_array[index.into() as usize] ^= true;
+        reactions_array[index.into() as usize]
+    } else {
+        let mut reactions_array = vec![false; T::ReactionsMaxNumber::get().into() as usize];
+        // Flip reaction value under given index
+        reactions_array[index.into() as usize] ^= true;
+        reactions.insert(owner.clone(), reactions_array);
+        true
     }
 }
 
@@ -623,7 +628,7 @@ decl_module! {
                     Self::deposit_event(RawEvent::ReplyReactionsUpdated(owner, blog_id, post_id, reply_id, index, reaction_status));
                 });
             } else {
-                
+
                 // Update post reactions
                 <PostById<T>>::mutate(blog_id, post_id, |inner_post| {
                     let reaction_status = inner_post.update_reactions(&owner, index);
@@ -904,7 +909,7 @@ decl_event!(
         BlogId = <T as Trait>::BlogId,
         PostId = <T as Trait>::PostId,
         ReplyId = <T as Trait>::ReplyId,
-        ReactionsNumber = <T as Trait>::ReactionsNumber,
+        ReactionIndex = <T as Trait>::ReactionsNumber,
         Status = bool,
     {
         BlogCreated(BlogOwnerId, BlogId),
@@ -917,7 +922,7 @@ decl_event!(
         ReplyCreated(AccountId, BlogId, PostId, ReplyId),
         DirectReplyCreated(AccountId, BlogId, PostId, ReplyId, ReplyId),
         ReplyEdited(BlogId, PostId, ReplyId),
-        PostReactionsUpdated(AccountId, BlogId, PostId, ReactionsNumber, Status),
-        ReplyReactionsUpdated(AccountId, BlogId, PostId, ReplyId, ReactionsNumber, Status),
+        PostReactionsUpdated(AccountId, BlogId, PostId, ReactionIndex, Status),
+        ReplyReactionsUpdated(AccountId, BlogId, PostId, ReplyId, ReactionIndex, Status),
     }
 );

@@ -254,6 +254,8 @@ impl<T: Trait> ExtBuilder<T> {
         CONSECUTIVE_REPLIES_MAX_NUMBER
             .with(|v| *v.borrow_mut() = self.consecutive_replies_max_number);
         CONSECUTIVE_REPLIES_INTERVAL.with(|v| *v.borrow_mut() = self.consecutive_replies_interval);
+
+        REACTIONS_MAX_NUMBER.with(|v| *v.borrow_mut() = self.reactions_number.into());
     }
 
     pub fn build(self) -> TestExternalities {
@@ -300,7 +302,7 @@ type RawTestEvent = RawEvent<
     <Runtime as Trait>::PostId,
     <Runtime as Trait>::ReplyId,
     <Runtime as Trait>::ReactionsNumber,
-    bool
+    bool,
 >;
 
 pub fn get_test_event(raw_event: RawTestEvent) -> TestEvent {
@@ -464,4 +466,16 @@ pub fn edit_reply(
 ) -> Result<(), &'static str> {
     let reply = get_reply_text(reply_type, true);
     TestBlogModule::edit_reply(Origin::signed(origin_id), blog_id, post_id, reply_id, reply)
+}
+
+// Reactions
+
+pub fn react(
+    origin_id: u64,
+    index: <Runtime as Trait>::ReactionsNumber,
+    blog_id: <Runtime as Trait>::BlogId,
+    post_id: <Runtime as Trait>::PostId,
+    reply_id: Option<<Runtime as Trait>::ReplyId>,
+) -> Result<(), &'static str> {
+    TestBlogModule::react(Origin::signed(origin_id), index, blog_id, post_id, reply_id)
 }

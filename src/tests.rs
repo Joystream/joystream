@@ -60,6 +60,18 @@ fn ensure_posts_equality(post: Option<Post<Runtime>>, editing: bool, locked: boo
     ));
 }
 
+fn ensure_reaction_status(
+    reactions: Option<&Vec<bool>>,
+    index: <Runtime as Trait>::ReactionsNumber,
+    status: bool,
+) {
+    // Ensure, that reaction status at given index is equal to expected one
+    assert!(matches!(
+        reactions,
+        Some(reactions) if reactions[index as usize] == status
+    ));
+}
+
 // Blogs
 #[test]
 fn blog_creation() {
@@ -1474,6 +1486,92 @@ fn reply_editing_ownership_error() {
             REPLY_OWNERSHIP_ERROR,
             number_of_events_before_call,
         );
+    })
+}
+
+#[test]
+fn reaction_success() {
+    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+        const REACTION_INDEX: <Runtime as Trait>::ReactionsNumber = 4;
+
+        // Create blog for future posts
+        create_blog(FIRST_OWNER_ORIGIN);
+
+        // Create post for future replies
+        create_post(FIRST_OWNER_ORIGIN, FIRST_ID, PostType::Valid);
+
+        let reaction_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // React to a post
+        assert_ok!(react(
+            SECOND_OWNER_ORIGIN,
+            REACTION_INDEX,
+            FIRST_ID,
+            FIRST_ID,
+            None,
+        ));
+
+        // Post state after reaction extrinsic performed
+        let post = post_by_id(FIRST_ID, FIRST_ID).unwrap();
+        ensure_reaction_status(post.get_reactions(&reaction_owner_id), REACTION_INDEX, true);
+
+        // Event checked
+        let post_reactions_updated_event = get_test_event(RawEvent::PostReactionsUpdated(
+            reaction_owner_id,
+            FIRST_ID,
+            FIRST_ID,
+            REACTION_INDEX,
+            true,
+        ));
+        assert_event_success(
+            post_reactions_updated_event,
+            number_of_events_before_call + 1,
+        );
+
+        create_reply(
+            FIRST_OWNER_ORIGIN,
+            FIRST_ID,
+            FIRST_ID,
+            None,
+            ReplyType::Valid,
+        );
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // React to a reply
+        react(
+            SECOND_OWNER_ORIGIN,
+            REACTION_INDEX,
+            FIRST_ID,
+            FIRST_ID,
+            Some(FIRST_ID),
+        );
+
+        // Reply state after reaction extrinsic performed
+        let reply = reply_by_id(FIRST_ID, FIRST_ID, FIRST_ID).unwrap();
+        ensure_reaction_status(
+            reply.get_reactions(&reaction_owner_id),
+            REACTION_INDEX,
+            true,
+        );
+
+        // Event checked
+        let reply_reactions_updated_event = get_test_event(RawEvent::ReplyReactionsUpdated(
+            reaction_owner_id,
+            FIRST_ID,
+            FIRST_ID,
+            FIRST_ID,
+            REACTION_INDEX,
+            true,
+        ));
+        assert_event_success(
+            reply_reactions_updated_event,
+            number_of_events_before_call + 1,
+        )
     })
 }
 
