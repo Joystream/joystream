@@ -1542,21 +1542,23 @@ fn reaction_success() {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        // React to a reply
-        react(
-            SECOND_OWNER_ORIGIN,
-            REACTION_INDEX,
-            FIRST_ID,
-            FIRST_ID,
-            Some(FIRST_ID),
-        );
+        // React to a reply twice to check flipping performed
+        for _ in 0..2 {
+            react(
+                SECOND_OWNER_ORIGIN,
+                REACTION_INDEX,
+                FIRST_ID,
+                FIRST_ID,
+                Some(FIRST_ID),
+            );
+        }
 
         // Reply state after reaction extrinsic performed
         let reply = reply_by_id(FIRST_ID, FIRST_ID, FIRST_ID).unwrap();
         ensure_reaction_status(
             reply.get_reactions(&reaction_owner_id),
             REACTION_INDEX,
-            true,
+            false,
         );
 
         // Event checked
@@ -1566,11 +1568,11 @@ fn reaction_success() {
             FIRST_ID,
             FIRST_ID,
             REACTION_INDEX,
-            true,
+            false,
         ));
         assert_event_success(
             reply_reactions_updated_event,
-            number_of_events_before_call + 1,
+            number_of_events_before_call + 2,
         )
     })
 }
