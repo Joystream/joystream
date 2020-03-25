@@ -511,17 +511,11 @@ fn begin_curator_applicant_review_success() {
             let opening =
                 <hiring::OpeningById<Test>>::get(&normal_opening_constructed.curator_opening_id);
             match opening.stage {
-                hiring::OpeningStage::Active {
-                    stage,
-                    applications_added,
-                    active_application_count,
-                    unstaking_application_count,
-                    deactivated_application_count,
-                } => {
+                hiring::OpeningStage::Active { stage, .. } => {
                     match stage {
                         hiring::ActiveOpeningStage::ReviewPeriod {
-                            started_accepting_applicants_at_block,
                             started_review_period_at_block,
+                            ..
                         } => {
                             /* OK */
                             // assert_eq!(started_accepting_applicants_at_block, 0);
@@ -921,12 +915,6 @@ impl UpdateCuratorRoleAccountFixture {
 
         assert_eq!(self.new_role_account, event_new_role_account);
     }
-
-    pub fn call_and_assert_failed_result(&self, error_message: &'static str) {
-        let call_result = self.call();
-
-        assert_eq!(call_result, Err(error_message));
-    }
 }
 
 #[test]
@@ -958,6 +946,7 @@ struct UpdateCuratorRewardAccountFixture {
 }
 
 impl UpdateCuratorRewardAccountFixture {
+    #[allow(dead_code)] // delete if the method is unnecessary
     fn call(&self) -> Result<(), &'static str> {
         ContentWorkingGroup::update_curator_reward_account(
             self.origin.clone(),
@@ -966,6 +955,7 @@ impl UpdateCuratorRewardAccountFixture {
         )
     }
 
+    #[allow(dead_code)] // delete if the method is unnecessary
     pub fn call_and_assert_success(&self) {
         let _original_curator = CuratorById::<Test>::get(self.curator_id);
 
@@ -995,12 +985,6 @@ impl UpdateCuratorRewardAccountFixture {
         assert_eq!(self.curator_id, event_curator_id);
 
         assert_eq!(self.new_reward_account, event_reward_account);
-    }
-
-    pub fn call_and_assert_failed_result(&self, error_message: &'static str) {
-        let call_result = self.call();
-
-        assert_eq!(call_result, Err(error_message));
     }
 }
 
@@ -1076,12 +1060,6 @@ impl LeaveCuratorRoleFixture {
          * recurringrewards, stake
          */
     }
-
-    pub fn call_and_assert_failed_result(&self, error_message: &'static str) {
-        let call_result = self.call();
-
-        assert_eq!(call_result, Err(error_message));
-    }
 }
 
 #[test]
@@ -1155,12 +1133,6 @@ impl TerminateCuratorRoleFixture {
          * recurringrewards, stake
          */
     }
-
-    pub fn call_and_assert_failed_result(&self, error_message: &'static str) {
-        let call_result = self.call();
-
-        assert_eq!(call_result, Err(error_message));
-    }
 }
 
 #[test]
@@ -1224,16 +1196,6 @@ impl SetLeadFixture {
             crate::RawEvent::LeadSet(new_lead_id)
         );
     }
-
-    pub fn call_and_assert_failed_result(&self, error_message: &'static str) {
-        let number_of_events_before_call = System::events().len();
-
-        let call_result = self.call();
-
-        assert_eq!(call_result, Err(error_message));
-
-        assert_eq!(System::events().len(), number_of_events_before_call);
-    }
 }
 
 #[test]
@@ -1287,16 +1249,6 @@ impl UnsetLeadFixture {
             get_last_event_or_panic(),
             crate::RawEvent::LeadUnset(original_lead_id)
         );
-    }
-
-    pub fn call_and_assert_failed_result(&self, error_message: &'static str) {
-        let number_of_events_before_call = System::events().len();
-
-        let call_result = self.call();
-
-        assert_eq!(call_result, Err(error_message));
-
-        assert_eq!(System::events().len(), number_of_events_before_call);
     }
 }
 
