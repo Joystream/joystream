@@ -19,7 +19,7 @@ impl<T: crate::members::Trait>
     /// the membership module
     fn ensure_actor_origin(
         origin: <T as system::Trait>::Origin,
-        actor_id: MemberId<T>, // From<u64>
+        actor_id: MemberId<T>,
     ) -> Result<<T as system::Trait>::AccountId, &'static str> {
         // check valid signed account_id
         let account_id = ensure_signed(origin)?;
@@ -29,7 +29,7 @@ impl<T: crate::members::Trait>
 
         if let Ok(profile) = profile_result {
             // whether the account_id belongs to the actor
-            if profile.root_account == account_id || profile.controller_account == account_id {
+            if profile.controller_account == account_id {
                 return Ok(account_id);
             } else {
                 return Err("Membership validation failed: given account doesn't match with profile accounts");
