@@ -217,24 +217,29 @@ impl<T: Trait> Post<T> {
     }
 
     /// Update reactions state
-    fn update_reactions(&mut self, owner: &T::AccountId, index: T::ReactionsNumber) {
+    fn update_reactions(&mut self, owner: &T::AccountId, index: T::ReactionsNumber) -> bool {
         mutate_reactions::<T>(&mut self.reactions, owner, index)
     }
 }
 
+/// Flips reaction status under given index and returns the result of this flip.
+/// If there is no reactions for this AccountId entry yet, 
+/// initialize a new reactions array and set reaction under given index
 fn mutate_reactions<T: Trait>(
     reactions: &mut BTreeMap<T::AccountId, Vec<bool>>,
     owner: &T::AccountId,
     index: T::ReactionsNumber,
-) {
+) -> bool {
     if let Some(reactions_array) = reactions.get_mut(owner) {
         // Flip reaction value under given index
         reactions_array[index.into() as usize] ^= true;
+        reactions_array[index.into() as usize]
     } else {
         let mut reactions_array = vec![false; T::ReactionsMaxNumber::get().into() as usize];
         // Flip reaction value under given index
         reactions_array[index.into() as usize] ^= true;
         reactions.insert(owner.clone(), reactions_array);
+        true
     }
 }
 
@@ -295,7 +300,7 @@ impl<T: Trait> Reply<T> {
     }
 
     /// Update reactions state
-    fn update_reactions(&mut self, owner: &T::AccountId, index: T::ReactionsNumber) {
+    fn update_reactions(&mut self, owner: &T::AccountId, index: T::ReactionsNumber) -> bool {
         mutate_reactions::<T>(&mut self.reactions, owner, index)
     }
 
@@ -609,15 +614,23 @@ decl_module! {
             //
 
             if let Some(reply_id) = reply_id {
+
                 // Update reply reactions
-                <ReplyById<T>>::mutate((blog_id, post_id, reply_id), |inner_reply| inner_reply.update_reactions(&owner, index));
-                // Trigger event
-                Self::deposit_event(RawEvent::ReplyReactionsUpdated(owner, blog_id, post_id, reply_id, index));
+                <ReplyById<T>>::mutate((blog_id, post_id, reply_id), |inner_reply| {
+                    let reaction_status = inner_reply.update_reactions(&owner, index);
+
+                    // Trigger event
+                    Self::deposit_event(RawEvent::ReplyReactionsUpdated(owner, blog_id, post_id, reply_id, index, reaction_status));
+                });
             } else {
+                
                 // Update post reactions
-                <PostById<T>>::mutate(blog_id, post_id, |inner_post| inner_post.update_reactions(&owner, index));
-                // Trigger event
-                Self::deposit_event(RawEvent::PostReactionsUpdated(owner, blog_id, post_id, index));
+                <PostById<T>>::mutate(blog_id, post_id, |inner_post| {
+                    let reaction_status = inner_post.update_reactions(&owner, index);
+
+                    // Trigger event
+                    Self::deposit_event(RawEvent::PostReactionsUpdated(owner, blog_id, post_id, index, reaction_status));
+                });
             }
         }
 
@@ -892,6 +905,7 @@ decl_event!(
         PostId = <T as Trait>::PostId,
         ReplyId = <T as Trait>::ReplyId,
         ReactionsNumber = <T as Trait>::ReactionsNumber,
+        Status = bool,
     {
         BlogCreated(BlogOwnerId, BlogId),
         BlogLocked(BlogOwnerId, BlogId),
@@ -903,7 +917,7 @@ decl_event!(
         ReplyCreated(AccountId, BlogId, PostId, ReplyId),
         DirectReplyCreated(AccountId, BlogId, PostId, ReplyId, ReplyId),
         ReplyEdited(BlogId, PostId, ReplyId),
-        PostReactionsUpdated(AccountId, BlogId, PostId, ReactionsNumber),
-        ReplyReactionsUpdated(AccountId, BlogId, PostId, ReplyId, ReactionsNumber),
+        PostReactionsUpdated(AccountId, BlogId, PostId, ReactionsNumber, Status),
+        ReplyReactionsUpdated(AccountId, BlogId, PostId, ReplyId, ReactionsNumber, Status),
     }
 );

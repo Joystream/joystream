@@ -300,6 +300,7 @@ type RawTestEvent = RawEvent<
     <Runtime as Trait>::PostId,
     <Runtime as Trait>::ReplyId,
     <Runtime as Trait>::ReactionsNumber,
+    bool
 >;
 
 pub fn get_test_event(raw_event: RawTestEvent) -> TestEvent {
