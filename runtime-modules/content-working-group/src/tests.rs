@@ -2186,7 +2186,7 @@ pub fn generate_too_long_length_buffer(constraint: &InputValidationLengthConstra
 }
 
 #[test]
-fn setting_mint_capacity() {
+fn increasing_mint_capacity() {
     const MINT_CAPACITY: u64 = 50000;
 
     TestExternalitiesBuilder::<Test>::default()
@@ -2196,7 +2196,27 @@ fn setting_mint_capacity() {
                 .build(),
         )
         .build()
-        .execute_with(|| {});
+        .execute_with(|| {
+            let mint_id = ContentWorkingGroup::mint();
+            let mint = Minting::mints(mint_id);
+            assert_eq!(mint.capacity(), MINT_CAPACITY);
+
+            let increase = 25000;
+            // Increasing mint capacity
+            let expected_new_capacity = MINT_CAPACITY + increase;
+            assert_ok!(ContentWorkingGroup::increase_mint_capacity(
+                Origin::ROOT,
+                increase
+            ));
+            // Excpected event after increasing
+            assert_eq!(
+                get_last_event_or_panic(),
+                crate::RawEvent::MintCapacityIncreased(mint_id, increase, expected_new_capacity)
+            );
+            // Excpected value of capacity after increasing
+            let mint = Minting::mints(mint_id);
+            assert_eq!(mint.capacity(), expected_new_capacity);
+        });
 }
 
 #[test]
