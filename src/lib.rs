@@ -220,6 +220,10 @@ impl<T: Trait> Post<T> {
     pub fn get_reactions(&self, owner: &T::AccountId) -> Option<&Vec<bool>> {
         self.reactions.get(owner)
     }
+
+    pub fn get_reactions_map(&self) -> &BTreeMap<T::AccountId, Vec<bool>> {
+        &self.reactions
+    }
 }
 
 /// Enum variant, representing reply`s parent type
@@ -286,6 +290,10 @@ impl<T: Trait> Reply<T> {
     /// Get reactions state, associated with reaction owner
     pub fn get_reactions(&self, owner: &T::AccountId) -> Option<&Vec<bool>> {
         self.reactions.get(owner)
+    }
+
+    pub fn get_reactions_map(&self) -> &BTreeMap<T::AccountId, Vec<bool>> {
+        &self.reactions
     }
 
     /// Return reply creation timestamp

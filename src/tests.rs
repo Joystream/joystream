@@ -1603,6 +1603,9 @@ fn reaction_invalid_index() {
                 None,
             );
 
+            // Ensure, that reactions related state left unchanged
+            assert!(reactions_state_left_unchanged(FIRST_ID, FIRST_ID, None));
+
             // Failure checked
             assert_failure(
                 react_result,
@@ -1629,6 +1632,9 @@ fn reaction_blog_not_found() {
             None,
         );
 
+        // Ensure, that reactions related state left unchanged
+        assert!(reactions_state_left_unchanged(FIRST_ID, FIRST_ID, None));
+
         // Failure checked
         assert_failure(react_result, BLOG_NOT_FOUND, number_of_events_before_call);
     })
@@ -1652,6 +1658,9 @@ fn reaction_post_not_found() {
             FIRST_ID,
             None,
         );
+
+        // Ensure, that reactions related state left unchanged
+        assert!(reactions_state_left_unchanged(FIRST_ID, FIRST_ID, None));
 
         // Failure checked
         assert_failure(react_result, POST_NOT_FOUND, number_of_events_before_call);
@@ -1679,6 +1688,13 @@ fn reaction_reply_not_found() {
             FIRST_ID,
             Some(FIRST_ID),
         );
+
+        // Ensure, that reactions related state left unchanged
+        assert!(reactions_state_left_unchanged(
+            FIRST_ID,
+            FIRST_ID,
+            Some(FIRST_ID)
+        ));
 
         // Failure checked
         assert_failure(react_result, REPLY_NOT_FOUND, number_of_events_before_call);
@@ -1709,6 +1725,9 @@ fn reaction_blog_locked_error() {
             FIRST_ID,
             None,
         );
+
+        // Ensure, that reactions related state left unchanged
+        assert!(reactions_state_left_unchanged(FIRST_ID, FIRST_ID, None));
 
         // Failure checked
         assert_failure(
@@ -1744,6 +1763,9 @@ fn reaction_post_locked_error() {
             None,
         );
 
+        // Ensure, that reactions related state left unchanged
+        assert!(reactions_state_left_unchanged(FIRST_ID, FIRST_ID, None));
+
         // Failure checked
         assert_failure(
             react_result,
@@ -1753,6 +1775,8 @@ fn reaction_post_locked_error() {
     })
 }
 
+// Probably an overkill now, as we already ensured,
+// that mutations are safe in runtime and tested all failure paths
 fn post_storage_unchanged(
     blog_id: <Runtime as Trait>::BlogId,
     post_id: <Runtime as Trait>::PostId,
@@ -1778,5 +1802,25 @@ fn replies_storage_unchanged(
         Some(_) => false,
         None if reply_by_id(blog_id, post_id, reply_id).is_none() => true,
         None => false,
+    }
+}
+
+fn reactions_state_left_unchanged(
+    blog_id: <Runtime as Trait>::BlogId,
+    post_id: <Runtime as Trait>::PostId,
+    reply_id: Option<<Runtime as Trait>::ReplyId>,
+) -> bool {
+    if let Some(reply_id) = reply_id {
+        match reply_by_id(blog_id, post_id, reply_id) {
+            Some(reply) if reply.get_reactions_map().is_empty() => true,
+            Some(_) => false,
+            None => true,
+        }
+    } else {
+        match post_by_id(blog_id, post_id) {
+            Some(post) if post.get_reactions_map().is_empty() => true,
+            Some(_) => false,
+            None => true,
+        }
     }
 }
