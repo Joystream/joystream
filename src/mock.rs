@@ -47,12 +47,6 @@ impl system::Trait for Runtime {
     type Version = ();
 }
 
-impl timestamp::Trait for Runtime {
-    type Moment = u64;
-    type OnTimestampSet = ();
-    type MinimumPeriod = ();
-}
-
 mod test_events {
     pub use crate::Event;
 }

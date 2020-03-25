@@ -24,7 +24,7 @@ type MaxNumber = u32;
 
 type MaxConsecutiveRepliesNumber = u16;
 
-/// The pallet's configuration trait.
+// The pallet's configuration trait.
 pub trait Trait: system::Trait + Default {
     /// Origin from which blog owner must come.
     type BlogOwnerEnsureOrigin: EnsureOrigin<Self::Origin, Success = Self::AccountId>;
@@ -32,7 +32,7 @@ pub trait Trait: system::Trait + Default {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    /// Security/configuration constraints
+    // Security/configuration constraints
 
     type PostTitleMaxLength: Get<MaxLength>;
 
@@ -52,7 +52,7 @@ pub trait Trait: system::Trait + Default {
     /// Max cosecutive replies interval in blocks passed
     type ConsecutiveRepliesInterval: Get<Self::BlockNumber>;
 
-    // Type, representing reactions number
+    /// Type, representing reactions number
     type ReactionsNumber: Parameter
         + Member
         + SimpleArithmetic
@@ -822,7 +822,7 @@ impl<T: Trait> Module<T> {
         let direct_replies_count = Self::get_replies_count(blog_id, post_id, Some(reply_id)) as u32;
 
         ensure!(
-            direct_replies_count < T::DirectRepliesMaxNumber::get().into(),
+            direct_replies_count < T::DirectRepliesMaxNumber::get(),
             DIRECT_REPLIES_LIMIT_REACHED
         );
 
@@ -836,7 +836,7 @@ impl<T: Trait> Module<T> {
         let replies_count = Self::get_replies_count(blog_id, post_id, None) as u32;
 
         ensure!(
-            replies_count < T::RepliesMaxNumber::get().into(),
+            replies_count < T::RepliesMaxNumber::get(),
             REPLIES_LIMIT_REACHED
         );
 
@@ -862,15 +862,11 @@ impl<T: Trait> Module<T> {
             // Get all replies, created in given interval
             .filter(|(_, reply)| {
                 // Overflow protection
-                if <system::Module<T>>::block_number() < T::ConsecutiveRepliesInterval::get().into()
+                if <system::Module<T>>::block_number() < T::ConsecutiveRepliesInterval::get()
                 {
                     true
-                } else if reply.block_number()
-                    > <system::Module<T>>::block_number() - T::ConsecutiveRepliesInterval::get()
-                {
-                    true
-                } else {
-                    false
+                } else { reply.block_number()
+                     > <system::Module<T>>::block_number() - T::ConsecutiveRepliesInterval::get()
                 }
             })
             .count()

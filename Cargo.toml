@@ -5,8 +5,6 @@ authors = ["iorveth"]
 edition = "2018"
 
 [dependencies]
-serde = { version = '1.0', optional = true }
-serde_derive = { version = '1.0', optional = true }
 rstd = { package = 'sr-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
 runtime-primitives = { package = 'sr-primitives', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
 srml-support = { package = 'srml-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
@@ -14,12 +12,6 @@ srml-support-procedural = { package = 'srml-support-procedural', git = 'https://
 system = { package = 'srml-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
 codec = { package = 'parity-scale-codec', version = '1.0.0', default-features = false, features = ['derive'] }
 mockall = {version = "0.6.0", optional = true}
-
-[dependencies.timestamp]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-timestamp'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
 [dependencies.runtime-io]
 default_features = false
@@ -37,13 +29,10 @@ mockall = "0.6.0"
 default = ['std']
 test = ['mockall']
 std = [
-	'serde',
-	'serde_derive',
 	'codec/std',
 	'rstd/std',
 	'runtime-io/std',
 	'runtime-primitives/std',
 	'srml-support/std',
 	'system/std',
-	'timestamp/std',
 ]
