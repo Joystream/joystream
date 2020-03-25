@@ -44,7 +44,7 @@ use rstd::prelude::*;
 use sr_primitives::traits::{DispatchResult, Zero};
 use srml_support::traits::{Currency, Get};
 use srml_support::{
-    decl_error, decl_event, decl_module, decl_storage, ensure, Parameter, StorageDoubleMap,
+    decl_error, decl_event, decl_module, decl_storage, ensure, print, Parameter, StorageDoubleMap,
 };
 use system::{ensure_root, RawOrigin};
 
@@ -106,6 +106,8 @@ decl_event!(
         <T as Trait>::ProposalId,
         MemberId = MemberId<T>,
         <T as system::Trait>::BlockNumber,
+        <T as system::Trait>::AccountId,
+        <T as stake::Trait>::StakeId,
     {
     	/// Emits on proposal creation.
         /// Params:
@@ -117,7 +119,7 @@ decl_event!(
         /// Params:
         /// - Id of a updated proposal.
         /// - New proposal status
-        ProposalStatusUpdated(ProposalId, ProposalStatus<BlockNumber>),
+        ProposalStatusUpdated(ProposalId, ProposalStatus<BlockNumber, StakeId, AccountId>),
 
         /// Emits on voting for the proposal
         /// Params:
@@ -236,7 +238,7 @@ decl_module! {
             ensure!(<Proposals<T>>::exists(proposal_id), Error::ProposalNotFound);
             let mut proposal = Self::proposals(proposal_id);
 
-            ensure!(proposal.status == ProposalStatus::Active, Error::ProposalFinalized);
+            ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::ProposalFinalized);
 
             let did_not_vote_before = !<VoteExistsByProposalByVoter<T>>::exists(
                 proposal_id,
@@ -265,7 +267,7 @@ decl_module! {
             let proposal = Self::proposals(proposal_id);
 
             ensure!(proposer_id == proposal.proposer_id, Error::NotAuthor);
-            ensure!(proposal.status == ProposalStatus::Active, Error::ProposalFinalized);
+            ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::ProposalFinalized);
 
             // mutation
 
@@ -279,7 +281,7 @@ decl_module! {
             ensure!(<Proposals<T>>::exists(proposal_id), Error::ProposalNotFound);
             let proposal = Self::proposals(proposal_id);
 
-            ensure!(proposal.status == ProposalStatus::Active, Error::ProposalFinalized);
+            ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::ProposalFinalized);
 
             // mutation
 
@@ -360,9 +362,8 @@ impl<T: Trait> Module<T> {
             title,
             description,
             proposer_id: proposer_id.clone(),
-            status: ProposalStatus::Active,
+            status: ProposalStatus::Active(stake_data),
             voting_results: VotingResults::default(),
-            stake_data,
         };
 
         <Proposals<T>>::insert(proposal_id, new_proposal);
@@ -444,12 +445,14 @@ impl<T: Trait> Module<T> {
             if <Proposals<T>>::exists(proposal_id) {
                 let proposal = Self::proposals(proposal_id);
 
-                if let Some(stake_data) = proposal.stake_data {
-                    //TODO: handle the result
-                    let _ = CurrencyOf::<T>::resolve_into_existing(
-                        &stake_data.source_account_id,
-                        imbalance,
-                    );
+                if let ProposalStatus::Active(active_stake_result) = proposal.status {
+                    if let Some(active_stake) = active_stake_result {
+                        //TODO: handle the result
+                        let _ = CurrencyOf::<T>::resolve_into_existing(
+                            &active_stake.source_account_id,
+                            imbalance,
+                        );
+                    }
                 }
             }
         }
@@ -537,31 +540,31 @@ impl<T: Trait> Module<T> {
 
         let mut proposal = Self::proposals(proposal_id);
 
-        if let ProposalDecisionStatus::Approved { .. } = decision_status {
-            <PendingExecutionProposalIds<T>>::insert(proposal_id, ());
+        if let ProposalStatus::Active(active_stake) = proposal.status.clone() {
+            if let ProposalDecisionStatus::Approved { .. } = decision_status {
+                <PendingExecutionProposalIds<T>>::insert(proposal_id, ());
+            }
+
+            // deal with stakes if necessary
+            let slash_balance =
+                Self::calculate_slash_balance(&decision_status, &proposal.parameters);
+            let slash_and_unstake_result =
+                Self::slash_and_unstake(active_stake.clone(), slash_balance);
+
+            // create finalized proposal status with error if any
+            let new_proposal_status = //TODO rename without an error
+            ProposalStatus::finalized_with_error(decision_status, slash_and_unstake_result.err(), active_stake, Self::current_block());
+
+            proposal.status = new_proposal_status.clone();
+            <Proposals<T>>::insert(proposal_id, proposal);
+
+            Self::deposit_event(RawEvent::ProposalStatusUpdated(
+                proposal_id,
+                new_proposal_status,
+            ));
+        } else {
+            print("Broken invariant: proposal cannot be non-active during the finalisation");
         }
-
-        // deal with stakes if necessary
-        let slash_balance = Self::calculate_slash_balance(&decision_status, &proposal.parameters);
-        let slash_and_unstake_result =
-            Self::slash_and_unstake(proposal.stake_data.clone(), slash_balance);
-
-        //TODO: leave stake data as is?
-        if slash_and_unstake_result.is_ok() {
-            proposal.stake_data = None;
-        }
-
-        // create finalized proposal status with error if any
-        let new_proposal_status = //TODO rename without an error
-            ProposalStatus::finalized_with_error(decision_status, slash_and_unstake_result.err(), Self::current_block());
-
-        proposal.status = new_proposal_status.clone();
-        <Proposals<T>>::insert(proposal_id, proposal);
-
-        Self::deposit_event(RawEvent::ProposalStatusUpdated(
-            proposal_id,
-            new_proposal_status,
-        ));
     }
 
     // Slashes the stake and perform unstake only in case of existing stake

@@ -142,19 +142,18 @@ pub struct Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId> {
     pub created_at: BlockNumber,
 
     /// Current proposal status
-    pub status: ProposalStatus<BlockNumber>,
+    pub status: ProposalStatus<BlockNumber, StakeId, AccountId>,
 
     /// Curring voting result for the proposal
     pub voting_results: VotingResults,
-
-    /// Stake data for the proposal
-    pub stake_data: Option<ActiveStake<StakeId, AccountId>>,
 }
 
 impl<BlockNumber, ProposerId, Balance, StakeId, AccountId>
     Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId>
 where
     BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
+    StakeId: Clone,
+    AccountId: Clone,
 {
     /// Returns whether voting period expired by now
     pub fn is_voting_period_expired(&self, now: BlockNumber) -> bool {
@@ -233,6 +232,8 @@ impl<'a, BlockNumber, ProposerId, Balance, StakeId, AccountId>
     ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, StakeId, AccountId>
 where
     BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
+    StakeId: Clone,
+    AccountId: Clone,
 {
     // Proposal has been expired and quorum not reached.
     pub fn is_expired(&self) -> bool {
@@ -353,7 +354,7 @@ pub(crate) struct ApprovedProposalData<
     pub proposal: Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId>,
 
     /// Proposal finalisation status data
-    pub finalisation_status_data: FinalizationData<BlockNumber>,
+    pub finalisation_status_data: FinalizationData<BlockNumber, StakeId, AccountId>,
 }
 
 #[cfg(test)]

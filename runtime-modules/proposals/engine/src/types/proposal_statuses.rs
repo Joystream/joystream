@@ -1,46 +1,49 @@
 use codec::{Decode, Encode};
 use rstd::prelude::*;
 
+use crate::ActiveStake;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
 /// Current status of the proposal
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum ProposalStatus<BlockNumber> {
-    /// A new proposal that is available for voting.
-    Active,
+pub enum ProposalStatus<BlockNumber, StakeId, AccountId> {
+    /// A new proposal status that is available for voting (with optional stake data).
+    Active(Option<ActiveStake<StakeId, AccountId>>),
 
     /// The proposal decision was made.
-    Finalized(FinalizationData<BlockNumber>),
+    Finalized(FinalizationData<BlockNumber, StakeId, AccountId>),
 }
 
-impl<BlockNumber> Default for ProposalStatus<BlockNumber> {
+impl<BlockNumber, StakeId, AccountId> Default for ProposalStatus<BlockNumber, StakeId, AccountId> {
     fn default() -> Self {
-        ProposalStatus::Active
+        ProposalStatus::Active(None)
     }
 }
 
-impl<BlockNumber> ProposalStatus<BlockNumber> {
+impl<BlockNumber, StakeId, AccountId> ProposalStatus<BlockNumber, StakeId, AccountId> {
     /// Creates finalized proposal status with provided ProposalDecisionStatus
     pub fn finalized(
         decision_status: ProposalDecisionStatus,
         now: BlockNumber,
-    ) -> ProposalStatus<BlockNumber> {
-        Self::finalized_with_error(decision_status, None, now)
+    ) -> ProposalStatus<BlockNumber, StakeId, AccountId> {
+        Self::finalized_with_error(decision_status, None, None, now)
     }
 
     /// Creates finalized proposal status with provided ProposalDecisionStatus and error
     pub fn finalized_with_error(
         decision_status: ProposalDecisionStatus,
         encoded_unstaking_error_due_to_broken_runtime: Option<&str>,
+        active_stake: Option<ActiveStake<StakeId, AccountId>>,
         now: BlockNumber,
-    ) -> ProposalStatus<BlockNumber> {
+    ) -> ProposalStatus<BlockNumber, StakeId, AccountId> {
         ProposalStatus::Finalized(FinalizationData {
             proposal_status: decision_status,
             encoded_unstaking_error_due_to_broken_runtime:
                 encoded_unstaking_error_due_to_broken_runtime.map(|err| err.as_bytes().to_vec()),
             finalized_at: now,
+            stake_data_after_unstaking_error: active_stake,
         })
     }
 
@@ -48,11 +51,12 @@ impl<BlockNumber> ProposalStatus<BlockNumber> {
     pub fn approved(
         approved_status: ApprovedProposalStatus,
         now: BlockNumber,
-    ) -> ProposalStatus<BlockNumber> {
+    ) -> ProposalStatus<BlockNumber, StakeId, AccountId> {
         ProposalStatus::Finalized(FinalizationData {
             proposal_status: ProposalDecisionStatus::Approved(approved_status),
             encoded_unstaking_error_due_to_broken_runtime: None,
             finalized_at: now,
+            stake_data_after_unstaking_error: None,
         })
     }
 }
@@ -60,7 +64,7 @@ impl<BlockNumber> ProposalStatus<BlockNumber> {
 /// Final proposal status and potential error.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct FinalizationData<BlockNumber> {
+pub struct FinalizationData<BlockNumber, StakeId, AccountId> {
     /// Final proposal status
     pub proposal_status: ProposalDecisionStatus,
 
@@ -69,14 +73,17 @@ pub struct FinalizationData<BlockNumber> {
 
     /// Error occured during the proposal finalization - unstaking failed in the stake module
     pub encoded_unstaking_error_due_to_broken_runtime: Option<Vec<u8>>,
+
+    /// Stake data for the proposal, filled if the unstaking wasn't successful
+    pub stake_data_after_unstaking_error: Option<ActiveStake<StakeId, AccountId>>,
 }
 
-impl<BlockNumber> FinalizationData<BlockNumber> {
+impl<BlockNumber, StakeId, AccountId> FinalizationData<BlockNumber, StakeId, AccountId> {
     /// FinalizationData helper, creates ApprovedProposalStatus
     pub fn create_approved_proposal_status(
         self,
         approved_status: ApprovedProposalStatus,
-    ) -> ProposalStatus<BlockNumber> {
+    ) -> ProposalStatus<BlockNumber, StakeId, AccountId> {
         ProposalStatus::Finalized(FinalizationData {
             proposal_status: ProposalDecisionStatus::Approved(approved_status),
             ..self

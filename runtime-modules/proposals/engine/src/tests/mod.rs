@@ -243,7 +243,7 @@ impl VoteGenerator {
 
 struct EventFixture;
 impl EventFixture {
-    fn assert_events(expected_raw_events: Vec<RawEvent<u32, u64, u64>>) {
+    fn assert_events(expected_raw_events: Vec<RawEvent<u32, u64, u64, u64, u64>>) {
         let expected_events = expected_raw_events
             .iter()
             .map(|ev| EventRecord {
@@ -340,7 +340,6 @@ fn proposal_execution_succeeds() {
                     rejections: 0,
                     slashes: 0,
                 },
-                stake_data: None,
             }
         );
 
@@ -393,7 +392,6 @@ fn proposal_execution_failed() {
                     rejections: 0,
                     slashes: 0,
                 },
-                stake_data: None,
             }
         )
     });
@@ -572,7 +570,6 @@ fn cancel_proposal_succeeds() {
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
-                stake_data: None,
             }
         )
     });
@@ -641,7 +638,6 @@ fn veto_proposal_succeeds() {
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
-                stake_data: None,
             }
         );
 
@@ -727,6 +723,7 @@ fn cancel_proposal_event_emitted() {
                 ProposalStatus::Finalized(FinalizationData {
                     proposal_status: ProposalDecisionStatus::Canceled,
                     encoded_unstaking_error_due_to_broken_runtime: None,
+                    stake_data_after_unstaking_error: None,
                     finalized_at: 1,
                 }),
             ),
@@ -772,7 +769,6 @@ fn create_proposal_and_expire_it() {
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
-                stake_data: None,
             }
         )
     });
@@ -818,7 +814,6 @@ fn proposal_execution_postponed_because_of_grace_period() {
                     rejections: 0,
                     slashes: 0,
                 },
-                stake_data: None,
             }
         );
     });
@@ -860,7 +855,6 @@ fn proposal_execution_succeeds_after_the_grace_period() {
                 rejections: 0,
                 slashes: 0,
             },
-            stake_data: None,
         };
 
         assert_eq!(proposal, expected_proposal);
@@ -955,14 +949,13 @@ fn create_dummy_proposal_succeeds_with_stake() {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::Active,
+                status: ProposalStatus::Active(Some(ActiveStake {
+                    stake_id: 0, // valid stake_id
+                    source_account_id: 1
+                })),
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
-                stake_data: Some(ActiveStake {
-                    stake_id: 0, // valid stake_id
-                    source_account_id: 1
-                }),
             }
         )
     });
@@ -1162,6 +1155,7 @@ fn proposal_slashing_succeeds() {
                 proposal_status: ProposalDecisionStatus::Slashed,
                 encoded_unstaking_error_due_to_broken_runtime: None,
                 finalized_at: 1,
+                stake_data_after_unstaking_error: None,
             }),
         );
         assert!(!<ActiveProposalIds<Test>>::exists(proposal_id));
@@ -1218,15 +1212,15 @@ fn finalize_proposal_using_stake_mocks_failed() {
                     status: ProposalStatus::finalized_with_error(
                         ProposalDecisionStatus::Expired,
                         Some("Cannot remove stake"),
+                        Some(ActiveStake {
+                            stake_id: 1,
+                            source_account_id: 1
+                        }),
                         4,
                     ),
                     title: b"title".to_vec(),
                     description: b"description".to_vec(),
                     voting_results: VotingResults::default(),
-                    stake_data: Some(ActiveStake {
-                        stake_id: 1,
-                        source_account_id: 1
-                    }),
                 }
             );
         });
