@@ -59,7 +59,6 @@ mod tests {
     }
 
     type Membership = membership::members::Module<Runtime>;
-    type ProposalsEngine = proposals_engine::Module<Runtime>;
 
     #[test]
     fn council_origin_validator_fails_with_unregistered_member() {

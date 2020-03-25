@@ -27,7 +27,7 @@ use types::FinalizedProposalData;
 use types::ProposalStakeManager;
 pub use types::{
     ApprovedProposalStatus, FinalizationData, Proposal, ProposalDecisionStatus, ProposalParameters,
-    ProposalStatus, StakeData, StakingEventsHandler, VotingResults,
+    ProposalStatus, StakeData, VotingResults,
 };
 pub use types::{BalanceOf, CurrencyOf, NegativeImbalance};
 pub use types::{DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider};
@@ -619,7 +619,7 @@ impl<T: Trait> Module<T> {
 
     //TODO: candidate for invariant break or error saving to the state
     /// Callback from StakingEventsHandler. Refunds unstaked imbalance back to the source account
-    pub(crate) fn refund_proposal_stake(stake_id: T::StakeId, imbalance: NegativeImbalance<T>) {
+    pub fn refund_proposal_stake(stake_id: T::StakeId, imbalance: NegativeImbalance<T>) {
         if <StakesProposals<T>>::exists(stake_id) {
             //TODO: handle non existence
 

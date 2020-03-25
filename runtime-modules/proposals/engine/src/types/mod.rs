@@ -19,7 +19,7 @@ pub use proposal_statuses::{
 };
 pub(crate) use stakes::ProposalStakeManager;
 pub use stakes::{
-    DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider, StakingEventsHandler,
+    DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider,
 };
 
 #[cfg(test)]
