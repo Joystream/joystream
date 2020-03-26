@@ -19,5 +19,10 @@ members = [
 	"runtime-modules/token-minting",
 	"runtime-modules/versioned-store",
 	"runtime-modules/versioned-store-permissions",
+	"node",
+	"utils/chain-spec-builder/"
 ]
 
+[profile.release]
+# Substrate runtime requires unwinding.
+panic = "unwind"

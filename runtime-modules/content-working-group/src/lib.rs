@@ -1080,7 +1080,9 @@ decl_event! {
         CuratorApplicationId = CuratorApplicationId<T>,
         CuratorId = CuratorId<T>,
         CuratorApplicationIdToCuratorIdMap = CuratorApplicationIdToCuratorIdMap<T>,
+        MintBalanceOf = minting::BalanceOf<T>,
         <T as system::Trait>::AccountId,
+        <T as minting::Trait>::MintId,
     {
         ChannelCreated(ChannelId),
         ChannelOwnershipTransferred(ChannelId),
@@ -1100,6 +1102,8 @@ decl_event! {
         CuratorRewardAccountUpdated(CuratorId, AccountId),
         ChannelUpdatedByCurationActor(ChannelId),
         ChannelCreationEnabledUpdated(bool),
+        MintCapacityIncreased(MintId, MintBalanceOf, MintBalanceOf),
+        MintCapacityDecreased(MintId, MintBalanceOf, MintBalanceOf),
     }
 }
 
@@ -2022,7 +2026,11 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelCreationEnabledUpdated(enabled));
         }
 
-        /// Add to capacity of current acive mint
+        /// Add to capacity of current acive mint.
+        /// This may be deprecated in the future, since set_mint_capacity is sufficient to
+        /// both increase and decrease capacity. Although when considering that it may be executed
+        /// by a proposal, given the temporal delay in approving a proposal, it might be more suitable
+        /// than set_mint_capacity?
         pub fn increase_mint_capacity(
             origin,
             additional_capacity: minting::BalanceOf<T>
@@ -2032,7 +2040,42 @@ decl_module! {
             let mint_id = Self::mint();
             let mint = <minting::Module<T>>::mints(mint_id); // must exist
             let new_capacity = mint.capacity() + additional_capacity;
-            let _ = <minting::Module<T>>::set_mint_capacity(mint_id, new_capacity);
+            <minting::Module<T>>::set_mint_capacity(mint_id, new_capacity)?;
+
+            Self::deposit_event(RawEvent::MintCapacityIncreased(
+                mint_id, additional_capacity, new_capacity
+            ));
+        }
+
+        /// Sets the capacity of the current active mint
+        pub fn set_mint_capacity(
+            origin,
+            new_capacity: minting::BalanceOf<T>
+        ) {
+            ensure_root(origin)?;
+
+            let mint_id = Self::mint();
+
+            // Mint must exist - it is set at genesis
+            let mint = <minting::Module<T>>::mints(mint_id);
+
+            let current_capacity = mint.capacity();
+
+            if new_capacity != current_capacity {
+                // Cannot fail if mint exists
+                <minting::Module<T>>::set_mint_capacity(mint_id, new_capacity)?;
+
+                if new_capacity > current_capacity {
+                    Self::deposit_event(RawEvent::MintCapacityIncreased(
+                        mint_id, new_capacity - current_capacity, new_capacity
+                    ));
+                } else {
+                    Self::deposit_event(RawEvent::MintCapacityDecreased(
+                        mint_id, current_capacity - new_capacity, new_capacity
+                    ));
+                }
+            }
+
         }
     }
 }

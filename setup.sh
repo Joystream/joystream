@@ -2,18 +2,13 @@
 
 set -e
 
-# Install OS dependencies
-curl https://getsubstrate.io -sSf | bash -s -- --fast
+# If OS is supported will install:
+#  - build tools and any other dependencies required for rust and substrate
+#  - rustup - rust insaller
+#  - rust compiler and toolchains
+#  - skips installing substrate and subkey
+curl https://getsubstrate.io -sSf | bash -s -- --fast \
+    && rustup component add rustfmt
 
-echo "*** Initialising WASM build environment"
-
-if [ -z $CI_PROJECT_NAME ] ; then
-   rustup update nightly
-   rustup update stable
-fi
-
-rustup target add wasm32-unknown-unknown --toolchain nightly
-
-# Install wasm-gc. It's useful for stripping slimming down wasm binaries.
-command -v wasm-gc || \
-	cargo +nightly install --git https://github.com/alexcrichton/wasm-gc --force
+# TODO: Install additional tools...
+# - b2sum
