@@ -549,8 +549,12 @@ impl<T: Trait> Module<T> {
                 Self::slash_and_unstake(active_stake.clone(), slash_balance);
 
             // create finalized proposal status with error if any
-            let new_proposal_status = //TODO rename without an error
-            ProposalStatus::finalized_with_error(decision_status, slash_and_unstake_result.err(), active_stake, Self::current_block());
+            let new_proposal_status = ProposalStatus::finalized(
+                decision_status,
+                slash_and_unstake_result.err(),
+                active_stake,
+                Self::current_block(),
+            );
 
             proposal.status = new_proposal_status.clone();
             <Proposals<T>>::insert(proposal_id, proposal);

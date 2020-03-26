@@ -464,7 +464,7 @@ fn rejected_voting_results_and_remove_proposal_id_from_active_succeeds() {
 
         assert_eq!(
             proposal.status,
-            ProposalStatus::finalized(ProposalDecisionStatus::Rejected, 1),
+            ProposalStatus::finalized_successfully(ProposalDecisionStatus::Rejected, 1),
         );
         assert!(!<ActiveProposalIds<Test>>::exists(proposal_id));
     });
@@ -566,7 +566,7 @@ fn cancel_proposal_succeeds() {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::finalized(ProposalDecisionStatus::Canceled, 1),
+                status: ProposalStatus::finalized_successfully(ProposalDecisionStatus::Canceled, 1),
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
@@ -634,7 +634,7 @@ fn veto_proposal_succeeds() {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::finalized(ProposalDecisionStatus::Vetoed, 1),
+                status: ProposalStatus::finalized_successfully(ProposalDecisionStatus::Vetoed, 1),
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
@@ -701,7 +701,7 @@ fn veto_proposal_event_emitted() {
             RawEvent::ProposalCreated(1, 1),
             RawEvent::ProposalStatusUpdated(
                 1,
-                ProposalStatus::finalized(ProposalDecisionStatus::Vetoed, 1),
+                ProposalStatus::finalized_successfully(ProposalDecisionStatus::Vetoed, 1),
             ),
         ]);
     });
@@ -765,7 +765,7 @@ fn create_proposal_and_expire_it() {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::finalized(ProposalDecisionStatus::Expired, 4),
+                status: ProposalStatus::finalized_successfully(ProposalDecisionStatus::Expired, 4),
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
@@ -1282,7 +1282,7 @@ fn finalize_proposal_using_stake_mocks_failed() {
                     parameters: parameters_fixture.params(),
                     proposer_id: 1,
                     created_at: 1,
-                    status: ProposalStatus::finalized_with_error(
+                    status: ProposalStatus::finalized(
                         ProposalDecisionStatus::Expired,
                         Some("Cannot remove stake"),
                         Some(ActiveStake {

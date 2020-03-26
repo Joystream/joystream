@@ -24,26 +24,32 @@ impl<BlockNumber, StakeId, AccountId> Default for ProposalStatus<BlockNumber, St
 
 impl<BlockNumber, StakeId, AccountId> ProposalStatus<BlockNumber, StakeId, AccountId> {
     /// Creates finalized proposal status with provided ProposalDecisionStatus
-    pub fn finalized(
+    pub fn finalized_successfully(
         decision_status: ProposalDecisionStatus,
         now: BlockNumber,
     ) -> ProposalStatus<BlockNumber, StakeId, AccountId> {
-        Self::finalized_with_error(decision_status, None, None, now)
+        Self::finalized(decision_status, None, None, now)
     }
 
     /// Creates finalized proposal status with provided ProposalDecisionStatus and error
-    pub fn finalized_with_error(
+    pub fn finalized(
         decision_status: ProposalDecisionStatus,
         encoded_unstaking_error_due_to_broken_runtime: Option<&str>,
         active_stake: Option<ActiveStake<StakeId, AccountId>>,
         now: BlockNumber,
     ) -> ProposalStatus<BlockNumber, StakeId, AccountId> {
+        // drop the stake information if there were no errors on unstaking
+        let actual_stake = if encoded_unstaking_error_due_to_broken_runtime.is_some() {
+            active_stake
+        } else {
+            None
+        };
         ProposalStatus::Finalized(FinalizationData {
             proposal_status: decision_status,
             encoded_unstaking_error_due_to_broken_runtime:
                 encoded_unstaking_error_due_to_broken_runtime.map(|err| err.as_bytes().to_vec()),
             finalized_at: now,
-            stake_data_after_unstaking_error: active_stake,
+            stake_data_after_unstaking_error: actual_stake,
         })
     }
 

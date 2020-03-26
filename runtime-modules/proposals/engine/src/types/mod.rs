@@ -389,7 +389,7 @@ mod tests {
         let mut proposal = ProposalObject::default();
 
         proposal.parameters.grace_period = 3;
-        proposal.status = ProposalStatus::finalized(
+        proposal.status = ProposalStatus::finalized_successfully(
             ProposalDecisionStatus::Approved(ApprovedProposalStatus::PendingExecution),
             0,
         );
@@ -402,7 +402,7 @@ mod tests {
         let mut proposal = ProposalObject::default();
 
         proposal.parameters.grace_period = 0;
-        proposal.status = ProposalStatus::finalized(
+        proposal.status = ProposalStatus::finalized_successfully(
             ProposalDecisionStatus::Approved(ApprovedProposalStatus::PendingExecution),
             0,
         );
