@@ -1906,103 +1906,23 @@ decl_module! {
             );
         }
 
-        /*
-         * Root origin routines for managing lead.
-         */
-
-
-        /// Introduce a lead when one is not currently set.
-        pub fn set_lead(origin, member: T::MemberId, role_account: T::AccountId) {
-
+        /// Replace the current lead. First unsets the active lead if there is one.
+        /// If a value is provided for new_lead it will then set that new lead.
+        /// It is responsibility of the caller to ensure the new lead can be set
+        /// to avoid the lead role being vacant at the end of the call.
+        pub fn replace_lead(origin, new_lead: Option<(T::MemberId, T::AccountId)>) {
             // Ensure root is origin
             ensure_root(origin)?;
 
-            // Ensure there is no current lead
-            ensure!(
-                <CurrentLeadId<T>>::get().is_none(),
-                MSG_CURRENT_LEAD_ALREADY_SET
-            );
+            // Unset current lead first
+            if Self::ensure_lead_is_set().is_ok() {
+                Self::unset_lead()?;
+            }
 
-            // Ensure that member can actually become lead
-            let new_lead_id = <NextLeadId<T>>::get();
-
-            let new_lead_role =
-                role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id);
-
-            let _profile = <members::Module<T>>::can_register_role_on_member(
-                &member,
-                &role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id),
-            )?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Construct lead
-            let new_lead = Lead {
-                role_account: role_account.clone(),
-                reward_relationship: None,
-                inducted: <system::Module<T>>::block_number(),
-                stage: LeadRoleState::Active,
-            };
-
-            // Store lead
-            <LeadById<T>>::insert(new_lead_id, new_lead);
-
-            // Update current lead
-            <CurrentLeadId<T>>::put(new_lead_id); // Some(new_lead_id)
-
-            // Update next lead counter
-            <NextLeadId<T>>::mutate(|id| *id += <LeadId<T> as One>::one());
-
-            // Register in role
-            let registered_role =
-                <members::Module<T>>::register_role_on_member(member, &new_lead_role).is_ok();
-
-            assert!(registered_role);
-
-            // Trigger event
-            Self::deposit_event(RawEvent::LeadSet(new_lead_id));
-        }
-
-        /// Evict the currently unset lead
-        pub fn unset_lead(origin) {
-
-            // Ensure root is origin
-            ensure_root(origin)?;
-
-            // Ensure there is a lead set
-            let (lead_id,lead) = Self::ensure_lead_is_set()?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Unregister from role in membership model
-            let current_lead_role = role_types::ActorInRole{
-                role: role_types::Role::CuratorLead,
-                actor_id: lead_id
-            };
-
-            let unregistered_role = <members::Module<T>>::unregister_role(current_lead_role).is_ok();
-
-            assert!(unregistered_role);
-
-            // Update lead stage as exited
-            let current_block = <system::Module<T>>::block_number();
-
-            let new_lead = Lead{
-                stage: LeadRoleState::Exited(ExitedLeadRole { initiated_at_block_number: current_block}),
-                ..lead
-            };
-
-            <LeadById<T>>::insert(lead_id, new_lead);
-
-            // Update current lead
-            <CurrentLeadId<T>>::take(); // None
-
-            // Trigger event
-            Self::deposit_event(RawEvent::LeadUnset(lead_id));
+            // Try to set new lead
+            if let Some((member_id, role_account)) = new_lead {
+                Self::set_lead(member_id, role_account)?;
+            }
         }
 
         /// Add an opening for a curator role.
@@ -2079,6 +1999,98 @@ impl<T: Trait> versioned_store_permissions::CredentialChecker<T> for Module<T> {
 }
 
 impl<T: Trait> Module<T> {
+    /// Introduce a lead when one is not currently set.
+    fn set_lead(member: T::MemberId, role_account: T::AccountId) -> dispatch::Result {
+        // Ensure there is no current lead
+        ensure!(
+            <CurrentLeadId<T>>::get().is_none(),
+            MSG_CURRENT_LEAD_ALREADY_SET
+        );
+
+        // Ensure that member can actually become lead
+        let new_lead_id = <NextLeadId<T>>::get();
+
+        let new_lead_role =
+            role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id);
+
+        let _profile = <members::Module<T>>::can_register_role_on_member(
+            &member,
+            &role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id),
+        )?;
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        // Construct lead
+        let new_lead = Lead {
+            role_account: role_account.clone(),
+            reward_relationship: None,
+            inducted: <system::Module<T>>::block_number(),
+            stage: LeadRoleState::Active,
+        };
+
+        // Store lead
+        <LeadById<T>>::insert(new_lead_id, new_lead);
+
+        // Update current lead
+        <CurrentLeadId<T>>::put(new_lead_id); // Some(new_lead_id)
+
+        // Update next lead counter
+        <NextLeadId<T>>::mutate(|id| *id += <LeadId<T> as One>::one());
+
+        // Register in role
+        let registered_role =
+            <members::Module<T>>::register_role_on_member(member, &new_lead_role).is_ok();
+
+        assert!(registered_role);
+
+        // Trigger event
+        Self::deposit_event(RawEvent::LeadSet(new_lead_id));
+
+        Ok(())
+    }
+
+    /// Evict the currently set lead
+    fn unset_lead() -> dispatch::Result {
+        // Ensure there is a lead set
+        let (lead_id, lead) = Self::ensure_lead_is_set()?;
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        // Unregister from role in membership model
+        let current_lead_role = role_types::ActorInRole {
+            role: role_types::Role::CuratorLead,
+            actor_id: lead_id,
+        };
+
+        let unregistered_role = <members::Module<T>>::unregister_role(current_lead_role).is_ok();
+
+        assert!(unregistered_role);
+
+        // Update lead stage as exited
+        let current_block = <system::Module<T>>::block_number();
+
+        let new_lead = Lead {
+            stage: LeadRoleState::Exited(ExitedLeadRole {
+                initiated_at_block_number: current_block,
+            }),
+            ..lead
+        };
+
+        <LeadById<T>>::insert(lead_id, new_lead);
+
+        // Update current lead
+        <CurrentLeadId<T>>::take(); // None
+
+        // Trigger event
+        Self::deposit_event(RawEvent::LeadUnset(lead_id));
+
+        Ok(())
+    }
+
     fn ensure_member_has_no_active_application_on_opening(
         curator_applications: CuratorApplicationIdSet<T>,
         member_id: T::MemberId,

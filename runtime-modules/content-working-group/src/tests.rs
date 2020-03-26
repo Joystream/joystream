@@ -1160,7 +1160,10 @@ struct SetLeadFixture {
 
 impl SetLeadFixture {
     fn call(&self) -> Result<(), &'static str> {
-        ContentWorkingGroup::set_lead(self.origin.clone(), self.member_id, self.new_role_account)
+        ContentWorkingGroup::replace_lead(
+            self.origin.clone(),
+            Some((self.member_id, self.new_role_account)),
+        )
     }
 
     pub fn call_and_assert_success(&self) {
@@ -1221,7 +1224,7 @@ struct UnsetLeadFixture {
 
 impl UnsetLeadFixture {
     fn call(&self) -> Result<(), &'static str> {
-        ContentWorkingGroup::unset_lead(self.origin.clone())
+        ContentWorkingGroup::replace_lead(self.origin.clone(), None)
     }
 
     pub fn call_and_assert_success(&self) {
@@ -2121,10 +2124,9 @@ pub fn set_lead(
 
     // Set lead
     assert_eq!(
-        ContentWorkingGroup::set_lead(
+        ContentWorkingGroup::replace_lead(
             mock::Origin::system(system::RawOrigin::Root),
-            member_id,
-            new_role_account
+            Some((member_id, new_role_account))
         )
         .unwrap(),
         ()
