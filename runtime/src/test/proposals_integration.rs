@@ -6,8 +6,8 @@ use crate::{ProposalCancellationFee, Runtime};
 use codec::Encode;
 use membership::members;
 use proposals_engine::{
-    BalanceOf, Error, FinalizationData, Proposal, ProposalDecisionStatus, ProposalParameters,
-    ProposalStatus, StakeData, VotingResults,
+    ActiveStake, BalanceOf, Error, FinalizationData, Proposal, ProposalDecisionStatus,
+    ProposalParameters, ProposalStatus, VotingResults,
 };
 use sr_primitives::traits::DispatchResult;
 use sr_primitives::AccountId32;
@@ -28,7 +28,7 @@ type ProposalsEngine = proposals_engine::Module<Runtime>;
 #[derive(Clone)]
 struct DummyProposalFixture {
     parameters: ProposalParameters<u32, u128>,
-    origin: RawOrigin<AccountId32>,
+    account_id: AccountId32,
     proposer_id: u64,
     proposal_code: Vec<u8>,
     title: Vec<u8>,
@@ -56,7 +56,7 @@ impl Default for DummyProposalFixture {
                 grace_period: 0,
                 required_stake: None,
             },
-            origin: RawOrigin::Signed(<Runtime as system::Trait>::AccountId::default()),
+            account_id: <Runtime as system::Trait>::AccountId::default(),
             proposer_id: 0,
             proposal_code: dummy_proposal.encode(),
             title,
@@ -71,8 +71,8 @@ impl DummyProposalFixture {
         DummyProposalFixture { parameters, ..self }
     }
 
-    fn with_origin(self, origin: RawOrigin<AccountId32>) -> Self {
-        DummyProposalFixture { origin, ..self }
+    fn with_account_id(self, account_id: AccountId32) -> Self {
+        DummyProposalFixture { account_id, ..self }
     }
 
     fn with_stake(self, stake_balance: BalanceOf<Runtime>) -> Self {
@@ -91,7 +91,7 @@ impl DummyProposalFixture {
 
     fn create_proposal_and_assert(self, result: Result<u32, Error>) -> Option<u32> {
         let proposal_id_result = ProposalsEngine::create_proposal(
-            self.origin.into(),
+            self.account_id,
             self.proposer_id,
             self.parameters,
             self.title,
@@ -122,7 +122,7 @@ impl CancelProposalFixture {
     }
 
     fn with_proposer(self, proposer_id: u64) -> Self {
-		CancelProposalFixture {
+        CancelProposalFixture {
             proposer_id,
             ..self
         }
@@ -139,7 +139,6 @@ impl CancelProposalFixture {
         );
     }
 }
-
 
 /// Main purpose of this integration test: check balance of the member on proposal finalization (cancellation)
 /// It tests StakingEventsHandler integration. Also, membership module is tested during the proposal creation (ActorOriginValidator).
@@ -174,7 +173,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         };
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters)
-            .with_origin(RawOrigin::Signed(account_id.clone()))
+            .with_account_id(account_id.clone())
             .with_stake(stake_amount)
             .with_proposer(member_id);
 
@@ -199,14 +198,13 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             parameters,
             proposer_id: member_id,
             created_at: 1,
-            status: ProposalStatus::Active,
+            status: ProposalStatus::Active(Some(ActiveStake {
+                stake_id: 0,
+                source_account_id: account_id.clone(),
+            })),
             title: b"title".to_vec(),
             description: b"description".to_vec(),
             voting_results: VotingResults::default(),
-            stake_data: Some(StakeData {
-                stake_id: 0,
-                source_account_id: account_id.clone(),
-            }),
         };
 
         assert_eq!(proposal, expected_proposal);
@@ -221,9 +219,9 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         expected_proposal.status = ProposalStatus::Finalized(FinalizationData {
             proposal_status: ProposalDecisionStatus::Canceled,
             finalized_at: 1,
-            finalization_error: None,
+            encoded_unstaking_error_due_to_broken_runtime: None,
+            stake_data_after_unstaking_error: None,
         });
-        expected_proposal.stake_data = None;
 
         assert_eq!(proposal, expected_proposal);
 

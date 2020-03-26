@@ -41,22 +41,11 @@ mod membership_mod {
     pub use membership::members::Event;
 }
 
-mod council_mod {
-    pub use governance::council::Event;
-}
-
-// impl_outer_dispatch! {
-//     pub enum Call for Test where origin: Origin {
-//         engine::ProposalsEngine,
-//     }
-// }
-
 impl_outer_event! {
     pub enum TestEvent for Test {
         balances<T>,
         engine<T>,
         membership_mod<T>,
-        council_mod<T>,
     }
 }
 
@@ -85,11 +74,6 @@ impl balances::Trait for Test {
 
 impl common::currency::GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
-}
-
-impl governance::council::Trait for Test {
-    type Event = TestEvent;
-    type CouncilTermEnded = ();
 }
 
 impl proposals::Trait for Test {}
@@ -131,7 +115,7 @@ impl crate::Trait for Test {
     type TitleMaxLength = TitleMaxLength;
     type DescriptionMaxLength = DescriptionMaxLength;
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
-    type ProposalCode = proposals::Call<Test>;
+    type DispatchableCallCode = proposals::Call<Test>;
 }
 
 impl Default for proposals::Call<Test> {

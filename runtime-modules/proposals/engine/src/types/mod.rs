@@ -11,19 +11,14 @@ use serde::{Deserialize, Serialize};
 use srml_support::dispatch;
 use srml_support::traits::Currency;
 
-mod council_origin_validator;
 mod proposal_statuses;
 mod stakes;
-
-pub use council_origin_validator::CouncilManager;
 
 pub use proposal_statuses::{
     ApprovedProposalStatus, FinalizationData, ProposalDecisionStatus, ProposalStatus,
 };
 pub(crate) use stakes::ProposalStakeManager;
-pub use stakes::{
-    DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider, StakingEventsHandler,
-};
+pub use stakes::{DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider};
 
 #[cfg(test)]
 pub(crate) use stakes::DefaultStakeHandler;
@@ -119,7 +114,7 @@ impl VotingResults {
 /// Contains created stake id and source account for the stake balance
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, Copy, PartialEq, Eq, Debug)]
-pub struct StakeData<StakeId, AccountId> {
+pub struct ActiveStake<StakeId, AccountId> {
     /// Created stake id for the proposal
     pub stake_id: StakeId,
 
@@ -147,19 +142,18 @@ pub struct Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId> {
     pub created_at: BlockNumber,
 
     /// Current proposal status
-    pub status: ProposalStatus<BlockNumber>,
+    pub status: ProposalStatus<BlockNumber, StakeId, AccountId>,
 
     /// Curring voting result for the proposal
     pub voting_results: VotingResults,
-
-    /// Stake data for the proposal
-    pub stake_data: Option<StakeData<StakeId, AccountId>>,
 }
 
 impl<BlockNumber, ProposerId, Balance, StakeId, AccountId>
     Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId>
 where
     BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
+    StakeId: Clone,
+    AccountId: Clone,
 {
     /// Returns whether voting period expired by now
     pub fn is_voting_period_expired(&self, now: BlockNumber) -> bool {
@@ -238,6 +232,8 @@ impl<'a, BlockNumber, ProposerId, Balance, StakeId, AccountId>
     ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, StakeId, AccountId>
 where
     BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
+    StakeId: Clone,
+    AccountId: Clone,
 {
     // Proposal has been expired and quorum not reached.
     pub fn is_expired(&self) -> bool {
@@ -340,6 +336,25 @@ pub(crate) struct FinalizedProposalData<
 
     /// Proposal finalization block number
     pub finalized_at: BlockNumber,
+}
+
+/// Data container for the approved proposal results
+pub(crate) struct ApprovedProposalData<
+    ProposalId,
+    BlockNumber,
+    ProposerId,
+    Balance,
+    StakeId,
+    AccountId,
+> {
+    /// Proposal id
+    pub proposal_id: ProposalId,
+
+    /// Proposal to be finalized
+    pub proposal: Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId>,
+
+    /// Proposal finalisation status data
+    pub finalisation_status_data: FinalizationData<BlockNumber, StakeId, AccountId>,
 }
 
 #[cfg(test)]

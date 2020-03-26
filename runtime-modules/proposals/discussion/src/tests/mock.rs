@@ -86,7 +86,6 @@ impl membership::members::Trait for Test {
 
 impl crate::Trait for Test {
     type Event = TestEvent;
-    type ThreadAuthorOriginValidator = ();
     type PostAuthorOriginValidator = ();
     type ThreadId = u32;
     type PostId = u32;

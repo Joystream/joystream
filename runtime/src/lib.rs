@@ -16,6 +16,8 @@ mod test;
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+mod integration;
+
 use authority_discovery_primitives::{
     AuthorityId as EncodedAuthorityId, Signature as EncodedSignature,
 };
@@ -57,7 +59,7 @@ pub use srml_support::{
 pub use staking::StakerStatus;
 pub use timestamp::Call as TimestampCall;
 
-use membership::origin_validator::MembershipOriginValidator;
+use integration::proposals::{CouncilManager, MembershipOriginValidator};
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -587,7 +589,7 @@ impl stake::Trait for Runtime {
     type StakePoolId = StakePoolId;
     type StakingEventsHandler = (
         ContentWorkingGroupStakingEventHandler,
-        proposals_engine::StakingEventsHandler<Self>,
+        crate::integration::proposals::StakingEventsHandler<Self>,
     );
     type StakeId = u64;
     type SlashId = u64;
@@ -819,8 +821,8 @@ parameter_types! {
 impl proposals_engine::Trait for Runtime {
     type Event = Event;
     type ProposerOriginValidator = MembershipOriginValidator<Self>;
-    type VoterOriginValidator = proposals_engine::CouncilManager<Self>;
-    type TotalVotersCounter = proposals_engine::CouncilManager<Self>;
+    type VoterOriginValidator = CouncilManager<Self>;
+    type TotalVotersCounter = CouncilManager<Self>;
     type ProposalId = u32;
     type StakeHandlerProvider = proposals_engine::DefaultStakeHandlerProvider;
     type CancellationFee = ProposalCancellationFee;
@@ -828,7 +830,7 @@ impl proposals_engine::Trait for Runtime {
     type TitleMaxLength = ProposalTitleMaxLength;
     type DescriptionMaxLength = ProposalDescriptionMaxLength;
     type MaxActiveProposalLimit = ProposalMaxActiveProposalLimit;
-    type ProposalCode = Call;
+    type DispatchableCallCode = Call;
 }
 impl Default for Call {
     fn default() -> Self {
@@ -845,7 +847,6 @@ parameter_types! {
 
 impl proposals_discussion::Trait for Runtime {
     type Event = Event;
-    type ThreadAuthorOriginValidator = MembershipOriginValidator<Self>;
     type PostAuthorOriginValidator = MembershipOriginValidator<Self>;
     type ThreadId = u32;
     type PostId = u32;
@@ -861,6 +862,7 @@ parameter_types! {
 }
 
 impl proposals_codex::Trait for Runtime {
+    type MembershipOriginValidator = MembershipOriginValidator<Self>;
     type TextProposalMaxLength = TextProposalMaxLength;
     type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
 }

@@ -18,7 +18,6 @@ std = [
     'stake/std',
     'balances/std',
     'sr-primitives/std',
-    'governance/std',
     'membership/std',
     'common/std',
 
@@ -96,11 +95,6 @@ path = '../../membership'
 default_features = false
 package = 'substrate-common-module'
 path = '../../common'
-
-[dependencies.governance]
-default_features = false
-package = 'substrate-governance-module'
-path = '../../governance'
 
 [dev-dependencies]
 mockall = "0.6.0"

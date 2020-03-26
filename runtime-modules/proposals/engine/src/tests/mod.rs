@@ -58,7 +58,7 @@ impl Default for ProposalParametersFixture {
 #[derive(Clone)]
 struct DummyProposalFixture {
     parameters: ProposalParameters<u64, u64>,
-    origin: RawOrigin<u64>,
+    account_id: u64,
     proposer_id: u64,
     proposal_code: Vec<u8>,
     title: Vec<u8>,
@@ -83,7 +83,7 @@ impl Default for DummyProposalFixture {
                 grace_period: 0,
                 required_stake: None,
             },
-            origin: RawOrigin::Signed(1),
+            account_id: 1,
             proposer_id: 1,
             proposal_code: dummy_proposal.encode(),
             title,
@@ -106,8 +106,8 @@ impl DummyProposalFixture {
         DummyProposalFixture { parameters, ..self }
     }
 
-    fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        DummyProposalFixture { origin, ..self }
+    fn with_account_id(self, account_id: u64) -> Self {
+        DummyProposalFixture { account_id, ..self }
     }
 
     fn with_stake(self, stake_balance: BalanceOf<Test>) -> Self {
@@ -126,7 +126,7 @@ impl DummyProposalFixture {
 
     fn create_proposal_and_assert(self, result: Result<u32, Error>) -> Option<u32> {
         let proposal_id_result = ProposalsEngine::create_proposal(
-            self.origin.into(),
+            self.account_id,
             self.proposer_id,
             self.parameters,
             self.title,
@@ -243,7 +243,7 @@ impl VoteGenerator {
 
 struct EventFixture;
 impl EventFixture {
-    fn assert_events(expected_raw_events: Vec<RawEvent<u32, u64, u64>>) {
+    fn assert_events(expected_raw_events: Vec<RawEvent<u32, u64, u64, u64, u64>>) {
         let expected_events = expected_raw_events
             .iter()
             .map(|ev| EventRecord {
@@ -280,14 +280,6 @@ fn create_dummy_proposal_succeeds() {
         let dummy_proposal = DummyProposalFixture::default();
 
         dummy_proposal.create_proposal_and_assert(Ok(1));
-    });
-}
-
-#[test]
-fn create_dummy_proposal_fails_with_insufficient_rights() {
-    initial_test_ext().execute_with(|| {
-        let dummy_proposal = DummyProposalFixture::default().with_origin(RawOrigin::None);
-        dummy_proposal.create_proposal_and_assert(Err(Error::Other("RequireSignedOrigin")));
     });
 }
 
@@ -348,7 +340,6 @@ fn proposal_execution_succeeds() {
                     rejections: 0,
                     slashes: 0,
                 },
-                stake_data: None,
             }
         );
 
@@ -401,7 +392,6 @@ fn proposal_execution_failed() {
                     rejections: 0,
                     slashes: 0,
                 },
-                stake_data: None,
             }
         )
     });
@@ -580,7 +570,6 @@ fn cancel_proposal_succeeds() {
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
-                stake_data: None,
             }
         )
     });
@@ -649,7 +638,6 @@ fn veto_proposal_succeeds() {
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
-                stake_data: None,
             }
         );
 
@@ -734,7 +722,8 @@ fn cancel_proposal_event_emitted() {
                 1,
                 ProposalStatus::Finalized(FinalizationData {
                     proposal_status: ProposalDecisionStatus::Canceled,
-                    finalization_error: None,
+                    encoded_unstaking_error_due_to_broken_runtime: None,
+                    stake_data_after_unstaking_error: None,
                     finalized_at: 1,
                 }),
             ),
@@ -780,7 +769,6 @@ fn create_proposal_and_expire_it() {
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
-                stake_data: None,
             }
         )
     });
@@ -826,7 +814,6 @@ fn proposal_execution_postponed_because_of_grace_period() {
                     rejections: 0,
                     slashes: 0,
                 },
-                stake_data: None,
             }
         );
     });
@@ -868,7 +855,6 @@ fn proposal_execution_succeeds_after_the_grace_period() {
                 rejections: 0,
                 slashes: 0,
             },
-            stake_data: None,
         };
 
         assert_eq!(proposal, expected_proposal);
@@ -948,7 +934,7 @@ fn create_dummy_proposal_succeeds_with_stake() {
 
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters_fixture.params())
-            .with_origin(RawOrigin::Signed(account_id))
+            .with_account_id(account_id)
             .with_stake(200);
 
         let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&account_id, 500);
@@ -963,14 +949,13 @@ fn create_dummy_proposal_succeeds_with_stake() {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 created_at: 1,
-                status: ProposalStatus::Active,
+                status: ProposalStatus::Active(Some(ActiveStake {
+                    stake_id: 0, // valid stake_id
+                    source_account_id: 1
+                })),
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
-                stake_data: Some(StakeData {
-                    stake_id: 0, // valid stake_id
-                    source_account_id: 1
-                }),
             }
         )
     });
@@ -986,7 +971,7 @@ fn create_dummy_proposal_fail_with_stake_on_empty_account() {
             ProposalParametersFixture::default().with_required_stake(required_stake);
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters_fixture.params())
-            .with_origin(RawOrigin::Signed(account_id))
+            .with_account_id(account_id)
             .with_stake(required_stake);
 
         dummy_proposal
@@ -1037,7 +1022,7 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
         };
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters)
-            .with_origin(RawOrigin::Signed(account_id))
+            .with_account_id(account_id)
             .with_stake(stake_amount);
 
         let account_balance = 500;
@@ -1061,14 +1046,13 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
             parameters,
             proposer_id: 1,
             created_at: 1,
-            status: ProposalStatus::Active,
+            status: ProposalStatus::Active(Some(ActiveStake {
+                stake_id: 0,
+                source_account_id: 1,
+            })),
             title: b"title".to_vec(),
             description: b"description".to_vec(),
             voting_results: VotingResults::default(),
-            stake_data: Some(StakeData {
-                stake_id: 0,
-                source_account_id: 1,
-            }),
         };
 
         assert_eq!(proposal, expected_proposal);
@@ -1080,9 +1064,9 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
         expected_proposal.status = ProposalStatus::Finalized(FinalizationData {
             proposal_status: ProposalDecisionStatus::Expired,
             finalized_at: 4,
-            finalization_error: None,
+            encoded_unstaking_error_due_to_broken_runtime: None,
+            stake_data_after_unstaking_error: None,
         });
-        expected_proposal.stake_data = None;
 
         assert_eq!(proposal, expected_proposal);
 
@@ -1111,7 +1095,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         };
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters)
-            .with_origin(RawOrigin::Signed(account_id))
+            .with_account_id(account_id.clone())
             .with_stake(stake_amount);
 
         let account_balance = 500;
@@ -1135,14 +1119,13 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             parameters,
             proposer_id: 1,
             created_at: 1,
-            status: ProposalStatus::Active,
+            status: ProposalStatus::Active(Some(ActiveStake {
+                stake_id: 0,
+                source_account_id: 1,
+            })),
             title: b"title".to_vec(),
             description: b"description".to_vec(),
             voting_results: VotingResults::default(),
-            stake_data: Some(StakeData {
-                stake_id: 0,
-                source_account_id: 1,
-            }),
         };
 
         assert_eq!(proposal, expected_proposal);
@@ -1156,9 +1139,9 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         expected_proposal.status = ProposalStatus::Finalized(FinalizationData {
             proposal_status: ProposalDecisionStatus::Canceled,
             finalized_at: 1,
-            finalization_error: None,
+            encoded_unstaking_error_due_to_broken_runtime: None,
+            stake_data_after_unstaking_error: None,
         });
-        expected_proposal.stake_data = None;
 
         assert_eq!(proposal, expected_proposal);
 
@@ -1201,7 +1184,7 @@ fn finalize_proposal_using_stake_mocks_succeeds() {
                 ProposalParametersFixture::default().with_required_stake(stake_amount);
             let dummy_proposal = DummyProposalFixture::default()
                 .with_parameters(parameters_fixture.params())
-                .with_origin(RawOrigin::Signed(account_id))
+                .with_account_id(account_id)
                 .with_stake(stake_amount);
 
             let _proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
@@ -1243,8 +1226,9 @@ fn proposal_slashing_succeeds() {
             proposal.status,
             ProposalStatus::Finalized(FinalizationData {
                 proposal_status: ProposalDecisionStatus::Slashed,
-                finalization_error: None,
+                encoded_unstaking_error_due_to_broken_runtime: None,
                 finalized_at: 1,
+                stake_data_after_unstaking_error: None,
             }),
         );
         assert!(!<ActiveProposalIds<Test>>::exists(proposal_id));
@@ -1284,7 +1268,7 @@ fn finalize_proposal_using_stake_mocks_failed() {
                 ProposalParametersFixture::default().with_required_stake(stake_amount);
             let dummy_proposal = DummyProposalFixture::default()
                 .with_parameters(parameters_fixture.params())
-                .with_origin(RawOrigin::Signed(account_id))
+                .with_account_id(account_id)
                 .with_stake(stake_amount);
 
             let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
@@ -1301,15 +1285,15 @@ fn finalize_proposal_using_stake_mocks_failed() {
                     status: ProposalStatus::finalized_with_error(
                         ProposalDecisionStatus::Expired,
                         Some("Cannot remove stake"),
+                        Some(ActiveStake {
+                            stake_id: 1,
+                            source_account_id: 1
+                        }),
                         4,
                     ),
                     title: b"title".to_vec(),
                     description: b"description".to_vec(),
                     voting_results: VotingResults::default(),
-                    stake_data: Some(StakeData {
-                        stake_id: 1,
-                        source_account_id: 1
-                    }),
                 }
             );
         });

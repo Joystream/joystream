@@ -23,6 +23,7 @@ use rstd::vec::Vec;
 use srml_support::{decl_error, decl_module, decl_storage, ensure, print};
 use system::{ensure_root, RawOrigin};
 
+use common::origin_validator::ActorOriginValidator;
 use proposal_engine::ProposalParameters;
 
 /// 'Proposals codex' substrate module Trait
@@ -34,6 +35,13 @@ pub trait Trait:
 
     /// Defines max wasm code length of the runtime upgrade proposal.
     type RuntimeUpgradeWasmProposalMaxLength: Get<u32>;
+
+    /// Validates member id and origin combination
+    type MembershipOriginValidator: ActorOriginValidator<
+        Self::Origin,
+        MemberId<Self>,
+        Self::AccountId,
+    >;
 }
 use srml_support::traits::{Currency, Get};
 
@@ -45,7 +53,7 @@ pub type BalanceOf<T> =
 pub type NegativeImbalance<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
 
-use membership::origin_validator::MemberId;
+type MemberId<T> = <T as membership::members::Trait>::MemberId;
 
 decl_error! {
     pub enum Error {
@@ -123,24 +131,35 @@ decl_module! {
             text: Vec<u8>,
             stake_balance: Option<BalanceOf<T>>,
         ) {
+            let account_id = T::MembershipOriginValidator::ensure_actor_origin(origin, member_id.clone())?;
+
             let parameters = proposal_types::parameters::text_proposal::<T>();
 
             ensure!(!text.is_empty(), Error::TextProposalIsEmpty);
             ensure!(text.len() as u32 <=  T::TextProposalMaxLength::get(),
                 Error::TextProposalSizeExceeded);
 
+            <proposal_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
+                &parameters,
+                &title,
+                &description,
+                stake_balance,
+            )?;
+
+            <proposal_discussion::Module<T>>::ensure_can_create_thread(
+                &title,
+                member_id.clone(),
+            )?;
+
             let proposal_code = <Call<T>>::text_proposal(title.clone(), description.clone(), text);
 
-            let (cloned_origin1, cloned_origin2) =  Self::double_origin(origin);
-
             let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
-                cloned_origin1,
                 member_id,
                 title.clone(),
             )?;
 
             let proposal_id = <proposal_engine::Module<T>>::create_proposal(
-                cloned_origin2,
+                account_id,
                 member_id,
                 parameters,
                 title,
@@ -161,24 +180,35 @@ decl_module! {
             wasm: Vec<u8>,
             stake_balance: Option<BalanceOf<T>>,
         ) {
+            let account_id = T::MembershipOriginValidator::ensure_actor_origin(origin, member_id.clone())?;
+
             let parameters = proposal_types::parameters::upgrade_runtime::<T>();
 
             ensure!(!wasm.is_empty(), Error::RuntimeProposalIsEmpty);
             ensure!(wasm.len() as u32 <= T::RuntimeUpgradeWasmProposalMaxLength::get(),
                 Error::RuntimeProposalSizeExceeded);
 
+            <proposal_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
+                &parameters,
+                &title,
+                &description,
+                stake_balance,
+            )?;
+
+            <proposal_discussion::Module<T>>::ensure_can_create_thread(
+                &title,
+                member_id.clone(),
+            )?;
+
             let proposal_code = <Call<T>>::text_proposal(title.clone(), description.clone(), wasm);
 
-            let (cloned_origin1, cloned_origin2) =  Self::double_origin(origin);
-
             let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
-                cloned_origin1,
                 member_id,
                 title.clone(),
             )?;
 
             let proposal_id = <proposal_engine::Module<T>>::create_proposal(
-                cloned_origin2,
+                account_id,
                 member_id,
                 parameters,
                 title,
