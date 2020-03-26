@@ -2040,7 +2040,7 @@ decl_module! {
             let mint_id = Self::mint();
             let mint = <minting::Module<T>>::mints(mint_id); // must exist
             let new_capacity = mint.capacity() + additional_capacity;
-            let _ = <minting::Module<T>>::set_mint_capacity(mint_id, new_capacity);
+            <minting::Module<T>>::set_mint_capacity(mint_id, new_capacity)?;
 
             Self::deposit_event(RawEvent::MintCapacityIncreased(
                 mint_id, additional_capacity, new_capacity
@@ -2063,7 +2063,7 @@ decl_module! {
 
             if new_capacity != current_capacity {
                 // Cannot fail if mint exists
-                let _ = <minting::Module<T>>::set_mint_capacity(mint_id, new_capacity);
+                <minting::Module<T>>::set_mint_capacity(mint_id, new_capacity)?;
 
                 if new_capacity > current_capacity {
                     Self::deposit_event(RawEvent::MintCapacityIncreased(

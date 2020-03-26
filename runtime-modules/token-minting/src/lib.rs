@@ -73,6 +73,15 @@ impl From<MintingError> for TransferError {
     }
 }
 
+impl From<GeneralError> for &'static str {
+    fn from(err: GeneralError) -> &'static str {
+        match err {
+            GeneralError::MintNotFound => "MintNotFound",
+            GeneralError::NextAdjustmentInPast => "NextAdjustmentInPast",
+        }
+    }
+}
+
 #[derive(Encode, Decode, Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Adjustment<Balance: Zero, BlockNumber> {
     // First adjustment will be after AdjustOnInterval.block_interval
