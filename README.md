@@ -158,7 +158,7 @@ Until the Joystream mainnet goes live, a sequence of test networks will be rolle
 
 ## Next Testnet
 
-Constantinople
+[Constantinople](/testnets/constantinople/README.md)
 
 
 ## Past Testnets
