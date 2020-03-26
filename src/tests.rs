@@ -3,6 +3,7 @@
 use crate::mock::{ConsecutiveRepliesInterval, *};
 use crate::*;
 use srml_support::assert_ok;
+use system::ensure_signed;
 
 //Blog, post or reply id
 const FIRST_ID: u32 = 0;

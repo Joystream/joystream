@@ -151,6 +151,9 @@ impl Trait for Runtime {
     type BlogOwnerEnsureOrigin = system::EnsureSigned<Self::AccountId>;
     type BlogOwnerId = u64;
 
+    type ParticipantEnsureOrigin = system::EnsureSigned<Self::AccountId>;
+    type ParticipantId = u64;
+
     type ReactionsMaxNumber = ReactionsMaxNumber;
     type ReactionsNumber = u32;
 
@@ -316,18 +319,18 @@ pub fn blog_by_id(blog_id: <Runtime as Trait>::BlogId) -> Option<Blog<Runtime>> 
 }
 
 pub fn create_blog(origin_id: u64) -> Result<(), &'static str> {
-    TestBlogModule::create_blog(Origin::signed(origin_id))
+    TestBlogModule::create_blog(origin_id)
 }
 
 pub fn lock_blog(origin_id: u64, blog_id: <Runtime as Trait>::BlogId) -> Result<(), &'static str> {
-    TestBlogModule::lock_blog(Origin::signed(origin_id), blog_id)
+    TestBlogModule::lock_blog(origin_id, blog_id)
 }
 
 pub fn unlock_blog(
     origin_id: u64,
     blog_id: <Runtime as Trait>::BlogId,
 ) -> Result<(), &'static str> {
-    TestBlogModule::unlock_blog(Origin::signed(origin_id), blog_id)
+    TestBlogModule::unlock_blog(origin_id, blog_id)
 }
 
 // Posts
