@@ -2050,20 +2050,17 @@ impl<T: Trait> Module<T> {
             MSG_CURRENT_LEAD_ALREADY_SET
         );
 
-        // Ensure that member can actually become lead
         let new_lead_id = <NextLeadId<T>>::get();
 
         let new_lead_role =
             role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id);
 
-        let _profile = <members::Module<T>>::can_register_role_on_member(
-            &member,
-            &role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id),
-        )?;
-
         //
         // == MUTATION SAFE ==
         //
+
+        // Register in role - will fail if member cannot become lead
+        members::Module::<T>::register_role_on_member(member, &new_lead_role)?;
 
         // Construct lead
         let new_lead = Lead {
@@ -2081,9 +2078,6 @@ impl<T: Trait> Module<T> {
 
         // Update next lead counter
         <NextLeadId<T>>::mutate(|id| *id += <LeadId<T> as One>::one());
-
-        // Register in role
-        <members::Module<T>>::register_role_on_member(member, &new_lead_role)?;
 
         // Trigger event
         Self::deposit_event(RawEvent::LeadSet(new_lead_id));
