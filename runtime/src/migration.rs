@@ -1,5 +1,5 @@
 use crate::VERSION;
-use sr_primitives::print;
+use sr_primitives::{print, traits::Zero};
 use srml_support::{decl_event, decl_module, decl_storage};
 use sudo;
 use system;
@@ -14,8 +14,10 @@ impl<T: Trait> Module<T> {
         // have been initialized with config() or build() mechanism.
         // ...
 
-        // Create the Council mint
-        governance::council::Module::<T>::create_new_council_mint();
+        // Create the Council mint. If it fails, we can't do anything about it here.
+        let _ = governance::council::Module::<T>::create_new_council_mint(
+            minting::BalanceOf::<T>::zero(),
+        );
 
         Self::deposit_event(RawEvent::Migrated(
             <system::Module<T>>::block_number(),
