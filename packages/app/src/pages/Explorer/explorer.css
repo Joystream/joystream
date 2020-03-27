@@ -1,0 +1,38 @@
+.explorer-columnar {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.explorer-column {
+  min-width: 50%;
+  max-width: 50%;
+}
+
+.column-header {
+  text-transform: lowercase;
+  min-height: 2.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.explorer-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  margin-bottom: 2.8rem;
+}
+
+.explorer-summary > section {
+  display: flex;
+  text-align: left;
+}
+
+.explorer-searchbar {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  top: -3.75rem;
+}
+
+.explorer-node-table {
+  width: max-content;
+}

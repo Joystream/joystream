@@ -1,0 +1,31 @@
+@charset "UTF-8";
+
+:root {
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+    Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+}
+
+html {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font);
+  color: rgb(78, 78, 78);
+  font-size: 14px;
+  background-color: #fafafa;
+  line-height: 1.4285em;
+}
+
+a {
+  color: unset;
+  text-decoration: none;
+}
+
+main {
+  padding: 0 4vw;
+}
+
+article {
+  background-color: white;
+}

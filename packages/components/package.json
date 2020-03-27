@@ -1,0 +1,46 @@
+{
+  "name": "components",
+  "version": "1.0.0",
+  "description": "\"React Components for the Atlas Project\"",
+  "author": "Gamaranto <gamarantor@gmail.com>",
+  "homepage": "https://github.com/Joystream/atlas#readme",
+  "license": "ISC",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.es.js",
+  "types": "dist/types",
+  "directories": {
+    "src": "src",
+    "test": "__tests__"
+  },
+  "files": [
+    "src"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Joystream/atlas.git"
+  },
+  "scripts": {
+    "start": "rollup -wc",
+    "index": "node scripts/build-index.js",
+    "build": "rollup -c",
+    "storybook": "start-storybook -p 6006",
+    "build-storybook": "build-storybook",
+    "now-build": "build-storybook",
+    "test": "echo \"Error: run tests from root\" && exit 1"
+  },
+  "bugs": {
+    "url": "https://github.com/Joystream/atlas/issues"
+  },
+  "dependencies": {
+    "@emotion/babel-preset-css-prop": "^10.0.27",
+    "@emotion/core": "^10.0.28",
+    "react": "^16.13.0",
+    "react-dom": "^16.13.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.8.7",
+    "@babel/preset-typescript": "^7.9.0",
+    "react-docgen-typescript-loader": "^3.7.1",
+    "ts-loader": "^6.2.1"
+  }
+}
