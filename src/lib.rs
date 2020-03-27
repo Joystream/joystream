@@ -1,10 +1,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use rstd::fmt::Debug;
-use runtime_primitives::traits::MaybeDisplay;
 use codec::{Codec, Decode, Encode};
 use rstd::collections::btree_map::BTreeMap;
+use rstd::fmt::Debug;
 use rstd::prelude::*;
+use runtime_primitives::traits::MaybeDisplay;
 use runtime_primitives::traits::{
     EnsureOrigin, MaybeSerialize, MaybeSerializeDeserialize, Member, One, SimpleArithmetic, Zero,
 };
@@ -82,14 +82,15 @@ pub trait Trait: system::Trait + Default {
     type BlogOwnerId: From<Self::AccountId> + Parameter + Default + Clone + Copy;
 
     /// Type for the participant id. Should be authenticated by account id.
-    type ParticipantId: From<Self::AccountId> + Parameter 
-        + Default 
-        + Clone 
-        + Copy 
-        + Member 
-        + MaybeSerializeDeserialize 
-        + Debug 
-        + MaybeDisplay 
+    type ParticipantId: From<Self::AccountId>
+        + Parameter
+        + Default
+        + Clone
+        + Copy
+        + Member
+        + MaybeSerializeDeserialize
+        + Debug
+        + MaybeDisplay
         + Ord;
 
     /// Type of identifier for blogs.
@@ -188,6 +189,11 @@ pub struct Post<T: Trait> {
     body: Vec<u8>,
     /// Overall replies counter, associated with post
     replies_count: T::ReplyId,
+    /// Root replies counter, associated with a post
+    root_replies_count: T::ReplyId,
+    /// Block numbers of last created root replies
+    // (needed for max consecutive replies constraint check)
+    last_root_replies_block_numbers: Vec<T::BlockNumber>,
     /// AccountId -> All presented reactions state mapping
     reactions: BTreeMap<T::ParticipantId, Vec<bool>>,
 }
@@ -202,6 +208,10 @@ impl<T: Trait> Post<T> {
             body,
             // Set replies count of newly created post to zero
             replies_count: T::ReplyId::default(),
+            // Set root replies count of newly created post to zero
+            root_replies_count: T::ReplyId::default(),
+            // Initialize with blank (default) collection
+            last_root_replies_block_numbers: vec![],
             // Initialize with blank (default) collection
             reactions: BTreeMap::default(),
         }
@@ -227,9 +237,28 @@ impl<T: Trait> Post<T> {
         self.replies_count
     }
 
-    /// Increase replies count, associated with given post by 1
+    /// Get root replies count, associated with this post
+    fn root_replies_count(&self) -> T::ReplyId {
+        self.root_replies_count
+    }
+
+    /// Increase replies counter, associated with given post by 1
     fn increment_replies_counter(&mut self) {
         self.replies_count += T::ReplyId::one()
+    }
+
+    fn add_root_reply(&mut self, block_number: T::BlockNumber) {
+        Module::<T>::recalculate_last_replies_count(&mut self.last_root_replies_block_numbers, block_number);
+        Module::<T>::push_reply_block_number(&mut self.last_root_replies_block_numbers, block_number);
+        // Increase root replies counter, associated with given post by 1
+        self.root_replies_count += T::ReplyId::one()
+    }
+
+    fn calculate_last_root_replies_count(&self, current_block_number: T::BlockNumber) -> usize {
+        Module::<T>::calculate_last_replies_count(
+            &self.last_root_replies_block_numbers,
+            current_block_number,
+        )
     }
 
     /// Update post title and body, if Option::Some(_)
@@ -244,7 +273,7 @@ impl<T: Trait> Post<T> {
 
     /// Update reactions state
     fn update_reactions(&mut self, owner: &T::ParticipantId, index: T::ReactionsNumber) -> bool {
-        mutate_reactions::<T>(&mut self.reactions, owner, index)
+        Module::<T>::mutate_reactions(&mut self.reactions, owner, index)
     }
 
     /// Get reactions state, associated with reaction owner
@@ -258,18 +287,18 @@ impl<T: Trait> Post<T> {
     }
 }
 
-/// Enum variant, representing reply`s parent type
+/// Enum variant, representing reply`s parent id
 #[derive(Encode, Decode, Clone, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub enum Parent<T: Trait> {
+pub enum ParentId<T: Trait> {
     Reply(T::ReplyId),
     Post(T::PostId),
 }
 
 /// Default parent representation
-impl<T: Trait> Default for Parent<T> {
+impl<T: Trait> Default for ParentId<T> {
     fn default() -> Self {
-        Parent::Post(T::PostId::default())
+        ParentId::Post(T::PostId::default())
     }
 }
 
@@ -282,20 +311,26 @@ pub struct Reply<T: Trait> {
     /// Participant id, associated with a reply owner
     owner: T::ParticipantId,
     /// Reply`s parent id
-    parent_id: Parent<T>,
-    /// Reply creation block number
-    block_number: T::BlockNumber,
+    parent_id: ParentId<T>,
+    /// Block numbers of last created direct replies
+    // (needed for max consecutive replies constraint check)
+    last_direct_replies_block_numbers: Vec<T::BlockNumber>,
+    /// Direct replies counter, associated with this reply
+    direct_replies_count: T::ReplyId,
     /// AccountId -> All presented reactions state mapping
     reactions: BTreeMap<T::ParticipantId, Vec<bool>>,
 }
 
 impl<T: Trait> Reply<T> {
-    fn new(text: Vec<u8>, owner: T::ParticipantId, parent_id: Parent<T>) -> Self {
+    fn new(text: Vec<u8>, owner: T::ParticipantId, parent_id: ParentId<T>) -> Self {
         Self {
             text,
             owner,
             parent_id,
-            block_number: <system::Module<T>>::block_number(),
+            // Initialize with blank (default) collection
+            last_direct_replies_block_numbers: vec![],
+            // Set direct replies count of newly created reply to zero
+            direct_replies_count: T::ReplyId::default(),
             // Initialize with blank (default) collection
             reactions: BTreeMap::new(),
         }
@@ -307,7 +342,7 @@ impl<T: Trait> Reply<T> {
     }
 
     /// Check if account_id is parent
-    fn is_parent(&self, account_id: &Parent<T>) -> bool {
+    fn is_parent(&self, account_id: &ParentId<T>) -> bool {
         core::mem::discriminant(&self.parent_id) == core::mem::discriminant(account_id)
     }
 
@@ -318,7 +353,7 @@ impl<T: Trait> Reply<T> {
 
     /// Update reactions state
     fn update_reactions(&mut self, owner: &T::ParticipantId, index: T::ReactionsNumber) -> bool {
-        mutate_reactions::<T>(&mut self.reactions, owner, index)
+        Module::<T>::mutate_reactions(&mut self.reactions, owner, index)
     }
 
     /// Get reactions state, associated with reaction owner
@@ -331,31 +366,26 @@ impl<T: Trait> Reply<T> {
         &self.reactions
     }
 
-    /// Return reply creation timestamp
-    fn block_number(&self) -> T::BlockNumber {
-        self.block_number
+    /// Get direct replies count, associated with this reply
+    fn direct_replies_count(&self) -> T::ReplyId {
+        self.direct_replies_count
     }
-}
 
-/// Flips reaction status under given index and returns the result of that flip.
-/// If there is no reactions under this AccountId entry yet,
-/// initialize a new reactions array and set reaction under given index
-fn mutate_reactions<T: Trait>(
-    reactions: &mut BTreeMap<T::ParticipantId, Vec<bool>>,
-    owner: &T::ParticipantId,
-    index: T::ReactionsNumber,
-) -> bool {
-    if let Some(reactions_array) = reactions.get_mut(owner) {
-        // Flip reaction value under given index
-        reactions_array[index.into() as usize] ^= true;
-        reactions_array[index.into() as usize]
-    } else {
-        // Initialize reactions array with all reactions unset (false)
-        let mut reactions_array = vec![false; T::ReactionsMaxNumber::get().into() as usize];
-        // Flip reaction value under given index
-        reactions_array[index.into() as usize] ^= true;
-        reactions.insert(owner.clone(), reactions_array);
-        true
+    fn add_direct_reply(&mut self, block_number: T::BlockNumber) {
+        Module::<T>::recalculate_last_replies_count(&mut self.last_direct_replies_block_numbers, block_number);
+        Module::<T>::push_reply_block_number(&mut self.last_direct_replies_block_numbers, block_number);
+        // Increase direct replies counter, associated with given reply by 1
+        self.direct_replies_count += T::ReplyId::one()
+    }
+
+    fn calculate_last_direct_replies_count(
+        &self,
+        current_block_number: T::BlockNumber,
+    ) -> usize {
+        Module::<T>::calculate_last_replies_count(
+            &self.last_direct_replies_block_numbers,
+            current_block_number,
+        )
     }
 }
 
@@ -551,19 +581,25 @@ decl_module! {
             // Ensure reply text length is valid
             Self::ensure_reply_text_is_valid(&text)?;
 
-            // Ensure  maximum number of consecutive replies in time limit not reached
-            Self::ensure_consecutive_replies_limit_not_reached(blog_id, post_id, reply_id)?;
+            let current_block_number = <system::Module<T>>::block_number();
 
             // New reply creation
             let reply = if let Some(reply_id) = reply_id {
-
-                // Check reply existance in case of direct reply
-                Self::ensure_reply_exists(blog_id, post_id, reply_id)?;
-                Self::ensure_direct_replies_limit_not_reached(blog_id, post_id, reply_id)?;
-                Reply::<T>::new(text, reply_owner, Parent::Reply(reply_id))
+                // Check parent reply existance in case of direct reply
+                let reply = Self::ensure_reply_exists(blog_id, post_id, reply_id)?;
+                // Ensure, maximum number direct replies per reply limit not reached
+                Self::ensure_direct_replies_limit_not_reached(&reply)?;
+                // Ensure maximum number of consecutive replies in time limit not reached
+                let last_direct_replies_count = reply.calculate_last_direct_replies_count(current_block_number);
+                Self::ensure_consecutive_replies_limit_not_reached(last_direct_replies_count)?;
+                Reply::<T>::new(text, reply_owner, ParentId::Reply(reply_id))
             } else {
-                Self::ensure_replies_limit_not_reached(blog_id, post_id)?;
-                Reply::<T>::new(text, reply_owner, Parent::Post(post_id))
+                // Ensure root replies limit not reached
+                Self::ensure_replies_limit_not_reached(&post)?;
+                // Ensure maximum number of consecutive replies in time limit not reached
+                let last_root_replies_count = post.calculate_last_root_replies_count(current_block_number);
+                Self::ensure_consecutive_replies_limit_not_reached(last_root_replies_count)?;
+                Reply::<T>::new(text, reply_owner, ParentId::Post(post_id))
             };
 
             //
@@ -577,10 +613,17 @@ decl_module! {
             // Increment replies counter, associated with given post
             <PostById<T>>::mutate(blog_id, post_id, |inner_post| inner_post.increment_replies_counter());
 
-            // Trigger event
             if let Some(reply_id) = reply_id {
+                <ReplyById<T>>::mutate((blog_id, post_id, reply_id), |inner_reply|  {
+                    inner_reply.add_direct_reply(current_block_number);
+                });
+                // Trigger event
                 Self::deposit_event(RawEvent::DirectReplyCreated(reply_owner, blog_id, post_id, reply_id, post_replies_count));
             } else {
+                <PostById<T>>::mutate(blog_id, post_id, |inner_post|  {
+                    inner_post.add_root_reply(current_block_number);
+                });
+                // Trigger event
                 Self::deposit_event(RawEvent::ReplyCreated(reply_owner, blog_id, post_id, post_replies_count));
             }
             Ok(())
@@ -691,7 +734,6 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-
     fn get_blog_owner(origin: T::Origin) -> Result<T::BlogOwnerId, &'static str> {
         let account_id = T::BlogOwnerEnsureOrigin::ensure_origin(origin)?;
         Ok(T::BlogOwnerId::from(account_id))
@@ -701,10 +743,10 @@ impl<T: Trait> Module<T> {
         let account_id = T::ParticipantEnsureOrigin::ensure_origin(origin)?;
         Ok(T::ParticipantId::from(account_id))
     }
-    
+
     /// Create blog via an extrinsic where access is gated by a dedicated EnsureOrigin runtime trait
     pub fn create_blog(blog_owner_id: T::BlogOwnerId) -> dispatch::Result {
-
+        
         //
         // == MUTATION SAFE ==
         //
@@ -724,7 +766,6 @@ impl<T: Trait> Module<T> {
 
     /// Lock blog to forbid mutations in all posts, related to given blog
     pub fn lock_blog(blog_owner_id: T::BlogOwnerId, blog_id: T::BlogId) -> dispatch::Result {
-
         // Ensure blog with given id exists
         let blog = Self::ensure_blog_exists(blog_id)?;
 
@@ -745,7 +786,6 @@ impl<T: Trait> Module<T> {
 
     /// Unlock blog to allow mutations in all posts, related to given blog (If was locked previously)
     pub fn unlock_blog(blog_owner_id: T::BlogOwnerId, blog_id: T::BlogId) -> dispatch::Result {
-
         // Ensure blog with given id exists
         let blog = Self::ensure_blog_exists(blog_id)?;
 
@@ -760,6 +800,64 @@ impl<T: Trait> Module<T> {
         <BlogById<T>>::mutate(&blog_id, |inner_blog| inner_blog.unlock());
         Self::deposit_event(RawEvent::BlogUnlocked(blog_owner_id, blog_id));
         Ok(())
+    }
+
+    /// Flips reaction status under given index and returns the result of that flip.
+    /// If there is no reactions under this AccountId entry yet,
+    /// initialize a new reactions array and set reaction under given index
+    fn mutate_reactions(
+        reactions: &mut BTreeMap<T::ParticipantId, Vec<bool>>,
+        owner: &T::ParticipantId,
+        index: T::ReactionsNumber,
+    ) -> bool {
+        if let Some(reactions_array) = reactions.get_mut(owner) {
+            // Flip reaction value under given index
+            reactions_array[index.into() as usize] ^= true;
+            reactions_array[index.into() as usize]
+        } else {
+            // Initialize reactions array with all reactions unset (false)
+            let mut reactions_array = vec![false; T::ReactionsMaxNumber::get().into() as usize];
+            // Flip reaction value under given index
+            reactions_array[index.into() as usize] ^= true;
+            reactions.insert(owner.clone(), reactions_array);
+            true
+        }
+    }
+
+    fn recalculate_last_replies_count(
+        last_replies_block_numbers: &mut Vec<T::BlockNumber>,
+        current_block_number: T::BlockNumber,
+    ) -> usize {
+        // Remove all replies block numbers beyond the consecutive replies interval constraint
+        // Consider using retain() instead for simplicity
+        while matches!(
+            last_replies_block_numbers.last(),
+            Some(reply_block_number) if T::ConsecutiveRepliesInterval::get() < current_block_number - *reply_block_number
+        ) {
+            last_replies_block_numbers.pop();
+        }
+        last_replies_block_numbers.len()
+    }
+
+    fn calculate_last_replies_count(
+        last_replies_block_numbers: &[T::BlockNumber],
+        current_block_number: T::BlockNumber,
+    ) -> usize {
+        last_replies_block_numbers
+            .iter()
+            .rev()
+            .take_while(|reply_block_number| {
+                T::ConsecutiveRepliesInterval::get() > current_block_number - **reply_block_number
+            })
+            .count()
+    }
+
+    fn push_reply_block_number(last_replies_block_numbers: &mut Vec<T::BlockNumber>, block_number: T::BlockNumber) {
+        if last_replies_block_numbers.is_empty() {
+            last_replies_block_numbers
+                .reserve(T::ConsecutiveRepliesMaxNumber::get() as usize);
+        }
+        last_replies_block_numbers.push(block_number);
     }
 
     fn ensure_blog_exists(blog_id: T::BlogId) -> Result<Blog<T>, &'static str> {
@@ -838,96 +936,33 @@ impl<T: Trait> Module<T> {
         Ok(posts_count)
     }
 
-    /// Get either replies count or direct replies count by given parent post/blog.
-    pub fn get_replies_count(
-        blog_id: T::BlogId,
-        post_id: T::PostId,
-        reply_id: Option<T::ReplyId>,
-    ) -> usize {
-        // Calculate replies count, iterating through all post
-        // related replies and checking if reply parent is given parent post/reply
-        <ReplyById<T>>::enumerate()
-            // Get replies, related to given post
-            .filter(|(id, _)| blog_id == id.0 && post_id == id.1)
-            // Get replies, related to given parent
-            .filter(|(_, reply)| {
-                if let Some(reply_id) = reply_id {
-                    reply.is_parent(&Parent::Reply(reply_id))
-                } else {
-                    reply.is_parent(&Parent::Post(post_id))
-                }
-            })
-            .count()
-    }
-
-    fn ensure_direct_replies_limit_not_reached(
-        blog_id: T::BlogId,
-        post_id: T::PostId,
-        reply_id: T::ReplyId,
-    ) -> Result<(), &'static str> {
-        let direct_replies_count = Self::get_replies_count(blog_id, post_id, Some(reply_id)) as u32;
+    fn ensure_direct_replies_limit_not_reached(reply: &Reply<T>) -> Result<(), &'static str> {
+        // Get direct replies count, associated with given reply
+        let direct_replies_count = reply.direct_replies_count();
 
         ensure!(
-            direct_replies_count < T::DirectRepliesMaxNumber::get(),
+            direct_replies_count < T::DirectRepliesMaxNumber::get().into(),
             DIRECT_REPLIES_LIMIT_REACHED
         );
 
         Ok(())
     }
 
-    fn ensure_replies_limit_not_reached(
-        blog_id: T::BlogId,
-        post_id: T::PostId,
-    ) -> Result<(), &'static str> {
-        let replies_count = Self::get_replies_count(blog_id, post_id, None) as u32;
+    fn ensure_replies_limit_not_reached(post: &Post<T>) -> Result<(), &'static str> {
+        // Get root replies count, associated with given post
+        let root_replies_count = post.root_replies_count();
 
         ensure!(
-            replies_count < T::RepliesMaxNumber::get(),
+            root_replies_count < T::RepliesMaxNumber::get().into(),
             REPLIES_LIMIT_REACHED
         );
 
         Ok(())
     }
 
-    /// Get number of consecutive (in time) replies by
-    /// the same actor (reader or author) to the same post or reply.
-    pub fn get_consecutive_replies_count(
-        blog_id: T::BlogId,
-        post_id: T::PostId,
-        reply_id: Option<T::ReplyId>,
-    ) -> usize {
-        <ReplyById<T>>::enumerate()
-            // Get replies, related to given post
-            .filter(|(id, _)| blog_id == id.0 && post_id == id.1)
-            // Get replies, related to given parent
-            .filter(|(_, reply)| {
-                if let Some(reply_id) = reply_id {
-                    reply.is_parent(&Parent::Reply(reply_id))
-                } else {
-                    reply.is_parent(&Parent::Post(post_id))
-                }
-            })
-            // Get all replies, created in given interval
-            .filter(|(_, reply)| {
-                // Overflow protection
-                if <system::Module<T>>::block_number() < T::ConsecutiveRepliesInterval::get() {
-                    true
-                } else {
-                    reply.block_number()
-                        > <system::Module<T>>::block_number() - T::ConsecutiveRepliesInterval::get()
-                }
-            })
-            .count()
-    }
-
     fn ensure_consecutive_replies_limit_not_reached(
-        blog_id: T::BlogId,
-        post_id: T::PostId,
-        reply_id: Option<T::ReplyId>,
+        consecutive_replies_count: usize,
     ) -> Result<(), &'static str> {
-        let consecutive_replies_count =
-            Self::get_consecutive_replies_count(blog_id, post_id, reply_id);
-
         ensure!(
             consecutive_replies_count < T::ConsecutiveRepliesMaxNumber::get().into(),
             CONSECUTIVE_REPLIES_LIMIT_REACHED

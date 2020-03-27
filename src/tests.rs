@@ -43,7 +43,7 @@ fn assert_failure(
 fn ensure_replies_equality(
     reply: Option<Reply<Runtime>>,
     reply_owner_id: <Runtime as system::Trait>::AccountId,
-    parent: Parent<Runtime>,
+    parent: ParentId<Runtime>,
     editing: bool,
 ) {
     // Ensure  stored reply is equal to expected one
@@ -859,14 +859,14 @@ fn reply_creation_success() {
         // Replies related storage updated succesfully
         let reply = reply_by_id(FIRST_ID, FIRST_ID, FIRST_ID);
 
-        ensure_replies_equality(reply, reply_owner_id, Parent::Post(FIRST_ID), false);
+        ensure_replies_equality(reply, reply_owner_id, ParentId::Post(FIRST_ID), false);
 
         // Overall post replies count
         assert_eq!(post.replies_count(), 1);
 
         // Root replies counter updated
         assert_eq!(
-            TestBlogModule::get_replies_count(FIRST_ID, FIRST_ID, None),
+            post.root_replies_count(),
             1
         );
 
@@ -916,16 +916,14 @@ fn direct_reply_creation_success() {
         let post = post_by_id(FIRST_ID, FIRST_ID).unwrap();
 
         // Replies related storage updated succesfully
-        let reply = reply_by_id(FIRST_ID, FIRST_ID, SECOND_ID);
-
-        ensure_replies_equality(reply, direct_reply_owner_id, Parent::Reply(FIRST_ID), false);
+        let reply = reply_by_id(FIRST_ID, FIRST_ID, FIRST_ID).expect("Reply not found");
 
         // Overall post replies count
         assert_eq!(post.replies_count(), 2);
 
         // Direct replies counter updated
         assert_eq!(
-            TestBlogModule::get_replies_count(FIRST_ID, FIRST_ID, Some(FIRST_ID)),
+            reply.direct_replies_count(),
             1
         );
 
@@ -1084,11 +1082,10 @@ fn reply_creation_limit_reached() {
                 None,
                 ReplyType::Valid,
             ) {
-                let root_replies_count =
-                    TestBlogModule::get_replies_count(FIRST_ID, FIRST_ID, None) as u32;
+                let post = post_by_id(FIRST_ID, FIRST_ID).unwrap();
 
                 // Root post replies counter & reply root max number contraint equality checked
-                assert_eq!(root_replies_count, RepliesMaxNumber::get());
+                assert_eq!(post.root_replies_count(), RepliesMaxNumber::get());
 
                 // Last reply creation, before limit reached, failure checked
                 assert_failure(
@@ -1162,11 +1159,11 @@ fn direct_reply_creation_limit_reached() {
                 Some(FIRST_ID),
                 ReplyType::Valid,
             ) {
-                let direct_replies_count =
-                    TestBlogModule::get_replies_count(FIRST_ID, FIRST_ID, Some(FIRST_ID)) as u32;
+                let reply =
+                    reply_by_id(FIRST_ID, FIRST_ID, FIRST_ID).unwrap();
 
                 // Direct replies counter & max number contraint equality checked
-                assert_eq!(direct_replies_count, DirectRepliesMaxNumber::get());
+                assert_eq!(reply.direct_replies_count(), DirectRepliesMaxNumber::get());
 
                 // Last reply creation, before limit reached, failure checked
                 assert_failure(
@@ -1212,15 +1209,19 @@ fn consecutive_reply_creation_limit_reached() {
                     None,
                     ReplyType::Valid,
                 ) {
-                    let consecutive_replies_count =
-                        TestBlogModule::get_consecutive_replies_count(FIRST_ID, FIRST_ID, None);
+                    let post =
+                        post_by_id(FIRST_ID, FIRST_ID).unwrap();
 
                     // Consecutive replies counter & consecutive replies max number contraint equality checked
+                    let current_block_number = System::block_number();
                     assert_eq!(
-                        consecutive_replies_count,
+                        post.calculate_last_root_replies_count(current_block_number),
                         ConsecutiveRepliesMaxNumber::get().into()
                     );
-
+                    assert_eq!(
+                        post.root_replies_count(),
+                        ConsecutiveRepliesMaxNumber::get() as u32 + 1
+                    );
                     // Last reply creation, before max consecutive replies limit reached, failure checked
                     assert_failure(
                         Err(create_reply_err),
@@ -1266,7 +1267,7 @@ fn reply_editing_success() {
         // Reply after editing checked
         let reply = reply_by_id(FIRST_ID, FIRST_ID, FIRST_ID);
 
-        ensure_replies_equality(reply, reply_owner_id, Parent::Post(FIRST_ID), true);
+        ensure_replies_equality(reply, reply_owner_id, ParentId::Post(FIRST_ID), true);
 
         // Event checked
         let reply_edited_event =
@@ -1312,7 +1313,7 @@ fn reply_editing_blog_locked_error() {
         let reply = reply_by_id(FIRST_ID, FIRST_ID, FIRST_ID);
 
         // Compare with default unedited reply
-        ensure_replies_equality(reply, reply_owner_id, Parent::Post(FIRST_ID), true);
+        ensure_replies_equality(reply, reply_owner_id, ParentId::Post(FIRST_ID), true);
 
         // Failure checked
         assert_failure(
@@ -1360,7 +1361,7 @@ fn reply_editing_post_locked_error() {
         let reply = reply_by_id(FIRST_ID, FIRST_ID, FIRST_ID);
 
         // Compare with default unedited reply
-        ensure_replies_equality(reply, reply_owner_id, Parent::Post(FIRST_ID), true);
+        ensure_replies_equality(reply, reply_owner_id, ParentId::Post(FIRST_ID), true);
 
         // Failure checked
         assert_failure(
@@ -1434,7 +1435,7 @@ fn reply_editing_text_too_long_error() {
         let reply = reply_by_id(FIRST_ID, FIRST_ID, FIRST_ID);
 
         // Compare with default unedited reply
-        ensure_replies_equality(reply, reply_owner_id, Parent::Post(FIRST_ID), true);
+        ensure_replies_equality(reply, reply_owner_id, ParentId::Post(FIRST_ID), true);
 
         // Failure checked
         assert_failure(
@@ -1479,7 +1480,7 @@ fn reply_editing_ownership_error() {
         let reply = reply_by_id(FIRST_ID, FIRST_ID, FIRST_ID);
 
         // Compare with default unedited reply
-        ensure_replies_equality(reply, reply_owner_id, Parent::Post(FIRST_ID), true);
+        ensure_replies_equality(reply, reply_owner_id, ParentId::Post(FIRST_ID), true);
 
         // Failure checked
         assert_failure(

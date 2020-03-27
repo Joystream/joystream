@@ -436,7 +436,7 @@ pub fn get_reply_text(reply_type: ReplyType, editing: bool) -> Vec<u8> {
 pub fn get_reply(
     reply_type: ReplyType,
     owner: <Runtime as system::Trait>::AccountId,
-    parent_id: Parent<Runtime>,
+    parent_id: ParentId<Runtime>,
     editing: bool,
 ) -> Reply<Runtime> {
     let reply_text = get_reply_text(reply_type, editing);
