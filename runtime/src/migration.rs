@@ -4,24 +4,18 @@ use srml_support::{decl_event, decl_module, decl_storage};
 use sudo;
 use system;
 
-// When preparing a new major runtime release version bump this value to match it and update
-// the initialization code in runtime_initialization(). Because of the way substrate runs runtime code
-// the runtime doesn't need to maintain any logic for old migrations. All knowledge about state of the chain and runtime
-// prior to the new runtime taking over is implicit in the migration code implementation. If assumptions are incorrect
-// behaviour is undefined.
-const MIGRATION_FOR_SPEC_VERSION: u32 = 0;
-
 impl<T: Trait> Module<T> {
-    fn runtime_initialization() {
-        if VERSION.spec_version != MIGRATION_FOR_SPEC_VERSION {
-            return;
-        }
-
-        print("running runtime initializers");
+    fn runtime_upgraded() {
+        print("running runtime initializers...");
 
         // ...
-        // add initialization of other modules introduced in this runtime
+        // add initialization of modules introduced in new runtime release. This
+        // would be any new storage values that need an initial value which would not
+        // have been initialized with config() or build() mechanism.
         // ...
+
+        // Create the Council mint
+        governance::council::Module::<T>::initialize_mint();
 
         Self::deposit_event(RawEvent::Migrated(
             <system::Module<T>>::block_number(),
@@ -36,6 +30,7 @@ pub trait Trait:
     + storage::data_object_storage_registry::Trait
     + forum::Trait
     + sudo::Trait
+    + governance::council::Trait
 {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
@@ -64,7 +59,7 @@ decl_module! {
                 SpecVersion::put(VERSION.spec_version);
 
                 // run migrations and store initializers
-                Self::runtime_initialization();
+                Self::runtime_upgraded();
             }
         }
     }

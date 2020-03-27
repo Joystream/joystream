@@ -70,7 +70,10 @@ impl membership::members::Trait for Test {
     type ActorId = u32;
     type InitialMembersBalance = InitialMembersBalance;
 }
-
+impl minting::Trait for Test {
+    type Currency = Balances;
+    type MintId = u64;
+}
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
     pub const TransferFee: u32 = 0;

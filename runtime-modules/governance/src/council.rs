@@ -21,7 +21,7 @@ impl<X: CouncilTermEnded> CouncilTermEnded for (X,) {
     }
 }
 
-pub trait Trait: system::Trait + GovernanceCurrency {
+pub trait Trait: system::Trait + minting::Trait + GovernanceCurrency {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type CouncilTermEnded: CouncilTermEnded;
@@ -29,8 +29,14 @@ pub trait Trait: system::Trait + GovernanceCurrency {
 
 decl_storage! {
     trait Store for Module<T: Trait> as Council {
-        ActiveCouncil get(active_council) config(): Seats<T::AccountId, BalanceOf<T>>;
-        TermEndsAt get(term_ends_at) config() : T::BlockNumber = T::BlockNumber::from(1);
+        pub ActiveCouncil get(active_council) config(): Seats<T::AccountId, BalanceOf<T>>;
+
+        pub TermEndsAt get(term_ends_at) config() : T::BlockNumber = T::BlockNumber::from(1);
+
+        /// The mint that funds council member rewards and spending proposals budget.
+        pub Mint get(mint) build(|_config: &GenesisConfig<T>| {
+            <Module<T>>::initialize_mint()
+        }): <T as minting::Trait>::MintId;
     }
 }
 
@@ -59,6 +65,12 @@ impl<T: Trait> Module<T> {
 
     pub fn is_councilor(sender: &T::AccountId) -> bool {
         Self::active_council().iter().any(|c| c.member == *sender)
+    }
+
+    // Initializes a new mint
+    pub fn initialize_mint() -> T::MintId {
+        <minting::Module<T>>::add_mint(minting::BalanceOf::<T>::zero(), None)
+            .expect("Failed to create a mint for the council")
     }
 }
 
@@ -117,6 +129,12 @@ decl_module! {
             ensure_root(origin)?;
             ensure!(ends_at > <system::Module<T>>::block_number(), "must set future block number");
             <TermEndsAt<T>>::put(ends_at);
+        }
+
+        fn set_mint_capacity(origin, new_capacity: minting::BalanceOf<T>) {
+            ensure_root(origin)?;
+            let mint_id = Self::mint();
+            minting::Module::<T>::set_mint_capacity(mint_id, new_capacity)?;
         }
     }
 }
