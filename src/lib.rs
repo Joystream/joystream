@@ -10,7 +10,7 @@ use runtime_primitives::traits::{
 };
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter,
-    StorageDoubleMap, StorageLinkedMap, StorageMap, StorageValue,
+    StorageDoubleMap, Hashable
 };
 
 mod error_messages;
@@ -397,9 +397,9 @@ decl_storage! {
 
         BlogById get(fn blog_by_id): map T::BlogId => Blog<T>;
 
-        PostById get(fn post_by_id): double_map hasher(blake2_256) T::BlogId, blake2_256(T::PostId) => Post<T>;
+        PostById get(fn post_by_id): double_map hasher(blake2_128) T::BlogId, blake2_128(T::PostId) => Post<T>;
 
-        ReplyById get (fn reply_by_id): linked_map (T::BlogId, T::PostId, T::ReplyId) => Reply<T>;
+        ReplyById get (fn reply_by_id): double_map hasher(blake2_128) (T::BlogId, T::PostId), blake2_128(T::ReplyId) => Reply<T>;
 
         /// Overall blogs counter
 
@@ -608,13 +608,13 @@ decl_module! {
 
             // Update runtime storage with new reply
             let post_replies_count = post.replies_count();
-            <ReplyById<T>>::insert((blog_id, post_id, post_replies_count), reply);
+            <ReplyById<T>>::insert((blog_id, post_id), post_replies_count, reply);
 
             // Increment replies counter, associated with given post
             <PostById<T>>::mutate(blog_id, post_id, |inner_post| inner_post.increment_replies_counter());
 
             if let Some(reply_id) = reply_id {
-                <ReplyById<T>>::mutate((blog_id, post_id, reply_id), |inner_reply|  {
+                <ReplyById<T>>::mutate((blog_id, post_id), reply_id, |inner_reply|  {
                     inner_reply.add_direct_reply(current_block_number);
                 });
                 // Trigger event
@@ -666,7 +666,7 @@ decl_module! {
             //
 
             // Update reply with new text
-            <ReplyById<T>>::mutate((blog_id, post_id, reply_id), |inner_reply| inner_reply.update(new_text));
+            <ReplyById<T>>::mutate((blog_id, post_id), reply_id, |inner_reply| inner_reply.update(new_text));
 
             // Trigger event
             Self::deposit_event(RawEvent::ReplyEdited(blog_id, post_id, reply_id));
@@ -712,7 +712,7 @@ decl_module! {
             if let Some(reply_id) = reply_id {
 
                 // Update reply reactions
-                <ReplyById<T>>::mutate((blog_id, post_id, reply_id), |inner_reply| {
+                <ReplyById<T>>::mutate((blog_id, post_id), reply_id, |inner_reply| {
                     let reaction_status = inner_reply.update_reactions(&owner, index);
 
                     // Trigger event
@@ -876,10 +876,10 @@ impl<T: Trait> Module<T> {
         reply_id: T::ReplyId,
     ) -> Result<Reply<T>, &'static str> {
         ensure!(
-            <ReplyById<T>>::exists((blog_id, post_id, reply_id)),
+            <ReplyById<T>>::exists((blog_id, post_id), reply_id),
             REPLY_NOT_FOUND
         );
-        Ok(Self::reply_by_id((blog_id, post_id, reply_id)))
+        Ok(Self::reply_by_id((blog_id, post_id), reply_id))
     }
 
     fn ensure_blog_ownership(

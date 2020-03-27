@@ -419,7 +419,7 @@ pub fn reply_by_id(
     post_id: <Runtime as Trait>::PostId,
     reply_id: <Runtime as Trait>::ReplyId,
 ) -> Option<Reply<Runtime>> {
-    match TestBlogModule::reply_by_id((blog_id, post_id, reply_id)) {
+    match TestBlogModule::reply_by_id((blog_id, post_id), reply_id) {
         reply if reply != Reply::<Runtime>::default() => Some(reply),
         _ => None,
     }
