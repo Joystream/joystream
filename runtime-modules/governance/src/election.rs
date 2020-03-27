@@ -126,14 +126,21 @@ decl_storage! {
         // If both candidacy limit and council size are zero then all applicant become council members
         // since no filtering occurs at end of announcing stage.
         // We only guard against these edge cases in the set_election_parameters() call.
-        AnnouncingPeriod get(announcing_period) config(): T::BlockNumber = T::BlockNumber::from(100);
-        VotingPeriod get(voting_period) config(): T::BlockNumber = T::BlockNumber::from(100);
-        RevealingPeriod get(revealing_period) config(): T::BlockNumber = T::BlockNumber::from(100);
-        CouncilSize get(council_size) config(): u32 = 10;
-        CandidacyLimit get (candidacy_limit) config(): u32 = 20;
-        MinCouncilStake get(min_council_stake) config(): BalanceOf<T> = BalanceOf::<T>::from(100);
-        NewTermDuration get(new_term_duration) config(): T::BlockNumber = T::BlockNumber::from(1000);
-        MinVotingStake get(min_voting_stake) config(): BalanceOf<T> = BalanceOf::<T>::from(10);
+        AnnouncingPeriod get(announcing_period): T::BlockNumber;
+        VotingPeriod get(voting_period): T::BlockNumber;
+        RevealingPeriod get(revealing_period): T::BlockNumber;
+        CouncilSize get(council_size): u32;
+        CandidacyLimit get (candidacy_limit): u32;
+        MinCouncilStake get(min_council_stake): BalanceOf<T>;
+        NewTermDuration get(new_term_duration): T::BlockNumber;
+        MinVotingStake get(min_voting_stake): BalanceOf<T>;
+    }
+    add_extra_genesis {
+        config(election_parameters): ElectionParameters<BalanceOf<T>, T::BlockNumber>;
+        build(|config: &GenesisConfig<T>| {
+            config.election_parameters.ensure_valid().expect("Invalid Election Parameters");
+            Module::<T>::set_verified_election_parameters(config.election_parameters);
+        });
     }
 }
 
@@ -731,6 +738,17 @@ impl<T: Trait> Module<T> {
 
         Ok(())
     }
+
+    fn set_verified_election_parameters(params: ElectionParameters<BalanceOf<T>, T::BlockNumber>) {
+        <AnnouncingPeriod<T>>::put(params.announcing_period);
+        <VotingPeriod<T>>::put(params.voting_period);
+        <RevealingPeriod<T>>::put(params.revealing_period);
+        <MinCouncilStake<T>>::put(params.min_council_stake);
+        <NewTermDuration<T>>::put(params.new_term_duration);
+        CouncilSize::put(params.council_size);
+        CandidacyLimit::put(params.candidacy_limit);
+        <MinVotingStake<T>>::put(params.min_voting_stake);
+    }
 }
 
 decl_module! {
@@ -825,15 +843,7 @@ decl_module! {
             ensure_root(origin)?;
             ensure!(!Self::is_election_running(), MSG_CANNOT_CHANGE_PARAMS_DURING_ELECTION);
             params.ensure_valid()?;
-
-            <AnnouncingPeriod<T>>::put(params.announcing_period);
-            <VotingPeriod<T>>::put(params.voting_period);
-            <RevealingPeriod<T>>::put(params.revealing_period);
-            <MinCouncilStake<T>>::put(params.min_council_stake);
-            <NewTermDuration<T>>::put(params.new_term_duration);
-            CouncilSize::put(params.council_size);
-            CandidacyLimit::put(params.candidacy_limit);
-            <MinVotingStake<T>>::put(params.min_voting_stake);
+            Self::set_verified_election_parameters(params);
         }
 
         fn force_stop_election(origin) {
