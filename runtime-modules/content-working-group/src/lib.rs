@@ -2040,10 +2040,7 @@ impl<T: Trait> Module<T> {
         <NextLeadId<T>>::mutate(|id| *id += <LeadId<T> as One>::one());
 
         // Register in role
-        let registered_role =
-            <members::Module<T>>::register_role_on_member(member, &new_lead_role).is_ok();
-
-        assert!(registered_role);
+        <members::Module<T>>::register_role_on_member(member, &new_lead_role)?;
 
         // Trigger event
         Self::deposit_event(RawEvent::LeadSet(new_lead_id));
@@ -2066,9 +2063,7 @@ impl<T: Trait> Module<T> {
             actor_id: lead_id,
         };
 
-        let unregistered_role = <members::Module<T>>::unregister_role(current_lead_role).is_ok();
-
-        assert!(unregistered_role);
+        <members::Module<T>>::unregister_role(current_lead_role)?;
 
         // Update lead stage as exited
         let current_block = <system::Module<T>>::block_number();
