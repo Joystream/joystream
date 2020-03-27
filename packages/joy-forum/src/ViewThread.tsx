@@ -15,7 +15,7 @@ import { withForumCalls } from './calls';
 import { withApi, withMulti } from '@polkadot/react-api';
 import { ApiProps } from '@polkadot/react-api/types';
 import { orderBy } from 'lodash';
-import { bnToStr } from '@polkadot/joy-utils/';
+import { bnToStr } from '@polkadot/joy-utils/index';
 import { IfIAmForumSudo } from './ForumSudo';
 import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
 
