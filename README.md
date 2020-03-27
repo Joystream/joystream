@@ -79,6 +79,11 @@ This will build and run a fresh new local development chain purging existing one
 cargo test
 ```
 
+### API integration tests
+
+```bash
+yarn test
+```
 
 ## Joystream Runtime
 
