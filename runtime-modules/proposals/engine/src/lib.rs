@@ -7,10 +7,11 @@
 //! - cancel_proposal - cancels the proposal (can be canceled only by owner)
 //! - veto_proposal - vetoes the proposal
 //!
-//! Public API (requires root origin):
+//! Public API:
 //! - create_proposal - creates proposal using provided parameters
 //! - ensure_create_proposal_parameters_are_valid - ensures that we can create the proposal
 //! - refund_proposal_stake - a callback for StakingHandlerEvents
+//! - reset_active_proposals - resets voting results for active proposals
 //!
 
 // Ensure we're `no_std` when compiling for Wasm.
@@ -460,6 +461,16 @@ impl<T: Trait> Module<T> {
         } else {
             print("Broken invariant: stake doesn't exist");
         }
+    }
+
+    /// Resets voting results for active proposals.
+    /// Possible application - after the new council elections.
+    pub fn reset_active_proposals() {
+        <ActiveProposalIds<T>>::enumerate().for_each(|(proposal_id, _)| {
+            <Proposals<T>>::mutate(proposal_id, |proposal| {
+                proposal.reset_proposal();
+            });
+        });
     }
 }
 

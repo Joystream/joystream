@@ -1,3 +1,5 @@
+#![warn(missing_docs)]
+
 use rstd::marker::PhantomData;
 
 use common::origin_validator::ActorOriginValidator;

@@ -1326,3 +1326,46 @@ fn create_proposal_fails_with_invalid_threshold_parameters() {
             .create_proposal_and_assert(Err(Error::InvalidParameterSlashingThreshold.into()));
     });
 }
+
+#[test]
+fn proposal_reset_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let dummy_proposal = DummyProposalFixture::default();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Reject);
+        vote_generator.vote_and_assert_ok(VoteKind::Abstain);
+        vote_generator.vote_and_assert_ok(VoteKind::Slash);
+
+        assert!(<ActiveProposalIds<Test>>::exists(proposal_id));
+
+        run_to_block_and_finalize(2);
+
+        let proposal = <Proposals<Test>>::get(proposal_id);
+
+        assert_eq!(
+            proposal.voting_results,
+            VotingResults {
+                abstentions: 1,
+                approvals: 0,
+                rejections: 1,
+                slashes: 1,
+            }
+        );
+
+        ProposalsEngine::reset_active_proposals();
+
+        let updated_proposal = <Proposals<Test>>::get(proposal_id);
+
+        assert_eq!(
+            updated_proposal.voting_results,
+            VotingResults {
+                abstentions: 0,
+                approvals: 0,
+                rejections: 0,
+                slashes: 0,
+            }
+        );
+    });
+}

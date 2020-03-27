@@ -4,15 +4,19 @@
 
 use crate::{ProposalCancellationFee, Runtime};
 use codec::Encode;
+use governance::election::CouncilElected;
 use membership::members;
 use proposals_engine::{
     ActiveStake, BalanceOf, Error, FinalizationData, Proposal, ProposalDecisionStatus,
-    ProposalParameters, ProposalStatus, VotingResults,
+    ProposalParameters, ProposalStatus, VoteKind, VotersParameters, VotingResults,
 };
 use sr_primitives::traits::DispatchResult;
 use sr_primitives::AccountId32;
 use srml_support::traits::Currency;
+use srml_support::StorageLinkedMap;
 use system::RawOrigin;
+
+use crate::CouncilManager;
 
 fn initial_test_ext() -> runtime_io::TestExternalities {
     let t = system::GenesisConfig::default()
@@ -24,6 +28,91 @@ fn initial_test_ext() -> runtime_io::TestExternalities {
 
 type Membership = membership::members::Module<Runtime>;
 type ProposalsEngine = proposals_engine::Module<Runtime>;
+type Council = governance::council::Module<Runtime>;
+
+fn setup_members(count: u8) {
+    let authority_account_id = <Runtime as system::Trait>::AccountId::default();
+    Membership::set_screening_authority(RawOrigin::Root.into(), authority_account_id.clone())
+        .unwrap();
+
+    for i in 0..count {
+        let account_id: [u8; 32] = [i; 32];
+        Membership::add_screened_member(
+            RawOrigin::Signed(authority_account_id.clone().into()).into(),
+            account_id.clone().into(),
+            members::UserInfo {
+                handle: Some(account_id.to_vec()),
+                avatar_uri: None,
+                about: None,
+            },
+        )
+        .unwrap();
+    }
+}
+
+fn setup_council() {
+    let councilor0 = AccountId32::default();
+    let councilor1: [u8; 32] = [1; 32];
+    let councilor2: [u8; 32] = [2; 32];
+    let councilor3: [u8; 32] = [3; 32];
+    let councilor4: [u8; 32] = [4; 32];
+    let councilor5: [u8; 32] = [5; 32];
+    assert!(Council::set_council(
+        system::RawOrigin::Root.into(),
+        vec![
+            councilor0,
+            councilor1.into(),
+            councilor2.into(),
+            councilor3.into(),
+            councilor4.into(),
+            councilor5.into()
+        ]
+    )
+    .is_ok());
+}
+
+struct VoteGenerator {
+    proposal_id: u32,
+    current_account_id: AccountId32,
+    current_account_id_seed: u8,
+    current_voter_id: u64,
+    pub auto_increment_voter_id: bool,
+}
+
+impl VoteGenerator {
+    fn new(proposal_id: u32) -> Self {
+        VoteGenerator {
+            proposal_id,
+            current_voter_id: 0,
+            current_account_id_seed: 0,
+            current_account_id: AccountId32::default(),
+            auto_increment_voter_id: true,
+        }
+    }
+    fn vote_and_assert_ok(&mut self, vote_kind: VoteKind) {
+        self.vote_and_assert(vote_kind, Ok(()));
+    }
+
+    fn vote_and_assert(&mut self, vote_kind: VoteKind, expected_result: DispatchResult<Error>) {
+        assert_eq!(self.vote(vote_kind.clone()), expected_result);
+    }
+
+    fn vote(&mut self, vote_kind: VoteKind) -> DispatchResult<Error> {
+        if self.auto_increment_voter_id {
+            self.current_account_id_seed += 1;
+            self.current_voter_id += 1;
+            let account_id: [u8; 32] = [self.current_account_id_seed; 32];
+            self.current_account_id = account_id.into();
+        }
+
+        ProposalsEngine::vote(
+            system::RawOrigin::Signed(self.current_account_id.clone()).into(),
+            self.current_voter_id,
+            self.proposal_id,
+            vote_kind,
+        )
+    }
+}
 
 #[derive(Clone)]
 struct DummyProposalFixture {
@@ -147,18 +236,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
     initial_test_ext().execute_with(|| {
         let account_id = <Runtime as system::Trait>::AccountId::default();
 
-        Membership::set_screening_authority(RawOrigin::Root.into(), account_id.clone()).unwrap();
-
-        Membership::add_screened_member(
-            RawOrigin::Signed(account_id.clone()).into(),
-            account_id.clone(),
-            members::UserInfo {
-                handle: Some(b"handle".to_vec()),
-                avatar_uri: None,
-                about: None,
-            },
-        )
-        .unwrap();
+        setup_members(2);
         let member_id = 0; // newly created member_id
 
         let stake_amount = 200u128;
@@ -230,5 +308,60 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             <Runtime as stake::Trait>::Currency::total_balance(&account_id),
             account_balance - cancellation_fee
         );
+    });
+}
+
+#[test]
+fn proposal_reset_succeeds() {
+    initial_test_ext().execute_with(|| {
+        setup_members(4);
+        setup_council();
+        // create proposal
+        let dummy_proposal = DummyProposalFixture::default();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        // create some votes
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Reject);
+        vote_generator.vote_and_assert_ok(VoteKind::Abstain);
+        vote_generator.vote_and_assert_ok(VoteKind::Slash);
+
+        assert!(<proposals_engine::ActiveProposalIds<Runtime>>::exists(
+            proposal_id
+        ));
+
+        // check
+        let proposal = ProposalsEngine::proposals(proposal_id);
+        assert_eq!(
+            proposal.voting_results,
+            VotingResults {
+                abstentions: 1,
+                approvals: 0,
+                rejections: 1,
+                slashes: 1,
+            }
+        );
+
+        // Ensure council was elected
+        assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 6);
+
+        // Check proposals CouncilElected hook
+        // just trigger the election hook, we don't care about the parameters
+        <Runtime as governance::election::Trait>::CouncilElected::council_elected(Vec::new(), 10);
+
+        let updated_proposal = ProposalsEngine::proposals(proposal_id);
+
+        assert_eq!(
+            updated_proposal.voting_results,
+            VotingResults {
+                abstentions: 0,
+                approvals: 0,
+                rejections: 0,
+                slashes: 0,
+            }
+        );
+
+        // Check council CouncilElected hook. It should set current council. And we passed empty council.
+        assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 0);
     });
 }

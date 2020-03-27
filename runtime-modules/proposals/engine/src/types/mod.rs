@@ -212,6 +212,14 @@ where
             None
         }
     }
+
+    /// Reset the proposal in Active status. Proposal with other status won't be changed.
+    /// Reset proposal operation clears voting results.
+    pub fn reset_proposal(&mut self) {
+        if let ProposalStatus::Active(_) = self.status.clone() {
+            self.voting_results = VotingResults::default();
+        }
+    }
 }
 
 /// Provides data for voting.

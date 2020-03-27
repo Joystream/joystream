@@ -1,3 +1,5 @@
+#![warn(missing_docs)]
+
 use super::{BalanceOf, CurrencyOf, NegativeImbalance};
 use crate::Trait;
 use rstd::convert::From;

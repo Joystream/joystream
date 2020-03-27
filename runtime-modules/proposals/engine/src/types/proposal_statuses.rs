@@ -1,3 +1,5 @@
+#![warn(missing_docs)]
+
 use codec::{Decode, Encode};
 use rstd::prelude::*;
 

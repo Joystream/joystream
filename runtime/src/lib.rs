@@ -672,7 +672,7 @@ impl common::currency::GovernanceCurrency for Runtime {
 
 impl governance::election::Trait for Runtime {
     type Event = Event;
-    type CouncilElected = (Council,);
+    type CouncilElected = (Council, integration::proposals::CouncilElectedHandler);
 }
 
 impl governance::council::Trait for Runtime {
