@@ -10,8 +10,8 @@ pub static MSG_CANDIDACY_LIMIT_WAS_LOWER_THAN_COUNCIL_SIZE: &str =
     "CandidacyWasLessThanCouncilSize";
 
 /// Combined Election parameters, as argument for set_election_parameters
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Clone, Copy, Encode, Decode, Default, PartialEq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Clone, Copy, Encode, Decode, Default, PartialEq, Debug)]
 pub struct ElectionParameters<Balance, BlockNumber> {
     pub announcing_period: BlockNumber,
     pub voting_period: BlockNumber,
