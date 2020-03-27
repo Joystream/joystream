@@ -1554,7 +1554,11 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
+<<<<<<< HEAD
 version = "2.1.5"
+=======
+version = "2.1.4"
+>>>>>>> development
 dependencies = [
  "ctrlc",
  "derive_more 0.14.1",

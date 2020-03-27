@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-//use super::genesis;
+use super::genesis;
 use super::mock::{self, *};
 //use crate::membership;
 use hiring;
@@ -2185,4 +2185,88 @@ pub fn generate_too_short_length_buffer(constraint: &InputValidationLengthConstr
 
 pub fn generate_too_long_length_buffer(constraint: &InputValidationLengthConstraint) -> Vec<u8> {
     generate_text((constraint.max() + 1) as usize)
+}
+
+#[test]
+fn increasing_mint_capacity() {
+    const MINT_CAPACITY: u64 = 50000;
+
+    TestExternalitiesBuilder::<Test>::default()
+        .with_content_wg_config(
+            genesis::GenesisConfigBuilder::<Test>::default()
+                .with_mint_capacity(MINT_CAPACITY)
+                .build(),
+        )
+        .build()
+        .execute_with(|| {
+            let mint_id = ContentWorkingGroup::mint();
+            let mint = Minting::mints(mint_id);
+            assert_eq!(mint.capacity(), MINT_CAPACITY);
+
+            let increase = 25000;
+            // Increasing mint capacity
+            let expected_new_capacity = MINT_CAPACITY + increase;
+            assert_ok!(ContentWorkingGroup::increase_mint_capacity(
+                Origin::ROOT,
+                increase
+            ));
+            // Excpected event after increasing
+            assert_eq!(
+                get_last_event_or_panic(),
+                crate::RawEvent::MintCapacityIncreased(mint_id, increase, expected_new_capacity)
+            );
+            // Excpected value of capacity after increasing
+            let mint = Minting::mints(mint_id);
+            assert_eq!(mint.capacity(), expected_new_capacity);
+        });
+}
+
+#[test]
+fn setting_mint_capacity() {
+    const MINT_CAPACITY: u64 = 50000;
+
+    TestExternalitiesBuilder::<Test>::default()
+        .with_content_wg_config(
+            genesis::GenesisConfigBuilder::<Test>::default()
+                .with_mint_capacity(MINT_CAPACITY)
+                .build(),
+        )
+        .build()
+        .execute_with(|| {
+            let mint_id = ContentWorkingGroup::mint();
+            let mint = Minting::mints(mint_id);
+            assert_eq!(mint.capacity(), MINT_CAPACITY);
+
+            // Decreasing mint capacity
+            let new_lower_capacity = 10000;
+            let decrease = MINT_CAPACITY - new_lower_capacity;
+            assert_ok!(ContentWorkingGroup::set_mint_capacity(
+                Origin::ROOT,
+                new_lower_capacity
+            ));
+            // Correct event after decreasing
+            assert_eq!(
+                get_last_event_or_panic(),
+                crate::RawEvent::MintCapacityDecreased(mint_id, decrease, new_lower_capacity)
+            );
+            // Correct value of capacity after decreasing
+            let mint = Minting::mints(mint_id);
+            assert_eq!(mint.capacity(), new_lower_capacity);
+
+            // Increasing mint capacity
+            let new_higher_capacity = 25000;
+            let increase = new_higher_capacity - mint.capacity();
+            assert_ok!(ContentWorkingGroup::set_mint_capacity(
+                Origin::ROOT,
+                new_higher_capacity
+            ));
+            // Excpected event after increasing
+            assert_eq!(
+                get_last_event_or_panic(),
+                crate::RawEvent::MintCapacityIncreased(mint_id, increase, new_higher_capacity)
+            );
+            // Excpected value of capacity after increasing
+            let mint = Minting::mints(mint_id);
+            assert_eq!(mint.capacity(), new_higher_capacity);
+        });
 }
