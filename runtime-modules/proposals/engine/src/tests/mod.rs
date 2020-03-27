@@ -1299,3 +1299,30 @@ fn finalize_proposal_using_stake_mocks_failed() {
         });
     });
 }
+
+#[test]
+fn create_proposal_fails_with_invalid_threshold_parameters() {
+    initial_test_ext().execute_with(|| {
+        let mut parameters = ProposalParameters {
+            voting_period: 3,
+            approval_quorum_percentage: 50,
+            approval_threshold_percentage: 0,
+            slashing_quorum_percentage: 60,
+            slashing_threshold_percentage: 60,
+            grace_period: 5,
+            required_stake: None,
+        };
+
+        let mut dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
+
+        dummy_proposal
+            .create_proposal_and_assert(Err(Error::InvalidParameterApprovalThreshold.into()));
+
+        parameters.approval_threshold_percentage = 60;
+        parameters.slashing_threshold_percentage = 0;
+        dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
+
+        dummy_proposal
+            .create_proposal_and_assert(Err(Error::InvalidParameterSlashingThreshold.into()));
+    });
+}
