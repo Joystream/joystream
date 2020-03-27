@@ -17,9 +17,6 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
-// TODO: Test StakingEventHandler
-// TODO: Test refund_proposal_stake()
-
 use types::FinalizedProposalData;
 use types::ProposalStakeManager;
 pub use types::{
@@ -431,12 +428,11 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    //TODO: candidate for invariant break or error saving to the state
-    /// Callback from StakingEventsHandler. Refunds unstaked imbalance back to the source account
+    /// Callback from StakingEventsHandler. Refunds unstaked imbalance back to the source account.
+    /// There can be a lot of invariant breaks in the scope of this proposal.
+    /// Such situations are handled by adding error messages to the log.
     pub fn refund_proposal_stake(stake_id: T::StakeId, imbalance: NegativeImbalance<T>) {
         if <StakesProposals<T>>::exists(stake_id) {
-            //TODO: handle non existence
-
             let proposal_id = Self::stakes_proposals(stake_id);
 
             if <Proposals<T>>::exists(proposal_id) {
@@ -444,14 +440,23 @@ impl<T: Trait> Module<T> {
 
                 if let ProposalStatus::Active(active_stake_result) = proposal.status {
                     if let Some(active_stake) = active_stake_result {
-                        //TODO: handle the result
-                        let _ = CurrencyOf::<T>::resolve_into_existing(
+                        let refunding_result = CurrencyOf::<T>::resolve_into_existing(
                             &active_stake.source_account_id,
                             imbalance,
                         );
+
+                        if refunding_result.is_err() {
+                            print("Broken invariant: cannot refund");
+                        }
                     }
+                } else {
+                    print("Broken invariant: proposal status is not Active");
                 }
+            } else {
+                print("Broken invariant: proposal doesn't exist");
             }
+        } else {
+            print("Broken invariant: stake doesn't exist");
         }
     }
 }
