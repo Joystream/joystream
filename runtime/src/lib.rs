@@ -115,11 +115,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 6,
-<<<<<<< HEAD
     spec_version: 11,
-=======
-    spec_version: 10,
->>>>>>> development
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
 };
