@@ -14,10 +14,7 @@ export class Utils {
 
       await signedTx
         .send(async result => {
-          if (
-            result.status.isFinalized === true &&
-            result.events !== undefined
-          ) {
+          if (result.status.isFinalized === true && result.events !== undefined) {
             result.events.forEach(event => {
               if (event.event.method === 'ExtrinsicFailed') {
                 if (expectFailure) {
