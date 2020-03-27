@@ -14,6 +14,7 @@ use super::sealed_vote::SealedVote;
 use super::stake::Stake;
 
 use super::council;
+use crate::election_params::ElectionParameters;
 pub use common::currency::{BalanceOf, GovernanceCurrency};
 
 pub trait Trait:
@@ -23,6 +24,8 @@ pub trait Trait:
 
     type CouncilElected: CouncilElected<Seats<Self::AccountId, BalanceOf<Self>>, Self::BlockNumber>;
 }
+
+pub static MSG_CANNOT_CHANGE_PARAMS_DURING_ELECTION: &str = "CannotChangeParamsDuringElection";
 
 #[derive(Clone, Copy, Encode, Decode)]
 pub enum ElectionStage<BlockNumber> {
@@ -106,8 +109,23 @@ decl_storage! {
         // TODO value type of this map looks scary, is there any way to simplify the notation?
         Votes get(votes): map T::Hash => SealedVote<T::AccountId, ElectionStake<T>, T::Hash, T::AccountId>;
 
-        // Current Election Parameters - default "zero" values are not meaningful. Running an election without
-        // settings reasonable values is a bad idea. Parameters can be set in the TriggerElection hook.
+        // Current Election Parameters.
+        // Should we replace all the individual values with a single ElectionParameters type?
+        // Having them individually makes it more flexible to add and remove new parameters in future
+        // without dealing with migration issues.
+
+        // We don't currently handle zero periods, zero council term, zero council size and candidacy
+        // limit in any special way. The behaviour in such cases:
+        // Setting any period to 0 will mean the election getting stuck in that stage, until force changing
+        // the state.
+        // Council Size of 0 - no limit to size of council, all applicants that move beyond
+        // announcing stage would become council members, so effectively the candidacy limit will
+        // be the size of the council, voting and revealing have no impact on final results.
+        // If candidacy limit is zero and council size > 0, council_size number of applicants will reach the voting stage.
+        // and become council members, voting will have no impact on final results.
+        // If both candidacy limit and council size are zero then all applicant become council members
+        // since no filtering occurs at end of announcing stage.
+        // We only guard against these edge cases in the set_election_parameters() call.
         AnnouncingPeriod get(announcing_period) config(): T::BlockNumber = T::BlockNumber::from(100);
         VotingPeriod get(voting_period) config(): T::BlockNumber = T::BlockNumber::from(100);
         RevealingPeriod get(revealing_period) config(): T::BlockNumber = T::BlockNumber::from(100);
@@ -195,7 +213,7 @@ impl<T: Trait> Module<T> {
 
         // Take snapshot of seat and backing stakes of an existing council
         // Its important to note that the election system takes ownership of these stakes, and is responsible
-        // to return any unused stake to original owners and the end of the election.
+        // to return any unused stake to original owners at the end of the election.
         Self::initialize_transferable_stakes(current_council);
 
         Self::deposit_event(RawEvent::ElectionStarted());
@@ -806,52 +824,19 @@ decl_module! {
             <Stage<T>>::put(ElectionStage::Voting(ends_at));
         }
 
-        fn set_param_announcing_period(origin, period: T::BlockNumber) {
+        fn set_election_parameters(origin, params: ElectionParameters<BalanceOf<T>, T::BlockNumber>) {
             ensure_root(origin)?;
-            ensure!(!Self::is_election_running(), "cannot change params during election");
-            ensure!(!period.is_zero(), "period cannot be zero");
-            <AnnouncingPeriod<T>>::put(period);
-        }
-        fn set_param_voting_period(origin,  period: T::BlockNumber) {
-            ensure_root(origin)?;
-            ensure!(!Self::is_election_running(), "cannot change params during election");
-            ensure!(!period.is_zero(), "period cannot be zero");
-            <VotingPeriod<T>>::put(period);
-        }
-        fn set_param_revealing_period(origin, period: T::BlockNumber) {
-            ensure_root(origin)?;
-            ensure!(!Self::is_election_running(), "cannot change params during election");
-            ensure!(!period.is_zero(), "period cannot be zero");
-            <RevealingPeriod<T>>::put(period);
-        }
-        fn set_param_min_council_stake(origin, amount: BalanceOf<T>) {
-            ensure_root(origin)?;
-            ensure!(!Self::is_election_running(), "cannot change params during election");
-            <MinCouncilStake<T>>::put(amount);
-        }
-        fn set_param_new_term_duration(origin, duration: T::BlockNumber) {
-            ensure_root(origin)?;
-            ensure!(!Self::is_election_running(), "cannot change params during election");
-            ensure!(!duration.is_zero(), "new term duration cannot be zero");
-            <NewTermDuration<T>>::put(duration);
-        }
-        fn set_param_council_size(origin, council_size: u32) {
-            ensure_root(origin)?;
-            ensure!(!Self::is_election_running(), "cannot change params during election");
-            ensure!(council_size > 0, "council size cannot be zero");
-            ensure!(council_size <= Self::candidacy_limit(), "council size cannot greater than candidacy limit");
-            CouncilSize::put(council_size);
-        }
-        fn set_param_candidacy_limit(origin, limit: u32) {
-            ensure_root(origin)?;
-            ensure!(!Self::is_election_running(), "cannot change params during election");
-            ensure!(limit >= Self::council_size(), "candidacy limit cannot be less than council size");
-            CandidacyLimit::put(limit);
-        }
-        fn set_param_min_voting_stake(origin, amount: BalanceOf<T>) {
-            ensure_root(origin)?;
-            ensure!(!Self::is_election_running(), "cannot change params during election");
-            <MinVotingStake<T>>::put(amount);
+            ensure!(!Self::is_election_running(), MSG_CANNOT_CHANGE_PARAMS_DURING_ELECTION);
+            params.ensure_valid()?;
+
+            <AnnouncingPeriod<T>>::put(params.announcing_period);
+            <VotingPeriod<T>>::put(params.voting_period);
+            <RevealingPeriod<T>>::put(params.revealing_period);
+            <MinCouncilStake<T>>::put(params.min_council_stake);
+            <NewTermDuration<T>>::put(params.new_term_duration);
+            CouncilSize::put(params.council_size);
+            CandidacyLimit::put(params.candidacy_limit);
+            <MinVotingStake<T>>::put(params.min_voting_stake);
         }
 
         fn force_stop_election(origin) {
@@ -2043,6 +2028,55 @@ mod tests {
 
             // When council term ends.. start a new election.
             assert_ok!(Election::start_election(vec![]));
+        });
+    }
+
+    #[test]
+    fn setting_election_parameters() {
+        initial_test_ext().execute_with(|| {
+            let default_parameters: ElectionParameters<u64, u64> = ElectionParameters::default();
+            // default all zeros is invalid
+            assert!(default_parameters.ensure_valid().is_err());
+
+            let new_parameters = ElectionParameters {
+                announcing_period: 1,
+                voting_period: 2,
+                revealing_period: 3,
+                council_size: 4,
+                candidacy_limit: 5,
+                min_voting_stake: 6,
+                min_council_stake: 7,
+                new_term_duration: 8,
+            };
+
+            assert_ok!(Election::set_election_parameters(
+                Origin::ROOT,
+                new_parameters
+            ));
+
+            assert_eq!(
+                <AnnouncingPeriod<Test>>::get(),
+                new_parameters.announcing_period
+            );
+            assert_eq!(<VotingPeriod<Test>>::get(), new_parameters.voting_period);
+            assert_eq!(
+                <RevealingPeriod<Test>>::get(),
+                new_parameters.revealing_period
+            );
+            assert_eq!(
+                <MinCouncilStake<Test>>::get(),
+                new_parameters.min_council_stake
+            );
+            assert_eq!(
+                <NewTermDuration<Test>>::get(),
+                new_parameters.new_term_duration
+            );
+            assert_eq!(CouncilSize::get(), new_parameters.council_size);
+            assert_eq!(CandidacyLimit::get(), new_parameters.candidacy_limit);
+            assert_eq!(
+                <MinVotingStake<Test>>::get(),
+                new_parameters.min_voting_stake
+            );
         });
     }
 }
