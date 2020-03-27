@@ -67,7 +67,7 @@ impl<T: Trait> Module<T> {
         Self::active_council().iter().any(|c| c.member == *sender)
     }
 
-    // Initializes a new mint, discarding previous mint if it existed.
+    /// Initializes a new mint, discarding previous mint if it existed.
     pub fn create_new_council_mint(
         capacity: minting::BalanceOf<T>,
     ) -> Result<T::MintId, &'static str> {
