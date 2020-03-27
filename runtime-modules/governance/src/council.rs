@@ -34,8 +34,8 @@ decl_storage! {
         pub TermEndsAt get(term_ends_at) config() : T::BlockNumber = T::BlockNumber::from(1);
 
         /// The mint that funds council member rewards and spending proposals budget.
-        pub Mint get(mint) build(|_config: &GenesisConfig<T>| {
-            <Module<T>>::initialize_mint()
+        pub CouncilMint get(council_mint) build(|_config: &GenesisConfig<T>| {
+            <Module<T>>::create_new_council_mint()
         }): <T as minting::Trait>::MintId;
     }
 }
@@ -68,9 +68,11 @@ impl<T: Trait> Module<T> {
     }
 
     // Initializes a new mint
-    pub fn initialize_mint() -> T::MintId {
-        <minting::Module<T>>::add_mint(minting::BalanceOf::<T>::zero(), None)
-            .expect("Failed to create a mint for the council")
+    pub fn create_new_council_mint() -> T::MintId {
+        let mint_id = <minting::Module<T>>::add_mint(minting::BalanceOf::<T>::zero(), None)
+            .expect("Failed to create a mint for the council");
+        CouncilMint::<T>::put(mint_id);
+        mint_id
     }
 }
 
@@ -131,10 +133,18 @@ decl_module! {
             <TermEndsAt<T>>::put(ends_at);
         }
 
-        fn set_mint_capacity(origin, new_capacity: minting::BalanceOf<T>) {
+        /// Sets the capacity of the the council mint
+        fn set_council_mint_capacity(origin, new_capacity: minting::BalanceOf<T>) {
             ensure_root(origin)?;
-            let mint_id = Self::mint();
+            let mint_id = Self::council_mint();
             minting::Module::<T>::set_mint_capacity(mint_id, new_capacity)?;
+        }
+
+        /// Attempts to mint and transfer amount to destination account
+        fn spend_from_council_mint(origin, amount: minting::BalanceOf<T>, destination: T::AccountId) {
+            ensure_root(origin)?;
+            let mint_id = Self::council_mint();
+            minting::Module::<T>::transfer_tokens(mint_id, amount, &destination)?;
         }
     }
 }

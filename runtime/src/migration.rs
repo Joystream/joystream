@@ -15,7 +15,7 @@ impl<T: Trait> Module<T> {
         // ...
 
         // Create the Council mint
-        governance::council::Module::<T>::initialize_mint();
+        governance::council::Module::<T>::create_new_council_mint();
 
         Self::deposit_event(RawEvent::Migrated(
             <system::Module<T>>::block_number(),
