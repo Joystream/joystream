@@ -1,6 +1,8 @@
 //! Proposals types module for the Joystream platform. Version 2.
 //! Provides types for the proposal engine.
 
+#![warn(missing_docs)]
+
 use codec::{Decode, Encode};
 use rstd::cmp::PartialOrd;
 use rstd::ops::Add;

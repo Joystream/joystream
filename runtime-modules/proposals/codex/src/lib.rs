@@ -1,15 +1,20 @@
 //! Proposals codex module for the Joystream platform. Version 2.
-//! Contains preset proposal types
+//! Contains preset proposal types.
 //!
 //! Supported extrinsics (proposal type):
 //! - create_text_proposal
+//! - create_runtime_upgrade_proposal
+//!
+//! Proposal implementations of this module:
+//! - execute_text_proposal - prints the proposal to the log
+//! - execute_runtime_upgrade_proposal - sets the runtime code
 //!
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
-//#![warn(missing_docs)]
+// #![warn(missing_docs)]
 
 mod proposal_types;
 #[cfg(test)]
@@ -71,9 +76,6 @@ decl_error! {
 
         /// Require root origin in extrinsics
         RequireRootOrigin,
-
-        /// Errors from the proposal engine
-        ProposalsEngineError
     }
 }
 
@@ -151,7 +153,7 @@ decl_module! {
                 member_id.clone(),
             )?;
 
-            let proposal_code = <Call<T>>::text_proposal(title.clone(), description.clone(), text);
+            let proposal_code = <Call<T>>::execute_text_proposal(title.clone(), description.clone(), text);
 
             let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
                 member_id,
@@ -200,7 +202,7 @@ decl_module! {
                 member_id.clone(),
             )?;
 
-            let proposal_code = <Call<T>>::text_proposal(title.clone(), description.clone(), wasm);
+            let proposal_code = <Call<T>>::execute_runtime_upgrade_proposal(title.clone(), description.clone(), wasm);
 
             let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
                 member_id,
@@ -223,7 +225,7 @@ decl_module! {
 // *************** Extrinsic to execute
 
         /// Text proposal extrinsic. Should be used as callable object to pass to the engine module.
-        fn text_proposal(
+        fn execute_text_proposal(
             origin,
             title: Vec<u8>,
             _description: Vec<u8>,
@@ -239,7 +241,7 @@ decl_module! {
 
         /// Runtime upgrade proposal extrinsic.
         /// Should be used as callable object to pass to the engine module.
-        fn runtime_upgrade_proposal(
+        fn execute_runtime_upgrade_proposal(
             origin,
             title: Vec<u8>,
             _description: Vec<u8>,

@@ -40,7 +40,7 @@ impl Default for DummyProposalFixture {
     fn default() -> Self {
         let title = b"title".to_vec();
         let description = b"description".to_vec();
-        let dummy_proposal = proposals_codex::Call::<Runtime>::text_proposal(
+        let dummy_proposal = proposals_codex::Call::<Runtime>::execute_text_proposal(
             title.clone(),
             description.clone(),
             b"text".to_vec(),

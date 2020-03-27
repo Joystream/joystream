@@ -9,6 +9,8 @@
 //!
 //! Public API (requires root origin):
 //! - create_proposal - creates proposal using provided parameters
+//! - ensure_create_proposal_parameters_are_valid - ensures that we can create the proposal
+//! - refund_proposal_stake - a callback for StakingHandlerEvents
 //!
 
 // Ensure we're `no_std` when compiling for Wasm.
@@ -373,7 +375,7 @@ impl<T: Trait> Module<T> {
 
     /// Performs all checks for the proposal creation:
     /// - title, body lengths
-    /// - mac active proposal
+    /// - max active proposal
     /// - provided parameters: approval_threshold_percentage and slashing_threshold_percentage > 0
     /// - provided stake balance and parameters.required_stake are valid
     pub fn ensure_create_proposal_parameters_are_valid(
