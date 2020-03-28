@@ -1,3 +1,26 @@
+//! Council Elections Manager
+//!
+//! # Election Parameters:
+//! We don't currently handle zero periods, zero council term, zero council size and candidacy
+//! limit in any special way. The behaviour in such cases:
+//!
+//! - Setting any period to 0 will mean the election getting stuck in that stage, until force changing
+//! the state.
+//!
+//! - Council Size of 0 - no limit to size of council, all applicants that move beyond
+//! announcing stage would become council members, so effectively the candidacy limit will
+//! be the size of the council, voting and revealing have no impact on final results.
+//!
+//! - If candidacy limit is zero and council size > 0, council_size number of applicants will reach the voting stage.
+//! and become council members, voting will have no impact on final results.
+//!
+//! - If both candidacy limit and council size are zero then all applicant become council members
+//! since no filtering occurs at end of announcing stage.
+//!
+//! We only guard against these edge cases in the [`set_election_parameters`] call.
+//!
+//! [`set_election_parameters`]: struct.Module.html#method.set_election_parameters
+
 use rstd::prelude::*;
 use srml_support::traits::{Currency, ReservableCurrency};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch::Result, ensure};
@@ -113,19 +136,6 @@ decl_storage! {
         // Should we replace all the individual values with a single ElectionParameters type?
         // Having them individually makes it more flexible to add and remove new parameters in future
         // without dealing with migration issues.
-
-        // We don't currently handle zero periods, zero council term, zero council size and candidacy
-        // limit in any special way. The behaviour in such cases:
-        // Setting any period to 0 will mean the election getting stuck in that stage, until force changing
-        // the state.
-        // Council Size of 0 - no limit to size of council, all applicants that move beyond
-        // announcing stage would become council members, so effectively the candidacy limit will
-        // be the size of the council, voting and revealing have no impact on final results.
-        // If candidacy limit is zero and council size > 0, council_size number of applicants will reach the voting stage.
-        // and become council members, voting will have no impact on final results.
-        // If both candidacy limit and council size are zero then all applicant become council members
-        // since no filtering occurs at end of announcing stage.
-        // We only guard against these edge cases in the set_election_parameters() call.
         AnnouncingPeriod get(announcing_period): T::BlockNumber;
         VotingPeriod get(voting_period): T::BlockNumber;
         RevealingPeriod get(revealing_period): T::BlockNumber;
@@ -839,7 +849,12 @@ decl_module! {
             <Stage<T>>::put(ElectionStage::Voting(ends_at));
         }
 
-        fn set_election_parameters(origin, params: ElectionParameters<BalanceOf<T>, T::BlockNumber>) {
+        /// Sets new election parameters. Some combination of parameters that are not desirable, so
+        /// the parameters are checked for validity.
+        /// The call will fail if an election is in progress. If a council is not being elected for some
+        /// reaon after multiple rounds, force_stop_election() can be called to stop elections and followed by
+        /// set_election_parameters().
+        pub fn set_election_parameters(origin, params: ElectionParameters<BalanceOf<T>, T::BlockNumber>) {
             ensure_root(origin)?;
             ensure!(!Self::is_election_running(), MSG_CANNOT_CHANGE_PARAMS_DURING_ELECTION);
             params.ensure_valid()?;
