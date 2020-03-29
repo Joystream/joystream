@@ -287,20 +287,6 @@ impl<T: Trait> Post<T> {
     }
 }
 
-/// Enum variant, representing reply`s parent id
-#[derive(Encode, Decode, Clone, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
-pub enum ParentId<T: Trait> {
-    Reply(T::ReplyId),
-    Post(T::PostId),
-}
-
-/// Default parent representation
-impl<T: Trait> Default for ParentId<T> {
-    fn default() -> Self {
-        ParentId::Post(T::PostId::default())
-    }
-}
 
 /// Type, representing either root post reply or direct reply to reply
 #[derive(Encode, Decode, Clone, Default, PartialEq)]
@@ -310,8 +296,6 @@ pub struct Reply<T: Trait> {
     text: Vec<u8>,
     /// Participant id, associated with a reply owner
     owner: T::ParticipantId,
-    /// Reply`s parent id
-    parent_id: ParentId<T>,
     /// Block numbers of last created direct replies
     // (needed for max consecutive replies constraint check)
     last_direct_replies_block_numbers: Vec<T::BlockNumber>,
@@ -322,11 +306,10 @@ pub struct Reply<T: Trait> {
 }
 
 impl<T: Trait> Reply<T> {
-    fn new(text: Vec<u8>, owner: T::ParticipantId, parent_id: ParentId<T>) -> Self {
+    fn new(text: Vec<u8>, owner: T::ParticipantId) -> Self {
         Self {
             text,
             owner,
-            parent_id,
             // Initialize with blank (default) collection
             last_direct_replies_block_numbers: vec![],
             // Set direct replies count of newly created reply to zero
@@ -339,11 +322,6 @@ impl<T: Trait> Reply<T> {
     /// Check if account_id is reply owner
     fn is_owner(&self, account_id: &T::ParticipantId) -> bool {
         self.owner == *account_id
-    }
-
-    /// Check if account_id is parent
-    fn is_parent(&self, account_id: &ParentId<T>) -> bool {
-        core::mem::discriminant(&self.parent_id) == core::mem::discriminant(account_id)
     }
 
     /// Update reply`s text
@@ -583,8 +561,7 @@ decl_module! {
 
             let current_block_number = <system::Module<T>>::block_number();
 
-            // New reply creation
-            let reply = if let Some(reply_id) = reply_id {
+            if let Some(reply_id) = reply_id {
                 // Check parent reply existance in case of direct reply
                 let reply = Self::ensure_reply_exists(blog_id, post_id, reply_id)?;
                 // Ensure, maximum number direct replies per reply limit not reached
@@ -592,19 +569,20 @@ decl_module! {
                 // Ensure maximum number of consecutive replies in time limit not reached
                 let last_direct_replies_count = reply.calculate_last_direct_replies_count(current_block_number);
                 Self::ensure_consecutive_replies_limit_not_reached(last_direct_replies_count)?;
-                Reply::<T>::new(text, reply_owner, ParentId::Reply(reply_id))
             } else {
                 // Ensure root replies limit not reached
                 Self::ensure_replies_limit_not_reached(&post)?;
                 // Ensure maximum number of consecutive replies in time limit not reached
                 let last_root_replies_count = post.calculate_last_root_replies_count(current_block_number);
                 Self::ensure_consecutive_replies_limit_not_reached(last_root_replies_count)?;
-                Reply::<T>::new(text, reply_owner, ParentId::Post(post_id))
             };
-
+            
             //
             // == MUTATION SAFE ==
             //
+
+            // New reply creation
+            let reply = Reply::<T>::new(text, reply_owner);
 
             // Update runtime storage with new reply
             let post_replies_count = post.replies_count();
