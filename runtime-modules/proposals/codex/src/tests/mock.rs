@@ -150,6 +150,11 @@ parameter_types! {
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 20_000;
 }
 
+impl governance::election::Trait for Test {
+    type Event = ();
+    type CouncilElected = ();
+}
+
 impl crate::Trait for Test {
     type TextProposalMaxLength = TextProposalMaxLength;
     type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;

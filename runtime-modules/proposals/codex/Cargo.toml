@@ -91,6 +91,11 @@ default_features = false
 package = 'substrate-membership-module'
 path = '../../membership'
 
+[dependencies.governance]
+default_features = false
+package = 'substrate-governance-module'
+path = '../../governance'
+
 [dependencies.proposal_engine]
 default_features = false
 package = 'substrate-proposals-engine-module'
@@ -111,8 +116,3 @@ default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-io'
 rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dev-dependencies.governance]
-default_features = false
-package = 'substrate-governance-module'
-path = '../../governance'

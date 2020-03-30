@@ -4,6 +4,7 @@
 //! Supported extrinsics (proposal type):
 //! - create_text_proposal
 //! - create_runtime_upgrade_proposal
+//! - create_set_election_parameters_proposal
 //!
 //! Proposal implementations of this module:
 //! - execute_text_proposal - prints the proposal to the log
@@ -29,11 +30,16 @@ use srml_support::{decl_error, decl_module, decl_storage, ensure, print};
 use system::{ensure_root, RawOrigin};
 
 use common::origin_validator::ActorOriginValidator;
+use governance::election_params::ElectionParameters;
 use proposal_engine::ProposalParameters;
 
 /// 'Proposals codex' substrate module Trait
 pub trait Trait:
-    system::Trait + proposal_engine::Trait + membership::members::Trait + proposal_discussion::Trait
+    system::Trait
+    + proposal_engine::Trait
+    + membership::members::Trait
+    + proposal_discussion::Trait
+    + governance::election::Trait
 {
     /// Defines max allowed text proposal length.
     type TextProposalMaxLength: Get<u32>;
@@ -53,6 +59,12 @@ use srml_support::traits::{Currency, Get};
 /// Balance alias
 pub type BalanceOf<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+
+/// Balance alias for GovernanceCurrency from common module. TODO: replace with BalanceOf
+pub type BalanceOfGovernanceCurrency<T> =
+    <<T as common::currency::GovernanceCurrency>::Currency as Currency<
+        <T as system::Trait>::AccountId,
+    >>::Balance;
 
 /// Balance alias for staking
 pub type NegativeImbalance<T> =
@@ -124,14 +136,14 @@ decl_module! {
         /// Predefined errors
         type Error = Error;
 
-        /// Create text (signal) proposal type. On approval prints its content.
+        /// Create text (signal) proposal type.
         pub fn create_text_proposal(
             origin,
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            text: Vec<u8>,
             stake_balance: Option<BalanceOf<T>>,
+            text: Vec<u8>,
         ) {
             let account_id = T::MembershipOriginValidator::ensure_actor_origin(origin, member_id.clone())?;
 
@@ -173,14 +185,14 @@ decl_module! {
              <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
         }
 
-        /// Create runtime upgrade proposal type. On approval prints its content.
+        /// Create runtime upgrade proposal type.
         pub fn create_runtime_upgrade_proposal(
             origin,
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            wasm: Vec<u8>,
             stake_balance: Option<BalanceOf<T>>,
+            wasm: Vec<u8>,
         ) {
             let account_id = T::MembershipOriginValidator::ensure_actor_origin(origin, member_id.clone())?;
 
@@ -220,6 +232,54 @@ decl_module! {
             )?;
 
             <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
+        }
+
+        /// Create 'Set election parameters' proposal type. This proposal uses set_election_parameters()
+        /// extrinsic from the governance::election module.
+        pub fn create_set_election_parameters_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            election_parameters: ElectionParameters<BalanceOfGovernanceCurrency<T>, T::BlockNumber>,
+        ) {
+            let account_id = T::MembershipOriginValidator::ensure_actor_origin(origin, member_id.clone())?;
+
+            let parameters = proposal_types::parameters::set_election_parameters_proposal::<T>();
+
+            <proposal_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
+                &parameters,
+                &title,
+                &description,
+                stake_balance,
+            )?;
+
+            <proposal_discussion::Module<T>>::ensure_can_create_thread(
+                &title,
+                member_id.clone(),
+            )?;
+
+            election_parameters.ensure_valid()?;
+
+            let proposal_code = <governance::election::Call<T>>::set_election_parameters(election_parameters);
+
+            let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
+                member_id,
+                title.clone(),
+            )?;
+
+            let proposal_id = <proposal_engine::Module<T>>::create_proposal(
+                account_id,
+                member_id,
+                parameters,
+                title,
+                description,
+                stake_balance,
+                proposal_code.encode(),
+            )?;
+
+             <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
         }
 
 // *************** Extrinsic to execute
