@@ -69,7 +69,7 @@
 //! 		#[weight = frame_support::weights::SimpleDispatchInfo::default()]
 //! 		pub fn create_blog(origin) -> dispatch::DispatchResult {
 //! 			let _sender = ensure_signed(origin)?;
-//! 			let _now = <blog_module::Module<T>>::create_blog(_sender);
+//! 			<blog_module::Module<T>>::create_blog(_sender)?;
 //! 			Ok(())
 //! 		}
 //! 	}
