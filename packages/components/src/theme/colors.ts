@@ -5,8 +5,8 @@ export default {
     success: "#56BA46",
     danger: "#EF6236",
     warning: "#FEEB83",
-    base: "fafafa",
-    white: "fff",
+    base: "#fafafa",
+    white: "#fff",
   },
   text: {
     base: "#646464",
