@@ -26,3 +26,18 @@ main {
   justify-content: space-between;
   flex-wrap: wrap;
 }
+
+.channel-header {
+  display: flex;
+  margin: 1rem auto;
+}
+
+.channel-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.channel-badges {
+  display: flex;
+  justify-content: space-evenly;
+}

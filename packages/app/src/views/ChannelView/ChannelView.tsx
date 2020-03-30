@@ -1,11 +1,13 @@
 import React from "react";
-import { GeneralSection, Avatar, Button } from "components";
+import { GeneralSection, Avatar, Button, VideoPreview } from "components";
+import { ChannelHeader } from "../../components/ChannelHeader";
 
 type ChannelProps = {
   name: string;
   isPublic?: boolean;
   isVerified?: boolean;
   description?: string;
+  banner?: string;
   videos?: any[];
   img: string;
 };
@@ -16,29 +18,32 @@ export default function Channel({
   isVerified = false,
   description,
   videos,
+  img,
 }: ChannelProps) {
   return (
     <>
-      <div>
-        <Avatar link="#" size="large" />
-        <h1>{channelName}</h1>
-        <div>
-          {isPublic && (
-            <Button outlined color="success" size="small">
-              Public
-            </Button>
-          )}
-          {isVerified && (
-            <Button outlined color="primary" size="small">
-              Verified
-            </Button>
-          )}
-          <p>{description}</p>
-          )}
-        </div>
-      </div>
+      <ChannelHeader
+        name={name}
+        isPublic={isPublic}
+        isVerified={isVerified}
+        description={description}
+        img={img}
+      />
       <GeneralSection auto title="Videos">
-        <div className="video-gallery"></div>
+        <div className="video-gallery">
+          {videos.map((video, key) => (
+            <VideoPreview
+              url="#"
+              channelUrl="#"
+              key={`title-${key}`}
+              title={video.title}
+              poster={video.poster}
+              channel={name}
+              channelImg={img}
+              showChannel
+            />
+          ))}
+        </div>
       </GeneralSection>
     </>
   );
