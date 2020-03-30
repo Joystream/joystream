@@ -66,6 +66,10 @@ pub type BalanceOfGovernanceCurrency<T> =
         <T as system::Trait>::AccountId,
     >>::Balance;
 
+/// Balance alias for token mint balance from token mint module. TODO: replace with BalanceOf
+pub type BalanceOfMint<T> =
+    <<T as mint::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+
 /// Balance alias for staking
 pub type NegativeImbalance<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
@@ -263,6 +267,53 @@ decl_module! {
             election_parameters.ensure_valid()?;
 
             let proposal_code = <governance::election::Call<T>>::set_election_parameters(election_parameters);
+
+            let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
+                member_id,
+                title.clone(),
+            )?;
+
+            let proposal_id = <proposal_engine::Module<T>>::create_proposal(
+                account_id,
+                member_id,
+                parameters,
+                title,
+                description,
+                stake_balance,
+                proposal_code.encode(),
+            )?;
+
+             <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
+        }
+
+
+        /// Create 'Set council mint capacity' proposal type. This proposal uses set_mint_capacity()
+        /// extrinsic from the governance::council module.
+        pub fn create_set_council_mint_capacity_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            mint_balance: BalanceOfMint<T>,
+        ) {
+            let account_id = T::MembershipOriginValidator::ensure_actor_origin(origin, member_id.clone())?;
+
+            let parameters = proposal_types::parameters::set_council_mint_capacity_proposal::<T>();
+
+            <proposal_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
+                &parameters,
+                &title,
+                &description,
+                stake_balance,
+            )?;
+
+            <proposal_discussion::Module<T>>::ensure_can_create_thread(
+                &title,
+                member_id.clone(),
+            )?;
+
+            let proposal_code = <governance::council::Call<T>>::set_council_mint_capacity(mint_balance);
 
             let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
                 member_id,
