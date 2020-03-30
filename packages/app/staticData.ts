@@ -1,6 +1,6 @@
 export default {
-  channels: [
-    {
+  channels: {
+    "Kek-Mex's video channel": {
       name: "Kek-Mex's video channel",
       isPublic: true,
       isVerified: true,
@@ -8,12 +8,12 @@ export default {
       img:
         "https://s3.amazonaws.com/keybase_processed_uploads/9003a57620356bd89d62bd34c7c0c305_360_360.jpg",
     },
-    {
+    "How to Draw": {
       name: "How to Draw",
       description: "Learn the techniques I use to make my drawings",
       isPublic: true,
     },
-    {
+    "Staked Podcast": {
       name: "Staked Podcast",
       isPublic: true,
       isVerified: true,
@@ -22,11 +22,12 @@ export default {
       banner:
         "http://static.libsyn.com/p/assets/2/c/2/5/2c25acab892a768e/Twitter_Cover.png",
     },
-  ],
+  },
   videos: {
     "Kek-Mex's video channel": [
       {
         title: "Reefer Madness (1936)",
+        channel: "Kek-Mex's video channel",
         description:
           'A trio of drug dealers lead innocent teenagers to become addicted to "reefer" cigarettes by holding wild parties with jazz music.',
         poster:
@@ -44,6 +45,7 @@ export default {
       },
       {
         title: "The Charlie Chaplin Festival (1941)",
+        channel: "Kek-Mex's video channel",
         description:
           "Four Chaplin shorts from 1917: The Adventurer, The Cure, Easy Street and The Immigrant, presented with music and sound effects.",
         src:
@@ -61,6 +63,7 @@ export default {
       },
       {
         title: "Frankenstein (1910)",
+        channel: "Kek-Mex's video channel",
         description:
           "This 14-minute short film, was the first motion picture adaptation of Mary Shelley's Frankenstein.",
         poster:
@@ -78,6 +81,7 @@ export default {
       },
       {
         title: "Doomsday Machine (1972)",
+        channel: "Kek-Mex's video channel",
         poster:
           "https://m.media-amazon.com/images/M/MV5BMDRiNzUxNGUtNzVmYS00NmJkLWIxYzYtMGUwMzJlZmU1MWZkXkEyXkFqcGdeQXVyMzUzNTU3Mw@@._V1_.jpg",
         src:
@@ -94,6 +98,7 @@ export default {
       },
       {
         title: "House on Haunted Hill (1959)",
+        channel: "Kek-Mex's video channel",
         description:
           "Frederick Loren has invited five strangers to a party of a lifetime. He is offering each of them $10,000 if they can stay the night in a house.",
         poster:
@@ -113,6 +118,7 @@ export default {
     "How to Draw": [
       {
         title: "How to Draw bitcoin coming out of the ground",
+        channel: "How To Draw",
         description:
           "Learn how to draw a hand coming out of the ground holding a bitcoin",
         poster: "test",
@@ -130,6 +136,7 @@ export default {
       {
         title: "Staked ep1 - Introduced",
         description: "Still WIP - 2",
+        channel: "Staked Podcast",
         poster:
           "https://ssl-static.libsyn.com/p/assets/a/4/8/f/a48f1a0697e958ce/Cover_2.png",
         src:

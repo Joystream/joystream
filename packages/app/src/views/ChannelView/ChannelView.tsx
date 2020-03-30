@@ -1,5 +1,5 @@
 import React from "react";
-import { GeneralSection, Avatar, Button, VideoPreview } from "components";
+import { GenericSection, VideoPreview } from "components";
 import { ChannelHeader } from "../../components/ChannelHeader";
 
 type ChannelProps = {
@@ -31,7 +31,7 @@ export default function Channel({
         banner={banner}
         img={img}
       />
-      <GeneralSection auto title="Videos">
+      <GenericSection auto title="Videos">
         <div className="video-gallery">
           {videos.map((video, key) => (
             <VideoPreview
@@ -40,13 +40,10 @@ export default function Channel({
               key={`title-${key}`}
               title={video.title}
               poster={video.poster}
-              channel={name}
-              channelImg={img}
-              showChannel
             />
           ))}
         </div>
-      </GeneralSection>
+      </GenericSection>
     </>
   );
 }

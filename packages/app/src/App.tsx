@@ -1,13 +1,15 @@
 import React from "react";
 import ChannelView from "./views/ChannelView";
 import data from "../staticData";
+import ExploreView from "./views/ExploreView";
 
-let channel = data.channels[0];
-let videos = data.videos[channel.name];
+let { channels, videos } = data;
+let channel = channels["Kek-Mex's video channel"];
+let channelVideos = videos[channel.name];
 export default function App() {
   return (
     <main className="main-section">
-      <ChannelView
+      {/* <ChannelView
         name={channel.name}
         isPublic={channel.isPublic}
         isVerified={channel.isVerified}
@@ -15,7 +17,8 @@ export default function App() {
         banner={channel.banner}
         description={channel.description}
         videos={videos}
-      />
+      /> */}
+      <ExploreView channels={channels} videos={videos} />
     </main>
   );
 }

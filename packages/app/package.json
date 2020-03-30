@@ -28,6 +28,7 @@
   "dependencies": {
     "@reach/router": "^1.3.3",
     "normalize.css": "^8.0.1",
+    "packages": "^0.0.8",
     "react": "^16.13.0",
     "react-dom": "^16.13.0"
   },

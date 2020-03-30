@@ -12,7 +12,7 @@ html {
 body {
   font-family: var(--font);
   color: #646464;
-  font-size: 14px;
+  font-size: 12px;
   background-color: #fafafa;
   line-height: 1.4285em;
 }
@@ -23,8 +23,12 @@ main {
 
 .video-gallery {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   flex-wrap: wrap;
+}
+
+.video-gallery > * {
+  flex-basis: 15%;
 }
 
 .channel-header {
@@ -39,5 +43,9 @@ main {
 
 .channel-badges {
   display: flex;
-  justify-content: space-evenly;
+  justify-content: space-between;
+}
+
+.channel-btn {
+  margin-right: 0.5rem;
 }

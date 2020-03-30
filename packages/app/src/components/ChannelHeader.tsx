@@ -27,16 +27,29 @@ export function ChannelHeader({
         <div className="channel-details">
           <h1>{name}</h1>
           <div className="channel-badges">
-            {isPublic && (
-              <Button outlined color="success" size="small">
-                Public
-              </Button>
-            )}
-            {isVerified && (
-              <Button outlined color="primary" size="small">
-                Verified
-              </Button>
-            )}
+            <div>Video Channel</div>
+            <div>
+              {isPublic && (
+                <Button
+                  outlined
+                  color="success"
+                  size="small"
+                  className="channel-btn"
+                >
+                  Public
+                </Button>
+              )}
+              {isVerified && (
+                <Button
+                  outlined
+                  color="primary"
+                  size="small"
+                  className="channel-btn"
+                >
+                  Verified
+                </Button>
+              )}
+            </div>
           </div>
           <div className="channel-description">
             <p>{description}</p>

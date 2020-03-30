@@ -1,12 +1,12 @@
 import React from "react";
-import { makeStyles, SectionStyleProps } from "./GeneralSection.style";
+import { makeStyles, SectionStyleProps } from "./GenericSection.style";
 
 type SectionProps = {
   children?: React.ReactNode;
   title?: string;
 } & SectionStyleProps;
 
-export default function GeneralSection({
+export default function GenericSection({
   children,
   title,
   ...styleProps
