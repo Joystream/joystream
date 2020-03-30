@@ -54,6 +54,7 @@ pub trait Trait:
         Self::AccountId,
     >;
 }
+use srml_support::dispatch::DispatchResult;
 use srml_support::traits::{Currency, Get};
 
 /// Balance alias
@@ -149,44 +150,23 @@ decl_module! {
             stake_balance: Option<BalanceOf<T>>,
             text: Vec<u8>,
         ) {
-            let account_id = T::MembershipOriginValidator::ensure_actor_origin(origin, member_id.clone())?;
-
-            let parameters = proposal_types::parameters::text_proposal::<T>();
-
             ensure!(!text.is_empty(), Error::TextProposalIsEmpty);
             ensure!(text.len() as u32 <=  T::TextProposalMaxLength::get(),
                 Error::TextProposalSizeExceeded);
 
-            <proposal_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
-                &parameters,
-                &title,
-                &description,
-                stake_balance,
-            )?;
+            let proposal_parameters = proposal_types::parameters::text_proposal::<T>();
+            let proposal_code =
+                <Call<T>>::execute_text_proposal(title.clone(), description.clone(), text);
 
-            <proposal_discussion::Module<T>>::ensure_can_create_thread(
-                &title,
-                member_id.clone(),
-            )?;
-
-            let proposal_code = <Call<T>>::execute_text_proposal(title.clone(), description.clone(), text);
-
-            let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
+            Self::create_proposal(
+                origin,
                 member_id,
-                title.clone(),
-            )?;
-
-            let proposal_id = <proposal_engine::Module<T>>::create_proposal(
-                account_id,
-                member_id,
-                parameters,
                 title,
                 description,
                 stake_balance,
                 proposal_code.encode(),
+                proposal_parameters,
             )?;
-
-             <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
         }
 
         /// Create runtime upgrade proposal type.
@@ -198,44 +178,24 @@ decl_module! {
             stake_balance: Option<BalanceOf<T>>,
             wasm: Vec<u8>,
         ) {
-            let account_id = T::MembershipOriginValidator::ensure_actor_origin(origin, member_id.clone())?;
-
-            let parameters = proposal_types::parameters::upgrade_runtime::<T>();
-
             ensure!(!wasm.is_empty(), Error::RuntimeProposalIsEmpty);
             ensure!(wasm.len() as u32 <= T::RuntimeUpgradeWasmProposalMaxLength::get(),
                 Error::RuntimeProposalSizeExceeded);
 
-            <proposal_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
-                &parameters,
-                &title,
-                &description,
-                stake_balance,
-            )?;
+            let proposal_code =
+                <Call<T>>::execute_runtime_upgrade_proposal(title.clone(), description.clone(), wasm);
 
-            <proposal_discussion::Module<T>>::ensure_can_create_thread(
-                &title,
-                member_id.clone(),
-            )?;
+            let proposal_parameters = proposal_types::parameters::upgrade_runtime::<T>();
 
-            let proposal_code = <Call<T>>::execute_runtime_upgrade_proposal(title.clone(), description.clone(), wasm);
-
-            let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
+            Self::create_proposal(
+                origin,
                 member_id,
-                title.clone(),
-            )?;
-
-            let proposal_id = <proposal_engine::Module<T>>::create_proposal(
-                account_id,
-                member_id,
-                parameters,
                 title,
                 description,
                 stake_balance,
                 proposal_code.encode(),
+                proposal_parameters,
             )?;
-
-            <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
         }
 
         /// Create 'Set election parameters' proposal type. This proposal uses set_election_parameters()
@@ -248,42 +208,23 @@ decl_module! {
             stake_balance: Option<BalanceOf<T>>,
             election_parameters: ElectionParameters<BalanceOfGovernanceCurrency<T>, T::BlockNumber>,
         ) {
-            let account_id = T::MembershipOriginValidator::ensure_actor_origin(origin, member_id.clone())?;
-
-            let parameters = proposal_types::parameters::set_election_parameters_proposal::<T>();
-
-            <proposal_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
-                &parameters,
-                &title,
-                &description,
-                stake_balance,
-            )?;
-
-            <proposal_discussion::Module<T>>::ensure_can_create_thread(
-                &title,
-                member_id.clone(),
-            )?;
-
             election_parameters.ensure_valid()?;
 
-            let proposal_code = <governance::election::Call<T>>::set_election_parameters(election_parameters);
+            let proposal_code =
+                <governance::election::Call<T>>::set_election_parameters(election_parameters);
 
-            let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
-                member_id,
-                title.clone(),
-            )?;
+            let proposal_parameters =
+                proposal_types::parameters::set_election_parameters_proposal::<T>();
 
-            let proposal_id = <proposal_engine::Module<T>>::create_proposal(
-                account_id,
+            Self::create_proposal(
+                origin,
                 member_id,
-                parameters,
                 title,
                 description,
                 stake_balance,
                 proposal_code.encode(),
+                proposal_parameters,
             )?;
-
-             <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
         }
 
 
@@ -297,40 +238,21 @@ decl_module! {
             stake_balance: Option<BalanceOf<T>>,
             mint_balance: BalanceOfMint<T>,
         ) {
-            let account_id = T::MembershipOriginValidator::ensure_actor_origin(origin, member_id.clone())?;
+            let proposal_code =
+                <governance::council::Call<T>>::set_council_mint_capacity(mint_balance);
 
-            let parameters = proposal_types::parameters::set_council_mint_capacity_proposal::<T>();
+            let proposal_parameters =
+                proposal_types::parameters::set_council_mint_capacity_proposal::<T>();
 
-            <proposal_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
-                &parameters,
-                &title,
-                &description,
-                stake_balance,
-            )?;
-
-            <proposal_discussion::Module<T>>::ensure_can_create_thread(
-                &title,
-                member_id.clone(),
-            )?;
-
-            let proposal_code = <governance::council::Call<T>>::set_council_mint_capacity(mint_balance);
-
-            let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
+            Self::create_proposal(
+                origin,
                 member_id,
-                title.clone(),
-            )?;
-
-            let proposal_id = <proposal_engine::Module<T>>::create_proposal(
-                account_id,
-                member_id,
-                parameters,
                 title,
                 description,
                 stake_balance,
                 proposal_code.encode(),
+                proposal_parameters,
             )?;
-
-             <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
         }
 
 // *************** Extrinsic to execute
@@ -390,5 +312,45 @@ impl<T: Trait> Module<T> {
         };
 
         (cloned_origin1.into(), cloned_origin2.into())
+    }
+
+    /// Generic template proposal builder
+    fn create_proposal(
+        origin: T::Origin,
+        member_id: MemberId<T>,
+        title: Vec<u8>,
+        description: Vec<u8>,
+        stake_balance: Option<BalanceOf<T>>,
+        proposal_code: Vec<u8>,
+        proposal_parameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>,
+    ) -> DispatchResult<Error> {
+        let account_id =
+            T::MembershipOriginValidator::ensure_actor_origin(origin, member_id.clone())?;
+
+        <proposal_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
+            &proposal_parameters,
+            &title,
+            &description,
+            stake_balance,
+        )?;
+
+        <proposal_discussion::Module<T>>::ensure_can_create_thread(&title, member_id.clone())?;
+
+        let discussion_thread_id =
+            <proposal_discussion::Module<T>>::create_thread(member_id, title.clone())?;
+
+        let proposal_id = <proposal_engine::Module<T>>::create_proposal(
+            account_id,
+            member_id,
+            proposal_parameters,
+            title,
+            description,
+            stake_balance,
+            proposal_code,
+        )?;
+
+        <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
+
+        Ok(())
     }
 }
