@@ -246,7 +246,7 @@ parameter_types! {
     pub const TransferFee: u128 = 0;
     pub const CreationFee: u128 = 0;
     pub const TransactionBaseFee: u128 = 1;
-    pub const TransactionByteFee: u128 = 1;
+    pub const TransactionByteFee: u128 = 0;
     pub const InitialMembersBalance: u32 = 2000;
 }
 
