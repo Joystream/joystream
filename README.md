@@ -82,8 +82,11 @@ cargo test
 ### API integration tests
 
 ```bash
+./scripts/run-dev-chain.sh
 yarn test
 ```
+
+To run the integration tests with a different chain, you can omit step running the local development chain and set the node URL using `NODE_URL` environment variable.
 
 ## Joystream Runtime
 

@@ -14,13 +14,13 @@ describe('Membership integration tests', () => {
   const N: number = +process.env.MEMBERSHIP_CREATION_N!;
   const paidTerms: number = +process.env.MEMBERSHIP_PAID_TERMS!;
   const nodeUrl: string = process.env.NODE_URL!;
-  const sudoUri: string = process.env.SUDO_ACCOUNT_URL!;
+  const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const defaultTimeout: number = 30000;
   let apiMethods: ApiMethods;
   let sudo: KeyringPair;
   let aKeyPair: KeyringPair;
-  let membershipFee: number;
-  let membershipTransactionFee: number;
+  let membershipFee: BN;
+  let membershipTransactionFee: BN;
 
   before(async function () {
     this.timeout(defaultTimeout);
@@ -40,46 +40,48 @@ describe('Membership integration tests', () => {
     );
     let nonce = await apiMethods.getNonce(sudo);
     nonce = nonce.sub(new BN(1));
-    await apiMethods.transferBalanceToAccounts(sudo, nKeyPairs, membershipFee + membershipTransactionFee, nonce);
-    await apiMethods.transferBalance(sudo, aKeyPair.address, membershipTransactionFee * 2);
+    await apiMethods.transferBalanceToAccounts(
+      sudo,
+      nKeyPairs,
+      membershipTransactionFee.add(new BN(membershipFee)),
+      nonce
+    );
+    await apiMethods.transferBalance(sudo, aKeyPair.address, membershipTransactionFee);
   });
 
   it('Buy membeship is accepted with sufficient funds', async () => {
     await Promise.all(
-      nKeyPairs.map(async keyPair => {
-        await apiMethods.buyMembership(keyPair, paidTerms, 'new_member');
+      nKeyPairs.map(async (keyPair, index) => {
+        await apiMethods.buyMembership(keyPair, paidTerms, `new_member_${index}`);
       })
     );
-    nKeyPairs.map(keyPair =>
+    nKeyPairs.forEach((keyPair, index) =>
       apiMethods
         .getMembership(keyPair.address)
-        .then(membership => assert(!membership.isEmpty, 'Account m is not a member'))
+        .then(membership => assert(!membership.isEmpty, `Account ${index} is not a member`))
     );
-  }).timeout(defaultTimeout);
-
-  it('Accont A has insufficient funds to buy membership', async () => {
-    apiMethods
-      .getBalance(aKeyPair.address)
-      .then(balance =>
-        assert(balance.toNumber() < membershipFee, 'Account A already have sufficient balance to purchase membership')
-      );
   }).timeout(defaultTimeout);
 
   it('Account A can not buy the membership with insufficient funds', async () => {
+    apiMethods
+      .getBalance(aKeyPair.address)
+      .then(balance =>
+        assert(
+          balance.toBn() < membershipFee.add(membershipTransactionFee),
+          'Account A already have sufficient balance to purchase membership'
+        )
+      );
     await apiMethods.buyMembership(aKeyPair, paidTerms, 'late_member', true);
     apiMethods.getMembership(aKeyPair.address).then(membership => assert(membership.isEmpty, 'Account A is a member'));
   }).timeout(defaultTimeout);
 
-  it('Account A has been provided with funds to buy the membership', async () => {
-    await apiMethods.transferBalance(sudo, aKeyPair.address, membershipFee);
+  it('Account A was able to buy the membership with insufficient funds', async () => {
+    await apiMethods.transferBalance(sudo, aKeyPair.address, membershipFee.add(membershipTransactionFee));
     apiMethods
       .getBalance(aKeyPair.address)
       .then(balance =>
-        assert(balance.toNumber() >= membershipFee, 'The account balance is insufficient to purchase membership')
+        assert(balance.toBn() >= membershipFee, 'The account balance is insufficient to purchase membership')
       );
-  }).timeout(defaultTimeout);
-
-  it('Account A was able to buy the membership', async () => {
     await apiMethods.buyMembership(aKeyPair, paidTerms, 'late_member');
     apiMethods
       .getMembership(aKeyPair.address)
