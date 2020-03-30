@@ -3,14 +3,23 @@ import { spacing, typography, colors } from "../../theme";
 
 export type AvatarStyleProps = {
   img?: string;
-  size?: "small" | "default";
+  size?: "small" | "default" | "large";
 };
 
 export let makeStyles = ({ img, size = "default" }: AvatarStyleProps) => {
   let width =
-    size === "small" ? spacing.s10 : `${parseInt(spacing.s10) * 2}rem`;
+    size === "small"
+      ? spacing.s9
+      : size === "default"
+      ? spacing.s19
+      : spacing.s25;
 
-  let margin = size === "small" ? spacing.s2 : spacing.s4;
+  let margin =
+    size === "small"
+      ? spacing.s2
+      : size === "default"
+      ? spacing.s4
+      : spacing.s6;
   return css`
     background-image: ${img
       ? `url(${img})`

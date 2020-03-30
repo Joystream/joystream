@@ -1,5 +1,6 @@
 import { css } from "@emotion/core";
 import { spacing, typography, colors } from "../../theme";
+import { type } from "os";
 
 export type SectionStyleProps = {
   auto?: boolean;
@@ -20,10 +21,13 @@ export let makeStyles = ({
         : "none"};
     `,
     header: css`
-      border: ${topDivider ? `1px solid ${colors.text.base}` : "none"};
+      border-bottom: ${topDivider ? `1px solid ${colors.text.base}` : "none"};
       color: ${colors.text.base};
       margin-bottom: ${spacing.s4};
+      padding-bottom: ${spacing.s2};
       font-family: ${typography.fonts.headers};
+      font-weight: ${typography.weights.light};
+      font-size: ${typography.sizes.large};
     `,
   };
 };

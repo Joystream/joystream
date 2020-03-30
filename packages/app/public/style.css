@@ -11,21 +11,18 @@ html {
 
 body {
   font-family: var(--font);
-  color: rgb(78, 78, 78);
+  color: #646464;
   font-size: 14px;
   background-color: #fafafa;
   line-height: 1.4285em;
-}
-
-a {
-  color: unset;
-  text-decoration: none;
 }
 
 main {
   padding: 0 4vw;
 }
 
-article {
-  background-color: white;
+.video-gallery {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
 }
