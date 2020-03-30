@@ -191,7 +191,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn can_participate(sender: &T::AccountId) -> bool {
-        !T::Currency::free_balance(sender).is_zero()
+        !<T as GovernanceCurrency>::Currency::free_balance(sender).is_zero()
             && <membership::members::Module<T>>::is_member_account(sender)
     }
 
@@ -391,7 +391,10 @@ impl<T: Trait> Module<T> {
         for stakeholder in Self::existing_stake_holders().iter() {
             let stake = Self::transferable_stakes(stakeholder);
             if !stake.seat.is_zero() || !stake.backing.is_zero() {
-                T::Currency::unreserve(stakeholder, stake.seat + stake.backing);
+                <T as GovernanceCurrency>::Currency::unreserve(
+                    stakeholder,
+                    stake.seat + stake.backing,
+                );
             }
         }
     }
@@ -416,7 +419,7 @@ impl<T: Trait> Module<T> {
 
         // return new stake to account's free balance
         if !stake.new.is_zero() {
-            T::Currency::unreserve(applicant, stake.new);
+            <T as GovernanceCurrency>::Currency::unreserve(applicant, stake.new);
         }
 
         // return unused transferable stake
@@ -470,7 +473,7 @@ impl<T: Trait> Module<T> {
                 // return new stake to account's free balance
                 let SealedVote { voter, stake, .. } = sealed_vote;
                 if !stake.new.is_zero() {
-                    T::Currency::unreserve(voter, stake.new);
+                    <T as GovernanceCurrency>::Currency::unreserve(voter, stake.new);
                 }
 
                 // return unused transferable stake
@@ -661,12 +664,12 @@ impl<T: Trait> Module<T> {
         let new_stake = Self::new_stake_reusing_transferable(&mut transferable_stake.seat, stake);
 
         ensure!(
-            T::Currency::can_reserve(&applicant, new_stake.new),
+            <T as GovernanceCurrency>::Currency::can_reserve(&applicant, new_stake.new),
             "not enough free balance to reserve"
         );
 
         ensure!(
-            T::Currency::reserve(&applicant, new_stake.new).is_ok(),
+            <T as GovernanceCurrency>::Currency::reserve(&applicant, new_stake.new).is_ok(),
             "failed to reserve applicant stake!"
         );
 
@@ -697,12 +700,12 @@ impl<T: Trait> Module<T> {
             Self::new_stake_reusing_transferable(&mut transferable_stake.backing, stake);
 
         ensure!(
-            T::Currency::can_reserve(&voter, vote_stake.new),
+            <T as GovernanceCurrency>::Currency::can_reserve(&voter, vote_stake.new),
             "not enough free balance to reserve"
         );
 
         ensure!(
-            T::Currency::reserve(&voter, vote_stake.new).is_ok(),
+            <T as GovernanceCurrency>::Currency::reserve(&voter, vote_stake.new).is_ok(),
             "failed to reserve voting stake!"
         );
 
