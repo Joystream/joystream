@@ -1,3 +1,82 @@
+//! # Blog Module
+//!
+//! The Blog module provides functionality for handling blogs
+//!
+//! - [`timestamp::Trait`](./trait.Trait.html)
+//! - [`Call`](./enum.Call.html)
+//! - [`Module`](./struct.Module.html)
+//! 
+//! ## Overview
+//! 
+//! The blog module provides functions for:
+//! 
+//! - Blogs creation
+//! - Blogs locking and unlocking
+//! - Creation and editing of posts, associated with given blog
+//! - Posts locking/unlocking
+//! - Creation and editing of replies, associated with given post
+//! - Reactions for both posts and replies
+//! 
+//! ### Terminology
+//! 
+//! - **Lock:** A forbiddance of mutation of any associated information related to a given blog or post.
+//! 
+//! - **Reaction:** A user can react to a post in N different ways, where N is an integer parameter configured through runtime. 
+//! For each way, the reader can simply react and unreact to a given post. Think of reactions as being things like, unlike, 
+//! laugh, etc. The semantics of each reaction is not present in the runtime.
+//! 
+//! ## Interface
+//!
+//! ### Dispatchable Functions
+//!
+//! - `create_post` - Blog owner can create posts, related to a given blog. 
+//! - `lock_post` - Blog owner can lock post to forbid mutations of any associated information related to a given post. 
+//! The origin of this call must be a blog owner.
+//! - `unlock_post` - Reverse to lock post. 
+//! - `edit_post` - Edit post with a new title/or body. The origin of this call must be a blog owner.
+//! - `create_reply` - Create either root post reply or direct reply to reply. 
+//! - `edit_reply` - Edit reply with a new text. The origin of this call must be a reply owner
+//! - `react` - Submit either post reaction or reply reaction. 
+//! - In case, when you resubmit reaction, it`s status will be changed to an opposite one
+//! 
+//! ### Public functions
+//!
+//! - `create_blog` - Creates new blog with unique identifier via an extrinsic where access is gated 
+//! by a dedicated EnsureOrigin runtime trait.
+//! - `lock_blog` - Locks blog to forbid mutations of any associated information related to a given blog.
+//! - `unlock_blog` - Reverse to lock_blog
+//! 
+//! ## Usage
+//!
+//! The following example shows how to use the Blog module in your custom module.
+//!
+//! ### Prerequisites
+//!
+//! Import the Blog module into your custom module and derive the module configuration
+//! trait from the blog trait.
+//! 
+//! ### Create a blog 
+//!
+//! ```
+//! use frame_support::{decl_module, dispatch};
+//! # use substrate_blog_module as blog_module;
+//! use frame_system::{self as system, ensure_signed};
+//!
+//! pub trait Trait: blog_module::Trait {}
+//!
+//! decl_module! {
+//! 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+//! 		#[weight = frame_support::weights::SimpleDispatchInfo::default()]
+//! 		pub fn create_blog(origin) -> dispatch::DispatchResult {
+//! 			let _sender = ensure_signed(origin)?;
+//! 			let _now = <blog_module::Module<T>>::create_blog(_sender);
+//! 			Ok(())
+//! 		}
+//! 	}
+//! }
+//! # fn main() {}
+//! ```
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Codec, Decode, Encode};
