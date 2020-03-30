@@ -1,5 +1,5 @@
 import React from "react";
-import { makeStyles, SectionStyleProps } from "./Section.styles";
+import { makeStyles, SectionStyleProps } from "./Section.style";
 
 type SectionProps = {
   children?: React.ReactNode;

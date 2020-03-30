@@ -1,6 +1,6 @@
 import React from "react";
 import ReactPlayer from "react-player";
-import { VideoStyleProps, makeStyles } from "./videoStyles";
+import { VideoStyleProps, makeStyles } from "./Video.style";
 
 export type VideoProps = {
   url?: string;

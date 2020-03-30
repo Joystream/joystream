@@ -1,5 +1,5 @@
 import React from "react";
-import { makeStyles, AvatarStyleProps } from "./avatarStyle";
+import { makeStyles, AvatarStyleProps } from "./Avatar.style";
 
 export type AvatarProps = {
   link: string;
