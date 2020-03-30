@@ -3,6 +3,7 @@
 
 pub mod council;
 pub mod election;
+pub mod election_params;
 
 mod sealed_vote;
 mod stake;
