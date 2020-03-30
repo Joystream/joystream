@@ -396,6 +396,7 @@ impl finality_tracker::Trait for Runtime {
 }
 
 pub use forum;
+pub use governance::election_params::ElectionParameters;
 use governance::{council, election, proposals};
 use membership::members;
 use storage::{data_directory, data_object_storage_registry, data_object_type_registry};

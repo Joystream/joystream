@@ -18,9 +18,9 @@ use node_runtime::{
     versioned_store::InputValidationLengthConstraint as VsInputValidation, ActorsConfig,
     AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
     CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
-    DataObjectTypeRegistryConfig, GrandpaConfig, ImOnlineConfig, IndicesConfig, MembersConfig,
-    Perbill, ProposalsConfig, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
-    SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
+    DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, IndicesConfig,
+    MembersConfig, Perbill, ProposalsConfig, SessionConfig, SessionKeys, Signature, StakerStatus,
+    StakingConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
 };
 pub use node_runtime::{AccountId, GenesisConfig};
 use primitives::{sr25519, Pair, Public};
@@ -235,14 +235,16 @@ pub fn testnet_genesis(
         }),
         election: Some(CouncilElectionConfig {
             auto_start: true,
-            announcing_period: 3 * DAYS,
-            voting_period: 1 * DAYS,
-            revealing_period: 1 * DAYS,
-            council_size: 12,
-            candidacy_limit: 25,
-            min_council_stake: 10 * DOLLARS,
-            new_term_duration: 14 * DAYS,
-            min_voting_stake: 1 * DOLLARS,
+            election_parameters: ElectionParameters {
+                announcing_period: 3 * DAYS,
+                voting_period: 1 * DAYS,
+                revealing_period: 1 * DAYS,
+                council_size: 12,
+                candidacy_limit: 25,
+                min_council_stake: 10 * DOLLARS,
+                new_term_duration: 14 * DAYS,
+                min_voting_stake: 1 * DOLLARS,
+            },
         }),
         proposals: Some(ProposalsConfig {
             approval_quorum: 66,
