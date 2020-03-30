@@ -1,4 +1,6 @@
 use codec::{Decode, Encode};
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 use sr_primitives::traits::Zero;
 use srml_support::{dispatch::Result, ensure};
 
@@ -8,6 +10,7 @@ pub static MSG_CANDIDACY_LIMIT_WAS_LOWER_THAN_COUNCIL_SIZE: &str =
     "CandidacyWasLessThanCouncilSize";
 
 /// Combined Election parameters, as argument for set_election_parameters
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Clone, Copy, Encode, Decode, Default, PartialEq, Debug)]
 pub struct ElectionParameters<Balance, BlockNumber> {
     pub announcing_period: BlockNumber,

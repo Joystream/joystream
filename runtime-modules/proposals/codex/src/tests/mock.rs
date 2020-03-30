@@ -109,6 +109,11 @@ impl Default for crate::Call<Test> {
     }
 }
 
+impl mint::Trait for Test {
+    type Currency = Balances;
+    type MintId = u64;
+}
+
 impl governance::council::Trait for Test {
     type Event = ();
     type CouncilTermEnded = ();

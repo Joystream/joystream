@@ -125,7 +125,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 6,
-    spec_version: 11,
+    spec_version: 12,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
 };
@@ -406,6 +406,7 @@ impl finality_tracker::Trait for Runtime {
 }
 
 pub use forum;
+pub use governance::election_params::ElectionParameters;
 use governance::{council, election};
 use membership::members;
 use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
