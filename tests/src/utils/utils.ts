@@ -1,5 +1,3 @@
-import { KeyringPair } from '@polkadot/keyring/types';
-import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { IExtrinsic } from '@polkadot/types/types';
 import { compactToU8a } from '@polkadot/util';
 import BN = require('bn.js');
