@@ -17,6 +17,7 @@ export default function Channel({
   isPublic = true,
   isVerified = false,
   description,
+  banner,
   videos,
   img,
 }: ChannelProps) {
@@ -27,6 +28,7 @@ export default function Channel({
         isPublic={isPublic}
         isVerified={isVerified}
         description={description}
+        banner={banner}
         img={img}
       />
       <GeneralSection auto title="Videos">
