@@ -52,7 +52,7 @@ pub(crate) mod parameters {
             approval_quorum_percentage: 40,
             approval_threshold_percentage: 51,
             slashing_quorum_percentage: 81,
-            slashing_threshold_percentage: 80,
+            slashing_threshold_percentage: 84,
             required_stake: Some(<BalanceOf<T>>::from(500u32)),
         }
     }

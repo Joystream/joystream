@@ -368,3 +368,86 @@ fn create_set_election_parameters_call_succeeds() {
         );
     });
 }
+
+#[test]
+fn create_set_council_mint_call_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let account_id = 1;
+        let origin = RawOrigin::Signed(account_id).into();
+
+        let required_stake = Some(<BalanceOf<Test>>::from(500u32));
+        let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&account_id, 50000);
+
+        assert!(ProposalCodex::create_set_council_mint_capacity_proposal(
+            origin,
+            1,
+            b"title".to_vec(),
+            b"body".to_vec(),
+            required_stake,
+            0,
+        )
+        .is_ok());
+
+        // a discussion was created
+        let thread_id = <crate::ThreadIdByProposalId<Test>>::get(1);
+        assert_eq!(thread_id, 1);
+
+        let proposal_id = 1;
+        let proposal = ProposalsEngine::proposals(proposal_id);
+        // check for correct proposal parameters
+        assert_eq!(
+            proposal.parameters,
+            crate::proposal_types::parameters::set_council_mint_capacity_proposal::<Test>()
+        );
+    });
+}
+
+#[test]
+fn create_set_council_mint_capacity_proposal_call_fails_with_invalid_stake() {
+    initial_test_ext().execute_with(|| {
+        let origin = RawOrigin::Signed(1).into();
+
+        assert_eq!(
+            ProposalCodex::create_set_council_mint_capacity_proposal(
+                origin,
+                1,
+                b"title".to_vec(),
+                b"body".to_vec(),
+                None,
+                0,
+            ),
+            Err(Error::Other("EmptyStake"))
+        );
+
+        let invalid_stake = Some(<BalanceOf<Test>>::from(5000u32));
+
+        assert_eq!(
+            ProposalCodex::create_set_council_mint_capacity_proposal(
+                RawOrigin::Signed(1).into(),
+                1,
+                b"title".to_vec(),
+                b"body".to_vec(),
+                invalid_stake,
+                0,
+            ),
+            Err(Error::Other("StakeDiffersFromRequired"))
+        );
+    });
+}
+
+#[test]
+fn create_set_council_mint_capacity_proposal_call_fails_with_insufficient_rights() {
+    initial_test_ext().execute_with(|| {
+        let origin = RawOrigin::None.into();
+
+        assert!(ProposalCodex::create_set_council_mint_capacity_proposal(
+            origin,
+            1,
+            b"title".to_vec(),
+            b"body".to_vec(),
+            None,
+            0,
+        )
+        .is_err());
+    });
+}
