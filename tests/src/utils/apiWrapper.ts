@@ -2,19 +2,19 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { Option } from '@polkadot/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { UserInfo, PaidMembershipTerms } from '@joystream/types/lib/members';
-import { Balance, Index } from '@polkadot/types/interfaces';
+import { Balance } from '@polkadot/types/interfaces';
 import BN = require('bn.js');
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { Sender } from './sender';
 import { Utils } from './utils';
 
-export class ApiMethods {
+export class ApiWrapper {
   private readonly api: ApiPromise;
   private readonly sender: Sender;
 
-  public static async create(provider: WsProvider): Promise<ApiMethods> {
+  public static async create(provider: WsProvider): Promise<ApiWrapper> {
     const api = await ApiPromise.create({ provider });
-    return new ApiMethods(api);
+    return new ApiWrapper(api);
   }
 
   constructor(api: ApiPromise) {
@@ -32,10 +32,9 @@ export class ApiMethods {
     name: string,
     expectFailure = false
   ): Promise<void> {
-    return Utils.signAndSend(
+    return this.sender.signAndSend(
       this.api.tx.members.buyMembership(paidTermsId, new UserInfo({ handle: name, avatar_uri: '', about: '' })),
       account,
-      await this.getNonce(account),
       expectFailure
     );
   }
@@ -48,9 +47,8 @@ export class ApiMethods {
     return this.api.query.balances.freeBalance<Balance>(address);
   }
 
-  public async transferBalance(from: KeyringPair, to: string, amount: BN, nonce: BN = new BN(-1)): Promise<void> {
-    const _nonce = nonce.isNeg() ? await this.getNonce(from) : nonce;
-    return Utils.signAndSend(this.api.tx.balances.transfer(to, amount), from, _nonce);
+  public async transferBalance(from: KeyringPair, to: string, amount: BN): Promise<void> {
+    return this.sender.signAndSend(this.api.tx.balances.transfer(to, amount), from);
   }
 
   public getPaidMembershipTerms(paidTermsId: number): Promise<Option<PaidMembershipTerms>> {
@@ -61,17 +59,12 @@ export class ApiMethods {
     return this.getPaidMembershipTerms(paidTermsId).then(terms => terms.unwrap().fee.toBn());
   }
 
-  public async transferBalanceToAccounts(from: KeyringPair, to: KeyringPair[], amount: BN, nonce: BN): Promise<void[]> {
+  public async transferBalanceToAccounts(from: KeyringPair, to: KeyringPair[], amount: BN): Promise<void[]> {
     return Promise.all(
       to.map(async keyPair => {
-        nonce = nonce.add(new BN(1));
-        await this.transferBalance(from, keyPair.address, amount, nonce);
+        await this.transferBalance(from, keyPair.address, amount);
       })
     );
-  }
-
-  public getNonce(account: KeyringPair): Promise<BN> {
-    return this.api.query.system.accountNonce<Index>(account.address);
   }
 
   private getBaseTxFee(): BN {
