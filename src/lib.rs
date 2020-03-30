@@ -9,8 +9,7 @@ use runtime_primitives::traits::{
     EnsureOrigin, MaybeSerialize, MaybeSerializeDeserialize, Member, One, SimpleArithmetic, Zero,
 };
 use srml_support::{
-    decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter,
-    StorageDoubleMap, Hashable
+    decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter, StorageDoubleMap
 };
 
 mod error_messages;
@@ -247,13 +246,15 @@ impl<T: Trait> Post<T> {
         self.replies_count += T::ReplyId::one()
     }
 
-    fn add_root_reply(&mut self, block_number: T::BlockNumber) {
+    /// Recalculate last consecutive replies count and add last reply block number
+    fn add_last_root_reply(&mut self, block_number: T::BlockNumber) {
         Module::<T>::recalculate_last_replies_count(&mut self.last_root_replies_block_numbers, block_number);
         Module::<T>::push_reply_block_number(&mut self.last_root_replies_block_numbers, block_number);
         // Increase root replies counter, associated with given post by 1
         self.root_replies_count += T::ReplyId::one()
     }
 
+    /// Get last consecutive root replies count
     fn calculate_last_root_replies_count(&self, current_block_number: T::BlockNumber) -> usize {
         Module::<T>::calculate_last_replies_count(
             &self.last_root_replies_block_numbers,
@@ -306,6 +307,7 @@ pub struct Reply<T: Trait> {
 }
 
 impl<T: Trait> Reply<T> {
+    /// Create new reply with given text and owner id
     fn new(text: Vec<u8>, owner: T::ParticipantId) -> Self {
         Self {
             text,
@@ -349,13 +351,15 @@ impl<T: Trait> Reply<T> {
         self.direct_replies_count
     }
 
-    fn add_direct_reply(&mut self, block_number: T::BlockNumber) {
+    /// Recalculate last consecutive replies count and add last reply block number
+    fn add_last_direct_reply(&mut self, block_number: T::BlockNumber) {
         Module::<T>::recalculate_last_replies_count(&mut self.last_direct_replies_block_numbers, block_number);
         Module::<T>::push_reply_block_number(&mut self.last_direct_replies_block_numbers, block_number);
         // Increase direct replies counter, associated with given reply by 1
         self.direct_replies_count += T::ReplyId::one()
     }
 
+    /// Get last consecutive direct replies count
     fn calculate_last_direct_replies_count(
         &self,
         current_block_number: T::BlockNumber,
@@ -373,9 +377,15 @@ decl_storage! {
 
         /// Maps, representing id => item relationship for blogs, posts and replies related structures
 
+        /// Blog by unique blog identificator
+       
         BlogById get(fn blog_by_id): map T::BlogId => Blog<T>;
 
+        /// Post by unique blog and post identificators
+        
         PostById get(fn post_by_id): double_map hasher(blake2_128) T::BlogId, blake2_128(T::PostId) => Post<T>;
+
+        /// Reply by unique blog, post and reply identificators
 
         ReplyById get (fn reply_by_id): double_map hasher(blake2_128) (T::BlogId, T::PostId), blake2_128(T::ReplyId) => Reply<T>;
 
@@ -593,13 +603,13 @@ decl_module! {
 
             if let Some(reply_id) = reply_id {
                 <ReplyById<T>>::mutate((blog_id, post_id), reply_id, |inner_reply|  {
-                    inner_reply.add_direct_reply(current_block_number);
+                    inner_reply.add_last_direct_reply(current_block_number);
                 });
                 // Trigger event
                 Self::deposit_event(RawEvent::DirectReplyCreated(reply_owner, blog_id, post_id, reply_id, post_replies_count));
             } else {
                 <PostById<T>>::mutate(blog_id, post_id, |inner_post|  {
-                    inner_post.add_root_reply(current_block_number);
+                    inner_post.add_last_root_reply(current_block_number);
                 });
                 // Trigger event
                 Self::deposit_event(RawEvent::ReplyCreated(reply_owner, blog_id, post_id, post_replies_count));
@@ -712,11 +722,13 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    // Get block owner id from account id
     fn get_blog_owner(origin: T::Origin) -> Result<T::BlogOwnerId, &'static str> {
         let account_id = T::BlogOwnerEnsureOrigin::ensure_origin(origin)?;
         Ok(T::BlogOwnerId::from(account_id))
     }
 
+    // Get block participant id from account id
     fn get_participant(origin: T::Origin) -> Result<T::ParticipantId, &'static str> {
         let account_id = T::ParticipantEnsureOrigin::ensure_origin(origin)?;
         Ok(T::ParticipantId::from(account_id))
@@ -780,7 +792,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Flips reaction status under given index and returns the result of that flip.
+    /// Flip reaction status under given index and returns the result of that flip.
     /// If there is no reactions under this AccountId entry yet,
     /// initialize a new reactions array and set reaction under given index
     fn mutate_reactions(
@@ -802,11 +814,11 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    /// Remove all replies block numbers beyond the consecutive replies interval constraint
     fn recalculate_last_replies_count(
         last_replies_block_numbers: &mut Vec<T::BlockNumber>,
         current_block_number: T::BlockNumber,
     ) -> usize {
-        // Remove all replies block numbers beyond the consecutive replies interval constraint
         // Consider using retain() instead for simplicity
         while matches!(
             last_replies_block_numbers.last(),
@@ -817,6 +829,7 @@ impl<T: Trait> Module<T> {
         last_replies_block_numbers.len()
     }
 
+    /// Calculate replies count within consecutive replies interval
     fn calculate_last_replies_count(
         last_replies_block_numbers: &[T::BlockNumber],
         current_block_number: T::BlockNumber,
@@ -830,6 +843,7 @@ impl<T: Trait> Module<T> {
             .count()
     }
 
+    // Add last reply block number to vector
     fn push_reply_block_number(last_replies_block_numbers: &mut Vec<T::BlockNumber>, block_number: T::BlockNumber) {
         if last_replies_block_numbers.is_empty() {
             last_replies_block_numbers
