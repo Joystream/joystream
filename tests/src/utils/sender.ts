@@ -17,7 +17,7 @@ export class Sender {
     if (!nonce) {
       nonce = await this.api.query.system.accountNonce<Index>(address);
     }
-    let nextNonce: BN = nonce.addn(1);
+    const nextNonce: BN = nonce.addn(1);
     this.nonceMap.set(address, nextNonce);
     return nonce;
   }
@@ -32,7 +32,7 @@ export class Sender {
     expectFailure = false
   ): Promise<void> {
     return new Promise(async (resolve, reject) => {
-      let nonce: BN = await this.getNonce(account.address);
+      const nonce: BN = await this.getNonce(account.address);
       const signedTx = tx.sign(account, { nonce });
 
       await signedTx
