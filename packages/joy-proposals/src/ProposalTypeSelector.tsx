@@ -22,7 +22,7 @@ export function ProposalTypeSelector (props: Props) {
 
   const onFilterProposal: OnChangeCb = (event, _data) => {
     const query = event.target.value
-    console.log('onFilterProposal: query:', query)
+    // console.log('onFilterProposal: query:', query)
 
     if (nonEmptyStr(query)) {
       setFilteredTypes(
@@ -37,7 +37,7 @@ export function ProposalTypeSelector (props: Props) {
   }
 
   return (
-    <Section title={`Choose a proposal type...`}>
+    <Section title={`Choose a Proposal Type`}>
       <Input
         icon='search'
         iconPosition='left'
