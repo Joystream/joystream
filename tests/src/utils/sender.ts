@@ -13,9 +13,13 @@ export class Sender {
   }
 
   private async getNonce(address: string): Promise<BN> {
+    let oncahinNonce: BN = new BN(0);
+    if (!this.nonceMap.get(address)) {
+      oncahinNonce = await this.api.query.system.accountNonce<Index>(address);
+    }
     let nonce: BN | undefined = this.nonceMap.get(address);
     if (!nonce) {
-      nonce = await this.api.query.system.accountNonce<Index>(address);
+      nonce = oncahinNonce;
     }
     const nextNonce: BN = nonce.addn(1);
     this.nonceMap.set(address, nextNonce);
@@ -34,7 +38,6 @@ export class Sender {
     return new Promise(async (resolve, reject) => {
       const nonce: BN = await this.getNonce(account.address);
       const signedTx = tx.sign(account, { nonce });
-
       await signedTx
         .send(async result => {
           if (result.status.isFinalized === true && result.events !== undefined) {
