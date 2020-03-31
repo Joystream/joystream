@@ -5,6 +5,8 @@
 //! - create_text_proposal
 //! - create_runtime_upgrade_proposal
 //! - create_set_election_parameters_proposal
+//! - create_set_council_mint_capacity_proposal
+//! - create_set_content_working_group_mint_capacity_proposal
 //!
 //! Proposal implementations of this module:
 //! - execute_text_proposal - prints the proposal to the log
@@ -40,6 +42,7 @@ pub trait Trait:
     + membership::members::Trait
     + proposal_discussion::Trait
     + governance::election::Trait
+    + content_working_group::Trait
 {
     /// Defines max allowed text proposal length.
     type TextProposalMaxLength: Get<u32>;
@@ -243,6 +246,33 @@ decl_module! {
 
             let proposal_parameters =
                 proposal_types::parameters::set_council_mint_capacity_proposal::<T>();
+
+            Self::create_proposal(
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_code.encode(),
+                proposal_parameters,
+            )?;
+        }
+
+        /// Create 'Set content working group mint capacity' proposal type.
+        /// This proposal uses set_mint_capacity() extrinsic from the content-working-group  module.
+        pub fn create_set_content_working_group_mint_capacity_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            mint_balance: BalanceOfMint<T>,
+        ) {
+            let proposal_code =
+                <content_working_group::Call<T>>::set_mint_capacity(mint_balance);
+
+            let proposal_parameters =
+                proposal_types::parameters::set_content_working_group_mint_capacity_proposal::<T>();
 
             Self::create_proposal(
                 origin,

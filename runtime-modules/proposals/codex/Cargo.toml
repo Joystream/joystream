@@ -21,6 +21,8 @@ std = [
     'stake/std',
     'balances/std',
     'membership/std',
+    'governance/std',
+    'mint/std',
 ]
 
 
@@ -116,8 +118,38 @@ default_features = false
 package = 'substrate-common-module'
 path = '../../common'
 
+[dependencies.content_working_group]
+default_features = false
+package = 'substrate-content-working-group-module'
+path = '../../content-working-group'
+
 [dev-dependencies.runtime-io]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-io'
 rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
+
+[dev-dependencies.hiring]
+default_features = false
+package = 'substrate-hiring-module'
+path = '../../hiring'
+
+[dev-dependencies.versioned_store]
+default_features = false
+package ='substrate-versioned-store'
+path = '../../versioned-store'
+
+[dependencies.versioned_store]
+default_features = false
+package ='substrate-versioned-store'
+path = '../../versioned-store'
+
+[dev-dependencies.versioned_store_permissions]
+default_features = false
+package = 'substrate-versioned-store-permissions-module'
+path = '../../versioned-store-permissions'
+
+[dev-dependencies.recurring_rewards]
+default_features = false
+package = 'substrate-recurring-reward-module'
+path = '../../recurring-reward'

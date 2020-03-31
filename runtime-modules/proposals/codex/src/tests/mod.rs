@@ -7,28 +7,49 @@ use system::RawOrigin;
 
 use crate::{BalanceOf, Error};
 use mock::*;
+use proposal_engine::ProposalParameters;
+use srml_support::dispatch::DispatchResult;
 
-#[test]
-fn create_text_proposal_codex_call_succeeds() {
-    initial_test_ext().execute_with(|| {
-        let account_id = 1;
-        let proposer_id = 1;
-        let origin = RawOrigin::Signed(account_id).into();
+struct ProposalTestFixture<InsufficientRightsCall, EmptyStakeCall, InvalidStakeCall, SuccessfulCall>
+where
+    InsufficientRightsCall: Fn() -> DispatchResult<crate::Error>,
+    EmptyStakeCall: Fn() -> DispatchResult<crate::Error>,
+    InvalidStakeCall: Fn() -> DispatchResult<crate::Error>,
+    SuccessfulCall: Fn() -> DispatchResult<crate::Error>,
+{
+    insufficient_rights_call: InsufficientRightsCall,
+    empty_stake_call: EmptyStakeCall,
+    invalid_stake_call: InvalidStakeCall,
+    successful_call: SuccessfulCall,
+    proposal_parameters: ProposalParameters<u64, u64>,
+}
 
-        let required_stake = Some(<BalanceOf<Test>>::from(500u32));
-        let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&account_id, 50000);
+impl<InsufficientRightsCall, EmptyStakeCall, InvalidStakeCall, SuccessfulCall>
+    ProposalTestFixture<InsufficientRightsCall, EmptyStakeCall, InvalidStakeCall, SuccessfulCall>
+where
+    InsufficientRightsCall: Fn() -> DispatchResult<crate::Error>,
+    EmptyStakeCall: Fn() -> DispatchResult<crate::Error>,
+    InvalidStakeCall: Fn() -> DispatchResult<crate::Error>,
+    SuccessfulCall: Fn() -> DispatchResult<crate::Error>,
+{
+    fn check_for_invalid_stakes(&self) {
+        assert_eq!((self.empty_stake_call)(), Err(Error::Other("EmptyStake")));
 
         assert_eq!(
-            ProposalCodex::create_text_proposal(
-                origin,
-                proposer_id,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                required_stake,
-                b"text".to_vec(),
-            ),
-            Ok(())
+            (self.invalid_stake_call)(),
+            Err(Error::Other("StakeDiffersFromRequired"))
         );
+    }
+
+    fn check_call_for_insufficient_rights(&self) {
+        assert!((self.insufficient_rights_call)().is_err());
+    }
+
+    fn check_for_successful_call(&self) {
+        let account_id = 1;
+        let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&account_id, 50000);
+
+        assert!((self.successful_call)().is_ok());
 
         // a discussion was created
         let thread_id = <crate::ThreadIdByProposalId<Test>>::get(1);
@@ -37,41 +58,63 @@ fn create_text_proposal_codex_call_succeeds() {
         let proposal_id = 1;
         let proposal = ProposalsEngine::proposals(proposal_id);
         // check for correct proposal parameters
-        assert_eq!(
-            proposal.parameters,
-            crate::proposal_types::parameters::text_proposal::<Test>()
-        );
-    });
+        assert_eq!(proposal.parameters, self.proposal_parameters);
+    }
+
+    pub fn check_all(&self) {
+        self.check_call_for_insufficient_rights();
+        self.check_for_invalid_stakes();
+        self.check_for_successful_call();
+    }
 }
 
 #[test]
-fn create_text_proposal_codex_call_fails_with_invalid_stake() {
+fn create_text_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        assert_eq!(
-            ProposalCodex::create_text_proposal(
-                RawOrigin::Signed(1).into(),
-                1,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                None,
-                b"text".to_vec(),
-            ),
-            Err(Error::Other("EmptyStake"))
-        );
-
-        let invalid_stake = Some(<BalanceOf<Test>>::from(5000u32));
-
-        assert_eq!(
-            ProposalCodex::create_text_proposal(
-                RawOrigin::Signed(1).into(),
-                1,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                invalid_stake,
-                b"text".to_vec(),
-            ),
-            Err(Error::Other("StakeDiffersFromRequired"))
-        );
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_text_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    b"text".to_vec(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_text_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    b"text".to_vec(),
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_text_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    b"text".to_vec(),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_text_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(500u32)),
+                    b"text".to_vec(),
+                )
+            },
+            proposal_parameters: crate::proposal_types::parameters::text_proposal::<Test>(),
+        };
+        proposal_fixture.check_all();
     });
 }
 
@@ -108,19 +151,52 @@ fn create_text_proposal_codex_call_fails_with_incorrect_text_size() {
 }
 
 #[test]
-fn create_text_proposal_codex_call_fails_with_insufficient_rights() {
+fn create_runtime_upgrade_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        let origin = RawOrigin::None.into();
-
-        assert!(ProposalCodex::create_text_proposal(
-            origin,
-            1,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            None,
-            b"text".to_vec(),
-        )
-        .is_err());
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_runtime_upgrade_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    b"wasm".to_vec(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_runtime_upgrade_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    b"wasm".to_vec(),
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_runtime_upgrade_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(500u32)),
+                    b"wasm".to_vec(),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_runtime_upgrade_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(50000u32)),
+                    b"wasm".to_vec(),
+                )
+            },
+            proposal_parameters: crate::proposal_types::parameters::upgrade_runtime::<Test>(),
+        };
+        proposal_fixture.check_all();
     });
 }
 
@@ -157,119 +233,76 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_incorrect_wasm_size() {
 }
 
 #[test]
-fn create_upgrade_runtime_proposal_codex_call_fails_with_insufficient_rights() {
+fn create_set_election_parameters_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        let origin = RawOrigin::None.into();
+        let election_parameters = ElectionParameters {
+            announcing_period: 1,
+            voting_period: 2,
+            revealing_period: 3,
+            council_size: 4,
+            candidacy_limit: 5,
+            min_voting_stake: 6,
+            min_council_stake: 7,
+            new_term_duration: 8,
+        };
 
-        assert!(ProposalCodex::create_runtime_upgrade_proposal(
-            origin,
-            1,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            None,
-            b"wasm".to_vec(),
-        )
-        .is_err());
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_set_election_parameters_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(500u32)),
+                    ElectionParameters::default(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_set_election_parameters_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    election_parameters.clone(),
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_set_election_parameters_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(50000u32)),
+                    election_parameters.clone(),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_set_election_parameters_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(500u32)),
+                    election_parameters.clone(),
+                )
+            },
+            proposal_parameters:
+                crate::proposal_types::parameters::set_election_parameters_proposal::<Test>(),
+        };
+        proposal_fixture.check_all();
     });
 }
-
-#[test]
-fn create_runtime_upgrade_proposal_codex_call_fails_with_invalid_stake() {
-    initial_test_ext().execute_with(|| {
-        let proposer_id = 1;
-        assert_eq!(
-            ProposalCodex::create_runtime_upgrade_proposal(
-                RawOrigin::Signed(1).into(),
-                proposer_id,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                None,
-                b"wasm".to_vec(),
-            ),
-            Err(Error::Other("EmptyStake"))
-        );
-
-        let invalid_stake = Some(<BalanceOf<Test>>::from(500u32));
-
-        assert_eq!(
-            ProposalCodex::create_runtime_upgrade_proposal(
-                RawOrigin::Signed(1).into(),
-                proposer_id,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                invalid_stake,
-                b"wasm".to_vec(),
-            ),
-            Err(Error::Other("StakeDiffersFromRequired"))
-        );
-    });
-}
-
-#[test]
-fn create_runtime_upgrade_proposal_codex_call_succeeds() {
-    initial_test_ext().execute_with(|| {
-        let account_id = 1;
-        let proposer_id = 1;
-        let origin = RawOrigin::Signed(account_id).into();
-
-        let required_stake = Some(<BalanceOf<Test>>::from(50000u32));
-        let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&account_id, 50000);
-
-        assert_eq!(
-            ProposalCodex::create_runtime_upgrade_proposal(
-                origin,
-                proposer_id,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                required_stake,
-                b"wasm".to_vec(),
-            ),
-            Ok(())
-        );
-
-        // a discussion was created
-        let thread_id = <crate::ThreadIdByProposalId<Test>>::get(1);
-        assert_eq!(thread_id, 1);
-
-        let proposal_id = 1;
-        let proposal = ProposalsEngine::proposals(proposal_id);
-        // check for correct proposal parameters
-        assert_eq!(
-            proposal.parameters,
-            crate::proposal_types::parameters::upgrade_runtime::<Test>()
-        );
-    });
-}
-
-#[test]
-fn create_set_election_parameters_call_fails_with_insufficient_rights() {
-    initial_test_ext().execute_with(|| {
-        let origin = RawOrigin::None.into();
-
-        assert!(ProposalCodex::create_set_election_parameters_proposal(
-            origin,
-            1,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            None,
-            ElectionParameters::default(),
-        )
-        .is_err());
-    });
-}
-
 #[test]
 fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
     initial_test_ext().execute_with(|| {
         let account_id = 1;
-        let origin = RawOrigin::Signed(account_id).into();
-
         let required_stake = Some(<BalanceOf<Test>>::from(500u32));
         let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&account_id, 50000);
 
         assert_eq!(
             ProposalCodex::create_set_election_parameters_proposal(
-                origin,
+                RawOrigin::Signed(1).into(),
                 1,
                 b"title".to_vec(),
                 b"body".to_vec(),
@@ -282,172 +315,102 @@ fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
 }
 
 #[test]
-fn create_set_election_parameters_call_fails_with_invalid_stake() {
+fn create_set_council_mint_capacity_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        let origin = RawOrigin::Signed(1).into();
-
-        let election_parameters = ElectionParameters {
-            announcing_period: 1,
-            voting_period: 2,
-            revealing_period: 3,
-            council_size: 4,
-            candidacy_limit: 5,
-            min_voting_stake: 6,
-            min_council_stake: 7,
-            new_term_duration: 8,
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_set_council_mint_capacity_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    0,
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_set_council_mint_capacity_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    0,
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_set_council_mint_capacity_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    0,
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_set_council_mint_capacity_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(500u32)),
+                    0,
+                )
+            },
+            proposal_parameters:
+                crate::proposal_types::parameters::set_council_mint_capacity_proposal::<Test>(),
         };
-
-        assert_eq!(
-            ProposalCodex::create_set_election_parameters_proposal(
-                origin,
-                1,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                None,
-                election_parameters.clone(),
-            ),
-            Err(Error::Other("EmptyStake"))
-        );
-
-        let invalid_stake = Some(<BalanceOf<Test>>::from(5000u32));
-
-        assert_eq!(
-            ProposalCodex::create_set_election_parameters_proposal(
-                RawOrigin::Signed(1).into(),
-                1,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                invalid_stake,
-                election_parameters,
-            ),
-            Err(Error::Other("StakeDiffersFromRequired"))
-        );
+        proposal_fixture.check_all();
     });
 }
 
 #[test]
-fn create_set_election_parameters_call_succeeds() {
+fn create_set_content_working_group_mint_capacity_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        let account_id = 1;
-        let origin = RawOrigin::Signed(account_id).into();
-
-        let required_stake = Some(<BalanceOf<Test>>::from(500u32));
-        let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&account_id, 50000);
-
-        let election_parameters = ElectionParameters {
-            announcing_period: 1,
-            voting_period: 2,
-            revealing_period: 3,
-            council_size: 4,
-            candidacy_limit: 5,
-            min_voting_stake: 6,
-            min_council_stake: 7,
-            new_term_duration: 8,
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_set_content_working_group_mint_capacity_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    0,
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_set_content_working_group_mint_capacity_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    0,
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_set_content_working_group_mint_capacity_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    0,
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_set_content_working_group_mint_capacity_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(500u32)),
+                    0,
+                )
+            },
+            proposal_parameters: crate::proposal_types::parameters::set_content_working_group_mint_capacity_proposal::<Test>(),
         };
-
-        assert!(ProposalCodex::create_set_election_parameters_proposal(
-            origin,
-            1,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            required_stake,
-            election_parameters,
-        )
-        .is_ok());
-
-        // a discussion was created
-        let thread_id = <crate::ThreadIdByProposalId<Test>>::get(1);
-        assert_eq!(thread_id, 1);
-
-        let proposal_id = 1;
-        let proposal = ProposalsEngine::proposals(proposal_id);
-        // check for correct proposal parameters
-        assert_eq!(
-            proposal.parameters,
-            crate::proposal_types::parameters::set_election_parameters_proposal::<Test>()
-        );
-    });
-}
-
-#[test]
-fn create_set_council_mint_call_succeeds() {
-    initial_test_ext().execute_with(|| {
-        let account_id = 1;
-        let origin = RawOrigin::Signed(account_id).into();
-
-        let required_stake = Some(<BalanceOf<Test>>::from(500u32));
-        let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&account_id, 50000);
-
-        assert!(ProposalCodex::create_set_council_mint_capacity_proposal(
-            origin,
-            1,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            required_stake,
-            0,
-        )
-        .is_ok());
-
-        // a discussion was created
-        let thread_id = <crate::ThreadIdByProposalId<Test>>::get(1);
-        assert_eq!(thread_id, 1);
-
-        let proposal_id = 1;
-        let proposal = ProposalsEngine::proposals(proposal_id);
-        // check for correct proposal parameters
-        assert_eq!(
-            proposal.parameters,
-            crate::proposal_types::parameters::set_council_mint_capacity_proposal::<Test>()
-        );
-    });
-}
-
-#[test]
-fn create_set_council_mint_capacity_proposal_call_fails_with_invalid_stake() {
-    initial_test_ext().execute_with(|| {
-        let origin = RawOrigin::Signed(1).into();
-
-        assert_eq!(
-            ProposalCodex::create_set_council_mint_capacity_proposal(
-                origin,
-                1,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                None,
-                0,
-            ),
-            Err(Error::Other("EmptyStake"))
-        );
-
-        let invalid_stake = Some(<BalanceOf<Test>>::from(5000u32));
-
-        assert_eq!(
-            ProposalCodex::create_set_council_mint_capacity_proposal(
-                RawOrigin::Signed(1).into(),
-                1,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                invalid_stake,
-                0,
-            ),
-            Err(Error::Other("StakeDiffersFromRequired"))
-        );
-    });
-}
-
-#[test]
-fn create_set_council_mint_capacity_proposal_call_fails_with_insufficient_rights() {
-    initial_test_ext().execute_with(|| {
-        let origin = RawOrigin::None.into();
-
-        assert!(ProposalCodex::create_set_council_mint_capacity_proposal(
-            origin,
-            1,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            None,
-            0,
-        )
-        .is_err());
+        proposal_fixture.check_all();
     });
 }

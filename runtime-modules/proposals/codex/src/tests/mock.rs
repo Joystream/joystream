@@ -160,6 +160,33 @@ impl governance::election::Trait for Test {
     type CouncilElected = ();
 }
 
+impl content_working_group::Trait for Test {
+    type Event = ();
+}
+
+impl recurring_rewards::Trait for Test {
+    type PayoutStatusHandler = ();
+    type RecipientId = u64;
+    type RewardRelationshipId = u64;
+}
+
+impl versioned_store_permissions::Trait for Test {
+    type Credential = u64;
+    type CredentialChecker = ();
+    type CreateClassPermissionsChecker = ();
+}
+
+impl versioned_store::Trait for Test {
+    type Event = ();
+}
+
+impl hiring::Trait for Test {
+    type OpeningId = u64;
+    type ApplicationId = u64;
+    type ApplicationDeactivatedHandler = ();
+    type StakeHandlerProvider = hiring::Module<Self>;
+}
+
 impl crate::Trait for Test {
     type TextProposalMaxLength = TextProposalMaxLength;
     type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;

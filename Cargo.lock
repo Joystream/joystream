@@ -5109,13 +5109,18 @@ dependencies = [
  "srml-system",
  "srml-timestamp",
  "substrate-common-module",
+ "substrate-content-working-group-module",
  "substrate-governance-module",
+ "substrate-hiring-module",
  "substrate-membership-module",
  "substrate-primitives",
  "substrate-proposals-discussion-module",
  "substrate-proposals-engine-module",
+ "substrate-recurring-reward-module",
  "substrate-stake-module",
  "substrate-token-mint-module",
+ "substrate-versioned-store",
+ "substrate-versioned-store-permissions-module",
 ]
 
 [[package]]
