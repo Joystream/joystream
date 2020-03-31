@@ -58,18 +58,16 @@
 //! ### Create a blog 
 //!
 //! ```
-//! use frame_support::{decl_module, dispatch};
-//! # use substrate_blog_module as blog_module;
-//! use frame_system::{self as system, ensure_signed};
+//! use srml_support::{decl_module, dispatch, assert_ok};
+//! use system::{self as system, ensure_signed};
 //!
 //! pub trait Trait: blog_module::Trait {}
 //!
 //! decl_module! {
 //! 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-//! 		#[weight = frame_support::weights::SimpleDispatchInfo::default()]
-//! 		pub fn create_blog(origin) -> dispatch::DispatchResult {
+//! 		pub fn create_blog(origin) -> dispatch::Result {
 //! 			let _sender = ensure_signed(origin)?;
-//! 			<blog_module::Module<T>>::create_blog(_sender)?;
+//! 			assert_ok!(<blog_module::Module<T>>::create_blog(_sender.into()));
 //! 			Ok(())
 //! 		}
 //! 	}
