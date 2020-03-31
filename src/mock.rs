@@ -476,3 +476,15 @@ pub fn react(
 ) -> Result<(), &'static str> {
     TestBlogModule::react(Origin::signed(origin_id), index, blog_id, post_id, reply_id)
 }
+
+pub fn get_reactions(
+    blog_id: <Runtime as Trait>::BlogId,
+    post_id: <Runtime as Trait>::PostId,
+    reply_id: Option<<Runtime as Trait>::ReplyId>,
+    owner: <Runtime as Trait>::ParticipantId,
+) -> Option<Vec<bool>> {
+    match TestBlogModule::reactions((blog_id, post_id, reply_id), owner) {
+        reactions if reactions != Vec::default() => Some(reactions),
+        _ => None,
+    }
+}

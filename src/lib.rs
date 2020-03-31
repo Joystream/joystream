@@ -138,7 +138,7 @@ pub trait Trait: system::Trait + Default {
 
     /// The maximum cosecutive replies interval in blocks passed
     type ConsecutiveRepliesInterval: Get<Self::BlockNumber>;
-
+  
     /// Type, representing reactions number
     type ReactionsNumber: Parameter
         + Member
@@ -270,8 +270,6 @@ pub struct Post<T: Trait> {
     /// Block numbers of last created root replies
     // (needed for max consecutive replies constraint check)
     last_root_replies_block_numbers: Vec<T::BlockNumber>,
-    /// AccountId -> All presented reactions state mapping
-    reactions: BTreeMap<T::ParticipantId, Vec<bool>>,
 }
 
 impl<T: Trait> Post<T> {
@@ -288,8 +286,6 @@ impl<T: Trait> Post<T> {
             root_replies_count: T::ReplyId::default(),
             // Initialize with blank (default) collection
             last_root_replies_block_numbers: vec![],
-            // Initialize with blank (default) collection
-            reactions: BTreeMap::default(),
         }
     }
 
@@ -348,30 +344,29 @@ impl<T: Trait> Post<T> {
             self.body = new_body
         }
     }
-
-    /// Update reactions state
-    fn update_reactions(&mut self, owner: &T::ParticipantId, index: T::ReactionsNumber) -> bool {
-        Module::<T>::mutate_reactions(&mut self.reactions, owner, index)
-    }
-
-    /// Get reactions state, associated with reaction owner
-    pub fn get_reactions(&self, owner: &T::ParticipantId) -> Option<&Vec<bool>> {
-        self.reactions.get(owner)
-    }
-
-    /// Get reference to all rections, associated with post
-    pub fn get_reactions_map(&self) -> &BTreeMap<T::ParticipantId, Vec<bool>> {
-        &self.reactions
-    }
 }
 
-/// Enum variant, representing reply`s parent id	
+/// Enum variant, representing either reply or post id	
 #[derive(Encode, Decode, Clone, PartialEq)]	
 #[cfg_attr(feature = "std", derive(Debug))]	
 pub enum ParentId<T: Trait> {	
     Reply(T::ReplyId),	
     Post(T::PostId),	
 }	
+
+// impl <T: Trait> From <T::ReplyId> for ParentId<T> {
+//     fn from (parent_id: T::ReplyId) -> Self {
+//         Self::Reply(parent_id)
+//     }
+// }
+
+// impl <T: Trait> From <T::PostId> for ParentId<T> {
+//     fn from (parent_id: T::PostId) -> Self {
+//         Self::Post(parent_id)
+//     }
+// }
+
+
 
 /// Default parent representation	
 impl<T: Trait> Default for ParentId<T> {	
@@ -395,8 +390,6 @@ pub struct Reply<T: Trait> {
     last_direct_replies_block_numbers: Vec<T::BlockNumber>,
     /// Direct replies counter, associated with this reply
     direct_replies_count: T::ReplyId,
-    /// AccountId -> All presented reactions state mapping
-    reactions: BTreeMap<T::ParticipantId, Vec<bool>>,
 }
 
 impl<T: Trait> Reply<T> {
@@ -410,8 +403,6 @@ impl<T: Trait> Reply<T> {
             last_direct_replies_block_numbers: vec![],
             // Set direct replies count of newly created reply to zero
             direct_replies_count: T::ReplyId::default(),
-            // Initialize with blank (default) collection
-            reactions: BTreeMap::new(),
         }
     }
 
@@ -428,21 +419,6 @@ impl<T: Trait> Reply<T> {
     /// Update reply`s text
     fn update(&mut self, new_text: Vec<u8>) {
         self.text = new_text
-    }
-
-    /// Update reactions state
-    fn update_reactions(&mut self, owner: &T::ParticipantId, index: T::ReactionsNumber) -> bool {
-        Module::<T>::mutate_reactions(&mut self.reactions, owner, index)
-    }
-
-    /// Get reactions state, associated with reaction owner
-    pub fn get_reactions(&self, owner: &T::ParticipantId) -> Option<&Vec<bool>> {
-        self.reactions.get(owner)
-    }
-
-    /// Get reference to all rections, associated with reply
-    pub fn get_reactions_map(&self) -> &BTreeMap<T::ParticipantId, Vec<bool>> {
-        &self.reactions
     }
 
     /// Get direct replies count, associated with this reply
@@ -487,6 +463,9 @@ decl_storage! {
         /// Reply by unique blog, post and reply identificators
 
         ReplyById get (fn reply_by_id): double_map hasher(blake2_128) (T::BlogId, T::PostId), blake2_128(T::ReplyId) => Reply<T>;
+
+        /// Mapping, representing AccountId -> All presented reactions state mapping by unique post or reply identificators.
+        Reactions get(reactions): double_map hasher(blake2_128) (T::BlogId, T::PostId, Option<T::ReplyId>), blake2_128(T::ParticipantId) => Vec<bool>;
 
         /// Overall blogs counter
 
@@ -796,25 +775,16 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            if let Some(reply_id) = reply_id {
-
-                // Update reply reactions
-                <ReplyById<T>>::mutate((blog_id, post_id), reply_id, |inner_reply| {
-                    let reaction_status = inner_reply.update_reactions(&owner, index);
-
-                    // Trigger event
+            // Update reply reactions
+            <Reactions<T>>::mutate((blog_id, post_id, reply_id), owner, |inner_reactions| {
+                let reaction_status = Self::mutate_reactions(inner_reactions, index);
+                // Trigger event
+                if let Some(reply_id) = reply_id {
                     Self::deposit_event(RawEvent::ReplyReactionsUpdated(owner, blog_id, post_id, reply_id, index, reaction_status));
-                });
-            } else {
-
-                // Update post reactions
-                <PostById<T>>::mutate(blog_id, post_id, |inner_post| {
-                    let reaction_status = inner_post.update_reactions(&owner, index);
-
-                    // Trigger event
+                } else {
                     Self::deposit_event(RawEvent::PostReactionsUpdated(owner, blog_id, post_id, index, reaction_status));
-                });
-            }
+                }
+            });
         }
 
     }
@@ -895,20 +865,18 @@ impl<T: Trait> Module<T> {
     /// If there is no reactions under this AccountId entry yet,
     /// initialize a new reactions array and set reaction under given index
     fn mutate_reactions(
-        reactions: &mut BTreeMap<T::ParticipantId, Vec<bool>>,
-        owner: &T::ParticipantId,
+        reactions: &mut Vec<bool>,
         index: T::ReactionsNumber,
     ) -> bool {
-        if let Some(reactions_array) = reactions.get_mut(owner) {
+        if !reactions.is_empty() {
             // Flip reaction value under given index
-            reactions_array[index.into() as usize] ^= true;
-            reactions_array[index.into() as usize]
+            reactions[index.into() as usize] ^= true;
+            reactions[index.into() as usize]
         } else {
             // Initialize reactions array with all reactions unset (false)
-            let mut reactions_array = vec![false; T::ReactionsMaxNumber::get().into() as usize];
+            *reactions = vec![false; T::ReactionsMaxNumber::get().into() as usize];
             // Flip reaction value under given index
-            reactions_array[index.into() as usize] ^= true;
-            reactions.insert(owner.clone(), reactions_array);
+            reactions[index.into() as usize] ^= true;
             true
         }
     }

@@ -62,7 +62,7 @@ fn ensure_posts_equality(post: Option<Post<Runtime>>, editing: bool, locked: boo
 }
 
 fn ensure_reaction_status(
-    reactions: Option<&Vec<bool>>,
+    reactions: Option<Vec<bool>>,
     index: <Runtime as Trait>::ReactionsNumber,
     status: bool,
 ) {
@@ -1518,7 +1518,7 @@ fn reaction_success() {
 
         // Post state after reaction extrinsic performed
         let post = post_by_id(FIRST_ID, FIRST_ID).unwrap();
-        ensure_reaction_status(post.get_reactions(&reaction_owner_id), REACTION_INDEX, true);
+        ensure_reaction_status(get_reactions(FIRST_ID, FIRST_ID, None, reaction_owner_id), REACTION_INDEX, true);
 
         // Event checked
         let post_reactions_updated_event = get_test_event(RawEvent::PostReactionsUpdated(
@@ -1558,7 +1558,7 @@ fn reaction_success() {
         // Reply state after reaction extrinsic performed
         let reply = reply_by_id(FIRST_ID, FIRST_ID, FIRST_ID).unwrap();
         ensure_reaction_status(
-            reply.get_reactions(&reaction_owner_id),
+            get_reactions(FIRST_ID, FIRST_ID, Some(FIRST_ID), reaction_owner_id),
             REACTION_INDEX,
             false,
         );
@@ -1605,8 +1605,10 @@ fn reaction_invalid_index() {
                 None,
             );
 
+            let reaction_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
+
             // Ensure  reactions related state left unchanged
-            assert!(reactions_state_left_unchanged(FIRST_ID, FIRST_ID, None));
+            assert!(get_reactions(FIRST_ID, FIRST_ID, None, reaction_owner_id).is_none());
 
             // Failure checked
             assert_failure(
@@ -1634,8 +1636,10 @@ fn reaction_blog_not_found() {
             None,
         );
 
+        let reaction_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
+
         // Ensure  reactions related state left unchanged
-        assert!(reactions_state_left_unchanged(FIRST_ID, FIRST_ID, None));
+        assert!(get_reactions(FIRST_ID, FIRST_ID, None, reaction_owner_id).is_none());
 
         // Failure checked
         assert_failure(react_result, BLOG_NOT_FOUND, number_of_events_before_call);
@@ -1661,8 +1665,10 @@ fn reaction_post_not_found() {
             None,
         );
 
+        let reaction_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
+
         // Ensure  reactions related state left unchanged
-        assert!(reactions_state_left_unchanged(FIRST_ID, FIRST_ID, None));
+        assert!(get_reactions(FIRST_ID, FIRST_ID, None, reaction_owner_id).is_none());
 
         // Failure checked
         assert_failure(react_result, POST_NOT_FOUND, number_of_events_before_call);
@@ -1691,12 +1697,10 @@ fn reaction_reply_not_found() {
             Some(FIRST_ID),
         );
 
+        let reaction_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
+
         // Ensure  reactions related state left unchanged
-        assert!(reactions_state_left_unchanged(
-            FIRST_ID,
-            FIRST_ID,
-            Some(FIRST_ID)
-        ));
+        assert!(get_reactions(FIRST_ID, FIRST_ID, Some(FIRST_ID), reaction_owner_id).is_none());
 
         // Failure checked
         assert_failure(react_result, REPLY_NOT_FOUND, number_of_events_before_call);
@@ -1728,8 +1732,10 @@ fn reaction_blog_locked_error() {
             None,
         );
 
+        let reaction_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
+
         // Ensure  reactions related state left unchanged
-        assert!(reactions_state_left_unchanged(FIRST_ID, FIRST_ID, None));
+        assert!(get_reactions(FIRST_ID, FIRST_ID, None, reaction_owner_id).is_none());
 
         // Failure checked
         assert_failure(
@@ -1765,8 +1771,10 @@ fn reaction_post_locked_error() {
             None,
         );
 
+        let reaction_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
+
         // Ensure  reactions related state left unchanged
-        assert!(reactions_state_left_unchanged(FIRST_ID, FIRST_ID, None));
+        assert!(get_reactions(FIRST_ID, FIRST_ID, None, reaction_owner_id).is_none());
 
         // Failure checked
         assert_failure(
@@ -1804,25 +1812,5 @@ fn replies_storage_unchanged(
         Some(_) => false,
         None if reply_by_id(blog_id, post_id, reply_id).is_none() => true,
         None => false,
-    }
-}
-
-fn reactions_state_left_unchanged(
-    blog_id: <Runtime as Trait>::BlogId,
-    post_id: <Runtime as Trait>::PostId,
-    reply_id: Option<<Runtime as Trait>::ReplyId>,
-) -> bool {
-    if let Some(reply_id) = reply_id {
-        match reply_by_id(blog_id, post_id, reply_id) {
-            Some(reply) if reply.get_reactions_map().is_empty() => true,
-            Some(_) => false,
-            None => true,
-        }
-    } else {
-        match post_by_id(blog_id, post_id) {
-            Some(post) if post.get_reactions_map().is_empty() => true,
-            Some(_) => false,
-            None => true,
-        }
     }
 }
