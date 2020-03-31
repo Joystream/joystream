@@ -1,17 +1,35 @@
-//! Proposals codex module for the Joystream platform. Version 2.
-//! Contains preset proposal types.
+//! # Proposals codex module
+//! Proposals `codex` module for the Joystream platform. Version 2.
+//! Component of the proposals system. Contains preset proposal types.
 //!
-//! Supported extrinsics (proposal type):
-//! - create_text_proposal
-//! - create_runtime_upgrade_proposal
-//! - create_set_election_parameters_proposal
-//! - create_set_council_mint_capacity_proposal
-//! - create_set_content_working_group_mint_capacity_proposal
-//! - create_spending_proposal
+//! ## Overview
 //!
-//! Proposal implementations of this module:
+//! The proposals codex module serves as facade and entry point of the proposals system. It uses
+//! proposals `engine` module to maintain a lifecycle of the proposal and to execute proposals.
+//! During the proposal creation `codex` also create a discussion thread using the `discussion`
+//! proposals module. `Codex` uses predefined parameters (eg.:`voting_period`) for each proposal and
+//! encodes extrinsic calls from dependency modules in order to create proposals inside the `engine`
+//! module.
+//!
+//! ### Supported extrinsics (proposal types)
+//! - [create_text_proposal](./struct.Module.html#method.create_text_proposal)
+//! - [create_runtime_upgrade_proposal](./struct.Module.html#method.create_runtime_upgrade_proposal)
+//! - [create_set_election_parameters_proposal](./struct.Module.html#method.create_set_election_parameters_proposal)
+//! - [create_set_council_mint_capacity_proposal](./struct.Module.html#method.create_set_council_mint_capacity_proposal)
+//! - [create_set_content_working_group_mint_capacity_proposal](./struct.Module.html#method.create_set_content_working_group_mint_capacity_proposal)
+//! - [create_spending_proposal](./struct.Module.html#method.create_spending_proposal)
+//! - [create_set_lead_proposal](./struct.Module.html#method.create_set_lead_proposal)
+//!
+//! ### Proposal implementations of this module
 //! - execute_text_proposal - prints the proposal to the log
 //! - execute_runtime_upgrade_proposal - sets the runtime code
+//!
+//! ### Dependencies:
+//! - [proposals engine](../substrate_proposals_engine_module/index.html)
+//! - [proposals discussion](../substrate_proposals_discussion_module/index.html)
+//! - [membership](../substrate_membership_module/index.html)
+//! - [governance](../substrate_governance_module/index.html)
+//! - [content_working_group](../substrate_content_working_group_module/index.html)
 //!
 
 // Ensure we're `no_std` when compiling for Wasm.
@@ -33,6 +51,8 @@ use rstd::prelude::*;
 use rstd::str::from_utf8;
 use rstd::vec::Vec;
 use sr_primitives::traits::Zero;
+use srml_support::dispatch::DispatchResult;
+use srml_support::traits::{Currency, Get};
 use srml_support::{decl_error, decl_module, decl_storage, ensure, print};
 use system::{ensure_root, RawOrigin};
 
@@ -40,8 +60,8 @@ use system::{ensure_root, RawOrigin};
 pub trait Trait:
     system::Trait
     + proposal_engine::Trait
-    + membership::members::Trait
     + proposal_discussion::Trait
+    + membership::members::Trait
     + governance::election::Trait
     + content_working_group::Trait
 {
@@ -58,30 +78,29 @@ pub trait Trait:
         Self::AccountId,
     >;
 }
-use srml_support::dispatch::DispatchResult;
-use srml_support::traits::{Currency, Get};
 
-/// Balance alias
+/// Balance alias for `stake` module
 pub type BalanceOf<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
-/// Balance alias for GovernanceCurrency from common module. TODO: replace with BalanceOf
+/// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
 pub type BalanceOfGovernanceCurrency<T> =
     <<T as common::currency::GovernanceCurrency>::Currency as Currency<
         <T as system::Trait>::AccountId,
     >>::Balance;
 
-/// Balance alias for token mint balance from token mint module. TODO: replace with BalanceOf
+/// Balance alias for token mint balance from `token mint` module. TODO: replace with BalanceOf
 pub type BalanceOfMint<T> =
     <<T as mint::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
-/// Balance alias for staking
+/// Negative imbalance alias for staking
 pub type NegativeImbalance<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
 
 type MemberId<T> = <T as membership::members::Trait>::MemberId;
 
 decl_error! {
+    /// Codex module predefined errors
     pub enum Error {
         /// The size of the provided text for text proposal exceeded the limit
         TextProposalSizeExceeded,
@@ -143,12 +162,12 @@ decl_storage! {
 }
 
 decl_module! {
-    /// 'Proposal codex' substrate module
+    /// Proposal codex substrate module Call
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         /// Predefined errors
         type Error = Error;
 
-        /// Create text (signal) proposal type.
+        /// Create 'Text (signal)' proposal type.
         pub fn create_text_proposal(
             origin,
             member_id: MemberId<T>,
@@ -176,7 +195,7 @@ decl_module! {
             )?;
         }
 
-        /// Create runtime upgrade proposal type.
+        /// Create 'Runtime upgrade' proposal type.
         pub fn create_runtime_upgrade_proposal(
             origin,
             member_id: MemberId<T>,
@@ -205,8 +224,8 @@ decl_module! {
             )?;
         }
 
-        /// Create 'Set election parameters' proposal type. This proposal uses set_election_parameters()
-        /// extrinsic from the governance::election module.
+        /// Create 'Set election parameters' proposal type. This proposal uses `set_election_parameters()`
+        /// extrinsic from the `governance::election module`.
         pub fn create_set_election_parameters_proposal(
             origin,
             member_id: MemberId<T>,
@@ -235,8 +254,8 @@ decl_module! {
         }
 
 
-        /// Create 'Set council mint capacity' proposal type. This proposal uses set_mint_capacity()
-        /// extrinsic from the governance::council module.
+        /// Create 'Set council mint capacity' proposal type. This proposal uses `set_mint_capacity()`
+        /// extrinsic from the `governance::council` module.
         pub fn create_set_council_mint_capacity_proposal(
             origin,
             member_id: MemberId<T>,
@@ -263,7 +282,7 @@ decl_module! {
         }
 
         /// Create 'Set content working group mint capacity' proposal type.
-        /// This proposal uses set_mint_capacity() extrinsic from the content-working-group  module.
+        /// This proposal uses `set_mint_capacity()` extrinsic from the `content-working-group`  module.
         pub fn create_set_content_working_group_mint_capacity_proposal(
             origin,
             member_id: MemberId<T>,
@@ -290,7 +309,7 @@ decl_module! {
         }
 
         /// Create 'Spending' proposal type.
-        /// This proposal uses spend_from_council_mint() extrinsic from the governance::council  module.
+        /// This proposal uses `spend_from_council_mint()` extrinsic from the `governance::council`  module.
         pub fn create_spending_proposal(
             origin,
             member_id: MemberId<T>,
@@ -321,7 +340,7 @@ decl_module! {
 
 
         /// Create 'Set lead' proposal type.
-        /// This proposal uses replace_lead() extrinsic from the content_working_group  module.
+        /// This proposal uses `replace_lead()` extrinsic from the `content_working_group`  module.
         pub fn create_set_lead_proposal(
             origin,
             member_id: MemberId<T>,
@@ -349,7 +368,7 @@ decl_module! {
 
 // *************** Extrinsic to execute
 
-        /// Text proposal extrinsic. Should be used as callable object to pass to the engine module.
+        /// Text proposal extrinsic. Should be used as callable object to pass to the `engine` module.
         fn execute_text_proposal(
             origin,
             title: Vec<u8>,
@@ -365,7 +384,7 @@ decl_module! {
         }
 
         /// Runtime upgrade proposal extrinsic.
-        /// Should be used as callable object to pass to the engine module.
+        /// Should be used as callable object to pass to the `engine` module.
         fn execute_runtime_upgrade_proposal(
             origin,
             title: Vec<u8>,
@@ -406,7 +425,7 @@ impl<T: Trait> Module<T> {
         (cloned_origin1.into(), cloned_origin2.into())
     }
 
-    /// Generic template proposal builder
+    // Generic template proposal builder
     fn create_proposal(
         origin: T::Origin,
         member_id: MemberId<T>,
