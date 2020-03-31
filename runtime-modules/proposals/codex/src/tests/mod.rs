@@ -486,3 +486,53 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
         );
     });
 }
+
+#[test]
+fn create_set_lead_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_set_lead_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    Some((20, 10)),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_set_lead_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    Some((20, 10)),
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_set_lead_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    Some((20, 10)),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_set_lead_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(500u32)),
+                    Some((20, 10)),
+                )
+            },
+            proposal_parameters: crate::proposal_types::parameters::set_lead_proposal::<Test>(),
+        };
+        proposal_fixture.check_all();
+    });
+}

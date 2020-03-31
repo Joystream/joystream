@@ -319,6 +319,34 @@ decl_module! {
             )?;
         }
 
+
+        /// Create 'Set lead' proposal type.
+        /// This proposal uses replace_lead() extrinsic from the content_working_group  module.
+        pub fn create_set_lead_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            new_lead: Option<(T::MemberId, T::AccountId)>
+        ) {
+            let proposal_code =
+                <content_working_group::Call<T>>::replace_lead(new_lead);
+
+            let proposal_parameters =
+                proposal_types::parameters::set_lead_proposal::<T>();
+
+            Self::create_proposal(
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_code.encode(),
+                proposal_parameters,
+            )?;
+        }
+
 // *************** Extrinsic to execute
 
         /// Text proposal extrinsic. Should be used as callable object to pass to the engine module.
