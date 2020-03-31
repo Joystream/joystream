@@ -56,7 +56,6 @@ type RouteProps = {
 
 export default function Channel({ videos, channels }: RouteProps) {
   let params = useParams();
-  console.log(params.channelName);
   let channelVideos = videos[params.channelName];
   let channel = channels[params.channelName];
   return <ChannelComponent {...channel} videos={channelVideos} />;

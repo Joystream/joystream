@@ -1,9 +1,20 @@
 import React from "react";
 
-type LabelProps = {
-  children?: React.ReactNode;
-};
+import { makeStyles, LabelStyleProps } from "./Label.style";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { IconProp } from "@fortawesome/fontawesome-svg-core";
 
-export default function Label({ children }: LabelProps) {
-  return <div>{children}</div>;
+type LabelProps = {
+  children?: string;
+  icon?: IconProp;
+} & LabelStyleProps;
+
+export default function Label({ children, icon, ...styleProps }: LabelProps) {
+  let styles = makeStyles(styleProps);
+  return (
+    <div css={styles.container}>
+      <FontAwesomeIcon icon={icon} css={styles.icon} />
+      <span>{children}</span>
+    </div>
+  );
 }

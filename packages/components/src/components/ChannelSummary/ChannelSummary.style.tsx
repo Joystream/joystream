@@ -20,6 +20,11 @@ export let makeStyles = ({}: ChannelSummaryStyleProps) => {
     badges: css`
       display: flex;
       justify-content: space-between;
+      text-transform: uppercase;
+
+      & > *:first-child {
+        margin-right: ${spacing.s4};
+      }
 
       & button {
         margin-right: ${spacing.s2};

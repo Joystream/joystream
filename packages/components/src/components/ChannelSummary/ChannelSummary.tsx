@@ -2,13 +2,14 @@ import React from "react";
 
 import { ChannelSummaryStyleProps, makeStyles } from "./ChannelSummary.style";
 
-import Banner from "../Banner";
+import Label from "../Label";
 import Avatar from "../Avatar";
 import Button from "../Button";
 
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+
 type ChannelSummaryProps = {
   name: string;
-
   img?: string;
   channelUrl?: string;
   description?: string;
@@ -24,7 +25,6 @@ export default function ChannelSummary({
   channelUrl,
   size,
   name,
-
   img,
   ...styleProps
 }: ChannelSummaryProps) {
@@ -36,16 +36,18 @@ export default function ChannelSummary({
         <div css={styles.details}>
           <h1 css={styles.title}>{name}</h1>
           <div css={styles.badges}>
-            <div>Video Channel</div>
+            <div>
+              <Label icon="film">Video Channel</Label>
+            </div>
             <div>
               {isPublic && (
                 <Button outlined color="success" size="small">
-                  Public
+                  <Label icon="eye">Public</Label>
                 </Button>
               )}
               {isVerified && (
                 <Button outlined color="primary" size="small">
-                  Verified
+                  <Label icon="check">Verified</Label>
                 </Button>
               )}
             </div>
