@@ -1516,8 +1516,7 @@ fn reaction_success() {
             None,
         ));
 
-        // Post state after reaction extrinsic performed
-        let post = post_by_id(FIRST_ID, FIRST_ID).unwrap();
+        // Reactions state after react to post extrinsic performed
         ensure_reaction_status(get_reactions(FIRST_ID, FIRST_ID, None, reaction_owner_id), REACTION_INDEX, true);
 
         // Event checked
@@ -1555,8 +1554,7 @@ fn reaction_success() {
             ));
         }
 
-        // Reply state after reaction extrinsic performed
-        let reply = reply_by_id(FIRST_ID, FIRST_ID, FIRST_ID).unwrap();
+        // Reactions state after react to reply extrinsic performed
         ensure_reaction_status(
             get_reactions(FIRST_ID, FIRST_ID, Some(FIRST_ID), reaction_owner_id),
             REACTION_INDEX,
