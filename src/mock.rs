@@ -120,10 +120,10 @@ impl Trait for Runtime {
     type PostsMaxNumber = PostsMaxNumber;
     type RepliesMaxNumber = RepliesMaxNumber;
 
-    type BlogOwnerEnsureOrigin = system::EnsureSigned<Self::AccountId>;
+    type BlogOwnerEnsureOrigin = system::EnsureSigned<Self::BlogOwnerId>;
     type BlogOwnerId = u64;
 
-    type ParticipantEnsureOrigin = system::EnsureSigned<Self::AccountId>;
+    type ParticipantEnsureOrigin = system::EnsureSigned<Self::ParticipantId>;
     type ParticipantId = u64;
 
     type ReactionsMaxNumber = ReactionsMaxNumber;
@@ -132,6 +132,14 @@ impl Trait for Runtime {
     type BlogId = u32;
     type PostId = u32;
     type ReplyId = u32;
+
+    fn ensure_blog_ownership(origin: Self::Origin, blog_id: Self::BlogId) -> dispatch::Result {
+        let block_owner_id = Self::BlogOwnerEnsureOrigin::ensure_origin(origin)?;
+
+        // Looks like i need to integrate into monorepo at this stage to be able to test this functionality properly.
+
+        Ok(())
+    }
 }
 
 pub struct ExtBuilder<T: Trait> {

@@ -101,10 +101,10 @@ type MaxNumber = u32;
 // The pallet's configuration trait.
 pub trait Trait: system::Trait + Default {
     /// Origin from which blog owner must come.
-    type BlogOwnerEnsureOrigin: EnsureOrigin<Self::Origin, Success = Self::AccountId>;
+    type BlogOwnerEnsureOrigin: EnsureOrigin<Self::Origin, Success = Self::BlogOwnerId>;
 
     /// Origin from which participant must come.
-    type ParticipantEnsureOrigin: EnsureOrigin<Self::Origin, Success = Self::AccountId>;
+    type ParticipantEnsureOrigin: EnsureOrigin<Self::Origin, Success = Self::ParticipantId>;
 
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -141,12 +141,11 @@ pub trait Trait: system::Trait + Default {
     /// Number of reactions, presented in runtime
     type ReactionsMaxNumber: Get<Self::ReactionsNumber>;
 
-    /// Type for the blog owner id. Should be authenticated by account id.
-    type BlogOwnerId: From<Self::AccountId> + Parameter + Default + Clone + Copy;
+    /// Type for the blog owner id. 
+    type BlogOwnerId: Parameter + Default + Clone + Copy;
 
-    /// Type for the participant id. Should be authenticated by account id.
-    type ParticipantId: From<Self::AccountId>
-        + Parameter
+    /// Type for the participant id. 
+    type ParticipantId: Parameter
         + Default
         + Clone
         + Copy
@@ -185,6 +184,8 @@ pub trait Trait: system::Trait + Default {
         + Copy
         + MaybeSerialize
         + PartialEq;
+    
+    fn ensure_blog_ownership(origin: Self::Origin, blog_id: Self::BlogId) -> dispatch::Result; 
 }
 
 /// Type, representing blog structure
@@ -195,19 +196,16 @@ pub struct Blog<T: Trait> {
     locked: bool,
     /// Overall posts counter, associated with blog
     posts_count: T::PostId,
-    /// Blog owner id, associated with blog owner
-    owner: T::BlogOwnerId,
 }
 
 impl<T: Trait> Blog<T> {
-    /// Create a new blog, related to a given blog owner
-    fn new(owner: T::BlogOwnerId) -> Self {
+    /// Create a new blog
+    fn new() -> Self {
         Self {
             // Blog default locking status
             locked: false,
             // Set posts count of newly created blog to zero
             posts_count: T::PostId::default(),
-            owner,
         }
     }
 
@@ -224,11 +222,6 @@ impl<T: Trait> Blog<T> {
     /// Get current locking status
     fn is_locked(&self) -> bool {
         self.locked
-    }
-
-    /// Check if account_id is blog owner
-    fn is_owner(&self, account_id: &T::BlogOwnerId) -> bool {
-        self.owner == *account_id
     }
 
     /// Get overall posts count, associated with this blog
@@ -375,6 +368,7 @@ decl_storage! {
         ReplyById get (fn reply_by_id): double_map hasher(blake2_128) (T::BlogId, T::PostId), blake2_128(T::ReplyId) => Reply<T>;
 
         /// Mapping, representing AccountId -> All presented reactions state mapping by unique post or reply identificators.
+        
         Reactions get(reactions): double_map hasher(blake2_128) (T::BlogId, T::PostId, Option<T::ReplyId>), blake2_128(T::ParticipantId) => Vec<bool>;
 
         /// Overall blogs counter
@@ -392,13 +386,12 @@ decl_module! {
 
         /// Blog owner can create posts, related to a given blog, if related blog is unlocked
         pub fn create_post(origin, blog_id: T::BlogId, title: Vec<u8>, body: Vec<u8>) -> dispatch::Result  {
-            let blog_owner = Self::get_blog_owner(origin)?;
 
             // Ensure blog with given id exists
             let blog = Self::ensure_blog_exists(blog_id)?;
 
             // Ensure blog -> owner relation exists
-            Self::ensure_blog_ownership(&blog, &blog_owner)?;
+            T::ensure_blog_ownership(origin, blog_id)?;
 
             // Ensure blog unlocked, so mutations can be performed
             Self::ensure_blog_unlocked(&blog)?;
@@ -432,13 +425,12 @@ decl_module! {
         /// Blog owner can lock posts, related to a given blog,
         /// making post immutable to any actions (replies creation, post editing, reactions, etc.)
         pub fn lock_post(origin, blog_id: T::BlogId, post_id: T::PostId) -> dispatch::Result {
-            let blog_owner = Self::get_blog_owner(origin)?;
 
             // Ensure blog with given id exists
-            let blog = Self::ensure_blog_exists(blog_id)?;
+            Self::ensure_blog_exists(blog_id)?;
 
             // Ensure blog -> owner relation exists
-            Self::ensure_blog_ownership(&blog, &blog_owner)?;
+            T::ensure_blog_ownership(origin, blog_id)?;
 
             // Ensure post with given id exists
             Self::ensure_post_exists(blog_id, post_id)?;
@@ -458,13 +450,12 @@ decl_module! {
         /// Blog owner can unlock posts, related to a given blog,
         /// making post accesible to previously forbidden actions
         pub fn unlock_post(origin, blog_id: T::BlogId, post_id: T::PostId) -> dispatch::Result {
-            let blog_owner = Self::get_blog_owner(origin)?;
 
             // Ensure blog with given id exists
             let blog = Self::ensure_blog_exists(blog_id)?;
 
             // Ensure blog -> owner relation exists
-            Self::ensure_blog_ownership(&blog, &blog_owner)?;
+            T::ensure_blog_ownership(origin, blog_id)?;
 
             // Ensure post with given id exists
             Self::ensure_post_exists(blog_id, post_id)?;
@@ -490,13 +481,12 @@ decl_module! {
             new_title: Option<Vec<u8>>,
             new_body: Option<Vec<u8>>
         ) -> dispatch::Result {
-            let blog_owner = Self::get_blog_owner(origin)?;
-
+            
             // Ensure blog with given id exists
             let blog = Self::ensure_blog_exists(blog_id)?;
 
             // Ensure blog -> owner relation exists
-            Self::ensure_blog_ownership(&blog, &blog_owner)?;
+            T::ensure_blog_ownership(origin, blog_id)?;
 
             // Ensure blog unlocked, so mutations can be performed
             Self::ensure_blog_unlocked(&blog)?;
@@ -686,19 +676,13 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    // Get block owner id from account id
-    fn get_blog_owner(origin: T::Origin) -> Result<T::BlogOwnerId, &'static str> {
-        let account_id = T::BlogOwnerEnsureOrigin::ensure_origin(origin)?;
-        Ok(T::BlogOwnerId::from(account_id))
-    }
 
-    // Get participant id from account id
+    // Get participant id from origin
     fn get_participant(origin: T::Origin) -> Result<T::ParticipantId, &'static str> {
-        let account_id = T::ParticipantEnsureOrigin::ensure_origin(origin)?;
-        Ok(T::ParticipantId::from(account_id))
+        Ok(T::ParticipantEnsureOrigin::ensure_origin(origin)?)
     }
 
-    /// Create blog via an extrinsic where access is gated by a dedicated EnsureOrigin runtime trait
+    /// Create blog, access is gated by a dedicated EnsureOrigin runtime trait
     pub fn create_blog(blog_owner_id: T::BlogOwnerId) -> dispatch::Result {
         
         //
@@ -708,7 +692,7 @@ impl<T: Trait> Module<T> {
         let blogs_count = Self::blogs_count();
 
         // Create blog
-        <BlogById<T>>::insert(blogs_count, Blog::<T>::new(blog_owner_id));
+        <BlogById<T>>::insert(blogs_count, Blog::<T>::new());
 
         // Increment overall blogs counter
         <BlogsCount<T>>::mutate(|count| *count += T::BlogId::one());
@@ -720,11 +704,9 @@ impl<T: Trait> Module<T> {
 
     /// Lock blog to forbid mutations in all posts, related to given blog
     pub fn lock_blog(blog_owner_id: T::BlogOwnerId, blog_id: T::BlogId) -> dispatch::Result {
-        // Ensure blog with given id exists
-        let blog = Self::ensure_blog_exists(blog_id)?;
 
-        // Ensure blog -> owner relation exists
-        Self::ensure_blog_ownership(&blog, &blog_owner_id)?;
+        // Ensure blog with given id exists
+        Self::ensure_blog_exists(blog_id)?;
 
         //
         // == MUTATION SAFE ==
@@ -740,11 +722,9 @@ impl<T: Trait> Module<T> {
 
     /// Unlock blog to allow mutations in all posts, related to given blog (If was locked previously)
     pub fn unlock_blog(blog_owner_id: T::BlogOwnerId, blog_id: T::BlogId) -> dispatch::Result {
-        // Ensure blog with given id exists
-        let blog = Self::ensure_blog_exists(blog_id)?;
 
-        // Ensure blog -> owner relation exists
-        Self::ensure_blog_ownership(&blog, &blog_owner_id)?;
+        // Ensure blog with given id exists
+        Self::ensure_blog_exists(blog_id)?;
 
         //
         // == MUTATION SAFE ==
@@ -798,13 +778,13 @@ impl<T: Trait> Module<T> {
         Ok(Self::reply_by_id((blog_id, post_id), reply_id))
     }
 
-    fn ensure_blog_ownership(
-        blog: &Blog<T>,
-        blog_owner: &T::BlogOwnerId,
-    ) -> Result<(), &'static str> {
-        ensure!(blog.is_owner(blog_owner), BLOG_OWNERSHIP_ERROR);
-        Ok(())
-    }
+    // fn ensure_blog_ownership(
+    //     blog: &Blog<T>,
+    //     blog_owner: &T::BlogOwnerId,
+    // ) -> Result<(), &'static str> {
+    //     ensure!(blog.is_owner(blog_owner), BLOG_OWNERSHIP_ERROR);
+    //     Ok(())
+    // }
 
     fn ensure_reply_ownership(
         reply: &Reply<T>,
