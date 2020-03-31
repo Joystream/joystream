@@ -1,5 +1,5 @@
 import { css } from "@emotion/core";
-import { spacing, typography, colors } from "../../theme";
+import { spacing, typography, colors, breakpoints } from "../../theme";
 
 export type VideoStyleProps = {
   width?: string | number;
@@ -18,24 +18,16 @@ export let makeStyles = ({
     .split(":")
     .map(x => Number(x))
     .reduce((x, y) => (y / x) * 100);
+
   return {
     containerStyles: css`
-      position: relative;
-      ${responsive ? `padding: ${ratioPerc}%` : ""}
+      max-width: ${breakpoints.medium};
+      & .video-player {
+      }
     `,
     playerStyles: css`
-        ${
-          responsive
-            ? css`
-                position: absolute;
-                top: 0;
-                left: 0;
-              `
-            : ""
-        }
       width: ${width};
       height: ${height};
-
     `,
   };
 };

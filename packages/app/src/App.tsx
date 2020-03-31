@@ -1,24 +1,25 @@
 import React from "react";
-import ChannelView from "./views/ChannelView";
+import { Router } from "@reach/router";
 import data from "../staticData";
+
+import ChannelView from "./views/ChannelView";
 import ExploreView from "./views/ExploreView";
+import VideoView from "./views/VideoView";
 
 let { channels, videos } = data;
-let channel = channels["Kek-Mex's video channel"];
-let channelVideos = videos[channel.name];
+
 export default function App() {
   return (
     <main className="main-section">
-      {/* <ChannelView
-        name={channel.name}
-        isPublic={channel.isPublic}
-        isVerified={channel.isVerified}
-        img={channel.img}
-        banner={channel.banner}
-        description={channel.description}
-        videos={videos}
-      /> */}
-      <ExploreView channels={channels} videos={videos} />
+      <Router>
+        <ExploreView path="/" channels={channels} videos={videos} />
+        <ChannelView
+          path="/channels/:channelName"
+          channels={channels}
+          videos={videos}
+        />
+        <VideoView path="/videos/:idx" channels={channels} videos={videos} />
+      </Router>
     </main>
   );
 }

@@ -1,14 +1,20 @@
 import React from "react";
-import { GenericSection, VideoPreview, Avatar, Button } from "components";
+import { Link, RouteComponentProps } from "@reach/router";
+import { GenericSection, VideoPreview, ChannelSummary } from "components";
 
 type ExploreViewProps = {
-  videos: any[];
-  channels: any[];
-};
+  videos: any;
+  channels: any;
+} & RouteComponentProps;
 
-export default function ExploreView({ channels, videos }: ExploreViewProps) {
-  console.log(channels);
+export default function ExploreView({
+  channels,
+  videos,
+  path,
+}: ExploreViewProps) {
   let allVideos = Object.values(videos).flat();
+  let allChannels: any[] = Object.values(channels);
+
   return (
     <>
       <GenericSection topDivider title="Latest Videos">
@@ -18,10 +24,10 @@ export default function ExploreView({ channels, videos }: ExploreViewProps) {
 
             return (
               <VideoPreview
-                url="#"
+                url={`videos/${idx}`}
                 key={`${video.title}-${idx}`}
                 channelImg={channelImg}
-                channelUrl="#"
+                channelUrl={`channels/${video.channel}`}
                 channel={video.channel}
                 title={video.title}
                 poster={video.poster}
@@ -33,39 +39,17 @@ export default function ExploreView({ channels, videos }: ExploreViewProps) {
       </GenericSection>
       <GenericSection topDivider title="Latest video channels">
         <div className="channel-gallery">
-          {Object.values(channels).map((channel, idx) => {
-            let { name, img, isPublic, isVerified } = channel;
-            return (
-              <div className="channel-header">
-                <Avatar link="#" size="default" img={img} />
-                <div className="channel-details">
-                  <h1>{name}</h1>
-                  <div>
-                    {isPublic && (
-                      <Button
-                        outlined
-                        color="success"
-                        size="small"
-                        className="channel-btn"
-                      >
-                        Public
-                      </Button>
-                    )}
-                    {isVerified && (
-                      <Button
-                        outlined
-                        color="primary"
-                        size="small"
-                        className="channel-btn"
-                      >
-                        Verified
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {allChannels.map((channel, idx) => (
+            <ChannelSummary
+              key={`${channel.name}-${idx}`}
+              channelUrl={`channels/${channel.name}`}
+              img={channel.img}
+              size="default"
+              name={channel.name}
+              isPublic={channel.isPublic}
+              isVerified={channel.isVerified}
+            />
+          ))}
         </div>
       </GenericSection>
     </>

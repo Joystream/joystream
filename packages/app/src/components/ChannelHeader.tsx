@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Avatar, Button, Banner } from "components";
+import { Banner, ChannelSummary } from "components";
 
 type ChannelHeaderProps = {
   img?: string;
@@ -9,6 +9,7 @@ type ChannelHeaderProps = {
   isPublic?: boolean;
   isVerified?: boolean;
   description?: string;
+  channelUrl?: string;
 };
 
 export function ChannelHeader({
@@ -18,44 +19,20 @@ export function ChannelHeader({
   description,
   name,
   banner,
+  channelUrl,
 }: ChannelHeaderProps) {
   return (
     <>
       {banner && <Banner src={banner} />}
-      <div className="channel-header">
-        <Avatar link="#" size="large" img={img} />
-        <div className="channel-details">
-          <h1>{name}</h1>
-          <div className="channel-badges">
-            <div>Video Channel</div>
-            <div>
-              {isPublic && (
-                <Button
-                  outlined
-                  color="success"
-                  size="small"
-                  className="channel-btn"
-                >
-                  Public
-                </Button>
-              )}
-              {isVerified && (
-                <Button
-                  outlined
-                  color="primary"
-                  size="small"
-                  className="channel-btn"
-                >
-                  Verified
-                </Button>
-              )}
-            </div>
-          </div>
-          <div className="channel-description">
-            <p>{description}</p>
-          </div>
-        </div>
-      </div>
+      <ChannelSummary
+        name={name}
+        isPublic={isPublic}
+        isVerified={isVerified}
+        size="large"
+        img={img}
+        description={description}
+        channelUrl={channelUrl}
+      />
     </>
   );
 }

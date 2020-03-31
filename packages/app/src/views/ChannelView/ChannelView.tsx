@@ -1,6 +1,7 @@
 import React from "react";
 import { GenericSection, VideoPreview } from "components";
 import { ChannelHeader } from "../../components/ChannelHeader";
+import { RouteComponentProps, useParams } from "@reach/router";
 
 type ChannelProps = {
   name: string;
@@ -12,7 +13,7 @@ type ChannelProps = {
   img: string;
 };
 
-export default function Channel({
+function ChannelComponent({
   name,
   isPublic = true,
   isVerified = false,
@@ -33,11 +34,11 @@ export default function Channel({
       />
       <GenericSection auto title="Videos">
         <div className="video-gallery">
-          {videos.map((video, key) => (
+          {videos.map((video, idx) => (
             <VideoPreview
-              url="#"
-              channelUrl="#"
-              key={`title-${key}`}
+              url={`videos/${idx}`}
+              channelUrl={`channels/${video.channel}`}
+              key={`title-${idx}`}
               title={video.title}
               poster={video.poster}
             />
@@ -46,4 +47,17 @@ export default function Channel({
       </GenericSection>
     </>
   );
+}
+
+type RouteProps = {
+  videos: any;
+  channels: any;
+} & RouteComponentProps;
+
+export default function Channel({ videos, channels }: RouteProps) {
+  let params = useParams();
+  console.log(params.channelName);
+  let channelVideos = videos[params.channelName];
+  let channel = channels[params.channelName];
+  return <ChannelComponent {...channel} videos={channelVideos} />;
 }

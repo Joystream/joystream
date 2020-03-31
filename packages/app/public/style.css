@@ -31,21 +31,11 @@ main {
   flex-basis: 15%;
 }
 
-.channel-header {
-  display: flex;
-  margin: 1rem auto;
+.video-details {
+  max-width: 48rem;
 }
 
-.channel-details {
-  display: flex;
-  flex-direction: column;
-}
-
-.channel-badges {
-  display: flex;
-  justify-content: space-between;
-}
-
-.channel-btn {
-  margin-right: 0.5rem;
+.video-details-table {
+  max-width: 48rem;
+  font-size: 1rem;
 }

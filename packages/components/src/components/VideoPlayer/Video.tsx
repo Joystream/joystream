@@ -3,7 +3,7 @@ import ReactPlayer from "react-player";
 import { VideoStyleProps, makeStyles } from "./Video.style";
 
 export type VideoProps = {
-  url?: string;
+  src?: string;
   playing?: boolean;
   poster?: string;
   controls?: boolean;
@@ -24,7 +24,7 @@ export type VideoProps = {
 } & VideoStyleProps;
 
 export default function Video({
-  url,
+  src,
   poster,
   playing,
   onPause,
@@ -52,7 +52,7 @@ export default function Video({
         css={playerStyles}
         width={styleProps.responsive ? "100%" : styleProps.width}
         height={styleProps.responsive ? "100%" : styleProps.height}
-        url={url}
+        url={src}
         autoPlay={autoPlay}
         light={poster || true}
         className={className}
@@ -66,6 +66,13 @@ export default function Video({
         onEnded={onEnded}
         onDuration={onDuration}
         onProgress={onProgress}
+        config={{
+          file: {
+            attributes: {
+              className: "video-player",
+            },
+          },
+        }}
       />
     </div>
   );

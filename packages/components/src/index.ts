@@ -5,3 +5,5 @@ export { default as Avatar } from "./components/Avatar";
 export { default as GenericSection } from "./components/GenericSection";
 export { default as VideoPreview } from "./components/VideoPreview";
 export { default as Banner } from "./components/Banner";
+export { default as ChannelSummary } from "./components/ChannelSummary";
+export { default as DetailsTable } from "./components/DetailsTable";
