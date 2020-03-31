@@ -43,12 +43,13 @@ fn assert_failure(
 fn ensure_replies_equality(
     reply: Option<Reply<Runtime>>,
     reply_owner_id: <Runtime as system::Trait>::AccountId,
+    parent: ParentId<Runtime>,	
     editing: bool,
 ) {
     // Ensure  stored reply is equal to expected one
     assert!(matches!(
         reply,
-        Some(reply) if reply == get_reply(ReplyType::Valid, reply_owner_id, editing)
+        Some(reply) if reply == get_reply(ReplyType::Valid, reply_owner_id, parent, editing)
     ));
 }
 
@@ -858,7 +859,7 @@ fn reply_creation_success() {
         // Replies related storage updated succesfully
         let reply = reply_by_id(FIRST_ID, FIRST_ID, FIRST_ID);
 
-        ensure_replies_equality(reply, reply_owner_id, false);
+        ensure_replies_equality(reply, reply_owner_id, ParentId::Post(FIRST_ID),false);
 
         // Overall post replies count
         assert_eq!(post.replies_count(), 1);
@@ -1266,7 +1267,7 @@ fn reply_editing_success() {
         // Reply after editing checked
         let reply = reply_by_id(FIRST_ID, FIRST_ID, FIRST_ID);
 
-        ensure_replies_equality(reply, reply_owner_id,  true);
+        ensure_replies_equality(reply, reply_owner_id, ParentId::Post(FIRST_ID), true);
 
         // Event checked
         let reply_edited_event =
@@ -1312,7 +1313,7 @@ fn reply_editing_blog_locked_error() {
         let reply = reply_by_id(FIRST_ID, FIRST_ID, FIRST_ID);
 
         // Compare with default unedited reply
-        ensure_replies_equality(reply, reply_owner_id, true);
+        ensure_replies_equality(reply, reply_owner_id, ParentId::Post(FIRST_ID), true);
 
         // Failure checked
         assert_failure(
@@ -1360,7 +1361,7 @@ fn reply_editing_post_locked_error() {
         let reply = reply_by_id(FIRST_ID, FIRST_ID, FIRST_ID);
 
         // Compare with default unedited reply
-        ensure_replies_equality(reply, reply_owner_id,  true);
+        ensure_replies_equality(reply, reply_owner_id,  ParentId::Post(FIRST_ID), true);
 
         // Failure checked
         assert_failure(
@@ -1434,7 +1435,7 @@ fn reply_editing_text_too_long_error() {
         let reply = reply_by_id(FIRST_ID, FIRST_ID, FIRST_ID);
 
         // Compare with default unedited reply
-        ensure_replies_equality(reply, reply_owner_id,  true);
+        ensure_replies_equality(reply, reply_owner_id,  ParentId::Post(FIRST_ID), true);
 
         // Failure checked
         assert_failure(
@@ -1479,7 +1480,7 @@ fn reply_editing_ownership_error() {
         let reply = reply_by_id(FIRST_ID, FIRST_ID, FIRST_ID);
 
         // Compare with default unedited reply
-        ensure_replies_equality(reply, reply_owner_id,  true);
+        ensure_replies_equality(reply, reply_owner_id,  ParentId::Post(FIRST_ID), true);
 
         // Failure checked
         assert_failure(

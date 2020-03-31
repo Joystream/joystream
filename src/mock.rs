@@ -436,10 +436,11 @@ pub fn get_reply_text(reply_type: ReplyType, editing: bool) -> Vec<u8> {
 pub fn get_reply(
     reply_type: ReplyType,
     owner: <Runtime as system::Trait>::AccountId,
+    parent_id: ParentId<Runtime>,	
     editing: bool,
 ) -> Reply<Runtime> {
     let reply_text = get_reply_text(reply_type, editing);
-    Reply::new(reply_text, owner)
+    Reply::new(reply_text, owner, parent_id)
 }
 
 pub fn create_reply(
