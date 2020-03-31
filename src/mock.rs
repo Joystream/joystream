@@ -5,7 +5,7 @@ use primitives::H256;
 use runtime_io::TestExternalities;
 use runtime_primitives::{
     testing::Header,
-    traits::{BlakeTwo256, IdentityLookup, OnFinalize, OnInitialize},
+    traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
 use srml_support::{impl_outer_event, impl_outer_origin, parameter_types, traits::Get};
@@ -64,10 +64,6 @@ thread_local! {
 
     static POSTS_MAX_NUMBER: RefCell<u32> = RefCell::new(0);
     static REPLIES_MAX_NUMBER: RefCell<u32> = RefCell::new(0);
-    static DIRECT_REPLIES_MAX_NUMBER: RefCell<u32> = RefCell::new(0);
-
-    static CONSECUTIVE_REPLIES_MAX_NUMBER: RefCell<u16> = RefCell::new(0);
-    static CONSECUTIVE_REPLIES_INTERVAL: RefCell<<Runtime as system::Trait>::BlockNumber> = RefCell::new(0);
 
     static REACTIONS_MAX_NUMBER: RefCell<<Runtime as Trait>::ReactionsNumber> = RefCell::new(0);
 }
@@ -107,27 +103,6 @@ impl Get<u32> for RepliesMaxNumber {
     }
 }
 
-pub struct DirectRepliesMaxNumber;
-impl Get<u32> for DirectRepliesMaxNumber {
-    fn get() -> u32 {
-        DIRECT_REPLIES_MAX_NUMBER.with(|v| *v.borrow())
-    }
-}
-
-pub struct ConsecutiveRepliesMaxNumber;
-impl Get<u16> for ConsecutiveRepliesMaxNumber {
-    fn get() -> u16 {
-        CONSECUTIVE_REPLIES_MAX_NUMBER.with(|v| *v.borrow())
-    }
-}
-
-pub struct ConsecutiveRepliesInterval;
-impl Get<<Runtime as system::Trait>::BlockNumber> for ConsecutiveRepliesInterval {
-    fn get() -> <Runtime as system::Trait>::BlockNumber {
-        CONSECUTIVE_REPLIES_INTERVAL.with(|v| *v.borrow())
-    }
-}
-
 pub struct ReactionsMaxNumber;
 impl Get<<Runtime as Trait>::ReactionsNumber> for ReactionsMaxNumber {
     fn get() -> <Runtime as Trait>::ReactionsNumber {
@@ -144,9 +119,6 @@ impl Trait for Runtime {
 
     type PostsMaxNumber = PostsMaxNumber;
     type RepliesMaxNumber = RepliesMaxNumber;
-    type DirectRepliesMaxNumber = DirectRepliesMaxNumber;
-    type ConsecutiveRepliesMaxNumber = ConsecutiveRepliesMaxNumber;
-    type ConsecutiveRepliesInterval = ConsecutiveRepliesInterval;
 
     type BlogOwnerEnsureOrigin = system::EnsureSigned<Self::AccountId>;
     type BlogOwnerId = u64;
@@ -168,9 +140,6 @@ pub struct ExtBuilder<T: Trait> {
     reply_max_length: u32,
     posts_max_number: u32,
     replies_max_number: u32,
-    direct_replies_max_number: u32,
-    consecutive_replies_max_number: u16,
-    consecutive_replies_interval: <Runtime as system::Trait>::BlockNumber,
     reactions_number: T::ReactionsNumber,
 }
 
@@ -182,9 +151,6 @@ impl<T: Trait> Default for ExtBuilder<T> {
             reply_max_length: 2_000,
             posts_max_number: 20,
             replies_max_number: 100,
-            direct_replies_max_number: 10,
-            consecutive_replies_max_number: 200,
-            consecutive_replies_interval: 10,
             reactions_number: 10.into(),
         }
     }
@@ -216,24 +182,6 @@ impl<T: Trait> ExtBuilder<T> {
         self
     }
 
-    pub fn direct_replies_max_number(mut self, direct_replies_max_number: u32) -> Self {
-        self.direct_replies_max_number = direct_replies_max_number;
-        self
-    }
-
-    pub fn consecutive_replies_max_number(mut self, consecutive_replies_max_number: u16) -> Self {
-        self.consecutive_replies_max_number = consecutive_replies_max_number;
-        self
-    }
-
-    pub fn consecutive_replies_max_period(
-        mut self,
-        consecutive_replies_interval: <Runtime as system::Trait>::BlockNumber,
-    ) -> Self {
-        self.consecutive_replies_interval = consecutive_replies_interval;
-        self
-    }
-
     pub fn reactions_max_number(mut self, reactions_number: T::ReactionsNumber) -> Self {
         self.reactions_number = reactions_number;
         self
@@ -246,11 +194,6 @@ impl<T: Trait> ExtBuilder<T> {
 
         POSTS_MAX_NUMBER.with(|v| *v.borrow_mut() = self.posts_max_number);
         REPLIES_MAX_NUMBER.with(|v| *v.borrow_mut() = self.replies_max_number);
-        DIRECT_REPLIES_MAX_NUMBER.with(|v| *v.borrow_mut() = self.direct_replies_max_number);
-
-        CONSECUTIVE_REPLIES_MAX_NUMBER
-            .with(|v| *v.borrow_mut() = self.consecutive_replies_max_number);
-        CONSECUTIVE_REPLIES_INTERVAL.with(|v| *v.borrow_mut() = self.consecutive_replies_interval);
 
         REACTIONS_MAX_NUMBER.with(|v| *v.borrow_mut() = self.reactions_number.into());
     }
@@ -283,17 +226,8 @@ pub fn generate_text(len: usize) -> Vec<u8> {
     vec![b'x'; len]
 }
 
-// Auxiliary method for simulating block time passing
-pub fn run_to_block(n: u64) {
-    while System::block_number() < n {
-        TestBlogModule::on_finalize(System::block_number());
-        System::set_block_number(System::block_number() + 1);
-        TestBlogModule::on_initialize(System::block_number() + 1);
-    }
-}
-
 type RawTestEvent = RawEvent<
-    <Runtime as system::Trait>::AccountId,
+    <Runtime as Trait>::ParticipantId,
     <Runtime as Trait>::BlogOwnerId,
     <Runtime as Trait>::BlogId,
     <Runtime as Trait>::PostId,

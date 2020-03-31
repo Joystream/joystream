@@ -78,7 +78,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Codec, Decode, Encode};
-use rstd::collections::btree_map::BTreeMap;
 use rstd::fmt::Debug;
 use rstd::prelude::*;
 use runtime_primitives::traits::MaybeDisplay;
@@ -129,16 +128,6 @@ pub trait Trait: system::Trait + Default {
     /// The maximum number of replies to a post.
     type RepliesMaxNumber: Get<MaxNumber>;
 
-    /// The maximum number of direct replies to a reply.
-    type DirectRepliesMaxNumber: Get<MaxNumber>;
-
-    /// The maximum number of consecutive (in time) replies by
-    /// the same actor (reader or author) to the same post or reply.
-    type ConsecutiveRepliesMaxNumber: Get<MaxConsecutiveRepliesNumber>;
-
-    /// The maximum cosecutive replies interval in blocks passed
-    type ConsecutiveRepliesInterval: Get<Self::BlockNumber>;
-  
     /// Type, representing reactions number
     type ReactionsNumber: Parameter
         + Member
@@ -265,11 +254,6 @@ pub struct Post<T: Trait> {
     body: Vec<u8>,
     /// Overall replies counter, associated with post
     replies_count: T::ReplyId,
-    /// Root replies counter, associated with a post
-    root_replies_count: T::ReplyId,
-    /// Block numbers of last created root replies
-    // (needed for max consecutive replies constraint check)
-    last_root_replies_block_numbers: Vec<T::BlockNumber>,
 }
 
 impl<T: Trait> Post<T> {
@@ -282,10 +266,6 @@ impl<T: Trait> Post<T> {
             body,
             // Set replies count of newly created post to zero
             replies_count: T::ReplyId::default(),
-            // Set root replies count of newly created post to zero
-            root_replies_count: T::ReplyId::default(),
-            // Initialize with blank (default) collection
-            last_root_replies_block_numbers: vec![],
         }
     }
 
@@ -309,30 +289,9 @@ impl<T: Trait> Post<T> {
         self.replies_count
     }
 
-    /// Get root replies count, associated with this post
-    fn root_replies_count(&self) -> T::ReplyId {
-        self.root_replies_count
-    }
-
     /// Increase replies counter, associated with given post by 1
     fn increment_replies_counter(&mut self) {
         self.replies_count += T::ReplyId::one()
-    }
-
-    /// Recalculate last consecutive replies count and add last reply block number
-    fn add_last_root_reply(&mut self, block_number: T::BlockNumber) {
-        Module::<T>::recalculate_last_replies_count(&mut self.last_root_replies_block_numbers, block_number);
-        Module::<T>::push_reply_block_number(&mut self.last_root_replies_block_numbers, block_number);
-        // Increase root replies counter, associated with given post by 1
-        self.root_replies_count += T::ReplyId::one()
-    }
-
-    /// Get last consecutive root replies count
-    fn calculate_last_root_replies_count(&self, current_block_number: T::BlockNumber) -> usize {
-        Module::<T>::calculate_last_replies_count(
-            &self.last_root_replies_block_numbers,
-            current_block_number,
-        )
     }
 
     /// Update post title and body, if Option::Some(_)
@@ -385,11 +344,6 @@ pub struct Reply<T: Trait> {
     owner: T::ParticipantId,
     /// Reply`s parent id	
     parent_id: ParentId<T>,
-    /// Block numbers of last created direct replies
-    // (needed for max consecutive replies constraint check)
-    last_direct_replies_block_numbers: Vec<T::BlockNumber>,
-    /// Direct replies counter, associated with this reply
-    direct_replies_count: T::ReplyId,
 }
 
 impl<T: Trait> Reply<T> {
@@ -399,10 +353,6 @@ impl<T: Trait> Reply<T> {
             text,
             owner,
             parent_id,
-            // Initialize with blank (default) collection
-            last_direct_replies_block_numbers: vec![],
-            // Set direct replies count of newly created reply to zero
-            direct_replies_count: T::ReplyId::default(),
         }
     }
 
@@ -419,30 +369,6 @@ impl<T: Trait> Reply<T> {
     /// Update reply`s text
     fn update(&mut self, new_text: Vec<u8>) {
         self.text = new_text
-    }
-
-    /// Get direct replies count, associated with this reply
-    fn direct_replies_count(&self) -> T::ReplyId {
-        self.direct_replies_count
-    }
-
-    /// Recalculate last consecutive replies count and add last reply block number
-    fn add_last_direct_reply(&mut self, block_number: T::BlockNumber) {
-        Module::<T>::recalculate_last_replies_count(&mut self.last_direct_replies_block_numbers, block_number);
-        Module::<T>::push_reply_block_number(&mut self.last_direct_replies_block_numbers, block_number);
-        // Increase direct replies counter, associated with given reply by 1
-        self.direct_replies_count += T::ReplyId::one()
-    }
-
-    /// Get last consecutive direct replies count
-    fn calculate_last_direct_replies_count(
-        &self,
-        current_block_number: T::BlockNumber,
-    ) -> usize {
-        Module::<T>::calculate_last_replies_count(
-            &self.last_direct_replies_block_numbers,
-            current_block_number,
-        )
     }
 }
 
@@ -647,24 +573,15 @@ decl_module! {
             // Ensure reply text length is valid
             Self::ensure_reply_text_is_valid(&text)?;
 
-            let current_block_number = <system::Module<T>>::block_number();
+            // Ensure root replies limit not reached
+            Self::ensure_replies_limit_not_reached(&post)?;
 
             // New reply creation
             let reply = if let Some(reply_id) = reply_id {
                 // Check parent reply existance in case of direct reply
                 let reply = Self::ensure_reply_exists(blog_id, post_id, reply_id)?;
-                // Ensure, maximum number direct replies per reply limit not reached
-                Self::ensure_direct_replies_limit_not_reached(&reply)?;
-                // Ensure maximum number of consecutive replies in time limit not reached
-                let last_direct_replies_count = reply.calculate_last_direct_replies_count(current_block_number);
-                Self::ensure_consecutive_replies_limit_not_reached(last_direct_replies_count)?;
                 Reply::<T>::new(text, reply_owner, ParentId::Reply(reply_id))	
             } else {
-                // Ensure root replies limit not reached
-                Self::ensure_replies_limit_not_reached(&post)?;
-                // Ensure maximum number of consecutive replies in time limit not reached
-                let last_root_replies_count = post.calculate_last_root_replies_count(current_block_number);
-                Self::ensure_consecutive_replies_limit_not_reached(last_root_replies_count)?;
                 Reply::<T>::new(text, reply_owner, ParentId::Post(post_id))	
             };
             
@@ -680,15 +597,9 @@ decl_module! {
             <PostById<T>>::mutate(blog_id, post_id, |inner_post| inner_post.increment_replies_counter());
 
             if let Some(reply_id) = reply_id {
-                <ReplyById<T>>::mutate((blog_id, post_id), reply_id, |inner_reply|  {
-                    inner_reply.add_last_direct_reply(current_block_number);
-                });
                 // Trigger event
                 Self::deposit_event(RawEvent::DirectReplyCreated(reply_owner, blog_id, post_id, reply_id, post_replies_count));
             } else {
-                <PostById<T>>::mutate(blog_id, post_id, |inner_post|  {
-                    inner_post.add_last_root_reply(current_block_number);
-                });
                 // Trigger event
                 Self::deposit_event(RawEvent::ReplyCreated(reply_owner, blog_id, post_id, post_replies_count));
             }
@@ -797,7 +708,7 @@ impl<T: Trait> Module<T> {
         Ok(T::BlogOwnerId::from(account_id))
     }
 
-    // Get block participant id from account id
+    // Get participant id from account id
     fn get_participant(origin: T::Origin) -> Result<T::ParticipantId, &'static str> {
         let account_id = T::ParticipantEnsureOrigin::ensure_origin(origin)?;
         Ok(T::ParticipantId::from(account_id))
@@ -881,44 +792,6 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    /// Remove all replies block numbers beyond the consecutive replies interval constraint
-    fn recalculate_last_replies_count(
-        last_replies_block_numbers: &mut Vec<T::BlockNumber>,
-        current_block_number: T::BlockNumber,
-    ) -> usize {
-        // Consider using retain() instead for simplicity
-        while matches!(
-            last_replies_block_numbers.last(),
-            Some(reply_block_number) if T::ConsecutiveRepliesInterval::get() < current_block_number - *reply_block_number
-        ) {
-            last_replies_block_numbers.pop();
-        }
-        last_replies_block_numbers.len()
-    }
-
-    /// Calculate replies count within consecutive replies interval
-    fn calculate_last_replies_count(
-        last_replies_block_numbers: &[T::BlockNumber],
-        current_block_number: T::BlockNumber,
-    ) -> usize {
-        last_replies_block_numbers
-            .iter()
-            .rev()
-            .take_while(|reply_block_number| {
-                T::ConsecutiveRepliesInterval::get() > current_block_number - **reply_block_number
-            })
-            .count()
-    }
-
-    // Add last reply block number to vector
-    fn push_reply_block_number(last_replies_block_numbers: &mut Vec<T::BlockNumber>, block_number: T::BlockNumber) {
-        if last_replies_block_numbers.is_empty() {
-            last_replies_block_numbers
-                .reserve(T::ConsecutiveRepliesMaxNumber::get() as usize);
-        }
-        last_replies_block_numbers.push(block_number);
-    }
-
     fn ensure_blog_exists(blog_id: T::BlogId) -> Result<Blog<T>, &'static str> {
         ensure!(<BlogById<T>>::exists(blog_id), BLOG_NOT_FOUND);
         Ok(Self::blog_by_id(blog_id))
@@ -995,36 +868,13 @@ impl<T: Trait> Module<T> {
         Ok(posts_count)
     }
 
-    fn ensure_direct_replies_limit_not_reached(reply: &Reply<T>) -> Result<(), &'static str> {
-        // Get direct replies count, associated with given reply
-        let direct_replies_count = reply.direct_replies_count();
-
-        ensure!(
-            direct_replies_count < T::DirectRepliesMaxNumber::get().into(),
-            DIRECT_REPLIES_LIMIT_REACHED
-        );
-
-        Ok(())
-    }
-
     fn ensure_replies_limit_not_reached(post: &Post<T>) -> Result<(), &'static str> {
-        // Get root replies count, associated with given post
-        let root_replies_count = post.root_replies_count();
+        // Get replies count, associated with given post
+        let root_replies_count = post.replies_count();
 
         ensure!(
             root_replies_count < T::RepliesMaxNumber::get().into(),
             REPLIES_LIMIT_REACHED
-        );
-
-        Ok(())
-    }
-
-    fn ensure_consecutive_replies_limit_not_reached(
-        consecutive_replies_count: usize,
-    ) -> Result<(), &'static str> {
-        ensure!(
-            consecutive_replies_count < T::ConsecutiveRepliesMaxNumber::get().into(),
-            CONSECUTIVE_REPLIES_LIMIT_REACHED
         );
 
         Ok(())

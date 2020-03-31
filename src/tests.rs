@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use crate::mock::{ConsecutiveRepliesInterval, *};
+use crate::mock::*;
 use crate::*;
 use srml_support::assert_ok;
 use system::ensure_signed;
@@ -866,7 +866,7 @@ fn reply_creation_success() {
 
         // Root replies counter updated
         assert_eq!(
-            post.root_replies_count(),
+            post.replies_count(),
             1
         );
 
@@ -920,12 +920,6 @@ fn direct_reply_creation_success() {
 
         // Overall post replies count
         assert_eq!(post.replies_count(), 2);
-
-        // Direct replies counter updated
-        assert_eq!(
-            reply.direct_replies_count(),
-            1
-        );
 
         // Event checked
         let reply_created_event = get_test_event(RawEvent::DirectReplyCreated(
@@ -1085,7 +1079,7 @@ fn reply_creation_limit_reached() {
                 let post = post_by_id(FIRST_ID, FIRST_ID).unwrap();
 
                 // Root post replies counter & reply root max number contraint equality checked
-                assert_eq!(post.root_replies_count(), RepliesMaxNumber::get());
+                assert_eq!(post.replies_count(), RepliesMaxNumber::get());
 
                 // Last reply creation, before limit reached, failure checked
                 assert_failure(
@@ -1130,108 +1124,6 @@ fn direct_reply_creation_reply_not_found() {
             number_of_events_before_call,
         );
     })
-}
-
-#[test]
-fn direct_reply_creation_limit_reached() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
-        // Create blog for future posts
-        create_blog(FIRST_OWNER_ORIGIN);
-
-        // Create post for future replies
-        create_post(FIRST_OWNER_ORIGIN, FIRST_ID, PostType::Valid);
-
-        // Create reply for direct replying
-        create_reply(
-            FIRST_OWNER_ORIGIN,
-            FIRST_ID,
-            FIRST_ID,
-            None,
-            ReplyType::Valid,
-        );
-        loop {
-            // Events number before tested call
-            let number_of_events_before_call = System::events().len();
-            if let Err(create_reply_err) = create_reply(
-                FIRST_OWNER_ORIGIN,
-                FIRST_ID,
-                FIRST_ID,
-                Some(FIRST_ID),
-                ReplyType::Valid,
-            ) {
-                let reply =
-                    reply_by_id(FIRST_ID, FIRST_ID, FIRST_ID).unwrap();
-
-                // Direct replies counter & max number contraint equality checked
-                assert_eq!(reply.direct_replies_count(), DirectRepliesMaxNumber::get());
-
-                // Last reply creation, before limit reached, failure checked
-                assert_failure(
-                    Err(create_reply_err),
-                    DIRECT_REPLIES_LIMIT_REACHED,
-                    number_of_events_before_call,
-                );
-                break;
-            }
-        }
-    })
-}
-
-#[test]
-fn consecutive_reply_creation_limit_reached() {
-    ExtBuilder::<Runtime>::default()
-        .consecutive_replies_max_number(5)
-        .build()
-        .execute_with(|| {
-            // Create blog for future posts
-            create_blog(FIRST_OWNER_ORIGIN);
-
-            // Create post for future replies
-            create_post(FIRST_OWNER_ORIGIN, FIRST_ID, PostType::Valid);
-
-            // Create reply and move to given block to show, that restriction removed
-            create_reply(
-                FIRST_OWNER_ORIGIN,
-                FIRST_ID,
-                FIRST_ID,
-                None,
-                ReplyType::Valid,
-            );
-
-            run_to_block((ConsecutiveRepliesInterval::get() + 1) as u64);
-            loop {
-                // Events number before tested call
-                let number_of_events_before_call = System::events().len();
-                if let Err(create_reply_err) = create_reply(
-                    FIRST_OWNER_ORIGIN,
-                    FIRST_ID,
-                    FIRST_ID,
-                    None,
-                    ReplyType::Valid,
-                ) {
-                    let post =
-                        post_by_id(FIRST_ID, FIRST_ID).unwrap();
-
-                    // Consecutive replies counter & consecutive replies max number contraint equality checked
-                    let current_block_number = System::block_number();
-                    assert_eq!(
-                        post.calculate_last_root_replies_count(current_block_number),
-                        ConsecutiveRepliesMaxNumber::get().into()
-                    );
-                    assert_eq!(
-                        post.root_replies_count(),
-                        ConsecutiveRepliesMaxNumber::get() as u32 + 1
-                    );
-                    // Last reply creation, before max consecutive replies limit reached, failure checked
-                    assert_failure(
-                        Err(create_reply_err),
-                        CONSECUTIVE_REPLIES_LIMIT_REACHED,
-                        number_of_events_before_call,
-                    );
-                    break;
-                }
-            }
-        })
 }
 
 #[test]
