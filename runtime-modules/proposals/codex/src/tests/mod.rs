@@ -49,7 +49,7 @@ where
         let account_id = 1;
         let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&account_id, 50000);
 
-        assert!((self.successful_call)().is_ok());
+        assert_eq!((self.successful_call)(), Ok(()));
 
         // a discussion was created
         let thread_id = <crate::ThreadIdByProposalId<Test>>::get(1);
@@ -412,5 +412,77 @@ fn create_set_content_working_group_mint_capacity_proposal_common_checks_succeed
             proposal_parameters: crate::proposal_types::parameters::set_content_working_group_mint_capacity_proposal::<Test>(),
         };
         proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_spending_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_spending_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    20,
+                    10,
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_spending_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    20,
+                    10,
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_spending_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    20,
+                    10,
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_spending_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(500u32)),
+                    100,
+                    2,
+                )
+            },
+            proposal_parameters: crate::proposal_types::parameters::spending_proposal::<Test>(),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_spending_proposal_call_fails_with_incorrect_balance() {
+    initial_test_ext().execute_with(|| {
+        assert_eq!(
+            ProposalCodex::create_spending_proposal(
+                RawOrigin::Signed(1).into(),
+                1,
+                b"title".to_vec(),
+                b"body".to_vec(),
+                Some(<BalanceOf<Test>>::from(500u32)),
+                0,
+                2,
+            ),
+            Err(Error::SpendingProposalZeroBalance)
+        );
     });
 }

@@ -7,6 +7,7 @@
 //! - create_set_election_parameters_proposal
 //! - create_set_council_mint_capacity_proposal
 //! - create_set_content_working_group_mint_capacity_proposal
+//! - create_spending_proposal
 //!
 //! Proposal implementations of this module:
 //! - execute_text_proposal - prints the proposal to the log
@@ -24,16 +25,16 @@ mod proposal_types;
 mod tests;
 
 use codec::Encode;
+use common::origin_validator::ActorOriginValidator;
+use governance::election_params::ElectionParameters;
+use proposal_engine::ProposalParameters;
 use rstd::clone::Clone;
 use rstd::prelude::*;
 use rstd::str::from_utf8;
 use rstd::vec::Vec;
+use sr_primitives::traits::Zero;
 use srml_support::{decl_error, decl_module, decl_storage, ensure, print};
 use system::{ensure_root, RawOrigin};
-
-use common::origin_validator::ActorOriginValidator;
-use governance::election_params::ElectionParameters;
-use proposal_engine::ProposalParameters;
 
 /// 'Proposals codex' substrate module Trait
 pub trait Trait:
@@ -93,6 +94,9 @@ decl_error! {
 
         /// Provided WASM code for the runtime upgrade proposal is empty
         RuntimeProposalIsEmpty,
+
+        /// Invalid balance value for the spending proposal
+        SpendingProposalZeroBalance,
 
         /// Require root origin in extrinsics
         RequireRootOrigin,
@@ -273,6 +277,36 @@ decl_module! {
 
             let proposal_parameters =
                 proposal_types::parameters::set_content_working_group_mint_capacity_proposal::<T>();
+
+            Self::create_proposal(
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_code.encode(),
+                proposal_parameters,
+            )?;
+        }
+
+        /// Create 'Spending' proposal type.
+        /// This proposal uses spend_from_council_mint() extrinsic from the governance::council  module.
+        pub fn create_spending_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            balance: BalanceOfMint<T>,
+            destination: T::AccountId,
+        ) {
+            ensure!(balance != BalanceOfMint::<T>::zero(), Error::SpendingProposalZeroBalance);
+
+            let proposal_code =
+                <governance::council::Call<T>>::spend_from_council_mint(balance, destination);
+
+            let proposal_parameters =
+                proposal_types::parameters::spending_proposal::<T>();
 
             Self::create_proposal(
                 origin,
