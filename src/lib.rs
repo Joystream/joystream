@@ -67,7 +67,7 @@
 //! 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 //! 		pub fn create_blog(origin) -> dispatch::Result {
 //! 			let _sender = ensure_signed(origin)?;
-//! 			assert_ok!(<blog_module::Module<T>>::create_blog(_sender.into()));
+//! 			<blog_module::Module<T>>::create_blog(_sender.into())?;
 //! 			Ok(())
 //! 		}
 //! 	}
@@ -97,8 +97,6 @@ use error_messages::*;
 type MaxLength = u32;
 
 type MaxNumber = u32;
-
-type MaxConsecutiveRepliesNumber = u16;
 
 // The pallet's configuration trait.
 pub trait Trait: system::Trait + Default {
@@ -312,20 +310,6 @@ pub enum ParentId<T: Trait> {
     Reply(T::ReplyId),	
     Post(T::PostId),	
 }	
-
-// impl <T: Trait> From <T::ReplyId> for ParentId<T> {
-//     fn from (parent_id: T::ReplyId) -> Self {
-//         Self::Reply(parent_id)
-//     }
-// }
-
-// impl <T: Trait> From <T::PostId> for ParentId<T> {
-//     fn from (parent_id: T::PostId) -> Self {
-//         Self::Post(parent_id)
-//     }
-// }
-
-
 
 /// Default parent representation	
 impl<T: Trait> Default for ParentId<T> {	
@@ -579,7 +563,7 @@ decl_module! {
             // New reply creation
             let reply = if let Some(reply_id) = reply_id {
                 // Check parent reply existance in case of direct reply
-                let reply = Self::ensure_reply_exists(blog_id, post_id, reply_id)?;
+                Self::ensure_reply_exists(blog_id, post_id, reply_id)?;
                 Reply::<T>::new(text, reply_owner, ParentId::Reply(reply_id))	
             } else {
                 Reply::<T>::new(text, reply_owner, ParentId::Post(post_id))	
@@ -686,7 +670,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Update reply reactions
+            // Update reply`s reactions
             <Reactions<T>>::mutate((blog_id, post_id, reply_id), owner, |inner_reactions| {
                 let reaction_status = Self::mutate_reactions(inner_reactions, index);
                 // Trigger event
