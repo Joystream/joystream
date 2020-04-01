@@ -54,7 +54,6 @@ mod lib {
 
 impl_outer_event! {
     pub enum TestEvent for Test {
-        versioned_store<T>,
         members<T>,
         balances<T>,
         lib<T>,

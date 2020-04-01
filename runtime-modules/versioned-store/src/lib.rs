@@ -247,7 +247,7 @@ pub struct ClassPropertyValue {
 }
 
 pub trait Trait: system::Trait + Sized {
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Event: Into<<Self as system::Trait>::Event>;
 }
 
 decl_storage! {
@@ -276,27 +276,8 @@ decl_storage! {
     }
 }
 
-decl_event!(
-    pub enum Event<T>
-    where
-        <T as system::Trait>::AccountId,
-    {
-        ClassCreated(ClassId),
-        ClassSchemaAdded(ClassId, u16),
-
-        EntityCreated(EntityId),
-        // EntityDeleted(EntityId),
-        EntityPropertiesUpdated(EntityId),
-        EntitySchemaAdded(EntityId, u16),
-
-        /// This is a fake event that uses AccountId type just to make Rust compiler happy to compile this module.
-        FixCompilation(AccountId),
-    }
-);
-
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        fn deposit_event() = default;
     }
 }
 
@@ -327,7 +308,6 @@ impl<T: Trait> Module<T> {
         // Increment the next class id:
         NextClassId::mutate(|n| *n += 1);
 
-        Self::deposit_event(RawEvent::ClassCreated(class_id));
         Ok(class_id)
     }
 
@@ -404,7 +384,6 @@ impl<T: Trait> Module<T> {
             class.schemas.push(schema);
         });
 
-        Self::deposit_event(RawEvent::ClassSchemaAdded(class_id, schema_idx));
         Ok(schema_idx)
     }
 
@@ -427,7 +406,6 @@ impl<T: Trait> Module<T> {
         // Increment the next entity id:
         NextEntityId::mutate(|n| *n += 1);
 
-        Self::deposit_event(RawEvent::EntityCreated(entity_id));
         Ok(entity_id)
     }
 
@@ -515,7 +493,6 @@ impl<T: Trait> Module<T> {
             }
         });
 
-        Self::deposit_event(RawEvent::EntitySchemaAdded(entity_id, schema_id));
         Ok(())
     }
 
@@ -574,7 +551,6 @@ impl<T: Trait> Module<T> {
             EntityById::mutate(entity_id, |entity| {
                 entity.values = updated_values;
             });
-            Self::deposit_event(RawEvent::EntityPropertiesUpdated(entity_id));
         }
 
         Ok(())
