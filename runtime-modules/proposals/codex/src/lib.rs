@@ -9,7 +9,8 @@
 //! During the proposal creation `codex` also create a discussion thread using the `discussion`
 //! proposals module. `Codex` uses predefined parameters (eg.:`voting_period`) for each proposal and
 //! encodes extrinsic calls from dependency modules in order to create proposals inside the `engine`
-//! module.
+//! module. For each proposal, [its crucial details](./enum.ProposalDetails.html) are saved to the
+//! `ProposalDetailsByProposalId` map.
 //!
 //! ### Supported extrinsics (proposal types)
 //! - [create_text_proposal](./struct.Module.html#method.create_text_proposal)
@@ -50,11 +51,14 @@ use rstd::clone::Clone;
 use rstd::prelude::*;
 use rstd::str::from_utf8;
 use rstd::vec::Vec;
+use runtime_io::blake2_256;
 use sr_primitives::traits::Zero;
 use srml_support::dispatch::DispatchResult;
 use srml_support::traits::{Currency, Get};
 use srml_support::{decl_error, decl_module, decl_storage, ensure, print};
 use system::{ensure_root, RawOrigin};
+
+pub use proposal_types::ProposalDetails;
 
 /// 'Proposals codex' substrate module Trait
 pub trait Trait:
@@ -158,6 +162,16 @@ decl_storage! {
         /// Map proposal id to its discussion thread id
         pub ThreadIdByProposalId get(fn thread_id_by_proposal_id):
             map T::ProposalId => T::ThreadId;
+
+        /// Map proposal id to proposal details
+        pub ProposalDetailsByProposalId get(fn proposal_details_by_proposal_id):
+            map T::ProposalId => ProposalDetails<
+                BalanceOfMint<T>,
+                BalanceOfGovernanceCurrency<T>,
+                T::BlockNumber,
+                T::AccountId,
+                T::MemberId
+            >;
     }
 }
 
@@ -182,7 +196,7 @@ decl_module! {
 
             let proposal_parameters = proposal_types::parameters::text_proposal::<T>();
             let proposal_code =
-                <Call<T>>::execute_text_proposal(title.clone(), description.clone(), text);
+                <Call<T>>::execute_text_proposal(title.clone(), description.clone(), text.clone());
 
             Self::create_proposal(
                 origin,
@@ -192,6 +206,7 @@ decl_module! {
                 stake_balance,
                 proposal_code.encode(),
                 proposal_parameters,
+                ProposalDetails::Text(text),
             )?;
         }
 
@@ -208,6 +223,8 @@ decl_module! {
             ensure!(wasm.len() as u32 <= T::RuntimeUpgradeWasmProposalMaxLength::get(),
                 Error::RuntimeProposalSizeExceeded);
 
+            let wasm_hash = blake2_256(&wasm);
+
             let proposal_code =
                 <Call<T>>::execute_runtime_upgrade_proposal(title.clone(), description.clone(), wasm);
 
@@ -221,6 +238,7 @@ decl_module! {
                 stake_balance,
                 proposal_code.encode(),
                 proposal_parameters,
+                ProposalDetails::RuntimeUpgrade(wasm_hash.to_vec()),
             )?;
         }
 
@@ -237,7 +255,7 @@ decl_module! {
             election_parameters.ensure_valid()?;
 
             let proposal_code =
-                <governance::election::Call<T>>::set_election_parameters(election_parameters);
+                <governance::election::Call<T>>::set_election_parameters(election_parameters.clone());
 
             let proposal_parameters =
                 proposal_types::parameters::set_election_parameters_proposal::<T>();
@@ -250,6 +268,7 @@ decl_module! {
                 stake_balance,
                 proposal_code.encode(),
                 proposal_parameters,
+                ProposalDetails::SetElectionParameters(election_parameters),
             )?;
         }
 
@@ -265,7 +284,7 @@ decl_module! {
             mint_balance: BalanceOfMint<T>,
         ) {
             let proposal_code =
-                <governance::council::Call<T>>::set_council_mint_capacity(mint_balance);
+                <governance::council::Call<T>>::set_council_mint_capacity(mint_balance.clone());
 
             let proposal_parameters =
                 proposal_types::parameters::set_council_mint_capacity_proposal::<T>();
@@ -278,6 +297,7 @@ decl_module! {
                 stake_balance,
                 proposal_code.encode(),
                 proposal_parameters,
+                ProposalDetails::SetCouncilMintCapacity(mint_balance),
             )?;
         }
 
@@ -292,7 +312,7 @@ decl_module! {
             mint_balance: BalanceOfMint<T>,
         ) {
             let proposal_code =
-                <content_working_group::Call<T>>::set_mint_capacity(mint_balance);
+                <content_working_group::Call<T>>::set_mint_capacity(mint_balance.clone());
 
             let proposal_parameters =
                 proposal_types::parameters::set_content_working_group_mint_capacity_proposal::<T>();
@@ -305,6 +325,7 @@ decl_module! {
                 stake_balance,
                 proposal_code.encode(),
                 proposal_parameters,
+                ProposalDetails::SetContentWorkingGroupMintCapacity(mint_balance),
             )?;
         }
 
@@ -321,8 +342,10 @@ decl_module! {
         ) {
             ensure!(balance != BalanceOfMint::<T>::zero(), Error::SpendingProposalZeroBalance);
 
-            let proposal_code =
-                <governance::council::Call<T>>::spend_from_council_mint(balance, destination);
+            let proposal_code = <governance::council::Call<T>>::spend_from_council_mint(
+                balance.clone(),
+                destination.clone()
+            );
 
             let proposal_parameters =
                 proposal_types::parameters::spending_proposal::<T>();
@@ -335,6 +358,7 @@ decl_module! {
                 stake_balance,
                 proposal_code.encode(),
                 proposal_parameters,
+                ProposalDetails::Spending(balance, destination),
             )?;
         }
 
@@ -350,7 +374,7 @@ decl_module! {
             new_lead: Option<(T::MemberId, T::AccountId)>
         ) {
             let proposal_code =
-                <content_working_group::Call<T>>::replace_lead(new_lead);
+                <content_working_group::Call<T>>::replace_lead(new_lead.clone());
 
             let proposal_parameters =
                 proposal_types::parameters::set_lead_proposal::<T>();
@@ -363,6 +387,7 @@ decl_module! {
                 stake_balance,
                 proposal_code.encode(),
                 proposal_parameters,
+                ProposalDetails::SetLead(new_lead),
             )?;
         }
 
@@ -434,6 +459,13 @@ impl<T: Trait> Module<T> {
         stake_balance: Option<BalanceOf<T>>,
         proposal_code: Vec<u8>,
         proposal_parameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>,
+        proposal_details: ProposalDetails<
+            BalanceOfMint<T>,
+            BalanceOfGovernanceCurrency<T>,
+            T::BlockNumber,
+            T::AccountId,
+            T::MemberId,
+        >,
     ) -> DispatchResult<Error> {
         let account_id =
             T::MembershipOriginValidator::ensure_actor_origin(origin, member_id.clone())?;
@@ -461,6 +493,7 @@ impl<T: Trait> Module<T> {
         )?;
 
         <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
+        <ProposalDetailsByProposalId<T>>::insert(proposal_id, proposal_details);
 
         Ok(())
     }

@@ -5,9 +5,10 @@ use srml_support::traits::Currency;
 use srml_support::StorageMap;
 use system::RawOrigin;
 
-use crate::{BalanceOf, Error};
+use crate::{BalanceOf, Error, ProposalDetails};
 use mock::*;
 use proposal_engine::ProposalParameters;
+use runtime_io::blake2_256;
 use srml_support::dispatch::DispatchResult;
 
 struct ProposalTestFixture<InsufficientRightsCall, EmptyStakeCall, InvalidStakeCall, SuccessfulCall>
@@ -22,6 +23,7 @@ where
     invalid_stake_call: InvalidStakeCall,
     successful_call: SuccessfulCall,
     proposal_parameters: ProposalParameters<u64, u64>,
+    proposal_details: ProposalDetails<u64, u64, u64, u64, u64>,
 }
 
 impl<InsufficientRightsCall, EmptyStakeCall, InvalidStakeCall, SuccessfulCall>
@@ -59,6 +61,10 @@ where
         let proposal = ProposalsEngine::proposals(proposal_id);
         // check for correct proposal parameters
         assert_eq!(proposal.parameters, self.proposal_parameters);
+
+        // proposal details was set
+        let details = <crate::ProposalDetailsByProposalId<Test>>::get(proposal_id);
+        assert_eq!(details, self.proposal_details);
     }
 
     pub fn check_all(&self) {
@@ -113,6 +119,7 @@ fn create_text_proposal_common_checks_succeed() {
                 )
             },
             proposal_parameters: crate::proposal_types::parameters::text_proposal::<Test>(),
+            proposal_details: ProposalDetails::Text(b"text".to_vec()),
         };
         proposal_fixture.check_all();
     });
@@ -195,6 +202,7 @@ fn create_runtime_upgrade_common_checks_succeed() {
                 )
             },
             proposal_parameters: crate::proposal_types::parameters::upgrade_runtime::<Test>(),
+            proposal_details: ProposalDetails::RuntimeUpgrade(blake2_256(b"wasm").to_vec()),
         };
         proposal_fixture.check_all();
     });
@@ -289,6 +297,7 @@ fn create_set_election_parameters_proposal_common_checks_succeed() {
             },
             proposal_parameters:
                 crate::proposal_types::parameters::set_election_parameters_proposal::<Test>(),
+            proposal_details: ProposalDetails::SetElectionParameters(election_parameters),
         };
         proposal_fixture.check_all();
     });
@@ -355,11 +364,12 @@ fn create_set_council_mint_capacity_proposal_common_checks_succeed() {
                     b"title".to_vec(),
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(500u32)),
-                    0,
+                    10,
                 )
             },
             proposal_parameters:
                 crate::proposal_types::parameters::set_council_mint_capacity_proposal::<Test>(),
+            proposal_details: ProposalDetails::SetCouncilMintCapacity(10),
         };
         proposal_fixture.check_all();
     });
@@ -406,10 +416,11 @@ fn create_set_content_working_group_mint_capacity_proposal_common_checks_succeed
                     b"title".to_vec(),
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(500u32)),
-                    0,
+                    10,
                 )
             },
             proposal_parameters: crate::proposal_types::parameters::set_content_working_group_mint_capacity_proposal::<Test>(),
+            proposal_details: ProposalDetails::SetContentWorkingGroupMintCapacity(10),
         };
         proposal_fixture.check_all();
     });
@@ -464,6 +475,7 @@ fn create_spending_proposal_common_checks_succeed() {
                 )
             },
             proposal_parameters: crate::proposal_types::parameters::spending_proposal::<Test>(),
+            proposal_details: ProposalDetails::Spending(100, 2),
         };
         proposal_fixture.check_all();
     });
@@ -532,6 +544,7 @@ fn create_set_lead_proposal_common_checks_succeed() {
                 )
             },
             proposal_parameters: crate::proposal_types::parameters::set_lead_proposal::<Test>(),
+            proposal_details: ProposalDetails::SetLead(Some((20, 10))),
         };
         proposal_fixture.check_all();
     });
