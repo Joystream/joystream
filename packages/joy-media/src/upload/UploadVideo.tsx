@@ -6,7 +6,7 @@ import moment from 'moment';
 
 import TxButton, { OnTxButtonClick } from '@polkadot/joy-utils/TxButton';
 import { ContentId } from '@joystream/types/media';
-import { onImageError } from '../utils';
+import { onImageError } from '@polkadot/joy-utils/images';
 import { VideoValidationSchema, VideoType, VideoClass as Fields, VideoFormValues, VideoToFormValues, VideoCodec, VideoPropId } from '../schemas/video/Video';
 import { MediaFormProps, withMediaForm, datePlaceholder } from '../common/MediaForms';
 import EntityId from '@joystream/types/versioned-store/EntityId';

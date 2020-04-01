@@ -5,7 +5,7 @@ import { History } from 'history';
 
 import { Text, Option } from '@polkadot/types';
 import TxButton from '@polkadot/joy-utils/TxButton';
-import { onImageError } from '../utils';
+import { onImageError } from '@polkadot/joy-utils/images';
 import { withMediaForm, MediaFormProps } from '../common/MediaForms';
 import { ChannelType, ChannelClass as Fields, buildChannelValidationSchema, ChannelFormValues, ChannelToFormValues, ChannelGenericProp } from '../schemas/channel/Channel';
 import { MediaDropdownOptions } from '../common/MediaDropdownOptions';

@@ -1,5 +1,5 @@
 import BN from 'bn.js';
-import { MediaTransport, ChannelValidationConstraints, ValidationConstraint } from './transport';
+import { MediaTransport, ChannelValidationConstraints } from './transport';
 import { ClassId, Class, EntityId, Entity, ClassName } from '@joystream/types/versioned-store';
 import { InputValidationLengthConstraint } from '@joystream/types/forum';
 import { PlainEntity, EntityCodecResolver } from '@joystream/types/versioned-store/EntityCodec';
@@ -25,6 +25,7 @@ import { ChannelCodec } from './schemas/channel/Channel';
 import { FeaturedContentType } from './schemas/general/FeaturedContent';
 import { AnyChannelId, asChannelId, AnyClassId, AnyEntityId } from './common/TypeHelpers';
 import { SimpleCache } from '@polkadot/joy-utils/SimpleCache';
+import { ValidationConstraint } from '@polkadot/joy-utils/ValidationConstraint';
 
 const FIRST_CHANNEL_ID = 1;
 const FIRST_CLASS_ID = 1;

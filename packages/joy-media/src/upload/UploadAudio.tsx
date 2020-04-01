@@ -5,7 +5,7 @@ import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { ContentId } from '@joystream/types/media';
-import { onImageError } from '../utils';
+import { onImageError } from '@polkadot/joy-utils/images';
 import { MusicTrackValidationSchema, MusicTrackType, MusicTrackClass as Fields, MusicTrackFormValues, MusicTrackToFormValues } from '../schemas/music/MusicTrack';
 import { withMediaForm, MediaFormProps, datePlaceholder } from '../common/MediaForms';
 import EntityId from '@joystream/types/versioned-store/EntityId';

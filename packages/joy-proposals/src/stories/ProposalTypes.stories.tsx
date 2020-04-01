@@ -4,7 +4,7 @@ import { ProposalTypeSelector } from '../ProposalTypeSelector';
 import { MockProposalTypes } from './data/MockProposalTypes';
 
 export default { 
-	title: 'Proposals | Proposals types',
+	title: 'Proposals | Types',
 };
 
 export const ProposalTypes = () =>
