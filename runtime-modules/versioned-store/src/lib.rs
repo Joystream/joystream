@@ -17,7 +17,7 @@ use serde_derive::{Deserialize, Serialize};
 use codec::{Decode, Encode};
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
-use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure};
+use srml_support::{decl_module, decl_storage, dispatch, ensure};
 use system;
 
 mod example;
@@ -159,7 +159,6 @@ pub struct Property {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum PropertyType {
-    None,
 
     // Single value:
     Bool,
@@ -196,14 +195,13 @@ pub enum PropertyType {
 
 impl Default for PropertyType {
     fn default() -> Self {
-        PropertyType::None
+        PropertyType::Bool
     }
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum PropertyValue {
-    None,
 
     // Single value:
     Bool(bool),
@@ -232,7 +230,7 @@ pub enum PropertyValue {
 
 impl Default for PropertyValue {
     fn default() -> Self {
-        PropertyValue::None
+        PropertyValue::Bool(false)
     }
 }
 
@@ -472,11 +470,11 @@ impl<T: Trait> Module<T> {
                     if class_prop.required {
                         return Err(ERROR_MISSING_REQUIRED_PROP);
                     }
-                    // Add all missing non required schema prop values as PropertyValue::None
+                    // Add all missing non required schema prop values as PropertyValue::Bool(false)
                     else {
                         appended_entity_values.push(ClassPropertyValue {
                             in_class_index: prop_id,
-                            value: PropertyValue::None,
+                            value: PropertyValue::Bool(false),
                         });
                     }
                 }
@@ -715,13 +713,12 @@ impl<T: Trait> Module<T> {
         prop: Property,
     ) -> bool {
 
-        // A non required property can be updated to None:
-        if !prop.required && value == PV::None {
+        // A non required property can be updated to Bool(false):
+        if !prop.required && value == PV::Bool(false) {
             return true
         }
 
         match (value, prop.prop_type) {
-            (PV::None,        PT::None) |
 
             // Single values
             (PV::Bool(_),     PT::Bool) |

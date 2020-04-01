@@ -403,7 +403,7 @@ fn create_podcast_class_schema() {
                     // 6
                     p.next_text_value(b"en".to_vec()),
                     // 7
-                    p.next_value(PropertyValue::None),
+                    p.next_value(PropertyValue::Bool(false)),
                     // 8
                     p.next_text_value(b"https://twitter.com/staked_podcast".to_vec()),
                     // 9
