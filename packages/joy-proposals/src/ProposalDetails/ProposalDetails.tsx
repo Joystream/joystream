@@ -4,13 +4,16 @@ import { Divider, Container, Header, Button, Icon } from "semantic-ui-react";
 import Votes from "./Votes";
 import Details from "./Details";
 import Body from "./Body";
+import VotingSection from "./VotingSection";
 
 export type User = {
   name?: string;
   avatar?: string;
 };
+
+export type VoteValue = "Approve" | "Slash" | "Abstain" | "Reject";
 export type Vote = {
-  value?: "Approve" | "Slash" | "Abstain" | "Reject";
+  value?: VoteValue;
   by?: User;
   createdAt?: string;
 };
@@ -33,33 +36,31 @@ export type ProposalProps = {
     createdBy?: User;
     createdAt?: string;
   };
+  onVote?: (vote: VoteValue) => void;
+  vote?: {
+    hasVoted?: boolean;
+    value?: VoteValue;
+  };
 };
 
-export default function ProposalDetails({ title, description, params, details, votes, totalVotes }: ProposalProps) {
+export default function ProposalDetails({
+  title,
+  description,
+  params,
+  details,
+  votes,
+  totalVotes,
+  onVote,
+  vote
+}: ProposalProps) {
+  let { hasVoted = false, value = undefined } = vote || {};
   return (
     <Container>
       <Details {...details} />
       <Body title={title} description={description} params={params} />
       <Header as="h3">Submit your vote</Header>
       <Divider />
-      <>
-        <Button color="green" icon labelPosition="left">
-          <Icon name="smile" inverted />
-          Approve
-        </Button>
-        <Button color="grey" icon labelPosition="left">
-          <Icon name="meh" inverted />
-          Abstain
-        </Button>
-        <Button color="orange" icon labelPosition="left">
-          <Icon name="frown" inverted />
-          Reject
-        </Button>
-        <Button color="red" icon labelPosition="left">
-          <Icon name="times" inverted />
-          Slash
-        </Button>
-      </>
+      <VotingSection onVote={onVote} hasVoted={hasVoted} value={value} />
       <Votes votes={votes} total={totalVotes} />
     </Container>
   );

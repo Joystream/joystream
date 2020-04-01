@@ -48,3 +48,7 @@
 .details-labels {
   margin-bottom: 1rem;
 }
+
+.bold {
+  font-weight: 700;
+}

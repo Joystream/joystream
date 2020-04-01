@@ -5,8 +5,21 @@ import MockProposalDetails from "./data/MockProposalDetails";
 import ProposalDetails from "../ProposalDetails";
 
 export default {
-  title: "ProposalsDetails | Types",
-  component: ProposalDetails
+  title: "Proposals | Details"
 };
 
-export const ProposalTypes = () => <ProposalDetails {...MockProposalDetails} />;
+export const HasToVote = () => <ProposalDetails {...MockProposalDetails} />;
+
+export const VotedApproved = () => (
+  <ProposalDetails {...MockProposalDetails} vote={{ hasVoted: true, value: "Approve" }} />
+);
+
+export const VotedAbstain = () => (
+  <ProposalDetails {...MockProposalDetails} vote={{ hasVoted: true, value: "Abstain" }} />
+);
+
+export const VotedReject = () => (
+  <ProposalDetails {...MockProposalDetails} vote={{ hasVoted: true, value: "Reject" }} />
+);
+
+export const VotedSlash = () => <ProposalDetails {...MockProposalDetails} vote={{ hasVoted: true, value: "Slash" }} />;
