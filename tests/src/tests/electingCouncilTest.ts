@@ -36,4 +36,8 @@ describe('Council integration tests', () => {
     apiWrapper.batchApplyForCouncilElection(m2KeyPairs.slice(0, K), greaterStake);
     apiWrapper.batchApplyForCouncilElection(m2KeyPairs.slice(K), lesserStake);
   });
+
+  after(() => {
+    apiWrapper.close();
+  });
 });
