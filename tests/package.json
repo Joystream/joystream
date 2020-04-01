@@ -14,12 +14,14 @@
     "@polkadot/keyring": "^1.7.0-beta.5",
     "@types/bn.js": "^4.11.5",
     "bn.js": "^4.11.8",
-    "dotenv": "^8.2.0"
+    "dotenv": "^8.2.0",
+    "uuid": "^7.0.3"
   },
   "devDependencies": {
     "@polkadot/ts": "^0.3.14",
     "@types/chai": "^4.2.11",
     "@types/mocha": "^7.0.2",
+    "@types/uuid": "^7.0.2",
     "chai": "^4.2.0",
     "mocha": "^7.1.1",
     "prettier": "2.0.2",

@@ -78,9 +78,24 @@ export class ApiWrapper {
   }
 
   public estimateBuyMembershipFee(account: KeyringPair, paidTermsId: number, name: string): BN {
-    const nonce: BN = new BN(0);
     return this.estimateTxFee(
       this.api.tx.members.buyMembership(paidTermsId, new UserInfo({ handle: name, avatar_uri: '', about: '' }))
+    );
+  }
+
+  public estimateApplyForCouncilFee(amount: BN): BN {
+    return this.estimateTxFee(this.api.tx.councilElection.apply(amount));
+  }
+
+  private applyForCouncilElection(account: KeyringPair, amount: BN): Promise<void> {
+    return this.sender.signAndSend(this.api.tx.councilElection.apply(amount), account, false);
+  }
+
+  public batchApplyForCouncilElection(accounts: KeyringPair[], amount: BN): Promise<void[]> {
+    return Promise.all(
+      accounts.map(async keyPair => {
+        await this.applyForCouncilElection(keyPair, amount);
+      })
     );
   }
 }
