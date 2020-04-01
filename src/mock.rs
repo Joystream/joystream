@@ -136,7 +136,7 @@ impl Trait for Runtime {
     fn ensure_blog_ownership(origin: Self::Origin, blog_id: Self::BlogId) -> dispatch::Result {
         let block_owner_id = Self::BlogOwnerEnsureOrigin::ensure_origin(origin)?;
 
-        // Looks like i need to integrate into monorepo at this stage to be able to test this functionality properly.
+        // Looks, like i need to integrate into monorepo at this stage to be able to test this functionality properly.
 
         Ok(())
     }
@@ -254,10 +254,7 @@ pub fn blogs_count() -> <Runtime as Trait>::BlogId {
 }
 
 pub fn blog_by_id(blog_id: <Runtime as Trait>::BlogId) -> Option<Blog<Runtime>> {
-    match TestBlogModule::blog_by_id(blog_id) {
-        blog if blog != Blog::<Runtime>::default() => Some(blog),
-        _ => None,
-    }
+    TestBlogModule::blog_by_id(blog_id)
 }
 
 pub fn create_blog(origin_id: u64) -> Result<(), &'static str> {
