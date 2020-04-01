@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Icon, Button, Message } from "semantic-ui-react";
+import { Icon, Button, Message, Divider, Header } from "semantic-ui-react";
 
 import { VoteValue } from "./ProposalDetails";
 
@@ -48,6 +48,8 @@ export default function VotingSection({ onVote, hasVoted, value }: VotingSection
   }
   return (
     <>
+      <Header as="h3">Submit your vote</Header>
+      <Divider />
       <Button color="green" icon labelPosition="left" onPress={() => onVote("Approve")}>
         <Icon name="smile" inverted />
         Approve

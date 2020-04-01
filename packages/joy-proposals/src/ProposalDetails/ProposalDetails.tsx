@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Divider, Container, Header, Button, Icon } from "semantic-ui-react";
+import { Container } from "semantic-ui-react";
 import Votes from "./Votes";
 import Details from "./Details";
 import Body from "./Body";
@@ -58,8 +58,6 @@ export default function ProposalDetails({
     <Container>
       <Details {...details} />
       <Body title={title} description={description} params={params} />
-      <Header as="h3">Submit your vote</Header>
-      <Divider />
       <VotingSection onVote={onVote} hasVoted={hasVoted} value={value} />
       <Votes votes={votes} total={totalVotes} />
     </Container>

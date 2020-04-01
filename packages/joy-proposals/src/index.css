@@ -33,16 +33,19 @@
 .text-secondary {
   color: #999;
 }
-.details-item {
+
+.details-container > .ui.items > .item:first-child {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+}
+
+/* Ovverrides Semantic UI for the details page.*/
+.ui.items > .item:first-child {
+  margin: 1em 0;
 }
 
 .details-container {
   display: flex;
-  justify-content: space-around;
-  align-items: stretch;
 }
 
 .details-labels {
@@ -51,4 +54,8 @@
 
 .bold {
   font-weight: 700;
+}
+
+.details-param {
+  display: flex;
 }

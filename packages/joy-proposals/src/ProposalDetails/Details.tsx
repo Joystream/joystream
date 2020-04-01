@@ -17,34 +17,34 @@ export default function Details({ stage, substage, createdAt, createdBy, type, e
   return (
     <Item.Group className="details-container">
       <Item className="details-item">
-        <Item.Content className="text-secondary">Proposed By:</Item.Content>
-        <Item.Content verticalAlign="top">
-          <Image avatar src={createdBy.avatar} floated="left" />
+        <Item.Content>
+          <Item.Extra>Proposed By:</Item.Extra>
+          <Image src={createdBy.avatar} avatar floated="left" />
           <Header as="h4">{createdBy.name}</Header>
-          <Item.Extra className="text-secondary">{createdAt}</Item.Extra>
+          <Item.Extra>{createdAt}</Item.Extra>
         </Item.Content>
       </Item>
       <Item className="details-item">
-        <Item.Content className="text-secondary">Proposal Type:</Item.Content>
-        <Item.Content verticalAlign="top">
+        <Item.Content>
+          <Item.Extra>Proposal Type:</Item.Extra>
           <Header as="h4">{type}</Header>
         </Item.Content>
       </Item>
       <Item className="details-item">
-        <Item.Content className="text-secondary">Stage:</Item.Content>
-        <Item.Content verticalAlign="top">
+        <Item.Content>
+          <Item.Extra>Stage:</Item.Extra>
           <Header as="h4">{stage}</Header>
         </Item.Content>
       </Item>
       <Item className="details-item">
-        <Item.Content className="text-secondary">Substage:</Item.Content>
         <Item.Content>
+          <Item.Extra>Substage:</Item.Extra>
           <Header as="h4">{substage}</Header>
         </Item.Content>
       </Item>
       <Item className="details-item">
-        <Item.Content className="text-secondary">Expires in:</Item.Content>
-        <Item.Content verticalAlign="top">
+        <Item.Content>
+          <Item.Extra>Expires in:</Item.Extra>
           <Header as="h4">{expiresIn}</Header>
         </Item.Content>
       </Item>
