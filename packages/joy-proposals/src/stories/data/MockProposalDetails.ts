@@ -11,9 +11,10 @@ const mockedProposal: ProposalProps = {
   details: {
     createdBy: {
       name: "Satoshi",
-      avatar: "Mar 25, 2020 at 14:20"
+      avatar: "https://react.semantic-ui.com/images/avatar/large/steve.jpg"
     },
     stage: "Active",
+    createdAt: "Mar 25, 2020 at 14:20",
     type: "Spending Proposal",
     substage: "Grace period",
     expiresIn: 5678
@@ -23,7 +24,7 @@ const mockedProposal: ProposalProps = {
       value: "Approve",
       by: {
         name: "Alice Ellison",
-        avatar: "default"
+        avatar: "https://react.semantic-ui.com/images/avatar/large/jenny.jpg"
       },
       createdAt: "Mar 25, 2020 at 14:20"
     },
@@ -31,7 +32,7 @@ const mockedProposal: ProposalProps = {
       value: "Abstain",
       by: {
         name: "Bob Bobston",
-        avatar: "default"
+        avatar: "https://react.semantic-ui.com/images/avatar/large/daniel.jpg"
       },
       createdAt: "Mar 24, 2020 at 12:11"
     },
@@ -39,7 +40,7 @@ const mockedProposal: ProposalProps = {
       value: "Reject",
       by: {
         name: "Charlie Chen",
-        avatar: "default"
+        avatar: "https://react.semantic-ui.com/images/avatar/large/matthew.png"
       },
       createdAt: "Mar 23, 2020 at 11:34"
     },
@@ -47,9 +48,12 @@ const mockedProposal: ProposalProps = {
       value: "Slash",
       by: {
         name: "David Douglas",
-        avatar: "default"
+        avatar: "https://react.semantic-ui.com/images/avatar/large/elliot.jpg"
       },
       createdAt: "Mar 21, 2020 at 9:54"
     }
-  ]
+  ],
+  totalVotes: 12
 };
+
+export default mockedProposal;

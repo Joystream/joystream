@@ -1,8 +1,11 @@
 import React from "react";
 
-import { Divider, Container } from "semantic-ui-react";
+import { Divider, Container, Header, Button, Icon } from "semantic-ui-react";
+import Votes from "./Votes";
+import Details from "./Details";
+import Body from "./Body";
 
-type User = {
+export type User = {
   name?: string;
   avatar?: string;
 };
@@ -33,10 +36,31 @@ export type ProposalProps = {
 };
 
 export default function ProposalDetails({ title, description, params, details, votes, totalVotes }: ProposalProps) {
-  return;
-  <Container>
-    <Details details={details} />
-    <Divider />
-    <Votes votes={votes} total={totalVotes} />
-  </Container>;
+  return (
+    <Container>
+      <Details {...details} />
+      <Body title={title} description={description} params={params} />
+      <Header as="h3">Submit your vote</Header>
+      <Divider />
+      <>
+        <Button color="green" icon labelPosition="left">
+          <Icon name="smile" inverted />
+          Approve
+        </Button>
+        <Button color="grey" icon labelPosition="left">
+          <Icon name="meh" inverted />
+          Abstain
+        </Button>
+        <Button color="orange" icon labelPosition="left">
+          <Icon name="frown" inverted />
+          Reject
+        </Button>
+        <Button color="red" icon labelPosition="left">
+          <Icon name="times" inverted />
+          Slash
+        </Button>
+      </>
+      <Votes votes={votes} total={totalVotes} />
+    </Container>
+  );
 }

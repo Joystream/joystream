@@ -11,9 +11,9 @@ type VotesProps = {
 export default function Votes({ votes, total }: VotesProps) {
   return (
     <>
-      <Header as="h3">{`${votes.length}/${total}`}</Header>
+      <Header as="h3">{`All Votes: (${votes.length} / ${total})`}</Header>
       <Divider />
-      <Table>
+      <Table basic="very">
         <Table.Body>
           {votes.map((vote, idx) => (
             <Table.Row key={`${vote.by.name}-${idx}`}>
@@ -21,7 +21,7 @@ export default function Votes({ votes, total }: VotesProps) {
               <Table.Cell>
                 <Image src={vote.by.avatar} avatar /> {vote.by.name}
               </Table.Cell>
-              <Table.Cell>{vote.createdAt}</Table.Cell>
+              <Table.Cell className="text-secondary">{vote.createdAt}</Table.Cell>
             </Table.Row>
           ))}
         </Table.Body>
