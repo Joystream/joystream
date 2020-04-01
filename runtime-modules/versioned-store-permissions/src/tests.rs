@@ -498,7 +498,7 @@ fn batch_transaction_simple() {
         });
 
         let new_properties = vec![Property {
-            prop_type: PropertyType::Internal(new_class_id),
+            prop_type: PropertyType::Reference(new_class_id),
             required: true,
             name: b"entity".to_vec(),
             description: b"another entity of same class".to_vec(),

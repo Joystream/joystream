@@ -170,7 +170,7 @@ pub enum PropertyType {
     Int32,
     Int64,
     Text(u16),
-    Internal(ClassId),
+    Reference(ClassId),
 
     // Vector of values.
     // The first u16 value is the max length of this vector.
@@ -214,7 +214,7 @@ pub enum PropertyValue {
     Int32(i32),
     Int64(i64),
     Text(Vec<u8>),
-    Internal(EntityId),
+    Reference(EntityId),
 
     // Vector of values:
     BoolVec(Vec<bool>),
@@ -354,9 +354,9 @@ impl<T: Trait> Module<T> {
             ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
         );
 
-        // Check validity of Internal(ClassId) for new_properties.
+        // Check validity of Reference(ClassId) for new_properties.
         let has_unknown_internal_id = new_properties.iter().any(|prop| match prop.prop_type {
-            PropertyType::Internal(other_class_id) => !ClassById::exists(other_class_id),
+            PropertyType::Reference(other_class_id) => !ClassById::exists(other_class_id),
             _ => false,
         });
         ensure!(
@@ -586,7 +586,7 @@ impl<T: Trait> Module<T> {
 
     pub fn ensure_valid_internal_prop(value: PropertyValue, prop: Property) -> dispatch::Result {
         match (value, prop.prop_type) {
-            (PV::Internal(entity_id), PT::Internal(class_id)) => {
+            (PV::Reference(entity_id), PT::Reference(class_id)) => {
                 Self::ensure_known_class_id(class_id)?;
                 Self::ensure_known_entity_id(entity_id)?;
                 let entity = Self::entity_by_id(entity_id);
@@ -601,7 +601,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn is_unknown_internal_entity_id(id: PropertyValue) -> bool {
-        if let PropertyValue::Internal(entity_id) = id {
+        if let PropertyValue::Reference(entity_id) = id {
             !EntityById::exists(entity_id)
         } else {
             false
@@ -732,7 +732,7 @@ impl<T: Trait> Module<T> {
             (PV::Int32(_),    PT::Int32) |
             (PV::Int64(_),    PT::Int64) |
             (PV::Text(_),     PT::Text(_)) |
-            (PV::Internal(_), PT::Internal(_)) |
+            (PV::Reference(_), PT::Reference(_)) |
 
             // Vectors:
             (PV::BoolVec(_),     PT::BoolVec(_)) |

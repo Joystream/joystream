@@ -114,7 +114,7 @@ pub fn good_prop_text() -> Property {
 
 pub fn new_internal_class_prop(class_id: ClassId) -> Property {
     Property {
-        prop_type: PropertyType::Internal(class_id),
+        prop_type: PropertyType::Reference(class_id),
         required: false,
         name: b"Name of a internal property".to_vec(),
         description: b"Description of a internal property".to_vec(),

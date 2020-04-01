@@ -607,14 +607,14 @@ impl<T: Trait> Module<T> {
         Ok(entity.class_id)
     }
 
-    // Ensures property_values of type Internal that point to a class,
+    // Ensures property_values of type Reference that point to a class,
     // the target entity and class exists and constraint allows it.
     fn ensure_internal_property_values_permitted(
         source_class_id: ClassId,
         property_values: &[ClassPropertyValue],
     ) -> dispatch::Result {
         for property_value in property_values.iter() {
-            if let PropertyValue::Internal(ref target_entity_id) = property_value.value {
+            if let PropertyValue::Reference(ref target_entity_id) = property_value.value {
                 // get the class permissions for target class
                 let target_class_id = Self::get_class_id_by_entity_id(*target_entity_id)?;
                 // assert class permissions exists for target class
