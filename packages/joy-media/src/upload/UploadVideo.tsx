@@ -18,7 +18,7 @@ import { Credential } from '@joystream/types/versioned-store/permissions/credent
 import { Class, VecClassPropertyValue } from '@joystream/types/versioned-store';
 import { TxCallback } from '@polkadot/react-components/Status/types';
 import { SubmittableResult } from '@polkadot/api';
-import { nonEmptyStr, filterSubstrateEventsAndExtractData } from '@polkadot/joy-utils/';
+import { nonEmptyStr, filterSubstrateEventsAndExtractData } from '@polkadot/joy-utils/index';
 import { u16, u32, bool, Option, Vec } from '@polkadot/types';
 import { isInternalProp } from '@joystream/types/versioned-store/EntityCodec';
 import { MediaObjectCodec } from '../schemas/general/MediaObject';
