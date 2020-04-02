@@ -1,7 +1,7 @@
 import React from "react";
 
 import Button from "../Button";
-import { SearchBarStyleProps, makeStyles } from "./searchBarStyle";
+import { SearchBarStyleProps, makeStyles } from "./SearchBar.style";
 
 type SearchBarProps = {
   placeholder?: string;

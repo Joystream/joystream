@@ -73,3 +73,26 @@ export const Success = () => (
     </div>
   </div>
 );
+
+export const Outlined = () => (
+  <div style={{ display: "flex" }}>
+    <div style={{ margin: 20 }}>
+      <Button outlined>Hello Atlas</Button>
+    </div>
+    <div style={{ margin: 20 }}>
+      <Button color="success" outlined>
+        Hello Atlas
+      </Button>
+    </div>
+    <div style={{ margin: 20 }}>
+      <Button color="neutral" outlined>
+        Hello Atlas
+      </Button>
+    </div>
+    <div style={{ margin: 20 }}>
+      <Button size="small" color="danger" outlined>
+        Hello Atlas
+      </Button>
+    </div>
+  </div>
+);

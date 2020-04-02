@@ -1,5 +1,5 @@
 import React from "react";
-import { makeStyles, ButtonStyleProps } from "./buttonStyle";
+import { makeStyles, ButtonStyleProps } from "./Button.style";
 
 type ButtonProps = {
   children?: React.ReactNode;

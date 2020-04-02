@@ -4,6 +4,7 @@
   "compilerOptions": {
     "jsx": "react",
     "declaration": true,
-    "declarationDir": "dist"
+    "declarationDir": "dist",
+    "lib": ["ES2019"]
   }
 }
