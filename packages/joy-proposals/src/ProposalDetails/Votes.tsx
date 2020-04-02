@@ -12,7 +12,7 @@ type VotesProps = {
 export default function Votes({ votes, total }: VotesProps) {
   return (
     <>
-      <Header as="h3">{`All Votes: (${votes.length} / ${total})`}</Header>
+      <Header as="h3">{`All Votes (${votes.length} / ${total})`}</Header>
       <Divider />
       <Table basic="very">
         <Table.Body>
