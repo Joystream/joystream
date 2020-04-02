@@ -8,6 +8,7 @@ use system::RawOrigin;
 use crate::{BalanceOf, Error, ProposalDetails};
 use mock::*;
 use proposal_engine::ProposalParameters;
+use roles::actors::RoleParameters;
 use runtime_io::blake2_256;
 use srml_support::dispatch::DispatchResult;
 
@@ -649,6 +650,58 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
                 Test,
             >(),
             proposal_details: ProposalDetails::SetValidatorCount(1),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_set_storage_role_parameters_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_set_storage_role_parameters_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    RoleParameters::default(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_set_storage_role_parameters_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    RoleParameters::default(),
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_set_storage_role_parameters_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    RoleParameters::default(),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_set_storage_role_parameters_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(500u32)),
+                    RoleParameters::default(),
+                )
+            },
+            proposal_parameters:
+                crate::proposal_types::parameters::set_storage_role_parameters_proposal::<Test>(),
+            proposal_details: ProposalDetails::SetStorageRoleParameters(RoleParameters::default()),
         };
         proposal_fixture.check_all();
     });

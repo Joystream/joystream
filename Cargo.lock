@@ -4912,7 +4912,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-membership-module"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "parity-scale-codec",
  "serde",
@@ -5195,7 +5195,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-roles-module"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "parity-scale-codec",
  "serde",

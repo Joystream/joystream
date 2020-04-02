@@ -22,6 +22,7 @@
 //! - [create_set_lead_proposal](./struct.Module.html#method.create_set_lead_proposal)
 //! - [create_evict_storage_provider_proposal](./struct.Module.html#method.create_evict_storage_provider_proposal)
 //! - [create_set_validator_count_proposal](./struct.Module.html#method.create_set_validator_count_proposal)
+//! - [create_set_storage_role_parameters_proposal](./struct.Module.html#method.create_set_storage_role_parameters_proposal)
 //!
 //! ### Proposal implementations of this module
 //! - execute_text_proposal - prints the proposal to the log
@@ -49,6 +50,7 @@ use codec::Encode;
 use common::origin_validator::ActorOriginValidator;
 use governance::election_params::ElectionParameters;
 use proposal_engine::ProposalParameters;
+use roles::actors::{Role, RoleParameters};
 use rstd::clone::Clone;
 use rstd::prelude::*;
 use rstd::str::from_utf8;
@@ -448,6 +450,36 @@ decl_module! {
                 proposal_code.encode(),
                 proposal_parameters,
                 ProposalDetails::SetValidatorCount(new_validator_count),
+            )?;
+        }
+
+        /// Create 'Set storage roles parameters' proposal type.
+        /// This proposal uses `set_role_parameters()` extrinsic from the Substrate `roles::actors`  module.
+        pub fn create_set_storage_role_parameters_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            role_parameters: RoleParameters<BalanceOfGovernanceCurrency<T>, T::BlockNumber>
+        ) {
+            let proposal_code = <roles::actors::Call<T>>::set_role_parameters(
+                Role::StorageProvider,
+                role_parameters.clone()
+            );
+
+            let proposal_parameters =
+                proposal_types::parameters::set_storage_role_parameters_proposal::<T>();
+
+            Self::create_proposal(
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_code.encode(),
+                proposal_parameters,
+                ProposalDetails::SetStorageRoleParameters(role_parameters),
             )?;
         }
 
