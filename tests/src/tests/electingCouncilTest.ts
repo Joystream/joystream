@@ -5,6 +5,7 @@ import { WsProvider, Keyring } from '@polkadot/api';
 import { initConfig } from '../utils/config';
 import BN = require('bn.js');
 import { registerJoystreamTypes } from '@joystream/types';
+import { assert } from 'chai';
 
 describe('Council integration tests', () => {
   initConfig();
@@ -23,19 +24,28 @@ describe('Council integration tests', () => {
   before(async function () {
     this.timeout(defaultTimeout);
     registerJoystreamTypes();
-    m1KeyPairs = membershipTest();
-    m2KeyPairs = membershipTest();
     const provider = new WsProvider(nodeUrl);
     apiWrapper = await ApiWrapper.create(provider);
-    sudo = keyring.addFromUri(sudoUri);
-    const applyForCouncilFee: BN = apiWrapper.estimateApplyForCouncilFee(greaterStake);
-    await apiWrapper.transferBalanceToAccounts(sudo, m2KeyPairs, applyForCouncilFee);
   });
 
+  membershipTest(m1KeyPairs);
+  membershipTest(m2KeyPairs);
+
   it('Electing a council test', async () => {
-    apiWrapper.batchApplyForCouncilElection(m2KeyPairs.slice(0, K), greaterStake);
-    apiWrapper.batchApplyForCouncilElection(m2KeyPairs.slice(K), lesserStake);
-  });
+    sudo = keyring.addFromUri(sudoUri);
+    const applyForCouncilFee: BN = apiWrapper.estimateApplyForCouncilFee(greaterStake);
+    await apiWrapper.transferBalanceToAccounts(sudo, m2KeyPairs, applyForCouncilFee.add(greaterStake));
+    await apiWrapper.batchApplyForCouncilElection(m2KeyPairs.slice(0, K), greaterStake);
+    m2KeyPairs.forEach(keyPair =>
+      apiWrapper.getCouncilElectionStake(keyPair.address).then(stake => {
+        assert(
+          stake.eq(greaterStake),
+          `${keyPair.address} not applied correctrly for council election with stake ${stake} versus expected ${greaterStake}`
+        );
+      })
+    );
+    await apiWrapper.batchApplyForCouncilElection(m2KeyPairs.slice(K), lesserStake);
+  }).timeout(defaultTimeout);
 
   after(() => {
     apiWrapper.close();

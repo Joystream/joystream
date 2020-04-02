@@ -98,4 +98,12 @@ export class ApiWrapper {
       })
     );
   }
+
+  public async getCouncilElectionStake(address: string): Promise<BN> {
+    //TODO alter then `applicantStake` type will be introduced
+    return this.api.query.councilElection.applicantStakes(address).then(stake => {
+      const parsed = JSON.parse(stake.toString());
+      return new BN(parsed.new);
+    });
+  }
 }

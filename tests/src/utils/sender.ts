@@ -6,7 +6,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
 
 export class Sender {
   private readonly api: ApiPromise;
-  private nonceMap: Map<string, BN> = new Map();
+  private static nonceMap: Map<string, BN> = new Map();
 
   constructor(api: ApiPromise) {
     this.api = api;
@@ -14,20 +14,20 @@ export class Sender {
 
   private async getNonce(address: string): Promise<BN> {
     let oncahinNonce: BN = new BN(0);
-    if (!this.nonceMap.get(address)) {
+    if (!Sender.nonceMap.get(address)) {
       oncahinNonce = await this.api.query.system.accountNonce<Index>(address);
     }
-    let nonce: BN | undefined = this.nonceMap.get(address);
+    let nonce: BN | undefined = Sender.nonceMap.get(address);
     if (!nonce) {
       nonce = oncahinNonce;
     }
     const nextNonce: BN = nonce.addn(1);
-    this.nonceMap.set(address, nextNonce);
+    Sender.nonceMap.set(address, nextNonce);
     return nonce;
   }
 
   private clearNonce(address: string): void {
-    this.nonceMap.delete(address);
+    Sender.nonceMap.delete(address);
   }
 
   public async signAndSend(
