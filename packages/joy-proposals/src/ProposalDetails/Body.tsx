@@ -22,13 +22,13 @@ export default function Body({ title, description, params }: BodyProps) {
         <Item.Group textAlign="left" relaxed>
           <Item>
             <Item.Content>
-              <span className="text-secondary">Amount of tokens: </span>
+              <span className="text-grey">Amount of tokens: </span>
               {`${params.tokensAmount} tJOY`}
             </Item.Content>
           </Item>
           <Item>
             <Item.Content>
-              <span className="text-secondary">Destination account: </span>
+              <span className="text-grey">Destination account: </span>
               {params.destinationAccount}
             </Item.Content>
           </Item>

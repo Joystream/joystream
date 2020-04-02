@@ -1,51 +1,53 @@
-/* Semantic UI Colors*/
-.text-white {
-  color: #ffffff;
-}
-.text-grey {
-  color: #9d9d9d;
-}
-.text-black {
-  color: #1b1c1d;
-}
-.text-yellow {
-  color: #f2c61f;
-}
-.text-teal {
-  color: #00b5ad;
-}
-.text-red {
-  color: #d95c5c;
-}
-.text-purple {
-  color: #564f8a;
-}
-.text-pink {
-  color: #d9499a;
-}
-.text-orange {
-  color: #e07b53;
-}
-.text-green {
-  color: #5bbd72;
-}
-.text-blue {
-  color: #3b83c0;
-}
+.ProposalDetails {
+  /* Semantic UI Colors*/
+  .text-white {
+    color: #ffffff;
+  }
+  .text-grey {
+    color: #9d9d9d;
+  }
+  .text-black {
+    color: #1b1c1d;
+  }
+  .text-yellow {
+    color: #f2c61f;
+  }
+  .text-teal {
+    color: #00b5ad;
+  }
+  .text-red {
+    color: #d95c5c;
+  }
+  .text-purple {
+    color: #564f8a;
+  }
+  .text-pink {
+    color: #d9499a;
+  }
+  .text-orange {
+    color: #e07b53;
+  }
+  .text-green {
+    color: #5bbd72;
+  }
+  .text-blue {
+    color: #3b83c0;
+  }
 
-/* Ovverrides Semantic UI for the details page.*/
-.ui.items > .item:first-child {
-  margin: 1em 0;
-}
+  /* Ovverrides Semantic UI for the details page.*/
+  .ui.items > .item:first-child {
+    margin: 1em 0;
+  }
 
-.details-container {
-  display: flex;
-}
+  .details-container {
+    display: flex;
+  }
 
-.bold {
-  font-weight: 700;
-}
+  .bold {
+    font-weight: 700;
+  }
 
-.details-param {
-  display: flex;
+  .details-param {
+    display: flex;
+  }
 }

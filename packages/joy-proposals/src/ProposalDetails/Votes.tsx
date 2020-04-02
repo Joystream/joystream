@@ -12,7 +12,7 @@ type VotesProps = {
 export default function Votes({ votes, total }: VotesProps) {
   return (
     <>
-      <Header as="h3">{`All Votes (${votes.length} / ${total})`}</Header>
+      <Header as="h3">{`All Votes: (${votes.length} / ${total})`}</Header>
       <Divider />
       <Table basic="very">
         <Table.Body>
@@ -20,7 +20,7 @@ export default function Votes({ votes, total }: VotesProps) {
             const { icon, textColor } = useVoteStyles(vote.value);
             return (
               <Table.Row key={`${vote.by.name}-${idx}`}>
-                <Table.Cell className={`${textColor} bold`}>
+                <Table.Cell className={textColor}>
                   <Icon name={icon} />
                   {vote.value}
                 </Table.Cell>

@@ -1,7 +1,7 @@
 import React from "react";
 import { Item, Image, Header } from "semantic-ui-react";
 
-import { User } from "./ProposalDetails";
+import { Member } from "./ProposalDetails";
 
 type DetailsProps = {
   // FIXME: Stage, substage and type all should be an enum
@@ -9,7 +9,7 @@ type DetailsProps = {
   substage?: string;
   expiresIn?: number;
   type?: string;
-  createdBy?: User;
+  createdBy?: Member;
   createdAt?: string;
 };
 
