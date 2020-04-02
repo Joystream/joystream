@@ -5122,6 +5122,7 @@ dependencies = [
  "substrate-proposals-discussion-module",
  "substrate-proposals-engine-module",
  "substrate-recurring-reward-module",
+ "substrate-roles-module",
  "substrate-stake-module",
  "substrate-token-mint-module",
  "substrate-versioned-store",

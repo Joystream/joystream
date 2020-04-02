@@ -31,6 +31,9 @@ pub enum ProposalDetails<MintedBalance, CurrencyBalance, BlockNumber, AccountId,
 
     /// Balance for the `set content working group mint capacity proposal`
     SetContentWorkingGroupMintCapacity(MintedBalance),
+
+    /// AccountId for the `evict storage provider proposal`
+    EvictStorageProvider(AccountId),
 }
 
 impl<MintedBalance, CurrencyBalance, BlockNumber, AccountId, MemberId> Default

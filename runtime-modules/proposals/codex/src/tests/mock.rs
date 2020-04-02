@@ -187,6 +187,15 @@ impl hiring::Trait for Test {
     type StakeHandlerProvider = hiring::Module<Self>;
 }
 
+impl roles::actors::Trait for Test {
+    type Event = ();
+    type OnActorRemoved = ();
+}
+
+impl roles::actors::ActorRemoved<Test> for () {
+    fn actor_removed(_: &u64) {}
+}
+
 impl crate::Trait for Test {
     type TextProposalMaxLength = TextProposalMaxLength;
     type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;

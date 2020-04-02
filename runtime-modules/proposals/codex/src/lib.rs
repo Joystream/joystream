@@ -20,6 +20,7 @@
 //! - [create_set_content_working_group_mint_capacity_proposal](./struct.Module.html#method.create_set_content_working_group_mint_capacity_proposal)
 //! - [create_spending_proposal](./struct.Module.html#method.create_spending_proposal)
 //! - [create_set_lead_proposal](./struct.Module.html#method.create_set_lead_proposal)
+//! - [create_evict_storage_provider_proposal](./struct.Module.html#method.create_evict_storage_provider_proposal)
 //!
 //! ### Proposal implementations of this module
 //! - execute_text_proposal - prints the proposal to the log
@@ -68,6 +69,7 @@ pub trait Trait:
     + membership::members::Trait
     + governance::election::Trait
     + content_working_group::Trait
+    + roles::actors::Trait
 {
     /// Defines max allowed text proposal length.
     type TextProposalMaxLength: Get<u32>;
@@ -228,7 +230,7 @@ decl_module! {
             let proposal_code =
                 <Call<T>>::execute_runtime_upgrade_proposal(title.clone(), description.clone(), wasm);
 
-            let proposal_parameters = proposal_types::parameters::upgrade_runtime::<T>();
+            let proposal_parameters = proposal_types::parameters::runtime_upgrade_proposal::<T>();
 
             Self::create_proposal(
                 origin,
@@ -388,6 +390,34 @@ decl_module! {
                 proposal_code.encode(),
                 proposal_parameters,
                 ProposalDetails::SetLead(new_lead),
+            )?;
+        }
+
+        /// Create 'Evict storage provider' proposal type.
+        /// This proposal uses `remove_actor()` extrinsic from the `roles::actors`  module.
+        pub fn create_evict_storage_provider_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            actor_account: T::AccountId,
+        ) {
+            let proposal_code =
+                <roles::actors::Call<T>>::remove_actor(actor_account.clone());
+
+            let proposal_parameters =
+                proposal_types::parameters::evict_storage_provider_proposal::<T>();
+
+            Self::create_proposal(
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_code.encode(),
+                proposal_parameters,
+                ProposalDetails::EvictStorageProvider(actor_account),
             )?;
         }
 
