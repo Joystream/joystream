@@ -56,7 +56,7 @@ export default function ProposalDetails({
   onVote,
   vote
 }: ProposalProps) {
-  let { hasVoted = false, value = undefined } = vote || {};
+  const { hasVoted = false, value = undefined } = vote || {};
   return (
     <Container>
       <Details {...details} />
