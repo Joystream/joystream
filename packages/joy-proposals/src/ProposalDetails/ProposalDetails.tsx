@@ -14,6 +14,7 @@ export type User = {
 };
 
 export type VoteValue = "Approve" | "Slash" | "Abstain" | "Reject";
+
 export type Vote = {
   value?: VoteValue;
   by?: User;
