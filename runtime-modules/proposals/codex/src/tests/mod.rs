@@ -551,7 +551,7 @@ fn create_set_lead_proposal_common_checks_succeed() {
 }
 
 #[test]
-fn create_evict_storage_provider_common_checks_succeed() {
+fn create_evict_storage_provider_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
@@ -596,6 +596,59 @@ fn create_evict_storage_provider_common_checks_succeed() {
             },
             proposal_parameters: crate::proposal_types::parameters::evict_storage_provider_proposal::<Test>(),
             proposal_details: ProposalDetails::EvictStorageProvider(1),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_set_validator_count_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_set_validator_count_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    1,
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_set_validator_count_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    1,
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_set_validator_count_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    1,
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_set_validator_count_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(500u32)),
+                    1,
+                )
+            },
+            proposal_parameters: crate::proposal_types::parameters::set_validator_count_proposal::<
+                Test,
+            >(),
+            proposal_details: ProposalDetails::SetValidatorCount(1),
         };
         proposal_fixture.check_all();
     });

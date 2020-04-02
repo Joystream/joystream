@@ -34,6 +34,9 @@ pub enum ProposalDetails<MintedBalance, CurrencyBalance, BlockNumber, AccountId,
 
     /// AccountId for the `evict storage provider proposal`
     EvictStorageProvider(AccountId),
+
+    /// Validator count for the `set validator count proposal`
+    SetValidatorCount(u32),
 }
 
 impl<MintedBalance, CurrencyBalance, BlockNumber, AccountId, MemberId> Default

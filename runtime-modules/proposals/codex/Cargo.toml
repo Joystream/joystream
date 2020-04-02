@@ -15,6 +15,7 @@ std = [
     'sr-primitives/std',
     'system/std',
     'timestamp/std',
+    'staking/std',
     'serde',
     'proposal_engine/std',
     'proposal_discussion/std',
@@ -82,6 +83,12 @@ rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 package = 'srml-balances'
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
+rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
+
+[dependencies.staking]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-staking'
 rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
 [dependencies.runtime-io]
@@ -159,3 +166,17 @@ path = '../../versioned-store-permissions'
 default_features = false
 package = 'substrate-recurring-reward-module'
 path = '../../recurring-reward'
+
+[dev-dependencies.sr-staking-primitives]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'sr-staking-primitives'
+rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
+
+# don't rename the dependency it is causing some strange compiler error:
+# https://github.com/rust-lang/rust/issues/64450
+[dev-dependencies.srml-staking-reward-curve]
+package = 'srml-staking-reward-curve'
+git = 'https://github.com/paritytech/substrate.git'
+default_features = false
+rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
