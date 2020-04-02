@@ -8,7 +8,7 @@ import VotingSection from "./VotingSection";
 
 import "./ProposalDetails.css";
 
-export type User = {
+export type Member = {
   name?: string;
   avatar?: string;
 };

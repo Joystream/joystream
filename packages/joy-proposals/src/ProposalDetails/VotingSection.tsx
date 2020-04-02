@@ -13,7 +13,7 @@ type VotingSectionProps = {
 
 export default function VotingSection({ onVote, hasVoted, value }: VotingSectionProps) {
   if (hasVoted) {
-    let { icon, color } = useVoteStyles(value);
+    const { icon, color } = useVoteStyles(value);
 
     return (
       <Message icon color={color}>
@@ -24,6 +24,7 @@ export default function VotingSection({ onVote, hasVoted, value }: VotingSection
       </Message>
     );
   }
+
   return (
     <>
       <Header as="h3">Submit your vote</Header>

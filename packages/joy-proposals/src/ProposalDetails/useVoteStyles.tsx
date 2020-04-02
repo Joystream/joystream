@@ -2,6 +2,7 @@ export default function useVoteStyles(value) {
   let textColor;
   let icon;
   let color;
+
   switch (value) {
     case "Approve": {
       icon = "smile";
@@ -28,5 +29,6 @@ export default function useVoteStyles(value) {
       break;
     }
   }
+
   return { textColor, color, icon };
 }

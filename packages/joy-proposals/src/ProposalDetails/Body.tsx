@@ -9,6 +9,7 @@ type BodyProps = {
     destinationAccount?: string;
   };
 };
+
 export default function Body({ title, description, params }: BodyProps) {
   return (
     <Card fluid>

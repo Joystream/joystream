@@ -17,7 +17,7 @@ export default function Votes({ votes, total }: VotesProps) {
       <Table basic="very">
         <Table.Body>
           {votes.map((vote, idx) => {
-            let { icon, textColor } = useVoteStyles(vote.value);
+            const { icon, textColor } = useVoteStyles(vote.value);
             return (
               <Table.Row key={`${vote.by.name}-${idx}`}>
                 <Table.Cell className={`${textColor} bold`}>
