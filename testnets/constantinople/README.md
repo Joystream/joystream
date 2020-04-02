@@ -323,11 +323,15 @@ Per 26.03.20, this comes to a total of:
 **Estimated hours: 300+86+282=668**
 
 ## Milestones
+The table below includes the initial milestone dates only. Go [here](https://github.com/Joystream/joystream/issues/205) for live milestones, and more details.
 
-| Date   |   Event                |  Status                      |
-|:------:|:----------------------:|:----------------------------:|
-|02.04.20|Constantinople Announced| :negative_squared_cross_mark:|
-|29.04.20|Complete Sub-system Test| :negative_squared_cross_mark:|
-|05.05.20|Complete Final Test     | :negative_squared_cross_mark:|
-|08.05.20|Launch Ready            | :negative_squared_cross_mark:|
-|11.05.20|Release                 | :negative_squared_cross_mark:|
+| Date   |   Event                        |  Involved                    |
+|:------:|:------------------------------:|:----------------------------:|
+|03.04.20|Constantinople Announced        | Ben, Martin                  |
+|14.04.20|Implement "Key" Proposals       | Alex, Francesco, Shamil      |
+|21.04.20|Implement "Important" Proposals | Alex, Francesco, Shamil      |
+|24.04.20|All Paramaters Set              | Bedeho, Ben, Martin          |
+|29.04.20|Complete Sub-system Test        | All                          |
+|05.05.20|Complete Final Test             | All                          |
+|08.05.20|Launch Ready                    | All                          |
+|11.05.20|Release                         | All                          |
