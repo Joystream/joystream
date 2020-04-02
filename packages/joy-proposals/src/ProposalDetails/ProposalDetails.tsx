@@ -6,7 +6,7 @@ import Details from "./Details";
 import Body from "./Body";
 import VotingSection from "./VotingSection";
 
-import "./ProposalDetails";
+import "./ProposalDetails.css";
 
 export type User = {
   name?: string;

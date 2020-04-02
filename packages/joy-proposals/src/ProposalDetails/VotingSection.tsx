@@ -36,7 +36,6 @@ export default function VotingSection({ onVote, hasVoted, value }: VotingSection
         break;
       }
     }
-    console.log({ color, icon, value });
     return (
       <Message icon color={color}>
         <Icon name={icon} />
