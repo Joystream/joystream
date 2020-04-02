@@ -1,6 +1,8 @@
 import React from "react";
 import { Header, Divider, Table, Image, Icon } from "semantic-ui-react";
 
+import Section from "@polkadot/joy-utils/Section";
+
 import { Vote } from "./ProposalDetails";
 import useVoteStyles from "./useVoteStyles";
 
@@ -11,9 +13,7 @@ type VotesProps = {
 
 export default function Votes({ votes, total }: VotesProps) {
   return (
-    <>
-      <Header as="h3">{`All Votes: (${votes.length} / ${total})`}</Header>
-      <Divider />
+    <Section level={3} title={`All Votes: (${votes.length} / ${total})`}>
       <Table basic="very">
         <Table.Body>
           {votes.map((vote, idx) => {
@@ -33,6 +33,6 @@ export default function Votes({ votes, total }: VotesProps) {
           })}
         </Table.Body>
       </Table>
-    </>
+    </Section>
   );
 }

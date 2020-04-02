@@ -16,9 +16,9 @@ export type Member = {
 export type VoteValue = "Approve" | "Slash" | "Abstain" | "Reject";
 
 export type Vote = {
-  value?: VoteValue;
-  by?: Member;
-  createdAt?: string;
+  value: VoteValue;
+  by: Member;
+  createdAt: string;
 };
 
 export type ProposalProps = {

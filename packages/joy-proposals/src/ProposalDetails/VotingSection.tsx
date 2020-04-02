@@ -2,6 +2,7 @@ import React from "react";
 
 import { Icon, Button, Message, Divider, Header } from "semantic-ui-react";
 
+import Section from "@polkadot/joy-utils/Section";
 import { VoteValue } from "./ProposalDetails";
 import useVoteStyles from "./useVoteStyles";
 
@@ -26,9 +27,7 @@ export default function VotingSection({ onVote, hasVoted, value }: VotingSection
   }
 
   return (
-    <>
-      <Header as="h3">Submit your vote</Header>
-      <Divider />
+    <Section level={3} title="Sumbit your vote">
       <Button color="green" icon labelPosition="left" onPress={() => onVote("Approve")}>
         <Icon name="smile" inverted />
         Approve
@@ -45,6 +44,6 @@ export default function VotingSection({ onVote, hasVoted, value }: VotingSection
         <Icon name="times" inverted />
         Slash
       </Button>
-    </>
+    </Section>
   );
 }

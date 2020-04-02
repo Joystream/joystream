@@ -45,7 +45,7 @@ export default function Details({ stage, substage, createdAt, createdBy, type, e
       <Item>
         <Item.Content>
           <Item.Extra>Expires in:</Item.Extra>
-          <Header as="h4">{expiresIn}</Header>
+          <Header as="h4">{`${expiresIn.toLocaleString("en-US")} blocks`}</Header>
         </Item.Content>
       </Item>
     </Item.Group>
