@@ -6,6 +6,8 @@ import Details from "./Details";
 import Body from "./Body";
 import VotingSection from "./VotingSection";
 
+import "./ProposalDetails";
+
 export type User = {
   name?: string;
   avatar?: string;

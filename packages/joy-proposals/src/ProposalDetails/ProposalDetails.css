@@ -1,0 +1,20 @@
+.text-secondary {
+  color: #999;
+}
+
+/* Ovverrides Semantic UI for the details page.*/
+.ui.items > .item:first-child {
+  margin: 1em 0;
+}
+
+.details-container {
+  display: flex;
+}
+
+.bold {
+  font-weight: 700;
+}
+
+.details-param {
+  display: flex;
+}

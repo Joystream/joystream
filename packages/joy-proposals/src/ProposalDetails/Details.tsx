@@ -16,7 +16,7 @@ type DetailsProps = {
 export default function Details({ stage, substage, createdAt, createdBy, type, expiresIn }: DetailsProps) {
   return (
     <Item.Group className="details-container">
-      <Item className="details-item">
+      <Item>
         <Item.Content>
           <Item.Extra>Proposed By:</Item.Extra>
           <Image src={createdBy.avatar} avatar floated="left" />
@@ -24,25 +24,25 @@ export default function Details({ stage, substage, createdAt, createdBy, type, e
           <Item.Extra>{createdAt}</Item.Extra>
         </Item.Content>
       </Item>
-      <Item className="details-item">
+      <Item>
         <Item.Content>
           <Item.Extra>Proposal Type:</Item.Extra>
           <Header as="h4">{type}</Header>
         </Item.Content>
       </Item>
-      <Item className="details-item">
+      <Item>
         <Item.Content>
           <Item.Extra>Stage:</Item.Extra>
           <Header as="h4">{stage}</Header>
         </Item.Content>
       </Item>
-      <Item className="details-item">
+      <Item>
         <Item.Content>
           <Item.Extra>Substage:</Item.Extra>
           <Header as="h4">{substage}</Header>
         </Item.Content>
       </Item>
-      <Item className="details-item">
+      <Item>
         <Item.Content>
           <Item.Extra>Expires in:</Item.Extra>
           <Header as="h4">{expiresIn}</Header>
