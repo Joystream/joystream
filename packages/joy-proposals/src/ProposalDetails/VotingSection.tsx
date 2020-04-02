@@ -3,6 +3,7 @@ import React from "react";
 import { Icon, Button, Message, Divider, Header } from "semantic-ui-react";
 
 import { VoteValue } from "./ProposalDetails";
+import useVoteStyles from "./useVoteStyles";
 
 type VotingSectionProps = {
   onVote?: (vote: VoteValue) => void;
@@ -12,30 +13,8 @@ type VotingSectionProps = {
 
 export default function VotingSection({ onVote, hasVoted, value }: VotingSectionProps) {
   if (hasVoted) {
-    let icon;
-    let color;
-    switch (value) {
-      case "Approve": {
-        icon = "smile";
-        color = "green";
-        break;
-      }
-      case "Abstain": {
-        icon = "meh";
-        color = "gray";
-        break;
-      }
-      case "Reject": {
-        icon = "frown";
-        color = "orange";
-        break;
-      }
-      case "Slash": {
-        icon = "times";
-        color = "red";
-        break;
-      }
-    }
+    let { icon, color } = useVoteStyles(value);
+
     return (
       <Message icon color={color}>
         <Icon name={icon} />

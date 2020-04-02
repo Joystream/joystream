@@ -1,7 +1,8 @@
 import React from "react";
-import { Header, Divider, Table, Image } from "semantic-ui-react";
+import { Header, Divider, Table, Image, Icon } from "semantic-ui-react";
 
 import { Vote } from "./ProposalDetails";
+import useVoteStyles from "./useVoteStyles";
 
 type VotesProps = {
   votes: Vote[];
@@ -16,28 +17,13 @@ export default function Votes({ votes, total }: VotesProps) {
       <Table basic="very">
         <Table.Body>
           {votes.map((vote, idx) => {
-            let textColor;
-            switch (vote.value) {
-              case "Approve": {
-                textColor = "text-green";
-                break;
-              }
-              case "Abstain": {
-                textColor = "text-grey";
-                break;
-              }
-              case "Reject": {
-                textColor = "text-orange";
-                break;
-              }
-              case "Slash": {
-                textColor = "text-red";
-                break;
-              }
-            }
+            let { icon, textColor } = useVoteStyles(vote.value);
             return (
               <Table.Row key={`${vote.by.name}-${idx}`}>
-                <Table.Cell className={`${textColor} bold`}>{vote.value}</Table.Cell>
+                <Table.Cell className={`${textColor} bold`}>
+                  <Icon name={icon} />
+                  {vote.value}
+                </Table.Cell>
                 <Table.Cell>
                   <Image src={vote.by.avatar} avatar /> {vote.by.name}
                 </Table.Cell>
