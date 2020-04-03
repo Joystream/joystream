@@ -1,4 +1,5 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
+import { stringToU8a } from '@polkadot/util';
 import { Option } from '@polkadot/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { UserInfo, PaidMembershipTerms } from '@joystream/types/lib/members';
@@ -87,6 +88,17 @@ export class ApiWrapper {
     return this.estimateTxFee(this.api.tx.councilElection.apply(amount));
   }
 
+  public estimateVoteForCouncilFee(nominee: string, salt: string, stake: BN): BN {
+    const hashedVote: string = Utils.hashVote(nominee, salt);
+    console.log('estimation nominee ' + nominee + ' salt ' + salt + ' hashed ' + hashedVote);
+    return this.estimateTxFee(this.api.tx.councilElection.vote(hashedVote, stake));
+  }
+
+  public estimateRevealVoteFee(nominee: string, salt: string): BN {
+    const hashedVote: string = Utils.hashVote(nominee, salt);
+    return this.estimateTxFee(this.api.tx.councilElection.reveal(hashedVote, nominee, stringToU8a(salt)));
+  }
+
   private applyForCouncilElection(account: KeyringPair, amount: BN): Promise<void> {
     return this.sender.signAndSend(this.api.tx.councilElection.apply(amount), account, false);
   }
@@ -105,5 +117,67 @@ export class ApiWrapper {
       const parsed = JSON.parse(stake.toString());
       return new BN(parsed.new);
     });
+  }
+
+  private voteForCouncilMember(account: KeyringPair, nominee: string, salt: string, stake: BN): Promise<void> {
+    const hashedVote: string = Utils.hashVote(nominee, salt);
+    console.log('nominee ' + nominee + ' salt ' + salt + ' hashed ' + hashedVote);
+    return this.sender.signAndSend(this.api.tx.councilElection.vote(hashedVote, stake), account, false);
+  }
+
+  //TODO alter method signature for better testing
+  public batchVoteForCouncilMember(accounts: KeyringPair[], nominees: KeyringPair[], stake: BN): Promise<void[]> {
+    return Promise.all(
+      accounts.map(async (keyPair, index) => {
+        await this.voteForCouncilMember(keyPair, nominees[index].address, nominees[index].address, stake);
+      })
+    );
+  }
+
+  private revealVote(account: KeyringPair, commitment: string, nominee: string, salt: string): Promise<void> {
+    console.log('commitment to reveal ' + commitment);
+    return this.sender.signAndSend(
+      this.api.tx.councilElection.reveal(commitment, nominee, stringToU8a(salt)),
+      account,
+      false
+    );
+  }
+
+  public batchRevealVote(accounts: KeyringPair[], nominees: KeyringPair[]): Promise<void[]> {
+    return Promise.all(
+      accounts.map(async (keyPair, index) => {
+        const commitment = Utils.hashVote(nominees[index].address, nominees[index].address);
+        await this.revealVote(keyPair, commitment, nominees[index].address, nominees[index].address);
+      })
+    );
+  }
+
+  //TODO consider using configurable genesis instead
+  public sudoStartAnnouncingPerion(sudo: KeyringPair, endsAtBlock: BN): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx.sudo.sudo(this.api.tx.councilElection.setStageAnnouncing(endsAtBlock)),
+      sudo,
+      false
+    );
+  }
+
+  public sudoStartVotingPerion(sudo: KeyringPair, endsAtBlock: BN): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx.sudo.sudo(this.api.tx.councilElection.setStageVoting(endsAtBlock)),
+      sudo,
+      false
+    );
+  }
+
+  public sudoStartRevealingPerion(sudo: KeyringPair, endsAtBlock: BN): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx.sudo.sudo(this.api.tx.councilElection.setStageRevealing(endsAtBlock)),
+      sudo,
+      false
+    );
+  }
+
+  public getBestBlock(): Promise<BN> {
+    return this.api.derive.chain.bestNumber();
   }
 }

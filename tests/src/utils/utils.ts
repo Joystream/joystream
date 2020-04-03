@@ -1,6 +1,8 @@
 import { IExtrinsic } from '@polkadot/types/types';
-import { compactToU8a } from '@polkadot/util';
+import { compactToU8a, stringToU8a } from '@polkadot/util';
+import { blake2AsHex } from '@polkadot/util-crypto';
 import BN = require('bn.js');
+import { decodeAddress } from '@polkadot/keyring';
 
 export class Utils {
   private static LENGTH_ADDRESS = 32 + 1; // publicKey + prefix
@@ -17,5 +19,18 @@ export class Utils {
         compactToU8a(nonce || 0).length +
         (extrinsic ? extrinsic.encodedLength : 0)
     );
+  };
+
+  /** hash(accountId + salt) */
+  public static hashVote = (accountId: string, salt: string): string => {
+    const accountU8a = decodeAddress(accountId);
+    const saltU8a = stringToU8a(salt);
+    const voteU8a = new Uint8Array(accountU8a.length + saltU8a.length);
+    voteU8a.set(accountU8a);
+    voteU8a.set(saltU8a, accountU8a.length);
+
+    const hash = blake2AsHex(voteU8a, 256);
+    // console.log('Vote hash:', hash, 'for', { accountId, salt });
+    return hash;
   };
 }
