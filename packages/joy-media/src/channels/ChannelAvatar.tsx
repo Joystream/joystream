@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { BgImg } from '../common/BgImg';
-import { DEFAULT_THUMBNAIL_URL } from '../utils';
+import { DEFAULT_THUMBNAIL_URL } from '@polkadot/joy-utils/images';
 
 const defaultSizePx = 75;
 

@@ -3,7 +3,8 @@ import * as Yup from 'yup';
 import { BlockNumber, AccountId } from '@polkadot/types/interfaces';
 import { ChannelContentTypeValue, PrincipalId, Channel, ChannelId, ChannelPublicationStatusValue, ChannelCurationStatusValue } from '@joystream/types/content-working-group';
 import { MemberId } from '@joystream/types/members';
-import { ChannelValidationConstraints, ValidationConstraint } from '@polkadot/joy-media/transport';
+import { ChannelValidationConstraints } from '@polkadot/joy-media/transport';
+import { ValidationConstraint } from '@polkadot/joy-utils/ValidationConstraint';
 
 function textValidation (constraint?: ValidationConstraint) {
   if (!constraint) {
