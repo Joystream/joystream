@@ -469,6 +469,7 @@ impl<T: Trait> Module<T> {
         <ActiveProposalIds<T>>::enumerate().for_each(|(proposal_id, _)| {
             <Proposals<T>>::mutate(proposal_id, |proposal| {
                 proposal.reset_proposal();
+                <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
             });
         });
     }

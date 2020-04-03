@@ -6,7 +6,7 @@ use mock::*;
 use codec::Encode;
 use rstd::rc::Rc;
 use sr_primitives::traits::{DispatchResult, OnFinalize, OnInitialize};
-use srml_support::{StorageMap, StorageValue};
+use srml_support::{StorageDoubleMap, StorageMap, StorageValue};
 use system::RawOrigin;
 use system::{EventRecord, Phase};
 
@@ -1339,6 +1339,10 @@ fn proposal_reset_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Slash);
 
         assert!(<ActiveProposalIds<Test>>::exists(proposal_id));
+        assert_eq!(
+            <VoteExistsByProposalByVoter<Test>>::get(&proposal_id, &2),
+            VoteKind::Abstain
+        );
 
         run_to_block_and_finalize(2);
 
@@ -1366,6 +1370,12 @@ fn proposal_reset_succeeds() {
                 rejections: 0,
                 slashes: 0,
             }
+        );
+
+        // whole double map prefix was removed (should return default value)
+        assert_eq!(
+            <VoteExistsByProposalByVoter<Test>>::get(&proposal_id, &2),
+            VoteKind::default()
         );
     });
 }
