@@ -254,7 +254,11 @@ pub fn blogs_count() -> <Runtime as Trait>::BlogId {
 }
 
 pub fn blog_by_id(blog_id: <Runtime as Trait>::BlogId) -> Option<Blog<Runtime>> {
-    TestBlogModule::blog_by_id(blog_id)
+    if BlogById::<Runtime>::exists(blog_id) {
+        Some(TestBlogModule::blog_by_id(blog_id))
+    } else {
+        None
+    }
 }
 
 pub fn create_blog(origin_id: u64) -> Result<(), &'static str> {

@@ -357,7 +357,7 @@ decl_storage! {
 
         /// Blog by unique blog identificator
        
-        BlogById get(fn blog_by_id): map T::BlogId => Option<Blog<T>>;
+        pub BlogById get(fn blog_by_id): map T::BlogId => Blog<T>;
 
         /// Post by unique blog and post identificators
         
@@ -415,7 +415,7 @@ decl_module! {
             <PostById<T>>::insert(blog_id, posts_count, post);
 
             // Increment blog posts counter, associated with given blog
-            <BlogById<T>>::mutate(blog_id, |inner_blog| inner_blog.as_mut().map(|inner_blog| inner_blog.increment_posts_counter()));
+            <BlogById<T>>::mutate(blog_id, |inner_blog| inner_blog.increment_posts_counter());
 
             // Trigger event
             Self::deposit_event(RawEvent::PostCreated(blog_id, posts_count));
@@ -452,7 +452,7 @@ decl_module! {
         pub fn unlock_post(origin, blog_id: T::BlogId, post_id: T::PostId) -> dispatch::Result {
 
             // Ensure blog with given id exists
-            let blog = Self::ensure_blog_exists(blog_id)?;
+            Self::ensure_blog_exists(blog_id)?;
 
             // Ensure blog -> owner relation exists
             T::ensure_blog_ownership(origin, blog_id)?;
@@ -713,7 +713,7 @@ impl<T: Trait> Module<T> {
         //
 
         // Update blog lock status, associated with given id
-        <BlogById<T>>::mutate(&blog_id, |inner_blog| inner_blog.as_mut().map(|inner_blog| inner_blog.lock()));
+        <BlogById<T>>::mutate(&blog_id, |inner_blog| inner_blog.lock());
 
         // Trigger event
         Self::deposit_event(RawEvent::BlogLocked(blog_owner_id, blog_id));
@@ -731,7 +731,7 @@ impl<T: Trait> Module<T> {
         //
 
         // Update blog lock status, associated with given id
-        <BlogById<T>>::mutate(&blog_id, |inner_blog| inner_blog.as_mut().map(|inner_blog| inner_blog.unlock()));
+        <BlogById<T>>::mutate(&blog_id, |inner_blog| inner_blog.unlock());
         Self::deposit_event(RawEvent::BlogUnlocked(blog_owner_id, blog_id));
         Ok(())
     }
@@ -757,7 +757,8 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_blog_exists(blog_id: T::BlogId) -> Result<Blog<T>, &'static str> {
-        Self::blog_by_id(blog_id).ok_or(BLOG_NOT_FOUND)
+        ensure!(<BlogById<T>>::exists(blog_id), BLOG_NOT_FOUND);	       
+        Ok(Self::blog_by_id(blog_id))
     }
 
     fn ensure_post_exists(blog_id: T::BlogId, post_id: T::PostId) -> Result<Post<T>, &'static str> {
