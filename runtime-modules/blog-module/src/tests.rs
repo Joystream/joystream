@@ -62,8 +62,8 @@ fn ensure_posts_equality(post: Option<Post<Runtime>>, editing: bool, locked: boo
 }
 
 fn ensure_reaction_status(
-    reactions: Option<Vec<bool>>,
-    index: <Runtime as Trait>::ReactionsNumber,
+    reactions: Option<[bool; REACTIONS_MAX_NUMBER as usize]>,
+    index: ReactionsNumber,
     status: bool,
 ) {
     // Ensure  reaction status at given index is equal to expected one
@@ -76,7 +76,7 @@ fn ensure_reaction_status(
 // Blogs
 #[test]
 fn blog_creation() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Runtime tested state before call
 
         // Events number before tested call
@@ -107,7 +107,7 @@ fn blog_creation() {
 
 #[test]
 fn blog_locking_success() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         create_blog(FIRST_OWNER_ORIGIN);
 
         // Runtime tested state before call
@@ -137,7 +137,7 @@ fn blog_locking_success() {
 
 #[test]
 fn blog_locking_blog_not_found() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Event number before tested call
         let number_of_events_before_call = System::events().len();
 
@@ -151,7 +151,7 @@ fn blog_locking_blog_not_found() {
 
 #[test]
 fn blog_locking_ownership_error() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         create_blog(FIRST_OWNER_ORIGIN);
 
         // Create another blog, using second owner origin
@@ -180,7 +180,7 @@ fn blog_locking_ownership_error() {
 
 #[test]
 fn blog_unlocking_success() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         create_blog(FIRST_OWNER_ORIGIN);
 
         // Lock blog firstly, as default state after creation is unlocked
@@ -206,7 +206,7 @@ fn blog_unlocking_success() {
 
 #[test]
 fn blog_unlocking_blog_not_found() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
@@ -220,7 +220,7 @@ fn blog_unlocking_blog_not_found() {
 
 #[test]
 fn blog_unlocking_ownership_error() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         create_blog(FIRST_OWNER_ORIGIN);
 
         // Create another blog, using second owner origin
@@ -253,7 +253,7 @@ fn blog_unlocking_ownership_error() {
 // Posts
 #[test]
 fn post_creation_success() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -283,7 +283,7 @@ fn post_creation_success() {
 
 #[test]
 fn post_creation_blog_not_found() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
@@ -299,7 +299,7 @@ fn post_creation_blog_not_found() {
 
 #[test]
 fn post_creation_blog_ownership_error() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -325,7 +325,7 @@ fn post_creation_blog_ownership_error() {
 
 #[test]
 fn post_creation_blog_locked_error() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -350,7 +350,7 @@ fn post_creation_blog_locked_error() {
 
 #[test]
 fn post_creation_title_too_long() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -373,7 +373,7 @@ fn post_creation_title_too_long() {
 
 #[test]
 fn post_creation_body_too_long() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -396,7 +396,7 @@ fn post_creation_body_too_long() {
 
 #[test]
 fn post_creation_limit_reached() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
         loop {
@@ -425,7 +425,7 @@ fn post_creation_limit_reached() {
 
 #[test]
 fn post_locking_success() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -456,7 +456,7 @@ fn post_locking_success() {
 
 #[test]
 fn post_locking_blog_not_found() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
@@ -469,7 +469,7 @@ fn post_locking_blog_not_found() {
 
 #[test]
 fn post_locking_post_not_found() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -485,7 +485,7 @@ fn post_locking_post_not_found() {
 
 #[test]
 fn post_locking_ownership_error() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -517,7 +517,7 @@ fn post_locking_ownership_error() {
 
 #[test]
 fn post_unlocking_success() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -550,7 +550,7 @@ fn post_unlocking_success() {
 
 #[test]
 fn post_unlocking_owner_not_found() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -581,7 +581,7 @@ fn post_unlocking_owner_not_found() {
 
 #[test]
 fn post_unlocking_post_not_found() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -598,7 +598,7 @@ fn post_unlocking_post_not_found() {
 
 #[test]
 fn post_unlocking_ownership_error() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -632,7 +632,7 @@ fn post_unlocking_ownership_error() {
 
 #[test]
 fn post_editing_success() {
-    ExtBuilder::<Runtime>::default()
+    ExtBuilder::default()
         .post_title_max_length(5)
         .post_body_max_length(10)
         .build()
@@ -666,7 +666,7 @@ fn post_editing_success() {
 
 #[test]
 fn post_editing_ownership_error() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -694,7 +694,7 @@ fn post_editing_ownership_error() {
 
 #[test]
 fn post_editing_post_not_found() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -711,7 +711,7 @@ fn post_editing_post_not_found() {
 
 #[test]
 fn post_editing_blog_locked_error() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -738,7 +738,7 @@ fn post_editing_blog_locked_error() {
 
 #[test]
 fn post_editing_post_locked_error() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -765,7 +765,7 @@ fn post_editing_post_locked_error() {
 
 #[test]
 fn post_editing_title_invalid_error() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -798,7 +798,7 @@ fn post_editing_title_invalid_error() {
 
 #[test]
 fn post_editing_body_invalid_error() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -832,7 +832,7 @@ fn post_editing_body_invalid_error() {
 // Replies
 #[test]
 fn reply_creation_success() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -883,7 +883,7 @@ fn reply_creation_success() {
 
 #[test]
 fn direct_reply_creation_success() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -935,7 +935,7 @@ fn direct_reply_creation_success() {
 
 #[test]
 fn reply_creation_blog_locked_error() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
         create_post(FIRST_OWNER_ORIGIN, FIRST_ID, PostType::Valid);
@@ -968,7 +968,7 @@ fn reply_creation_blog_locked_error() {
 
 #[test]
 fn reply_creation_post_locked_error() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
         create_post(FIRST_OWNER_ORIGIN, FIRST_ID, PostType::Valid);
@@ -1001,7 +1001,7 @@ fn reply_creation_post_locked_error() {
 
 #[test]
 fn reply_creation_text_too_long_error() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
         create_post(FIRST_OWNER_ORIGIN, FIRST_ID, PostType::Valid);
@@ -1031,7 +1031,7 @@ fn reply_creation_text_too_long_error() {
 
 #[test]
 fn reply_creation_post_not_found() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -1060,7 +1060,7 @@ fn reply_creation_post_not_found() {
 
 #[test]
 fn reply_creation_limit_reached() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -1095,7 +1095,7 @@ fn reply_creation_limit_reached() {
 
 #[test]
 fn direct_reply_creation_reply_not_found() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -1128,7 +1128,7 @@ fn direct_reply_creation_reply_not_found() {
 
 #[test]
 fn reply_editing_success() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future replies
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -1170,7 +1170,7 @@ fn reply_editing_success() {
 
 #[test]
 fn reply_editing_blog_locked_error() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future replies
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -1218,7 +1218,7 @@ fn reply_editing_blog_locked_error() {
 
 #[test]
 fn reply_editing_post_locked_error() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future replies
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -1266,7 +1266,7 @@ fn reply_editing_post_locked_error() {
 
 #[test]
 fn reply_editing_not_found() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future replies
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -1295,7 +1295,7 @@ fn reply_editing_not_found() {
 
 #[test]
 fn reply_editing_text_too_long_error() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future replies
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -1340,7 +1340,7 @@ fn reply_editing_text_too_long_error() {
 
 #[test]
 fn reply_editing_ownership_error() {
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future replies
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -1385,9 +1385,9 @@ fn reply_editing_ownership_error() {
 
 #[test]
 fn reaction_success() {
-    const REACTION_INDEX: <Runtime as Trait>::ReactionsNumber = 4;
+    const REACTION_INDEX: ReactionsNumber = 4;
 
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -1471,10 +1471,9 @@ fn reaction_success() {
 
 #[test]
 fn reaction_invalid_index() {
-    const REACTIONS_MAX_NUMBER: <Runtime as Trait>::ReactionsNumber = 5;
+    const REACTIONS_MAX_NUMBER: ReactionsNumber = 5;
 
-    ExtBuilder::<Runtime>::default()
-        .reactions_max_number(REACTIONS_MAX_NUMBER)
+    ExtBuilder::default()
         .build()
         .execute_with(|| {
             // Create blog for future posts
@@ -1511,9 +1510,9 @@ fn reaction_invalid_index() {
 
 #[test]
 fn reaction_blog_not_found() {
-    const REACTION_INDEX: <Runtime as Trait>::ReactionsNumber = 4;
+    const REACTION_INDEX: ReactionsNumber = 4;
 
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
@@ -1538,9 +1537,9 @@ fn reaction_blog_not_found() {
 
 #[test]
 fn reaction_post_not_found() {
-    const REACTION_INDEX: <Runtime as Trait>::ReactionsNumber = 4;
+    const REACTION_INDEX: ReactionsNumber = 4;
 
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         create_blog(FIRST_OWNER_ORIGIN);
 
         // Events number before tested call
@@ -1567,9 +1566,9 @@ fn reaction_post_not_found() {
 
 #[test]
 fn reaction_reply_not_found() {
-    const REACTION_INDEX: <Runtime as Trait>::ReactionsNumber = 4;
+    const REACTION_INDEX: ReactionsNumber = 4;
 
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -1599,9 +1598,9 @@ fn reaction_reply_not_found() {
 
 #[test]
 fn reaction_blog_locked_error() {
-    const REACTION_INDEX: <Runtime as Trait>::ReactionsNumber = 4;
+    const REACTION_INDEX: ReactionsNumber = 4;
 
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 
@@ -1638,9 +1637,9 @@ fn reaction_blog_locked_error() {
 
 #[test]
 fn reaction_post_locked_error() {
-    const REACTION_INDEX: <Runtime as Trait>::ReactionsNumber = 4;
+    const REACTION_INDEX: ReactionsNumber = 4;
 
-    ExtBuilder::<Runtime>::default().build().execute_with(|| {
+    ExtBuilder::default().build().execute_with(|| {
         // Create blog for future posts
         create_blog(FIRST_OWNER_ORIGIN);
 

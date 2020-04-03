@@ -64,8 +64,6 @@ thread_local! {
 
     static POSTS_MAX_NUMBER: RefCell<u32> = RefCell::new(0);
     static REPLIES_MAX_NUMBER: RefCell<u32> = RefCell::new(0);
-
-    static REACTIONS_MAX_NUMBER: RefCell<<Runtime as Trait>::ReactionsNumber> = RefCell::new(0);
 }
 
 pub struct PostTitleMaxLength;
@@ -103,13 +101,6 @@ impl Get<u32> for RepliesMaxNumber {
     }
 }
 
-pub struct ReactionsMaxNumber;
-impl Get<<Runtime as Trait>::ReactionsNumber> for ReactionsMaxNumber {
-    fn get() -> <Runtime as Trait>::ReactionsNumber {
-        REACTIONS_MAX_NUMBER.with(|v| *v.borrow())
-    }
-}
-
 impl Trait for Runtime {
     type Event = TestEvent;
 
@@ -126,9 +117,6 @@ impl Trait for Runtime {
     type ParticipantEnsureOrigin = system::EnsureSigned<Self::ParticipantId>;
     type ParticipantId = u64;
 
-    type ReactionsMaxNumber = ReactionsMaxNumber;
-    type ReactionsNumber = u32;
-
     type BlogId = u32;
     type PostId = u32;
     type ReplyId = u32;
@@ -142,16 +130,15 @@ impl Trait for Runtime {
     }
 }
 
-pub struct ExtBuilder<T: Trait> {
+pub struct ExtBuilder {
     post_title_max_length: u32,
     post_body_max_length: u32,
     reply_max_length: u32,
     posts_max_number: u32,
     replies_max_number: u32,
-    reactions_number: T::ReactionsNumber,
 }
 
-impl<T: Trait> Default for ExtBuilder<T> {
+impl Default for ExtBuilder {
     fn default() -> Self {
         Self {
             post_title_max_length: 200,
@@ -159,12 +146,11 @@ impl<T: Trait> Default for ExtBuilder<T> {
             reply_max_length: 2_000,
             posts_max_number: 20,
             replies_max_number: 100,
-            reactions_number: 10.into(),
         }
     }
 }
 
-impl<T: Trait> ExtBuilder<T> {
+impl ExtBuilder {
     pub fn post_title_max_length(mut self, post_title_max_length: u32) -> Self {
         self.post_title_max_length = post_title_max_length;
         self
@@ -190,11 +176,6 @@ impl<T: Trait> ExtBuilder<T> {
         self
     }
 
-    pub fn reactions_max_number(mut self, reactions_number: T::ReactionsNumber) -> Self {
-        self.reactions_number = reactions_number;
-        self
-    }
-
     pub fn set_associated_consts(&self) {
         POST_TITLE_MAX_LENGTH.with(|v| *v.borrow_mut() = self.post_title_max_length);
         POST_BODY_MAX_LENGTH.with(|v| *v.borrow_mut() = self.post_body_max_length);
@@ -202,8 +183,6 @@ impl<T: Trait> ExtBuilder<T> {
 
         POSTS_MAX_NUMBER.with(|v| *v.borrow_mut() = self.posts_max_number);
         REPLIES_MAX_NUMBER.with(|v| *v.borrow_mut() = self.replies_max_number);
-
-        REACTIONS_MAX_NUMBER.with(|v| *v.borrow_mut() = self.reactions_number.into());
     }
 
     pub fn build(self) -> TestExternalities {
@@ -240,7 +219,7 @@ type RawTestEvent = RawEvent<
     <Runtime as Trait>::BlogId,
     <Runtime as Trait>::PostId,
     <Runtime as Trait>::ReplyId,
-    <Runtime as Trait>::ReactionsNumber,
+    ReactionsNumber,
     bool,
 >;
 
@@ -412,7 +391,7 @@ pub fn edit_reply(
 
 pub fn react(
     origin_id: u64,
-    index: <Runtime as Trait>::ReactionsNumber,
+    index: ReactionsNumber,
     blog_id: <Runtime as Trait>::BlogId,
     post_id: <Runtime as Trait>::PostId,
     reply_id: Option<<Runtime as Trait>::ReplyId>,
@@ -425,9 +404,10 @@ pub fn get_reactions(
     post_id: <Runtime as Trait>::PostId,
     reply_id: Option<<Runtime as Trait>::ReplyId>,
     owner: <Runtime as Trait>::ParticipantId,
-) -> Option<Vec<bool>> {
-    match TestBlogModule::reactions((blog_id, post_id, reply_id), owner) {
-        reactions if reactions != Vec::default() => Some(reactions),
-        _ => None,
+) -> Option<[bool; REACTIONS_MAX_NUMBER as usize]> {
+    if Reactions::<Runtime>::exists((blog_id, post_id, reply_id), owner) {
+       Some(TestBlogModule::reactions((blog_id, post_id, reply_id), owner))
+    } else {
+       None
     }
 }

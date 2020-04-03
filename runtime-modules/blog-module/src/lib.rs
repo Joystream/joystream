@@ -82,7 +82,7 @@ use rstd::fmt::Debug;
 use rstd::prelude::*;
 use runtime_primitives::traits::MaybeDisplay;
 use runtime_primitives::traits::{
-    EnsureOrigin, MaybeSerialize, MaybeSerializeDeserialize, Member, One, SimpleArithmetic, Zero,
+    EnsureOrigin, MaybeSerialize, MaybeSerializeDeserialize, Member, One, SimpleArithmetic,
 };
 use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter, StorageDoubleMap
@@ -97,6 +97,12 @@ use error_messages::*;
 type MaxLength = u32;
 
 type MaxNumber = u32;
+
+/// Type, representing reactions number
+type ReactionsNumber = u32;
+
+/// Number of reactions, presented in runtime
+pub const REACTIONS_MAX_NUMBER: ReactionsNumber = 5;
 
 // The pallet's configuration trait.
 pub trait Trait: system::Trait + Default {
@@ -125,21 +131,6 @@ pub trait Trait: system::Trait + Default {
 
     /// The maximum number of replies to a post.
     type RepliesMaxNumber: Get<MaxNumber>;
-
-    /// Type, representing reactions number
-    type ReactionsNumber: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq
-        + Into<u32>
-        + From<u32>;
-
-    /// Number of reactions, presented in runtime
-    type ReactionsMaxNumber: Get<Self::ReactionsNumber>;
 
     /// Type for the blog owner id. 
     type BlogOwnerId: Parameter + Default + Clone + Copy;
@@ -369,9 +360,7 @@ decl_storage! {
 
         /// Mapping, representing AccountId -> All presented reactions state mapping by unique post or reply identificators.
         
-        Reactions get(reactions): double_map hasher(blake2_128) (T::BlogId, T::PostId, Option<T::ReplyId>), blake2_128(T::ParticipantId) => Vec<bool>;
-
-        /// Overall blogs counter
+        pub Reactions get(fn reactions): double_map hasher(blake2_128) (T::BlogId, T::PostId, Option<T::ReplyId>), blake2_128(T::ParticipantId) => [bool; REACTIONS_MAX_NUMBER as usize];
 
         BlogsCount get(fn blogs_count): T::BlogId;
     }
@@ -629,7 +618,7 @@ decl_module! {
         pub fn react(
             origin,
             // reaction index in array
-            index: T::ReactionsNumber,
+            index: ReactionsNumber,
             blog_id: T::BlogId,
             post_id: T::PostId,
             reply_id: Option<T::ReplyId>
@@ -740,20 +729,11 @@ impl<T: Trait> Module<T> {
     /// If there is no reactions under this AccountId entry yet,
     /// initialize a new reactions array and set reaction under given index
     fn mutate_reactions(
-        reactions: &mut Vec<bool>,
-        index: T::ReactionsNumber,
+        reactions: &mut [bool],
+        index: ReactionsNumber,
     ) -> bool {
-        if !reactions.is_empty() {
-            // Flip reaction value under given index
-            reactions[index.into() as usize] ^= true;
-            reactions[index.into() as usize]
-        } else {
-            // Initialize reactions array with all reactions unset (false)
-            *reactions = vec![false; T::ReactionsMaxNumber::get().into() as usize];
-            // Flip reaction value under given index
-            reactions[index.into() as usize] ^= true;
-            true
-        }
+        reactions[index as usize] ^= true;
+        reactions[index as usize]
     }
 
     fn ensure_blog_exists(blog_id: T::BlogId) -> Result<Blog<T>, &'static str> {
@@ -852,9 +832,9 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn ensure_reaction_index_is_valid(index: T::ReactionsNumber) -> Result<(), &'static str> {
+    fn ensure_reaction_index_is_valid(index: ReactionsNumber) -> Result<(), &'static str> {
         ensure!(
-            index >= T::ReactionsNumber::zero() && index < T::ReactionsMaxNumber::get(),
+            index < REACTIONS_MAX_NUMBER,
             INVALID_REACTION_INDEX
         );
         Ok(())
@@ -869,7 +849,7 @@ decl_event!(
         BlogId = <T as Trait>::BlogId,
         PostId = <T as Trait>::PostId,
         ReplyId = <T as Trait>::ReplyId,
-        ReactionIndex = <T as Trait>::ReactionsNumber,
+        ReactionIndex = ReactionsNumber,
         Status = bool,
     {
         BlogCreated(BlogOwnerId, BlogId),
