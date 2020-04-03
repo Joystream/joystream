@@ -1,8 +1,9 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { stringToU8a } from '@polkadot/util';
-import { Option } from '@polkadot/types';
+import { Option, Vec } from '@polkadot/types';
+import { Codec } from '@polkadot/types/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { UserInfo, PaidMembershipTerms } from '@joystream/types/lib/members';
+import { Seat } from '@joystream/types';
 import { Balance } from '@polkadot/types/interfaces';
 import BN = require('bn.js');
 import { SubmittableExtrinsic } from '@polkadot/api/types';
@@ -90,13 +91,12 @@ export class ApiWrapper {
 
   public estimateVoteForCouncilFee(nominee: string, salt: string, stake: BN): BN {
     const hashedVote: string = Utils.hashVote(nominee, salt);
-    console.log('estimation nominee ' + nominee + ' salt ' + salt + ' hashed ' + hashedVote);
     return this.estimateTxFee(this.api.tx.councilElection.vote(hashedVote, stake));
   }
 
   public estimateRevealVoteFee(nominee: string, salt: string): BN {
     const hashedVote: string = Utils.hashVote(nominee, salt);
-    return this.estimateTxFee(this.api.tx.councilElection.reveal(hashedVote, nominee, stringToU8a(salt)));
+    return this.estimateTxFee(this.api.tx.councilElection.reveal(hashedVote, nominee, salt));
   }
 
   private applyForCouncilElection(account: KeyringPair, amount: BN): Promise<void> {
@@ -121,33 +121,31 @@ export class ApiWrapper {
 
   private voteForCouncilMember(account: KeyringPair, nominee: string, salt: string, stake: BN): Promise<void> {
     const hashedVote: string = Utils.hashVote(nominee, salt);
-    console.log('nominee ' + nominee + ' salt ' + salt + ' hashed ' + hashedVote);
     return this.sender.signAndSend(this.api.tx.councilElection.vote(hashedVote, stake), account, false);
   }
 
-  //TODO alter method signature for better testing
-  public batchVoteForCouncilMember(accounts: KeyringPair[], nominees: KeyringPair[], stake: BN): Promise<void[]> {
+  public batchVoteForCouncilMember(
+    accounts: KeyringPair[],
+    nominees: KeyringPair[],
+    salt: string[],
+    stake: BN
+  ): Promise<void[]> {
     return Promise.all(
       accounts.map(async (keyPair, index) => {
-        await this.voteForCouncilMember(keyPair, nominees[index].address, nominees[index].address, stake);
+        await this.voteForCouncilMember(keyPair, nominees[index].address, salt[index], stake);
       })
     );
   }
 
   private revealVote(account: KeyringPair, commitment: string, nominee: string, salt: string): Promise<void> {
-    console.log('commitment to reveal ' + commitment);
-    return this.sender.signAndSend(
-      this.api.tx.councilElection.reveal(commitment, nominee, stringToU8a(salt)),
-      account,
-      false
-    );
+    return this.sender.signAndSend(this.api.tx.councilElection.reveal(commitment, nominee, salt), account, false);
   }
 
-  public batchRevealVote(accounts: KeyringPair[], nominees: KeyringPair[]): Promise<void[]> {
+  public batchRevealVote(accounts: KeyringPair[], nominees: KeyringPair[], salt: string[]): Promise<void[]> {
     return Promise.all(
       accounts.map(async (keyPair, index) => {
-        const commitment = Utils.hashVote(nominees[index].address, nominees[index].address);
-        await this.revealVote(keyPair, commitment, nominees[index].address, nominees[index].address);
+        const commitment = Utils.hashVote(nominees[index].address, salt[index]);
+        await this.revealVote(keyPair, commitment, nominees[index].address, salt[index]);
       })
     );
   }
@@ -179,5 +177,9 @@ export class ApiWrapper {
 
   public getBestBlock(): Promise<BN> {
     return this.api.derive.chain.bestNumber();
+  }
+
+  public getCouncil(): Promise<Seat[]> {
+    return this.api.query.council.activeCouncil<Vec<Codec>>().then(seats => JSON.parse(seats.toString()));
   }
 }

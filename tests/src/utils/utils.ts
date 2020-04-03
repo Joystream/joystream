@@ -3,6 +3,7 @@ import { compactToU8a, stringToU8a } from '@polkadot/util';
 import { blake2AsHex } from '@polkadot/util-crypto';
 import BN = require('bn.js');
 import { decodeAddress } from '@polkadot/keyring';
+import { Seat } from '@joystream/types';
 
 export class Utils {
   private static LENGTH_ADDRESS = 32 + 1; // publicKey + prefix
@@ -22,7 +23,7 @@ export class Utils {
   };
 
   /** hash(accountId + salt) */
-  public static hashVote = (accountId: string, salt: string): string => {
+  public static hashVote(accountId: string, salt: string): string {
     const accountU8a = decodeAddress(accountId);
     const saltU8a = stringToU8a(salt);
     const voteU8a = new Uint8Array(accountU8a.length + saltU8a.length);
@@ -32,5 +33,13 @@ export class Utils {
     const hash = blake2AsHex(voteU8a, 256);
     // console.log('Vote hash:', hash, 'for', { accountId, salt });
     return hash;
-  };
+  }
+
+  public static wait(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  public static getTotalStake(seat: Seat): BN {
+    return seat.stake.toBn().add(seat.backers.reduce((a, baker) => a.add(baker.stake.toBn()), new BN(0)));
+  }
 }
