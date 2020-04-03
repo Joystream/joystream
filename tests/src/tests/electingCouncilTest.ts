@@ -77,7 +77,6 @@ describe('Council integration tests', () => {
     //TODO get duration from chain
     await Utils.wait(6000);
     let seats: Seat[] = await apiWrapper.getCouncil();
-    console.log(seats.toString());
     const m2addresses: string[] = m2KeyPairs.map(keyPair => keyPair.address);
     const m1addresses: string[] = m1KeyPairs.map(keyPair => keyPair.address);
     const members: string[] = seats.map(seat => seat.member.toString());

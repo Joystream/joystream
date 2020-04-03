@@ -40,6 +40,7 @@ export class Utils {
   }
 
   public static getTotalStake(seat: Seat): BN {
-    return seat.stake.toBn().add(seat.backers.reduce((a, baker) => a.add(baker.stake.toBn()), new BN(0)));
+    //TODO consider refactoring with a typecast
+    return new BN(+seat.stake.toString() + seat.backers.reduce((a, baker) => a + +baker.stake.toString(), 0));
   }
 }

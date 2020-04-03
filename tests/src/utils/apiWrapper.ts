@@ -180,6 +180,9 @@ export class ApiWrapper {
   }
 
   public getCouncil(): Promise<Seat[]> {
-    return this.api.query.council.activeCouncil<Vec<Codec>>().then(seats => JSON.parse(seats.toString()));
+    return this.api.query.council.activeCouncil<Vec<Codec>>().then(seats => {
+      console.log('elected council ' + seats.toString());
+      return JSON.parse(seats.toString());
+    });
   }
 }
