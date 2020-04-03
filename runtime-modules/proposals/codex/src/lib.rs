@@ -222,7 +222,8 @@ decl_module! {
             )?;
         }
 
-        /// Create 'Runtime upgrade' proposal type.
+        /// Create 'Runtime upgrade' proposal type. Runtime upgrade can be initiated only by
+        /// members from the hardcoded list `RuntimeUpgradeProposalAllowedProposers`
         pub fn create_runtime_upgrade_proposal(
             origin,
             member_id: MemberId<T>,
@@ -288,7 +289,6 @@ decl_module! {
                 ProposalDetails::SetElectionParameters(election_parameters),
             )?;
         }
-
 
         /// Create 'Set council mint capacity' proposal type. This proposal uses `set_mint_capacity()`
         /// extrinsic from the `governance::council` module.
@@ -580,7 +580,7 @@ impl<T: Trait> Module<T> {
             stake_balance,
         )?;
 
-        <proposal_discussion::Module<T>>::ensure_can_create_thread(&title, member_id.clone())?;
+        <proposal_discussion::Module<T>>::ensure_can_create_thread(member_id.clone(), &title)?;
 
         let discussion_thread_id =
             <proposal_discussion::Module<T>>::create_thread(member_id, title.clone())?;

@@ -128,6 +128,7 @@ decl_event!(
 );
 
 decl_error! {
+    /// Engine module predefined errors
     pub enum Error {
         /// Proposal cannot have an empty title"
         EmptyTitleProvided,
