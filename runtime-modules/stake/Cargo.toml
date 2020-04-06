@@ -1,6 +1,6 @@
 [package]
 name = 'substrate-stake-module'
-version = '1.0.1'
+version = '2.0.0'
 authors = ['Joystream contributors']
 edition = '2018'
 

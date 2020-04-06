@@ -114,6 +114,11 @@ impl governance::council::Trait for Test {
     type CouncilTermEnded = ();
 }
 
+impl token_mint::Trait for Test {
+    type Currency = Balances;
+    type MintId = u64;
+}
+
 impl common::origin_validator::ActorOriginValidator<Origin, u64, u64> for () {
     fn ensure_actor_origin(_: Origin, _: u64) -> Result<u64, &'static str> {
         Ok(1)

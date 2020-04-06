@@ -1,3 +1,6 @@
+### Version 6.9.1
+...
+
 ### Version 6.8.0 (Rome release) - March 9th 2020
 - New versioned and permissioned content mangement system that powers a new media experience.
 - Content Working Group - introduces staked content curator roles to maintain quality of content and ensure that is meets the platform's terms of service.

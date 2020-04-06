@@ -122,7 +122,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 6,
-    spec_version: 8,
+    spec_version: 12,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
 };
@@ -403,6 +403,7 @@ impl finality_tracker::Trait for Runtime {
 }
 
 pub use forum;
+pub use governance::election_params::ElectionParameters;
 use governance::{council, election};
 use membership::members;
 use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
@@ -642,7 +643,7 @@ impl stake::StakingEventsHandler<Runtime> for ContentWorkingGroupStakingEventHan
     // Handler for slashing event
     fn slashed(
         _id: &<Runtime as stake::Trait>::StakeId,
-        _slash_id: &<Runtime as stake::Trait>::SlashId,
+        _slash_id: Option<<Runtime as stake::Trait>::SlashId>,
         _slashed_amount: stake::BalanceOf<Runtime>,
         _remaining_stake: stake::BalanceOf<Runtime>,
         remaining_imbalance: stake::NegativeImbalance<Runtime>,
