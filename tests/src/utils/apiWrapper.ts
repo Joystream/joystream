@@ -1,9 +1,9 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { Option, Vec } from '@polkadot/types';
+import { Option, Vec, Bytes } from '@polkadot/types';
 import { Codec } from '@polkadot/types/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { UserInfo, PaidMembershipTerms } from '@joystream/types/lib/members';
-import { Seat } from '@joystream/types';
+import { Seat, VoteKind } from '@joystream/types';
 import { Balance } from '@polkadot/types/interfaces';
 import BN = require('bn.js');
 import { SubmittableExtrinsic } from '@polkadot/api/types';
@@ -99,6 +99,14 @@ export class ApiWrapper {
     return this.estimateTxFee(this.api.tx.councilElection.reveal(hashedVote, nominee, salt));
   }
 
+  public estimateProposeRuntimeUpgradeFee(stake: BN, name: string, description: string, runtime: Bytes): BN {
+    return this.estimateTxFee(this.api.tx.proposals.createProposal(stake, name, description, runtime));
+  }
+
+  public estimateVoteForProposalFee(): BN {
+    return this.estimateTxFee(this.api.tx.proposals.voteOnProposal(0, 'Approve'));
+  }
+
   private applyForCouncilElection(account: KeyringPair, amount: BN): Promise<void> {
     return this.sender.signAndSend(this.api.tx.councilElection.apply(amount), account, false);
   }
@@ -184,5 +192,27 @@ export class ApiWrapper {
       console.log('elected council ' + seats.toString());
       return JSON.parse(seats.toString());
     });
+  }
+
+  public getRuntime(): Promise<Bytes> {
+    return this.api.query.substrate.code<Bytes>();
+  }
+
+  public proposeRuntime(
+    account: KeyringPair,
+    stake: BN,
+    name: string,
+    description: string,
+    runtime: Bytes
+  ): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx.proposals.createProposal(stake, name, description, runtime),
+      account,
+      false
+    );
+  }
+
+  public approveProposal(account: KeyringPair, proposal: BN): Promise<void> {
+    return this.sender.signAndSend(this.api.tx.proposals.voteOnProposal(proposal, 'Approve'), account, false);
   }
 }

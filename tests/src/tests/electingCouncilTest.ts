@@ -2,7 +2,6 @@ import { membershipTest } from './membershipCreationTest';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { ApiWrapper } from '../utils/apiWrapper';
 import { WsProvider, Keyring } from '@polkadot/api';
-import { stringToU8a } from '@polkadot/util';
 import { initConfig } from '../utils/config';
 import BN = require('bn.js');
 import { registerJoystreamTypes, Seat } from '@joystream/types';
@@ -94,7 +93,7 @@ export function councilTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]
   });
 }
 
-describe('Council integration tests', () => {
+describe.skip('Council integration tests', () => {
   const m1KeyPairs: KeyringPair[] = new Array();
   const m2KeyPairs: KeyringPair[] = new Array();
   membershipTest(m1KeyPairs);
