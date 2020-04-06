@@ -1,4 +1,4 @@
-import { css } from 'styled-components';
+import { css } from "styled-components";
 
 export default css`
   .text.muted,
@@ -22,11 +22,11 @@ export default css`
   .ui--row {
     .ui.message {
       margin: 0;
-      padding: .7rem 1rem;
+      padding: 0.7rem 1rem;
     }
     textarea,
     .ui--InputFile {
-      margin: .25rem 0 !important;
+      margin: 0.25rem 0 !important;
       height: 5rem;
     }
   }
@@ -48,18 +48,18 @@ export default css`
       display: inline-block;
       margin-top: 0;
       padding-top: 0;
-      font-size: .80rem !important;
+      font-size: 0.8rem !important;
       margin-right: 1rem;
       font-weight: 100;
-      opacity: .80;
+      opacity: 0.8;
       overflow: hidden;
     }
   }
 
   .ui--Bubble.ui.label {
     background-color: #f2f2f2;
-    margin: .25rem 0;
-    margin-right: .5rem;
+    margin: 0.25rem 0;
+    margin-right: 0.5rem;
 
     &.pointing:before {
       background-color: #e6e6e6;
@@ -96,10 +96,10 @@ export default css`
 
   .apps--SideBar-logo {
     max-height: 26px !important;
-    margin: 1rem 1.5rem 2.5rem .75rem !important;
+    margin: 1rem 1.5rem 2.5rem 0.75rem !important;
   }
   .collapsed .apps--SideBar-logo {
-    margin: 1rem .75rem 2.5rem .5rem !important
+    margin: 1rem 0.75rem 2.5rem 0.5rem !important;
   }
 
   .JoyForm {
@@ -107,8 +107,8 @@ export default css`
 
     .ui--Labelled {
       align-items: end;
-      &>label {
-        padding-top: .75rem;
+      & > label {
+        padding-top: 0.75rem;
       }
     }
   }
@@ -120,7 +120,7 @@ export default css`
     }
     code {
       background-color: #e0e0e0;
-      padding: 0 .25rem;
+      padding: 0 0.25rem;
       border-radius: 2px;
     }
   }
@@ -137,7 +137,7 @@ export default css`
   }
 
   .JoyInlineActions {
-    white-space: 'nowrap';
+    white-space: "nowrap";
   }
 
   .FlexCenter {
@@ -149,11 +149,47 @@ export default css`
     width: 100% !important;
     background-color: transparent !important;
     &:hover {
-      background-color: rgba(0,0,0,.05) !important;
+      background-color: rgba(0, 0, 0, 0.05) !important;
     }
     .icon {
       margin-left: 0 !important;
-      margin-right: .78571429rem !important;
+      margin-right: 0.78571429rem !important;
     }
+  }
+
+  /* Semantic UI Colors*/
+  .text-white {
+    color: #ffffff;
+  }
+  /* Commented otherwise it overrides the text-grey above
+  .text-grey {
+    color: #9d9d9d;
+  } */
+  .text-black {
+    color: #1b1c1d;
+  }
+  .text-yellow {
+    color: #f2c61f;
+  }
+  .text-teal {
+    color: #00b5ad;
+  }
+  .text-red {
+    color: #d95c5c;
+  }
+  .text-purple {
+    color: #564f8a;
+  }
+  .text-pink {
+    color: #d9499a;
+  }
+  .text-orange {
+    color: #e07b53;
+  }
+  .text-green {
+    color: #5bbd72;
+  }
+  .text-blue {
+    color: #3b83c0;
   }
 `;
