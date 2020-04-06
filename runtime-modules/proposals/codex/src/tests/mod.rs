@@ -740,3 +740,74 @@ fn create_set_storage_role_parameters_proposal_common_checks_succeed() {
         proposal_fixture.check_all();
     });
 }
+
+fn assert_failed_set_storage_parameters_call(
+    role_parameters: RoleParameters<u64, u64>,
+    error: Error,
+) {
+    assert_eq!(
+        ProposalCodex::create_set_storage_role_parameters_proposal(
+            RawOrigin::Signed(1).into(),
+            1,
+            b"title".to_vec(),
+            b"body".to_vec(),
+            Some(<BalanceOf<Test>>::from(500u32)),
+            role_parameters,
+        ),
+        Err(error)
+    );
+}
+
+#[test]
+fn create_set_storage_role_parameters_proposal_fails_with_invalid_parameters() {
+    initial_test_ext().execute_with(|| {
+        let mut role_parameters = RoleParameters::default();
+        role_parameters.min_actors = 0;
+        assert_failed_set_storage_parameters_call(
+            role_parameters,
+            Error::InvalidStorageRoleParameterMinActors,
+        );
+
+        role_parameters = RoleParameters::default();
+        role_parameters.max_actors = 0;
+        assert_failed_set_storage_parameters_call(
+            role_parameters,
+            Error::InvalidStorageRoleParameterMaxActors,
+        );
+
+        role_parameters = RoleParameters::default();
+        role_parameters.reward_period = 700;
+        assert_failed_set_storage_parameters_call(
+            role_parameters,
+            Error::InvalidStorageRoleParameterRewardPeriod,
+        );
+
+        role_parameters = RoleParameters::default();
+        role_parameters.bonding_period = 700;
+        assert_failed_set_storage_parameters_call(
+            role_parameters,
+            Error::InvalidStorageRoleParameterBondingPeriod,
+        );
+
+        role_parameters = RoleParameters::default();
+        role_parameters.unbonding_period = 700;
+        assert_failed_set_storage_parameters_call(
+            role_parameters,
+            Error::InvalidStorageRoleParameterUnbondingPeriod,
+        );
+
+        role_parameters = RoleParameters::default();
+        role_parameters.min_service_period = 700;
+        assert_failed_set_storage_parameters_call(
+            role_parameters,
+            Error::InvalidStorageRoleParameterMinServicePeriod,
+        );
+
+        role_parameters = RoleParameters::default();
+        role_parameters.startup_grace_period = 500;
+        assert_failed_set_storage_parameters_call(
+            role_parameters,
+            Error::InvalidStorageRoleParameterStartupGracePeriod,
+        );
+    });
+}

@@ -141,6 +141,30 @@ decl_error! {
 
         /// Require root origin in extrinsics
         RequireRootOrigin,
+
+        /// Invalid storage role parameter - min_actors
+        InvalidStorageRoleParameterMinActors,
+
+        /// Invalid storage role parameter - max_actors
+        InvalidStorageRoleParameterMaxActors,
+
+        /// Invalid storage role parameter - reward_period
+        InvalidStorageRoleParameterRewardPeriod,
+
+        /// Invalid storage role parameter - bonding_period
+        InvalidStorageRoleParameterBondingPeriod,
+
+        /// Invalid storage role parameter - unbonding_period
+        InvalidStorageRoleParameterUnbondingPeriod,
+
+        /// Invalid storage role parameter - min_service_period
+        InvalidStorageRoleParameterMinServicePeriod,
+
+        /// Invalid storage role parameter - min_service_period
+        InvalidStorageRoleParameterMinServicePeriod,
+
+        /// Invalid storage role parameter - startup_grace_period
+        InvalidStorageRoleParameterStartupGracePeriod,
     }
 }
 
@@ -485,6 +509,8 @@ decl_module! {
             stake_balance: Option<BalanceOf<T>>,
             role_parameters: RoleParameters<BalanceOfGovernanceCurrency<T>, T::BlockNumber>
         ) {
+            Self::ensure_storage_role_parameters_valid(&role_parameters)?;
+
             let proposal_code = <roles::actors::Call<T>>::set_role_parameters(
                 Role::StorageProvider,
                 role_parameters.clone()
@@ -608,6 +634,48 @@ impl<T: Trait> Module<T> {
 
         <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
         <ProposalDetailsByProposalId<T>>::insert(proposal_id, proposal_details);
+
+        Ok(())
+    }
+
+    // validates storage role parameters for the 'Set storage role parameters' proposal
+    fn ensure_storage_role_parameters_valid(
+        role_parameters: &RoleParameters<BalanceOfGovernanceCurrency<T>, T::BlockNumber>,
+    ) -> Result<(), Error> {
+        ensure!(
+            role_parameters.min_actors > 0,
+            Error::InvalidStorageRoleParameterMinActors
+        );
+
+        ensure!(
+            role_parameters.max_actors > 0,
+            Error::InvalidStorageRoleParameterMaxActors
+        );
+
+        ensure!(
+            role_parameters.reward_period == T::BlockNumber::from(600),
+            Error::InvalidStorageRoleParameterRewardPeriod
+        );
+
+        ensure!(
+            role_parameters.bonding_period == T::BlockNumber::from(600),
+            Error::InvalidStorageRoleParameterBondingPeriod
+        );
+
+        ensure!(
+            role_parameters.unbonding_period == T::BlockNumber::from(600),
+            Error::InvalidStorageRoleParameterUnbondingPeriod
+        );
+
+        ensure!(
+            role_parameters.min_service_period == T::BlockNumber::from(600),
+            Error::InvalidStorageRoleParameterMinServicePeriod
+        );
+
+        ensure!(
+            role_parameters.startup_grace_period >= T::BlockNumber::from(600),
+            Error::InvalidStorageRoleParameterStartupGracePeriod
+        );
 
         Ok(())
     }
