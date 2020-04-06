@@ -75,6 +75,9 @@ pub trait Trait:
     + roles::actors::Trait
     + staking::Trait
 {
+    /// Defines min allowed validator count for the 'Set validator count' proposal.
+    type SetValidatorCountProposalMinValidators: Get<u32>;
+
     /// Defines max allowed text proposal length.
     type TextProposalMaxLength: Get<u32>;
 
@@ -132,6 +135,9 @@ decl_error! {
 
         /// Invalid balance value for the spending proposal
         SpendingProposalZeroBalance,
+
+        /// Invalid validator count for the 'set validator count' proposal
+        LessThanMinValidatorCount,
 
         /// Require root origin in extrinsics
         RequireRootOrigin,
@@ -446,6 +452,11 @@ decl_module! {
             stake_balance: Option<BalanceOf<T>>,
             new_validator_count: u32,
         ) {
+            ensure!(
+                new_validator_count >= T::SetValidatorCountProposalMinValidators::get(),
+                Error::LessThanMinValidatorCount
+            );
+
             let proposal_code =
                 <staking::Call<T>>::set_validator_count(new_validator_count);
 

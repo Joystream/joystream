@@ -630,7 +630,7 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
                     b"title".to_vec(),
                     b"body".to_vec(),
                     None,
-                    1,
+                    4,
                 )
             },
             empty_stake_call: || {
@@ -640,7 +640,7 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
                     b"title".to_vec(),
                     b"body".to_vec(),
                     None,
-                    1,
+                    4,
                 )
             },
             invalid_stake_call: || {
@@ -650,7 +650,7 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
                     b"title".to_vec(),
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(5000u32)),
-                    1,
+                    4,
                 )
             },
             successful_call: || {
@@ -660,15 +660,32 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
                     b"title".to_vec(),
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(500u32)),
-                    1,
+                    4,
                 )
             },
             proposal_parameters: crate::proposal_types::parameters::set_validator_count_proposal::<
                 Test,
             >(),
-            proposal_details: ProposalDetails::SetValidatorCount(1),
+            proposal_details: ProposalDetails::SetValidatorCount(4),
         };
         proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
+    initial_test_ext().execute_with(|| {
+        assert_eq!(
+            ProposalCodex::create_set_validator_count_proposal(
+                RawOrigin::Signed(1).into(),
+                1,
+                b"title".to_vec(),
+                b"body".to_vec(),
+                Some(<BalanceOf<Test>>::from(500u32)),
+                3,
+            ),
+            Err(Error::LessThanMinValidatorCount)
+        );
     });
 }
 

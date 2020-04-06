@@ -859,6 +859,7 @@ impl proposals_discussion::Trait for Runtime {
 
 parameter_types! {
     pub const TextProposalMaxLength: u32 = 60_000;
+    pub const SetValidatorCountProposalMinValidators: u32 = 4;
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 2_000_000;
     pub const RuntimeUpgradeProposalAllowedProposers: Vec<u64> = Vec::new(); //TODO set allowed members
 }
@@ -868,6 +869,7 @@ impl proposals_codex::Trait for Runtime {
     type TextProposalMaxLength = TextProposalMaxLength;
     type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
     type RuntimeUpgradeProposalAllowedProposers = RuntimeUpgradeProposalAllowedProposers;
+    type SetValidatorCountProposalMinValidators = SetValidatorCountProposalMinValidators;
 }
 
 construct_runtime!(
