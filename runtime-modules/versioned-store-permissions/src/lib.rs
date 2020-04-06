@@ -1,15 +1,17 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use codec::Codec;
-use rstd::collections::btree_map::BTreeMap;
+use codec::{Codec, Encode, Decode};
+use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use rstd::prelude::*;
 use runtime_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_module, decl_storage, dispatch, ensure, Parameter};
 use system;
 
+#[cfg(feature = "std")]
+use serde_derive::{Deserialize, Serialize};
+
 // EntityId, ClassId -> should be configured on versioned_store::Trait
-pub use versioned_store::{ClassId, ClassPropertyValue, EntityId, Property, PropertyValue};
 
 mod constraint;
 mod credentials;
@@ -17,12 +19,13 @@ mod mock;
 mod operations;
 mod permissions;
 mod tests;
+mod errors;
 
 pub use constraint::*;
 pub use credentials::*;
 pub use operations::*;
 pub use permissions::*;
-
+pub use errors::*;
 /// Trait for checking if an account has specified Credential
 pub trait CredentialChecker<T: Trait> {
     fn account_has_credential(account: &T::AccountId, credential: T::Credential) -> bool;
@@ -57,12 +60,224 @@ impl<T: Trait> CreateClassPermissionsChecker<T> for () {
     }
 }
 
+/// Length constraint for input validation
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct InputValidationLengthConstraint {
+    /// Minimum length
+    pub min: u16,
+
+    /// Difference between minimum length and max length.
+    /// While having max would have been more direct, this
+    /// way makes max < min unrepresentable semantically,
+    /// which is safer.
+    pub max_min_diff: u16,
+}
+
+impl InputValidationLengthConstraint {
+    /// Helper for computing max
+    pub fn max(&self) -> u16 {
+        self.min + self.max_min_diff
+    }
+
+    pub fn ensure_valid(
+        &self,
+        len: usize,
+        too_short_msg: &'static str,
+        too_long_msg: &'static str,
+    ) -> Result<(), &'static str> {
+        let length = len as u16;
+        if length < self.min {
+            Err(too_short_msg)
+        } else if length > self.max() {
+            Err(too_long_msg)
+        } else {
+            Ok(())
+        }
+    }
+}
+
+pub type ClassId = u64;
+pub type EntityId = u64;
+
+#[derive(Encode, Decode, Default, Eq, PartialEq, Clone, Debug)]
+pub struct Class<T: Trait> {
+    /// Permissions for an instance of a Class in the versioned store.
+    class_permissions: ClassPermissionsType<T>,
+    /// All properties that have been used on this class across different class schemas.
+    /// Unlikely to be more than roughly 20 properties per class, often less.
+    /// For Person, think "height", "weight", etc.
+    pub properties: Vec<Property>,
+
+    /// All scehmas that are available for this class, think v0.0 Person, v.1.0 Person, etc.
+    pub schemas: Vec<ClassSchema>,
+
+    pub name: Vec<u8>,
+    pub description: Vec<u8>,
+}
+
+impl <T: Trait> Class<T> {
+    fn new(class_permissions: ClassPermissionsType<T>, name: Vec<u8>, description: Vec<u8>) -> Self {
+        Self {
+            class_permissions,
+            properties: vec![],
+            schemas: vec![],
+            name,
+            description
+        }
+    }
+
+    fn get_permissions_mut(&mut self) -> &mut ClassPermissionsType<T> {
+        &mut self.class_permissions
+    }
+
+    fn get_permissions(& self) -> &ClassPermissionsType<T> {
+        &self.class_permissions
+    }
+
+    fn refresh_last_permissions_update(&mut self) {
+        self.class_permissions.last_permissions_update = <system::Module<T>>::block_number();
+    }
+}
+
 pub type ClassPermissionsType<T> =
     ClassPermissions<ClassId, <T as Trait>::Credential, u16, <T as system::Trait>::BlockNumber>;
 
-pub trait Trait: system::Trait + versioned_store::Trait {
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct Entity {
+    pub id: EntityId,
+
+    /// The class id of this entity.
+    pub class_id: ClassId,
+
+    /// What schemas under which this entity of a class is available, think
+    /// v.2.0 Person schema for John, v3.0 Person schema for John
+    /// Unlikely to be more than roughly 20ish, assuming schemas for a given class eventually stableize, or that very old schema are eventually removed.
+    pub in_class_schema_indexes: Vec<u16>, // indices of schema in corresponding class
+
+    /// Values for properties on class that are used by some schema used by this entity!
+    /// Length is no more than Class.properties.
+    pub values: Vec<ClassPropertyValue>,
+    // pub deleted: bool,
+}
+
+/// A schema defines what properties describe an entity
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct ClassSchema {
+    /// Indices into properties vector for the corresponding class.
+    pub properties: Vec<u16>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct Property {
+    pub prop_type: PropertyType,
+    pub required: bool,
+    pub name: Vec<u8>,
+    pub description: Vec<u8>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum PropertyType {
+    None,
+
+    // Single value:
+    Bool,
+    Uint16,
+    Uint32,
+    Uint64,
+    Int16,
+    Int32,
+    Int64,
+    Text(u16),
+    Internal(ClassId),
+
+    // Vector of values.
+    // The first u16 value is the max length of this vector.
+    BoolVec(u16),
+    Uint16Vec(u16),
+    Uint32Vec(u16),
+    Uint64Vec(u16),
+    Int16Vec(u16),
+    Int32Vec(u16),
+    Int64Vec(u16),
+
+    /// The first u16 value is the max length of this vector.
+    /// The second u16 value is the max length of every text item in this vector.
+    TextVec(u16, u16),
+
+    /// The first u16 value is the max length of this vector.
+    /// The second ClassId value tells that an every element of this vector
+    /// should be of a specific ClassId.
+    InternalVec(u16, ClassId),
+    // External(ExternalProperty),
+    // ExternalVec(u16, ExternalProperty),
+}
+
+impl Default for PropertyType {
+    fn default() -> Self {
+        PropertyType::None
+    }
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum PropertyValue {
+    None,
+
+    // Single value:
+    Bool(bool),
+    Uint16(u16),
+    Uint32(u32),
+    Uint64(u64),
+    Int16(i16),
+    Int32(i32),
+    Int64(i64),
+    Text(Vec<u8>),
+    Internal(EntityId),
+
+    // Vector of values:
+    BoolVec(Vec<bool>),
+    Uint16Vec(Vec<u16>),
+    Uint32Vec(Vec<u32>),
+    Uint64Vec(Vec<u64>),
+    Int16Vec(Vec<i16>),
+    Int32Vec(Vec<i32>),
+    Int64Vec(Vec<i64>),
+    TextVec(Vec<Vec<u8>>),
+    InternalVec(Vec<EntityId>),
+    // External(ExternalPropertyType),
+    // ExternalVec(Vec<ExternalPropertyType>),
+}
+
+impl Default for PropertyValue {
+    fn default() -> Self {
+        PropertyValue::None
+    }
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct ClassPropertyValue {
+    /// Index is into properties vector of class.
+    pub in_class_index: u16,
+
+    /// Value of property with index `in_class_index` in a given class.
+    pub value: PropertyValue,
+}
+
+// Shortcuts for faster readability of match expression:
+use PropertyType as PT;
+use PropertyValue as PV;
+
+pub trait Trait: system::Trait + Default {
     // type Event: ...
     // Do we need Events?
+
+    type Event: Into<<Self as system::Trait>::Event>;
 
     /// Type that represents an actor or group of actors in the system.
     type Credential: Parameter
@@ -86,16 +301,35 @@ pub trait Trait: system::Trait + versioned_store::Trait {
 
 decl_storage! {
     trait Store for Module<T: Trait> as VersionedStorePermissions {
-      /// ClassPermissions of corresponding Classes in the versioned store
-      pub ClassPermissionsByClassId get(class_permissions_by_class_id): linked_map ClassId => ClassPermissionsType<T>;
+        /// ClassPermissions of corresponding Classes in the versioned store
+        pub ClassById get(class_by_id): linked_map ClassId => Class<T>;
 
-      /// Owner of an entity in the versioned store. If it is None then it is owned by the system.
-      pub EntityMaintainerByEntityId get(entity_maintainer_by_entity_id): linked_map EntityId => Option<T::Credential>;
-    }
+        pub EntityById get(entity_by_id) config(): map EntityId => Entity;
+
+        /// Owner of an entity in the versioned store. If it is None then it is owned by the system.
+        pub EntityMaintainerByEntityId get(entity_maintainer_by_entity_id): linked_map EntityId => Option<T::Credential>;
+
+        pub NextClassId get(next_class_id) config(): ClassId;
+
+        pub NextEntityId get(next_entity_id) config(): EntityId;
+
+        pub PropertyNameConstraint get(property_name_constraint)
+            config(): InputValidationLengthConstraint;
+
+        pub PropertyDescriptionConstraint get(property_description_constraint)
+            config(): InputValidationLengthConstraint;
+
+        pub ClassNameConstraint get(class_name_constraint)
+            config(): InputValidationLengthConstraint;
+
+        pub ClassDescriptionConstraint get(class_description_constraint)
+            config(): InputValidationLengthConstraint;
+        }
 }
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+
 
         /// Sets the admins for a class
         fn set_class_admins(
@@ -246,27 +480,24 @@ decl_module! {
             description: Vec<u8>,
             class_permissions: ClassPermissionsType<T>
         ) -> dispatch::Result {
-            let raw_origin = Self::ensure_root_or_signed(origin)?;
+            Self::ensure_can_create_class(origin)?;
 
-            let can_create_class = match raw_origin {
-                system::RawOrigin::Root => true,
-                system::RawOrigin::Signed(sender) => {
-                    T::CreateClassPermissionsChecker::account_can_create_class_permissions(&sender)
-                },
-                _ => false
-            };
+            Self::ensure_class_name_is_valid(&name)?;
+    
+            Self::ensure_class_description_is_valid(&description)?;
 
-            if can_create_class {
-                let class_id = <versioned_store::Module<T>>::create_class(name, description)?;
+            // is there a need to assert class_id is unique?
 
-                // is there a need to assert class_id is unique?
+            let class_id = NextClassId::get();
 
-                <ClassPermissionsByClassId<T>>::insert(&class_id, class_permissions);
+            let class = Class::new(class_permissions, name, description);
 
-                Ok(())
-            } else {
-                Err("NotPermittedToCreateClass")
-            }
+            <ClassById<T>>::insert(&class_id, class);
+
+            // Increment the next class id:
+            NextClassId::mutate(|n| *n += 1);
+
+            Ok(())
         }
 
         pub fn create_class_with_default_permissions(
@@ -297,7 +528,7 @@ decl_module! {
                     // at this point we don't enforce anything about reference constraints
                     // because of the chicken and egg problem. Instead enforcement is done
                     // at the time of creating an entity.
-                    let _schema_index = <versioned_store::Module<T>>::add_class_schema(class_id, existing_properties, new_properties)?;
+                    let _schema_index = Self::append_class_schema(class_id, existing_properties, new_properties)?;
                     Ok(())
                 }
             )
@@ -381,6 +612,20 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    fn ensure_can_create_class(origin: T::Origin) -> Result<(),  &'static str> {
+        let raw_origin = Self::ensure_root_or_signed(origin)?;
+
+        let can_create_class = match raw_origin {
+            system::RawOrigin::Root => true,
+            system::RawOrigin::Signed(sender) => {
+                T::CreateClassPermissionsChecker::account_can_create_class_permissions(&sender)
+            },
+            _ => false
+        };
+        ensure!(can_create_class, "NotPermittedToCreateClass");
+        Ok(())
+    }
+
     fn do_create_entity(
         raw_origin: &system::RawOrigin<T::AccountId>,
         with_credential: Option<T::Credential>,
@@ -393,7 +638,20 @@ impl<T: Trait> Module<T> {
             ClassPermissions::can_create_entity,
             class_id,
             |_class_permissions, access_level| {
-                let entity_id = <versioned_store::Module<T>>::create_entity(class_id)?;
+                let entity_id = NextEntityId::get();
+    
+                let new_entity = Entity {
+                    id: entity_id,
+                    class_id,
+                    in_class_schema_indexes: vec![],
+                    values: vec![],
+                };
+        
+                // Save newly created entity:
+                EntityById::insert(entity_id, new_entity);
+        
+                // Increment the next entity id:
+                NextEntityId::mutate(|n| *n += 1);
 
                 // Note: mutating value to None is equivalient to removing the value from storage map
                 <EntityMaintainerByEntityId<T>>::mutate(
@@ -434,12 +692,72 @@ impl<T: Trait> Module<T> {
             ClassPermissions::can_update_entity,
             class_id,
             |_class_permissions, _access_level| {
-                <versioned_store::Module<T>>::update_entity_property_values(
+                Self::complete_entity_property_values_update(
                     entity_id,
                     property_values,
                 )
             },
         )
+    }
+
+    pub fn complete_entity_property_values_update(
+        entity_id: EntityId,
+        new_property_values: Vec<ClassPropertyValue>,
+    ) -> dispatch::Result {
+        Self::ensure_known_entity_id(entity_id)?;
+
+        let (entity, class) = Self::get_entity_and_class(entity_id);
+
+        // Get current property values of an entity as a mutable vector,
+        // so we can update them if new values provided present in new_property_values.
+        let mut updated_values = entity.values;
+        let mut updates_count = 0;
+
+        // Iterate over a vector of new values and update corresponding properties
+        // of this entity if new values are valid.
+        for new_prop_value in new_property_values.iter() {
+            let ClassPropertyValue {
+                in_class_index: id,
+                value: new_value,
+            } = new_prop_value;
+
+            // Try to find a current property value in the entity
+            // by matching its id to the id of a property with an updated value.
+            if let Some(current_prop_value) = updated_values
+                .iter_mut()
+                .find(|prop| *id == prop.in_class_index)
+            {
+                let ClassPropertyValue {
+                    in_class_index: valid_id,
+                    value: current_value,
+                } = current_prop_value;
+
+                // Get class-level information about this property
+                let class_prop = class.properties.get(*valid_id as usize).unwrap();
+
+                // Validate a new property value against the type of this property
+                // and check any additional constraints like the length of a vector
+                // if it's a vector property or the length of a text if it's a text property.
+                Self::ensure_property_value_is_valid(new_value.clone(), class_prop.clone())?;
+
+                // Update a current prop value in a mutable vector, if a new value is valid.
+                *current_value = new_value.clone();
+                updates_count += 1;
+            } else {
+                // Throw an error if a property was not found on entity
+                // by an in-class index of a property update.
+                return Err(ERROR_UNKNOWN_ENTITY_PROP_ID);
+            }
+        }
+
+        // If at least one of the entity property values should be update:
+        if updates_count > 0 {
+            EntityById::mutate(entity_id, |entity| {
+                entity.values = updated_values;
+            });
+        }
+
+        Ok(())
     }
 
     fn do_add_schema_support_to_entity(
@@ -468,7 +786,7 @@ impl<T: Trait> Module<T> {
             ClassPermissions::can_update_entity,
             class_id,
             |_class_permissions, _access_level| {
-                <versioned_store::Module<T>>::add_schema_support_to_entity(
+                Self::add_schema_support(
                     entity_id,
                     schema_id,
                     property_values,
@@ -518,15 +836,15 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    /// Returns the stored class permissions if exist, error otherwise.
-    fn ensure_class_permissions(
+    /// Returns the stored class if exist, error otherwise.
+    fn ensure_class_exists(
         class_id: ClassId,
-    ) -> Result<ClassPermissionsType<T>, &'static str> {
+    ) -> Result<Class<T>, &'static str> {
         ensure!(
-            <ClassPermissionsByClassId<T>>::exists(class_id),
-            "ClassPermissionsNotFoundByClassId"
+            <ClassById<T>>::exists(class_id),
+            ERROR_CLASS_NOT_FOUND
         );
-        Ok(Self::class_permissions_by_class_id(class_id))
+        Ok(Self::class_by_id(class_id))
     }
 
     /// Derives the access level of the caller.
@@ -547,12 +865,14 @@ impl<T: Trait> Module<T> {
         Mutate: FnOnce(&mut ClassPermissionsType<T>) -> dispatch::Result,
     {
         let access_level = Self::derive_access_level(raw_origin, with_credential, None)?;
-        let mut class_permissions = Self::ensure_class_permissions(class_id)?;
-
-        predicate(&class_permissions, &access_level)?;
-        mutate(&mut class_permissions)?;
-        class_permissions.last_permissions_update = <system::Module<T>>::block_number();
-        <ClassPermissionsByClassId<T>>::insert(class_id, class_permissions);
+        let class = Self::ensure_class_exists(class_id)?;
+        predicate(class.get_permissions(), &access_level)?;
+        <ClassById<T>>::mutate(class_id, |inner_class|  {
+            //It is safe to not check for an error here, as result always be  Ok(())
+            mutate(inner_class.get_permissions_mut());
+            // Refresh last permissions update block number.
+            inner_class.refresh_last_permissions_update();
+        });
         Ok(())
     }
 
@@ -591,10 +911,10 @@ impl<T: Trait> Module<T> {
     {
         let access_level =
             Self::derive_access_level(raw_origin, with_credential, as_entity_maintainer)?;
-        let class_permissions = Self::ensure_class_permissions(class_id)?;
-
-        predicate(&class_permissions, &access_level)?;
-        callback(&class_permissions, &access_level)
+        let class = Self::ensure_class_exists(class_id)?;
+        let class_permissions = class.get_permissions();
+        predicate(class_permissions, &access_level)?;
+        callback(class_permissions, &access_level)
     }
 
     fn get_class_id_by_entity_id(entity_id: EntityId) -> Result<ClassId, &'static str> {
@@ -603,7 +923,7 @@ impl<T: Trait> Module<T> {
             versioned_store::EntityById::exists(entity_id),
             "EntityNotFound"
         );
-        let entity = <versioned_store::Module<T>>::entity_by_id(entity_id);
+        let entity = Self::entity_by_id(entity_id);
         Ok(entity.class_id)
     }
 
@@ -618,10 +938,10 @@ impl<T: Trait> Module<T> {
                 // get the class permissions for target class
                 let target_class_id = Self::get_class_id_by_entity_id(*target_entity_id)?;
                 // assert class permissions exists for target class
-                let class_permissions = Self::class_permissions_by_class_id(target_class_id);
+                let class = Self::class_by_id(target_class_id);
 
                 // ensure internal reference is permitted
-                match class_permissions.reference_constraint {
+                match &class.get_permissions().reference_constraint {
                     ReferenceConstraint::NoConstraint => Ok(()),
                     ReferenceConstraint::NoReferencingAllowed => {
                         Err("EntityCannotReferenceTargetEntity")
@@ -643,4 +963,394 @@ impl<T: Trait> Module<T> {
         // if we reach here all Internal properties have passed the constraint check
         Ok(())
     }
+    
+        /// Returns an index of a newly added class schema on success.
+        pub fn append_class_schema(
+            class_id: ClassId,
+            existing_properties: Vec<u16>,
+            new_properties: Vec<Property>,
+        ) -> Result<u16, &'static str> {
+            Self::ensure_known_class_id(class_id)?;
+    
+            let non_empty_schema = !existing_properties.is_empty() || !new_properties.is_empty();
+    
+            ensure!(non_empty_schema, ERROR_NO_PROPS_IN_CLASS_SCHEMA);
+    
+            let class = <ClassById<T>>::get(class_id);
+    
+            // TODO Use BTreeSet for prop unique names when switched to Substrate 2.
+            // There is no support for BTreeSet in Substrate 1 runtime.
+            // use rstd::collections::btree_set::BTreeSet;
+            let mut unique_prop_names = BTreeSet::new();
+            for prop in class.properties.iter() {
+                unique_prop_names.insert(prop.name.clone());
+            }
+    
+            for prop in new_properties.iter() {
+                Self::ensure_property_name_is_valid(&prop.name)?;
+                Self::ensure_property_description_is_valid(&prop.description)?;
+    
+                // Check that the name of a new property is unique within its class.
+                ensure!(
+                    !unique_prop_names.contains(&prop.name),
+                    ERROR_PROP_NAME_NOT_UNIQUE_IN_CLASS
+                );
+                unique_prop_names.insert(prop.name.clone());
+            }
+    
+            // Check that existing props are valid indices of class properties vector:
+            let has_unknown_props = existing_properties
+                .iter()
+                .any(|&prop_id| prop_id >= class.properties.len() as u16);
+            ensure!(
+                !has_unknown_props,
+                ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
+            );
+    
+            // Check validity of Internal(ClassId) for new_properties.
+            let has_unknown_internal_id = new_properties.iter().any(|prop| match prop.prop_type {
+                PropertyType::Internal(other_class_id) => !<ClassById<T>>::exists(other_class_id),
+                _ => false,
+            });
+            ensure!(
+                !has_unknown_internal_id,
+                ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID
+            );
+    
+            // Use the current length of schemas in this class as an index
+            // for the next schema that will be sent in a result of this function.
+            let schema_idx = class.schemas.len() as u16;
+    
+            let mut schema = ClassSchema {
+                properties: existing_properties,
+            };
+    
+            let mut updated_class_props = class.properties;
+            new_properties.into_iter().for_each(|prop| {
+                let prop_id = updated_class_props.len() as u16;
+                updated_class_props.push(prop);
+                schema.properties.push(prop_id);
+            });
+    
+            <ClassById<T>>::mutate(class_id, |class| {
+                class.properties = updated_class_props;
+                class.schemas.push(schema);
+            });
+    
+            Ok(schema_idx)
+        }
+    
+        pub fn add_schema_support(
+            entity_id: EntityId,
+            schema_id: u16,
+            property_values: Vec<ClassPropertyValue>,
+        ) -> dispatch::Result {
+            Self::ensure_known_entity_id(entity_id)?;
+    
+            let (entity, class) = Self::get_entity_and_class(entity_id);
+    
+            // Check that schema_id is a valid index of class schemas vector:
+            let known_schema_id = schema_id < class.schemas.len() as u16;
+            ensure!(known_schema_id, ERROR_UNKNOWN_CLASS_SCHEMA_ID);
+    
+            // Check that schema id is not yet added to this entity:
+            let schema_not_added = entity
+                .in_class_schema_indexes
+                .iter()
+                .position(|x| *x == schema_id)
+                .is_none();
+            ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY);
+    
+            let class_schema_opt = class.schemas.get(schema_id as usize);
+            let schema_prop_ids = class_schema_opt.unwrap().properties.clone();
+    
+            let current_entity_values = entity.values.clone();
+            let mut appended_entity_values = entity.values;
+    
+            for &prop_id in schema_prop_ids.iter() {
+                let prop_already_added = current_entity_values
+                    .iter()
+                    .any(|prop| prop.in_class_index == prop_id);
+    
+                if prop_already_added {
+                    // A property is already added to the entity and cannot be updated
+                    // while adding a schema support to this entity.
+                    continue;
+                }
+    
+                let class_prop = class.properties.get(prop_id as usize).unwrap();
+    
+                // If a value was not povided for the property of this schema:
+                match property_values
+                    .iter()
+                    .find(|prop| prop.in_class_index == prop_id)
+                {
+                    Some(new_prop) => {
+                        let ClassPropertyValue {
+                            in_class_index: new_id,
+                            value: new_value,
+                        } = new_prop;
+    
+                        Self::ensure_property_value_is_valid(new_value.clone(), class_prop.clone())?;
+    
+                        appended_entity_values.push(ClassPropertyValue {
+                            in_class_index: *new_id,
+                            value: new_value.clone(),
+                        });
+                    }
+                    None => {
+                        // All required prop values should be are provided
+                        if class_prop.required {
+                            return Err(ERROR_MISSING_REQUIRED_PROP);
+                        }
+                        // Add all missing non required schema prop values as PropertyValue::None
+                        else {
+                            appended_entity_values.push(ClassPropertyValue {
+                                in_class_index: prop_id,
+                                value: PropertyValue::None,
+                            });
+                        }
+                    }
+                }
+            }
+    
+            EntityById::mutate(entity_id, |entity| {
+                // Add a new schema to the list of schemas supported by this entity.
+                entity.in_class_schema_indexes.push(schema_id);
+    
+                // Update entity values only if new properties have been added.
+                if appended_entity_values.len() > entity.values.len() {
+                    entity.values = appended_entity_values;
+                }
+            });
+    
+            Ok(())
+        }
+    
+        // Commented out for now <- requested by Bedeho.
+        // pub fn delete_entity(entity_id: EntityId) -> dispatch::Result {
+        //     Self::ensure_known_entity_id(entity_id)?;
+    
+        //     let is_deleted = EntityById::get(entity_id).deleted;
+        //     ensure!(!is_deleted, ERROR_ENTITY_ALREADY_DELETED);
+    
+        //     EntityById::mutate(entity_id, |x| {
+        //         x.deleted = true;
+        //     });
+    
+        //     Self::deposit_event(RawEvent::EntityDeleted(entity_id));
+        //     Ok(())
+        // }
+    
+        // Helper functions:
+        // ----------------------------------------------------------------
+    
+        pub fn ensure_known_class_id(class_id: ClassId) -> dispatch::Result {
+            ensure!(<ClassById<T>>::exists(class_id), ERROR_CLASS_NOT_FOUND);
+            Ok(())
+        }
+    
+        pub fn ensure_known_entity_id(entity_id: EntityId) -> dispatch::Result {
+            ensure!(EntityById::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
+            Ok(())
+        }
+    
+        pub fn ensure_valid_internal_prop(value: PropertyValue, prop: Property) -> dispatch::Result {
+            match (value, prop.prop_type) {
+                (PV::Internal(entity_id), PT::Internal(class_id)) => {
+                    Self::ensure_known_class_id(class_id)?;
+                    Self::ensure_known_entity_id(entity_id)?;
+                    let entity = Self::entity_by_id(entity_id);
+                    ensure!(
+                        entity.class_id == class_id,
+                        ERROR_INTERNAL_RPOP_DOES_NOT_MATCH_ITS_CLASS
+                    );
+                    Ok(())
+                }
+                _ => Ok(()),
+            }
+        }
+    
+        pub fn is_unknown_internal_entity_id(id: PropertyValue) -> bool {
+            if let PropertyValue::Internal(entity_id) = id {
+                !EntityById::exists(entity_id)
+            } else {
+                false
+            }
+        }
+    
+        pub fn get_entity_and_class(entity_id: EntityId) -> (Entity, Class<T>) {
+            let entity = EntityById::get(entity_id);
+            let class = ClassById::get(entity.class_id);
+            (entity, class)
+        }
+    
+        pub fn ensure_property_value_is_valid(
+            value: PropertyValue,
+            prop: Property,
+        ) -> dispatch::Result {
+            Self::ensure_prop_value_matches_its_type(value.clone(), prop.clone())?;
+            Self::ensure_valid_internal_prop(value.clone(), prop.clone())?;
+            Self::validate_max_len_if_text_prop(value.clone(), prop.clone())?;
+            Self::validate_max_len_if_vec_prop(value.clone(), prop.clone())?;
+            Ok(())
+        }
+    
+        pub fn validate_max_len_if_text_prop(value: PropertyValue, prop: Property) -> dispatch::Result {
+            match (value, prop.prop_type) {
+                (PV::Text(text), PT::Text(max_len)) => Self::validate_max_len_of_text(text, max_len),
+                _ => Ok(()),
+            }
+        }
+    
+        pub fn validate_max_len_of_text(text: Vec<u8>, max_len: u16) -> dispatch::Result {
+            if text.len() <= max_len as usize {
+                Ok(())
+            } else {
+                Err(ERROR_TEXT_PROP_IS_TOO_LONG)
+            }
+        }
+    
+        #[rustfmt::skip]
+        pub fn validate_max_len_if_vec_prop(
+            value: PropertyValue,
+            prop: Property,
+        ) -> dispatch::Result {
+    
+            fn validate_vec_len<T>(vec: Vec<T>, max_len: u16) -> bool {
+                vec.len() <= max_len as usize
+            }
+    
+            fn validate_vec_len_ref<T>(vec: &Vec<T>, max_len: u16) -> bool {
+                vec.len() <= max_len as usize
+            }
+    
+            let is_valid_len = match (value, prop.prop_type) {
+                (PV::BoolVec(vec),     PT::BoolVec(max_len))   => validate_vec_len(vec, max_len),
+                (PV::Uint16Vec(vec),   PT::Uint16Vec(max_len)) => validate_vec_len(vec, max_len),
+                (PV::Uint32Vec(vec),   PT::Uint32Vec(max_len)) => validate_vec_len(vec, max_len),
+                (PV::Uint64Vec(vec),   PT::Uint64Vec(max_len)) => validate_vec_len(vec, max_len),
+                (PV::Int16Vec(vec),    PT::Int16Vec(max_len))  => validate_vec_len(vec, max_len),
+                (PV::Int32Vec(vec),    PT::Int32Vec(max_len))  => validate_vec_len(vec, max_len),
+                (PV::Int64Vec(vec),    PT::Int64Vec(max_len))  => validate_vec_len(vec, max_len),
+    
+                (PV::TextVec(vec),     PT::TextVec(vec_max_len, text_max_len)) => {
+                    if validate_vec_len_ref(&vec, vec_max_len) {
+                        for text_item in vec.iter() {
+                            Self::validate_max_len_of_text(text_item.clone(), text_max_len)?;
+                        }
+                        true
+                    } else {
+                        false
+                    }
+                },
+    
+                (PV::InternalVec(vec), PT::InternalVec(vec_max_len, class_id)) => {
+                    Self::ensure_known_class_id(class_id)?;
+                    if validate_vec_len_ref(&vec, vec_max_len) {
+                        for entity_id in vec.iter() {
+                            Self::ensure_known_entity_id(entity_id.clone())?;
+                            let entity = Self::entity_by_id(entity_id);
+                            ensure!(entity.class_id == class_id, ERROR_INTERNAL_RPOP_DOES_NOT_MATCH_ITS_CLASS);
+                        }
+                        true
+                    } else {
+                        false
+                    }
+                },
+    
+                _ => true
+            };
+    
+            if is_valid_len {
+                Ok(())
+            } else {
+                Err(ERROR_VEC_PROP_IS_TOO_LONG)
+            }
+        }
+    
+        pub fn ensure_prop_value_matches_its_type(
+            value: PropertyValue,
+            prop: Property,
+        ) -> dispatch::Result {
+            if Self::does_prop_value_match_type(value, prop) {
+                Ok(())
+            } else {
+                Err(ERROR_PROP_VALUE_DONT_MATCH_TYPE)
+            }
+        }
+    
+        #[rustfmt::skip]
+        pub fn does_prop_value_match_type(
+            value: PropertyValue,
+            prop: Property,
+        ) -> bool {
+    
+            // A non required property can be updated to None:
+            if !prop.required && value == PV::None {
+                return true
+            }
+    
+            match (value, prop.prop_type) {
+                (PV::None,        PT::None) |
+    
+                // Single values
+                (PV::Bool(_),     PT::Bool) |
+                (PV::Uint16(_),   PT::Uint16) |
+                (PV::Uint32(_),   PT::Uint32) |
+                (PV::Uint64(_),   PT::Uint64) |
+                (PV::Int16(_),    PT::Int16) |
+                (PV::Int32(_),    PT::Int32) |
+                (PV::Int64(_),    PT::Int64) |
+                (PV::Text(_),     PT::Text(_)) |
+                (PV::Internal(_), PT::Internal(_)) |
+    
+                // Vectors:
+                (PV::BoolVec(_),     PT::BoolVec(_)) |
+                (PV::Uint16Vec(_),   PT::Uint16Vec(_)) |
+                (PV::Uint32Vec(_),   PT::Uint32Vec(_)) |
+                (PV::Uint64Vec(_),   PT::Uint64Vec(_)) |
+                (PV::Int16Vec(_),    PT::Int16Vec(_)) |
+                (PV::Int32Vec(_),    PT::Int32Vec(_)) |
+                (PV::Int64Vec(_),    PT::Int64Vec(_)) |
+                (PV::TextVec(_),     PT::TextVec(_, _)) |
+                (PV::InternalVec(_), PT::InternalVec(_, _)) => true,
+    
+                // (PV::External(_), PT::External(_)) => true,
+                // (PV::ExternalVec(_), PT::ExternalVec(_, _)) => true,
+                _ => false,
+            }
+        }
+    
+        pub fn ensure_property_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
+            PropertyNameConstraint::get().ensure_valid(
+                text.len(),
+                ERROR_PROPERTY_NAME_TOO_SHORT,
+                ERROR_PROPERTY_NAME_TOO_LONG,
+            )
+        }
+    
+        pub fn ensure_property_description_is_valid(text: &Vec<u8>) -> dispatch::Result {
+            PropertyDescriptionConstraint::get().ensure_valid(
+                text.len(),
+                ERROR_PROPERTY_DESCRIPTION_TOO_SHORT,
+                ERROR_PROPERTY_DESCRIPTION_TOO_LONG,
+            )
+        }
+    
+        pub fn ensure_class_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
+            ClassNameConstraint::get().ensure_valid(
+                text.len(),
+                ERROR_CLASS_NAME_TOO_SHORT,
+                ERROR_CLASS_NAME_TOO_LONG,
+            )
+        }
+    
+        pub fn ensure_class_description_is_valid(text: &Vec<u8>) -> dispatch::Result {
+            ClassDescriptionConstraint::get().ensure_valid(
+                text.len(),
+                ERROR_CLASS_DESCRIPTION_TOO_SHORT,
+                ERROR_CLASS_DESCRIPTION_TOO_LONG,
+            )
+        }
 }

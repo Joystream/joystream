@@ -17,7 +17,7 @@ impl_outer_origin! {
 }
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct Runtime;
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
@@ -56,6 +56,7 @@ impl versioned_store::Trait for Runtime {
 }
 
 impl Trait for Runtime {
+    type Event = ();
     type Credential = u64;
     type CredentialChecker = MockCredentialChecker;
     type CreateClassPermissionsChecker = MockCreateClassPermissionsChecker;

@@ -44,6 +44,7 @@ where
     Credential: Ord + Clone,
     PropertyIndex: Ord,
 {
+
     /// Returns Ok if access_level is root origin or credential is in admins set, Err otherwise
     pub fn is_admin(
         class_permissions: &Self,

@@ -1,7 +1,7 @@
 use codec::{Decode, Encode};
 use rstd::collections::btree_map::BTreeMap;
 use rstd::prelude::*;
-use versioned_store::{ClassId, ClassPropertyValue, EntityId, PropertyValue};
+use crate::{ClassId, ClassPropertyValue, EntityId, PropertyValue};
 
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub enum ParametrizedPropertyValue {
