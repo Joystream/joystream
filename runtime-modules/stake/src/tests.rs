@@ -802,3 +802,178 @@ fn unstake() {
         assert_eq!(StakePool::stake_pool_balance(), starting_stake_fund_balance);
     });
 }
+
+#[test]
+fn immediate_slashing_cannot_slash_non_existent_stake() {
+    build_test_externalities().execute_with(|| {
+        let outcome = StakePool::slash_immediate(&100, 5000, false);
+        assert!(outcome.is_err());
+        let error = outcome.err().unwrap();
+        assert_eq!(error, StakeActionError::StakeNotFound);
+    });
+}
+
+#[test]
+fn immediate_slashing_without_unstaking() {
+    build_test_externalities().execute_with(|| {
+        const UNSTAKE_POLICY: bool = false;
+        let staked_amount = Balances::minimum_balance() + 10000;
+        let _ = Balances::deposit_creating(&StakePool::stake_pool_account_id(), staked_amount);
+
+        let stake_id = StakePool::create_stake();
+        let created_at = System::block_number();
+        let initial_stake_state = Stake {
+            created: created_at,
+            staking_status: StakingStatus::Staked(StakedState {
+                staked_amount,
+                staked_status: StakedStatus::Normal,
+                next_slash_id: 0,
+                ongoing_slashes: BTreeMap::new(),
+            }),
+        };
+        <Stakes<Test>>::insert(&stake_id, initial_stake_state);
+
+        let slash_amount = 5000;
+
+        let outcome = StakePool::slash_immediate(&stake_id, slash_amount, UNSTAKE_POLICY);
+        assert!(outcome.is_ok());
+        let outcome = outcome.ok().unwrap();
+
+        assert_eq!(outcome.caused_unstake, false);
+        assert_eq!(outcome.actually_slashed, slash_amount);
+        assert_eq!(outcome.remaining_stake, staked_amount - slash_amount);
+        // Default handler destroys imbalance
+        assert_eq!(outcome.remaining_imbalance.peek(), 0);
+
+        assert_eq!(
+            <Stakes<Test>>::get(stake_id),
+            Stake {
+                created: created_at,
+                staking_status: StakingStatus::Staked(StakedState {
+                    staked_amount: outcome.remaining_stake,
+                    staked_status: StakedStatus::Normal,
+                    next_slash_id: 0,
+                    ongoing_slashes: BTreeMap::new()
+                }),
+            }
+        );
+
+        // slash to zero but without asking to unstake
+        // Slash and unstake by making slash go to zero
+        let slash_amount = outcome.remaining_stake;
+        let outcome = StakePool::slash_immediate(&stake_id, slash_amount, UNSTAKE_POLICY)
+            .ok()
+            .unwrap();
+        assert_eq!(outcome.caused_unstake, false);
+        assert_eq!(outcome.actually_slashed, slash_amount);
+        assert_eq!(outcome.remaining_stake, 0);
+        // Default handler destroys imbalance
+        assert_eq!(outcome.remaining_imbalance.peek(), 0);
+
+        // Should still be staked, even if staked amount = 0
+        assert_eq!(
+            <Stakes<Test>>::get(stake_id),
+            Stake {
+                created: created_at,
+                staking_status: StakingStatus::Staked(StakedState {
+                    staked_amount: 0,
+                    staked_status: StakedStatus::Normal,
+                    next_slash_id: 0,
+                    ongoing_slashes: BTreeMap::new()
+                }),
+            }
+        );
+    });
+}
+
+#[test]
+fn immediate_slashing_with_unstaking() {
+    build_test_externalities().execute_with(|| {
+        const UNSTAKE_POLICY: bool = true;
+        let staked_amount = Balances::minimum_balance() + 10000;
+        let _ = Balances::deposit_creating(&StakePool::stake_pool_account_id(), staked_amount);
+
+        let stake_id = StakePool::create_stake();
+        let created_at = System::block_number();
+        let initial_stake_state = Stake {
+            created: created_at,
+            staking_status: StakingStatus::Staked(StakedState {
+                staked_amount,
+                staked_status: StakedStatus::Normal,
+                next_slash_id: 0,
+                ongoing_slashes: BTreeMap::new(),
+            }),
+        };
+        <Stakes<Test>>::insert(&stake_id, initial_stake_state);
+
+        // Slash whole amount unstake by making slash go to zero
+        let slash_amount = staked_amount;
+        let outcome = StakePool::slash_immediate(&stake_id, slash_amount, UNSTAKE_POLICY)
+            .ok()
+            .unwrap();
+        assert_eq!(outcome.caused_unstake, true);
+        assert_eq!(outcome.actually_slashed, slash_amount);
+        assert_eq!(outcome.remaining_stake, 0);
+        // Default handler destroys imbalance
+        assert_eq!(outcome.remaining_imbalance.peek(), 0);
+        // Should now be unstaked
+        assert_eq!(
+            <Stakes<Test>>::get(stake_id),
+            Stake {
+                created: created_at,
+                staking_status: StakingStatus::NotStaked
+            }
+        );
+    });
+}
+
+#[test]
+fn immediate_slashing_cannot_slash_if_not_staked() {
+    build_test_externalities().execute_with(|| {
+        let stake_id = StakePool::create_stake();
+        let created_at = System::block_number();
+        let initial_stake_state = Stake {
+            created: created_at,
+            staking_status: StakingStatus::NotStaked,
+        };
+        <Stakes<Test>>::insert(&stake_id, initial_stake_state);
+
+        let outcome = StakePool::slash_immediate(&stake_id, 1, false);
+        let outcome_err = outcome.err().unwrap();
+        assert_eq!(
+            outcome_err,
+            StakeActionError::Error(ImmediateSlashingError::NotStaked)
+        );
+    });
+}
+
+#[test]
+fn immediate_slashing_cannot_slash_zero() {
+    build_test_externalities().execute_with(|| {
+        let staked_amount = Balances::minimum_balance() + 10000;
+        let _ = Balances::deposit_creating(&StakePool::stake_pool_account_id(), staked_amount);
+
+        let stake_id = StakePool::create_stake();
+        let created_at = System::block_number();
+        let initial_stake_state = Stake {
+            created: created_at,
+            staking_status: StakingStatus::Staked(StakedState {
+                staked_amount,
+                staked_status: StakedStatus::Normal,
+                next_slash_id: 0,
+                ongoing_slashes: BTreeMap::new(),
+            }),
+        };
+        <Stakes<Test>>::insert(&stake_id, initial_stake_state);
+
+        const ZERO_SLASH_AMOUNT: u64 = 0;
+
+        let outcome_err = StakePool::slash_immediate(&stake_id, ZERO_SLASH_AMOUNT, true)
+            .err()
+            .unwrap();
+        assert_eq!(
+            outcome_err,
+            StakeActionError::Error(ImmediateSlashingError::SlashAmountShouldBeGreaterThanZero)
+        );
+    });
+}

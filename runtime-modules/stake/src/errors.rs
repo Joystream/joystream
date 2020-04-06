@@ -45,6 +45,12 @@ pub enum DecreasingStakeError {
 }
 
 #[derive(Debug, Eq, PartialEq)]
+pub enum ImmediateSlashingError {
+    NotStaked,
+    SlashAmountShouldBeGreaterThanZero,
+}
+
+#[derive(Debug, Eq, PartialEq)]
 pub enum InitiateSlashingError {
     NotStaked,
     SlashPeriodShouldBeGreaterThanZero,

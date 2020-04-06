@@ -37,7 +37,7 @@ impl<T: stake::Trait + proposals_engine::Trait> stake::StakingEventsHandler<T>
     /// Empty handler for slashing
     fn slashed(
         _: &<T as stake::Trait>::StakeId,
-        _: &<T as stake::Trait>::SlashId,
+        _: Option<<T as stake::Trait>::SlashId>,
         _: BalanceOf<T>,
         _: BalanceOf<T>,
         remaining_imbalance: NegativeImbalance<T>,

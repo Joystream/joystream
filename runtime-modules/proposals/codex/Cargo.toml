@@ -116,3 +116,8 @@ rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 default_features = false
 package = 'substrate-governance-module'
 path = '../../governance'
+
+[dev-dependencies.token_mint]
+default_features = false
+package = 'substrate-token-mint-module'
+path = '../../token-minting'

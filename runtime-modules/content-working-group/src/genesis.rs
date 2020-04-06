@@ -43,11 +43,11 @@ pub struct GenesisConfigBuilder<T: Trait> {
 }
 
 impl<T: Trait> GenesisConfigBuilder<T> {
-    /*
-    pub fn set_mint(mut self, mint: <T as minting::Trait>::MintId) -> Self {
-        self.mint = mint;
+    pub fn with_mint_capacity(mut self, capacity: minting::BalanceOf<T>) -> Self {
+        self.mint_capacity = capacity;
         self
     }
+    /*
     pub fn set_channel_handle_constraint(mut self, constraint: InputValidationLengthConstraint) -> Self {
         self.channel_description_constraint = constraint;
         self
