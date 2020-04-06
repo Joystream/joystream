@@ -10,7 +10,7 @@ import { assert } from 'chai';
 import { v4 as uuid } from 'uuid';
 import { Utils } from '../utils/utils';
 
-describe('Council integration tests', () => {
+export function councilTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
@@ -21,8 +21,6 @@ describe('Council integration tests', () => {
   const defaultTimeout: number = 120000;
   let sudo: KeyringPair;
   let apiWrapper: ApiWrapper;
-  const m1KeyPairs: KeyringPair[] = new Array();
-  const m2KeyPairs: KeyringPair[] = new Array();
 
   before(async function () {
     this.timeout(defaultTimeout);
@@ -30,9 +28,6 @@ describe('Council integration tests', () => {
     const provider = new WsProvider(nodeUrl);
     apiWrapper = await ApiWrapper.create(provider);
   });
-
-  membershipTest(m1KeyPairs);
-  membershipTest(m2KeyPairs);
 
   it('Electing a council test', async () => {
     sudo = keyring.addFromUri(sudoUri);
@@ -97,4 +92,12 @@ describe('Council integration tests', () => {
   after(() => {
     apiWrapper.close();
   });
+}
+
+describe('Council integration tests', () => {
+  const m1KeyPairs: KeyringPair[] = new Array();
+  const m2KeyPairs: KeyringPair[] = new Array();
+  membershipTest(m1KeyPairs);
+  membershipTest(m2KeyPairs);
+  councilTest(m1KeyPairs, m2KeyPairs);
 });
