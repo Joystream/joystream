@@ -21,8 +21,8 @@ describe('Council integration tests', () => {
   const defaultTimeout: number = 120000;
   let sudo: KeyringPair;
   let apiWrapper: ApiWrapper;
-  let m1KeyPairs: KeyringPair[] = new Array();
-  let m2KeyPairs: KeyringPair[] = new Array();
+  const m1KeyPairs: KeyringPair[] = new Array();
+  const m2KeyPairs: KeyringPair[] = new Array();
 
   before(async function () {
     this.timeout(defaultTimeout);
@@ -40,7 +40,7 @@ describe('Council integration tests', () => {
     await apiWrapper.sudoStartAnnouncingPerion(sudo, now.addn(100));
     const applyForCouncilFee: BN = apiWrapper.estimateApplyForCouncilFee(greaterStake);
     const voteForCouncilFee: BN = apiWrapper.estimateVoteForCouncilFee(sudo.address, sudo.address, greaterStake);
-    let salt: string[] = new Array();
+    const salt: string[] = new Array();
     m1KeyPairs.forEach(() => {
       salt.push(''.concat(uuid().replace(/-/g, '')));
     });
@@ -74,9 +74,9 @@ describe('Council integration tests', () => {
     await apiWrapper.batchRevealVote(m1KeyPairs.slice(K), m2KeyPairs.slice(K), salt.slice(K));
     now = await apiWrapper.getBestBlock();
     await apiWrapper.sudoStartRevealingPerion(sudo, now.addn(2));
-    //TODO get duration from chain
+    // TODO get duration from chain
     await Utils.wait(6000);
-    let seats: Seat[] = await apiWrapper.getCouncil();
+    const seats: Seat[] = await apiWrapper.getCouncil();
     const m2addresses: string[] = m2KeyPairs.map(keyPair => keyPair.address);
     const m1addresses: string[] = m1KeyPairs.map(keyPair => keyPair.address);
     const members: string[] = seats.map(seat => seat.member.toString());
