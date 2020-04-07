@@ -12,6 +12,7 @@ use runtime_primitives::{
 use srml_support::{impl_outer_origin, parameter_types};
 use crate::InputValidationLengthConstraint;
 
+
 impl_outer_origin! {
     pub enum Origin for Runtime {}
 }
@@ -155,7 +156,15 @@ pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
     build_test_externalities(versioned_store_config).execute_with(f)
 }
 
+pub fn good_class_name() -> Vec<u8> {
+    b"Name of a class".to_vec()
+}
+
+pub fn good_class_description() -> Vec<u8> {
+    b"Description of a class".to_vec()
+}
+
 // pub type System = system::Module;
 
 /// Export module on a test runtime
-pub type Permissions = Module<Runtime>;
+pub type TestModule = Module<Runtime>;

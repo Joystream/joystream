@@ -24,7 +24,7 @@ fn simple_test_entity_property_values() -> Vec<ClassPropertyValue> {
 
 fn create_simple_class(permissions: ClassPermissionsType<Runtime>) -> ClassId {
     let class_id = <Module<Runtime>>::next_class_id();
-    assert_ok!(Permissions::create_class(
+    assert_ok!(TestModule::create_class(
         Origin::signed(CLASS_PERMISSIONS_CREATOR1),
         b"class_name_1".to_vec(),
         b"class_description_1".to_vec(),
@@ -66,7 +66,7 @@ fn create_class_then_entity_with_default_class() {
     with_test_externalities(|| {
         // Only authorized accounts can create classes
         assert_err!(
-            Permissions::create_class_with_default_permissions(
+            TestModule::create_class_with_default_permissions(
                 Origin::signed(UNAUTHORIZED_CLASS_PERMISSIONS_CREATOR),
                 b"class_name".to_vec(),
                 b"class_description".to_vec(),
@@ -78,9 +78,11 @@ fn create_class_then_entity_with_default_class() {
 
         assert!(<ClassById<Runtime>>::exists(class_id));
 
+        assert_eq!(TestModule::next_class_id(), class_id + 1);
+
         // default class permissions have empty add_schema acl
         assert_err!(
-            Permissions::add_class_schema(
+            TestModule::add_class_schema(
                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
                 Some(0),
                 class_id,
@@ -92,7 +94,7 @@ fn create_class_then_entity_with_default_class() {
 
         // give members of GROUP_ZERO permission to add schemas
         let add_schema_set = CredentialSet::from(vec![0]);
-        assert_ok!(Permissions::set_class_add_schemas_set(
+        assert_ok!(TestModule::set_class_add_schemas_set(
             Origin::ROOT,
             None,
             class_id,
@@ -100,7 +102,7 @@ fn create_class_then_entity_with_default_class() {
         ));
 
         // successfully add a new schema
-        assert_ok!(Permissions::add_class_schema(
+        assert_ok!(TestModule::add_class_schema(
             Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
             Some(0),
             class_id,
@@ -110,17 +112,17 @@ fn create_class_then_entity_with_default_class() {
 
         // System can always create entities (provided class exists) bypassing any permissions
         let entity_id_1 = next_entity_id();
-        assert_ok!(Permissions::create_entity(Origin::ROOT, None, class_id,));
+        assert_ok!(TestModule::create_entity(Origin::ROOT, None, class_id,));
         // entities created by system are "un-owned"
         assert!(!<EntityMaintainerByEntityId<Runtime>>::exists(entity_id_1));
         assert_eq!(
-            Permissions::entity_maintainer_by_entity_id(entity_id_1),
+            TestModule::entity_maintainer_by_entity_id(entity_id_1),
             None
         );
 
         // default permissions have empty create_entities set and by default no entities can be created
         assert_err!(
-            Permissions::create_entity(
+            TestModule::create_entity(
                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
                 Some(1),
                 class_id,
@@ -128,7 +130,7 @@ fn create_class_then_entity_with_default_class() {
             "EntitiesCannotBeCreated"
         );
 
-        assert_ok!(Permissions::set_class_entities_can_be_created(
+        assert_ok!(TestModule::set_class_entities_can_be_created(
             Origin::ROOT,
             None,
             class_id,
@@ -136,7 +138,7 @@ fn create_class_then_entity_with_default_class() {
         ));
 
         assert_err!(
-            Permissions::create_entity(
+            TestModule::create_entity(
                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
                 Some(1),
                 class_id,
@@ -146,7 +148,7 @@ fn create_class_then_entity_with_default_class() {
 
         // give members of GROUP_ONE permission to create entities
         let create_entities_set = CredentialSet::from(vec![1]);
-        assert_ok!(Permissions::set_class_create_entities_set(
+        assert_ok!(TestModule::set_class_create_entities_set(
             Origin::ROOT,
             None,
             class_id,
@@ -154,20 +156,23 @@ fn create_class_then_entity_with_default_class() {
         ));
 
         let entity_id_2 = next_entity_id();
-        assert_ok!(Permissions::create_entity(
+        assert_ok!(TestModule::create_entity(
             Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
             Some(1),
             class_id,
         ));
+
         assert!(<EntityMaintainerByEntityId<Runtime>>::exists(entity_id_2));
         assert_eq!(
-            Permissions::entity_maintainer_by_entity_id(entity_id_2),
+            TestModule::entity_maintainer_by_entity_id(entity_id_2),
             Some(1)
         );
 
+        assert_eq!(TestModule::next_entity_id(), entity_id_2 + 1);
+
         // Updating entity must be authorized
         assert_err!(
-            Permissions::add_schema_support_to_entity(
+            TestModule::add_schema_support_to_entity(
                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
                 Some(0),
                 false, // not claiming to be entity maintainer
@@ -179,7 +184,7 @@ fn create_class_then_entity_with_default_class() {
         );
 
         // default permissions give entity maintainer permission to update and delete
-        assert_ok!(Permissions::add_schema_support_to_entity(
+        assert_ok!(TestModule::add_schema_support_to_entity(
             Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
             Some(1),
             true, // we are claiming to be the entity maintainer
@@ -187,7 +192,7 @@ fn create_class_then_entity_with_default_class() {
             0,
             simple_test_entity_property_values()
         ));
-        assert_ok!(Permissions::update_entity_property_values(
+        assert_ok!(TestModule::update_entity_property_values(
             Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
             Some(1),
             true, // we are claiming to be the entity maintainer
@@ -198,11 +203,40 @@ fn create_class_then_entity_with_default_class() {
 }
 
 #[test]
+fn cannot_create_class_with_empty_name() {
+    with_test_externalities(|| {
+        let empty_name = vec![];
+        assert_err!(
+            TestModule::create_class_with_default_permissions( 
+                Origin::signed(CLASS_PERMISSIONS_CREATOR1),
+                empty_name, 
+                good_class_description(),
+            ),
+            ERROR_CLASS_NAME_TOO_SHORT
+        );
+    })
+}
+
+#[test]
+fn create_class_with_empty_description() {
+    with_test_externalities(|| {
+        let empty_description = vec![];
+        assert_ok!(
+            TestModule::create_class_with_default_permissions(
+                Origin::signed(CLASS_PERMISSIONS_CREATOR1),
+                good_class_name(), 
+                empty_description
+            )
+        );
+    })
+}
+
+#[test]
 fn class_set_admins() {
     with_test_externalities(|| {
         // create a class where all permission sets are empty
         let class_id = create_simple_class(class_minimal());
-        let class = Permissions::class_by_id(class_id);
+        let class = TestModule::class_by_id(class_id);
 
         assert!(class.get_permissions().admins.is_empty());
 
@@ -210,11 +244,11 @@ fn class_set_admins() {
 
         // only root should be able to set admins
         assert_err!(
-            Permissions::set_class_admins(Origin::signed(1), class_id, credential_set.clone()),
+            TestModule::set_class_admins(Origin::signed(1), class_id, credential_set.clone()),
             "NotRootOrigin"
         );
         assert_err!(
-            Permissions::set_class_admins(
+            TestModule::set_class_admins(
                 Origin::NONE, //unsigned inherent?
                 class_id,
                 credential_set.clone()
@@ -223,13 +257,13 @@ fn class_set_admins() {
         );
 
         // root origin can set admins
-        assert_ok!(Permissions::set_class_admins(
+        assert_ok!(TestModule::set_class_admins(
             Origin::ROOT,
             class_id,
             credential_set.clone()
         ));
 
-        let class = Permissions::class_by_id(class_id);
+        let class = TestModule::class_by_id(class_id);
         assert_eq!(class.get_permissions().admins, credential_set);
     })
 }
@@ -240,7 +274,7 @@ fn class_set_add_schemas_set() {
         const ADMIN_ACCOUNT: u64 = MEMBER_ONE_WITH_CREDENTIAL_ZERO;
         // create a class where all permission sets are empty
         let class_id = create_simple_class(class_minimal_with_admins(vec![0]));
-        let class = Permissions::class_by_id(class_id);
+        let class = TestModule::class_by_id(class_id);
 
         assert!(class.get_permissions().add_schemas.is_empty());
 
@@ -248,28 +282,28 @@ fn class_set_add_schemas_set() {
         let credential_set2 = CredentialSet::from(vec![3, 4]);
 
         // root
-        assert_ok!(Permissions::set_class_add_schemas_set(
+        assert_ok!(TestModule::set_class_add_schemas_set(
             Origin::ROOT,
             None,
             class_id,
             credential_set1.clone()
         ));
-        let class = Permissions::class_by_id(class_id);
+        let class = TestModule::class_by_id(class_id);
         assert_eq!(class.get_permissions().add_schemas, credential_set1);
 
         // admins
-        assert_ok!(Permissions::set_class_add_schemas_set(
+        assert_ok!(TestModule::set_class_add_schemas_set(
             Origin::signed(ADMIN_ACCOUNT),
             Some(0),
             class_id,
             credential_set2.clone()
         ));
-        let class = Permissions::class_by_id(class_id);
+        let class = TestModule::class_by_id(class_id);
         assert_eq!(class.get_permissions().add_schemas, credential_set2);
 
         // non-admins
         assert_err!(
-            Permissions::set_class_add_schemas_set(
+            TestModule::set_class_add_schemas_set(
                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
                 Some(1),
                 class_id,
@@ -286,7 +320,7 @@ fn class_set_class_create_entities_set() {
         const ADMIN_ACCOUNT: u64 = MEMBER_ONE_WITH_CREDENTIAL_ZERO;
         // create a class where all permission sets are empty
         let class_id = create_simple_class(class_minimal_with_admins(vec![0]));
-        let class = Permissions::class_by_id(class_id);
+        let class = TestModule::class_by_id(class_id);
 
         assert!(class.get_permissions().create_entities.is_empty());
 
@@ -294,28 +328,28 @@ fn class_set_class_create_entities_set() {
         let credential_set2 = CredentialSet::from(vec![3, 4]);
 
         // root
-        assert_ok!(Permissions::set_class_create_entities_set(
+        assert_ok!(TestModule::set_class_create_entities_set(
             Origin::ROOT,
             None,
             class_id,
             credential_set1.clone()
         ));
-        let class = Permissions::class_by_id(class_id);
+        let class = TestModule::class_by_id(class_id);
         assert_eq!(class.get_permissions().create_entities, credential_set1);
 
         // admins
-        assert_ok!(Permissions::set_class_create_entities_set(
+        assert_ok!(TestModule::set_class_create_entities_set(
             Origin::signed(ADMIN_ACCOUNT),
             Some(0),
             class_id,
             credential_set2.clone()
         ));
-        let class = Permissions::class_by_id(class_id);
+        let class = TestModule::class_by_id(class_id);
         assert_eq!(class.get_permissions().create_entities, credential_set2);
 
         // non-admins
         assert_err!(
-            Permissions::set_class_create_entities_set(
+            TestModule::set_class_create_entities_set(
                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
                 Some(1),
                 class_id,
@@ -332,33 +366,33 @@ fn class_set_class_entities_can_be_created() {
         const ADMIN_ACCOUNT: u64 = MEMBER_ONE_WITH_CREDENTIAL_ZERO;
         // create a class where all permission sets are empty
         let class_id = create_simple_class(class_minimal_with_admins(vec![0]));
-        let class = Permissions::class_by_id(class_id);
+        let class = TestModule::class_by_id(class_id);
 
         assert_eq!(class.get_permissions().entities_can_be_created, false);
 
         // root
-        assert_ok!(Permissions::set_class_entities_can_be_created(
+        assert_ok!(TestModule::set_class_entities_can_be_created(
             Origin::ROOT,
             None,
             class_id,
             true
         ));
-        let class = Permissions::class_by_id(class_id);
+        let class = TestModule::class_by_id(class_id);
         assert_eq!(class.get_permissions().entities_can_be_created, true);
 
         // admins
-        assert_ok!(Permissions::set_class_entities_can_be_created(
+        assert_ok!(TestModule::set_class_entities_can_be_created(
             Origin::signed(ADMIN_ACCOUNT),
             Some(0),
             class_id,
             false
         ));
-        let class = Permissions::class_by_id(class_id);
+        let class = TestModule::class_by_id(class_id);
         assert_eq!(class.get_permissions().entities_can_be_created, false);
 
         // non-admins
         assert_err!(
-            Permissions::set_class_entities_can_be_created(
+            TestModule::set_class_entities_can_be_created(
                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
                 Some(1),
                 class_id,
@@ -375,7 +409,7 @@ fn class_set_class_entity_permissions() {
         const ADMIN_ACCOUNT: u64 = MEMBER_ONE_WITH_CREDENTIAL_ZERO;
         // create a class where all permission sets are empty
         let class_id = create_simple_class(class_minimal_with_admins(vec![0]));
-        let class = Permissions::class_by_id(class_id);
+        let class = TestModule::class_by_id(class_id);
 
         assert!(class.get_permissions().entity_permissions.update.is_empty());
 
@@ -385,13 +419,13 @@ fn class_set_class_entity_permissions() {
         };
 
         //root
-        assert_ok!(Permissions::set_class_entity_permissions(
+        assert_ok!(TestModule::set_class_entity_permissions(
             Origin::ROOT,
             None,
             class_id,
             entity_permissions1.clone()
         ));
-        let class = Permissions::class_by_id(class_id);
+        let class = TestModule::class_by_id(class_id);
         assert_eq!(class.get_permissions().entity_permissions, entity_permissions1);
 
         let entity_permissions2 = EntityPermissions {
@@ -399,18 +433,18 @@ fn class_set_class_entity_permissions() {
             maintainer_has_all_permissions: true,
         };
         //admins
-        assert_ok!(Permissions::set_class_entity_permissions(
+        assert_ok!(TestModule::set_class_entity_permissions(
             Origin::signed(ADMIN_ACCOUNT),
             Some(0),
             class_id,
             entity_permissions2.clone()
         ));
-        let class = Permissions::class_by_id(class_id);
+        let class = TestModule::class_by_id(class_id);
         assert_eq!(class.get_permissions().entity_permissions, entity_permissions2);
 
         // non admins
         assert_err!(
-            Permissions::set_class_entity_permissions(
+            TestModule::set_class_entity_permissions(
                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
                 Some(1),
                 class_id,
@@ -427,7 +461,7 @@ fn class_set_class_reference_constraint() {
         const ADMIN_ACCOUNT: u64 = MEMBER_ONE_WITH_CREDENTIAL_ZERO;
         // create a class where all permission sets are empty
         let class_id = create_simple_class(class_minimal_with_admins(vec![0]));
-        let class = Permissions::class_by_id(class_id);
+        let class = TestModule::class_by_id(class_id);
 
         assert_eq!(class.get_permissions().reference_constraint, Default::default());
 
@@ -439,13 +473,13 @@ fn class_set_class_reference_constraint() {
         let reference_constraint1 = ReferenceConstraint::Restricted(constraints_set);
 
         //root
-        assert_ok!(Permissions::set_class_reference_constraint(
+        assert_ok!(TestModule::set_class_reference_constraint(
             Origin::ROOT,
             None,
             class_id,
             reference_constraint1.clone()
         ));
-        let class = Permissions::class_by_id(class_id);
+        let class = TestModule::class_by_id(class_id);
         assert_eq!(
             class.get_permissions().reference_constraint,
             reference_constraint1
@@ -459,13 +493,13 @@ fn class_set_class_reference_constraint() {
         let reference_constraint2 = ReferenceConstraint::Restricted(constraints_set);
 
         //admins
-        assert_ok!(Permissions::set_class_reference_constraint(
+        assert_ok!(TestModule::set_class_reference_constraint(
             Origin::signed(ADMIN_ACCOUNT),
             Some(0),
             class_id,
             reference_constraint2.clone()
         ));
-        let class = Permissions::class_by_id(class_id);
+        let class = TestModule::class_by_id(class_id);
         assert_eq!(
             class.get_permissions().reference_constraint,
             reference_constraint2
@@ -473,7 +507,7 @@ fn class_set_class_reference_constraint() {
 
         // non admins
         assert_err!(
-            Permissions::set_class_reference_constraint(
+            TestModule::set_class_reference_constraint(
                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
                 Some(1),
                 class_id,
@@ -503,7 +537,7 @@ fn batch_transaction_simple() {
             description: b"another entity of same class".to_vec(),
         }];
 
-        assert_ok!(Permissions::add_class_schema(
+        assert_ok!(TestModule::add_class_schema(
             Origin::ROOT,
             None,
             new_class_id,
@@ -557,7 +591,7 @@ fn batch_transaction_simple() {
 
         let entity_id = next_entity_id();
 
-        assert_ok!(Permissions::transaction(
+        assert_ok!(TestModule::transaction(
             Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
             operations
         ));
@@ -587,7 +621,7 @@ fn batch_transaction_vector_of_entities() {
             description: b"vector of entities of same class".to_vec(),
         }];
 
-        assert_ok!(Permissions::add_class_schema(
+        assert_ok!(TestModule::add_class_schema(
             Origin::ROOT,
             None,
             new_class_id,
@@ -638,7 +672,7 @@ fn batch_transaction_vector_of_entities() {
 
         let entity_id = next_entity_id();
 
-        assert_ok!(Permissions::transaction(
+        assert_ok!(TestModule::transaction(
             Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
             operations
         ));

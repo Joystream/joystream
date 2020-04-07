@@ -347,9 +347,9 @@ fn create_podcast_class_schema() {
 
         // Channel
 
-        let channel_class_id = Permissions::next_class_id();
+        let channel_class_id = TestModule::next_class_id();
         assert_ok!(
-            Permissions::create_class_with_default_permissions(        
+            TestModule::create_class_with_default_permissions(        
                 Origin::signed(CLASS_PERMISSIONS_CREATOR1),
                 b"PodcastChannel".to_vec(), 
                 b"A podcast channel".to_vec(),
@@ -359,15 +359,15 @@ fn create_podcast_class_schema() {
         let channel_schema_id: u16 = 0;
 
         assert_ok!(
-            Permissions::append_class_schema(channel_class_id, vec![], channel_props),
+            TestModule::append_class_schema(channel_class_id, vec![], channel_props),
             channel_schema_id
         );
 
         // Episodes:
 
-        let episode_class_id = Permissions::next_class_id();
+        let episode_class_id = TestModule::next_class_id();
         assert_ok!(
-            Permissions::create_class_with_default_permissions(
+            TestModule::create_class_with_default_permissions(
                 Origin::signed(CLASS_PERMISSIONS_CREATOR1),
                 b"PodcastEpisode".to_vec(), 
                 b"A podcast episode".to_vec(),
@@ -377,20 +377,20 @@ fn create_podcast_class_schema() {
         let episode_schema_id: u16 = 0;
 
         assert_ok!(
-            Permissions::append_class_schema(episode_class_id, vec![], episode_props,),
+            TestModule::append_class_schema(episode_class_id, vec![], episode_props,),
             episode_schema_id
         );
 
         let mut p = PropHelper::new();
-        let channel_entity_id = Permissions::next_entity_id();
+        let channel_entity_id = TestModule::next_entity_id();
 
         assert_eq!(
-            Permissions::perform_entity_creation(channel_class_id),
+            TestModule::perform_entity_creation(channel_class_id),
             channel_entity_id
         );
 
         assert_ok!(
-            Permissions::add_schema_support(
+            TestModule::add_schema_support(
                 channel_entity_id,
                 channel_schema_id,
                 vec![
@@ -452,15 +452,15 @@ fn create_podcast_class_schema() {
         let episode_2_summary = b"<p>In July 2017, the SEC published a report following their <a href=\"https://www.sec.gov/litigation/investreport/34-81207.pdf\">investigation of the DAO</a>. This was significant as it was the first actionable statement from the SEC, giving some insight as to how they interpret this new asset class in light of existing securities laws.</p> <p>Staked is brought to you by Joystream - A user governed media platform.</p>".to_vec();
 
         p = PropHelper::new();
-        let episode_2_entity_id = Permissions::next_entity_id();
+        let episode_2_entity_id = TestModule::next_entity_id();
 
         assert_eq!(
-            Permissions::perform_entity_creation(episode_class_id),
+            TestModule::perform_entity_creation(episode_class_id),
             episode_2_entity_id
         );
 
         assert_ok!(
-            Permissions::add_schema_support(
+            TestModule::add_schema_support(
                 episode_2_entity_id,
                 episode_schema_id,
                 vec![
