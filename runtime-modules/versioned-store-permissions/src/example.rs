@@ -390,7 +390,7 @@ fn create_podcast_class_schema() {
         );
 
         assert_ok!(
-            TestModule::add_schema_support(
+            TestModule::add_entity_schema_support(
                 channel_entity_id,
                 channel_schema_id,
                 vec![
@@ -460,7 +460,7 @@ fn create_podcast_class_schema() {
         );
 
         assert_ok!(
-            TestModule::add_schema_support(
+            TestModule::add_entity_schema_support(
                 episode_2_entity_id,
                 episode_schema_id,
                 vec![

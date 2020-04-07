@@ -794,7 +794,7 @@ impl<T: Trait> Module<T> {
             ClassPermissions::can_update_entity,
             class_id,
             |_class_permissions, _access_level| {
-                Self::add_schema_support(
+                Self::add_entity_schema_support(
                     entity_id,
                     schema_id,
                     property_values,
@@ -1048,7 +1048,7 @@ impl<T: Trait> Module<T> {
             Ok(schema_idx)
         }
     
-        pub fn add_schema_support(
+        pub fn add_entity_schema_support(
             entity_id: EntityId,
             schema_id: u16,
             property_values: Vec<ClassPropertyValue>,
