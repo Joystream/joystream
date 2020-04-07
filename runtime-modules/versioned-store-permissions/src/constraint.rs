@@ -1,7 +1,11 @@
 use codec::{Decode, Encode};
 use rstd::collections::btree_set::BTreeSet;
 
+#[cfg(feature = "std")]
+use serde_derive::{Deserialize, Serialize};
+
 /// Reference to a specific property of a specific class.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
 pub struct PropertyOfClass<ClassId, PropertyIndex> {
     pub class_id: ClassId,
@@ -9,6 +13,7 @@ pub struct PropertyOfClass<ClassId, PropertyIndex> {
 }
 
 /// The type of constraint imposed on referencing a class via class property of type "Internal".
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub enum ReferenceConstraint<ClassId: Ord, PropertyIndex: Ord> {
     /// No property can reference the class.

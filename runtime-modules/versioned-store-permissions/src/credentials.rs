@@ -2,8 +2,12 @@ use codec::{Decode, Encode};
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 
+#[cfg(feature = "std")]
+use serde_derive::{Deserialize, Serialize};
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
-pub struct CredentialSet<Credential>(BTreeSet<Credential>);
+pub struct CredentialSet<Credential: Ord>(BTreeSet<Credential>);
 
 impl<Credential> From<Vec<Credential>> for CredentialSet<Credential>
 where

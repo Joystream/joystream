@@ -1,7 +1,9 @@
 #![cfg(test)]
 
 use crate::*;
-use crate::{Module, Trait};
+
+#[cfg(feature = "std")]
+use serde_derive::{Deserialize, Serialize};
 
 use primitives::H256;
 use runtime_primitives::{
@@ -52,7 +54,8 @@ impl_outer_origin! {
 }
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Runtime;
 parameter_types! {
     pub const BlockHashCount: u64 = 250;

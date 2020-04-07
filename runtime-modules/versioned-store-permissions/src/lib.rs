@@ -4,14 +4,14 @@
 use codec::{Codec, Encode, Decode};
 use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use rstd::prelude::*;
-use runtime_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
+use runtime_primitives::traits::{MaybeSerializeDeserialize, Member, SimpleArithmetic};
 use srml_support::{decl_module, decl_storage, dispatch, ensure, Parameter};
 use system;
 
 #[cfg(feature = "std")]
-use serde_derive::{Deserialize, Serialize};
+pub use serde_derive::{Deserialize, Serialize};
 
-// EntityId, ClassId -> should be configured on versioned_store::Trait
+// EntityId, ClassId -> should be configured on versioned_store_permissions::Trait
 
 mod constraint;
 mod credentials;
@@ -27,6 +27,29 @@ pub use credentials::*;
 pub use operations::*;
 pub use permissions::*;
 pub use errors::*;
+
+pub trait Trait: system::Trait {
+
+    /// Type that represents an actor or group of actors in the system.
+    type Credential: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + Clone
+        + MaybeSerializeDeserialize
+        + Eq
+        + PartialEq
+        + Ord;
+
+    /// External type for checking if an account has specified credential.
+    type CredentialChecker: CredentialChecker<Self>;
+
+    /// External type used to check if an account has permission to create new Classes.
+    type CreateClassPermissionsChecker: CreateClassPermissionsChecker<Self>;
+}
+
 /// Trait for checking if an account has specified Credential
 pub trait CredentialChecker<T: Trait> {
     fn account_has_credential(account: &T::AccountId, credential: T::Credential) -> bool;
@@ -101,7 +124,8 @@ impl InputValidationLengthConstraint {
 pub type ClassId = u64;
 pub type EntityId = u64;
 
-#[derive(Encode, Decode, Default, Eq, PartialEq, Clone, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct Class<T: Trait> {
     /// Permissions for an instance of a Class in the versioned store.
     class_permissions: ClassPermissionsType<T>,
@@ -115,6 +139,18 @@ pub struct Class<T: Trait> {
 
     pub name: Vec<u8>,
     pub description: Vec<u8>,
+}
+
+impl <T: Trait> Default for Class <T> {
+    fn default() -> Self {
+        Self {
+            class_permissions: ClassPermissionsType::<T>::default(),
+            properties: vec![],
+            schemas: vec![],
+            name: vec![],
+            description: vec![]
+        }
+    }
 }
 
 impl <T: Trait> Class<T> {
@@ -273,30 +309,6 @@ pub struct ClassPropertyValue {
 // Shortcuts for faster readability of match expression:
 use PropertyType as PT;
 use PropertyValue as PV;
-
-pub trait Trait: system::Trait + Default {
-    // type Event: ...
-    // Do we need Events?
-
-    /// Type that represents an actor or group of actors in the system.
-    type Credential: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + Clone
-        + MaybeSerialize
-        + Eq
-        + PartialEq
-        + Ord;
-
-    /// External type for checking if an account has specified credential.
-    type CredentialChecker: CredentialChecker<Self>;
-
-    /// External type used to check if an account has permission to create new Classes.
-    type CreateClassPermissionsChecker: CreateClassPermissionsChecker<Self>;
-}
 
 decl_storage! {
     trait Store for Module<T: Trait> as VersionedStorePermissions {

@@ -400,7 +400,6 @@ pub use governance::election_params::ElectionParameters;
 use governance::{council, election, proposals};
 use membership::members;
 use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
-pub use versioned_store;
 use versioned_store_permissions;
 
 pub use content_working_group as content_wg;
@@ -414,10 +413,6 @@ use stake;
 
 /// Alias for ContentId, used in various places.
 pub type ContentId = primitives::H256;
-
-impl versioned_store::Trait for Runtime {
-    type Event = Event;
-}
 
 impl versioned_store_permissions::Trait for Runtime {
     type Credential = Credential;
@@ -838,8 +833,7 @@ construct_runtime!(
         DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
         DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
         Discovery: discovery::{Module, Call, Storage, Event<T>},
-        VersionedStore: versioned_store::{Module, Call, Storage, Event<T>, Config},
-        VersionedStorePermissions: versioned_store_permissions::{Module, Call, Storage},
+        VersionedStorePermissions: versioned_store_permissions::{Module, Call, Storage, Config<T>},
         Stake: stake::{Module, Call, Storage},
         Minting: minting::{Module, Call, Storage},
         RecurringRewards: recurringrewards::{Module, Call, Storage},

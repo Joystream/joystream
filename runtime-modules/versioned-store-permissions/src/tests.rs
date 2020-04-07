@@ -1055,3 +1055,42 @@ fn update_entity_props_successfully() {
         );
     })
 }
+
+// TODO test text max len
+
+// TODO test vec max len
+
+// Delete entity
+// --------------------------------------
+
+// #[test]
+// fn delete_entity_successfully() {
+//     with_test_externalities(|| {
+//         let entity_id = create_entity();
+//         assert_ok!(
+//             TestModule::delete_entity(entity_id),
+//             ()
+//         );
+//     })
+// }
+
+// #[test]
+// fn cannot_delete_entity_when_entity_not_found() {
+//     with_test_externalities(|| {
+//         assert_entity_not_found(
+//             TestModule::delete_entity(UNKNOWN_ENTITY_ID)
+//         );
+//     })
+// }
+
+// #[test]
+// fn cannot_delete_already_deleted_entity() {
+//     with_test_externalities(|| {
+//         let entity_id = create_entity();
+//         let _ok = TestModule::delete_entity(entity_id);
+//         assert_err!(
+//             TestModule::delete_entity(entity_id),
+//             ERROR_ENTITY_ALREADY_DELETED
+//         );
+//     })
+// }

@@ -1648,7 +1648,6 @@ dependencies = [
  "substrate-stake-module",
  "substrate-storage-module",
  "substrate-token-mint-module",
- "substrate-versioned-store",
  "substrate-versioned-store-permissions-module",
  "substrate-wasm-builder-runner",
 ]
@@ -4669,7 +4668,6 @@ dependencies = [
  "substrate-recurring-reward-module",
  "substrate-stake-module",
  "substrate-token-mint-module",
- "substrate-versioned-store",
  "substrate-versioned-store-permissions-module",
 ]
 
@@ -5400,26 +5398,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "substrate-versioned-store"
-version = "1.0.1"
-dependencies = [
- "hex-literal 0.1.4",
- "parity-scale-codec",
- "quote 0.6.13",
- "serde",
- "serde_derive",
- "sr-io",
- "sr-primitives",
- "sr-std",
- "srml-balances",
- "srml-support",
- "srml-support-procedural",
- "srml-system",
- "srml-timestamp",
- "substrate-primitives",
-]
-
-[[package]]
 name = "substrate-versioned-store-permissions-module"
 version = "1.0.1"
 dependencies = [
@@ -5436,7 +5414,6 @@ dependencies = [
  "srml-system",
  "srml-timestamp",
  "substrate-primitives",
- "substrate-versioned-store",
 ]
 
 [[package]]

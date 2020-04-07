@@ -15,12 +15,12 @@
 // along with Joystream node.  If not, see <http://www.gnu.org/licenses/>.
 
 use node_runtime::{
-    versioned_store::InputValidationLengthConstraint as VsInputValidation, ActorsConfig,
+    versioned_store_permissions::InputValidationLengthConstraint as VsInputValidation, ActorsConfig,
     AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
     CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
     DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, IndicesConfig,
     MembersConfig, Perbill, ProposalsConfig, SessionConfig, SessionKeys, Signature, StakerStatus,
-    StakingConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
+    StakingConfig, SudoConfig, SystemConfig, VersionedStorePermissionsConfig, DAYS, WASM_BINARY,
 };
 pub use node_runtime::{AccountId, GenesisConfig};
 use primitives::{sr25519, Pair, Public};
@@ -273,7 +273,7 @@ pub fn testnet_genesis(
             enable_storage_role: true,
             request_life_time: 300,
         }),
-        versioned_store: Some(VersionedStoreConfig {
+        versioned_store_permissions: Some(VersionedStorePermissionsConfig {
             class_by_id: vec![],
             entity_by_id: vec![],
             next_class_id: 1,

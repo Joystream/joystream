@@ -20,7 +20,6 @@ pub use membership::members;
 pub use minting;
 pub use recurringrewards;
 pub use stake;
-//pub use versioned_store;
 pub use versioned_store_permissions;
 
 use crate::genesis;
@@ -54,7 +53,6 @@ mod lib {
 
 impl_outer_event! {
     pub enum TestEvent for Test {
-        versioned_store<T>,
         members<T>,
         balances<T>,
         lib<T>,
@@ -169,10 +167,6 @@ impl hiring::Trait for Test {
     type ApplicationId = TestApplicationId;
     type ApplicationDeactivatedHandler = ();
     type StakeHandlerProvider = hiring::Module<Self>;
-}
-
-impl versioned_store::Trait for Test {
-    type Event = TestEvent;
 }
 
 type TestPrincipalId = u64;

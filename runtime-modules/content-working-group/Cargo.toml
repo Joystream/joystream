@@ -19,7 +19,6 @@ std = [
     'hiring/std',
     'stake/std',
     'minting/std',
-    'versioned_store/std',
     'versioned_store_permissions/std',
     'recurringrewards/std',
 ]
@@ -90,11 +89,6 @@ path = '../recurring-reward'
 default_features = false
 package = 'substrate-hiring-module'
 path = '../hiring'
-
-[dependencies.versioned_store]
-default_features = false
-package ='substrate-versioned-store'
-path = '../versioned-store'
 
 [dependencies.versioned_store_permissions]
 default_features = false

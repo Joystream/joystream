@@ -19,11 +19,6 @@ runtime-io = { package = 'sr-io', default-features = false, git = 'https://githu
 # https://users.rust-lang.org/t/failure-derive-compilation-error/39062
 quote = '<=1.0.2'
 
-[dependencies.versioned-store]
-default_features = false
-package ='substrate-versioned-store'
-path = '../versioned-store'
-
 [dev-dependencies]
 runtime-io = { package = 'sr-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
 primitives = { package = 'substrate-primitives', git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
@@ -40,5 +35,4 @@ std = [
 	'srml-support/std',
 	'system/std',
 	'timestamp/std',
-	'versioned-store/std',
 ]
