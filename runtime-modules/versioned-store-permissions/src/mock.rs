@@ -10,7 +10,7 @@ use runtime_primitives::{
     Perbill,
 };
 use srml_support::{impl_outer_origin, parameter_types};
-use versioned_store::InputValidationLengthConstraint;
+use crate::InputValidationLengthConstraint;
 
 impl_outer_origin! {
     pub enum Origin for Runtime {}
@@ -49,10 +49,6 @@ impl timestamp::Trait for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
-}
-
-impl versioned_store::Trait for Runtime {
-    type Event = ();
 }
 
 impl Trait for Runtime {
@@ -117,8 +113,8 @@ impl CreateClassPermissionsChecker<Runtime> for MockCreateClassPermissionsChecke
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
 
-fn default_versioned_store_genesis_config() -> versioned_store::GenesisConfig {
-    versioned_store::GenesisConfig {
+fn default_versioned_store_genesis_config() -> GenesisConfig<Runtime> {
+    GenesisConfig {
         class_by_id: vec![],
         entity_by_id: vec![],
         next_class_id: 1,
@@ -143,7 +139,7 @@ fn default_versioned_store_genesis_config() -> versioned_store::GenesisConfig {
 }
 
 fn build_test_externalities(
-    config: versioned_store::GenesisConfig,
+    config: GenesisConfig<Runtime>,
 ) -> runtime_io::TestExternalities {
     let mut t = system::GenesisConfig::default()
         .build_storage::<Runtime>()

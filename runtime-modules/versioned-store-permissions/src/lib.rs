@@ -19,6 +19,7 @@ mod mock;
 mod operations;
 mod permissions;
 mod tests;
+mod example;
 mod errors;
 
 pub use constraint::*;
@@ -302,7 +303,7 @@ pub trait Trait: system::Trait + Default {
 decl_storage! {
     trait Store for Module<T: Trait> as VersionedStorePermissions {
         /// ClassPermissions of corresponding Classes in the versioned store
-        pub ClassById get(class_by_id): linked_map ClassId => Class<T>;
+        pub ClassById get(class_by_id) config(): linked_map ClassId => Class<T>;
 
         pub EntityById get(entity_by_id) config(): map EntityId => Entity;
 
@@ -638,20 +639,7 @@ impl<T: Trait> Module<T> {
             ClassPermissions::can_create_entity,
             class_id,
             |_class_permissions, access_level| {
-                let entity_id = NextEntityId::get();
-    
-                let new_entity = Entity {
-                    id: entity_id,
-                    class_id,
-                    in_class_schema_indexes: vec![],
-                    values: vec![],
-                };
-        
-                // Save newly created entity:
-                EntityById::insert(entity_id, new_entity);
-        
-                // Increment the next entity id:
-                NextEntityId::mutate(|n| *n += 1);
+                let entity_id = Self::perform_entity_creation(class_id);
 
                 // Note: mutating value to None is equivalient to removing the value from storage map
                 <EntityMaintainerByEntityId<T>>::mutate(
@@ -666,6 +654,26 @@ impl<T: Trait> Module<T> {
                 Ok(entity_id)
             },
         )
+    }
+
+    fn perform_entity_creation(class_id: ClassId) -> EntityId {
+
+        let entity_id = NextEntityId::get();
+
+        let new_entity = Entity {
+            id: entity_id,
+            class_id,
+            in_class_schema_indexes: vec![],
+            values: vec![],
+        };
+
+        // Save newly created entity:
+        EntityById::insert(entity_id, new_entity);
+
+        // Increment the next entity id:
+        NextEntityId::mutate(|n| *n += 1);
+
+        entity_id
     }
 
     fn do_update_entity_property_values(
@@ -869,7 +877,7 @@ impl<T: Trait> Module<T> {
         predicate(class.get_permissions(), &access_level)?;
         <ClassById<T>>::mutate(class_id, |inner_class|  {
             //It is safe to not check for an error here, as result always be  Ok(())
-            mutate(inner_class.get_permissions_mut());
+            let _ = mutate(inner_class.get_permissions_mut());
             // Refresh last permissions update block number.
             inner_class.refresh_last_permissions_update();
         });
@@ -920,7 +928,7 @@ impl<T: Trait> Module<T> {
     fn get_class_id_by_entity_id(entity_id: EntityId) -> Result<ClassId, &'static str> {
         // use a utility method on versioned_store module
         ensure!(
-            versioned_store::EntityById::exists(entity_id),
+            EntityById::exists(entity_id),
             "EntityNotFound"
         );
         let entity = Self::entity_by_id(entity_id);
