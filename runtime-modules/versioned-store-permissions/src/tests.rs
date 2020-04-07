@@ -696,3 +696,183 @@ fn batch_transaction_vector_of_entities() {
         );
     })
 }
+
+// Add class schema
+// --------------------------------------
+
+#[test]
+fn cannot_add_schema_to_unknown_class() {
+    with_test_externalities(|| {
+        assert_err!(
+            TestModule::append_class_schema(UNKNOWN_CLASS_ID, good_prop_ids(), good_props()),
+            ERROR_CLASS_NOT_FOUND
+        );
+    })
+}
+
+#[test]
+fn cannot_add_class_schema_when_no_props_passed() {
+    with_test_externalities(|| {
+        let class_id = create_simple_class_with_default_permissions();
+        assert_err!(
+            TestModule::append_class_schema(class_id, vec![], vec![]),
+            ERROR_NO_PROPS_IN_CLASS_SCHEMA
+        );
+    })
+}
+
+#[test]
+fn cannot_add_class_schema_when_it_refers_unknown_prop_index_and_class_has_no_props() {
+    with_test_externalities(|| {
+        let class_id = create_simple_class_with_default_permissions();
+        assert_err!(
+            TestModule::append_class_schema(class_id, vec![UNKNOWN_PROP_ID], vec![]),
+            ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
+        );
+    })
+}
+
+#[test]
+fn cannot_add_class_schema_when_it_refers_unknown_prop_index() {
+    with_test_externalities(|| {
+        let class_id = create_simple_class_with_default_permissions();
+
+        assert_eq!(
+            TestModule::append_class_schema(class_id, vec![], good_props()),
+            Ok(SCHEMA_ID_0)
+        );
+
+        // Try to add a new schema that is based on one valid prop ids
+        // plus another prop id is unknown on this class.
+        assert_err!(
+            TestModule::append_class_schema(class_id, vec![0, UNKNOWN_PROP_ID], vec![]),
+            ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
+        );
+
+        // Verify that class props and schemas remain unchanged:
+        assert_class_props(class_id, good_props());
+        assert_class_schemas(class_id, vec![good_prop_ids()]);
+    })
+}
+
+#[test]
+fn cannot_add_class_schema_when_it_refers_unknown_internal_id() {
+    with_test_externalities(|| {
+        let class_id = create_simple_class_with_default_permissions();
+        let bad_internal_prop = new_internal_class_prop(UNKNOWN_CLASS_ID);
+
+        assert_err!(
+            TestModule::append_class_schema(
+                class_id,
+                vec![],
+                vec![good_prop_bool(), bad_internal_prop]
+            ),
+            ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID
+        );
+    })
+}
+
+#[test]
+fn should_add_class_schema_with_internal_class_prop() {
+    with_test_externalities(|| {
+        let class_id = create_simple_class_with_default_permissions();
+        let internal_class_prop = new_internal_class_prop(class_id);
+
+        // Add first schema with new props.
+        // No other props on the class at this time.
+        assert_eq!(
+            TestModule::append_class_schema(class_id, vec![], vec![internal_class_prop.clone()]),
+            Ok(SCHEMA_ID_0)
+        );
+
+        assert_class_props(class_id, vec![internal_class_prop]);
+        assert_class_schemas(class_id, vec![vec![SCHEMA_ID_0]]);
+    })
+}
+
+#[test]
+fn should_add_class_schema_when_only_new_props_passed() {
+    with_test_externalities(|| {
+        let class_id = create_simple_class_with_default_permissions();
+
+        // Add first schema with new props.
+        // No other props on the class at this time.
+        assert_eq!(
+            TestModule::append_class_schema(class_id, vec![], good_props()),
+            Ok(SCHEMA_ID_0)
+        );
+
+        assert_class_props(class_id, good_props());
+        assert_class_schemas(class_id, vec![good_prop_ids()]);
+    })
+}
+
+#[test]
+fn should_add_class_schema_when_only_prop_ids_passed() {
+    with_test_externalities(|| {
+        let class_id = create_simple_class_with_default_permissions();
+
+        // Add first schema with new props.
+        // No other props on the class at this time.
+        assert_eq!(
+            TestModule::append_class_schema(class_id, vec![], good_props()),
+            Ok(SCHEMA_ID_0)
+        );
+
+        // Add a new schema that is based solely on the props ids
+        // of the previously added schema.
+        assert_eq!(
+            TestModule::append_class_schema(class_id, good_prop_ids(), vec![]),
+            Ok(SCHEMA_ID_1)
+        );
+    })
+}
+
+#[test]
+fn cannot_add_class_schema_when_new_props_have_duplicate_names() {
+    with_test_externalities(|| {
+        let class_id = create_simple_class_with_default_permissions();
+
+        // Add first schema with new props.
+        // No other props on the class at this time.
+        assert_eq!(
+            TestModule::append_class_schema(class_id, vec![], good_props()),
+            Ok(SCHEMA_ID_0)
+        );
+
+        // Add a new schema with not unique property names:
+        assert_err!(
+            TestModule::append_class_schema(class_id, vec![], good_props()),
+            ERROR_PROP_NAME_NOT_UNIQUE_IN_CLASS
+        );
+    })
+}
+
+#[test]
+fn should_add_class_schema_when_both_prop_ids_and_new_props_passed() {
+    with_test_externalities(|| {
+        let class_id = create_simple_class_with_default_permissions();
+
+        // Add first schema with new props.
+        // No other props on the class at this time.
+        assert_eq!(
+            TestModule::append_class_schema(class_id, vec![], vec![good_prop_bool(), good_prop_u32()]),
+            Ok(SCHEMA_ID_0)
+        );
+
+        // Add a new schema that is based on some prop ids
+        // added with previous schema plus some new props,
+        // introduced by this new schema.
+        assert_eq!(
+            TestModule::append_class_schema(class_id, vec![1], vec![good_prop_text()]),
+            Ok(SCHEMA_ID_1)
+        );
+
+        assert_class_props(
+            class_id,
+            vec![good_prop_bool(), good_prop_u32(), good_prop_text()],
+        );
+
+        assert_class_schemas(class_id, vec![vec![0, 1], vec![1, 2]]);
+    })
+}

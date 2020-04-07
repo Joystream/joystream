@@ -9,9 +9,25 @@ use runtime_primitives::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use srml_support::{impl_outer_origin, parameter_types};
+use srml_support::{impl_outer_origin, assert_ok, parameter_types};
 use crate::InputValidationLengthConstraint;
 
+
+pub fn assert_class_props(class_id: ClassId, expected_props: Vec<Property>) {
+    let class = TestModule::class_by_id(class_id);
+    assert_eq!(class.properties, expected_props);
+}
+
+pub fn assert_class_schemas(class_id: ClassId, expected_schema_prop_ids: Vec<Vec<u16>>) {
+    let class = TestModule::class_by_id(class_id);
+    let schemas: Vec<_> = expected_schema_prop_ids
+        .iter()
+        .map(|prop_ids| ClassSchema {
+            properties: prop_ids.clone(),
+        })
+        .collect();
+    assert_eq!(class.schemas, schemas);
+}
 
 impl_outer_origin! {
     pub enum Origin for Runtime {}
@@ -63,6 +79,18 @@ pub const MEMBER_ONE_WITH_CREDENTIAL_ZERO: u64 = 100;
 pub const MEMBER_TWO_WITH_CREDENTIAL_ZERO: u64 = 101;
 pub const MEMBER_ONE_WITH_CREDENTIAL_ONE: u64 = 102;
 pub const MEMBER_TWO_WITH_CREDENTIAL_ONE: u64 = 103;
+
+
+pub const UNKNOWN_CLASS_ID: ClassId = 111;
+
+pub const UNKNOWN_ENTITY_ID: EntityId = 222;
+
+pub const UNKNOWN_PROP_ID: u16 = 333;
+
+// pub const UNKNOWN_SCHEMA_ID: u16 = 444;
+
+pub const SCHEMA_ID_0: u16 = 0;
+pub const SCHEMA_ID_1: u16 = 1;
 
 pub const PRINCIPAL_GROUP_MEMBERS: [[u64; 2]; 2] = [
     [
@@ -156,12 +184,56 @@ pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
     build_test_externalities(versioned_store_config).execute_with(f)
 }
 
+pub fn good_prop_bool() -> Property {
+    Property {
+        prop_type: PropertyType::Bool,
+        required: false,
+        name: b"Name of a bool property".to_vec(),
+        description: b"Description of a bool property".to_vec(),
+    }
+}
+
+pub fn good_prop_u32() -> Property {
+    Property {
+        prop_type: PropertyType::Uint32,
+        required: false,
+        name: b"Name of a u32 property".to_vec(),
+        description: b"Description of a u32 property".to_vec(),
+    }
+}
+
+pub fn good_prop_text() -> Property {
+    Property {
+        prop_type: PropertyType::Text(20),
+        required: false,
+        name: b"Name of a text property".to_vec(),
+        description: b"Description of a text property".to_vec(),
+    }
+}
+
+pub fn new_internal_class_prop(class_id: ClassId) -> Property {
+    Property {
+        prop_type: PropertyType::Internal(class_id),
+        required: false,
+        name: b"Name of a internal property".to_vec(),
+        description: b"Description of a internal property".to_vec(),
+    }
+}
+
 pub fn good_class_name() -> Vec<u8> {
     b"Name of a class".to_vec()
 }
 
 pub fn good_class_description() -> Vec<u8> {
     b"Description of a class".to_vec()
+}
+
+pub fn good_props() -> Vec<Property> {
+    vec![good_prop_bool(), good_prop_u32()]
+}
+
+pub fn good_prop_ids() -> Vec<u16> {
+    vec![0, 1]
 }
 
 // pub type System = system::Module;
