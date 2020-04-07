@@ -213,6 +213,10 @@ export class ApiWrapper {
   }
 
   public approveProposal(account: KeyringPair, proposal: BN): Promise<void> {
-    return this.sender.signAndSend(this.api.tx.proposals.voteOnProposal(proposal, 'Approve'), account, false);
+    return this.sender.signAndSend(
+      this.api.tx.proposals.voteOnProposal(proposal, new VoteKind('Approve')),
+      account,
+      false
+    );
   }
 }
