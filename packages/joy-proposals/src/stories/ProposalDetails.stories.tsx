@@ -1,7 +1,7 @@
 import React from "react";
 import "../index.css";
 
-import MockProposalDetails from "./data/MockProposalDetails";
+import MockProposalDetails from "../__mocks__/MockProposalDetails
 import ProposalDetails from "../ProposalDetails";
 
 export default {
