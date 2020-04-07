@@ -278,8 +278,6 @@ pub trait Trait: system::Trait + Default {
     // type Event: ...
     // Do we need Events?
 
-    type Event: Into<<Self as system::Trait>::Event>;
-
     /// Type that represents an actor or group of actors in the system.
     type Credential: Parameter
         + Member

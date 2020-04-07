@@ -20,7 +20,7 @@ pub use membership::members;
 pub use minting;
 pub use recurringrewards;
 pub use stake;
-pub use versioned_store;
+//pub use versioned_store;
 pub use versioned_store_permissions;
 
 use crate::genesis;
@@ -41,7 +41,7 @@ parameter_types! {
 }
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Default, Eq, Debug)]
 pub struct Test;
 
 impl_outer_origin! {

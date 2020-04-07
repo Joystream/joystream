@@ -12,123 +12,40 @@ use runtime_primitives::{
 use srml_support::{impl_outer_origin, assert_err, assert_ok, parameter_types};
 use crate::InputValidationLengthConstraint;
 
+pub const MEMBER_ONE_WITH_CREDENTIAL_ZERO: u64 = 100;
+pub const MEMBER_TWO_WITH_CREDENTIAL_ZERO: u64 = 101;
+pub const MEMBER_ONE_WITH_CREDENTIAL_ONE: u64 = 102;
+pub const MEMBER_TWO_WITH_CREDENTIAL_ONE: u64 = 103;
 
-impl Property {
-    fn required(&self) -> Property {
-        let mut new_self = self.clone();
-        new_self.required = true;
-        new_self
-    }
-}
+pub const UNKNOWN_CLASS_ID: ClassId = 111;
+pub const UNKNOWN_ENTITY_ID: EntityId = 222;
+pub const UNKNOWN_PROP_ID: u16 = 333;
+// pub const UNKNOWN_SCHEMA_ID: u16 = 444;
 
-pub fn assert_class_props(class_id: ClassId, expected_props: Vec<Property>) {
-    let class = TestModule::class_by_id(class_id);
-    assert_eq!(class.properties, expected_props);
-}
+pub const SCHEMA_ID_0: u16 = 0;
+pub const SCHEMA_ID_1: u16 = 1;
 
-pub fn assert_class_schemas(class_id: ClassId, expected_schema_prop_ids: Vec<Vec<u16>>) {
-    let class = TestModule::class_by_id(class_id);
-    let schemas: Vec<_> = expected_schema_prop_ids
-        .iter()
-        .map(|prop_ids| ClassSchema {
-            properties: prop_ids.clone(),
-        })
-        .collect();
-    assert_eq!(class.schemas, schemas);
-}
+pub const PROP_ID_BOOL: u16 = 0;
+pub const PROP_ID_U32: u16 = 1;
+pub const PROP_ID_INTERNAL: u16 = 2;
 
-pub fn assert_entity_not_found(result: dispatch::Result) {
-    assert_err!(result, ERROR_ENTITY_NOT_FOUND);
-}
+pub const PRINCIPAL_GROUP_MEMBERS: [[u64; 2]; 2] = [
+    [
+        MEMBER_ONE_WITH_CREDENTIAL_ZERO,
+        MEMBER_TWO_WITH_CREDENTIAL_ZERO,
+    ],
+    [
+        MEMBER_ONE_WITH_CREDENTIAL_ONE,
+        MEMBER_TWO_WITH_CREDENTIAL_ONE,
+    ],
+];
 
-pub fn simple_test_schema() -> Vec<Property> {
-    vec![Property {
-        prop_type: PropertyType::Int64,
-        required: false,
-        name: b"field1".to_vec(),
-        description: b"Description field1".to_vec(),
-    }]
-}
+pub const CLASS_PERMISSIONS_CREATOR1: u64 = 200;
+pub const CLASS_PERMISSIONS_CREATOR2: u64 = 300;
+pub const UNAUTHORIZED_CLASS_PERMISSIONS_CREATOR: u64 = 50;
 
-pub fn simple_test_entity_property_values() -> Vec<ClassPropertyValue> {
-    vec![ClassPropertyValue {
-        in_class_index: 0,
-        value: PropertyValue::Int64(1337),
-    }]
-}
-
-pub fn create_simple_class(permissions: ClassPermissionsType<Runtime>) -> ClassId {
-    let class_id = <Module<Runtime>>::next_class_id();
-    assert_ok!(TestModule::create_class(
-        Origin::signed(CLASS_PERMISSIONS_CREATOR1),
-        b"class_name_1".to_vec(),
-        b"class_description_1".to_vec(),
-        permissions
-    ));
-    class_id
-}
-
-pub fn create_simple_class_with_default_permissions() -> ClassId {
-    create_simple_class(Default::default())
-}
-
-pub fn class_minimal() -> ClassPermissionsType<Runtime> {
-    ClassPermissions {
-        // remove special permissions for entity maintainers
-        entity_permissions: EntityPermissions {
-            maintainer_has_all_permissions: false,
-            ..Default::default()
-        },
-        ..Default::default()
-    }
-}
-
-pub fn class_minimal_with_admins(
-    admins: Vec<<Runtime as Trait>::Credential>,
-) -> ClassPermissionsType<Runtime> {
-    ClassPermissions {
-        admins: admins.into(),
-        ..class_minimal()
-    }
-}
-
-pub fn next_entity_id() -> EntityId {
-    <Module<Runtime>>::next_entity_id()
-}
-
-pub fn create_entity_of_class(class_id: ClassId) -> EntityId {
-    let entity_id = TestModule::next_entity_id();
-    assert_eq!(TestModule::perform_entity_creation(class_id,), entity_id);
-    entity_id
-}
-
-pub fn create_entity_with_schema_support() -> EntityId {
-    let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
-    assert_ok!(TestModule::add_entity_schema_support(
-        entity_id,
-        schema_id,
-        vec![prop_value(PROP_ID_BOOL, PropertyValue::Bool(true))]
-    ));
-    entity_id
-}
-
-pub fn create_class_with_schema_and_entity() -> (ClassId, u16, EntityId) {
-    let class_id = create_simple_class_with_default_permissions();
-    if let Ok(schema_id) = TestModule::append_class_schema(
-        class_id,
-        vec![],
-        vec![
-            good_prop_bool().required(),
-            good_prop_u32(),
-            new_internal_class_prop(class_id),
-        ],
-    ) {
-        let entity_id = create_entity_of_class(class_id);
-        (class_id, schema_id, entity_id)
-    } else {
-        panic!("This should not happen")
-    }
-}
+const CLASS_PERMISSIONS_CREATORS: [u64; 2] =
+    [CLASS_PERMISSIONS_CREATOR1, CLASS_PERMISSIONS_CREATOR2];
 
 impl_outer_origin! {
     pub enum Origin for Runtime {}
@@ -170,43 +87,10 @@ impl timestamp::Trait for Runtime {
 }
 
 impl Trait for Runtime {
-    type Event = ();
     type Credential = u64;
     type CredentialChecker = MockCredentialChecker;
     type CreateClassPermissionsChecker = MockCreateClassPermissionsChecker;
 }
-
-pub const MEMBER_ONE_WITH_CREDENTIAL_ZERO: u64 = 100;
-pub const MEMBER_TWO_WITH_CREDENTIAL_ZERO: u64 = 101;
-pub const MEMBER_ONE_WITH_CREDENTIAL_ONE: u64 = 102;
-pub const MEMBER_TWO_WITH_CREDENTIAL_ONE: u64 = 103;
-
-
-pub const UNKNOWN_CLASS_ID: ClassId = 111;
-
-pub const UNKNOWN_ENTITY_ID: EntityId = 222;
-
-pub const UNKNOWN_PROP_ID: u16 = 333;
-
-// pub const UNKNOWN_SCHEMA_ID: u16 = 444;
-
-pub const SCHEMA_ID_0: u16 = 0;
-pub const SCHEMA_ID_1: u16 = 1;
-
-pub const PROP_ID_BOOL: u16 = 0;
-pub const PROP_ID_U32: u16 = 1;
-pub const PROP_ID_INTERNAL: u16 = 2;
-
-pub const PRINCIPAL_GROUP_MEMBERS: [[u64; 2]; 2] = [
-    [
-        MEMBER_ONE_WITH_CREDENTIAL_ZERO,
-        MEMBER_TWO_WITH_CREDENTIAL_ZERO,
-    ],
-    [
-        MEMBER_ONE_WITH_CREDENTIAL_ONE,
-        MEMBER_TWO_WITH_CREDENTIAL_ONE,
-    ],
-];
 
 pub struct MockCredentialChecker {}
 
@@ -225,12 +109,7 @@ impl CredentialChecker<Runtime> for MockCredentialChecker {
     }
 }
 
-pub const CLASS_PERMISSIONS_CREATOR1: u64 = 200;
-pub const CLASS_PERMISSIONS_CREATOR2: u64 = 300;
-pub const UNAUTHORIZED_CLASS_PERMISSIONS_CREATOR: u64 = 50;
 
-const CLASS_PERMISSIONS_CREATORS: [u64; 2] =
-    [CLASS_PERMISSIONS_CREATOR1, CLASS_PERMISSIONS_CREATOR2];
 
 pub struct MockCreateClassPermissionsChecker {}
 
@@ -287,6 +166,123 @@ fn build_test_externalities(
 pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
     let versioned_store_config = default_versioned_store_genesis_config();
     build_test_externalities(versioned_store_config).execute_with(f)
+}
+
+impl Property {
+    fn required(&self) -> Property {
+        let mut new_self = self.clone();
+        new_self.required = true;
+        new_self
+    }
+}
+
+pub fn assert_class_props(class_id: ClassId, expected_props: Vec<Property>) {
+    let class = TestModule::class_by_id(class_id);
+    assert_eq!(class.properties, expected_props);
+}
+
+pub fn assert_class_schemas(class_id: ClassId, expected_schema_prop_ids: Vec<Vec<u16>>) {
+    let class = TestModule::class_by_id(class_id);
+    let schemas: Vec<_> = expected_schema_prop_ids
+        .iter()
+        .map(|prop_ids| ClassSchema {
+            properties: prop_ids.clone(),
+        })
+        .collect();
+    assert_eq!(class.schemas, schemas);
+}
+
+pub fn assert_entity_not_found(result: dispatch::Result) {
+    assert_err!(result, ERROR_ENTITY_NOT_FOUND);
+}
+
+pub fn simple_test_schema() -> Vec<Property> {
+    vec![Property {
+        prop_type: PropertyType::Int64,
+        required: false,
+        name: b"field1".to_vec(),
+        description: b"Description field1".to_vec(),
+    }]
+}
+
+pub fn simple_test_entity_property_values() -> Vec<ClassPropertyValue> {
+    vec![ClassPropertyValue {
+        in_class_index: 0,
+        value: PropertyValue::Int64(1337),
+    }]
+}
+
+pub fn create_simple_class(permissions: ClassPermissionsType<Runtime>) -> ClassId {
+    let class_id = TestModule::next_class_id();
+    assert_ok!(TestModule::create_class(
+        Origin::signed(CLASS_PERMISSIONS_CREATOR1),
+        b"class_name_1".to_vec(),
+        b"class_description_1".to_vec(),
+        permissions
+    ));
+    class_id
+}
+
+pub fn create_simple_class_with_default_permissions() -> ClassId {
+    create_simple_class(Default::default())
+}
+
+pub fn class_minimal() -> ClassPermissionsType<Runtime> {
+    ClassPermissions {
+        // remove special permissions for entity maintainers
+        entity_permissions: EntityPermissions {
+            maintainer_has_all_permissions: false,
+            ..Default::default()
+        },
+        ..Default::default()
+    }
+}
+
+pub fn class_minimal_with_admins(
+    admins: Vec<<Runtime as Trait>::Credential>,
+) -> ClassPermissionsType<Runtime> {
+    ClassPermissions {
+        admins: admins.into(),
+        ..class_minimal()
+    }
+}
+
+pub fn next_entity_id() -> EntityId {
+    TestModule::next_entity_id()
+}
+
+pub fn create_entity_of_class(class_id: ClassId) -> EntityId {
+    let entity_id = TestModule::next_entity_id();
+    assert_eq!(TestModule::perform_entity_creation(class_id,), entity_id);
+    entity_id
+}
+
+pub fn create_entity_with_schema_support() -> EntityId {
+    let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
+    assert_ok!(TestModule::add_entity_schema_support(
+        entity_id,
+        schema_id,
+        vec![prop_value(PROP_ID_BOOL, PropertyValue::Bool(true))]
+    ));
+    entity_id
+}
+
+pub fn create_class_with_schema_and_entity() -> (ClassId, u16, EntityId) {
+    let class_id = create_simple_class_with_default_permissions();
+    if let Ok(schema_id) = TestModule::append_class_schema(
+        class_id,
+        vec![],
+        vec![
+            good_prop_bool().required(),
+            good_prop_u32(),
+            new_internal_class_prop(class_id),
+        ],
+    ) {
+        let entity_id = create_entity_of_class(class_id);
+        (class_id, schema_id, entity_id)
+    } else {
+        panic!("This should not happen")
+    }
 }
 
 pub fn good_prop_bool() -> Property {
