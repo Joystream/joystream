@@ -45,7 +45,10 @@ where
     }
 
     fn check_call_for_insufficient_rights(&self) {
-        assert!((self.insufficient_rights_call)().is_err());
+        assert_eq!(
+            (self.insufficient_rights_call)(),
+            Err(Error::Other("RequireSignedOrigin"))
+        );
     }
 
     fn check_for_successful_call(&self) {
@@ -261,26 +264,15 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_not_allowed_member_id()
 #[test]
 fn create_set_election_parameters_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        let election_parameters = ElectionParameters {
-            announcing_period: 1,
-            voting_period: 2,
-            revealing_period: 3,
-            council_size: 4,
-            candidacy_limit: 5,
-            min_voting_stake: 6,
-            min_council_stake: 7,
-            new_term_duration: 8,
-        };
-
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_set_election_parameters_proposal(
-                    RawOrigin::Signed(1).into(),
+                    RawOrigin::None.into(),
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(500u32)),
-                    ElectionParameters::default(),
+                    None,
+                    get_valid_election_parameters(),
                 )
             },
             empty_stake_call: || {
@@ -290,7 +282,7 @@ fn create_set_election_parameters_proposal_common_checks_succeed() {
                     b"title".to_vec(),
                     b"body".to_vec(),
                     None,
-                    election_parameters.clone(),
+                    get_valid_election_parameters(),
                 )
             },
             invalid_stake_call: || {
@@ -300,7 +292,7 @@ fn create_set_election_parameters_proposal_common_checks_succeed() {
                     b"title".to_vec(),
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(50000u32)),
-                    election_parameters.clone(),
+                    get_valid_election_parameters(),
                 )
             },
             successful_call: || {
@@ -310,33 +302,108 @@ fn create_set_election_parameters_proposal_common_checks_succeed() {
                     b"title".to_vec(),
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(500u32)),
-                    election_parameters.clone(),
+                    get_valid_election_parameters(),
                 )
             },
             proposal_parameters:
                 crate::proposal_types::parameters::set_election_parameters_proposal::<Test>(),
-            proposal_details: ProposalDetails::SetElectionParameters(election_parameters),
+            proposal_details: ProposalDetails::SetElectionParameters(
+                get_valid_election_parameters(),
+            ),
         };
         proposal_fixture.check_all();
     });
 }
+
+fn assert_failed_election_parameters_call(
+    election_parameters: ElectionParameters<u64, u64>,
+    error: Error,
+) {
+    assert_eq!(
+        ProposalCodex::create_set_election_parameters_proposal(
+            RawOrigin::Signed(1).into(),
+            1,
+            b"title".to_vec(),
+            b"body".to_vec(),
+            Some(<BalanceOf<Test>>::from(500u32)),
+            election_parameters,
+        ),
+        Err(error)
+    );
+}
+
+fn get_valid_election_parameters() -> ElectionParameters<u64, u64> {
+    ElectionParameters {
+        announcing_period: 14400,
+        voting_period: 14400,
+        revealing_period: 14400,
+        council_size: 3,
+        candidacy_limit: 25,
+        new_term_duration: 14400,
+        min_council_stake: 1,
+        min_voting_stake: 1,
+    }
+}
+
 #[test]
 fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
     initial_test_ext().execute_with(|| {
-        let account_id = 1;
-        let required_stake = Some(<BalanceOf<Test>>::from(500u32));
-        let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&account_id, 50000);
+        let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&1, 50000);
 
-        assert_eq!(
-            ProposalCodex::create_set_election_parameters_proposal(
-                RawOrigin::Signed(1).into(),
-                1,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                required_stake,
-                ElectionParameters::default(),
-            ),
-            Err(Error::Other("PeriodCannotBeZero"))
+        let mut election_parameters = get_valid_election_parameters();
+        election_parameters.council_size = 2;
+        assert_failed_election_parameters_call(
+            election_parameters,
+            Error::InvalidCouncilElectionParameterCouncilSize,
+        );
+
+        election_parameters = get_valid_election_parameters();
+        election_parameters.candidacy_limit = 22;
+        assert_failed_election_parameters_call(
+            election_parameters,
+            Error::InvalidCouncilElectionParameterCandidacyLimit,
+        );
+
+        election_parameters = get_valid_election_parameters();
+        election_parameters.min_voting_stake = 0;
+        assert_failed_election_parameters_call(
+            election_parameters,
+            Error::InvalidCouncilElectionParameterMinVotingStake,
+        );
+
+        election_parameters = get_valid_election_parameters();
+        election_parameters.new_term_duration = 10000;
+        assert_failed_election_parameters_call(
+            election_parameters,
+            Error::InvalidCouncilElectionParameterNewTermDuration,
+        );
+
+        election_parameters = get_valid_election_parameters();
+        election_parameters.min_council_stake = 0;
+        assert_failed_election_parameters_call(
+            election_parameters,
+            Error::InvalidCouncilElectionParameterMinCouncilStake,
+        );
+
+        election_parameters = get_valid_election_parameters();
+        election_parameters.voting_period = 10000;
+        assert_failed_election_parameters_call(
+            election_parameters,
+            Error::InvalidCouncilElectionParameterVotingPeriod,
+        );
+
+        election_parameters = get_valid_election_parameters();
+        election_parameters.revealing_period = 10000;
+        assert_failed_election_parameters_call(
+            election_parameters,
+            Error::InvalidCouncilElectionParameterRevealingPeriod,
+        );
+
+        election_parameters = get_valid_election_parameters();
+        election_parameters.announcing_period = 10000;
+        assert_failed_election_parameters_call(
+            election_parameters,
+            Error::InvalidCouncilElectionParameterAnnouncingPeriod,
         );
     });
 }

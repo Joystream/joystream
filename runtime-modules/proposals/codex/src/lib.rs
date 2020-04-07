@@ -56,7 +56,7 @@ use rstd::prelude::*;
 use rstd::str::from_utf8;
 use rstd::vec::Vec;
 use runtime_io::blake2_256;
-use sr_primitives::traits::Zero;
+use sr_primitives::traits::{One, Zero};
 use srml_support::dispatch::DispatchResult;
 use srml_support::traits::{Currency, Get};
 use srml_support::{decl_error, decl_module, decl_storage, ensure, print};
@@ -160,11 +160,33 @@ decl_error! {
         /// Invalid storage role parameter - min_service_period
         InvalidStorageRoleParameterMinServicePeriod,
 
-        /// Invalid storage role parameter - min_service_period
-        InvalidStorageRoleParameterMinServicePeriod,
-
         /// Invalid storage role parameter - startup_grace_period
         InvalidStorageRoleParameterStartupGracePeriod,
+
+        /// Invalid council election parameter - council_size
+        InvalidCouncilElectionParameterCouncilSize,
+
+        /// Invalid council election parameter - candidacy-limit
+        InvalidCouncilElectionParameterCandidacyLimit,
+
+        /// Invalid council election parameter - min-voting_stake
+        InvalidCouncilElectionParameterMinVotingStake,
+
+        /// Invalid council election parameter - new_term_duration
+        InvalidCouncilElectionParameterNewTermDuration,
+
+        /// Invalid council election parameter - min_council_stake
+        InvalidCouncilElectionParameterMinCouncilStake,
+
+        /// Invalid council election parameter - revealing_period
+        InvalidCouncilElectionParameterRevealingPeriod,
+
+        /// Invalid council election parameter - voting_period
+        InvalidCouncilElectionParameterVotingPeriod,
+
+        /// Invalid council election parameter - announcing_period
+        InvalidCouncilElectionParameterAnnouncingPeriod,
+
     }
 }
 
@@ -300,7 +322,7 @@ decl_module! {
             stake_balance: Option<BalanceOf<T>>,
             election_parameters: ElectionParameters<BalanceOfGovernanceCurrency<T>, T::BlockNumber>,
         ) {
-            election_parameters.ensure_valid()?;
+            Self::ensure_council_election_parameters_valid(&election_parameters)?;
 
             let proposal_code =
                 <governance::election::Call<T>>::set_election_parameters(election_parameters.clone());
@@ -675,6 +697,53 @@ impl<T: Trait> Module<T> {
         ensure!(
             role_parameters.startup_grace_period >= T::BlockNumber::from(600),
             Error::InvalidStorageRoleParameterStartupGracePeriod
+        );
+
+        Ok(())
+    }
+
+    // validates council election parameters for the 'Set election parameters' proposal
+    fn ensure_council_election_parameters_valid(
+        election_parameters: &ElectionParameters<BalanceOfGovernanceCurrency<T>, T::BlockNumber>,
+    ) -> Result<(), Error> {
+        ensure!(
+            election_parameters.council_size >= 3,
+            Error::InvalidCouncilElectionParameterCouncilSize
+        );
+
+        ensure!(
+            election_parameters.candidacy_limit >= 25,
+            Error::InvalidCouncilElectionParameterCandidacyLimit
+        );
+
+        ensure!(
+            election_parameters.min_voting_stake >= <BalanceOfGovernanceCurrency<T>>::one(),
+            Error::InvalidCouncilElectionParameterMinVotingStake
+        );
+
+        ensure!(
+            election_parameters.new_term_duration >= T::BlockNumber::from(14400),
+            Error::InvalidCouncilElectionParameterNewTermDuration
+        );
+
+        ensure!(
+            election_parameters.revealing_period >= T::BlockNumber::from(14400),
+            Error::InvalidCouncilElectionParameterRevealingPeriod
+        );
+
+        ensure!(
+            election_parameters.voting_period >= T::BlockNumber::from(14400),
+            Error::InvalidCouncilElectionParameterVotingPeriod
+        );
+
+        ensure!(
+            election_parameters.announcing_period >= T::BlockNumber::from(14400),
+            Error::InvalidCouncilElectionParameterAnnouncingPeriod
+        );
+
+        ensure!(
+            election_parameters.min_council_stake >= <BalanceOfGovernanceCurrency<T>>::one(),
+            Error::InvalidCouncilElectionParameterMinCouncilStake
         );
 
         Ok(())
