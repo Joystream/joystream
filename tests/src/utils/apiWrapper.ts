@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { Option, Vec } from '@polkadot/types';
+import { Option, Vec, UInt } from '@polkadot/types';
 import { Codec } from '@polkadot/types/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { UserInfo, PaidMembershipTerms } from '@joystream/types/lib/members';
@@ -184,5 +184,9 @@ export class ApiWrapper {
       console.log('elected council ' + seats.toString());
       return JSON.parse(seats.toString());
     });
+  }
+
+  public getBlockDuration(): BN {
+    return this.api.createType('Moment', this.api.consts.babe.expectedBlockTime).toBn();
   }
 }
