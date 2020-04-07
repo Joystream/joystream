@@ -157,7 +157,6 @@ impl VotersParameters for MockVotersParameters {
 
 parameter_types! {
     pub const TextProposalMaxLength: u32 = 20_000;
-    pub const SetValidatorCountProposalMinValidators: u32 = 4;
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 20_000;
     pub const RuntimeUpgradeProposalAllowedProposers: Vec<u64> = vec![1];
 }

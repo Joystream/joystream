@@ -75,9 +75,6 @@ pub trait Trait:
     + roles::actors::Trait
     + staking::Trait
 {
-    /// Defines min allowed validator count for the 'Set validator count' proposal.
-    type SetValidatorCountProposalMinValidators: Get<u32>;
-
     /// Defines max allowed text proposal length.
     type TextProposalMaxLength: Get<u32>;
 
@@ -499,7 +496,7 @@ decl_module! {
             new_validator_count: u32,
         ) {
             ensure!(
-                new_validator_count >= T::SetValidatorCountProposalMinValidators::get(),
+                new_validator_count >= <staking::Module<T>>::minimum_validator_count(),
                 Error::LessThanMinValidatorCount
             );
 
