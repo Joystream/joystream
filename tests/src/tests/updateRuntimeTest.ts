@@ -43,9 +43,11 @@ describe('Council integration tests', () => {
       description,
       runtime
     );
+    console.log('sending some funds for the test');
     const runtimeVoteFee: BN = apiWrapper.estimateVoteForProposalFee();
-    apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, runtimeProposalFee);
-    apiWrapper.transferBalanceToAccounts(sudo, m2KeyPairs, runtimeVoteFee);
+    await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, runtimeProposalFee.add(proposalStake));
+    await apiWrapper.transferBalanceToAccounts(sudo, m2KeyPairs, runtimeVoteFee);
+    console.log('going to propose runtime');
     await apiWrapper.proposeRuntime(
       m1KeyPairs[0],
       proposalStake,
@@ -53,6 +55,8 @@ describe('Council integration tests', () => {
       'runtime to test proposal functionality',
       runtime
     );
+    console.log('runtime proposed, approving...');
+    await apiWrapper.approveProposal(m2KeyPairs[0], new BN(1));
   }).timeout(defaultTimeout);
 
   after(() => {
