@@ -6,6 +6,6 @@
 		"test": "yarn && yarn workspaces run test"
 	},
 	"workspaces": [
-		"tests"
+		"tests/network-tests"
 	]
 }
