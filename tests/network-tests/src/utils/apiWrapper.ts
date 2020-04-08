@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { Option, Vec, Bytes } from '@polkadot/types';
+import { Option, Vec, Bytes, UInt } from '@polkadot/types';
 import { Codec } from '@polkadot/types/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { UserInfo, PaidMembershipTerms } from '@joystream/types/lib/members';
@@ -228,5 +228,9 @@ export class ApiWrapper {
         await this.approveProposal(keyPair, proposal);
       })
     );
+  }
+
+  public getBlockDuration(): BN {
+    return this.api.createType('Moment', this.api.consts.babe.expectedBlockTime).toBn();
   }
 }
