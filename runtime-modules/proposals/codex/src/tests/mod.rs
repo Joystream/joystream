@@ -828,6 +828,11 @@ fn assert_failed_set_storage_parameters_call(
 #[test]
 fn create_set_storage_role_parameters_proposal_fails_with_invalid_parameters() {
     initial_test_ext().execute_with(|| {
+        // {
+        //     let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&44, 50000);
+        // }
+        // assert_eq!(Balances::total_issuance(), 0);
+
         let mut role_parameters = RoleParameters::default();
         role_parameters.min_actors = 0;
         assert_failed_set_storage_parameters_call(

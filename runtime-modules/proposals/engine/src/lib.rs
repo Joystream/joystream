@@ -279,11 +279,14 @@ decl_module! {
             ensure!(<Proposals<T>>::exists(proposal_id), Error::ProposalNotFound);
             let proposal = Self::proposals(proposal_id);
 
-            ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::ProposalFinalized);
-
             // mutation
 
-            Self::finalize_proposal(proposal_id, ProposalDecisionStatus::Vetoed);
+            if <PendingExecutionProposalIds<T>>::exists(proposal_id) {
+                Self::veto_pending_execution_proposal(proposal_id, proposal);
+            } else {
+                ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::ProposalFinalized);
+                Self::finalize_proposal(proposal_id, ProposalDecisionStatus::Vetoed);
+            }
         }
 
         /// Block finalization. Perform voting period check, vote result tally, approved proposals
@@ -508,6 +511,27 @@ impl<T: Trait> Module<T> {
                 })
             })
             .collect() // compose output vector
+    }
+
+    // Veto approved proposal during its grace period. Saves a new proposal status and removes
+    // proposal id from the 'PendingExecutionProposalIds'
+    fn veto_pending_execution_proposal(proposal_id: T::ProposalId, proposal: ProposalOf<T>) {
+        <PendingExecutionProposalIds<T>>::remove(proposal_id);
+
+        let vetoed_proposal_status = ProposalStatus::finalized(
+            ProposalDecisionStatus::Vetoed,
+            None,
+            None,
+            Self::current_block(),
+        );
+
+        <Proposals<T>>::insert(
+            proposal_id,
+            Proposal {
+                status: vetoed_proposal_status,
+                ..proposal
+            },
+        );
     }
 
     // Executes approved proposal code

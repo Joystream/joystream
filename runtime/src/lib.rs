@@ -868,7 +868,6 @@ impl proposals_codex::Trait for Runtime {
     type TextProposalMaxLength = TextProposalMaxLength;
     type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
     type RuntimeUpgradeProposalAllowedProposers = RuntimeUpgradeProposalAllowedProposers;
-    type SetValidatorCountProposalMinValidators = SetValidatorCountProposalMinValidators;
 }
 
 construct_runtime!(

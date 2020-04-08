@@ -819,6 +819,119 @@ fn proposal_execution_postponed_because_of_grace_period() {
     });
 }
 
+/*
+
+#[test]
+fn veto_proposal_succeeds() {
+    initial_test_ext().execute_with(|| {
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 0);
+
+        let parameters_fixture = ProposalParametersFixture::default();
+        let dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 1);
+
+        let veto_proposal = VetoProposalFixture::new(proposal_id);
+        veto_proposal.veto_and_assert(Ok(()));
+
+        let proposal = <crate::Proposals<Test>>::get(proposal_id);
+
+        assert_eq!(
+            proposal,
+            Proposal {
+                parameters: parameters_fixture.params(),
+                proposer_id: 1,
+                created_at: 1,
+                status: ProposalStatus::finalized_successfully(ProposalDecisionStatus::Vetoed, 1),
+                title: b"title".to_vec(),
+                description: b"description".to_vec(),
+                voting_results: VotingResults::default(),
+            }
+        );
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 0);
+    });
+}
+*/
+
+#[test]
+fn proposal_execution_vetoed_successfully_during_the_grace_period() {
+    initial_test_ext().execute_with(|| {
+        let parameters_fixture = ProposalParametersFixture::default().with_grace_period(2);
+        let dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
+
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+
+        run_to_block_and_finalize(1);
+        run_to_block_and_finalize(2);
+
+        // check internal cache for proposal_id presense
+        assert!(<PendingExecutionProposalIds<Test>>::enumerate()
+            .find(|(x, _)| *x == proposal_id)
+            .is_some());
+
+        let proposal = <crate::Proposals<Test>>::get(proposal_id);
+
+        assert_eq!(
+            proposal,
+            Proposal {
+                parameters: parameters_fixture.params(),
+                proposer_id: 1,
+                created_at: 1,
+                status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 1),
+                title: b"title".to_vec(),
+                description: b"description".to_vec(),
+                voting_results: VotingResults {
+                    abstentions: 0,
+                    approvals: 4,
+                    rejections: 0,
+                    slashes: 0,
+                },
+            }
+        );
+
+        let veto_proposal = VetoProposalFixture::new(proposal_id);
+        veto_proposal.veto_and_assert(Ok(()));
+
+        let proposal = <crate::Proposals<Test>>::get(proposal_id);
+
+        assert_eq!(
+            proposal,
+            Proposal {
+                parameters: parameters_fixture.params(),
+                proposer_id: 1,
+                created_at: 1,
+                status: ProposalStatus::finalized_successfully(ProposalDecisionStatus::Vetoed, 2),
+                title: b"title".to_vec(),
+                description: b"description".to_vec(),
+                voting_results: VotingResults {
+                    abstentions: 0,
+                    approvals: 4,
+                    rejections: 0,
+                    slashes: 0,
+                },
+            }
+        );
+
+        // check internal cache for proposal_id presense
+        assert!(<PendingExecutionProposalIds<Test>>::enumerate()
+            .find(|(x, _)| *x == proposal_id)
+            .is_none());
+    });
+}
+
 #[test]
 fn proposal_execution_succeeds_after_the_grace_period() {
     initial_test_ext().execute_with(|| {

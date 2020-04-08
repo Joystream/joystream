@@ -247,7 +247,6 @@ impl staking::SessionInterface<u64> for Test {
 }
 
 impl crate::Trait for Test {
-    type SetValidatorCountProposalMinValidators = SetValidatorCountProposalMinValidators;
     type TextProposalMaxLength = TextProposalMaxLength;
     type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
     type RuntimeUpgradeProposalAllowedProposers = RuntimeUpgradeProposalAllowedProposers;
