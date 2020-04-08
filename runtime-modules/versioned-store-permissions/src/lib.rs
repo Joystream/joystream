@@ -183,7 +183,6 @@ pub type ClassPermissionsType<T> =
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Entity {
-    pub id: EntityId,
 
     /// The class id of this entity.
     pub class_id: ClassId,
@@ -671,7 +670,6 @@ impl<T: Trait> Module<T> {
         let entity_id = NextEntityId::get();
 
         let new_entity = Entity {
-            id: entity_id,
             class_id,
             in_class_schema_indexes: vec![],
             values: vec![],

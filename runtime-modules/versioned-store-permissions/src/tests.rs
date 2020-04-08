@@ -648,7 +648,6 @@ fn batch_transaction_vector_of_entities() {
             EntityById::get(entity_id),
             Entity {
                 class_id: new_class_id,
-                id: entity_id,
                 in_class_schema_indexes: vec![0],
                 values: vec![ClassPropertyValue {
                     in_class_index: 0,
