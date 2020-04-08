@@ -64,6 +64,8 @@ export class ApiWrapper {
   public async transferBalanceToAccounts(from: KeyringPair, to: KeyringPair[], amount: BN): Promise<void[]> {
     return Promise.all(
       to.map(async keyPair => {
+        amount = amount.addn(1);
+        console.log('sending to ' + keyPair.address + ' amount ' + amount);
         await this.transferBalance(from, keyPair.address, amount);
       })
     );
@@ -217,6 +219,14 @@ export class ApiWrapper {
       this.api.tx.proposals.voteOnProposal(proposal, new VoteKind('Approve')),
       account,
       false
+    );
+  }
+
+  public batchApproveProposal(council: KeyringPair[], proposal: BN): Promise<void[]> {
+    return Promise.all(
+      council.map(async keyPair => {
+        await this.approveProposal(keyPair, proposal);
+      })
     );
   }
 }

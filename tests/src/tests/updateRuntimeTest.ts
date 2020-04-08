@@ -56,7 +56,7 @@ describe('Council integration tests', () => {
       runtime
     );
     console.log('runtime proposed, approving...');
-    await apiWrapper.approveProposal(m2KeyPairs[0], new BN(1));
+    await apiWrapper.batchApproveProposal(m2KeyPairs, new BN(1));
   }).timeout(defaultTimeout);
 
   after(() => {
