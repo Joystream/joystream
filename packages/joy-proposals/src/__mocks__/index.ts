@@ -1,1 +1,1 @@
-export { default as Proposals } from "./proposals.mocked";
+export { default as proposalDetails } from "./proposalDetails.mock.ts";
