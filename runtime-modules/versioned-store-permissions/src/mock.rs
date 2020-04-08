@@ -2,9 +2,6 @@
 
 use crate::*;
 
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
-
 use primitives::H256;
 use runtime_primitives::{
     testing::Header,
@@ -54,7 +51,7 @@ impl_outer_origin! {
 }
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, Default, PartialEq, Eq, Debug)]
 pub struct Runtime;
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
@@ -316,7 +313,7 @@ pub fn good_prop_text() -> Property {
 
 pub fn new_internal_class_prop(class_id: ClassId) -> Property {
     Property {
-        prop_type: PropertyType::Internal(class_id),
+        prop_type: PropertyType::Reference(class_id),
         required: false,
         name: b"Name of a internal property".to_vec(),
         description: b"Description of a internal property".to_vec(),

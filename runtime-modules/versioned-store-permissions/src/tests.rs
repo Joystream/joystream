@@ -493,7 +493,7 @@ fn batch_transaction_simple() {
         });
 
         let new_properties = vec![Property {
-            prop_type: PropertyType::Internal(new_class_id),
+            prop_type: PropertyType::Reference(new_class_id),
             required: true,
             name: b"entity".to_vec(),
             description: b"another entity of same class".to_vec(),
@@ -577,7 +577,7 @@ fn batch_transaction_vector_of_entities() {
         });
 
         let new_properties = vec![Property {
-            prop_type: PropertyType::InternalVec(10, new_class_id),
+            prop_type: PropertyType::ReferenceVec(10, new_class_id),
             required: true,
             name: b"entities".to_vec(),
             description: b"vector of entities of same class".to_vec(),
@@ -651,7 +651,7 @@ fn batch_transaction_vector_of_entities() {
                 in_class_schema_indexes: vec![0],
                 values: vec![ClassPropertyValue {
                     in_class_index: 0,
-                    value: PropertyValue::InternalVec(vec![entity_id + 1, entity_id + 2,])
+                    value: PropertyValue::ReferenceVec(vec![entity_id + 1, entity_id + 2,])
                 }]
             }
         );
@@ -916,7 +916,7 @@ fn cannot_add_schema_to_entity_when_unknown_internal_entity_id() {
                 schema_id,
                 vec![
                     bool_prop_value(),
-                    prop_value(PROP_ID_INTERNAL, PropertyValue::Internal(UNKNOWN_ENTITY_ID))
+                    prop_value(PROP_ID_INTERNAL, PropertyValue::Reference(UNKNOWN_ENTITY_ID))
                 ]
             ),
             ERROR_ENTITY_NOT_FOUND
@@ -1002,7 +1002,7 @@ fn cannot_update_entity_props_when_unknown_internal_entity_id() {
                 entity_id,
                 vec![prop_value(
                     PROP_ID_INTERNAL,
-                    PropertyValue::Internal(UNKNOWN_ENTITY_ID)
+                    PropertyValue::Reference(UNKNOWN_ENTITY_ID)
                 )]
             ),
             ERROR_ENTITY_NOT_FOUND
@@ -1041,7 +1041,7 @@ fn update_entity_props_successfully() {
             vec![
                 prop_value(PROP_ID_BOOL, PropertyValue::Bool(false)),
                 prop_value(PROP_ID_U32, PropertyValue::Uint32(123)),
-                prop_value(PROP_ID_INTERNAL, PropertyValue::Internal(entity_id)),
+                prop_value(PROP_ID_INTERNAL, PropertyValue::Reference(entity_id)),
             ]
         ));
         assert_eq!(
@@ -1049,7 +1049,7 @@ fn update_entity_props_successfully() {
             vec![
                 prop_value(PROP_ID_BOOL, PropertyValue::Bool(false)),
                 prop_value(PROP_ID_U32, PropertyValue::Uint32(123)),
-                prop_value(PROP_ID_INTERNAL, PropertyValue::Internal(entity_id)),
+                prop_value(PROP_ID_INTERNAL, PropertyValue::Reference(entity_id)),
             ]
         );
     })

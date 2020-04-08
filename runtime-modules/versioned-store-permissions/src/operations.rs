@@ -96,7 +96,7 @@ pub fn parametrized_property_values_to_property_values(
                 let op_index = entity_created_in_operation_index as usize;
                 if created_entities.contains_key(&op_index) {
                     let entity_id = created_entities.get(&op_index).unwrap();
-                    PropertyValue::Internal(*entity_id)
+                    PropertyValue::Reference(*entity_id)
                 } else {
                     return Err("EntityNotCreatedByOperation");
                 }
@@ -121,7 +121,7 @@ pub fn parametrized_property_values_to_property_values(
                     }
                 }
 
-                PropertyValue::InternalVec(entities)
+                PropertyValue::ReferenceVec(entities)
             }
         };
 

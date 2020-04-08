@@ -4,7 +4,7 @@
 use codec::{Codec, Encode, Decode};
 use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use rstd::prelude::*;
-use runtime_primitives::traits::{MaybeSerializeDeserialize, Member, SimpleArithmetic};
+use runtime_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_module, decl_storage, dispatch, ensure, Parameter};
 use system;
 
@@ -38,7 +38,7 @@ pub trait Trait: system::Trait {
         + Default
         + Copy
         + Clone
-        + MaybeSerializeDeserialize
+        + MaybeSerialize
         + Eq
         + PartialEq
         + Ord;
@@ -128,6 +128,9 @@ pub type EntityId = u64;
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct Class<T: Trait> {
     /// Permissions for an instance of a Class in the versioned store.
+    /// #[cfg(feature = "std")]
+
+    #[cfg_attr(feature = "std", serde(skip))]
     class_permissions: ClassPermissionsType<T>,
     /// All properties that have been used on this class across different class schemas.
     /// Unlikely to be more than roughly 20 properties per class, often less.
@@ -229,7 +232,7 @@ pub enum PropertyType {
     Int32,
     Int64,
     Text(u16),
-    Internal(ClassId),
+    Reference(ClassId),
 
     // Vector of values.
     // The first u16 value is the max length of this vector.
@@ -248,7 +251,7 @@ pub enum PropertyType {
     /// The first u16 value is the max length of this vector.
     /// The second ClassId value tells that an every element of this vector
     /// should be of a specific ClassId.
-    InternalVec(u16, ClassId),
+    ReferenceVec(u16, ClassId),
     // External(ExternalProperty),
     // ExternalVec(u16, ExternalProperty),
 }
@@ -273,7 +276,7 @@ pub enum PropertyValue {
     Int32(i32),
     Int64(i64),
     Text(Vec<u8>),
-    Internal(EntityId),
+    Reference(EntityId),
 
     // Vector of values:
     BoolVec(Vec<bool>),
@@ -284,7 +287,7 @@ pub enum PropertyValue {
     Int32Vec(Vec<i32>),
     Int64Vec(Vec<i64>),
     TextVec(Vec<Vec<u8>>),
-    InternalVec(Vec<EntityId>),
+    ReferenceVec(Vec<EntityId>),
     // External(ExternalPropertyType),
     // ExternalVec(Vec<ExternalPropertyType>),
 }
@@ -950,7 +953,7 @@ impl<T: Trait> Module<T> {
         property_values: &[ClassPropertyValue],
     ) -> dispatch::Result {
         for property_value in property_values.iter() {
-            if let PropertyValue::Internal(ref target_entity_id) = property_value.value {
+            if let PropertyValue::Reference(ref target_entity_id) = property_value.value {
                 // get the class permissions for target class
                 let target_class_id = Self::get_class_id_by_entity_id(*target_entity_id)?;
                 // assert class permissions exists for target class
@@ -1025,7 +1028,7 @@ impl<T: Trait> Module<T> {
     
             // Check validity of Internal(ClassId) for new_properties.
             let has_unknown_internal_id = new_properties.iter().any(|prop| match prop.prop_type {
-                PropertyType::Internal(other_class_id) => !<ClassById<T>>::exists(other_class_id),
+                PropertyType::Reference(other_class_id) => !<ClassById<T>>::exists(other_class_id),
                 _ => false,
             });
             ensure!(
@@ -1173,7 +1176,7 @@ impl<T: Trait> Module<T> {
     
         pub fn ensure_valid_internal_prop(value: PropertyValue, prop: Property) -> dispatch::Result {
             match (value, prop.prop_type) {
-                (PV::Internal(entity_id), PT::Internal(class_id)) => {
+                (PV::Reference(entity_id), PT::Reference(class_id)) => {
                     Self::ensure_known_class_id(class_id)?;
                     Self::ensure_known_entity_id(entity_id)?;
                     let entity = Self::entity_by_id(entity_id);
@@ -1188,7 +1191,7 @@ impl<T: Trait> Module<T> {
         }
     
         pub fn is_unknown_internal_entity_id(id: PropertyValue) -> bool {
-            if let PropertyValue::Internal(entity_id) = id {
+            if let PropertyValue::Reference(entity_id) = id {
                 !EntityById::exists(entity_id)
             } else {
                 false
@@ -1261,7 +1264,7 @@ impl<T: Trait> Module<T> {
                     }
                 },
     
-                (PV::InternalVec(vec), PT::InternalVec(vec_max_len, class_id)) => {
+                (PV::ReferenceVec(vec), PT::ReferenceVec(vec_max_len, class_id)) => {
                     Self::ensure_known_class_id(class_id)?;
                     if validate_vec_len_ref(&vec, vec_max_len) {
                         for entity_id in vec.iter() {
@@ -1319,7 +1322,7 @@ impl<T: Trait> Module<T> {
                 (PV::Int32(_),    PT::Int32) |
                 (PV::Int64(_),    PT::Int64) |
                 (PV::Text(_),     PT::Text(_)) |
-                (PV::Internal(_), PT::Internal(_)) |
+                (PV::Reference(_), PT::Reference(_)) |
     
                 // Vectors:
                 (PV::BoolVec(_),     PT::BoolVec(_)) |
@@ -1330,7 +1333,7 @@ impl<T: Trait> Module<T> {
                 (PV::Int32Vec(_),    PT::Int32Vec(_)) |
                 (PV::Int64Vec(_),    PT::Int64Vec(_)) |
                 (PV::TextVec(_),     PT::TextVec(_, _)) |
-                (PV::InternalVec(_), PT::InternalVec(_, _)) => true,
+                (PV::ReferenceVec(_), PT::ReferenceVec(_, _)) => true,
     
                 // (PV::External(_), PT::External(_)) => true,
                 // (PV::ExternalVec(_), PT::ExternalVec(_, _)) => true,
