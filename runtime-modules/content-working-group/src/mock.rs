@@ -40,7 +40,7 @@ parameter_types! {
 }
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Default, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
 
 impl_outer_origin! {
