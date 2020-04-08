@@ -2,7 +2,7 @@ use codec::{Decode, Encode};
 use rstd::collections::btree_set::BTreeSet;
 
 #[cfg(feature = "std")]
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 /// Reference to a specific property of a specific class.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

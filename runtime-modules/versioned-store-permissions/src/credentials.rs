@@ -3,7 +3,7 @@ use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 
 #[cfg(feature = "std")]
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]

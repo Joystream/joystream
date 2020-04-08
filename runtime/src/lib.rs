@@ -400,7 +400,7 @@ pub use governance::election_params::ElectionParameters;
 use governance::{council, election, proposals};
 use membership::members;
 use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
-use versioned_store_permissions;
+pub use versioned_store_permissions;
 
 pub use content_working_group as content_wg;
 mod migration;

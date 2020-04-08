@@ -2,7 +2,7 @@ use codec::{Decode, Encode};
 use srml_support::dispatch;
 
 #[cfg(feature = "std")]
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::constraint::*;
 use crate::credentials::*;

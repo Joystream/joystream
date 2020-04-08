@@ -5405,7 +5405,6 @@ dependencies = [
  "parity-scale-codec",
  "quote 0.6.13",
  "serde",
- "serde_derive",
  "sr-io",
  "sr-primitives",
  "sr-std",

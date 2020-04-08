@@ -9,7 +9,7 @@ use srml_support::{decl_module, decl_storage, dispatch, ensure, Parameter};
 use system;
 
 #[cfg(feature = "std")]
-pub use serde_derive::{Deserialize, Serialize};
+pub use serde::{Deserialize, Serialize};
 
 // EntityId, ClassId -> should be configured on versioned_store_permissions::Trait
 
