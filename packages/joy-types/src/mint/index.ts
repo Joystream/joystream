@@ -68,7 +68,8 @@ export function registerMintTypes () {
       getTypeRegistry().register({
         MintId: 'u64',
         Mint,
-        'minting::BalanceOf': 'Balance'
+        'minting::BalanceOf': 'Balance',
+        'MintBalanceOf': 'Balance',
       });
     } catch (err) {
       console.error('Failed to register custom types of mint module', err);

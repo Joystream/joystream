@@ -243,7 +243,17 @@ function registerElectionAndProposalTypes() {
         'slashes': 'u32',
         'status': 'ProposalStatus',
         'finalized_at': 'BlockNumber'
-      }
+      },
+      'ElectionParameters': {
+        'announcing_period': 'BlockNumber',
+        'voting_period': 'BlockNumber',
+        'revealing_period': 'BlockNumber',
+        'council_size': 'u32',
+        'candidacy_limit': 'u32',
+        'new_term_duration': 'BlockNumber',
+        'min_council_stake': 'Balance',
+        'min_voting_stake': 'Balance',
+      },
     });
   } catch (err) {
     console.error('Failed to register custom types of Joystream node', err);
