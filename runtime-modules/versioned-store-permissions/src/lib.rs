@@ -221,7 +221,6 @@ pub struct Property {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum PropertyType {
-    None,
 
     // Single value:
     Bool,
@@ -258,14 +257,13 @@ pub enum PropertyType {
 
 impl Default for PropertyType {
     fn default() -> Self {
-        PropertyType::None
+        PropertyType::Bool
     }
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum PropertyValue {
-    None,
 
     // Single value:
     Bool(bool),
@@ -294,7 +292,7 @@ pub enum PropertyValue {
 
 impl Default for PropertyValue {
     fn default() -> Self {
-        PropertyValue::None
+        PropertyValue::Bool(false)
     }
 }
 
@@ -1126,7 +1124,7 @@ impl<T: Trait> Module<T> {
                         else {
                             appended_entity_values.push(ClassPropertyValue {
                                 in_class_index: prop_id,
-                                value: PropertyValue::None,
+                                value: PropertyValue::Bool(false),
                             });
                         }
                     }
@@ -1306,12 +1304,11 @@ impl<T: Trait> Module<T> {
         ) -> bool {
     
             // A non required property can be updated to None:
-            if !prop.required && value == PV::None {
+            if !prop.required && value == PV::Bool(false) {
                 return true
             }
     
             match (value, prop.prop_type) {
-                (PV::None,        PT::None) |
     
                 // Single values
                 (PV::Bool(_),     PT::Bool) |

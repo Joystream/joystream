@@ -881,7 +881,7 @@ fn cannot_add_schema_to_entity_when_schema_id_is_unknown() {
             TestModule::add_entity_schema_support(
                 entity_id,
                 unknown_schema_id,
-                vec![prop_value(0, PropertyValue::None)]
+                vec![prop_value(0, PropertyValue::Bool(false))]
             ),
             ERROR_UNKNOWN_CLASS_SCHEMA_ID
         );
@@ -960,7 +960,7 @@ fn should_add_schema_to_entity_when_some_optional_props_provided() {
             vec![
                 bool_prop_value(),
                 prop_value(PROP_ID_U32, PropertyValue::Uint32(123)),
-                prop_value(PROP_ID_INTERNAL, PropertyValue::None),
+                prop_value(PROP_ID_INTERNAL, PropertyValue::Bool(false)),
             ]
         );
     })
@@ -1032,8 +1032,8 @@ fn update_entity_props_successfully() {
             TestModule::entity_by_id(entity_id).values,
             vec![
                 prop_value(PROP_ID_BOOL, PropertyValue::Bool(true)),
-                prop_value(PROP_ID_U32, PropertyValue::None),
-                prop_value(PROP_ID_INTERNAL, PropertyValue::None),
+                prop_value(PROP_ID_U32, PropertyValue::Bool(false)),
+                prop_value(PROP_ID_INTERNAL, PropertyValue::Bool(false)),
             ]
         );
         assert_ok!(TestModule::complete_entity_property_values_update(
