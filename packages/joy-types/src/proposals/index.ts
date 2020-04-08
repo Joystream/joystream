@@ -83,7 +83,13 @@ export function registerProposalsTypes() {
     VoteKind
   });
   typeRegistry.register({
-    RuntimeUpgradeProposal: {
+    VotingResults: {
+      abstensions: "u32",
+      approvals: "u32",
+      rejections: "u32",
+      slashes: "u32"
+    },
+    Proposal: {
       proposer_id: "MemberId",
       stake: "Balance",
       title: "Text",
