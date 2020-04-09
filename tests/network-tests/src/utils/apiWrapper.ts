@@ -1,10 +1,10 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { Option, Vec, Bytes, UInt } from '@polkadot/types';
+import { Option, Vec, Bytes } from '@polkadot/types';
 import { Codec } from '@polkadot/types/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { UserInfo, PaidMembershipTerms } from '@joystream/types/lib/members';
 import { Seat, VoteKind } from '@joystream/types';
-import { Balance } from '@polkadot/types/interfaces';
+import { Balance, EventRecord } from '@polkadot/types/interfaces';
 import BN = require('bn.js');
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { Sender } from './sender';
@@ -64,8 +64,6 @@ export class ApiWrapper {
   public async transferBalanceToAccounts(from: KeyringPair, to: KeyringPair[], amount: BN): Promise<void[]> {
     return Promise.all(
       to.map(async keyPair => {
-        amount = amount.addn(1);
-        console.log('sending to ' + keyPair.address + ' amount ' + amount);
         await this.transferBalance(from, keyPair.address, amount);
       })
     );
@@ -191,7 +189,6 @@ export class ApiWrapper {
 
   public getCouncil(): Promise<Seat[]> {
     return this.api.query.council.activeCouncil<Vec<Codec>>().then(seats => {
-      console.log('elected council ' + seats.toString());
       return JSON.parse(seats.toString());
     });
   }
@@ -232,5 +229,29 @@ export class ApiWrapper {
 
   public getBlockDuration(): BN {
     return this.api.createType('Moment', this.api.consts.babe.expectedBlockTime).toBn();
+  }
+
+  public expectProposalCreated(): Promise<BN> {
+    return new Promise(async resolve => {
+      await this.api.query.system.events<Vec<EventRecord>>(events => {
+        events.forEach(record => {
+          if (record.event.method.toString() === 'ProposalCreated') {
+            resolve(new BN(record.event.data[1].toString()));
+          }
+        });
+      });
+    });
+  }
+
+  public expectRuntimeUpgraded(): Promise<void> {
+    return new Promise(async resolve => {
+      await this.api.query.system.events<Vec<EventRecord>>(events => {
+        events.forEach(record => {
+          if (record.event.method.toString() === 'RuntimeUpdated') {
+            resolve();
+          }
+        });
+      });
+    });
   }
 }

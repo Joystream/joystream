@@ -103,8 +103,8 @@ export function councilTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]
     );
 
     // Assertions
-    // m2addresses.forEach(address => assert(members.includes(address), `Account ${address} is not in the council`));
-    // m1addresses.forEach(address => assert(bakers.includes(address), `Account ${address} is not in the voters`));
+    m2addresses.forEach(address => assert(members.includes(address), `Account ${address} is not in the council`));
+    m1addresses.forEach(address => assert(bakers.includes(address), `Account ${address} is not in the voters`));
     seats.forEach(seat =>
       assert(
         Utils.getTotalStake(seat).eq(greaterStake.add(lesserStake)),

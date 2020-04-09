@@ -8,7 +8,7 @@ import { registerJoystreamTypes } from '@joystream/types';
 import { ApiWrapper } from '../utils/apiWrapper';
 import BN = require('bn.js');
 
-describe('Council integration tests', () => {
+describe('Runtime upgrade integration tests', () => {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
@@ -33,7 +33,8 @@ describe('Council integration tests', () => {
   membershipTest(m2KeyPairs);
   councilTest(m1KeyPairs, m2KeyPairs);
 
-  it('Upgradeing the runtime test', async () => {
+  it('Upgrading the runtime test', async () => {
+    // Setup
     sudo = keyring.addFromUri(sudoUri);
     const runtime: Bytes = await apiWrapper.getRuntime();
     const description: string = 'runtime upgrade proposal which is used for API integration testing';
@@ -43,11 +44,14 @@ describe('Council integration tests', () => {
       description,
       runtime
     );
-    console.log('sending some funds for the test');
     const runtimeVoteFee: BN = apiWrapper.estimateVoteForProposalFee();
+
+    // Topping the balances
     await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, runtimeProposalFee.add(proposalStake));
     await apiWrapper.transferBalanceToAccounts(sudo, m2KeyPairs, runtimeVoteFee);
-    console.log('going to propose runtime');
+
+    // Proposal creation
+    const proposalPromise = apiWrapper.expectProposalCreated();
     await apiWrapper.proposeRuntime(
       m1KeyPairs[0],
       proposalStake,
@@ -55,9 +59,15 @@ describe('Council integration tests', () => {
       'runtime to test proposal functionality',
       runtime
     );
-    console.log('runtime proposed, approving...');
-    await apiWrapper.batchApproveProposal(m2KeyPairs, new BN(1));
+    const proposalNumber = await proposalPromise;
+
+    // Approving runtime update proposal
+    const runtimePromise = apiWrapper.expectRuntimeUpgraded();
+    await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber);
+    await runtimePromise;
   }).timeout(defaultTimeout);
+
+  membershipTest(new Array<KeyringPair>());
 
   after(() => {
     apiWrapper.close();
