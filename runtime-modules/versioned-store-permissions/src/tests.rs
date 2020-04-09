@@ -37,6 +37,18 @@ fn create_class_then_entity_with_default_class() {
             "NotInAddSchemasSet"
         );
 
+        // attemt to add class schema to nonexistent class
+        assert_err!(
+            TestModule::add_class_schema(
+                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
+                Some(0),
+                class_id + 1,
+                vec![],
+                simple_test_schema()
+            ),
+            ERROR_CLASS_NOT_FOUND
+        );
+
         // give members of GROUP_ZERO permission to add schemas
         let add_schema_set = CredentialSet::from(vec![0]);
         assert_ok!(TestModule::set_class_add_schemas_set(
@@ -848,6 +860,112 @@ fn should_add_class_schema_when_both_prop_ids_and_new_props_passed() {
     })
 }
 
+// Update class schema status
+// --------------------------------------
+
+#[test]
+fn update_class_schema_status_success() {
+    with_test_externalities(|| {
+        let (class_id, schema_id) = create_class_with_schema();
+
+        // Check given class schema status before update performed
+        assert_eq!(TestModule::class_by_id(class_id).is_active_schema(schema_id), true);
+
+        // Give members of GROUP_ZERO permission to add schemas
+        let update_schema_set = CredentialSet::from(vec![0]);
+        assert_ok!(TestModule::set_class_update_schemas_status_set(
+            Origin::ROOT,
+            None,
+            class_id,
+            update_schema_set
+        ));
+
+        // Make class schema under given index inactive.
+        assert_ok!(
+            TestModule::update_class_schema_status(
+                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
+                Some(0),
+                class_id,
+                schema_id,
+                false
+            )
+        );
+
+        // Check given class schema status after update performed
+        assert_eq!(TestModule::class_by_id(class_id).is_active_schema(schema_id), false);
+    })
+}
+
+#[test]
+fn update_class_schema_status_class_not_found() {
+    with_test_externalities(|| {
+        // attemt to update class schema of nonexistent class
+        assert_err!(
+            TestModule::update_class_schema_status(
+                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),                
+                Some(0),
+                UNKNOWN_CLASS_ID,
+                UNKNOWN_SCHEMA_ID,
+                false
+            ),
+            ERROR_CLASS_NOT_FOUND
+        );
+    })
+}
+
+#[test]
+fn update_class_schema_status_not_in_update_class_schema_status_set() {
+    with_test_externalities(|| {
+        let (class_id, schema_id) = create_class_with_schema();
+
+        // Check given class schema status before update performed
+        assert_eq!(TestModule::class_by_id(class_id).is_active_schema(schema_id), true);
+
+        // attemt to update class schema of nonexistent schema
+        assert_err!(
+            TestModule::update_class_schema_status(
+                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),                
+                Some(0),
+                class_id,
+                schema_id,
+                false
+            ),
+            "NotInUpdateSchemasStatusSet"
+        );
+
+        // Check given class schema status after update performed
+        assert_eq!(TestModule::class_by_id(class_id).is_active_schema(schema_id), true);
+    })
+}
+
+#[test]
+fn update_class_schema_status_schema_not_found() {
+    with_test_externalities(|| {
+        let class_id = create_simple_class_with_default_permissions();
+
+        // give members of GROUP_ZERO permission to update schemas
+        let update_schema_set = CredentialSet::from(vec![0]);
+        assert_ok!(TestModule::set_class_update_schemas_status_set(
+            Origin::ROOT,
+            None,
+            class_id,
+            update_schema_set
+        ));
+
+        // attemt to update class schema of nonexistent class
+        assert_err!(
+            TestModule::update_class_schema_status(
+                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
+                Some(0),
+                class_id,
+                UNKNOWN_SCHEMA_ID,
+                false
+            ),
+            ERROR_UNKNOWN_CLASS_SCHEMA_ID
+        );
+    })
+}
+
 // Add schema support to entity
 // --------------------------------------
 
@@ -859,6 +977,26 @@ fn cannot_add_schema_to_entity_when_entity_not_found() {
             1,
             vec![],
         ));
+    })
+}
+
+#[test]
+fn cannot_add_schema_to_entity_when_schema_is_not_active() {
+    with_test_externalities(|| {
+        let (class_id, schema_id, entity_id) = create_class_with_schema_and_entity();
+
+        // Firstly we make class schema under given index inactive.
+        assert_ok!(TestModule::complete_class_schema_status_update(
+            class_id,
+            schema_id,
+            false
+        ));
+
+        // Secondly we try to add support for the same schema.
+        assert_err!(
+            TestModule::add_entity_schema_support(entity_id, schema_id, vec![bool_prop_value()]),
+            ERROR_CLASS_SCHEMA_NOT_ACTIVE
+        );
     })
 }
 
