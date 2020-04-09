@@ -341,7 +341,7 @@ use PropertyType as PT;
 use PropertyValue as PV;
 
 decl_storage! {
-    trait Store for Module<T: Trait> as VersionedStorePermissions {
+    trait Store for Module<T: Trait> as ContentDirectory {
         /// ClassPermissions of corresponding Classes in the versioned store
         pub ClassById get(class_by_id) config(): linked_map ClassId => Class<T>;
 

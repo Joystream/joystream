@@ -833,7 +833,7 @@ construct_runtime!(
         DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
         DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
         Discovery: discovery::{Module, Call, Storage, Event<T>},
-        VersionedStorePermissions: content_directory::{Module, Call, Storage, Config<T>},
+        ContentDirectory: content_directory::{Module, Call, Storage, Config<T>},
         Stake: stake::{Module, Call, Storage},
         Minting: minting::{Module, Call, Storage},
         RecurringRewards: recurringrewards::{Module, Call, Storage},
