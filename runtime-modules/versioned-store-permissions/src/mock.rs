@@ -180,7 +180,7 @@ pub fn assert_class_schemas(class_id: ClassId, expected_schema_prop_ids: Vec<Vec
     let class = TestModule::class_by_id(class_id);
     let schemas: Vec<_> = expected_schema_prop_ids
         .iter()
-        .map(|prop_ids| ClassSchema::new(prop_ids.to_owned()))
+        .map(|prop_ids| Schema::new(prop_ids.to_owned()))
         .collect();
     assert_eq!(class.schemas, schemas);
 }

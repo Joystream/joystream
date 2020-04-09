@@ -137,7 +137,7 @@ pub struct Class<T: Trait> {
     pub properties: Vec<Property>,
 
     /// All scehmas that are available for this class, think v0.0 Person, v.1.0 Person, etc.
-    pub schemas: Vec<ClassSchema>,
+    pub schemas: Vec<Schema>,
 
     pub name: Vec<u8>,
     pub description: Vec<u8>,
@@ -213,13 +213,13 @@ pub struct Entity {
 /// A schema defines what properties describe an entity
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct ClassSchema {
+pub struct Schema {
     /// Indices into properties vector for the corresponding class.
     pub properties: Vec<u16>,
     pub is_active: bool
 }
 
-impl Default for ClassSchema {
+impl Default for Schema {
     fn default() -> Self {
         Self {
             properties: vec![],
@@ -229,7 +229,7 @@ impl Default for ClassSchema {
     }
 }
 
-impl ClassSchema {
+impl Schema {
     fn new(properties: Vec<u16>) -> Self {
         Self {
             properties,
@@ -1125,7 +1125,7 @@ impl<T: Trait> Module<T> {
             // for the next schema that will be sent in a result of this function.
             let schema_idx = class.schemas.len() as u16;
     
-            let mut schema = ClassSchema::new(existing_properties);
+            let mut schema = Schema::new(existing_properties);
     
             let mut updated_class_props = class.properties;
             new_properties.into_iter().for_each(|prop| {
