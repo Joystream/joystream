@@ -814,9 +814,9 @@ impl discovery::Trait for Runtime {
 parameter_types! {
     pub const ProposalCancellationFee: u64 = 5;
     pub const ProposalRejectionFee: u64 = 3;
-    pub const ProposalTitleMaxLength: u32 = 100;
-    pub const ProposalDescriptionMaxLength: u32 = 10000;
-    pub const ProposalMaxActiveProposalLimit: u32 = 100;
+    pub const ProposalTitleMaxLength: u32 = 40;
+    pub const ProposalDescriptionMaxLength: u32 = 3000;
+    pub const ProposalMaxActiveProposalLimit: u32 = 5;
 }
 
 impl proposals_engine::Trait for Runtime {
@@ -840,10 +840,10 @@ impl Default for Call {
 }
 
 parameter_types! {
-    pub const ProposalMaxPostEditionNumber: u32 = 5;
-    pub const ProposalMaxThreadInARowNumber: u32 = 3;
-    pub const ProposalThreadTitleLengthLimit: u32 = 200;
-    pub const ProposalPostLengthLimit: u32 = 2000;
+    pub const ProposalMaxPostEditionNumber: u32 = 0; // post update is disabled
+    pub const ProposalMaxThreadInARowNumber: u32 = 100000; // will not be used
+    pub const ProposalThreadTitleLengthLimit: u32 = 40;
+    pub const ProposalPostLengthLimit: u32 = 1000;
 }
 
 impl proposals_discussion::Trait for Runtime {
@@ -858,7 +858,7 @@ impl proposals_discussion::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const TextProposalMaxLength: u32 = 60_000;
+    pub const TextProposalMaxLength: u32 = 5_000;
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 2_000_000;
     pub const RuntimeUpgradeProposalAllowedProposers: Vec<u64> = Vec::new(); //TODO set allowed members
 }
