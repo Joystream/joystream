@@ -1,16 +1,16 @@
 import { u64 } from "@polkadot/types";
-import { AccountId } from "@polkadot/types/interfaces";
+import { Proposal } from "@joystream/types/";
+import Cache from "./cache";
 
 type ProposalId = u64;
 
 export default abstract class Transport {
-  abstract allProposals(): Promise<any[]>;
+  protected finalizedProposalCache = Cache;
+  abstract allProposals(): Promise<Proposal[]>;
 
-  async proposalById(id: ProposalId): Promise<any> {
-    return (await this.allProposals()).find((prop) => id.eq(prop.id));
-  }
+  abstract vote(): Promise<any>;
 
-  async proposalsByAccount(accountId: AccountId): Promise<any> {
-    return (await this.allProposals()).filter((x) => accountId && accountId.eq(x.roleAccount));
-  }
+  abstract createProposal(): Promise<any>;
+
+  protected simpleCache = new Map();
 }

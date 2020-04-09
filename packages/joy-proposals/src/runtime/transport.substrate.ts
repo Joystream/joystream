@@ -17,11 +17,15 @@ export default class SubstrateTransport extends Transport {
     this.api = api.api;
   }
 
-  proposalEngine() {
+  engine() {
     return this.api.query.proposalEngine;
   }
 
+  codex() {
+    return this.api.query.codex;
+  }
+
   allProposals() {
-    return this.proposalEngine().dunnoYet;
+    return this.engine();
   }
 }
