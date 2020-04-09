@@ -56,7 +56,7 @@ export function membershipTest(nKeyPairs: KeyringPair[]) {
   }).timeout(defaultTimeout);
 
   it('Account A can not buy the membership with insufficient funds', async () => {
-    apiWrapper
+    await apiWrapper
       .getBalance(aKeyPair.address)
       .then(balance =>
         assert(
