@@ -49,7 +49,7 @@ std = [
     'recurringrewards/std',
     'stake/std',
     'hiring/std',
-    'versioned_store_permissions/std',
+    'content_directory/std',
     'common/std',
     'content_working_group/std',
     'governance/std',
@@ -295,10 +295,10 @@ default_features = false
 package = 'substrate-hiring-module'
 path = '../runtime-modules/hiring'
 
-[dependencies.versioned_store_permissions]
+[dependencies.content_directory]
 default_features = false
-package = 'substrate-versioned-store-permissions-module'
-path = '../runtime-modules/versioned-store-permissions'
+package = 'substrate-content-directory-module'
+path = '../runtime-modules/content-directory'
 
 [dependencies.common]
 default_features = false

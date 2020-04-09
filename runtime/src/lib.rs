@@ -400,7 +400,7 @@ pub use governance::election_params::ElectionParameters;
 use governance::{council, election, proposals};
 use membership::members;
 use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
-pub use versioned_store_permissions;
+pub use content_directory;
 
 pub use content_working_group as content_wg;
 mod migration;
@@ -414,7 +414,7 @@ use stake;
 /// Alias for ContentId, used in various places.
 pub type ContentId = primitives::H256;
 
-impl versioned_store_permissions::Trait for Runtime {
+impl content_directory::Trait for Runtime {
     type Credential = Credential;
     type CredentialChecker = (ContentWorkingGroupCredentials, SudoKeyHasAllCredentials);
     type CreateClassPermissionsChecker = ContentLeadOrSudoKeyCanCreateClasses;
@@ -422,10 +422,10 @@ impl versioned_store_permissions::Trait for Runtime {
 
 // Credential Checker that gives the sudo key holder all credentials
 pub struct SudoKeyHasAllCredentials {}
-impl versioned_store_permissions::CredentialChecker<Runtime> for SudoKeyHasAllCredentials {
+impl content_directory::CredentialChecker<Runtime> for SudoKeyHasAllCredentials {
     fn account_has_credential(
         account: &AccountId,
-        _credential: <Runtime as versioned_store_permissions::Trait>::Credential,
+        _credential: <Runtime as content_directory::Trait>::Credential,
     ) -> bool {
         <sudo::Module<Runtime>>::key() == *account
     }
@@ -439,10 +439,10 @@ parameter_types! {
 }
 
 pub struct ContentWorkingGroupCredentials {}
-impl versioned_store_permissions::CredentialChecker<Runtime> for ContentWorkingGroupCredentials {
+impl content_directory::CredentialChecker<Runtime> for ContentWorkingGroupCredentials {
     fn account_has_credential(
         account: &AccountId,
-        credential: <Runtime as versioned_store_permissions::Trait>::Credential,
+        credential: <Runtime as content_directory::Trait>::Credential,
     ) -> bool {
         match credential {
             // Credentials from 0..999 represents groups or more complex requirements
@@ -499,7 +499,7 @@ impl versioned_store_permissions::CredentialChecker<Runtime> for ContentWorkingG
 
 // Allow sudo key holder permission to create classes
 pub struct SudoKeyCanCreateClasses {}
-impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
+impl content_directory::CreateClassPermissionsChecker<Runtime>
     for SudoKeyCanCreateClasses
 {
     fn account_can_create_class_permissions(account: &AccountId) -> bool {
@@ -510,10 +510,10 @@ impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
 // Impl this in the permissions module - can't be done here because
 // neither CreateClassPermissionsChecker or (X, Y) are local types?
 // impl<
-//         T: versioned_store_permissions::Trait,
-//         X: versioned_store_permissions::CreateClassPermissionsChecker<T>,
-//         Y: versioned_store_permissions::CreateClassPermissionsChecker<T>,
-//     > versioned_store_permissions::CreateClassPermissionsChecker<T> for (X, Y)
+//         T: content_directory::Trait,
+//         X: content_directory::CreateClassPermissionsChecker<T>,
+//         Y: content_directory::CreateClassPermissionsChecker<T>,
+//     > content_directory::CreateClassPermissionsChecker<T> for (X, Y)
 // {
 //     fn account_can_create_class_permissions(account: &T::AccountId) -> bool {
 //         X::account_can_create_class_permissions(account)
@@ -522,7 +522,7 @@ impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
 // }
 
 pub struct ContentLeadOrSudoKeyCanCreateClasses {}
-impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
+impl content_directory::CreateClassPermissionsChecker<Runtime>
     for ContentLeadOrSudoKeyCanCreateClasses
 {
     fn account_can_create_class_permissions(account: &AccountId) -> bool {
@@ -533,7 +533,7 @@ impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
 
 // Allow content working group lead to create classes in content directory
 pub struct ContentLeadCanCreateClasses {}
-impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
+impl content_directory::CreateClassPermissionsChecker<Runtime>
     for ContentLeadCanCreateClasses
 {
     fn account_can_create_class_permissions(account: &AccountId) -> bool {
@@ -833,7 +833,7 @@ construct_runtime!(
         DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
         DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
         Discovery: discovery::{Module, Call, Storage, Event<T>},
-        VersionedStorePermissions: versioned_store_permissions::{Module, Call, Storage, Config<T>},
+        VersionedStorePermissions: content_directory::{Module, Call, Storage, Config<T>},
         Stake: stake::{Module, Call, Storage},
         Minting: minting::{Module, Call, Storage},
         RecurringRewards: recurringrewards::{Module, Call, Storage},

@@ -20,7 +20,7 @@ pub use membership::members;
 pub use minting;
 pub use recurringrewards;
 pub use stake;
-pub use versioned_store_permissions;
+pub use content_directory;
 
 use crate::genesis;
 
@@ -170,7 +170,7 @@ impl hiring::Trait for Test {
 }
 
 type TestPrincipalId = u64;
-impl versioned_store_permissions::Trait for Test {
+impl content_directory::Trait for Test {
     type Credential = TestPrincipalId;
     type CredentialChecker = ();
     type CreateClassPermissionsChecker = ();

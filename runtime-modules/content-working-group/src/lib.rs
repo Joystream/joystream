@@ -41,7 +41,7 @@ pub trait Trait:
     + recurringrewards::Trait
     + stake::Trait
     + hiring::Trait
-    + versioned_store_permissions::Trait
+    + content_directory::Trait
     + members::Trait
 {
     // + Sized
@@ -88,7 +88,7 @@ pub type RewardRelationshipId<T> = <T as recurringrewards::Trait>::RewardRelatio
 pub type StakeId<T> = <T as stake::Trait>::StakeId;
 
 /// Type of permissions module prinicipal identifiers
-pub type PrincipalId<T> = <T as versioned_store_permissions::Trait>::Credential;
+pub type PrincipalId<T> = <T as content_directory::Trait>::Credential;
 
 pub type CuratorApplicationIdToCuratorIdMap<T> = BTreeMap<CuratorApplicationId<T>, CuratorId<T>>;
 
@@ -2000,7 +2000,7 @@ decl_module! {
     }
 }
 
-impl<T: Trait> versioned_store_permissions::CredentialChecker<T> for Module<T> {
+impl<T: Trait> content_directory::CredentialChecker<T> for Module<T> {
     fn account_has_credential(account: &T::AccountId, id: PrincipalId<T>) -> bool {
         // Check that principal exists
         if !PrincipalById::<T>::exists(&id) {

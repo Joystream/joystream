@@ -15,7 +15,7 @@
 // along with Joystream node.  If not, see <http://www.gnu.org/licenses/>.
 
 use node_runtime::{
-    versioned_store_permissions::InputValidationLengthConstraint as VsInputValidation, ActorsConfig,
+    content_directory::InputValidationLengthConstraint as VsInputValidation, ActorsConfig,
     AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
     CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
     DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, IndicesConfig,
@@ -273,7 +273,7 @@ pub fn testnet_genesis(
             enable_storage_role: true,
             request_life_time: 300,
         }),
-        // versioned_store_permissions: Some(VersionedStorePermissionsConfig {
+        // content_directory: Some(VersionedStorePermissionsConfig {
         //     class_by_id: vec![],
         //     entity_by_id: vec![],
         //     next_class_id: 1,

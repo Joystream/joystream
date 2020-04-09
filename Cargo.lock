@@ -1633,6 +1633,7 @@ dependencies = [
  "substrate-client",
  "substrate-common-module",
  "substrate-consensus-babe-primitives",
+ "substrate-content-directory-module",
  "substrate-content-working-group-module",
  "substrate-forum-module",
  "substrate-governance-module",
@@ -1648,7 +1649,6 @@ dependencies = [
  "substrate-stake-module",
  "substrate-storage-module",
  "substrate-token-mint-module",
- "substrate-versioned-store-permissions-module",
  "substrate-wasm-builder-runner",
 ]
 
@@ -4648,6 +4648,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-content-directory-module"
+version = "1.0.1"
+dependencies = [
+ "hex-literal 0.1.4",
+ "parity-scale-codec",
+ "quote 0.6.13",
+ "serde",
+ "sr-io",
+ "sr-primitives",
+ "sr-std",
+ "srml-support",
+ "srml-support-procedural",
+ "srml-system",
+ "srml-timestamp",
+ "substrate-primitives",
+]
+
+[[package]]
 name = "substrate-content-working-group-module"
 version = "1.0.0"
 dependencies = [
@@ -4661,6 +4679,7 @@ dependencies = [
  "srml-system",
  "srml-timestamp",
  "substrate-common-module",
+ "substrate-content-directory-module",
  "substrate-forum-module",
  "substrate-hiring-module",
  "substrate-membership-module",
@@ -4668,7 +4687,6 @@ dependencies = [
  "substrate-recurring-reward-module",
  "substrate-stake-module",
  "substrate-token-mint-module",
- "substrate-versioned-store-permissions-module",
 ]
 
 [[package]]
@@ -5395,24 +5413,6 @@ dependencies = [
  "substrate-primitives",
  "trie-db",
  "trie-root",
-]
-
-[[package]]
-name = "substrate-versioned-store-permissions-module"
-version = "1.0.1"
-dependencies = [
- "hex-literal 0.1.4",
- "parity-scale-codec",
- "quote 0.6.13",
- "serde",
- "sr-io",
- "sr-primitives",
- "sr-std",
- "srml-support",
- "srml-support-procedural",
- "srml-system",
- "srml-timestamp",
- "substrate-primitives",
 ]
 
 [[package]]
