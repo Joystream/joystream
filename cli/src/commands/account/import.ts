@@ -2,8 +2,8 @@ import fs from 'fs';
 import chalk from 'chalk';
 import path from 'path';
 import ExitCodes from '../../ExitCodes';
-import { KeyringPair$Json } from '@polkadot/keyring/types';
 import AccountsCommandBase from '../../base/AccountsCommandBase';
+import { NamedKeyringPair } from '../../Types';
 
 type AccountImportArgs = {
     backupFilePath: string
@@ -22,7 +22,7 @@ export default class AccountImport extends AccountsCommandBase {
 
     async run() {
         const args: AccountImportArgs = <AccountImportArgs> this.parse(AccountImport).args;
-        const backupAcc: KeyringPair$Json = this.fetchJsonBackupAccountObj(args.backupFilePath);
+        const backupAcc: NamedKeyringPair = this.fetchAccountFromJsonFile(args.backupFilePath);
         const accountName: string = backupAcc.meta.name;
         const accountAddress: string = backupAcc.address;
 
