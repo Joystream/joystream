@@ -6,11 +6,20 @@ use srml_support::StorageMap;
 use system::RawOrigin;
 
 use crate::{BalanceOf, Error, ProposalDetails};
-use mock::*;
 use proposal_engine::ProposalParameters;
 use roles::actors::RoleParameters;
 use runtime_io::blake2_256;
 use srml_support::dispatch::DispatchResult;
+
+pub use mock::*;
+
+pub(crate) fn increase_total_balance_issuance(balance: u64) {
+    let initial_balance = Balances::total_issuance();
+    {
+        let _ = <Test as stake::Trait>::Currency::deposit_creating(&999, balance);
+    }
+    assert_eq!(Balances::total_issuance(), initial_balance + balance);
+}
 
 struct ProposalTestFixture<InsufficientRightsCall, EmptyStakeCall, InvalidStakeCall, SuccessfulCall>
 where
@@ -81,6 +90,8 @@ where
 #[test]
 fn create_text_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_text_proposal(
@@ -118,7 +129,7 @@ fn create_text_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(500u32)),
+                    Some(<BalanceOf<Test>>::from(1250u32)),
                     b"text".to_vec(),
                 )
             },
@@ -164,6 +175,8 @@ fn create_text_proposal_codex_call_fails_with_incorrect_text_size() {
 #[test]
 fn create_runtime_upgrade_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_runtime_upgrade_proposal(
@@ -201,7 +214,7 @@ fn create_runtime_upgrade_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(50000u32)),
+                    Some(<BalanceOf<Test>>::from(5000u32)),
                     b"wasm".to_vec(),
                 )
             },
@@ -264,6 +277,8 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_not_allowed_member_id()
 #[test]
 fn create_set_election_parameters_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_set_election_parameters_proposal(
@@ -301,7 +316,7 @@ fn create_set_election_parameters_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(500u32)),
+                    Some(<BalanceOf<Test>>::from(3750u32)),
                     get_valid_election_parameters(),
                 )
             },
@@ -411,6 +426,8 @@ fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
 #[test]
 fn create_set_council_mint_capacity_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_set_council_mint_capacity_proposal(
@@ -438,7 +455,7 @@ fn create_set_council_mint_capacity_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    Some(<BalanceOf<Test>>::from(150u32)),
                     0,
                 )
             },
@@ -448,7 +465,7 @@ fn create_set_council_mint_capacity_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(500u32)),
+                    Some(<BalanceOf<Test>>::from(1250u32)),
                     10,
                 )
             },
@@ -463,6 +480,8 @@ fn create_set_council_mint_capacity_proposal_common_checks_succeed() {
 #[test]
 fn create_set_content_working_group_mint_capacity_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_set_content_working_group_mint_capacity_proposal(
@@ -500,7 +519,7 @@ fn create_set_content_working_group_mint_capacity_proposal_common_checks_succeed
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(500u32)),
+                    Some(<BalanceOf<Test>>::from(1250u32)),
                     10,
                 )
             },
@@ -514,6 +533,8 @@ fn create_set_content_working_group_mint_capacity_proposal_common_checks_succeed
 #[test]
 fn create_spending_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_spending_proposal(
@@ -554,7 +575,7 @@ fn create_spending_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(500u32)),
+                    Some(<BalanceOf<Test>>::from(1250u32)),
                     100,
                     2,
                 )
@@ -587,6 +608,8 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
 #[test]
 fn create_set_lead_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_set_lead_proposal(
@@ -624,7 +647,7 @@ fn create_set_lead_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(500u32)),
+                    Some(<BalanceOf<Test>>::from(1250u32)),
                     Some((20, 10)),
                 )
             },
@@ -638,6 +661,8 @@ fn create_set_lead_proposal_common_checks_succeed() {
 #[test]
 fn create_evict_storage_provider_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_evict_storage_provider_proposal(
@@ -689,6 +714,8 @@ fn create_evict_storage_provider_proposal_common_checks_succeed() {
 #[test]
 fn create_set_validator_count_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_set_validator_count_proposal(
@@ -726,7 +753,7 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(500u32)),
+                    Some(<BalanceOf<Test>>::from(1250u32)),
                     4,
                 )
             },
@@ -759,6 +786,8 @@ fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
 #[test]
 fn create_set_storage_role_parameters_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_set_storage_role_parameters_proposal(
@@ -796,7 +825,7 @@ fn create_set_storage_role_parameters_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(500u32)),
+                    Some(<BalanceOf<Test>>::from(1250u32)),
                     RoleParameters::default(),
                 )
             },
@@ -828,11 +857,6 @@ fn assert_failed_set_storage_parameters_call(
 #[test]
 fn create_set_storage_role_parameters_proposal_fails_with_invalid_parameters() {
     initial_test_ext().execute_with(|| {
-        // {
-        //     let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&44, 50000);
-        // }
-        // assert_eq!(Balances::total_issuance(), 0);
-
         let mut role_parameters = RoleParameters::default();
         role_parameters.min_actors = 0;
         assert_failed_set_storage_parameters_call(

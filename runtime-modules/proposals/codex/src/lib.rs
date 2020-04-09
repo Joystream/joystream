@@ -96,6 +96,9 @@ pub trait Trait:
 pub type BalanceOf<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
+/// Currency alias for `stake` module
+pub type CurrencyOf<T> = <T as stake::Trait>::Currency;
+
 /// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
 pub type BalanceOfGovernanceCurrency<T> =
     <<T as common::currency::GovernanceCurrency>::Currency as Currency<
