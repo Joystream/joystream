@@ -154,9 +154,9 @@ fn cannot_create_class_with_empty_name() {
     with_test_externalities(|| {
         let empty_name = vec![];
         assert_err!(
-            TestModule::create_class_with_default_permissions( 
+            TestModule::create_class_with_default_permissions(
                 Origin::signed(CLASS_PERMISSIONS_CREATOR1),
-                empty_name, 
+                empty_name,
                 good_class_description(),
             ),
             ERROR_CLASS_NAME_TOO_SHORT
@@ -168,22 +168,19 @@ fn cannot_create_class_with_empty_name() {
 fn create_class_with_empty_description() {
     with_test_externalities(|| {
         let empty_description = vec![];
-        assert_ok!(
-            TestModule::create_class_with_default_permissions(
-                Origin::signed(CLASS_PERMISSIONS_CREATOR1),
-                good_class_name(), 
-                empty_description
-            )
-        );
+        assert_ok!(TestModule::create_class_with_default_permissions(
+            Origin::signed(CLASS_PERMISSIONS_CREATOR1),
+            good_class_name(),
+            empty_description
+        ));
     })
 }
-
 
 #[test]
 fn cannot_create_entity_with_unknown_class_id() {
     with_test_externalities(|| {
         assert_err!(
-            TestModule::create_entity(                
+            TestModule::create_entity(
                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
                 Some(1),
                 UNKNOWN_CLASS_ID,
@@ -388,7 +385,10 @@ fn class_set_class_entity_permissions() {
             entity_permissions1.clone()
         ));
         let class = TestModule::class_by_id(class_id);
-        assert_eq!(class.get_permissions().entity_permissions, entity_permissions1);
+        assert_eq!(
+            class.get_permissions().entity_permissions,
+            entity_permissions1
+        );
 
         let entity_permissions2 = EntityPermissions {
             update: CredentialSet::from(vec![4]),
@@ -402,7 +402,10 @@ fn class_set_class_entity_permissions() {
             entity_permissions2.clone()
         ));
         let class = TestModule::class_by_id(class_id);
-        assert_eq!(class.get_permissions().entity_permissions, entity_permissions2);
+        assert_eq!(
+            class.get_permissions().entity_permissions,
+            entity_permissions2
+        );
 
         // non admins
         assert_err!(
@@ -425,7 +428,10 @@ fn class_set_class_reference_constraint() {
         let class_id = create_simple_class(class_minimal_with_admins(vec![0]));
         let class = TestModule::class_by_id(class_id);
 
-        assert_eq!(class.get_permissions().reference_constraint, Default::default());
+        assert_eq!(
+            class.get_permissions().reference_constraint,
+            Default::default()
+        );
 
         let mut constraints_set = BTreeSet::new();
         constraints_set.insert(PropertyOfClass {
@@ -817,7 +823,11 @@ fn should_add_class_schema_when_both_prop_ids_and_new_props_passed() {
         // Add first schema with new props.
         // No other props on the class at this time.
         assert_eq!(
-            TestModule::append_class_schema(class_id, vec![], vec![good_prop_bool(), good_prop_u32()]),
+            TestModule::append_class_schema(
+                class_id,
+                vec![],
+                vec![good_prop_bool(), good_prop_u32()]
+            ),
             Ok(SCHEMA_ID_0)
         );
 
@@ -916,7 +926,10 @@ fn cannot_add_schema_to_entity_when_unknown_internal_entity_id() {
                 schema_id,
                 vec![
                     bool_prop_value(),
-                    prop_value(PROP_ID_INTERNAL, PropertyValue::Reference(UNKNOWN_ENTITY_ID))
+                    prop_value(
+                        PROP_ID_INTERNAL,
+                        PropertyValue::Reference(UNKNOWN_ENTITY_ID)
+                    )
                 ]
             ),
             ERROR_ENTITY_NOT_FOUND

@@ -128,7 +128,6 @@ pub type EntityId = u64;
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct Class<T: Trait> {
     /// Permissions for an instance of a Class in the versioned store.
-    /// #[cfg(feature = "std")]
 
     #[cfg_attr(feature = "std", serde(skip))]
     class_permissions: ClassPermissionsType<T>,
@@ -167,6 +166,16 @@ impl <T: Trait> Class<T> {
         }
     }
 
+    fn is_active_schema(&self, schema_index: u16) -> bool {
+        // Such indexing safe, when length bounds were previously checked
+        self.schemas[schema_index as usize].is_active
+    }
+
+    fn update_schema_status(&mut self, schema_index: u16, schema_status: bool) {
+        // Such indexing safe, when length bounds were previously checked
+        self.schemas[schema_index as usize].is_active = schema_status;
+    }
+
     fn get_permissions_mut(&mut self) -> &mut ClassPermissionsType<T> {
         &mut self.class_permissions
     }
@@ -203,10 +212,31 @@ pub struct Entity {
 
 /// A schema defines what properties describe an entity
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct ClassSchema {
     /// Indices into properties vector for the corresponding class.
     pub properties: Vec<u16>,
+    pub is_active: bool
+}
+
+impl Default for ClassSchema {
+    fn default() -> Self {
+        Self {
+            properties: vec![],
+            // Default schema status
+            is_active: true
+        }
+    }
+}
+
+impl ClassSchema {
+    fn new(properties: Vec<u16>) -> Self {
+        Self {
+            properties,
+            // Default schema status
+            is_active: true
+        }
+    }
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -424,6 +454,26 @@ decl_module! {
             )
         }
 
+        fn set_class_update_schemas_status_set(
+            origin,
+            with_credential: Option<T::Credential>,
+            class_id: ClassId,
+            credential_set: CredentialSet<T::Credential>
+        ) -> dispatch::Result {
+            let raw_origin = Self::ensure_root_or_signed(origin)?;
+
+            Self::mutate_class_permissions(
+                &raw_origin,
+                with_credential,
+                ClassPermissions::is_admin,
+                class_id,
+                |class_permissions| {
+                    class_permissions.update_schemas_status = credential_set;
+                    Ok(())
+                }
+            )
+        }
+
         fn set_class_create_entities_set(
             origin,
             with_credential: Option<T::Credential>,
@@ -540,6 +590,32 @@ decl_module! {
                     // because of the chicken and egg problem. Instead enforcement is done
                     // at the time of creating an entity.
                     let _schema_index = Self::append_class_schema(class_id, existing_properties, new_properties)?;
+                    Ok(())
+                }
+            )
+        }
+
+        pub fn update_class_schema_status(
+            origin,
+            with_credential: Option<T::Credential>,
+            class_id: ClassId,
+            schema_id: u16, // Do not type alias u16!! - u16,
+            is_active: bool
+        ) -> dispatch::Result {
+            let raw_origin = Self::ensure_root_or_signed(origin)?;
+
+            Self::if_class_permissions_satisfied(
+                &raw_origin,
+                with_credential,
+                None,
+                ClassPermissions::can_update_schema_status,
+                class_id,
+                |_class_permissions, _access_level| {
+                    // If a new property points at another class,
+                    // at this point we don't enforce anything about reference constraints
+                    // because of the chicken and egg problem. Instead enforcement is done
+                    // at the time of creating an entity.
+                    let _schema_index = Self::complete_class_schema_status_update(class_id, schema_id, is_active)?;
                     Ok(())
                 }
             )
@@ -715,6 +791,17 @@ impl<T: Trait> Module<T> {
                 )
             },
         )
+    }
+
+    pub fn complete_class_schema_status_update(
+        class_id: ClassId,
+        schema_id: u16, // Do not type alias u16!! - u16,
+        schema_status: bool
+    ) -> dispatch::Result {
+        // Check that schema_id is a valid index of class schemas vector:
+        Self::ensure_class_schema_id_exists(&Self::class_by_id(class_id), schema_id)?;
+        <ClassById<T>>::mutate(class_id, |class| class.update_schema_status(schema_id, schema_status));
+        Ok(())
     }
 
     pub fn complete_entity_property_values_update(
@@ -1038,9 +1125,7 @@ impl<T: Trait> Module<T> {
             // for the next schema that will be sent in a result of this function.
             let schema_idx = class.schemas.len() as u16;
     
-            let mut schema = ClassSchema {
-                properties: existing_properties,
-            };
+            let mut schema = ClassSchema::new(existing_properties);
     
             let mut updated_class_props = class.properties;
             new_properties.into_iter().for_each(|prop| {
@@ -1067,16 +1152,13 @@ impl<T: Trait> Module<T> {
             let (entity, class) = Self::get_entity_and_class(entity_id);
     
             // Check that schema_id is a valid index of class schemas vector:
-            let known_schema_id = schema_id < class.schemas.len() as u16;
-            ensure!(known_schema_id, ERROR_UNKNOWN_CLASS_SCHEMA_ID);
+            Self::ensure_class_schema_id_exists(&class, schema_id)?;
+
+            // Ensure class schema is active
+            Self::ensure_class_schema_is_active(&class, schema_id)?;
     
             // Check that schema id is not yet added to this entity:
-            let schema_not_added = entity
-                .in_class_schema_indexes
-                .iter()
-                .position(|x| *x == schema_id)
-                .is_none();
-            ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY);
+            Self::ensure_schema_id_is_not_added(&entity, schema_id)?;
     
             let class_schema_opt = class.schemas.get(schema_id as usize);
             let schema_prop_ids = class_schema_opt.unwrap().properties.clone();
@@ -1169,6 +1251,26 @@ impl<T: Trait> Module<T> {
     
         pub fn ensure_known_entity_id(entity_id: EntityId) -> dispatch::Result {
             ensure!(EntityById::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
+            Ok(())
+        }
+
+        pub fn ensure_class_schema_id_exists(class: &Class<T>, schema_id: u16) -> dispatch::Result {
+            ensure!(schema_id < class.schemas.len() as u16, ERROR_UNKNOWN_CLASS_SCHEMA_ID);
+            Ok(())
+        }
+
+        pub fn ensure_class_schema_is_active(class: &Class<T>, schema_id: u16) -> dispatch::Result {
+            ensure!(class.is_active_schema(schema_id), ERROR_CLASS_SCHEMA_NOT_ACTIVE);
+            Ok(())
+        }
+
+        pub fn ensure_schema_id_is_not_added(entity: &Entity, schema_id: u16) -> dispatch::Result {
+            let schema_not_added = entity
+                .in_class_schema_indexes
+                .iter()
+                .position(|x| *x == schema_id)
+                .is_none();
+            ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY);
             Ok(())
         }
     

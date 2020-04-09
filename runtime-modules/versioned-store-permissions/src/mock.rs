@@ -2,14 +2,14 @@
 
 use crate::*;
 
+use crate::InputValidationLengthConstraint;
 use primitives::H256;
 use runtime_primitives::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use srml_support::{impl_outer_origin, assert_err, assert_ok, parameter_types};
-use crate::InputValidationLengthConstraint;
+use srml_support::{assert_err, assert_ok, impl_outer_origin, parameter_types};
 
 pub const MEMBER_ONE_WITH_CREDENTIAL_ZERO: u64 = 100;
 pub const MEMBER_TWO_WITH_CREDENTIAL_ZERO: u64 = 101;
@@ -108,8 +108,6 @@ impl CredentialChecker<Runtime> for MockCredentialChecker {
     }
 }
 
-
-
 pub struct MockCreateClassPermissionsChecker {}
 
 impl CreateClassPermissionsChecker<Runtime> for MockCreateClassPermissionsChecker {
@@ -150,9 +148,7 @@ fn default_versioned_store_genesis_config() -> GenesisConfig<Runtime> {
     }
 }
 
-fn build_test_externalities(
-    config: GenesisConfig<Runtime>,
-) -> runtime_io::TestExternalities {
+fn build_test_externalities(config: GenesisConfig<Runtime>) -> runtime_io::TestExternalities {
     let mut t = system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
@@ -184,9 +180,7 @@ pub fn assert_class_schemas(class_id: ClassId, expected_schema_prop_ids: Vec<Vec
     let class = TestModule::class_by_id(class_id);
     let schemas: Vec<_> = expected_schema_prop_ids
         .iter()
-        .map(|prop_ids| ClassSchema {
-            properties: prop_ids.clone(),
-        })
+        .map(|prop_ids| ClassSchema::new(prop_ids.to_owned()))
         .collect();
     assert_eq!(class.schemas, schemas);
 }

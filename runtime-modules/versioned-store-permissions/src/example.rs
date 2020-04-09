@@ -348,13 +348,11 @@ fn create_podcast_class_schema() {
         // Channel
 
         let channel_class_id = TestModule::next_class_id();
-        assert_ok!(
-            TestModule::create_class_with_default_permissions(        
-                Origin::signed(CLASS_PERMISSIONS_CREATOR1),
-                b"PodcastChannel".to_vec(), 
-                b"A podcast channel".to_vec(),
-            ),
-        );
+        assert_ok!(TestModule::create_class_with_default_permissions(
+            Origin::signed(CLASS_PERMISSIONS_CREATOR1),
+            b"PodcastChannel".to_vec(),
+            b"A podcast channel".to_vec(),
+        ),);
 
         let channel_schema_id: u16 = 0;
 
@@ -366,13 +364,11 @@ fn create_podcast_class_schema() {
         // Episodes:
 
         let episode_class_id = TestModule::next_class_id();
-        assert_ok!(
-            TestModule::create_class_with_default_permissions(
-                Origin::signed(CLASS_PERMISSIONS_CREATOR1),
-                b"PodcastEpisode".to_vec(), 
-                b"A podcast episode".to_vec(),
-            ),
-        );
+        assert_ok!(TestModule::create_class_with_default_permissions(
+            Origin::signed(CLASS_PERMISSIONS_CREATOR1),
+            b"PodcastEpisode".to_vec(),
+            b"A podcast episode".to_vec(),
+        ),);
 
         let episode_schema_id: u16 = 0;
 

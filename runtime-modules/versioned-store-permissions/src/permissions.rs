@@ -27,6 +27,9 @@ where
     /// Who can add new schemas in the versioned store for this class
     pub add_schemas: CredentialSet<Credential>,
 
+    /// Who can activate/deactivate already existing schemas for this class
+    pub update_schemas_status: CredentialSet<Credential>,
+
     /// Who can create new entities in the versioned store of this class
     pub create_entities: CredentialSet<Credential>,
 
@@ -48,7 +51,6 @@ where
     Credential: Ord + Clone,
     PropertyIndex: Ord,
 {
-
     /// Returns Ok if access_level is root origin or credential is in admins set, Err otherwise
     pub fn is_admin(
         class_permissions: &Self,
@@ -79,6 +81,24 @@ where
                     Ok(())
                 } else {
                     Err("NotInAddSchemasSet")
+                }
+            }
+            AccessLevel::Unspecified => Err("UnspecifiedActor"),
+            AccessLevel::EntityMaintainer => Err("AccessLevel::EntityMaintainer-UsedOutOfPlace"),
+        }
+    }
+
+    pub fn can_update_schema_status(
+        class_permissions: &Self,
+        access_level: &AccessLevel<Credential>,
+    ) -> dispatch::Result {
+        match access_level {
+            AccessLevel::System => Ok(()),
+            AccessLevel::Credential(credential) => {
+                if class_permissions.update_schemas_status.contains(credential) {
+                    Ok(())
+                } else {
+                    Err("NotInUpdateSchemasStatusSet")
                 }
             }
             AccessLevel::Unspecified => Err("UnspecifiedActor"),
