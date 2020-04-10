@@ -3,7 +3,7 @@
 use super::*;
 use crate::mock::*;
 use rstd::collections::btree_set::BTreeSet;
-
+use core::iter::FromIterator;
 use srml_support::{assert_err, assert_ok};
 
 #[test]
@@ -666,7 +666,7 @@ fn batch_transaction_vector_of_entities() {
             EntityById::get(entity_id),
             Entity {
                 class_id: new_class_id,
-                in_class_schema_indexes: vec![0],
+                supported_schemas: BTreeSet::from_iter(vec![SCHEMA_ID_0].into_iter()),
                 values: prop_value(0, PropertyValue::ReferenceVec(vec![entity_id + 1, entity_id + 2,]))
             }
         );
@@ -1099,7 +1099,7 @@ fn should_add_schema_to_entity_when_some_optional_props_provided() {
         ));
 
         let entity = TestModule::entity_by_id(entity_id);
-        assert_eq!(entity.in_class_schema_indexes, [SCHEMA_ID_0]);
+        assert_eq!(entity.supported_schemas, BTreeSet::from_iter(vec![SCHEMA_ID_0].into_iter()));
         prop_values = bool_prop_value();
         prop_values.append(&mut prop_value(PROP_ID_U32, PropertyValue::Uint32(123)));
         prop_values.append(&mut prop_value(PROP_ID_INTERNAL, PropertyValue::Bool(false)));

@@ -202,7 +202,7 @@ pub struct Entity {
     /// What schemas under which this entity of a class is available, think
     /// v.2.0 Person schema for John, v3.0 Person schema for John
     /// Unlikely to be more than roughly 20ish, assuming schemas for a given class eventually stableize, or that very old schema are eventually removed.
-    pub in_class_schema_indexes: Vec<u16>, // indices of schema in corresponding class
+    pub supported_schemas: BTreeSet<u16>, // indices of schema in corresponding class
 
     /// Values for properties on class that are used by some schema used by this entity!
     /// Length is no more than Class.properties.
@@ -738,7 +738,7 @@ impl<T: Trait> Module<T> {
 
         let new_entity = Entity {
             class_id,
-            in_class_schema_indexes: vec![],
+            supported_schemas: BTreeSet::new(),
             values: BTreeMap::new(),
         };
 
@@ -1187,7 +1187,7 @@ impl<T: Trait> Module<T> {
     
             EntityById::mutate(entity_id, |entity| {
                 // Add a new schema to the list of schemas supported by this entity.
-                entity.in_class_schema_indexes.push(schema_id);
+                entity.supported_schemas.insert(schema_id);
     
                 // Update entity values only if new properties have been added.
                 if appended_entity_values.len() > entity.values.len() {
@@ -1237,11 +1237,9 @@ impl<T: Trait> Module<T> {
         }
 
         pub fn ensure_schema_id_is_not_added(entity: &Entity, schema_id: u16) -> dispatch::Result {
-            let schema_not_added = entity
-                .in_class_schema_indexes
-                .iter()
-                .position(|x| *x == schema_id)
-                .is_none();
+            let schema_not_added = !entity
+                .supported_schemas
+                .contains(&schema_id);
             ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY);
             Ok(())
         }
