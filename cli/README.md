@@ -29,13 +29,18 @@ USAGE
 # Commands
 <!-- commands -->
 * [`joystream-cli account:choose`](#joystream-cli-accountchoose)
+* [`joystream-cli account:create NAME`](#joystream-cli-accountcreate-name)
+* [`joystream-cli account:current`](#joystream-cli-accountcurrent)
+* [`joystream-cli account:export PATH`](#joystream-cli-accountexport-path)
+* [`joystream-cli account:forget`](#joystream-cli-accountforget)
 * [`joystream-cli account:import BACKUPFILEPATH`](#joystream-cli-accountimport-backupfilepath)
+* [`joystream-cli account:transferTokens RECIPIENT AMOUNT`](#joystream-cli-accounttransfertokens-recipient-amount)
 * [`joystream-cli council:info`](#joystream-cli-councilinfo)
 * [`joystream-cli help [COMMAND]`](#joystream-cli-help-command)
 
 ## `joystream-cli account:choose`
 
-Choose current account to use in the CLI
+Choose default account to use in the CLI
 
 ```
 USAGE
@@ -43,6 +48,63 @@ USAGE
 ```
 
 _See code: [src/commands/account/choose.ts](https://github.com/Joystream/cli/blob/v0.0.0/src/commands/account/choose.ts)_
+
+## `joystream-cli account:create NAME`
+
+Create new account
+
+```
+USAGE
+  $ joystream-cli account:create NAME
+
+ARGUMENTS
+  NAME  Account name
+```
+
+_See code: [src/commands/account/create.ts](https://github.com/Joystream/cli/blob/v0.0.0/src/commands/account/create.ts)_
+
+## `joystream-cli account:current`
+
+Display information about currently choosen default account
+
+```
+USAGE
+  $ joystream-cli account:current
+
+ALIASES
+  $ joystream-cli account:info
+  $ joystream-cli account:default
+```
+
+_See code: [src/commands/account/current.ts](https://github.com/Joystream/cli/blob/v0.0.0/src/commands/account/current.ts)_
+
+## `joystream-cli account:export PATH`
+
+Export account(s) to given location
+
+```
+USAGE
+  $ joystream-cli account:export PATH
+
+ARGUMENTS
+  PATH  Path where the exported files should be placed
+
+OPTIONS
+  -a, --all  If provided, exports all existing accounts into "exported_accounts" folder inside given path
+```
+
+_See code: [src/commands/account/export.ts](https://github.com/Joystream/cli/blob/v0.0.0/src/commands/account/export.ts)_
+
+## `joystream-cli account:forget`
+
+Forget (remove) account from the list of available accounts
+
+```
+USAGE
+  $ joystream-cli account:forget
+```
+
+_See code: [src/commands/account/forget.ts](https://github.com/Joystream/cli/blob/v0.0.0/src/commands/account/forget.ts)_
 
 ## `joystream-cli account:import BACKUPFILEPATH`
 
@@ -57,6 +119,21 @@ ARGUMENTS
 ```
 
 _See code: [src/commands/account/import.ts](https://github.com/Joystream/cli/blob/v0.0.0/src/commands/account/import.ts)_
+
+## `joystream-cli account:transferTokens RECIPIENT AMOUNT`
+
+Transfer tokens from currently choosen account
+
+```
+USAGE
+  $ joystream-cli account:transferTokens RECIPIENT AMOUNT
+
+ARGUMENTS
+  RECIPIENT  Address of the transfer recipient
+  AMOUNT     Amount of tokens to transfer
+```
+
+_See code: [src/commands/account/transferTokens.ts](https://github.com/Joystream/cli/blob/v0.0.0/src/commands/account/transferTokens.ts)_
 
 ## `joystream-cli council:info`
 
