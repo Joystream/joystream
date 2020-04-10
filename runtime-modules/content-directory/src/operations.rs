@@ -83,8 +83,8 @@ pub fn parametrized_entity_to_entity_id(
 pub fn parametrized_property_values_to_property_values(
     created_entities: &BTreeMap<usize, EntityId>,
     parametrized_property_values: Vec<ParametrizedClassPropertyValue>,
-) -> Result<Vec<ClassPropertyValue>, &'static str> {
-    let mut class_property_values: Vec<ClassPropertyValue> = vec![];
+) -> Result<BTreeMap<u16, PropertyValue>, &'static str> {
+    let mut class_property_values = BTreeMap::new();
 
     for parametrized_class_property_value in parametrized_property_values.into_iter() {
         let property_value = match parametrized_class_property_value.value {
@@ -124,11 +124,8 @@ pub fn parametrized_property_values_to_property_values(
                 PropertyValue::ReferenceVec(entities)
             }
         };
-
-        class_property_values.push(ClassPropertyValue {
-            in_class_index: parametrized_class_property_value.in_class_index,
-            value: property_value,
-        });
+        
+        class_property_values.insert(parametrized_class_property_value.in_class_index, property_value);
     }
 
     Ok(class_property_values)

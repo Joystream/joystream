@@ -667,10 +667,7 @@ fn batch_transaction_vector_of_entities() {
             Entity {
                 class_id: new_class_id,
                 in_class_schema_indexes: vec![0],
-                values: vec![ClassPropertyValue {
-                    in_class_index: 0,
-                    value: PropertyValue::ReferenceVec(vec![entity_id + 1, entity_id + 2,])
-                }]
+                values: prop_value(0, PropertyValue::ReferenceVec(vec![entity_id + 1, entity_id + 2,]))
             }
         );
     })
@@ -975,7 +972,7 @@ fn cannot_add_schema_to_entity_when_entity_not_found() {
         assert_entity_not_found(TestModule::add_entity_schema_support(
             UNKNOWN_ENTITY_ID,
             1,
-            vec![],
+            BTreeMap::new(),
         ));
     })
 }
@@ -994,7 +991,7 @@ fn cannot_add_schema_to_entity_when_schema_is_not_active() {
 
         // Secondly we try to add support for the same schema.
         assert_err!(
-            TestModule::add_entity_schema_support(entity_id, schema_id, vec![bool_prop_value()]),
+            TestModule::add_entity_schema_support(entity_id, schema_id, bool_prop_value()),
             ERROR_CLASS_SCHEMA_NOT_ACTIVE
         );
     })
@@ -1009,12 +1006,12 @@ fn cannot_add_schema_to_entity_when_schema_already_added_to_entity() {
         assert_ok!(TestModule::add_entity_schema_support(
             entity_id,
             schema_id,
-            vec![bool_prop_value()]
+            bool_prop_value()
         ));
 
         // Secondly we try to add support for the same schema.
         assert_err!(
-            TestModule::add_entity_schema_support(entity_id, schema_id, vec![]),
+            TestModule::add_entity_schema_support(entity_id, schema_id, BTreeMap::new()),
             ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY
         );
     })
@@ -1029,7 +1026,7 @@ fn cannot_add_schema_to_entity_when_schema_id_is_unknown() {
             TestModule::add_entity_schema_support(
                 entity_id,
                 unknown_schema_id,
-                vec![prop_value(0, PropertyValue::Bool(false))]
+                prop_value(0, PropertyValue::Bool(false))
             ),
             ERROR_UNKNOWN_CLASS_SCHEMA_ID
         );
@@ -1040,14 +1037,13 @@ fn cannot_add_schema_to_entity_when_schema_id_is_unknown() {
 fn cannot_add_schema_to_entity_when_prop_value_dont_match_type() {
     with_test_externalities(|| {
         let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
+        let mut prop_values = bool_prop_value();
+        prop_values.append(&mut prop_value(PROP_ID_U32, PropertyValue::Bool(true)));
         assert_err!(
             TestModule::add_entity_schema_support(
                 entity_id,
                 schema_id,
-                vec![
-                    bool_prop_value(),
-                    prop_value(PROP_ID_U32, PropertyValue::Bool(true))
-                ]
+                prop_values
             ),
             ERROR_PROP_VALUE_DONT_MATCH_TYPE
         );
@@ -1058,17 +1054,16 @@ fn cannot_add_schema_to_entity_when_prop_value_dont_match_type() {
 fn cannot_add_schema_to_entity_when_unknown_internal_entity_id() {
     with_test_externalities(|| {
         let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
+        let mut prop_values = bool_prop_value();
+        prop_values.append(&mut prop_value(
+            PROP_ID_INTERNAL,
+            PropertyValue::Reference(UNKNOWN_ENTITY_ID)
+        ));
         assert_err!(
             TestModule::add_entity_schema_support(
                 entity_id,
                 schema_id,
-                vec![
-                    bool_prop_value(),
-                    prop_value(
-                        PROP_ID_INTERNAL,
-                        PropertyValue::Reference(UNKNOWN_ENTITY_ID)
-                    )
-                ]
+                prop_values
             ),
             ERROR_ENTITY_NOT_FOUND
         );
@@ -1083,7 +1078,7 @@ fn cannot_add_schema_to_entity_when_missing_required_prop() {
             TestModule::add_entity_schema_support(
                 entity_id,
                 schema_id,
-                vec![prop_value(PROP_ID_U32, PropertyValue::Uint32(456))]
+                prop_value(PROP_ID_U32, PropertyValue::Uint32(456))
             ),
             ERROR_MISSING_REQUIRED_PROP
         );
@@ -1094,25 +1089,23 @@ fn cannot_add_schema_to_entity_when_missing_required_prop() {
 fn should_add_schema_to_entity_when_some_optional_props_provided() {
     with_test_externalities(|| {
         let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
+        let mut prop_values = bool_prop_value();
+        prop_values.append(&mut prop_value(PROP_ID_U32, PropertyValue::Uint32(123)));
         assert_ok!(TestModule::add_entity_schema_support(
             entity_id,
             schema_id,
-            vec![
-                bool_prop_value(),
-                prop_value(PROP_ID_U32, PropertyValue::Uint32(123)),
-                // Note that an optional internal prop is not provided here.
-            ]
+            // Note that an optional internal prop is not provided here.
+            prop_values
         ));
 
         let entity = TestModule::entity_by_id(entity_id);
         assert_eq!(entity.in_class_schema_indexes, [SCHEMA_ID_0]);
+        prop_values = bool_prop_value();
+        prop_values.append(&mut prop_value(PROP_ID_U32, PropertyValue::Uint32(123)));
+        prop_values.append(&mut prop_value(PROP_ID_INTERNAL, PropertyValue::Bool(false)));
         assert_eq!(
             entity.values,
-            vec![
-                bool_prop_value(),
-                prop_value(PROP_ID_U32, PropertyValue::Uint32(123)),
-                prop_value(PROP_ID_INTERNAL, PropertyValue::Bool(false)),
-            ]
+            prop_values
         );
     })
 }
@@ -1125,7 +1118,7 @@ fn cannot_update_entity_props_when_entity_not_found() {
     with_test_externalities(|| {
         assert_entity_not_found(TestModule::complete_entity_property_values_update(
             UNKNOWN_ENTITY_ID,
-            vec![],
+            BTreeMap::new(),
         ));
     })
 }
@@ -1137,7 +1130,7 @@ fn cannot_update_entity_props_when_prop_value_dont_match_type() {
         assert_err!(
             TestModule::complete_entity_property_values_update(
                 entity_id,
-                vec![prop_value(PROP_ID_BOOL, PropertyValue::Uint32(1))]
+                prop_value(PROP_ID_BOOL, PropertyValue::Uint32(1))
             ),
             ERROR_PROP_VALUE_DONT_MATCH_TYPE
         );
@@ -1151,10 +1144,10 @@ fn cannot_update_entity_props_when_unknown_internal_entity_id() {
         assert_err!(
             TestModule::complete_entity_property_values_update(
                 entity_id,
-                vec![prop_value(
+                prop_value(
                     PROP_ID_INTERNAL,
                     PropertyValue::Reference(UNKNOWN_ENTITY_ID)
-                )]
+                )
             ),
             ERROR_ENTITY_NOT_FOUND
         );
@@ -1168,7 +1161,7 @@ fn cannot_update_entity_props_when_unknown_entity_prop_id() {
         assert_err!(
             TestModule::complete_entity_property_values_update(
                 entity_id,
-                vec![prop_value(UNKNOWN_PROP_ID, PropertyValue::Bool(true))]
+                prop_value(UNKNOWN_PROP_ID, PropertyValue::Bool(true))
             ),
             ERROR_UNKNOWN_ENTITY_PROP_ID
         );
@@ -1179,29 +1172,23 @@ fn cannot_update_entity_props_when_unknown_entity_prop_id() {
 fn update_entity_props_successfully() {
     with_test_externalities(|| {
         let entity_id = create_entity_with_schema_support();
+        let mut prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(true));
+        prop_values.append(&mut prop_value(PROP_ID_U32, PropertyValue::Bool(false)));
+        prop_values.append(&mut prop_value(PROP_ID_INTERNAL, PropertyValue::Bool(false)));
         assert_eq!(
             TestModule::entity_by_id(entity_id).values,
-            vec![
-                prop_value(PROP_ID_BOOL, PropertyValue::Bool(true)),
-                prop_value(PROP_ID_U32, PropertyValue::Bool(false)),
-                prop_value(PROP_ID_INTERNAL, PropertyValue::Bool(false)),
-            ]
+            prop_values
         );
+        prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(false));
+        prop_values.append(&mut prop_value(PROP_ID_U32, PropertyValue::Uint32(123)));
+        prop_values.append(&mut prop_value(PROP_ID_INTERNAL, PropertyValue::Reference(entity_id)));
         assert_ok!(TestModule::complete_entity_property_values_update(
             entity_id,
-            vec![
-                prop_value(PROP_ID_BOOL, PropertyValue::Bool(false)),
-                prop_value(PROP_ID_U32, PropertyValue::Uint32(123)),
-                prop_value(PROP_ID_INTERNAL, PropertyValue::Reference(entity_id)),
-            ]
+            prop_values.clone()
         ));
         assert_eq!(
             TestModule::entity_by_id(entity_id).values,
-            vec![
-                prop_value(PROP_ID_BOOL, PropertyValue::Bool(false)),
-                prop_value(PROP_ID_U32, PropertyValue::Uint32(123)),
-                prop_value(PROP_ID_INTERNAL, PropertyValue::Reference(entity_id)),
-            ]
+            prop_values
         );
     })
 }

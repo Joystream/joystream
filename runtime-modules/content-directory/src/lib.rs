@@ -167,12 +167,12 @@ impl <T: Trait> Class<T> {
     }
 
     fn is_active_schema(&self, schema_index: u16) -> bool {
-        // Such indexing safe, when length bounds were previously checked
+        // Such indexing is safe, when length bounds were previously checked
         self.schemas[schema_index as usize].is_active
     }
 
     fn update_schema_status(&mut self, schema_index: u16, schema_status: bool) {
-        // Such indexing safe, when length bounds were previously checked
+        // Such indexing is safe, when length bounds were previously checked
         self.schemas[schema_index as usize].is_active = schema_status;
     }
 
@@ -206,7 +206,7 @@ pub struct Entity {
 
     /// Values for properties on class that are used by some schema used by this entity!
     /// Length is no more than Class.properties.
-    pub values: Vec<ClassPropertyValue>,
+    pub values: BTreeMap<u16, PropertyValue>,
     // pub deleted: bool,
 }
 
@@ -639,7 +639,7 @@ decl_module! {
             as_entity_maintainer: bool,
             entity_id: EntityId,
             schema_id: u16, // Do not type alias u16!! - u16,
-            property_values: Vec<ClassPropertyValue>
+            property_values: BTreeMap<u16, PropertyValue>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
             Self::do_add_schema_support_to_entity(&raw_origin, with_credential, as_entity_maintainer, entity_id, schema_id, property_values)
@@ -650,7 +650,7 @@ decl_module! {
             with_credential: Option<T::Credential>,
             as_entity_maintainer: bool,
             entity_id: EntityId,
-            property_values: Vec<ClassPropertyValue>
+            property_values: BTreeMap<u16, PropertyValue>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
             Self::do_update_entity_property_values(&raw_origin, with_credential, as_entity_maintainer, entity_id, property_values)
@@ -749,7 +749,7 @@ impl<T: Trait> Module<T> {
         let new_entity = Entity {
             class_id,
             in_class_schema_indexes: vec![],
-            values: vec![],
+            values: BTreeMap::new(),
         };
 
         // Save newly created entity:
@@ -766,7 +766,7 @@ impl<T: Trait> Module<T> {
         with_credential: Option<T::Credential>,
         as_entity_maintainer: bool,
         entity_id: EntityId,
-        property_values: Vec<ClassPropertyValue>,
+        property_values: BTreeMap<u16, PropertyValue>,
     ) -> dispatch::Result {
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
 
@@ -806,7 +806,7 @@ impl<T: Trait> Module<T> {
 
     pub fn complete_entity_property_values_update(
         entity_id: EntityId,
-        new_property_values: Vec<ClassPropertyValue>,
+        new_property_values: BTreeMap<u16, PropertyValue>
     ) -> dispatch::Result {
         Self::ensure_known_entity_id(entity_id)?;
 
@@ -819,25 +819,17 @@ impl<T: Trait> Module<T> {
 
         // Iterate over a vector of new values and update corresponding properties
         // of this entity if new values are valid.
-        for new_prop_value in new_property_values.iter() {
-            let ClassPropertyValue {
-                in_class_index: id,
-                value: new_value,
-            } = new_prop_value;
+        for (id, new_value) in new_property_values.iter() {
 
             // Try to find a current property value in the entity
             // by matching its id to the id of a property with an updated value.
-            if let Some(current_prop_value) = updated_values
+            if let Some((in_class_index, current_prop_value)) = updated_values
                 .iter_mut()
-                .find(|prop| *id == prop.in_class_index)
+                .find(|(in_class_index, _)| *id == **in_class_index)
             {
-                let ClassPropertyValue {
-                    in_class_index: valid_id,
-                    value: current_value,
-                } = current_prop_value;
 
                 // Get class-level information about this property
-                let class_prop = class.properties.get(*valid_id as usize).unwrap();
+                let class_prop = class.properties.get(*in_class_index as usize).unwrap();
 
                 // Validate a new property value against the type of this property
                 // and check any additional constraints like the length of a vector
@@ -845,7 +837,7 @@ impl<T: Trait> Module<T> {
                 Self::ensure_property_value_is_valid(new_value.clone(), class_prop.clone())?;
 
                 // Update a current prop value in a mutable vector, if a new value is valid.
-                *current_value = new_value.clone();
+                *current_prop_value = new_value.clone();
                 updates_count += 1;
             } else {
                 // Throw an error if a property was not found on entity
@@ -870,7 +862,7 @@ impl<T: Trait> Module<T> {
         as_entity_maintainer: bool,
         entity_id: EntityId,
         schema_id: u16,
-        property_values: Vec<ClassPropertyValue>,
+        property_values: BTreeMap<u16, PropertyValue>,
     ) -> dispatch::Result {
         // class id of the entity being updated
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
@@ -1035,10 +1027,10 @@ impl<T: Trait> Module<T> {
     // the target entity and class exists and constraint allows it.
     fn ensure_internal_property_values_permitted(
         source_class_id: ClassId,
-        property_values: &[ClassPropertyValue],
+        property_values: &BTreeMap<u16, PropertyValue>,
     ) -> dispatch::Result {
-        for property_value in property_values.iter() {
-            if let PropertyValue::Reference(ref target_entity_id) = property_value.value {
+        for (in_class_index, property_value) in property_values.iter() {
+            if let PropertyValue::Reference(ref target_entity_id) = property_value {
                 // get the class permissions for target class
                 let target_class_id = Self::get_class_id_by_entity_id(*target_entity_id)?;
                 // assert class permissions exists for target class
@@ -1053,7 +1045,7 @@ impl<T: Trait> Module<T> {
                     ReferenceConstraint::Restricted(permitted_properties) => {
                         if permitted_properties.contains(&PropertyOfClass {
                             class_id: source_class_id,
-                            property_index: property_value.in_class_index,
+                            property_index: *in_class_index,
                         }) {
                             Ok(())
                         } else {
@@ -1145,7 +1137,7 @@ impl<T: Trait> Module<T> {
         pub fn add_entity_schema_support(
             entity_id: EntityId,
             schema_id: u16,
-            property_values: Vec<ClassPropertyValue>,
+            property_values: BTreeMap<u16, PropertyValue>,
         ) -> dispatch::Result {
             Self::ensure_known_entity_id(entity_id)?;
     
@@ -1169,7 +1161,7 @@ impl<T: Trait> Module<T> {
             for &prop_id in schema_prop_ids.iter() {
                 let prop_already_added = current_entity_values
                     .iter()
-                    .any(|prop| prop.in_class_index == prop_id);
+                    .any(|(property_in_class_index, _)| *property_in_class_index == prop_id);
     
                 if prop_already_added {
                     // A property is already added to the entity and cannot be updated
@@ -1182,20 +1174,13 @@ impl<T: Trait> Module<T> {
                 // If a value was not povided for the property of this schema:
                 match property_values
                     .iter()
-                    .find(|prop| prop.in_class_index == prop_id)
+                    .find(|(property_in_class_index, _)| **property_in_class_index == prop_id)
                 {
-                    Some(new_prop) => {
-                        let ClassPropertyValue {
-                            in_class_index: new_id,
-                            value: new_value,
-                        } = new_prop;
+                    Some((new_id, new_value)) => {
     
                         Self::ensure_property_value_is_valid(new_value.clone(), class_prop.clone())?;
     
-                        appended_entity_values.push(ClassPropertyValue {
-                            in_class_index: *new_id,
-                            value: new_value.clone(),
-                        });
+                        appended_entity_values.insert(*new_id, new_value.to_owned());
                     }
                     None => {
                         // All required prop values should be are provided
@@ -1204,10 +1189,7 @@ impl<T: Trait> Module<T> {
                         }
                         // Add all missing non required schema prop values as PropertyValue::None
                         else {
-                            appended_entity_values.push(ClassPropertyValue {
-                                in_class_index: prop_id,
-                                value: PropertyValue::Bool(false),
-                            });
+                            appended_entity_values.insert(prop_id, PropertyValue::Bool(false));
                         }
                     }
                 }

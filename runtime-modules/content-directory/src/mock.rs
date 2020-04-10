@@ -198,11 +198,10 @@ pub fn simple_test_schema() -> Vec<Property> {
     }]
 }
 
-pub fn simple_test_entity_property_values() -> Vec<ClassPropertyValue> {
-    vec![ClassPropertyValue {
-        in_class_index: 0,
-        value: PropertyValue::Int64(1337),
-    }]
+pub fn simple_test_entity_property_values() -> BTreeMap<u16, PropertyValue>  {
+    let mut property_values = BTreeMap::new();
+    property_values.insert(0, PropertyValue::Int64(1337));
+    property_values
 }
 
 pub fn create_simple_class(permissions: ClassPermissionsType<Runtime>) -> ClassId {
@@ -252,10 +251,12 @@ pub fn create_entity_of_class(class_id: ClassId) -> EntityId {
 
 pub fn create_entity_with_schema_support() -> EntityId {
     let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
+    let mut property_values = BTreeMap::new();
+    property_values.insert(PROP_ID_BOOL, PropertyValue::Bool(true));
     assert_ok!(TestModule::add_entity_schema_support(
         entity_id,
         schema_id,
-        vec![prop_value(PROP_ID_BOOL, PropertyValue::Bool(true))]
+        property_values
     ));
     entity_id
 }
@@ -332,18 +333,16 @@ pub fn good_prop_ids() -> Vec<u16> {
     vec![0, 1]
 }
 
-pub fn bool_prop_value() -> ClassPropertyValue {
-    ClassPropertyValue {
-        in_class_index: 0,
-        value: PropertyValue::Bool(true),
-    }
+pub fn bool_prop_value() -> BTreeMap<u16, PropertyValue> {
+    let mut property_values = BTreeMap::new();
+    property_values.insert(0, PropertyValue::Bool(true));
+    property_values
 }
 
-pub fn prop_value(index: u16, value: PropertyValue) -> ClassPropertyValue {
-    ClassPropertyValue {
-        in_class_index: index,
-        value: value,
-    }
+pub fn prop_value(index: u16, value: PropertyValue) -> BTreeMap<u16, PropertyValue> {
+    let mut property_values = BTreeMap::new();
+    property_values.insert(index, value);
+    property_values
 }
 
 // pub type System = system::Module;
