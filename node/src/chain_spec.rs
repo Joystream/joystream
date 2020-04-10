@@ -15,12 +15,12 @@
 // along with Joystream node.  If not, see <http://www.gnu.org/licenses/>.
 
 use node_runtime::{
-    content_directory::InputValidationLengthConstraint as VsInputValidation, ActorsConfig,
+    versioned_store::InputValidationLengthConstraint as VsInputValidation, ActorsConfig,
     AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
     CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
-    DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, IndicesConfig,
-    MembersConfig, Perbill, ProposalsConfig, SessionConfig, SessionKeys, Signature, StakerStatus,
-    StakingConfig, SudoConfig, SystemConfig, VersionedStorePermissionsConfig, DAYS, WASM_BINARY,
+    DataObjectTypeRegistryConfig, GrandpaConfig, ImOnlineConfig, IndicesConfig, MembersConfig,
+    Perbill, ProposalsConfig, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
+    SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
 };
 pub use node_runtime::{AccountId, GenesisConfig};
 use primitives::{sr25519, Pair, Public};
@@ -235,16 +235,14 @@ pub fn testnet_genesis(
         }),
         election: Some(CouncilElectionConfig {
             auto_start: true,
-            election_parameters: ElectionParameters {
-                announcing_period: 3 * DAYS,
-                voting_period: 1 * DAYS,
-                revealing_period: 1 * DAYS,
-                council_size: 12,
-                candidacy_limit: 25,
-                min_council_stake: 10 * DOLLARS,
-                new_term_duration: 14 * DAYS,
-                min_voting_stake: 1 * DOLLARS,
-            },
+            announcing_period: 3 * DAYS,
+            voting_period: 1 * DAYS,
+            revealing_period: 1 * DAYS,
+            council_size: 12,
+            candidacy_limit: 25,
+            min_council_stake: 10 * DOLLARS,
+            new_term_duration: 14 * DAYS,
+            min_voting_stake: 1 * DOLLARS,
         }),
         proposals: Some(ProposalsConfig {
             approval_quorum: 66,
@@ -273,16 +271,16 @@ pub fn testnet_genesis(
             enable_storage_role: true,
             request_life_time: 300,
         }),
-        // content_directory: Some(VersionedStorePermissionsConfig {
-        //     class_by_id: vec![],
-        //     entity_by_id: vec![],
-        //     next_class_id: 1,
-        //     next_entity_id: 1,
-        //     property_name_constraint: new_vs_validation(1, 99),
-        //     property_description_constraint: new_vs_validation(1, 999),
-        //     class_name_constraint: new_vs_validation(1, 99),
-        //     class_description_constraint: new_vs_validation(1, 999),
-        // }),
+        versioned_store: Some(VersionedStoreConfig {
+            class_by_id: vec![],
+            entity_by_id: vec![],
+            next_class_id: 1,
+            next_entity_id: 1,
+            property_name_constraint: new_vs_validation(1, 99),
+            property_description_constraint: new_vs_validation(1, 999),
+            class_name_constraint: new_vs_validation(1, 99),
+            class_description_constraint: new_vs_validation(1, 999),
+        }),
         content_wg: Some(ContentWorkingGroupConfig {
             mint_capacity: 100000,
             curator_opening_by_id: vec![],

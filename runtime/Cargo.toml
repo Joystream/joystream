@@ -5,7 +5,7 @@ edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
-version = '6.12.0'
+version = '6.8.1'
 
 [features]
 default = ['std']
@@ -49,7 +49,8 @@ std = [
     'recurringrewards/std',
     'stake/std',
     'hiring/std',
-    'content_directory/std',
+    'versioned_store/std',
+    'versioned_store_permissions/std',
     'common/std',
     'content_working_group/std',
     'governance/std',
@@ -295,10 +296,15 @@ default_features = false
 package = 'substrate-hiring-module'
 path = '../runtime-modules/hiring'
 
-[dependencies.content_directory]
+[dependencies.versioned_store]
 default_features = false
-package = 'substrate-content-directory-module'
-path = '../runtime-modules/content-directory'
+package ='substrate-versioned-store'
+path = '../runtime-modules/versioned-store'
+
+[dependencies.versioned_store_permissions]
+default_features = false
+package = 'substrate-versioned-store-permissions-module'
+path = '../runtime-modules/versioned-store-permissions'
 
 [dependencies.common]
 default_features = false

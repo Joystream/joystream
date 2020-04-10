@@ -1554,7 +1554,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "2.1.6"
+version = "2.1.3"
 dependencies = [
  "ctrlc",
  "derive_more 0.14.1",
@@ -1599,7 +1599,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "6.12.0"
+version = "6.8.1"
 dependencies = [
  "parity-scale-codec",
  "safe-mix",
@@ -1633,7 +1633,6 @@ dependencies = [
  "substrate-client",
  "substrate-common-module",
  "substrate-consensus-babe-primitives",
- "substrate-content-directory-module",
  "substrate-content-working-group-module",
  "substrate-forum-module",
  "substrate-governance-module",
@@ -1649,6 +1648,8 @@ dependencies = [
  "substrate-stake-module",
  "substrate-storage-module",
  "substrate-token-mint-module",
+ "substrate-versioned-store",
+ "substrate-versioned-store-permissions-module",
  "substrate-wasm-builder-runner",
 ]
 
@@ -4648,24 +4649,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "substrate-content-directory-module"
-version = "1.0.1"
-dependencies = [
- "hex-literal 0.1.4",
- "parity-scale-codec",
- "quote 0.6.13",
- "serde",
- "sr-io",
- "sr-primitives",
- "sr-std",
- "srml-support",
- "srml-support-procedural",
- "srml-system",
- "srml-timestamp",
- "substrate-primitives",
-]
-
-[[package]]
 name = "substrate-content-working-group-module"
 version = "1.0.0"
 dependencies = [
@@ -4679,7 +4662,6 @@ dependencies = [
  "srml-system",
  "srml-timestamp",
  "substrate-common-module",
- "substrate-content-directory-module",
  "substrate-forum-module",
  "substrate-hiring-module",
  "substrate-membership-module",
@@ -4687,6 +4669,8 @@ dependencies = [
  "substrate-recurring-reward-module",
  "substrate-stake-module",
  "substrate-token-mint-module",
+ "substrate-versioned-store",
+ "substrate-versioned-store-permissions-module",
 ]
 
 [[package]]
@@ -4812,7 +4796,6 @@ dependencies = [
  "substrate-common-module",
  "substrate-membership-module",
  "substrate-primitives",
- "substrate-token-mint-module",
 ]
 
 [[package]]
@@ -5413,6 +5396,46 @@ dependencies = [
  "substrate-primitives",
  "trie-db",
  "trie-root",
+]
+
+[[package]]
+name = "substrate-versioned-store"
+version = "1.0.1"
+dependencies = [
+ "hex-literal 0.1.4",
+ "parity-scale-codec",
+ "quote 0.6.13",
+ "serde",
+ "serde_derive",
+ "sr-io",
+ "sr-primitives",
+ "sr-std",
+ "srml-balances",
+ "srml-support",
+ "srml-support-procedural",
+ "srml-system",
+ "srml-timestamp",
+ "substrate-primitives",
+]
+
+[[package]]
+name = "substrate-versioned-store-permissions-module"
+version = "1.0.1"
+dependencies = [
+ "hex-literal 0.1.4",
+ "parity-scale-codec",
+ "quote 0.6.13",
+ "serde",
+ "serde_derive",
+ "sr-io",
+ "sr-primitives",
+ "sr-std",
+ "srml-support",
+ "srml-support-procedural",
+ "srml-system",
+ "srml-timestamp",
+ "substrate-primitives",
+ "substrate-versioned-store",
 ]
 
 [[package]]

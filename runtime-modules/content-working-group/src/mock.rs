@@ -20,7 +20,8 @@ pub use membership::members;
 pub use minting;
 pub use recurringrewards;
 pub use stake;
-pub use content_directory;
+pub use versioned_store;
+pub use versioned_store_permissions;
 
 use crate::genesis;
 
@@ -53,6 +54,7 @@ mod lib {
 
 impl_outer_event! {
     pub enum TestEvent for Test {
+        versioned_store<T>,
         members<T>,
         balances<T>,
         lib<T>,
@@ -66,9 +68,7 @@ pub type RawLibTestEvent = RawEvent<
     CuratorApplicationId<Test>,
     CuratorId<Test>,
     CuratorApplicationIdToCuratorIdMap<Test>,
-    minting::BalanceOf<Test>,
     <Test as system::Trait>::AccountId,
-    <Test as minting::Trait>::MintId,
 >;
 
 pub fn get_last_event_or_panic() -> RawLibTestEvent {
@@ -169,8 +169,12 @@ impl hiring::Trait for Test {
     type StakeHandlerProvider = hiring::Module<Self>;
 }
 
+impl versioned_store::Trait for Test {
+    type Event = TestEvent;
+}
+
 type TestPrincipalId = u64;
-impl content_directory::Trait for Test {
+impl versioned_store_permissions::Trait for Test {
     type Credential = TestPrincipalId;
     type CredentialChecker = ();
     type CreateClassPermissionsChecker = ();
@@ -216,13 +220,11 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
         self.membership_config = Some(membership_config);
         self
     }
-    */
-
-    pub fn with_content_wg_config(mut self, conteng_wg_config: GenesisConfig<T>) -> Self {
+    pub fn set_content_wg_config(mut self, conteng_wg_config: GenesisConfig<T>) -> Self {
         self.content_wg_config = Some(conteng_wg_config);
         self
     }
-
+    */
     pub fn build(self) -> runtime_io::TestExternalities {
         // Add system
         let mut t = self
@@ -258,4 +260,3 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
 pub type System = system::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type ContentWorkingGroup = Module<Test>;
-pub type Minting = minting::Module<Test>;

@@ -1,23 +1,27 @@
 use crate::VERSION;
-use sr_primitives::{print, traits::Zero};
+use sr_primitives::print;
 use srml_support::{decl_event, decl_module, decl_storage};
 use sudo;
 use system;
 
+// When preparing a new major runtime release version bump this value to match it and update
+// the initialization code in runtime_initialization(). Because of the way substrate runs runtime code
+// the runtime doesn't need to maintain any logic for old migrations. All knowledge about state of the chain and runtime
+// prior to the new runtime taking over is implicit in the migration code implementation. If assumptions are incorrect
+// behaviour is undefined.
+const MIGRATION_FOR_SPEC_VERSION: u32 = 0;
+
 impl<T: Trait> Module<T> {
-    fn runtime_upgraded() {
-        print("running runtime initializers...");
+    fn runtime_initialization() {
+        if VERSION.spec_version != MIGRATION_FOR_SPEC_VERSION {
+            return;
+        }
+
+        print("running runtime initializers");
 
         // ...
-        // add initialization of modules introduced in new runtime release. This
-        // would be any new storage values that need an initial value which would not
-        // have been initialized with config() or build() mechanism.
+        // add initialization of other modules introduced in this runtime
         // ...
-
-        // Create the Council mint. If it fails, we can't do anything about it here.
-        let _ = governance::council::Module::<T>::create_new_council_mint(
-            minting::BalanceOf::<T>::zero(),
-        );
 
         Self::deposit_event(RawEvent::Migrated(
             <system::Module<T>>::block_number(),
@@ -32,7 +36,6 @@ pub trait Trait:
     + storage::data_object_storage_registry::Trait
     + forum::Trait
     + sudo::Trait
-    + governance::council::Trait
 {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
@@ -61,7 +64,7 @@ decl_module! {
                 SpecVersion::put(VERSION.spec_version);
 
                 // run migrations and store initializers
-                Self::runtime_upgraded();
+                Self::runtime_initialization();
             }
         }
     }
