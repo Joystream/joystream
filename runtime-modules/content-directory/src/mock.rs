@@ -10,6 +10,7 @@ use runtime_primitives::{
     Perbill,
 };
 use srml_support::{assert_err, assert_ok, impl_outer_origin, parameter_types};
+use std::cell::RefCell;
 
 pub const MEMBER_ONE_WITH_CREDENTIAL_ZERO: u64 = 100;
 pub const MEMBER_TWO_WITH_CREDENTIAL_ZERO: u64 = 101;
@@ -85,10 +86,49 @@ impl timestamp::Trait for Runtime {
     type MinimumPeriod = MinimumPeriod;
 }
 
+thread_local! {
+    static PROPERTY_NAME_CONSTRAINT: RefCell<InputValidationLengthConstraint> = RefCell::new(InputValidationLengthConstraint::default());
+    static PROPERTY_DESCRIPTION_CONSTRAINT: RefCell<InputValidationLengthConstraint> = RefCell::new(InputValidationLengthConstraint::default());
+    static CLASS_NAME_CONSTRAINT: RefCell<InputValidationLengthConstraint> = RefCell::new(InputValidationLengthConstraint::default());
+    static CLASS_DESCRIPTION_CONSTRAINT: RefCell<InputValidationLengthConstraint> = RefCell::new(InputValidationLengthConstraint::default());
+}
+
+pub struct PropertyNameConstraint;
+impl Get<InputValidationLengthConstraint> for PropertyNameConstraint {
+    fn get() -> InputValidationLengthConstraint {
+        PROPERTY_NAME_CONSTRAINT.with(|v| *v.borrow())
+    }
+}
+
+pub struct PropertyDescriptionConstraint;
+impl Get<InputValidationLengthConstraint> for PropertyDescriptionConstraint {
+    fn get() -> InputValidationLengthConstraint {
+        PROPERTY_DESCRIPTION_CONSTRAINT.with(|v| *v.borrow())
+    }
+}
+
+pub struct ClassNameConstraint;
+impl Get<InputValidationLengthConstraint> for ClassNameConstraint {
+    fn get() -> InputValidationLengthConstraint {
+        CLASS_NAME_CONSTRAINT.with(|v| *v.borrow())
+    }
+}
+
+pub struct ClassDescriptionConstraint;
+impl Get<InputValidationLengthConstraint> for ClassDescriptionConstraint {
+    fn get() -> InputValidationLengthConstraint {
+        CLASS_DESCRIPTION_CONSTRAINT.with(|v| *v.borrow())
+    }
+}
+
 impl Trait for Runtime {
     type Credential = u64;
     type CredentialChecker = MockCredentialChecker;
     type CreateClassPermissionsChecker = MockCreateClassPermissionsChecker;
+    type PropertyNameConstraint = PropertyNameConstraint;
+    type PropertyDescriptionConstraint = PropertyDescriptionConstraint;
+    type ClassNameConstraint = ClassNameConstraint;
+    type ClassDescriptionConstraint  = ClassDescriptionConstraint;
 }
 
 pub struct MockCredentialChecker {}
@@ -120,47 +160,77 @@ impl CreateClassPermissionsChecker<Runtime> for MockCreateClassPermissionsChecke
     }
 }
 
+pub struct ExtBuilder {
+    property_name_constraint: InputValidationLengthConstraint,
+    property_description_constraint: InputValidationLengthConstraint,
+    class_name_constraint: InputValidationLengthConstraint,
+    class_description_constraint: InputValidationLengthConstraint,
+}
+
+impl Default for ExtBuilder {
+    fn default() -> Self {
+        Self {
+            property_name_constraint: InputValidationLengthConstraint::new(1, 49),
+            property_description_constraint: InputValidationLengthConstraint::new(0, 500),
+            class_name_constraint: InputValidationLengthConstraint::new(1, 49),
+            class_description_constraint: InputValidationLengthConstraint::new(0, 500),
+        }
+    }
+}
+
+impl ExtBuilder {
+    pub fn post_title_max_length(mut self, property_name_constraint: InputValidationLengthConstraint) -> Self {
+        self.property_name_constraint = property_name_constraint;
+        self
+    }
+
+    pub fn post_body_max_length(mut self, property_description_constraint: InputValidationLengthConstraint) -> Self {
+        self.property_description_constraint = property_description_constraint;
+        self
+    }
+
+    pub fn reply_max_length(mut self, class_name_constraint: InputValidationLengthConstraint) -> Self {
+        self.class_name_constraint = class_name_constraint;
+        self
+    }
+
+    pub fn posts_max_number(mut self, class_description_constraint: InputValidationLengthConstraint) -> Self {
+        self.class_description_constraint = class_description_constraint;
+        self
+    }
+
+    pub fn set_associated_consts(&self) {
+        PROPERTY_NAME_CONSTRAINT.with(|v| *v.borrow_mut() = self.property_name_constraint);
+        PROPERTY_DESCRIPTION_CONSTRAINT.with(|v| *v.borrow_mut() = self.property_description_constraint);
+        CLASS_NAME_CONSTRAINT.with(|v| *v.borrow_mut() = self.class_name_constraint);
+        CLASS_DESCRIPTION_CONSTRAINT.with(|v| *v.borrow_mut() = self.class_description_constraint);
+    }
+
+    pub fn build(self, config: GenesisConfig<Runtime>) -> runtime_io::TestExternalities {
+        self.set_associated_consts();
+        let mut t = system::GenesisConfig::default()
+            .build_storage::<Runtime>()
+            .unwrap();
+        config.assimilate_storage(&mut t).unwrap();
+        t.into()
+    }
+}
+
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
 
-fn default_versioned_store_genesis_config() -> GenesisConfig<Runtime> {
+fn default_content_directory_genesis_config() -> GenesisConfig<Runtime> {
     GenesisConfig {
         class_by_id: vec![],
         entity_by_id: vec![],
         next_class_id: 1,
         next_entity_id: 1,
-        property_name_constraint: InputValidationLengthConstraint {
-            min: 1,
-            max_min_diff: 49,
-        },
-        property_description_constraint: InputValidationLengthConstraint {
-            min: 0,
-            max_min_diff: 500,
-        },
-        class_name_constraint: InputValidationLengthConstraint {
-            min: 1,
-            max_min_diff: 49,
-        },
-        class_description_constraint: InputValidationLengthConstraint {
-            min: 0,
-            max_min_diff: 500,
-        },
     }
 }
 
-fn build_test_externalities(config: GenesisConfig<Runtime>) -> runtime_io::TestExternalities {
-    let mut t = system::GenesisConfig::default()
-        .build_storage::<Runtime>()
-        .unwrap();
-
-    config.assimilate_storage(&mut t).unwrap();
-
-    t.into()
-}
-
 pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
-    let versioned_store_config = default_versioned_store_genesis_config();
-    build_test_externalities(versioned_store_config).execute_with(f)
+    let default_genesis_config = default_content_directory_genesis_config();
+    ExtBuilder::default().build(default_genesis_config).execute_with(f)
 }
 
 impl Property {

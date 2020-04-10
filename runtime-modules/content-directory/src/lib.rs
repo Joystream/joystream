@@ -5,7 +5,7 @@ use codec::{Codec, Encode, Decode};
 use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use rstd::prelude::*;
 use runtime_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
-use srml_support::{decl_module, decl_storage, dispatch, ensure, Parameter};
+use srml_support::{decl_module, traits::Get, decl_storage, dispatch, ensure, Parameter};
 use system;
 
 #[cfg(feature = "std")]
@@ -42,6 +42,16 @@ pub trait Trait: system::Trait {
         + Eq
         + PartialEq
         + Ord;
+    
+    /// Security/configuration constraints
+
+    type PropertyNameConstraint: Get<InputValidationLengthConstraint>;
+
+    type PropertyDescriptionConstraint: Get<InputValidationLengthConstraint>;
+
+    type ClassNameConstraint: Get<InputValidationLengthConstraint>;
+
+    type ClassDescriptionConstraint: Get<InputValidationLengthConstraint>;
 
     /// External type for checking if an account has specified credential.
     type CredentialChecker: CredentialChecker<Self>;
@@ -86,7 +96,7 @@ impl<T: Trait> CreateClassPermissionsChecker<T> for () {
 
 /// Length constraint for input validation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub struct InputValidationLengthConstraint {
     /// Minimum length
     pub min: u16,
@@ -99,6 +109,13 @@ pub struct InputValidationLengthConstraint {
 }
 
 impl InputValidationLengthConstraint {
+    pub fn new(min: u16, max_min_diff: u16) -> Self {
+        Self {
+            min,
+            max_min_diff
+        }
+    }
+
     /// Helper for computing max
     pub fn max(&self) -> u16 {
         self.min + self.max_min_diff
@@ -343,19 +360,7 @@ decl_storage! {
         pub NextClassId get(next_class_id) config(): ClassId;
 
         pub NextEntityId get(next_entity_id) config(): EntityId;
-
-        pub PropertyNameConstraint get(property_name_constraint)
-            config(): InputValidationLengthConstraint;
-
-        pub PropertyDescriptionConstraint get(property_description_constraint)
-            config(): InputValidationLengthConstraint;
-
-        pub ClassNameConstraint get(class_name_constraint)
-            config(): InputValidationLengthConstraint;
-
-        pub ClassDescriptionConstraint get(class_description_constraint)
-            config(): InputValidationLengthConstraint;
-        }
+    }
 }
 
 decl_module! {
@@ -1411,7 +1416,7 @@ impl<T: Trait> Module<T> {
         }
     
         pub fn ensure_property_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
-            PropertyNameConstraint::get().ensure_valid(
+            T::PropertyNameConstraint::get().ensure_valid(
                 text.len(),
                 ERROR_PROPERTY_NAME_TOO_SHORT,
                 ERROR_PROPERTY_NAME_TOO_LONG,
@@ -1419,7 +1424,7 @@ impl<T: Trait> Module<T> {
         }
     
         pub fn ensure_property_description_is_valid(text: &Vec<u8>) -> dispatch::Result {
-            PropertyDescriptionConstraint::get().ensure_valid(
+            T::PropertyDescriptionConstraint::get().ensure_valid(
                 text.len(),
                 ERROR_PROPERTY_DESCRIPTION_TOO_SHORT,
                 ERROR_PROPERTY_DESCRIPTION_TOO_LONG,
@@ -1427,7 +1432,7 @@ impl<T: Trait> Module<T> {
         }
     
         pub fn ensure_class_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
-            ClassNameConstraint::get().ensure_valid(
+            T::ClassNameConstraint::get().ensure_valid(
                 text.len(),
                 ERROR_CLASS_NAME_TOO_SHORT,
                 ERROR_CLASS_NAME_TOO_LONG,
@@ -1435,7 +1440,7 @@ impl<T: Trait> Module<T> {
         }
     
         pub fn ensure_class_description_is_valid(text: &Vec<u8>) -> dispatch::Result {
-            ClassDescriptionConstraint::get().ensure_valid(
+            T::ClassDescriptionConstraint::get().ensure_valid(
                 text.len(),
                 ERROR_CLASS_DESCRIPTION_TOO_SHORT,
                 ERROR_CLASS_DESCRIPTION_TOO_LONG,
