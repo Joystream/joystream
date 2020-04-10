@@ -14,9 +14,13 @@ use srml_support::dispatch::DispatchResult;
 pub use mock::*;
 
 pub(crate) fn increase_total_balance_issuance(balance: u64) {
+    increase_total_balance_issuance_using_account_id(balance, 999);
+}
+
+pub(crate) fn increase_total_balance_issuance_using_account_id(balance: u64, account_id: u64) {
     let initial_balance = Balances::total_issuance();
     {
-        let _ = <Test as stake::Trait>::Currency::deposit_creating(&999, balance);
+        let _ = <Test as stake::Trait>::Currency::deposit_creating(&account_id, balance);
     }
     assert_eq!(Balances::total_issuance(), initial_balance + balance);
 }
@@ -340,7 +344,7 @@ fn assert_failed_election_parameters_call(
             1,
             b"title".to_vec(),
             b"body".to_vec(),
-            Some(<BalanceOf<Test>>::from(500u32)),
+            Some(<BalanceOf<Test>>::from(3750u32)),
             election_parameters,
         ),
         Err(error)
@@ -352,7 +356,7 @@ fn get_valid_election_parameters() -> ElectionParameters<u64, u64> {
         announcing_period: 14400,
         voting_period: 14400,
         revealing_period: 14400,
-        council_size: 3,
+        council_size: 4,
         candidacy_limit: 25,
         new_term_duration: 14400,
         min_council_stake: 1,
@@ -363,10 +367,16 @@ fn get_valid_election_parameters() -> ElectionParameters<u64, u64> {
 #[test]
 fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
     initial_test_ext().execute_with(|| {
-        let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&1, 50000);
+        increase_total_balance_issuance_using_account_id(500000, 1);
 
         let mut election_parameters = get_valid_election_parameters();
         election_parameters.council_size = 2;
+        assert_failed_election_parameters_call(
+            election_parameters,
+            Error::InvalidCouncilElectionParameterCouncilSize,
+        );
+
+        election_parameters.council_size = 21;
         assert_failed_election_parameters_call(
             election_parameters,
             Error::InvalidCouncilElectionParameterCouncilSize,
@@ -380,7 +390,21 @@ fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
         );
 
         election_parameters = get_valid_election_parameters();
+        election_parameters.candidacy_limit = 122;
+        assert_failed_election_parameters_call(
+            election_parameters,
+            Error::InvalidCouncilElectionParameterCandidacyLimit,
+        );
+
+        election_parameters = get_valid_election_parameters();
         election_parameters.min_voting_stake = 0;
+        assert_failed_election_parameters_call(
+            election_parameters,
+            Error::InvalidCouncilElectionParameterMinVotingStake,
+        );
+
+        election_parameters = get_valid_election_parameters();
+        election_parameters.min_voting_stake = 200000;
         assert_failed_election_parameters_call(
             election_parameters,
             Error::InvalidCouncilElectionParameterMinVotingStake,
@@ -394,7 +418,21 @@ fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
         );
 
         election_parameters = get_valid_election_parameters();
+        election_parameters.new_term_duration = 500000;
+        assert_failed_election_parameters_call(
+            election_parameters,
+            Error::InvalidCouncilElectionParameterNewTermDuration,
+        );
+
+        election_parameters = get_valid_election_parameters();
         election_parameters.min_council_stake = 0;
+        assert_failed_election_parameters_call(
+            election_parameters,
+            Error::InvalidCouncilElectionParameterMinCouncilStake,
+        );
+
+        election_parameters = get_valid_election_parameters();
+        election_parameters.min_council_stake = 200000;
         assert_failed_election_parameters_call(
             election_parameters,
             Error::InvalidCouncilElectionParameterMinCouncilStake,
@@ -408,7 +446,21 @@ fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
         );
 
         election_parameters = get_valid_election_parameters();
+        election_parameters.voting_period = 50000;
+        assert_failed_election_parameters_call(
+            election_parameters,
+            Error::InvalidCouncilElectionParameterVotingPeriod,
+        );
+
+        election_parameters = get_valid_election_parameters();
         election_parameters.revealing_period = 10000;
+        assert_failed_election_parameters_call(
+            election_parameters,
+            Error::InvalidCouncilElectionParameterRevealingPeriod,
+        );
+
+        election_parameters = get_valid_election_parameters();
+        election_parameters.revealing_period = 50000;
         assert_failed_election_parameters_call(
             election_parameters,
             Error::InvalidCouncilElectionParameterRevealingPeriod,
@@ -419,6 +471,32 @@ fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
         assert_failed_election_parameters_call(
             election_parameters,
             Error::InvalidCouncilElectionParameterAnnouncingPeriod,
+        );
+
+        election_parameters = get_valid_election_parameters();
+        election_parameters.announcing_period = 50000;
+        assert_failed_election_parameters_call(
+            election_parameters,
+            Error::InvalidCouncilElectionParameterAnnouncingPeriod,
+        );
+    });
+}
+
+#[test]
+fn create_set_council_mint_capacity_proposal_fails_with_invalid_parameters() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
+        assert_eq!(
+            ProposalCodex::create_set_council_mint_capacity_proposal(
+                RawOrigin::Signed(1).into(),
+                1,
+                b"title".to_vec(),
+                b"body".to_vec(),
+                Some(<BalanceOf<Test>>::from(1250u32)),
+                10001,
+            ),
+            Err(Error::InvalidStorageCouncilMintCapacity)
         );
     });
 }
@@ -474,6 +552,25 @@ fn create_set_council_mint_capacity_proposal_common_checks_succeed() {
             proposal_details: ProposalDetails::SetCouncilMintCapacity(10),
         };
         proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_working_groupd_mint_capacity_proposal_fails_with_invalid_parameters() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
+        assert_eq!(
+            ProposalCodex::create_set_content_working_group_mint_capacity_proposal(
+                RawOrigin::Signed(1).into(),
+                1,
+                b"title".to_vec(),
+                b"body".to_vec(),
+                Some(<BalanceOf<Test>>::from(1250u32)),
+                5001,
+            ),
+            Err(Error::InvalidStorageWorkingGroupMintCapacity)
+        );
     });
 }
 
@@ -590,17 +687,58 @@ fn create_spending_proposal_common_checks_succeed() {
 #[test]
 fn create_spending_proposal_call_fails_with_incorrect_balance() {
     initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 500000);
+
         assert_eq!(
             ProposalCodex::create_spending_proposal(
                 RawOrigin::Signed(1).into(),
                 1,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(<BalanceOf<Test>>::from(500u32)),
+                Some(<BalanceOf<Test>>::from(1250u32)),
                 0,
                 2,
             ),
-            Err(Error::SpendingProposalZeroBalance)
+            Err(Error::InvalidSpendingProposalBalance)
+        );
+
+        assert_eq!(
+            ProposalCodex::create_spending_proposal(
+                RawOrigin::Signed(1).into(),
+                1,
+                b"title".to_vec(),
+                b"body".to_vec(),
+                Some(<BalanceOf<Test>>::from(1250u32)),
+                1001,
+                2,
+            ),
+            Err(Error::InvalidSpendingProposalBalance)
+        );
+    });
+}
+
+#[test]
+fn create_set_lead_proposal_fails_with_proposed_councilor() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(500000, 1);
+
+        let lead_account_id = 20;
+        <governance::council::Module<Test>>::set_council(
+            RawOrigin::Root.into(),
+            vec![lead_account_id],
+        )
+        .unwrap();
+
+        assert_eq!(
+            ProposalCodex::create_set_lead_proposal(
+                RawOrigin::Signed(1).into(),
+                1,
+                b"title".to_vec(),
+                b"body".to_vec(),
+                Some(<BalanceOf<Test>>::from(1250u32)),
+                Some((20, lead_account_id)),
+            ),
+            Err(Error::InvalidSetLeadParameterCannotBeCouncilor)
         );
     });
 }
@@ -778,7 +916,19 @@ fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
                 Some(<BalanceOf<Test>>::from(500u32)),
                 3,
             ),
-            Err(Error::LessThanMinValidatorCount)
+            Err(Error::InvalidValidatorCount)
+        );
+
+        assert_eq!(
+            ProposalCodex::create_set_validator_count_proposal(
+                RawOrigin::Signed(1).into(),
+                1,
+                b"title".to_vec(),
+                b"body".to_vec(),
+                Some(<BalanceOf<Test>>::from(1001u32)),
+                3,
+            ),
+            Err(Error::InvalidValidatorCount)
         );
     });
 }
@@ -857,53 +1007,138 @@ fn assert_failed_set_storage_parameters_call(
 #[test]
 fn create_set_storage_role_parameters_proposal_fails_with_invalid_parameters() {
     initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
         let mut role_parameters = RoleParameters::default();
-        role_parameters.min_actors = 0;
+        role_parameters.min_actors = 6;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterMinActors,
         );
 
         role_parameters = RoleParameters::default();
-        role_parameters.max_actors = 0;
+        role_parameters.max_actors = 4;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterMaxActors,
         );
 
         role_parameters = RoleParameters::default();
-        role_parameters.reward_period = 700;
+        role_parameters.max_actors = 100;
+        assert_failed_set_storage_parameters_call(
+            role_parameters,
+            Error::InvalidStorageRoleParameterMaxActors,
+        );
+
+        role_parameters = RoleParameters::default();
+        role_parameters.reward_period = 599;
+        assert_failed_set_storage_parameters_call(
+            role_parameters,
+            Error::InvalidStorageRoleParameterRewardPeriod,
+        );
+
+        role_parameters.reward_period = 28801;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterRewardPeriod,
         );
 
         role_parameters = RoleParameters::default();
-        role_parameters.bonding_period = 700;
+        role_parameters.bonding_period = 599;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterBondingPeriod,
         );
 
         role_parameters = RoleParameters::default();
-        role_parameters.unbonding_period = 700;
+        role_parameters.bonding_period = 28801;
+        assert_failed_set_storage_parameters_call(
+            role_parameters,
+            Error::InvalidStorageRoleParameterBondingPeriod,
+        );
+
+        role_parameters = RoleParameters::default();
+        role_parameters.unbonding_period = 599;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterUnbondingPeriod,
         );
 
         role_parameters = RoleParameters::default();
-        role_parameters.min_service_period = 700;
+        role_parameters.unbonding_period = 28801;
+        assert_failed_set_storage_parameters_call(
+            role_parameters,
+            Error::InvalidStorageRoleParameterUnbondingPeriod,
+        );
+
+        role_parameters = RoleParameters::default();
+        role_parameters.min_service_period = 599;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterMinServicePeriod,
         );
 
         role_parameters = RoleParameters::default();
-        role_parameters.startup_grace_period = 500;
+        role_parameters.min_service_period = 28801;
+        assert_failed_set_storage_parameters_call(
+            role_parameters,
+            Error::InvalidStorageRoleParameterMinServicePeriod,
+        );
+
+        role_parameters = RoleParameters::default();
+        role_parameters.startup_grace_period = 599;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterStartupGracePeriod,
+        );
+
+        role_parameters = RoleParameters::default();
+        role_parameters.startup_grace_period = 28801;
+        assert_failed_set_storage_parameters_call(
+            role_parameters,
+            Error::InvalidStorageRoleParameterStartupGracePeriod,
+        );
+
+        role_parameters = RoleParameters::default();
+        role_parameters.min_stake = 0;
+        assert_failed_set_storage_parameters_call(
+            role_parameters,
+            Error::InvalidStorageRoleParameterMinStake,
+        );
+
+        role_parameters = RoleParameters::default();
+        role_parameters.min_stake = 5001;
+        assert_failed_set_storage_parameters_call(
+            role_parameters,
+            Error::InvalidStorageRoleParameterMinStake,
+        );
+
+        role_parameters = RoleParameters::default();
+        role_parameters.entry_request_fee = 0;
+        assert_failed_set_storage_parameters_call(
+            role_parameters,
+            Error::InvalidStorageRoleParameterEntryRequestFee,
+        );
+
+        role_parameters = RoleParameters::default();
+        role_parameters.entry_request_fee = 5001;
+        assert_failed_set_storage_parameters_call(
+            role_parameters,
+            Error::InvalidStorageRoleParameterEntryRequestFee,
+        );
+
+        role_parameters = RoleParameters::default();
+        role_parameters.reward = 0;
+        assert_failed_set_storage_parameters_call(
+            role_parameters,
+            Error::InvalidStorageRoleParameterReward,
+        );
+
+        role_parameters = RoleParameters::default();
+        role_parameters.reward = 501;
+        assert_failed_set_storage_parameters_call(
+            role_parameters,
+            Error::InvalidStorageRoleParameterReward,
         );
     });
 }

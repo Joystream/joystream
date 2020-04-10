@@ -1,23 +1,4 @@
-use crate::{BalanceOf, CurrencyOf, ProposalParameters};
-use rstd::convert::TryInto;
-use sr_primitives::traits::SaturatedConversion;
-pub use sr_primitives::Perbill;
-use srml_support::traits::Currency;
-
-// calculates required stake value using total issuance value and stake percentage. Truncates to
-// lowest integer value.
-fn get_required_stake_by_fraction<T: crate::Trait>(
-    numerator: u32,
-    denominator: u32,
-) -> BalanceOf<T> {
-    let total_issuance: u128 = <CurrencyOf<T>>::total_issuance().try_into().unwrap_or(0) as u128;
-    let required_stake =
-        Perbill::from_rational_approximation(numerator, denominator) * total_issuance;
-
-    let balance: BalanceOf<T> = required_stake.saturated_into();
-
-    balance
-}
+use crate::{get_required_stake_by_fraction, BalanceOf, ProposalParameters};
 
 // Proposal parameters for the 'Set validator count' proposal
 pub(crate) fn set_validator_count_proposal<T: crate::Trait>(
@@ -106,8 +87,8 @@ pub(crate) fn set_content_working_group_mint_capacity_proposal<T: crate::Trait>(
 pub(crate) fn spending_proposal<T: crate::Trait>(
 ) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
     ProposalParameters {
-        voting_period: T::BlockNumber::from(43200u32),
-        grace_period: T::BlockNumber::from(0u32),
+        voting_period: T::BlockNumber::from(72000u32),
+        grace_period: T::BlockNumber::from(14400u32),
         approval_quorum_percentage: 66,
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,

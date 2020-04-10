@@ -52,17 +52,24 @@ use governance::election_params::ElectionParameters;
 use proposal_engine::ProposalParameters;
 use roles::actors::{Role, RoleParameters};
 use rstd::clone::Clone;
+use rstd::convert::TryInto;
 use rstd::prelude::*;
 use rstd::str::from_utf8;
 use rstd::vec::Vec;
 use runtime_io::blake2_256;
+use sr_primitives::traits::SaturatedConversion;
 use sr_primitives::traits::{One, Zero};
+pub use sr_primitives::Perbill;
 use srml_support::dispatch::DispatchResult;
 use srml_support::traits::{Currency, Get};
 use srml_support::{decl_error, decl_module, decl_storage, ensure, print};
 use system::{ensure_root, RawOrigin};
 
 pub use proposal_types::ProposalDetails;
+
+// Percentage of the total token issue as max mint balance value. Shared with spending
+// proposal max balance percentage.
+const COUNCIL_MINT_MAX_BALANCE_PERCENT: u32 = 2;
 
 /// 'Proposals codex' substrate module Trait
 pub trait Trait:
@@ -134,10 +141,10 @@ decl_error! {
         RuntimeProposalProposerNotInTheAllowedProposersList,
 
         /// Invalid balance value for the spending proposal
-        SpendingProposalZeroBalance,
+        InvalidSpendingProposalBalance,
 
         /// Invalid validator count for the 'set validator count' proposal
-        LessThanMinValidatorCount,
+        InvalidValidatorCount,
 
         /// Require root origin in extrinsics
         RequireRootOrigin,
@@ -187,6 +194,23 @@ decl_error! {
         /// Invalid council election parameter - announcing_period
         InvalidCouncilElectionParameterAnnouncingPeriod,
 
+        /// Invalid council election parameter - min_stake
+        InvalidStorageRoleParameterMinStake,
+
+        /// Invalid council election parameter - reward
+        InvalidStorageRoleParameterReward,
+
+        /// Invalid council election parameter - entry_request_fee
+        InvalidStorageRoleParameterEntryRequestFee,
+
+        /// Invalid working group mint capacity parameter
+        InvalidStorageWorkingGroupMintCapacity,
+
+        /// Invalid council mint capacity parameter
+        InvalidStorageCouncilMintCapacity,
+
+        /// Invalid 'set lead proposal' parameter - proposed lead cannot be a councilor
+        InvalidSetLeadParameterCannotBeCouncilor
     }
 }
 
@@ -322,6 +346,8 @@ decl_module! {
             stake_balance: Option<BalanceOf<T>>,
             election_parameters: ElectionParameters<BalanceOfGovernanceCurrency<T>, T::BlockNumber>,
         ) {
+            election_parameters.ensure_valid()?;
+
             Self::ensure_council_election_parameters_valid(&election_parameters)?;
 
             let proposal_code =
@@ -352,6 +378,19 @@ decl_module! {
             stake_balance: Option<BalanceOf<T>>,
             mint_balance: BalanceOfMint<T>,
         ) {
+
+            let max_mint_capacity: u32 = get_required_stake_by_fraction::<T>(
+                COUNCIL_MINT_MAX_BALANCE_PERCENT,
+                100
+            )
+            .try_into()
+            .unwrap_or_default() as u32;
+
+            ensure!(
+                mint_balance < <BalanceOfMint<T>>::from(max_mint_capacity),
+                Error::InvalidStorageCouncilMintCapacity
+            );
+
             let proposal_code =
                 <governance::council::Call<T>>::set_council_mint_capacity(mint_balance.clone());
 
@@ -380,6 +419,15 @@ decl_module! {
             stake_balance: Option<BalanceOf<T>>,
             mint_balance: BalanceOfMint<T>,
         ) {
+
+            let max_mint_capacity: u32 = get_required_stake_by_fraction::<T>(1, 100)
+                .try_into()
+                .unwrap_or_default() as u32;
+            ensure!(
+                mint_balance < <BalanceOfMint<T>>::from(max_mint_capacity),
+                Error::InvalidStorageWorkingGroupMintCapacity
+            );
+
             let proposal_code =
                 <content_working_group::Call<T>>::set_mint_capacity(mint_balance.clone());
 
@@ -409,7 +457,19 @@ decl_module! {
             balance: BalanceOfMint<T>,
             destination: T::AccountId,
         ) {
-            ensure!(balance != BalanceOfMint::<T>::zero(), Error::SpendingProposalZeroBalance);
+            ensure!(balance != BalanceOfMint::<T>::zero(), Error::InvalidSpendingProposalBalance);
+
+            let max_balance: u32 = get_required_stake_by_fraction::<T>(
+                COUNCIL_MINT_MAX_BALANCE_PERCENT,
+                100
+            )
+            .try_into()
+            .unwrap_or_default() as u32;
+
+            ensure!(
+                balance < <BalanceOfMint<T>>::from(max_balance),
+                Error::InvalidSpendingProposalBalance
+            );
 
             let proposal_code = <governance::council::Call<T>>::spend_from_council_mint(
                 balance.clone(),
@@ -442,6 +502,14 @@ decl_module! {
             stake_balance: Option<BalanceOf<T>>,
             new_lead: Option<(T::MemberId, T::AccountId)>
         ) {
+            if let Some(lead) = new_lead.clone() {
+                let account_id = lead.1;
+                ensure!(
+                    !<governance::council::Module<T>>::is_councilor(&account_id),
+                    Error::InvalidSetLeadParameterCannotBeCouncilor
+                );
+            }
+
             let proposal_code =
                 <content_working_group::Call<T>>::replace_lead(new_lead.clone());
 
@@ -500,7 +568,12 @@ decl_module! {
         ) {
             ensure!(
                 new_validator_count >= <staking::Module<T>>::minimum_validator_count(),
-                Error::LessThanMinValidatorCount
+                Error::InvalidValidatorCount
+            );
+
+            ensure!(
+                new_validator_count <= 1000, // max validator count
+                Error::InvalidValidatorCount
             );
 
             let proposal_code =
@@ -665,32 +738,57 @@ impl<T: Trait> Module<T> {
         role_parameters: &RoleParameters<BalanceOfGovernanceCurrency<T>, T::BlockNumber>,
     ) -> Result<(), Error> {
         ensure!(
-            role_parameters.min_actors > 0,
+            role_parameters.min_actors <= 5,
             Error::InvalidStorageRoleParameterMinActors
         );
 
         ensure!(
-            role_parameters.max_actors > 0,
+            role_parameters.max_actors >= 5,
             Error::InvalidStorageRoleParameterMaxActors
         );
 
         ensure!(
-            role_parameters.reward_period == T::BlockNumber::from(600),
+            role_parameters.max_actors < 100,
+            Error::InvalidStorageRoleParameterMaxActors
+        );
+
+        ensure!(
+            role_parameters.reward_period >= T::BlockNumber::from(600),
             Error::InvalidStorageRoleParameterRewardPeriod
         );
 
         ensure!(
-            role_parameters.bonding_period == T::BlockNumber::from(600),
+            role_parameters.reward_period <= T::BlockNumber::from(3600),
+            Error::InvalidStorageRoleParameterRewardPeriod
+        );
+
+        ensure!(
+            role_parameters.bonding_period >= T::BlockNumber::from(600),
             Error::InvalidStorageRoleParameterBondingPeriod
         );
 
         ensure!(
-            role_parameters.unbonding_period == T::BlockNumber::from(600),
+            role_parameters.bonding_period <= T::BlockNumber::from(28800),
+            Error::InvalidStorageRoleParameterBondingPeriod
+        );
+
+        ensure!(
+            role_parameters.unbonding_period >= T::BlockNumber::from(600),
             Error::InvalidStorageRoleParameterUnbondingPeriod
         );
 
         ensure!(
-            role_parameters.min_service_period == T::BlockNumber::from(600),
+            role_parameters.unbonding_period <= T::BlockNumber::from(28800),
+            Error::InvalidStorageRoleParameterUnbondingPeriod
+        );
+
+        ensure!(
+            role_parameters.min_service_period >= T::BlockNumber::from(600),
+            Error::InvalidStorageRoleParameterMinServicePeriod
+        );
+
+        ensure!(
+            role_parameters.min_service_period <= T::BlockNumber::from(28800),
             Error::InvalidStorageRoleParameterMinServicePeriod
         );
 
@@ -699,15 +797,74 @@ impl<T: Trait> Module<T> {
             Error::InvalidStorageRoleParameterStartupGracePeriod
         );
 
+        ensure!(
+            role_parameters.startup_grace_period <= T::BlockNumber::from(28800),
+            Error::InvalidStorageRoleParameterStartupGracePeriod
+        );
+
+        ensure!(
+            role_parameters.min_stake > <BalanceOfGovernanceCurrency<T>>::from(0u32),
+            Error::InvalidStorageRoleParameterMinStake
+        );
+
+        let max_min_stake: u32 = get_required_stake_by_fraction::<T>(1, 100)
+            .try_into()
+            .unwrap_or_default() as u32;
+
+        ensure!(
+            role_parameters.min_stake < <BalanceOfGovernanceCurrency<T>>::from(max_min_stake),
+            Error::InvalidStorageRoleParameterMinStake
+        );
+
+        ensure!(
+            role_parameters.entry_request_fee > <BalanceOfGovernanceCurrency<T>>::from(0u32),
+            Error::InvalidStorageRoleParameterEntryRequestFee
+        );
+
+        let max_entry_request_fee: u32 = get_required_stake_by_fraction::<T>(1, 100)
+            .try_into()
+            .unwrap_or_default() as u32;
+
+        ensure!(
+            role_parameters.entry_request_fee
+                < <BalanceOfGovernanceCurrency<T>>::from(max_entry_request_fee),
+            Error::InvalidStorageRoleParameterEntryRequestFee
+        );
+
+        ensure!(
+            role_parameters.reward > <BalanceOfGovernanceCurrency<T>>::from(0u32),
+            Error::InvalidStorageRoleParameterReward
+        );
+
+        let max_reward: u32 = get_required_stake_by_fraction::<T>(1, 1000)
+            .try_into()
+            .unwrap_or_default() as u32;
+
+        ensure!(
+            role_parameters.reward < <BalanceOfGovernanceCurrency<T>>::from(max_reward),
+            Error::InvalidStorageRoleParameterReward
+        );
+
         Ok(())
     }
 
+    /*
+    entry_request_fee [tJOY]	>0	<1%	NA
+    * Not enforced by runtime. Should not be displayed in the UI, or at least grayed out.
+    ** Should not be displayed in the UI, or at least grayed out.
+        */
+
     // validates council election parameters for the 'Set election parameters' proposal
-    fn ensure_council_election_parameters_valid(
+    pub(crate) fn ensure_council_election_parameters_valid(
         election_parameters: &ElectionParameters<BalanceOfGovernanceCurrency<T>, T::BlockNumber>,
     ) -> Result<(), Error> {
         ensure!(
-            election_parameters.council_size >= 3,
+            election_parameters.council_size >= 4,
+            Error::InvalidCouncilElectionParameterCouncilSize
+        );
+
+        ensure!(
+            election_parameters.council_size <= 20,
             Error::InvalidCouncilElectionParameterCouncilSize
         );
 
@@ -717,7 +874,18 @@ impl<T: Trait> Module<T> {
         );
 
         ensure!(
+            election_parameters.candidacy_limit <= 100,
+            Error::InvalidCouncilElectionParameterCandidacyLimit
+        );
+
+        ensure!(
             election_parameters.min_voting_stake >= <BalanceOfGovernanceCurrency<T>>::one(),
+            Error::InvalidCouncilElectionParameterMinVotingStake
+        );
+
+        ensure!(
+            election_parameters.min_voting_stake
+                <= <BalanceOfGovernanceCurrency<T>>::from(100000u32),
             Error::InvalidCouncilElectionParameterMinVotingStake
         );
 
@@ -727,7 +895,17 @@ impl<T: Trait> Module<T> {
         );
 
         ensure!(
+            election_parameters.new_term_duration <= T::BlockNumber::from(432000),
+            Error::InvalidCouncilElectionParameterNewTermDuration
+        );
+
+        ensure!(
             election_parameters.revealing_period >= T::BlockNumber::from(14400),
+            Error::InvalidCouncilElectionParameterRevealingPeriod
+        );
+
+        ensure!(
+            election_parameters.revealing_period <= T::BlockNumber::from(43200),
             Error::InvalidCouncilElectionParameterRevealingPeriod
         );
 
@@ -737,7 +915,17 @@ impl<T: Trait> Module<T> {
         );
 
         ensure!(
+            election_parameters.voting_period <= T::BlockNumber::from(43200),
+            Error::InvalidCouncilElectionParameterVotingPeriod
+        );
+
+        ensure!(
             election_parameters.announcing_period >= T::BlockNumber::from(14400),
+            Error::InvalidCouncilElectionParameterAnnouncingPeriod
+        );
+
+        ensure!(
+            election_parameters.announcing_period <= T::BlockNumber::from(43200),
             Error::InvalidCouncilElectionParameterAnnouncingPeriod
         );
 
@@ -746,6 +934,27 @@ impl<T: Trait> Module<T> {
             Error::InvalidCouncilElectionParameterMinCouncilStake
         );
 
+        ensure!(
+            election_parameters.min_council_stake
+                <= <BalanceOfGovernanceCurrency<T>>::from(100000u32),
+            Error::InvalidCouncilElectionParameterMinCouncilStake
+        );
+
         Ok(())
     }
+}
+
+// calculates required stake value using total issuance value and stake percentage. Truncates to
+// lowest integer value. Value fraction is defined by numerator and denominator.
+pub(crate) fn get_required_stake_by_fraction<T: crate::Trait>(
+    numerator: u32,
+    denominator: u32,
+) -> BalanceOf<T> {
+    let total_issuance: u128 = <CurrencyOf<T>>::total_issuance().try_into().unwrap_or(0) as u128;
+    let required_stake =
+        Perbill::from_rational_approximation(numerator, denominator) * total_issuance;
+
+    let balance: BalanceOf<T> = required_stake.saturated_into();
+
+    balance
 }
