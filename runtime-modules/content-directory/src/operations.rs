@@ -1,4 +1,4 @@
-use crate::{ClassId, ClassPropertyValue, EntityId, PropertyValue};
+use crate::{ClassId, EntityId, PropertyValue};
 use codec::{Decode, Encode};
 use rstd::collections::btree_map::BTreeMap;
 use rstd::prelude::*;
@@ -124,7 +124,7 @@ pub fn parametrized_property_values_to_property_values(
                 PropertyValue::ReferenceVec(entities)
             }
         };
-        
+
         class_property_values.insert(parametrized_class_property_value.in_class_index, property_value);
     }
 

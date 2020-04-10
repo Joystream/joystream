@@ -326,16 +326,6 @@ impl Default for PropertyValue {
     }
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ClassPropertyValue {
-    /// Index is into properties vector of class.
-    pub in_class_index: u16,
-
-    /// Value of property with index `in_class_index` in a given class.
-    pub value: PropertyValue,
-}
-
 // Shortcuts for faster readability of match expression:
 use PropertyType as PT;
 use PropertyValue as PV;
