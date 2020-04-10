@@ -125,7 +125,10 @@ pub fn parametrized_property_values_to_property_values(
             }
         };
 
-        class_property_values.insert(parametrized_class_property_value.in_class_index, property_value);
+        class_property_values.insert(
+            parametrized_class_property_value.in_class_index,
+            property_value,
+        );
     }
 
     Ok(class_property_values)

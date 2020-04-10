@@ -2,8 +2,8 @@
 
 use super::*;
 use crate::mock::*;
-use rstd::collections::btree_set::BTreeSet;
 use core::iter::FromIterator;
+use rstd::collections::btree_set::BTreeSet;
 use srml_support::{assert_err, assert_ok};
 
 #[test]
@@ -667,7 +667,10 @@ fn batch_transaction_vector_of_entities() {
             Entity {
                 class_id: new_class_id,
                 supported_schemas: BTreeSet::from_iter(vec![SCHEMA_ID_0].into_iter()),
-                values: prop_value(0, PropertyValue::ReferenceVec(vec![entity_id + 1, entity_id + 2,]))
+                values: prop_value(
+                    0,
+                    PropertyValue::ReferenceVec(vec![entity_id + 1, entity_id + 2,])
+                )
             }
         );
     })
@@ -866,7 +869,10 @@ fn update_class_schema_status_success() {
         let (class_id, schema_id) = create_class_with_schema();
 
         // Check given class schema status before update performed
-        assert_eq!(TestModule::class_by_id(class_id).is_active_schema(schema_id), true);
+        assert_eq!(
+            TestModule::class_by_id(class_id).is_active_schema(schema_id),
+            true
+        );
 
         // Give members of GROUP_ZERO permission to add schemas
         let update_schema_set = CredentialSet::from(vec![0]);
@@ -878,18 +884,19 @@ fn update_class_schema_status_success() {
         ));
 
         // Make class schema under given index inactive.
-        assert_ok!(
-            TestModule::update_class_schema_status(
-                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
-                Some(0),
-                class_id,
-                schema_id,
-                false
-            )
-        );
+        assert_ok!(TestModule::update_class_schema_status(
+            Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
+            Some(0),
+            class_id,
+            schema_id,
+            false
+        ));
 
         // Check given class schema status after update performed
-        assert_eq!(TestModule::class_by_id(class_id).is_active_schema(schema_id), false);
+        assert_eq!(
+            TestModule::class_by_id(class_id).is_active_schema(schema_id),
+            false
+        );
     })
 }
 
@@ -899,7 +906,7 @@ fn update_class_schema_status_class_not_found() {
         // attemt to update class schema of nonexistent class
         assert_err!(
             TestModule::update_class_schema_status(
-                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),                
+                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
                 Some(0),
                 UNKNOWN_CLASS_ID,
                 UNKNOWN_SCHEMA_ID,
@@ -916,12 +923,15 @@ fn update_class_schema_status_not_in_update_class_schema_status_set() {
         let (class_id, schema_id) = create_class_with_schema();
 
         // Check given class schema status before update performed
-        assert_eq!(TestModule::class_by_id(class_id).is_active_schema(schema_id), true);
+        assert_eq!(
+            TestModule::class_by_id(class_id).is_active_schema(schema_id),
+            true
+        );
 
         // attemt to update class schema of nonexistent schema
         assert_err!(
             TestModule::update_class_schema_status(
-                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),                
+                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
                 Some(0),
                 class_id,
                 schema_id,
@@ -931,7 +941,10 @@ fn update_class_schema_status_not_in_update_class_schema_status_set() {
         );
 
         // Check given class schema status after update performed
-        assert_eq!(TestModule::class_by_id(class_id).is_active_schema(schema_id), true);
+        assert_eq!(
+            TestModule::class_by_id(class_id).is_active_schema(schema_id),
+            true
+        );
     })
 }
 
@@ -984,9 +997,7 @@ fn cannot_add_schema_to_entity_when_schema_is_not_active() {
 
         // Firstly we make class schema under given index inactive.
         assert_ok!(TestModule::complete_class_schema_status_update(
-            class_id,
-            schema_id,
-            false
+            class_id, schema_id, false
         ));
 
         // Secondly we try to add support for the same schema.
@@ -1040,11 +1051,7 @@ fn cannot_add_schema_to_entity_when_prop_value_dont_match_type() {
         let mut prop_values = bool_prop_value();
         prop_values.append(&mut prop_value(PROP_ID_U32, PropertyValue::Bool(true)));
         assert_err!(
-            TestModule::add_entity_schema_support(
-                entity_id,
-                schema_id,
-                prop_values
-            ),
+            TestModule::add_entity_schema_support(entity_id, schema_id, prop_values),
             ERROR_PROP_VALUE_DONT_MATCH_TYPE
         );
     })
@@ -1057,14 +1064,10 @@ fn cannot_add_schema_to_entity_when_unknown_internal_entity_id() {
         let mut prop_values = bool_prop_value();
         prop_values.append(&mut prop_value(
             PROP_ID_INTERNAL,
-            PropertyValue::Reference(UNKNOWN_ENTITY_ID)
+            PropertyValue::Reference(UNKNOWN_ENTITY_ID),
         ));
         assert_err!(
-            TestModule::add_entity_schema_support(
-                entity_id,
-                schema_id,
-                prop_values
-            ),
+            TestModule::add_entity_schema_support(entity_id, schema_id, prop_values),
             ERROR_ENTITY_NOT_FOUND
         );
     })
@@ -1099,14 +1102,17 @@ fn should_add_schema_to_entity_when_some_optional_props_provided() {
         ));
 
         let entity = TestModule::entity_by_id(entity_id);
-        assert_eq!(entity.supported_schemas, BTreeSet::from_iter(vec![SCHEMA_ID_0].into_iter()));
+        assert_eq!(
+            entity.supported_schemas,
+            BTreeSet::from_iter(vec![SCHEMA_ID_0].into_iter())
+        );
         prop_values = bool_prop_value();
         prop_values.append(&mut prop_value(PROP_ID_U32, PropertyValue::Uint32(123)));
-        prop_values.append(&mut prop_value(PROP_ID_INTERNAL, PropertyValue::Bool(false)));
-        assert_eq!(
-            entity.values,
-            prop_values
-        );
+        prop_values.append(&mut prop_value(
+            PROP_ID_INTERNAL,
+            PropertyValue::Bool(false),
+        ));
+        assert_eq!(entity.values, prop_values);
     })
 }
 
@@ -1174,22 +1180,22 @@ fn update_entity_props_successfully() {
         let entity_id = create_entity_with_schema_support();
         let mut prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(true));
         prop_values.append(&mut prop_value(PROP_ID_U32, PropertyValue::Bool(false)));
-        prop_values.append(&mut prop_value(PROP_ID_INTERNAL, PropertyValue::Bool(false)));
-        assert_eq!(
-            TestModule::entity_by_id(entity_id).values,
-            prop_values
-        );
+        prop_values.append(&mut prop_value(
+            PROP_ID_INTERNAL,
+            PropertyValue::Bool(false),
+        ));
+        assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
         prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(false));
         prop_values.append(&mut prop_value(PROP_ID_U32, PropertyValue::Uint32(123)));
-        prop_values.append(&mut prop_value(PROP_ID_INTERNAL, PropertyValue::Reference(entity_id)));
+        prop_values.append(&mut prop_value(
+            PROP_ID_INTERNAL,
+            PropertyValue::Reference(entity_id),
+        ));
         assert_ok!(TestModule::complete_entity_property_values_update(
             entity_id,
             prop_values.clone()
         ));
-        assert_eq!(
-            TestModule::entity_by_id(entity_id).values,
-            prop_values
-        );
+        assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
     })
 }
 

@@ -1,11 +1,11 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use codec::{Codec, Encode, Decode};
+use codec::{Codec, Decode, Encode};
 use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use rstd::prelude::*;
 use runtime_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
-use srml_support::{decl_module, traits::Get, decl_storage, dispatch, ensure, Parameter};
+use srml_support::{decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter};
 use system;
 
 #[cfg(feature = "std")]
@@ -15,21 +15,20 @@ pub use serde::{Deserialize, Serialize};
 
 mod constraint;
 mod credentials;
+mod errors;
+mod example;
 mod mock;
 mod operations;
 mod permissions;
 mod tests;
-mod example;
-mod errors;
 
 pub use constraint::*;
 pub use credentials::*;
+pub use errors::*;
 pub use operations::*;
 pub use permissions::*;
-pub use errors::*;
 
 pub trait Trait: system::Trait {
-
     /// Type that represents an actor or group of actors in the system.
     type Credential: Parameter
         + Member
@@ -42,7 +41,7 @@ pub trait Trait: system::Trait {
         + Eq
         + PartialEq
         + Ord;
-    
+
     /// Security/configuration constraints
 
     type PropertyNameConstraint: Get<InputValidationLengthConstraint>;
@@ -110,10 +109,7 @@ pub struct InputValidationLengthConstraint {
 
 impl InputValidationLengthConstraint {
     pub fn new(min: u16, max_min_diff: u16) -> Self {
-        Self {
-            min,
-            max_min_diff
-        }
+        Self { min, max_min_diff }
     }
 
     /// Helper for computing max
@@ -160,26 +156,30 @@ pub struct Class<T: Trait> {
     pub description: Vec<u8>,
 }
 
-impl <T: Trait> Default for Class <T> {
+impl<T: Trait> Default for Class<T> {
     fn default() -> Self {
         Self {
             class_permissions: ClassPermissionsType::<T>::default(),
             properties: vec![],
             schemas: vec![],
             name: vec![],
-            description: vec![]
+            description: vec![],
         }
     }
 }
 
-impl <T: Trait> Class<T> {
-    fn new(class_permissions: ClassPermissionsType<T>, name: Vec<u8>, description: Vec<u8>) -> Self {
+impl<T: Trait> Class<T> {
+    fn new(
+        class_permissions: ClassPermissionsType<T>,
+        name: Vec<u8>,
+        description: Vec<u8>,
+    ) -> Self {
         Self {
             class_permissions,
             properties: vec![],
             schemas: vec![],
             name,
-            description
+            description,
         }
     }
 
@@ -197,7 +197,7 @@ impl <T: Trait> Class<T> {
         &mut self.class_permissions
     }
 
-    fn get_permissions(& self) -> &ClassPermissionsType<T> {
+    fn get_permissions(&self) -> &ClassPermissionsType<T> {
         &self.class_permissions
     }
 
@@ -212,7 +212,6 @@ pub type ClassPermissionsType<T> =
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Entity {
-
     /// The class id of this entity.
     pub class_id: ClassId,
 
@@ -233,7 +232,7 @@ pub struct Entity {
 pub struct Schema {
     /// Indices into properties vector for the corresponding class.
     pub properties: Vec<u16>,
-    pub is_active: bool
+    pub is_active: bool,
 }
 
 impl Default for Schema {
@@ -241,7 +240,7 @@ impl Default for Schema {
         Self {
             properties: vec![],
             // Default schema status
-            is_active: true
+            is_active: true,
         }
     }
 }
@@ -251,7 +250,7 @@ impl Schema {
         Self {
             properties,
             // Default schema status
-            is_active: true
+            is_active: true,
         }
     }
 }
@@ -268,7 +267,6 @@ pub struct Property {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum PropertyType {
-
     // Single value:
     Bool,
     Uint16,
@@ -311,7 +309,6 @@ impl Default for PropertyType {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum PropertyValue {
-
     // Single value:
     Bool(bool),
     Uint16(u16),
@@ -539,7 +536,7 @@ decl_module! {
             Self::ensure_can_create_class(origin)?;
 
             Self::ensure_class_name_is_valid(&name)?;
-    
+
             Self::ensure_class_description_is_valid(&description)?;
 
             // is there a need to assert class_id is unique?
@@ -694,15 +691,15 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_can_create_class(origin: T::Origin) -> Result<(),  &'static str> {
+    fn ensure_can_create_class(origin: T::Origin) -> Result<(), &'static str> {
         let raw_origin = Self::ensure_root_or_signed(origin)?;
 
         let can_create_class = match raw_origin {
             system::RawOrigin::Root => true,
             system::RawOrigin::Signed(sender) => {
                 T::CreateClassPermissionsChecker::account_can_create_class_permissions(&sender)
-            },
-            _ => false
+            }
+            _ => false,
         };
         ensure!(can_create_class, "NotPermittedToCreateClass");
         Ok(())
@@ -738,7 +735,6 @@ impl<T: Trait> Module<T> {
     }
 
     fn perform_entity_creation(class_id: ClassId) -> EntityId {
-
         let entity_id = NextEntityId::get();
 
         let new_entity = Entity {
@@ -780,10 +776,7 @@ impl<T: Trait> Module<T> {
             ClassPermissions::can_update_entity,
             class_id,
             |_class_permissions, _access_level| {
-                Self::complete_entity_property_values_update(
-                    entity_id,
-                    property_values,
-                )
+                Self::complete_entity_property_values_update(entity_id, property_values)
             },
         )
     }
@@ -791,19 +784,21 @@ impl<T: Trait> Module<T> {
     pub fn complete_class_schema_status_update(
         class_id: ClassId,
         schema_id: u16, // Do not type alias u16!! - u16,
-        schema_status: bool
+        schema_status: bool,
     ) -> dispatch::Result {
         // Check that schema_id is a valid index of class schemas vector:
         Self::ensure_class_schema_id_exists(&Self::class_by_id(class_id), schema_id)?;
-        <ClassById<T>>::mutate(class_id, |class| class.update_schema_status(schema_id, schema_status));
+        <ClassById<T>>::mutate(class_id, |class| {
+            class.update_schema_status(schema_id, schema_status)
+        });
         Ok(())
     }
 
     pub fn complete_entity_property_values_update(
         entity_id: EntityId,
-        new_property_values: BTreeMap<u16, PropertyValue>
+        new_property_values: BTreeMap<u16, PropertyValue>,
     ) -> dispatch::Result {
-        Self::ensure_known_entity_id(entity_id)?;
+        Self::ensure_known_entity_id(&entity_id)?;
 
         let (entity, class) = Self::get_entity_and_class(entity_id);
 
@@ -815,24 +810,19 @@ impl<T: Trait> Module<T> {
         // Iterate over a vector of new values and update corresponding properties
         // of this entity if new values are valid.
         for (id, new_value) in new_property_values.iter() {
-
             // Try to find a current property value in the entity
             // by matching its id to the id of a property with an updated value.
-            if let Some((in_class_index, current_prop_value)) = updated_values
-                .iter_mut()
-                .find(|(in_class_index, _)| *id == **in_class_index)
-            {
-
+            if let Some(current_prop_value) = updated_values.get_mut(id) {
                 // Get class-level information about this property
-                let class_prop = class.properties.get(*in_class_index as usize).unwrap();
+                let class_prop = &class.properties[*id as usize];
 
                 // Validate a new property value against the type of this property
                 // and check any additional constraints like the length of a vector
                 // if it's a vector property or the length of a text if it's a text property.
-                Self::ensure_property_value_is_valid(new_value.clone(), class_prop.clone())?;
+                Self::ensure_property_value_is_valid(new_value, class_prop)?;
 
                 // Update a current prop value in a mutable vector, if a new value is valid.
-                *current_prop_value = new_value.clone();
+                *current_prop_value = new_value.to_owned();
                 updates_count += 1;
             } else {
                 // Throw an error if a property was not found on entity
@@ -877,11 +867,7 @@ impl<T: Trait> Module<T> {
             ClassPermissions::can_update_entity,
             class_id,
             |_class_permissions, _access_level| {
-                Self::add_entity_schema_support(
-                    entity_id,
-                    schema_id,
-                    property_values,
-                )
+                Self::add_entity_schema_support(entity_id, schema_id, property_values)
             },
         )
     }
@@ -928,13 +914,8 @@ impl<T: Trait> Module<T> {
     }
 
     /// Returns the stored class if exist, error otherwise.
-    fn ensure_class_exists(
-        class_id: ClassId,
-    ) -> Result<Class<T>, &'static str> {
-        ensure!(
-            <ClassById<T>>::exists(class_id),
-            ERROR_CLASS_NOT_FOUND
-        );
+    fn ensure_class_exists(class_id: ClassId) -> Result<Class<T>, &'static str> {
+        ensure!(<ClassById<T>>::exists(class_id), ERROR_CLASS_NOT_FOUND);
         Ok(Self::class_by_id(class_id))
     }
 
@@ -958,7 +939,7 @@ impl<T: Trait> Module<T> {
         let access_level = Self::derive_access_level(raw_origin, with_credential, None)?;
         let class = Self::ensure_class_exists(class_id)?;
         predicate(class.get_permissions(), &access_level)?;
-        <ClassById<T>>::mutate(class_id, |inner_class|  {
+        <ClassById<T>>::mutate(class_id, |inner_class| {
             //It is safe to not check for an error here, as result always be  Ok(())
             let _ = mutate(inner_class.get_permissions_mut());
             // Refresh last permissions update block number.
@@ -1010,10 +991,7 @@ impl<T: Trait> Module<T> {
 
     fn get_class_id_by_entity_id(entity_id: EntityId) -> Result<ClassId, &'static str> {
         // use a utility method on versioned_store module
-        ensure!(
-            EntityById::exists(entity_id),
-            "EntityNotFound"
-        );
+        ensure!(EntityById::exists(entity_id), "EntityNotFound");
         let entity = Self::entity_by_id(entity_id);
         Ok(entity.class_id)
     }
@@ -1054,284 +1032,276 @@ impl<T: Trait> Module<T> {
         // if we reach here all Internal properties have passed the constraint check
         Ok(())
     }
-    
-        /// Returns an index of a newly added class schema on success.
-        pub fn append_class_schema(
-            class_id: ClassId,
-            existing_properties: Vec<u16>,
-            new_properties: Vec<Property>,
-        ) -> Result<u16, &'static str> {
-            Self::ensure_known_class_id(class_id)?;
-    
-            let non_empty_schema = !existing_properties.is_empty() || !new_properties.is_empty();
-    
-            ensure!(non_empty_schema, ERROR_NO_PROPS_IN_CLASS_SCHEMA);
-    
-            let class = <ClassById<T>>::get(class_id);
-    
-            // TODO Use BTreeSet for prop unique names when switched to Substrate 2.
-            // There is no support for BTreeSet in Substrate 1 runtime.
-            // use rstd::collections::btree_set::BTreeSet;
-            let mut unique_prop_names = BTreeSet::new();
-            for prop in class.properties.iter() {
-                unique_prop_names.insert(prop.name.clone());
+
+    /// Returns an index of a newly added class schema on success.
+    pub fn append_class_schema(
+        class_id: ClassId,
+        existing_properties: Vec<u16>,
+        new_properties: Vec<Property>,
+    ) -> Result<u16, &'static str> {
+        Self::ensure_known_class_id(&class_id)?;
+
+        let non_empty_schema = !existing_properties.is_empty() || !new_properties.is_empty();
+
+        ensure!(non_empty_schema, ERROR_NO_PROPS_IN_CLASS_SCHEMA);
+
+        let class = <ClassById<T>>::get(class_id);
+
+        // TODO Use BTreeSet for prop unique names when switched to Substrate 2.
+        // There is no support for BTreeSet in Substrate 1 runtime.
+        // use rstd::collections::btree_set::BTreeSet;
+        let mut unique_prop_names = BTreeSet::new();
+        for prop in class.properties.iter() {
+            unique_prop_names.insert(prop.name.clone());
+        }
+
+        for prop in new_properties.iter() {
+            Self::ensure_property_name_is_valid(&prop.name)?;
+            Self::ensure_property_description_is_valid(&prop.description)?;
+
+            // Check that the name of a new property is unique within its class.
+            ensure!(
+                !unique_prop_names.contains(&prop.name),
+                ERROR_PROP_NAME_NOT_UNIQUE_IN_CLASS
+            );
+            unique_prop_names.insert(prop.name.clone());
+        }
+
+        // Check that existing props are valid indices of class properties vector:
+        let has_unknown_props = existing_properties
+            .iter()
+            .any(|&prop_id| prop_id >= class.properties.len() as u16);
+        ensure!(
+            !has_unknown_props,
+            ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
+        );
+
+        // Check validity of Internal(ClassId) for new_properties.
+        let has_unknown_internal_id = new_properties.iter().any(|prop| match prop.prop_type {
+            PropertyType::Reference(other_class_id) => !<ClassById<T>>::exists(other_class_id),
+            _ => false,
+        });
+        ensure!(
+            !has_unknown_internal_id,
+            ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID
+        );
+
+        // Use the current length of schemas in this class as an index
+        // for the next schema that will be sent in a result of this function.
+        let schema_idx = class.schemas.len() as u16;
+
+        let mut schema = Schema::new(existing_properties);
+
+        let mut updated_class_props = class.properties;
+        new_properties.into_iter().for_each(|prop| {
+            let prop_id = updated_class_props.len() as u16;
+            updated_class_props.push(prop);
+            schema.properties.push(prop_id);
+        });
+
+        <ClassById<T>>::mutate(class_id, |class| {
+            class.properties = updated_class_props;
+            class.schemas.push(schema);
+        });
+
+        Ok(schema_idx)
+    }
+
+    pub fn add_entity_schema_support(
+        entity_id: EntityId,
+        schema_id: u16,
+        property_values: BTreeMap<u16, PropertyValue>,
+    ) -> dispatch::Result {
+        Self::ensure_known_entity_id(&entity_id)?;
+
+        let (entity, class) = Self::get_entity_and_class(entity_id);
+
+        // Check that schema_id is a valid index of class schemas vector:
+        Self::ensure_class_schema_id_exists(&class, schema_id)?;
+
+        // Ensure class schema is active
+        Self::ensure_class_schema_is_active(&class, schema_id)?;
+
+        // Check that schema id is not yet added to this entity:
+        Self::ensure_schema_id_is_not_added(&entity, schema_id)?;
+
+        let class_schema_opt = class.schemas.get(schema_id as usize);
+        let schema_prop_ids = class_schema_opt.unwrap().properties.clone();
+
+        let current_entity_values = entity.values.clone();
+        let mut appended_entity_values = entity.values;
+
+        for prop_id in schema_prop_ids.iter() {
+            if current_entity_values.contains_key(prop_id) {
+                // A property is already added to the entity and cannot be updated
+                // while adding a schema support to this entity.
+                continue;
             }
-    
-            for prop in new_properties.iter() {
-                Self::ensure_property_name_is_valid(&prop.name)?;
-                Self::ensure_property_description_is_valid(&prop.description)?;
-    
-                // Check that the name of a new property is unique within its class.
+
+            let class_prop = &class.properties[*prop_id as usize];
+
+            // If a value was not povided for the property of this schema:
+            if let Some(new_value) = property_values.get(prop_id) {
+                Self::ensure_property_value_is_valid(new_value, class_prop)?;
+
+                appended_entity_values.insert(*prop_id, new_value.to_owned());
+            } else {
+                // All required prop values should be are provided
+                if class_prop.required {
+                    return Err(ERROR_MISSING_REQUIRED_PROP);
+                }
+                // Add all missing non required schema prop values as PropertyValue::None
+                else {
+                    appended_entity_values.insert(*prop_id, PropertyValue::Bool(false));
+                }
+            }
+        }
+
+        EntityById::mutate(entity_id, |entity| {
+            // Add a new schema to the list of schemas supported by this entity.
+            entity.supported_schemas.insert(schema_id);
+
+            // Update entity values only if new properties have been added.
+            if appended_entity_values.len() > entity.values.len() {
+                entity.values = appended_entity_values;
+            }
+        });
+
+        Ok(())
+    }
+
+    // Commented out for now <- requested by Bedeho.
+    // pub fn delete_entity(entity_id: EntityId) -> dispatch::Result {
+    //     Self::ensure_known_entity_id(entity_id)?;
+
+    //     let is_deleted = EntityById::get(entity_id).deleted;
+    //     ensure!(!is_deleted, ERROR_ENTITY_ALREADY_DELETED);
+
+    //     EntityById::mutate(entity_id, |x| {
+    //         x.deleted = true;
+    //     });
+
+    //     Self::deposit_event(RawEvent::EntityDeleted(entity_id));
+    //     Ok(())
+    // }
+
+    // Helper functions:
+    // ----------------------------------------------------------------
+
+    pub fn ensure_known_class_id(class_id: &ClassId) -> dispatch::Result {
+        ensure!(<ClassById<T>>::exists(class_id), ERROR_CLASS_NOT_FOUND);
+        Ok(())
+    }
+
+    pub fn ensure_known_entity_id(entity_id: &EntityId) -> dispatch::Result {
+        ensure!(EntityById::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
+        Ok(())
+    }
+
+    pub fn ensure_class_schema_id_exists(class: &Class<T>, schema_id: u16) -> dispatch::Result {
+        ensure!(
+            schema_id < class.schemas.len() as u16,
+            ERROR_UNKNOWN_CLASS_SCHEMA_ID
+        );
+        Ok(())
+    }
+
+    pub fn ensure_class_schema_is_active(class: &Class<T>, schema_id: u16) -> dispatch::Result {
+        ensure!(
+            class.is_active_schema(schema_id),
+            ERROR_CLASS_SCHEMA_NOT_ACTIVE
+        );
+        Ok(())
+    }
+
+    pub fn ensure_schema_id_is_not_added(entity: &Entity, schema_id: u16) -> dispatch::Result {
+        let schema_not_added = !entity.supported_schemas.contains(&schema_id);
+        ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY);
+        Ok(())
+    }
+
+    pub fn ensure_valid_internal_prop(value: &PropertyValue, prop: &Property) -> dispatch::Result {
+        match (value, &prop.prop_type) {
+            (PV::Reference(entity_id), PT::Reference(class_id)) => {
+                Self::ensure_known_class_id(class_id)?;
+                Self::ensure_known_entity_id(entity_id)?;
+                let entity = Self::entity_by_id(entity_id);
                 ensure!(
-                    !unique_prop_names.contains(&prop.name),
-                    ERROR_PROP_NAME_NOT_UNIQUE_IN_CLASS
+                    entity.class_id == *class_id,
+                    ERROR_INTERNAL_RPOP_DOES_NOT_MATCH_ITS_CLASS
                 );
-                unique_prop_names.insert(prop.name.clone());
-            }
-    
-            // Check that existing props are valid indices of class properties vector:
-            let has_unknown_props = existing_properties
-                .iter()
-                .any(|&prop_id| prop_id >= class.properties.len() as u16);
-            ensure!(
-                !has_unknown_props,
-                ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
-            );
-    
-            // Check validity of Internal(ClassId) for new_properties.
-            let has_unknown_internal_id = new_properties.iter().any(|prop| match prop.prop_type {
-                PropertyType::Reference(other_class_id) => !<ClassById<T>>::exists(other_class_id),
-                _ => false,
-            });
-            ensure!(
-                !has_unknown_internal_id,
-                ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID
-            );
-    
-            // Use the current length of schemas in this class as an index
-            // for the next schema that will be sent in a result of this function.
-            let schema_idx = class.schemas.len() as u16;
-    
-            let mut schema = Schema::new(existing_properties);
-    
-            let mut updated_class_props = class.properties;
-            new_properties.into_iter().for_each(|prop| {
-                let prop_id = updated_class_props.len() as u16;
-                updated_class_props.push(prop);
-                schema.properties.push(prop_id);
-            });
-    
-            <ClassById<T>>::mutate(class_id, |class| {
-                class.properties = updated_class_props;
-                class.schemas.push(schema);
-            });
-    
-            Ok(schema_idx)
-        }
-    
-        pub fn add_entity_schema_support(
-            entity_id: EntityId,
-            schema_id: u16,
-            property_values: BTreeMap<u16, PropertyValue>,
-        ) -> dispatch::Result {
-            Self::ensure_known_entity_id(entity_id)?;
-    
-            let (entity, class) = Self::get_entity_and_class(entity_id);
-    
-            // Check that schema_id is a valid index of class schemas vector:
-            Self::ensure_class_schema_id_exists(&class, schema_id)?;
-
-            // Ensure class schema is active
-            Self::ensure_class_schema_is_active(&class, schema_id)?;
-    
-            // Check that schema id is not yet added to this entity:
-            Self::ensure_schema_id_is_not_added(&entity, schema_id)?;
-    
-            let class_schema_opt = class.schemas.get(schema_id as usize);
-            let schema_prop_ids = class_schema_opt.unwrap().properties.clone();
-    
-            let current_entity_values = entity.values.clone();
-            let mut appended_entity_values = entity.values;
-    
-            for &prop_id in schema_prop_ids.iter() {
-                let prop_already_added = current_entity_values
-                    .iter()
-                    .any(|(property_in_class_index, _)| *property_in_class_index == prop_id);
-    
-                if prop_already_added {
-                    // A property is already added to the entity and cannot be updated
-                    // while adding a schema support to this entity.
-                    continue;
-                }
-    
-                let class_prop = class.properties.get(prop_id as usize).unwrap();
-    
-                // If a value was not povided for the property of this schema:
-                match property_values
-                    .iter()
-                    .find(|(property_in_class_index, _)| **property_in_class_index == prop_id)
-                {
-                    Some((new_id, new_value)) => {
-    
-                        Self::ensure_property_value_is_valid(new_value.clone(), class_prop.clone())?;
-    
-                        appended_entity_values.insert(*new_id, new_value.to_owned());
-                    }
-                    None => {
-                        // All required prop values should be are provided
-                        if class_prop.required {
-                            return Err(ERROR_MISSING_REQUIRED_PROP);
-                        }
-                        // Add all missing non required schema prop values as PropertyValue::None
-                        else {
-                            appended_entity_values.insert(prop_id, PropertyValue::Bool(false));
-                        }
-                    }
-                }
-            }
-    
-            EntityById::mutate(entity_id, |entity| {
-                // Add a new schema to the list of schemas supported by this entity.
-                entity.supported_schemas.insert(schema_id);
-    
-                // Update entity values only if new properties have been added.
-                if appended_entity_values.len() > entity.values.len() {
-                    entity.values = appended_entity_values;
-                }
-            });
-    
-            Ok(())
-        }
-    
-        // Commented out for now <- requested by Bedeho.
-        // pub fn delete_entity(entity_id: EntityId) -> dispatch::Result {
-        //     Self::ensure_known_entity_id(entity_id)?;
-    
-        //     let is_deleted = EntityById::get(entity_id).deleted;
-        //     ensure!(!is_deleted, ERROR_ENTITY_ALREADY_DELETED);
-    
-        //     EntityById::mutate(entity_id, |x| {
-        //         x.deleted = true;
-        //     });
-    
-        //     Self::deposit_event(RawEvent::EntityDeleted(entity_id));
-        //     Ok(())
-        // }
-    
-        // Helper functions:
-        // ----------------------------------------------------------------
-    
-        pub fn ensure_known_class_id(class_id: ClassId) -> dispatch::Result {
-            ensure!(<ClassById<T>>::exists(class_id), ERROR_CLASS_NOT_FOUND);
-            Ok(())
-        }
-    
-        pub fn ensure_known_entity_id(entity_id: EntityId) -> dispatch::Result {
-            ensure!(EntityById::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
-            Ok(())
-        }
-
-        pub fn ensure_class_schema_id_exists(class: &Class<T>, schema_id: u16) -> dispatch::Result {
-            ensure!(schema_id < class.schemas.len() as u16, ERROR_UNKNOWN_CLASS_SCHEMA_ID);
-            Ok(())
-        }
-
-        pub fn ensure_class_schema_is_active(class: &Class<T>, schema_id: u16) -> dispatch::Result {
-            ensure!(class.is_active_schema(schema_id), ERROR_CLASS_SCHEMA_NOT_ACTIVE);
-            Ok(())
-        }
-
-        pub fn ensure_schema_id_is_not_added(entity: &Entity, schema_id: u16) -> dispatch::Result {
-            let schema_not_added = !entity
-                .supported_schemas
-                .contains(&schema_id);
-            ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY);
-            Ok(())
-        }
-    
-        pub fn ensure_valid_internal_prop(value: PropertyValue, prop: Property) -> dispatch::Result {
-            match (value, prop.prop_type) {
-                (PV::Reference(entity_id), PT::Reference(class_id)) => {
-                    Self::ensure_known_class_id(class_id)?;
-                    Self::ensure_known_entity_id(entity_id)?;
-                    let entity = Self::entity_by_id(entity_id);
-                    ensure!(
-                        entity.class_id == class_id,
-                        ERROR_INTERNAL_RPOP_DOES_NOT_MATCH_ITS_CLASS
-                    );
-                    Ok(())
-                }
-                _ => Ok(()),
-            }
-        }
-    
-        pub fn is_unknown_internal_entity_id(id: PropertyValue) -> bool {
-            if let PropertyValue::Reference(entity_id) = id {
-                !EntityById::exists(entity_id)
-            } else {
-                false
-            }
-        }
-    
-        pub fn get_entity_and_class(entity_id: EntityId) -> (Entity, Class<T>) {
-            let entity = EntityById::get(entity_id);
-            let class = ClassById::get(entity.class_id);
-            (entity, class)
-        }
-    
-        pub fn ensure_property_value_is_valid(
-            value: PropertyValue,
-            prop: Property,
-        ) -> dispatch::Result {
-            Self::ensure_prop_value_matches_its_type(value.clone(), prop.clone())?;
-            Self::ensure_valid_internal_prop(value.clone(), prop.clone())?;
-            Self::validate_max_len_if_text_prop(value.clone(), prop.clone())?;
-            Self::validate_max_len_if_vec_prop(value.clone(), prop.clone())?;
-            Ok(())
-        }
-    
-        pub fn validate_max_len_if_text_prop(value: PropertyValue, prop: Property) -> dispatch::Result {
-            match (value, prop.prop_type) {
-                (PV::Text(text), PT::Text(max_len)) => Self::validate_max_len_of_text(text, max_len),
-                _ => Ok(()),
-            }
-        }
-    
-        pub fn validate_max_len_of_text(text: Vec<u8>, max_len: u16) -> dispatch::Result {
-            if text.len() <= max_len as usize {
                 Ok(())
-            } else {
-                Err(ERROR_TEXT_PROP_IS_TOO_LONG)
             }
+            _ => Ok(()),
         }
+    }
+
+    pub fn is_unknown_internal_entity_id(id: PropertyValue) -> bool {
+        if let PropertyValue::Reference(entity_id) = id {
+            !EntityById::exists(entity_id)
+        } else {
+            false
+        }
+    }
+
+    pub fn get_entity_and_class(entity_id: EntityId) -> (Entity, Class<T>) {
+        let entity = EntityById::get(entity_id);
+        let class = ClassById::get(entity.class_id);
+        (entity, class)
+    }
+
+    pub fn ensure_property_value_is_valid(
+        value: &PropertyValue,
+        prop: &Property,
+    ) -> dispatch::Result {
+        Self::ensure_prop_value_matches_its_type(value, prop)?;
+        Self::ensure_valid_internal_prop(value, prop)?;
+        Self::validate_max_len_if_text_prop(value, prop)?;
+        Self::validate_max_len_if_vec_prop(value, prop)?;
+        Ok(())
+    }
+
+    pub fn validate_max_len_if_text_prop(
+        value: &PropertyValue,
+        prop: &Property,
+    ) -> dispatch::Result {
+        match (value, &prop.prop_type) {
+            (PV::Text(text), PT::Text(max_len)) => Self::validate_max_len_of_text(text, *max_len),
+            _ => Ok(()),
+        }
+    }
+
+    pub fn validate_max_len_of_text(text: &[u8], max_len: u16) -> dispatch::Result {
+        if text.len() <= max_len as usize {
+            Ok(())
+        } else {
+            Err(ERROR_TEXT_PROP_IS_TOO_LONG)
+        }
+    }
     
         #[rustfmt::skip]
-        pub fn validate_max_len_if_vec_prop(
-            value: PropertyValue,
-            prop: Property,
+    pub fn validate_max_len_if_vec_prop(
+            value: &PropertyValue,
+            prop: &Property,
         ) -> dispatch::Result {
     
-            fn validate_vec_len<T>(vec: Vec<T>, max_len: u16) -> bool {
-                vec.len() <= max_len as usize
+            fn validate_slice_len<T>(vec: &[T], max_len: &u16) -> bool {
+                vec.len() <= *max_len as usize
             }
     
-            fn validate_vec_len_ref<T>(vec: &Vec<T>, max_len: u16) -> bool {
-                vec.len() <= max_len as usize
-            }
-    
-            let is_valid_len = match (value, prop.prop_type) {
-                (PV::BoolVec(vec),     PT::BoolVec(max_len))   => validate_vec_len(vec, max_len),
-                (PV::Uint16Vec(vec),   PT::Uint16Vec(max_len)) => validate_vec_len(vec, max_len),
-                (PV::Uint32Vec(vec),   PT::Uint32Vec(max_len)) => validate_vec_len(vec, max_len),
-                (PV::Uint64Vec(vec),   PT::Uint64Vec(max_len)) => validate_vec_len(vec, max_len),
-                (PV::Int16Vec(vec),    PT::Int16Vec(max_len))  => validate_vec_len(vec, max_len),
-                (PV::Int32Vec(vec),    PT::Int32Vec(max_len))  => validate_vec_len(vec, max_len),
-                (PV::Int64Vec(vec),    PT::Int64Vec(max_len))  => validate_vec_len(vec, max_len),
+            let is_valid_len = match (value, &prop.prop_type) {
+                (PV::BoolVec(vec),     PT::BoolVec(max_len))   => validate_slice_len(vec, max_len),
+                (PV::Uint16Vec(vec),   PT::Uint16Vec(max_len)) => validate_slice_len(vec, max_len),
+                (PV::Uint32Vec(vec),   PT::Uint32Vec(max_len)) => validate_slice_len(vec, max_len),
+                (PV::Uint64Vec(vec),   PT::Uint64Vec(max_len)) => validate_slice_len(vec, max_len),
+                (PV::Int16Vec(vec),    PT::Int16Vec(max_len))  => validate_slice_len(vec, max_len),
+                (PV::Int32Vec(vec),    PT::Int32Vec(max_len))  => validate_slice_len(vec, max_len),
+                (PV::Int64Vec(vec),    PT::Int64Vec(max_len))  => validate_slice_len(vec, max_len),
     
                 (PV::TextVec(vec),     PT::TextVec(vec_max_len, text_max_len)) => {
-                    if validate_vec_len_ref(&vec, vec_max_len) {
+                    if validate_slice_len(vec, vec_max_len) {
                         for text_item in vec.iter() {
-                            Self::validate_max_len_of_text(text_item.clone(), text_max_len)?;
+                            Self::validate_max_len_of_text(text_item, *text_max_len)?;
                         }
                         true
                     } else {
@@ -1341,11 +1311,11 @@ impl<T: Trait> Module<T> {
     
                 (PV::ReferenceVec(vec), PT::ReferenceVec(vec_max_len, class_id)) => {
                     Self::ensure_known_class_id(class_id)?;
-                    if validate_vec_len_ref(&vec, vec_max_len) {
+                    if validate_slice_len(vec, vec_max_len) {
                         for entity_id in vec.iter() {
-                            Self::ensure_known_entity_id(entity_id.clone())?;
+                            Self::ensure_known_entity_id(entity_id)?;
                             let entity = Self::entity_by_id(entity_id);
-                            ensure!(entity.class_id == class_id, ERROR_INTERNAL_RPOP_DOES_NOT_MATCH_ITS_CLASS);
+                            ensure!(entity.class_id == *class_id, ERROR_INTERNAL_RPOP_DOES_NOT_MATCH_ITS_CLASS);
                         }
                         true
                     } else {
@@ -1362,30 +1332,30 @@ impl<T: Trait> Module<T> {
                 Err(ERROR_VEC_PROP_IS_TOO_LONG)
             }
         }
-    
-        pub fn ensure_prop_value_matches_its_type(
-            value: PropertyValue,
-            prop: Property,
-        ) -> dispatch::Result {
-            if Self::does_prop_value_match_type(value, prop) {
-                Ok(())
-            } else {
-                Err(ERROR_PROP_VALUE_DONT_MATCH_TYPE)
-            }
+
+    pub fn ensure_prop_value_matches_its_type(
+        value: &PropertyValue,
+        prop: &Property,
+    ) -> dispatch::Result {
+        if Self::does_prop_value_match_type(value, prop) {
+            Ok(())
+        } else {
+            Err(ERROR_PROP_VALUE_DONT_MATCH_TYPE)
         }
+    }
     
         #[rustfmt::skip]
-        pub fn does_prop_value_match_type(
-            value: PropertyValue,
-            prop: Property,
+    pub fn does_prop_value_match_type(
+            value: &PropertyValue,
+            prop: &Property,
         ) -> bool {
     
             // A non required property can be updated to None:
-            if !prop.required && value == PV::Bool(false) {
+            if !prop.required && *value == PV::Bool(false) {
                 return true
             }
     
-            match (value, prop.prop_type) {
+            match (value, &prop.prop_type) {
     
                 // Single values
                 (PV::Bool(_),     PT::Bool) |
@@ -1414,36 +1384,36 @@ impl<T: Trait> Module<T> {
                 _ => false,
             }
         }
-    
-        pub fn ensure_property_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
-            T::PropertyNameConstraint::get().ensure_valid(
-                text.len(),
-                ERROR_PROPERTY_NAME_TOO_SHORT,
-                ERROR_PROPERTY_NAME_TOO_LONG,
-            )
-        }
-    
-        pub fn ensure_property_description_is_valid(text: &Vec<u8>) -> dispatch::Result {
-            T::PropertyDescriptionConstraint::get().ensure_valid(
-                text.len(),
-                ERROR_PROPERTY_DESCRIPTION_TOO_SHORT,
-                ERROR_PROPERTY_DESCRIPTION_TOO_LONG,
-            )
-        }
-    
-        pub fn ensure_class_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
-            T::ClassNameConstraint::get().ensure_valid(
-                text.len(),
-                ERROR_CLASS_NAME_TOO_SHORT,
-                ERROR_CLASS_NAME_TOO_LONG,
-            )
-        }
-    
-        pub fn ensure_class_description_is_valid(text: &Vec<u8>) -> dispatch::Result {
-            T::ClassDescriptionConstraint::get().ensure_valid(
-                text.len(),
-                ERROR_CLASS_DESCRIPTION_TOO_SHORT,
-                ERROR_CLASS_DESCRIPTION_TOO_LONG,
-            )
-        }
+
+    pub fn ensure_property_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
+        T::PropertyNameConstraint::get().ensure_valid(
+            text.len(),
+            ERROR_PROPERTY_NAME_TOO_SHORT,
+            ERROR_PROPERTY_NAME_TOO_LONG,
+        )
+    }
+
+    pub fn ensure_property_description_is_valid(text: &Vec<u8>) -> dispatch::Result {
+        T::PropertyDescriptionConstraint::get().ensure_valid(
+            text.len(),
+            ERROR_PROPERTY_DESCRIPTION_TOO_SHORT,
+            ERROR_PROPERTY_DESCRIPTION_TOO_LONG,
+        )
+    }
+
+    pub fn ensure_class_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
+        T::ClassNameConstraint::get().ensure_valid(
+            text.len(),
+            ERROR_CLASS_NAME_TOO_SHORT,
+            ERROR_CLASS_NAME_TOO_LONG,
+        )
+    }
+
+    pub fn ensure_class_description_is_valid(text: &Vec<u8>) -> dispatch::Result {
+        T::ClassDescriptionConstraint::get().ensure_valid(
+            text.len(),
+            ERROR_CLASS_DESCRIPTION_TOO_SHORT,
+            ERROR_CLASS_DESCRIPTION_TOO_LONG,
+        )
+    }
 }

@@ -406,7 +406,10 @@ fn create_podcast_class_schema() {
         // 9
         p.next_text_value(b"staked@jsgenesis.com (staked@jsgenesis.com)".to_vec());
         // 10
-        p.next_text_value(b"https://ssl-static.libsyn.com/p/assets/2/d/2/5/2d25eb5fa72739f7/iTunes_Cover.png".to_vec());
+        p.next_text_value(
+            b"https://ssl-static.libsyn.com/p/assets/2/d/2/5/2d25eb5fa72739f7/iTunes_Cover.png"
+                .to_vec(),
+        );
         // 11
         p.next_text_value(b"Staked".to_vec());
         // 12
@@ -419,11 +422,14 @@ fn create_podcast_class_schema() {
         p.next_text_value(b"crypto,blockchain,governance,staking,bitcoin,ethereum".to_vec());
         // 16
         p.next_value(PropertyValue::TextVec(vec![
-            b"Technology".to_vec(), 
-            b"Software How-To".to_vec()
+            b"Technology".to_vec(),
+            b"Software How-To".to_vec(),
         ]));
         // 17
-        p.next_text_value(b"https://ssl-static.libsyn.com/p/assets/2/d/2/5/2d25eb5fa72739f7/iTunes_Cover.png".to_vec());
+        p.next_text_value(
+            b"https://ssl-static.libsyn.com/p/assets/2/d/2/5/2d25eb5fa72739f7/iTunes_Cover.png"
+                .to_vec(),
+        );
         // 18
         p.next_text_value(b"yes".to_vec());
         // 19
@@ -437,13 +443,11 @@ fn create_podcast_class_schema() {
         // 23
         p.next_text_value(b"episodic".to_vec());
 
-        assert_ok!(
-            TestModule::add_entity_schema_support(
-                channel_entity_id,
-                channel_schema_id,
-                p.get_property_values()
-            )
-        );
+        assert_ok!(TestModule::add_entity_schema_support(
+            channel_entity_id,
+            channel_schema_id,
+            p.get_property_values()
+        ));
 
         let episode_2_summary = b"<p>In July 2017, the SEC published a report following their <a href=\"https://www.sec.gov/litigation/investreport/34-81207.pdf\">investigation of the DAO</a>. This was significant as it was the first actionable statement from the SEC, giving some insight as to how they interpret this new asset class in light of existing securities laws.</p> <p>Staked is brought to you by Joystream - A user governed media platform.</p>".to_vec();
 
@@ -464,9 +468,15 @@ fn create_podcast_class_schema() {
         // 3
         p.next_text_value(b"1bf862ba81ab4ee797526d98e09ad301".to_vec());
         // 4
-        p.next_text_value(b"http://staked.libsyn.com/implications-of-the-dao-report-for-crypto-governance".to_vec());
+        p.next_text_value(
+            b"http://staked.libsyn.com/implications-of-the-dao-report-for-crypto-governance"
+                .to_vec(),
+        );
         // 5
-        p.next_text_value(b"https://ssl-static.libsyn.com/p/assets/2/d/2/5/2d25eb5fa72739f7/iTunes_Cover.png".to_vec());
+        p.next_text_value(
+            b"https://ssl-static.libsyn.com/p/assets/2/d/2/5/2d25eb5fa72739f7/iTunes_Cover.png"
+                .to_vec(),
+        );
         // 6
         p.next_text_value(episode_2_summary.clone());
         // 7
@@ -482,9 +492,13 @@ fn create_podcast_class_schema() {
         // 12
         p.next_text_value(b"yes".to_vec());
         // 13
-        p.next_text_value(b"governance,crypto,sec,securities,dao,bitcoin,blockchain,ethereum".to_vec());
+        p.next_text_value(
+            b"governance,crypto,sec,securities,dao,bitcoin,blockchain,ethereum".to_vec(),
+        );
         // 14
-        p.next_text_value(b"Part I in a series exploring decentralized governance and securities law".to_vec());
+        p.next_text_value(
+            b"Part I in a series exploring decentralized governance and securities law".to_vec(),
+        );
         // 15
         p.next_text_value(episode_2_summary);
         // 16
@@ -496,24 +510,25 @@ fn create_podcast_class_schema() {
         // 19
         p.next_text_value(b"Staked".to_vec());
 
-        assert_ok!(
-            TestModule::add_entity_schema_support(
-                episode_2_entity_id,
-                episode_schema_id,
-                p.get_property_values()
-            )
-        );
+        assert_ok!(TestModule::add_entity_schema_support(
+            episode_2_entity_id,
+            episode_schema_id,
+            p.get_property_values()
+        ));
     })
 }
 
 struct PropHelper {
     prop_idx: u16,
-    property_values: BTreeMap<u16, PropertyValue>
+    property_values: BTreeMap<u16, PropertyValue>,
 }
 
 impl PropHelper {
     fn new() -> PropHelper {
-        PropHelper { prop_idx: 0, property_values: BTreeMap::new() }
+        PropHelper {
+            prop_idx: 0,
+            property_values: BTreeMap::new(),
+        }
     }
 
     fn next_value(&mut self, value: PropertyValue) {

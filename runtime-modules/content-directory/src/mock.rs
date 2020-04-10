@@ -128,7 +128,7 @@ impl Trait for Runtime {
     type PropertyNameConstraint = PropertyNameConstraint;
     type PropertyDescriptionConstraint = PropertyDescriptionConstraint;
     type ClassNameConstraint = ClassNameConstraint;
-    type ClassDescriptionConstraint  = ClassDescriptionConstraint;
+    type ClassDescriptionConstraint = ClassDescriptionConstraint;
 }
 
 pub struct MockCredentialChecker {}
@@ -179,29 +179,42 @@ impl Default for ExtBuilder {
 }
 
 impl ExtBuilder {
-    pub fn post_title_max_length(mut self, property_name_constraint: InputValidationLengthConstraint) -> Self {
+    pub fn post_title_max_length(
+        mut self,
+        property_name_constraint: InputValidationLengthConstraint,
+    ) -> Self {
         self.property_name_constraint = property_name_constraint;
         self
     }
 
-    pub fn post_body_max_length(mut self, property_description_constraint: InputValidationLengthConstraint) -> Self {
+    pub fn post_body_max_length(
+        mut self,
+        property_description_constraint: InputValidationLengthConstraint,
+    ) -> Self {
         self.property_description_constraint = property_description_constraint;
         self
     }
 
-    pub fn reply_max_length(mut self, class_name_constraint: InputValidationLengthConstraint) -> Self {
+    pub fn reply_max_length(
+        mut self,
+        class_name_constraint: InputValidationLengthConstraint,
+    ) -> Self {
         self.class_name_constraint = class_name_constraint;
         self
     }
 
-    pub fn posts_max_number(mut self, class_description_constraint: InputValidationLengthConstraint) -> Self {
+    pub fn posts_max_number(
+        mut self,
+        class_description_constraint: InputValidationLengthConstraint,
+    ) -> Self {
         self.class_description_constraint = class_description_constraint;
         self
     }
 
     pub fn set_associated_consts(&self) {
         PROPERTY_NAME_CONSTRAINT.with(|v| *v.borrow_mut() = self.property_name_constraint);
-        PROPERTY_DESCRIPTION_CONSTRAINT.with(|v| *v.borrow_mut() = self.property_description_constraint);
+        PROPERTY_DESCRIPTION_CONSTRAINT
+            .with(|v| *v.borrow_mut() = self.property_description_constraint);
         CLASS_NAME_CONSTRAINT.with(|v| *v.borrow_mut() = self.class_name_constraint);
         CLASS_DESCRIPTION_CONSTRAINT.with(|v| *v.borrow_mut() = self.class_description_constraint);
     }
@@ -230,7 +243,9 @@ fn default_content_directory_genesis_config() -> GenesisConfig<Runtime> {
 
 pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
     let default_genesis_config = default_content_directory_genesis_config();
-    ExtBuilder::default().build(default_genesis_config).execute_with(f)
+    ExtBuilder::default()
+        .build(default_genesis_config)
+        .execute_with(f)
 }
 
 impl Property {
@@ -268,7 +283,7 @@ pub fn simple_test_schema() -> Vec<Property> {
     }]
 }
 
-pub fn simple_test_entity_property_values() -> BTreeMap<u16, PropertyValue>  {
+pub fn simple_test_entity_property_values() -> BTreeMap<u16, PropertyValue> {
     let mut property_values = BTreeMap::new();
     property_values.insert(0, PropertyValue::Int64(1337));
     property_values
@@ -341,7 +356,8 @@ pub fn create_class_with_schema() -> (ClassId, u16) {
             good_prop_u32(),
             new_internal_class_prop(class_id),
         ],
-    ).expect("This should not happen");
+    )
+    .expect("This should not happen");
     (class_id, schema_id)
 }
 
