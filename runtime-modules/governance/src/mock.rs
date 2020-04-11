@@ -74,6 +74,11 @@ impl minting::Trait for Test {
     type Currency = Balances;
     type MintId = u64;
 }
+impl recurringrewards::Trait for Test {
+    type PayoutStatusHandler = ();
+    type RecipientId = u64;
+    type RewardRelationshipId = u64;
+}
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
     pub const TransferFee: u32 = 0;

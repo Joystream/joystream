@@ -4796,6 +4796,7 @@ dependencies = [
  "substrate-common-module",
  "substrate-membership-module",
  "substrate-primitives",
+ "substrate-recurring-reward-module",
  "substrate-token-mint-module",
 ]
 

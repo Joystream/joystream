@@ -655,6 +655,12 @@ mod tests {
         type MintId = u64;
     }
 
+    impl recurringrewards::Trait for Test {
+        type PayoutStatusHandler = ();
+        type RecipientId = u64;
+        type RewardRelationshipId = u64;
+    }
+
     impl Trait for Test {
         type Event = ();
     }

@@ -1,6 +1,6 @@
 use rstd::prelude::*;
-use sr_primitives::traits::Zero;
-use srml_support::{decl_event, decl_module, decl_storage, ensure};
+use sr_primitives::traits::{One, Zero};
+use srml_support::{debug, decl_event, decl_module, decl_storage, ensure};
 use system::{self, ensure_root};
 
 pub use super::election::{self, CouncilElected, Seat, Seats};
@@ -21,7 +21,7 @@ impl<X: CouncilTermEnded> CouncilTermEnded for (X,) {
     }
 }
 
-pub trait Trait: system::Trait + minting::Trait + GovernanceCurrency {
+pub trait Trait: system::Trait + recurringrewards::Trait + GovernanceCurrency {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type CouncilTermEnded: CouncilTermEnded;
@@ -37,6 +37,20 @@ decl_storage! {
         /// because it was introduced in a runtime upgrade. It will be automatically created when
         /// a successful call to set_council_mint_capacity() is made.
         pub CouncilMint get(council_mint) : Option<<T as minting::Trait>::MintId>;
+
+        /// The reward relationships currently in place. There may not necessarily be a 1-1 correspondance with
+        /// the active council, since there are multiple ways of setting/adding/removing council members, some of which
+        /// do not involve creating a relationship.
+        pub RewardRelationships get(reward_relationships) : map T::AccountId => T::RewardRelationshipId;
+
+        /// Reward amount paid out at each PayoutInterval
+        pub AmountPerPayout get(amount_per_payout): minting::BalanceOf<T>;
+
+        /// Optional interval in blocks on which a reward payout will be made to each council member
+        pub PayoutInterval get(payout_interval): Option<T::BlockNumber>;
+
+        /// How many blocks after start of council term the first payout will be made
+        pub FirstPayoutAfterTermStart get(first_payout_after_term_start): T::BlockNumber;
     }
 }
 
@@ -50,11 +64,7 @@ decl_event!(
 
 impl<T: Trait> CouncilElected<Seats<T::AccountId, BalanceOf<T>>, T::BlockNumber> for Module<T> {
     fn council_elected(seats: Seats<T::AccountId, BalanceOf<T>>, term: T::BlockNumber) {
-        <ActiveCouncil<T>>::put(seats);
-
-        let next_term_ends_at = <system::Module<T>>::block_number() + term;
-        <TermEndsAt<T>>::put(next_term_ends_at);
-        Self::deposit_event(RawEvent::NewCouncilTermStarted(next_term_ends_at));
+        Self::apply_council_seats(seats, term);
     }
 }
 
@@ -75,6 +85,73 @@ impl<T: Trait> Module<T> {
         CouncilMint::<T>::put(mint_id);
         Ok(mint_id)
     }
+
+    fn add_reward_relationship(
+        destination: &T::AccountId,
+    ) -> Result<T::RewardRelationshipId, recurringrewards::RewardsError> {
+        if let Some(reward_source) = Self::council_mint() {
+            let recipient = <recurringrewards::Module<T>>::add_recipient();
+
+            let next_payout_at = system::Module::<T>::block_number()
+                + Self::first_payout_after_term_start()
+                + T::BlockNumber::one();
+
+            let relationship_id = <recurringrewards::Module<T>>::add_reward_relationship(
+                reward_source,
+                recipient,
+                destination.clone(),
+                Self::amount_per_payout(),
+                next_payout_at,
+                Self::payout_interval(),
+            )?;
+
+            RewardRelationships::<T>::insert(destination, relationship_id);
+
+            Ok(relationship_id)
+        } else {
+            Err(recurringrewards::RewardsError::RewardSourceNotFound)
+        }
+    }
+
+    fn remove_reward_relationships() {
+        for seat in Self::active_council().into_iter() {
+            if RewardRelationships::<T>::exists(&seat.member) {
+                let id = Self::reward_relationships(&seat.member);
+                <recurringrewards::Module<T>>::remove_reward_relationship(id);
+            }
+        }
+    }
+
+    fn apply_council_seats(seats: Seats<T::AccountId, BalanceOf<T>>, term: T::BlockNumber) {
+        <ActiveCouncil<T>>::put(seats.clone());
+
+        let next_term_ends_at = <system::Module<T>>::block_number() + term;
+
+        <TermEndsAt<T>>::put(next_term_ends_at);
+
+        for seat in seats.iter() {
+            let reward_added_result = Self::add_reward_relationship(&seat.member);
+
+            if reward_added_result.is_err() {
+                debug::info!("Failed to create a reward relationship for council seat");
+            }
+        }
+
+        Self::deposit_event(RawEvent::NewCouncilTermStarted(next_term_ends_at));
+    }
+
+    fn on_term_ended(now: T::BlockNumber) {
+        // Stop paying out rewards when the term ends.
+        // Note: Is it not simpler to just do a single payout at end of term?
+        // During the term the recurring reward module could unfairly pay some but not all council members
+        // If there is insufficient mint capacity.. so doing it at this point offers more control
+        // and a potentially more fair outcome in such a case.
+        Self::remove_reward_relationships();
+
+        Self::deposit_event(RawEvent::CouncilTermEnded(now));
+
+        T::CouncilTermEnded::council_term_ended();
+    }
 }
 
 decl_module! {
@@ -83,16 +160,22 @@ decl_module! {
 
         fn on_finalize(now: T::BlockNumber) {
             if now == Self::term_ends_at() {
-                Self::deposit_event(RawEvent::CouncilTermEnded(now));
-                T::CouncilTermEnded::council_term_ended();
+                Self::on_term_ended(now);
             }
         }
 
         // Privileged methods
 
-        /// Force set a zero staked council. Stakes in existing council will vanish into thin air!
+        /// Force set a zero staked council. Stakes in existing council seats are not returned.
+        /// Existing council rewards are removed and new council members do NOT get any rewards.
+        /// Avoid using this call if possible, will be deprecated. The term of the new council is
+        /// not extended.
         fn set_council(origin, accounts: Vec<T::AccountId>) {
             ensure_root(origin)?;
+
+            // Council is being replaced so remove existing reward relationships if they exist
+            Self::remove_reward_relationships();
+
             let new_council: Seats<T::AccountId, BalanceOf<T>> = accounts.into_iter().map(|account| {
                 Seat {
                     member: account,
@@ -100,10 +183,11 @@ decl_module! {
                     backers: vec![]
                 }
             }).collect();
+
             <ActiveCouncil<T>>::put(new_council);
         }
 
-        /// Adds a zero staked council member
+        /// Adds a zero staked council member. A member added in this way does not get a recurring reward.
         fn add_council_member(origin, account: T::AccountId) {
             ensure_root(origin)?;
             ensure!(!Self::is_councilor(&account), "cannot add same account multiple times");
@@ -117,13 +201,22 @@ decl_module! {
             <ActiveCouncil<T>>::mutate(|council| council.push(seat));
         }
 
+        /// Remove a single council member and their reward.
         fn remove_council_member(origin, account_to_remove: T::AccountId) {
             ensure_root(origin)?;
+
             ensure!(Self::is_councilor(&account_to_remove), "account is not a councilor");
+
+            if RewardRelationships::<T>::exists(&account_to_remove) {
+                let relationship_id = Self::reward_relationships(&account_to_remove);
+                <recurringrewards::Module<T>>::remove_reward_relationship(relationship_id);
+            }
+
             let filtered_council: Seats<T::AccountId, BalanceOf<T>> = Self::active_council()
                 .into_iter()
                 .filter(|c| c.member != account_to_remove)
                 .collect();
+
             <ActiveCouncil<T>>::put(filtered_council);
         }
 
@@ -156,11 +249,31 @@ decl_module! {
                 return Err("CouncilHashNoMint")
             }
         }
+
+        /// Sets the council rewards which is only applied on new council being elected.
+        fn set_council_rewards(
+            origin,
+            amount_per_payout: minting::BalanceOf<T>,
+            payout_interval: Option<T::BlockNumber>,
+            first_payout_after_term_start: T::BlockNumber
+        ) {
+            ensure_root(origin)?;
+
+            AmountPerPayout::<T>::put(amount_per_payout);
+            FirstPayoutAfterTermStart::<T>::put(first_payout_after_term_start);
+
+            if let Some(payout_interval) = payout_interval {
+                PayoutInterval::<T>::put(payout_interval);
+            } else {
+                PayoutInterval::<T>::take();
+            }
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::mock::*;
     use srml_support::*;
 
@@ -210,6 +323,40 @@ mod tests {
             assert!(Council::is_councilor(&4));
             assert!(Council::is_councilor(&5));
             assert!(Council::is_councilor(&6));
+        });
+    }
+
+    #[test]
+    fn council_elected_test() {
+        initial_test_ext().execute_with(|| {
+            Council::council_elected(
+                vec![
+                    Seat {
+                        member: 5,
+                        stake: 0,
+                        backers: vec![],
+                    },
+                    Seat {
+                        member: 6,
+                        stake: 0,
+                        backers: vec![],
+                    },
+                    Seat {
+                        member: 7,
+                        stake: 0,
+                        backers: vec![],
+                    },
+                ],
+                50 as u64, // <Test as system::Trait>::BlockNumber::from(50)
+            );
+
+            assert!(Council::is_councilor(&5));
+            assert!(Council::is_councilor(&6));
+            assert!(Council::is_councilor(&7));
+
+            assert!(RewardRelationships::<Test>::exists(&5));
+            assert!(RewardRelationships::<Test>::exists(&6));
+            assert!(RewardRelationships::<Test>::exists(&7));
         });
     }
 }
