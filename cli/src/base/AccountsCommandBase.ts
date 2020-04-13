@@ -13,6 +13,17 @@ import { AccountBalances, NamedKeyringPair } from '../Types';
 
 type StateObject = { selectedAccountFilename: string };
 
+/**
+ * Abstract base class for account-related commands.
+ *
+ * All the accounts available in the CLI are stored in the form of json backup files inside:
+ * { this.config.dataDir }/{ ACCOUNTS_DIRNAME } (ie. ~/.local/share/joystream-cli/accounts on Ubuntu)
+ * Where: this.config.dataDir is provided by oclif and ACCOUNTS_DIRNAME is a static of AccountsCommandBase.
+ *
+ * Additionally, there is a state.json file kept inside the data directory (this.config.dataDir).
+ * Currently it just stores information about the default account that can be choosen by the user
+ * by executing account:choose command (see "StateObject" type above).
+ */
 export default abstract class AccountsCommandBase extends Command {
     static ACCOUNTS_DIRNAME = '/accounts';
     static STATE_FILE = '/state.json';
