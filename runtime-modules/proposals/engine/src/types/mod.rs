@@ -222,7 +222,7 @@ where
     }
 }
 
-/// Provides data for voting.
+/// Provides data for the voting.
 pub trait VotersParameters {
     /// Defines maximum voters count for the proposal
     fn total_voters_count() -> u32;

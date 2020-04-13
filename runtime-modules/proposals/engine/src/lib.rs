@@ -1,18 +1,90 @@
-//! Proposals engine module for the Joystream platform. Version 2.
-//! Provides methods and extrinsics to create and vote for proposals,
-//! inspired by Parity **Democracy module**.
+//! # Proposals engine module
+//! Proposals `engine` module for the Joystream platform. Version 2.
+//! Main component of the proposals system. Provides methods and extrinsics to create and
+//! vote for proposals, inspired by Parity **Democracy module**.
 //!
-//! Supported extrinsics:
-//! - vote - registers a vote for the proposal
-//! - cancel_proposal - cancels the proposal (can be canceled only by owner)
-//! - veto_proposal - vetoes the proposal
+//! ## Overview
+//! Proposals `engine` module provides abstract mechanism to work with proposals: creation, voting,
+//! execution, canceling, etc. Proposal execution demands serialized _Dispatchable_ proposal code.
+//! It could be any _Dispatchable_ + _Parameter_ type, but most likely it would be serialized (via
+//! Parity _codec_ crate) extrisic call. Proposal stage can be described by its [status](./enum.ProposalStatus.html).
 //!
-//! Public API:
-//! - create_proposal - creates proposal using provided parameters
-//! - ensure_create_proposal_parameters_are_valid - ensures that we can create the proposal
-//! - refund_proposal_stake - a callback for StakingHandlerEvents
-//! - reset_active_proposals - resets voting results for active proposals
+//! ## Proposal lifecycle
+//! When a proposal passes [checks](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid)
+//! for its [parameters](./struct.ProposalParameters.html) - it can be [created](./struct.Module.html#method.create_proposal).
+//! Newly created proposal has _Active_ status. The proposal can be voted on or canceled during its
+//! _voting period_. Votes can be [different](./enum.VoteKind.html). When proposal gets enough votes
+//! to be slashed or approved or _voting period_ ends - the proposal becomes _Finalized_. If the proposal
+//! got approved and _grace period_ passed - the  `engine` module tries to execute the proposal.
+//! The final [approved status](./enum.ApprovedProposalStatus.html) of the proposal defines
+//! an overall proposal outcome. The proposal can also be [vetoed](./struct.Module.html#method.veto_proposal)
+//! anytime before the proposal execution by the _sudo_.
 //!
+//! ### Important abstract types to be implemented
+//! Proposals `engine` module has several abstractions to be implemented in order to work correctly.
+//! - _VoterOriginValidator_ - ensure valid voter identity. Voters should have permissions to vote:
+//! they should be council members.
+//! - [VotersParameters](./trait.VotersParameters.html) - defines total voter number, which is
+//! the council size
+//! - _ProposerOriginValidator_ - ensure valid proposer identity. Proposers should have permissions
+//! to create a proposal: they should be members of the Joystream.
+//! - [StakeHandlerProvider](./trait.StakeHandlerProvider.html) - defines interface for the staking.
+//!
+//! Full list of the abstractions can be found [here](./trait.Trait.html).
+//!
+//! ### Supported extrinsics
+//! - [vote](./struct.Module.html#method.vote) - registers a vote for the proposal
+//! - [cancel_proposal](./struct.Module.html#method.cancel_proposal) - cancels the proposal (can be canceled only by owner)
+//! - [veto_proposal](./struct.Module.html#method.veto_proposal) - vetoes the proposal
+//!
+//! ### Public API
+//! - [create_proposal](./struct.Module.html#method.create_proposal) - creates proposal using provided parameters
+//! - [ensure_create_proposal_parameters_are_valid](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid) - ensures that we can create the proposal
+//! - [refund_proposal_stake](./struct.Module.html#method.refund_proposal_stake) - a callback for _StakingHandlerEvents_
+//! - [reset_active_proposals](./trait.Module.html#method.reset_active_proposals) - resets voting results for active proposals
+//!
+//! ## Usage
+//!
+//! ```
+//! use srml_support::{decl_module, dispatch::Result};
+//! use system::ensure_signed;
+//! use substrate_proposals_engine_module::{self as engine, ProposalParameters};
+//!
+//! pub trait Trait: engine::Trait + membership::members::Trait {}
+//!
+//! decl_module! {
+//!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+//!         pub fn create_spending_proposal(
+//!             origin,
+//!             proposer_id: T::MemberId,
+//!         ) -> Result {
+//!             let account_id = ensure_signed(origin)?;
+//!             let parameters = ProposalParameters::default();
+//!             let title = b"Spending proposal".to_vec();
+//!             let description = b"We need to spend some tokens to support the working group lead.".to_vec();
+//!             let encoded_proposal_code = Vec::new();
+//!
+//!             <engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
+//!                 &parameters,
+//!                 &title,
+//!                 &description,
+//!                 None
+//!             )?;
+//!             <engine::Module<T>>::create_proposal(
+//!                 account_id,
+//!                 proposer_id,
+//!                 parameters,
+//!                 title,
+//!                 description,
+//!                 None,
+//!                 encoded_proposal_code
+//!             )?;
+//!             Ok(())
+//!         }
+//!     }
+//! }
+//! # fn main() {}
+//! ```
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -468,7 +540,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Resets voting results for active proposals.
-    /// Possible application - after the new council elections.
+    /// Possible application includes new council elections.
     pub fn reset_active_proposals() {
         <ActiveProposalIds<T>>::enumerate().for_each(|(proposal_id, _)| {
             <Proposals<T>>::mutate(proposal_id, |proposal| {
