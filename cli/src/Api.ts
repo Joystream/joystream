@@ -27,6 +27,10 @@ export default class Api {
         this._api = originalApi;
     }
 
+    public getOriginalApi(): ApiPromise {
+        return this._api;
+    }
+
     private static async initApi(): Promise<ApiPromise> {
         formatBalance.setDefaults({ unit: TOKEN_SYMBOL });
         const wsProvider:WsProvider = new WsProvider(API_URL);
