@@ -809,21 +809,21 @@ impl<T: Trait> Module<T> {
 
         // Iterate over a vector of new values and update corresponding properties
         // of this entity if new values are valid.
-        for (id, new_value) in new_property_values.iter() {
+        for (id, new_value) in new_property_values.into_iter() {
             // Try to find a current property value in the entity
             // by matching its id to the id of a property with an updated value.
-            if let Some(current_prop_value) = updated_values.get_mut(id) {
+            if let Some(current_prop_value) = updated_values.get_mut(&id) {
                 // Get class-level information about this property
-                let class_prop = &class.properties[*id as usize];
+                if let Some(class_prop) = class.properties.get(id as usize) {
+                    // Validate a new property value against the type of this property
+                    // and check any additional constraints like the length of a vector
+                    // if it's a vector property or the length of a text if it's a text property.
+                    Self::ensure_property_value_is_valid(&new_value, class_prop)?;
 
-                // Validate a new property value against the type of this property
-                // and check any additional constraints like the length of a vector
-                // if it's a vector property or the length of a text if it's a text property.
-                Self::ensure_property_value_is_valid(new_value, class_prop)?;
-
-                // Update a current prop value in a mutable vector, if a new value is valid.
-                *current_prop_value = new_value.to_owned();
-                updates_count += 1;
+                    // Update a current prop value in a mutable vector, if a new value is valid.
+                    *current_prop_value = new_value;
+                    updates_count += 1;
+                }
             } else {
                 // Throw an error if a property was not found on entity
                 // by an in-class index of a property update.
