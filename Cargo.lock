@@ -1554,7 +1554,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "2.1.6"
+version = "2.1.3"
 dependencies = [
  "ctrlc",
  "derive_more 0.14.1",
@@ -1599,7 +1599,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "6.12.0"
+version = "6.8.1"
 dependencies = [
  "parity-scale-codec",
  "safe-mix",
@@ -4649,6 +4649,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-content-directory-module"
+version = "1.0.1"
+dependencies = [
+ "hex-literal 0.1.4",
+ "parity-scale-codec",
+ "quote 0.6.13",
+ "serde",
+ "sr-io",
+ "sr-primitives",
+ "sr-std",
+ "srml-support",
+ "srml-support-procedural",
+ "srml-system",
+ "srml-timestamp",
+ "substrate-primitives",
+]
+
+[[package]]
 name = "substrate-content-working-group-module"
 version = "1.0.0"
 dependencies = [
@@ -4796,7 +4814,6 @@ dependencies = [
  "substrate-common-module",
  "substrate-membership-module",
  "substrate-primitives",
- "substrate-token-mint-module",
 ]
 
 [[package]]
