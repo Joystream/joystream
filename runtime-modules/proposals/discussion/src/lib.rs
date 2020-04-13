@@ -1,6 +1,6 @@
 //! # Proposals discussion module
 //! Proposals `discussion` module for the Joystream platform. Version 2.
-//! Contains discussion subsystem of the proposals.
+//! It contains discussion subsystem of the proposals.
 //!
 //! ## Overview
 //!
@@ -9,7 +9,7 @@
 //! posts.
 //!
 //! ## Supported extrinsics
-//! - [add_post](./struct.Module.html#method.add_post) - adds a post to existing discussion thread
+//! - [add_post](./struct.Module.html#method.add_post) - adds a post to an existing discussion thread
 //! - [update_post](./struct.Module.html#method.update_post) - updates existing post
 //!
 //! ## Public API methods
