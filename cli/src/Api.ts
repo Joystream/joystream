@@ -1,11 +1,12 @@
 import BN from 'bn.js';
 import { registerJoystreamTypes } from '@joystream/types';
 import { ApiPromise, WsProvider } from '@polkadot/api';
+import { QueryableStorageMultiArg } from '@polkadot/api/types';
 import { formatBalance } from '@polkadot/util';
 import { Balance, Hash } from '@polkadot/types/interfaces';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { Codec } from '@polkadot/types/types';
-import { AccountBalances, CouncilInfoObj, CouncilInfoTuple, AccountSummary, createCouncilInfoObj } from './Types';
+import { AccountBalances, AccountSummary, CouncilInfoObj, CouncilInfoTuple, createCouncilInfoObj } from './Types';
 import { DerivedFees, DerivedBalances } from '@polkadot/api-derive/types';
 import { CLIError } from '@oclif/errors';
 import ExitCodes from './ExitCodes';
@@ -83,25 +84,24 @@ export default class Api {
     }
 
     async getCouncilInfo(): Promise<CouncilInfoObj> {
-        const results = await this.queryMultiOnce([
-            this._api.query.council.activeCouncil,
-            this._api.query.council.termEndsAt,
-            this._api.query.councilElection.autoStart,
-            this._api.query.councilElection.newTermDuration,
-            this._api.query.councilElection.candidacyLimit,
-            this._api.query.councilElection.councilSize,
-            this._api.query.councilElection.minCouncilStake,
-            this._api.query.councilElection.minVotingStake,
-            this._api.query.councilElection.announcingPeriod,
-            this._api.query.councilElection.votingPeriod,
-            this._api.query.councilElection.revealingPeriod,
-            this._api.query.councilElection.round,
-            this._api.query.councilElection.stage
-        ]);
+        const queries: { [P in keyof CouncilInfoObj]: QueryableStorageMultiArg<"promise"> } = {
+            activeCouncil:    this._api.query.council.activeCouncil,
+            termEndsAt:       this._api.query.council.termEndsAt,
+            autoStart:        this._api.query.councilElection.autoStart,
+            newTermDuration:  this._api.query.councilElection.newTermDuration,
+            candidacyLimit:   this._api.query.councilElection.candidacyLimit,
+            councilSize:      this._api.query.councilElection.councilSize,
+            minCouncilStake:  this._api.query.councilElection.minCouncilStake,
+            minVotingStake:   this._api.query.councilElection.minVotingStake,
+            announcingPeriod: this._api.query.councilElection.announcingPeriod,
+            votingPeriod:     this._api.query.councilElection.votingPeriod,
+            revealingPeriod:  this._api.query.councilElection.revealingPeriod,
+            round:            this._api.query.councilElection.round,
+            stage:            this._api.query.councilElection.stage
+        }
+        const results: CouncilInfoTuple = <CouncilInfoTuple> await this.queryMultiOnce(Object.values(queries));
 
-        let infoObj: CouncilInfoObj = createCouncilInfoObj(...(<CouncilInfoTuple> results));
-
-        return infoObj;
+        return createCouncilInfoObj(...results);
     }
 
     // TODO: This formula is probably not too good, so some better implementation will be required in the future
