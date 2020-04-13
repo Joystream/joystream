@@ -230,7 +230,7 @@ decl_module! {
         pub fn vote(origin, voter_id: MemberId<T>, proposal_id: T::ProposalId, vote: VoteKind)  {
             T::VoterOriginValidator::ensure_actor_origin(
                 origin,
-                voter_id.clone(),
+                voter_id,
             )?;
 
             ensure!(<Proposals<T>>::exists(proposal_id), Error::ProposalNotFound);
@@ -240,7 +240,7 @@ decl_module! {
 
             let did_not_vote_before = !<VoteExistsByProposalByVoter<T>>::exists(
                 proposal_id,
-                voter_id.clone(),
+                voter_id,
             );
 
             ensure!(did_not_vote_before, Error::AlreadyVoted);
@@ -250,7 +250,7 @@ decl_module! {
             // mutation
 
             <Proposals<T>>::insert(proposal_id, proposal);
-            <VoteExistsByProposalByVoter<T>>::insert( proposal_id, voter_id.clone(), vote.clone());
+            <VoteExistsByProposalByVoter<T>>::insert( proposal_id, voter_id, vote.clone());
             Self::deposit_event(RawEvent::Voted(voter_id, proposal_id, vote));
         }
 
@@ -258,7 +258,7 @@ decl_module! {
         pub fn cancel_proposal(origin, proposer_id: MemberId<T>, proposal_id: T::ProposalId) {
             T::ProposerOriginValidator::ensure_actor_origin(
                 origin,
-                proposer_id.clone(),
+                proposer_id,
             )?;
 
             ensure!(<Proposals<T>>::exists(proposal_id), Error::ProposalNotFound);
@@ -362,7 +362,7 @@ impl<T: Trait> Module<T> {
             parameters,
             title,
             description,
-            proposer_id: proposer_id.clone(),
+            proposer_id,
             status: ProposalStatus::Active(stake_data),
             voting_results: VotingResults::default(),
         };

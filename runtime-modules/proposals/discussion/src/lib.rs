@@ -26,16 +26,15 @@
 //! pub trait Trait: discussions::Trait + membership::members::Trait {}
 //!
 //! decl_module! {
-//! 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-//! 		pub fn create_discussion(origin, title: Vec<u8>, author_id : T::MemberId) -> Result {
-//! 			ensure_root(origin)?;
-//! 			<discussions::Module<T>>::ensure_can_create_thread(author_id, &title)?;
-//! 			<discussions::Module<T>>::create_thread(author_id, title)?;
-//! 			Ok(())
-//! 		}
-//! 	}
+//!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+//!         pub fn create_discussion(origin, title: Vec<u8>, author_id : T::MemberId) -> Result {
+//!             ensure_root(origin)?;
+//!             <discussions::Module<T>>::ensure_can_create_thread(author_id, &title)?;
+//!             <discussions::Module<T>>::create_thread(author_id, title)?;
+//!             Ok(())
+//!         }
+//!     }
 //! }
-//! # fn main() { }
 //! ```
 
 //!
@@ -199,7 +198,7 @@ decl_module! {
         ) {
             T::PostAuthorOriginValidator::ensure_actor_origin(
                 origin,
-                post_author_id.clone(),
+                post_author_id,
             )?;
             ensure!(<ThreadById<T>>::exists(thread_id), Error::ThreadDoesntExist);
 
@@ -218,7 +217,7 @@ decl_module! {
                 text,
                 created_at: Self::current_block(),
                 updated_at: Self::current_block(),
-                author_id: post_author_id.clone(),
+                author_id: post_author_id,
                 edition_number : 0,
                 thread_id,
             };
@@ -239,7 +238,7 @@ decl_module! {
         ){
             T::PostAuthorOriginValidator::ensure_actor_origin(
                 origin,
-                post_author_id.clone(),
+                post_author_id,
             )?;
 
             ensure!(<ThreadById<T>>::exists(thread_id), Error::ThreadDoesntExist);
@@ -279,7 +278,7 @@ impl<T: Trait> Module<T> {
         thread_author_id: MemberId<T>,
         title: Vec<u8>,
     ) -> Result<T::ThreadId, Error> {
-        Self::ensure_can_create_thread(thread_author_id.clone(), &title)?;
+        Self::ensure_can_create_thread(thread_author_id, &title)?;
 
         let next_thread_count_value = Self::thread_count() + 1;
         let new_thread_id = next_thread_count_value;
@@ -287,11 +286,11 @@ impl<T: Trait> Module<T> {
         let new_thread = Thread {
             title,
             created_at: Self::current_block(),
-            author_id: thread_author_id.clone(),
+            author_id: thread_author_id,
         };
 
         // get new 'threads in a row' counter for the author
-        let current_thread_counter = Self::get_updated_thread_counter(thread_author_id.clone());
+        let current_thread_counter = Self::get_updated_thread_counter(thread_author_id);
 
         // mutation
 
@@ -319,7 +318,7 @@ impl<T: Trait> Module<T> {
         );
 
         // get new 'threads in a row' counter for the author
-        let current_thread_counter = Self::get_updated_thread_counter(thread_author_id.clone());
+        let current_thread_counter = Self::get_updated_thread_counter(thread_author_id);
 
         ensure!(
             current_thread_counter.counter as u32 <= T::MaxThreadInARowNumber::get(),
