@@ -1,47 +1,11 @@
-/* Proposal type previews */
-
-.ProposalTypePreview {
-  background-color: #fff;
-
-  &:hover {
-    border: 1px solid #4183c4;
-  }
-
-  .name {
-    font-weight: bold;
-    font-size: 1.5rem;
-  }
-  .description {
-    margin-top: 1rem;
-  }
-  .conditions {
-    display: flex;
-    flex-flow: row;
-    margin-top: 1rem;
-  }
-    .condition {
-      margin-right: 2rem;
-    }
-    .label {
-      font-size: 0.9rem;
-      margin-bottom: 0.25rem;
-    }
-    .value {
-      font-size: 1.5rem;
-    }
-  }
-}
-
 /* Proposal forms */
 
-
 .ProposalForm {
-  width: 100%;
-  max-width: 600px;
-
-.text-secondary {
-  color: #999;
 }
+
+  .text-secondary {
+  color: #999;
+  }
 
 .details-container > .ui.items > .item:first-child {
   display: flex;
