@@ -16,6 +16,12 @@ type StateObject = { selectedAccountFilename: string };
 export default abstract class AccountsCommandBase extends Command {
     static ACCOUNTS_DIRNAME = '/accounts';
     static STATE_FILE = '/state.json';
+    private api: Api | null = null;
+
+    getApi(): Api {
+        if (!this.api) throw new CLIError('Tried to get API before initialization.', { exit: ExitCodes.ApiError });
+        return this.api;
+    }
 
     getAccountsDirPath(): string {
         return path.join(this.config.dataDir, AccountsCommandBase.ACCOUNTS_DIRNAME);
@@ -213,8 +219,7 @@ export default abstract class AccountsCommandBase extends Command {
     ): Promise<NamedKeyringPair> {
         let balances: AccountBalances[];
         if (showBalances) {
-            const api: Api = new Api();
-            balances = await api.getAccountsBalancesInfo(accounts.map(acc => acc.address));
+            balances = await this.getApi().getAccountsBalancesInfo(accounts.map(acc => acc.address));
         }
         const { chosenAccountFilename } = await inquirer.prompt([{
             name: 'chosenAccountFilename',
@@ -243,6 +248,7 @@ export default abstract class AccountsCommandBase extends Command {
     }
 
     async init() {
+        this.api = await Api.create();
         try {
             this.initDataDir();
         } catch (e) {

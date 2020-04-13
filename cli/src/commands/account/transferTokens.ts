@@ -31,13 +31,12 @@ export default class AccountTransferTokens extends AccountsCommandBase {
 
     async run() {
         const args: AccountTransferArgs = <AccountTransferArgs> this.parse(AccountTransferTokens).args;
-        const api: Api = new Api();
         const selectedAccount: NamedKeyringPair = await this.getRequiredSelectedAccount();
         const amountBN: BN = new BN(args.amount);
 
         // Initial validation
         validateAddress(args.recipient, 'Invalid recipient address');
-        const accBalances: AccountBalances = (await api.getAccountsBalancesInfo([ selectedAccount.address ]))[0];
+        const accBalances: AccountBalances = (await this.getApi().getAccountsBalancesInfo([ selectedAccount.address ]))[0];
         checkBalance(accBalances, amountBN);
 
         await this.requestAccountDecoding(selectedAccount);
@@ -45,7 +44,7 @@ export default class AccountTransferTokens extends AccountsCommandBase {
         this.log(chalk.white('Estimating fee...'));
         let estimatedFee: BN;
         try {
-            estimatedFee = await api.estimateFee(selectedAccount, args.recipient, amountBN);
+            estimatedFee = await this.getApi().estimateFee(selectedAccount, args.recipient, amountBN);
         }
         catch (e) {
             this.error('Could not estimate the fee.', { exit: ExitCodes.UnexpectedException });
@@ -59,7 +58,7 @@ export default class AccountTransferTokens extends AccountsCommandBase {
         await this.requireConfirmation('Do you confirm the transfer?');
 
         try {
-            const txHash: Hash = await api.transfer(selectedAccount, args.recipient, amountBN);
+            const txHash: Hash = await this.getApi().transfer(selectedAccount, args.recipient, amountBN);
             this.log(chalk.greenBright('Transaction succesfully sent!'));
             this.log(chalk.white('Hash:', txHash.toString()));
         } catch (e) {

@@ -52,7 +52,7 @@ export default class CouncilInfo extends Command {
     }
 
     async run() {
-        const api = new Api();
+        const api = await Api.create();
         const infoObj = await api.getCouncilInfo();
         this.displayInfo(infoObj);
         this.exit();

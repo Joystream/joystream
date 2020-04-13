@@ -10,9 +10,8 @@ export default class AccountCurrent extends AccountsCommandBase {
     static aliases = ['account:info', 'account:default'];
 
     async run() {
-        const api: Api = new Api();
         const currentAccount: NamedKeyringPair = await this.getRequiredSelectedAccount(false);
-        const summary: AccountSummary = await api.getAccountSummary(currentAccount.address);
+        const summary: AccountSummary = await this.getApi().getAccountSummary(currentAccount.address);
 
         displayHeader('Account information');
         const creationDate: string = currentAccount.meta.whenCreated ?
