@@ -334,6 +334,53 @@ pub enum PropertyValue {
     // ExternalVec(Vec<ExternalPropertyType>),
 }
 
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+enum PropertyValueType {
+    SingleValue,
+    Vector
+}
+
+impl PropertyValue {
+    fn vec_clear(&mut self) {
+        match self {
+            PropertyValue::BoolVec(vec) => *vec = vec![],
+            PropertyValue::Uint16Vec(vec) => *vec = vec![],
+            PropertyValue::Uint32Vec(vec) => *vec = vec![],
+            PropertyValue::Uint64Vec(vec) => *vec = vec![],
+            PropertyValue::Int16Vec(vec) => *vec = vec![],
+            PropertyValue::Int32Vec(vec) => *vec = vec![],
+            PropertyValue::Int64Vec(vec) => *vec = vec![],
+            PropertyValue::TextVec(vec) => *vec = vec![],
+            PropertyValue::ReferenceVec(vec) => *vec = vec![],
+            _ => ()
+        }
+    }
+
+    fn vec_remove_at(&mut self, index_in_property_vec: u32) {
+
+        fn remove_at_checked<T>(vec: &mut Vec<T>, index_in_property_vec: u32) {
+            if (index_in_property_vec as usize) < vec.len()  {
+                vec.remove(index_in_property_vec as usize);
+            }
+        }
+
+        match self {
+            PropertyValue::BoolVec(vec) => remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::Uint16Vec(vec) =>  remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::Uint32Vec(vec) =>  remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::Uint64Vec(vec) =>  remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::Int16Vec(vec) =>  remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::Int32Vec(vec) =>  remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::Int64Vec(vec) =>  remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::TextVec(vec) =>  remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::ReferenceVec(vec) => remove_at_checked(vec, index_in_property_vec),
+            _ => ()
+        }
+    }
+
+}
+
 impl Default for PropertyValue {
     fn default() -> Self {
         PropertyValue::Bool(false)
@@ -648,6 +695,50 @@ decl_module! {
             Self::do_update_entity_property_values(&raw_origin, with_credential, as_entity_maintainer, entity_id, property_values)
         }
 
+        pub fn clear_entity_property_vector(
+            origin,
+            with_credential: Option<T::Credential>,
+            as_entity_maintainer: bool,
+            entity_id: EntityId,
+            in_class_schema_property_id: u16
+        ) -> dispatch::Result {
+            let raw_origin = Self::ensure_root_or_signed(origin)?;
+            Self::do_clear_entity_property_vector(&raw_origin, with_credential, as_entity_maintainer, entity_id, in_class_schema_property_id)
+        }
+
+        pub fn remove_at_entity_property_vector(
+            origin,
+            with_credential: Option<T::Credential>,
+            as_entity_maintainer: bool,
+            entity_id: EntityId,
+            in_class_schema_property_id: u16,
+            index_in_property_vec: u32
+        ) -> dispatch::Result {
+            let raw_origin = Self::ensure_root_or_signed(origin)?;
+            Self::do_remove_at_entity_property_vector(&raw_origin, with_credential, as_entity_maintainer, entity_id, in_class_schema_property_id, index_in_property_vec)
+        }
+
+        pub fn insert_at_entity_property_vector(
+            origin,
+            with_credential: Option<T::Credential>,
+            as_entity_maintainer: bool,
+            entity_id: EntityId,
+            in_class_schema_property_id: u16,
+            index_in_property_vec: u32,
+            property_value: PropertyValue
+        ) -> dispatch::Result {
+            let raw_origin = Self::ensure_root_or_signed(origin)?;
+            Self::do_insert_at_entity_property_vector(
+                &raw_origin, 
+                with_credential, 
+                as_entity_maintainer, 
+                entity_id, 
+                in_class_schema_property_id, 
+                index_in_property_vec, 
+                property_value
+            )
+        }
+        
         pub fn transaction(origin, operations: Vec<Operation<T::Credential>>) -> dispatch::Result {
             // This map holds the EntityId of the entity created as a result of executing a CreateEntity Operation
             // keyed by the indexed of the operation, in the operations vector.
@@ -781,6 +872,90 @@ impl<T: Trait> Module<T> {
         )
     }
 
+    fn do_clear_entity_property_vector(
+        raw_origin: &system::RawOrigin<T::AccountId>,
+        with_credential: Option<T::Credential>,
+        as_entity_maintainer: bool,
+        entity_id: EntityId,
+        in_class_schema_property_id: u16,
+    ) -> dispatch::Result {
+        let class_id = Self::get_class_id_by_entity_id(entity_id)?;
+
+        let as_entity_maintainer = if as_entity_maintainer {
+            Some(entity_id)
+        } else {
+            None
+        };
+
+        Self::if_class_permissions_satisfied(
+            raw_origin,
+            with_credential,
+            as_entity_maintainer,
+            ClassPermissions::can_update_entity,
+            class_id,
+            |_class_permissions, _access_level| {
+                Self::complete_entity_property_vector_cleaning(entity_id, in_class_schema_property_id)
+            },
+        )
+    }
+
+    fn do_remove_at_entity_property_vector(
+        raw_origin: &system::RawOrigin<T::AccountId>,
+        with_credential: Option<T::Credential>,
+        as_entity_maintainer: bool,
+        entity_id: EntityId,
+        in_class_schema_property_id: u16,
+        index_in_property_vec: u32
+    ) -> dispatch::Result {
+        let class_id = Self::get_class_id_by_entity_id(entity_id)?;
+
+        let as_entity_maintainer = if as_entity_maintainer {
+            Some(entity_id)
+        } else {
+            None
+        };
+
+        Self::if_class_permissions_satisfied(
+            raw_origin,
+            with_credential,
+            as_entity_maintainer,
+            ClassPermissions::can_update_entity,
+            class_id,
+            |_class_permissions, _access_level| {
+                Self::complete_remove_at_entity_property_vector(entity_id, in_class_schema_property_id, index_in_property_vec)
+            },
+        )
+    }
+
+    fn do_insert_at_entity_property_vector(
+        raw_origin: &system::RawOrigin<T::AccountId>,
+        with_credential: Option<T::Credential>,
+        as_entity_maintainer: bool,
+        entity_id: EntityId,
+        in_class_schema_property_id: u16,
+        index_in_property_vec: u32,
+        property_value: PropertyValue
+    ) -> dispatch::Result {
+        let class_id = Self::get_class_id_by_entity_id(entity_id)?;
+
+        let as_entity_maintainer = if as_entity_maintainer {
+            Some(entity_id)
+        } else {
+            None
+        };
+
+        Self::if_class_permissions_satisfied(
+            raw_origin,
+            with_credential,
+            as_entity_maintainer,
+            ClassPermissions::can_update_entity,
+            class_id,
+            |_class_permissions, _access_level| {
+                Self::complete_insert_at_entity_property_vector(entity_id, in_class_schema_property_id, index_in_property_vec, property_value)
+            },
+        )
+    }
+
     pub fn complete_class_schema_status_update(
         class_id: ClassId,
         schema_id: u16, // Do not type alias u16!! - u16,
@@ -805,7 +980,7 @@ impl<T: Trait> Module<T> {
         // Get current property values of an entity as a mutable vector,
         // so we can update them if new values provided present in new_property_values.
         let mut updated_values = entity.values;
-        let mut updates_count = 0;
+        let mut updated = false;
 
         // Iterate over a vector of new values and update corresponding properties
         // of this entity if new values are valid.
@@ -818,11 +993,11 @@ impl<T: Trait> Module<T> {
                     // Validate a new property value against the type of this property
                     // and check any additional constraints like the length of a vector
                     // if it's a vector property or the length of a text if it's a text property.
-                    Self::ensure_property_value_is_valid(&new_value, class_prop)?;
+                    Self::ensure_property_value_to_update_is_valid(&new_value, class_prop)?;
 
                     // Update a current prop value in a mutable vector, if a new value is valid.
                     *current_prop_value = new_value;
-                    updates_count += 1;
+                    updated = !updated;
                 }
             } else {
                 // Throw an error if a property was not found on entity
@@ -831,12 +1006,88 @@ impl<T: Trait> Module<T> {
             }
         }
 
-        // If at least one of the entity property values should be update:
-        if updates_count > 0 {
+        // If property values should be update:
+        if updated  {
             EntityById::mutate(entity_id, |entity| {
                 entity.values = updated_values;
             });
         }
+
+        Ok(())
+    }
+
+    fn complete_entity_property_vector_cleaning(
+        entity_id: EntityId,
+        in_class_schema_property_id: u16,
+    ) -> dispatch::Result {
+        Self::ensure_known_entity_id(&entity_id)?;
+        let entity = Self::entity_by_id(entity_id);
+
+        if !entity.values.contains_key(&in_class_schema_property_id) {
+            // Throw an error if a property was not found on entity
+            // by an in-class index of a property update.
+            return Err(ERROR_UNKNOWN_ENTITY_PROP_ID);
+        } 
+        
+        // Clear property value vector:
+        EntityById::mutate(entity_id, |entity| entity.values.get_mut(&in_class_schema_property_id).as_deref_mut()
+            .map(|current_property_value_vec| current_property_value_vec.vec_clear()));
+
+        Ok(())
+    }
+
+    fn complete_remove_at_entity_property_vector(
+        entity_id: EntityId,
+        in_class_schema_property_id: u16,
+        index_in_property_vec: u32
+    ) -> dispatch::Result {
+
+        Self::ensure_known_entity_id(&entity_id)?;
+        let entity = Self::entity_by_id(entity_id);
+
+        if !entity.values.contains_key(&in_class_schema_property_id) {
+            // Throw an error if a property was not found on entity
+            // by an in-class index of a property update.
+            return Err(ERROR_UNKNOWN_ENTITY_PROP_ID);
+        } 
+        
+        // Remove property value vector
+        EntityById::mutate(entity_id, |entity| entity.values.get_mut(&in_class_schema_property_id).as_deref_mut()
+            .map(|current_prop_value| current_prop_value.vec_remove_at(index_in_property_vec)));
+        
+        Ok(())
+    }
+
+    fn complete_insert_at_entity_property_vector(
+        entity_id: EntityId,
+        in_class_schema_property_id: u16,
+        index_in_property_vec: u32,
+        property_value: PropertyValue
+    ) -> dispatch::Result {
+
+        Self::ensure_known_entity_id(&entity_id)?;
+
+        let (mut entity, class) = Self::get_entity_and_class(entity_id);
+
+        // Try to find a current property value in the entity
+        // by matching its id to the id of a property with an updated value.
+        if let Some(current_prop_value) = entity.values.get_mut(&in_class_schema_property_id) {
+            // Get class-level information about this property
+            if let Some(class_prop) = class.properties.get(in_class_schema_property_id as usize) {
+                // Validate a new property value against the type of this property
+                // and check any additional constraints like the length of a vector
+                // if it's a vector property or the length of a text if it's a text property.
+                Self::ensure_value_to_insert_at_vec_is_valid(&property_value, class_prop)?;
+            }
+        } else {
+            // Throw an error if a property was not found on entity
+            // by an in-class index of a property update.
+            return Err(ERROR_UNKNOWN_ENTITY_PROP_ID);
+        }
+
+        // Insert property value into property value vector
+        // EntityById::mutate(entity_id, |entity| entity.values.get_mut(&in_class_schema_property_id).as_deref_mut()
+        //     .map(|current_prop_value| current_prop_value.vec_insert_at(index_in_property_vec, property_value)));
 
         Ok(())
     }
@@ -996,7 +1247,7 @@ impl<T: Trait> Module<T> {
         Ok(entity.class_id)
     }
 
-    // Ensures property_values of type Internal that point to a class,
+    // Ensures property_values of type Reference that point to a class,
     // the target entity and class exists and constraint allows it.
     fn ensure_internal_property_values_permitted(
         source_class_id: ClassId,
@@ -1142,7 +1393,7 @@ impl<T: Trait> Module<T> {
 
             // If a value was not povided for the property of this schema:
             if let Some(new_value) = property_values.get(prop_id) {
-                Self::ensure_property_value_is_valid(new_value, class_prop)?;
+                Self::ensure_property_value_to_update_is_valid(new_value, class_prop)?;
 
                 appended_entity_values.insert(*prop_id, new_value.to_owned());
             } else {
@@ -1250,13 +1501,23 @@ impl<T: Trait> Module<T> {
         (entity, class)
     }
 
-    pub fn ensure_property_value_is_valid(
+    pub fn ensure_property_value_to_update_is_valid(
         value: &PropertyValue,
         prop: &Property,
     ) -> dispatch::Result {
         Self::ensure_prop_value_matches_its_type(value, prop)?;
         Self::ensure_valid_internal_prop(value, prop)?;
         Self::validate_max_len_if_text_prop(value, prop)?;
+        Self::validate_max_len_if_vec_prop(value, prop)?;
+        Ok(())
+    }
+
+    pub fn ensure_value_to_insert_at_vec_is_valid(
+        value: &PropertyValue,
+        prop: &Property,
+    ) -> dispatch::Result {
+        Self::ensure_prop_value_matches_its_type(value, prop)?;
+        Self::ensure_valid_internal_prop(value, prop)?;
         Self::validate_max_len_if_vec_prop(value, prop)?;
         Ok(())
     }
