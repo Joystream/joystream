@@ -47,7 +47,7 @@ USAGE
   $ joystream-cli account:choose
 ```
 
-_See code: [src/commands/account/choose.ts](https://github.com/Joystream/cli/blob/v0.0.0/src/commands/account/choose.ts)_
+_See code: [src/commands/account/choose.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/choose.ts)_
 
 ## `joystream-cli account:create NAME`
 
@@ -61,7 +61,7 @@ ARGUMENTS
   NAME  Account name
 ```
 
-_See code: [src/commands/account/create.ts](https://github.com/Joystream/cli/blob/v0.0.0/src/commands/account/create.ts)_
+_See code: [src/commands/account/create.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/create.ts)_
 
 ## `joystream-cli account:current`
 
@@ -76,7 +76,7 @@ ALIASES
   $ joystream-cli account:default
 ```
 
-_See code: [src/commands/account/current.ts](https://github.com/Joystream/cli/blob/v0.0.0/src/commands/account/current.ts)_
+_See code: [src/commands/account/current.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/current.ts)_
 
 ## `joystream-cli account:export PATH`
 
@@ -93,7 +93,7 @@ OPTIONS
   -a, --all  If provided, exports all existing accounts into "exported_accounts" folder inside given path
 ```
 
-_See code: [src/commands/account/export.ts](https://github.com/Joystream/cli/blob/v0.0.0/src/commands/account/export.ts)_
+_See code: [src/commands/account/export.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/export.ts)_
 
 ## `joystream-cli account:forget`
 
@@ -104,7 +104,7 @@ USAGE
   $ joystream-cli account:forget
 ```
 
-_See code: [src/commands/account/forget.ts](https://github.com/Joystream/cli/blob/v0.0.0/src/commands/account/forget.ts)_
+_See code: [src/commands/account/forget.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/forget.ts)_
 
 ## `joystream-cli account:import BACKUPFILEPATH`
 
@@ -118,7 +118,7 @@ ARGUMENTS
   BACKUPFILEPATH  Path to account backup JSON file
 ```
 
-_See code: [src/commands/account/import.ts](https://github.com/Joystream/cli/blob/v0.0.0/src/commands/account/import.ts)_
+_See code: [src/commands/account/import.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/import.ts)_
 
 ## `joystream-cli account:transferTokens RECIPIENT AMOUNT`
 
@@ -133,7 +133,7 @@ ARGUMENTS
   AMOUNT     Amount of tokens to transfer
 ```
 
-_See code: [src/commands/account/transferTokens.ts](https://github.com/Joystream/cli/blob/v0.0.0/src/commands/account/transferTokens.ts)_
+_See code: [src/commands/account/transferTokens.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/transferTokens.ts)_
 
 ## `joystream-cli council:info`
 
@@ -144,7 +144,7 @@ USAGE
   $ joystream-cli council:info
 ```
 
-_See code: [src/commands/council/info.ts](https://github.com/Joystream/cli/blob/v0.0.0/src/commands/council/info.ts)_
+_See code: [src/commands/council/info.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/council/info.ts)_
 
 ## `joystream-cli help [COMMAND]`
 
