@@ -1278,60 +1278,61 @@ impl<T: Trait> Module<T> {
             Err(ERROR_TEXT_PROP_IS_TOO_LONG)
         }
     }
-    
-        #[rustfmt::skip]
+
     pub fn validate_max_len_if_vec_prop(
-            value: &PropertyValue,
-            prop: &Property,
-        ) -> dispatch::Result {
-    
-            fn validate_slice_len<T>(vec: &[T], max_len: &u16) -> bool {
-                vec.len() <= *max_len as usize
-            }
-    
-            let is_valid_len = match (value, &prop.prop_type) {
-                (PV::BoolVec(vec),     PT::BoolVec(max_len))   => validate_slice_len(vec, max_len),
-                (PV::Uint16Vec(vec),   PT::Uint16Vec(max_len)) => validate_slice_len(vec, max_len),
-                (PV::Uint32Vec(vec),   PT::Uint32Vec(max_len)) => validate_slice_len(vec, max_len),
-                (PV::Uint64Vec(vec),   PT::Uint64Vec(max_len)) => validate_slice_len(vec, max_len),
-                (PV::Int16Vec(vec),    PT::Int16Vec(max_len))  => validate_slice_len(vec, max_len),
-                (PV::Int32Vec(vec),    PT::Int32Vec(max_len))  => validate_slice_len(vec, max_len),
-                (PV::Int64Vec(vec),    PT::Int64Vec(max_len))  => validate_slice_len(vec, max_len),
-    
-                (PV::TextVec(vec),     PT::TextVec(vec_max_len, text_max_len)) => {
-                    if validate_slice_len(vec, vec_max_len) {
-                        for text_item in vec.iter() {
-                            Self::validate_max_len_of_text(text_item, *text_max_len)?;
-                        }
-                        true
-                    } else {
-                        false
-                    }
-                },
-    
-                (PV::ReferenceVec(vec), PT::ReferenceVec(vec_max_len, class_id)) => {
-                    Self::ensure_known_class_id(class_id)?;
-                    if validate_slice_len(vec, vec_max_len) {
-                        for entity_id in vec.iter() {
-                            Self::ensure_known_entity_id(entity_id)?;
-                            let entity = Self::entity_by_id(entity_id);
-                            ensure!(entity.class_id == *class_id, ERROR_INTERNAL_RPOP_DOES_NOT_MATCH_ITS_CLASS);
-                        }
-                        true
-                    } else {
-                        false
-                    }
-                },
-    
-                _ => true
-            };
-    
-            if is_valid_len {
-                Ok(())
-            } else {
-                Err(ERROR_VEC_PROP_IS_TOO_LONG)
-            }
+        value: &PropertyValue,
+        prop: &Property,
+    ) -> dispatch::Result {
+        fn validate_slice_len<T>(vec: &[T], max_len: &u16) -> bool {
+            vec.len() <= *max_len as usize
         }
+
+        let is_valid_len = match (value, &prop.prop_type) {
+            (PV::BoolVec(vec), PT::BoolVec(max_len)) => validate_slice_len(vec, max_len),
+            (PV::Uint16Vec(vec), PT::Uint16Vec(max_len)) => validate_slice_len(vec, max_len),
+            (PV::Uint32Vec(vec), PT::Uint32Vec(max_len)) => validate_slice_len(vec, max_len),
+            (PV::Uint64Vec(vec), PT::Uint64Vec(max_len)) => validate_slice_len(vec, max_len),
+            (PV::Int16Vec(vec), PT::Int16Vec(max_len)) => validate_slice_len(vec, max_len),
+            (PV::Int32Vec(vec), PT::Int32Vec(max_len)) => validate_slice_len(vec, max_len),
+            (PV::Int64Vec(vec), PT::Int64Vec(max_len)) => validate_slice_len(vec, max_len),
+
+            (PV::TextVec(vec), PT::TextVec(vec_max_len, text_max_len)) => {
+                if validate_slice_len(vec, vec_max_len) {
+                    for text_item in vec.iter() {
+                        Self::validate_max_len_of_text(text_item, *text_max_len)?;
+                    }
+                    true
+                } else {
+                    false
+                }
+            }
+
+            (PV::ReferenceVec(vec), PT::ReferenceVec(vec_max_len, class_id)) => {
+                Self::ensure_known_class_id(class_id)?;
+                if validate_slice_len(vec, vec_max_len) {
+                    for entity_id in vec.iter() {
+                        Self::ensure_known_entity_id(entity_id)?;
+                        let entity = Self::entity_by_id(entity_id);
+                        ensure!(
+                            entity.class_id == *class_id,
+                            ERROR_INTERNAL_RPOP_DOES_NOT_MATCH_ITS_CLASS
+                        );
+                    }
+                    true
+                } else {
+                    false
+                }
+            }
+
+            _ => true,
+        };
+
+        if is_valid_len {
+            Ok(())
+        } else {
+            Err(ERROR_VEC_PROP_IS_TOO_LONG)
+        }
+    }
 
     pub fn ensure_prop_value_matches_its_type(
         value: &PropertyValue,
@@ -1343,20 +1344,13 @@ impl<T: Trait> Module<T> {
             Err(ERROR_PROP_VALUE_DONT_MATCH_TYPE)
         }
     }
-    
-        #[rustfmt::skip]
-    pub fn does_prop_value_match_type(
-            value: &PropertyValue,
-            prop: &Property,
-        ) -> bool {
-    
-            // A non required property can be updated to None:
-            if !prop.required && *value == PV::Bool(false) {
-                return true
-            }
-    
-            match (value, &prop.prop_type) {
-    
+
+    pub fn does_prop_value_match_type(value: &PropertyValue, prop: &Property) -> bool {
+        // A non required property can be updated to None:
+        if !prop.required && *value == PV::Bool(false) {
+            return true;
+        }
+        match (value, &prop.prop_type) {
                 // Single values
                 (PV::Bool(_),     PT::Bool) |
                 (PV::Uint16(_),   PT::Uint16) |
@@ -1367,7 +1361,6 @@ impl<T: Trait> Module<T> {
                 (PV::Int64(_),    PT::Int64) |
                 (PV::Text(_),     PT::Text(_)) |
                 (PV::Reference(_), PT::Reference(_)) |
-    
                 // Vectors:
                 (PV::BoolVec(_),     PT::BoolVec(_)) |
                 (PV::Uint16Vec(_),   PT::Uint16Vec(_)) |
@@ -1378,12 +1371,11 @@ impl<T: Trait> Module<T> {
                 (PV::Int64Vec(_),    PT::Int64Vec(_)) |
                 (PV::TextVec(_),     PT::TextVec(_, _)) |
                 (PV::ReferenceVec(_), PT::ReferenceVec(_, _)) => true,
-    
                 // (PV::External(_), PT::External(_)) => true,
                 // (PV::ExternalVec(_), PT::ExternalVec(_, _)) => true,
                 _ => false,
             }
-        }
+    }
 
     pub fn ensure_property_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
         T::PropertyNameConstraint::get().ensure_valid(
