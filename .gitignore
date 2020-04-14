@@ -22,3 +22,6 @@ yarn*
 
 # Visual Studio Code
 .vscode
+
+# Warthog codegen
+generated/
