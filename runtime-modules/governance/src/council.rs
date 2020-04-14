@@ -49,8 +49,8 @@ decl_storage! {
         /// Optional interval in blocks on which a reward payout will be made to each council member
         pub PayoutInterval get(payout_interval): Option<T::BlockNumber>;
 
-        /// How many blocks after start of council term the first payout will be made
-        pub FirstPayoutAfterTermStart get(first_payout_after_term_start): T::BlockNumber;
+        /// How many blocks after the reward is created, the first payout will be made
+        pub FirstPayoutAfterRewardCreated get(first_payout_after_reward_created): T::BlockNumber;
     }
 }
 
@@ -64,7 +64,24 @@ decl_event!(
 
 impl<T: Trait> CouncilElected<Seats<T::AccountId, BalanceOf<T>>, T::BlockNumber> for Module<T> {
     fn council_elected(seats: Seats<T::AccountId, BalanceOf<T>>, term: T::BlockNumber) {
-        Self::apply_council_seats(seats, term);
+        <ActiveCouncil<T>>::put(seats.clone());
+
+        let next_term_ends_at = <system::Module<T>>::block_number() + term;
+
+        <TermEndsAt<T>>::put(next_term_ends_at);
+
+        if let Some(reward_source) = Self::council_mint() {
+            for seat in seats.iter() {
+                Self::add_reward_relationship(&seat.member, reward_source);
+            }
+        } else {
+            // Skip trying to create rewards since no mint has been created yet
+            debug::warn!(
+                "Not creating reward relationship for council seats because no mint exists"
+            );
+        }
+
+        Self::deposit_event(RawEvent::NewCouncilTermStarted(next_term_ends_at));
     }
 }
 
@@ -86,30 +103,26 @@ impl<T: Trait> Module<T> {
         Ok(mint_id)
     }
 
-    fn add_reward_relationship(
-        destination: &T::AccountId,
-    ) -> Result<T::RewardRelationshipId, recurringrewards::RewardsError> {
-        if let Some(reward_source) = Self::council_mint() {
-            let recipient = <recurringrewards::Module<T>>::add_recipient();
+    fn add_reward_relationship(destination: &T::AccountId, reward_source: T::MintId) {
+        let recipient = <recurringrewards::Module<T>>::add_recipient();
 
-            let next_payout_at = system::Module::<T>::block_number()
-                + Self::first_payout_after_term_start()
-                + T::BlockNumber::one();
+        // When calculating when first payout occurs, add minimum of one block interval to ensure rewards module
+        // has a chance to execute its on_finalize routine.
+        let next_payout_at = system::Module::<T>::block_number()
+            + Self::first_payout_after_reward_created()
+            + T::BlockNumber::one();
 
-            let relationship_id = <recurringrewards::Module<T>>::add_reward_relationship(
-                reward_source,
-                recipient,
-                destination.clone(),
-                Self::amount_per_payout(),
-                next_payout_at,
-                Self::payout_interval(),
-            )?;
-
+        if let Ok(relationship_id) = <recurringrewards::Module<T>>::add_reward_relationship(
+            reward_source,
+            recipient,
+            destination.clone(),
+            Self::amount_per_payout(),
+            next_payout_at,
+            Self::payout_interval(),
+        ) {
             RewardRelationships::<T>::insert(destination, relationship_id);
-
-            Ok(relationship_id)
         } else {
-            Err(recurringrewards::RewardsError::RewardSourceNotFound)
+            debug::warn!("Failed to create a reward relationship for council seat");
         }
     }
 
@@ -120,24 +133,6 @@ impl<T: Trait> Module<T> {
                 <recurringrewards::Module<T>>::remove_reward_relationship(id);
             }
         }
-    }
-
-    fn apply_council_seats(seats: Seats<T::AccountId, BalanceOf<T>>, term: T::BlockNumber) {
-        <ActiveCouncil<T>>::put(seats.clone());
-
-        let next_term_ends_at = <system::Module<T>>::block_number() + term;
-
-        <TermEndsAt<T>>::put(next_term_ends_at);
-
-        for seat in seats.iter() {
-            let reward_added_result = Self::add_reward_relationship(&seat.member);
-
-            if reward_added_result.is_err() {
-                debug::info!("Failed to create a reward relationship for council seat");
-            }
-        }
-
-        Self::deposit_event(RawEvent::NewCouncilTermStarted(next_term_ends_at));
     }
 
     fn on_term_ended(now: T::BlockNumber) {
@@ -176,6 +171,12 @@ decl_module! {
             // Council is being replaced so remove existing reward relationships if they exist
             Self::remove_reward_relationships();
 
+            if let Some(reward_source) = Self::council_mint() {
+                for account in accounts.clone() {
+                    Self::add_reward_relationship(&account, reward_source);
+                }
+            }
+
             let new_council: Seats<T::AccountId, BalanceOf<T>> = accounts.into_iter().map(|account| {
                 Seat {
                     member: account,
@@ -190,7 +191,13 @@ decl_module! {
         /// Adds a zero staked council member. A member added in this way does not get a recurring reward.
         fn add_council_member(origin, account: T::AccountId) {
             ensure_root(origin)?;
+
             ensure!(!Self::is_councilor(&account), "cannot add same account multiple times");
+
+            if let Some(reward_source) = Self::council_mint() {
+                Self::add_reward_relationship(&account, reward_source);
+            }
+
             let seat = Seat {
                 member: account,
                 stake: BalanceOf::<T>::zero(),
@@ -246,7 +253,7 @@ decl_module! {
             if let Some(mint_id) = Self::council_mint() {
                 minting::Module::<T>::transfer_tokens(mint_id, amount, &destination)?;
             } else {
-                return Err("CouncilHashNoMint")
+                return Err("CouncilHasNoMint")
             }
         }
 
@@ -255,12 +262,12 @@ decl_module! {
             origin,
             amount_per_payout: minting::BalanceOf<T>,
             payout_interval: Option<T::BlockNumber>,
-            first_payout_after_term_start: T::BlockNumber
+            first_payout_after_reward_created: T::BlockNumber
         ) {
             ensure_root(origin)?;
 
             AmountPerPayout::<T>::put(amount_per_payout);
-            FirstPayoutAfterTermStart::<T>::put(first_payout_after_term_start);
+            FirstPayoutAfterRewardCreated::<T>::put(first_payout_after_reward_created);
 
             if let Some(payout_interval) = payout_interval {
                 PayoutInterval::<T>::put(payout_interval);
@@ -329,6 +336,12 @@ mod tests {
     #[test]
     fn council_elected_test() {
         initial_test_ext().execute_with(|| {
+            // Ensure a mint is created so we can create rewards
+            assert_ok!(Council::set_council_mint_capacity(
+                system::RawOrigin::Root.into(),
+                1000
+            ));
+
             Council::council_elected(
                 vec![
                     Seat {
