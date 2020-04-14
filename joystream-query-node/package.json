@@ -1,0 +1,105 @@
+{
+  "name": "query-node-graphql-server",
+  "version": "0.0.0",
+  "description": "Generated Warthog Project",
+  "license": "MIT",
+  "scripts": {
+    "bootstrap": "yarn bootstrap:dev",
+    "bootstrap:dev": "yarn && yarn build:dev && yarn db:drop && yarn db:create && yarn db:migrate && yarn db:seed",
+    "bootstrap:prod": "yarn && yarn build:prod && yarn start:prod",
+    "//": "This is the default command run in CI, so it should point to Prod and also create Prod config",
+    "build": "yarn build:prod",
+    "build:prod": "WARTHOG_ENV=production yarn run config && yarn compile",
+    "build:dev": "yarn run config:dev && yarn codegen && yarn compile",
+    "check:code": "tsc --noEmit && yarn lint && prettier ./{src,test,tools}/**/*.ts --write",
+    "clean": "yarn db:drop && rm -rf ./node_modules ./generated ./dist",
+    "codegen": "warthog codegen",
+    "config": "WARTHOG_ENV=$NODE_ENV yarn dotenv:generate",
+    "config:dev": "WARTHOG_ENV=development yarn dotenv:generate",
+    "compile": "rm -rf ./dist && yarn tsc",
+    "deploy": "heroku git:remote -a warthog-starter && git push heroku master && WARTHOG_ENV=production yarn dotenv:generate && warthog db:migrate",
+    "dotenv:generate": "dotenvi -s ${WARTHOG_ENV:-development}",
+    "db:create": "warthog db:create",
+    "db:drop": "warthog db:drop",
+    "db:migrate:generate": "warthog db:migrate:generate --name",
+    "db:migrate": "warthog db:migrate",
+    "db:seed": "ts-node tools/seed.ts",
+    "lint": "eslint './+(src|test|tools)/**/*.{js,ts}' --fix",
+    "list:users": "ts-node ./tools/list-users.ts",
+    "playground": "warthog playground",
+    "prettier": "prettier ./{src,test,tools}/**/*.ts --write",
+    "start": "yarn start:prod",
+    "start:dev": "ts-node-dev --type-check src/index.ts",
+    "start:dev:watch": "nodemon -e ts,graphql -x ts-node --type-check src/index.ts",
+    "start:prod": "WARTHOG_ENV=production yarn dotenv:generate && node dist/src/index.js",
+    "test": "DEBUG= jest --verbose --coverage",
+    "test:watch": "DEBUG= jest --watch"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "yarn run config:dev && lint-staged && tsc -p ./tsconfig.json && yarn test"
+    }
+  },
+  "lint-staged": {
+    "linters": {
+      "*.ts": [
+        "eslint --fix",
+        "prettier --write",
+        "git add"
+      ],
+      "*.{js,json}": [
+        "prettier --write",
+        "git add"
+      ]
+    },
+    "ignore": [
+      "**/generated/*"
+    ]
+  },
+  "dependencies": {
+    "@types/sqlite3": "^3.1.5",
+    "dotenv": "^8.0.0",
+    "dotenvi": "^0.6.0",
+    "reflect-metadata": "^0.1.13",
+    "warthog": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^24.0.15",
+    "jest": "^24.8.0",
+    "ts-jest": "^24.0.2",
+    "ts-node": "^7.0.1",
+    "ts-node-dev": "^1.0.0-pre.40",
+    "typescript": "3.5.2"
+  },
+  "jest": {
+    "globals": {
+      "ts-jest": {
+        "tsConfig": "tsconfig.test.json"
+      }
+    },
+    "transform": {
+      ".ts": "ts-jest"
+    },
+    "testRegex": "\\.test\\.ts$",
+    "moduleFileExtensions": [
+      "js",
+      "ts"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "\\.test\\.ts$"
+    ],
+    "globalSetup": "<rootDir>/test/globalSetup.ts",
+    "globalTeardown": "<rootDir>/test/globalTeardown.ts",
+    "setupFilesAfterEnv": [
+      "./test/setupFilesAfterEnv.ts"
+    ]
+  },
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true
+  },
+  "resolutions": {
+    "ts-node": "7.0.1"
+  }
+}

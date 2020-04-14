@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "outDir": "./dist",
+    "lib": ["dom", "es5", "es6", "es7", "esnext"],
+    "target": "es5",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "sourceMap": true,
+    "keyofStringsOnly": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": false, // Avoid noise in our resolvers when we use DI
+    "strict": true,
+    "strictNullChecks": true,
+    "types": ["isomorphic-fetch", "node"]
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules/**/*", "generated/**/*", "tools/**/*"]
+}
