@@ -1,6 +1,6 @@
 use crate::VERSION;
 use sr_primitives::{print, traits::Zero};
-use srml_support::{decl_event, decl_module, decl_storage};
+use srml_support::{debug, decl_event, decl_module, decl_storage};
 use sudo;
 use system;
 
@@ -15,9 +15,16 @@ impl<T: Trait> Module<T> {
         // ...
 
         // Create the Council mint. If it fails, we can't do anything about it here.
-        let _ = governance::council::Module::<T>::create_new_council_mint(
+        let mint_creation_result = governance::council::Module::<T>::create_new_council_mint(
             minting::BalanceOf::<T>::zero(),
         );
+
+        if mint_creation_result.is_err() {
+            debug::warn!(
+                "Failed to create a mint for council during migration: {:?}",
+                mint_creation_result
+            );
+        }
 
         Self::deposit_event(RawEvent::Migrated(
             <system::Module<T>>::block_number(),
