@@ -338,7 +338,7 @@ pub enum PropertyValue {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 enum PropertyValueType {
     SingleValue,
-    Vector
+    Vector,
 }
 
 impl PropertyValue {
@@ -353,32 +353,69 @@ impl PropertyValue {
             PropertyValue::Int64Vec(vec) => *vec = vec![],
             PropertyValue::TextVec(vec) => *vec = vec![],
             PropertyValue::ReferenceVec(vec) => *vec = vec![],
-            _ => ()
+            _ => (),
         }
     }
 
     fn vec_remove_at(&mut self, index_in_property_vec: u32) {
-
         fn remove_at_checked<T>(vec: &mut Vec<T>, index_in_property_vec: u32) {
-            if (index_in_property_vec as usize) < vec.len()  {
+            if (index_in_property_vec as usize) < vec.len() {
                 vec.remove(index_in_property_vec as usize);
             }
         }
 
         match self {
             PropertyValue::BoolVec(vec) => remove_at_checked(vec, index_in_property_vec),
-            PropertyValue::Uint16Vec(vec) =>  remove_at_checked(vec, index_in_property_vec),
-            PropertyValue::Uint32Vec(vec) =>  remove_at_checked(vec, index_in_property_vec),
-            PropertyValue::Uint64Vec(vec) =>  remove_at_checked(vec, index_in_property_vec),
-            PropertyValue::Int16Vec(vec) =>  remove_at_checked(vec, index_in_property_vec),
-            PropertyValue::Int32Vec(vec) =>  remove_at_checked(vec, index_in_property_vec),
-            PropertyValue::Int64Vec(vec) =>  remove_at_checked(vec, index_in_property_vec),
-            PropertyValue::TextVec(vec) =>  remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::Uint16Vec(vec) => remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::Uint32Vec(vec) => remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::Uint64Vec(vec) => remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::Int16Vec(vec) => remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::Int32Vec(vec) => remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::Int64Vec(vec) => remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::TextVec(vec) => remove_at_checked(vec, index_in_property_vec),
             PropertyValue::ReferenceVec(vec) => remove_at_checked(vec, index_in_property_vec),
-            _ => ()
+            _ => (),
         }
     }
 
+    fn vec_insert_at(&mut self, index_in_property_vec: u32, property_value: Self) {
+        fn insert_at<T>(vec: &mut Vec<T>, index_in_property_vec: u32, value: T) {
+            if (index_in_property_vec as usize) < vec.len() {
+                vec.insert(index_in_property_vec as usize, value);
+            }
+        }
+
+        match (self, property_value) {
+            (PropertyValue::BoolVec(vec), PropertyValue::Bool(value)) => {
+                insert_at(vec, index_in_property_vec, value)
+            }
+            (PropertyValue::Uint16Vec(vec), PropertyValue::Uint16(value)) => {
+                insert_at(vec, index_in_property_vec, value)
+            }
+            (PropertyValue::Uint32Vec(vec), PropertyValue::Uint32(value)) => {
+                insert_at(vec, index_in_property_vec, value)
+            }
+            (PropertyValue::Uint64Vec(vec), PropertyValue::Uint64(value)) => {
+                insert_at(vec, index_in_property_vec, value)
+            }
+            (PropertyValue::Int16Vec(vec), PropertyValue::Int16(value)) => {
+                insert_at(vec, index_in_property_vec, value)
+            }
+            (PropertyValue::Int32Vec(vec), PropertyValue::Int32(value)) => {
+                insert_at(vec, index_in_property_vec, value)
+            }
+            (PropertyValue::Int64Vec(vec), PropertyValue::Int64(value)) => {
+                insert_at(vec, index_in_property_vec, value)
+            }
+            (PropertyValue::TextVec(vec), PropertyValue::Text(ref value)) => {
+                insert_at(vec, index_in_property_vec, value.to_owned())
+            }
+            (PropertyValue::ReferenceVec(vec), PropertyValue::Reference(value)) => {
+                insert_at(vec, index_in_property_vec, value)
+            }
+            _ => (),
+        }
+    }
 }
 
 impl Default for PropertyValue {
@@ -729,16 +766,16 @@ decl_module! {
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
             Self::do_insert_at_entity_property_vector(
-                &raw_origin, 
-                with_credential, 
-                as_entity_maintainer, 
-                entity_id, 
-                in_class_schema_property_id, 
-                index_in_property_vec, 
+                &raw_origin,
+                with_credential,
+                as_entity_maintainer,
+                entity_id,
+                in_class_schema_property_id,
+                index_in_property_vec,
                 property_value
             )
         }
-        
+
         pub fn transaction(origin, operations: Vec<Operation<T::Credential>>) -> dispatch::Result {
             // This map holds the EntityId of the entity created as a result of executing a CreateEntity Operation
             // keyed by the indexed of the operation, in the operations vector.
@@ -894,7 +931,10 @@ impl<T: Trait> Module<T> {
             ClassPermissions::can_update_entity,
             class_id,
             |_class_permissions, _access_level| {
-                Self::complete_entity_property_vector_cleaning(entity_id, in_class_schema_property_id)
+                Self::complete_entity_property_vector_cleaning(
+                    entity_id,
+                    in_class_schema_property_id,
+                )
             },
         )
     }
@@ -905,7 +945,7 @@ impl<T: Trait> Module<T> {
         as_entity_maintainer: bool,
         entity_id: EntityId,
         in_class_schema_property_id: u16,
-        index_in_property_vec: u32
+        index_in_property_vec: u32,
     ) -> dispatch::Result {
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
 
@@ -922,7 +962,11 @@ impl<T: Trait> Module<T> {
             ClassPermissions::can_update_entity,
             class_id,
             |_class_permissions, _access_level| {
-                Self::complete_remove_at_entity_property_vector(entity_id, in_class_schema_property_id, index_in_property_vec)
+                Self::complete_remove_at_entity_property_vector(
+                    entity_id,
+                    in_class_schema_property_id,
+                    index_in_property_vec,
+                )
             },
         )
     }
@@ -934,7 +978,7 @@ impl<T: Trait> Module<T> {
         entity_id: EntityId,
         in_class_schema_property_id: u16,
         index_in_property_vec: u32,
-        property_value: PropertyValue
+        property_value: PropertyValue,
     ) -> dispatch::Result {
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
 
@@ -951,7 +995,12 @@ impl<T: Trait> Module<T> {
             ClassPermissions::can_update_entity,
             class_id,
             |_class_permissions, _access_level| {
-                Self::complete_insert_at_entity_property_vector(entity_id, in_class_schema_property_id, index_in_property_vec, property_value)
+                Self::complete_insert_at_entity_property_vector(
+                    entity_id,
+                    in_class_schema_property_id,
+                    index_in_property_vec,
+                    property_value,
+                )
             },
         )
     }
@@ -1007,7 +1056,7 @@ impl<T: Trait> Module<T> {
         }
 
         // If property values should be update:
-        if updated  {
+        if updated {
             EntityById::mutate(entity_id, |entity| {
                 entity.values = updated_values;
             });
@@ -1027,11 +1076,16 @@ impl<T: Trait> Module<T> {
             // Throw an error if a property was not found on entity
             // by an in-class index of a property update.
             return Err(ERROR_UNKNOWN_ENTITY_PROP_ID);
-        } 
-        
+        }
+
         // Clear property value vector:
-        EntityById::mutate(entity_id, |entity| entity.values.get_mut(&in_class_schema_property_id).as_deref_mut()
-            .map(|current_property_value_vec| current_property_value_vec.vec_clear()));
+        EntityById::mutate(entity_id, |entity| {
+            entity
+                .values
+                .get_mut(&in_class_schema_property_id)
+                .as_deref_mut()
+                .map(|current_property_value_vec| current_property_value_vec.vec_clear())
+        });
 
         Ok(())
     }
@@ -1039,9 +1093,8 @@ impl<T: Trait> Module<T> {
     fn complete_remove_at_entity_property_vector(
         entity_id: EntityId,
         in_class_schema_property_id: u16,
-        index_in_property_vec: u32
+        index_in_property_vec: u32,
     ) -> dispatch::Result {
-
         Self::ensure_known_entity_id(&entity_id)?;
         let entity = Self::entity_by_id(entity_id);
 
@@ -1049,12 +1102,17 @@ impl<T: Trait> Module<T> {
             // Throw an error if a property was not found on entity
             // by an in-class index of a property update.
             return Err(ERROR_UNKNOWN_ENTITY_PROP_ID);
-        } 
-        
+        }
+
         // Remove property value vector
-        EntityById::mutate(entity_id, |entity| entity.values.get_mut(&in_class_schema_property_id).as_deref_mut()
-            .map(|current_prop_value| current_prop_value.vec_remove_at(index_in_property_vec)));
-        
+        EntityById::mutate(entity_id, |entity| {
+            entity
+                .values
+                .get_mut(&in_class_schema_property_id)
+                .as_deref_mut()
+                .map(|current_prop_value| current_prop_value.vec_remove_at(index_in_property_vec))
+        });
+
         Ok(())
     }
 
@@ -1062,22 +1120,25 @@ impl<T: Trait> Module<T> {
         entity_id: EntityId,
         in_class_schema_property_id: u16,
         index_in_property_vec: u32,
-        property_value: PropertyValue
+        property_value: PropertyValue,
     ) -> dispatch::Result {
-
         Self::ensure_known_entity_id(&entity_id)?;
 
-        let (mut entity, class) = Self::get_entity_and_class(entity_id);
+        let (entity, class) = Self::get_entity_and_class(entity_id);
 
         // Try to find a current property value in the entity
         // by matching its id to the id of a property with an updated value.
-        if let Some(current_prop_value) = entity.values.get_mut(&in_class_schema_property_id) {
+        if let Some(entity_prop_value) = entity.values.get(&in_class_schema_property_id) {
             // Get class-level information about this property
             if let Some(class_prop) = class.properties.get(in_class_schema_property_id as usize) {
                 // Validate a new property value against the type of this property
                 // and check any additional constraints like the length of a vector
                 // if it's a vector property or the length of a text if it's a text property.
-                Self::ensure_value_to_insert_at_vec_is_valid(&property_value, class_prop)?;
+                Self::ensure_prop_value_can_be_insert_at_prop_vec(
+                    &property_value,
+                    entity_prop_value,
+                    class_prop,
+                )?;
             }
         } else {
             // Throw an error if a property was not found on entity
@@ -1086,8 +1147,15 @@ impl<T: Trait> Module<T> {
         }
 
         // Insert property value into property value vector
-        // EntityById::mutate(entity_id, |entity| entity.values.get_mut(&in_class_schema_property_id).as_deref_mut()
-        //     .map(|current_prop_value| current_prop_value.vec_insert_at(index_in_property_vec, property_value)));
+        EntityById::mutate(entity_id, |entity| {
+            entity
+                .values
+                .get_mut(&in_class_schema_property_id)
+                .as_deref_mut()
+                .map(|current_prop_value| {
+                    current_prop_value.vec_insert_at(index_in_property_vec, property_value)
+                })
+        });
 
         Ok(())
     }
@@ -1512,13 +1580,13 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn ensure_value_to_insert_at_vec_is_valid(
+    pub fn ensure_prop_value_can_be_insert_at_prop_vec(
         value: &PropertyValue,
+        entity_prop_value: &PropertyValue,
         prop: &Property,
     ) -> dispatch::Result {
-        Self::ensure_prop_value_matches_its_type(value, prop)?;
         Self::ensure_valid_internal_prop(value, prop)?;
-        Self::validate_max_len_if_vec_prop(value, prop)?;
+        Self::validate_prop_value_can_be_insert_at_prop_vec(value, entity_prop_value, prop)?;
         Ok(())
     }
 
@@ -1544,21 +1612,21 @@ impl<T: Trait> Module<T> {
         value: &PropertyValue,
         prop: &Property,
     ) -> dispatch::Result {
-        fn validate_slice_len<T>(vec: &[T], max_len: &u16) -> bool {
+        fn validate_vec_len<T>(vec: &[T], max_len: &u16) -> bool {
             vec.len() <= *max_len as usize
         }
 
         let is_valid_len = match (value, &prop.prop_type) {
-            (PV::BoolVec(vec), PT::BoolVec(max_len)) => validate_slice_len(vec, max_len),
-            (PV::Uint16Vec(vec), PT::Uint16Vec(max_len)) => validate_slice_len(vec, max_len),
-            (PV::Uint32Vec(vec), PT::Uint32Vec(max_len)) => validate_slice_len(vec, max_len),
-            (PV::Uint64Vec(vec), PT::Uint64Vec(max_len)) => validate_slice_len(vec, max_len),
-            (PV::Int16Vec(vec), PT::Int16Vec(max_len)) => validate_slice_len(vec, max_len),
-            (PV::Int32Vec(vec), PT::Int32Vec(max_len)) => validate_slice_len(vec, max_len),
-            (PV::Int64Vec(vec), PT::Int64Vec(max_len)) => validate_slice_len(vec, max_len),
+            (PV::BoolVec(vec), PT::BoolVec(max_len)) => validate_vec_len(vec, max_len),
+            (PV::Uint16Vec(vec), PT::Uint16Vec(max_len)) => validate_vec_len(vec, max_len),
+            (PV::Uint32Vec(vec), PT::Uint32Vec(max_len)) => validate_vec_len(vec, max_len),
+            (PV::Uint64Vec(vec), PT::Uint64Vec(max_len)) => validate_vec_len(vec, max_len),
+            (PV::Int16Vec(vec), PT::Int16Vec(max_len)) => validate_vec_len(vec, max_len),
+            (PV::Int32Vec(vec), PT::Int32Vec(max_len)) => validate_vec_len(vec, max_len),
+            (PV::Int64Vec(vec), PT::Int64Vec(max_len)) => validate_vec_len(vec, max_len),
 
             (PV::TextVec(vec), PT::TextVec(vec_max_len, text_max_len)) => {
-                if validate_slice_len(vec, vec_max_len) {
+                if validate_vec_len(vec, vec_max_len) {
                     for text_item in vec.iter() {
                         Self::validate_max_len_of_text(text_item, *text_max_len)?;
                     }
@@ -1570,7 +1638,7 @@ impl<T: Trait> Module<T> {
 
             (PV::ReferenceVec(vec), PT::ReferenceVec(vec_max_len, class_id)) => {
                 Self::ensure_known_class_id(class_id)?;
-                if validate_slice_len(vec, vec_max_len) {
+                if validate_vec_len(vec, vec_max_len) {
                     for entity_id in vec.iter() {
                         Self::ensure_known_entity_id(entity_id)?;
                         let entity = Self::entity_by_id(entity_id);
@@ -1599,11 +1667,11 @@ impl<T: Trait> Module<T> {
         value: &PropertyValue,
         prop: &Property,
     ) -> dispatch::Result {
-        if Self::does_prop_value_match_type(value, prop) {
-            Ok(())
-        } else {
-            Err(ERROR_PROP_VALUE_DONT_MATCH_TYPE)
-        }
+        ensure!(
+            Self::does_prop_value_match_type(value, prop),
+            ERROR_PROP_VALUE_DONT_MATCH_TYPE
+        );
+        Ok(())
     }
 
     pub fn does_prop_value_match_type(value: &PropertyValue, prop: &Property) -> bool {
@@ -1636,6 +1704,76 @@ impl<T: Trait> Module<T> {
                 // (PV::ExternalVec(_), PT::ExternalVec(_, _)) => true,
                 _ => false,
             }
+    }
+
+    pub fn validate_prop_value_can_be_insert_at_prop_vec(
+        value: &PropertyValue,
+        entity_prop_value: &PropertyValue,
+        prop: &Property,
+    ) -> dispatch::Result {
+        fn validate_prop_vec_len_after_value_insert<T>(vec: &[T], max_len: &u16) -> bool {
+            vec.len() < *max_len as usize
+        }
+
+        // A non required property can be updated to None:
+        if !prop.required && *value == PV::Bool(false) {
+            return Ok(());
+        }
+
+        let is_valid_len = match (value, entity_prop_value, &prop.prop_type) {
+            // Single values
+            (PV::Bool(_), PV::BoolVec(vec), PT::BoolVec(max_len)) => {
+                validate_prop_vec_len_after_value_insert(vec, max_len)
+            }
+            (PV::Uint16(_), PV::Uint16Vec(vec), PT::Uint16Vec(max_len)) => {
+                validate_prop_vec_len_after_value_insert(vec, max_len)
+            }
+            (PV::Uint32(_), PV::Uint32Vec(vec), PT::Uint32Vec(max_len)) => {
+                validate_prop_vec_len_after_value_insert(vec, max_len)
+            }
+            (PV::Uint64(_), PV::Uint64Vec(vec), PT::Uint64Vec(max_len)) => {
+                validate_prop_vec_len_after_value_insert(vec, max_len)
+            }
+            (PV::Int16(_), PV::Int16Vec(vec), PT::Int16Vec(max_len)) => {
+                validate_prop_vec_len_after_value_insert(vec, max_len)
+            }
+            (PV::Int32(_), PV::Int32Vec(vec), PT::Int32Vec(max_len)) => {
+                validate_prop_vec_len_after_value_insert(vec, max_len)
+            }
+            (PV::Int64(_), PV::Int64Vec(vec), PT::Int64Vec(max_len)) => {
+                validate_prop_vec_len_after_value_insert(vec, max_len)
+            }
+            (PV::Text(text_item), PV::TextVec(vec), PT::TextVec(vec_max_len, text_max_len)) => {
+                if validate_prop_vec_len_after_value_insert(vec, vec_max_len) {
+                    Self::validate_max_len_of_text(text_item, *text_max_len)?;
+                    true
+                } else {
+                    false
+                }
+            }
+            (
+                PV::Reference(entity_id),
+                PV::ReferenceVec(vec),
+                PT::ReferenceVec(vec_max_len, class_id),
+            ) => {
+                Self::ensure_known_class_id(class_id)?;
+                if validate_prop_vec_len_after_value_insert(vec, vec_max_len) {
+                    Self::ensure_known_entity_id(entity_id)?;
+                    let entity = Self::entity_by_id(entity_id);
+                    ensure!(
+                        entity.class_id == *class_id,
+                        ERROR_INTERNAL_RPOP_DOES_NOT_MATCH_ITS_CLASS
+                    );
+                    true
+                } else {
+                    false
+                }
+            }
+            _ => false,
+        };
+
+        ensure!(is_valid_len, ERROR_ENTITY_PROP_VALUE_VECTOR_IS_TOO_LONG);
+        Ok(())
     }
 
     pub fn ensure_property_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
