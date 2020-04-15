@@ -1218,12 +1218,12 @@ fn complete_entity_property_vector_cleaning_successfully() {
     with_test_externalities(|| {
         let entity_id = create_entity_with_schema_support();
         let mut prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(true));
-        prop_values.append(&mut prop_value(PROP_ID_U32, PropertyValue::Bool(false)));
-        prop_values.append(&mut prop_value(PROP_ID_U32_VEC, PropertyValue::Uint32Vec(vec![123, 234, 44])));
-        prop_values.append(&mut prop_value(
+        prop_values.insert(PROP_ID_U32, PropertyValue::Bool(false));
+        prop_values.insert(PROP_ID_U32_VEC, PropertyValue::Uint32Vec(vec![123, 234, 44]));
+        prop_values.insert(
             PROP_ID_INTERNAL,
             PropertyValue::Bool(false),
-        ));
+        );
         
         // Check property values runtime storage related to an entity before cleaning of entity property vector value under given schema id 
         assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
@@ -1234,7 +1234,7 @@ fn complete_entity_property_vector_cleaning_successfully() {
             PROP_ID_U32_VEC
         ));
 
-        // Update prop_value to compare with empty vec under given index
+        // Update entity property values to compare with runtime storage entity value under given schema id 
         prop_values.insert(PROP_ID_U32_VEC, PropertyValue::Uint32Vec(vec![]));
 
         // Check property values runtime storage related to a entity right after 
@@ -1277,6 +1277,113 @@ fn cannot_complete_entity_property_vector_cleaning_when_entity_prop_id_is_not_a_
                 PROP_ID_U32
             ),
             ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR
+        );
+    })
+}
+
+// Remove at entity property vector
+// --------------------------------------
+
+#[test]
+fn complete_remove_at_entity_property_vector_successfully() {
+    with_test_externalities(|| {
+        let entity_id = create_entity_with_schema_support();
+        let mut prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(true));
+        prop_values.insert(PROP_ID_U32, PropertyValue::Bool(false));
+        prop_values.insert(PROP_ID_U32_VEC, PropertyValue::Uint32Vec(vec![123, 234, 44]));
+        prop_values.insert(
+            PROP_ID_INTERNAL,
+            PropertyValue::Bool(false),
+        );
+        
+        // Check property values runtime storage related to an entity before removing at given index of entity property vector value 
+        assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
+
+        // Perform removing at given index of entity property vector value
+        assert_ok!(TestModule::complete_remove_at_entity_property_vector(
+            entity_id,
+            PROP_ID_U32_VEC,
+            1
+        ));
+
+        // Update entity property values to compare with runtime storage entity value under given schema id 
+        prop_values.insert(PROP_ID_U32_VEC, PropertyValue::Uint32Vec(vec![123, 44]));
+
+        // Check property values runtime storage related to a entity right after 
+        // removing at given index of entity property vector value
+        assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
+    })
+}
+
+#[test]
+fn cannot_complete_remove_at_entity_property_vector_when_entity_not_found() {
+    with_test_externalities(|| {
+        assert_entity_not_found(TestModule::complete_remove_at_entity_property_vector(
+            UNKNOWN_ENTITY_ID,
+            PROP_ID_U32_VEC,
+            1
+        ));
+    })
+}
+
+#[test]
+fn cannot_complete_remove_at_entity_property_vector_when_unknown_entity_prop_id() {
+    with_test_externalities(|| {
+        let entity_id = create_entity_with_schema_support();
+        assert_err!(
+            TestModule::complete_remove_at_entity_property_vector(
+                entity_id,
+                UNKNOWN_PROP_ID,
+                1
+            ),
+            ERROR_UNKNOWN_ENTITY_PROP_ID
+        );
+    })
+}
+
+#[test]
+fn cannot_complete_remove_at_entity_property_vector_when_entity_prop_id_is_not_a_vector() {
+    with_test_externalities(|| {
+        let entity_id = create_entity_with_schema_support();
+        assert_err!(
+            TestModule::complete_remove_at_entity_property_vector(
+                entity_id,
+                PROP_ID_U32,
+                1
+            ),
+            ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR
+        );
+    })
+}
+
+#[test]
+fn cannot_complete_remove_at_entity_property_vector_when_already_updated() {
+    with_test_externalities(|| {
+        let entity_id = create_entity_with_schema_support();
+        let mut prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(true));
+        prop_values.insert(PROP_ID_U32, PropertyValue::Bool(false));
+        prop_values.insert(PROP_ID_U32_VEC, PropertyValue::Uint32Vec(vec![123, 234, 44]));
+        prop_values.insert(
+            PROP_ID_INTERNAL,
+            PropertyValue::Bool(false),
+        );
+        
+        // Check property values runtime storage related to an entity before removing at given index of entity property vector value 
+        assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
+
+        // Perform removing at given index of entity property vector value
+        assert_ok!(TestModule::complete_remove_at_entity_property_vector(
+            entity_id,
+            PROP_ID_U32_VEC,
+            1
+        ));
+        assert_err!(
+            TestModule::complete_remove_at_entity_property_vector(
+                entity_id,
+                PROP_ID_U32_VEC,
+                1
+            ),
+            ERROR_PROP_VALUE_VEC_WAS_ALREADY_UPDATED
         );
     })
 }
