@@ -1,7 +1,7 @@
-import React from "react";
-import { Item, Image, Header } from "semantic-ui-react";
+import React from 'react';
+import { Item, Image, Header } from 'semantic-ui-react';
 
-import { Member } from "./ProposalDetails";
+import { Member } from './ProposalDetails';
 
 type DetailsProps = {
   // FIXME: Stage, substage and type all should be an enum
@@ -19,8 +19,8 @@ export default function Details({ stage, substage, createdAt, createdBy, type, e
       <Item>
         <Item.Content>
           <Item.Extra>Proposed By:</Item.Extra>
-          <Image src={createdBy.avatar} avatar floated="left" />
-          <Header as="h4">{createdBy.name}</Header>
+          <Image src={createdBy?.avatar} avatar floated="left" />
+          <Header as="h4">{createdBy?.name}</Header>
           <Item.Extra>{createdAt}</Item.Extra>
         </Item.Content>
       </Item>
@@ -45,7 +45,7 @@ export default function Details({ stage, substage, createdAt, createdBy, type, e
       <Item>
         <Item.Content>
           <Item.Extra>Expires in:</Item.Extra>
-          <Header as="h4">{`${expiresIn.toLocaleString("en-US")} blocks`}</Header>
+          <Header as="h4">{`${expiresIn.toLocaleString('en-US')} blocks`}</Header>
         </Item.Content>
       </Item>
     </Item.Group>
