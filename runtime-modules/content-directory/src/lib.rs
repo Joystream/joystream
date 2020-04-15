@@ -210,8 +210,8 @@ pub type ClassPermissionsType<T> =
     ClassPermissions<ClassId, <T as Trait>::Credential, u16, <T as system::Trait>::BlockNumber>;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Entity {
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct Entity<T: Trait> {
     /// The class id of this entity.
     pub class_id: ClassId,
 
@@ -223,7 +223,37 @@ pub struct Entity {
     /// Values for properties on class that are used by some schema used by this entity!
     /// Length is no more than Class.properties.
     pub values: BTreeMap<u16, PropertyValue>,
+
+    /// Map, representing relation between entity vec_values index and block, where vec_value was updated
+    /// Used to forbid mutating property vec value more than once per block for purpose of race update conditions avoiding
+    pub vec_values_last_update: BTreeMap<u16, <T as system::Trait>::BlockNumber>,
     // pub deleted: bool,
+}
+
+impl<T: Trait> Default for Entity<T> {
+    fn default() -> Self {
+        Self {
+            class_id: ClassId::default(),
+            supported_schemas: BTreeSet::new(),
+            values: BTreeMap::new(),
+            vec_values_last_update: BTreeMap::new(),
+        }
+    }
+}
+
+impl<T: Trait> Entity<T> {
+    fn new(
+        class_id: ClassId,
+        supported_schemas: BTreeSet<u16>,
+        values: BTreeMap<u16, PropertyValue>,
+    ) -> Self {
+        Self {
+            class_id,
+            supported_schemas,
+            values,
+            ..Entity::default()
+        }
+    }
 }
 
 /// A schema defines what properties describe an entity
@@ -334,14 +364,22 @@ pub enum PropertyValue {
     // ExternalVec(Vec<ExternalPropertyType>),
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-enum PropertyValueType {
-    SingleValue,
-    Vector,
-}
-
 impl PropertyValue {
+    fn is_vec(&self) -> bool {
+        match self {
+            PropertyValue::BoolVec(_)
+            | PropertyValue::Uint16Vec(_)
+            | PropertyValue::Uint32Vec(_)
+            | PropertyValue::Uint64Vec(_)
+            | PropertyValue::Int16Vec(_)
+            | PropertyValue::Int32Vec(_)
+            | PropertyValue::Int64Vec(_)
+            | PropertyValue::TextVec(_)
+            | PropertyValue::ReferenceVec(_) => true,
+            _ => false,
+        }
+    }
+
     fn vec_clear(&mut self) {
         match self {
             PropertyValue::BoolVec(vec) => *vec = vec![],
@@ -433,7 +471,7 @@ decl_storage! {
         /// ClassPermissions of corresponding Classes in the versioned store
         pub ClassById get(class_by_id) config(): linked_map ClassId => Class<T>;
 
-        pub EntityById get(entity_by_id) config(): map EntityId => Entity;
+        pub EntityById get(entity_by_id) config(): map EntityId => Entity<T>;
 
         /// Owner of an entity in the versioned store. If it is None then it is owned by the system.
         pub EntityMaintainerByEntityId get(entity_maintainer_by_entity_id): linked_map EntityId => Option<T::Credential>;
@@ -865,11 +903,7 @@ impl<T: Trait> Module<T> {
     fn perform_entity_creation(class_id: ClassId) -> EntityId {
         let entity_id = NextEntityId::get();
 
-        let new_entity = Entity {
-            class_id,
-            supported_schemas: BTreeSet::new(),
-            values: BTreeMap::new(),
-        };
+        let new_entity = Entity::<T>::new(class_id, BTreeSet::new(), BTreeMap::new());
 
         // Save newly created entity:
         EntityById::insert(entity_id, new_entity);
@@ -1029,8 +1063,8 @@ impl<T: Trait> Module<T> {
         // Get current property values of an entity as a mutable vector,
         // so we can update them if new values provided present in new_property_values.
         let mut updated_values = entity.values;
+        let mut vec_values_last_update = entity.vec_values_last_update;
         let mut updated = false;
-
         // Iterate over a vector of new values and update corresponding properties
         // of this entity if new values are valid.
         for (id, new_value) in new_property_values.into_iter() {
@@ -1046,7 +1080,11 @@ impl<T: Trait> Module<T> {
 
                     // Update a current prop value in a mutable vector, if a new value is valid.
                     *current_prop_value = new_value;
-                    updated = !updated;
+                    if current_prop_value.is_vec() {
+                        // Update last block of vec prop value if update performed
+                        Self::refresh_vec_values_last_update(id, &mut vec_values_last_update);
+                    }
+                    updated = true;
                 }
             } else {
                 // Throw an error if a property was not found on entity
@@ -1055,14 +1093,31 @@ impl<T: Trait> Module<T> {
             }
         }
 
-        // If property values should be update:
+        // If property values should be updated:
         if updated {
-            EntityById::mutate(entity_id, |entity| {
+            <EntityById<T>>::mutate(entity_id, |entity| {
                 entity.values = updated_values;
+                entity.vec_values_last_update = vec_values_last_update;
             });
         }
 
         Ok(())
+    }
+
+    fn refresh_vec_values_last_update(
+        id: u16,
+        vec_values_last_update: &mut BTreeMap<u16, T::BlockNumber>,
+    ) {
+        match vec_values_last_update.get_mut(&id) {
+            Some(block_number) if *block_number < <system::Module<T>>::block_number() => {
+                *block_number = <system::Module<T>>::block_number();
+                return;
+            }
+            Some(_) => return,
+            None => (),
+        }
+        // If there no last block number entry under a given key, we need to initialize it manually, as given entity value exist
+        vec_values_last_update.insert(id, <system::Module<T>>::block_number());
     }
 
     fn complete_entity_property_vector_cleaning(
@@ -1072,19 +1127,28 @@ impl<T: Trait> Module<T> {
         Self::ensure_known_entity_id(&entity_id)?;
         let entity = Self::entity_by_id(entity_id);
 
-        if !entity.values.contains_key(&in_class_schema_property_id) {
+        match entity.values.get(&in_class_schema_property_id) {
+            Some(current_prop_value) if current_prop_value.is_vec() => (),
+            Some(_) => return Err(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR),
+            _ =>
             // Throw an error if a property was not found on entity
             // by an in-class index of a property update.
-            return Err(ERROR_UNKNOWN_ENTITY_PROP_ID);
+            {
+                return Err(ERROR_UNKNOWN_ENTITY_PROP_ID)
+            }
         }
 
         // Clear property value vector:
-        EntityById::mutate(entity_id, |entity| {
+        <EntityById<T>>::mutate(entity_id, |entity| {
             entity
                 .values
                 .get_mut(&in_class_schema_property_id)
                 .as_deref_mut()
-                .map(|current_property_value_vec| current_property_value_vec.vec_clear())
+                .map(|current_property_value_vec| current_property_value_vec.vec_clear());
+            Self::refresh_vec_values_last_update(
+                in_class_schema_property_id,
+                &mut entity.vec_values_last_update,
+            );
         });
 
         Ok(())
@@ -1098,19 +1162,35 @@ impl<T: Trait> Module<T> {
         Self::ensure_known_entity_id(&entity_id)?;
         let entity = Self::entity_by_id(entity_id);
 
-        if !entity.values.contains_key(&in_class_schema_property_id) {
+        // Ensure property value vector was not already updated in this block to avoid possible data races,
+        // when performing vector specific operations
+        Self::ensure_entity_prop_value_vec_was_not_updated(
+            in_class_schema_property_id,
+            &entity.vec_values_last_update,
+        )?;
+
+        match entity.values.get(&in_class_schema_property_id) {
+            Some(current_prop_value) if current_prop_value.is_vec() => (),
+            Some(_) => return Err(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR),
+            _ =>
             // Throw an error if a property was not found on entity
             // by an in-class index of a property update.
-            return Err(ERROR_UNKNOWN_ENTITY_PROP_ID);
+            {
+                return Err(ERROR_UNKNOWN_ENTITY_PROP_ID)
+            }
         }
 
         // Remove property value vector
-        EntityById::mutate(entity_id, |entity| {
+        <EntityById<T>>::mutate(entity_id, |entity| {
             entity
                 .values
                 .get_mut(&in_class_schema_property_id)
                 .as_deref_mut()
-                .map(|current_prop_value| current_prop_value.vec_remove_at(index_in_property_vec))
+                .map(|current_prop_value| current_prop_value.vec_remove_at(index_in_property_vec));
+            Self::refresh_vec_values_last_update(
+                in_class_schema_property_id,
+                &mut entity.vec_values_last_update,
+            );
         });
 
         Ok(())
@@ -1126,35 +1206,50 @@ impl<T: Trait> Module<T> {
 
         let (entity, class) = Self::get_entity_and_class(entity_id);
 
-        // Try to find a current property value in the entity
-        // by matching its id to the id of a property with an updated value.
-        if let Some(entity_prop_value) = entity.values.get(&in_class_schema_property_id) {
-            // Get class-level information about this property
-            if let Some(class_prop) = class.properties.get(in_class_schema_property_id as usize) {
-                // Validate a new property value against the type of this property
-                // and check any additional constraints like the length of a vector
-                // if it's a vector property or the length of a text if it's a text property.
-                Self::ensure_prop_value_can_be_insert_at_prop_vec(
-                    &property_value,
-                    entity_prop_value,
-                    class_prop,
-                )?;
+        // Ensure property value vector was not already updated in this block to avoid possible data races,
+        // when performing vector specific operations
+        Self::ensure_entity_prop_value_vec_was_not_updated(
+            in_class_schema_property_id,
+            &entity.vec_values_last_update,
+        )?;
+        // Get class-level information about this property
+        if let Some(class_prop) = class.properties.get(in_class_schema_property_id as usize) {
+            // Try to find a current property value in the entity
+            // by matching its id to the id of a property with an updated value.
+            match entity.values.get(&in_class_schema_property_id) {
+                Some(entity_prop_value) if entity_prop_value.is_vec() => {
+                    // Validate a new property value against the type of this property
+                    // and check any additional constraints like the length of a vector
+                    // if it's a vector property or the length of a text if it's a text property.
+                    Self::ensure_prop_value_can_be_insert_at_prop_vec(
+                        &property_value,
+                        entity_prop_value,
+                        class_prop,
+                    )?;
+                }
+                Some(_) => return Err(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR),
+                _ =>
+                // Throw an error if a property was not found on entity
+                // by an in-class index of a property update.
+                {
+                    return Err(ERROR_UNKNOWN_ENTITY_PROP_ID)
+                }
             }
-        } else {
-            // Throw an error if a property was not found on entity
-            // by an in-class index of a property update.
-            return Err(ERROR_UNKNOWN_ENTITY_PROP_ID);
         }
 
         // Insert property value into property value vector
-        EntityById::mutate(entity_id, |entity| {
+        <EntityById<T>>::mutate(entity_id, |entity| {
             entity
                 .values
                 .get_mut(&in_class_schema_property_id)
                 .as_deref_mut()
                 .map(|current_prop_value| {
                     current_prop_value.vec_insert_at(index_in_property_vec, property_value)
-                })
+                });
+            Self::refresh_vec_values_last_update(
+                in_class_schema_property_id,
+                &mut entity.vec_values_last_update,
+            );
         });
 
         Ok(())
@@ -1310,7 +1405,7 @@ impl<T: Trait> Module<T> {
 
     fn get_class_id_by_entity_id(entity_id: EntityId) -> Result<ClassId, &'static str> {
         // use a utility method on versioned_store module
-        ensure!(EntityById::exists(entity_id), "EntityNotFound");
+        ensure!(<EntityById<T>>::exists(entity_id), "EntityNotFound");
         let entity = Self::entity_by_id(entity_id);
         Ok(entity.class_id)
     }
@@ -1349,6 +1444,19 @@ impl<T: Trait> Module<T> {
         }
 
         // if we reach here all Internal properties have passed the constraint check
+        Ok(())
+    }
+
+    fn ensure_entity_prop_value_vec_was_not_updated(
+        in_class_schema_property_id: u16,
+        vec_values_last_update: &BTreeMap<u16, T::BlockNumber>,
+    ) -> dispatch::Result {
+        if let Some(last_update_block) = vec_values_last_update.get(&in_class_schema_property_id) {
+            ensure!(
+                *last_update_block < <system::Module<T>>::block_number(),
+                ERROR_PROP_VALUE_VEC_WAS_ALREADY_UPDATED
+            );
+        }
         Ok(())
     }
 
@@ -1476,7 +1584,7 @@ impl<T: Trait> Module<T> {
             }
         }
 
-        EntityById::mutate(entity_id, |entity| {
+        <EntityById<T>>::mutate(entity_id, |entity| {
             // Add a new schema to the list of schemas supported by this entity.
             entity.supported_schemas.insert(schema_id);
 
@@ -1513,7 +1621,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn ensure_known_entity_id(entity_id: &EntityId) -> dispatch::Result {
-        ensure!(EntityById::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
+        ensure!(<EntityById<T>>::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
         Ok(())
     }
 
@@ -1533,7 +1641,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn ensure_schema_id_is_not_added(entity: &Entity, schema_id: u16) -> dispatch::Result {
+    pub fn ensure_schema_id_is_not_added(entity: &Entity<T>, schema_id: u16) -> dispatch::Result {
         let schema_not_added = !entity.supported_schemas.contains(&schema_id);
         ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY);
         Ok(())
@@ -1547,7 +1655,7 @@ impl<T: Trait> Module<T> {
                 let entity = Self::entity_by_id(entity_id);
                 ensure!(
                     entity.class_id == *class_id,
-                    ERROR_INTERNAL_RPOP_DOES_NOT_MATCH_ITS_CLASS
+                    ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS
                 );
                 Ok(())
             }
@@ -1557,14 +1665,14 @@ impl<T: Trait> Module<T> {
 
     pub fn is_unknown_internal_entity_id(id: PropertyValue) -> bool {
         if let PropertyValue::Reference(entity_id) = id {
-            !EntityById::exists(entity_id)
+            !<EntityById<T>>::exists(entity_id)
         } else {
             false
         }
     }
 
-    pub fn get_entity_and_class(entity_id: EntityId) -> (Entity, Class<T>) {
-        let entity = EntityById::get(entity_id);
+    pub fn get_entity_and_class(entity_id: EntityId) -> (Entity<T>, Class<T>) {
+        let entity = <EntityById<T>>::get(entity_id);
         let class = ClassById::get(entity.class_id);
         (entity, class)
     }
@@ -1644,7 +1752,7 @@ impl<T: Trait> Module<T> {
                         let entity = Self::entity_by_id(entity_id);
                         ensure!(
                             entity.class_id == *class_id,
-                            ERROR_INTERNAL_RPOP_DOES_NOT_MATCH_ITS_CLASS
+                            ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS
                         );
                     }
                     true
@@ -1762,7 +1870,7 @@ impl<T: Trait> Module<T> {
                     let entity = Self::entity_by_id(entity_id);
                     ensure!(
                         entity.class_id == *class_id,
-                        ERROR_INTERNAL_RPOP_DOES_NOT_MATCH_ITS_CLASS
+                        ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS
                     );
                     true
                 } else {

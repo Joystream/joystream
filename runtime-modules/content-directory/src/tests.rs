@@ -577,8 +577,8 @@ fn batch_transaction_simple() {
         ));
 
         // two entities created
-        assert!(EntityById::exists(entity_id));
-        assert!(EntityById::exists(entity_id + 1));
+        assert!(<EntityById<Runtime>>::exists(entity_id));
+        assert!(<EntityById<Runtime>>::exists(entity_id + 1));
     })
 }
 
@@ -658,20 +658,20 @@ fn batch_transaction_vector_of_entities() {
         ));
 
         // three entities created
-        assert!(EntityById::exists(entity_id));
-        assert!(EntityById::exists(entity_id + 1));
-        assert!(EntityById::exists(entity_id + 2));
+        assert!(<EntityById<Runtime>>::exists(entity_id));
+        assert!(<EntityById<Runtime>>::exists(entity_id + 1));
+        assert!(<EntityById<Runtime>>::exists(entity_id + 2));
 
         assert_eq!(
-            EntityById::get(entity_id),
-            Entity {
-                class_id: new_class_id,
-                supported_schemas: BTreeSet::from_iter(vec![SCHEMA_ID_0].into_iter()),
-                values: prop_value(
+            TestModule::entity_by_id(entity_id),
+            Entity::new(
+                new_class_id,
+                BTreeSet::from_iter(vec![SCHEMA_ID_0].into_iter()),
+                prop_value(
                     0,
                     PropertyValue::ReferenceVec(vec![entity_id + 1, entity_id + 2,])
                 )
-            }
+            )
         );
     })
 }
