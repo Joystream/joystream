@@ -12,6 +12,14 @@ use system::{EventRecord, Phase};
 
 use srml_support::traits::Currency;
 
+pub(crate) fn increase_total_balance_issuance_using_account_id(account_id: u64, balance: u64) {
+    let initial_balance = Balances::total_issuance();
+    {
+        let _ = <Test as stake::Trait>::Currency::deposit_creating(&account_id, balance);
+    }
+    assert_eq!(Balances::total_issuance(), initial_balance + balance);
+}
+
 struct ProposalParametersFixture {
     parameters: ProposalParameters<u64, u64>,
 }
@@ -437,6 +445,9 @@ fn voting_results_calculation_succeeds() {
 #[test]
 fn rejected_voting_results_and_remove_proposal_id_from_active_succeeds() {
     initial_test_ext().execute_with(|| {
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 0);
+
         let dummy_proposal = DummyProposalFixture::default();
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
@@ -447,6 +458,9 @@ fn rejected_voting_results_and_remove_proposal_id_from_active_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
 
         assert!(<ActiveProposalIds<Test>>::exists(proposal_id));
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 1);
 
         run_to_block_and_finalize(2);
 
@@ -467,6 +481,9 @@ fn rejected_voting_results_and_remove_proposal_id_from_active_succeeds() {
             ProposalStatus::finalized_successfully(ProposalDecisionStatus::Rejected, 1),
         );
         assert!(!<ActiveProposalIds<Test>>::exists(proposal_id));
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 0);
     });
 }
 
@@ -555,8 +572,14 @@ fn cancel_proposal_succeeds() {
             DummyProposalFixture::default().with_parameters(parameters_fixture.params());
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 1);
+
         let cancel_proposal = CancelProposalFixture::new(proposal_id);
         cancel_proposal.cancel_and_assert(Ok(()));
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 0);
 
         let proposal = <crate::Proposals<Test>>::get(proposal_id);
 
@@ -818,46 +841,6 @@ fn proposal_execution_postponed_because_of_grace_period() {
         );
     });
 }
-
-/*
-
-#[test]
-fn veto_proposal_succeeds() {
-    initial_test_ext().execute_with(|| {
-        // internal active proposal counter check
-        assert_eq!(<ActiveProposalCount>::get(), 0);
-
-        let parameters_fixture = ProposalParametersFixture::default();
-        let dummy_proposal =
-            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
-
-        // internal active proposal counter check
-        assert_eq!(<ActiveProposalCount>::get(), 1);
-
-        let veto_proposal = VetoProposalFixture::new(proposal_id);
-        veto_proposal.veto_and_assert(Ok(()));
-
-        let proposal = <crate::Proposals<Test>>::get(proposal_id);
-
-        assert_eq!(
-            proposal,
-            Proposal {
-                parameters: parameters_fixture.params(),
-                proposer_id: 1,
-                created_at: 1,
-                status: ProposalStatus::finalized_successfully(ProposalDecisionStatus::Vetoed, 1),
-                title: b"title".to_vec(),
-                description: b"description".to_vec(),
-                voting_results: VotingResults::default(),
-            }
-        );
-
-        // internal active proposal counter check
-        assert_eq!(<ActiveProposalCount>::get(), 0);
-    });
-}
-*/
 
 #[test]
 fn proposal_execution_vetoed_successfully_during_the_grace_period() {
@@ -1490,5 +1473,109 @@ fn proposal_reset_succeeds() {
             <VoteExistsByProposalByVoter<Test>>::get(&proposal_id, &2),
             VoteKind::default()
         );
+    });
+}
+
+#[test]
+fn proposal_counters_are_valid() {
+    initial_test_ext().execute_with(|| {
+        let mut dummy_proposal = DummyProposalFixture::default();
+        let _ = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        dummy_proposal = DummyProposalFixture::default();
+        let _ = dummy_proposal.create_proposal_and_assert(Ok(2)).unwrap();
+
+        dummy_proposal = DummyProposalFixture::default();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(3)).unwrap();
+
+        assert_eq!(ActiveProposalCount::get(), 3);
+        assert_eq!(ProposalCount::get(), 3);
+
+        let cancel_proposal_fixture = CancelProposalFixture::new(proposal_id);
+        cancel_proposal_fixture.cancel_and_assert(Ok(()));
+
+        assert_eq!(ActiveProposalCount::get(), 2);
+        assert_eq!(ProposalCount::get(), 3);
+    });
+}
+
+#[test]
+fn proposal_stake_cache_is_valid() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 50000);
+
+        let stake = 250u32;
+        let parameters = ProposalParametersFixture::default().with_required_stake(stake.into());
+        let dummy_proposal = DummyProposalFixture::default()
+            .with_parameters(parameters.params())
+            .with_stake(stake as u64);
+
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+        let expected_stake_id = 0;
+        assert_eq!(
+            <StakesProposals<Test>>::get(&expected_stake_id),
+            proposal_id
+        );
+    });
+}
+
+#[test]
+fn slash_balance_is_calculated_correctly() {
+    initial_test_ext().execute_with(|| {
+        let vetoed_slash_balance = ProposalsEngine::calculate_slash_balance(
+            &ProposalDecisionStatus::Vetoed,
+            &ProposalParametersFixture::default().params(),
+        );
+
+        assert_eq!(vetoed_slash_balance, 0);
+
+        let approved_slash_balance = ProposalsEngine::calculate_slash_balance(
+            &ProposalDecisionStatus::Approved(ApprovedProposalStatus::Executed),
+            &ProposalParametersFixture::default().params(),
+        );
+
+        assert_eq!(approved_slash_balance, 0);
+
+        let rejection_fee = <Test as crate::Trait>::RejectionFee::get();
+
+        let rejected_slash_balance = ProposalsEngine::calculate_slash_balance(
+            &ProposalDecisionStatus::Rejected,
+            &ProposalParametersFixture::default().params(),
+        );
+
+        assert_eq!(rejected_slash_balance, rejection_fee);
+
+        let expired_slash_balance = ProposalsEngine::calculate_slash_balance(
+            &ProposalDecisionStatus::Expired,
+            &ProposalParametersFixture::default().params(),
+        );
+
+        assert_eq!(expired_slash_balance, rejection_fee);
+
+        let cancellation_fee = <Test as crate::Trait>::CancellationFee::get();
+
+        let cancellation_slash_balance = ProposalsEngine::calculate_slash_balance(
+            &ProposalDecisionStatus::Canceled,
+            &ProposalParametersFixture::default().params(),
+        );
+
+        assert_eq!(cancellation_slash_balance, cancellation_fee);
+
+        let slash_balance_with_no_stake = ProposalsEngine::calculate_slash_balance(
+            &ProposalDecisionStatus::Slashed,
+            &ProposalParametersFixture::default().params(),
+        );
+
+        assert_eq!(slash_balance_with_no_stake, 0);
+
+        let stake = 256;
+        let slash_balance_with_stake = ProposalsEngine::calculate_slash_balance(
+            &ProposalDecisionStatus::Slashed,
+            &ProposalParametersFixture::default()
+                .with_required_stake(stake)
+                .params(),
+        );
+
+        assert_eq!(slash_balance_with_stake, stake);
     });
 }

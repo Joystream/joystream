@@ -14,10 +14,10 @@ use srml_support::dispatch::DispatchResult;
 pub use mock::*;
 
 pub(crate) fn increase_total_balance_issuance(balance: u64) {
-    increase_total_balance_issuance_using_account_id(balance, 999);
+    increase_total_balance_issuance_using_account_id(999, balance);
 }
 
-pub(crate) fn increase_total_balance_issuance_using_account_id(balance: u64, account_id: u64) {
+pub(crate) fn increase_total_balance_issuance_using_account_id(account_id: u64, balance: u64) {
     let initial_balance = Balances::total_issuance();
     {
         let _ = <Test as stake::Trait>::Currency::deposit_creating(&account_id, balance);
@@ -367,7 +367,7 @@ fn get_valid_election_parameters() -> ElectionParameters<u64, u64> {
 #[test]
 fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(500000, 1);
+        increase_total_balance_issuance_using_account_id(1, 500000);
 
         let mut election_parameters = get_valid_election_parameters();
         election_parameters.council_size = 2;
@@ -687,7 +687,7 @@ fn create_spending_proposal_common_checks_succeed() {
 #[test]
 fn create_spending_proposal_call_fails_with_incorrect_balance() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 500000);
+        increase_total_balance_issuance_using_account_id(500000, 1);
 
         assert_eq!(
             ProposalCodex::create_spending_proposal(
@@ -720,7 +720,7 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
 #[test]
 fn create_set_lead_proposal_fails_with_proposed_councilor() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(500000, 1);
+        increase_total_balance_issuance_using_account_id(1, 500000);
 
         let lead_account_id = 20;
         <governance::council::Module<Test>>::set_council(

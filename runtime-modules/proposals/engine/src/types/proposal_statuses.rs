@@ -148,3 +148,50 @@ pub enum ProposalDecisionStatus {
     /// must be no less than the quorum value for the given proposal type.
     Approved(ApprovedProposalStatus),
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        ActiveStake, ApprovedProposalStatus, FinalizationData, ProposalDecisionStatus,
+        ProposalStatus,
+    };
+
+    #[test]
+    fn approved_proposal_status_helper_succeeds() {
+        let msg = "error";
+
+        assert_eq!(
+            ApprovedProposalStatus::failed_execution(&msg),
+            ApprovedProposalStatus::ExecutionFailed {
+                error: msg.as_bytes().to_vec()
+            }
+        );
+    }
+
+    #[test]
+    fn finalized_proposal_status_helper_succeeds() {
+        let msg = "error";
+        let block_number = 20;
+        let stake = ActiveStake {
+            stake_id: 50,
+            source_account_id: 2,
+        };
+
+        let proposal_status = ProposalStatus::finalized(
+            ProposalDecisionStatus::Slashed,
+            Some(msg),
+            Some(stake),
+            block_number,
+        );
+
+        assert_eq!(
+            ProposalStatus::Finalized(FinalizationData {
+                proposal_status: ProposalDecisionStatus::Slashed,
+                finalized_at: block_number,
+                encoded_unstaking_error_due_to_broken_runtime: Some(msg.as_bytes().to_vec()),
+                stake_data_after_unstaking_error: Some(stake)
+            }),
+            proposal_status
+        );
+    }
+}

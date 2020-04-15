@@ -663,7 +663,9 @@ impl<T: Trait> Module<T> {
     // - update proposal status fields (status, finalized_at)
     // - add to pending execution proposal cache if approved
     // - slash and unstake proposal stake if stake exists
+    // - decrease active proposal counter
     // - fire an event
+    // It prints an error message in case of an attempt to finalize the non-active proposal.
     fn finalize_proposal(proposal_id: T::ProposalId, decision_status: ProposalDecisionStatus) {
         Self::decrease_active_proposal_counter();
         <ActiveProposalIds<T>>::remove(&proposal_id.clone());
@@ -719,7 +721,8 @@ impl<T: Trait> Module<T> {
     }
 
     // Calculates required slash based on finalization ProposalDecisionStatus and proposal parameters.
-    fn calculate_slash_balance(
+    // Method visibility allows testing.
+    pub(crate) fn calculate_slash_balance(
         decision_status: &ProposalDecisionStatus,
         proposal_parameters: &ProposalParameters<T::BlockNumber, types::BalanceOf<T>>,
     ) -> types::BalanceOf<T> {
