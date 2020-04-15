@@ -262,23 +262,6 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_incorrect_wasm_size() {
 }
 
 #[test]
-fn create_upgrade_runtime_proposal_codex_call_fails_with_not_allowed_member_id() {
-    initial_test_ext().execute_with(|| {
-        assert_eq!(
-            ProposalCodex::create_runtime_upgrade_proposal(
-                RawOrigin::Signed(1).into(),
-                110,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(<BalanceOf<Test>>::from(50000u32)),
-                b"wasm".to_vec(),
-            ),
-            Err(Error::RuntimeProposalProposerNotInTheAllowedProposersList)
-        );
-    });
-}
-
-#[test]
 fn create_set_election_parameters_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance(500000);
