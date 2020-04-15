@@ -12,7 +12,6 @@ impl<T: Trait> Module<T> {
     fn runtime_upgraded() {
         print("Running runtime upgraded handler");
 
-
         // Add initialization of modules introduced in new runtime release. Typically this
         // would be any new storage values that need an initial value which would not
         // have been initialized with config() or build() chainspec construction mechanism.
