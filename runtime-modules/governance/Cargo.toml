@@ -17,6 +17,7 @@ std = [
 	'rstd/std',
 	'common/std',
 	'membership/std',
+	'minting/std',
 ]
 
 [dependencies.sr-primitives]
@@ -87,3 +88,8 @@ default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-balances'
 rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
+
+[dependencies.minting]
+default_features = false
+package = 'substrate-token-mint-module'
+path = '../token-minting'

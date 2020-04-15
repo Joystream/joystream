@@ -244,7 +244,7 @@ decl_module! {
             ensure!(wasm_code.len() as u32 <= Self::wasm_code_max_len(), MSG_TOO_LONG_WASM_CODE);
 
             // Lock proposer's stake:
-            T::Currency::reserve(&proposer, stake)
+            <T as GovernanceCurrency>::Currency::reserve(&proposer, stake)
                 .map_err(|_| MSG_STAKE_IS_GREATER_THAN_BALANCE)?;
 
             let proposal_id = Self::proposal_count() + 1;
@@ -312,11 +312,11 @@ decl_module! {
 
             // Spend some minimum fee on proposer's balance for canceling a proposal
             let fee = Self::cancellation_fee();
-            let _ = T::Currency::slash_reserved(&proposer, fee);
+            let _ = <T as GovernanceCurrency>::Currency::slash_reserved(&proposer, fee);
 
             // Return unspent part of remaining staked deposit (after taking some fee)
             let left_stake = proposal.stake - fee;
-            let _ = T::Currency::unreserve(&proposer, left_stake);
+            let _ = <T as GovernanceCurrency>::Currency::unreserve(&proposer, left_stake);
 
             Self::_update_proposal_status(proposal_id, Cancelled)?;
             Self::deposit_event(RawEvent::ProposalCanceled(proposer, proposal_id));
@@ -336,7 +336,7 @@ decl_module! {
             let proposal = Self::proposals(proposal_id);
             ensure!(proposal.status == Active, MSG_PROPOSAL_FINALIZED);
 
-            let _ = T::Currency::unreserve(&proposal.proposer, proposal.stake);
+            let _ = <T as GovernanceCurrency>::Currency::unreserve(&proposal.proposer, proposal.stake);
 
             Self::_update_proposal_status(proposal_id, Cancelled)?;
 
@@ -357,7 +357,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn can_participate(sender: &T::AccountId) -> bool {
-        !T::Currency::free_balance(sender).is_zero()
+        !<T as GovernanceCurrency>::Currency::free_balance(sender).is_zero()
             && <membership::members::Module<T>>::is_member_account(sender)
     }
 
@@ -513,7 +513,8 @@ impl<T: Trait> Module<T> {
         let proposal = Self::proposals(proposal_id);
 
         // Slash proposer's stake:
-        let _ = T::Currency::slash_reserved(&proposal.proposer, proposal.stake);
+        let _ =
+            <T as GovernanceCurrency>::Currency::slash_reserved(&proposal.proposer, proposal.stake);
 
         Ok(())
     }
@@ -525,11 +526,11 @@ impl<T: Trait> Module<T> {
 
         // Spend some minimum fee on proposer's balance to prevent spamming attacks:
         let fee = Self::rejection_fee();
-        let _ = T::Currency::slash_reserved(&proposer, fee);
+        let _ = <T as GovernanceCurrency>::Currency::slash_reserved(&proposer, fee);
 
         // Return unspent part of remaining staked deposit (after taking some fee):
         let left_stake = proposal.stake - fee;
-        let _ = T::Currency::unreserve(&proposer, left_stake);
+        let _ = <T as GovernanceCurrency>::Currency::unreserve(&proposer, left_stake);
 
         Ok(())
     }
@@ -540,7 +541,7 @@ impl<T: Trait> Module<T> {
         let wasm_code = Self::wasm_code_by_hash(proposal.wasm_hash);
 
         // Return staked deposit to proposer:
-        let _ = T::Currency::unreserve(&proposal.proposer, proposal.stake);
+        let _ = <T as GovernanceCurrency>::Currency::unreserve(&proposal.proposer, proposal.stake);
 
         // Update wasm code of node's runtime:
         <system::Module<T>>::set_code(system::RawOrigin::Root.into(), wasm_code)?;
@@ -647,6 +648,11 @@ mod tests {
         type SubscriptionId = u32;
         type ActorId = u32;
         type InitialMembersBalance = InitialMembersBalance;
+    }
+
+    impl minting::Trait for Test {
+        type Currency = balances::Module<Self>;
+        type MintId = u64;
     }
 
     impl Trait for Test {
