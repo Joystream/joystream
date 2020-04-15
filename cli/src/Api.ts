@@ -52,7 +52,8 @@ export default class Api {
         if (!results.length || results.length !== queries.length) {
             throw new CLIError('API querying issue', { exit: ExitCodes.ApiError });
         }
-            return results;
+
+        return results;
     }
 
     async getAccountsBalancesInfo(accountAddresses:string[]): Promise<AccountBalances[]> {
