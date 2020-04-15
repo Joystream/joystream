@@ -28,6 +28,9 @@ pub const SCHEMA_ID_1: u16 = 1;
 pub const PROP_ID_BOOL: u16 = 0;
 pub const PROP_ID_U32: u16 = 1;
 pub const PROP_ID_INTERNAL: u16 = 2;
+pub const PROP_ID_U32_VEC: u16 = 3;
+pub const PROP_ID_U32_VEC_MAX_LEN: u16 = 20;
+
 
 pub const PRINCIPAL_GROUP_MEMBERS: [[u64; 2]; 2] = [
     [
@@ -338,6 +341,7 @@ pub fn create_entity_with_schema_support() -> EntityId {
     let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
     let mut property_values = BTreeMap::new();
     property_values.insert(PROP_ID_BOOL, PropertyValue::Bool(true));
+    property_values.insert(PROP_ID_U32_VEC, PropertyValue::Uint32Vec(vec![123, 234, 44]));
     assert_ok!(TestModule::add_entity_schema_support(
         entity_id,
         schema_id,
@@ -355,6 +359,7 @@ pub fn create_class_with_schema() -> (ClassId, u16) {
             good_prop_bool().required(),
             good_prop_u32(),
             new_internal_class_prop(class_id),
+            good_prop_u32_vec()
         ],
     )
     .expect("This should not happen");
@@ -382,6 +387,15 @@ pub fn good_prop_u32() -> Property {
         required: false,
         name: b"Name of a u32 property".to_vec(),
         description: b"Description of a u32 property".to_vec(),
+    }
+}
+
+pub fn good_prop_u32_vec() -> Property {
+    Property {
+        prop_type: PropertyType::Uint32Vec(PROP_ID_U32_VEC_MAX_LEN),
+        required: false,
+        name: b"Name of a u32 vec property".to_vec(),
+        description: b"Description of a u32 vec property".to_vec(),
     }
 }
 
