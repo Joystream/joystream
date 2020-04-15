@@ -1769,7 +1769,7 @@ impl<T: Trait> Module<T> {
                     false
                 }
             }
-            _ => false,
+            _ => return Err(ERROR_PROP_VALUE_TYPE_DOESNT_MATCH_INTERNAL_ENTITY_VECTOR_TYPE),
         };
 
         ensure!(is_valid_len, ERROR_ENTITY_PROP_VALUE_VECTOR_IS_TOO_LONG);

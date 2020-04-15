@@ -40,5 +40,7 @@ pub const ERROR_TEXT_PROP_IS_TOO_LONG: &str = "Text propery is too long";
 pub const ERROR_VEC_PROP_IS_TOO_LONG: &str = "Vector propery is too long";
 pub const ERROR_ENTITY_PROP_VALUE_VECTOR_IS_TOO_LONG: &str =
     "Propery value vector can`t contain more values";
+pub const ERROR_PROP_VALUE_TYPE_DOESNT_MATCH_INTERNAL_ENTITY_VECTOR_TYPE: &str =
+    "Propery value type does not match internal entity vector type";
 pub const ERROR_INTERNAL_RPOP_DOES_NOT_MATCH_ITS_CLASS: &str =
     "Internal property does not match its class";
