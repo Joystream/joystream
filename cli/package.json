@@ -1,0 +1,85 @@
+{
+  "name": "joystream-cli",
+  "description": "Command Line Interface for Joystream community and governance activities",
+  "version": "0.0.0",
+  "author": "Leszek Wiesner",
+  "bin": {
+    "joystream-cli": "./bin/run"
+  },
+  "bugs": "https://github.com/Joystream/substrate-runtime-joystream/issues",
+  "dependencies": {
+    "@joystream/types": "^0.6.0",
+    "@oclif/command": "^1.5.19",
+    "@oclif/config": "^1.14.0",
+    "@oclif/plugin-help": "^2.2.3",
+    "@polkadot/api": "^0.96.1",
+    "@types/inquirer": "^6.5.0",
+    "@types/slug": "^0.9.1",
+    "cli-ux": "^5.4.5",
+    "inquirer": "^7.1.0",
+    "moment": "^2.24.0",
+    "slug": "^2.1.1",
+    "tslib": "^1.11.1"
+  },
+  "devDependencies": {
+    "@oclif/dev-cli": "^1.22.2",
+    "@oclif/test": "^1.2.5",
+    "@types/chai": "^4.2.11",
+    "@types/mocha": "^5.2.7",
+    "@types/node": "^10.17.18",
+    "chai": "^4.2.0",
+    "eslint": "^5.16.0",
+    "eslint-config-oclif": "^3.1.0",
+    "eslint-config-oclif-typescript": "^0.1.0",
+    "globby": "^10.0.2",
+    "mocha": "^5.2.0",
+    "nyc": "^14.1.1",
+    "ts-node": "^8.8.2",
+    "typescript": "^3.8.3",
+    "@polkadot/ts": "^0.1.56"
+  },
+  "engines": {
+    "node": ">=8.0.0"
+  },
+  "files": [
+    "/bin",
+    "/lib",
+    "/npm-shrinkwrap.json",
+    "/oclif.manifest.json"
+  ],
+  "homepage": "https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli",
+  "keywords": [
+    "oclif"
+  ],
+  "license": "MIT",
+  "main": "lib/index.js",
+  "oclif": {
+    "repositoryPrefix": "<%- repo %>/blob/master/cli/<%- commandPath %>",
+    "commands": "./lib/commands",
+    "bin": "joystream-cli",
+    "plugins": [
+      "@oclif/plugin-help"
+    ],
+    "topics": {
+      "council": {
+        "description": "Council-related information and activities like voting, becoming part of the council etc."
+      },
+      "account": {
+        "description": "Accounts management - create, import or switch currently used account"
+      }
+    }
+  },
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/Joystream/substrate-runtime-joystream",
+    "directory": "cli"
+  },
+  "scripts": {
+    "postpack": "rm -f oclif.manifest.json",
+    "posttest": "eslint . --ext .ts --config .eslintrc",
+    "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
+    "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
+    "version": "oclif-dev readme && git add README.md"
+  },
+  "types": "lib/index.d.ts"
+}
