@@ -1228,12 +1228,13 @@ impl<T: Trait> Module<T> {
                     )?;
                 }
                 Some(_) => return Err(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR),
-                _ =>
-                // Throw an error if a property was not found on entity
-                // by an in-class index of a property update.
-                {
-                    return Err(ERROR_UNKNOWN_ENTITY_PROP_ID)
-                }
+                _ => (),
+            }
+        } else {
+            // Throw an error if a property was not found on entity
+            // by an in-class index of a property update.
+            {
+                return Err(ERROR_UNKNOWN_ENTITY_PROP_ID);
             }
         }
 

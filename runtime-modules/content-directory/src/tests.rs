@@ -1106,14 +1106,8 @@ fn should_add_schema_to_entity_when_some_optional_props_provided() {
             entity.supported_schemas,
             BTreeSet::from_iter(vec![SCHEMA_ID_0].into_iter())
         );
-        prop_values.insert(
-            PROP_ID_INTERNAL,
-            PropertyValue::Bool(false),
-        );
-        prop_values.insert(
-            PROP_ID_U32_VEC,
-            PropertyValue::Bool(false),
-        );
+        prop_values.insert(PROP_ID_INTERNAL, PropertyValue::Bool(false));
+        prop_values.insert(PROP_ID_U32_VEC, PropertyValue::Bool(false));
         assert_eq!(entity.values, prop_values);
     })
 }
@@ -1121,17 +1115,13 @@ fn should_add_schema_to_entity_when_some_optional_props_provided() {
 // Update entity properties
 // --------------------------------------
 
-
 #[test]
 fn update_entity_props_successfully() {
     with_test_externalities(|| {
         let entity_id = create_entity_with_schema_support();
         let mut prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(true));
         prop_values.insert(PROP_ID_U32, PropertyValue::Bool(false));
-        prop_values.insert(
-            PROP_ID_INTERNAL,
-            PropertyValue::Bool(false),
-        );
+        prop_values.insert(PROP_ID_INTERNAL, PropertyValue::Bool(false));
         prop_values.insert(
             PROP_ID_U32_VEC,
             PropertyValue::Uint32Vec(vec![123, 234, 44]),
@@ -1139,10 +1129,7 @@ fn update_entity_props_successfully() {
         assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
         prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(false));
         prop_values.insert(PROP_ID_U32, PropertyValue::Uint32(123));
-        prop_values.insert(
-            PROP_ID_INTERNAL,
-            PropertyValue::Reference(entity_id),
-        );
+        prop_values.insert(PROP_ID_INTERNAL, PropertyValue::Reference(entity_id));
         prop_values.insert(
             PROP_ID_U32_VEC,
             PropertyValue::Uint32Vec(vec![123, 234, 44, 88, 43]),
@@ -1219,26 +1206,26 @@ fn complete_entity_property_vector_cleaning_successfully() {
         let entity_id = create_entity_with_schema_support();
         let mut prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(true));
         prop_values.insert(PROP_ID_U32, PropertyValue::Bool(false));
-        prop_values.insert(PROP_ID_U32_VEC, PropertyValue::Uint32Vec(vec![123, 234, 44]));
         prop_values.insert(
-            PROP_ID_INTERNAL,
-            PropertyValue::Bool(false),
+            PROP_ID_U32_VEC,
+            PropertyValue::Uint32Vec(vec![123, 234, 44]),
         );
-        
-        // Check property values runtime storage related to an entity before cleaning of entity property vector value under given schema id 
+        prop_values.insert(PROP_ID_INTERNAL, PropertyValue::Bool(false));
+
+        // Check property values runtime storage related to an entity before cleaning of entity property vector value under given schema id
         assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
 
-        // Perform cleaning of entity property vector value under given schema id 
+        // Perform cleaning of entity property vector value under given schema id
         assert_ok!(TestModule::complete_entity_property_vector_cleaning(
             entity_id,
             PROP_ID_U32_VEC
         ));
 
-        // Update entity property values to compare with runtime storage entity value under given schema id 
+        // Update entity property values to compare with runtime storage entity value under given schema id
         prop_values.insert(PROP_ID_U32_VEC, PropertyValue::Uint32Vec(vec![]));
 
-        // Check property values runtime storage related to a entity right after 
-        // cleaning entity property vector under given schema id 
+        // Check property values runtime storage related to a entity right after
+        // cleaning entity property vector under given schema id
         assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
     })
 }
@@ -1258,10 +1245,7 @@ fn cannot_complete_entity_property_vector_cleaning_when_unknown_entity_prop_id()
     with_test_externalities(|| {
         let entity_id = create_entity_with_schema_support();
         assert_err!(
-            TestModule::complete_entity_property_vector_cleaning(
-                entity_id,
-                UNKNOWN_PROP_ID
-            ),
+            TestModule::complete_entity_property_vector_cleaning(entity_id, UNKNOWN_PROP_ID),
             ERROR_UNKNOWN_ENTITY_PROP_ID
         );
     })
@@ -1272,10 +1256,7 @@ fn cannot_complete_entity_property_vector_cleaning_when_entity_prop_id_is_not_a_
     with_test_externalities(|| {
         let entity_id = create_entity_with_schema_support();
         assert_err!(
-            TestModule::complete_entity_property_vector_cleaning(
-                entity_id,
-                PROP_ID_U32
-            ),
+            TestModule::complete_entity_property_vector_cleaning(entity_id, PROP_ID_U32),
             ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR
         );
     })
@@ -1286,31 +1267,31 @@ fn cannot_complete_entity_property_vector_cleaning_when_entity_prop_id_is_not_a_
 
 fn complete_remove_at_entity_property_vector() -> EntityId {
     let entity_id = create_entity_with_schema_support();
-        let mut prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(true));
-        prop_values.insert(PROP_ID_U32, PropertyValue::Bool(false));
-        prop_values.insert(PROP_ID_U32_VEC, PropertyValue::Uint32Vec(vec![123, 234, 44]));
-        prop_values.insert(
-            PROP_ID_INTERNAL,
-            PropertyValue::Bool(false),
-        );
-        
-        // Check property values runtime storage related to an entity before removing at given index of entity property vector value 
-        assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
+    let mut prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(true));
+    prop_values.insert(PROP_ID_U32, PropertyValue::Bool(false));
+    prop_values.insert(
+        PROP_ID_U32_VEC,
+        PropertyValue::Uint32Vec(vec![123, 234, 44]),
+    );
+    prop_values.insert(PROP_ID_INTERNAL, PropertyValue::Bool(false));
 
-        // Perform removing at given index of entity property vector value
-        assert_ok!(TestModule::complete_remove_at_entity_property_vector(
-            entity_id,
-            PROP_ID_U32_VEC,
-            1
-        ));
+    // Check property values runtime storage related to an entity before removing at given index of entity property vector value
+    assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
 
-        // Update entity property values to compare with runtime storage entity value under given schema id 
-        prop_values.insert(PROP_ID_U32_VEC, PropertyValue::Uint32Vec(vec![123, 44]));
+    // Perform removing at given index of entity property vector value
+    assert_ok!(TestModule::complete_remove_at_entity_property_vector(
+        entity_id,
+        PROP_ID_U32_VEC,
+        1
+    ));
 
-        // Check property values runtime storage related to a entity right after 
-        // removing at given index of entity property vector value
-        assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
-        entity_id
+    // Update entity property values to compare with runtime storage entity value under given schema id
+    prop_values.insert(PROP_ID_U32_VEC, PropertyValue::Uint32Vec(vec![123, 44]));
+
+    // Check property values runtime storage related to a entity right after
+    // removing at given index of entity property vector value
+    assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
+    entity_id
 }
 
 #[test]
@@ -1326,7 +1307,7 @@ fn cannot_complete_remove_at_entity_property_vector_when_entity_not_found() {
         assert_entity_not_found(TestModule::complete_remove_at_entity_property_vector(
             UNKNOWN_ENTITY_ID,
             PROP_ID_U32_VEC,
-            1
+            1,
         ));
     })
 }
@@ -1336,11 +1317,7 @@ fn cannot_complete_remove_at_entity_property_vector_when_unknown_entity_prop_id(
     with_test_externalities(|| {
         let entity_id = create_entity_with_schema_support();
         assert_err!(
-            TestModule::complete_remove_at_entity_property_vector(
-                entity_id,
-                UNKNOWN_PROP_ID,
-                1
-            ),
+            TestModule::complete_remove_at_entity_property_vector(entity_id, UNKNOWN_PROP_ID, 1),
             ERROR_UNKNOWN_ENTITY_PROP_ID
         );
     })
@@ -1351,11 +1328,7 @@ fn cannot_complete_remove_at_entity_property_vector_when_entity_prop_id_is_not_a
     with_test_externalities(|| {
         let entity_id = create_entity_with_schema_support();
         assert_err!(
-            TestModule::complete_remove_at_entity_property_vector(
-                entity_id,
-                PROP_ID_U32,
-                1
-            ),
+            TestModule::complete_remove_at_entity_property_vector(entity_id, PROP_ID_U32, 1),
             ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR
         );
     })
@@ -1366,15 +1339,151 @@ fn cannot_complete_remove_at_entity_property_vector_when_already_updated() {
     with_test_externalities(|| {
         let entity_id = complete_remove_at_entity_property_vector();
         assert_err!(
-            TestModule::complete_remove_at_entity_property_vector(
+            TestModule::complete_remove_at_entity_property_vector(entity_id, PROP_ID_U32_VEC, 1),
+            ERROR_PROP_VALUE_VEC_WAS_ALREADY_UPDATED
+        );
+    })
+}
+
+#[test]
+fn complete_insert_at_entity_property_vector_successfully() {
+    with_test_externalities(|| {
+        let entity_id = create_entity_with_schema_support();
+        let mut prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(true));
+        prop_values.insert(PROP_ID_U32, PropertyValue::Bool(false));
+        prop_values.insert(
+            PROP_ID_U32_VEC,
+            PropertyValue::Uint32Vec(vec![123, 234, 44]),
+        );
+        prop_values.insert(PROP_ID_INTERNAL, PropertyValue::Bool(false));
+
+        // Check property values runtime storage related to an entity before inserting at given index of entity property vector value
+        assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
+
+        // Perform inserting at given index of entity property vector value
+        assert_ok!(TestModule::complete_insert_at_entity_property_vector(
+            entity_id,
+            PROP_ID_U32_VEC,
+            1,
+            PropertyValue::Uint32(33)
+        ));
+
+        // Update entity property values to compare with runtime storage entity value under given schema id
+        prop_values.insert(
+            PROP_ID_U32_VEC,
+            PropertyValue::Uint32Vec(vec![123, 33, 234, 44]),
+        );
+
+        // Check property values runtime storage related to a entity right after
+        // inserting at given index of entity property vector value
+        assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
+    })
+}
+
+#[test]
+fn cannot_complete_insert_at_entity_property_vector_when_entity_not_found() {
+    with_test_externalities(|| {
+        assert_entity_not_found(TestModule::complete_insert_at_entity_property_vector(
+            UNKNOWN_ENTITY_ID,
+            PROP_ID_U32_VEC,
+            1,
+            PropertyValue::Uint32(33),
+        ));
+    })
+}
+
+#[test]
+fn cannot_complete_insert_at_entity_property_vector_when_unknown_entity_prop_id() {
+    with_test_externalities(|| {
+        let entity_id = create_entity_with_schema_support();
+        assert_err!(
+            TestModule::complete_insert_at_entity_property_vector(
+                entity_id,
+                UNKNOWN_PROP_ID,
+                1,
+                PropertyValue::Uint32(33)
+            ),
+            ERROR_UNKNOWN_ENTITY_PROP_ID
+        );
+    })
+}
+
+#[test]
+fn cannot_complete_insert_at_entity_property_vector_when_entity_prop_id_is_not_a_vector() {
+    with_test_externalities(|| {
+        let entity_id = create_entity_with_schema_support();
+        assert_err!(
+            TestModule::complete_insert_at_entity_property_vector(
+                entity_id,
+                PROP_ID_U32,
+                1,
+                PropertyValue::Uint32(17)
+            ),
+            ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR
+        );
+    })
+}
+
+#[test]
+fn cannot_complete_insert_at_entity_property_type_does_not_match_internal_entity_vector_type() {
+    with_test_externalities(|| {
+        let entity_id = create_entity_with_schema_support();
+        assert_err!(
+            TestModule::complete_insert_at_entity_property_vector(
                 entity_id,
                 PROP_ID_U32_VEC,
-                1
+                1,
+                PropertyValue::Uint16(33)
+            ),
+            ERROR_PROP_VALUE_TYPE_DOESNT_MATCH_INTERNAL_ENTITY_VECTOR_TYPE
+        );
+    })
+}
+
+#[test]
+fn cannot_complete_insert_at_entity_property_vector_when_entity_prop_value_vector_is_too_long() {
+    with_test_externalities(|| {
+        let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
+        let mut property_values = BTreeMap::new();
+        property_values.insert(PROP_ID_BOOL, PropertyValue::Bool(true));
+        property_values.insert(
+            PROP_ID_U32_VEC,
+            PropertyValue::Uint32Vec(vec![5; PROP_ID_U32_VEC_MAX_LEN as usize]),
+        );
+        assert_ok!(TestModule::add_entity_schema_support(
+            entity_id,
+            schema_id,
+            property_values
+        ));
+        assert_err!(
+            TestModule::complete_insert_at_entity_property_vector(
+                entity_id,
+                PROP_ID_U32_VEC,
+                1,
+                PropertyValue::Uint32(33)
+            ),
+            ERROR_ENTITY_PROP_VALUE_VECTOR_IS_TOO_LONG
+        );
+    })
+}
+
+#[test]
+fn cannot_complete_insert_at_entity_property_vector_when_already_updated() {
+    with_test_externalities(|| {
+        let entity_id = complete_remove_at_entity_property_vector();
+        assert_err!(
+            TestModule::complete_insert_at_entity_property_vector(
+                entity_id,
+                PROP_ID_U32_VEC,
+                1,
+                PropertyValue::Uint32(33)
             ),
             ERROR_PROP_VALUE_VEC_WAS_ALREADY_UPDATED
         );
     })
 }
+
+// TODO insert at ReferenceVec test
 
 // TODO test text max len
 
