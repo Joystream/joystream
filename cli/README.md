@@ -9,9 +9,35 @@ Command Line Interface for Joystream community and governance activities
 [![License](https://img.shields.io/npm/l/joystream-cli.svg)](https://github.com/Joystream/cli/blob/master/package.json)
 
 <!-- toc -->
+* [Development](#development)
 * [Usage](#usage)
 * [Commands](#commands)
 <!-- tocstop -->
+
+# Development
+<!-- development -->
+To run a command in developemnt environment (without installing the package):
+
+1. Navigate into the CLI root directory
+1. Either execute any command like this:
+
+    ```
+        $ ./bin/run COMMAND
+    ```
+
+    Or use:
+
+    ```
+        $ npm link
+    ```
+
+    And then execute any command like this:
+
+    ```
+        $ joystream-cli COMMAND
+    ```
+<!-- development -->
+
 # Usage
 <!-- usage -->
 ```sh-session
