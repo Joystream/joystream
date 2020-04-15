@@ -1,0 +1,17 @@
+.Forms {
+  .proposal-form {
+    margin: 0 auto;
+  }
+
+  .ui.form.proposal-form {
+    max-width: 48rem;
+
+    & label {
+      font-size: 1rem;
+    }
+  }
+
+  .form-buttons {
+    display: flex;
+  }
+}
