@@ -10,6 +10,7 @@ use rstd::prelude::*;
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
+use sr_primitives::Perbill;
 use srml_support::dispatch;
 use srml_support::traits::Currency;
 
@@ -253,45 +254,45 @@ where
     // Approval quorum reached for the proposal. Compares predefined parameter with actual
     // votes sum divided by total possible votes count.
     pub fn is_approval_quorum_reached(&self) -> bool {
-        let actual_votes_fraction: f32 = self.votes_count as f32 / self.total_voters_count as f32;
-
+        let actual_votes_fraction =
+            Perbill::from_rational_approximation(self.votes_count, self.total_voters_count);
         let approval_quorum_fraction =
-            self.proposal.parameters.approval_quorum_percentage as f32 / 100.0;
+            Perbill::from_percent(self.proposal.parameters.approval_quorum_percentage);
 
-        actual_votes_fraction >= approval_quorum_fraction
+        actual_votes_fraction.deconstruct() >= approval_quorum_fraction.deconstruct()
     }
 
     // Slashing quorum reached for the proposal. Compares predefined parameter with actual
     // votes sum divided by total possible votes count.
     pub fn is_slashing_quorum_reached(&self) -> bool {
-        let actual_votes_fraction: f32 = self.votes_count as f32 / self.total_voters_count as f32;
-
+        let actual_votes_fraction =
+            Perbill::from_rational_approximation(self.votes_count, self.total_voters_count);
         let slashing_quorum_fraction =
-            self.proposal.parameters.slashing_quorum_percentage as f32 / 100.0;
+            Perbill::from_percent(self.proposal.parameters.slashing_quorum_percentage);
 
-        actual_votes_fraction >= slashing_quorum_fraction
+        actual_votes_fraction.deconstruct() >= slashing_quorum_fraction.deconstruct()
     }
 
     // Approval threshold reached for the proposal. Compares predefined parameter with 'approve'
     // votes sum divided by actual votes count.
     pub fn is_approval_threshold_reached(&self) -> bool {
-        let approval_votes_fraction: f32 = self.approvals as f32 / self.votes_count as f32;
-
+        let approval_votes_fraction =
+            Perbill::from_rational_approximation(self.approvals, self.votes_count);
         let required_threshold_fraction =
-            self.proposal.parameters.approval_threshold_percentage as f32 / 100.0;
+            Perbill::from_percent(self.proposal.parameters.approval_threshold_percentage);
 
-        approval_votes_fraction >= required_threshold_fraction
+        approval_votes_fraction.deconstruct() >= required_threshold_fraction.deconstruct()
     }
 
     // Slashing threshold reached for the proposal. Compares predefined parameter with 'approve'
     // votes sum divided by actual votes count.
     pub fn is_slashing_threshold_reached(&self) -> bool {
-        let slashing_votes_fraction: f32 = self.slashes as f32 / self.votes_count as f32;
-
+        let slashing_votes_fraction =
+            Perbill::from_rational_approximation(self.slashes, self.votes_count);
         let required_threshold_fraction =
-            self.proposal.parameters.slashing_threshold_percentage as f32 / 100.0;
+            Perbill::from_percent(self.proposal.parameters.slashing_threshold_percentage);
 
-        slashing_votes_fraction >= required_threshold_fraction
+        slashing_votes_fraction.deconstruct() >= required_threshold_fraction.deconstruct()
     }
 
     // All voters had voted
@@ -679,6 +680,7 @@ mod tests {
         let no_approval_quorum_proposal: Proposal<u64, u64, u64, u64, u64> = Proposal {
             parameters: ProposalParameters {
                 approval_quorum_percentage: 63,
+                slashing_threshold_percentage: 63,
                 ..ProposalParameters::default()
             },
             ..Proposal::default()
@@ -706,6 +708,7 @@ mod tests {
     fn proposal_status_resolution_slashing_quorum_works_correctly() {
         let no_slashing_quorum_proposal: Proposal<u64, u64, u64, u64, u64> = Proposal {
             parameters: ProposalParameters {
+                approval_quorum_percentage: 63,
                 slashing_quorum_percentage: 63,
                 ..ProposalParameters::default()
             },
@@ -734,6 +737,7 @@ mod tests {
     fn proposal_status_resolution_approval_threshold_works_correctly() {
         let no_approval_threshold_proposal: Proposal<u64, u64, u64, u64, u64> = Proposal {
             parameters: ProposalParameters {
+                slashing_threshold_percentage: 63,
                 approval_threshold_percentage: 63,
                 ..ProposalParameters::default()
             },
@@ -763,6 +767,7 @@ mod tests {
         let no_slashing_threshold_proposal: Proposal<u64, u64, u64, u64, u64> = Proposal {
             parameters: ProposalParameters {
                 slashing_threshold_percentage: 63,
+                approval_threshold_percentage: 63,
                 ..ProposalParameters::default()
             },
             ..Proposal::default()

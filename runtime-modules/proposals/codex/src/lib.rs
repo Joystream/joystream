@@ -59,7 +59,7 @@ use rstd::vec::Vec;
 use runtime_io::blake2_256;
 use sr_primitives::traits::SaturatedConversion;
 use sr_primitives::traits::{One, Zero};
-pub use sr_primitives::Perbill;
+use sr_primitives::Perbill;
 use srml_support::dispatch::DispatchResult;
 use srml_support::traits::{Currency, Get};
 use srml_support::{decl_error, decl_module, decl_storage, ensure, print};
