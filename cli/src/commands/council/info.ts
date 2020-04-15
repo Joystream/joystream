@@ -1,12 +1,11 @@
 import { ElectionStage } from '@joystream/types';
 import { formatNumber, formatBalance } from '@polkadot/util';
 import { BlockNumber } from '@polkadot/types/interfaces';
-import Command from '@oclif/command';
 import { CouncilInfoObj, NameValueObj } from '../../Types';
 import { displayHeader, displayNameValueTable } from '../../helpers/display';
-import Api from '../../Api';
+import ApiCommandBase from '../../base/ApiCommandBase';
 
-export default class CouncilInfo extends Command {
+export default class CouncilInfo extends ApiCommandBase {
     static description = 'Get current council and council elections information';
 
     displayInfo(infoObj: CouncilInfoObj) {
@@ -52,9 +51,7 @@ export default class CouncilInfo extends Command {
     }
 
     async run() {
-        const api = await Api.create();
-        const infoObj = await api.getCouncilInfo();
+        const infoObj = await this.getApi().getCouncilInfo();
         this.displayInfo(infoObj);
-        this.exit();
     }
   }

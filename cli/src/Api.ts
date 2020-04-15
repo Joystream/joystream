@@ -11,12 +11,8 @@ import { DerivedFees, DerivedBalances } from '@polkadot/api-derive/types';
 import { CLIError } from '@oclif/errors';
 import ExitCodes from './ExitCodes';
 
-const API_URL = process.env.WS_URL || (
-    process.env.MAIN_TESTNET ?
-        'wss://rome-rpc-endpoint.joystream.org:9944/'
-        : 'wss://rome-staging-2.joystream.org/staging/rpc/'
-);
-const TOKEN_SYMBOL = 'JOY';
+export const DEFAULT_API_URI = 'wss://rome-rpc-endpoint.joystream.org:9944/';
+export const TOKEN_SYMBOL = 'JOY';
 
 // Api wrapper for handling most common api calls and allowing easy API implementation switch in the future
 
@@ -31,16 +27,16 @@ export default class Api {
         return this._api;
     }
 
-    private static async initApi(): Promise<ApiPromise> {
+    private static async initApi(apiUri: string = DEFAULT_API_URI): Promise<ApiPromise> {
         formatBalance.setDefaults({ unit: TOKEN_SYMBOL });
-        const wsProvider:WsProvider = new WsProvider(API_URL);
+        const wsProvider:WsProvider = new WsProvider(apiUri);
         registerJoystreamTypes();
 
         return await ApiPromise.create({ provider: wsProvider });
     }
 
-    static async create(): Promise<Api> {
-        const originalApi: ApiPromise = await Api.initApi();
+    static async create(apiUri: string = DEFAULT_API_URI): Promise<Api> {
+        const originalApi: ApiPromise = await Api.initApi(apiUri);
         return new Api(originalApi);
     }
 

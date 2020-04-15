@@ -19,7 +19,7 @@ export default class AccountChoose extends AccountsCommandBase {
 
         const choosenAccount: NamedKeyringPair = await this.promptForAccount(accounts, selectedAccount);
 
-        this.setSelectedAccount(choosenAccount);
+        await this.setSelectedAccount(choosenAccount);
         this.log(chalk.greenBright("\nAccount switched!"));
     }
   }

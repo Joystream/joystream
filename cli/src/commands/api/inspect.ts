@@ -1,5 +1,4 @@
-import Api from '../../Api';
-import Command, { flags } from '@oclif/command';
+import { flags } from '@oclif/command';
 import { CLIError } from '@oclif/errors';
 import { displayNameValueTable } from '../../helpers/display';
 import { ApiPromise } from '@polkadot/api';
@@ -10,6 +9,7 @@ import ExitCodes from '../../ExitCodes';
 import chalk from 'chalk';
 import { NameValueObj } from '../../Types';
 import inquirer from 'inquirer';
+import ApiCommandBase from '../../base/ApiCommandBase';
 
 // Command flags type
 type ApiInspectFlags = {
@@ -36,7 +36,7 @@ type ApiMethodInputSimpleArg = string;
 // ((Type1, Type2), Option<Type3>) etc.
 type ApiMethodInputArg = ApiMethodInputSimpleArg | ApiMethodInputArg[];
 
-export default class ApiInspect extends Command {
+export default class ApiInspect extends ApiCommandBase {
     static description =
         'Lists available node API modules/methods and/or their description(s), '+
         'or calls one of the API methods (depending on provided arguments and flags)';
@@ -86,25 +86,13 @@ export default class ApiInspect extends Command {
         })
     };
 
-    api: ApiPromise | null = null;
-
-    async init() {
-        const api = await Api.create();
-        this.api = api.getOriginalApi();
-    }
-
-    getApi() {
-        if (!this.api) throw new CLIError('Tried to get API before initialization.', { exit: ExitCodes.ApiError });
-        return this.api;
-    }
-
     getMethodMeta(apiType: ApiType, apiModule: string, apiMethod: string) {
         if (apiType === 'query') {
-            return this.getApi().query[apiModule][apiMethod].creator.meta;
+            return this.getOriginalApi().query[apiModule][apiMethod].creator.meta;
         }
         else {
             // Currently the only other optoin is api.consts
-            const method:ConstantCodec = <ConstantCodec> this.getApi().consts[apiModule][apiMethod];
+            const method:ConstantCodec = <ConstantCodec> this.getOriginalApi().consts[apiModule][apiMethod];
             return method.meta;
         }
     }
@@ -115,7 +103,7 @@ export default class ApiInspect extends Command {
     }
 
     getQueryMethodParamsTypes(apiModule: string, apiMethod: string): string[] {
-        const method = this.getApi().query[apiModule][apiMethod];
+        const method = this.getOriginalApi().query[apiModule][apiMethod];
         const { type } = method.creator.meta;
         if (type.isDoubleMap) {
             return [ type.asDoubleMap.key1.toString(), type.asDoubleMap.key2.toString() ];
@@ -128,7 +116,7 @@ export default class ApiInspect extends Command {
 
     getMethodReturnType(apiType: ApiType, apiModule: string, apiMethod: string): string {
         if (apiType === 'query') {
-            const method = this.getApi().query[apiModule][apiMethod];
+            const method = this.getOriginalApi().query[apiModule][apiMethod];
             const { meta: { type, modifier } } = method.creator;
             if (type.isDoubleMap) {
                 return type.asDoubleMap.value.toString();
@@ -228,7 +216,7 @@ export default class ApiInspect extends Command {
     }
 
     async run() {
-        const api: ApiPromise = this.getApi();
+        const api: ApiPromise = this.getOriginalApi();
         const flags: ApiInspectFlags = <ApiInspectFlags> this.parse(ApiInspect).flags;
         const availableTypes: readonly string[] = TYPES_AVAILABLE;
         const { apiType, apiModule, apiMethod } = this.validateFlags(api, flags);
@@ -285,7 +273,5 @@ export default class ApiInspect extends Command {
             this.log(chalk.bold.white('Available types:'));
             this.log(availableTypes.map(type => chalk.white(type)).join('\n'));
         }
-
-        this.exit(ExitCodes.OK);
     }
 }

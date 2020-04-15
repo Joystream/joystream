@@ -14,10 +14,12 @@
     "@oclif/plugin-help": "^2.2.3",
     "@polkadot/api": "^0.96.1",
     "@types/inquirer": "^6.5.0",
+    "@types/proper-lockfile": "^4.1.1",
     "@types/slug": "^0.9.1",
     "cli-ux": "^5.4.5",
     "inquirer": "^7.1.0",
     "moment": "^2.24.0",
+    "proper-lockfile": "^4.1.1",
     "slug": "^2.1.1",
     "tslib": "^1.11.1"
   },
@@ -66,12 +68,15 @@
       },
       "account": {
         "description": "Accounts management - create, import or switch currently used account"
+      },
+      "api": {
+        "description": "Inspect the substrate node api, perform lower-level api calls or change the current api provider uri"
       }
     }
   },
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/Joystream/substrate-runtime-joystream",
+    "type": "git",
+    "url": "https://github.com/Joystream/substrate-runtime-joystream",
     "directory": "cli"
   },
   "scripts": {
