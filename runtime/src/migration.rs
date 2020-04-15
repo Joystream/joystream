@@ -5,14 +5,14 @@ use sudo;
 use system;
 
 impl<T: Trait> Module<T> {
-    /// This method is called from on_finalize() when a runtime upgrade is detected. This
+    /// This method is called from on_initialize() when a runtime upgrade is detected. This
     /// happens when the runtime spec version is found to be higher than the stored value.
     /// Important to note this method should be carefully maintained, because it runs on every runtime
     /// upgrade.
     fn runtime_upgraded() {
-        print("running runtime initializers...");
+        print("Running runtime upgraded handler");
 
-        //
+
         // Add initialization of modules introduced in new runtime release. Typically this
         // would be any new storage values that need an initial value which would not
         // have been initialized with config() or build() chainspec construction mechanism.
