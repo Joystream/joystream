@@ -36,7 +36,6 @@
 </div>
 
 Table of Contents
-=================
 
 - [Overview](#overview)
 - [Contribute](#contribute)
@@ -72,14 +71,15 @@ Table of Contents
 
 # Overview
 
-This landing repo is intended to be the best starting place to get a coherent view of how information is organized in this GitHub organization.
+This is the main code repository for all joystream software as well as the best starting place to get a coherent view of how information is organized in this GitHub organization.
 
-It is the main code reposity for all joystream software. It will  house the substrate chain project, the full node and runtime and all reusable substrate runtime modules that make up the joystream runtime. In addition to all front-end apps and infrastructure servers necessary for operating the network.
+It will  house the substrate chain project, the full node and runtime and all reusable substrate runtime modules that make up the joystream runtime. In addition to all front-end apps and infrastructure servers necessary for operating the network.
 
-The repository both a cargo workspace and yarn workspace.
+The repository is both a cargo workspace and a yarn workspace.
 
 The Joystream network builds on a pre-release version of [substrate v2.0](https://substrate.dev/) and adds additional
 functionality to support the [various roles](https://www.joystream.org/roles) that can be entered into on the platform.
+
 
 # Contribute
 
