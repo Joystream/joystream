@@ -1694,8 +1694,63 @@ impl<T: Trait> Module<T> {
         entity_prop_value: &PropertyValue,
         prop: &Property,
     ) -> dispatch::Result {
-        Self::ensure_valid_internal_prop(value, prop)?;
-        Self::validate_prop_value_can_be_insert_at_prop_vec(value, entity_prop_value, prop)?;
+        fn validate_prop_vec_len_after_value_insert<T>(vec: &[T], max_len: &u16) -> bool {
+            vec.len() < *max_len as usize
+        }
+
+        let is_valid_len = match (value, entity_prop_value, &prop.prop_type) {
+            // Single values
+            (PV::Bool(_), PV::BoolVec(vec), PT::BoolVec(max_len)) => {
+                validate_prop_vec_len_after_value_insert(vec, max_len)
+            }
+            (PV::Uint16(_), PV::Uint16Vec(vec), PT::Uint16Vec(max_len)) => {
+                validate_prop_vec_len_after_value_insert(vec, max_len)
+            }
+            (PV::Uint32(_), PV::Uint32Vec(vec), PT::Uint32Vec(max_len)) => {
+                validate_prop_vec_len_after_value_insert(vec, max_len)
+            }
+            (PV::Uint64(_), PV::Uint64Vec(vec), PT::Uint64Vec(max_len)) => {
+                validate_prop_vec_len_after_value_insert(vec, max_len)
+            }
+            (PV::Int16(_), PV::Int16Vec(vec), PT::Int16Vec(max_len)) => {
+                validate_prop_vec_len_after_value_insert(vec, max_len)
+            }
+            (PV::Int32(_), PV::Int32Vec(vec), PT::Int32Vec(max_len)) => {
+                validate_prop_vec_len_after_value_insert(vec, max_len)
+            }
+            (PV::Int64(_), PV::Int64Vec(vec), PT::Int64Vec(max_len)) => {
+                validate_prop_vec_len_after_value_insert(vec, max_len)
+            }
+            (PV::Text(text_item), PV::TextVec(vec), PT::TextVec(vec_max_len, text_max_len)) => {
+                if validate_prop_vec_len_after_value_insert(vec, vec_max_len) {
+                    Self::validate_max_len_of_text(text_item, *text_max_len)?;
+                    true
+                } else {
+                    false
+                }
+            }
+            (
+                PV::Reference(entity_id),
+                PV::ReferenceVec(vec),
+                PT::ReferenceVec(vec_max_len, class_id),
+            ) => {
+                Self::ensure_known_class_id(class_id)?;
+                if validate_prop_vec_len_after_value_insert(vec, vec_max_len) {
+                    Self::ensure_known_entity_id(entity_id)?;
+                    let entity = Self::entity_by_id(entity_id);
+                    ensure!(
+                        entity.class_id == *class_id,
+                        ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS
+                    );
+                    true
+                } else {
+                    false
+                }
+            }
+            _ => return Err(ERROR_PROP_VALUE_TYPE_DOESNT_MATCH_INTERNAL_ENTITY_VECTOR_TYPE),
+        };
+
+        ensure!(is_valid_len, ERROR_ENTITY_PROP_VALUE_VECTOR_IS_TOO_LONG);
         Ok(())
     }
 
@@ -1813,76 +1868,6 @@ impl<T: Trait> Module<T> {
                 // (PV::ExternalVec(_), PT::ExternalVec(_, _)) => true,
                 _ => false,
             }
-    }
-
-    pub fn validate_prop_value_can_be_insert_at_prop_vec(
-        value: &PropertyValue,
-        entity_prop_value: &PropertyValue,
-        prop: &Property,
-    ) -> dispatch::Result {
-        fn validate_prop_vec_len_after_value_insert<T>(vec: &[T], max_len: &u16) -> bool {
-            vec.len() < *max_len as usize
-        }
-
-        // A non required property can be updated to None:
-        if !prop.required && *value == PV::Bool(false) {
-            return Ok(());
-        }
-
-        let is_valid_len = match (value, entity_prop_value, &prop.prop_type) {
-            // Single values
-            (PV::Bool(_), PV::BoolVec(vec), PT::BoolVec(max_len)) => {
-                validate_prop_vec_len_after_value_insert(vec, max_len)
-            }
-            (PV::Uint16(_), PV::Uint16Vec(vec), PT::Uint16Vec(max_len)) => {
-                validate_prop_vec_len_after_value_insert(vec, max_len)
-            }
-            (PV::Uint32(_), PV::Uint32Vec(vec), PT::Uint32Vec(max_len)) => {
-                validate_prop_vec_len_after_value_insert(vec, max_len)
-            }
-            (PV::Uint64(_), PV::Uint64Vec(vec), PT::Uint64Vec(max_len)) => {
-                validate_prop_vec_len_after_value_insert(vec, max_len)
-            }
-            (PV::Int16(_), PV::Int16Vec(vec), PT::Int16Vec(max_len)) => {
-                validate_prop_vec_len_after_value_insert(vec, max_len)
-            }
-            (PV::Int32(_), PV::Int32Vec(vec), PT::Int32Vec(max_len)) => {
-                validate_prop_vec_len_after_value_insert(vec, max_len)
-            }
-            (PV::Int64(_), PV::Int64Vec(vec), PT::Int64Vec(max_len)) => {
-                validate_prop_vec_len_after_value_insert(vec, max_len)
-            }
-            (PV::Text(text_item), PV::TextVec(vec), PT::TextVec(vec_max_len, text_max_len)) => {
-                if validate_prop_vec_len_after_value_insert(vec, vec_max_len) {
-                    Self::validate_max_len_of_text(text_item, *text_max_len)?;
-                    true
-                } else {
-                    false
-                }
-            }
-            (
-                PV::Reference(entity_id),
-                PV::ReferenceVec(vec),
-                PT::ReferenceVec(vec_max_len, class_id),
-            ) => {
-                Self::ensure_known_class_id(class_id)?;
-                if validate_prop_vec_len_after_value_insert(vec, vec_max_len) {
-                    Self::ensure_known_entity_id(entity_id)?;
-                    let entity = Self::entity_by_id(entity_id);
-                    ensure!(
-                        entity.class_id == *class_id,
-                        ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS
-                    );
-                    true
-                } else {
-                    false
-                }
-            }
-            _ => return Err(ERROR_PROP_VALUE_TYPE_DOESNT_MATCH_INTERNAL_ENTITY_VECTOR_TYPE),
-        };
-
-        ensure!(is_valid_len, ERROR_ENTITY_PROP_VALUE_VECTOR_IS_TOO_LONG);
-        Ok(())
     }
 
     pub fn ensure_property_name_is_valid(text: &Vec<u8>) -> dispatch::Result {

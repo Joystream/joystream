@@ -26,8 +26,9 @@ pub const SCHEMA_ID_0: u16 = 0;
 pub const SCHEMA_ID_1: u16 = 1;
 
 pub const PROP_ID_BOOL: u16 = 0;
+pub const PROP_ID_REFERENCE_VEC: u16 = 1;
 pub const PROP_ID_U32: u16 = 1;
-pub const PROP_ID_INTERNAL: u16 = 2;
+pub const PROP_ID_REFERENCE: u16 = 2;
 pub const PROP_ID_U32_VEC: u16 = 3;
 pub const PROP_ID_U32_VEC_MAX_LEN: u16 = 20;
 
@@ -251,7 +252,7 @@ pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
 }
 
 impl Property {
-    fn required(&self) -> Property {
+    pub fn required(&self) -> Property {
         let mut new_self = self.clone();
         new_self.required = true;
         new_self
@@ -360,7 +361,7 @@ pub fn create_class_with_schema() -> (ClassId, u16) {
         vec![
             good_prop_bool().required(),
             good_prop_u32(),
-            new_internal_class_prop(class_id),
+            new_reference_class_prop(class_id),
             good_prop_u32_vec(),
         ],
     )
@@ -410,9 +411,18 @@ pub fn good_prop_text() -> Property {
     }
 }
 
-pub fn new_internal_class_prop(class_id: ClassId) -> Property {
+pub fn new_reference_class_prop(class_id: ClassId) -> Property {
     Property {
         prop_type: PropertyType::Reference(class_id),
+        required: false,
+        name: b"Name of a internal property".to_vec(),
+        description: b"Description of a internal property".to_vec(),
+    }
+}
+
+pub fn new_reference_class_prop_vec(class_id: ClassId) -> Property {
+    Property {
+        prop_type: PropertyType::ReferenceVec(PROP_ID_U32_VEC_MAX_LEN, class_id),
         required: false,
         name: b"Name of a internal property".to_vec(),
         description: b"Description of a internal property".to_vec(),
