@@ -179,11 +179,10 @@ export class ApiWrapper {
     return this.api.derive.chain.bestNumber();
   }
 
-  public getCouncil(): Promise<Seat[]> {
-    return this.api.query.council.activeCouncil<Vec<Codec>>().then(seats => {
-      console.log('elected council ' + seats.toString());
-      return JSON.parse(seats.toString());
-    });
+  public async getCouncil(): Promise<Seat[]> {
+    const seats = await this.api.query.council.activeCouncil<Vec<Codec>>();
+    // Vec extends Array so we can type cast it
+    return seats as unknown as Seat[];
   }
 
   public getBlockDuration(): BN {
