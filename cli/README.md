@@ -61,6 +61,9 @@ USAGE
 * [`joystream-cli account:forget`](#joystream-cli-accountforget)
 * [`joystream-cli account:import BACKUPFILEPATH`](#joystream-cli-accountimport-backupfilepath)
 * [`joystream-cli account:transferTokens RECIPIENT AMOUNT`](#joystream-cli-accounttransfertokens-recipient-amount)
+* [`joystream-cli api:getUri`](#joystream-cli-apigeturi)
+* [`joystream-cli api:inspect`](#joystream-cli-apiinspect)
+* [`joystream-cli api:setUri URI`](#joystream-cli-apiseturi-uri)
 * [`joystream-cli council:info`](#joystream-cli-councilinfo)
 * [`joystream-cli help [COMMAND]`](#joystream-cli-help-command)
 
@@ -160,6 +163,75 @@ ARGUMENTS
 ```
 
 _See code: [src/commands/account/transferTokens.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/transferTokens.ts)_
+
+## `joystream-cli api:getUri`
+
+Get current api WS provider uri
+
+```
+USAGE
+  $ joystream-cli api:getUri
+```
+
+_See code: [src/commands/api/getUri.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/api/getUri.ts)_
+
+## `joystream-cli api:inspect`
+
+Lists available node API modules/methods and/or their description(s), or calls one of the API methods (depending on provided arguments and flags)
+
+```
+USAGE
+  $ joystream-cli api:inspect
+
+OPTIONS
+  -M, --module=module
+      Specifies the api module, ie. "system", "staking" etc.
+      If no "--method" flag is provided then all methods in that module will be listed along with the descriptions.
+
+  -a, --callArgs=callArgs
+      Specifies the arguments to use when calling a method. Multiple arguments can be separated with a comma, ie. 
+      "-a=arg1,arg2".
+      You can omit this flag even if the method requires some aguments.
+      In that case you will be promted to provide value for each required argument.
+      Ommiting this flag is recommended when input parameters are of more complex types (and it's hard to specify them as 
+      just simple comma-separated strings)
+
+  -e, --exec
+      Provide this flag if you want to execute the actual call, instead of displaying the method description (which is 
+      default)
+
+  -m, --method=method
+      Specifies the api method to call/describe.
+
+  -t, --type=type
+      Specifies the type/category of the inspected request (ie. "query", "consts" etc.).
+      If no "--module" flag is provided then all available modules in that type will be listed.
+      If this flag is not provided then all available types will be listed.
+
+EXAMPLES
+  $ api:inspect
+  $ api:inspect -t=query
+  $ api:inspect -t=query -M=members
+  $ api:inspect -t=query -M=members -m=memberProfile
+  $ api:inspect -t=query -M=members -m=memberProfile -e
+  $ api:inspect -t=query -M=members -m=memberProfile -e -a=1
+```
+
+_See code: [src/commands/api/inspect.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/api/inspect.ts)_
+
+## `joystream-cli api:setUri URI`
+
+Set api WS provider uri
+
+```
+USAGE
+  $ joystream-cli api:setUri URI
+
+ARGUMENTS
+  URI  Uri of the node api WS provider
+```
+
+_See code: [src/commands/api/setUri.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/api/setUri.ts)_
 
 ## `joystream-cli council:info`
 

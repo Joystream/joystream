@@ -4,38 +4,23 @@ import slug from 'slug';
 import inquirer from 'inquirer';
 import ExitCodes from '../ExitCodes';
 import { CLIError } from '@oclif/errors';
-import { Command } from '@oclif/command';
+import ApiCommandBase from './ApiCommandBase';
 import { Keyring } from '@polkadot/api';
-import { KeyringPair$Json, KeyringPair } from '@polkadot/keyring/types';
-import Api from '../Api';
 import { formatBalance } from '@polkadot/util';
 import { AccountBalances, NamedKeyringPair } from '../Types';
 
-type StateObject = { selectedAccountFilename: string };
+const ACCOUNTS_DIRNAME = '/accounts';
 
 /**
  * Abstract base class for account-related commands.
  *
  * All the accounts available in the CLI are stored in the form of json backup files inside:
  * { this.config.dataDir }/{ ACCOUNTS_DIRNAME } (ie. ~/.local/share/joystream-cli/accounts on Ubuntu)
- * Where: this.config.dataDir is provided by oclif and ACCOUNTS_DIRNAME is a static of AccountsCommandBase.
- *
- * Additionally, there is a state.json file kept inside the data directory (this.config.dataDir).
- * Currently it just stores information about the default account that can be choosen by the user
- * by executing account:choose command (see "StateObject" type above).
+ * Where: this.config.dataDir is provided by oclif and ACCOUNTS_DIRNAME is a const (see above).
  */
-export default abstract class AccountsCommandBase extends Command {
-    static ACCOUNTS_DIRNAME = '/accounts';
-    static STATE_FILE = '/state.json';
-    private api: Api | null = null;
-
-    getApi(): Api {
-        if (!this.api) throw new CLIError('Tried to get API before initialization.', { exit: ExitCodes.ApiError });
-        return this.api;
-    }
-
+export default abstract class AccountsCommandBase extends ApiCommandBase {
     getAccountsDirPath(): string {
-        return path.join(this.config.dataDir, AccountsCommandBase.ACCOUNTS_DIRNAME);
+        return path.join(this.config.dataDir, ACCOUNTS_DIRNAME);
     }
 
     getAccountFilePath(account: NamedKeyringPair): string {
@@ -46,34 +31,9 @@ export default abstract class AccountsCommandBase extends Command {
         return `${ slug(account.meta.name, '_') }__${ account.address }.json`;
     }
 
-    getStateFilePath(): string {
-        return path.join(this.config.dataDir, AccountsCommandBase.STATE_FILE);
-    }
-
-    private createDataReadError(): CLIError {
-        return new CLIError(
-            `Unexpected error while trying to read from the data directory (${this.config.dataDir})! Permissions issue?`,
-            { exit: ExitCodes.FsOperationFailed }
-        );
-    }
-
-    private createDataWriteError(): CLIError {
-        return new CLIError(
-            `Unexpected error while trying to write into the data directory (${this.config.dataDir})! Permissions issue?`,
-            { exit: ExitCodes.FsOperationFailed }
-        );
-    }
-
-    private initDataDir(): void {
-        const initialState: StateObject = { selectedAccountFilename: '' };
-        if (!fs.existsSync(this.config.dataDir)) {
-            fs.mkdirSync(this.config.dataDir);
-        }
+    private initAccountsFs(): void {
         if (!fs.existsSync(this.getAccountsDirPath())) {
             fs.mkdirSync(this.getAccountsDirPath());
-        }
-        if (!fs.existsSync(this.getStateFilePath())) {
-            fs.writeFileSync(this.getStateFilePath(), JSON.stringify(initialState));
         }
     }
 
@@ -147,16 +107,8 @@ export default abstract class AccountsCommandBase extends Command {
             .filter(accObj => accObj !== null);
     }
 
-    // TODO: Probably some better way to handle state will be required later
     getSelectedAccountFilename(): string {
-        let state: StateObject;
-        try {
-            state = <StateObject> require(this.getStateFilePath());
-        } catch(e) {
-            throw this.createDataReadError();
-        }
-
-        return state.selectedAccountFilename;
+        return this.getPreservedState().selectedAccountFilename;
     }
 
     getSelectedAccount(): NamedKeyringPair | null {
@@ -190,21 +142,8 @@ export default abstract class AccountsCommandBase extends Command {
         return selectedAccount;
     }
 
-    setSelectedAccount(account: NamedKeyringPair): void {
-        let state: StateObject;
-        try {
-            state = <StateObject> require(this.getStateFilePath());
-        } catch(e) {
-            throw this.createDataReadError();
-        }
-
-        state.selectedAccountFilename = this.generateAccountFilename(account);
-
-        try {
-            fs.writeFileSync(this.getStateFilePath(), JSON.stringify(state));
-        } catch(e) {
-            throw this.createDataWriteError();
-        }
+    async setSelectedAccount(account: NamedKeyringPair): Promise<void> {
+        await this.setPreservedState({ selectedAccountFilename: this.generateAccountFilename(account) });
     }
 
     async promptForPassword(message:string = 'Your account\'s password') {
@@ -259,21 +198,11 @@ export default abstract class AccountsCommandBase extends Command {
     }
 
     async init() {
-        this.api = await Api.create();
+        await super.init();
         try {
-            this.initDataDir();
+            this.initAccountsFs();
         } catch (e) {
-            this.error(
-                'Unexpected error while trying to initialize the data directory! Permissions issue?',
-                { exit: ExitCodes.FsOperationFailed }
-            );
+            throw this.createDataDirInitError();
         }
-    }
-
-    async finally(err: any) {
-        // called after run and catch regardless of whether or not the command errored
-        // We'll force exit here, in case there is no error, to prevent console.log from hanging the process
-        if (!err) this.exit(ExitCodes.OK);
-        super.finally(err);
     }
 }

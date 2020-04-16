@@ -1,5 +1,4 @@
 import AccountsCommandBase from '../../base/AccountsCommandBase';
-import Api from '../../Api';
 import { AccountSummary, NameValueObj, NamedKeyringPair } from '../../Types';
 import { displayHeader, displayNameValueTable } from '../../helpers/display';
 import { formatBalance } from '@polkadot/util';
