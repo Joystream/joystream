@@ -14,14 +14,6 @@ export type NamedKeyringPair = KeyringPair & {
     }
 }
 
-// Simplified account balances (used when listing multiple accounts etc.)
-// Combines results returned by api.query.balances.freeBalance and api.query.balances.reservedBalance
-export type AccountBalances = {
-    free: Balance,
-    reserved: Balance,
-    total: Balance
-};
-
 // Summary of the account information fetched from the api for "account:current" purposes (currently just balances)
 export type AccountSummary = {
     balances: DerivedBalances
