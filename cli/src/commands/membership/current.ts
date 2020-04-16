@@ -7,15 +7,10 @@ import { Role, ActorInRole } from '@joystream/types/src/members';
 
 export default class MembershipCurrent extends AccountsCommandBase {
     static description = 'Display information about current\'s account memberships';
-    static aliases = ['memberships:info'];
+    static aliases = ['membership:info'];
 
     async run() {
-        const selectedAccount = await this.getRequiredSelectedAccount();
-
-        const membership = await this.getApi().getCurrentMembershipByAddress(selectedAccount.address);
-        if (!membership) {
-            this.error('No memberships are available for this accout', { exit: ExitCodes.NoMembershipFound });
-        }
+        const membership = await this.getRequiredMembership(false);
 
         const roles = membership.roles
             .map((actorInRole: ActorInRole): string | null => {
