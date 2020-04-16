@@ -1,3 +1,6 @@
+# Joystream [![Build Status](https://travis-ci.org/Joystream/substrate-runtime-joystream.svg?branch=master)](https://travis-ci.org/Joystream/substrate-runtime-joystream)
+
+
 <p align="center"><img src="img/landing-cover_new.svg"></p>
 
 <div align="center">
@@ -69,7 +72,14 @@ Table of Contents
 
 # Overview
 
-This landing repo is intended to be the best starting place to get a coherent view of how information is organised in this GitHub organization.
+This landing repo is intended to be the best starting place to get a coherent view of how information is organized in this GitHub organization.
+
+It is the main code reposity for all joystream software. It will  house the substrate chain project, the full node and runtime and all reusable substrate runtime modules that make up the joystream runtime. In addition to all front-end apps and infrastructure servers necessary for operating the network.
+
+The repository both a cargo workspace and yarn workspace.
+
+The Joystream network builds on a pre-release version of [substrate v2.0](https://substrate.dev/) and adds additional
+functionality to support the [various roles](https://www.joystream.org/roles) that can be entered into on the platform.
 
 # Contribute
 
@@ -105,7 +115,7 @@ This is the set of active repos to which this document refers:
 | Repo                                                                                      | Description                                           | Maintainer      |
 | :-------------                                                                            | :-------------                                        | :-----------:   |
 | [apps](https://github.com/Joystream/apps)                                                 | The Pioneer application.                              | @siman          |
-| [substrate-node-joystream](https://github.com/Joystream/substrate-node-joystream)         | The Joystream substrate node.                         | @mnaamani       |
+| [joystream-node](./node)         | The Joystream substrate node.                         | @mnaamani       |
 | [storage-node-joystream](https://github.com/Joystream/storage-node-joystream)             | The storage node application.                         | @mnaamani   |
 | [query-node-joystream](https://github.com/Joystream/query-node-joystream)                             | Query node for the Joystream Platform.    | @paul           |
 
@@ -123,20 +133,19 @@ This is the set of active repos to which this document refers:
 | [manifesto](https://github.com/Joystream/manifesto)                             | The Joystream manifesto.    | @bedeho           |
 | [joystream-content-system](https://github.com/Joystream/joystream-content-system)                             | A repo containing information and resources about the Joystream content system.     | @bwhm           |
 
-## Runtime Repos
+## Runtime & Runtime Modules
 
 | Repo                                                                                      | Description                                           | Maintainer      |
 | :-------------                                                                            | :-------------                                        | :-----------:   |
-| [substrate-runtime-joystream](https://github.com/Joystream/substrate-runtime-joystream)   | The Joystream substrate runtime.                      | @mnaamani       |
-| [substrate-content-directory-working-group-module](https://github.com/Joystream/substrate-content-directory-working-group-module)                             | A working group module for the Joystream content directory.    | @bedeho           |
-| [substrate-versioned-store-permissions-module](https://github.com/Joystream/substrate-versioned-store-permissions-module)                             | Permissioned access to the versioned store.    | @mnaamani           |
-| [substrate-versioned-store-module](https://github.com/Joystream/substrate-versioned-store-module)                             | A versioned data store Substrate module.    | @siman           |
-| [substrate-recurring-reward-module](https://github.com/Joystream/substrate-recurring-reward-module)                             | Recurring periodic minting of rewards for recipients.    | @mnaamani           |
-| [substrate-token-minting-module](https://github.com/Joystream/substrate-token-minting-module)                             | Transferrable capacity constrained token minting.    | @mnaamani           |
-| [substrate-hiring-module](https://github.com/Joystream/substrate-hiring-module)                             | Hiring for on-chain organisations.    | @bedeho           |
-| [substrate-stake-module](https://github.com/Joystream/substrate-stake-module)                             | Managed staking, unstaking and slashing.    | @mnaamani           |
-| [substrate-forum-module](https://github.com/Joystream/substrate-forum-module)                             | The on-chain Joystream community forum.    | @bedeho           |
-| [substrate-module-template](https://github.com/Joystream/substrate-module-template)                             | Substrate runtime module template.    | @mnaamani           |
+| [runtime](./runtime)   | The Joystream substrate runtime.                      | @mnaamani       |
+| [substrate-content-directory-working-group-module](./runtime-modules/content-directory-working-group)                             | A working group module for the Joystream content directory.    | @bedeho           |
+| [substrate-versioned-store-permissions-module](./runtime-modules/versioned-store-permissions-module)                             | Permissioned access to the versioned store.    | @mnaamani           |
+| [substrate-versioned-store-module](./runtime-modules/versioned-store-module)                             | A versioned data store Substrate module.    | @siman           |
+| [substrate-recurring-reward-module](./runtime-modules/recurring-reward)                             | Recurring periodic minting of rewards for recipients.    | @mnaamani           |
+| [substrate-token-minting-module](./runtime-modules/token-minting)                             | Transferrable capacity constrained token minting.    | @mnaamani           |
+| [substrate-hiring-module](./runtime-modules/hiring)                             | Hiring for on-chain organisations.    | @bedeho           |
+| [substrate-stake-module](./runtime-modules/stake)                             | Managed staking, unstaking and slashing.    | @mnaamani           |
+| [substrate-forum-module](./runtime-modules/forum)                             | The on-chain Joystream community forum.    | @bedeho           |
 
 ## Libraries and Tools
 
@@ -378,3 +387,16 @@ WIP: describe how we use GitHub, in particular
 - how to use this repo, in particular managing label sets, projects, etc.
 - explain gitflow
 - collaboration, membership status policies.
+
+
+## Authors
+
+See also the list of [CONTRIBUTORS](./CONTRIBUTORS) who participated in this project.
+
+## License
+
+This project is licensed under the GPLv3 License - see the [LICENSE](./LICENSE) file for details
+
+## Acknowledgments
+
+Thanks to the whole [Parity Tech](https://www.parity.io/) team for making substrate and helping on riot chat with tips, suggestions, tutorials and answering all our questions during development.
