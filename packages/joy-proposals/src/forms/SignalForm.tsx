@@ -39,6 +39,7 @@ function SignalForm(props: SignalFormProps & FormikProps<FormValues>) {
         />
         <div className="form-buttons">
           <Button type="submit" color="blue">
+            <Icon name="paper plane" />
             Submit
           </Button>
           <Button color="grey" icon="times">

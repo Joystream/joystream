@@ -9,6 +9,16 @@
     & label {
       font-size: 1rem;
     }
+
+    & input[name="tokens"] {
+      max-width: 16rem;
+    }
+
+    & .ui.input.tokens::after {
+      content: "tJOY";
+      position: absolute;
+      left: 5px;
+    }
   }
 
   .form-buttons {

@@ -6,17 +6,19 @@ import * as Yup from "yup";
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
 
-type EvictStorageProviderProps = {
-  storageProviders: any[];
+type SpendingProposalProps = {
+  destinationAccounts: any[];
 };
 
 interface FormValues {
   title: string;
   rationale: string;
-  storageProvider: any;
+  destinationAccount: any;
+  tokens: number;
 }
-function EvictStorageProviderForm(props: EvictStorageProviderProps & FormikProps<FormValues>) {
-  const { handleChange, storageProviders } = props;
+
+function SpendingProposalForm(props: SpendingProposalProps & FormikProps<FormValues>) {
+  const { handleChange, destinationAccounts } = props;
   return (
     <div className="Forms">
       <Form className="proposal-form">
@@ -32,17 +34,29 @@ function EvictStorageProviderForm(props: EvictStorageProviderProps & FormikProps
           name="rationale"
           placeholder="This proposal is awesome because..."
         />
+        <div style={{ display: "flex" }}>
+          <Form.Input
+            onChange={handleChange}
+            className="tokens"
+            label="Amount of tokens"
+            name="tokens"
+            placeholder="100"
+          />
+          <div style={{ margin: "2.5rem 0 2.5rem 1rem" }}>tJOY</div>
+        </div>
         <Form.Field>
-          <label>Storage Provider</label>
+          <label>Destination Account</label>
           <Dropdown
             clearable
-            name="storageProvider"
-            placeholder="Select Storage Provider"
+            name="destinationAccount"
+            labeled
+            placeholder="Select Destination Account"
             fluid
             selection
-            options={storageProviders}
+            options={destinationAccounts}
           />
         </Form.Field>
+
         <div className="form-buttons">
           <Button type="submit" color="blue">
             <Icon name="paper plane" />
@@ -61,22 +75,24 @@ function EvictStorageProviderForm(props: EvictStorageProviderProps & FormikProps
 type OuterFormProps = {
   initialTitle?: string;
   initialRationale?: string;
-} & EvictStorageProviderProps;
+  initialTokens?: number;
+} & SpendingProposalProps;
 
 export default withFormContainer<OuterFormProps, FormValues>({
   mapPropsToValues: () => ({
     title: "",
-    rationale: ""
+    rationale: "",
+    tokens: 0
   }),
   validationSchema: Yup.object().shape({
     title: Yup.string().required("Title is required!"),
-    rationale: Yup.string().required("Rationale is required!")
+    rationale: Yup.string().required("Rationale is required!"),
+    tokens: Yup.number().required("You need to specify an amount of tokens."),
+    destinationAccount: Yup.string()
   }),
   handleSubmit: (values, { setSubmitting }) => {
-    setTimeout(() => {
-      alert(JSON.stringify(values, null, 2));
-      setSubmitting(false);
-    }, 1000);
+    console.log(JSON.stringify(values, null, 2));
+    setSubmitting(false);
   },
-  displayName: "EvictStorageProvidersForm"
-})(EvictStorageProviderForm);
+  displayName: "SpendingProposalsForm"
+})(SpendingProposalForm);
