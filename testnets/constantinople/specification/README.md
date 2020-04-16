@@ -1,2 +1,0 @@
-Constantinople Testnet Specification
-==
