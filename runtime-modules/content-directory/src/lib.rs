@@ -1149,7 +1149,7 @@ impl<T: Trait> Module<T> {
             Some(_) => return Err(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR),
             _ =>
             // Throw an error if a property was not found on entity
-            // by an in-class index of a property update.
+            // by an in-class index of a property.
             {
                 return Err(ERROR_UNKNOWN_ENTITY_PROP_ID)
             }
@@ -1188,17 +1188,14 @@ impl<T: Trait> Module<T> {
             nonce
         )?;
 
-        match entity.values.get(&in_class_schema_property_id) {
-            Some(current_prop_value) if current_prop_value.is_vec() => (),
-            Some(_) => return Err(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR),
-            _ =>
+        if let Some(current_prop_value) = entity.values.get(&in_class_schema_property_id) {
+            Self::ensure_index_in_property_vector_is_valid(current_prop_value, index_in_property_vec)?;
+        } else {
             // Throw an error if a property was not found on entity
-            // by an in-class index of a property update.
-            {
-                return Err(ERROR_UNKNOWN_ENTITY_PROP_ID)
-            }
+            // by an in-class index of a property.
+            return Err(ERROR_UNKNOWN_ENTITY_PROP_ID)
         }
-
+            
         // Remove property value vector
         <EntityById<T>>::mutate(entity_id, |entity| {
             if let Some(current_prop_value) = entity.values.get_mut(&in_class_schema_property_id) {
@@ -1235,19 +1232,16 @@ impl<T: Trait> Module<T> {
         if let Some(class_prop) = class.properties.get(in_class_schema_property_id as usize) {
             // Try to find a current property value in the entity
             // by matching its id to the id of a property with an updated value.
-            match entity.values.get(&in_class_schema_property_id) {
-                Some(entity_prop_value) if entity_prop_value.is_vec() => {
-                    // Validate a new property value against the type of this property
-                    // and check any additional constraints like the length of a vector
-                    // if it's a vector property or the length of a text if it's a text property.
-                    Self::ensure_prop_value_can_be_insert_at_prop_vec(
-                        &property_value,
-                        entity_prop_value,
-                        class_prop,
-                    )?;
-                }
-                Some(_) => return Err(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR),
-                _ => (),
+            if let Some(entity_prop_value) = entity.values.get(&in_class_schema_property_id) {
+                // Validate a new property value against the type of this property
+                // and check any additional constraints like the length of a vector
+                // if it's a vector property or the length of a text if it's a text property.
+                Self::ensure_prop_value_can_be_inserted_at_prop_vec(
+                    &property_value,
+                    entity_prop_value,
+                    index_in_property_vec,
+                    class_prop,
+                )?;
             }
         } else {
             // Throw an error if a property was not found on entity
@@ -1685,6 +1679,29 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    pub fn ensure_index_in_property_vector_is_valid(value: &PropertyValue, index_in_property_vec: u32) -> dispatch::Result {
+
+        fn is_valid_index<T>(vec: &[T], index_in_property_vec: u32) -> bool {
+            (index_in_property_vec as usize) < vec.len()
+        }
+
+        let is_valid_index = match value {
+            PropertyValue::BoolVec(vec) => is_valid_index(vec, index_in_property_vec),
+            PropertyValue::Uint16Vec(vec) => is_valid_index(vec, index_in_property_vec),
+            PropertyValue::Uint32Vec(vec) => is_valid_index(vec, index_in_property_vec),
+            PropertyValue::Uint64Vec(vec) => is_valid_index(vec, index_in_property_vec),
+            PropertyValue::Int16Vec(vec) => is_valid_index(vec, index_in_property_vec),
+            PropertyValue::Int32Vec(vec) => is_valid_index(vec, index_in_property_vec),
+            PropertyValue::Int64Vec(vec) => is_valid_index(vec, index_in_property_vec),
+            PropertyValue::TextVec(vec) => is_valid_index(vec, index_in_property_vec),
+            PropertyValue::ReferenceVec(vec) => is_valid_index(vec, index_in_property_vec),
+            _ => return Err(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR),
+        };
+
+        ensure!(is_valid_index, ERROR_ENTITY_PROP_VALUE_VECTOR_INDEX_IS_OUT_OF_RANGE);
+        Ok(())
+    }
+
     pub fn is_unknown_internal_entity_id(id: PropertyValue) -> bool {
         if let PropertyValue::Reference(entity_id) = id {
             !<EntityById<T>>::exists(entity_id)
@@ -1710,11 +1727,14 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn ensure_prop_value_can_be_insert_at_prop_vec(
+    pub fn ensure_prop_value_can_be_inserted_at_prop_vec(
         value: &PropertyValue,
         entity_prop_value: &PropertyValue,
+        index_in_property_vec: u32,
         prop: &Property,
     ) -> dispatch::Result {
+        Self::ensure_index_in_property_vector_is_valid(entity_prop_value, index_in_property_vec)?;
+
         fn validate_prop_vec_len_after_value_insert<T>(vec: &[T], max_len: u16) -> bool {
             vec.len() < max_len as usize
         }

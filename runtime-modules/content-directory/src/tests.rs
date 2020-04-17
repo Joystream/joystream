@@ -1538,7 +1538,7 @@ fn cannot_complete_insert_at_entity_property_vector_when_unknown_internal_entity
             TestModule::complete_insert_at_entity_property_vector(
                 entity_id,
                 PROP_ID_REFERENCE_VEC,
-                1,
+                0,
                 PropertyValue::Reference(UNKNOWN_ENTITY_ID),
                 ZERO_NONCE
             ),
