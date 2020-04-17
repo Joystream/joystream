@@ -1,6 +1,7 @@
 import React from "react";
 import { FormikProps } from "formik";
-import { Form, Icon, Button, Dropdown } from "semantic-ui-react";
+import { Form, Icon, Button, Dropdown, Label } from "semantic-ui-react";
+import { getFormErrorLabelsProps } from './errorHandling';
 import * as Yup from "yup";
 
 import { withFormContainer } from "./FormContainer";
@@ -16,23 +17,26 @@ interface FormValues {
   storageProvider: any;
 }
 function EvictStorageProviderForm(props: EvictStorageProviderProps & FormikProps<FormValues>) {
-  const { handleChange, storageProviders } = props;
+  const { handleChange, storageProviders, errors, touched, handleSubmit } = props;
+  const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
     <div className="Forms">
-      <Form className="proposal-form">
+      <Form className="proposal-form" onSubmit={ handleSubmit }>
         <Form.Input
           onChange={handleChange}
           label="Title"
           name="title"
           placeholder="Title for your awesome proposal..."
+          error={ errorLabelsProps.title }
         />
         <Form.TextArea
           onChange={handleChange}
           label="Rationale"
           name="rationale"
           placeholder="This proposal is awesome because..."
+          error={ errorLabelsProps.rationale }
         />
-        <Form.Field>
+        <Form.Field error={ Boolean(errorLabelsProps.storageProvider) }>
           <label>Storage Provider</label>
           <Dropdown
             clearable
@@ -41,7 +45,9 @@ function EvictStorageProviderForm(props: EvictStorageProviderProps & FormikProps
             fluid
             selection
             options={storageProviders}
+            onChange={handleChange}
           />
+          { errorLabelsProps.storageProvider && <Label { ...errorLabelsProps.storageProvider } prompt/> }
         </Form.Field>
         <div className="form-buttons">
           <Button type="submit" color="blue">
@@ -66,11 +72,13 @@ type OuterFormProps = {
 export default withFormContainer<OuterFormProps, FormValues>({
   mapPropsToValues: () => ({
     title: "",
-    rationale: ""
+    rationale: "",
+    storageProvider: "",
   }),
   validationSchema: Yup.object().shape({
     title: Yup.string().required("Title is required!"),
-    rationale: Yup.string().required("Rationale is required!")
+    rationale: Yup.string().required("Rationale is required!"),
+    storageProvider: Yup.string().required("Select a storage provider!")
   }),
   handleSubmit: (values, { setSubmitting }) => {
     setTimeout(() => {
