@@ -82,7 +82,7 @@ export default withFormContainer<OuterFormProps, FormValues>({
   mapPropsToValues: () => ({
     title: "",
     rationale: "",
-    capacity: 0
+    capacity: ""
   }),
   validationSchema: Yup.object().shape({
     title: Yup.string().required("Title is required!"),
