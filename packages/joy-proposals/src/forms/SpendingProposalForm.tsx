@@ -1,6 +1,7 @@
 import React from "react";
 import { FormikProps } from "formik";
-import { Form, Icon, Button, Dropdown } from "semantic-ui-react";
+import { Form, Icon, Button, Dropdown, Label } from "semantic-ui-react";
+import { getFormErrorLabelsProps } from "./errorHandling";
 import * as Yup from "yup";
 
 import { withFormContainer } from "./FormContainer";
@@ -18,7 +19,8 @@ interface FormValues {
 }
 
 function SpendingProposalForm(props: SpendingProposalProps & FormikProps<FormValues>) {
-  const { handleChange, handleSubmit, isSubmitting, destinationAccounts } = props;
+  const { handleChange, destinationAccounts, errors, isSubmitting, touched, handleSubmit } = props;
+  const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
     <div className="Forms">
       <Form className="proposal-form" onSubmit={handleSubmit}>
@@ -27,24 +29,28 @@ function SpendingProposalForm(props: SpendingProposalProps & FormikProps<FormVal
           label="Title"
           name="title"
           placeholder="Title for your awesome proposal..."
+          error={errorLabelsProps.title}
         />
         <Form.TextArea
           onChange={handleChange}
           label="Rationale"
           name="rationale"
           placeholder="This proposal is awesome because..."
+          error={errorLabelsProps.rationale}
         />
-        <div style={{ display: "flex" }}>
-          <Form.Input
-            onChange={handleChange}
-            className="tokens"
-            label="Amount of tokens"
-            name="tokens"
-            placeholder="100"
-          />
-          <div style={{ margin: "2.5rem 0 2.5rem 1rem" }}>tJOY</div>
-        </div>
-        <Form.Field>
+        <Form.Input
+          style={{ display: "flex", alignItems: "center" }}
+          onChange={handleChange}
+          className="tokens"
+          label="Amount of tokens"
+          name="tokens"
+          placeholder="100"
+          error={errorLabelsProps.tokens}
+        >
+          <input />
+          <div style={{ margin: "0 0 0 1rem" }}>tJOY</div>
+        </Form.Input>
+        <Form.Field error={Boolean(errorLabelsProps.destinationAccount)}>
           <label>Destination Account</label>
           <Dropdown
             clearable
@@ -54,7 +60,9 @@ function SpendingProposalForm(props: SpendingProposalProps & FormikProps<FormVal
             fluid
             selection
             options={destinationAccounts}
+            onChange={handleChange}
           />
+          {errorLabelsProps.destinationAccount && <Label {...errorLabelsProps.destinationAccount} prompt />}
         </Form.Field>
 
         <div className="form-buttons">
@@ -82,13 +90,14 @@ export default withFormContainer<OuterFormProps, FormValues>({
   mapPropsToValues: () => ({
     title: "",
     rationale: "",
-    tokens: 0
+    tokens: "",
+    destinationAccount: ""
   }),
   validationSchema: Yup.object().shape({
     title: Yup.string().required("Title is required!"),
     rationale: Yup.string().required("Rationale is required!"),
     tokens: Yup.number().required("You need to specify an amount of tokens."),
-    destinationAccount: Yup.string()
+    destinationAccount: Yup.string().required("Select a destination account!")
   }),
   handleSubmit: (values, { setSubmitting }) => {
     setTimeout(() => {

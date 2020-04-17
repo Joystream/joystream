@@ -71,31 +71,31 @@ const destinationAccounts = [
   {
     key: "Elliot Fu",
     text: "Elliot Fu",
-    value: "0x555",
+    value: "0x666",
     image: { avatar: true, src: "https://react.semantic-ui.com/images/avatar/small/elliot.jpg" }
   },
   {
     key: "Stevie Feliciano",
     text: "Stevie Feliciano",
-    value: "0x555",
+    value: "0x777",
     image: { avatar: true, src: "https://react.semantic-ui.com/images/avatar/small/stevie.jpg" }
   },
   {
     key: "Christian",
     text: "Christian",
-    value: "0x555",
+    value: "0x888",
     image: { avatar: true, src: "https://react.semantic-ui.com/images/avatar/small/christian.jpg" }
   },
   {
     key: "Matt",
     text: "Matt",
-    value: "0x555",
+    value: "0x999",
     image: { avatar: true, src: "https://react.semantic-ui.com/images/avatar/small/elliot.jpg" }
   },
   {
     key: "Justen Kitsune",
     text: "Justen Kitsune",
-    value: "0x555",
+    value: "0x000",
     image: { avatar: true, src: "https://react.semantic-ui.com/images/avatar/small/steve.jpg" }
   }
 ];

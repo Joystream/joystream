@@ -1,10 +1,11 @@
-import React from 'react';
-import { FormikProps } from 'formik';
-import { Form, Icon, Button, Dropdown } from 'semantic-ui-react';
-import * as Yup from 'yup';
+import React from "react";
+import { FormikProps } from "formik";
+import { Form, Icon, Button, Dropdown, Label } from "semantic-ui-react";
+import { getFormErrorLabelsProps } from "./errorHandling";
+import * as Yup from "yup";
 
-import { withFormContainer } from './FormContainer';
-import './forms.css';
+import { withFormContainer } from "./FormContainer";
+import "./forms.css";
 
 type EvictStorageProviderProps = {
   storageProviders: any[];
@@ -15,8 +16,9 @@ interface FormValues {
   rationale: string;
   storageProvider: any;
 }
-function EvictStorageProviderForm (props: EvictStorageProviderProps & FormikProps<FormValues>) {
-  const { handleChange, handleSubmit, isSubmitting, storageProviders } = props;
+function EvictStorageProviderForm(props: EvictStorageProviderProps & FormikProps<FormValues>) {
+  const { handleChange, storageProviders, errors, isSubmitting, touched, handleSubmit } = props;
+  const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
     <div className="Forms">
       <Form className="proposal-form" onSubmit={handleSubmit}>
@@ -25,14 +27,16 @@ function EvictStorageProviderForm (props: EvictStorageProviderProps & FormikProp
           label="Title"
           name="title"
           placeholder="Title for your awesome proposal..."
+          error={errorLabelsProps.title}
         />
         <Form.TextArea
           onChange={handleChange}
           label="Rationale"
           name="rationale"
           placeholder="This proposal is awesome because..."
+          error={errorLabelsProps.rationale}
         />
-        <Form.Field>
+        <Form.Field error={Boolean(errorLabelsProps.storageProvider)}>
           <label>Storage Provider</label>
           <Dropdown
             clearable
@@ -41,7 +45,9 @@ function EvictStorageProviderForm (props: EvictStorageProviderProps & FormikProp
             fluid
             selection
             options={storageProviders}
+            onChange={handleChange}
           />
+          {errorLabelsProps.storageProvider && <Label {...errorLabelsProps.storageProvider} prompt />}
         </Form.Field>
         <div className="form-buttons">
           <Button type="submit" color="blue" loading={isSubmitting}>
@@ -65,12 +71,14 @@ type OuterFormProps = {
 
 export default withFormContainer<OuterFormProps, FormValues>({
   mapPropsToValues: () => ({
-    title: '',
-    rationale: ''
+    title: "",
+    rationale: "",
+    storageProvider: ""
   }),
   validationSchema: Yup.object().shape({
-    title: Yup.string().required('Title is required!'),
-    rationale: Yup.string().required('Rationale is required!')
+    title: Yup.string().required("Title is required!"),
+    rationale: Yup.string().required("Rationale is required!"),
+    storageProvider: Yup.string().required("Select a storage provider!")
   }),
   handleSubmit: (values, { setSubmitting, resetForm }) => {
     setTimeout(() => {
@@ -79,5 +87,5 @@ export default withFormContainer<OuterFormProps, FormValues>({
       setSubmitting(false);
     }, 1000);
   },
-  displayName: 'EvictStorageProvidersForm'
+  displayName: "EvictStorageProvidersForm"
 })(EvictStorageProviderForm);
