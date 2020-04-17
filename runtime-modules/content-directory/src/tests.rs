@@ -1514,7 +1514,7 @@ fn cannot_complete_insert_at_entity_property_vector_when_unknown_internal_entity
                 entity_id,
                 PROP_ID_REFERENCE_VEC,
                 1,
-                PropertyValue::Reference(entity_id)
+                PropertyValue::Reference(UNKNOWN_ENTITY_ID)
             ),
             ERROR_ENTITY_NOT_FOUND
         );

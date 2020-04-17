@@ -6,7 +6,6 @@ use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use rstd::prelude::*;
 use runtime_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter};
-use system;
 
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
@@ -113,12 +112,12 @@ impl InputValidationLengthConstraint {
     }
 
     /// Helper for computing max
-    pub fn max(&self) -> u16 {
+    pub fn max(self) -> u16 {
         self.min + self.max_min_diff
     }
 
     pub fn ensure_valid(
-        &self,
+        self,
         len: usize,
         too_short_msg: &'static str,
         too_long_msg: &'static str,
@@ -295,7 +294,7 @@ pub struct Property {
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum PropertyType {
     // Single value:
     Bool,
@@ -729,7 +728,7 @@ decl_module! {
                     // at this point we don't enforce anything about reference constraints
                     // because of the chicken and egg problem. Instead enforcement is done
                     // at the time of creating an entity.
-                    let _schema_index = Self::complete_class_schema_status_update(class_id, schema_id, is_active)?;
+                    Self::complete_class_schema_status_update(class_id, schema_id, is_active)?;
                     Ok(())
                 }
             )
@@ -1056,7 +1055,7 @@ impl<T: Trait> Module<T> {
         entity_id: EntityId,
         new_property_values: BTreeMap<u16, PropertyValue>,
     ) -> dispatch::Result {
-        Self::ensure_known_entity_id(&entity_id)?;
+        Self::ensure_known_entity_id(entity_id)?;
 
         let (entity, class) = Self::get_entity_and_class(entity_id);
 
@@ -1124,7 +1123,7 @@ impl<T: Trait> Module<T> {
         entity_id: EntityId,
         in_class_schema_property_id: u16,
     ) -> dispatch::Result {
-        Self::ensure_known_entity_id(&entity_id)?;
+        Self::ensure_known_entity_id(entity_id)?;
         let entity = Self::entity_by_id(entity_id);
 
         match entity.values.get(&in_class_schema_property_id) {
@@ -1140,11 +1139,11 @@ impl<T: Trait> Module<T> {
 
         // Clear property value vector:
         <EntityById<T>>::mutate(entity_id, |entity| {
-            entity
-                .values
-                .get_mut(&in_class_schema_property_id)
-                .as_deref_mut()
-                .map(|current_property_value_vec| current_property_value_vec.vec_clear());
+            if let Some(current_property_value_vec) =
+                entity.values.get_mut(&in_class_schema_property_id)
+            {
+                current_property_value_vec.vec_clear();
+            }
             Self::refresh_vec_values_last_update(
                 in_class_schema_property_id,
                 &mut entity.vec_values_last_update,
@@ -1159,7 +1158,7 @@ impl<T: Trait> Module<T> {
         in_class_schema_property_id: u16,
         index_in_property_vec: u32,
     ) -> dispatch::Result {
-        Self::ensure_known_entity_id(&entity_id)?;
+        Self::ensure_known_entity_id(entity_id)?;
         let entity = Self::entity_by_id(entity_id);
 
         // Ensure property value vector was not already updated in this block to avoid possible data races,
@@ -1182,11 +1181,9 @@ impl<T: Trait> Module<T> {
 
         // Remove property value vector
         <EntityById<T>>::mutate(entity_id, |entity| {
-            entity
-                .values
-                .get_mut(&in_class_schema_property_id)
-                .as_deref_mut()
-                .map(|current_prop_value| current_prop_value.vec_remove_at(index_in_property_vec));
+            if let Some(current_prop_value) = entity.values.get_mut(&in_class_schema_property_id) {
+                current_prop_value.vec_remove_at(index_in_property_vec)
+            }
             Self::refresh_vec_values_last_update(
                 in_class_schema_property_id,
                 &mut entity.vec_values_last_update,
@@ -1202,7 +1199,7 @@ impl<T: Trait> Module<T> {
         index_in_property_vec: u32,
         property_value: PropertyValue,
     ) -> dispatch::Result {
-        Self::ensure_known_entity_id(&entity_id)?;
+        Self::ensure_known_entity_id(entity_id)?;
 
         let (entity, class) = Self::get_entity_and_class(entity_id);
 
@@ -1240,13 +1237,9 @@ impl<T: Trait> Module<T> {
 
         // Insert property value into property value vector
         <EntityById<T>>::mutate(entity_id, |entity| {
-            entity
-                .values
-                .get_mut(&in_class_schema_property_id)
-                .as_deref_mut()
-                .map(|current_prop_value| {
-                    current_prop_value.vec_insert_at(index_in_property_vec, property_value)
-                });
+            if let Some(current_prop_value) = entity.values.get_mut(&in_class_schema_property_id) {
+                current_prop_value.vec_insert_at(index_in_property_vec, property_value)
+            }
             Self::refresh_vec_values_last_update(
                 in_class_schema_property_id,
                 &mut entity.vec_values_last_update,
@@ -1467,7 +1460,7 @@ impl<T: Trait> Module<T> {
         existing_properties: Vec<u16>,
         new_properties: Vec<Property>,
     ) -> Result<u16, &'static str> {
-        Self::ensure_known_class_id(&class_id)?;
+        Self::ensure_known_class_id(class_id)?;
 
         let non_empty_schema = !existing_properties.is_empty() || !new_properties.is_empty();
 
@@ -1540,7 +1533,7 @@ impl<T: Trait> Module<T> {
         schema_id: u16,
         property_values: BTreeMap<u16, PropertyValue>,
     ) -> dispatch::Result {
-        Self::ensure_known_entity_id(&entity_id)?;
+        Self::ensure_known_entity_id(entity_id)?;
 
         let (entity, class) = Self::get_entity_and_class(entity_id);
 
@@ -1616,12 +1609,12 @@ impl<T: Trait> Module<T> {
     // Helper functions:
     // ----------------------------------------------------------------
 
-    pub fn ensure_known_class_id(class_id: &ClassId) -> dispatch::Result {
+    pub fn ensure_known_class_id(class_id: ClassId) -> dispatch::Result {
         ensure!(<ClassById<T>>::exists(class_id), ERROR_CLASS_NOT_FOUND);
         Ok(())
     }
 
-    pub fn ensure_known_entity_id(entity_id: &EntityId) -> dispatch::Result {
+    pub fn ensure_known_entity_id(entity_id: EntityId) -> dispatch::Result {
         ensure!(<EntityById<T>>::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
         Ok(())
     }
@@ -1649,13 +1642,13 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn ensure_valid_internal_prop(value: &PropertyValue, prop: &Property) -> dispatch::Result {
-        match (value, &prop.prop_type) {
+        match (value, prop.prop_type) {
             (PV::Reference(entity_id), PT::Reference(class_id)) => {
                 Self::ensure_known_class_id(class_id)?;
-                Self::ensure_known_entity_id(entity_id)?;
+                Self::ensure_known_entity_id(*entity_id)?;
                 let entity = Self::entity_by_id(entity_id);
                 ensure!(
-                    entity.class_id == *class_id,
+                    entity.class_id == class_id,
                     ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS
                 );
                 Ok(())
@@ -1694,11 +1687,11 @@ impl<T: Trait> Module<T> {
         entity_prop_value: &PropertyValue,
         prop: &Property,
     ) -> dispatch::Result {
-        fn validate_prop_vec_len_after_value_insert<T>(vec: &[T], max_len: &u16) -> bool {
-            vec.len() < *max_len as usize
+        fn validate_prop_vec_len_after_value_insert<T>(vec: &[T], max_len: u16) -> bool {
+            vec.len() < max_len as usize
         }
 
-        let is_valid_len = match (value, entity_prop_value, &prop.prop_type) {
+        let is_valid_len = match (value, entity_prop_value, prop.prop_type) {
             // Single values
             (PV::Bool(_), PV::BoolVec(vec), PT::BoolVec(max_len)) => {
                 validate_prop_vec_len_after_value_insert(vec, max_len)
@@ -1723,7 +1716,7 @@ impl<T: Trait> Module<T> {
             }
             (PV::Text(text_item), PV::TextVec(vec), PT::TextVec(vec_max_len, text_max_len)) => {
                 if validate_prop_vec_len_after_value_insert(vec, vec_max_len) {
-                    Self::validate_max_len_of_text(text_item, *text_max_len)?;
+                    Self::validate_max_len_of_text(text_item, text_max_len)?;
                     true
                 } else {
                     false
@@ -1736,10 +1729,10 @@ impl<T: Trait> Module<T> {
             ) => {
                 Self::ensure_known_class_id(class_id)?;
                 if validate_prop_vec_len_after_value_insert(vec, vec_max_len) {
-                    Self::ensure_known_entity_id(entity_id)?;
+                    Self::ensure_known_entity_id(*entity_id)?;
                     let entity = Self::entity_by_id(entity_id);
                     ensure!(
-                        entity.class_id == *class_id,
+                        entity.class_id == class_id,
                         ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS
                     );
                     true
@@ -1776,11 +1769,11 @@ impl<T: Trait> Module<T> {
         value: &PropertyValue,
         prop: &Property,
     ) -> dispatch::Result {
-        fn validate_vec_len<T>(vec: &[T], max_len: &u16) -> bool {
-            vec.len() <= *max_len as usize
+        fn validate_vec_len<T>(vec: &[T], max_len: u16) -> bool {
+            vec.len() <= max_len as usize
         }
 
-        let is_valid_len = match (value, &prop.prop_type) {
+        let is_valid_len = match (value, prop.prop_type) {
             (PV::BoolVec(vec), PT::BoolVec(max_len)) => validate_vec_len(vec, max_len),
             (PV::Uint16Vec(vec), PT::Uint16Vec(max_len)) => validate_vec_len(vec, max_len),
             (PV::Uint32Vec(vec), PT::Uint32Vec(max_len)) => validate_vec_len(vec, max_len),
@@ -1792,7 +1785,7 @@ impl<T: Trait> Module<T> {
             (PV::TextVec(vec), PT::TextVec(vec_max_len, text_max_len)) => {
                 if validate_vec_len(vec, vec_max_len) {
                     for text_item in vec.iter() {
-                        Self::validate_max_len_of_text(text_item, *text_max_len)?;
+                        Self::validate_max_len_of_text(text_item, text_max_len)?;
                     }
                     true
                 } else {
@@ -1804,10 +1797,10 @@ impl<T: Trait> Module<T> {
                 Self::ensure_known_class_id(class_id)?;
                 if validate_vec_len(vec, vec_max_len) {
                     for entity_id in vec.iter() {
-                        Self::ensure_known_entity_id(entity_id)?;
+                        Self::ensure_known_entity_id(*entity_id)?;
                         let entity = Self::entity_by_id(entity_id);
                         ensure!(
-                            entity.class_id == *class_id,
+                            entity.class_id == class_id,
                             ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS
                         );
                     }
@@ -1870,7 +1863,7 @@ impl<T: Trait> Module<T> {
             }
     }
 
-    pub fn ensure_property_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    pub fn ensure_property_name_is_valid(text: &[u8]) -> dispatch::Result {
         T::PropertyNameConstraint::get().ensure_valid(
             text.len(),
             ERROR_PROPERTY_NAME_TOO_SHORT,
@@ -1878,7 +1871,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    pub fn ensure_property_description_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    pub fn ensure_property_description_is_valid(text: &[u8]) -> dispatch::Result {
         T::PropertyDescriptionConstraint::get().ensure_valid(
             text.len(),
             ERROR_PROPERTY_DESCRIPTION_TOO_SHORT,
@@ -1886,7 +1879,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    pub fn ensure_class_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    pub fn ensure_class_name_is_valid(text: &[u8]) -> dispatch::Result {
         T::ClassNameConstraint::get().ensure_valid(
             text.len(),
             ERROR_CLASS_NAME_TOO_SHORT,
@@ -1894,7 +1887,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    pub fn ensure_class_description_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    pub fn ensure_class_description_is_valid(text: &[u8]) -> dispatch::Result {
         T::ClassDescriptionConstraint::get().ensure_valid(
             text.len(),
             ERROR_CLASS_DESCRIPTION_TOO_SHORT,
