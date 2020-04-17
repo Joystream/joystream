@@ -1,10 +1,10 @@
-import React from "react";
-import { FormikProps } from "formik";
-import { Form, Icon, Button, Dropdown } from "semantic-ui-react";
-import * as Yup from "yup";
+import React from 'react';
+import { FormikProps } from 'formik';
+import { Form, Icon, Button, Dropdown } from 'semantic-ui-react';
+import * as Yup from 'yup';
 
-import { withFormContainer } from "./FormContainer";
-import "./forms.css";
+import { withFormContainer } from './FormContainer';
+import './forms.css';
 
 type EvictStorageProviderProps = {
   storageProviders: any[];
@@ -15,7 +15,7 @@ interface FormValues {
   rationale: string;
   storageProvider: any;
 }
-function EvictStorageProviderForm(props: EvictStorageProviderProps & FormikProps<FormValues>) {
+function EvictStorageProviderForm (props: EvictStorageProviderProps & FormikProps<FormValues>) {
   const { handleChange, handleSubmit, isSubmitting, storageProviders } = props;
   return (
     <div className="Forms">
@@ -65,18 +65,19 @@ type OuterFormProps = {
 
 export default withFormContainer<OuterFormProps, FormValues>({
   mapPropsToValues: () => ({
-    title: "",
-    rationale: ""
+    title: '',
+    rationale: ''
   }),
   validationSchema: Yup.object().shape({
-    title: Yup.string().required("Title is required!"),
-    rationale: Yup.string().required("Rationale is required!")
+    title: Yup.string().required('Title is required!'),
+    rationale: Yup.string().required('Rationale is required!')
   }),
-  handleSubmit: (values, { setSubmitting }) => {
+  handleSubmit: (values, { setSubmitting, resetForm }) => {
     setTimeout(() => {
       alert(JSON.stringify(values, null, 2));
+      resetForm({});
       setSubmitting(false);
     }, 1000);
   },
-  displayName: "EvictStorageProvidersForm"
+  displayName: 'EvictStorageProvidersForm'
 })(EvictStorageProviderForm);

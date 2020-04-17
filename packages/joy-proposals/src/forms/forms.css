@@ -4,8 +4,6 @@
   }
 
   .ui.form.proposal-form {
-    max-width: 48rem;
-
     & label {
       font-size: 1rem;
     }
