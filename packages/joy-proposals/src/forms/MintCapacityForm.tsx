@@ -2,6 +2,7 @@ import React from "react";
 import { FormikProps } from "formik";
 import { Form, Icon, Button, Dropdown } from "semantic-ui-react";
 import * as Yup from "yup";
+import { getFormErrorLabelsProps } from "./errorHandling";
 
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
@@ -17,7 +18,8 @@ interface FormValues {
 }
 
 function MintCapacityForm(props: MintCapacityProps & FormikProps<FormValues>) {
-  const { handleChange, handleSubmit, isSubmitting } = props;
+  const { handleChange, errors, touched, isSubmitting, handleSubmit } = props;
+  const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
     <div className="Forms">
       <Form className="proposal-form" onSubmit={handleSubmit}>
@@ -26,12 +28,14 @@ function MintCapacityForm(props: MintCapacityProps & FormikProps<FormValues>) {
           label="Title"
           name="title"
           placeholder="Title for your awesome proposal..."
+          error={errorLabelsProps.title}
         />
         <Form.TextArea
           onChange={handleChange}
           label="Rationale"
           name="rationale"
           placeholder="This proposal is awesome because..."
+          error={errorLabelsProps.rationale}
         />
         <div style={{ display: "flex" }}>
           <Form.Input
@@ -40,6 +44,7 @@ function MintCapacityForm(props: MintCapacityProps & FormikProps<FormValues>) {
             label="New Mint Capacity"
             name="capacity"
             placeholder="100"
+            error={errorLabelsProps.capacity}
           />
           <div style={{ margin: "2.5rem 0 2.5rem 1rem" }}>tJOY</div>
         </div>
