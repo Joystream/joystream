@@ -3,6 +3,7 @@ import { FormikProps } from "formik";
 import { Form, Icon, Button, Dropdown, Label } from "semantic-ui-react";
 import { getFormErrorLabelsProps } from "./errorHandling";
 import * as Yup from "yup";
+import LabelWithHelp from './LabelWithHelp';
 
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
@@ -22,22 +23,26 @@ function EvictStorageProviderForm(props: EvictStorageProviderProps & FormikProps
   return (
     <div className="Forms">
       <Form className="proposal-form" onSubmit={handleSubmit}>
-        <Form.Input
-          onChange={handleChange}
-          label="Title"
-          name="title"
-          placeholder="Title for your awesome proposal..."
-          error={errorLabelsProps.title}
-        />
-        <Form.TextArea
-          onChange={handleChange}
-          label="Rationale"
-          name="rationale"
-          placeholder="This proposal is awesome because..."
-          error={errorLabelsProps.rationale}
-        />
+        <Form.Field error={Boolean(errorLabelsProps.title)}>
+          <LabelWithHelp text="Title" help="The title of your proposal"/>
+          <Form.Input
+            onChange={handleChange}
+            name="title"
+            placeholder="Title for your awesome proposal..."
+            error={errorLabelsProps.title}
+          />
+        </Form.Field>
+        <Form.Field error={Boolean(errorLabelsProps.rationale)}>
+          <LabelWithHelp text="Rationale" help="The rationale behind your proposal"/>
+          <Form.TextArea
+            onChange={handleChange}
+            name="rationale"
+            placeholder="This proposal is awesome because..."
+            error={errorLabelsProps.rationale}
+          />
+        </Form.Field>
         <Form.Field error={Boolean(errorLabelsProps.storageProvider)}>
-          <label>Storage Provider</label>
+          <LabelWithHelp text="Storage provider" help="The storage provider you propose to evict"/>
           <Dropdown
             clearable
             name="storageProvider"

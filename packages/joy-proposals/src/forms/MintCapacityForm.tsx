@@ -3,6 +3,7 @@ import { FormikProps } from "formik";
 import { Form, Icon, Button, Dropdown } from "semantic-ui-react";
 import * as Yup from "yup";
 import { getFormErrorLabelsProps } from "./errorHandling";
+import LabelWithHelp from './LabelWithHelp';
 
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
@@ -23,31 +24,38 @@ function MintCapacityForm(props: MintCapacityProps & FormikProps<FormValues>) {
   return (
     <div className="Forms">
       <Form className="proposal-form" onSubmit={handleSubmit}>
-        <Form.Input
-          onChange={handleChange}
-          label="Title"
-          name="title"
-          placeholder="Title for your awesome proposal..."
-          error={errorLabelsProps.title}
-        />
-        <Form.TextArea
-          onChange={handleChange}
-          label="Rationale"
-          name="rationale"
-          placeholder="This proposal is awesome because..."
-          error={errorLabelsProps.rationale}
-        />
-        <div style={{ display: "flex", alignItems: "center" }}>
+        <Form.Field error={Boolean(errorLabelsProps.title)}>
+          <LabelWithHelp text="Title" help="The title of your proposal"/>
           <Form.Input
             onChange={handleChange}
+            name="title"
+            placeholder="Title for your awesome proposal..."
+            error={errorLabelsProps.title}
+          />
+        </Form.Field>
+        <Form.Field error={Boolean(errorLabelsProps.rationale)}>
+          <LabelWithHelp text="Rationale" help="The rationale behind your proposal"/>
+          <Form.TextArea
+            onChange={handleChange}
+            name="rationale"
+            placeholder="This proposal is awesome because..."
+            error={errorLabelsProps.rationale}
+          />
+        </Form.Field>
+        <Form.Field error={Boolean(errorLabelsProps.capacity)}>
+          <LabelWithHelp text="New Mint Capacity" help="The new mint capacity you propse"/>
+          <Form.Input
+            style={{ display: "flex", alignItems: "center" }}
+            onChange={handleChange}
             className="capacity"
-            label="New Mint Capacity"
             name="capacity"
             placeholder="100"
             error={errorLabelsProps.capacity}
-          />
-          <div style={{ margin: "0 0 0 1rem" }}>tJOY</div>
-        </div>
+          >
+            <input />
+            <div style={{ margin: "0 0 0 1rem" }}>tJOY</div>
+          </Form.Input>
+        </Form.Field>
 
         <div className="form-buttons">
           <Button type="submit" color="blue" loading={isSubmitting}>

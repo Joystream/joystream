@@ -3,6 +3,7 @@ import { FormikProps } from "formik";
 import { Form, Icon, Button, Dropdown, Label } from "semantic-ui-react";
 import { getFormErrorLabelsProps } from "./errorHandling";
 import * as Yup from "yup";
+import LabelWithHelp from './LabelWithHelp';
 
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
@@ -24,34 +25,40 @@ function SpendingProposalForm(props: SpendingProposalProps & FormikProps<FormVal
   return (
     <div className="Forms">
       <Form className="proposal-form" onSubmit={handleSubmit}>
-        <Form.Input
-          onChange={handleChange}
-          label="Title"
-          name="title"
-          placeholder="Title for your awesome proposal..."
-          error={errorLabelsProps.title}
-        />
-        <Form.TextArea
-          onChange={handleChange}
-          label="Rationale"
-          name="rationale"
-          placeholder="This proposal is awesome because..."
-          error={errorLabelsProps.rationale}
-        />
-        <Form.Input
-          style={{ display: "flex", alignItems: "center" }}
-          onChange={handleChange}
-          className="tokens"
-          label="Amount of tokens"
-          name="tokens"
-          placeholder="100"
-          error={errorLabelsProps.tokens}
-        >
-          <input />
-          <div style={{ margin: "0 0 0 1rem" }}>tJOY</div>
-        </Form.Input>
+        <Form.Field error={Boolean(errorLabelsProps.title)}>
+          <LabelWithHelp text="Title" help="The title of your proposal"/>
+          <Form.Input
+            onChange={handleChange}
+            name="title"
+            placeholder="Title for your awesome proposal..."
+            error={errorLabelsProps.title}
+          />
+        </Form.Field>
+        <Form.Field error={Boolean(errorLabelsProps.rationale)}>
+          <LabelWithHelp text="Rationale" help="The rationale behind your proposal"/>
+          <Form.TextArea
+            onChange={handleChange}
+            name="rationale"
+            placeholder="This proposal is awesome because..."
+            error={errorLabelsProps.rationale}
+          />
+        </Form.Field>
+        <Form.Field error={Boolean(errorLabelsProps.tokens)}>
+          <LabelWithHelp text="Amount of tokens" help="The amount of tokens you propose to spend"/>
+          <Form.Input
+            style={{ display: "flex", alignItems: "center" }}
+            onChange={handleChange}
+            className="tokens"
+            name="tokens"
+            placeholder="100"
+            error={errorLabelsProps.tokens}
+          >
+            <input />
+            <div style={{ margin: "0 0 0 1rem" }}>tJOY</div>
+          </Form.Input>
+        </Form.Field>
         <Form.Field error={Boolean(errorLabelsProps.destinationAccount)}>
-          <label>Destination Account</label>
+          <LabelWithHelp text="Destination account" help="The account you propose to send the tokens into"/>
           <Dropdown
             clearable
             name="destinationAccount"
