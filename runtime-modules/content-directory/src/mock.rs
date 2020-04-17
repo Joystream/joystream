@@ -29,6 +29,9 @@ pub const ZERO_NONCE: u64 = 0;
 pub const FIRST_NONCE: u64 = 1;
 pub const SECOND_NONCE: u64 = 2;
 
+pub const VALID_PROPERTY_VEC_INDEX: u32 = 0;
+pub const INVALID_PROPERTY_VEC_INDEX: u32 = 5;
+
 pub const PROP_ID_BOOL: u16 = 0;
 pub const PROP_ID_REFERENCE_VEC: u16 = 1;
 pub const PROP_ID_U32: u16 = 1;

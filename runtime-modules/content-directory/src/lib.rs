@@ -4,7 +4,9 @@
 use codec::{Codec, Decode, Encode};
 use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use rstd::prelude::*;
-use runtime_primitives::traits::{MaybeSerialize, MaybeSerializeDeserialize, One, Zero, Member, SimpleArithmetic};
+use runtime_primitives::traits::{
+    MaybeSerialize, MaybeSerializeDeserialize, Member, One, SimpleArithmetic, Zero,
+};
 use srml_support::{decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter};
 
 #[cfg(feature = "std")]
@@ -996,7 +998,7 @@ impl<T: Trait> Module<T> {
         entity_id: EntityId,
         in_class_schema_property_id: u16,
         index_in_property_vec: u32,
-        nonce: T::Nonce
+        nonce: T::Nonce,
     ) -> dispatch::Result {
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
 
@@ -1017,7 +1019,7 @@ impl<T: Trait> Module<T> {
                     entity_id,
                     in_class_schema_property_id,
                     index_in_property_vec,
-                    nonce
+                    nonce,
                 )
             },
         )
@@ -1031,7 +1033,7 @@ impl<T: Trait> Module<T> {
         in_class_schema_property_id: u16,
         index_in_property_vec: u32,
         property_value: PropertyValue,
-        nonce: T::Nonce
+        nonce: T::Nonce,
     ) -> dispatch::Result {
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
 
@@ -1053,7 +1055,7 @@ impl<T: Trait> Module<T> {
                     in_class_schema_property_id,
                     index_in_property_vec,
                     property_value,
-                    nonce
+                    nonce,
                 )
             },
         )
@@ -1124,14 +1126,11 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn refresh_vec_value_nonces(
-        id: u16,
-        vec_value_nonces: &mut BTreeMap<u16, T::Nonce>,
-    ) {
+    fn refresh_vec_value_nonces(id: u16, vec_value_nonces: &mut BTreeMap<u16, T::Nonce>) {
         if let Some(nonce) = vec_value_nonces.get_mut(&id) {
             *nonce += T::Nonce::one();
         } else {
-            // If there no nonce entry under a given key, we need to initialize it manually with one nonce, as given entity value exist 
+            // If there no nonce entry under a given key, we need to initialize it manually with one nonce, as given entity value exist
             // and first vec value specific operation was already performed
             vec_value_nonces.insert(id, T::Nonce::one());
         }
@@ -1175,27 +1174,26 @@ impl<T: Trait> Module<T> {
         entity_id: EntityId,
         in_class_schema_property_id: u16,
         index_in_property_vec: u32,
-        nonce: T::Nonce
+        nonce: T::Nonce,
     ) -> dispatch::Result {
         Self::ensure_known_entity_id(entity_id)?;
         let entity = Self::entity_by_id(entity_id);
 
         // Ensure property value vector nonces equality to avoid possible data races,
         // when performing vector specific operations
-        Self::ensure_nonce_equality(
-            in_class_schema_property_id,
-            &entity.vec_value_nonces,
-            nonce
-        )?;
+        Self::ensure_nonce_equality(in_class_schema_property_id, &entity.vec_value_nonces, nonce)?;
 
         if let Some(current_prop_value) = entity.values.get(&in_class_schema_property_id) {
-            Self::ensure_index_in_property_vector_is_valid(current_prop_value, index_in_property_vec)?;
+            Self::ensure_index_in_property_vector_is_valid(
+                current_prop_value,
+                index_in_property_vec,
+            )?;
         } else {
             // Throw an error if a property was not found on entity
             // by an in-class index of a property.
-            return Err(ERROR_UNKNOWN_ENTITY_PROP_ID)
+            return Err(ERROR_UNKNOWN_ENTITY_PROP_ID);
         }
-            
+
         // Remove property value vector
         <EntityById<T>>::mutate(entity_id, |entity| {
             if let Some(current_prop_value) = entity.values.get_mut(&in_class_schema_property_id) {
@@ -1215,7 +1213,7 @@ impl<T: Trait> Module<T> {
         in_class_schema_property_id: u16,
         index_in_property_vec: u32,
         property_value: PropertyValue,
-        nonce: T::Nonce
+        nonce: T::Nonce,
     ) -> dispatch::Result {
         Self::ensure_known_entity_id(entity_id)?;
 
@@ -1223,11 +1221,7 @@ impl<T: Trait> Module<T> {
 
         // Ensure property value vector nonces equality to avoid possible data races,
         // when performing vector specific operations
-        Self::ensure_nonce_equality(
-            in_class_schema_property_id,
-            &entity.vec_value_nonces,
-            nonce
-        )?;
+        Self::ensure_nonce_equality(in_class_schema_property_id, &entity.vec_value_nonces, nonce)?;
         // Get class-level information about this property
         if let Some(class_prop) = class.properties.get(in_class_schema_property_id as usize) {
             // Try to find a current property value in the entity
@@ -1460,7 +1454,7 @@ impl<T: Trait> Module<T> {
     fn ensure_nonce_equality(
         in_class_schema_property_id: u16,
         vec_value_nonces: &BTreeMap<u16, T::Nonce>,
-        nonce: T::Nonce
+        nonce: T::Nonce,
     ) -> dispatch::Result {
         if let Some(vec_value_nonce) = vec_value_nonces.get(&in_class_schema_property_id) {
             ensure!(
@@ -1679,8 +1673,10 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    pub fn ensure_index_in_property_vector_is_valid(value: &PropertyValue, index_in_property_vec: u32) -> dispatch::Result {
-
+    pub fn ensure_index_in_property_vector_is_valid(
+        value: &PropertyValue,
+        index_in_property_vec: u32,
+    ) -> dispatch::Result {
         fn is_valid_index<T>(vec: &[T], index_in_property_vec: u32) -> bool {
             (index_in_property_vec as usize) < vec.len()
         }
@@ -1698,7 +1694,10 @@ impl<T: Trait> Module<T> {
             _ => return Err(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR),
         };
 
-        ensure!(is_valid_index, ERROR_ENTITY_PROP_VALUE_VECTOR_INDEX_IS_OUT_OF_RANGE);
+        ensure!(
+            is_valid_index,
+            ERROR_ENTITY_PROP_VALUE_VECTOR_INDEX_IS_OUT_OF_RANGE
+        );
         Ok(())
     }
 
