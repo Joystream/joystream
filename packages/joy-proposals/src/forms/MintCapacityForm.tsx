@@ -37,7 +37,7 @@ function MintCapacityForm(props: MintCapacityProps & FormikProps<FormValues>) {
           placeholder="This proposal is awesome because..."
           error={errorLabelsProps.rationale}
         />
-        <div style={{ display: "flex" }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
           <Form.Input
             onChange={handleChange}
             className="capacity"
@@ -46,7 +46,7 @@ function MintCapacityForm(props: MintCapacityProps & FormikProps<FormValues>) {
             placeholder="100"
             error={errorLabelsProps.capacity}
           />
-          <div style={{ margin: "2.5rem 0 2.5rem 1rem" }}>tJOY</div>
+          <div style={{ margin: "0 0 0 1rem" }}>tJOY</div>
         </div>
 
         <div className="form-buttons">
