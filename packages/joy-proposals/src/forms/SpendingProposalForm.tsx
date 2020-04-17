@@ -18,10 +18,10 @@ interface FormValues {
 }
 
 function SpendingProposalForm(props: SpendingProposalProps & FormikProps<FormValues>) {
-  const { handleChange, destinationAccounts } = props;
+  const { handleChange, handleSubmit, isSubmitting, destinationAccounts } = props;
   return (
     <div className="Forms">
-      <Form className="proposal-form">
+      <Form className="proposal-form" onSubmit={handleSubmit}>
         <Form.Input
           onChange={handleChange}
           label="Title"
@@ -58,7 +58,7 @@ function SpendingProposalForm(props: SpendingProposalProps & FormikProps<FormVal
         </Form.Field>
 
         <div className="form-buttons">
-          <Button type="submit" color="blue">
+          <Button type="submit" color="blue" loading={isSubmitting}>
             <Icon name="paper plane" />
             Submit
           </Button>
@@ -91,8 +91,10 @@ export default withFormContainer<OuterFormProps, FormValues>({
     destinationAccount: Yup.string()
   }),
   handleSubmit: (values, { setSubmitting }) => {
-    console.log(JSON.stringify(values, null, 2));
-    setSubmitting(false);
+    setTimeout(() => {
+      console.log(JSON.stringify(values, null, 2));
+      setSubmitting(false);
+    });
   },
   displayName: "SpendingProposalsForm"
 })(SpendingProposalForm);

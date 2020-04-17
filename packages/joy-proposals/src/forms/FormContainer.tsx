@@ -26,13 +26,13 @@ import { withFormik } from "formik";
 export function withFormContainer<MyFormProps, FormValues>(formikProps) {
   return function(InnerForm: React.ComponentType<any>) {
     return withFormik<MyFormProps, FormValues>(formikProps)(function(props) {
-      let handleBlur = (e, data: any) => {
+      const handleBlur = (e, data: any) => {
         if (data && data.name) {
           props.setFieldValue(data.name, data.value);
           props.setFieldTouched(data.name);
         }
       };
-      let handleChange = (e, data: any) => {
+      const handleChange = (e, data: any) => {
         if (data && data.name) {
           props.setFieldValue(data.name, data.value);
           props.setFieldTouched(data.name);

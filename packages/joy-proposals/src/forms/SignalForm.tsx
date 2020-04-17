@@ -15,10 +15,10 @@ interface FormValues {
 }
 
 function SignalForm(props: SignalFormProps & FormikProps<FormValues>) {
-  const { handleChange } = props;
+  const { handleChange, handleSubmit, isSubmitting } = props;
   return (
     <div className="Forms">
-      <Form className="proposal-form">
+      <Form className="proposal-form" onSubmit={handleSubmit}>
         <Form.Input
           onChange={handleChange}
           label="Title"
@@ -38,7 +38,7 @@ function SignalForm(props: SignalFormProps & FormikProps<FormValues>) {
           placeholder="This proposal is awesome because..."
         />
         <div className="form-buttons">
-          <Button type="submit" color="blue">
+          <Button type="submit" color="blue" loading={isSubmitting}>
             <Icon name="paper plane" />
             Submit
           </Button>

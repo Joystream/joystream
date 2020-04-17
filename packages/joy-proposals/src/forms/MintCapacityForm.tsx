@@ -6,17 +6,18 @@ import * as Yup from "yup";
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
 
-type EvictStorageProviderProps = {
-  storageProviders: any[];
+type MintCapacityProps = {
+  handleClear: () => void;
 };
 
 interface FormValues {
   title: string;
   rationale: string;
-  storageProvider: any;
+  capacity: number;
 }
-function EvictStorageProviderForm(props: EvictStorageProviderProps & FormikProps<FormValues>) {
-  const { handleChange, handleSubmit, isSubmitting, storageProviders } = props;
+
+function MintCapacityForm(props: MintCapacityProps & FormikProps<FormValues>) {
+  const { handleChange, handleSubmit, isSubmitting } = props;
   return (
     <div className="Forms">
       <Form className="proposal-form" onSubmit={handleSubmit}>
@@ -32,23 +33,23 @@ function EvictStorageProviderForm(props: EvictStorageProviderProps & FormikProps
           name="rationale"
           placeholder="This proposal is awesome because..."
         />
-        <Form.Field>
-          <label>Storage Provider</label>
-          <Dropdown
-            clearable
-            name="storageProvider"
-            placeholder="Select Storage Provider"
-            fluid
-            selection
-            options={storageProviders}
+        <div style={{ display: "flex" }}>
+          <Form.Input
+            onChange={handleChange}
+            className="capacity"
+            label="New Mint Capacity"
+            name="capacity"
+            placeholder="100"
           />
-        </Form.Field>
+          <div style={{ margin: "2.5rem 0 2.5rem 1rem" }}>tJOY</div>
+        </div>
+
         <div className="form-buttons">
           <Button type="submit" color="blue" loading={isSubmitting}>
             <Icon name="paper plane" />
             Submit
           </Button>
-          <Button color="grey" icon="times">
+          <Button color="grey" icon="times" type="button">
             <Icon name="times" />
             Cancel
           </Button>
@@ -61,22 +62,27 @@ function EvictStorageProviderForm(props: EvictStorageProviderProps & FormikProps
 type OuterFormProps = {
   initialTitle?: string;
   initialRationale?: string;
-} & EvictStorageProviderProps;
+  initialCapacity?: number;
+} & MintCapacityProps;
 
 export default withFormContainer<OuterFormProps, FormValues>({
   mapPropsToValues: () => ({
     title: "",
-    rationale: ""
+    rationale: "",
+    capacity: 0
   }),
   validationSchema: Yup.object().shape({
     title: Yup.string().required("Title is required!"),
-    rationale: Yup.string().required("Rationale is required!")
+    rationale: Yup.string().required("Rationale is required!"),
+    capacity: Yup.number().required("You need to specify a mint capacity for the council."),
+    destinationAccount: Yup.string()
   }),
   handleSubmit: (values, { setSubmitting }) => {
     setTimeout(() => {
-      alert(JSON.stringify(values, null, 2));
+      console.log(JSON.stringify(values, null, 2));
+
       setSubmitting(false);
     }, 1000);
   },
-  displayName: "EvictStorageProvidersForm"
-})(EvictStorageProviderForm);
+  displayName: "MintCapacityForm"
+})(MintCapacityForm);
