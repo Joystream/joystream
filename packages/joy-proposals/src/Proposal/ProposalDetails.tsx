@@ -1,19 +1,19 @@
-import React from 'react';
+import React from "react";
 
-import { Container } from 'semantic-ui-react';
-import Votes from './Votes';
-import Details from './Details';
-import Body from './Body';
-import VotingSection from './VotingSection';
+import { Container } from "semantic-ui-react";
+import Votes from "./Votes";
+import Details from "./Details";
+import Body from "./Body";
+import VotingSection from "./VotingSection";
 
-import './Proposal.css';
+import "./Proposal.css";
 
 export type Member = {
   name?: string;
   avatar?: string;
 };
 
-export type VoteValue = 'Approve' | 'Slash' | 'Abstain' | 'Reject';
+export type VoteValue = "Approve" | "Slash" | "Abstain" | "Reject";
 
 export type Vote = {
   value: VoteValue;
@@ -24,7 +24,7 @@ export type Vote = {
 export type ProposalProps = {
   title?: string;
   description?: string;
-  finalized?: 'approved' | 'rejected' | 'slashed' | 'withdrawn';
+  finalized?: "approved" | "rejected" | "slashed" | "withdrawn";
   params?: {
     tokensAmount?: number;
     destinationAccount?: string;
@@ -59,7 +59,7 @@ export default function ProposalDetails({
 }: ProposalProps) {
   const { hasVoted = false, value = undefined } = vote || {};
   return (
-    <Container className="ProposalDetails">
+    <Container className="Proposal">
       <Details {...details} />
       <Body title={title} description={description} params={params} />
       <VotingSection onVote={onVote} hasVoted={hasVoted} value={value} />

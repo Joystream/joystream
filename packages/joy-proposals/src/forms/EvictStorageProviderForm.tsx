@@ -1,7 +1,7 @@
 import React from "react";
 import { FormikProps } from "formik";
 import { Form, Icon, Button, Dropdown, Label } from "semantic-ui-react";
-import { getFormErrorLabelsProps } from './errorHandling';
+import { getFormErrorLabelsProps } from "./errorHandling";
 import * as Yup from "yup";
 
 import { withFormContainer } from "./FormContainer";
@@ -17,26 +17,26 @@ interface FormValues {
   storageProvider: any;
 }
 function EvictStorageProviderForm(props: EvictStorageProviderProps & FormikProps<FormValues>) {
-  const { handleChange, storageProviders, errors, touched, handleSubmit } = props;
+  const { handleChange, storageProviders, errors, isSubmitting, touched, handleSubmit } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
     <div className="Forms">
-      <Form className="proposal-form" onSubmit={ handleSubmit }>
+      <Form className="proposal-form" onSubmit={handleSubmit}>
         <Form.Input
           onChange={handleChange}
           label="Title"
           name="title"
           placeholder="Title for your awesome proposal..."
-          error={ errorLabelsProps.title }
+          error={errorLabelsProps.title}
         />
         <Form.TextArea
           onChange={handleChange}
           label="Rationale"
           name="rationale"
           placeholder="This proposal is awesome because..."
-          error={ errorLabelsProps.rationale }
+          error={errorLabelsProps.rationale}
         />
-        <Form.Field error={ Boolean(errorLabelsProps.storageProvider) }>
+        <Form.Field error={Boolean(errorLabelsProps.storageProvider)}>
           <label>Storage Provider</label>
           <Dropdown
             clearable
@@ -47,10 +47,10 @@ function EvictStorageProviderForm(props: EvictStorageProviderProps & FormikProps
             options={storageProviders}
             onChange={handleChange}
           />
-          { errorLabelsProps.storageProvider && <Label { ...errorLabelsProps.storageProvider } prompt/> }
+          {errorLabelsProps.storageProvider && <Label {...errorLabelsProps.storageProvider} prompt />}
         </Form.Field>
         <div className="form-buttons">
-          <Button type="submit" color="blue">
+          <Button type="submit" color="blue" loading={isSubmitting}>
             <Icon name="paper plane" />
             Submit
           </Button>
@@ -73,16 +73,17 @@ export default withFormContainer<OuterFormProps, FormValues>({
   mapPropsToValues: () => ({
     title: "",
     rationale: "",
-    storageProvider: "",
+    storageProvider: ""
   }),
   validationSchema: Yup.object().shape({
     title: Yup.string().required("Title is required!"),
     rationale: Yup.string().required("Rationale is required!"),
     storageProvider: Yup.string().required("Select a storage provider!")
   }),
-  handleSubmit: (values, { setSubmitting }) => {
+  handleSubmit: (values, { setSubmitting, resetForm }) => {
     setTimeout(() => {
       alert(JSON.stringify(values, null, 2));
+      resetForm({});
       setSubmitting(false);
     }, 1000);
   },

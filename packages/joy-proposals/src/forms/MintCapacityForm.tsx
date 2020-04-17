@@ -1,25 +1,24 @@
 import React from "react";
 import { FormikProps } from "formik";
-import { Form, Icon, Button, Dropdown, Label } from "semantic-ui-react";
-import { getFormErrorLabelsProps } from "./errorHandling";
+import { Form, Icon, Button, Dropdown } from "semantic-ui-react";
 import * as Yup from "yup";
+import { getFormErrorLabelsProps } from "./errorHandling";
 
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
 
-type SpendingProposalProps = {
-  destinationAccounts: any[];
+type MintCapacityProps = {
+  handleClear: () => void;
 };
 
 interface FormValues {
   title: string;
   rationale: string;
-  destinationAccount: any;
-  tokens: number;
+  capacity: number;
 }
 
-function SpendingProposalForm(props: SpendingProposalProps & FormikProps<FormValues>) {
-  const { handleChange, destinationAccounts, errors, isSubmitting, touched, handleSubmit } = props;
+function MintCapacityForm(props: MintCapacityProps & FormikProps<FormValues>) {
+  const { handleChange, errors, touched, isSubmitting, handleSubmit } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
     <div className="Forms">
@@ -38,39 +37,24 @@ function SpendingProposalForm(props: SpendingProposalProps & FormikProps<FormVal
           placeholder="This proposal is awesome because..."
           error={errorLabelsProps.rationale}
         />
-        <Form.Input
-          style={{ display: "flex", alignItems: "center" }}
-          onChange={handleChange}
-          className="tokens"
-          label="Amount of tokens"
-          name="tokens"
-          placeholder="100"
-          error={errorLabelsProps.tokens}
-        >
-          <input />
-          <div style={{ margin: "0 0 0 1rem" }}>tJOY</div>
-        </Form.Input>
-        <Form.Field error={Boolean(errorLabelsProps.destinationAccount)}>
-          <label>Destination Account</label>
-          <Dropdown
-            clearable
-            name="destinationAccount"
-            labeled
-            placeholder="Select Destination Account"
-            fluid
-            selection
-            options={destinationAccounts}
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <Form.Input
             onChange={handleChange}
+            className="capacity"
+            label="New Mint Capacity"
+            name="capacity"
+            placeholder="100"
+            error={errorLabelsProps.capacity}
           />
-          {errorLabelsProps.destinationAccount && <Label {...errorLabelsProps.destinationAccount} prompt />}
-        </Form.Field>
+          <div style={{ margin: "0 0 0 1rem" }}>tJOY</div>
+        </div>
 
         <div className="form-buttons">
           <Button type="submit" color="blue" loading={isSubmitting}>
             <Icon name="paper plane" />
             Submit
           </Button>
-          <Button color="grey" icon="times">
+          <Button color="grey" icon="times" type="button">
             <Icon name="times" />
             Cancel
           </Button>
@@ -83,27 +67,27 @@ function SpendingProposalForm(props: SpendingProposalProps & FormikProps<FormVal
 type OuterFormProps = {
   initialTitle?: string;
   initialRationale?: string;
-  initialTokens?: number;
-} & SpendingProposalProps;
+  initialCapacity?: number;
+} & MintCapacityProps;
 
 export default withFormContainer<OuterFormProps, FormValues>({
   mapPropsToValues: () => ({
     title: "",
     rationale: "",
-    tokens: "",
-    destinationAccount: ""
+    capacity: 0
   }),
   validationSchema: Yup.object().shape({
     title: Yup.string().required("Title is required!"),
     rationale: Yup.string().required("Rationale is required!"),
-    tokens: Yup.number().required("You need to specify an amount of tokens."),
-    destinationAccount: Yup.string().required("Select a destination account!")
+    capacity: Yup.number().required("You need to specify a mint capacity for the council."),
+    destinationAccount: Yup.string()
   }),
   handleSubmit: (values, { setSubmitting }) => {
     setTimeout(() => {
       console.log(JSON.stringify(values, null, 2));
+
       setSubmitting(false);
-    });
+    }, 1000);
   },
-  displayName: "SpendingProposalsForm"
-})(SpendingProposalForm);
+  displayName: "MintCapacityForm"
+})(MintCapacityForm);

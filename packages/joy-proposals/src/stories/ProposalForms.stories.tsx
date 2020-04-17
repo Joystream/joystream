@@ -1,6 +1,12 @@
 import React from "react";
 import "../index.css";
-import { SignalForm, EvictStorageProviderForm, SpendingProposalForm } from "../forms";
+import {
+  SignalForm,
+  EvictStorageProviderForm,
+  SpendingProposalForm,
+  MintCapacityForm,
+  SetCouncilParamsForm
+} from "../forms";
 
 export default {
   title: "Proposals | Forms"
@@ -11,6 +17,10 @@ export const Signal = () => <SignalForm />;
 export const StorageProviders = () => <EvictStorageProviderForm storageProviders={storageProvidersData} />;
 
 export const SpendingProposal = () => <SpendingProposalForm destinationAccounts={destinationAccounts} />;
+
+export const MintCapacity = () => <MintCapacityForm />;
+
+export const SetCouncilParams = () => <SetCouncilParamsForm />;
 
 var storageProvidersData = [
   {

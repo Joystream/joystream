@@ -1,7 +1,7 @@
 import React from "react";
 import { FormikProps } from "formik";
 import { Form, Icon, Button } from "semantic-ui-react";
-import { getFormErrorLabelsProps } from './errorHandling';
+import { getFormErrorLabelsProps } from "./errorHandling";
 import * as Yup from "yup";
 
 import { withFormContainer } from "./FormContainer";
@@ -16,7 +16,7 @@ interface FormValues {
 }
 
 function SignalForm(props: SignalFormProps & FormikProps<FormValues>) {
-  const { handleChange, errors, touched, handleSubmit } = props;
+  const { handleChange, errors, touched, isSubmitting, handleSubmit } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
     <div className="Forms">
@@ -26,24 +26,24 @@ function SignalForm(props: SignalFormProps & FormikProps<FormValues>) {
           label="Title"
           name="title"
           placeholder="Title for your awesome proposal..."
-          error={ errorLabelsProps.title }
+          error={errorLabelsProps.title}
         />
         <Form.TextArea
           onChange={handleChange}
           label="Description"
           name="description"
           placeholder="What I would like to propose is..."
-          error={ errorLabelsProps.description }
+          error={errorLabelsProps.description}
         />
         <Form.TextArea
           onChange={handleChange}
           label="Rationale"
           name="rationale"
           placeholder="This proposal is awesome because..."
-          error={ errorLabelsProps.rationale }
+          error={errorLabelsProps.rationale}
         />
         <div className="form-buttons">
-          <Button type="submit" color="blue">
+          <Button type="submit" color="blue" loading={isSubmitting}>
             <Icon name="paper plane" />
             Submit
           </Button>
