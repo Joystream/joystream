@@ -11,7 +11,7 @@ export function getErrorLabelProps<ValuesT>(
   errors: FormikErrors<ValuesT>,
   touched: FormikTouched<ValuesT>,
   fieldName: keyof ValuesT,
-  pointing: LabelProps["pointing"] = 'above'
+  pointing: LabelProps["pointing"] = undefined
 
 ): FieldErrorLabelProps
 {

@@ -3,6 +3,7 @@ import { FormikProps } from "formik";
 import { Form, Icon, Button } from "semantic-ui-react";
 import { getFormErrorLabelsProps } from "./errorHandling";
 import * as Yup from "yup";
+import LabelWithHelp from './LabelWithHelp';
 
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
@@ -21,27 +22,32 @@ function SignalForm(props: SignalFormProps & FormikProps<FormValues>) {
   return (
     <div className="Forms">
       <Form className="proposal-form" onSubmit={handleSubmit}>
-        <Form.Input
-          onChange={handleChange}
-          label="Title"
-          name="title"
-          placeholder="Title for your awesome proposal..."
-          error={errorLabelsProps.title}
-        />
-        <Form.TextArea
-          onChange={handleChange}
-          label="Description"
-          name="description"
-          placeholder="What I would like to propose is..."
-          error={errorLabelsProps.description}
-        />
-        <Form.TextArea
-          onChange={handleChange}
-          label="Rationale"
-          name="rationale"
-          placeholder="This proposal is awesome because..."
-          error={errorLabelsProps.rationale}
-        />
+        <Form.Field error={ Boolean(errorLabelsProps.title) } >
+          <LabelWithHelp text="Title" help="The title of your proposal"/>
+          <Form.Input
+            name="title"
+            placeholder="Title for your awesome proposal..."
+            onChange={handleChange}
+            error={errorLabelsProps.title}/>
+        </Form.Field>
+        <Form.Field error={ Boolean(errorLabelsProps.description) }>
+          <LabelWithHelp text="Description" help="The extensive description of your proposal"/>
+          <Form.TextArea
+            onChange={handleChange}
+            name="description"
+            placeholder="What I would like to propose is..."
+            error={ errorLabelsProps.description }
+          />
+        </Form.Field>
+        <Form.Field error={ Boolean(errorLabelsProps.rationale) }>
+          <LabelWithHelp text="Rationale" help="The rationale behind your proposal"/>
+          <Form.TextArea
+            onChange={handleChange}
+            name="rationale"
+            placeholder="This proposal is awesome because..."
+            error={ errorLabelsProps.rationale }
+          />
+        </Form.Field>
         <div className="form-buttons">
           <Button type="submit" color="blue" loading={isSubmitting}>
             <Icon name="paper plane" />
