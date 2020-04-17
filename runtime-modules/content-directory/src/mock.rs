@@ -25,6 +25,10 @@ pub const UNKNOWN_SCHEMA_ID: u16 = 444;
 pub const SCHEMA_ID_0: u16 = 0;
 pub const SCHEMA_ID_1: u16 = 1;
 
+pub const ZERO_NONCE: u64 = 0;
+pub const FIRST_NONCE: u64 = 1;
+pub const SECOND_NONCE: u64 = 2;
+
 pub const PROP_ID_BOOL: u16 = 0;
 pub const PROP_ID_REFERENCE_VEC: u16 = 1;
 pub const PROP_ID_U32: u16 = 1;
@@ -126,6 +130,7 @@ impl Get<InputValidationLengthConstraint> for ClassDescriptionConstraint {
 
 impl Trait for Runtime {
     type Credential = u64;
+    type Nonce = u64;
     type CredentialChecker = MockCredentialChecker;
     type CreateClassPermissionsChecker = MockCreateClassPermissionsChecker;
     type PropertyNameConstraint = PropertyNameConstraint;

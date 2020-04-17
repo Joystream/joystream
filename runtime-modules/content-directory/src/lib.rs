@@ -4,7 +4,7 @@
 use codec::{Codec, Decode, Encode};
 use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use rstd::prelude::*;
-use runtime_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
+use runtime_primitives::traits::{MaybeSerialize, MaybeSerializeDeserialize, One, Zero, Member, SimpleArithmetic};
 use srml_support::{decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter};
 
 #[cfg(feature = "std")]
@@ -37,6 +37,20 @@ pub trait Trait: system::Trait {
         + Copy
         + Clone
         + MaybeSerialize
+        + Eq
+        + PartialEq
+        + Ord;
+
+    type Nonce: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + Clone
+        + One
+        + Zero
+        + MaybeSerializeDeserialize
         + Eq
         + PartialEq
         + Ord;
@@ -223,9 +237,9 @@ pub struct Entity<T: Trait> {
     /// Length is no more than Class.properties.
     pub values: BTreeMap<u16, PropertyValue>,
 
-    /// Map, representing relation between entity vec_values index and block, where vec_value was updated
-    /// Used to forbid mutating property vec value more than once per block for purpose of race update conditions avoiding
-    pub vec_values_last_update: BTreeMap<u16, <T as system::Trait>::BlockNumber>,
+    /// Map, representing relation between entity vec_values index and nonce, where vec_value was updated
+    /// Used to avoid race update conditions
+    pub vec_value_nonces: BTreeMap<u16, T::Nonce>,
     // pub deleted: bool,
 }
 
@@ -235,7 +249,7 @@ impl<T: Trait> Default for Entity<T> {
             class_id: ClassId::default(),
             supported_schemas: BTreeSet::new(),
             values: BTreeMap::new(),
-            vec_values_last_update: BTreeMap::new(),
+            vec_value_nonces: BTreeMap::new(),
         }
     }
 }
@@ -786,10 +800,11 @@ decl_module! {
             as_entity_maintainer: bool,
             entity_id: EntityId,
             in_class_schema_property_id: u16,
-            index_in_property_vec: u32
+            index_in_property_vec: u32,
+            nonce: T::Nonce
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
-            Self::do_remove_at_entity_property_vector(&raw_origin, with_credential, as_entity_maintainer, entity_id, in_class_schema_property_id, index_in_property_vec)
+            Self::do_remove_at_entity_property_vector(&raw_origin, with_credential, as_entity_maintainer, entity_id, in_class_schema_property_id, index_in_property_vec, nonce)
         }
 
         pub fn insert_at_entity_property_vector(
@@ -799,7 +814,8 @@ decl_module! {
             entity_id: EntityId,
             in_class_schema_property_id: u16,
             index_in_property_vec: u32,
-            property_value: PropertyValue
+            property_value: PropertyValue,
+            nonce: T::Nonce
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
             Self::do_insert_at_entity_property_vector(
@@ -809,7 +825,8 @@ decl_module! {
                 entity_id,
                 in_class_schema_property_id,
                 index_in_property_vec,
-                property_value
+                property_value,
+                nonce
             )
         }
 
@@ -979,6 +996,7 @@ impl<T: Trait> Module<T> {
         entity_id: EntityId,
         in_class_schema_property_id: u16,
         index_in_property_vec: u32,
+        nonce: T::Nonce
     ) -> dispatch::Result {
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
 
@@ -999,6 +1017,7 @@ impl<T: Trait> Module<T> {
                     entity_id,
                     in_class_schema_property_id,
                     index_in_property_vec,
+                    nonce
                 )
             },
         )
@@ -1012,6 +1031,7 @@ impl<T: Trait> Module<T> {
         in_class_schema_property_id: u16,
         index_in_property_vec: u32,
         property_value: PropertyValue,
+        nonce: T::Nonce
     ) -> dispatch::Result {
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
 
@@ -1033,6 +1053,7 @@ impl<T: Trait> Module<T> {
                     in_class_schema_property_id,
                     index_in_property_vec,
                     property_value,
+                    nonce
                 )
             },
         )
@@ -1062,7 +1083,7 @@ impl<T: Trait> Module<T> {
         // Get current property values of an entity as a mutable vector,
         // so we can update them if new values provided present in new_property_values.
         let mut updated_values = entity.values;
-        let mut vec_values_last_update = entity.vec_values_last_update;
+        let mut vec_value_nonces = entity.vec_value_nonces;
         let mut updated = false;
         // Iterate over a vector of new values and update corresponding properties
         // of this entity if new values are valid.
@@ -1081,7 +1102,7 @@ impl<T: Trait> Module<T> {
                     *current_prop_value = new_value;
                     if current_prop_value.is_vec() {
                         // Update last block of vec prop value if update performed
-                        Self::refresh_vec_values_last_update(id, &mut vec_values_last_update);
+                        Self::refresh_vec_value_nonces(id, &mut vec_value_nonces);
                     }
                     updated = true;
                 }
@@ -1096,27 +1117,24 @@ impl<T: Trait> Module<T> {
         if updated {
             <EntityById<T>>::mutate(entity_id, |entity| {
                 entity.values = updated_values;
-                entity.vec_values_last_update = vec_values_last_update;
+                entity.vec_value_nonces = vec_value_nonces;
             });
         }
 
         Ok(())
     }
 
-    fn refresh_vec_values_last_update(
+    fn refresh_vec_value_nonces(
         id: u16,
-        vec_values_last_update: &mut BTreeMap<u16, T::BlockNumber>,
+        vec_value_nonces: &mut BTreeMap<u16, T::Nonce>,
     ) {
-        match vec_values_last_update.get_mut(&id) {
-            Some(block_number) if *block_number < <system::Module<T>>::block_number() => {
-                *block_number = <system::Module<T>>::block_number();
-                return;
-            }
-            Some(_) => return,
-            None => (),
+        if let Some(nonce) = vec_value_nonces.get_mut(&id) {
+            *nonce += T::Nonce::one();
+        } else {
+            // If there no nonce entry under a given key, we need to initialize it manually with one nonce, as given entity value exist 
+            // and first vec value specific operation was already performed
+            vec_value_nonces.insert(id, T::Nonce::one());
         }
-        // If there no last block number entry under a given key, we need to initialize it manually, as given entity value exist
-        vec_values_last_update.insert(id, <system::Module<T>>::block_number());
     }
 
     fn complete_entity_property_vector_cleaning(
@@ -1144,9 +1162,9 @@ impl<T: Trait> Module<T> {
             {
                 current_property_value_vec.vec_clear();
             }
-            Self::refresh_vec_values_last_update(
+            Self::refresh_vec_value_nonces(
                 in_class_schema_property_id,
-                &mut entity.vec_values_last_update,
+                &mut entity.vec_value_nonces,
             );
         });
 
@@ -1157,15 +1175,17 @@ impl<T: Trait> Module<T> {
         entity_id: EntityId,
         in_class_schema_property_id: u16,
         index_in_property_vec: u32,
+        nonce: T::Nonce
     ) -> dispatch::Result {
         Self::ensure_known_entity_id(entity_id)?;
         let entity = Self::entity_by_id(entity_id);
 
-        // Ensure property value vector was not already updated in this block to avoid possible data races,
+        // Ensure property value vector nonces equality to avoid possible data races,
         // when performing vector specific operations
-        Self::ensure_entity_prop_value_vec_was_not_updated(
+        Self::ensure_nonce_equality(
             in_class_schema_property_id,
-            &entity.vec_values_last_update,
+            &entity.vec_value_nonces,
+            nonce
         )?;
 
         match entity.values.get(&in_class_schema_property_id) {
@@ -1184,9 +1204,9 @@ impl<T: Trait> Module<T> {
             if let Some(current_prop_value) = entity.values.get_mut(&in_class_schema_property_id) {
                 current_prop_value.vec_remove_at(index_in_property_vec)
             }
-            Self::refresh_vec_values_last_update(
+            Self::refresh_vec_value_nonces(
                 in_class_schema_property_id,
-                &mut entity.vec_values_last_update,
+                &mut entity.vec_value_nonces,
             );
         });
 
@@ -1198,16 +1218,18 @@ impl<T: Trait> Module<T> {
         in_class_schema_property_id: u16,
         index_in_property_vec: u32,
         property_value: PropertyValue,
+        nonce: T::Nonce
     ) -> dispatch::Result {
         Self::ensure_known_entity_id(entity_id)?;
 
         let (entity, class) = Self::get_entity_and_class(entity_id);
 
-        // Ensure property value vector was not already updated in this block to avoid possible data races,
+        // Ensure property value vector nonces equality to avoid possible data races,
         // when performing vector specific operations
-        Self::ensure_entity_prop_value_vec_was_not_updated(
+        Self::ensure_nonce_equality(
             in_class_schema_property_id,
-            &entity.vec_values_last_update,
+            &entity.vec_value_nonces,
+            nonce
         )?;
         // Get class-level information about this property
         if let Some(class_prop) = class.properties.get(in_class_schema_property_id as usize) {
@@ -1240,9 +1262,9 @@ impl<T: Trait> Module<T> {
             if let Some(current_prop_value) = entity.values.get_mut(&in_class_schema_property_id) {
                 current_prop_value.vec_insert_at(index_in_property_vec, property_value)
             }
-            Self::refresh_vec_values_last_update(
+            Self::refresh_vec_value_nonces(
                 in_class_schema_property_id,
-                &mut entity.vec_values_last_update,
+                &mut entity.vec_value_nonces,
             );
         });
 
@@ -1441,14 +1463,20 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn ensure_entity_prop_value_vec_was_not_updated(
+    fn ensure_nonce_equality(
         in_class_schema_property_id: u16,
-        vec_values_last_update: &BTreeMap<u16, T::BlockNumber>,
+        vec_value_nonces: &BTreeMap<u16, T::Nonce>,
+        nonce: T::Nonce
     ) -> dispatch::Result {
-        if let Some(last_update_block) = vec_values_last_update.get(&in_class_schema_property_id) {
+        if let Some(vec_value_nonce) = vec_value_nonces.get(&in_class_schema_property_id) {
             ensure!(
-                *last_update_block < <system::Module<T>>::block_number(),
-                ERROR_PROP_VALUE_VEC_WAS_ALREADY_UPDATED
+                *vec_value_nonce == nonce,
+                ERROR_PROP_VALUE_VEC_NONCES_DOES_NOT_MATCH
+            );
+        } else {
+            ensure!(
+                nonce == T::Nonce::zero(),
+                ERROR_PROP_VALUE_VEC_NONCES_DOES_NOT_MATCH
             );
         }
         Ok(())

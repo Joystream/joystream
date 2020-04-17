@@ -33,8 +33,8 @@ pub const ERROR_PROP_VALUE_DONT_MATCH_VEC_TYPE: &str =
     "Property value don't match the expected vector property type";
 pub const ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR: &str =
     "Property value under given index is not a vector";
-pub const ERROR_PROP_VALUE_VEC_WAS_ALREADY_UPDATED: &str =
-    "Property value vector was already updated in this block, vector specific operations forbidden to avoid possible data races";
+pub const ERROR_PROP_VALUE_VEC_NONCES_DOES_NOT_MATCH: &str =
+    "Current property value vector nonce does not equal to provided one";
 pub const ERROR_PROP_NAME_NOT_UNIQUE_IN_CLASS: &str =
     "Property name is not unique within its class";
 pub const ERROR_MISSING_REQUIRED_PROP: &str =
