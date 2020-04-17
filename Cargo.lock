@@ -4462,6 +4462,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-bureaucracy-module"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "serde",
+ "sr-io",
+ "sr-primitives",
+ "sr-std",
+ "srml-support",
+ "srml-system",
+ "substrate-hiring-module",
+ "substrate-primitives",
+ "substrate-stake-module",
+]
+
+[[package]]
 name = "substrate-chain-spec"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8#c37bb08535c49a12320af7facfd555ce05cce2e8"
