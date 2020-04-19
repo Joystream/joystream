@@ -6,6 +6,7 @@ import * as Yup from "yup";
 
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
+import LabelWithHelp from "./LabelWithHelp";
 
 type SetCouncilParamsProps = {
   handleClear: () => void;
@@ -30,90 +31,111 @@ function SetCouncilParamsForm(props: SetCouncilParamsProps & FormikProps<FormVal
   return (
     <div className="Forms">
       <Form className="proposal-form" onSubmit={handleSubmit}>
-        <Form.Input
-          onChange={handleChange}
-          label="Title"
-          name="title"
-          placeholder="Title for your awesome proposal..."
-          error={errorLabelsProps.title}
-        />
-        <Form.TextArea
-          onChange={handleChange}
-          label="Rationale"
-          name="rationale"
-          placeholder="This proposal is awesome because..."
-          error={errorLabelsProps.rationale}
-        />
+        <Form.Field error={Boolean(errorLabelsProps.title)}>
+          <LabelWithHelp text="Title" help="The title of your proposal"/>
+          <Form.Input
+            onChange={handleChange}
+            name="title"
+            placeholder="Title for your awesome proposal..."
+            error={errorLabelsProps.title}
+          />
+        </Form.Field>
+        <Form.Field error={Boolean(errorLabelsProps.rationale)}>
+          <LabelWithHelp text="Rationale" help="The rationale behind your proposal"/>
+          <Form.TextArea
+            onChange={handleChange}
+            name="rationale"
+            placeholder="This proposal is awesome because..."
+            error={errorLabelsProps.rationale}
+          />
+        </Form.Field>
+
         <Divider horizontal>Voting </Divider>
 
         <Form.Group widths="equal" style={{ marginBottom: "8rem" }}>
-          <Form.Input
-            fluid
-            onChange={handleChange}
-            label="Announcing Period"
-            name="announcingPeriod"
-            placeholder="100"
-            error={errorLabelsProps.announcingPeriod}
-          />
-          <Form.Input
-            fluid
-            onChange={handleChange}
-            label="Voting Period"
-            name="votingPeriod"
-            placeholder="(Currently: x days)"
-            error={errorLabelsProps.votingPeriod}
-          />
-          <Form.Input
-            fluid
-            onChange={handleChange}
-            label="Revealing Period"
-            name="revealingPeriod"
-            placeholder="100"
-            error={errorLabelsProps.revealingPeriod}
-          />
-          <Form.Input
-            fluid
-            onChange={handleChange}
-            label="Minimum Voting Stake"
-            name="minVotingStake"
-            placeholder="100"
-            error={errorLabelsProps.minVotingStake}
-          />
+          <Form.Field error={Boolean(errorLabelsProps.announcingPeriod)}>
+            <LabelWithHelp text="Announcing Period" help="Announcing period in days"/>
+            <Form.Input
+              fluid
+              onChange={handleChange}
+              name="announcingPeriod"
+              placeholder="100"
+              error={errorLabelsProps.announcingPeriod}
+            />
+          </Form.Field>
+          <Form.Field error={Boolean(errorLabelsProps.votingPeriod)}>
+            <LabelWithHelp text="Voting Period" help="Voting period in days"/>
+            <Form.Input
+              fluid
+              onChange={handleChange}
+              name="votingPeriod"
+              placeholder="(Currently: x days)"
+              error={errorLabelsProps.votingPeriod}
+            />
+          </Form.Field>
+          <Form.Field error={Boolean(errorLabelsProps.revealingPeriod)}>
+            <LabelWithHelp text="Revealing Period" help="Revealing period in days"/>
+            <Form.Input
+              fluid
+              onChange={handleChange}
+              name="revealingPeriod"
+              placeholder="100"
+              error={errorLabelsProps.revealingPeriod}
+            />
+          </Form.Field>
+          <Form.Field error={Boolean(errorLabelsProps.minVotingStake)}>
+            <LabelWithHelp text="Minimum Voting Stake" help="The minimum voting stake"/>
+            <Form.Input
+              fluid
+              onChange={handleChange}
+              name="minVotingStake"
+              placeholder="100"
+              error={errorLabelsProps.minVotingStake}
+            />
+          </Form.Field>
         </Form.Group>
         <Divider horizontal>Council</Divider>
         <Form.Group widths="equal" style={{ marginBottom: "8rem" }}>
-          <Form.Input
-            fluid
-            onChange={handleChange}
-            label="Minimum Council Stake"
-            name="minCouncilStake"
-            placeholder="100"
-            error={errorLabelsProps.minCouncilStake}
-          />
-          <Form.Input
-            fluid
-            onChange={handleChange}
-            label="New Term Duration"
-            name="newTermDuration"
-            placeholder="100"
-            error={errorLabelsProps.newTermDuration}
-          />
-          <Form.Input
-            fluid
-            onChange={handleChange}
-            label="Council Size"
-            name="councilSize"
-            placeholder="100"
-            error={errorLabelsProps.councilSize}
-          />
-          <Form.Input
-            fluid
-            onChange={handleChange}
-            label="Candidacy Limit"
-            name="candidacyLimit"
-            placeholder="5"
-            error={errorLabelsProps.candidacyLimit}
-          />
+          <Form.Field error={Boolean(errorLabelsProps.minCouncilStake)}>
+            <LabelWithHelp text="Minimum Council Stake" help="The minimum council stake"/>
+            <Form.Input
+              fluid
+              onChange={handleChange}
+              name="minCouncilStake"
+              placeholder="100"
+              error={errorLabelsProps.minCouncilStake}
+            />
+          </Form.Field>
+          <Form.Field error={Boolean(errorLabelsProps.newTermDuration)}>
+            <LabelWithHelp text="New Term Duration" help="Duration of the new term in days"/>
+            <Form.Input
+              fluid
+              onChange={handleChange}
+              name="newTermDuration"
+              placeholder="100"
+              error={errorLabelsProps.newTermDuration}
+            />
+          </Form.Field>
+          <Form.Field error={Boolean(errorLabelsProps.councilSize)}>
+            <LabelWithHelp text="Council Size" help="The size of the council (number of seats)"/>
+            <Form.Input
+              fluid
+              onChange={handleChange}
+              name="councilSize"
+              placeholder="100"
+              error={errorLabelsProps.councilSize}
+            />
+          </Form.Field>
+          <Form.Field error={Boolean(errorLabelsProps.candidacyLimit)}>
+            <LabelWithHelp text="Candidacy Limit" help="How many times can a member candidate"/>
+            <Form.Input
+              fluid
+              onChange={handleChange}
+              name="candidacyLimit"
+              placeholder="5"
+              error={errorLabelsProps.candidacyLimit}
+            />
+          </Form.Field>
         </Form.Group>
 
         <div className="form-buttons">
