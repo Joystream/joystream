@@ -23,16 +23,11 @@ impl stake::StakingEventsHandler<Test> for BalanceManagerStakingEventsHandler {
 
     fn slashed(
         _id: &u64,
-        _slash_id: Option<u64>,
-        slashed_amount: stake::BalanceOf<Test>,
+        _slash_id: Option<<Test as stake::Trait>::SlashId>,
+        _slashed_amount: stake::BalanceOf<Test>,
         _remaining_stake: stake::BalanceOf<Test>,
-        _imbalance: stake::NegativeImbalance<Test>,
+        imbalance: stake::NegativeImbalance<Test>,
     ) -> stake::NegativeImbalance<Test> {
-        let default_account_id = 1;
-
-        let (remaining_imbalance, _) =
-            <Test as stake::Trait>::Currency::slash(&default_account_id, slashed_amount);
-
-        remaining_imbalance
+        imbalance
     }
 }

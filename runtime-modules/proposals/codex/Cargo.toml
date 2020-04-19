@@ -12,7 +12,7 @@ std = [
     'rstd/std',
     'srml-support/std',
     'primitives/std',
-    'runtime-primitives/std',
+    'sr-primitives/std',
     'system/std',
     'timestamp/std',
     'serde',
@@ -21,6 +21,8 @@ std = [
     'stake/std',
     'balances/std',
     'membership/std',
+    'governance/std',
+    'mint/std',
 ]
 
 
@@ -51,7 +53,7 @@ git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-std'
 rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
-[dependencies.runtime-primitives]
+[dependencies.sr-primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-primitives'
@@ -91,6 +93,16 @@ default_features = false
 package = 'substrate-membership-module'
 path = '../../membership'
 
+[dependencies.governance]
+default_features = false
+package = 'substrate-governance-module'
+path = '../../governance'
+
+[dependencies.mint]
+default_features = false
+package = 'substrate-token-mint-module'
+path = '../../token-minting'
+
 [dependencies.proposal_engine]
 default_features = false
 package = 'substrate-proposals-engine-module'
@@ -106,18 +118,38 @@ default_features = false
 package = 'substrate-common-module'
 path = '../../common'
 
+[dependencies.content_working_group]
+default_features = false
+package = 'substrate-content-working-group-module'
+path = '../../content-working-group'
+
 [dev-dependencies.runtime-io]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-io'
 rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
-[dev-dependencies.governance]
+[dev-dependencies.hiring]
 default_features = false
-package = 'substrate-governance-module'
-path = '../../governance'
+package = 'substrate-hiring-module'
+path = '../../hiring'
 
-[dev-dependencies.token_mint]
+[dev-dependencies.versioned_store]
 default_features = false
-package = 'substrate-token-mint-module'
-path = '../../token-minting'
+package ='substrate-versioned-store'
+path = '../../versioned-store'
+
+[dependencies.versioned_store]
+default_features = false
+package ='substrate-versioned-store'
+path = '../../versioned-store'
+
+[dev-dependencies.versioned_store_permissions]
+default_features = false
+package = 'substrate-versioned-store-permissions-module'
+path = '../../versioned-store-permissions'
+
+[dev-dependencies.recurring_rewards]
+default_features = false
+package = 'substrate-recurring-reward-module'
+path = '../../recurring-reward'

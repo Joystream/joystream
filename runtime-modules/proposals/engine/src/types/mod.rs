@@ -1,6 +1,8 @@
 //! Proposals types module for the Joystream platform. Version 2.
 //! Provides types for the proposal engine.
 
+#![warn(missing_docs)]
+
 use codec::{Decode, Encode};
 use rstd::cmp::PartialOrd;
 use rstd::ops::Add;
@@ -210,6 +212,14 @@ where
             None
         }
     }
+
+    /// Reset the proposal in Active status. Proposal with other status won't be changed.
+    /// Reset proposal operation clears voting results.
+    pub fn reset_proposal(&mut self) {
+        if let ProposalStatus::Active(_) = self.status.clone() {
+            self.voting_results = VotingResults::default();
+        }
+    }
 }
 
 /// Provides data for voting.
@@ -389,7 +399,7 @@ mod tests {
         let mut proposal = ProposalObject::default();
 
         proposal.parameters.grace_period = 3;
-        proposal.status = ProposalStatus::finalized(
+        proposal.status = ProposalStatus::finalized_successfully(
             ProposalDecisionStatus::Approved(ApprovedProposalStatus::PendingExecution),
             0,
         );
@@ -402,7 +412,7 @@ mod tests {
         let mut proposal = ProposalObject::default();
 
         proposal.parameters.grace_period = 0;
-        proposal.status = ProposalStatus::finalized(
+        proposal.status = ProposalStatus::finalized_successfully(
             ProposalDecisionStatus::Approved(ApprovedProposalStatus::PendingExecution),
             0,
         );

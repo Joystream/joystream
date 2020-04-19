@@ -7,8 +7,11 @@
 //! - cancel_proposal - cancels the proposal (can be canceled only by owner)
 //! - veto_proposal - vetoes the proposal
 //!
-//! Public API (requires root origin):
+//! Public API:
 //! - create_proposal - creates proposal using provided parameters
+//! - ensure_create_proposal_parameters_are_valid - ensures that we can create the proposal
+//! - refund_proposal_stake - a callback for StakingHandlerEvents
+//! - reset_active_proposals - resets voting results for active proposals
 //!
 
 // Ensure we're `no_std` when compiling for Wasm.
@@ -16,12 +19,6 @@
 
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
-
-// TODO: Test module after the https://github.com/Joystream/substrate-runtime-joystream/issues/161
-// issue will be fixed: "Fix stake module and allow slashing and unstaking in the same block."
-// TODO: Test cancellation, rejection fees
-// TODO: Test StakingEventHandler
-// TODO: Test refund_proposal_stake()
 
 use types::FinalizedProposalData;
 use types::ProposalStakeManager;
@@ -379,7 +376,7 @@ impl<T: Trait> Module<T> {
 
     /// Performs all checks for the proposal creation:
     /// - title, body lengths
-    /// - mac active proposal
+    /// - max active proposal
     /// - provided parameters: approval_threshold_percentage and slashing_threshold_percentage > 0
     /// - provided stake balance and parameters.required_stake are valid
     pub fn ensure_create_proposal_parameters_are_valid(
@@ -434,12 +431,11 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    //TODO: candidate for invariant break or error saving to the state
-    /// Callback from StakingEventsHandler. Refunds unstaked imbalance back to the source account
+    /// Callback from StakingEventsHandler. Refunds unstaked imbalance back to the source account.
+    /// There can be a lot of invariant breaks in the scope of this proposal.
+    /// Such situations are handled by adding error messages to the log.
     pub fn refund_proposal_stake(stake_id: T::StakeId, imbalance: NegativeImbalance<T>) {
         if <StakesProposals<T>>::exists(stake_id) {
-            //TODO: handle non existence
-
             let proposal_id = Self::stakes_proposals(stake_id);
 
             if <Proposals<T>>::exists(proposal_id) {
@@ -447,15 +443,34 @@ impl<T: Trait> Module<T> {
 
                 if let ProposalStatus::Active(active_stake_result) = proposal.status {
                     if let Some(active_stake) = active_stake_result {
-                        //TODO: handle the result
-                        let _ = CurrencyOf::<T>::resolve_into_existing(
+                        let refunding_result = CurrencyOf::<T>::resolve_into_existing(
                             &active_stake.source_account_id,
                             imbalance,
                         );
+
+                        if refunding_result.is_err() {
+                            print("Broken invariant: cannot refund");
+                        }
                     }
+                } else {
+                    print("Broken invariant: proposal status is not Active");
                 }
+            } else {
+                print("Broken invariant: proposal doesn't exist");
             }
+        } else {
+            print("Broken invariant: stake doesn't exist");
         }
+    }
+
+    /// Resets voting results for active proposals.
+    /// Possible application - after the new council elections.
+    pub fn reset_active_proposals() {
+        <ActiveProposalIds<T>>::enumerate().for_each(|(proposal_id, _)| {
+            <Proposals<T>>::mutate(proposal_id, |proposal| {
+                proposal.reset_proposal();
+            });
+        });
     }
 }
 
@@ -552,8 +567,12 @@ impl<T: Trait> Module<T> {
                 Self::slash_and_unstake(active_stake.clone(), slash_balance);
 
             // create finalized proposal status with error if any
-            let new_proposal_status = //TODO rename without an error
-            ProposalStatus::finalized_with_error(decision_status, slash_and_unstake_result.err(), active_stake, Self::current_block());
+            let new_proposal_status = ProposalStatus::finalized(
+                decision_status,
+                slash_and_unstake_result.err(),
+                active_stake,
+                Self::current_block(),
+            );
 
             proposal.status = new_proposal_status.clone();
             <Proposals<T>>::insert(proposal_id, proposal);

@@ -3,7 +3,7 @@
 pub use system;
 
 pub use primitives::{Blake2Hasher, H256};
-pub use runtime_primitives::{
+pub use sr_primitives::{
     testing::{Digest, DigestItem, Header, UintAuthorityId},
     traits::{BlakeTwo256, Convert, IdentityLookup, OnFinalize},
     weights::Weight,
@@ -109,14 +109,14 @@ impl Default for crate::Call<Test> {
     }
 }
 
+impl mint::Trait for Test {
+    type Currency = Balances;
+    type MintId = u64;
+}
+
 impl governance::council::Trait for Test {
     type Event = ();
     type CouncilTermEnded = ();
-}
-
-impl token_mint::Trait for Test {
-    type Currency = Balances;
-    type MintId = u64;
 }
 
 impl common::origin_validator::ActorOriginValidator<Origin, u64, u64> for () {
@@ -153,6 +153,38 @@ impl VotersParameters for MockVotersParameters {
 parameter_types! {
     pub const TextProposalMaxLength: u32 = 20_000;
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 20_000;
+}
+
+impl governance::election::Trait for Test {
+    type Event = ();
+    type CouncilElected = ();
+}
+
+impl content_working_group::Trait for Test {
+    type Event = ();
+}
+
+impl recurring_rewards::Trait for Test {
+    type PayoutStatusHandler = ();
+    type RecipientId = u64;
+    type RewardRelationshipId = u64;
+}
+
+impl versioned_store_permissions::Trait for Test {
+    type Credential = u64;
+    type CredentialChecker = ();
+    type CreateClassPermissionsChecker = ();
+}
+
+impl versioned_store::Trait for Test {
+    type Event = ();
+}
+
+impl hiring::Trait for Test {
+    type OpeningId = u64;
+    type ApplicationId = u64;
+    type ApplicationDeactivatedHandler = ();
+    type StakeHandlerProvider = hiring::Module<Self>;
 }
 
 impl crate::Trait for Test {

@@ -1,9 +1,10 @@
+#![warn(missing_docs)]
+
 use super::{BalanceOf, CurrencyOf, NegativeImbalance};
 use crate::Trait;
 use rstd::convert::From;
 use rstd::marker::PhantomData;
 use rstd::rc::Rc;
-use sr_primitives::traits::Zero;
 use srml_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
 
 // Mocking dependencies for testing
@@ -92,8 +93,7 @@ impl<T: Trait> StakeHandler<T> for DefaultStakeHandler<T> {
 
     /// Execute unstaking
     fn unstake(&self, stake_id: <T as stake::Trait>::StakeId) -> Result<(), &'static str> {
-        stake::Module::<T>::initiate_unstaking(&stake_id, Some(T::BlockNumber::zero()))
-            .map_err(WrappedError)?;
+        stake::Module::<T>::initiate_unstaking(&stake_id, None).map_err(WrappedError)?;
 
         Ok(())
     }
@@ -104,8 +104,8 @@ impl<T: Trait> StakeHandler<T> for DefaultStakeHandler<T> {
         stake_id: <T as stake::Trait>::StakeId,
         slash_balance: BalanceOf<T>,
     ) -> Result<(), &'static str> {
-        let _slash_id =
-            stake::Module::<T>::initiate_slashing(&stake_id, slash_balance, T::BlockNumber::zero())
+        let _ignored_successful_result =
+            stake::Module::<T>::slash_immediate(&stake_id, slash_balance, false)
                 .map_err(WrappedError)?;
 
         Ok(())
@@ -153,7 +153,6 @@ impl<T: Trait> ProposalStakeManager<T> {
     pub fn remove_stake(stake_id: T::StakeId) -> Result<(), &'static str> {
         T::StakeHandlerProvider::stakes().unstake(stake_id)?;
 
-        //TODO: can't remove stake before refunding
         T::StakeHandlerProvider::stakes().remove_stake(stake_id)?;
 
         Ok(())
@@ -222,6 +221,23 @@ impl From<WrappedError<stake::StakeActionError<stake::InitiateSlashingError>>> f
                         "SlashPeriodShouldBeGreaterThanZero"
                     }
                     stake::InitiateSlashingError::SlashAmountShouldBeGreaterThanZero => {
+                        "SlashAmountShouldBeGreaterThanZero"
+                    }
+                },
+            }
+        }
+    }
+}
+
+// error conversion for the Wrapped StakeActionError with the inner ImmediateSlashingError
+impl From<WrappedError<stake::StakeActionError<stake::ImmediateSlashingError>>> for &str {
+    fn from(wrapper: WrappedError<stake::StakeActionError<stake::ImmediateSlashingError>>) -> Self {
+        {
+            match wrapper.0 {
+                stake::StakeActionError::StakeNotFound => "StakeNotFound",
+                stake::StakeActionError::Error(err) => match err {
+                    stake::ImmediateSlashingError::NotStaked => "NotStaked",
+                    stake::ImmediateSlashingError::SlashAmountShouldBeGreaterThanZero => {
                         "SlashAmountShouldBeGreaterThanZero"
                     }
                 },

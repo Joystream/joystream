@@ -1,4 +1,4 @@
-//! The Substrate Node Template runtime. This can be compiled with `#[no_std]`, ready for Wasm.
+//! The Joystream Substrate Node runtime.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
@@ -6,6 +6,9 @@
 // srml_staking_reward_curve::build! - substrate macro produces a warning.
 // TODO: remove after post-Rome substrate upgrade
 #![allow(array_into_iter)]
+
+// Runtime integration tests
+mod test;
 
 // Make the WASM binary available.
 // This is required only by the node build.
@@ -670,7 +673,7 @@ impl common::currency::GovernanceCurrency for Runtime {
 
 impl governance::election::Trait for Runtime {
     type Event = Event;
-    type CouncilElected = (Council,);
+    type CouncilElected = (Council, integration::proposals::CouncilElectedHandler);
 }
 
 impl governance::council::Trait for Runtime {

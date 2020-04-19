@@ -1,34 +1,69 @@
-//! Proposals codex module for the Joystream platform. Version 2.
-//! Contains preset proposal types
+//! # Proposals codex module
+//! Proposals `codex` module for the Joystream platform. Version 2.
+//! Component of the proposals system. Contains preset proposal types.
 //!
-//! Supported extrinsics (proposal type):
-//! - create_text_proposal
+//! ## Overview
+//!
+//! The proposals codex module serves as facade and entry point of the proposals system. It uses
+//! proposals `engine` module to maintain a lifecycle of the proposal and to execute proposals.
+//! During the proposal creation `codex` also create a discussion thread using the `discussion`
+//! proposals module. `Codex` uses predefined parameters (eg.:`voting_period`) for each proposal and
+//! encodes extrinsic calls from dependency modules in order to create proposals inside the `engine`
+//! module.
+//!
+//! ### Supported extrinsics (proposal types)
+//! - [create_text_proposal](./struct.Module.html#method.create_text_proposal)
+//! - [create_runtime_upgrade_proposal](./struct.Module.html#method.create_runtime_upgrade_proposal)
+//! - [create_set_election_parameters_proposal](./struct.Module.html#method.create_set_election_parameters_proposal)
+//! - [create_set_council_mint_capacity_proposal](./struct.Module.html#method.create_set_council_mint_capacity_proposal)
+//! - [create_set_content_working_group_mint_capacity_proposal](./struct.Module.html#method.create_set_content_working_group_mint_capacity_proposal)
+//! - [create_spending_proposal](./struct.Module.html#method.create_spending_proposal)
+//! - [create_set_lead_proposal](./struct.Module.html#method.create_set_lead_proposal)
+//!
+//! ### Proposal implementations of this module
+//! - execute_text_proposal - prints the proposal to the log
+//! - execute_runtime_upgrade_proposal - sets the runtime code
+//!
+//! ### Dependencies:
+//! - [proposals engine](../substrate_proposals_engine_module/index.html)
+//! - [proposals discussion](../substrate_proposals_discussion_module/index.html)
+//! - [membership](../substrate_membership_module/index.html)
+//! - [governance](../substrate_governance_module/index.html)
+//! - [content_working_group](../substrate_content_working_group_module/index.html)
 //!
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
-//#![warn(missing_docs)]
+// #![warn(missing_docs)]
 
 mod proposal_types;
 #[cfg(test)]
 mod tests;
 
 use codec::Encode;
+use common::origin_validator::ActorOriginValidator;
+use governance::election_params::ElectionParameters;
+use proposal_engine::ProposalParameters;
 use rstd::clone::Clone;
 use rstd::prelude::*;
 use rstd::str::from_utf8;
 use rstd::vec::Vec;
+use sr_primitives::traits::Zero;
+use srml_support::dispatch::DispatchResult;
+use srml_support::traits::{Currency, Get};
 use srml_support::{decl_error, decl_module, decl_storage, ensure, print};
 use system::{ensure_root, RawOrigin};
 
-use common::origin_validator::ActorOriginValidator;
-use proposal_engine::ProposalParameters;
-
 /// 'Proposals codex' substrate module Trait
 pub trait Trait:
-    system::Trait + proposal_engine::Trait + membership::members::Trait + proposal_discussion::Trait
+    system::Trait
+    + proposal_engine::Trait
+    + proposal_discussion::Trait
+    + membership::members::Trait
+    + governance::election::Trait
+    + content_working_group::Trait
 {
     /// Defines max allowed text proposal length.
     type TextProposalMaxLength: Get<u32>;
@@ -43,19 +78,29 @@ pub trait Trait:
         Self::AccountId,
     >;
 }
-use srml_support::traits::{Currency, Get};
 
-/// Balance alias
+/// Balance alias for `stake` module
 pub type BalanceOf<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
-/// Balance alias for staking
+/// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
+pub type BalanceOfGovernanceCurrency<T> =
+    <<T as common::currency::GovernanceCurrency>::Currency as Currency<
+        <T as system::Trait>::AccountId,
+    >>::Balance;
+
+/// Balance alias for token mint balance from `token mint` module. TODO: replace with BalanceOf
+pub type BalanceOfMint<T> =
+    <<T as mint::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+
+/// Negative imbalance alias for staking
 pub type NegativeImbalance<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
 
 type MemberId<T> = <T as membership::members::Trait>::MemberId;
 
 decl_error! {
+    /// Codex module predefined errors
     pub enum Error {
         /// The size of the provided text for text proposal exceeded the limit
         TextProposalSizeExceeded,
@@ -69,11 +114,11 @@ decl_error! {
         /// Provided WASM code for the runtime upgrade proposal is empty
         RuntimeProposalIsEmpty,
 
+        /// Invalid balance value for the spending proposal
+        SpendingProposalZeroBalance,
+
         /// Require root origin in extrinsics
         RequireRootOrigin,
-
-        /// Errors from the proposal engine
-        ProposalsEngineError
     }
 }
 
@@ -117,113 +162,214 @@ decl_storage! {
 }
 
 decl_module! {
-    /// 'Proposal codex' substrate module
+    /// Proposal codex substrate module Call
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         /// Predefined errors
         type Error = Error;
 
-        /// Create text (signal) proposal type. On approval prints its content.
+        /// Create 'Text (signal)' proposal type.
         pub fn create_text_proposal(
             origin,
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            text: Vec<u8>,
             stake_balance: Option<BalanceOf<T>>,
+            text: Vec<u8>,
         ) {
-            let account_id = T::MembershipOriginValidator::ensure_actor_origin(origin, member_id.clone())?;
-
-            let parameters = proposal_types::parameters::text_proposal::<T>();
-
             ensure!(!text.is_empty(), Error::TextProposalIsEmpty);
             ensure!(text.len() as u32 <=  T::TextProposalMaxLength::get(),
                 Error::TextProposalSizeExceeded);
 
-            <proposal_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
-                &parameters,
-                &title,
-                &description,
-                stake_balance,
-            )?;
+            let proposal_parameters = proposal_types::parameters::text_proposal::<T>();
+            let proposal_code =
+                <Call<T>>::execute_text_proposal(title.clone(), description.clone(), text);
 
-            <proposal_discussion::Module<T>>::ensure_can_create_thread(
-                &title,
-                member_id.clone(),
-            )?;
-
-            let proposal_code = <Call<T>>::text_proposal(title.clone(), description.clone(), text);
-
-            let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
+            Self::create_proposal(
+                origin,
                 member_id,
-                title.clone(),
-            )?;
-
-            let proposal_id = <proposal_engine::Module<T>>::create_proposal(
-                account_id,
-                member_id,
-                parameters,
                 title,
                 description,
                 stake_balance,
                 proposal_code.encode(),
+                proposal_parameters,
             )?;
-
-             <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
         }
 
-        /// Create runtime upgrade proposal type. On approval prints its content.
+        /// Create 'Runtime upgrade' proposal type.
         pub fn create_runtime_upgrade_proposal(
             origin,
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            wasm: Vec<u8>,
             stake_balance: Option<BalanceOf<T>>,
+            wasm: Vec<u8>,
         ) {
-            let account_id = T::MembershipOriginValidator::ensure_actor_origin(origin, member_id.clone())?;
-
-            let parameters = proposal_types::parameters::upgrade_runtime::<T>();
-
             ensure!(!wasm.is_empty(), Error::RuntimeProposalIsEmpty);
             ensure!(wasm.len() as u32 <= T::RuntimeUpgradeWasmProposalMaxLength::get(),
                 Error::RuntimeProposalSizeExceeded);
 
-            <proposal_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
-                &parameters,
-                &title,
-                &description,
-                stake_balance,
-            )?;
+            let proposal_code =
+                <Call<T>>::execute_runtime_upgrade_proposal(title.clone(), description.clone(), wasm);
 
-            <proposal_discussion::Module<T>>::ensure_can_create_thread(
-                &title,
-                member_id.clone(),
-            )?;
+            let proposal_parameters = proposal_types::parameters::upgrade_runtime::<T>();
 
-            let proposal_code = <Call<T>>::text_proposal(title.clone(), description.clone(), wasm);
-
-            let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
+            Self::create_proposal(
+                origin,
                 member_id,
-                title.clone(),
-            )?;
-
-            let proposal_id = <proposal_engine::Module<T>>::create_proposal(
-                account_id,
-                member_id,
-                parameters,
                 title,
                 description,
                 stake_balance,
                 proposal_code.encode(),
+                proposal_parameters,
             )?;
+        }
 
-            <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
+        /// Create 'Set election parameters' proposal type. This proposal uses `set_election_parameters()`
+        /// extrinsic from the `governance::election module`.
+        pub fn create_set_election_parameters_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            election_parameters: ElectionParameters<BalanceOfGovernanceCurrency<T>, T::BlockNumber>,
+        ) {
+            election_parameters.ensure_valid()?;
+
+            let proposal_code =
+                <governance::election::Call<T>>::set_election_parameters(election_parameters);
+
+            let proposal_parameters =
+                proposal_types::parameters::set_election_parameters_proposal::<T>();
+
+            Self::create_proposal(
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_code.encode(),
+                proposal_parameters,
+            )?;
+        }
+
+
+        /// Create 'Set council mint capacity' proposal type. This proposal uses `set_mint_capacity()`
+        /// extrinsic from the `governance::council` module.
+        pub fn create_set_council_mint_capacity_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            mint_balance: BalanceOfMint<T>,
+        ) {
+            let proposal_code =
+                <governance::council::Call<T>>::set_council_mint_capacity(mint_balance);
+
+            let proposal_parameters =
+                proposal_types::parameters::set_council_mint_capacity_proposal::<T>();
+
+            Self::create_proposal(
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_code.encode(),
+                proposal_parameters,
+            )?;
+        }
+
+        /// Create 'Set content working group mint capacity' proposal type.
+        /// This proposal uses `set_mint_capacity()` extrinsic from the `content-working-group`  module.
+        pub fn create_set_content_working_group_mint_capacity_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            mint_balance: BalanceOfMint<T>,
+        ) {
+            let proposal_code =
+                <content_working_group::Call<T>>::set_mint_capacity(mint_balance);
+
+            let proposal_parameters =
+                proposal_types::parameters::set_content_working_group_mint_capacity_proposal::<T>();
+
+            Self::create_proposal(
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_code.encode(),
+                proposal_parameters,
+            )?;
+        }
+
+        /// Create 'Spending' proposal type.
+        /// This proposal uses `spend_from_council_mint()` extrinsic from the `governance::council`  module.
+        pub fn create_spending_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            balance: BalanceOfMint<T>,
+            destination: T::AccountId,
+        ) {
+            ensure!(balance != BalanceOfMint::<T>::zero(), Error::SpendingProposalZeroBalance);
+
+            let proposal_code =
+                <governance::council::Call<T>>::spend_from_council_mint(balance, destination);
+
+            let proposal_parameters =
+                proposal_types::parameters::spending_proposal::<T>();
+
+            Self::create_proposal(
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_code.encode(),
+                proposal_parameters,
+            )?;
+        }
+
+
+        /// Create 'Set lead' proposal type.
+        /// This proposal uses `replace_lead()` extrinsic from the `content_working_group`  module.
+        pub fn create_set_lead_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            new_lead: Option<(T::MemberId, T::AccountId)>
+        ) {
+            let proposal_code =
+                <content_working_group::Call<T>>::replace_lead(new_lead);
+
+            let proposal_parameters =
+                proposal_types::parameters::set_lead_proposal::<T>();
+
+            Self::create_proposal(
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_code.encode(),
+                proposal_parameters,
+            )?;
         }
 
 // *************** Extrinsic to execute
 
-        /// Text proposal extrinsic. Should be used as callable object to pass to the engine module.
-        fn text_proposal(
+        /// Text proposal extrinsic. Should be used as callable object to pass to the `engine` module.
+        fn execute_text_proposal(
             origin,
             title: Vec<u8>,
             _description: Vec<u8>,
@@ -238,8 +384,8 @@ decl_module! {
         }
 
         /// Runtime upgrade proposal extrinsic.
-        /// Should be used as callable object to pass to the engine module.
-        fn runtime_upgrade_proposal(
+        /// Should be used as callable object to pass to the `engine` module.
+        fn execute_runtime_upgrade_proposal(
             origin,
             title: Vec<u8>,
             _description: Vec<u8>,
@@ -277,5 +423,45 @@ impl<T: Trait> Module<T> {
         };
 
         (cloned_origin1.into(), cloned_origin2.into())
+    }
+
+    // Generic template proposal builder
+    fn create_proposal(
+        origin: T::Origin,
+        member_id: MemberId<T>,
+        title: Vec<u8>,
+        description: Vec<u8>,
+        stake_balance: Option<BalanceOf<T>>,
+        proposal_code: Vec<u8>,
+        proposal_parameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>,
+    ) -> DispatchResult<Error> {
+        let account_id =
+            T::MembershipOriginValidator::ensure_actor_origin(origin, member_id.clone())?;
+
+        <proposal_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
+            &proposal_parameters,
+            &title,
+            &description,
+            stake_balance,
+        )?;
+
+        <proposal_discussion::Module<T>>::ensure_can_create_thread(&title, member_id.clone())?;
+
+        let discussion_thread_id =
+            <proposal_discussion::Module<T>>::create_thread(member_id, title.clone())?;
+
+        let proposal_id = <proposal_engine::Module<T>>::create_proposal(
+            account_id,
+            member_id,
+            proposal_parameters,
+            title,
+            description,
+            stake_balance,
+            proposal_code,
+        )?;
+
+        <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
+
+        Ok(())
     }
 }

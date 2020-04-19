@@ -1,3 +1,5 @@
+#![warn(missing_docs)]
+
 use rstd::marker::PhantomData;
 use srml_support::traits::{Currency, Imbalance};
 use srml_support::StorageMap;

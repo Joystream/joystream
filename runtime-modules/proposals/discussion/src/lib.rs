@@ -7,6 +7,7 @@
 //!
 //! Public API:
 //! - create_discussion - creates a discussion
+//! - ensure_can_create_thread - ensures safe thread creation
 //!
 
 // Ensure we're `no_std` when compiling for Wasm.
@@ -84,9 +85,6 @@ pub trait Trait: system::Trait + membership::members::Trait {
 
 decl_error! {
     pub enum Error {
-        /// The size of the provided text for text proposal exceeded the limit
-        TextProposalSizeExceeded,
-
         /// Author should match the post creator
         NotAuthor,
 
