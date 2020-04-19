@@ -23,3 +23,11 @@ export function displayNameValueTable(rows: NameValueObj[]) {
     );
 }
 
+export function toFixedLength(text: string, length: number, spacesOnLeft = false): string {
+    if (text.length > length && length > 3) {
+        return text.slice(0, length-3) + '...';
+    }
+    while(text.length < length) { spacesOnLeft ? text = ' '+text : text += ' ' };
+
+    return text;
+}

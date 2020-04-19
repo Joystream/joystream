@@ -1,7 +1,7 @@
 import BN from 'bn.js';
 import ExitCodes from '../ExitCodes';
 import { decodeAddress } from '@polkadot/util-crypto';
-import { AccountBalances } from '../Types';
+import { DerivedBalances } from '@polkadot/api-derive/types';
 import { CLIError } from '@oclif/errors';
 
 export function validateAddress(address: string, errorMessage: string = 'Invalid address'): void {
@@ -12,8 +12,8 @@ export function validateAddress(address: string, errorMessage: string = 'Invalid
     }
 }
 
-export function checkBalance(accBalances: AccountBalances, requiredBalance: BN): void {
-    if (requiredBalance.gt(accBalances.free)) {
+export function checkBalance(accBalances: DerivedBalances, requiredBalance: BN): void {
+    if (requiredBalance.gt(accBalances.availableBalance)) {
         throw new CLIError('Not enough balance available', { exit: ExitCodes.InvalidInput });
     }
 }

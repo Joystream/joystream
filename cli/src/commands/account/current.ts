@@ -1,5 +1,6 @@
 import AccountsCommandBase from '../../base/AccountsCommandBase';
 import { AccountSummary, NameValueObj, NamedKeyringPair } from '../../Types';
+import { DerivedBalances } from '@polkadot/api-derive/types';
 import { displayHeader, displayNameValueTable } from '../../helpers/display';
 import { formatBalance } from '@polkadot/util';
 import moment from 'moment';
@@ -24,11 +25,17 @@ export default class AccountCurrent extends AccountsCommandBase {
         displayNameValueTable(accountRows);
 
         displayHeader('Balances');
-        const balancesRows: NameValueObj[] = [
-            { name: 'Available balance:', value: formatBalance(summary.balances.availableBalance) },
-            { name: 'Free balance:', value: formatBalance(summary.balances.freeBalance) },
-            { name: 'Locked balance:', value: formatBalance(summary.balances.lockedBalance) }
+        const balances: DerivedBalances = summary.balances;
+        let balancesRows: NameValueObj[] = [
+            { name: 'Total balance:', value: formatBalance(balances.votingBalance) },
+            { name: 'Transferable balance:', value: formatBalance(balances.availableBalance) }
         ];
+        if (balances.lockedBalance.gtn(0)) {
+            balancesRows.push({ name: 'Locked balance:', value: formatBalance(balances.lockedBalance) });
+        }
+        if (balances.reservedBalance.gtn(0)) {
+            balancesRows.push({ name: 'Reserved balance:', value: formatBalance(balances.reservedBalance) });
+        }
         displayNameValueTable(balancesRows);
     }
   }

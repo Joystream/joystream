@@ -7,7 +7,9 @@ import { CLIError } from '@oclif/errors';
 import ApiCommandBase from './ApiCommandBase';
 import { Keyring } from '@polkadot/api';
 import { formatBalance } from '@polkadot/util';
-import { AccountBalances, NamedKeyringPair } from '../Types';
+import { NamedKeyringPair } from '../Types';
+import { DerivedBalances } from '@polkadot/api-derive/types';
+import { toFixedLength } from '../helpers/display';
 
 const ACCOUNTS_DIRNAME = '/accounts';
 
@@ -167,20 +169,27 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
         message: string = 'Select an account',
         showBalances: boolean = true
     ): Promise<NamedKeyringPair> {
-        let balances: AccountBalances[];
+        let balances: DerivedBalances[];
         if (showBalances) {
             balances = await this.getApi().getAccountsBalancesInfo(accounts.map(acc => acc.address));
         }
+        const longestAccNameLength: number = accounts.reduce((prev, curr) => Math.max(curr.meta.name.length, prev), 0);
+        const accNameColLength: number = Math.min(longestAccNameLength + 1, 20);
         const { chosenAccountFilename } = await inquirer.prompt([{
             name: 'chosenAccountFilename',
             message,
             type: 'list',
             choices: accounts.map((account: NamedKeyringPair, i) => ({
-                name:
-                    `${ account.meta.name }: `+
-                    ( showBalances ? `${ formatBalance(balances[i].free) } / ${ formatBalance(balances[i].total) } ` : ' ')+
-                    account.address,
-                value: this.generateAccountFilename(account)
+                name: (
+                    `${ toFixedLength(account.meta.name, accNameColLength) } | `+
+                    `${ account.address } | ` +
+                    ((showBalances || '') && (
+                        `${ formatBalance(balances[i].availableBalance) } / `+
+                        `${ formatBalance(balances[i].votingBalance) }`
+                    ))
+                ),
+                value: this.generateAccountFilename(account),
+                short: `${ account.meta.name } (${ account.address })`
             })),
             default: defaultAccount && this.generateAccountFilename(defaultAccount)
         }]);

@@ -4,9 +4,9 @@ import chalk from 'chalk';
 import ExitCodes from '../../ExitCodes';
 import { formatBalance } from '@polkadot/util';
 import { Hash } from '@polkadot/types/interfaces';
-import Api from '../../Api';
-import { AccountBalances, NamedKeyringPair } from '../../Types';
+import { NamedKeyringPair } from '../../Types';
 import { checkBalance, validateAddress } from '../../helpers/validation';
+import { DerivedBalances } from '@polkadot/api-derive/types';
 
 type AccountTransferArgs = {
     recipient: string,
@@ -36,7 +36,7 @@ export default class AccountTransferTokens extends AccountsCommandBase {
 
         // Initial validation
         validateAddress(args.recipient, 'Invalid recipient address');
-        const accBalances: AccountBalances = (await this.getApi().getAccountsBalancesInfo([ selectedAccount.address ]))[0];
+        const accBalances: DerivedBalances = (await this.getApi().getAccountsBalancesInfo([ selectedAccount.address ]))[0];
         checkBalance(accBalances, amountBN);
 
         await this.requestAccountDecoding(selectedAccount);

@@ -3,10 +3,10 @@ import { registerJoystreamTypes } from '@joystream/types';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { QueryableStorageMultiArg } from '@polkadot/api/types';
 import { formatBalance } from '@polkadot/util';
-import { Balance, Hash } from '@polkadot/types/interfaces';
+import { Hash } from '@polkadot/types/interfaces';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { Codec } from '@polkadot/types/types';
-import { AccountBalances, AccountSummary, CouncilInfoObj, CouncilInfoTuple, createCouncilInfoObj } from './Types';
+import { AccountSummary, CouncilInfoObj, CouncilInfoTuple, createCouncilInfoObj } from './Types';
 import { DerivedFees, DerivedBalances } from '@polkadot/api-derive/types';
 import { CLIError } from '@oclif/errors';
 import ExitCodes from './ExitCodes';
@@ -56,30 +56,17 @@ export default class Api {
         return results;
     }
 
-    async getAccountsBalancesInfo(accountAddresses:string[]): Promise<AccountBalances[]> {
-        let apiQueries:any = [];
-        for (let address of accountAddresses) {
-            apiQueries.push([this._api.query.balances.freeBalance, address]);
-            apiQueries.push([this._api.query.balances.reservedBalance, address]);
-        }
+    async getAccountsBalancesInfo(accountAddresses:string[]): Promise<DerivedBalances[]> {
+        let accountsBalances: DerivedBalances[] = await this._api.derive.balances.votingBalances(accountAddresses);
 
-        let balances: AccountBalances[] = [];
-        let balancesRes = await this.queryMultiOnce(apiQueries);
-        for (let key in accountAddresses) {
-            let numKey: number = parseInt(key);
-            const free: Balance = <Balance> balancesRes[numKey*2];
-            const reserved: Balance = <Balance> balancesRes[numKey*2 + 1];
-            const total: Balance = this._api.createType('Balance', free.add(reserved));
-            balances[key] = { free, reserved, total };
-        }
-
-        return balances;
+        return accountsBalances;
     }
 
     // Get on-chain data related to given account.
     // For now it's just account balances
     async getAccountSummary(accountAddresses:string): Promise<AccountSummary> {
-        const balances: DerivedBalances = await this._api.derive.balances.all(accountAddresses);
+        const balances: DerivedBalances = (await this.getAccountsBalancesInfo([accountAddresses]))[0];
+        // TODO: Some more information can be fetched here in the future
 
         return { balances };
     }
