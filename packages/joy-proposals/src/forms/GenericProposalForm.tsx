@@ -25,12 +25,14 @@ type GenericProposalFormProps = {
 
 type GenericProposalFormAdditionalProps = {};
 
-type DefaultGenericFormOptions = WithFormikConfig<GenericProposalFormAdditionalProps, GenericFormValues>;
-
 export type DefaultOuterFormProps<FormAdditionalPropsT, FormValuesT> = FormAdditionalPropsT & { initialData?: Partial<FormValuesT> };
 
+type OuterFormProps = DefaultOuterFormProps<GenericProposalFormAdditionalProps, GenericFormValues>;
+
+type DefaultGenericFormOptions = WithFormikConfig<OuterFormProps, GenericFormValues>;
+
 export const genericFormDefaultOptions: DefaultGenericFormOptions = {
-  mapPropsToValues: (props:DefaultOuterFormProps<GenericProposalFormAdditionalProps, GenericFormValues>) => ({
+  mapPropsToValues: (props:OuterFormProps) => ({
     ...genericFormDefaultValues,
     ...(props.initialData || {})
   }),
