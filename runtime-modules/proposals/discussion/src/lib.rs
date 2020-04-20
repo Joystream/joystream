@@ -1,13 +1,43 @@
-//! Proposals discussion module for the Joystream platform. Version 2.
-//! Contains discussion subsystem for the proposals engine.
+//! # Proposals discussion module
+//! Proposals `discussion` module for the Joystream platform. Version 2.
+//! It contains discussion subsystem of the proposals.
 //!
-//! Supported extrinsics:
-//! - add_post - adds a post to existing discussion thread
-//! - update_post - updates existing post
+//! ## Overview
 //!
-//! Public API:
-//! - create_discussion - creates a discussion
-//! - ensure_can_create_thread - ensures safe thread creation
+//! The proposals discussion module is used by the codex module to provide a platform for discussions
+//! about different proposals. It allows to create discussion threads and then add and update related
+//! posts.
+//!
+//! ## Supported extrinsics
+//! - [add_post](./struct.Module.html#method.add_post) - adds a post to an existing discussion thread
+//! - [update_post](./struct.Module.html#method.update_post) - updates existing post
+//!
+//! ## Public API methods
+//! - [create_thread](./struct.Module.html#method.create_thread) - creates a discussion thread
+//! - [ensure_can_create_thread](./struct.Module.html#method.ensure_can_create_thread) - ensures safe thread creation
+//!
+//! ## Usage
+//!
+//! ```
+//! use srml_support::{decl_module, dispatch::Result};
+//! use system::ensure_root;
+//! use substrate_proposals_discussion_module::{self as discussions};
+//!
+//! pub trait Trait: discussions::Trait + membership::members::Trait {}
+//!
+//! decl_module! {
+//!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+//!         pub fn create_discussion(origin, title: Vec<u8>, author_id : T::MemberId) -> Result {
+//!             ensure_root(origin)?;
+//!             <discussions::Module<T>>::ensure_can_create_thread(author_id, &title)?;
+//!             <discussions::Module<T>>::create_thread(author_id, title)?;
+//!             Ok(())
+//!         }
+//!     }
+//! }
+//! # fn main() {}
+//! ```
+
 //!
 
 // Ensure we're `no_std` when compiling for Wasm.
@@ -84,6 +114,7 @@ pub trait Trait: system::Trait + membership::members::Trait {
 }
 
 decl_error! {
+    /// Discussion module predefined errors
     pub enum Error {
         /// Author should match the post creator
         NotAuthor,
@@ -168,7 +199,7 @@ decl_module! {
         ) {
             T::PostAuthorOriginValidator::ensure_actor_origin(
                 origin,
-                post_author_id.clone(),
+                post_author_id,
             )?;
             ensure!(<ThreadById<T>>::exists(thread_id), Error::ThreadDoesntExist);
 
@@ -187,7 +218,7 @@ decl_module! {
                 text,
                 created_at: Self::current_block(),
                 updated_at: Self::current_block(),
-                author_id: post_author_id.clone(),
+                author_id: post_author_id,
                 edition_number : 0,
                 thread_id,
             };
@@ -208,7 +239,7 @@ decl_module! {
         ){
             T::PostAuthorOriginValidator::ensure_actor_origin(
                 origin,
-                post_author_id.clone(),
+                post_author_id,
             )?;
 
             ensure!(<ThreadById<T>>::exists(thread_id), Error::ThreadDoesntExist);
@@ -242,18 +273,13 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    // Wrapper-function over system::block_number()
-    fn current_block() -> T::BlockNumber {
-        <system::Module<T>>::block_number()
-    }
-
     /// Create the discussion thread. Cannot add more threads than 'predefined limit = MaxThreadInARowNumber'
     /// times in a row by the same author.
     pub fn create_thread(
         thread_author_id: MemberId<T>,
         title: Vec<u8>,
     ) -> Result<T::ThreadId, Error> {
-        Self::ensure_can_create_thread(&title, thread_author_id.clone())?;
+        Self::ensure_can_create_thread(thread_author_id, &title)?;
 
         let next_thread_count_value = Self::thread_count() + 1;
         let new_thread_id = next_thread_count_value;
@@ -261,11 +287,11 @@ impl<T: Trait> Module<T> {
         let new_thread = Thread {
             title,
             created_at: Self::current_block(),
-            author_id: thread_author_id.clone(),
+            author_id: thread_author_id,
         };
 
         // get new 'threads in a row' counter for the author
-        let current_thread_counter = Self::get_updated_thread_counter(thread_author_id.clone());
+        let current_thread_counter = Self::get_updated_thread_counter(thread_author_id);
 
         // mutation
 
@@ -276,6 +302,38 @@ impl<T: Trait> Module<T> {
         Self::deposit_event(RawEvent::ThreadCreated(thread_id, thread_author_id));
 
         Ok(thread_id)
+    }
+
+    /// Ensures thread can be created.
+    /// Checks:
+    /// - title is valid
+    /// - max thread in a row by the same author
+    pub fn ensure_can_create_thread(
+        thread_author_id: MemberId<T>,
+        title: &[u8],
+    ) -> DispatchResult<Error> {
+        ensure!(!title.is_empty(), Error::EmptyTitleProvided);
+        ensure!(
+            title.len() as u32 <= T::ThreadTitleLengthLimit::get(),
+            Error::TitleIsTooLong
+        );
+
+        // get new 'threads in a row' counter for the author
+        let current_thread_counter = Self::get_updated_thread_counter(thread_author_id);
+
+        ensure!(
+            current_thread_counter.counter as u32 <= T::MaxThreadInARowNumber::get(),
+            Error::MaxThreadInARowLimitExceeded
+        );
+
+        Ok(())
+    }
+}
+
+impl<T: Trait> Module<T> {
+    // Wrapper-function over system::block_number()
+    fn current_block() -> T::BlockNumber {
+        <system::Module<T>>::block_number()
     }
 
     // returns incremented thread counter if last thread author equals with provided parameter
@@ -290,30 +348,5 @@ impl<T: Trait> Module<T> {
 
         // else return new counter (set with 1 thread number)
         ThreadCounter::new(author_id)
-    }
-
-    /// Ensures thread can be created.
-    /// Checks:
-    /// - title is valid
-    /// - max thread in a row by the same author
-    pub fn ensure_can_create_thread(
-        title: &[u8],
-        thread_author_id: MemberId<T>,
-    ) -> DispatchResult<Error> {
-        ensure!(!title.is_empty(), Error::EmptyTitleProvided);
-        ensure!(
-            title.len() as u32 <= T::ThreadTitleLengthLimit::get(),
-            Error::TitleIsTooLong
-        );
-
-        // get new 'threads in a row' counter for the author
-        let current_thread_counter = Self::get_updated_thread_counter(thread_author_id.clone());
-
-        ensure!(
-            current_thread_counter.counter as u32 <= T::MaxThreadInARowNumber::get(),
-            Error::MaxThreadInARowLimitExceeded
-        );
-
-        Ok(())
     }
 }

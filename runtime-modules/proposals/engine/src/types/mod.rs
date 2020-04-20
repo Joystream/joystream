@@ -10,6 +10,7 @@ use rstd::prelude::*;
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
+use sr_primitives::Perbill;
 use srml_support::dispatch;
 use srml_support::traits::Currency;
 
@@ -222,7 +223,7 @@ where
     }
 }
 
-/// Provides data for voting.
+/// Provides data for the voting.
 pub trait VotersParameters {
     /// Defines maximum voters count for the proposal
     fn total_voters_count() -> u32;
@@ -253,45 +254,45 @@ where
     // Approval quorum reached for the proposal. Compares predefined parameter with actual
     // votes sum divided by total possible votes count.
     pub fn is_approval_quorum_reached(&self) -> bool {
-        let actual_votes_fraction: f32 = self.votes_count as f32 / self.total_voters_count as f32;
-
+        let actual_votes_fraction =
+            Perbill::from_rational_approximation(self.votes_count, self.total_voters_count);
         let approval_quorum_fraction =
-            self.proposal.parameters.approval_quorum_percentage as f32 / 100.0;
+            Perbill::from_percent(self.proposal.parameters.approval_quorum_percentage);
 
-        actual_votes_fraction >= approval_quorum_fraction
+        actual_votes_fraction.deconstruct() >= approval_quorum_fraction.deconstruct()
     }
 
     // Slashing quorum reached for the proposal. Compares predefined parameter with actual
     // votes sum divided by total possible votes count.
     pub fn is_slashing_quorum_reached(&self) -> bool {
-        let actual_votes_fraction: f32 = self.votes_count as f32 / self.total_voters_count as f32;
-
+        let actual_votes_fraction =
+            Perbill::from_rational_approximation(self.votes_count, self.total_voters_count);
         let slashing_quorum_fraction =
-            self.proposal.parameters.slashing_quorum_percentage as f32 / 100.0;
+            Perbill::from_percent(self.proposal.parameters.slashing_quorum_percentage);
 
-        actual_votes_fraction >= slashing_quorum_fraction
+        actual_votes_fraction.deconstruct() >= slashing_quorum_fraction.deconstruct()
     }
 
     // Approval threshold reached for the proposal. Compares predefined parameter with 'approve'
     // votes sum divided by actual votes count.
     pub fn is_approval_threshold_reached(&self) -> bool {
-        let approval_votes_fraction: f32 = self.approvals as f32 / self.votes_count as f32;
-
+        let approval_votes_fraction =
+            Perbill::from_rational_approximation(self.approvals, self.votes_count);
         let required_threshold_fraction =
-            self.proposal.parameters.approval_threshold_percentage as f32 / 100.0;
+            Perbill::from_percent(self.proposal.parameters.approval_threshold_percentage);
 
-        approval_votes_fraction >= required_threshold_fraction
+        approval_votes_fraction.deconstruct() >= required_threshold_fraction.deconstruct()
     }
 
     // Slashing threshold reached for the proposal. Compares predefined parameter with 'approve'
     // votes sum divided by actual votes count.
     pub fn is_slashing_threshold_reached(&self) -> bool {
-        let slashing_votes_fraction: f32 = self.slashes as f32 / self.votes_count as f32;
-
+        let slashing_votes_fraction =
+            Perbill::from_rational_approximation(self.slashes, self.votes_count);
         let required_threshold_fraction =
-            self.proposal.parameters.slashing_threshold_percentage as f32 / 100.0;
+            Perbill::from_percent(self.proposal.parameters.slashing_threshold_percentage);
 
-        slashing_votes_fraction >= required_threshold_fraction
+        slashing_votes_fraction.deconstruct() >= required_threshold_fraction.deconstruct()
     }
 
     // All voters had voted
@@ -369,6 +370,7 @@ pub(crate) struct ApprovedProposalData<
 
 #[cfg(test)]
 mod tests {
+    use crate::types::ProposalStatusResolution;
     use crate::*;
 
     // Alias introduced for simplicity of changing Proposal exact types.
@@ -671,5 +673,121 @@ mod tests {
             expected_proposal_status,
             Some(ProposalDecisionStatus::Slashed)
         );
+    }
+
+    #[test]
+    fn proposal_status_resolution_approval_quorum_works_correctly() {
+        let no_approval_quorum_proposal: Proposal<u64, u64, u64, u64, u64> = Proposal {
+            parameters: ProposalParameters {
+                approval_quorum_percentage: 63,
+                slashing_threshold_percentage: 63,
+                ..ProposalParameters::default()
+            },
+            ..Proposal::default()
+        };
+        let no_approval_proposal_status_resolution = ProposalStatusResolution {
+            proposal: &no_approval_quorum_proposal,
+            now: 20,
+            votes_count: 314,
+            total_voters_count: 500,
+            approvals: 3,
+            slashes: 3,
+        };
+
+        assert!(!no_approval_proposal_status_resolution.is_approval_quorum_reached());
+
+        let approval_quorum_proposal_status_resolution = ProposalStatusResolution {
+            votes_count: 315,
+            ..no_approval_proposal_status_resolution
+        };
+
+        assert!(approval_quorum_proposal_status_resolution.is_approval_quorum_reached());
+    }
+
+    #[test]
+    fn proposal_status_resolution_slashing_quorum_works_correctly() {
+        let no_slashing_quorum_proposal: Proposal<u64, u64, u64, u64, u64> = Proposal {
+            parameters: ProposalParameters {
+                approval_quorum_percentage: 63,
+                slashing_quorum_percentage: 63,
+                ..ProposalParameters::default()
+            },
+            ..Proposal::default()
+        };
+        let no_slashing_proposal_status_resolution = ProposalStatusResolution {
+            proposal: &no_slashing_quorum_proposal,
+            now: 20,
+            votes_count: 314,
+            total_voters_count: 500,
+            approvals: 3,
+            slashes: 3,
+        };
+
+        assert!(!no_slashing_proposal_status_resolution.is_slashing_quorum_reached());
+
+        let slashing_quorum_proposal_status_resolution = ProposalStatusResolution {
+            votes_count: 315,
+            ..no_slashing_proposal_status_resolution
+        };
+
+        assert!(slashing_quorum_proposal_status_resolution.is_slashing_quorum_reached());
+    }
+
+    #[test]
+    fn proposal_status_resolution_approval_threshold_works_correctly() {
+        let no_approval_threshold_proposal: Proposal<u64, u64, u64, u64, u64> = Proposal {
+            parameters: ProposalParameters {
+                slashing_threshold_percentage: 63,
+                approval_threshold_percentage: 63,
+                ..ProposalParameters::default()
+            },
+            ..Proposal::default()
+        };
+        let no_approval_proposal_status_resolution = ProposalStatusResolution {
+            proposal: &no_approval_threshold_proposal,
+            now: 20,
+            votes_count: 500,
+            total_voters_count: 600,
+            approvals: 314,
+            slashes: 3,
+        };
+
+        assert!(!no_approval_proposal_status_resolution.is_approval_threshold_reached());
+
+        let approval_threshold_proposal_status_resolution = ProposalStatusResolution {
+            approvals: 315,
+            ..no_approval_proposal_status_resolution
+        };
+
+        assert!(approval_threshold_proposal_status_resolution.is_approval_threshold_reached());
+    }
+
+    #[test]
+    fn proposal_status_resolution_slashing_threshold_works_correctly() {
+        let no_slashing_threshold_proposal: Proposal<u64, u64, u64, u64, u64> = Proposal {
+            parameters: ProposalParameters {
+                slashing_threshold_percentage: 63,
+                approval_threshold_percentage: 63,
+                ..ProposalParameters::default()
+            },
+            ..Proposal::default()
+        };
+        let no_slashing_proposal_status_resolution = ProposalStatusResolution {
+            proposal: &no_slashing_threshold_proposal,
+            now: 20,
+            votes_count: 500,
+            total_voters_count: 600,
+            approvals: 3,
+            slashes: 314,
+        };
+
+        assert!(!no_slashing_proposal_status_resolution.is_slashing_threshold_reached());
+
+        let slashing_threshold_proposal_status_resolution = ProposalStatusResolution {
+            slashes: 315,
+            ..no_slashing_proposal_status_resolution
+        };
+
+        assert!(slashing_threshold_proposal_status_resolution.is_slashing_threshold_reached());
     }
 }

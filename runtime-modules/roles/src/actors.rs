@@ -8,10 +8,14 @@ use srml_support::traits::{
 use srml_support::{decl_event, decl_module, decl_storage, ensure};
 use system::{self, ensure_root, ensure_signed};
 
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
+
 pub use membership::members::Role;
 
 const STAKING_ID: LockIdentifier = *b"role_stk";
 
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Copy, Clone, Eq, PartialEq, Debug)]
 pub struct RoleParameters<Balance, BlockNumber> {
     // minium balance required to stake to enter a role

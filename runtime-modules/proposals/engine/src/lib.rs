@@ -1,18 +1,107 @@
-//! Proposals engine module for the Joystream platform. Version 2.
-//! Provides methods and extrinsics to create and vote for proposals,
-//! inspired by Parity **Democracy module**.
+//! # Proposals engine module
+//! Proposals `engine` module for the Joystream platform. Version 2.
+//! The main component of the proposals system. Provides methods and extrinsics to create and
+//! vote for proposals, inspired by Parity **Democracy module**.
 //!
-//! Supported extrinsics:
-//! - vote - registers a vote for the proposal
-//! - cancel_proposal - cancels the proposal (can be canceled only by owner)
-//! - veto_proposal - vetoes the proposal
+//! ## Overview
+//! Proposals `engine` module provides an abstract mechanism to work with proposals: creation, voting,
+//! execution, canceling, etc. Proposal execution demands serialized _Dispatchable_ proposal code.
+//! It could be any _Dispatchable_ + _Parameter_ type, but most likely, it would be serialized (via
+//! Parity _codec_ crate) extrisic call. A proposal stage can be described by its [status](./enum.ProposalStatus.html).
 //!
-//! Public API:
-//! - create_proposal - creates proposal using provided parameters
-//! - ensure_create_proposal_parameters_are_valid - ensures that we can create the proposal
-//! - refund_proposal_stake - a callback for StakingHandlerEvents
-//! - reset_active_proposals - resets voting results for active proposals
+//! ## Proposal lifecycle
+//! When a proposal passes [checks](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid)
+//! for its [parameters](./struct.ProposalParameters.html) - it can be [created](./struct.Module.html#method.create_proposal).
+//! The newly created proposal has _Active_ status. The proposal can be voted on or canceled during its
+//! _voting period_. Votes can be [different](./enum.VoteKind.html). When the proposal gets enough votes
+//! to be slashed or approved or _voting period_ ends - the proposal becomes _Finalized_. If the proposal
+//! got approved and _grace period_ passed - the  `engine` module tries to execute the proposal.
+//! The final [approved status](./enum.ApprovedProposalStatus.html) of the proposal defines
+//! an overall proposal outcome.
 //!
+//! ### Notes
+//!
+//! - The proposal can be [vetoed](./struct.Module.html#method.veto_proposal)
+//! anytime before the proposal execution by the _sudo_.
+//! - When the proposal is created with some stake - refunding on proposal finalization with
+//! different statuses should be accomplished from the external handler from the _stake module_
+//! (_StakingEventsHandler_). Such a handler should call
+//! [refund_proposal_stake](./struct.Module.html#method.refund_proposal_stake) callback function.
+//! - If the _council_ got reelected during the proposal _voting period_ the external handler calls
+//! [reset_active_proposals](./trait.Module.html#method.reset_active_proposals) function and
+//! all voting results get cleared.
+//!
+//! ### Important abstract types to be implemented
+//! Proposals `engine` module has several abstractions to be implemented in order to work correctly.
+//! - _VoterOriginValidator_ - ensure valid voter identity. Voters should have permissions to vote:
+//! they should be council members.
+//! - [VotersParameters](./trait.VotersParameters.html) - defines total voter number, which is
+//! the council size
+//! - _ProposerOriginValidator_ - ensure valid proposer identity. Proposers should have permissions
+//! to create a proposal: they should be members of the Joystream.
+//! - [StakeHandlerProvider](./trait.StakeHandlerProvider.html) - defines an interface for the staking.
+//!
+//! A full list of the abstractions can be found [here](./trait.Trait.html).
+//!
+//! ### Supported extrinsics
+//! - [vote](./struct.Module.html#method.vote) - registers a vote for the proposal
+//! - [cancel_proposal](./struct.Module.html#method.cancel_proposal) - cancels the proposal (can be canceled only by owner)
+//! - [veto_proposal](./struct.Module.html#method.veto_proposal) - vetoes the proposal
+//!
+//! ### Public API
+//! - [create_proposal](./struct.Module.html#method.create_proposal) - creates proposal using provided parameters
+//! - [ensure_create_proposal_parameters_are_valid](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid) - ensures that we can create the proposal
+//! - [refund_proposal_stake](./struct.Module.html#method.refund_proposal_stake) - a callback for _StakingHandlerEvents_
+//! - [reset_active_proposals](./trait.Module.html#method.reset_active_proposals) - resets voting results for active proposals
+//!
+//! ## Usage
+//!
+//! ```
+//! use srml_support::{decl_module, dispatch::Result, print};
+//! use system::ensure_signed;
+//! use codec::Encode;
+//! use substrate_proposals_engine_module::{self as engine, ProposalParameters};
+//!
+//! pub trait Trait: engine::Trait + membership::members::Trait {}
+//!
+//! decl_module! {
+//!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+//!         fn executable_proposal(origin) {
+//!             print("executed!");
+//!         }
+//!
+//!         pub fn create_spending_proposal(
+//!             origin,
+//!             proposer_id: T::MemberId,
+//!         ) -> Result {
+//!             let account_id = ensure_signed(origin)?;
+//!             let parameters = ProposalParameters::default();
+//!             let title = b"Spending proposal".to_vec();
+//!             let description = b"We need to spend some tokens to support the working group lead."
+//!                 .to_vec();
+//!             let encoded_proposal_code = <Call<T>>::executable_proposal().encode();
+//!
+//!             <engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
+//!                 &parameters,
+//!                 &title,
+//!                 &description,
+//!                 None
+//!             )?;
+//!             <engine::Module<T>>::create_proposal(
+//!                 account_id,
+//!                 proposer_id,
+//!                 parameters,
+//!                 title,
+//!                 description,
+//!                 None,
+//!                 encoded_proposal_code
+//!             )?;
+//!             Ok(())
+//!         }
+//!     }
+//! }
+//! # fn main() {}
+//! ```
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -128,6 +217,7 @@ decl_event!(
 );
 
 decl_error! {
+    /// Engine module predefined errors
     pub enum Error {
         /// Proposal cannot have an empty title"
         EmptyTitleProvided,
@@ -229,7 +319,7 @@ decl_module! {
         pub fn vote(origin, voter_id: MemberId<T>, proposal_id: T::ProposalId, vote: VoteKind)  {
             T::VoterOriginValidator::ensure_actor_origin(
                 origin,
-                voter_id.clone(),
+                voter_id,
             )?;
 
             ensure!(<Proposals<T>>::exists(proposal_id), Error::ProposalNotFound);
@@ -239,7 +329,7 @@ decl_module! {
 
             let did_not_vote_before = !<VoteExistsByProposalByVoter<T>>::exists(
                 proposal_id,
-                voter_id.clone(),
+                voter_id,
             );
 
             ensure!(did_not_vote_before, Error::AlreadyVoted);
@@ -249,7 +339,7 @@ decl_module! {
             // mutation
 
             <Proposals<T>>::insert(proposal_id, proposal);
-            <VoteExistsByProposalByVoter<T>>::insert( proposal_id, voter_id.clone(), vote.clone());
+            <VoteExistsByProposalByVoter<T>>::insert( proposal_id, voter_id, vote.clone());
             Self::deposit_event(RawEvent::Voted(voter_id, proposal_id, vote));
         }
 
@@ -257,7 +347,7 @@ decl_module! {
         pub fn cancel_proposal(origin, proposer_id: MemberId<T>, proposal_id: T::ProposalId) {
             T::ProposerOriginValidator::ensure_actor_origin(
                 origin,
-                proposer_id.clone(),
+                proposer_id,
             )?;
 
             ensure!(<Proposals<T>>::exists(proposal_id), Error::ProposalNotFound);
@@ -278,11 +368,14 @@ decl_module! {
             ensure!(<Proposals<T>>::exists(proposal_id), Error::ProposalNotFound);
             let proposal = Self::proposals(proposal_id);
 
-            ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::ProposalFinalized);
-
             // mutation
 
-            Self::finalize_proposal(proposal_id, ProposalDecisionStatus::Vetoed);
+            if <PendingExecutionProposalIds<T>>::exists(proposal_id) {
+                Self::veto_pending_execution_proposal(proposal_id, proposal);
+            } else {
+                ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::ProposalFinalized);
+                Self::finalize_proposal(proposal_id, ProposalDecisionStatus::Vetoed);
+            }
         }
 
         /// Block finalization. Perform voting period check, vote result tally, approved proposals
@@ -358,7 +451,7 @@ impl<T: Trait> Module<T> {
             parameters,
             title,
             description,
-            proposer_id: proposer_id.clone(),
+            proposer_id,
             status: ProposalStatus::Active(stake_data),
             voting_results: VotingResults::default(),
         };
@@ -464,11 +557,12 @@ impl<T: Trait> Module<T> {
     }
 
     /// Resets voting results for active proposals.
-    /// Possible application - after the new council elections.
+    /// Possible application includes new council elections.
     pub fn reset_active_proposals() {
         <ActiveProposalIds<T>>::enumerate().for_each(|(proposal_id, _)| {
             <Proposals<T>>::mutate(proposal_id, |proposal| {
                 proposal.reset_proposal();
+                <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
             });
         });
     }
@@ -506,6 +600,27 @@ impl<T: Trait> Module<T> {
                 })
             })
             .collect() // compose output vector
+    }
+
+    // Veto approved proposal during its grace period. Saves a new proposal status and removes
+    // proposal id from the 'PendingExecutionProposalIds'
+    fn veto_pending_execution_proposal(proposal_id: T::ProposalId, proposal: ProposalOf<T>) {
+        <PendingExecutionProposalIds<T>>::remove(proposal_id);
+
+        let vetoed_proposal_status = ProposalStatus::finalized(
+            ProposalDecisionStatus::Vetoed,
+            None,
+            None,
+            Self::current_block(),
+        );
+
+        <Proposals<T>>::insert(
+            proposal_id,
+            Proposal {
+                status: vetoed_proposal_status,
+                ..proposal
+            },
+        );
     }
 
     // Executes approved proposal code
@@ -548,7 +663,9 @@ impl<T: Trait> Module<T> {
     // - update proposal status fields (status, finalized_at)
     // - add to pending execution proposal cache if approved
     // - slash and unstake proposal stake if stake exists
+    // - decrease active proposal counter
     // - fire an event
+    // It prints an error message in case of an attempt to finalize the non-active proposal.
     fn finalize_proposal(proposal_id: T::ProposalId, decision_status: ProposalDecisionStatus) {
         Self::decrease_active_proposal_counter();
         <ActiveProposalIds<T>>::remove(&proposal_id.clone());
@@ -604,7 +721,8 @@ impl<T: Trait> Module<T> {
     }
 
     // Calculates required slash based on finalization ProposalDecisionStatus and proposal parameters.
-    fn calculate_slash_balance(
+    // Method visibility allows testing.
+    pub(crate) fn calculate_slash_balance(
         decision_status: &ProposalDecisionStatus,
         proposal_parameters: &ProposalParameters<T::BlockNumber, types::BalanceOf<T>>,
     ) -> types::BalanceOf<T> {

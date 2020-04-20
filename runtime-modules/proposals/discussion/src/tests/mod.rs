@@ -214,7 +214,7 @@ fn update_post_call_succeeds() {
 }
 
 #[test]
-fn update_post_call_failes_because_of_post_edition_limit() {
+fn update_post_call_fails_because_of_post_edition_limit() {
     initial_test_ext().execute_with(|| {
         let discussion_fixture = DiscussionFixture::default();
 
@@ -235,7 +235,7 @@ fn update_post_call_failes_because_of_post_edition_limit() {
 }
 
 #[test]
-fn update_post_call_failes_because_of_the_wrong_author() {
+fn update_post_call_fails_because_of_the_wrong_author() {
     initial_test_ext().execute_with(|| {
         let discussion_fixture = DiscussionFixture::default();
 
@@ -397,5 +397,21 @@ fn add_discussion_thread_fails_because_of_max_thread_by_same_author_in_a_row_lim
         }
 
         discussion_fixture.create_discussion_and_assert(Err(Error::MaxThreadInARowLimitExceeded));
+    });
+}
+
+#[test]
+fn discussion_thread_and_post_counters_are_valid() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let mut post_fixture1 = PostFixture::default_for_thread(thread_id);
+        let _ = post_fixture1.add_post_and_assert(Ok(())).unwrap();
+
+        assert_eq!(Discussions::thread_count(), 1);
+        assert_eq!(Discussions::post_count(), 1);
     });
 }

@@ -1,17 +1,20 @@
 #![cfg(test)]
-
-pub use system;
+// srml_staking_reward_curve::build! - substrate macro produces a warning.
+// TODO: remove after post-Rome substrate upgrade
+#![allow(array_into_iter)]
 
 pub use primitives::{Blake2Hasher, H256};
+use proposal_engine::VotersParameters;
+use sr_primitives::curve::PiecewiseLinear;
 pub use sr_primitives::{
     testing::{Digest, DigestItem, Header, UintAuthorityId},
     traits::{BlakeTwo256, Convert, IdentityLookup, OnFinalize},
     weights::Weight,
     BuildStorage, DispatchError, Perbill,
 };
-
-use proposal_engine::VotersParameters;
+use sr_staking_primitives::SessionIndex;
 use srml_support::{impl_outer_dispatch, impl_outer_origin, parameter_types};
+pub use system;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -120,8 +123,10 @@ impl governance::council::Trait for Test {
 }
 
 impl common::origin_validator::ActorOriginValidator<Origin, u64, u64> for () {
-    fn ensure_actor_origin(_: Origin, _: u64) -> Result<u64, &'static str> {
-        Ok(1)
+    fn ensure_actor_origin(origin: Origin, _: u64) -> Result<u64, &'static str> {
+        let account_id = system::ensure_signed(origin)?;
+
+        Ok(account_id)
     }
 }
 
@@ -185,6 +190,59 @@ impl hiring::Trait for Test {
     type ApplicationId = u64;
     type ApplicationDeactivatedHandler = ();
     type StakeHandlerProvider = hiring::Module<Self>;
+}
+
+impl roles::actors::Trait for Test {
+    type Event = ();
+    type OnActorRemoved = ();
+}
+
+impl roles::actors::ActorRemoved<Test> for () {
+    fn actor_removed(_: &u64) {}
+}
+
+srml_staking_reward_curve::build! {
+    const I_NPOS: PiecewiseLinear<'static> = curve!(
+        min_inflation: 0_025_000,
+        max_inflation: 0_100_000,
+        ideal_stake: 0_500_000,
+        falloff: 0_050_000,
+        max_piece_count: 40,
+        test_precision: 0_005_000,
+    );
+}
+
+parameter_types! {
+    pub const SessionsPerEra: SessionIndex = 3;
+    pub const BondingDuration: staking::EraIndex = 3;
+    pub const RewardCurve: &'static PiecewiseLinear<'static> = &I_NPOS;
+}
+impl staking::Trait for Test {
+    type Currency = balances::Module<Self>;
+    type Time = timestamp::Module<Self>;
+    type CurrencyToVote = ();
+    type RewardRemainder = ();
+    type Event = ();
+    type Slash = ();
+    type Reward = ();
+    type SessionsPerEra = SessionsPerEra;
+    type BondingDuration = BondingDuration;
+    type SessionInterface = Self;
+    type RewardCurve = RewardCurve;
+}
+
+impl staking::SessionInterface<u64> for Test {
+    fn disable_validator(_: &u64) -> Result<bool, ()> {
+        unimplemented!()
+    }
+
+    fn validators() -> Vec<u64> {
+        unimplemented!()
+    }
+
+    fn prune_historical_up_to(_: u32) {
+        unimplemented!()
+    }
 }
 
 impl crate::Trait for Test {

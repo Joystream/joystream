@@ -4912,7 +4912,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-membership-module"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "parity-scale-codec",
  "serde",
@@ -5108,8 +5108,11 @@ dependencies = [
  "serde",
  "sr-io",
  "sr-primitives",
+ "sr-staking-primitives",
  "sr-std",
  "srml-balances",
+ "srml-staking",
+ "srml-staking-reward-curve",
  "srml-support",
  "srml-system",
  "srml-timestamp",
@@ -5122,6 +5125,7 @@ dependencies = [
  "substrate-proposals-discussion-module",
  "substrate-proposals-engine-module",
  "substrate-recurring-reward-module",
+ "substrate-roles-module",
  "substrate-stake-module",
  "substrate-token-mint-module",
  "substrate-versioned-store",
@@ -5191,7 +5195,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-roles-module"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "parity-scale-codec",
  "serde",
