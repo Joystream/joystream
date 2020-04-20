@@ -28,7 +28,8 @@ const defaultValues:FormValues = {
   storageProviderStakingLimit: '',
 }
 
-type SetStorageRoleParamsFormProps = FormikProps<FormValues>;
+type FormAdditionalProps = {};
+type SetStorageRoleParamsFormProps = FormikProps<FormValues> & FormAdditionalProps;
 
 const SetStorageRoleParamsForm: React.FunctionComponent<SetStorageRoleParamsFormProps> = props => {
   const { handleChange, handleSubmit, isSubmitting, errors, touched } = props;
@@ -66,7 +67,7 @@ const SetStorageRoleParamsForm: React.FunctionComponent<SetStorageRoleParamsForm
   );
 }
 
-type OuterFormProps = DefaultOuterFormProps<SetStorageRoleParamsFormProps, FormValues>;
+type OuterFormProps = DefaultOuterFormProps<FormAdditionalProps, FormValues>;
 
 export default withFormContainer<OuterFormProps, FormValues>({
   mapPropsToValues: (props:OuterFormProps) => ({

@@ -4,7 +4,7 @@ import { Form, Dropdown, Label } from "semantic-ui-react";
 import { getFormErrorLabelsProps } from "./errorHandling";
 import * as Yup from "yup";
 import LabelWithHelp from './LabelWithHelp';
-import { GenericProposalForm, GenericFormValues, genericFormDefaultOptions } from './GenericProposalForm';
+import { GenericProposalForm, GenericFormValues, genericFormDefaultOptions, DefaultOuterFormProps } from './GenericProposalForm';
 
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
@@ -13,9 +13,8 @@ type FormValues = GenericFormValues & {
   workingGroupLead: any;
 }
 
-type SetContentWorkingGroupsLeadFormProps = FormikProps<FormValues> & {
-  members: any[];
-};
+type FromAdditionalProps = { members: any[] };
+type SetContentWorkingGroupsLeadFormProps = FormikProps<FormValues> & FromAdditionalProps;
 
 const SetContentWorkingGroupsLeadForm: React.FunctionComponent<SetContentWorkingGroupsLeadFormProps> = props => {
   const { handleChange, members, errors, isSubmitting, touched, handleSubmit } = props;
@@ -42,11 +41,7 @@ const SetContentWorkingGroupsLeadForm: React.FunctionComponent<SetContentWorking
   );
 }
 
-type OuterFormProps = {
-  initialTitle?: FormValues["title"],
-  initialRationale?: FormValues["rationale"],
-  initialWorkingGroupLead?: FormValues["workingGroupLead"]
-} & SetContentWorkingGroupsLeadFormProps;
+type OuterFormProps = DefaultOuterFormProps<FromAdditionalProps, FormValues>;
 
 export default withFormContainer<OuterFormProps, FormValues>({
   mapPropsToValues: (props: OuterFormProps) => ({
