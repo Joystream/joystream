@@ -17,8 +17,9 @@
     "noUnusedLocals": false, // Avoid noise in our resolvers when we use DI
     "strict": true,
     "strictNullChecks": true,
-    "types": ["isomorphic-fetch", "node"]
+    "types": ["isomorphic-fetch", "node"],
+    "typeRoots": ["./node_modules/@types"]
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "cli.ts"],
   "exclude": ["node_modules/**/*", "generated/**/*", "tools/**/*"]
 }
