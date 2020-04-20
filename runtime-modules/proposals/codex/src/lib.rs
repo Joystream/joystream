@@ -16,7 +16,6 @@
 //! - [create_text_proposal](./struct.Module.html#method.create_text_proposal)
 //! - [create_runtime_upgrade_proposal](./struct.Module.html#method.create_runtime_upgrade_proposal)
 //! - [create_set_election_parameters_proposal](./struct.Module.html#method.create_set_election_parameters_proposal)
-//! - [create_set_council_mint_capacity_proposal](./struct.Module.html#method.create_set_council_mint_capacity_proposal)
 //! - [create_set_content_working_group_mint_capacity_proposal](./struct.Module.html#method.create_set_content_working_group_mint_capacity_proposal)
 //! - [create_spending_proposal](./struct.Module.html#method.create_spending_proposal)
 //! - [create_set_lead_proposal](./struct.Module.html#method.create_set_lead_proposal)
@@ -200,9 +199,6 @@ decl_error! {
         /// Invalid working group mint capacity parameter
         InvalidStorageWorkingGroupMintCapacity,
 
-        /// Invalid council mint capacity parameter
-        InvalidStorageCouncilMintCapacity,
-
         /// Invalid 'set lead proposal' parameter - proposed lead cannot be a councilor
         InvalidSetLeadParameterCannotBeCouncilor
     }
@@ -354,47 +350,6 @@ decl_module! {
                 proposal_code.encode(),
                 proposal_parameters,
                 ProposalDetails::SetElectionParameters(election_parameters),
-            )?;
-        }
-
-        /// Create 'Set council mint capacity' proposal type. This proposal uses `set_mint_capacity()`
-        /// extrinsic from the `governance::council` module.
-        pub fn create_set_council_mint_capacity_proposal(
-            origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
-            mint_balance: BalanceOfMint<T>,
-        ) {
-
-            let max_mint_capacity: u32 = get_required_stake_by_fraction::<T>(
-                COUNCIL_MINT_MAX_BALANCE_PERCENT,
-                100
-            )
-            .try_into()
-            .unwrap_or_default() as u32;
-
-            ensure!(
-                mint_balance < <BalanceOfMint<T>>::from(max_mint_capacity),
-                Error::InvalidStorageCouncilMintCapacity
-            );
-
-            let proposal_code =
-                <governance::council::Call<T>>::set_council_mint_capacity(mint_balance.clone());
-
-            let proposal_parameters =
-                proposal_types::parameters::set_council_mint_capacity_proposal::<T>();
-
-            Self::create_proposal(
-                origin,
-                member_id,
-                title,
-                description,
-                stake_balance,
-                proposal_code.encode(),
-                proposal_parameters,
-                ProposalDetails::SetCouncilMintCapacity(mint_balance),
             )?;
         }
 

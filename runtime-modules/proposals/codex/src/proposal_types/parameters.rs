@@ -55,20 +55,6 @@ pub(crate) fn set_election_parameters_proposal<T: crate::Trait>(
     }
 }
 
-// Proposal parameters for the 'Set council mint capacity' proposal
-pub(crate) fn set_council_mint_capacity_proposal<T: crate::Trait>(
-) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
-    ProposalParameters {
-        voting_period: T::BlockNumber::from(43200u32),
-        grace_period: T::BlockNumber::from(0u32),
-        approval_quorum_percentage: 66,
-        approval_threshold_percentage: 80,
-        slashing_quorum_percentage: 50,
-        slashing_threshold_percentage: 50,
-        required_stake: Some(get_required_stake_by_fraction::<T>(25, 10000)),
-    }
-}
-
 // Proposal parameters for the 'Set content working group mint capacity' proposal
 pub(crate) fn set_content_working_group_mint_capacity_proposal<T: crate::Trait>(
 ) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {

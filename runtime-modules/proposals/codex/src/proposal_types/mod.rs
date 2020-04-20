@@ -27,9 +27,6 @@ pub enum ProposalDetails<MintedBalance, CurrencyBalance, BlockNumber, AccountId,
     /// New leader memberId and account_id for the `set lead` proposal
     SetLead(Option<(MemberId, AccountId)>),
 
-    /// Balance for the `set council mint capacity` proposal
-    SetCouncilMintCapacity(MintedBalance),
-
     /// Balance for the `set content working group mint capacity` proposal
     SetContentWorkingGroupMintCapacity(MintedBalance),
 
