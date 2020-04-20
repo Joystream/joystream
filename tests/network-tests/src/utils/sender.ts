@@ -37,6 +37,7 @@ export class Sender {
   ): Promise<void> {
     return new Promise(async (resolve, reject) => {
       const nonce: BN = await this.getNonce(account.address);
+      // console.log('sending transaction from ' + account.address + ' with nonce ' + nonce);
       const signedTx = tx.sign(account, { nonce });
       await signedTx
         .send(async result => {
@@ -53,6 +54,7 @@ export class Sender {
             resolve();
           }
           if (result.status.isFuture) {
+            console.log('nonce ' + nonce + ' for account ' + account.address + ' is in future');
             this.clearNonce(account.address);
             reject(new Error('Extrinsic nonce is in future'));
           }

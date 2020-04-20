@@ -1,10 +1,10 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { Option, Vec, UInt } from '@polkadot/types';
+import { Option, Vec, Bytes } from '@polkadot/types';
 import { Codec } from '@polkadot/types/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { UserInfo, PaidMembershipTerms } from '@joystream/types/lib/members';
-import { Seat } from '@joystream/types';
-import { Balance } from '@polkadot/types/interfaces';
+import { Seat, VoteKind } from '@joystream/types';
+import { Balance, EventRecord } from '@polkadot/types/interfaces';
 import BN = require('bn.js');
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { Sender } from './sender';
@@ -99,6 +99,14 @@ export class ApiWrapper {
     return this.estimateTxFee(this.api.tx.councilElection.reveal(hashedVote, nominee, salt));
   }
 
+  public estimateProposeRuntimeUpgradeFee(stake: BN, name: string, description: string, runtime: Bytes): BN {
+    return this.estimateTxFee(this.api.tx.proposals.createProposal(stake, name, description, runtime));
+  }
+
+  public estimateVoteForProposalFee(): BN {
+    return this.estimateTxFee(this.api.tx.proposals.voteOnProposal(0, 'Approve'));
+  }
+
   private applyForCouncilElection(account: KeyringPair, amount: BN): Promise<void> {
     return this.sender.signAndSend(this.api.tx.councilElection.apply(amount), account, false);
   }
@@ -181,12 +189,69 @@ export class ApiWrapper {
 
   public getCouncil(): Promise<Seat[]> {
     return this.api.query.council.activeCouncil<Vec<Codec>>().then(seats => {
-      console.log('elected council ' + seats.toString());
       return JSON.parse(seats.toString());
     });
   }
 
+  public getRuntime(): Promise<Bytes> {
+    return this.api.query.substrate.code<Bytes>();
+  }
+
+  public proposeRuntime(
+    account: KeyringPair,
+    stake: BN,
+    name: string,
+    description: string,
+    runtime: Bytes
+  ): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx.proposals.createProposal(stake, name, description, runtime),
+      account,
+      false
+    );
+  }
+
+  public approveProposal(account: KeyringPair, proposal: BN): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx.proposals.voteOnProposal(proposal, new VoteKind('Approve')),
+      account,
+      false
+    );
+  }
+
+  public batchApproveProposal(council: KeyringPair[], proposal: BN): Promise<void[]> {
+    return Promise.all(
+      council.map(async keyPair => {
+        await this.approveProposal(keyPair, proposal);
+      })
+    );
+  }
+
   public getBlockDuration(): BN {
     return this.api.createType('Moment', this.api.consts.babe.expectedBlockTime).toBn();
+  }
+
+  public expectProposalCreated(): Promise<BN> {
+    return new Promise(async resolve => {
+      await this.api.query.system.events<Vec<EventRecord>>(events => {
+        events.forEach(record => {
+          if (record.event.method.toString() === 'ProposalCreated') {
+            resolve(new BN(record.event.data[1].toString()));
+          }
+        });
+      });
+    });
+  }
+
+  public expectRuntimeUpgraded(): Promise<void> {
+    return new Promise(async resolve => {
+      await this.api.query.system.events<Vec<EventRecord>>(events => {
+        events.forEach(record => {
+          if (record.event.method.toString() === 'RuntimeUpdated') {
+            resolve();
+          }
+        });
+      });
+    });
   }
 }
