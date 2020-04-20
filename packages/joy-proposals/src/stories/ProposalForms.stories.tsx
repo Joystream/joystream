@@ -5,7 +5,8 @@ import {
   EvictStorageProviderForm,
   SpendingProposalForm,
   MintCapacityForm,
-  SetCouncilParamsForm
+  SetCouncilParamsForm,
+  SetContentWorkingGroupLeadForm
 } from "../forms";
 
 export default {
@@ -21,6 +22,8 @@ export const SpendingProposal = () => <SpendingProposalForm destinationAccounts=
 export const MintCapacity = () => <MintCapacityForm />;
 
 export const SetCouncilParams = () => <SetCouncilParamsForm />;
+
+export const SetContentWorkingGroupLead = () => <SetContentWorkingGroupLeadForm members={members} />;
 
 var storageProvidersData = [
   {
@@ -60,6 +63,8 @@ var storageProvidersData = [
     image: { avatar: true, src: "https://react.semantic-ui.com/images/avatar/small/steve.jpg" }
   }
 ];
+
+const members = [...storageProvidersData];
 
 const destinationAccounts = [
   {
