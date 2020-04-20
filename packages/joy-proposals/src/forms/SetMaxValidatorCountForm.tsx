@@ -22,7 +22,8 @@ const defaultValues: FormValues = {
   maxValidatorCount: ''
 }
 
-type SetMaxValidatorCountFormProps = FormikProps<FormValues>;
+type FromAdditionalProps = {};
+type SetMaxValidatorCountFormProps = FormikProps<FormValues> & FromAdditionalProps;
 
 const SetMaxValidatorCountForm: React.FunctionComponent<SetMaxValidatorCountFormProps> = props => {
   const { handleChange, errors, isSubmitting, touched, handleSubmit } = props;
@@ -42,7 +43,7 @@ const SetMaxValidatorCountForm: React.FunctionComponent<SetMaxValidatorCountForm
   );
 }
 
-type OuterFormProps = DefaultOuterFormProps<SetMaxValidatorCountFormProps, FormValues>;
+type OuterFormProps = DefaultOuterFormProps<FromAdditionalProps, FormValues>;
 
 export default withFormContainer<OuterFormProps, FormValues>({
   mapPropsToValues: (props:OuterFormProps) => ({
