@@ -14,18 +14,18 @@ import FormField from './FormField';
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
 
-// TODO: All of those should actually be strings? More research required
+// All of those are strings, because that's how those values are beeing passed from inputs
 type FormValues = GenericFormValues & {
-  storageProviderCount: number | '',
-  storageProviderReward: number | '',
-  storageProviderStakingLimit: number | '',
+  storageProviderCount: string,
+  storageProviderReward: string,
+  storageProviderStakingLimit: string,
 };
 
 const defaultValues:FormValues = {
   ...genericFormDefaultValues,
-  storageProviderCount: '' as '',
-  storageProviderReward: '' as '',
-  storageProviderStakingLimit: '' as '',
+  storageProviderCount: '',
+  storageProviderReward: '',
+  storageProviderStakingLimit: '',
 }
 
 type SetStorageRoleParamsFormProps = FormikProps<FormValues>;
