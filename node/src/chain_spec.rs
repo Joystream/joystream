@@ -19,8 +19,8 @@ use node_runtime::{
     AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
     CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
     DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, IndicesConfig,
-    MembersConfig, Perbill, ProposalsConfig, SessionConfig, SessionKeys, Signature, StakerStatus,
-    StakingConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
+    MembersConfig, Perbill, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
+    SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
 };
 pub use node_runtime::{AccountId, GenesisConfig};
 use primitives::{sr25519, Pair, Public};
@@ -245,16 +245,6 @@ pub fn testnet_genesis(
                 new_term_duration: 14 * DAYS,
                 min_voting_stake: 1 * DOLLARS,
             },
-        }),
-        proposals: Some(ProposalsConfig {
-            approval_quorum: 66,
-            min_stake: 2 * DOLLARS,
-            cancellation_fee: 10 * CENTS,
-            rejection_fee: 1 * DOLLARS,
-            voting_period: 2 * DAYS,
-            name_max_len: 512,
-            description_max_len: 10_000,
-            wasm_code_max_len: 2_000_000,
         }),
         members: Some(MembersConfig {
             default_paid_membership_fee: 100u128,
