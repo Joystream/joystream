@@ -7,6 +7,7 @@ import {
   SetCouncilParamsForm,
   SetContentWorkingGroupLeadForm,
   SetStorageRoleParamsForm,
+  RuntimeUpgradeForm,
   SetContentWorkingGroupMintCapForm,
   SetCouncilMintCapForm
 } from "../forms";
@@ -26,6 +27,8 @@ export const SetCouncilParams = () => <SetCouncilParamsForm />;
 export const SetContentWorkingGroupLead = () => <SetContentWorkingGroupLeadForm members={members} />;
 
 export const SetStorageRoleParams = () => <SetStorageRoleParamsForm />;
+
+export const RuntimeUpgrade = () => <RuntimeUpgradeForm />;
 
 export const ContentWorkingGroupMintCap = () => <SetContentWorkingGroupMintCapForm />;
 
