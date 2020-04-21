@@ -519,8 +519,8 @@ fn create_podcast_class_schema() {
 }
 
 struct PropHelper<T: Trait> {
-    prop_idx: u16,
-    property_values: BTreeMap<u16, PropertyValue<T>>,
+    prop_idx: PropertyId,
+    property_values: BTreeMap<PropertyId, PropertyValue<T>>,
 }
 
 impl<T: Trait> PropHelper<T> {

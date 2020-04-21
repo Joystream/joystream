@@ -153,6 +153,9 @@ impl InputValidationLengthConstraint {
 
 pub type ClassId = u64;
 pub type EntityId = u64;
+pub type PropertyId = u16;
+pub type VecMaxLength = u16;
+pub type TextMaxLength = u16;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
@@ -223,8 +226,12 @@ impl<T: Trait> Class<T> {
     }
 }
 
-pub type ClassPermissionsType<T> =
-    ClassPermissions<ClassId, <T as Trait>::Credential, u16, <T as system::Trait>::BlockNumber>;
+pub type ClassPermissionsType<T> = ClassPermissions<
+    ClassId,
+    <T as Trait>::Credential,
+    PropertyId,
+    <T as system::Trait>::BlockNumber,
+>;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -239,8 +246,8 @@ pub struct Entity<T: Trait> {
 
     /// Values for properties on class that are used by some schema used by this entity!
     /// Length is no more than Class.properties.
-    pub values: BTreeMap<u16, PropertyValue<T>>, // Map, representing relation between entity vec_values index and nonce, where vec_value was updated
-                                                 // pub deleted: bool
+    pub values: BTreeMap<PropertyId, PropertyValue<T>>,
+    // pub deleted: bool
 }
 
 impl<T: Trait> Default for Entity<T> {
@@ -257,7 +264,7 @@ impl<T: Trait> Entity<T> {
     fn new(
         class_id: ClassId,
         supported_schemas: BTreeSet<u16>,
-        values: BTreeMap<u16, PropertyValue<T>>,
+        values: BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> Self {
         Self {
             class_id,
@@ -272,7 +279,7 @@ impl<T: Trait> Entity<T> {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct Schema {
     /// Indices into properties vector for the corresponding class.
-    pub properties: Vec<u16>,
+    pub properties: Vec<PropertyId>,
     pub is_active: bool,
 }
 
@@ -287,7 +294,7 @@ impl Default for Schema {
 }
 
 impl Schema {
-    fn new(properties: Vec<u16>) -> Self {
+    fn new(properties: Vec<PropertyId>) -> Self {
         Self {
             properties,
             // Default schema status
@@ -316,27 +323,27 @@ pub enum PropertyType {
     Int16,
     Int32,
     Int64,
-    Text(u16),
+    Text(TextMaxLength),
     Reference(ClassId),
 
     // Vector of values.
-    // The first u16 value is the max length of this vector.
-    BoolVec(u16),
-    Uint16Vec(u16),
-    Uint32Vec(u16),
-    Uint64Vec(u16),
-    Int16Vec(u16),
-    Int32Vec(u16),
-    Int64Vec(u16),
+    // The first value is the max length of this vector.
+    BoolVec(VecMaxLength),
+    Uint16Vec(VecMaxLength),
+    Uint32Vec(VecMaxLength),
+    Uint64Vec(VecMaxLength),
+    Int16Vec(VecMaxLength),
+    Int32Vec(VecMaxLength),
+    Int64Vec(VecMaxLength),
 
-    /// The first u16 value is the max length of this vector.
-    /// The second u16 value is the max length of every text item in this vector.
-    TextVec(u16, u16),
+    /// The first value is the max length of this vector.
+    /// The second value is the max length of every text item in this vector.
+    TextVec(VecMaxLength, TextMaxLength),
 
-    /// The first u16 value is the max length of this vector.
+    /// The first value is the max length of this vector.
     /// The second ClassId value tells that an every element of this vector
     /// should be of a specific ClassId.
-    ReferenceVec(u16, ClassId),
+    ReferenceVec(VecMaxLength, ClassId),
     // External(ExternalProperty),
     // ExternalVec(u16, ExternalProperty),
 }
@@ -361,7 +368,7 @@ pub enum PropertyValue<T: Trait> {
     Text(Vec<u8>),
     Reference(EntityId),
 
-    // Vector of values, nonce used to avoid race update conditions:
+    // Vector of values, second value - nonce used to avoid race update conditions:
     BoolVec(Vec<bool>, T::Nonce),
     Uint16Vec(Vec<u16>, T::Nonce),
     Uint32Vec(Vec<u32>, T::Nonce),
@@ -466,8 +473,8 @@ impl<T: Trait> PropertyValue<T> {
         self.try_increment_nonce();
     }
 
-    fn vec_remove_at(&mut self, index_in_property_vec: u32) {
-        fn remove_at_checked<T>(vec: &mut Vec<T>, index_in_property_vec: u32) {
+    fn vec_remove_at(&mut self, index_in_property_vec: VecMaxLength) {
+        fn remove_at_checked<T>(vec: &mut Vec<T>, index_in_property_vec: VecMaxLength) {
             if (index_in_property_vec as usize) < vec.len() {
                 vec.remove(index_in_property_vec as usize);
             }
@@ -488,8 +495,8 @@ impl<T: Trait> PropertyValue<T> {
         self.try_increment_nonce();
     }
 
-    fn vec_insert_at(&mut self, index_in_property_vec: u32, property_value: Self) {
-        fn insert_at<T>(vec: &mut Vec<T>, index_in_property_vec: u32, value: T) {
+    fn vec_insert_at(&mut self, index_in_property_vec: VecMaxLength, property_value: Self) {
+        fn insert_at<T>(vec: &mut Vec<T>, index_in_property_vec: VecMaxLength, value: T) {
             if (index_in_property_vec as usize) < vec.len() {
                 vec.insert(index_in_property_vec as usize, value);
             }
@@ -686,7 +693,7 @@ decl_module! {
             origin,
             with_credential: Option<T::Credential>,
             class_id: ClassId,
-            constraint: ReferenceConstraint<ClassId, u16>
+            constraint: ReferenceConstraint<ClassId, PropertyId>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
 
@@ -761,7 +768,7 @@ decl_module! {
             origin,
             with_credential: Option<T::Credential>,
             class_id: ClassId,
-            existing_properties: Vec<u16>,
+            existing_properties: Vec<PropertyId>,
             new_properties: Vec<Property>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
@@ -827,7 +834,7 @@ decl_module! {
             as_entity_maintainer: bool,
             entity_id: EntityId,
             schema_id: u16, // Do not type alias u16!! - u16,
-            property_values: BTreeMap<u16, PropertyValue<T>>
+            property_values: BTreeMap<PropertyId, PropertyValue<T>>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
             Self::do_add_schema_support_to_entity(&raw_origin, with_credential, as_entity_maintainer, entity_id, schema_id, property_values)
@@ -838,7 +845,7 @@ decl_module! {
             with_credential: Option<T::Credential>,
             as_entity_maintainer: bool,
             entity_id: EntityId,
-            property_values: BTreeMap<u16, PropertyValue<T>>
+            property_values: BTreeMap<PropertyId, PropertyValue<T>>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
             Self::do_update_entity_property_values(&raw_origin, with_credential, as_entity_maintainer, entity_id, property_values)
@@ -849,7 +856,7 @@ decl_module! {
             with_credential: Option<T::Credential>,
             as_entity_maintainer: bool,
             entity_id: EntityId,
-            in_class_schema_property_id: u16
+            in_class_schema_property_id: PropertyId
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
             Self::do_clear_entity_property_vector(&raw_origin, with_credential, as_entity_maintainer, entity_id, in_class_schema_property_id)
@@ -860,8 +867,8 @@ decl_module! {
             with_credential: Option<T::Credential>,
             as_entity_maintainer: bool,
             entity_id: EntityId,
-            in_class_schema_property_id: u16,
-            index_in_property_vec: u32,
+            in_class_schema_property_id: PropertyId,
+            index_in_property_vec: VecMaxLength,
             nonce: T::Nonce
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
@@ -873,8 +880,8 @@ decl_module! {
             with_credential: Option<T::Credential>,
             as_entity_maintainer: bool,
             entity_id: EntityId,
-            in_class_schema_property_id: u16,
-            index_in_property_vec: u32,
+            in_class_schema_property_id: PropertyId,
+            index_in_property_vec: VecMaxLength,
             property_value: PropertyValue<T>,
             nonce: T::Nonce
         ) -> dispatch::Result {
@@ -996,7 +1003,7 @@ impl<T: Trait> Module<T> {
         with_credential: Option<T::Credential>,
         as_entity_maintainer: bool,
         entity_id: EntityId,
-        property_values: BTreeMap<u16, PropertyValue<T>>,
+        property_values: BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
 
@@ -1025,7 +1032,7 @@ impl<T: Trait> Module<T> {
         with_credential: Option<T::Credential>,
         as_entity_maintainer: bool,
         entity_id: EntityId,
-        in_class_schema_property_id: u16,
+        in_class_schema_property_id: PropertyId,
     ) -> dispatch::Result {
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
 
@@ -1055,8 +1062,8 @@ impl<T: Trait> Module<T> {
         with_credential: Option<T::Credential>,
         as_entity_maintainer: bool,
         entity_id: EntityId,
-        in_class_schema_property_id: u16,
-        index_in_property_vec: u32,
+        in_class_schema_property_id: PropertyId,
+        index_in_property_vec: VecMaxLength,
         nonce: T::Nonce,
     ) -> dispatch::Result {
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
@@ -1089,8 +1096,8 @@ impl<T: Trait> Module<T> {
         with_credential: Option<T::Credential>,
         as_entity_maintainer: bool,
         entity_id: EntityId,
-        in_class_schema_property_id: u16,
-        index_in_property_vec: u32,
+        in_class_schema_property_id: PropertyId,
+        index_in_property_vec: VecMaxLength,
         property_value: PropertyValue<T>,
         nonce: T::Nonce,
     ) -> dispatch::Result {
@@ -1135,7 +1142,7 @@ impl<T: Trait> Module<T> {
 
     pub fn complete_entity_property_values_update(
         entity_id: EntityId,
-        new_property_values: BTreeMap<u16, PropertyValue<T>>,
+        new_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
         Self::ensure_known_entity_id(entity_id)?;
 
@@ -1181,7 +1188,7 @@ impl<T: Trait> Module<T> {
 
     fn complete_entity_property_vector_cleaning(
         entity_id: EntityId,
-        in_class_schema_property_id: u16,
+        in_class_schema_property_id: PropertyId,
     ) -> dispatch::Result {
         Self::ensure_known_entity_id(entity_id)?;
         let entity = Self::entity_by_id(entity_id);
@@ -1211,8 +1218,8 @@ impl<T: Trait> Module<T> {
 
     fn complete_remove_at_entity_property_vector(
         entity_id: EntityId,
-        in_class_schema_property_id: u16,
-        index_in_property_vec: u32,
+        in_class_schema_property_id: PropertyId,
+        index_in_property_vec: VecMaxLength,
         nonce: T::Nonce,
     ) -> dispatch::Result {
         Self::ensure_known_entity_id(entity_id)?;
@@ -1244,8 +1251,8 @@ impl<T: Trait> Module<T> {
 
     fn complete_insert_at_entity_property_vector(
         entity_id: EntityId,
-        in_class_schema_property_id: u16,
-        index_in_property_vec: u32,
+        in_class_schema_property_id: PropertyId,
+        index_in_property_vec: VecMaxLength,
         property_value: PropertyValue<T>,
         nonce: T::Nonce,
     ) -> dispatch::Result {
@@ -1295,7 +1302,7 @@ impl<T: Trait> Module<T> {
         as_entity_maintainer: bool,
         entity_id: EntityId,
         schema_id: u16,
-        property_values: BTreeMap<u16, PropertyValue<T>>,
+        property_values: BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
         // class id of the entity being updated
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
@@ -1448,7 +1455,7 @@ impl<T: Trait> Module<T> {
     // the target entity and class exists and constraint allows it.
     fn ensure_internal_property_values_permitted(
         source_class_id: ClassId,
-        property_values: &BTreeMap<u16, PropertyValue<T>>,
+        property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
         for (in_class_index, property_value) in property_values.iter() {
             if let PropertyValue::Reference(ref target_entity_id) = property_value {
@@ -1497,7 +1504,7 @@ impl<T: Trait> Module<T> {
     /// Returns an index of a newly added class schema on success.
     pub fn append_class_schema(
         class_id: ClassId,
-        existing_properties: Vec<u16>,
+        existing_properties: Vec<PropertyId>,
         new_properties: Vec<Property>,
     ) -> Result<u16, &'static str> {
         Self::ensure_known_class_id(class_id)?;
@@ -1531,7 +1538,7 @@ impl<T: Trait> Module<T> {
         // Check that existing props are valid indices of class properties vector:
         let has_unknown_props = existing_properties
             .iter()
-            .any(|&prop_id| prop_id >= class.properties.len() as u16);
+            .any(|&prop_id| prop_id >= class.properties.len() as PropertyId);
         ensure!(
             !has_unknown_props,
             ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
@@ -1571,7 +1578,7 @@ impl<T: Trait> Module<T> {
     pub fn add_entity_schema_support(
         entity_id: EntityId,
         schema_id: u16,
-        property_values: BTreeMap<u16, PropertyValue<T>>,
+        property_values: BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
         Self::ensure_known_entity_id(entity_id)?;
 
@@ -1702,9 +1709,9 @@ impl<T: Trait> Module<T> {
 
     pub fn ensure_index_in_property_vector_is_valid(
         value: &PropertyValue<T>,
-        index_in_property_vec: u32,
+        index_in_property_vec: VecMaxLength,
     ) -> dispatch::Result {
-        fn is_valid_index<T>(vec: &[T], index_in_property_vec: u32) -> bool {
+        fn is_valid_index<T>(vec: &[T], index_in_property_vec: VecMaxLength) -> bool {
             (index_in_property_vec as usize) < vec.len()
         }
 
@@ -1756,12 +1763,12 @@ impl<T: Trait> Module<T> {
     pub fn ensure_prop_value_can_be_inserted_at_prop_vec(
         value: &PropertyValue<T>,
         entity_prop_value: &PropertyValue<T>,
-        index_in_property_vec: u32,
+        index_in_property_vec: VecMaxLength,
         prop: &Property,
     ) -> dispatch::Result {
         Self::ensure_index_in_property_vector_is_valid(entity_prop_value, index_in_property_vec)?;
 
-        fn validate_prop_vec_len_after_value_insert<T>(vec: &[T], max_len: u16) -> bool {
+        fn validate_prop_vec_len_after_value_insert<T>(vec: &[T], max_len: VecMaxLength) -> bool {
             vec.len() < max_len as usize
         }
 
@@ -1831,7 +1838,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    pub fn validate_max_len_of_text(text: &[u8], max_len: u16) -> dispatch::Result {
+    pub fn validate_max_len_of_text(text: &[u8], max_len: TextMaxLength) -> dispatch::Result {
         if text.len() <= max_len as usize {
             Ok(())
         } else {
@@ -1843,7 +1850,7 @@ impl<T: Trait> Module<T> {
         value: &PropertyValue<T>,
         prop: &Property,
     ) -> dispatch::Result {
-        fn validate_vec_len<T>(vec: &[T], max_len: u16) -> bool {
+        fn validate_vec_len<T>(vec: &[T], max_len: VecMaxLength) -> bool {
             vec.len() <= max_len as usize
         }
 
