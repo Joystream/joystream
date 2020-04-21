@@ -9,7 +9,8 @@ import {
   SetStorageRoleParamsForm,
   RuntimeUpgradeForm,
   SetContentWorkingGroupMintCapForm,
-  SetCouncilMintCapForm
+  SetCouncilMintCapForm,
+  SetMaxValidatorCountForm
 } from "../forms";
 
 export default {
@@ -33,6 +34,8 @@ export const RuntimeUpgrade = () => <RuntimeUpgradeForm />;
 export const ContentWorkingGroupMintCap = () => <SetContentWorkingGroupMintCapForm />;
 
 export const CouncilMintCap = () => <SetCouncilMintCapForm />;
+
+export const SetMaxValidatorCount = () => <SetMaxValidatorCountForm />;
 
 var storageProvidersData = [
   {
