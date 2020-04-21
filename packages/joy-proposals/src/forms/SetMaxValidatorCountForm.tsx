@@ -9,7 +9,7 @@ import {
   DefaultOuterFormProps,
   genericFormDefaultValues
 } from './GenericProposalForm';
-import FormField from './FormField';
+import { InputFormField } from './FormFields';
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
 
@@ -26,18 +26,18 @@ type FromAdditionalProps = {};
 type SetMaxValidatorCountFormProps = FormikProps<FormValues> & FromAdditionalProps;
 
 const SetMaxValidatorCountForm: React.FunctionComponent<SetMaxValidatorCountFormProps> = props => {
-  const { handleChange, errors, isSubmitting, touched, handleSubmit } = props;
-  const passProps = { handleChange, errors, isSubmitting, touched, handleSubmit };
+  const { handleChange, errors, touched, values } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
-    <GenericProposalForm {...passProps}>
-      <FormField
+    <GenericProposalForm {...props}>
+      <InputFormField
         error={errorLabelsProps.maxValidatorCount}
         label="Max Validator Count"
         help="The new value for maximum number of Validators that you propose"
         onChange={handleChange}
         name="maxValidatorCount"
         placeholder="20"
+        value={values.maxValidatorCount}
         />
     </GenericProposalForm>
   );

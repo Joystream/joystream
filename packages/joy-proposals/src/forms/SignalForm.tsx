@@ -1,89 +1,58 @@
 import React from "react";
 import { FormikProps } from "formik";
-import { Form, Icon, Button } from "semantic-ui-react";
 import { getFormErrorLabelsProps } from "./errorHandling";
 import * as Yup from "yup";
-import LabelWithHelp from './LabelWithHelp';
-
+import {
+  GenericProposalForm,
+  GenericFormValues,
+  genericFormDefaultOptions,
+  DefaultOuterFormProps,
+  genericFormDefaultValues
+} from './GenericProposalForm';
+import { TextareaFormField } from './FormFields';
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
 
-type SignalFormProps = {};
+type FormValues = GenericFormValues & {
+  description: string
+};
 
-interface FormValues {
-  title: string;
-  rationale: string;
-  description: string;
+const defaultValues:FormValues = {
+  ...genericFormDefaultValues,
+  description: ''
 }
 
-function SignalForm(props: SignalFormProps & FormikProps<FormValues>) {
-  const { handleChange, errors, touched, isSubmitting, handleSubmit } = props;
+type FormAdditionalProps = {};
+type SingalFormProps = FormikProps<FormValues> & FormAdditionalProps;
+
+const SignalForm: React.FunctionComponent<SingalFormProps> = props => {
+  const { handleChange, errors, touched } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
-    <div className="Forms">
-      <Form className="proposal-form" onSubmit={handleSubmit}>
-        <Form.Field error={ Boolean(errorLabelsProps.title) } >
-          <LabelWithHelp text="Title" help="The title of your proposal"/>
-          <Form.Input
-            name="title"
-            placeholder="Title for your awesome proposal..."
-            onChange={handleChange}
-            error={errorLabelsProps.title}/>
-        </Form.Field>
-        <Form.Field error={ Boolean(errorLabelsProps.description) }>
-          <LabelWithHelp text="Description" help="The extensive description of your proposal"/>
-          <Form.TextArea
-            onChange={handleChange}
-            name="description"
-            placeholder="What I would like to propose is..."
-            error={ errorLabelsProps.description }
-          />
-        </Form.Field>
-        <Form.Field error={ Boolean(errorLabelsProps.rationale) }>
-          <LabelWithHelp text="Rationale" help="The rationale behind your proposal"/>
-          <Form.TextArea
-            onChange={handleChange}
-            name="rationale"
-            placeholder="This proposal is awesome because..."
-            error={ errorLabelsProps.rationale }
-          />
-        </Form.Field>
-        <div className="form-buttons">
-          <Button type="submit" color="blue" loading={isSubmitting}>
-            <Icon name="paper plane" />
-            Submit
-          </Button>
-          <Button color="grey" icon="times">
-            <Icon name="times" />
-            Cancel
-          </Button>
-        </div>
-      </Form>
-    </div>
+    <GenericProposalForm {...props}>
+      <TextareaFormField
+        label="Description"
+        help="The extensive description of your proposal"
+        onChange={handleChange}
+        name="description"
+        placeholder="What I would like to propose is..."
+        error={ errorLabelsProps.description }
+        />
+    </GenericProposalForm>
   );
 }
 
-type OuterFormProps = {
-  initialTitle?: string;
-  initialDescription?: string;
-};
+type OuterFormProps = DefaultOuterFormProps<FormAdditionalProps, FormValues>;
 
 export default withFormContainer<OuterFormProps, FormValues>({
-  mapPropsToValues: () => ({
-    title: "",
-    description: "",
-    rationale: ""
+  mapPropsToValues: (props:OuterFormProps) => ({
+    ...defaultValues,
+    ...(props.initialData || {})
   }),
   validationSchema: Yup.object().shape({
-    title: Yup.string().required("Title is required!"),
-    rationale: Yup.string().required("Rationale is required!"),
+    ...genericFormDefaultOptions.validationSchema,
     description: Yup.string().required("Description is required!")
   }),
-  handleSubmit: (values, { setSubmitting }) => {
-    setTimeout(() => {
-      alert(JSON.stringify(values, null, 2));
-      setSubmitting(false);
-    }, 1000);
-  },
+  handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: "SignalForm"
 })(SignalForm);

@@ -9,7 +9,7 @@ import {
   DefaultOuterFormProps,
   genericFormDefaultValues
 } from './GenericProposalForm';
-import FormField from "./FormField";
+import { InputFormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
 
@@ -31,12 +31,11 @@ type FormAdditionalProps = {
 type MintCapacityProps = FormikProps<FormValues> & FormAdditionalProps;
 
 const MintCapacityForm: React.FunctionComponent<MintCapacityProps> = props => {
-  const { handleChange, errors, touched, isSubmitting, handleSubmit, mintCapacityGroup } = props;
-  const passProps = { handleChange, errors, isSubmitting, touched, handleSubmit };
+  const { handleChange, errors, touched, mintCapacityGroup, values } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
-    <GenericProposalForm {...passProps}>
-      <FormField
+    <GenericProposalForm {...props}>
+      <InputFormField
         error={errorLabelsProps.capacity}
         onChange={handleChange}
         name="capacity"
@@ -44,6 +43,7 @@ const MintCapacityForm: React.FunctionComponent<MintCapacityProps> = props => {
         label={ `${ mintCapacityGroup } Mint Capacity` }
         help={ `The new mint capacity you propse for ${ mintCapacityGroup }` }
         unit="tJOY"
+        value={values.capacity}
       />
     </GenericProposalForm>
   );

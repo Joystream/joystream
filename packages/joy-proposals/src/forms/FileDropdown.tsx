@@ -42,6 +42,7 @@ const dropdownDivStyle = (status:Status): React.CSSProperties => {
   let mainColor = getStatusColor(status);
 
   return {
+    cursor: 'pointer',
     border: `1px solid ${ mainColor + '30' }`,
     borderRadius: '3px',
     padding: '1.5em',
@@ -93,7 +94,7 @@ export default function FileDropdown<ValuesT = {}>(props: FileDropdownProps<Valu
       multiple={false}
       accept={acceptedFormats}
       >
-      {({getRootProps, getInputProps, acceptedFiles, rejectedFiles, isDragActive }) => {
+      {({ getRootProps, getInputProps, acceptedFiles, rejectedFiles, isDragActive }) => {
         const status = determineStatus(acceptedFiles, rejectedFiles, error, isDragActive, parsing);
         return (
           <section>
