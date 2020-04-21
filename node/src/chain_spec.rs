@@ -19,8 +19,8 @@ use node_runtime::{
     AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
     CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
     DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, IndicesConfig,
-    MembersConfig, Perbill, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
-    SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY, ProposalsCodexConfig
+    MembersConfig, Perbill, ProposalsCodexConfig, SessionConfig, SessionKeys, Signature,
+    StakerStatus, StakingConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
 };
 pub use node_runtime::{AccountId, GenesisConfig};
 use primitives::{sr25519, Pair, Public};
@@ -297,25 +297,25 @@ pub fn testnet_genesis(
             channel_banner_constraint: crate::forum_config::new_validation(5, 1024),
             channel_title_constraint: crate::forum_config::new_validation(5, 1024),
         }),
-        proposals_codex : Some(ProposalsCodexConfig {
-            set_validator_count_proposal_voting_period : 43200u32,
-            set_validator_count_proposal_grace_period : 0u32,
-            runtime_upgrade_proposal_voting_period : 72000u32,
-            runtime_upgrade_proposal_grace_period : 72000u32,
-            text_proposal_voting_period : 72000u32,
-            text_proposal_grace_period : 0u32,
-            set_election_parameters_proposal_voting_period : 72000u32,
-            set_election_parameters_proposal_grace_period : 201601u32,
-            set_content_working_group_mint_capacity_proposal_voting_period : 43200u32,
-            set_content_working_group_mint_capacity_proposal_grace_period : 0u32,
-            set_lead_proposal_voting_period : 43200u32,
-            set_lead_proposal_grace_period : 0u32,
-            spending_proposal_voting_period : 72000u32,
-            spending_proposal_grace_period : 14400u32,
-            evict_storage_provider_proposal_voting_period : 43200u32,
-            evict_storage_provider_proposal_grace_period : 0u32,
-            set_storage_role_parameters_proposal_voting_period : 43200u32,
-            set_storage_role_parameters_proposal_grace_period : 14400u32,
-        })
+        proposals_codex: Some(ProposalsCodexConfig {
+            set_validator_count_proposal_voting_period: 43200u32,
+            set_validator_count_proposal_grace_period: 0u32,
+            runtime_upgrade_proposal_voting_period: 72000u32,
+            runtime_upgrade_proposal_grace_period: 72000u32,
+            text_proposal_voting_period: 72000u32,
+            text_proposal_grace_period: 0u32,
+            set_election_parameters_proposal_voting_period: 72000u32,
+            set_election_parameters_proposal_grace_period: 201601u32,
+            set_content_working_group_mint_capacity_proposal_voting_period: 43200u32,
+            set_content_working_group_mint_capacity_proposal_grace_period: 0u32,
+            set_lead_proposal_voting_period: 43200u32,
+            set_lead_proposal_grace_period: 0u32,
+            spending_proposal_voting_period: 72000u32,
+            spending_proposal_grace_period: 14400u32,
+            evict_storage_provider_proposal_voting_period: 43200u32,
+            evict_storage_provider_proposal_grace_period: 0u32,
+            set_storage_role_parameters_proposal_voting_period: 43200u32,
+            set_storage_role_parameters_proposal_grace_period: 14400u32,
+        }),
     }
 }
