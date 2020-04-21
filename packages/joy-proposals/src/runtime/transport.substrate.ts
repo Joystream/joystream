@@ -3,7 +3,6 @@ import { Proposal, ProposalId } from "@joystream/types/proposals";
 import { MemberId } from "@joystream/types/members";
 import { ApiProps } from "@polkadot/react-api/types";
 import { u32, bool } from "@polkadot/types/";
-import { Codec } from "@polkadot/types/types";
 import { ApiPromise } from "@polkadot/api";
 
 export default class SubstrateTransport extends Transport {
@@ -44,21 +43,22 @@ export default class SubstrateTransport extends Transport {
 
   async proposals() {
     const ids = await this.proposalsIds();
-    return Promise.all(ids.map((id) => this.proposalById(id)));
+    return Promise.all(ids.map(id => this.proposalById(id)));
   }
 
   async hasVotedOnProposal(proposalId: ProposalId, voterId: MemberId) {
-    return await this.proposalEngine.voteExistsByProposalByVoter<bool>(proposalId, voterId);
+    const hasVoted = await this.proposalEngine.voteExistsByProposalByVoter<bool>(proposalId, voterId);
+    return hasVoted.eq(true);
   }
 
   async activeProposals() {
     const activeProposalsIds = await this.proposalEngine.activeProposalsIds<ProposalId[]>();
 
-    return Promise.all(activeProposalsIds.map((id) => this.proposalById(id)));
+    return Promise.all(activeProposalsIds.map(id => this.proposalById(id)));
   }
 
   async proposedBy(member: MemberId) {
-    let proposals = await this.proposals();
+    const proposals = await this.proposals();
     return proposals.filter(({ proposerId }: Proposal) => proposerId.eq(member));
   }
 }

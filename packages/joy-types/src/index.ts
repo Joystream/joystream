@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { Enum, Option, Struct, Vec } from "@polkadot/types/codec";
 import { getTypeRegistry, Text } from "@polkadot/types";
 import { BlockNumber, AccountId, Balance, Hash } from "@polkadot/types/interfaces";
@@ -17,28 +16,7 @@ import { registerStakeTypes } from "./stake";
 import { registerMintTypes } from "./mint";
 import { registerRecurringRewardsTypes } from "./recurring-rewards";
 import { registerContentWorkingGroupTypes } from "./content-working-group";
-import { registerProposalsTypes } from "./proposals";
-=======
-import { Enum, Option, Struct, Vec } from '@polkadot/types/codec';
-import { getTypeRegistry, Text } from '@polkadot/types';
-import { BlockNumber, AccountId, Balance, Hash } from '@polkadot/types/interfaces';
-import { u32, bool } from '@polkadot/types/primitive';
-import { Codec } from '@polkadot/types/types';
-
-import { registerForumTypes } from './forum';
-import { registerMediaTypes } from './media';
-import { registerMembershipTypes } from './members';
-import { registerRolesTypes } from './roles';
-import { registerDiscoveryTypes } from './discovery';
-import { registerHiringTypes } from './hiring';
-import { registerVersionedStoreTypes } from './versioned-store';
-import { registerVersionedStorePermissionsTypes } from './versioned-store/permissions';
-import { registerStakeTypes } from './stake';
-import { registerMintTypes } from './mint';
-import { registerRecurringRewardsTypes } from './recurring-rewards';
-import { registerContentWorkingGroupTypes } from './content-working-group';
-import { registerProposalTypes, ProposalStatus } from './proposals';
->>>>>>> joystream-constantinoples
+import { registerProposalTypes, ProposalStatus } from "./proposals";
 
 export function getTextPropAsString(struct: Struct, fieldName: string): string {
   return (struct.get(fieldName) as Text).toString();
@@ -90,22 +68,6 @@ export type SealedVote = {
   vote: Option<AccountId>;
 };
 
-<<<<<<< HEAD
-// Note: this could be named 'RuntimeUpgradeProposal' (as it is in Rust),
-// but not a big deal here in JS.
-export type Proposal = {
-  id: u32;
-  proposer: AccountId;
-  stake: Balance;
-  name: Text; // or AnyU8a?
-  description: Text;
-  wasm_hash: Hash;
-  proposed_at: BlockNumber;
-  status: ProposalStatus;
-};
-
-=======
->>>>>>> joystream-constantinoples
 export type ProposalVote = {
   voter: AccountId;
   kind: VoteKind;
@@ -160,24 +122,6 @@ export class ElectionStage extends Enum {
 
 export type AnyElectionStage = Announcing | Voting | Revealing;
 
-<<<<<<< HEAD
-export const ProposalStatuses: { [key: string]: string } = {
-  Active: "Active",
-  Cancelled: "Cancelled",
-  Expired: "Expired",
-  Approved: "Approved",
-  Rejected: "Rejected",
-  Slashed: "Slashed"
-};
-
-export class ProposalStatus extends Enum {
-  constructor(value?: any) {
-    super(["Active", "Cancelled", "Expired", "Approved", "Rejected", "Slashed"], value);
-  }
-}
-
-=======
->>>>>>> joystream-constantinoples
 export const VoteKinds: { [key: string]: string } = {
   Abstain: "Abstain",
   Approve: "Approve",
