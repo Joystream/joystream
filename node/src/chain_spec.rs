@@ -300,6 +300,22 @@ pub fn testnet_genesis(
         proposals_codex : Some(ProposalsCodexConfig {
             set_validator_count_proposal_voting_period : 43200u32,
             set_validator_count_proposal_grace_period : 0u32,
+            runtime_upgrade_proposal_voting_period : 72000u32,
+            runtime_upgrade_proposal_grace_period : 72000u32,
+            text_proposal_voting_period : 72000u32,
+            text_proposal_grace_period : 0u32,
+            set_election_parameters_proposal_voting_period : 72000u32,
+            set_election_parameters_proposal_grace_period : 201601u32,
+            set_content_working_group_mint_capacity_proposal_voting_period : 43200u32,
+            set_content_working_group_mint_capacity_proposal_grace_period : 0u32,
+            set_lead_proposal_voting_period : 43200u32,
+            set_lead_proposal_grace_period : 0u32,
+            spending_proposal_voting_period : 72000u32,
+            spending_proposal_grace_period : 14400u32,
+            evict_storage_provider_proposal_voting_period : 43200u32,
+            evict_storage_provider_proposal_grace_period : 0u32,
+            set_storage_role_parameters_proposal_voting_period : 43200u32,
+            set_storage_role_parameters_proposal_grace_period : 14400u32,
         })
     }
 }
