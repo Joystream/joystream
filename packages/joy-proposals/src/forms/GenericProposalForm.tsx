@@ -42,7 +42,7 @@ export const genericFormDefaultOptions: DefaultGenericFormOptions = {
   },
   handleSubmit: (values, { setSubmitting, resetForm }) => {
     setTimeout(() => {
-      alert(JSON.stringify(values, null, 2));
+      console.log(JSON.stringify(values));
       setSubmitting(false);
     }, 1000);
   },

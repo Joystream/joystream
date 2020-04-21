@@ -5,3 +5,4 @@ export { default as MintCapacityForm } from "./MintCapacityForm";
 export { default as SetCouncilParamsForm } from "./SetCouncilParamsForm";
 export { default as SetContentWorkingGroupLeadForm } from "./SetContentWorkingGroupLeadForm";
 export { default as SetStorageRoleParamsForm } from "./SetStorageRoleParamsForm"
+export { default as RuntimeUpgradeForm } from "./RuntimeUpgradeForm";
