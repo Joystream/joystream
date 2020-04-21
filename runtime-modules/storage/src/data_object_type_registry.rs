@@ -150,7 +150,7 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
     fn ensure_data_object_type(id: T::DataObjectTypeId) -> Result<DataObjectType, &'static str> {
-        return Self::data_object_types(&id).ok_or(MSG_DO_TYPE_NOT_FOUND);
+        Self::data_object_types(&id).ok_or(MSG_DO_TYPE_NOT_FOUND)
     }
 }
 

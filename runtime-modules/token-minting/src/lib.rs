@@ -138,14 +138,13 @@ impl<T: Trait> Module<T> {
 
         // Ensure the next adjustment if set, is in the future
         if let Some(adjustment) = adjustment {
-            match adjustment {
-                Adjustment::IntervalAfterFirstAdjustmentAbsolute(_, first_adjustment_in) => {
-                    ensure!(
-                        first_adjustment_in > now,
-                        GeneralError::NextAdjustmentInPast
-                    );
-                }
-                _ => (),
+            if let Adjustment::IntervalAfterFirstAdjustmentAbsolute(_, first_adjustment_in) =
+                adjustment
+            {
+                ensure!(
+                    first_adjustment_in > now,
+                    GeneralError::NextAdjustmentInPast
+                );
             }
         }
 

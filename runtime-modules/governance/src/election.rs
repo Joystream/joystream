@@ -235,11 +235,11 @@ impl<T: Trait> Module<T> {
     fn start_election(current_council: Seats<T::AccountId, BalanceOf<T>>) -> Result {
         ensure!(!Self::is_election_running(), "election already in progress");
         ensure!(
-            Self::existing_stake_holders().len() == 0,
+            Self::existing_stake_holders().is_empty(),
             "stake holders must be empty"
         );
-        ensure!(Self::applicants().len() == 0, "applicants must be empty");
-        ensure!(Self::commitments().len() == 0, "commitments must be empty");
+        ensure!(Self::applicants().is_empty(), "applicants must be empty");
+        ensure!(Self::commitments().is_empty(), "commitments must be empty");
 
         // Take snapshot of seat and backing stakes of an existing council
         // Its important to note that the election system takes ownership of these stakes, and is responsible
@@ -663,7 +663,7 @@ impl<T: Trait> Module<T> {
             *transferable
         };
 
-        *transferable = *transferable - transferred;
+        *transferable -= transferred;
 
         Stake {
             new: new_stake - transferred,
@@ -699,7 +699,7 @@ impl<T: Trait> Module<T> {
             <Applicants<T>>::mutate(|applicants| applicants.insert(0, applicant.clone()));
         }
 
-        <ApplicantStakes<T>>::insert(applicant.clone(), total_stake);
+        <ApplicantStakes<T>>::insert(applicant, total_stake);
 
         Ok(())
     }
@@ -754,7 +754,7 @@ impl<T: Trait> Module<T> {
             "vote for non-applicant not allowed"
         );
 
-        let mut salt = salt.clone();
+        let mut salt = salt;
 
         // Tries to unseal, if salt is invalid will return error
         sealed_vote.unseal(vote_for, &mut salt, <T as system::Trait>::Hashing::hash)?;

@@ -1,3 +1,7 @@
+// Clippy linter requirement
+#![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
+// example:  pub Parameters get(parameters) build(|config: &GenesisConfig| {..}
+
 use codec::{Decode, Encode};
 use common::currency::{BalanceOf, GovernanceCurrency};
 use rstd::prelude::*;
@@ -12,6 +16,7 @@ use system::{self, ensure_root, ensure_signed};
 use serde::{Deserialize, Serialize};
 
 pub use membership::members::Role;
+
 
 const STAKING_ID: LockIdentifier = *b"role_stk";
 
@@ -180,19 +185,19 @@ impl<T: Trait> Module<T> {
     fn remove_actor_from_service(actor_account: T::AccountId, role: Role, member_id: MemberId<T>) {
         let accounts: Vec<T::AccountId> = Self::account_ids_by_role(role)
             .into_iter()
-            .filter(|account| !(*account == actor_account))
+            .filter(|account| *account != actor_account)
             .collect();
         <AccountIdsByRole<T>>::insert(role, accounts);
 
         let accounts: Vec<T::AccountId> = Self::account_ids_by_member_id(&member_id)
             .into_iter()
-            .filter(|account| !(*account == actor_account))
+            .filter(|account| *account != actor_account)
             .collect();
         <AccountIdsByMemberId<T>>::insert(&member_id, accounts);
 
         let accounts: Vec<T::AccountId> = Self::actor_account_ids()
             .into_iter()
-            .filter(|account| !(*account == actor_account))
+            .filter(|account| *account != actor_account)
             .collect();
         <ActorAccountIds<T>>::put(accounts);
 
@@ -262,7 +267,7 @@ decl_module! {
                 if let Some(params) = Self::parameters(role) {
                     if !(now % params.reward_period == T::BlockNumber::zero()) { continue }
                     let accounts = Self::account_ids_by_role(role);
-                    for actor in accounts.into_iter().map(|account| Self::actor_by_account_id(account)) {
+                    for actor in accounts.into_iter().map(Self::actor_by_account_id) {
                         if let Some(actor) = actor {
                             if now > actor.joined_at + params.reward_period {
                                 // reward can top up balance if it is below minimum stake requirement
@@ -381,7 +386,7 @@ decl_module! {
 
         pub fn set_role_parameters(origin, role: Role, params: RoleParameters<BalanceOf<T>, T::BlockNumber>) {
             ensure_root(origin)?;
-            let new_stake = params.min_stake.clone();
+            let new_stake = params.min_stake;
             <Parameters<T>>::insert(role, params);
             // Update locks for all actors in the role. The lock for each account is already until max_value
             // It doesn't affect actors which are unbonding, they should have already been removed from AccountIdsByRole

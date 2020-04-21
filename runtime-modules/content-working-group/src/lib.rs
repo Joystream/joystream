@@ -1308,14 +1308,14 @@ decl_module! {
 
             Self::update_channel(
                 &channel_id,
-                &None, // verified
+                None, // verified
                 &new_handle,
                 &new_title,
                 &new_description,
                 &new_avatar,
                 &new_banner,
-                &new_publication_status,
-                &None // curation_status
+                new_publication_status,
+                None // curation_status
             );
         }
 
@@ -1337,14 +1337,14 @@ decl_module! {
 
             Self::update_channel(
                 &channel_id,
-                &new_verified,
+                new_verified,
                 &None, // handle
                 &None, // title
                 &None, // description,
                 &None, // avatar
                 &None, // banner
-                &None, // publication_status
-                &new_curation_status
+                None, // publication_status
+                new_curation_status
             );
         }
 
@@ -1464,7 +1464,7 @@ decl_module! {
             let successful_iter = successful_curator_application_ids
                                     .iter()
                                     // recover curator application from id
-                                    .map(|curator_application_id| { Self::ensure_curator_application_exists(curator_application_id) })
+                                    .map(|curator_application_id| { Self::ensure_curator_application_exists(curator_application_id)})
                                     // remove Err cases, i.e. non-existing applications
                                     .filter_map(|result| result.ok());
 
@@ -1474,8 +1474,7 @@ decl_module! {
             // Ensure all curator applications exist
             let number_of_successful_applications = successful_iter
                                                     .clone()
-                                                    .collect::<Vec<_>>()
-                                                    .len();
+                                                    .count();
 
             ensure!(
                 number_of_successful_applications == num_provided_successful_curator_application_ids,
@@ -1493,7 +1492,7 @@ decl_module! {
                                                                         .clone()
                                                                         .map(|(successful_curator_application, _, _)| successful_curator_application.member_id)
                                                                         .filter_map(|successful_member_id| Self::ensure_can_register_curator_role_on_member(&successful_member_id).ok() )
-                                                                        .collect::<Vec<_>>().len();
+                                                                        .count();
 
             ensure!(
                 num_successful_applications_that_can_register_as_curator == num_provided_successful_curator_application_ids,
@@ -2064,7 +2063,7 @@ impl<T: Trait> Module<T> {
 
         // Construct lead
         let new_lead = Lead {
-            role_account: role_account.clone(),
+            role_account,
             reward_relationship: None,
             inducted: <system::Module<T>>::block_number(),
             stage: LeadRoleState::Active,
@@ -2256,7 +2255,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_curator_application_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    fn ensure_curator_application_text_is_valid(text: &[u8]) -> dispatch::Result {
         CuratorApplicationHumanReadableText::get().ensure_valid(
             text.len(),
             MSG_CURATOR_APPLICATION_TEXT_TOO_SHORT,
@@ -2264,7 +2263,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_curator_exit_rationale_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    fn ensure_curator_exit_rationale_text_is_valid(text: &[u8]) -> dispatch::Result {
         CuratorExitRationaleText::get().ensure_valid(
             text.len(),
             MSG_CURATOR_EXIT_RATIONALE_TEXT_TOO_SHORT,
@@ -2272,7 +2271,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_opening_human_readable_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    fn ensure_opening_human_readable_text_is_valid(text: &[u8]) -> dispatch::Result {
         OpeningHumanReadableText::get().ensure_valid(
             text.len(),
             MSG_CHANNEL_DESCRIPTION_TOO_SHORT,
@@ -2540,7 +2539,7 @@ impl<T: Trait> Module<T> {
 
         Ok((
             curator_application,
-            curator_application_id.clone(),
+            *curator_application_id,
             curator_opening,
         ))
     }
@@ -2647,14 +2646,14 @@ impl<T: Trait> Module<T> {
         {
             // Attempt to deactivate
             recurringrewards::Module::<T>::try_to_deactivate_relationship(*reward_relationship_id)
-                .expect("Relatioship must exist")
+                .expect("Relationship must exist")
         } else {
             // Did not deactivate, there was no reward relationship!
             false
         };
 
-        // When the curator is staked, unstaking must first be initated,
-        // otherwise they can be terminted right away.
+        // When the curator is staked, unstaking must first be initaated,
+        // otherwise they can be terminated right away.
 
         // Create exit summary for this termination
         let current_block = <system::Module<T>>::block_number();
@@ -2663,33 +2662,30 @@ impl<T: Trait> Module<T> {
             CuratorExitSummary::new(exit_initiation_origin, &current_block, rationale_text);
 
         // Determine new curator stage and event to emit
-        let (new_curator_stage, unstake_directions, event) =
-            if let Some(ref stake_profile) = curator.role_stake_profile {
-                // Determine unstaknig period based on who initiated deactivation
-                let unstaking_period = match curator_exit_summary.origin {
-                    CuratorExitInitiationOrigin::Lead => stake_profile.termination_unstaking_period,
-                    CuratorExitInitiationOrigin::Curator => stake_profile.exit_unstaking_period,
-                };
-
-                (
-                    CuratorRoleStage::Unstaking(curator_exit_summary),
-                    Some((stake_profile.stake_id.clone(), unstaking_period)),
-                    RawEvent::CuratorUnstaking(curator_id.clone()),
-                )
-            } else {
-                (
-                    CuratorRoleStage::Exited(curator_exit_summary.clone()),
-                    None,
-                    match curator_exit_summary.origin {
-                        CuratorExitInitiationOrigin::Lead => {
-                            RawEvent::TerminatedCurator(curator_id.clone())
-                        }
-                        CuratorExitInitiationOrigin::Curator => {
-                            RawEvent::CuratorExited(curator_id.clone())
-                        }
-                    },
-                )
+        let (new_curator_stage, unstake_directions, event) = if let Some(ref stake_profile) =
+            curator.role_stake_profile
+        {
+            // Determine unstaknig period based on who initiated deactivation
+            let unstaking_period = match curator_exit_summary.origin {
+                CuratorExitInitiationOrigin::Lead => stake_profile.termination_unstaking_period,
+                CuratorExitInitiationOrigin::Curator => stake_profile.exit_unstaking_period,
             };
+
+            (
+                CuratorRoleStage::Unstaking(curator_exit_summary),
+                Some((stake_profile.stake_id, unstaking_period)),
+                RawEvent::CuratorUnstaking(*curator_id),
+            )
+        } else {
+            (
+                CuratorRoleStage::Exited(curator_exit_summary.clone()),
+                None,
+                match curator_exit_summary.origin {
+                    CuratorExitInitiationOrigin::Lead => RawEvent::TerminatedCurator(*curator_id),
+                    CuratorExitInitiationOrigin::Curator => RawEvent::CuratorExited(*curator_id),
+                },
+            )
+        };
 
         // Update curator
         let new_curator = Curator {
@@ -2702,7 +2698,7 @@ impl<T: Trait> Module<T> {
         // Unstake if directions provided
         if let Some(directions) = unstake_directions {
             // Keep track of curator unstaking
-            let unstaker = WorkingGroupUnstaker::Curator(curator_id.clone());
+            let unstaker = WorkingGroupUnstaker::Curator(*curator_id);
             UnstakerByStakeId::<T>::insert(directions.0, unstaker);
 
             // Unstake
@@ -2731,14 +2727,14 @@ impl<T: Trait> Module<T> {
 
     fn update_channel(
         channel_id: &ChannelId<T>,
-        new_verified: &Option<bool>,
+        new_verified: Option<bool>,
         new_handle: &Option<Vec<u8>>,
         new_title: &Option<OptionalText>,
         new_description: &Option<OptionalText>,
         new_avatar: &Option<OptionalText>,
         new_banner: &Option<OptionalText>,
-        new_publication_status: &Option<ChannelPublicationStatus>,
-        new_curation_status: &Option<ChannelCurationStatus>,
+        new_publication_status: Option<ChannelPublicationStatus>,
+        new_curation_status: Option<ChannelCurationStatus>,
     ) {
         // Update channel id to handle mapping, if there is a new handle.
         if let Some(ref handle) = new_handle {

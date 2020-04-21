@@ -484,12 +484,12 @@ pub fn genesis_config(
 ) -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
         category_by_id: category_by_id.clone(),
-        next_category_id: next_category_id,
+        next_category_id,
         thread_by_id: thread_by_id.clone(),
-        next_thread_id: next_thread_id,
+        next_thread_id,
         post_by_id: post_by_id.clone(),
-        next_post_id: next_post_id,
-        forum_sudo: forum_sudo,
+        next_post_id,
+        forum_sudo,
         category_title_constraint: category_title_constraint.clone(),
         category_description_constraint: category_description_constraint.clone(),
         thread_title_constraint: thread_title_constraint.clone(),
