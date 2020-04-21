@@ -16,6 +16,7 @@ import { registerStakeTypes } from './stake';
 import { registerMintTypes } from './mint';
 import { registerRecurringRewardsTypes } from './recurring-rewards';
 import { registerContentWorkingGroupTypes } from './content-working-group';
+import { registerProposalTypes, ProposalStatus } from './proposals';
 
 export function getTextPropAsString(struct: Struct, fieldName: string): string {
   return (struct.get(fieldName) as Text).toString();
@@ -70,19 +71,6 @@ export type SealedVote = {
   vote: Option<AccountId>
 };
 
-// Note: this could be named 'RuntimeUpgradeProposal' (as it is in Rust),
-// but not a big deal here in JS.
-export type Proposal = {
-  id: u32,
-  proposer: AccountId,
-  stake: Balance,
-  name: Text, // or AnyU8a?
-  description: Text,
-  wasm_hash: Hash,
-  proposed_at: BlockNumber,
-  status: ProposalStatus
-};
-
 export type ProposalVote = {
   voter: AccountId,
   kind: VoteKind
@@ -134,28 +122,6 @@ export class ElectionStage extends Enum {
 }
 
 export type AnyElectionStage = Announcing | Voting | Revealing;
-
-export const ProposalStatuses: { [key: string]: string } = {
-  Active: 'Active',
-  Cancelled: 'Cancelled',
-  Expired: 'Expired',
-  Approved: 'Approved',
-  Rejected: 'Rejected',
-  Slashed: 'Slashed'
-};
-
-export class ProposalStatus extends Enum {
-  constructor(value?: any) {
-    super([
-      'Active',
-      'Cancelled',
-      'Expired',
-      'Approved',
-      'Rejected',
-      'Slashed'
-    ], value);
-  }
-}
 
 export const VoteKinds: { [key: string]: string } = {
   Abstain: 'Abstain',
@@ -264,4 +230,5 @@ export function registerJoystreamTypes() {
   registerRecurringRewardsTypes();
   registerHiringTypes();
   registerContentWorkingGroupTypes();
+  registerProposalTypes();
 }
