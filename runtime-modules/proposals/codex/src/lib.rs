@@ -250,6 +250,14 @@ decl_storage! {
                 T::AccountId,
                 T::MemberId
             >;
+
+        /// Voting period for the 'set validator count' proposal
+        pub SetValidatorCountProposalVotingPeriod get(set_validator_count_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grate period for the 'set validator count' proposal
+        pub SetValidatorCountProposalGracePeriod get(set_validator_count_proposal_grace_period)
+            config(): T::BlockNumber;
     }
 }
 

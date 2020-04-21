@@ -20,7 +20,7 @@ use node_runtime::{
     CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
     DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, IndicesConfig,
     MembersConfig, Perbill, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
-    SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
+    SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY, ProposalsCodexConfig
 };
 pub use node_runtime::{AccountId, GenesisConfig};
 use primitives::{sr25519, Pair, Public};
@@ -297,5 +297,9 @@ pub fn testnet_genesis(
             channel_banner_constraint: crate::forum_config::new_validation(5, 1024),
             channel_title_constraint: crate::forum_config::new_validation(5, 1024),
         }),
+        proposals_codex : Some(ProposalsCodexConfig {
+            set_validator_count_proposal_voting_period : 43200u32,
+            set_validator_count_proposal_grace_period : 0u32,
+        })
     }
 }

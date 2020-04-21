@@ -1,11 +1,11 @@
-use crate::{get_required_stake_by_fraction, BalanceOf, ProposalParameters};
+use crate::{get_required_stake_by_fraction, BalanceOf, ProposalParameters, Module};
 
 // Proposal parameters for the 'Set validator count' proposal
 pub(crate) fn set_validator_count_proposal<T: crate::Trait>(
 ) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
     ProposalParameters {
-        voting_period: T::BlockNumber::from(43200u32),
-        grace_period: T::BlockNumber::from(0u32),
+        voting_period: <Module<T>>::set_validator_count_proposal_voting_period(),
+        grace_period: <Module<T>>::set_validator_count_proposal_grace_period(),
         approval_quorum_percentage: 66,
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,

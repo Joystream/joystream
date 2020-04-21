@@ -913,7 +913,7 @@ construct_runtime!(
         // --- Proposals
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
-        ProposalsCodex: proposals_codex::{Module, Call, Storage, Error},
+        ProposalsCodex: proposals_codex::{Module, Call, Storage, Error, Config<T>},
         // ---
 	}
 );
