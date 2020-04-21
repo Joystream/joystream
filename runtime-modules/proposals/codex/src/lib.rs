@@ -250,6 +250,74 @@ decl_storage! {
                 T::AccountId,
                 T::MemberId
             >;
+
+        /// Voting period for the 'set validator count' proposal
+        pub SetValidatorCountProposalVotingPeriod get(set_validator_count_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'set validator count' proposal
+        pub SetValidatorCountProposalGracePeriod get(set_validator_count_proposal_grace_period)
+            config(): T::BlockNumber;
+
+        /// Voting period for the 'runtime upgrade' proposal
+        pub RuntimeUpgradeProposalVotingPeriod get(runtime_upgrade_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'runtime upgrade' proposal
+        pub RuntimeUpgradeProposalGracePeriod get(runtime_upgrade_proposal_grace_period)
+            config(): T::BlockNumber;
+
+        /// Voting period for the 'set election parameters' proposal
+        pub SetElectionParametersProposalVotingPeriod get(set_election_parameters_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'set election parameters' proposal
+        pub SetElectionParametersProposalGracePeriod get(set_election_parameters_proposal_grace_period)
+            config(): T::BlockNumber;
+
+        /// Voting period for the 'text' proposal
+        pub TextProposalVotingPeriod get(text_proposal_voting_period) config(): T::BlockNumber;
+
+        /// Grace period for the 'text' proposal
+        pub TextProposalGracePeriod get(text_proposal_grace_period) config(): T::BlockNumber;
+
+        /// Voting period for the 'set content working group mint capacity' proposal
+        pub SetContentWorkingGroupMintCapacityProposalVotingPeriod get(set_content_working_group_mint_capacity_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'set content working group mint capacity' proposal
+        pub SetContentWorkingGroupMintCapacityProposalGracePeriod get(set_content_working_group_mint_capacity_proposal_grace_period)
+            config(): T::BlockNumber;
+
+        /// Voting period for the 'set lead' proposal
+        pub SetLeadProposalVotingPeriod get(set_lead_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'set lead' proposal
+        pub SetLeadProposalGracePeriod get(set_lead_proposal_grace_period)
+            config(): T::BlockNumber;
+
+        /// Voting period for the 'spending' proposal
+        pub SpendingProposalVotingPeriod get(spending_proposal_voting_period) config(): T::BlockNumber;
+
+        /// Grace period for the 'spending' proposal
+        pub SpendingProposalGracePeriod get(spending_proposal_grace_period) config(): T::BlockNumber;
+
+        /// Voting period for the 'evict storage provider' proposal
+        pub EvictStorageProviderProposalVotingPeriod get(evict_storage_provider_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'evict storage provider' proposal
+        pub EvictStorageProviderProposalGracePeriod get(evict_storage_provider_proposal_grace_period)
+            config(): T::BlockNumber;
+
+        /// Voting period for the 'set storage role parameters' proposal
+        pub SetStorageRoleParametersProposalVotingPeriod get(set_storage_role_parameters_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'set storage role parameters' proposal
+        pub SetStorageRoleParametersProposalGracePeriod get(set_storage_role_parameters_proposal_grace_period)
+            config(): T::BlockNumber;
     }
 }
 

@@ -1,11 +1,11 @@
-use crate::{get_required_stake_by_fraction, BalanceOf, ProposalParameters};
+use crate::{get_required_stake_by_fraction, BalanceOf, Module, ProposalParameters};
 
 // Proposal parameters for the 'Set validator count' proposal
 pub(crate) fn set_validator_count_proposal<T: crate::Trait>(
 ) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
     ProposalParameters {
-        voting_period: T::BlockNumber::from(43200u32),
-        grace_period: T::BlockNumber::from(0u32),
+        voting_period: <Module<T>>::set_validator_count_proposal_voting_period(),
+        grace_period: <Module<T>>::set_validator_count_proposal_grace_period(),
         approval_quorum_percentage: 66,
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
@@ -18,8 +18,8 @@ pub(crate) fn set_validator_count_proposal<T: crate::Trait>(
 pub(crate) fn runtime_upgrade_proposal<T: crate::Trait>(
 ) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
     ProposalParameters {
-        voting_period: T::BlockNumber::from(72000u32),
-        grace_period: T::BlockNumber::from(72000u32),
+        voting_period: <Module<T>>::runtime_upgrade_proposal_voting_period(),
+        grace_period: <Module<T>>::runtime_upgrade_proposal_grace_period(),
         approval_quorum_percentage: 80,
         approval_threshold_percentage: 100,
         slashing_quorum_percentage: 60,
@@ -31,8 +31,8 @@ pub(crate) fn runtime_upgrade_proposal<T: crate::Trait>(
 // Proposal parameters for the text proposal
 pub(crate) fn text_proposal<T: crate::Trait>() -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
     ProposalParameters {
-        voting_period: T::BlockNumber::from(72000u32),
-        grace_period: T::BlockNumber::from(0u32),
+        voting_period: <Module<T>>::text_proposal_voting_period(),
+        grace_period: <Module<T>>::text_proposal_grace_period(),
         approval_quorum_percentage: 66,
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
@@ -45,8 +45,8 @@ pub(crate) fn text_proposal<T: crate::Trait>() -> ProposalParameters<T::BlockNum
 pub(crate) fn set_election_parameters_proposal<T: crate::Trait>(
 ) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
     ProposalParameters {
-        voting_period: T::BlockNumber::from(72000u32),
-        grace_period: T::BlockNumber::from(201601u32),
+        voting_period: <Module<T>>::set_election_parameters_proposal_voting_period(),
+        grace_period: <Module<T>>::set_election_parameters_proposal_grace_period(),
         approval_quorum_percentage: 66,
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
@@ -59,8 +59,9 @@ pub(crate) fn set_election_parameters_proposal<T: crate::Trait>(
 pub(crate) fn set_content_working_group_mint_capacity_proposal<T: crate::Trait>(
 ) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
     ProposalParameters {
-        voting_period: T::BlockNumber::from(43200u32),
-        grace_period: T::BlockNumber::from(0u32),
+        voting_period: <Module<T>>::set_content_working_group_mint_capacity_proposal_voting_period(
+        ),
+        grace_period: <Module<T>>::set_content_working_group_mint_capacity_proposal_grace_period(),
         approval_quorum_percentage: 50,
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
@@ -73,8 +74,8 @@ pub(crate) fn set_content_working_group_mint_capacity_proposal<T: crate::Trait>(
 pub(crate) fn spending_proposal<T: crate::Trait>(
 ) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
     ProposalParameters {
-        voting_period: T::BlockNumber::from(72000u32),
-        grace_period: T::BlockNumber::from(14400u32),
+        voting_period: <Module<T>>::spending_proposal_voting_period(),
+        grace_period: <Module<T>>::spending_proposal_grace_period(),
         approval_quorum_percentage: 66,
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
@@ -87,8 +88,8 @@ pub(crate) fn spending_proposal<T: crate::Trait>(
 pub(crate) fn set_lead_proposal<T: crate::Trait>(
 ) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
     ProposalParameters {
-        voting_period: T::BlockNumber::from(43200u32),
-        grace_period: T::BlockNumber::from(0u32),
+        voting_period: <Module<T>>::set_lead_proposal_voting_period(),
+        grace_period: <Module<T>>::set_lead_proposal_grace_period(),
         approval_quorum_percentage: 66,
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
@@ -101,8 +102,8 @@ pub(crate) fn set_lead_proposal<T: crate::Trait>(
 pub(crate) fn evict_storage_provider_proposal<T: crate::Trait>(
 ) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
     ProposalParameters {
-        voting_period: T::BlockNumber::from(43200u32),
-        grace_period: T::BlockNumber::from(0u32),
+        voting_period: <Module<T>>::evict_storage_provider_proposal_voting_period(),
+        grace_period: <Module<T>>::evict_storage_provider_proposal_grace_period(),
         approval_quorum_percentage: 50,
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
@@ -115,8 +116,8 @@ pub(crate) fn evict_storage_provider_proposal<T: crate::Trait>(
 pub(crate) fn set_storage_role_parameters_proposal<T: crate::Trait>(
 ) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
     ProposalParameters {
-        voting_period: T::BlockNumber::from(43200u32),
-        grace_period: T::BlockNumber::from(14400u32),
+        voting_period: <Module<T>>::set_storage_role_parameters_proposal_voting_period(),
+        grace_period: <Module<T>>::set_storage_role_parameters_proposal_grace_period(),
         approval_quorum_percentage: 75,
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
