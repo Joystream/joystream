@@ -1,4 +1,5 @@
 import Transport from "./transport";
+import { u64 } from "@polkadot/types";
 import { ApiProps } from "@polkadot/react-api/types";
 import { ApiPromise } from "@polkadot/api";
 
@@ -17,15 +18,35 @@ export default class SubstrateTransport extends Transport {
     this.api = api.api;
   }
 
-  engine() {
+  get proposalEngine() {
     return this.api.query.proposalEngine;
   }
 
-  codex() {
+  get proposalCodex() {
     return this.api.query.codex;
   }
 
-  allProposals() {
-    return this.engine();
+  async proposalCount() {
+    return this.proposalEngine.proposalCount();
   }
+
+  async proposalById(proposalId: u64) {
+    return this.proposalEngine.proposals(proposalId);
+  }
+
+  async proposals() {
+    const count = await this.proposalCount();
+    return Promise.all(Array.from({ length: Number(count.toString()) }, (_, i) => this.proposalEngine.proposalById(i)));
+  }
+
+  async hasVotedOnProposal(proposalId: u64, memberId: u64) {
+    return this.proposalEngine.voteExistsByProposalByVoter(proposalId, memberId);
+  }
+
+  async activeProposals() {
+    const activeProposalsIds = this.proposalEngine.activeProposalsIds();
+    return Promise.all(activeProposalsIds.map((id: u64) => this.proposalById(id)));
+  }
+
+  async proposedBy(memberId: u64) {}
 }
