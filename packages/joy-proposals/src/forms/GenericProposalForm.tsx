@@ -10,6 +10,11 @@ export type GenericFormValues = {
   rationale: string;
 }
 
+export const genericFormDefaultValues: GenericFormValues = {
+  title: '',
+  rationale: '',
+}
+
 type GenericProposalFormProps = {
   handleChange: FormikProps<GenericFormValues>["handleChange"],
   errors: FormikProps<GenericFormValues>["errors"],
@@ -18,12 +23,18 @@ type GenericProposalFormProps = {
   handleSubmit: FormikProps<GenericFormValues>["handleSubmit"]
 }
 
-type DefaultGenericFormOptions = WithFormikConfig<GenericProposalFormProps, GenericFormValues>;
+type GenericProposalFormAdditionalProps = {};
+
+export type DefaultOuterFormProps<FormAdditionalPropsT, FormValuesT> = FormAdditionalPropsT & { initialData?: Partial<FormValuesT> };
+
+type OuterFormProps = DefaultOuterFormProps<GenericProposalFormAdditionalProps, GenericFormValues>;
+
+type DefaultGenericFormOptions = WithFormikConfig<OuterFormProps, GenericFormValues>;
 
 export const genericFormDefaultOptions: DefaultGenericFormOptions = {
-  mapPropsToValues: props => ({
-    title: "",
-    rationale: "",
+  mapPropsToValues: (props:OuterFormProps) => ({
+    ...genericFormDefaultValues,
+    ...(props.initialData || {})
   }),
   validationSchema: {
     title: Yup.string().required("Title is required!"),

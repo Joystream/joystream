@@ -6,7 +6,8 @@ import {
   SpendingProposalForm,
   MintCapacityForm,
   SetCouncilParamsForm,
-  SetContentWorkingGroupLeadForm
+  SetContentWorkingGroupLeadForm,
+  SetStorageRoleParamsForm
 } from "../forms";
 
 export default {
@@ -24,6 +25,8 @@ export const MintCapacity = () => <MintCapacityForm />;
 export const SetCouncilParams = () => <SetCouncilParamsForm />;
 
 export const SetContentWorkingGroupLead = () => <SetContentWorkingGroupLeadForm members={members} />;
+
+export const SetStorageRoleParams = () => <SetStorageRoleParamsForm />;
 
 var storageProvidersData = [
   {
