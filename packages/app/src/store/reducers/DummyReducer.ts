@@ -12,7 +12,7 @@ const DummyReducer = (state = initialState, action: DummyActionTypes): Dummy[] =
         action.dummy
       ]
     case REMOVE_DUMMY_ACTION:
-      return state.filter(dummy => dummy.id === action.id)
+      return state.filter(dummy => dummy.id !== action.id)
     default:
       return state
   }
