@@ -1,7 +1,8 @@
 use crate::VERSION;
+use common::currency::BalanceOf;
+use rstd::prelude::*;
 use sr_primitives::{print, traits::Zero};
 use srml_support::{debug, decl_event, decl_module, decl_storage};
-use sudo;
 use system;
 
 impl<T: Trait> Module<T> {
@@ -20,26 +21,120 @@ impl<T: Trait> Module<T> {
         // Runtime Upgrade Code for going from Rome to Constantinople
 
         // Create the Council mint. If it fails, we can't do anything about it here.
-        let mint_creation_result = governance::council::Module::<T>::create_new_council_mint(
-            minting::BalanceOf::<T>::zero(),
-        );
+        governance::council::Module::<T>::create_new_council_mint(minting::BalanceOf::<T>::zero())
+            .err()
+            .map(|err| {
+                debug::warn!(
+                    "Failed to create a mint for council during migration: {:?}",
+                    err
+                );
+            });
 
-        if mint_creation_result.is_err() {
+        // Reset Council
+        governance::election::Module::<T>::stop_election_and_dissolve_council()
+            .err()
+            .map(|err| {
+                debug::warn!("Failed to dissolve council during migration: {:?}", err);
+            });
+
+        // Reset working group mint capacity
+        content_working_group::Module::<T>::set_mint_capacity(
+            system::RawOrigin::Root.into(),
+            minting::BalanceOf::<T>::zero(),
+        )
+        .err()
+        .map(|err| {
             debug::warn!(
-                "Failed to create a mint for council during migration: {:?}",
-                mint_creation_result
+                "Failed to reset mint for working group during migration: {:?}",
+                err
             );
+        });
+
+        // Deactivate active curators
+        let termination_reason = "resetting curators".as_bytes().to_vec();
+
+        for (curator_id, ref curator) in content_working_group::CuratorById::<T>::enumerate() {
+            // Skip non-active curators
+            if curator.stage != content_working_group::CuratorRoleStage::Active {
+                continue;
+            }
+
+            content_working_group::Module::<T>::terminate_curator_role_as_root(
+                system::RawOrigin::Root.into(),
+                curator_id,
+                termination_reason.clone(),
+            )
+            .err()
+            .map(|err| {
+                debug::warn!(
+                    "Failed to terminate curator {:?} during migration: {:?}",
+                    curator_id,
+                    err
+                );
+            });
+        }
+
+        // Deactivate all storage providers, except Joystream providers (member id 0 in Rome runtime)
+        let joystream_providers =
+            roles::actors::AccountIdsByMemberId::<T>::get(T::MemberId::from(0));
+
+        // Is there an intersect() like call to check if vector contains some elements from
+        // another vector?.. below implementation just seems
+        // silly to have to do in a filter predicate.
+        let storage_providers_to_remove: Vec<T::AccountId> =
+            roles::actors::Module::<T>::actor_account_ids()
+                .into_iter()
+                .filter(|account| {
+                    for provider in joystream_providers.as_slice() {
+                        if *account == *provider {
+                            return false;
+                        }
+                    }
+                    return true;
+                })
+                .collect();
+
+        for provider in storage_providers_to_remove {
+            roles::actors::Module::<T>::remove_actor(system::RawOrigin::Root.into(), provider)
+                .err()
+                .map(|err| {
+                    debug::warn!(
+                        "Failed to remove storage provider during migration: {:?}",
+                        err
+                    );
+                });
+        }
+
+        // Remove any pending storage entry requests, no stake is lost because only a fee is paid
+        // to make a request.
+        let no_requests: roles::actors::Requests<T> = vec![];
+        roles::actors::RoleEntryRequests::<T>::put(no_requests);
+
+        // Set Storage Role reward to zero
+        if let Some(parameters) =
+            roles::actors::Parameters::<T>::get(roles::actors::Role::StorageProvider)
+        {
+            roles::actors::Module::<T>::set_role_parameters(
+                system::RawOrigin::Root.into(),
+                roles::actors::Role::StorageProvider,
+                roles::actors::RoleParameters {
+                    reward: BalanceOf::<T>::zero(),
+                    ..parameters
+                },
+            )
+            .err()
+            .map(|err| {
+                debug::warn!(
+                    "Failed to set zero reward for storage role during migration: {:?}",
+                    err
+                );
+            });
         }
     }
 }
 
 pub trait Trait:
-    system::Trait
-    + storage::data_directory::Trait
-    + storage::data_object_storage_registry::Trait
-    + forum::Trait
-    + sudo::Trait
-    + governance::council::Trait
+    system::Trait + governance::election::Trait + content_working_group::Trait + roles::actors::Trait
 {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
