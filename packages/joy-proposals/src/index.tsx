@@ -40,7 +40,7 @@ function App(props: Props) {
         <Route path={`${basePath}/finalized`} component={NotDone} />
         <Route path={`${basePath}/new`} component={NotDone} />
         <Route path={`${basePath}/:id`} component={NotDone} />
-        <Route component={ProposalPreviewList} />
+        <Route component={NotDone} />
       </Switch>
     </main>
   );

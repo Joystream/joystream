@@ -1,20 +1,18 @@
-import { Routes } from './types';
+import { Routes } from "./types";
 
-import Proposals from '@polkadot/joy-proposals/deprecated/index';
+import Proposals from "@polkadot/joy-proposals/";
 
-export default ([
+export default [
   {
     Component: Proposals,
     display: {
       needsAccounts: true,
-      needsApi: [
-        'query.proposals.proposalCount',
-      ]
+      needsApi: ["query.proposalsEngine.proposalCount"]
     },
     i18n: {
-      defaultValue: 'Proposals'
+      defaultValue: "Proposals"
     },
-    icon: 'tasks',
-    name: 'proposals'
+    icon: "tasks",
+    name: "proposals"
   }
-] as Routes);
+] as Routes;
