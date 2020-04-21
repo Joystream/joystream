@@ -1,142 +1,80 @@
-import React from 'react';
-import { Button } from 'semantic-ui-react';
-import { Form, withFormik } from 'formik';
-import { History } from 'history';
-import BN from 'bn.js';
+import React from "react";
+import { FormikProps, WithFormikConfig } from "formik";
+import { Form, Icon, Button } from "semantic-ui-react";
+import { getFormErrorLabelsProps } from "./errorHandling";
+import * as Yup from "yup";
+import LabelWithHelp from './LabelWithHelp';
 
-import { withEasyForm, EasyFormProps } from '@polkadot/joy-utils/JoyEasyForms';
-import { onImageError } from '@polkadot/joy-utils/images';
-import TxButton from '@polkadot/joy-utils/TxButton';
-import { findFirstParamOfSubstrateEvent } from '@polkadot/joy-utils/index';
-import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
-import { TxCallback } from '@polkadot/react-components/Status/types';
-import { SubmittableResult } from '@polkadot/api';
-import { ProposalId, ProposalType, ProposalFormValues, ProposalGenericProp, ProposalValidationConstraints, ProposalToFormValues, ProposalFields as Fields } from './ProposalTypes';
-
-type FormValues = ProposalFormValues;
-
-export type OuterProps = {
-  history?: History
-  id?: ProposalId
-  entity?: ProposalType
-  constraints?: ProposalValidationConstraints
+export type GenericFormValues = {
+  title: string;
+  rationale: string;
 }
 
-const InnerForm = (props: EasyFormProps<OuterProps, FormValues>) => {
-  const {
-    // React components for form fields:
-    EasyText,
-    EasyDropdown,
-    LabelledField,
+type GenericProposalFormProps = {
+  handleChange: FormikProps<GenericFormValues>["handleChange"],
+  errors: FormikProps<GenericFormValues>["errors"],
+  isSubmitting: FormikProps<GenericFormValues>["isSubmitting"],
+  touched: FormikProps<GenericFormValues>["touched"],
+  handleSubmit: FormikProps<GenericFormValues>["handleSubmit"]
+}
 
-    // Callbacks:
-    onSubmit,
-    // onTxSuccess,
-    onTxFailed,
+type DefaultGenericFormOptions = WithFormikConfig<GenericProposalFormProps, GenericFormValues>;
 
-    history,
-    id: existingId,
-    entity,
-    isFieldChanged,
-
-    // Formik stuff:
-    values,
-    dirty,
-    isValid,
-    isSubmitting,
-    setSubmitting,
-    resetForm
-  } = props;
-
-  const { myAddress, myMemberId } = useMyMembership();
-  const isNew = !entity;
-
-  // if user is not the channel owner don't render the edit form
-  // return null
-
-  const onTxSuccess: TxCallback = (txResult: SubmittableResult) => {
-    setSubmitting(false)
-    if (!history) return
-
-    const id = existingId
-      ? existingId
-      : findFirstParamOfSubstrateEvent<BN>(txResult, 'ProposalCreated')
-
-    console.log('Proposals id:', id?.toString())
-
-    if (id) {
-      history.push('/proposals/' + id.toString())
-    }
-  }
-
-  const buildTxParams = () => {
-    if (!isValid) return [];
-
-    return [ /* TODO provide params for tx */ ];
-  }
-
-  const formFields = () => <>
-    {/*TODO Add proposal type*/}
-    <EasyText field={Fields.title} {...props} />
-    <EasyText field={Fields.description} textarea {...props} />
-  </>;
-
-  const renderMainButton = () =>
-    <TxButton
-      type='submit'
-      size='large'
-      isDisabled={!dirty || isSubmitting}
-      label={isNew
-        ? 'Create proposal'
-        : 'Update proposal'
-      }
-      params={buildTxParams()}
-      tx={isNew
-        ? 'proposals.createProposal'
-        : 'proposals.updateProposal'
-      }
-      onClick={onSubmit}
-      txFailedCb={onTxFailed}
-      txSuccessCb={onTxSuccess}
-    />
-
-  return <div>
-    <Form className='ui form JoyForm ProposalForm'>
-
-      {formFields()}
-
-      <LabelledField style={{ marginTop: '1rem' }} {...props}>
-        {/* {renderMainButton()} */}
-        <Button
-          type='button'
-          size='large'
-          disabled={!dirty || isSubmitting}
-          onClick={() => resetForm()}
-          content='Reset form'
-        />
-      </LabelledField>
-    </Form>
-  </div>;
-};
-
-export const EditForm = withFormik<OuterProps, FormValues>({
-
-  // Transform outer props into form values
-  mapPropsToValues: (props): FormValues => {
-    const { entity } = props;
-    return ProposalToFormValues(entity);
+export const genericFormDefaultOptions: DefaultGenericFormOptions = {
+  mapPropsToValues: props => ({
+    title: "",
+    rationale: "",
+  }),
+  validationSchema: {
+    title: Yup.string().required("Title is required!"),
+    rationale: Yup.string().required("Rationale is required!"),
   },
-
-  validationSchema: (props: OuterProps): any => {
-    const { constraints } = props
-    if (!constraints) return null
-
-    return buildValidationSchema(constraints)
+  handleSubmit: (values, { setSubmitting, resetForm }) => {
+    setTimeout(() => {
+      alert(JSON.stringify(values, null, 2));
+      setSubmitting(false);
+    }, 1000);
   },
+}
 
-  handleSubmit: () => {
-    // do submitting things
-  }
-})(withEasyForm(InnerForm) as any);
-
-export default EditForm;
+// Generic proposal form with basic structure, "Title" and "Rationale" fields
+// Other fields can be passed as children
+export const GenericProposalForm: React.FunctionComponent<GenericProposalFormProps> = (props) => {
+  const { handleChange, errors, isSubmitting, touched, handleSubmit, children } = props;
+  const errorLabelsProps = getFormErrorLabelsProps<GenericFormValues>(errors, touched);
+  return (
+    <div className="Forms">
+      <Form className="proposal-form" onSubmit={handleSubmit}>
+        <Form.Field error={Boolean(errorLabelsProps.title)}>
+          <LabelWithHelp text="Title" help="The title of your proposal"/>
+          <Form.Input
+            onChange={handleChange}
+            name="title"
+            placeholder="Title for your awesome proposal..."
+            error={errorLabelsProps.title}
+          />
+        </Form.Field>
+        <Form.Field error={Boolean(errorLabelsProps.rationale)}>
+          <LabelWithHelp text="Rationale" help="The rationale behind your proposal"/>
+          <Form.TextArea
+            onChange={handleChange}
+            name="rationale"
+            placeholder="This proposal is awesome because..."
+            error={errorLabelsProps.rationale}
+          />
+        </Form.Field>
+        { children }
+        <div className="form-buttons">
+          <Button type="submit" color="blue" loading={isSubmitting}>
+            <Icon name="paper plane" />
+            Submit
+          </Button>
+          <Button color="grey" icon="times">
+            <Icon name="times" />
+            Cancel
+          </Button>
+        </div>
+      </Form>
+    </div>
+  )
+}

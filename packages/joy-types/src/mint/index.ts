@@ -68,6 +68,8 @@ export function registerMintTypes () {
       getTypeRegistry().register({
         MintId: 'u64',
         Mint,
+        MintBalanceOf: 'u64',
+        BalanceOfMint: 'Balance',
         'minting::BalanceOf': 'Balance'
       });
     } catch (err) {

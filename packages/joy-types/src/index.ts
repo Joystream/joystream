@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { Enum, Option, Struct, Vec } from "@polkadot/types/codec";
 import { getTypeRegistry, Text } from "@polkadot/types";
 import { BlockNumber, AccountId, Balance, Hash } from "@polkadot/types/interfaces";
@@ -17,6 +18,27 @@ import { registerMintTypes } from "./mint";
 import { registerRecurringRewardsTypes } from "./recurring-rewards";
 import { registerContentWorkingGroupTypes } from "./content-working-group";
 import { registerProposalsTypes } from "./proposals";
+=======
+import { Enum, Option, Struct, Vec } from '@polkadot/types/codec';
+import { getTypeRegistry, Text } from '@polkadot/types';
+import { BlockNumber, AccountId, Balance, Hash } from '@polkadot/types/interfaces';
+import { u32, bool } from '@polkadot/types/primitive';
+import { Codec } from '@polkadot/types/types';
+
+import { registerForumTypes } from './forum';
+import { registerMediaTypes } from './media';
+import { registerMembershipTypes } from './members';
+import { registerRolesTypes } from './roles';
+import { registerDiscoveryTypes } from './discovery';
+import { registerHiringTypes } from './hiring';
+import { registerVersionedStoreTypes } from './versioned-store';
+import { registerVersionedStorePermissionsTypes } from './versioned-store/permissions';
+import { registerStakeTypes } from './stake';
+import { registerMintTypes } from './mint';
+import { registerRecurringRewardsTypes } from './recurring-rewards';
+import { registerContentWorkingGroupTypes } from './content-working-group';
+import { registerProposalTypes, ProposalStatus } from './proposals';
+>>>>>>> joystream-constantinoples
 
 export function getTextPropAsString(struct: Struct, fieldName: string): string {
   return (struct.get(fieldName) as Text).toString();
@@ -68,6 +90,7 @@ export type SealedVote = {
   vote: Option<AccountId>;
 };
 
+<<<<<<< HEAD
 // Note: this could be named 'RuntimeUpgradeProposal' (as it is in Rust),
 // but not a big deal here in JS.
 export type Proposal = {
@@ -81,6 +104,8 @@ export type Proposal = {
   status: ProposalStatus;
 };
 
+=======
+>>>>>>> joystream-constantinoples
 export type ProposalVote = {
   voter: AccountId;
   kind: VoteKind;
@@ -135,6 +160,7 @@ export class ElectionStage extends Enum {
 
 export type AnyElectionStage = Announcing | Voting | Revealing;
 
+<<<<<<< HEAD
 export const ProposalStatuses: { [key: string]: string } = {
   Active: "Active",
   Cancelled: "Cancelled",
@@ -150,6 +176,8 @@ export class ProposalStatus extends Enum {
   }
 }
 
+=======
+>>>>>>> joystream-constantinoples
 export const VoteKinds: { [key: string]: string } = {
   Abstain: "Abstain",
   Approve: "Approve",
@@ -253,4 +281,5 @@ export function registerJoystreamTypes() {
   registerRecurringRewardsTypes();
   registerHiringTypes();
   registerContentWorkingGroupTypes();
+  registerProposalTypes();
 }

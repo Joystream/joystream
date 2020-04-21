@@ -1,19 +1,25 @@
 import React from "react";
 import "../index.css";
 
-import { proposalDetails as mockedDetails } from "../__mocks__";
-import ProposalDetails from "../ProposalDetails";
+import MockProposalDetails from "./data/ProposalDetails.mock";
+import { ProposalDetails } from "../Proposal";
 
 export default {
-  title: "Proposals | Details"
+  title: "Proposals | Details",
 };
 
 export const HasToVote = () => <ProposalDetails {...mockedDetails} />;
 
-export const VotedApproved = () => <ProposalDetails {...mockedDetails} vote={{ hasVoted: true, value: "Approve" }} />;
+export const VotedApproved = () => (
+  <ProposalDetails {...MockProposalDetails} vote={{ hasVoted: true, value: "Approve" }} />
+);
 
-export const VotedAbstain = () => <ProposalDetails {...mockedDetails} vote={{ hasVoted: true, value: "Abstain" }} />;
+export const VotedAbstain = () => (
+  <ProposalDetails {...MockProposalDetails} vote={{ hasVoted: true, value: "Abstain" }} />
+);
 
-export const VotedReject = () => <ProposalDetails {...mockedDetails} vote={{ hasVoted: true, value: "Reject" }} />;
+export const VotedReject = () => (
+  <ProposalDetails {...MockProposalDetails} vote={{ hasVoted: true, value: "Reject" }} />
+);
 
-export const VotedSlash = () => <ProposalDetails {...mockedDetails} vote={{ hasVoted: true, value: "Slash" }} />;
+export const VotedSlash = () => <ProposalDetails {...MockProposalDetails} vote={{ hasVoted: true, value: "Slash" }} />;
