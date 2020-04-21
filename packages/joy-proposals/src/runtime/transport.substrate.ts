@@ -1,6 +1,9 @@
 import Transport from "./transport";
-import { u64 } from "@polkadot/types";
+import { Proposal, ProposalId } from "@joystream/types/proposals";
+import { MemberId } from "@joystream/types/members";
 import { ApiProps } from "@polkadot/react-api/types";
+import { u32, bool } from "@polkadot/types/";
+import { Codec } from "@polkadot/types/types";
 import { ApiPromise } from "@polkadot/api";
 
 export default class SubstrateTransport extends Transport {
@@ -27,26 +30,35 @@ export default class SubstrateTransport extends Transport {
   }
 
   async proposalCount() {
-    return this.proposalEngine.proposalCount();
+    return this.proposalEngine.proposalCount<u32>();
   }
 
-  async proposalById(proposalId: u64) {
-    return this.proposalEngine.proposals(proposalId);
+  async proposalById(proposalId: ProposalId) {
+    return this.proposalEngine.proposals<any>(proposalId);
+  }
+
+  async proposalsIds() {
+    const total: number = (await this.proposalCount()).toBn().toNumber();
+    return Array.from({ length: total }, (_, i) => new ProposalId(i));
   }
 
   async proposals() {
-    const count = await this.proposalCount();
-    return Promise.all(Array.from({ length: Number(count.toString()) }, (_, i) => this.proposalEngine.proposalById(i)));
+    const ids = await this.proposalsIds();
+    return Promise.all(ids.map((id) => this.proposalById(id)));
   }
 
-  async hasVotedOnProposal(proposalId: u64, memberId: u64) {
-    return this.proposalEngine.voteExistsByProposalByVoter(proposalId, memberId);
+  async hasVotedOnProposal(proposalId: ProposalId, voterId: MemberId) {
+    return await this.proposalEngine.voteExistsByProposalByVoter<bool>(proposalId, voterId);
   }
 
   async activeProposals() {
-    const activeProposalsIds = this.proposalEngine.activeProposalsIds();
-    return Promise.all(activeProposalsIds.map((id: u64) => this.proposalById(id)));
+    const activeProposalsIds = await this.proposalEngine.activeProposalsIds<ProposalId[]>();
+
+    return Promise.all(activeProposalsIds.map((id) => this.proposalById(id)));
   }
 
-  async proposedBy(memberId: u64) {}
+  async proposedBy(member: MemberId) {
+    let proposals = await this.proposals();
+    return proposals.filter(({ proposerId }: Proposal) => proposerId.eq(member));
+  }
 }
