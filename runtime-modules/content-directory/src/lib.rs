@@ -24,12 +24,13 @@ mod permissions;
 mod tests;
 
 pub use constraint::*;
+use core::fmt::Debug;
 pub use credentials::*;
 pub use errors::*;
 pub use operations::*;
 pub use permissions::*;
 
-pub trait Trait: system::Trait {
+pub trait Trait: system::Trait + Debug {
     /// Type that represents an actor or group of actors in the system.
     type Credential: Parameter
         + Member
@@ -55,7 +56,8 @@ pub trait Trait: system::Trait {
         + MaybeSerializeDeserialize
         + Eq
         + PartialEq
-        + Ord;
+        + Ord
+        + From<u32>;
 
     /// Security/configuration constraints
 
@@ -237,12 +239,8 @@ pub struct Entity<T: Trait> {
 
     /// Values for properties on class that are used by some schema used by this entity!
     /// Length is no more than Class.properties.
-    pub values: BTreeMap<u16, PropertyValue>,
-
-    /// Map, representing relation between entity vec_values index and nonce, where vec_value was updated
-    /// Used to avoid race update conditions
-    pub vec_value_nonces: BTreeMap<u16, T::Nonce>,
-    // pub deleted: bool,
+    pub values: BTreeMap<u16, PropertyValue<T>>, // Map, representing relation between entity vec_values index and nonce, where vec_value was updated
+                                                 // pub deleted: bool
 }
 
 impl<T: Trait> Default for Entity<T> {
@@ -251,7 +249,6 @@ impl<T: Trait> Default for Entity<T> {
             class_id: ClassId::default(),
             supported_schemas: BTreeSet::new(),
             values: BTreeMap::new(),
-            vec_value_nonces: BTreeMap::new(),
         }
     }
 }
@@ -260,13 +257,12 @@ impl<T: Trait> Entity<T> {
     fn new(
         class_id: ClassId,
         supported_schemas: BTreeSet<u16>,
-        values: BTreeMap<u16, PropertyValue>,
+        values: BTreeMap<u16, PropertyValue<T>>,
     ) -> Self {
         Self {
             class_id,
             supported_schemas,
             values,
-            ..Entity::default()
         }
     }
 }
@@ -353,7 +349,7 @@ impl Default for PropertyType {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum PropertyValue {
+pub enum PropertyValue<T: Trait> {
     // Single value:
     Bool(bool),
     Uint16(u16),
@@ -365,49 +361,109 @@ pub enum PropertyValue {
     Text(Vec<u8>),
     Reference(EntityId),
 
-    // Vector of values:
-    BoolVec(Vec<bool>),
-    Uint16Vec(Vec<u16>),
-    Uint32Vec(Vec<u32>),
-    Uint64Vec(Vec<u64>),
-    Int16Vec(Vec<i16>),
-    Int32Vec(Vec<i32>),
-    Int64Vec(Vec<i64>),
-    TextVec(Vec<Vec<u8>>),
-    ReferenceVec(Vec<EntityId>),
+    // Vector of values, nonce used to avoid race update conditions:
+    BoolVec(Vec<bool>, T::Nonce),
+    Uint16Vec(Vec<u16>, T::Nonce),
+    Uint32Vec(Vec<u32>, T::Nonce),
+    Uint64Vec(Vec<u64>, T::Nonce),
+    Int16Vec(Vec<i16>, T::Nonce),
+    Int32Vec(Vec<i32>, T::Nonce),
+    Int64Vec(Vec<i64>, T::Nonce),
+    TextVec(Vec<Vec<u8>>, T::Nonce),
+    ReferenceVec(Vec<EntityId>, T::Nonce),
     // External(ExternalPropertyType),
     // ExternalVec(Vec<ExternalPropertyType>),
 }
 
-impl PropertyValue {
+impl<T: Trait> PropertyValue<T> {
+    fn update(&mut self, new_value: PropertyValue<T>) {
+        if let Some(new_nonce) = self.try_increment_nonce() {
+            *self = new_value;
+            self.try_set_nonce(new_nonce)
+        } else {
+            *self = new_value;
+        }
+    }
+
+    fn try_increment_nonce(&mut self) -> Option<T::Nonce> {
+        // Increment nonce if property value is vec
+        match self {
+            PropertyValue::BoolVec(_, nonce)
+            | PropertyValue::Uint16Vec(_, nonce)
+            | PropertyValue::Uint32Vec(_, nonce)
+            | PropertyValue::Uint64Vec(_, nonce)
+            | PropertyValue::Int16Vec(_, nonce)
+            | PropertyValue::Int32Vec(_, nonce)
+            | PropertyValue::Int64Vec(_, nonce)
+            | PropertyValue::TextVec(_, nonce)
+            | PropertyValue::ReferenceVec(_, nonce) => {
+                *nonce += T::Nonce::one();
+                Some(*nonce)
+            }
+            _ => None,
+        }
+    }
+
+    fn try_set_nonce(&mut self, new_nonce: T::Nonce) {
+        // Set new nonce if property value is vec
+        match self {
+            PropertyValue::BoolVec(_, nonce)
+            | PropertyValue::Uint16Vec(_, nonce)
+            | PropertyValue::Uint32Vec(_, nonce)
+            | PropertyValue::Uint64Vec(_, nonce)
+            | PropertyValue::Int16Vec(_, nonce)
+            | PropertyValue::Int32Vec(_, nonce)
+            | PropertyValue::Int64Vec(_, nonce)
+            | PropertyValue::TextVec(_, nonce)
+            | PropertyValue::ReferenceVec(_, nonce) => *nonce = new_nonce,
+            _ => (),
+        }
+    }
+
+    fn get_nonce(&self) -> Option<T::Nonce> {
+        match self {
+            PropertyValue::BoolVec(_, nonce)
+            | PropertyValue::Uint16Vec(_, nonce)
+            | PropertyValue::Uint32Vec(_, nonce)
+            | PropertyValue::Uint64Vec(_, nonce)
+            | PropertyValue::Int16Vec(_, nonce)
+            | PropertyValue::Int32Vec(_, nonce)
+            | PropertyValue::Int64Vec(_, nonce)
+            | PropertyValue::TextVec(_, nonce)
+            | PropertyValue::ReferenceVec(_, nonce) => Some(*nonce),
+            _ => None,
+        }
+    }
+
     fn is_vec(&self) -> bool {
         match self {
-            PropertyValue::BoolVec(_)
-            | PropertyValue::Uint16Vec(_)
-            | PropertyValue::Uint32Vec(_)
-            | PropertyValue::Uint64Vec(_)
-            | PropertyValue::Int16Vec(_)
-            | PropertyValue::Int32Vec(_)
-            | PropertyValue::Int64Vec(_)
-            | PropertyValue::TextVec(_)
-            | PropertyValue::ReferenceVec(_) => true,
+            PropertyValue::BoolVec(_, _)
+            | PropertyValue::Uint16Vec(_, _)
+            | PropertyValue::Uint32Vec(_, _)
+            | PropertyValue::Uint64Vec(_, _)
+            | PropertyValue::Int16Vec(_, _)
+            | PropertyValue::Int32Vec(_, _)
+            | PropertyValue::Int64Vec(_, _)
+            | PropertyValue::TextVec(_, _)
+            | PropertyValue::ReferenceVec(_, _) => true,
             _ => false,
         }
     }
 
     fn vec_clear(&mut self) {
         match self {
-            PropertyValue::BoolVec(vec) => *vec = vec![],
-            PropertyValue::Uint16Vec(vec) => *vec = vec![],
-            PropertyValue::Uint32Vec(vec) => *vec = vec![],
-            PropertyValue::Uint64Vec(vec) => *vec = vec![],
-            PropertyValue::Int16Vec(vec) => *vec = vec![],
-            PropertyValue::Int32Vec(vec) => *vec = vec![],
-            PropertyValue::Int64Vec(vec) => *vec = vec![],
-            PropertyValue::TextVec(vec) => *vec = vec![],
-            PropertyValue::ReferenceVec(vec) => *vec = vec![],
+            PropertyValue::BoolVec(vec, _) => *vec = vec![],
+            PropertyValue::Uint16Vec(vec, _) => *vec = vec![],
+            PropertyValue::Uint32Vec(vec, _) => *vec = vec![],
+            PropertyValue::Uint64Vec(vec, _) => *vec = vec![],
+            PropertyValue::Int16Vec(vec, _) => *vec = vec![],
+            PropertyValue::Int32Vec(vec, _) => *vec = vec![],
+            PropertyValue::Int64Vec(vec, _) => *vec = vec![],
+            PropertyValue::TextVec(vec, _) => *vec = vec![],
+            PropertyValue::ReferenceVec(vec, _) => *vec = vec![],
             _ => (),
         }
+        self.try_increment_nonce();
     }
 
     fn vec_remove_at(&mut self, index_in_property_vec: u32) {
@@ -418,17 +474,18 @@ impl PropertyValue {
         }
 
         match self {
-            PropertyValue::BoolVec(vec) => remove_at_checked(vec, index_in_property_vec),
-            PropertyValue::Uint16Vec(vec) => remove_at_checked(vec, index_in_property_vec),
-            PropertyValue::Uint32Vec(vec) => remove_at_checked(vec, index_in_property_vec),
-            PropertyValue::Uint64Vec(vec) => remove_at_checked(vec, index_in_property_vec),
-            PropertyValue::Int16Vec(vec) => remove_at_checked(vec, index_in_property_vec),
-            PropertyValue::Int32Vec(vec) => remove_at_checked(vec, index_in_property_vec),
-            PropertyValue::Int64Vec(vec) => remove_at_checked(vec, index_in_property_vec),
-            PropertyValue::TextVec(vec) => remove_at_checked(vec, index_in_property_vec),
-            PropertyValue::ReferenceVec(vec) => remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::BoolVec(vec, _) => remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::Uint16Vec(vec, _) => remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::Uint32Vec(vec, _) => remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::Uint64Vec(vec, _) => remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::Int16Vec(vec, _) => remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::Int32Vec(vec, _) => remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::Int64Vec(vec, _) => remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::TextVec(vec, _) => remove_at_checked(vec, index_in_property_vec),
+            PropertyValue::ReferenceVec(vec, _) => remove_at_checked(vec, index_in_property_vec),
             _ => (),
         }
+        self.try_increment_nonce();
     }
 
     fn vec_insert_at(&mut self, index_in_property_vec: u32, property_value: Self) {
@@ -438,32 +495,34 @@ impl PropertyValue {
             }
         }
 
+        self.try_increment_nonce();
+
         match (self, property_value) {
-            (PropertyValue::BoolVec(vec), PropertyValue::Bool(value)) => {
+            (PropertyValue::BoolVec(vec, _), PropertyValue::Bool(value)) => {
                 insert_at(vec, index_in_property_vec, value)
             }
-            (PropertyValue::Uint16Vec(vec), PropertyValue::Uint16(value)) => {
+            (PropertyValue::Uint16Vec(vec, _), PropertyValue::Uint16(value)) => {
                 insert_at(vec, index_in_property_vec, value)
             }
-            (PropertyValue::Uint32Vec(vec), PropertyValue::Uint32(value)) => {
+            (PropertyValue::Uint32Vec(vec, _), PropertyValue::Uint32(value)) => {
                 insert_at(vec, index_in_property_vec, value)
             }
-            (PropertyValue::Uint64Vec(vec), PropertyValue::Uint64(value)) => {
+            (PropertyValue::Uint64Vec(vec, _), PropertyValue::Uint64(value)) => {
                 insert_at(vec, index_in_property_vec, value)
             }
-            (PropertyValue::Int16Vec(vec), PropertyValue::Int16(value)) => {
+            (PropertyValue::Int16Vec(vec, _), PropertyValue::Int16(value)) => {
                 insert_at(vec, index_in_property_vec, value)
             }
-            (PropertyValue::Int32Vec(vec), PropertyValue::Int32(value)) => {
+            (PropertyValue::Int32Vec(vec, _), PropertyValue::Int32(value)) => {
                 insert_at(vec, index_in_property_vec, value)
             }
-            (PropertyValue::Int64Vec(vec), PropertyValue::Int64(value)) => {
+            (PropertyValue::Int64Vec(vec, _), PropertyValue::Int64(value)) => {
                 insert_at(vec, index_in_property_vec, value)
             }
-            (PropertyValue::TextVec(vec), PropertyValue::Text(ref value)) => {
+            (PropertyValue::TextVec(vec, _), PropertyValue::Text(ref value)) => {
                 insert_at(vec, index_in_property_vec, value.to_owned())
             }
-            (PropertyValue::ReferenceVec(vec), PropertyValue::Reference(value)) => {
+            (PropertyValue::ReferenceVec(vec, _), PropertyValue::Reference(value)) => {
                 insert_at(vec, index_in_property_vec, value)
             }
             _ => (),
@@ -471,7 +530,7 @@ impl PropertyValue {
     }
 }
 
-impl Default for PropertyValue {
+impl<T: Trait> Default for PropertyValue<T> {
     fn default() -> Self {
         PropertyValue::Bool(false)
     }
@@ -768,7 +827,7 @@ decl_module! {
             as_entity_maintainer: bool,
             entity_id: EntityId,
             schema_id: u16, // Do not type alias u16!! - u16,
-            property_values: BTreeMap<u16, PropertyValue>
+            property_values: BTreeMap<u16, PropertyValue<T>>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
             Self::do_add_schema_support_to_entity(&raw_origin, with_credential, as_entity_maintainer, entity_id, schema_id, property_values)
@@ -779,7 +838,7 @@ decl_module! {
             with_credential: Option<T::Credential>,
             as_entity_maintainer: bool,
             entity_id: EntityId,
-            property_values: BTreeMap<u16, PropertyValue>
+            property_values: BTreeMap<u16, PropertyValue<T>>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
             Self::do_update_entity_property_values(&raw_origin, with_credential, as_entity_maintainer, entity_id, property_values)
@@ -816,7 +875,7 @@ decl_module! {
             entity_id: EntityId,
             in_class_schema_property_id: u16,
             index_in_property_vec: u32,
-            property_value: PropertyValue,
+            property_value: PropertyValue<T>,
             nonce: T::Nonce
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
@@ -832,7 +891,7 @@ decl_module! {
             )
         }
 
-        pub fn transaction(origin, operations: Vec<Operation<T::Credential>>) -> dispatch::Result {
+        pub fn transaction(origin, operations: Vec<Operation<T::Credential, T>>) -> dispatch::Result {
             // This map holds the EntityId of the entity created as a result of executing a CreateEntity Operation
             // keyed by the indexed of the operation, in the operations vector.
             let mut entity_created_in_operation: BTreeMap<usize, EntityId> = BTreeMap::new();
@@ -937,7 +996,7 @@ impl<T: Trait> Module<T> {
         with_credential: Option<T::Credential>,
         as_entity_maintainer: bool,
         entity_id: EntityId,
-        property_values: BTreeMap<u16, PropertyValue>,
+        property_values: BTreeMap<u16, PropertyValue<T>>,
     ) -> dispatch::Result {
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
 
@@ -1032,7 +1091,7 @@ impl<T: Trait> Module<T> {
         entity_id: EntityId,
         in_class_schema_property_id: u16,
         index_in_property_vec: u32,
-        property_value: PropertyValue,
+        property_value: PropertyValue<T>,
         nonce: T::Nonce,
     ) -> dispatch::Result {
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
@@ -1076,7 +1135,7 @@ impl<T: Trait> Module<T> {
 
     pub fn complete_entity_property_values_update(
         entity_id: EntityId,
-        new_property_values: BTreeMap<u16, PropertyValue>,
+        new_property_values: BTreeMap<u16, PropertyValue<T>>,
     ) -> dispatch::Result {
         Self::ensure_known_entity_id(entity_id)?;
 
@@ -1085,7 +1144,6 @@ impl<T: Trait> Module<T> {
         // Get current property values of an entity as a mutable vector,
         // so we can update them if new values provided present in new_property_values.
         let mut updated_values = entity.values;
-        let mut vec_value_nonces = entity.vec_value_nonces;
         let mut updated = false;
         // Iterate over a vector of new values and update corresponding properties
         // of this entity if new values are valid.
@@ -1101,11 +1159,7 @@ impl<T: Trait> Module<T> {
                     Self::ensure_property_value_to_update_is_valid(&new_value, class_prop)?;
 
                     // Update a current prop value in a mutable vector, if a new value is valid.
-                    *current_prop_value = new_value;
-                    if current_prop_value.is_vec() {
-                        // Update last block of vec prop value if update performed
-                        Self::refresh_vec_value_nonces(id, &mut vec_value_nonces);
-                    }
+                    current_prop_value.update(new_value);
                     updated = true;
                 }
             } else {
@@ -1119,21 +1173,10 @@ impl<T: Trait> Module<T> {
         if updated {
             <EntityById<T>>::mutate(entity_id, |entity| {
                 entity.values = updated_values;
-                entity.vec_value_nonces = vec_value_nonces;
             });
         }
 
         Ok(())
-    }
-
-    fn refresh_vec_value_nonces(id: u16, vec_value_nonces: &mut BTreeMap<u16, T::Nonce>) {
-        if let Some(nonce) = vec_value_nonces.get_mut(&id) {
-            *nonce += T::Nonce::one();
-        } else {
-            // If there no nonce entry under a given key, we need to initialize it manually with one nonce, as given entity value exist
-            // and first vec value specific operation was already performed
-            vec_value_nonces.insert(id, T::Nonce::one());
-        }
     }
 
     fn complete_entity_property_vector_cleaning(
@@ -1161,10 +1204,6 @@ impl<T: Trait> Module<T> {
             {
                 current_property_value_vec.vec_clear();
             }
-            Self::refresh_vec_value_nonces(
-                in_class_schema_property_id,
-                &mut entity.vec_value_nonces,
-            );
         });
 
         Ok(())
@@ -1179,11 +1218,10 @@ impl<T: Trait> Module<T> {
         Self::ensure_known_entity_id(entity_id)?;
         let entity = Self::entity_by_id(entity_id);
 
-        // Ensure property value vector nonces equality to avoid possible data races,
-        // when performing vector specific operations
-        Self::ensure_nonce_equality(in_class_schema_property_id, &entity.vec_value_nonces, nonce)?;
-
         if let Some(current_prop_value) = entity.values.get(&in_class_schema_property_id) {
+            // Ensure property value vector nonces equality to avoid possible data races,
+            // when performing vector specific operations
+            Self::ensure_nonce_equality(current_prop_value, nonce)?;
             Self::ensure_index_in_property_vector_is_valid(
                 current_prop_value,
                 index_in_property_vec,
@@ -1199,10 +1237,6 @@ impl<T: Trait> Module<T> {
             if let Some(current_prop_value) = entity.values.get_mut(&in_class_schema_property_id) {
                 current_prop_value.vec_remove_at(index_in_property_vec)
             }
-            Self::refresh_vec_value_nonces(
-                in_class_schema_property_id,
-                &mut entity.vec_value_nonces,
-            );
         });
 
         Ok(())
@@ -1212,21 +1246,21 @@ impl<T: Trait> Module<T> {
         entity_id: EntityId,
         in_class_schema_property_id: u16,
         index_in_property_vec: u32,
-        property_value: PropertyValue,
+        property_value: PropertyValue<T>,
         nonce: T::Nonce,
     ) -> dispatch::Result {
         Self::ensure_known_entity_id(entity_id)?;
 
         let (entity, class) = Self::get_entity_and_class(entity_id);
 
-        // Ensure property value vector nonces equality to avoid possible data races,
-        // when performing vector specific operations
-        Self::ensure_nonce_equality(in_class_schema_property_id, &entity.vec_value_nonces, nonce)?;
         // Get class-level information about this property
         if let Some(class_prop) = class.properties.get(in_class_schema_property_id as usize) {
             // Try to find a current property value in the entity
             // by matching its id to the id of a property with an updated value.
             if let Some(entity_prop_value) = entity.values.get(&in_class_schema_property_id) {
+                // Ensure property value vector nonces equality to avoid possible data races,
+                // when performing vector specific operations
+                Self::ensure_nonce_equality(entity_prop_value, nonce)?;
                 // Validate a new property value against the type of this property
                 // and check any additional constraints like the length of a vector
                 // if it's a vector property or the length of a text if it's a text property.
@@ -1250,10 +1284,6 @@ impl<T: Trait> Module<T> {
             if let Some(current_prop_value) = entity.values.get_mut(&in_class_schema_property_id) {
                 current_prop_value.vec_insert_at(index_in_property_vec, property_value)
             }
-            Self::refresh_vec_value_nonces(
-                in_class_schema_property_id,
-                &mut entity.vec_value_nonces,
-            );
         });
 
         Ok(())
@@ -1265,7 +1295,7 @@ impl<T: Trait> Module<T> {
         as_entity_maintainer: bool,
         entity_id: EntityId,
         schema_id: u16,
-        property_values: BTreeMap<u16, PropertyValue>,
+        property_values: BTreeMap<u16, PropertyValue<T>>,
     ) -> dispatch::Result {
         // class id of the entity being updated
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
@@ -1418,7 +1448,7 @@ impl<T: Trait> Module<T> {
     // the target entity and class exists and constraint allows it.
     fn ensure_internal_property_values_permitted(
         source_class_id: ClassId,
-        property_values: &BTreeMap<u16, PropertyValue>,
+        property_values: &BTreeMap<u16, PropertyValue<T>>,
     ) -> dispatch::Result {
         for (in_class_index, property_value) in property_values.iter() {
             if let PropertyValue::Reference(ref target_entity_id) = property_value {
@@ -1452,18 +1482,12 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_nonce_equality(
-        in_class_schema_property_id: u16,
-        vec_value_nonces: &BTreeMap<u16, T::Nonce>,
-        nonce: T::Nonce,
+        vec_value: &PropertyValue<T>,
+        new_nonce: T::Nonce,
     ) -> dispatch::Result {
-        if let Some(vec_value_nonce) = vec_value_nonces.get(&in_class_schema_property_id) {
+        if let Some(nonce) = vec_value.get_nonce() {
             ensure!(
-                *vec_value_nonce == nonce,
-                ERROR_PROP_VALUE_VEC_NONCES_DOES_NOT_MATCH
-            );
-        } else {
-            ensure!(
-                nonce == T::Nonce::zero(),
+                nonce == new_nonce,
                 ERROR_PROP_VALUE_VEC_NONCES_DOES_NOT_MATCH
             );
         }
@@ -1547,7 +1571,7 @@ impl<T: Trait> Module<T> {
     pub fn add_entity_schema_support(
         entity_id: EntityId,
         schema_id: u16,
-        property_values: BTreeMap<u16, PropertyValue>,
+        property_values: BTreeMap<u16, PropertyValue<T>>,
     ) -> dispatch::Result {
         Self::ensure_known_entity_id(entity_id)?;
 
@@ -1657,7 +1681,10 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn ensure_valid_internal_prop(value: &PropertyValue, prop: &Property) -> dispatch::Result {
+    pub fn ensure_valid_internal_prop(
+        value: &PropertyValue<T>,
+        prop: &Property,
+    ) -> dispatch::Result {
         match (value, prop.prop_type) {
             (PV::Reference(entity_id), PT::Reference(class_id)) => {
                 Self::ensure_known_class_id(class_id)?;
@@ -1674,7 +1701,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn ensure_index_in_property_vector_is_valid(
-        value: &PropertyValue,
+        value: &PropertyValue<T>,
         index_in_property_vec: u32,
     ) -> dispatch::Result {
         fn is_valid_index<T>(vec: &[T], index_in_property_vec: u32) -> bool {
@@ -1682,15 +1709,15 @@ impl<T: Trait> Module<T> {
         }
 
         let is_valid_index = match value {
-            PropertyValue::BoolVec(vec) => is_valid_index(vec, index_in_property_vec),
-            PropertyValue::Uint16Vec(vec) => is_valid_index(vec, index_in_property_vec),
-            PropertyValue::Uint32Vec(vec) => is_valid_index(vec, index_in_property_vec),
-            PropertyValue::Uint64Vec(vec) => is_valid_index(vec, index_in_property_vec),
-            PropertyValue::Int16Vec(vec) => is_valid_index(vec, index_in_property_vec),
-            PropertyValue::Int32Vec(vec) => is_valid_index(vec, index_in_property_vec),
-            PropertyValue::Int64Vec(vec) => is_valid_index(vec, index_in_property_vec),
-            PropertyValue::TextVec(vec) => is_valid_index(vec, index_in_property_vec),
-            PropertyValue::ReferenceVec(vec) => is_valid_index(vec, index_in_property_vec),
+            PropertyValue::BoolVec(vec, _) => is_valid_index(vec, index_in_property_vec),
+            PropertyValue::Uint16Vec(vec, _) => is_valid_index(vec, index_in_property_vec),
+            PropertyValue::Uint32Vec(vec, _) => is_valid_index(vec, index_in_property_vec),
+            PropertyValue::Uint64Vec(vec, _) => is_valid_index(vec, index_in_property_vec),
+            PropertyValue::Int16Vec(vec, _) => is_valid_index(vec, index_in_property_vec),
+            PropertyValue::Int32Vec(vec, _) => is_valid_index(vec, index_in_property_vec),
+            PropertyValue::Int64Vec(vec, _) => is_valid_index(vec, index_in_property_vec),
+            PropertyValue::TextVec(vec, _) => is_valid_index(vec, index_in_property_vec),
+            PropertyValue::ReferenceVec(vec, _) => is_valid_index(vec, index_in_property_vec),
             _ => return Err(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR),
         };
 
@@ -1701,7 +1728,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn is_unknown_internal_entity_id(id: PropertyValue) -> bool {
+    pub fn is_unknown_internal_entity_id(id: PropertyValue<T>) -> bool {
         if let PropertyValue::Reference(entity_id) = id {
             !<EntityById<T>>::exists(entity_id)
         } else {
@@ -1716,7 +1743,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn ensure_property_value_to_update_is_valid(
-        value: &PropertyValue,
+        value: &PropertyValue<T>,
         prop: &Property,
     ) -> dispatch::Result {
         Self::ensure_prop_value_matches_its_type(value, prop)?;
@@ -1727,8 +1754,8 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn ensure_prop_value_can_be_inserted_at_prop_vec(
-        value: &PropertyValue,
-        entity_prop_value: &PropertyValue,
+        value: &PropertyValue<T>,
+        entity_prop_value: &PropertyValue<T>,
         index_in_property_vec: u32,
         prop: &Property,
     ) -> dispatch::Result {
@@ -1740,28 +1767,28 @@ impl<T: Trait> Module<T> {
 
         let is_valid_len = match (value, entity_prop_value, prop.prop_type) {
             // Single values
-            (PV::Bool(_), PV::BoolVec(vec), PT::BoolVec(max_len)) => {
+            (PV::Bool(_), PV::BoolVec(vec, _), PT::BoolVec(max_len)) => {
                 validate_prop_vec_len_after_value_insert(vec, max_len)
             }
-            (PV::Uint16(_), PV::Uint16Vec(vec), PT::Uint16Vec(max_len)) => {
+            (PV::Uint16(_), PV::Uint16Vec(vec, _), PT::Uint16Vec(max_len)) => {
                 validate_prop_vec_len_after_value_insert(vec, max_len)
             }
-            (PV::Uint32(_), PV::Uint32Vec(vec), PT::Uint32Vec(max_len)) => {
+            (PV::Uint32(_), PV::Uint32Vec(vec, _), PT::Uint32Vec(max_len)) => {
                 validate_prop_vec_len_after_value_insert(vec, max_len)
             }
-            (PV::Uint64(_), PV::Uint64Vec(vec), PT::Uint64Vec(max_len)) => {
+            (PV::Uint64(_), PV::Uint64Vec(vec, _), PT::Uint64Vec(max_len)) => {
                 validate_prop_vec_len_after_value_insert(vec, max_len)
             }
-            (PV::Int16(_), PV::Int16Vec(vec), PT::Int16Vec(max_len)) => {
+            (PV::Int16(_), PV::Int16Vec(vec, _), PT::Int16Vec(max_len)) => {
                 validate_prop_vec_len_after_value_insert(vec, max_len)
             }
-            (PV::Int32(_), PV::Int32Vec(vec), PT::Int32Vec(max_len)) => {
+            (PV::Int32(_), PV::Int32Vec(vec, _), PT::Int32Vec(max_len)) => {
                 validate_prop_vec_len_after_value_insert(vec, max_len)
             }
-            (PV::Int64(_), PV::Int64Vec(vec), PT::Int64Vec(max_len)) => {
+            (PV::Int64(_), PV::Int64Vec(vec, _), PT::Int64Vec(max_len)) => {
                 validate_prop_vec_len_after_value_insert(vec, max_len)
             }
-            (PV::Text(text_item), PV::TextVec(vec), PT::TextVec(vec_max_len, text_max_len)) => {
+            (PV::Text(text_item), PV::TextVec(vec, _), PT::TextVec(vec_max_len, text_max_len)) => {
                 if validate_prop_vec_len_after_value_insert(vec, vec_max_len) {
                     Self::validate_max_len_of_text(text_item, text_max_len)?;
                     true
@@ -1771,7 +1798,7 @@ impl<T: Trait> Module<T> {
             }
             (
                 PV::Reference(entity_id),
-                PV::ReferenceVec(vec),
+                PV::ReferenceVec(vec, _),
                 PT::ReferenceVec(vec_max_len, class_id),
             ) => {
                 Self::ensure_known_class_id(class_id)?;
@@ -1795,7 +1822,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn validate_max_len_if_text_prop(
-        value: &PropertyValue,
+        value: &PropertyValue<T>,
         prop: &Property,
     ) -> dispatch::Result {
         match (value, &prop.prop_type) {
@@ -1813,7 +1840,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn validate_max_len_if_vec_prop(
-        value: &PropertyValue,
+        value: &PropertyValue<T>,
         prop: &Property,
     ) -> dispatch::Result {
         fn validate_vec_len<T>(vec: &[T], max_len: u16) -> bool {
@@ -1821,15 +1848,15 @@ impl<T: Trait> Module<T> {
         }
 
         let is_valid_len = match (value, prop.prop_type) {
-            (PV::BoolVec(vec), PT::BoolVec(max_len)) => validate_vec_len(vec, max_len),
-            (PV::Uint16Vec(vec), PT::Uint16Vec(max_len)) => validate_vec_len(vec, max_len),
-            (PV::Uint32Vec(vec), PT::Uint32Vec(max_len)) => validate_vec_len(vec, max_len),
-            (PV::Uint64Vec(vec), PT::Uint64Vec(max_len)) => validate_vec_len(vec, max_len),
-            (PV::Int16Vec(vec), PT::Int16Vec(max_len)) => validate_vec_len(vec, max_len),
-            (PV::Int32Vec(vec), PT::Int32Vec(max_len)) => validate_vec_len(vec, max_len),
-            (PV::Int64Vec(vec), PT::Int64Vec(max_len)) => validate_vec_len(vec, max_len),
+            (PV::BoolVec(vec, _), PT::BoolVec(max_len)) => validate_vec_len(vec, max_len),
+            (PV::Uint16Vec(vec, _), PT::Uint16Vec(max_len)) => validate_vec_len(vec, max_len),
+            (PV::Uint32Vec(vec, _), PT::Uint32Vec(max_len)) => validate_vec_len(vec, max_len),
+            (PV::Uint64Vec(vec, _), PT::Uint64Vec(max_len)) => validate_vec_len(vec, max_len),
+            (PV::Int16Vec(vec, _), PT::Int16Vec(max_len)) => validate_vec_len(vec, max_len),
+            (PV::Int32Vec(vec, _), PT::Int32Vec(max_len)) => validate_vec_len(vec, max_len),
+            (PV::Int64Vec(vec, _), PT::Int64Vec(max_len)) => validate_vec_len(vec, max_len),
 
-            (PV::TextVec(vec), PT::TextVec(vec_max_len, text_max_len)) => {
+            (PV::TextVec(vec, _), PT::TextVec(vec_max_len, text_max_len)) => {
                 if validate_vec_len(vec, vec_max_len) {
                     for text_item in vec.iter() {
                         Self::validate_max_len_of_text(text_item, text_max_len)?;
@@ -1840,7 +1867,7 @@ impl<T: Trait> Module<T> {
                 }
             }
 
-            (PV::ReferenceVec(vec), PT::ReferenceVec(vec_max_len, class_id)) => {
+            (PV::ReferenceVec(vec, _), PT::ReferenceVec(vec_max_len, class_id)) => {
                 Self::ensure_known_class_id(class_id)?;
                 if validate_vec_len(vec, vec_max_len) {
                     for entity_id in vec.iter() {
@@ -1868,7 +1895,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn ensure_prop_value_matches_its_type(
-        value: &PropertyValue,
+        value: &PropertyValue<T>,
         prop: &Property,
     ) -> dispatch::Result {
         ensure!(
@@ -1878,7 +1905,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn does_prop_value_match_type(value: &PropertyValue, prop: &Property) -> bool {
+    pub fn does_prop_value_match_type(value: &PropertyValue<T>, prop: &Property) -> bool {
         // A non required property can be updated to None:
         if !prop.required && *value == PV::Bool(false) {
             return true;
@@ -1895,15 +1922,15 @@ impl<T: Trait> Module<T> {
                 (PV::Text(_),     PT::Text(_)) |
                 (PV::Reference(_), PT::Reference(_)) |
                 // Vectors:
-                (PV::BoolVec(_),     PT::BoolVec(_)) |
-                (PV::Uint16Vec(_),   PT::Uint16Vec(_)) |
-                (PV::Uint32Vec(_),   PT::Uint32Vec(_)) |
-                (PV::Uint64Vec(_),   PT::Uint64Vec(_)) |
-                (PV::Int16Vec(_),    PT::Int16Vec(_)) |
-                (PV::Int32Vec(_),    PT::Int32Vec(_)) |
-                (PV::Int64Vec(_),    PT::Int64Vec(_)) |
-                (PV::TextVec(_),     PT::TextVec(_, _)) |
-                (PV::ReferenceVec(_), PT::ReferenceVec(_, _)) => true,
+                (PV::BoolVec(_, _),     PT::BoolVec(_)) |
+                (PV::Uint16Vec(_, _),   PT::Uint16Vec(_)) |
+                (PV::Uint32Vec(_, _),   PT::Uint32Vec(_)) |
+                (PV::Uint64Vec(_, _),   PT::Uint64Vec(_)) |
+                (PV::Int16Vec(_, _),    PT::Int16Vec(_)) |
+                (PV::Int32Vec(_, _),    PT::Int32Vec(_)) |
+                (PV::Int64Vec(_, _),    PT::Int64Vec(_)) |
+                (PV::TextVec(_, _),     PT::TextVec(_, _)) |
+                (PV::ReferenceVec(_, _), PT::ReferenceVec(_, _)) => true,
                 // (PV::External(_), PT::External(_)) => true,
                 // (PV::ExternalVec(_), PT::ExternalVec(_, _)) => true,
                 _ => false,

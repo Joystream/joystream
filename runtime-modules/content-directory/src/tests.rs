@@ -669,7 +669,10 @@ fn batch_transaction_vector_of_entities() {
                 BTreeSet::from_iter(vec![SCHEMA_ID_0].into_iter()),
                 prop_value(
                     0,
-                    PropertyValue::ReferenceVec(vec![entity_id + 1, entity_id + 2,])
+                    PropertyValue::ReferenceVec(
+                        vec![entity_id + 1, entity_id + 2,],
+                        <Runtime as Trait>::Nonce::default()
+                    )
                 )
             )
         );
@@ -1124,7 +1127,7 @@ fn update_entity_props_successfully() {
         prop_values.insert(PROP_ID_REFERENCE, PropertyValue::Bool(false));
         prop_values.insert(
             PROP_ID_U32_VEC,
-            PropertyValue::Uint32Vec(vec![123, 234, 44]),
+            PropertyValue::Uint32Vec(vec![123, 234, 44], <Runtime as Trait>::Nonce::default()),
         );
         assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
         prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(false));
@@ -1132,7 +1135,7 @@ fn update_entity_props_successfully() {
         prop_values.insert(PROP_ID_REFERENCE, PropertyValue::Reference(entity_id));
         prop_values.insert(
             PROP_ID_U32_VEC,
-            PropertyValue::Uint32Vec(vec![123, 234, 44, 88, 43]),
+            PropertyValue::Uint32Vec(vec![123, 234, 44, 88, 43], <Runtime as Trait>::Nonce::one()),
         );
         assert_ok!(TestModule::complete_entity_property_values_update(
             entity_id,
@@ -1208,7 +1211,7 @@ fn complete_entity_property_vector_cleaning_successfully() {
         prop_values.insert(PROP_ID_U32, PropertyValue::Bool(false));
         prop_values.insert(
             PROP_ID_U32_VEC,
-            PropertyValue::Uint32Vec(vec![123, 234, 44]),
+            PropertyValue::Uint32Vec(vec![123, 234, 44], <Runtime as Trait>::Nonce::default()),
         );
         prop_values.insert(PROP_ID_REFERENCE, PropertyValue::Bool(false));
 
@@ -1222,7 +1225,10 @@ fn complete_entity_property_vector_cleaning_successfully() {
         ));
 
         // Update entity property values to compare with runtime storage entity value under given schema id
-        prop_values.insert(PROP_ID_U32_VEC, PropertyValue::Uint32Vec(vec![]));
+        prop_values.insert(
+            PROP_ID_U32_VEC,
+            PropertyValue::Uint32Vec(vec![], <Runtime as Trait>::Nonce::one()),
+        );
 
         // Check property values runtime storage related to a entity right after
         // cleaning entity property vector under given schema id
@@ -1271,7 +1277,7 @@ fn complete_remove_at_entity_property_vector() -> EntityId {
     prop_values.insert(PROP_ID_U32, PropertyValue::Bool(false));
     prop_values.insert(
         PROP_ID_U32_VEC,
-        PropertyValue::Uint32Vec(vec![123, 234, 44]),
+        PropertyValue::Uint32Vec(vec![123, 234, 44], <Runtime as Trait>::Nonce::default()),
     );
     prop_values.insert(PROP_ID_REFERENCE, PropertyValue::Bool(false));
 
@@ -1287,7 +1293,10 @@ fn complete_remove_at_entity_property_vector() -> EntityId {
     ));
 
     // Update entity property values to compare with runtime storage entity value under given schema id
-    prop_values.insert(PROP_ID_U32_VEC, PropertyValue::Uint32Vec(vec![234, 44]));
+    prop_values.insert(
+        PROP_ID_U32_VEC,
+        PropertyValue::Uint32Vec(vec![234, 44], <Runtime as Trait>::Nonce::one()),
+    );
 
     // Check property values runtime storage related to a entity right after
     // removing at given index of entity property vector value
@@ -1393,7 +1402,7 @@ fn complete_insert_at_entity_property_vector_successfully() {
         prop_values.insert(PROP_ID_U32, PropertyValue::Bool(false));
         prop_values.insert(
             PROP_ID_U32_VEC,
-            PropertyValue::Uint32Vec(vec![123, 234, 44]),
+            PropertyValue::Uint32Vec(vec![123, 234, 44], <Runtime as Trait>::Nonce::default()),
         );
         prop_values.insert(PROP_ID_REFERENCE, PropertyValue::Bool(false));
 
@@ -1421,7 +1430,7 @@ fn complete_insert_at_entity_property_vector_successfully() {
         // Update entity property values to compare with runtime storage entity value under given schema id
         prop_values.insert(
             PROP_ID_U32_VEC,
-            PropertyValue::Uint32Vec(vec![55, 33, 123, 234, 44]),
+            PropertyValue::Uint32Vec(vec![55, 33, 123, 234, 44], 2_u32.into()),
         );
 
         // Check property values runtime storage related to a entity right after
@@ -1520,7 +1529,10 @@ fn cannot_complete_insert_at_entity_property_vector_when_entity_prop_value_vecto
         property_values.insert(PROP_ID_BOOL, PropertyValue::Bool(true));
         property_values.insert(
             PROP_ID_U32_VEC,
-            PropertyValue::Uint32Vec(vec![5; PROP_ID_U32_VEC_MAX_LEN as usize]),
+            PropertyValue::Uint32Vec(
+                vec![5; PROP_ID_U32_VEC_MAX_LEN as usize],
+                <Runtime as Trait>::Nonce::default(),
+            ),
         );
         assert_ok!(TestModule::add_entity_schema_support(
             entity_id,
@@ -1576,7 +1588,7 @@ fn cannot_complete_insert_at_entity_property_vector_when_unknown_internal_entity
         property_values.insert(PROP_ID_BOOL, PropertyValue::Bool(true));
         property_values.insert(
             PROP_ID_REFERENCE_VEC,
-            PropertyValue::ReferenceVec(vec![entity_id_2]),
+            PropertyValue::ReferenceVec(vec![entity_id_2], <Runtime as Trait>::Nonce::default()),
         );
         assert_ok!(TestModule::add_entity_schema_support(
             entity_id,

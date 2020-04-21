@@ -294,7 +294,7 @@ pub fn simple_test_schema() -> Vec<Property> {
     }]
 }
 
-pub fn simple_test_entity_property_values() -> BTreeMap<u16, PropertyValue> {
+pub fn simple_test_entity_property_values<T: Trait>() -> BTreeMap<u16, PropertyValue<T>> {
     let mut property_values = BTreeMap::new();
     property_values.insert(0, PropertyValue::Int64(1337));
     property_values
@@ -351,7 +351,7 @@ pub fn create_entity_with_schema_support() -> EntityId {
     property_values.insert(PROP_ID_BOOL, PropertyValue::Bool(true));
     property_values.insert(
         PROP_ID_U32_VEC,
-        PropertyValue::Uint32Vec(vec![123, 234, 44]),
+        PropertyValue::Uint32Vec(vec![123, 234, 44], <Runtime as Trait>::Nonce::default()),
     );
     assert_ok!(TestModule::add_entity_schema_support(
         entity_id,
@@ -453,13 +453,16 @@ pub fn good_prop_ids() -> Vec<u16> {
     vec![0, 1]
 }
 
-pub fn bool_prop_value() -> BTreeMap<u16, PropertyValue> {
+pub fn bool_prop_value<T: Trait>() -> BTreeMap<u16, PropertyValue<T>> {
     let mut property_values = BTreeMap::new();
     property_values.insert(0, PropertyValue::Bool(true));
     property_values
 }
 
-pub fn prop_value(index: u16, value: PropertyValue) -> BTreeMap<u16, PropertyValue> {
+pub fn prop_value<T: Trait>(
+    index: u16,
+    value: PropertyValue<T>,
+) -> BTreeMap<u16, PropertyValue<T>> {
     let mut property_values = BTreeMap::new();
     property_values.insert(index, value);
     property_values

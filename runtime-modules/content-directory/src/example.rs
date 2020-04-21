@@ -421,10 +421,10 @@ fn create_podcast_class_schema() {
         // 15
         p.next_text_value(b"crypto,blockchain,governance,staking,bitcoin,ethereum".to_vec());
         // 16
-        p.next_value(PropertyValue::TextVec(vec![
-            b"Technology".to_vec(),
-            b"Software How-To".to_vec(),
-        ]));
+        p.next_value(PropertyValue::TextVec(
+            vec![b"Technology".to_vec(), b"Software How-To".to_vec()],
+            <Runtime as Trait>::Nonce::default(),
+        ));
         // 17
         p.next_text_value(
             b"https://ssl-static.libsyn.com/p/assets/2/d/2/5/2d25eb5fa72739f7/iTunes_Cover.png"
@@ -518,20 +518,20 @@ fn create_podcast_class_schema() {
     })
 }
 
-struct PropHelper {
+struct PropHelper<T: Trait> {
     prop_idx: u16,
-    property_values: BTreeMap<u16, PropertyValue>,
+    property_values: BTreeMap<u16, PropertyValue<T>>,
 }
 
-impl PropHelper {
-    fn new() -> PropHelper {
+impl<T: Trait> PropHelper<T> {
+    fn new() -> PropHelper<T> {
         PropHelper {
             prop_idx: 0,
             property_values: BTreeMap::new(),
         }
     }
 
-    fn next_value(&mut self, value: PropertyValue) {
+    fn next_value(&mut self, value: PropertyValue<T>) {
         self.property_values.insert(self.prop_idx, value);
         self.prop_idx += 1;
     }
@@ -540,7 +540,7 @@ impl PropHelper {
         self.next_value(PropertyValue::Text(text))
     }
 
-    fn get_property_values(self) -> BTreeMap<u16, PropertyValue> {
+    fn get_property_values(self) -> BTreeMap<u16, PropertyValue<T>> {
         self.property_values
     }
 }

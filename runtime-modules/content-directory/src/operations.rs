@@ -1,12 +1,12 @@
-use crate::{ClassId, EntityId, PropertyValue};
+use crate::{ClassId, EntityId, PropertyValue, Trait};
 use codec::{Decode, Encode};
 use rstd::collections::btree_map::BTreeMap;
 use rstd::prelude::*;
 
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
-pub enum ParametrizedPropertyValue {
+pub enum ParametrizedPropertyValue<T: Trait> {
     /// Same fields as normal PropertyValue
-    PropertyValue(PropertyValue),
+    PropertyValue(PropertyValue<T>),
 
     /// This is the index of an operation creating an entity in the transaction/batch operations
     InternalEntityJustAdded(u32), // should really be usize but it doesn't have Encode/Decode support
@@ -22,12 +22,12 @@ pub enum ParameterizedEntity {
 }
 
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
-pub struct ParametrizedClassPropertyValue {
+pub struct ParametrizedClassPropertyValue<T: Trait> {
     /// Index is into properties vector of class.
     pub in_class_index: u16,
 
     /// Value of property with index `in_class_index` in a given class.
-    pub value: ParametrizedPropertyValue,
+    pub value: ParametrizedPropertyValue<T>,
 }
 
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
@@ -36,30 +36,30 @@ pub struct CreateEntityOperation {
 }
 
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
-pub struct UpdatePropertyValuesOperation {
+pub struct UpdatePropertyValuesOperation<T: Trait> {
     pub entity_id: ParameterizedEntity,
-    pub new_parametrized_property_values: Vec<ParametrizedClassPropertyValue>,
+    pub new_parametrized_property_values: Vec<ParametrizedClassPropertyValue<T>>,
 }
 
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
-pub struct AddSchemaSupportToEntityOperation {
+pub struct AddSchemaSupportToEntityOperation<T: Trait> {
     pub entity_id: ParameterizedEntity,
     pub schema_id: u16,
-    pub parametrized_property_values: Vec<ParametrizedClassPropertyValue>,
+    pub parametrized_property_values: Vec<ParametrizedClassPropertyValue<T>>,
 }
 
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
-pub enum OperationType {
+pub enum OperationType<T: Trait> {
     CreateEntity(CreateEntityOperation),
-    UpdatePropertyValues(UpdatePropertyValuesOperation),
-    AddSchemaSupportToEntity(AddSchemaSupportToEntityOperation),
+    UpdatePropertyValues(UpdatePropertyValuesOperation<T>),
+    AddSchemaSupportToEntity(AddSchemaSupportToEntityOperation<T>),
 }
 
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
-pub struct Operation<Credential> {
+pub struct Operation<Credential, T: Trait> {
     pub with_credential: Option<Credential>,
     pub as_entity_maintainer: bool,
-    pub operation_type: OperationType,
+    pub operation_type: OperationType<T>,
 }
 
 pub fn parametrized_entity_to_entity_id(
@@ -80,10 +80,10 @@ pub fn parametrized_entity_to_entity_id(
     }
 }
 
-pub fn parametrized_property_values_to_property_values(
+pub fn parametrized_property_values_to_property_values<T: Trait>(
     created_entities: &BTreeMap<usize, EntityId>,
-    parametrized_property_values: Vec<ParametrizedClassPropertyValue>,
-) -> Result<BTreeMap<u16, PropertyValue>, &'static str> {
+    parametrized_property_values: Vec<ParametrizedClassPropertyValue<T>>,
+) -> Result<BTreeMap<u16, PropertyValue<T>>, &'static str> {
     let mut class_property_values = BTreeMap::new();
 
     for parametrized_class_property_value in parametrized_property_values.into_iter() {
@@ -121,7 +121,7 @@ pub fn parametrized_property_values_to_property_values(
                     }
                 }
 
-                PropertyValue::ReferenceVec(entities)
+                PropertyValue::ReferenceVec(entities, T::Nonce::default())
             }
         };
 
