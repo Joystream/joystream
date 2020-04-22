@@ -2,6 +2,10 @@ use codec::{Decode, Encode};
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub enum Role {
     StorageProvider,

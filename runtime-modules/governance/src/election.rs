@@ -99,6 +99,19 @@ impl<Elected, Term, X: CouncilElected<Elected, Term>> CouncilElected<Elected, Te
         X::council_elected(new_council, term);
     }
 }
+// Chain of handlers.
+impl<
+        Elected: Clone,
+        Term: Clone,
+        X: CouncilElected<Elected, Term>,
+        Y: CouncilElected<Elected, Term>,
+    > CouncilElected<Elected, Term> for (X, Y)
+{
+    fn council_elected(new_council: Elected, term: Term) {
+        X::council_elected(new_council.clone(), term.clone());
+        Y::council_elected(new_council, term);
+    }
+}
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Clone, Copy, Encode, Decode, Default)]
