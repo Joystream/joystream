@@ -1,6 +1,7 @@
 const cli = require('warthog/dist/cli/cli');
 import { Command } from '@oclif/command';
 
+import { ormconfig } from '../utils/ormconfig';
 import { createDir, createFile } from '../utils/utils';
 
 export default class New extends Command {
@@ -8,6 +9,7 @@ export default class New extends Command {
   static joystreamQueryNode = 'joystream-query-node';
   static substrateQueryNode = 'substrate-query-node';
   static schemaFile = 'schema.json';
+  static ormconfigFile = 'ormconfig.json';
 
   static args = [
     {
@@ -27,10 +29,26 @@ export default class New extends Command {
     createDir(New.joystreamQueryNode);
     createDir(New.substrateQueryNode);
 
-    // Change dir and create warthog graphql server
-    process.chdir(New.joystreamQueryNode);
-    createFile(New.schemaFile, '[{}]');
+    this.generateSubstrateQueryNodeDirs();
 
+    // Change working to joystream-query-node
+    process.chdir(New.joystreamQueryNode);
+    // Create joystream-query-node/schema.json file
+    createFile(New.schemaFile, '[{}]');
+    // Create warthog graphql server
     cli.run(`new ${project_name}`);
+  }
+
+  generateSubstrateQueryNodeDirs() {
+    // substrate-query-node/src
+    const srcDir = [New.substrateQueryNode, 'src'].join('/');
+    //substrate-query-node/src/mappings.ts
+    const mappingsFile = [srcDir, 'mappings.ts'].join('/');
+    // substrate-query-node/ormconfig.json
+    const ormConfigFile = [New.substrateQueryNode, New.ormconfigFile].join('/');
+
+    createDir(srcDir);
+    createFile(mappingsFile, '');
+    createFile(ormConfigFile, JSON.stringify(ormconfig));
   }
 }
