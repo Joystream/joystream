@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext } from "react";
 import { ApiContext } from "@polkadot/react-api";
 import { ApiProps } from "@polkadot/react-api/types";
 import { SubstrateTransport } from "@polkadot/joy-media/transport.substrate";
@@ -10,8 +10,8 @@ export function MockProvider({ children }) {
 }
 
 export function SubstrateProvider({ children }) {
-  let api: ApiProps = useContext(ApiContext);
-  let transport = new SubstrateTransport(api);
+  const api: ApiProps = useContext(ApiContext);
+  const transport = new SubstrateTransport(api);
 
   return <TransportContext.Provider value={transport}>{children}</TransportContext.Provider>;
 }
