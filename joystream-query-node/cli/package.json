@@ -11,6 +11,9 @@
     "@oclif/command": "^1",
     "@oclif/config": "^1",
     "@oclif/plugin-help": "^2",
+    "@types/mustache": "^4.0.1",
+    "fs-extra": "^9.0.0",
+    "mustache": "^4.0.1",
     "tslib": "^1",
     "typeorm-model-generator": "^0.4.2"
   },

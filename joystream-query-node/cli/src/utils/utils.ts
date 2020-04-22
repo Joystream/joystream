@@ -1,7 +1,11 @@
-import * as fs from 'fs';
+import * as fs from 'fs-extra';
 
-export function createDir(path: string) {
+export function createDir(path: string, del: boolean = false) {
   if (!fs.existsSync(path)) {
+    fs.mkdirSync(path);
+  }
+  if (del) {
+    fs.removeSync(path);
     fs.mkdirSync(path);
   }
 }
