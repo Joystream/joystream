@@ -2,15 +2,16 @@
 
 #![cfg(test)]
 
-use crate::{ProposalCancellationFee, Runtime};
+use crate::{BlockNumber, ProposalCancellationFee, Runtime};
 use codec::Encode;
 use governance::election::CouncilElected;
 use membership::members;
 use proposals_engine::{
-    ActiveStake, BalanceOf, Error, FinalizationData, Proposal, ProposalDecisionStatus,
-    ProposalParameters, ProposalStatus, VoteKind, VotersParameters, VotingResults,
+    ActiveStake, ApprovedProposalStatus, BalanceOf, Error, FinalizationData, Proposal,
+    ProposalDecisionStatus, ProposalParameters, ProposalStatus, VoteKind, VotersParameters,
+    VotingResults,
 };
-use sr_primitives::traits::DispatchResult;
+use sr_primitives::traits::{DispatchResult, OnFinalize, OnInitialize};
 use sr_primitives::AccountId32;
 use srml_support::traits::Currency;
 use srml_support::StorageLinkedMap;
@@ -26,9 +27,11 @@ fn initial_test_ext() -> runtime_io::TestExternalities {
     t.into()
 }
 
+type System = system::Module<Runtime>;
 type Membership = membership::members::Module<Runtime>;
 type ProposalsEngine = proposals_engine::Module<Runtime>;
 type Council = governance::council::Module<Runtime>;
+type ProposalCodex = proposals_codex::Module<Runtime>;
 
 fn setup_members(count: u8) {
     let authority_account_id = <Runtime as system::Trait>::AccountId::default();
@@ -69,6 +72,30 @@ fn setup_council() {
         ]
     )
     .is_ok());
+}
+
+pub(crate) fn increase_total_balance_issuance_using_account_id(
+    account_id: AccountId32,
+    balance: u128,
+) {
+    type Balances = balances::Module<Runtime>;
+    let initial_balance = Balances::total_issuance();
+    {
+        let _ = <Runtime as stake::Trait>::Currency::deposit_creating(&account_id, balance);
+    }
+    assert_eq!(Balances::total_issuance(), initial_balance + balance);
+}
+
+// Recommendation from Parity on testing on_finalize
+// https://substrate.dev/docs/en/next/development/module/tests
+fn run_to_block(n: BlockNumber) {
+    while System::block_number() < n {
+        <System as OnFinalize<BlockNumber>>::on_finalize(System::block_number());
+        <ProposalsEngine as OnFinalize<BlockNumber>>::on_finalize(System::block_number());
+        System::set_block_number(System::block_number() + 1);
+        <System as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
+        <ProposalsEngine as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
+    }
 }
 
 struct VoteGenerator {
@@ -129,11 +156,8 @@ impl Default for DummyProposalFixture {
     fn default() -> Self {
         let title = b"title".to_vec();
         let description = b"description".to_vec();
-        let dummy_proposal = proposals_codex::Call::<Runtime>::execute_text_proposal(
-            title.clone(),
-            description.clone(),
-            b"text".to_vec(),
-        );
+        let dummy_proposal =
+            proposals_codex::Call::<Runtime>::execute_text_proposal(b"text".to_vec());
 
         DummyProposalFixture {
             parameters: ProposalParameters {
@@ -363,5 +387,60 @@ fn proposal_reset_succeeds() {
 
         // Check council CouncilElected hook. It should set current council. And we passed empty council.
         assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 0);
+    });
+}
+
+#[test]
+fn text_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        setup_members(7);
+        setup_council();
+
+        println!("{}", CouncilManager::<Runtime>::total_voters_count());
+
+        let member_id = 1;
+        let account_id: [u8; 32] = [member_id; 32];
+        increase_total_balance_issuance_using_account_id(account_id.clone().into(), 500000);
+
+        assert_eq!(
+            ProposalCodex::create_text_proposal(
+                RawOrigin::Signed(account_id.into()).into(),
+                member_id as u64,
+                b"title".to_vec(),
+                b"body".to_vec(),
+                Some(<BalanceOf<Runtime>>::from(1250u32)),
+                b"text".to_vec(),
+            ),
+            Ok(())
+        );
+
+        let proposal_id = 1;
+
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+
+        run_to_block(2);
+
+        let proposal = ProposalsEngine::proposals(proposal_id);
+
+        assert_eq!(
+            proposal,
+            Proposal {
+                status: ProposalStatus::approved(ApprovedProposalStatus::Executed, 1),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                voting_results: VotingResults {
+                    abstentions: 0,
+                    approvals: 5,
+                    rejections: 0,
+                    slashes: 0,
+                },
+                ..proposal
+            }
+        );
     });
 }
