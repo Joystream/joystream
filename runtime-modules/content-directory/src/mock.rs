@@ -260,10 +260,9 @@ pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
 }
 
 impl Property {
-    pub fn required(&self) -> Property {
-        let mut new_self = self.clone();
-        new_self.required = true;
-        new_self
+    pub fn required(self) -> Self {
+        self.required = true;
+        self
     }
 }
 

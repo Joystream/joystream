@@ -70,8 +70,7 @@ pub fn parametrized_entity_to_entity_id(
         ParameterizedEntity::ExistingEntity(entity_id) => Ok(entity_id),
         ParameterizedEntity::InternalEntityJustAdded(op_index_u32) => {
             let op_index = op_index_u32 as usize;
-            if created_entities.contains_key(&op_index) {
-                let entity_id = created_entities.get(&op_index).unwrap();
+            if let Some(entity_id) = created_entities.get(&op_index) {
                 Ok(*entity_id)
             } else {
                 Err("EntityNotCreatedByOperation")
@@ -94,8 +93,7 @@ pub fn parametrized_property_values_to_property_values<T: Trait>(
             ) => {
                 // Verify that referenced entity was indeed created created
                 let op_index = entity_created_in_operation_index as usize;
-                if created_entities.contains_key(&op_index) {
-                    let entity_id = created_entities.get(&op_index).unwrap();
+                if let Some(entity_id) = created_entities.get(&op_index) {
                     PropertyValue::Reference(*entity_id)
                 } else {
                     return Err("EntityNotCreatedByOperation");
@@ -111,8 +109,7 @@ pub fn parametrized_property_values_to_property_values<T: Trait>(
                             entity_created_in_operation_index,
                         ) => {
                             let op_index = entity_created_in_operation_index as usize;
-                            if created_entities.contains_key(&op_index) {
-                                let entity_id = created_entities.get(&op_index).unwrap();
+                            if let Some(entity_id) = created_entities.get(&op_index) {
                                 entities.push(*entity_id);
                             } else {
                                 return Err("EntityNotCreatedByOperation");

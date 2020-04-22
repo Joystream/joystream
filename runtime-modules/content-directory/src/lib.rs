@@ -1595,7 +1595,7 @@ impl<T: Trait> Module<T> {
         Self::ensure_schema_id_is_not_added(&entity, schema_id)?;
 
         let class_schema_opt = class.schemas.get(schema_id as usize);
-        let schema_prop_ids = class_schema_opt.unwrap().properties.clone();
+        let schema_prop_ids = &class_schema_opt.unwrap().properties;
 
         let current_entity_values = entity.values.clone();
         let mut appended_entity_values = entity.values;
