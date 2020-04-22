@@ -4,7 +4,7 @@ import { Form, withFormik } from 'formik';
 import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
-import { onImageError } from '../utils';
+import { onImageError } from '@polkadot/joy-utils/images';
 import { ReorderableTracks } from './ReorderableTracks';
 import { MusicAlbumValidationSchema, MusicAlbumType, MusicAlbumClass as Fields, MusicAlbumFormValues, MusicAlbumToFormValues } from '../schemas/music/MusicAlbum';
 import { withMediaForm, MediaFormProps, datePlaceholder } from '../common/MediaForms';

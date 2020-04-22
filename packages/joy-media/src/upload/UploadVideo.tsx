@@ -6,7 +6,7 @@ import moment from 'moment';
 
 import TxButton, { OnTxButtonClick } from '@polkadot/joy-utils/TxButton';
 import { ContentId } from '@joystream/types/media';
-import { onImageError } from '../utils';
+import { onImageError } from '@polkadot/joy-utils/images';
 import { VideoValidationSchema, VideoType, VideoClass as Fields, VideoFormValues, VideoToFormValues, VideoCodec, VideoPropId } from '../schemas/video/Video';
 import { MediaFormProps, withMediaForm, datePlaceholder } from '../common/MediaForms';
 import EntityId from '@joystream/types/versioned-store/EntityId';
@@ -18,7 +18,7 @@ import { Credential } from '@joystream/types/versioned-store/permissions/credent
 import { Class, VecClassPropertyValue } from '@joystream/types/versioned-store';
 import { TxCallback } from '@polkadot/react-components/Status/types';
 import { SubmittableResult } from '@polkadot/api';
-import { nonEmptyStr, filterSubstrateEventsAndExtractData } from '@polkadot/joy-utils/';
+import { nonEmptyStr, filterSubstrateEventsAndExtractData } from '@polkadot/joy-utils/index';
 import { u16, u32, bool, Option, Vec } from '@polkadot/types';
 import { isInternalProp } from '@joystream/types/versioned-store/EntityCodec';
 import { MediaObjectCodec } from '../schemas/general/MediaObject';

@@ -1,6 +1,6 @@
 import { Routes } from './types';
 
-import Proposals from '@polkadot/joy-proposals/index';
+import Proposals from '@polkadot/joy-proposals/deprecated/index';
 
 export default ([
   {

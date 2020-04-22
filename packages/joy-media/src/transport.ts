@@ -18,11 +18,7 @@ import { MediaDropdownOptions } from './common/MediaDropdownOptions';
 import { ChannelEntity } from './entities/ChannelEntity';
 import { ChannelId } from '@joystream/types/content-working-group';
 import { isVideoChannel, isPublicChannel } from './channels/ChannelHelpers';
-
-export interface ValidationConstraint {
-  min: number
-  max: number
-}
+import { ValidationConstraint } from '@polkadot/joy-utils/ValidationConstraint';
 
 export interface ChannelValidationConstraints {
   handle: ValidationConstraint

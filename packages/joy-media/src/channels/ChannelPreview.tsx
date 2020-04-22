@@ -7,7 +7,7 @@ import { ChannelAvatar, ChannelAvatarSize } from './ChannelAvatar';
 import { isPublicChannel } from './ChannelHelpers';
 import { isMusicChannel, isVideoChannel, isAccountAChannelOwner, isVerifiedChannel } from './ChannelHelpers';
 import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
-import { nonEmptyStr } from '@polkadot/joy-utils/';
+import { nonEmptyStr } from '@polkadot/joy-utils/index';
 import { CurationPanel } from './CurationPanel';
 import { ChannelNameAsLink } from './ChannelNameAsLink';
 
