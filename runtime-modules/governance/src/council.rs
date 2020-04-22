@@ -21,7 +21,7 @@ impl<X: CouncilTermEnded> CouncilTermEnded for (X,) {
     }
 }
 
-pub trait Trait: system::Trait + GovernanceCurrency {
+pub trait Trait: system::Trait + minting::Trait + GovernanceCurrency {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type CouncilTermEnded: CouncilTermEnded;
@@ -29,8 +29,14 @@ pub trait Trait: system::Trait + GovernanceCurrency {
 
 decl_storage! {
     trait Store for Module<T: Trait> as Council {
-        ActiveCouncil get(active_council) config(): Seats<T::AccountId, BalanceOf<T>>;
-        TermEndsAt get(term_ends_at) config() : T::BlockNumber = T::BlockNumber::from(1);
+        pub ActiveCouncil get(active_council) config(): Seats<T::AccountId, BalanceOf<T>>;
+
+        pub TermEndsAt get(term_ends_at) config() : T::BlockNumber = T::BlockNumber::from(1);
+
+        /// The mint that funds council member rewards and spending proposals budget. It is an Option
+        /// because it was introduced in a runtime upgrade. It will be automatically created when
+        /// a successful call to set_council_mint_capacity() is made.
+        pub CouncilMint get(council_mint) : Option<<T as minting::Trait>::MintId>;
     }
 }
 
@@ -60,6 +66,15 @@ impl<T: Trait> Module<T> {
     pub fn is_councilor(sender: &T::AccountId) -> bool {
         Self::active_council().iter().any(|c| c.member == *sender)
     }
+
+    /// Initializes a new mint, discarding previous mint if it existed.
+    pub fn create_new_council_mint(
+        capacity: minting::BalanceOf<T>,
+    ) -> Result<T::MintId, &'static str> {
+        let mint_id = <minting::Module<T>>::add_mint(capacity, None)?;
+        CouncilMint::<T>::put(mint_id);
+        Ok(mint_id)
+    }
 }
 
 decl_module! {
@@ -76,7 +91,7 @@ decl_module! {
         // Privileged methods
 
         /// Force set a zero staked council. Stakes in existing council will vanish into thin air!
-        fn set_council(origin, accounts: Vec<T::AccountId>) {
+        pub fn set_council(origin, accounts: Vec<T::AccountId>) {
             ensure_root(origin)?;
             let new_council: Seats<T::AccountId, BalanceOf<T>> = accounts.into_iter().map(|account| {
                 Seat {
@@ -117,6 +132,29 @@ decl_module! {
             ensure_root(origin)?;
             ensure!(ends_at > <system::Module<T>>::block_number(), "must set future block number");
             <TermEndsAt<T>>::put(ends_at);
+        }
+
+        /// Sets the capacity of the the council mint, if it doesn't exist, attempts to
+        /// create a new one.
+        fn set_council_mint_capacity(origin, capacity: minting::BalanceOf<T>) {
+            ensure_root(origin)?;
+
+            if let Some(mint_id) = Self::council_mint() {
+                minting::Module::<T>::set_mint_capacity(mint_id, capacity)?;
+            } else {
+                Self::create_new_council_mint(capacity)?;
+            }
+        }
+
+        /// Attempts to mint and transfer amount to destination account
+        fn spend_from_council_mint(origin, amount: minting::BalanceOf<T>, destination: T::AccountId) {
+            ensure_root(origin)?;
+
+            if let Some(mint_id) = Self::council_mint() {
+                minting::Module::<T>::transfer_tokens(mint_id, amount, &destination)?;
+            } else {
+                return Err("CouncilHashNoMint")
+            }
         }
     }
 }

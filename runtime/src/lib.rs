@@ -1,14 +1,22 @@
-//! The Substrate Node Template runtime. This can be compiled with `#[no_std]`, ready for Wasm.
+//! The Joystream Substrate Node runtime.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
+// srml_staking_reward_curve::build! - substrate macro produces a warning.
+// TODO: remove after post-Rome substrate upgrade
+#![allow(array_into_iter)]
+
+// Runtime integration tests
+mod test;
 
 // Make the WASM binary available.
 // This is required only by the node build.
 // A dummy wasm_binary.rs will be built for the IDE.
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
+
+mod integration;
 
 use authority_discovery_primitives::{
     AuthorityId as EncodedAuthorityId, Signature as EncodedSignature,
@@ -50,6 +58,8 @@ pub use srml_support::{
 };
 pub use staking::StakerStatus;
 pub use timestamp::Call as TimestampCall;
+
+use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -115,7 +125,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 6,
-    spec_version: 8,
+    spec_version: 12,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
 };
@@ -396,7 +406,8 @@ impl finality_tracker::Trait for Runtime {
 }
 
 pub use forum;
-use governance::{council, election, proposals};
+pub use governance::election_params::ElectionParameters;
+use governance::{council, election};
 use membership::members;
 use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
 pub use versioned_store;
@@ -577,7 +588,10 @@ parameter_types! {
 impl stake::Trait for Runtime {
     type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
     type StakePoolId = StakePoolId;
-    type StakingEventsHandler = ContentWorkingGroupStakingEventHandler;
+    type StakingEventsHandler = (
+        ContentWorkingGroupStakingEventHandler,
+        crate::integration::proposals::StakingEventsHandler<Self>,
+    );
     type StakeId = u64;
     type SlashId = u64;
 }
@@ -632,7 +646,7 @@ impl stake::StakingEventsHandler<Runtime> for ContentWorkingGroupStakingEventHan
     // Handler for slashing event
     fn slashed(
         _id: &<Runtime as stake::Trait>::StakeId,
-        _slash_id: &<Runtime as stake::Trait>::SlashId,
+        _slash_id: Option<<Runtime as stake::Trait>::SlashId>,
         _slashed_amount: stake::BalanceOf<Runtime>,
         _remaining_stake: stake::BalanceOf<Runtime>,
         remaining_imbalance: stake::NegativeImbalance<Runtime>,
@@ -657,13 +671,9 @@ impl common::currency::GovernanceCurrency for Runtime {
     type Currency = balances::Module<Self>;
 }
 
-impl governance::proposals::Trait for Runtime {
-    type Event = Event;
-}
-
 impl governance::election::Trait for Runtime {
     type Event = Event;
-    type CouncilElected = (Council,);
+    type CouncilElected = (Council, integration::proposals::CouncilElectedHandler);
 }
 
 impl governance::council::Trait for Runtime {
@@ -801,6 +811,64 @@ impl discovery::Trait for Runtime {
     type Roles = LookupRoles;
 }
 
+parameter_types! {
+    pub const ProposalCancellationFee: u64 = 5;
+    pub const ProposalRejectionFee: u64 = 3;
+    pub const ProposalTitleMaxLength: u32 = 40;
+    pub const ProposalDescriptionMaxLength: u32 = 3000;
+    pub const ProposalMaxActiveProposalLimit: u32 = 5;
+}
+
+impl proposals_engine::Trait for Runtime {
+    type Event = Event;
+    type ProposerOriginValidator = MembershipOriginValidator<Self>;
+    type VoterOriginValidator = CouncilManager<Self>;
+    type TotalVotersCounter = CouncilManager<Self>;
+    type ProposalId = u32;
+    type StakeHandlerProvider = proposals_engine::DefaultStakeHandlerProvider;
+    type CancellationFee = ProposalCancellationFee;
+    type RejectionFee = ProposalRejectionFee;
+    type TitleMaxLength = ProposalTitleMaxLength;
+    type DescriptionMaxLength = ProposalDescriptionMaxLength;
+    type MaxActiveProposalLimit = ProposalMaxActiveProposalLimit;
+    type DispatchableCallCode = Call;
+}
+impl Default for Call {
+    fn default() -> Self {
+        panic!("shouldn't call default for Call");
+    }
+}
+
+parameter_types! {
+    pub const ProposalMaxPostEditionNumber: u32 = 0; // post update is disabled
+    pub const ProposalMaxThreadInARowNumber: u32 = 100000; // will not be used
+    pub const ProposalThreadTitleLengthLimit: u32 = 40;
+    pub const ProposalPostLengthLimit: u32 = 1000;
+}
+
+impl proposals_discussion::Trait for Runtime {
+    type Event = Event;
+    type PostAuthorOriginValidator = MembershipOriginValidator<Self>;
+    type ThreadId = u32;
+    type PostId = u32;
+    type MaxPostEditionNumber = ProposalMaxPostEditionNumber;
+    type ThreadTitleLengthLimit = ProposalThreadTitleLengthLimit;
+    type PostLengthLimit = ProposalPostLengthLimit;
+    type MaxThreadInARowNumber = ProposalMaxThreadInARowNumber;
+}
+
+parameter_types! {
+    pub const TextProposalMaxLength: u32 = 5_000;
+    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 2_000_000;
+}
+
+impl proposals_codex::Trait for Runtime {
+    type MembershipOriginValidator = MembershipOriginValidator<Self>;
+    type TextProposalMaxLength = TextProposalMaxLength;
+    type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
+    type ProposalEncoder = ExtrinsicProposalEncoder;
+}
+
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -825,7 +893,6 @@ construct_runtime!(
         RandomnessCollectiveFlip: randomness_collective_flip::{Module, Call, Storage},
         Sudo: sudo,
         // Joystream
-        Proposals: proposals::{Module, Call, Storage, Event<T>, Config<T>},
         CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
         Council: council::{Module, Call, Storage, Event<T>, Config<T>},
         Memo: memo::{Module, Call, Storage, Event<T>},
@@ -844,6 +911,11 @@ construct_runtime!(
         RecurringRewards: recurringrewards::{Module, Call, Storage},
         Hiring: hiring::{Module, Call, Storage},
         ContentWorkingGroup: content_wg::{Module, Call, Storage, Event<T>, Config<T>},
+        // --- Proposals
+        ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
+        ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
+        ProposalsCodex: proposals_codex::{Module, Call, Storage, Error, Config<T>},
+        // ---
 	}
 );
 

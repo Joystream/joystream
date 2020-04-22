@@ -1,0 +1,11 @@
+{
+	"private": true,
+	"name": "joystream",
+	"license": "GPL-3.0-only",
+	"scripts": {
+		"test": "yarn && yarn workspaces run test"
+	},
+	"workspaces": [
+		"tests/network-tests"
+	]
+}
