@@ -27,6 +27,7 @@ fn initial_test_ext() -> runtime_io::TestExternalities {
     t.into()
 }
 
+type Balances = balances::Module<Runtime>;
 type System = system::Module<Runtime>;
 type Membership = membership::members::Module<Runtime>;
 type ProposalsEngine = proposals_engine::Module<Runtime>;
@@ -390,27 +391,26 @@ fn proposal_reset_succeeds() {
     });
 }
 
-#[test]
-fn text_proposal_execution_succeeds() {
-    initial_test_ext().execute_with(|| {
-        setup_members(7);
+struct CodexProposalTestFixture<SuccessfulCall>
+where
+    SuccessfulCall: Fn() -> DispatchResult<proposals_codex::Error>,
+{
+    successful_call: SuccessfulCall,
+}
+
+impl<SuccessfulCall> CodexProposalTestFixture<SuccessfulCall>
+where
+    SuccessfulCall: Fn() -> DispatchResult<proposals_codex::Error>,
+{
+    fn call_extrinsic_and_assert(&self) {
+        setup_members(15);
         setup_council();
 
-        let member_id = 1;
+        let member_id = 10;
         let account_id: [u8; 32] = [member_id; 32];
         increase_total_balance_issuance_using_account_id(account_id.clone().into(), 500000);
 
-        assert_eq!(
-            ProposalCodex::create_text_proposal(
-                RawOrigin::Signed(account_id.into()).into(),
-                member_id as u64,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(<BalanceOf<Runtime>>::from(1250u32)),
-                b"text".to_vec(),
-            ),
-            Ok(())
-        );
+        assert_eq!((self.successful_call)(), Ok(()));
 
         let proposal_id = 1;
 
@@ -439,6 +439,95 @@ fn text_proposal_execution_succeeds() {
                 },
                 ..proposal
             }
+        );
+    }
+}
+
+#[test]
+fn text_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 10;
+        let account_id: [u8; 32] = [member_id; 32];
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture {
+            successful_call: || {
+                ProposalCodex::create_text_proposal(
+                    RawOrigin::Signed(account_id.into()).into(),
+                    member_id as u64,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Runtime>>::from(1250u32)),
+                    b"text".to_vec(),
+                )
+            },
+        };
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+    });
+}
+
+#[test]
+fn set_lead_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 10;
+        let account_id: [u8; 32] = [member_id; 32];
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture {
+            successful_call: || {
+                ProposalCodex::create_set_lead_proposal(
+                    RawOrigin::Signed(account_id.clone().into()).into(),
+                    member_id as u64,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Runtime>>::from(1250u32)),
+                    Some((member_id as u64, account_id.into())),
+                )
+            },
+        };
+
+        assert!(content_working_group::Module::<Runtime>::ensure_lead_is_set().is_err());
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        assert!(content_working_group::Module::<Runtime>::ensure_lead_is_set().is_ok());
+    });
+}
+
+#[test]
+fn spending_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 10;
+        let account_id: [u8; 32] = [member_id; 32];
+        let new_balance = <BalanceOf<Runtime>>::from(5555u32);
+
+        let target_account_id: [u8; 32] = [12; 32];
+
+        assert!(Council::set_council_mint_capacity(RawOrigin::Root.into(), new_balance).is_ok());
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture {
+            successful_call: || {
+                ProposalCodex::create_spending_proposal(
+                    RawOrigin::Signed(account_id.clone().into()).into(),
+                    member_id as u64,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Runtime>>::from(1250u32)),
+                    new_balance,
+                    target_account_id.clone().into(),
+                )
+            },
+        };
+
+        assert_eq!(
+            Balances::free_balance::<AccountId32>(target_account_id.clone().into()),
+            0
+        );
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        assert_eq!(
+            Balances::free_balance::<AccountId32>(target_account_id.into()),
+            new_balance
         );
     });
 }
