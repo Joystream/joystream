@@ -42,8 +42,9 @@
 // #![warn(missing_docs)]
 
 mod proposal_types;
-#[cfg(test)]
-mod tests;
+
+// #[cfg(test)]
+// mod tests;
 
 use codec::Encode;
 use common::origin_validator::ActorOriginValidator;
@@ -70,6 +71,18 @@ pub use proposal_types::ProposalDetails;
 // proposal max balance percentage.
 const COUNCIL_MINT_MAX_BALANCE_PERCENT: u32 = 2;
 
+pub trait ProposalEncoder<T: Trait> {
+    fn encode_proposal(
+        proposal_details: ProposalDetails<
+            BalanceOfMint<T>,
+            BalanceOfGovernanceCurrency<T>,
+            T::BlockNumber,
+            T::AccountId,
+            MemberId<T>,
+        >,
+    ) -> Vec<u8>;
+}
+
 /// 'Proposals codex' substrate module Trait
 pub trait Trait:
     system::Trait
@@ -93,6 +106,8 @@ pub trait Trait:
         MemberId<Self>,
         Self::AccountId,
     >;
+
+    type ProposalEncoder: ProposalEncoder<Self>;
 }
 
 /// Balance alias for `stake` module
@@ -341,8 +356,8 @@ decl_module! {
                 Error::TextProposalSizeExceeded);
 
             let proposal_parameters = proposal_types::parameters::text_proposal::<T>();
-            let proposal_code =
-                <Call<T>>::execute_text_proposal(title.clone(), description.clone(), text.clone());
+            let proposal_details = ProposalDetails::<BalanceOfMint<T>, BalanceOfGovernanceCurrency<T>, T::BlockNumber, T::AccountId, MemberId<T>>::Text(text);
+            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
 
             Self::create_proposal(
                 origin,
@@ -350,12 +365,12 @@ decl_module! {
                 title,
                 description,
                 stake_balance,
-                proposal_code.encode(),
+                proposal_code,
                 proposal_parameters,
-                ProposalDetails::Text(text),
+                proposal_details,
             )?;
         }
-
+/*
         /// Create 'Runtime upgrade' proposal type. Runtime upgrade can be initiated only by
         /// members from the hardcoded list `RuntimeUpgradeProposalAllowedProposers`
         pub fn create_runtime_upgrade_proposal(
@@ -637,27 +652,25 @@ decl_module! {
                 ProposalDetails::SetStorageRoleParameters(role_parameters),
             )?;
         }
-
+*/
 // *************** Extrinsic to execute
 
         /// Text proposal extrinsic. Should be used as callable object to pass to the `engine` module.
-        fn execute_text_proposal(
+        pub fn execute_text_proposal(
             origin,
-            title: Vec<u8>,
-            _description: Vec<u8>,
-            _text: Vec<u8>,
+            text: Vec<u8>,
         ) {
             ensure_root(origin)?;
             print("Text proposal: ");
-            let title_string_result = from_utf8(title.as_slice());
-            if let Ok(title_string) = title_string_result{
-                print(title_string);
+            let text_string_result = from_utf8(text.as_slice());
+            if let Ok(text_string) = text_string_result{
+                print(text_string);
             }
         }
 
         /// Runtime upgrade proposal extrinsic.
         /// Should be used as callable object to pass to the `engine` module.
-        fn execute_runtime_upgrade_proposal(
+        pub fn execute_runtime_upgrade_proposal(
             origin,
             title: Vec<u8>,
             _description: Vec<u8>,
