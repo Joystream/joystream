@@ -9,24 +9,24 @@ import {
   genericFormDefaultOptions,
   DefaultOuterFormProps,
   genericFormDefaultValues
-} from './GenericProposalForm';
-import FormField from './FormField';
+} from "./GenericProposalForm";
+import FormField from "./FormField";
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
 
 // All of those are strings, because that's how those values are beeing passed from inputs
 type FormValues = GenericFormValues & {
-  storageProviderCount: string,
-  storageProviderReward: string,
-  storageProviderStakingLimit: string,
+  storageProviderCount: string;
+  storageProviderReward: string;
+  storageProviderStakingLimit: string;
 };
 
-const defaultValues:FormValues = {
+const defaultValues: FormValues = {
   ...genericFormDefaultValues,
-  storageProviderCount: '',
-  storageProviderReward: '',
-  storageProviderStakingLimit: '',
-}
+  storageProviderCount: "",
+  storageProviderReward: "",
+  storageProviderStakingLimit: ""
+};
 
 type FormAdditionalProps = {};
 type SetStorageRoleParamsFormProps = FormikProps<FormValues> & FormAdditionalProps;
@@ -37,48 +37,51 @@ const SetStorageRoleParamsForm: React.FunctionComponent<SetStorageRoleParamsForm
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
     <GenericProposalForm {...passProps}>
-        <Divider horizontal>Parameters</Divider>
-        <Form.Group widths="equal" style={{ marginBottom: "8rem" }}>
-          <FormField
-            label="Providers Count"
-            help="The proposed maximum number of active Storage Providers"
-            onChange={handleChange}
-            name="storageProviderCount"
-            placeholder="10"
-            error={errorLabelsProps.storageProviderCount}/>
-          <FormField
-            label="Provider Reward"
-            help="The proposed reward for Storage Providers (every x blocks)"
-            onChange={handleChange}
-            name="storageProviderReward"
-            placeholder="50"
-            error={errorLabelsProps.storageProviderReward}
-            unit={'tJOY'}/>
-          <FormField
-            label="Staking Limit"
-            help="The minimum stake for Storage Providers"
-            onChange={handleChange}
-            name="storageProviderStakingLimit"
-            placeholder="1500"
-            error={errorLabelsProps.storageProviderStakingLimit}
-            unit={'tJOY'}/>
-        </Form.Group>
+      <Divider horizontal>Parameters</Divider>
+      <Form.Group widths="equal" style={{ marginBottom: "8rem" }}>
+        <FormField
+          label="Providers Count"
+          help="The proposed maximum number of active Storage Providers"
+          onChange={handleChange}
+          name="storageProviderCount"
+          placeholder="10"
+          error={errorLabelsProps.storageProviderCount}
+        />
+        <FormField
+          label="Provider Reward"
+          help="The proposed reward for Storage Providers (every x blocks)"
+          onChange={handleChange}
+          name="storageProviderReward"
+          placeholder="50"
+          error={errorLabelsProps.storageProviderReward}
+          unit={"tJOY"}
+        />
+        <FormField
+          label="Staking Limit"
+          help="The minimum stake for Storage Providers"
+          onChange={handleChange}
+          name="storageProviderStakingLimit"
+          placeholder="1500"
+          error={errorLabelsProps.storageProviderStakingLimit}
+          unit={"tJOY"}
+        />
+      </Form.Group>
     </GenericProposalForm>
   );
-}
+};
 
 type OuterFormProps = DefaultOuterFormProps<FormAdditionalProps, FormValues>;
 
 export default withFormContainer<OuterFormProps, FormValues>({
-  mapPropsToValues: (props:OuterFormProps) => ({
+  mapPropsToValues: (props: OuterFormProps) => ({
     ...defaultValues,
     ...(props.initialData || {})
   }),
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    storageProviderCount: Yup.number().required('Enter the provider count'),
-    storageProviderReward: Yup.number().required('Enter the reward'),
-    storageProviderStakingLimit: Yup.number().required('Enter the provider staking limit')
+    storageProviderCount: Yup.number().required("Enter the provider count"),
+    storageProviderReward: Yup.number().required("Enter the reward"),
+    storageProviderStakingLimit: Yup.number().required("Enter the provider staking limit")
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: "SetStorageRoleParamsForm"

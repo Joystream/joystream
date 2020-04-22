@@ -9,11 +9,10 @@ import "./index.css";
 
 import translate from "./translate";
 import NotDone from "./NotDone";
-import { ProposalPreviewList } from "./Proposal";
 
-type Props = AppProps & I18nProps & ApiProps;
+interface Props extends AppProps, I18nProps {}
 
-function App(props: Props) {
+function App(props: Props): React.ReactElement<Props> {
   const { t, basePath } = props;
 
   // TODO: Can use semantic here?

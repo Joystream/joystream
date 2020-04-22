@@ -3,7 +3,7 @@ import { FormikProps } from "formik";
 import { Form, Icon, Button, Dropdown, Label } from "semantic-ui-react";
 import { getFormErrorLabelsProps } from "./errorHandling";
 import * as Yup from "yup";
-import LabelWithHelp from './LabelWithHelp';
+import LabelWithHelp from "./LabelWithHelp";
 
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
@@ -26,7 +26,7 @@ function SpendingProposalForm(props: SpendingProposalProps & FormikProps<FormVal
     <div className="Forms">
       <Form className="proposal-form" onSubmit={handleSubmit}>
         <Form.Field error={Boolean(errorLabelsProps.title)}>
-          <LabelWithHelp text="Title" help="The title of your proposal"/>
+          <LabelWithHelp text="Title" help="The title of your proposal" />
           <Form.Input
             onChange={handleChange}
             name="title"
@@ -35,7 +35,7 @@ function SpendingProposalForm(props: SpendingProposalProps & FormikProps<FormVal
           />
         </Form.Field>
         <Form.Field error={Boolean(errorLabelsProps.rationale)}>
-          <LabelWithHelp text="Rationale" help="The rationale behind your proposal"/>
+          <LabelWithHelp text="Rationale" help="The rationale behind your proposal" />
           <Form.TextArea
             onChange={handleChange}
             name="rationale"
@@ -44,7 +44,7 @@ function SpendingProposalForm(props: SpendingProposalProps & FormikProps<FormVal
           />
         </Form.Field>
         <Form.Field error={Boolean(errorLabelsProps.tokens)}>
-          <LabelWithHelp text="Amount of tokens" help="The amount of tokens you propose to spend"/>
+          <LabelWithHelp text="Amount of tokens" help="The amount of tokens you propose to spend" />
           <Form.Input
             style={{ display: "flex", alignItems: "center" }}
             onChange={handleChange}
@@ -58,7 +58,7 @@ function SpendingProposalForm(props: SpendingProposalProps & FormikProps<FormVal
           </Form.Input>
         </Form.Field>
         <Form.Field error={Boolean(errorLabelsProps.destinationAccount)}>
-          <LabelWithHelp text="Destination account" help="The account you propose to send the tokens into"/>
+          <LabelWithHelp text="Destination account" help="The account you propose to send the tokens into" />
           <Dropdown
             clearable
             name="destinationAccount"
@@ -106,7 +106,7 @@ export default withFormContainer<OuterFormProps, FormValues>({
     tokens: Yup.number().required("You need to specify an amount of tokens."),
     destinationAccount: Yup.string().required("Select a destination account!")
   }),
-  handleSubmit: (values, { setSubmitting }) => {
+  handleSubmit: (values: FormValues, { setSubmitting }) => {
     setTimeout(() => {
       console.log(JSON.stringify(values, null, 2));
       setSubmitting(false);

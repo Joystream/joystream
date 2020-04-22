@@ -3,7 +3,7 @@ import { FormikProps } from "formik";
 import { Form, Icon, Button, Dropdown, Label } from "semantic-ui-react";
 import { getFormErrorLabelsProps } from "./errorHandling";
 import * as Yup from "yup";
-import LabelWithHelp from './LabelWithHelp';
+import LabelWithHelp from "./LabelWithHelp";
 
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
@@ -24,7 +24,7 @@ function EvictStorageProviderForm(props: EvictStorageProviderProps & FormikProps
     <div className="Forms">
       <Form className="proposal-form" onSubmit={handleSubmit}>
         <Form.Field error={Boolean(errorLabelsProps.title)}>
-          <LabelWithHelp text="Title" help="The title of your proposal"/>
+          <LabelWithHelp text="Title" help="The title of your proposal" />
           <Form.Input
             onChange={handleChange}
             name="title"
@@ -33,7 +33,7 @@ function EvictStorageProviderForm(props: EvictStorageProviderProps & FormikProps
           />
         </Form.Field>
         <Form.Field error={Boolean(errorLabelsProps.rationale)}>
-          <LabelWithHelp text="Rationale" help="The rationale behind your proposal"/>
+          <LabelWithHelp text="Rationale" help="The rationale behind your proposal" />
           <Form.TextArea
             onChange={handleChange}
             name="rationale"
@@ -42,7 +42,7 @@ function EvictStorageProviderForm(props: EvictStorageProviderProps & FormikProps
           />
         </Form.Field>
         <Form.Field error={Boolean(errorLabelsProps.storageProvider)}>
-          <LabelWithHelp text="Storage provider" help="The storage provider you propose to evict"/>
+          <LabelWithHelp text="Storage provider" help="The storage provider you propose to evict" />
           <Dropdown
             clearable
             name="storageProvider"
@@ -85,7 +85,7 @@ export default withFormContainer<OuterFormProps, FormValues>({
     rationale: Yup.string().required("Rationale is required!"),
     storageProvider: Yup.string().required("Select a storage provider!")
   }),
-  handleSubmit: (values, { setSubmitting, resetForm }) => {
+  handleSubmit: (values: FormValues, { setSubmitting, resetForm }: { [k: string]: any }) => {
     setTimeout(() => {
       alert(JSON.stringify(values, null, 2));
       resetForm({});

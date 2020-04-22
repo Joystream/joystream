@@ -32,7 +32,7 @@ function SetCouncilParamsForm(props: SetCouncilParamsProps & FormikProps<FormVal
     <div className="Forms">
       <Form className="proposal-form" onSubmit={handleSubmit}>
         <Form.Field error={Boolean(errorLabelsProps.title)}>
-          <LabelWithHelp text="Title" help="The title of your proposal"/>
+          <LabelWithHelp text="Title" help="The title of your proposal" />
           <Form.Input
             onChange={handleChange}
             name="title"
@@ -41,7 +41,7 @@ function SetCouncilParamsForm(props: SetCouncilParamsProps & FormikProps<FormVal
           />
         </Form.Field>
         <Form.Field error={Boolean(errorLabelsProps.rationale)}>
-          <LabelWithHelp text="Rationale" help="The rationale behind your proposal"/>
+          <LabelWithHelp text="Rationale" help="The rationale behind your proposal" />
           <Form.TextArea
             onChange={handleChange}
             name="rationale"
@@ -54,7 +54,7 @@ function SetCouncilParamsForm(props: SetCouncilParamsProps & FormikProps<FormVal
 
         <Form.Group widths="equal" style={{ marginBottom: "8rem" }}>
           <Form.Field error={Boolean(errorLabelsProps.announcingPeriod)}>
-            <LabelWithHelp text="Announcing Period" help="Announcing period in days"/>
+            <LabelWithHelp text="Announcing Period" help="Announcing period in days" />
             <Form.Input
               fluid
               onChange={handleChange}
@@ -64,7 +64,7 @@ function SetCouncilParamsForm(props: SetCouncilParamsProps & FormikProps<FormVal
             />
           </Form.Field>
           <Form.Field error={Boolean(errorLabelsProps.votingPeriod)}>
-            <LabelWithHelp text="Voting Period" help="Voting period in days"/>
+            <LabelWithHelp text="Voting Period" help="Voting period in days" />
             <Form.Input
               fluid
               onChange={handleChange}
@@ -74,7 +74,7 @@ function SetCouncilParamsForm(props: SetCouncilParamsProps & FormikProps<FormVal
             />
           </Form.Field>
           <Form.Field error={Boolean(errorLabelsProps.revealingPeriod)}>
-            <LabelWithHelp text="Revealing Period" help="Revealing period in days"/>
+            <LabelWithHelp text="Revealing Period" help="Revealing period in days" />
             <Form.Input
               fluid
               onChange={handleChange}
@@ -84,7 +84,7 @@ function SetCouncilParamsForm(props: SetCouncilParamsProps & FormikProps<FormVal
             />
           </Form.Field>
           <Form.Field error={Boolean(errorLabelsProps.minVotingStake)}>
-            <LabelWithHelp text="Minimum Voting Stake" help="The minimum voting stake"/>
+            <LabelWithHelp text="Minimum Voting Stake" help="The minimum voting stake" />
             <Form.Input
               fluid
               onChange={handleChange}
@@ -97,7 +97,7 @@ function SetCouncilParamsForm(props: SetCouncilParamsProps & FormikProps<FormVal
         <Divider horizontal>Council</Divider>
         <Form.Group widths="equal" style={{ marginBottom: "8rem" }}>
           <Form.Field error={Boolean(errorLabelsProps.minCouncilStake)}>
-            <LabelWithHelp text="Minimum Council Stake" help="The minimum council stake"/>
+            <LabelWithHelp text="Minimum Council Stake" help="The minimum council stake" />
             <Form.Input
               fluid
               onChange={handleChange}
@@ -107,7 +107,7 @@ function SetCouncilParamsForm(props: SetCouncilParamsProps & FormikProps<FormVal
             />
           </Form.Field>
           <Form.Field error={Boolean(errorLabelsProps.newTermDuration)}>
-            <LabelWithHelp text="New Term Duration" help="Duration of the new term in days"/>
+            <LabelWithHelp text="New Term Duration" help="Duration of the new term in days" />
             <Form.Input
               fluid
               onChange={handleChange}
@@ -117,7 +117,7 @@ function SetCouncilParamsForm(props: SetCouncilParamsProps & FormikProps<FormVal
             />
           </Form.Field>
           <Form.Field error={Boolean(errorLabelsProps.councilSize)}>
-            <LabelWithHelp text="Council Size" help="The size of the council (number of seats)"/>
+            <LabelWithHelp text="Council Size" help="The size of the council (number of seats)" />
             <Form.Input
               fluid
               onChange={handleChange}
@@ -127,7 +127,7 @@ function SetCouncilParamsForm(props: SetCouncilParamsProps & FormikProps<FormVal
             />
           </Form.Field>
           <Form.Field error={Boolean(errorLabelsProps.candidacyLimit)}>
-            <LabelWithHelp text="Candidacy Limit" help="How many times can a member candidate"/>
+            <LabelWithHelp text="Candidacy Limit" help="How many times can a member candidate" />
             <Form.Input
               fluid
               onChange={handleChange}
@@ -202,7 +202,7 @@ export default withFormContainer<OuterFormProps, FormValues>({
     candidacyLimit: Yup.number().required("All fields must be filled!"),
     councilSize: Yup.number().required("All fields must be filled!")
   }),
-  handleSubmit: (values, { setSubmitting }) => {
+  handleSubmit: (values: FormValues, { setSubmitting }) => {
     setTimeout(() => {
       alert(JSON.stringify(values, null, 2));
 
