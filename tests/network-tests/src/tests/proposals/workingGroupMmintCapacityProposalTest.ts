@@ -1,19 +1,19 @@
-import { initConfig } from '../utils/config';
+import { initConfig } from '../../utils/config';
 import { Keyring, WsProvider } from '@polkadot/api';
-import { Bytes } from '@polkadot/types';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { membershipTest } from './membershipCreationTest';
-import { councilTest } from './electingCouncilTest';
+import { membershipTest } from '../membershipCreationTest';
+import { councilTest } from '../electingCouncilTest';
 import { registerJoystreamTypes } from '@joystream/types';
-import { ApiWrapper } from '../utils/apiWrapper';
+import { ApiWrapper } from '../../utils/apiWrapper';
+import { v4 as uuid } from 'uuid';
 import BN = require('bn.js');
 
-describe('Runtime upgrade integration tests', () => {
+describe.skip('Mint capacity proposal network tests', () => {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
-  const proposalStake: BN = new BN(+process.env.RUNTIME_UPGRADE_PROPOSAL_STAKE!);
+  const mintingCapacity: BN = new BN(+process.env.MINTING_CAPACITY!);
   const defaultTimeout: number = 120000;
 
   const m1KeyPairs: KeyringPair[] = new Array();
@@ -33,41 +33,46 @@ describe('Runtime upgrade integration tests', () => {
   membershipTest(m2KeyPairs);
   councilTest(m1KeyPairs, m2KeyPairs);
 
-  it('Upgrading the runtime test', async () => {
+  // TODO implement the test
+  it('Mint capacity proposal test', async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
-    const runtime: Bytes = await apiWrapper.getRuntime();
-    const description: string = 'runtime upgrade proposal which is used for API integration testing';
-    const runtimeProposalFee: BN = apiWrapper.estimateProposeRuntimeUpgradeFee(
-      proposalStake,
-      description,
-      description,
-      runtime
-    );
+    const description: string = 'spending proposal which is used for API network testing';
     const runtimeVoteFee: BN = apiWrapper.estimateVoteForProposalFee();
 
     // Topping the balances
+    const proposalStake: BN = await apiWrapper.getRequiredProposalStake(25, 10000);
+    const runtimeProposalFee: BN = apiWrapper.estimateProposeWorkingGroupMintCapacityFee(
+      description,
+      description,
+      proposalStake,
+      mintingCapacity
+    );
     await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, runtimeProposalFee.add(proposalStake));
     await apiWrapper.transferBalanceToAccounts(sudo, m2KeyPairs, runtimeVoteFee);
 
     // Proposal creation
+    console.log('proposing new mint capacity');
     const proposalPromise = apiWrapper.expectProposalCreated();
-    await apiWrapper.proposeRuntime(
+    console.log('sending extr with capacity ' + mintingCapacity);
+    await apiWrapper.proposeWorkingGroupMintCapacity(
       m1KeyPairs[0],
+      'testing mint capacity' + uuid().substring(0, 8),
+      'mint capacity to test proposal functionality' + uuid().substring(0, 8),
       proposalStake,
-      'testing runtime',
-      'runtime to test proposal functionality',
-      runtime
+      mintingCapacity
     );
     const proposalNumber = await proposalPromise;
+    console.log('proposed');
+    //await apiWrapper.getProposal(proposalNumber);
 
     // Approving runtime update proposal
-    const runtimePromise = apiWrapper.expectRuntimeUpgraded();
+    console.log('block number ' + (await apiWrapper.getBestBlock()));
+    console.log('approving new mint capacity');
+    const runtimePromise = apiWrapper.expectProposalFinalized();
     await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber);
     await runtimePromise;
   }).timeout(defaultTimeout);
-
-  membershipTest(new Array<KeyringPair>());
 
   after(() => {
     apiWrapper.close();

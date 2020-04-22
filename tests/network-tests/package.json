@@ -4,17 +4,18 @@
   "license": "GPL-3.0-only",
   "scripts": {
     "build": "tsc --build tsconfig.json",
-    "test": "mocha -r ts-node/register src/tests/*",
+    "test": "mocha -r ts-node/register src/tests/**/*",
     "lint": "tslint --project tsconfig.json",
     "prettier": "prettier --write ./src"
   },
   "dependencies": {
-    "@joystream/types": "^0.7.0",
+    "@joystream/types": "../joystream-apps/packages/joy-types",
     "@polkadot/api": "^0.96.1",
     "@polkadot/keyring": "^1.7.0-beta.5",
     "@types/bn.js": "^4.11.5",
     "bn.js": "^4.11.8",
     "dotenv": "^8.2.0",
+    "fs": "^0.0.1-security",
     "uuid": "^7.0.3"
   },
   "devDependencies": {
