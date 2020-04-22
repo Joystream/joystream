@@ -1,9 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
-//const { exec } = require('child_process');
+const { exec } = require('child_process');
 import { Command, flags } from '@oclif/command';
-const util = require('util');
-const exec = util.promisify(require('child_process').exec);
 
 export default class Typeorm extends Command {
   static description = 'Typeorm commands';

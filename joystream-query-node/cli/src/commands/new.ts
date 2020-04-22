@@ -1,7 +1,7 @@
 const cli = require('warthog/dist/cli/cli');
 import { Command } from '@oclif/command';
 
-import { ormconfig } from '../utils/ormconfig';
+import { ormconfig } from '../helpers/ormconfig';
 import { createDir, createFile } from '../utils/utils';
 
 export default class New extends Command {
