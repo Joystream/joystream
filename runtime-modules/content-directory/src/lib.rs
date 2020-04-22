@@ -7,7 +7,7 @@ use rstd::prelude::*;
 use runtime_primitives::traits::{
     MaybeSerialize, MaybeSerializeDeserialize, Member, One, SimpleArithmetic, Zero,
 };
-use srml_support::{decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter};
+use srml_support::{decl_module, StorageMap, decl_storage, dispatch, ensure, traits::Get, Parameter};
 
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
@@ -249,6 +249,7 @@ pub struct Entity<T: Trait> {
     /// Length is no more than Class.properties.
     pub values: BTreeMap<PropertyId, PropertyValue<T>>,
     // pub deleted: bool
+    pub reference_count: u32
 }
 
 impl<T: Trait> Default for Entity<T> {
@@ -257,6 +258,7 @@ impl<T: Trait> Default for Entity<T> {
             class_id: ClassId::default(),
             supported_schemas: BTreeSet::new(),
             values: BTreeMap::new(),
+            reference_count: 0
         }
     }
 }
@@ -271,6 +273,7 @@ impl<T: Trait> Entity<T> {
             class_id,
             supported_schemas,
             values,
+            ..Self::default()
         }
     }
 }
@@ -825,8 +828,17 @@ decl_module! {
             class_id: ClassId
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
-            let _entity_id = Self::do_create_entity(&raw_origin, with_credential, class_id)?;
+            Self::do_create_entity(&raw_origin, with_credential, class_id)?;
             Ok(())
+        }
+
+        pub fn remove_entity(
+            origin,
+            with_credential: Option<T::Credential>,
+            entity_id: EntityId,
+        ) -> dispatch::Result {
+            let raw_origin = Self::ensure_root_or_signed(origin)?;
+            Self::do_remove_entity(&raw_origin, with_credential, entity_id)
         }
 
         pub fn add_schema_support_to_entity(
@@ -985,6 +997,26 @@ impl<T: Trait> Module<T> {
         )
     }
 
+    fn do_remove_entity(
+        raw_origin: &system::RawOrigin<T::AccountId>,
+        with_credential: Option<T::Credential>,
+        entity_id: EntityId,
+    ) -> dispatch::Result {
+        // class id of the entity being removed
+        let class_id = Self::get_class_id_by_entity_id(entity_id)?;
+
+        Self::if_class_permissions_satisfied(
+            raw_origin,
+            with_credential,
+            None,
+            ClassPermissions::can_remove_entity,
+            class_id,
+            |_class_permissions, _access_level| {
+                Self::complete_entity_removal(entity_id)
+            }
+        )
+    }
+
     fn perform_entity_creation(class_id: ClassId) -> EntityId {
         let entity_id = NextEntityId::get();
 
@@ -1126,6 +1158,15 @@ impl<T: Trait> Module<T> {
                 )
             },
         )
+    }
+
+    fn complete_entity_removal(entity_id: EntityId) -> dispatch::Result {
+        
+        // Ensure there is no property values pointing to given entity
+        Self::ensure_rc_is_zero(entity_id)?;
+        <EntityById<T>>::remove(entity_id);
+        <EntityMaintainerByEntityId<T>>::remove(entity_id);
+        Ok(())
     }
 
     pub fn complete_class_schema_status_update(
@@ -1664,6 +1705,12 @@ impl<T: Trait> Module<T> {
 
     pub fn ensure_known_entity_id(entity_id: EntityId) -> dispatch::Result {
         ensure!(<EntityById<T>>::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
+        Ok(())
+    }
+
+    pub fn ensure_rc_is_zero(entity_id: EntityId) -> dispatch::Result {
+        let entity = Self::entity_by_id(entity_id);
+        ensure!(entity.reference_count == 0, ERROR_ENTITY_REFERENCE_COUNTER_DOES_NOT_EQUAL_TO_ZERO);
         Ok(())
     }
 

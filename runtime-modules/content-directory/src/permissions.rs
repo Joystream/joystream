@@ -30,6 +30,9 @@ where
     /// Who can create new entities in the versioned store of this class
     pub create_entities: CredentialSet<Credential>,
 
+    /// Who can remove entities from the versioned store of this class
+    pub remove_entities: CredentialSet<Credential>,
+
     /// The type of constraint on referencing the class from other entities.
     pub reference_constraint: ReferenceConstraint<ClassId, PropertyIndex>,
 
@@ -116,6 +119,26 @@ where
                     Ok(())
                 } else {
                     Err("NotInCreateEntitiesSet")
+                }
+            }
+            AccessLevel::Unspecified => Err("UnspecifiedActor"),
+            AccessLevel::EntityMaintainer => Err("AccessLevel::EntityMaintainer-UsedOutOfPlace"),
+        }
+    }
+
+    pub fn can_remove_entity(
+        class_permissions: &Self,
+        access_level: &AccessLevel<Credential>,
+    ) -> dispatch::Result {
+        match access_level {
+            AccessLevel::System => Ok(()),
+            AccessLevel::Credential(credential) => {
+                if !class_permissions.entities_can_be_created {
+                    Err("EntitiesCannotBeRemoved")
+                } else if class_permissions.remove_entities.contains(credential) {
+                    Ok(())
+                } else {
+                    Err("NotInRemoveEntitiesSet")
                 }
             }
             AccessLevel::Unspecified => Err("UnspecifiedActor"),
