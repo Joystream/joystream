@@ -22,7 +22,6 @@ export default function ExploreView({
           minItemWidth="250"
           items={allVideos.map((video, idx) => {
             let { img: channelImg } = channels[video.channel] || ""
-
             return (
               <VideoPreview
                 url={`videos/${idx}`}
