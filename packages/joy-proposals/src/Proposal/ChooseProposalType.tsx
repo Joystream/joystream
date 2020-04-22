@@ -7,7 +7,9 @@ import "./ChooseProposalType.css";
 export const Categories = {
   storage: 'Storage',
   council: 'Council',
-  validators: 'Validators'
+  validators: 'Validators',
+  cwg: 'Content Working Group',
+  other: 'Other'
 } as const;
 
 export type Category = typeof Categories[keyof typeof Categories];

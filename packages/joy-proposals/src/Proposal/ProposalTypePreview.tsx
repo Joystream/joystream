@@ -37,7 +37,7 @@ export default function ProposalTypePreview(props:ProposalTypePreviewProps) {
           </div>
           <div className="proposal-detail">
             <div className="detail-title">Grace period:</div>
-            <div className="detail-value">{gracePeriod} day{ gracePeriod > 1 && 's' }</div>
+            <div className="detail-value">{gracePeriod ? `${ gracePeriod } day${ gracePeriod > 1 ? 's' : '' }` : 'NONE' }</div>
           </div>
         </div>
       </Item.Content>
