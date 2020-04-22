@@ -223,7 +223,7 @@ fn create_runtime_upgrade_common_checks_succeed() {
                 )
             },
             proposal_parameters: crate::proposal_types::parameters::runtime_upgrade_proposal::<Test>(),
-            proposal_details: ProposalDetails::RuntimeUpgrade(blake2_256(b"wasm").to_vec()),
+            proposal_details: ProposalDetails::RuntimeUpgradeHash(blake2_256(b"wasm").to_vec()),
         };
         proposal_fixture.check_all();
     });

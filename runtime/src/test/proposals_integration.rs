@@ -396,8 +396,6 @@ fn text_proposal_execution_succeeds() {
         setup_members(7);
         setup_council();
 
-        println!("{}", CouncilManager::<Runtime>::total_voters_count());
-
         let member_id = 1;
         let account_id: [u8; 32] = [member_id; 32];
         increase_total_balance_issuance_using_account_id(account_id.clone().into(), 500000);
