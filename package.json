@@ -4,6 +4,14 @@
   "workspaces": [
     "packages/*"
   ],
+  "scripts": {
+    "test": "echo 'OK'"
+  },
+  "lint-staged": {
+    "*.{ts, tsx, js, jsx, json}": [
+      "prettier --no-semi --write"
+    ]
+  },
   "devDependencies": {
     "@babel/core": "^7.8.7",
     "@babel/preset-env": "^7.8.7",
@@ -37,7 +45,7 @@
     "lerna": "^3.20.2",
     "lint-staged": "^10.0.8",
     "parcel-bundler": "^1.12.4",
-    "prettier": "^1.19.1",
+    "prettier": "2.0.5",
     "react-docgen-typescript-loader": "^3.7.1",
     "rollup": "^2.1.0",
     "rollup-plugin-babel": "^4.4.0",
