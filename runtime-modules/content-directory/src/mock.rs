@@ -20,10 +20,10 @@ pub const MEMBER_TWO_WITH_CREDENTIAL_ONE: u64 = 103;
 pub const UNKNOWN_CLASS_ID: ClassId = 111;
 pub const UNKNOWN_ENTITY_ID: EntityId = 222;
 pub const UNKNOWN_PROP_ID: PropertyId = 333;
-pub const UNKNOWN_SCHEMA_ID: u16 = 444;
+pub const UNKNOWN_SCHEMA_ID: SchemaId = 444;
 
-pub const SCHEMA_ID_0: u16 = 0;
-pub const SCHEMA_ID_1: u16 = 1;
+pub const SCHEMA_ID_0: SchemaId = 0;
+pub const SCHEMA_ID_1: SchemaId = 1;
 
 pub const ZERO_NONCE: <Runtime as Trait>::Nonce = 0;
 pub const FIRST_NONCE: <Runtime as Trait>::Nonce = 1;
@@ -361,7 +361,7 @@ pub fn create_entity_with_schema_support() -> EntityId {
     entity_id
 }
 
-pub fn create_class_with_schema() -> (ClassId, u16) {
+pub fn create_class_with_schema() -> (ClassId, SchemaId) {
     let class_id = create_simple_class_with_default_permissions();
     let schema_id = TestModule::append_class_schema(
         class_id,
@@ -377,7 +377,7 @@ pub fn create_class_with_schema() -> (ClassId, u16) {
     (class_id, schema_id)
 }
 
-pub fn create_class_with_schema_and_entity() -> (ClassId, u16, EntityId) {
+pub fn create_class_with_schema_and_entity() -> (ClassId, SchemaId, EntityId) {
     let (class_id, schema_id) = create_class_with_schema();
     let entity_id = create_entity_of_class(class_id);
     (class_id, schema_id, entity_id)

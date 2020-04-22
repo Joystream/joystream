@@ -1,4 +1,4 @@
-use crate::{ClassId, EntityId, PropertyValue, Trait};
+use crate::{ClassId, EntityId, SchemaId, PropertyId, PropertyValue, Trait};
 use codec::{Decode, Encode};
 use rstd::collections::btree_map::BTreeMap;
 use rstd::prelude::*;
@@ -24,7 +24,7 @@ pub enum ParameterizedEntity {
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct ParametrizedClassPropertyValue<T: Trait> {
     /// Index is into properties vector of class.
-    pub in_class_index: u16,
+    pub in_class_index: PropertyId,
 
     /// Value of property with index `in_class_index` in a given class.
     pub value: ParametrizedPropertyValue<T>,
@@ -44,7 +44,7 @@ pub struct UpdatePropertyValuesOperation<T: Trait> {
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct AddSchemaSupportToEntityOperation<T: Trait> {
     pub entity_id: ParameterizedEntity,
-    pub schema_id: u16,
+    pub schema_id: SchemaId,
     pub parametrized_property_values: Vec<ParametrizedClassPropertyValue<T>>,
 }
 
@@ -83,7 +83,7 @@ pub fn parametrized_entity_to_entity_id(
 pub fn parametrized_property_values_to_property_values<T: Trait>(
     created_entities: &BTreeMap<usize, EntityId>,
     parametrized_property_values: Vec<ParametrizedClassPropertyValue<T>>,
-) -> Result<BTreeMap<u16, PropertyValue<T>>, &'static str> {
+) -> Result<BTreeMap<PropertyId, PropertyValue<T>>, &'static str> {
     let mut class_property_values = BTreeMap::new();
 
     for parametrized_class_property_value in parametrized_property_values.into_iter() {

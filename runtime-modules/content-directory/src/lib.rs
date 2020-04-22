@@ -154,6 +154,7 @@ impl InputValidationLengthConstraint {
 pub type ClassId = u64;
 pub type EntityId = u64;
 pub type PropertyId = u16;
+pub type SchemaId = u16;
 pub type VecMaxLength = u16;
 pub type TextMaxLength = u16;
 
@@ -203,12 +204,12 @@ impl<T: Trait> Class<T> {
         }
     }
 
-    fn is_active_schema(&self, schema_index: u16) -> bool {
+    fn is_active_schema(&self, schema_index: SchemaId) -> bool {
         // Such indexing is safe, when length bounds were previously checked
         self.schemas[schema_index as usize].is_active
     }
 
-    fn update_schema_status(&mut self, schema_index: u16, schema_status: bool) {
+    fn update_schema_status(&mut self, schema_index: SchemaId, schema_status: bool) {
         // Such indexing is safe, when length bounds were previously checked
         self.schemas[schema_index as usize].is_active = schema_status;
     }
@@ -242,7 +243,7 @@ pub struct Entity<T: Trait> {
     /// What schemas under which this entity of a class is available, think
     /// v.2.0 Person schema for John, v3.0 Person schema for John
     /// Unlikely to be more than roughly 20ish, assuming schemas for a given class eventually stableize, or that very old schema are eventually removed.
-    pub supported_schemas: BTreeSet<u16>, // indices of schema in corresponding class
+    pub supported_schemas: BTreeSet<SchemaId>, // indices of schema in corresponding class
 
     /// Values for properties on class that are used by some schema used by this entity!
     /// Length is no more than Class.properties.
@@ -263,7 +264,7 @@ impl<T: Trait> Default for Entity<T> {
 impl<T: Trait> Entity<T> {
     fn new(
         class_id: ClassId,
-        supported_schemas: BTreeSet<u16>,
+        supported_schemas: BTreeSet<SchemaId>,
         values: BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> Self {
         Self {
@@ -794,7 +795,7 @@ decl_module! {
             origin,
             with_credential: Option<T::Credential>,
             class_id: ClassId,
-            schema_id: u16, // Do not type alias u16!! - u16,
+            schema_id: SchemaId, 
             is_active: bool
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
@@ -833,7 +834,7 @@ decl_module! {
             with_credential: Option<T::Credential>,
             as_entity_maintainer: bool,
             entity_id: EntityId,
-            schema_id: u16, // Do not type alias u16!! - u16,
+            schema_id: SchemaId, 
             property_values: BTreeMap<PropertyId, PropertyValue<T>>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
@@ -1129,7 +1130,7 @@ impl<T: Trait> Module<T> {
 
     pub fn complete_class_schema_status_update(
         class_id: ClassId,
-        schema_id: u16, // Do not type alias u16!! - u16,
+        schema_id: SchemaId, 
         schema_status: bool,
     ) -> dispatch::Result {
         // Check that schema_id is a valid index of class schemas vector:
@@ -1301,7 +1302,7 @@ impl<T: Trait> Module<T> {
         with_credential: Option<T::Credential>,
         as_entity_maintainer: bool,
         entity_id: EntityId,
-        schema_id: u16,
+        schema_id: SchemaId,
         property_values: BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
         // class id of the entity being updated
@@ -1506,7 +1507,7 @@ impl<T: Trait> Module<T> {
         class_id: ClassId,
         existing_properties: Vec<PropertyId>,
         new_properties: Vec<Property>,
-    ) -> Result<u16, &'static str> {
+    ) -> Result<SchemaId, &'static str> {
         Self::ensure_known_class_id(class_id)?;
 
         let non_empty_schema = !existing_properties.is_empty() || !new_properties.is_empty();
@@ -1556,13 +1557,13 @@ impl<T: Trait> Module<T> {
 
         // Use the current length of schemas in this class as an index
         // for the next schema that will be sent in a result of this function.
-        let schema_idx = class.schemas.len() as u16;
+        let schema_idx = class.schemas.len() as SchemaId;
 
         let mut schema = Schema::new(existing_properties);
 
         let mut updated_class_props = class.properties;
         new_properties.into_iter().for_each(|prop| {
-            let prop_id = updated_class_props.len() as u16;
+            let prop_id = updated_class_props.len() as PropertyId;
             updated_class_props.push(prop);
             schema.properties.push(prop_id);
         });
@@ -1577,7 +1578,7 @@ impl<T: Trait> Module<T> {
 
     pub fn add_entity_schema_support(
         entity_id: EntityId,
-        schema_id: u16,
+        schema_id: SchemaId,
         property_values: BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
         Self::ensure_known_entity_id(entity_id)?;
@@ -1666,15 +1667,15 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn ensure_class_schema_id_exists(class: &Class<T>, schema_id: u16) -> dispatch::Result {
+    pub fn ensure_class_schema_id_exists(class: &Class<T>, schema_id: SchemaId) -> dispatch::Result {
         ensure!(
-            schema_id < class.schemas.len() as u16,
+            schema_id < class.schemas.len() as SchemaId,
             ERROR_UNKNOWN_CLASS_SCHEMA_ID
         );
         Ok(())
     }
 
-    pub fn ensure_class_schema_is_active(class: &Class<T>, schema_id: u16) -> dispatch::Result {
+    pub fn ensure_class_schema_is_active(class: &Class<T>, schema_id: SchemaId) -> dispatch::Result {
         ensure!(
             class.is_active_schema(schema_id),
             ERROR_CLASS_SCHEMA_NOT_ACTIVE
@@ -1682,7 +1683,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn ensure_schema_id_is_not_added(entity: &Entity<T>, schema_id: u16) -> dispatch::Result {
+    pub fn ensure_schema_id_is_not_added(entity: &Entity<T>, schema_id: SchemaId) -> dispatch::Result {
         let schema_not_added = !entity.supported_schemas.contains(&schema_id);
         ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY);
         Ok(())

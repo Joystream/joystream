@@ -354,7 +354,7 @@ fn create_podcast_class_schema() {
             b"A podcast channel".to_vec(),
         ),);
 
-        let channel_schema_id: u16 = 0;
+        let channel_schema_id: SchemaId = 0;
 
         assert_ok!(
             TestModule::append_class_schema(channel_class_id, vec![], channel_props),
@@ -370,7 +370,7 @@ fn create_podcast_class_schema() {
             b"A podcast episode".to_vec(),
         ),);
 
-        let episode_schema_id: u16 = 0;
+        let episode_schema_id: SchemaId = 0;
 
         assert_ok!(
             TestModule::append_class_schema(episode_class_id, vec![], episode_props,),
@@ -540,7 +540,7 @@ impl<T: Trait> PropHelper<T> {
         self.next_value(PropertyValue::Text(text))
     }
 
-    fn get_property_values(self) -> BTreeMap<u16, PropertyValue<T>> {
+    fn get_property_values(self) -> BTreeMap<PropertyId, PropertyValue<T>> {
         self.property_values
     }
 }
