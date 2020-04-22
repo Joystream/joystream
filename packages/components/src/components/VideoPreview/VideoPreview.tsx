@@ -1,7 +1,7 @@
 import React from "react";
 
 import { makeStyles, VideoPreviewStyleProps } from "./VideoPreview.styles";
-import Avatar from "../Avatar";
+import Avatar from "./../Avatar";
 
 type VideoPreviewProps = {
   url: string;
@@ -19,13 +19,16 @@ export default function VideoPreview({
   channelUrl,
   channelImg,
   showChannel = false,
+  poster,
   ...styleProps
 }: VideoPreviewProps) {
   let styles = makeStyles(styleProps);
   return (
     <div css={styles.container}>
       <a href={url}>
-        <div css={styles.cover}></div>
+        <div css={styles.coverContainer}>
+          <img css={styles.cover} src={poster} />
+        </div>
       </a>
       <div>
         <a href={url}>
