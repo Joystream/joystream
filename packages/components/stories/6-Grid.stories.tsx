@@ -17,6 +17,6 @@ function Item() {
 
 export const Default = () => <Grid items={([...Array(12).keys()].map(() => <Item />))} />
 
-export const WithMinItemWidth300 = () => <Grid minItemWidth="300px" items={([...Array(12).keys()].map(() => <Item />))} />
+export const WithMinItemWidth300 = () => <Grid minItemWidth="300" items={([...Array(12).keys()].map(() => <Item />))} />
 
 export const WithClassName = () => <Grid className="customGrid" items={([...Array(12).keys()].map(() => <Item />))} />
