@@ -13,3 +13,4 @@ export { default as Banner } from "./components/Banner";
 export { default as ChannelSummary } from "./components/ChannelSummary";
 export { default as Label } from "./components/Label";
 export { default as DetailsTable } from "./components/DetailsTable";
+export { default as Grid } from "./components/Grid";
