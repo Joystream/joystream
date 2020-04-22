@@ -260,7 +260,7 @@ pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
 }
 
 impl Property {
-    pub fn required(self) -> Self {
+    pub fn required(mut self) -> Self {
         self.required = true;
         self
     }
