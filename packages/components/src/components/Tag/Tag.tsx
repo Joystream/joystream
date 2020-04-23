@@ -12,8 +12,13 @@ export default function Tag({ icon, text, ...styleProps }: TagProps) {
   let styles = makeStyles(styleProps)
   return (
     <div css={styles.container}>
-      <FontAwesomeIcon icon={icon} css={styles.icon} />
-      <span>{text}</span>
+      {!!icon &&
+        <FontAwesomeIcon icon={icon} css={styles.icon} />
+      }
+      {!!icon && !!text && <span style={{ margin: "0 10px 0 0" }}></span>}
+      {!!text &&
+        <span>{text}</span>
+      }
     </div>
   )
 }
