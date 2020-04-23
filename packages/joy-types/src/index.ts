@@ -216,7 +216,6 @@ export function registerJoystreamTypes() {
   registerMediaTypes();
   registerForumTypes();
   registerElectionAndProposalTypes();
-  registerProposalsTypes();
   registerDiscoveryTypes();
   registerVersionedStoreTypes();
   registerVersionedStorePermissionsTypes();

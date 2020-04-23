@@ -57,7 +57,7 @@ export const IProposalStatus: { [key: string]: string } = {
   Executed: "Executed",
   ExecutionFailed: "ExecutionFailed",
   Finalized: "Finalized",
-  Slashed: "Slashed",
+  Slashed: "Slashed"
 };
 
 export type IActiveStake = {
@@ -69,7 +69,7 @@ export class ActiveStake extends JoyStruct<IActiveStake> {
     super(
       {
         stake_id: u32,
-        source_account_id: GenericAccountId,
+        source_account_id: GenericAccountId
       },
       value
     );
@@ -98,7 +98,7 @@ export class FinalizationData extends JoyStruct<IFinalizationData> {
         proposal_status: ProposalDecisionStatus,
         finalized_at: u32,
         encoded_unstaking_error_due_to_broken_runtime: Option.with(Vec.with(u8)),
-        stake_data_after_unstaking_error: Option.with(ActiveStake),
+        stake_data_after_unstaking_error: Option.with(ActiveStake)
       },
       value
     );
@@ -113,7 +113,7 @@ export class ProposalStatus extends Enum {
     super(
       {
         Active,
-        Finalized,
+        Finalized
       },
       value
     );
@@ -124,7 +124,7 @@ export const VoteKinds: { [key: string]: string } = {
   Abstain: "Abstain",
   Approve: "Approve",
   Reject: "Reject",
-  Slash: "Slash",
+  Slash: "Slash"
 };
 
 export class VoteKind extends Enum {
@@ -148,7 +148,7 @@ export function registerProposalTypes() {
     getTypeRegistry().register({
       ProposalId,
       ProposalStatus,
-      VoteKind,
+      VoteKind
     });
   } catch (err) {
     console.error("Failed to register custom types of proposals module", err);
