@@ -1,5 +1,5 @@
 import { css } from "@emotion/core"
-import { spacing, typography, colors } from "./../../theme"
+import { colors, typography } from "./../../theme"
 
 export type TagStyleProps = {
   color?: string
@@ -10,13 +10,12 @@ export let makeStyles = ({
 }: TagStyleProps) => {
   return {
     container: css`
+      display: inline-block;
+      font-family: ${typography.fonts.base};
       border: 1px solid ${color};
       border-radius: 4px;
       padding: 5px 10px;
       color: ${color};
-      & > span {
-        margin-left: 5px;
-      }
     `,
     icon: css`
       & > *:nth-child(1) {
