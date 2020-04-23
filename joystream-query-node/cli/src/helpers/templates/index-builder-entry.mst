@@ -1,0 +1,19 @@
+import { registerJoystreamTypes } from '@joystream/types';
+import { config } from 'dotenv';
+
+import QueryNodeManager from './query-node/QueryNodeManager';
+
+// Load from .env
+config();
+
+const providerUri = process.env.WS_PROVIDER_ENDPOINT_URI;
+
+if (!providerUri) {
+  console.error(
+    'WS_PROVIDER_ENDPOINT_URI environment variable is not set! Make sure you set it in your .env file or system wide.'
+  );
+  process.exit(1);
+}
+
+const node = new QueryNodeManager(process);
+node.start(providerUri, registerJoystreamTypes);

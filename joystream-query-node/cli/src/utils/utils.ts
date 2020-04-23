@@ -15,3 +15,11 @@ export function createFile(path: string, content: string) {
     fs.writeFileSync(path, content);
   }
 }
+
+export async function copyFiles(from: string, to: string) {
+  try {
+    await fs.copy(from, to);
+  } catch (err) {
+    console.error(err);
+  }
+}
