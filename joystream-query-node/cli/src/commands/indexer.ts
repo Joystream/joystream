@@ -37,8 +37,10 @@ export default class Indexer extends Command {
   }
 
   create() {
+    const cwd = process.cwd();
+
     // TODO: If files exists delete them?
-    const to = path.resolve(process.cwd(), 'src');
+    const to = path.resolve(cwd, 'src');
     if (!fs.pathExistsSync(to)) {
       this.error(
         'src directory does not exists. Go to root of the project dir then run this command'
@@ -61,6 +63,21 @@ export default class Indexer extends Command {
     );
     formatted = formatWithPrettier(processingPackFileContent);
     createFile(path.resolve(to, 'processingPack.ts'), formatted);
+
+    // Create src/mappings.ts
+    const mappingFileContent = fs.readFileSync(
+      path.resolve(__dirname, '..', 'helpers', 'templates', 'mappings.mst'),
+      'utf8'
+    );
+    formatted = formatWithPrettier(mappingFileContent);
+    createFile(path.resolve(to, 'mappings.ts'), formatted);
+
+    // Create .env file
+    const dotenvFileContent = fs.readFileSync(
+      path.resolve(__dirname, '..', 'helpers', 'templates', 'dotenv.mst'),
+      'utf8'
+    );
+    createFile(path.resolve(cwd, '.env'), dotenvFileContent);
 
     const indexBuilderDirectoryName = 'index-builder';
     const queryNodeDirectoryName = 'query-node';
