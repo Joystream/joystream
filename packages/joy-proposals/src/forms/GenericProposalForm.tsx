@@ -3,7 +3,7 @@ import { FormikProps, WithFormikConfig } from "formik";
 import { Form, Icon, Button } from "semantic-ui-react";
 import { getFormErrorLabelsProps } from "./errorHandling";
 import * as Yup from "yup";
-import LabelWithHelp from './LabelWithHelp';
+import { InputFormField, TextareaFormField } from "./FormFields";
 
 export type GenericFormValues = {
   title: string;
@@ -15,13 +15,7 @@ export const genericFormDefaultValues: GenericFormValues = {
   rationale: '',
 }
 
-type GenericProposalFormProps = {
-  handleChange: FormikProps<GenericFormValues>["handleChange"],
-  errors: FormikProps<GenericFormValues>["errors"],
-  isSubmitting: FormikProps<GenericFormValues>["isSubmitting"],
-  touched: FormikProps<GenericFormValues>["touched"],
-  handleSubmit: FormikProps<GenericFormValues>["handleSubmit"]
-}
+type GenericProposalFormProps = FormikProps<GenericFormValues>;
 
 type GenericProposalFormAdditionalProps = {};
 
@@ -43,6 +37,7 @@ export const genericFormDefaultOptions: DefaultGenericFormOptions = {
   handleSubmit: (values, { setSubmitting, resetForm }) => {
     setTimeout(() => {
       console.log(JSON.stringify(values));
+      resetForm();
       setSubmitting(false);
     }, 1000);
   },
@@ -51,36 +46,36 @@ export const genericFormDefaultOptions: DefaultGenericFormOptions = {
 // Generic proposal form with basic structure, "Title" and "Rationale" fields
 // Other fields can be passed as children
 export const GenericProposalForm: React.FunctionComponent<GenericProposalFormProps> = (props) => {
-  const { handleChange, errors, isSubmitting, touched, handleSubmit, children } = props;
+  const { handleChange, errors, isSubmitting, touched, handleSubmit, children, handleReset, values } = props;
   const errorLabelsProps = getFormErrorLabelsProps<GenericFormValues>(errors, touched);
   return (
     <div className="Forms">
       <Form className="proposal-form" onSubmit={handleSubmit}>
-        <Form.Field error={Boolean(errorLabelsProps.title)}>
-          <LabelWithHelp text="Title" help="The title of your proposal"/>
-          <Form.Input
-            onChange={handleChange}
-            name="title"
-            placeholder="Title for your awesome proposal..."
-            error={errorLabelsProps.title}
+        <InputFormField
+          label="Title"
+          help="The title of your proposal"
+          onChange={handleChange}
+          name="title"
+          placeholder="Title for your awesome proposal..."
+          error={errorLabelsProps.title}
+          value={values.title}
           />
-        </Form.Field>
-        <Form.Field error={Boolean(errorLabelsProps.rationale)}>
-          <LabelWithHelp text="Rationale" help="The rationale behind your proposal"/>
-          <Form.TextArea
-            onChange={handleChange}
-            name="rationale"
-            placeholder="This proposal is awesome because..."
-            error={errorLabelsProps.rationale}
+        <TextareaFormField
+          label="Rationale"
+          help="The rationale behind your proposal"
+          onChange={handleChange}
+          name="rationale"
+          placeholder="This proposal is awesome because..."
+          error={errorLabelsProps.rationale}
+          value={values.rationale}
           />
-        </Form.Field>
         { children }
         <div className="form-buttons">
           <Button type="submit" color="blue" loading={isSubmitting}>
             <Icon name="paper plane" />
             Submit
           </Button>
-          <Button color="grey" icon="times">
+          <Button type="button" color="grey" icon="times" onClick={handleReset}>
             <Icon name="times" />
             Cancel
           </Button>
