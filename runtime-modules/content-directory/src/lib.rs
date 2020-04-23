@@ -1202,14 +1202,16 @@ impl<T: Trait> Module<T> {
             if let Some(current_prop_value) = updated_values.get_mut(&id) {
                 // Get class-level information about this property
                 if let Some(class_prop) = class.properties.get(id as usize) {
-                    // Validate a new property value against the type of this property
-                    // and check any additional constraints like the length of a vector
-                    // if it's a vector property or the length of a text if it's a text property.
-                    Self::ensure_property_value_to_update_is_valid(&new_value, class_prop)?;
+                    if new_value != *current_prop_value {
+                        // Validate a new property value against the type of this property
+                        // and check any additional constraints like the length of a vector
+                        // if it's a vector property or the length of a text if it's a text property.
+                        Self::ensure_property_value_to_update_is_valid(&new_value, class_prop)?;
 
-                    // Update a current prop value in a mutable vector, if a new value is valid.
-                    current_prop_value.update(new_value);
-                    updated = true;
+                        // Update a current prop value in a mutable vector, if a new value is valid.
+                        current_prop_value.update(new_value);
+                        updated = true;
+                    }
                 }
             } else {
                 // Throw an error if a property was not found on entity
