@@ -56,11 +56,16 @@ export default class IndexBuilder {
     console.log(`Yay, block producer at height: #${query_event_block.block_number}`);
 
     query_event_block.query_events.forEach((query_event, index) => {
-      console.log(query_event.event_method);
-      if (!this._processing_pack[query_event.event_name]) {
+      if (!this._processing_pack[query_event.event_method]) {
         console.log(`Unrecognized: ` + query_event.event_name);
+
         query_event.log(0, debug);
-      } else console.log(`Recognized: ` + query_event.event_name);
+      } else {
+        console.log(`Recognized: ` + query_event.event_name);
+
+        // Call event handler to store data on database
+        this._processing_pack[query_event.event_method](query_event);
+      }
     });
   }
 }
