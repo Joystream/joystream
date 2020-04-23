@@ -1,28 +1,22 @@
-import { css } from "@emotion/core";
-import { spacing, typography, colors } from "../../theme";
+import { css } from "@emotion/core"
+import { spacing, typography } from "./../../theme"
 
 export type VideoPreviewStyleProps = {
-  poster?: string;
-};
+  poster?: string
+}
 
 export let makeStyles = ({ poster }: VideoPreviewStyleProps) => {
-  let px210 = `${parseInt(spacing.s25) * 2.1}rem`;
-  let px120 = `${parseInt(spacing.s25) * 1.2}rem`;
   return {
     container: css`
-      padding-bottom: ${spacing.s4};
-      padding-right: ${spacing.s4};
+    `,
+    coverContainer: css`
+      width: 100%;
+      background-color: black;
     `,
     cover: css`
-      background-image: ${poster
-        ? `url(${poster})`
-        : `radial-gradient(${colors.bg.primary}, ${colors.bg.primary})`};
-      background-size: cover;
-      background-position: center;
-      min-width: ${px210};
-      min-height: ${px120};
-      max-width: ${px210};
-      max-height: ${px120};
+      display: block;
+      width: 100%;
+      height: auto;
     `,
     title: css`
       margin: ${spacing.s2} 0;
@@ -35,5 +29,5 @@ export let makeStyles = ({ poster }: VideoPreviewStyleProps) => {
     channelTitle: css`
       margin: ${spacing.s2} 0;
     `,
-  };
-};
+  }
+}
