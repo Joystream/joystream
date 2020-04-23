@@ -9,24 +9,24 @@ export let makeStyles = ({}: ChannelSummaryStyleProps) => {
     container: css`
       display: flex;
       margin: ${spacing.s4} auto;
+      & > a {
+        text-decoration: none;
+      }
     `,
     details: css`
       display: flex;
       flex-direction: column;
+      margin: 0 0 0 ${spacing.s4};
     `,
     title: css`
       color: ${colors.text.accent};
+      margin: ${spacing.s3} 0;
     `,
     badges: css`
       display: flex;
       justify-content: space-between;
       text-transform: uppercase;
-
-      & > *:first-child {
-        margin-right: ${spacing.s4};
-      }
-
-      & button {
+      & > *:not(last-child) {
         margin-right: ${spacing.s2};
       }
     `,
