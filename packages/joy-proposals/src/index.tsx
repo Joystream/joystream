@@ -37,7 +37,6 @@ function App(props: Props): React.ReactElement<Props> {
         <Route path={`${basePath}/new`} component={NotDone} />
         <Route path={`${basePath}/active`} component={NotDone} />
         <Route path={`${basePath}/finalized`} component={NotDone} />
-        <Route path={`${basePath}/new`} component={NotDone} />
         <Route path={`${basePath}/:id`} component={NotDone} />
         <Route component={NotDone} />
       </Switch>
