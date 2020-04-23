@@ -5,6 +5,8 @@ import { ProposalProps } from "./ProposalDetails";
 import ProposalPreview from "./ProposalPreview";
 import { useTransport, SubstrateTransport, TransportContext } from "../runtime";
 import { usePromise } from "../utils";
+import Loading from "./Loading";
+import Error from "./Error";
 
 type ProposalFilter = "all" | "active" | "withdrawn" | "approved" | "rejected" | "slashed";
 
@@ -40,9 +42,9 @@ export default function ProposalPreviewList() {
   const [activeFilter, setActiveFilter] = useState<ProposalFilter>("all");
 
   if (loading && !error) {
-    return <Loader>Fetching Proposals...</Loader>;
+    return <Loading text="Fetching proposals..." />;
   } else if (error) {
-    return <div style={{ color: "red" }}>{error}</div>;
+    return <Error error={error} />;
   }
 
   console.log(proposals);

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-export function usePromise<T>(promiseOrFunction: () => Promise<T> | Promise<T>, defaultValue: T) {
+export function usePromise<T>(promiseOrFunction: (() => Promise<T>) | Promise<T>, defaultValue: T) {
   const [state, setState] = useState({ value: defaultValue, error: null, isPending: true });
 
   useEffect(() => {
