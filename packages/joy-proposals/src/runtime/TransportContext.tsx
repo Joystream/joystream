@@ -5,13 +5,13 @@ import { SubstrateTransport } from "./transport.substrate";
 import { MockTransport } from "./transport.mock";
 import { Transport } from "./transport";
 
-export const TransportContext = createContext<Transport>(new MockTransport());
+const TransportContext = createContext<Transport>((null as unknown) as Transport);
 
-export function MockProvider({ children }) {
+export function MockProvider({ children }: { children: React.PropsWithChildren<{}> }) {
   return <TransportContext.Provider value={new MockTransport()}>{children}</TransportContext.Provider>;
 }
 
-export function SubstrateProvider({ children }) {
+export function SubstrateProvider({ children }: { children: React.PropsWithChildren<{}> }) {
   const api: ApiProps = useContext(ApiContext);
   const transport = new SubstrateTransport(api);
 
@@ -19,5 +19,5 @@ export function SubstrateProvider({ children }) {
 }
 
 export function useTransport() {
-  return useContext<SubstrateTransport>(TransportContext);
+  return useContext(TransportContext) as SubstrateTransport;
 }

@@ -5,10 +5,10 @@ import MockProposalDetails from "./data/ProposalDetails.mock";
 import { ProposalDetails } from "../Proposal";
 
 export default {
-  title: "Proposals | Details",
+  title: "Proposals | Details"
 };
 
-export const HasToVote = () => <ProposalDetails {...mockedDetails} />;
+export const HasToVote = () => <ProposalDetails {...MockProposalDetails} />;
 
 export const VotedApproved = () => (
   <ProposalDetails {...MockProposalDetails} vote={{ hasVoted: true, value: "Approve" }} />
