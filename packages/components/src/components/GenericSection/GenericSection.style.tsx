@@ -12,7 +12,7 @@ export let makeStyles = ({
 }: SectionStyleProps) => {
   return {
     section: css`
-      margin: 0;
+      margin: 30px 0;
       border-bottom: ${bottomDivider
         ? `1px solid ${colors.text.base}`
         : "none"};
