@@ -9,40 +9,41 @@ import {
   DefaultOuterFormProps,
   genericFormDefaultValues
 } from './GenericProposalForm';
-import { TextareaFormField } from './FormFields';
+import { InputFormField } from './FormFields';
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
 
 type FormValues = GenericFormValues & {
-  description: string
-};
-
-const defaultValues:FormValues = {
-  ...genericFormDefaultValues,
-  description: ''
+  maxValidatorCount: string;
 }
 
-type FormAdditionalProps = {};
-type SingalFormProps = FormikProps<FormValues> & FormAdditionalProps;
+const defaultValues: FormValues = {
+  ...genericFormDefaultValues,
+  maxValidatorCount: ''
+}
 
-const SignalForm: React.FunctionComponent<SingalFormProps> = props => {
-  const { handleChange, errors, touched } = props;
+type FromAdditionalProps = {};
+type SetMaxValidatorCountFormProps = FormikProps<FormValues> & FromAdditionalProps;
+
+const SetMaxValidatorCountForm: React.FunctionComponent<SetMaxValidatorCountFormProps> = props => {
+  const { handleChange, errors, touched, values } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
     <GenericProposalForm {...props}>
-      <TextareaFormField
-        label="Description"
-        help="The extensive description of your proposal"
+      <InputFormField
+        error={errorLabelsProps.maxValidatorCount}
+        label="Max Validator Count"
+        help="The new value for maximum number of Validators that you propose"
         onChange={handleChange}
-        name="description"
-        placeholder="What I would like to propose is..."
-        error={ errorLabelsProps.description }
+        name="maxValidatorCount"
+        placeholder="20"
+        value={values.maxValidatorCount}
         />
     </GenericProposalForm>
   );
 }
 
-type OuterFormProps = DefaultOuterFormProps<FormAdditionalProps, FormValues>;
+type OuterFormProps = DefaultOuterFormProps<FromAdditionalProps, FormValues>;
 
 export default withFormContainer<OuterFormProps, FormValues>({
   mapPropsToValues: (props:OuterFormProps) => ({
@@ -51,8 +52,8 @@ export default withFormContainer<OuterFormProps, FormValues>({
   }),
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    description: Yup.string().required("Description is required!")
+    maxValidatorCount: Yup.number().required('Enter the max validator count'),
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
-  displayName: "SignalForm"
-})(SignalForm);
+  displayName: "SetMaxValidatorCountForm"
+})(SetMaxValidatorCountForm);

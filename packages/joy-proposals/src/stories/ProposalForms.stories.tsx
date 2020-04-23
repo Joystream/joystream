@@ -4,9 +4,13 @@ import {
   SignalForm,
   EvictStorageProviderForm,
   SpendingProposalForm,
-  MintCapacityForm,
   SetCouncilParamsForm,
   SetContentWorkingGroupLeadForm,
+  SetStorageRoleParamsForm,
+  RuntimeUpgradeForm,
+  SetContentWorkingGroupMintCapForm,
+  SetCouncilMintCapForm,
+  SetMaxValidatorCountForm,
 } from "../forms";
 
 export default {
@@ -19,11 +23,19 @@ export const StorageProviders = () => <EvictStorageProviderForm storageProviders
 
 export const SpendingProposal = () => <SpendingProposalForm destinationAccounts={destinationAccounts} />;
 
-export const MintCapacity = () => <MintCapacityForm />;
-
 export const SetCouncilParams = () => <SetCouncilParamsForm />;
 
 export const SetContentWorkingGroupLead = () => <SetContentWorkingGroupLeadForm members={members} />;
+
+export const SetStorageRoleParams = () => <SetStorageRoleParamsForm />;
+
+export const RuntimeUpgrade = () => <RuntimeUpgradeForm />;
+
+export const ContentWorkingGroupMintCap = () => <SetContentWorkingGroupMintCapForm />;
+
+export const CouncilMintCap = () => <SetCouncilMintCapForm />;
+
+export const SetMaxValidatorCount = () => <SetMaxValidatorCountForm />;
 
 var storageProvidersData = [
   {

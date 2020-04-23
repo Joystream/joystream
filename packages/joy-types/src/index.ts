@@ -93,7 +93,7 @@ export class ElectionStage extends Enum {
       {
         Announcing,
         Voting,
-        Revealing
+        Revealing,
       },
       value,
       index
@@ -126,7 +126,7 @@ export const VoteKinds: { [key: string]: string } = {
   Abstain: "Abstain",
   Approve: "Approve",
   Reject: "Reject",
-  Slash: "Slash"
+  Slash: "Slash",
 };
 
 export class VoteKind extends Enum {
@@ -146,44 +146,44 @@ function registerElectionAndProposalTypes() {
     const typeRegistry = getTypeRegistry();
     // Is this enough?
     typeRegistry.register({
-      BTreeSet
+      BTreeSet,
     });
 
     typeRegistry.register({
-      MemoText: "Text"
+      MemoText: "Text",
     });
     // Register parametrized enum ElectionStage:
     typeRegistry.register({
-      ElectionStage
+      ElectionStage,
     });
     typeRegistry.register({
       ProposalStatus,
-      VoteKind
+      VoteKind,
     });
     typeRegistry.register({
       ElectionStake: {
         new: "Balance",
-        transferred: "Balance"
+        transferred: "Balance",
       },
       Backer: {
         member: "AccountId",
-        stake: "Balance"
+        stake: "Balance",
       },
       Seat: {
         member: "AccountId",
         stake: "Balance",
-        backers: "Vec<Backer>"
+        backers: "Vec<Backer>",
       },
       Seats: "Vec<Seat>",
       SealedVote: {
         voter: "AccountId",
         commitment: "Hash",
         stake: "ElectionStake",
-        vote: "Option<AccountId>"
+        vote: "Option<AccountId>",
       },
       TransferableStake: {
         seat: "Balance",
-        backing: "Balance"
+        backing: "Balance",
       },
       RuntimeUpgradeProposal: {
         id: "u32",
@@ -193,7 +193,7 @@ function registerElectionAndProposalTypes() {
         description: "Text",
         wasm_hash: "Hash",
         proposed_at: "BlockNumber",
-        status: "ProposalStatus"
+        status: "ProposalStatus",
       },
       "TallyResult<BlockNumber>": {
         proposal_id: "u32",
@@ -202,8 +202,18 @@ function registerElectionAndProposalTypes() {
         rejections: "u32",
         slashes: "u32",
         status: "ProposalStatus",
-        finalized_at: "BlockNumber"
-      }
+        finalized_at: "BlockNumber",
+      },
+      ElectionParameters: {
+        announcing_period: "BlockNumber",
+        voting_period: "BlockNumber",
+        revealing_period: "BlockNumber",
+        council_size: "u32",
+        candidacy_limit: "u32",
+        new_term_duration: "BlockNumber",
+        min_council_stake: "Balance",
+        min_voting_stake: "Balance",
+      },
     });
   } catch (err) {
     console.error("Failed to register custom types of Joystream node", err);
@@ -216,7 +226,6 @@ export function registerJoystreamTypes() {
   registerMediaTypes();
   registerForumTypes();
   registerElectionAndProposalTypes();
-  registerProposalsTypes();
   registerDiscoveryTypes();
   registerVersionedStoreTypes();
   registerVersionedStorePermissionsTypes();

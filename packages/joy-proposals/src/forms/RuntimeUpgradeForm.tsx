@@ -1,6 +1,6 @@
 import React from "react";
 import { FormikProps } from "formik";
-import { getFormErrorLabelsProps } from "./errorHandling";
+import { Form } from "semantic-ui-react";
 import * as Yup from "yup";
 import {
   GenericProposalForm,
@@ -9,35 +9,34 @@ import {
   DefaultOuterFormProps,
   genericFormDefaultValues
 } from './GenericProposalForm';
-import { TextareaFormField } from './FormFields';
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
+import FileDropdown from './FileDropdown';
 
 type FormValues = GenericFormValues & {
-  description: string
+  WASM: string
 };
 
 const defaultValues:FormValues = {
   ...genericFormDefaultValues,
-  description: ''
+  WASM: ''
 }
 
 type FormAdditionalProps = {};
-type SingalFormProps = FormikProps<FormValues> & FormAdditionalProps;
+type RuntimeUpgradeFormProps = FormikProps<FormValues> & FormAdditionalProps;
 
-const SignalForm: React.FunctionComponent<SingalFormProps> = props => {
-  const { handleChange, errors, touched } = props;
-  const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
+const RuntimeUpgradeForm: React.FunctionComponent<RuntimeUpgradeFormProps> = props => {
+  const { errors, setFieldValue } = props;
   return (
     <GenericProposalForm {...props}>
-      <TextareaFormField
-        label="Description"
-        help="The extensive description of your proposal"
-        onChange={handleChange}
-        name="description"
-        placeholder="What I would like to propose is..."
-        error={ errorLabelsProps.description }
-        />
+      <Form.Field>
+        <FileDropdown<FormValues>
+          setFieldValue={setFieldValue}
+          defaultText="Drag-n-drop WASM bytecode of a runtime upgrade (*.wasm)"
+          acceptedFormats=".wasm"
+          name="WASM"
+          error={ errors.WASM }/>
+      </Form.Field>
     </GenericProposalForm>
   );
 }
@@ -51,8 +50,8 @@ export default withFormContainer<OuterFormProps, FormValues>({
   }),
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    description: Yup.string().required("Description is required!")
+    WASM: Yup.string().required('The file is empty!'),
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
-  displayName: "SignalForm"
-})(SignalForm);
+  displayName: "RuntimeUpgradeForm"
+})(RuntimeUpgradeForm);
