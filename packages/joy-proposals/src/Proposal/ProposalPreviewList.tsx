@@ -1,13 +1,24 @@
-import React, { useState } from "react";
-import { Card, Menu, Container } from "semantic-ui-react";
+import React, { useState, useEffect } from "react";
+import { Card, Menu, Container, Loader } from "semantic-ui-react";
 
 import { ProposalProps } from "./ProposalDetails";
 import ProposalPreview from "./ProposalPreview";
+import { useTransport, SubstrateTransport, TransportContext } from "../runtime";
+import { usePromise } from "../utils";
 
 type ProposalFilter = "all" | "active" | "withdrawn" | "approved" | "rejected" | "slashed";
 
-export default function ProposalPreviewList({ proposals }: { proposals: ProposalProps[] }) {
-  const [activeFilter, setActiveFilter] = useState<ProposalFilter>("all");
+function filterProposals(filter: ProposalFilter, proposals: ProposalProps[]) {
+  if (filter === "all") {
+    return proposals;
+  } else if (filter === "active") {
+    return proposals.filter((prop: any) => prop.details.stage === "active");
+  }
+
+  return proposals.filter((prop: any) => prop.finalized === filter);
+}
+
+function mapFromProposals(proposals: any[]) {
   const proposalsMap = new Map();
 
   proposalsMap.set("all", proposals);
@@ -17,9 +28,29 @@ export default function ProposalPreviewList({ proposals }: { proposals: Proposal
   proposalsMap.set("rejected", filterProposals("rejected", proposals));
   proposalsMap.set("slashed", filterProposals("slashed", proposals));
 
+  return proposalsMap;
+}
+
+export default function ProposalPreviewList() {
+  const transport = useTransport();
+  console.log("THIS IS THE CONTEXT INSIDE OF PROPOSAL PREVIEW LIST BLEEP BLOOP 🤖");
+
+  const [proposals, error, loading] = usePromise<any>(transport.proposals(), new Map());
+
+  const [activeFilter, setActiveFilter] = useState<ProposalFilter>("all");
+
+  if (loading && !error) {
+    return <Loader>Fetching Proposals...</Loader>;
+  } else if (error) {
+    return <div style={{ color: "red" }}>{error}</div>;
+  }
+
+  console.log(proposals);
+
   return (
     <Container className="Proposal">
-      <Menu tabular className="list-menu">
+      <div>{proposals}</div>
+      {/* <Menu tabular className="list-menu">
         <Menu.Item
           name={`all - ${proposalsMap.get("withdrawn").length} `}
           active={activeFilter === "all"}
@@ -53,7 +84,7 @@ export default function ProposalPreviewList({ proposals }: { proposals: Proposal
       </Menu>
 
       <Card.Group>
-        {proposalsMap.get(activeFilter).map((prop: any, idx: number) => (
+        {proposals.get(activeFilter).map((prop: any, idx: number) => (
           <ProposalPreview
             key={`${prop.title}-${idx}`}
             title={prop.title}
@@ -61,17 +92,7 @@ export default function ProposalPreviewList({ proposals }: { proposals: Proposal
             details={prop.details}
           />
         ))}
-      </Card.Group>
+      </Card.Group> */}
     </Container>
   );
-}
-
-function filterProposals(filter: ProposalFilter, proposals: ProposalProps[]) {
-  if (filter === "all") {
-    return proposals;
-  } else if (filter === "active") {
-    return proposals.filter((prop: any) => prop.details.stage === "active");
-  }
-
-  return proposals.filter((prop: any) => prop.finalized === filter);
 }

@@ -5,6 +5,7 @@ import { AppProps, I18nProps } from "@polkadot/react-components/types";
 import Tabs, { TabItem } from "@polkadot/react-components/Tabs";
 import { ApiProps } from "@polkadot/react-api/types";
 import { SubstrateProvider } from "./runtime";
+import { ProposalPreviewList } from "./Proposal";
 
 import "./index.css";
 
@@ -36,12 +37,12 @@ function App(props: Props): React.ReactElement<Props> {
           <Tabs basePath={basePath} items={tabs} />
         </header>
         <Switch>
-          <Route path={`${basePath}/proposals/new`} component={NotDone} />
+          <Route path={`${basePath}/new`} component={NotDone} />
           <Route path={`${basePath}/active`} component={NotDone} />
           <Route path={`${basePath}/finalized`} component={NotDone} />
           <Route path={`${basePath}/new`} component={NotDone} />
           <Route path={`${basePath}/:id`} component={NotDone} />
-          <Route component={NotDone} />
+          <Route component={ProposalPreviewList} />
         </Switch>
       </main>
     </SubstrateProvider>
