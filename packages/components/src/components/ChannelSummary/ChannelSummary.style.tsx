@@ -1,6 +1,5 @@
 import { css } from "@emotion/core";
-
-import { spacing, typography, colors } from "../../theme";
+import { spacing, colors } from "../../theme";
 
 export type ChannelSummaryStyleProps = {};
 
@@ -30,5 +29,11 @@ export let makeStyles = ({}: ChannelSummaryStyleProps) => {
         margin-right: ${spacing.s2};
       }
     `,
+    tagSuccess: css`
+      color: ${colors.other.success}
+    `,
+    tagInfo: css`
+      color: ${colors.other.info}
+    `
   };
 };
