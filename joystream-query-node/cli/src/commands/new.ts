@@ -42,13 +42,9 @@ export default class New extends Command {
   generateSubstrateQueryNodeDirs() {
     // substrate-query-node/src
     const srcDir = [New.substrateQueryNode, 'src'].join('/');
-    //substrate-query-node/src/mappings.ts
-    const mappingsFile = [srcDir, 'mappings.ts'].join('/');
-    // substrate-query-node/ormconfig.json
     const ormConfigFile = [New.substrateQueryNode, New.ormconfigFile].join('/');
 
     createDir(srcDir);
-    createFile(mappingsFile, '');
     createFile(ormConfigFile, JSON.stringify(ormconfig));
   }
 }
