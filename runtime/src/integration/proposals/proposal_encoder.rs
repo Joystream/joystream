@@ -4,7 +4,6 @@ use roles::actors::Role;
 
 use codec::Encode;
 use rstd::vec::Vec;
-use srml_support::print;
 
 /// _ProposalEncoder_ implementation. It encodes extrinsics with proposal details parameters
 /// using Runtime Call and parity codec.
@@ -43,25 +42,10 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                 roles::actors::Call::set_role_parameters(Role::StorageProvider, role_parameters),
             )
             .encode(),
-            ProposalDetails::RuntimeUpgrade(wasm_code) => {
-                // The runtime upgrade proposal has two proposal details: wasm and wasm hash.
-                // This is an exception for the optimization.
-
-                // This is a real extrinsic call.
-                Call::ProposalsCodex(proposals_codex::Call::execute_runtime_upgrade_proposal(
-                    wasm_code,
-                ))
-                .encode()
-            }
-            ProposalDetails::RuntimeUpgradeHash(_) => {
-                // The runtime upgrade proposal has two proposal details: wasm and wasm hash.
-                // This is an exception for the optimization.
-
-                // Cannot be here. This is a bug.
-                print("Invalid proposal: cannot encode ProposalDetails::RuntimeUpgradeHash");
-
-                Vec::new()
-            }
+            ProposalDetails::RuntimeUpgrade(wasm_code) => Call::ProposalsCodex(
+                proposals_codex::Call::execute_runtime_upgrade_proposal(wasm_code),
+            )
+            .encode(),
         }
     }
 }

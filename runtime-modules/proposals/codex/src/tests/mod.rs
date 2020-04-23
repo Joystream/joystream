@@ -8,7 +8,6 @@ use system::RawOrigin;
 use crate::{BalanceOf, Error, ProposalDetails};
 use proposal_engine::ProposalParameters;
 use roles::actors::RoleParameters;
-use runtime_io::blake2_256;
 use srml_support::dispatch::DispatchResult;
 
 pub use mock::*;
@@ -223,7 +222,7 @@ fn create_runtime_upgrade_common_checks_succeed() {
                 )
             },
             proposal_parameters: crate::proposal_types::parameters::runtime_upgrade_proposal::<Test>(),
-            proposal_details: ProposalDetails::RuntimeUpgradeHash(blake2_256(b"wasm").to_vec()),
+            proposal_details: ProposalDetails::RuntimeUpgrade(b"wasm".to_vec()),
         };
         proposal_fixture.check_all();
     });

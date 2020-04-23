@@ -30,12 +30,7 @@ pub enum ProposalDetails<MintedBalance, CurrencyBalance, BlockNumber, AccountId,
     /// The text of the `text` proposal
     Text(Vec<u8>),
 
-    /// The hash of wasm code for the `runtime upgrade` proposal. The runtime upgrade proposal has
-    /// two proposal details: wasm and wasm hash. This is an exception for the optimization.
-    RuntimeUpgradeHash(Vec<u8>),
-
-    /// The wasm code for the `runtime upgrade` proposal. The runtime upgrade proposal has
-    /// two proposal details: wasm and wasm hash. This is an exception for the optimization.
+    /// The wasm code for the `runtime upgrade` proposal
     RuntimeUpgrade(Vec<u8>),
 
     /// Election parameters for the `set election parameters` proposal

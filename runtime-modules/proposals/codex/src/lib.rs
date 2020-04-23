@@ -55,7 +55,6 @@ use rstd::convert::TryInto;
 use rstd::prelude::*;
 use rstd::str::from_utf8;
 use rstd::vec::Vec;
-use runtime_io::blake2_256;
 use sr_primitives::traits::SaturatedConversion;
 use sr_primitives::traits::{One, Zero};
 use sr_primitives::Perbill;
@@ -372,16 +371,10 @@ decl_module! {
             ensure!(wasm.len() as u32 <= T::RuntimeUpgradeWasmProposalMaxLength::get(),
                 Error::RuntimeProposalSizeExceeded);
 
-            let wasm_hash = blake2_256(&wasm);
-
-            // The runtime upgrade proposal has two proposal details: wasm and wasm hash.
-            // This is an exception for the optimization.
-
             let proposal_parameters = proposal_types::parameters::runtime_upgrade_proposal::<T>();
             let proposal_details = ProposalDetails::RuntimeUpgrade(wasm);
             let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
 
-            let proposal_details_for_hash = ProposalDetails::RuntimeUpgradeHash(wasm_hash.to_vec());
             Self::create_proposal(
                 origin,
                 member_id,
@@ -390,7 +383,7 @@ decl_module! {
                 stake_balance,
                 proposal_code,
                 proposal_parameters,
-                proposal_details_for_hash,
+                proposal_details,
             )?;
         }
 
