@@ -2,15 +2,8 @@ import React from "react";
 import { FormikProps } from "formik";
 import { getFormErrorLabelsProps } from "./errorHandling";
 import * as Yup from "yup";
-import { Dropdown, Label } from "semantic-ui-react";
-import {
-  GenericProposalForm,
-  GenericFormValues,
-  genericFormDefaultOptions,
-  DefaultOuterFormProps,
-  genericFormDefaultValues
-} from './GenericProposalForm';
-import { FormField } from './FormFields';
+import LabelWithHelp from "./LabelWithHelp";
+
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
 
@@ -33,11 +26,28 @@ const EvictStorageProviderForm: React.FunctionComponent<EvictStorageProviderForm
   const { handleChange, storageProviders, errors, touched, values } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
-    <GenericProposalForm {...props}>
-        <FormField
-          error={errorLabelsProps.storageProvider}
-          label="Storage provider"
-          help="The storage provider you propose to evict">
+    <div className="Forms">
+      <Form className="proposal-form" onSubmit={handleSubmit}>
+        <Form.Field error={Boolean(errorLabelsProps.title)}>
+          <LabelWithHelp text="Title" help="The title of your proposal" />
+          <Form.Input
+            onChange={handleChange}
+            name="title"
+            placeholder="Title for your awesome proposal..."
+            error={errorLabelsProps.title}
+          />
+        </Form.Field>
+        <Form.Field error={Boolean(errorLabelsProps.rationale)}>
+          <LabelWithHelp text="Rationale" help="The rationale behind your proposal" />
+          <Form.TextArea
+            onChange={handleChange}
+            name="rationale"
+            placeholder="This proposal is awesome because..."
+            error={errorLabelsProps.rationale}
+          />
+        </Form.Field>
+        <Form.Field error={Boolean(errorLabelsProps.storageProvider)}>
+          <LabelWithHelp text="Storage provider" help="The storage provider you propose to evict" />
           <Dropdown
             clearable
             name="storageProvider"
@@ -65,6 +75,12 @@ export default withFormContainer<OuterFormProps, FormValues>({
     ...genericFormDefaultOptions.validationSchema,
     storageProvider: Yup.string().required("Select a storage provider!")
   }),
-  handleSubmit: genericFormDefaultOptions.handleSubmit,
+  handleSubmit: (values: FormValues, { setSubmitting, resetForm }: { [k: string]: any }) => {
+    setTimeout(() => {
+      alert(JSON.stringify(values, null, 2));
+      resetForm({});
+      setSubmitting(false);
+    }, 1000);
+  },
   displayName: "EvictStorageProvidersForm"
 })(EvictStorageProviderForm);

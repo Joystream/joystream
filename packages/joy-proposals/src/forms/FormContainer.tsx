@@ -4,13 +4,13 @@ import { withFormik } from "formik";
 export function withFormContainer<MyFormProps, FormValues>(formikProps) {
   return function(InnerForm: React.ComponentType<any>) {
     return withFormik<MyFormProps, FormValues>(formikProps)(function(props) {
-      const handleBlur = (e, data: any) => {
+      const handleBlur = (e: React.FocusEvent<HTMLInputElement>, data: any): void => {
         if (data && data.name) {
           props.setFieldValue(data.name, data.value);
           props.setFieldTouched(data.name);
         }
       };
-      const handleChange = (e, data: any) => {
+      const handleChange = (e: React.ChangeEvent<HTMLInputElement>, data: any): void => {
         if (data && data.name) {
           props.setFieldValue(data.name, data.value);
           props.setFieldTouched(data.name);
