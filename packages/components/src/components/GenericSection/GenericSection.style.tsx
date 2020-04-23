@@ -23,7 +23,8 @@ export let makeStyles = ({
     header: css`
       border-bottom: ${topDivider ? `1px solid ${colors.text.base}` : "none"};
       color: ${colors.text.base};
-      margin-bottom: ${spacing.s4};
+      margin-top: ${spacing.s16};
+      margin-bottom: ${spacing.s8};
       padding-bottom: ${spacing.s2};
       font-family: ${typography.fonts.headers};
       font-weight: ${typography.weights.light};
