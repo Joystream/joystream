@@ -1209,9 +1209,9 @@ impl<T: Trait> Module<T> {
                         // if it's a vector property or the length of a text if it's a text property.
                         Self::ensure_property_value_to_update_is_valid(&new_value, class_prop)?;
                         // Get unique entity ids to update rc
-                        if let (Some(entities_rc_to_decrement), Some(entities_rc_to_increment)) = (
-                            Self::get_involved_entities(&current_prop_value),
+                        if let (Some(entities_rc_to_increment), Some(entities_rc_to_decrement)) = (
                             Self::get_involved_entities(&new_value),
+                            Self::get_involved_entities(&current_prop_value),
                         ) {
                             let (entities_rc_to_decrement, entities_rc_to_increment): (
                                 Vec<EntityId>,
@@ -1223,8 +1223,8 @@ impl<T: Trait> Module<T> {
                                     entity_rc_to_decrement != entity_rc_to_increment
                                 })
                                 .unzip();
-                            entities_rc_to_decrement_vec.push(entities_rc_to_decrement);
                             entities_rc_to_increment_vec.push(entities_rc_to_increment);
+                            entities_rc_to_decrement_vec.push(entities_rc_to_decrement);
                         }
                         // Update a current prop value in a mutable vector, if a new value is valid.
                         current_prop_value.update(new_value);
@@ -1243,16 +1243,16 @@ impl<T: Trait> Module<T> {
             <EntityById<T>>::mutate(entity_id, |entity| {
                 entity.values = updated_values;
             });
+            entities_rc_to_increment_vec
+                .iter()
+                .for_each(|entities_rc_to_increment| {
+                    Self::increment_entities_rc(entities_rc_to_increment);
+                });
             entities_rc_to_decrement_vec
                 .iter()
                 .for_each(|entities_rc_to_decrement| {
                     Self::decrement_entities_rc(entities_rc_to_decrement);
                 });
-            entities_rc_to_increment_vec
-                .iter()
-                .for_each(|entities_rc_to_increment| {
-                    Self::increment_entities_rc(entities_rc_to_increment);
-                })
         }
 
         Ok(())
@@ -1325,7 +1325,7 @@ impl<T: Trait> Module<T> {
             }
         });
         if let Some(involved_entity_id) = involved_entity_id {
-            <EntityById<T>>::mutate(involved_entity_id, |entity| entity.reference_count += 1)
+            <EntityById<T>>::mutate(involved_entity_id, |entity| entity.reference_count -= 1)
         }
         Ok(())
     }
@@ -1694,6 +1694,7 @@ impl<T: Trait> Module<T> {
 
         let current_entity_values = entity.values.clone();
         let mut appended_entity_values = entity.values;
+        let mut entities_rc_to_increment_vec = vec![];
 
         for prop_id in schema_prop_ids.iter() {
             if current_entity_values.contains_key(prop_id) {
@@ -1707,14 +1708,16 @@ impl<T: Trait> Module<T> {
             // If a value was not povided for the property of this schema:
             if let Some(new_value) = property_values.get(prop_id) {
                 Self::ensure_property_value_to_update_is_valid(new_value, class_prop)?;
-
+                if let Some(entities_rc_to_increment) = Self::get_involved_entities(new_value) {
+                    entities_rc_to_increment_vec.push(entities_rc_to_increment);
+                }
                 appended_entity_values.insert(*prop_id, new_value.to_owned());
             } else {
                 // All required prop values should be are provided
                 if class_prop.required {
                     return Err(ERROR_MISSING_REQUIRED_PROP);
                 }
-                // Add all missing non required schema prop values as PropertyValue::None
+                // Add all missing non required schema prop values as PropertyValue::Bool(false)
                 else {
                     appended_entity_values.insert(*prop_id, PropertyValue::Bool(false));
                 }
@@ -1728,6 +1731,11 @@ impl<T: Trait> Module<T> {
             // Update entity values only if new properties have been added.
             if appended_entity_values.len() > entity.values.len() {
                 entity.values = appended_entity_values;
+                entities_rc_to_increment_vec
+                    .iter()
+                    .for_each(|entities_rc_to_increment| {
+                        Self::increment_entities_rc(entities_rc_to_increment);
+                    });
             }
         });
 
