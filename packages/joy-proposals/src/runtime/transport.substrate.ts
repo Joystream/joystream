@@ -5,11 +5,10 @@ import { ApiProps } from "@polkadot/react-api/types";
 import { u32, bool } from "@polkadot/types/";
 import { ApiPromise } from "@polkadot/api";
 
-function excludeKeys<T extends { [k: string]: any }>(obj: T, ...bannedKeys: string[]) {
+function includeKeys<T extends { [k: string]: any }>(obj: T, ...allowedKeys: string[]) {
   return Object.keys(obj).filter(objKey => {
-    // I keep an objKey only if it's not included in one of the banned Keys
-    return bannedKeys.reduce(
-      (includesBanned: boolean, bannedKey: string) => includesBanned || objKey.includes(bannedKey),
+    return allowedKeys.reduce(
+      (hasAllowed: boolean, allowedKey: string) => hasAllowed || objKey.includes(allowedKey),
       false
     );
   });
@@ -35,7 +34,7 @@ export class SubstrateTransport extends Transport {
   }
 
   get proposalsCodex() {
-    return this.api.query.codex;
+    return this.api.query.proposalsCodex;
   }
 
   async proposalCount() {
@@ -62,9 +61,9 @@ export class SubstrateTransport extends Transport {
   }
 
   async activeProposals() {
-    const activeProposalsIds = await this.proposalsEngine.activeProposalsIds<ProposalId[]>();
+    const activeProposalIds = await this.proposalsEngine.activeProposalIds<ProposalId[]>();
 
-    return Promise.all(activeProposalsIds.map(id => this.proposalById(id)));
+    return Promise.all(activeProposalIds.map(id => this.proposalById(id)));
   }
 
   async proposedBy(member: MemberId) {
@@ -77,25 +76,13 @@ export class SubstrateTransport extends Transport {
   }
 
   async proposalTypesGracePeriod() {
-    // Cheating here,we know what the keys are.
-    const methods = excludeKeys(
-      this.proposalsCodex,
-      "threadIdByProposalId",
-      "proposalDetailsByProposalId",
-      "VotingPeriod"
-    );
+    const methods = includeKeys(this.proposalsCodex, "GracePeriod");
     // methods = [proposalTypeGracePeriod...]
     return Promise.all(methods.map(method => this.proposalsCodex[method]()));
   }
 
   async proposalTypesVotingPeriod() {
-    // Cheating here,we know what the keys are.
-    const methods = excludeKeys(
-      this.proposalsCodex,
-      "threadIdByProposalId",
-      "proposalDetailsByProposalId",
-      "GracePeriod"
-    );
+    const methods = includeKeys(this.proposalsCodex, "VotingPeriod");
     // methods = [proposalTypeVotingPeriod...]
     return Promise.all(methods.map(method => this.proposalsCodex[method]()));
   }
