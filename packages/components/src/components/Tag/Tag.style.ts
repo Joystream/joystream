@@ -16,6 +16,8 @@ export let makeStyles = ({
       border-radius: 4px;
       padding: 5px 10px;
       color: ${color};
+      cursor: default;
+      vertical-align: middle;
     `,
     icon: css`
       & > *:nth-child(1) {
