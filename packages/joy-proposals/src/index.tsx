@@ -34,7 +34,7 @@ function App(props: Props): React.ReactElement<Props> {
         <Tabs basePath={basePath} items={tabs} />
       </header>
       <Switch>
-        <Route path={`${basePath}/proposals/new`} component={NotDone} />
+        <Route path={`${basePath}/new`} component={NotDone} />
         <Route path={`${basePath}/active`} component={NotDone} />
         <Route path={`${basePath}/finalized`} component={NotDone} />
         <Route path={`${basePath}/new`} component={NotDone} />
