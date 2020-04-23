@@ -21,16 +21,6 @@ main {
   padding: 0 4vw;
 }
 
-.video-gallery {
-  display: flex;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-}
-
-.video-gallery > * {
-  flex-basis: 15%;
-}
-
 .video-details {
   max-width: 48rem;
 }

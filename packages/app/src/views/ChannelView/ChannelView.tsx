@@ -1,17 +1,17 @@
-import React from "react";
-import { GenericSection, VideoPreview } from "components";
-import { ChannelHeader } from "../../components/ChannelHeader";
-import { RouteComponentProps, useParams } from "@reach/router";
+import React from "react"
+import { GenericSection, VideoPreview, Grid } from "components"
+import { ChannelHeader } from "../../components/ChannelHeader"
+import { RouteComponentProps, useParams } from "@reach/router"
 
 type ChannelProps = {
-  name: string;
-  isPublic?: boolean;
-  isVerified?: boolean;
-  description?: string;
-  banner?: string;
-  videos?: any[];
-  img: string;
-};
+  name: string
+  isPublic?: boolean
+  isVerified?: boolean
+  description?: string
+  banner?: string
+  videos?: any[]
+  img: string
+}
 
 function ChannelComponent({
   name,
@@ -33,8 +33,9 @@ function ChannelComponent({
         img={img}
       />
       <GenericSection auto title="Videos">
-        <div className="video-gallery">
-          {videos.map((video, idx) => (
+        <Grid
+          minItemWidth="250"
+          items={videos.map((video, idx) => (
             <VideoPreview
               url={`videos/${idx}`}
               channelUrl={`channels/${video.channel}`}
@@ -43,20 +44,20 @@ function ChannelComponent({
               poster={video.poster}
             />
           ))}
-        </div>
+        />
       </GenericSection>
     </>
-  );
+  )
 }
 
 type RouteProps = {
-  videos: any;
-  channels: any;
-} & RouteComponentProps;
+  videos: any
+  channels: any
+} & RouteComponentProps
 
 export default function Channel({ videos, channels }: RouteProps) {
-  let params = useParams();
-  let channelVideos = videos[params.channelName];
-  let channel = channels[params.channelName];
-  return <ChannelComponent {...channel} videos={channelVideos} />;
+  let params = useParams()
+  let channelVideos = videos[params.channelName]
+  let channel = channels[params.channelName]
+  return <ChannelComponent {...channel} videos={channelVideos} />
 }
