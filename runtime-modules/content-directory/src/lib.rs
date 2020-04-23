@@ -7,7 +7,9 @@ use rstd::prelude::*;
 use runtime_primitives::traits::{
     MaybeSerialize, MaybeSerializeDeserialize, Member, One, SimpleArithmetic, Zero,
 };
-use srml_support::{decl_module, StorageMap, decl_storage, dispatch, ensure, traits::Get, Parameter};
+use srml_support::{
+    decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter, StorageMap,
+};
 
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
@@ -249,7 +251,7 @@ pub struct Entity<T: Trait> {
     /// Length is no more than Class.properties.
     pub values: BTreeMap<PropertyId, PropertyValue<T>>,
     // pub deleted: bool
-    pub reference_count: u32
+    pub reference_count: u32,
 }
 
 impl<T: Trait> Default for Entity<T> {
@@ -258,7 +260,7 @@ impl<T: Trait> Default for Entity<T> {
             class_id: ClassId::default(),
             supported_schemas: BTreeSet::new(),
             values: BTreeMap::new(),
-            reference_count: 0
+            reference_count: 0,
         }
     }
 }
@@ -798,7 +800,7 @@ decl_module! {
             origin,
             with_credential: Option<T::Credential>,
             class_id: ClassId,
-            schema_id: SchemaId, 
+            schema_id: SchemaId,
             is_active: bool
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
@@ -846,7 +848,7 @@ decl_module! {
             with_credential: Option<T::Credential>,
             as_entity_maintainer: bool,
             entity_id: EntityId,
-            schema_id: SchemaId, 
+            schema_id: SchemaId,
             property_values: BTreeMap<PropertyId, PropertyValue<T>>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
@@ -1011,9 +1013,7 @@ impl<T: Trait> Module<T> {
             None,
             ClassPermissions::can_remove_entity,
             class_id,
-            |_class_permissions, _access_level| {
-                Self::complete_entity_removal(entity_id)
-            }
+            |_class_permissions, _access_level| Self::complete_entity_removal(entity_id),
         )
     }
 
@@ -1161,7 +1161,6 @@ impl<T: Trait> Module<T> {
     }
 
     fn complete_entity_removal(entity_id: EntityId) -> dispatch::Result {
-        
         // Ensure there is no property values pointing to given entity
         Self::ensure_rc_is_zero(entity_id)?;
         <EntityById<T>>::remove(entity_id);
@@ -1171,7 +1170,7 @@ impl<T: Trait> Module<T> {
 
     pub fn complete_class_schema_status_update(
         class_id: ClassId,
-        schema_id: SchemaId, 
+        schema_id: SchemaId,
         schema_status: bool,
     ) -> dispatch::Result {
         // Check that schema_id is a valid index of class schemas vector:
@@ -1194,6 +1193,8 @@ impl<T: Trait> Module<T> {
         // so we can update them if new values provided present in new_property_values.
         let mut updated_values = entity.values;
         let mut updated = false;
+        let mut entities_rc_to_decrement_vec = vec![];
+        let mut entities_rc_to_increment_vec = vec![];
         // Iterate over a vector of new values and update corresponding properties
         // of this entity if new values are valid.
         for (id, new_value) in new_property_values.into_iter() {
@@ -1207,7 +1208,24 @@ impl<T: Trait> Module<T> {
                         // and check any additional constraints like the length of a vector
                         // if it's a vector property or the length of a text if it's a text property.
                         Self::ensure_property_value_to_update_is_valid(&new_value, class_prop)?;
-
+                        // Get unique entity ids to update rc
+                        if let (Some(entities_rc_to_decrement), Some(entities_rc_to_increment)) = (
+                            Self::get_involved_entities(&current_prop_value),
+                            Self::get_involved_entities(&new_value),
+                        ) {
+                            let (entities_rc_to_decrement, entities_rc_to_increment): (
+                                Vec<EntityId>,
+                                Vec<EntityId>,
+                            ) = entities_rc_to_decrement
+                                .into_iter()
+                                .zip(entities_rc_to_increment.into_iter())
+                                .filter(|(entity_rc_to_decrement, entity_rc_to_increment)| {
+                                    entity_rc_to_decrement != entity_rc_to_increment
+                                })
+                                .unzip();
+                            entities_rc_to_decrement_vec.push(entities_rc_to_decrement);
+                            entities_rc_to_increment_vec.push(entities_rc_to_increment);
+                        }
                         // Update a current prop value in a mutable vector, if a new value is valid.
                         current_prop_value.update(new_value);
                         updated = true;
@@ -1225,6 +1243,16 @@ impl<T: Trait> Module<T> {
             <EntityById<T>>::mutate(entity_id, |entity| {
                 entity.values = updated_values;
             });
+            entities_rc_to_decrement_vec
+                .iter()
+                .for_each(|entities_rc_to_decrement| {
+                    Self::decrement_entities_rc(entities_rc_to_decrement);
+                });
+            entities_rc_to_increment_vec
+                .iter()
+                .for_each(|entities_rc_to_increment| {
+                    Self::increment_entities_rc(entities_rc_to_increment);
+                })
         }
 
         Ok(())
@@ -1236,9 +1264,10 @@ impl<T: Trait> Module<T> {
     ) -> dispatch::Result {
         Self::ensure_known_entity_id(entity_id)?;
         let entity = Self::entity_by_id(entity_id);
-
-        match entity.values.get(&in_class_schema_property_id) {
-            Some(current_prop_value) if current_prop_value.is_vec() => (),
+        let entities_rc_to_decrement = match entity.values.get(&in_class_schema_property_id) {
+            Some(current_prop_value) if current_prop_value.is_vec() => {
+                Self::get_involved_entities(&current_prop_value)
+            }
             Some(_) => return Err(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR),
             _ =>
             // Throw an error if a property was not found on entity
@@ -1246,7 +1275,7 @@ impl<T: Trait> Module<T> {
             {
                 return Err(ERROR_UNKNOWN_ENTITY_PROP_ID)
             }
-        }
+        };
 
         // Clear property value vector:
         <EntityById<T>>::mutate(entity_id, |entity| {
@@ -1254,6 +1283,9 @@ impl<T: Trait> Module<T> {
                 entity.values.get_mut(&in_class_schema_property_id)
             {
                 current_property_value_vec.vec_clear();
+            }
+            if let Some(entities_rc_to_decrement) = entities_rc_to_decrement {
+                Self::decrement_entities_rc(&entities_rc_to_decrement);
             }
         });
 
@@ -1269,19 +1301,22 @@ impl<T: Trait> Module<T> {
         Self::ensure_known_entity_id(entity_id)?;
         let entity = Self::entity_by_id(entity_id);
 
-        if let Some(current_prop_value) = entity.values.get(&in_class_schema_property_id) {
-            // Ensure property value vector nonces equality to avoid possible data races,
-            // when performing vector specific operations
-            Self::ensure_nonce_equality(current_prop_value, nonce)?;
-            Self::ensure_index_in_property_vector_is_valid(
-                current_prop_value,
-                index_in_property_vec,
-            )?;
-        } else {
-            // Throw an error if a property was not found on entity
-            // by an in-class index of a property.
-            return Err(ERROR_UNKNOWN_ENTITY_PROP_ID);
-        }
+        let involved_entity_id =
+            if let Some(current_prop_value) = entity.values.get(&in_class_schema_property_id) {
+                // Ensure property value vector nonces equality to avoid possible data races,
+                // when performing vector specific operations
+                Self::ensure_nonce_equality(current_prop_value, nonce)?;
+                Self::ensure_index_in_property_vector_is_valid(
+                    current_prop_value,
+                    index_in_property_vec,
+                )?;
+                Self::get_involved_entities(&current_prop_value)
+                    .map(|involved_entities| involved_entities[index_in_property_vec as usize])
+            } else {
+                // Throw an error if a property was not found on entity
+                // by an in-class index of a property.
+                return Err(ERROR_UNKNOWN_ENTITY_PROP_ID);
+            };
 
         // Remove property value vector
         <EntityById<T>>::mutate(entity_id, |entity| {
@@ -1289,7 +1324,9 @@ impl<T: Trait> Module<T> {
                 current_prop_value.vec_remove_at(index_in_property_vec)
             }
         });
-
+        if let Some(involved_entity_id) = involved_entity_id {
+            <EntityById<T>>::mutate(involved_entity_id, |entity| entity.reference_count += 1)
+        }
         Ok(())
     }
 
@@ -1332,6 +1369,9 @@ impl<T: Trait> Module<T> {
 
         // Insert property value into property value vector
         <EntityById<T>>::mutate(entity_id, |entity| {
+            if let Some(entities_rc_to_increment) = Self::get_involved_entities(&property_value) {
+                Self::increment_entities_rc(&entities_rc_to_increment);
+            }
             if let Some(current_prop_value) = entity.values.get_mut(&in_class_schema_property_id) {
                 current_prop_value.vec_insert_at(index_in_property_vec, property_value)
             }
@@ -1410,6 +1450,18 @@ impl<T: Trait> Module<T> {
             }
             _ => Err("BadOrigin:ExpectedRootOrSigned"),
         }
+    }
+
+    fn increment_entities_rc(entity_ids: &[EntityId]) {
+        entity_ids.iter().for_each(|entity_id| {
+            <EntityById<T>>::mutate(entity_id, |entity| entity.reference_count += 1)
+        });
+    }
+
+    fn decrement_entities_rc(entity_ids: &[EntityId]) {
+        entity_ids.iter().for_each(|entity_id| {
+            <EntityById<T>>::mutate(entity_id, |entity| entity.reference_count -= 1)
+        });
     }
 
     /// Returns the stored class if exist, error otherwise.
@@ -1712,11 +1764,17 @@ impl<T: Trait> Module<T> {
 
     pub fn ensure_rc_is_zero(entity_id: EntityId) -> dispatch::Result {
         let entity = Self::entity_by_id(entity_id);
-        ensure!(entity.reference_count == 0, ERROR_ENTITY_REFERENCE_COUNTER_DOES_NOT_EQUAL_TO_ZERO);
+        ensure!(
+            entity.reference_count == 0,
+            ERROR_ENTITY_REFERENCE_COUNTER_DOES_NOT_EQUAL_TO_ZERO
+        );
         Ok(())
     }
 
-    pub fn ensure_class_schema_id_exists(class: &Class<T>, schema_id: SchemaId) -> dispatch::Result {
+    pub fn ensure_class_schema_id_exists(
+        class: &Class<T>,
+        schema_id: SchemaId,
+    ) -> dispatch::Result {
         ensure!(
             schema_id < class.schemas.len() as SchemaId,
             ERROR_UNKNOWN_CLASS_SCHEMA_ID
@@ -1724,7 +1782,10 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn ensure_class_schema_is_active(class: &Class<T>, schema_id: SchemaId) -> dispatch::Result {
+    pub fn ensure_class_schema_is_active(
+        class: &Class<T>,
+        schema_id: SchemaId,
+    ) -> dispatch::Result {
         ensure!(
             class.is_active_schema(schema_id),
             ERROR_CLASS_SCHEMA_NOT_ACTIVE
@@ -1732,7 +1793,10 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn ensure_schema_id_is_not_added(entity: &Entity<T>, schema_id: SchemaId) -> dispatch::Result {
+    pub fn ensure_schema_id_is_not_added(
+        entity: &Entity<T>,
+        schema_id: SchemaId,
+    ) -> dispatch::Result {
         let schema_not_added = !entity.supported_schemas.contains(&schema_id);
         ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY);
         Ok(())
@@ -1797,6 +1861,14 @@ impl<T: Trait> Module<T> {
         let entity = <EntityById<T>>::get(entity_id);
         let class = ClassById::get(entity.class_id);
         (entity, class)
+    }
+
+    pub fn get_involved_entities(current_prop_value: &PropertyValue<T>) -> Option<Vec<EntityId>> {
+        match current_prop_value {
+            PropertyValue::Reference(entity_id) => Some(vec![*entity_id]),
+            PropertyValue::ReferenceVec(entity_ids_vec, _) => Some(entity_ids_vec.clone()),
+            _ => None,
+        }
     }
 
     pub fn ensure_property_value_to_update_is_valid(
@@ -1889,11 +1961,8 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn validate_max_len_of_text(text: &[u8], max_len: TextMaxLength) -> dispatch::Result {
-        if text.len() <= max_len as usize {
-            Ok(())
-        } else {
-            Err(ERROR_TEXT_PROP_IS_TOO_LONG)
-        }
+        ensure!(text.len() <= max_len as usize, ERROR_TEXT_PROP_IS_TOO_LONG);
+        Ok(())
     }
 
     pub fn validate_max_len_if_vec_prop(

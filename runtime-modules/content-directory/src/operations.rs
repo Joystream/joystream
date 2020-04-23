@@ -1,4 +1,4 @@
-use crate::{ClassId, EntityId, SchemaId, PropertyId, PropertyValue, Trait};
+use crate::{ClassId, EntityId, PropertyId, PropertyValue, SchemaId, Trait};
 use codec::{Decode, Encode};
 use rstd::collections::btree_map::BTreeMap;
 use rstd::prelude::*;
