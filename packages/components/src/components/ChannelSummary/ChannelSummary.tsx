@@ -28,25 +28,29 @@ export default function ChannelSummary({
   let styles = makeStyles(styleProps)
   return (
     <div css={styles.container}>
-      <Avatar link={channelUrl} size={size} img={img} />
-      <a href={channelUrl}>
-        <div css={styles.details}>
+      <div css={styles.avatar}>
+        <a href={channelUrl}>
+          <Avatar size={size} img={img} />
+        </a>
+      </div>
+      <div css={styles.details}>
+        <a href={channelUrl}>
           <h1 css={styles.title}>{name}</h1>
-          <div css={styles.badges}>
-            {isVerified && (
-              <Tag icon={faCheck} text="Verified" color={colors.other.success} />
-            )}
-            {isPublic && (
-              <Tag icon={faEye} text="Public" color={colors.other.info} />
-            )}
-          </div>
-          {description && (
-            <div>
-              <p>{description}</p>
-            </div>
+        </a>
+        <div css={styles.badges}>
+          {isVerified && (
+            <Tag icon={faCheck} text="Verified" color={colors.other.success} />
+          )}
+          {isPublic && (
+            <Tag icon={faEye} text="Public" color={colors.other.info} />
           )}
         </div>
-      </a>
+        {description && (
+          <div>
+            <p>{description}</p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
