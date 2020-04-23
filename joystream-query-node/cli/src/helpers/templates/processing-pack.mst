@@ -1,5 +1,8 @@
 import { QueryEventProcessingPack } from './index-builder';
+import { handleExtrinsicSuccess } from './mappings';
 
-const processingPack: QueryEventProcessingPack = {};
+const processingPack: QueryEventProcessingPack = {
+  ExtrinsicSuccess: handleExtrinsicSuccess,
+};
 
 export default processingPack;

@@ -1,6 +1,6 @@
 import { QueryEvent } from './index-builder';
 
 // This is an example you can delete it :)
-export function handleExtrisincSuccuss(event: QueryEvent) {
+export function handleExtrinsicSuccess(event: QueryEvent) {
   console.log(event.event_name);
 }
