@@ -23,29 +23,33 @@ export default function VideoPreview({
   poster,
   ...styleProps
 }: VideoPreviewProps) {
-  let styles = makeStyles(styleProps)
+  let styles = makeStyles({ showChannel, ...styleProps })
   return (
     <div css={styles.container}>
-      <a css={styles.containerLink} href={url}>
-        <div css={styles.coverContainer}>
+      <div css={styles.coverContainer}>
+        <a css={styles.link} href={url}>
           <img css={styles.cover} src={poster} />
-        </div>
-        <div css={styles.infoContainer}>
-          {showChannel && (
+        </a>
+      </div>
+      <div css={styles.infoContainer}>
+        {showChannel && (
+          <a css={styles.link} href={url}>
             <div css={styles.avatar}>
-              <Avatar size="small" link={channelUrl} img={channelImg} />
+              <Avatar size="small" img={channelImg} />
             </div>
-          )}
-          <div css={styles.textContainer}>
+          </a>
+        )}
+        <div css={styles.textContainer}>
+          <a css={styles.link} href={url}>
             <h3 css={styles.title}>{title}</h3>
-            {showChannel && (
-              <a css={styles.channel} href={channelUrl}>
-                <h3>{channel}</h3>
-              </a>
-            )}
-          </div>
+          </a>
+          {showChannel && (
+            <a css={styles.channel} href={channelUrl}>
+              <h3>{channel}</h3>
+            </a>
+          )}
         </div>
-      </a>
+      </div>
     </div>
   )
 }

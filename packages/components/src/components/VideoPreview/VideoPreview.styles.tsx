@@ -5,10 +5,10 @@ export type VideoPreviewStyleProps = {
   showChannel?: boolean
 }
 
-export let makeStyles = ({ showChannel }: VideoPreviewStyleProps) => {
+export let makeStyles = ({ showChannel = false }: VideoPreviewStyleProps) => {
   return {
     container: css``,
-    containerLink: css`
+    link: css`
       text-decoration: none;
     `,
     coverContainer: css`
