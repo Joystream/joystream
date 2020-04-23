@@ -8,6 +8,7 @@ import { deserializeArray } from 'class-transformer';
 
 import { Input } from '../helpers/schema';
 import { createDir, createFile } from '../utils/utils';
+import { fieldTypes } from '../helpers/tsTypes';
 
 const prettierOptions: Prettier.Options = {
   parser: 'typescript',
@@ -48,19 +49,26 @@ export default class Event extends Command {
 
     let eventFileName;
     let eventFileContent;
-    let newInput;
 
     inputs.forEach((input) => {
-      newInput = {
+      const newInput = {
         name: input.name,
         fields: input.fields.map((f) => {
           let type = f.type.endsWith('!') ? f.type.slice(0, -1) : f.type;
-          return { name: f.name, type: type };
+          return { name: f.name, type: fieldTypes[type].tsType };
         }),
       };
       eventFileContent = render(template, { input: newInput });
+      let formatted = '';
+      try {
+        formatted = Prettier.format(eventFileContent, prettierOptions);
+      } catch (error) {
+        this.log('There were some errors while formatting with Prettier', error);
+        formatted = eventFileContent;
+      }
+
       eventFileName = `${input.name}.ts`;
-      createFile(`${generatedFolder}/${eventFileName}`, eventFileContent);
+      createFile(`${generatedFolder}/${eventFileName}`, formatted);
     });
   }
 }
