@@ -3,7 +3,7 @@ import { ChannelSummaryStyleProps, makeStyles } from "./ChannelSummary.style"
 import Avatar from "../Avatar"
 import Tag from "../Tag"
 import { faEye, faCheck } from "@fortawesome/free-solid-svg-icons"
-import { colors } from "theme"
+import { colors } from "./../../theme"
 
 type ChannelSummaryProps = {
   name: string
