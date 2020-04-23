@@ -34,5 +34,11 @@ export default {
     base: "#e8edf6",
     light: "#f2f5f9"
   },
-  white: "#fff"
+  white: "#fff",
+  other: {
+    info: "#2F80ED",
+    success: "#219653",
+    danger: "#EB5757",
+    warning: "#F2C94C"
+  }
 };
