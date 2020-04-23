@@ -5,6 +5,7 @@ export default {
   },
   weights: {
     light: "100",
+    regular: "500",
     bold: "700",
   },
   sizes: {
