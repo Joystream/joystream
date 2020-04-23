@@ -1,11 +1,21 @@
-import Transport from "./transport";
+import { Transport } from "./transport";
 import { Proposal, ProposalId } from "@joystream/types/proposals";
 import { MemberId } from "@joystream/types/members";
 import { ApiProps } from "@polkadot/react-api/types";
 import { u32, bool } from "@polkadot/types/";
 import { ApiPromise } from "@polkadot/api";
 
-export default class SubstrateTransport extends Transport {
+function excludeKeys<T extends { [k: string]: any }>(obj: T, ...bannedKeys: string[]) {
+  return Object.keys(obj).filter(objKey => {
+    // I keep an objKey only if it's not included in one of the banned Keys
+    return bannedKeys.reduce(
+      (includesBanned: boolean, bannedKey: string) => includesBanned || objKey.includes(bannedKey),
+      false
+    );
+  });
+}
+
+export class SubstrateTransport extends Transport {
   protected api: ApiPromise;
 
   constructor(api: ApiProps) {
@@ -32,8 +42,8 @@ export default class SubstrateTransport extends Transport {
     return this.proposalEngine.proposalCount<u32>();
   }
 
-  async proposalById(proposalId: ProposalId) {
-    return this.proposalEngine.proposals<any>(proposalId);
+  async proposalById(id: ProposalId) {
+    return this.proposalEngine.proposals<any>(id);
   }
 
   async proposalsIds() {
@@ -60,5 +70,28 @@ export default class SubstrateTransport extends Transport {
   async proposedBy(member: MemberId) {
     const proposals = await this.proposals();
     return proposals.filter(({ proposerId }: Proposal) => proposerId.eq(member));
+  }
+
+  async proposalDetails(id: ProposalId) {
+    return this.proposalCodex.proposalDetailsByProposalId(id);
+  }
+
+  async proposalTypesGracePeriod() {
+    // Cheating here,we know what the keys are.
+    let methods = excludeKeys(
+      this.proposalCodex,
+      "threadIdByProposalId",
+      "proposalDetailsByProposalId",
+      "VotingPeriod"
+    );
+    // methods = [proposalTypeGracePeriod...]
+    return Promise.all(methods.map(method => this.proposalCodex[method]()));
+  }
+
+  async proposalTypesVotingPeriod() {
+    // Cheating here,we know what the keys are.
+    let methods = excludeKeys(this.proposalCodex, "threadIdByProposalId", "proposalDetailsByProposalId", "GracePeriod");
+    // methods = [proposalTypeVotingPeriod...]
+    return Promise.all(methods.map(method => this.proposalCodex[method]()));
   }
 }

@@ -1,16 +1,17 @@
-import Transport from "./transport";
+import { Transport } from "./transport";
+import { Proposal } from "@joystream/types/proposals";
 
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export default class MockTransport extends Transport {
+export class MockTransport extends Transport {
   constructor() {
     super();
   }
 
-  async allProposals() {
+  async proposals() {
     await delay(Math.random() * 2000);
-    return;
+    return Promise.all((Array.from({ length: 5 }, (_, i) => `Not implemented`) as unknown) as Proposal[]);
   }
 }

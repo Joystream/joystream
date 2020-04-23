@@ -26,10 +26,9 @@ type FormAdditionalProps = {};
 type RuntimeUpgradeFormProps = FormikProps<FormValues> & FormAdditionalProps;
 
 const RuntimeUpgradeForm: React.FunctionComponent<RuntimeUpgradeFormProps> = props => {
-  const { handleChange, handleSubmit, isSubmitting, errors, touched, setFieldValue } = props;
-  const passProps = { handleChange, errors, isSubmitting, touched, handleSubmit };
+  const { errors, setFieldValue } = props;
   return (
-    <GenericProposalForm {...passProps}>
+    <GenericProposalForm {...props}>
       <Form.Field>
         <FileDropdown<FormValues>
           setFieldValue={setFieldValue}
