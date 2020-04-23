@@ -2,10 +2,10 @@ import { css } from "@emotion/core"
 import { typography, colors } from "./../../theme"
 
 export type VideoPreviewStyleProps = {
-  poster?: string
+  showChannel?: boolean
 }
 
-export let makeStyles = ({ poster }: VideoPreviewStyleProps) => {
+export let makeStyles = ({ showChannel }: VideoPreviewStyleProps) => {
   return {
     container: css``,
     containerLink: css`
@@ -22,14 +22,14 @@ export let makeStyles = ({ poster }: VideoPreviewStyleProps) => {
     `,
     infoContainer: css`
       display: grid;
-      grid-template: auto / 45px auto;
+      grid-template: auto / ${showChannel ? "45px auto" : "auto"};
       margin: 10px 0 0;
     `,
     avatar: css`
       grid-column: 1 / 1;
     `,
     textContainer: css`
-      grid-column: 2 / 2;
+      grid-column: ${showChannel ? "2 / 2" : "1 / 1"};
     `,
     title: css`
       margin: 0;
