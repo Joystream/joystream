@@ -23,7 +23,7 @@ function App(props: Props): React.ReactElement<Props> {
       text: t("Proposals")
     },
     {
-      name: "proposals/new",
+      name: "new",
       text: t("New Proposal")
     }
   ];
