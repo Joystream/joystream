@@ -2,6 +2,7 @@ import { registerJoystreamTypes } from '@joystream/types';
 import { config } from 'dotenv';
 
 import QueryNodeManager from './query-node/QueryNodeManager';
+import processingPack  from './processingPack'
 
 // Load from .env
 config();
@@ -16,4 +17,4 @@ if (!providerUri) {
 }
 
 const node = new QueryNodeManager(process);
-node.start(providerUri, registerJoystreamTypes);
+node.start(providerUri, processingPack, registerJoystreamTypes);

@@ -54,6 +54,14 @@ export default class Indexer extends Command {
     let formatted = formatWithPrettier(indexFileContent);
     createFile(path.resolve(to, 'index.ts'), formatted);
 
+    // Create src/processing_pack.ts
+    const processingPackFileContent = fs.readFileSync(
+      path.resolve(__dirname, '..', 'helpers', 'templates', 'processing-pack.mst'),
+      'utf8'
+    );
+    formatted = formatWithPrettier(processingPackFileContent);
+    createFile(path.resolve(to, 'processingPack.ts'), formatted);
+
     const indexBuilderDirectoryName = 'index-builder';
     const queryNodeDirectoryName = 'query-node';
 

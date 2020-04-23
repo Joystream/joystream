@@ -1,0 +1,5 @@
+import { QueryEventProcessingPack } from './index-builder';
+
+const processingPack: QueryEventProcessingPack = {};
+
+export default processingPack;

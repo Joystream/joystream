@@ -18,14 +18,18 @@ export default class IndexBuilder {
 
   private _processing_pack!: QueryEventProcessingPack;
 
-  private constructor(producer: QueryBlockProducer) {
+  private constructor(producer: QueryBlockProducer, processing_pack: QueryEventProcessingPack) {
     this._producer = producer;
+    this._processing_pack = processing_pack;
   }
 
-  static create(service: ISubstrateQueryService): IndexBuilder {
+  static create(
+    service: ISubstrateQueryService,
+    processing_pack: QueryEventProcessingPack
+  ): IndexBuilder {
     const producer = new QueryBlockProducer(service);
 
-    return new IndexBuilder(producer);
+    return new IndexBuilder(producer, processing_pack);
   }
 
   async start() {
@@ -53,13 +57,10 @@ export default class IndexBuilder {
 
     query_event_block.query_events.forEach((query_event, index) => {
       console.log(query_event.event_method);
-      // if (!this._processing_pack[query_event.event_name]) {
-      //   debug(`Unrecognized: ` + query_event.event_name);
-      //   query_event.log(0, debug);
-      // }
-
-      //else
-      //    debug(`Recognized: ` + query_event.event_name)
+      if (!this._processing_pack[query_event.event_name]) {
+        console.log(`Unrecognized: ` + query_event.event_name);
+        query_event.log(0, debug);
+      } else console.log(`Recognized: ` + query_event.event_name);
     });
   }
 }

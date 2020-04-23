@@ -2,7 +2,12 @@
 
 import { ApiPromise, WsProvider /*RuntimeVersion*/ } from '@polkadot/api';
 
-import { makeQueryService, IndexBuilder, ISubstrateQueryService } from '../index-builder';
+import {
+  makeQueryService,
+  IndexBuilder,
+  ISubstrateQueryService,
+  QueryEventProcessingPack,
+} from '../index-builder';
 
 export enum QueryNodeState {
   NOT_STARTED,
@@ -32,7 +37,11 @@ export default class QueryNode {
     this._indexBuilder = indexBuilder;
   }
 
-  static async create(ws_provider_endpoint_uri: string, type_registrator: () => void) {
+  static async create(
+    ws_provider_endpoint_uri: string,
+    processing_pack: QueryEventProcessingPack,
+    type_registrator: () => void
+  ) {
     // TODO: Do we really need to do it like this?
     // Its pretty ugly, but the registrtion appears to be
     // accessing some sort of global state, and has to be done after
@@ -49,7 +58,7 @@ export default class QueryNode {
 
     const service = makeQueryService(api);
 
-    const index_buider = IndexBuilder.create(service);
+    const index_buider = IndexBuilder.create(service, processing_pack);
 
     return new QueryNode(provider, api, index_buider);
   }
