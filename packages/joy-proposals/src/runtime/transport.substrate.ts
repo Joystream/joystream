@@ -30,20 +30,20 @@ export class SubstrateTransport extends Transport {
     this.api = api.api;
   }
 
-  get proposalEngine() {
-    return this.api.query.proposalEngine;
+  get proposalsEngine() {
+    return this.api.query.proposalsEngine;
   }
 
-  get proposalCodex() {
+  get proposalsCodex() {
     return this.api.query.codex;
   }
 
   async proposalCount() {
-    return this.proposalEngine.proposalCount<u32>();
+    return this.proposalsEngine.proposalCount<u32>();
   }
 
   async proposalById(id: ProposalId) {
-    return this.proposalEngine.proposals<any>(id);
+    return this.proposalsEngine.proposals<any>(id);
   }
 
   async proposalsIds() {
@@ -57,12 +57,12 @@ export class SubstrateTransport extends Transport {
   }
 
   async hasVotedOnProposal(proposalId: ProposalId, voterId: MemberId) {
-    const hasVoted = await this.proposalEngine.voteExistsByProposalByVoter<bool>(proposalId, voterId);
+    const hasVoted = await this.proposalsEngine.voteExistsByProposalByVoter<bool>(proposalId, voterId);
     return hasVoted.eq(true);
   }
 
   async activeProposals() {
-    const activeProposalsIds = await this.proposalEngine.activeProposalsIds<ProposalId[]>();
+    const activeProposalsIds = await this.proposalsEngine.activeProposalsIds<ProposalId[]>();
 
     return Promise.all(activeProposalsIds.map(id => this.proposalById(id)));
   }
@@ -73,25 +73,30 @@ export class SubstrateTransport extends Transport {
   }
 
   async proposalDetails(id: ProposalId) {
-    return this.proposalCodex.proposalDetailsByProposalId(id);
+    return this.proposalsCodex.proposalDetailsByProposalId(id);
   }
 
   async proposalTypesGracePeriod() {
     // Cheating here,we know what the keys are.
-    let methods = excludeKeys(
-      this.proposalCodex,
+    const methods = excludeKeys(
+      this.proposalsCodex,
       "threadIdByProposalId",
       "proposalDetailsByProposalId",
       "VotingPeriod"
     );
     // methods = [proposalTypeGracePeriod...]
-    return Promise.all(methods.map(method => this.proposalCodex[method]()));
+    return Promise.all(methods.map(method => this.proposalsCodex[method]()));
   }
 
   async proposalTypesVotingPeriod() {
     // Cheating here,we know what the keys are.
-    let methods = excludeKeys(this.proposalCodex, "threadIdByProposalId", "proposalDetailsByProposalId", "GracePeriod");
+    const methods = excludeKeys(
+      this.proposalsCodex,
+      "threadIdByProposalId",
+      "proposalDetailsByProposalId",
+      "GracePeriod"
+    );
     // methods = [proposalTypeVotingPeriod...]
-    return Promise.all(methods.map(method => this.proposalCodex[method]()));
+    return Promise.all(methods.map(method => this.proposalsCodex[method]()));
   }
 }
