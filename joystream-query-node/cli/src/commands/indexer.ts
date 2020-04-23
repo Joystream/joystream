@@ -98,5 +98,10 @@ export default class Indexer extends Command {
 
     copyFiles(indexBuilderTemplate, indexBuilderPath);
     copyFiles(queryNodeTemplate, queryNodePath);
+
+    copyFiles(
+      path.resolve(__dirname, '..', 'helpers', 'templates', 'package.json'),
+      path.resolve(cwd, 'package.json')
+    );
   }
 }
