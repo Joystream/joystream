@@ -25,24 +25,26 @@ export default function VideoPreview({
   let styles = makeStyles(styleProps);
   return (
     <div css={styles.container}>
-      <a href={url}>
+      <a css={styles.containerLink} href={url}>
         <div css={styles.coverContainer}>
           <img css={styles.cover} src={poster} />
         </div>
-      </a>
-      <div>
-        <a href={url}>
-          <h3 css={styles.title}>{title}</h3>
-        </a>
-        {showChannel && (
-          <div css={styles.channel}>
-            <Avatar size="small" link={channelUrl} img={channelImg} />
-            <a href={channelUrl}>
-              <h3 css={styles.channelTitle}>{channel}</h3>
-            </a>
+        <div css={styles.infoContainer}>
+          {showChannel && (
+            <div css={styles.avatar}>
+              <Avatar size="small" link={channelUrl} img={channelImg} />
+            </div>
+          )}
+          <div css={styles.textContainer}>
+            <h3 css={styles.title}>{title}</h3>
+            {showChannel && (
+              <a css={styles.channel} href={channelUrl}>
+                <h3>{channel}</h3>
+              </a>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      </a>
     </div>
   );
 }
