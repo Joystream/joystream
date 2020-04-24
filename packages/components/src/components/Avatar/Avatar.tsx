@@ -1,15 +1,11 @@
 import React from "react";
 import { makeStyles, AvatarStyleProps } from "./Avatar.style";
 
-export type AvatarProps = {
-  link: string;
-} & AvatarStyleProps;
+export type AvatarProps = {} & AvatarStyleProps;
 
-export default function Avatar({ link, ...styleProps }: AvatarProps) {
+export default function Avatar({ ...styleProps }: AvatarProps) {
   let styles = makeStyles(styleProps);
   return (
-    <a href={link}>
-      <div css={styles}></div>
-    </a>
+    <div css={styles} />
   );
 }

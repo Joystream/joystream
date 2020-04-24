@@ -17,7 +17,7 @@ export default function ExploreView({
 
   return (
     <>
-      <GenericSection topDivider title="Latest Videos">
+      <GenericSection topDivider title="Latest Videos" link="#" linkText="All Videos">
         <Grid
           minItemWidth="250"
           items={allVideos.map((video, idx) => {
@@ -37,7 +37,7 @@ export default function ExploreView({
           })}
         />
       </GenericSection>
-      <GenericSection topDivider title="Latest video channels">
+      <GenericSection topDivider title="Latest video channels" link="#" linkText="All Channels">
         <div className="channel-gallery">
           {allChannels.map((channel, idx) => (
             <ChannelSummary
