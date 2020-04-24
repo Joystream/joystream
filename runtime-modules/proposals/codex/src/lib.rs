@@ -34,6 +34,9 @@
 //! - [governance](../substrate_governance_module/index.html)
 //! - [content_working_group](../substrate_content_working_group_module/index.html)
 //!
+//! ### Notes
+//! The module uses [ProposalEncoder](./trait.ProposalEncoder.html) to encode the proposal using
+//! its details. Encoded byte vector is passed to the _proposals engine_ as serialized executable code.
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -93,6 +96,7 @@ pub trait Trait:
         Self::AccountId,
     >;
 
+    /// Encodes the proposal usint its details
     type ProposalEncoder: ProposalEncoder<Self>;
 }
 
