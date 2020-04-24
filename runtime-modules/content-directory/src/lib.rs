@@ -1193,6 +1193,7 @@ impl<T: Trait> Module<T> {
         // so we can update them if new values provided present in new_property_values.
         let mut updated_values = entity.values;
         let mut updated = false;
+
         let mut entities_rc_to_decrement_vec = vec![];
         let mut entities_rc_to_increment_vec = vec![];
         // Iterate over a vector of new values and update corresponding properties
@@ -1200,41 +1201,40 @@ impl<T: Trait> Module<T> {
         for (id, new_value) in new_property_values.into_iter() {
             // Try to find a current property value in the entity
             // by matching its id to the id of a property with an updated value.
-            if let Some(current_prop_value) = updated_values.get_mut(&id) {
-                // Get class-level information about this property
-                if let Some(class_prop) = class.properties.get(id as usize) {
-                    if new_value != *current_prop_value {
-                        // Validate a new property value against the type of this property
-                        // and check any additional constraints like the length of a vector
-                        // if it's a vector property or the length of a text if it's a text property.
-                        Self::ensure_property_value_to_update_is_valid(&new_value, class_prop)?;
-                        // Get unique entity ids to update rc
-                        if let (Some(entities_rc_to_increment), Some(entities_rc_to_decrement)) = (
-                            Self::get_involved_entities(&new_value),
-                            Self::get_involved_entities(&current_prop_value),
-                        ) {
-                            let (entities_rc_to_decrement, entities_rc_to_increment): (
-                                Vec<EntityId>,
-                                Vec<EntityId>,
-                            ) = entities_rc_to_decrement
-                                .into_iter()
-                                .zip(entities_rc_to_increment.into_iter())
-                                .filter(|(entity_rc_to_decrement, entity_rc_to_increment)| {
-                                    entity_rc_to_decrement != entity_rc_to_increment
-                                })
-                                .unzip();
-                            entities_rc_to_increment_vec.push(entities_rc_to_increment);
-                            entities_rc_to_decrement_vec.push(entities_rc_to_decrement);
-                        }
-                        // Update a current prop value in a mutable vector, if a new value is valid.
-                        current_prop_value.update(new_value);
-                        updated = true;
-                    }
-                }
-            } else {
+            let current_prop_value = updated_values
+                .get_mut(&id)
                 // Throw an error if a property was not found on entity
                 // by an in-class index of a property update.
-                return Err(ERROR_UNKNOWN_ENTITY_PROP_ID);
+                .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?;
+            // Get class-level information about this property
+            if let Some(class_prop) = class.properties.get(id as usize) {
+                if new_value != *current_prop_value {
+                    // Validate a new property value against the type of this property
+                    // and check any additional constraints like the length of a vector
+                    // if it's a vector property or the length of a text if it's a text property.
+                    Self::ensure_property_value_to_update_is_valid(&new_value, class_prop)?;
+                    // Get unique entity ids to update rc
+                    if let (Some(entities_rc_to_increment), Some(entities_rc_to_decrement)) = (
+                        Self::get_involved_entities(&new_value),
+                        Self::get_involved_entities(&current_prop_value),
+                    ) {
+                        let (entities_rc_to_decrement, entities_rc_to_increment): (
+                            Vec<EntityId>,
+                            Vec<EntityId>,
+                        ) = entities_rc_to_decrement
+                            .into_iter()
+                            .zip(entities_rc_to_increment.into_iter())
+                            .filter(|(entity_rc_to_decrement, entity_rc_to_increment)| {
+                                entity_rc_to_decrement != entity_rc_to_increment
+                            })
+                            .unzip();
+                        entities_rc_to_increment_vec.push(entities_rc_to_increment);
+                        entities_rc_to_decrement_vec.push(entities_rc_to_decrement);
+                    }
+                    // Update a current prop value in a mutable vector, if a new value is valid.
+                    current_prop_value.update(new_value);
+                    updated = true;
+                }
             }
         }
 
@@ -1264,18 +1264,20 @@ impl<T: Trait> Module<T> {
     ) -> dispatch::Result {
         Self::ensure_known_entity_id(entity_id)?;
         let entity = Self::entity_by_id(entity_id);
-        let entities_rc_to_decrement = match entity.values.get(&in_class_schema_property_id) {
-            Some(current_prop_value) if current_prop_value.is_vec() => {
-                Self::get_involved_entities(&current_prop_value)
-            }
-            Some(_) => return Err(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR),
-            _ =>
+        let current_prop_value = entity
+            .values
+            .get(&in_class_schema_property_id)
             // Throw an error if a property was not found on entity
             // by an in-class index of a property.
-            {
-                return Err(ERROR_UNKNOWN_ENTITY_PROP_ID)
-            }
-        };
+            .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?;
+
+        // Ensure prop value under given class schema property id is vector
+        ensure!(
+            current_prop_value.is_vec(),
+            ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR
+        );
+
+        let entities_rc_to_decrement = Self::get_involved_entities(&current_prop_value);
 
         // Clear property value vector:
         <EntityById<T>>::mutate(entity_id, |entity| {
@@ -1301,22 +1303,19 @@ impl<T: Trait> Module<T> {
         Self::ensure_known_entity_id(entity_id)?;
         let entity = Self::entity_by_id(entity_id);
 
-        let involved_entity_id =
-            if let Some(current_prop_value) = entity.values.get(&in_class_schema_property_id) {
-                // Ensure property value vector nonces equality to avoid possible data races,
-                // when performing vector specific operations
-                Self::ensure_nonce_equality(current_prop_value, nonce)?;
-                Self::ensure_index_in_property_vector_is_valid(
-                    current_prop_value,
-                    index_in_property_vec,
-                )?;
-                Self::get_involved_entities(&current_prop_value)
-                    .map(|involved_entities| involved_entities[index_in_property_vec as usize])
-            } else {
-                // Throw an error if a property was not found on entity
-                // by an in-class index of a property.
-                return Err(ERROR_UNKNOWN_ENTITY_PROP_ID);
-            };
+        let current_prop_value = entity
+            .values
+            .get(&in_class_schema_property_id)
+            // Throw an error if a property was not found on entity
+            // by an in-class index of a property.
+            .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?;
+
+        // Ensure property value vector nonces equality to avoid possible data races,
+        // when performing vector specific operations
+        Self::ensure_nonce_equality(current_prop_value, nonce)?;
+        Self::ensure_index_in_property_vector_is_valid(current_prop_value, index_in_property_vec)?;
+        let involved_entity_id = Self::get_involved_entities(&current_prop_value)
+            .map(|involved_entities| involved_entities[index_in_property_vec as usize]);
 
         // Remove property value vector
         <EntityById<T>>::mutate(entity_id, |entity| {
@@ -1342,30 +1341,29 @@ impl<T: Trait> Module<T> {
         let (entity, class) = Self::get_entity_and_class(entity_id);
 
         // Get class-level information about this property
-        if let Some(class_prop) = class.properties.get(in_class_schema_property_id as usize) {
-            // Try to find a current property value in the entity
-            // by matching its id to the id of a property with an updated value.
-            if let Some(entity_prop_value) = entity.values.get(&in_class_schema_property_id) {
-                // Ensure property value vector nonces equality to avoid possible data races,
-                // when performing vector specific operations
-                Self::ensure_nonce_equality(entity_prop_value, nonce)?;
-                // Validate a new property value against the type of this property
-                // and check any additional constraints like the length of a vector
-                // if it's a vector property or the length of a text if it's a text property.
-                Self::ensure_prop_value_can_be_inserted_at_prop_vec(
-                    &property_value,
-                    entity_prop_value,
-                    index_in_property_vec,
-                    class_prop,
-                )?;
-            }
-        } else {
+        let class_prop = class
+            .properties
+            .get(in_class_schema_property_id as usize)
             // Throw an error if a property was not found on entity
             // by an in-class index of a property update.
-            {
-                return Err(ERROR_UNKNOWN_ENTITY_PROP_ID);
-            }
-        }
+            .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?;
+
+        // Try to find a current property value in the entity
+        // by matching its id to the id of a property with an updated value.
+        if let Some(entity_prop_value) = entity.values.get(&in_class_schema_property_id) {
+            // Ensure property value vector nonces equality to avoid possible data races,
+            // when performing vector specific operations
+            Self::ensure_nonce_equality(entity_prop_value, nonce)?;
+            // Validate a new property value against the type of this property
+            // and check any additional constraints like the length of a vector
+            // if it's a vector property or the length of a text if it's a text property.
+            Self::ensure_prop_value_can_be_inserted_at_prop_vec(
+                &property_value,
+                entity_prop_value,
+                index_in_property_vec,
+                class_prop,
+            )?;
+        };
 
         // Insert property value into property value vector
         <EntityById<T>>::mutate(entity_id, |entity| {
@@ -1422,27 +1420,25 @@ impl<T: Trait> Module<T> {
             system::RawOrigin::Root => Ok(AccessLevel::System),
             system::RawOrigin::Signed(account_id) => {
                 if let Some(credential) = with_credential {
-                    if T::CredentialChecker::account_has_credential(&account_id, credential) {
-                        if let Some(entity_id) = as_entity_maintainer {
-                            // is entity maintained by system
-                            ensure!(
-                                <EntityMaintainerByEntityId<T>>::exists(entity_id),
-                                "NotEnityMaintainer"
-                            );
-                            // ensure entity maintainer matches
-                            match Self::entity_maintainer_by_entity_id(entity_id) {
-                                Some(maintainer_credential)
-                                    if credential == maintainer_credential =>
-                                {
-                                    Ok(AccessLevel::EntityMaintainer)
-                                }
-                                _ => Err("NotEnityMaintainer"),
+                    ensure!(
+                        T::CredentialChecker::account_has_credential(&account_id, credential),
+                        "OriginCannotActWithRequestedCredential"
+                    );
+                    if let Some(entity_id) = as_entity_maintainer {
+                        // is entity maintained by system
+                        ensure!(
+                            <EntityMaintainerByEntityId<T>>::exists(entity_id),
+                            "NotEnityMaintainer"
+                        );
+                        // ensure entity maintainer matches
+                        match Self::entity_maintainer_by_entity_id(entity_id) {
+                            Some(maintainer_credential) if credential == maintainer_credential => {
+                                Ok(AccessLevel::EntityMaintainer)
                             }
-                        } else {
-                            Ok(AccessLevel::Credential(credential))
+                            _ => Err("NotEnityMaintainer"),
                         }
                     } else {
-                        Err("OriginCannotActWithRequestedCredential")
+                        Ok(AccessLevel::Credential(credential))
                     }
                 } else {
                     Ok(AccessLevel::Unspecified)
@@ -1542,7 +1538,7 @@ impl<T: Trait> Module<T> {
 
     fn get_class_id_by_entity_id(entity_id: EntityId) -> Result<ClassId, &'static str> {
         // use a utility method on versioned_store module
-        ensure!(<EntityById<T>>::exists(entity_id), "EntityNotFound");
+        ensure!(<EntityById<T>>::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
         let entity = Self::entity_by_id(entity_id);
         Ok(entity.class_id)
     }
@@ -1567,14 +1563,14 @@ impl<T: Trait> Module<T> {
                         Err("EntityCannotReferenceTargetEntity")
                     }
                     ReferenceConstraint::Restricted(permitted_properties) => {
-                        if permitted_properties.contains(&PropertyOfClass {
-                            class_id: source_class_id,
-                            property_index: *in_class_index,
-                        }) {
-                            Ok(())
-                        } else {
-                            Err("EntityCannotReferenceTargetEntity")
-                        }
+                        ensure!(
+                            permitted_properties.contains(&PropertyOfClass {
+                                class_id: source_class_id,
+                                property_index: *in_class_index,
+                            }),
+                            "EntityCannotReferenceTargetEntity"
+                        );
+                        Ok(())
                     }
                 }?;
             }
@@ -1714,13 +1710,9 @@ impl<T: Trait> Module<T> {
                 appended_entity_values.insert(*prop_id, new_value.to_owned());
             } else {
                 // All required prop values should be are provided
-                if class_prop.required {
-                    return Err(ERROR_MISSING_REQUIRED_PROP);
-                }
+                ensure!(!class_prop.required, ERROR_MISSING_REQUIRED_PROP);
                 // Add all missing non required schema prop values as PropertyValue::Bool(false)
-                else {
-                    appended_entity_values.insert(*prop_id, PropertyValue::Bool(false));
-                }
+                appended_entity_values.insert(*prop_id, PropertyValue::Bool(false));
             }
         }
 
@@ -1823,10 +1815,10 @@ impl<T: Trait> Module<T> {
                     entity.class_id == class_id,
                     ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS
                 );
-                Ok(())
             }
-            _ => Ok(()),
+            _ => (),
         }
+        Ok(())
     }
 
     pub fn ensure_index_in_property_vector_is_valid(
@@ -2021,11 +2013,8 @@ impl<T: Trait> Module<T> {
             _ => true,
         };
 
-        if is_valid_len {
-            Ok(())
-        } else {
-            Err(ERROR_VEC_PROP_IS_TOO_LONG)
-        }
+        ensure!(is_valid_len, ERROR_VEC_PROP_IS_TOO_LONG);
+        Ok(())
     }
 
     pub fn ensure_prop_value_matches_its_type(

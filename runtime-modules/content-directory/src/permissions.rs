@@ -1,5 +1,5 @@
 use codec::{Decode, Encode};
-use srml_support::dispatch;
+use srml_support::{dispatch, ensure};
 
 use crate::constraint::*;
 use crate::credentials::*;
@@ -77,11 +77,11 @@ where
         match access_level {
             AccessLevel::System => Ok(()),
             AccessLevel::Credential(credential) => {
-                if class_permissions.add_schemas.contains(credential) {
-                    Ok(())
-                } else {
-                    Err("NotInAddSchemasSet")
-                }
+                ensure!(
+                    class_permissions.add_schemas.contains(credential),
+                    "NotInAddSchemasSet"
+                );
+                Ok(())
             }
             AccessLevel::Unspecified => Err("UnspecifiedActor"),
             AccessLevel::EntityMaintainer => Err("AccessLevel::EntityMaintainer-UsedOutOfPlace"),
@@ -90,16 +90,17 @@ where
 
     pub fn can_update_schema_status(
         class_permissions: &Self,
+
         access_level: &AccessLevel<Credential>,
     ) -> dispatch::Result {
         match access_level {
             AccessLevel::System => Ok(()),
             AccessLevel::Credential(credential) => {
-                if class_permissions.update_schemas_status.contains(credential) {
-                    Ok(())
-                } else {
-                    Err("NotInUpdateSchemasStatusSet")
-                }
+                ensure!(
+                    class_permissions.update_schemas_status.contains(credential),
+                    "NotInUpdateSchemasStatusSet"
+                );
+                Ok(())
             }
             AccessLevel::Unspecified => Err("UnspecifiedActor"),
             AccessLevel::EntityMaintainer => Err("AccessLevel::EntityMaintainer-UsedOutOfPlace"),
