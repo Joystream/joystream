@@ -10,7 +10,7 @@ import {
   DefaultOuterFormProps,
   genericFormDefaultValues
 } from "./GenericProposalForm";
-import FormField from "./FormField";
+import { InputFormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
 
@@ -35,18 +35,19 @@ const SetStorageRoleParamsForm: React.FunctionComponent<SetStorageRoleParamsForm
   const { handleChange, errors, touched, values } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
-    <GenericProposalForm {...passProps}>
+    <GenericProposalForm {...props}>
       <Divider horizontal>Parameters</Divider>
       <Form.Group widths="equal" style={{ marginBottom: "8rem" }}>
-        <FormField
+        <InputFormField
           label="Providers Count"
           help="The proposed maximum number of active Storage Providers"
           onChange={handleChange}
           name="storageProviderCount"
           placeholder="10"
           error={errorLabelsProps.storageProviderCount}
+          value={values.storageProviderCount}
         />
-        <FormField
+        <InputFormField
           label="Provider Reward"
           help="The proposed reward for Storage Providers (every x blocks)"
           onChange={handleChange}
@@ -54,8 +55,9 @@ const SetStorageRoleParamsForm: React.FunctionComponent<SetStorageRoleParamsForm
           placeholder="50"
           error={errorLabelsProps.storageProviderReward}
           unit={"tJOY"}
+          value={values.storageProviderReward}
         />
-        <FormField
+        <InputFormField
           label="Staking Limit"
           help="The minimum stake for Storage Providers"
           onChange={handleChange}
@@ -63,6 +65,7 @@ const SetStorageRoleParamsForm: React.FunctionComponent<SetStorageRoleParamsForm
           placeholder="1500"
           error={errorLabelsProps.storageProviderStakingLimit}
           unit={"tJOY"}
+          value={values.storageProviderStakingLimit}
         />
       </Form.Group>
     </GenericProposalForm>

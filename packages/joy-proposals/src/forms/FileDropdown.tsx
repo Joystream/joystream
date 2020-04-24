@@ -45,6 +45,7 @@ const dropdownDivStyle = (status: Status): React.CSSProperties => {
   const mainColor = getStatusColor(status);
 
   return {
+    cursor: "pointer",
     border: `1px solid ${mainColor + "30"}`,
     borderRadius: "3px",
     padding: "1.5em",
