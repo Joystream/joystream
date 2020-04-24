@@ -4,7 +4,8 @@ const cli = require('warthog/dist/cli/cli');
 import { Command } from '@oclif/command';
 
 import { createDir, createFile } from '../utils/utils';
-import { formatWithPrettier } from '../helpers/formatter';
+import Indexer from './indexer';
+import DB from './db';
 
 export default class New extends Command {
   static description = 'Create grapqhl server and event processor';
@@ -31,13 +32,19 @@ export default class New extends Command {
     createDir(New.substrateQueryNode);
 
     this.generateSubstrateQueryNodeDirs(project_name);
+    this.generateBlockIndexer();
 
     // Change working to joystream-query-node
     process.chdir(New.joystreamQueryNode);
+
     // Create joystream-query-node/schema.json file
     createFile(New.schemaFile, '[{}]');
+
     // Create warthog graphql server
     cli.run(`new ${project_name}`);
+
+    // This command needs to be execute in New.joystreamQueryNode directory!
+    this.createDatabase();
   }
 
   generateSubstrateQueryNodeDirs(projectName: string) {
@@ -64,5 +71,15 @@ export default class New extends Command {
     );
     ormconfigTemplate = JSON.stringify(ormconfigTemplate);
     createFile(ormconfigFilePath, ormconfigTemplate);
+  }
+
+  generateBlockIndexer() {
+    process.chdir(New.substrateQueryNode);
+    Indexer.run(['--create']);
+    process.chdir('..');
+  }
+
+  createDatabase() {
+    DB.run(['--create']);
   }
 }
