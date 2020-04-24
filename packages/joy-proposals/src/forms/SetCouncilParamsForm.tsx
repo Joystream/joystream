@@ -9,33 +9,33 @@ import {
   genericFormDefaultOptions,
   DefaultOuterFormProps,
   genericFormDefaultValues
-} from './GenericProposalForm';
-import { InputFormField } from './FormFields';
+} from "./GenericProposalForm";
+import { InputFormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
 
 type FormValues = GenericFormValues & {
-  announcingPeriod: string,
-  votingPeriod: string,
-  minVotingStake: string,
-  revealingPeriod: string,
-  minCouncilStake: string,
-  newTermDuration: string,
-  candidacyLimit: string,
-  councilSize: string,
-}
+  announcingPeriod: string;
+  votingPeriod: string;
+  minVotingStake: string;
+  revealingPeriod: string;
+  minCouncilStake: string;
+  newTermDuration: string;
+  candidacyLimit: string;
+  councilSize: string;
+};
 
 const defaultValues: FormValues = {
   ...genericFormDefaultValues,
-  announcingPeriod: '',
-  votingPeriod: '',
-  minVotingStake: '',
-  revealingPeriod: '',
-  minCouncilStake: '',
-  newTermDuration: '',
-  candidacyLimit: '',
-  councilSize: '',
-}
+  announcingPeriod: "",
+  votingPeriod: "",
+  minVotingStake: "",
+  revealingPeriod: "",
+  minCouncilStake: "",
+  newTermDuration: "",
+  candidacyLimit: "",
+  councilSize: ""
+};
 
 type FromAdditionalProps = {};
 type SetCouncilParamsFormProps = FormikProps<FormValues> & FromAdditionalProps;
@@ -55,7 +55,7 @@ const SetCouncilParamsForm: React.FunctionComponent<SetCouncilParamsFormProps> =
           placeholder="100"
           error={errorLabelsProps.announcingPeriod}
           value={values.announcingPeriod}
-          />
+        />
         <InputFormField
           label="Voting Period"
           help="Voting period in days"
@@ -64,7 +64,7 @@ const SetCouncilParamsForm: React.FunctionComponent<SetCouncilParamsFormProps> =
           placeholder="(Currently: x days)"
           error={errorLabelsProps.votingPeriod}
           value={values.votingPeriod}
-          />
+        />
         <InputFormField
           label="Revealing Period"
           help="Revealing period in days"
@@ -131,12 +131,12 @@ const SetCouncilParamsForm: React.FunctionComponent<SetCouncilParamsFormProps> =
       </Form.Group>
     </GenericProposalForm>
   );
-}
+};
 
 type OuterFormProps = DefaultOuterFormProps<FromAdditionalProps, FormValues>;
 
 export default withFormContainer<OuterFormProps, FormValues>({
-  mapPropsToValues: (props:OuterFormProps) => ({
+  mapPropsToValues: (props: OuterFormProps) => ({
     ...defaultValues,
     ...(props.initialData || {})
   }),

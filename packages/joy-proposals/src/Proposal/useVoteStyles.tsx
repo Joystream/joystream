@@ -1,7 +1,11 @@
-export default function useVoteStyles(value) {
+import { SemanticCOLORS, SemanticICONS } from "semantic-ui-react";
+
+export default function useVoteStyles(
+  value: "Approve" | "Abstain" | "Reject" | "Slash"
+): { textColor: string; icon: SemanticICONS; color: SemanticCOLORS } {
   let textColor;
-  let icon;
-  let color;
+  let icon: SemanticICONS;
+  let color: SemanticCOLORS;
 
   switch (value) {
     case "Approve": {
