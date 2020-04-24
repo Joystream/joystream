@@ -1569,32 +1569,37 @@ fn cannot_complete_insert_at_entity_property_vector_when_nonce_does_not_match() 
     })
 }
 
+fn create_entity_with_prop_value_referencing_another_entity() -> (EntityId, EntityId) {
+    let class_id = create_simple_class_with_default_permissions();
+    let schema_id = TestModule::append_class_schema(
+        class_id,
+        vec![],
+        vec![
+            good_prop_bool().required(),
+            new_reference_class_prop_vec(class_id),
+        ],
+    )
+    .expect("This should not happen");
+    let entity_id = create_entity_of_class(class_id);
+    let entity_id_2 = create_entity_of_class(class_id);
+    let mut property_values = BTreeMap::new();
+    property_values.insert(PROP_ID_BOOL, PropertyValue::Bool(true));
+    property_values.insert(
+        PROP_ID_REFERENCE_VEC,
+        PropertyValue::ReferenceVec(vec![entity_id_2], <Runtime as Trait>::Nonce::default()),
+    );
+    assert_ok!(TestModule::add_entity_schema_support(
+        entity_id,
+        schema_id,
+        property_values
+    ));
+    (entity_id, entity_id_2)
+}
+
 #[test]
 fn cannot_complete_insert_at_entity_property_vector_when_unknown_internal_entity_id() {
     with_test_externalities(|| {
-        let class_id = create_simple_class_with_default_permissions();
-        let schema_id = TestModule::append_class_schema(
-            class_id,
-            vec![],
-            vec![
-                good_prop_bool().required(),
-                new_reference_class_prop_vec(class_id),
-            ],
-        )
-        .expect("This should not happen");
-        let entity_id = create_entity_of_class(class_id);
-        let entity_id_2 = create_entity_of_class(class_id);
-        let mut property_values = BTreeMap::new();
-        property_values.insert(PROP_ID_BOOL, PropertyValue::Bool(true));
-        property_values.insert(
-            PROP_ID_REFERENCE_VEC,
-            PropertyValue::ReferenceVec(vec![entity_id_2], <Runtime as Trait>::Nonce::default()),
-        );
-        assert_ok!(TestModule::add_entity_schema_support(
-            entity_id,
-            schema_id,
-            property_values
-        ));
+        let (entity_id, _) = create_entity_with_prop_value_referencing_another_entity();
         assert_err!(
             TestModule::complete_insert_at_entity_property_vector(
                 entity_id,
@@ -1604,6 +1609,44 @@ fn cannot_complete_insert_at_entity_property_vector_when_unknown_internal_entity
                 ZERO_NONCE
             ),
             ERROR_ENTITY_NOT_FOUND
+        );
+    })
+}
+
+// Remove entity
+// --------------------------------------
+
+#[test]
+fn remove_entity_successfully() {
+    with_test_externalities(|| {
+        let (_, _, entity_id) = create_class_with_schema_and_entity();
+        assert_ok!(TestModule::remove_entity(Origin::ROOT, None, entity_id));
+        // Ensure entity related storage was cleared successfully.
+        assert_eq!(
+            TestModule::entity_by_id(entity_id),
+            Entity::<Runtime>::default()
+        );
+        assert_eq!(TestModule::entity_maintainer_by_entity_id(entity_id), None);
+    })
+}
+
+#[test]
+fn remove_entity_not_found() {
+    with_test_externalities(|| {
+        assert_err!(
+            TestModule::remove_entity(Origin::ROOT, None, UNKNOWN_ENTITY_ID),
+            ERROR_ENTITY_NOT_FOUND
+        );
+    })
+}
+
+#[test]
+fn remove_entity_reference_counter_does_not_equal_zero() {
+    with_test_externalities(|| {
+        let (_, entity_by_id_2) = create_entity_with_prop_value_referencing_another_entity();
+        assert_err!(
+            TestModule::remove_entity(Origin::ROOT, None, entity_by_id_2),
+            ERROR_ENTITY_REFERENCE_COUNTER_DOES_NOT_EQUAL_TO_ZERO
         );
     })
 }
