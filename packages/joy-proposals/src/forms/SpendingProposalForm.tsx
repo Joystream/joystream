@@ -9,70 +9,69 @@ import {
   genericFormDefaultOptions,
   DefaultOuterFormProps,
   genericFormDefaultValues
-} from './GenericProposalForm';
-import { InputFormField, FormField } from './FormFields';
+} from "./GenericProposalForm";
+import { InputFormField, FormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
 
 type FormValues = GenericFormValues & {
-  destinationAccount: any,
-  tokens: string,
+  destinationAccount: any;
+  tokens: string;
 };
 
-const defaultValues:FormValues = {
+const defaultValues: FormValues = {
   ...genericFormDefaultValues,
-  destinationAccount: '',
-  tokens: '',
-}
+  destinationAccount: "",
+  tokens: ""
+};
 
 type FormAdditionalProps = {
-  destinationAccounts: any[]
+  destinationAccounts: any[];
 };
 type SpendingProposalProps = FormikProps<FormValues> & FormAdditionalProps;
-
 
 const SpendingProposalForm: React.FunctionComponent<SpendingProposalProps> = props => {
   const { handleChange, destinationAccounts, errors, touched, values } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
     <GenericProposalForm {...props}>
-        <InputFormField
-          label="Amount of tokens"
-          help="The amount of tokens you propose to spend"
+      <InputFormField
+        label="Amount of tokens"
+        help="The amount of tokens you propose to spend"
+        onChange={handleChange}
+        className="tokens"
+        name="tokens"
+        placeholder="100"
+        error={errorLabelsProps.tokens}
+        unit={"tJOY"}
+        value={values.tokens}
+      />
+      <FormField
+        error={errorLabelsProps.destinationAccount}
+        label="Destination account"
+        help="The account you propose to send the tokens into"
+      >
+        <Dropdown
+          clearable
+          name="destinationAccount"
+          labeled
+          placeholder="Select Destination Account"
+          fluid
+          selection
+          options={destinationAccounts}
           onChange={handleChange}
-          className="tokens"
-          name="tokens"
-          placeholder="100"
-          error={errorLabelsProps.tokens}
-          unit={'tJOY'}
-          value={ values.tokens }
-          />
-        <FormField
-          error={errorLabelsProps.destinationAccount}
-          label="Destination account"
-          help="The account you propose to send the tokens into">
-          <Dropdown
-            clearable
-            name="destinationAccount"
-            labeled
-            placeholder="Select Destination Account"
-            fluid
-            selection
-            options={destinationAccounts}
-            onChange={handleChange}
-            value={ values.destinationAccount }
-          />
-          {errorLabelsProps.destinationAccount && <Label {...errorLabelsProps.destinationAccount} prompt />}
-        </FormField>
-
+          value={values.destinationAccount}
+        />
+        {errorLabelsProps.destinationAccount && <Label {...errorLabelsProps.destinationAccount} prompt />}
+      </FormField>
     </GenericProposalForm>
   );
-}
+};
 
 type OuterFormProps = DefaultOuterFormProps<FormAdditionalProps, FormValues>;
 
 export default withFormContainer<OuterFormProps, FormValues>({
-  mapPropsToValues: (props:OuterFormProps) => ({
+  mapPropsToValues: (props: OuterFormProps) => ({
     ...defaultValues,
     ...(props.initialData || {})
   }),

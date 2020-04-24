@@ -2,11 +2,11 @@ import React from "react";
 import { Card, Header, Item } from "semantic-ui-react";
 
 type BodyProps = {
-  title?: string;
-  description?: string;
-  params?: {
-    tokensAmount?: number;
-    destinationAccount?: string;
+  title: string;
+  description: string;
+  params: {
+    tokensAmount: number;
+    destinationAccount: string;
   };
 };
 

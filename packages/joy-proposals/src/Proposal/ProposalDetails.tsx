@@ -9,8 +9,8 @@ import VotingSection from "./VotingSection";
 import "./Proposal.css";
 
 export type Member = {
-  name?: string;
-  avatar?: string;
+  name: string;
+  avatar: string;
 };
 
 export type VoteValue = "Approve" | "Slash" | "Abstain" | "Reject";
@@ -22,28 +22,28 @@ export type Vote = {
 };
 
 export type ProposalProps = {
-  title?: string;
-  description?: string;
-  finalized?: "approved" | "rejected" | "slashed" | "withdrawn";
-  params?: {
-    tokensAmount?: number;
-    destinationAccount?: string;
+  title: string;
+  description: string;
+  finalized: "approved" | "rejected" | "slashed" | "withdrawn";
+  params: {
+    tokensAmount: number;
+    destinationAccount: string;
   };
-  votes?: Vote[];
-  totalVotes?: number;
-  details?: {
+  votes: Vote[];
+  totalVotes: number;
+  details: {
     // FIXME: Stage, substage and type all should be an enum
-    stage?: string;
-    substage?: string;
-    expiresIn?: number;
-    type?: string;
-    createdBy?: Member;
-    createdAt?: string;
+    stage: string;
+    substage: string;
+    expiresIn: number;
+    type: string;
+    createdBy: Member;
+    createdAt: string;
   };
-  onVote?: (vote: VoteValue) => void;
-  vote?: {
-    hasVoted?: boolean;
-    value?: VoteValue;
+  onVote: (vote: VoteValue) => void;
+  vote: {
+    hasVoted: boolean;
+    value: VoteValue;
   };
 };
 
@@ -62,7 +62,7 @@ export default function ProposalDetails({
     <Container className="Proposal">
       <Details {...details} />
       <Body title={title} description={description} params={params} />
-      <VotingSection onVote={onVote} hasVoted={hasVoted} value={value} />
+      <VotingSection onVote={onVote} hasVoted={hasVoted} value={value || "Approve"} />
       <Votes votes={votes} total={totalVotes} />
     </Container>
   );

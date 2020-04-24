@@ -8,19 +8,19 @@ import {
   genericFormDefaultOptions,
   DefaultOuterFormProps,
   genericFormDefaultValues
-} from './GenericProposalForm';
-import { TextareaFormField } from './FormFields';
+} from "./GenericProposalForm";
+import { TextareaFormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
 
 type FormValues = GenericFormValues & {
-  description: string
+  description: string;
 };
 
-const defaultValues:FormValues = {
+const defaultValues: FormValues = {
   ...genericFormDefaultValues,
-  description: ''
-}
+  description: ""
+};
 
 type FormAdditionalProps = {};
 type SingalFormProps = FormikProps<FormValues> & FormAdditionalProps;
@@ -36,16 +36,16 @@ const SignalForm: React.FunctionComponent<SingalFormProps> = props => {
         onChange={handleChange}
         name="description"
         placeholder="What I would like to propose is..."
-        error={ errorLabelsProps.description }
-        />
+        error={errorLabelsProps.description}
+      />
     </GenericProposalForm>
   );
-}
+};
 
 type OuterFormProps = DefaultOuterFormProps<FormAdditionalProps, FormValues>;
 
 export default withFormContainer<OuterFormProps, FormValues>({
-  mapPropsToValues: (props:OuterFormProps) => ({
+  mapPropsToValues: (props: OuterFormProps) => ({
     ...defaultValues,
     ...(props.initialData || {})
   }),

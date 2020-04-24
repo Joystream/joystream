@@ -9,23 +9,22 @@ import {
   genericFormDefaultOptions,
   DefaultOuterFormProps,
   genericFormDefaultValues
-} from './GenericProposalForm';
-import { FormField } from './FormFields';
+} from "./GenericProposalForm";
+import { FormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
 
-
 type FormValues = GenericFormValues & {
-  storageProvider: any
+  storageProvider: any;
 };
 
-const defaultValues:FormValues = {
+const defaultValues: FormValues = {
   ...genericFormDefaultValues,
-  storageProvider: ''
-}
+  storageProvider: ""
+};
 
 type FormAdditionalProps = {
-  storageProviders: any[],
+  storageProviders: any[];
 };
 type EvictStorageProviderFormProps = FormikProps<FormValues> & FormAdditionalProps;
 
@@ -34,30 +33,31 @@ const EvictStorageProviderForm: React.FunctionComponent<EvictStorageProviderForm
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
     <GenericProposalForm {...props}>
-        <FormField
-          error={errorLabelsProps.storageProvider}
-          label="Storage provider"
-          help="The storage provider you propose to evict">
-          <Dropdown
-            clearable
-            name="storageProvider"
-            placeholder="Select Storage Provider"
-            fluid
-            selection
-            options={storageProviders}
-            onChange={handleChange}
-            value={values.storageProvider}
-          />
-          {errorLabelsProps.storageProvider && <Label {...errorLabelsProps.storageProvider} prompt />}
-        </FormField>
+      <FormField
+        error={errorLabelsProps.storageProvider}
+        label="Storage provider"
+        help="The storage provider you propose to evict"
+      >
+        <Dropdown
+          clearable
+          name="storageProvider"
+          placeholder="Select Storage Provider"
+          fluid
+          selection
+          options={storageProviders}
+          onChange={handleChange}
+          value={values.storageProvider}
+        />
+        {errorLabelsProps.storageProvider && <Label {...errorLabelsProps.storageProvider} prompt />}
+      </FormField>
     </GenericProposalForm>
   );
-}
+};
 
 type OuterFormProps = DefaultOuterFormProps<FormAdditionalProps, FormValues>;
 
 export default withFormContainer<OuterFormProps, FormValues>({
-  mapPropsToValues: (props:OuterFormProps) => ({
+  mapPropsToValues: (props: OuterFormProps) => ({
     ...defaultValues,
     ...(props.initialData || {})
   }),
