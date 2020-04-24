@@ -1,5 +1,9 @@
 import { EventRecord, Extrinsic } from '@polkadot/types/interfaces';
 
+interface EventParameters {
+  [key: string]: string;
+}
+
 export default class QueryEvent {
   readonly event_record: EventRecord;
 
@@ -18,6 +22,17 @@ export default class QueryEvent {
 
   get event_method(): string {
     return this.event_record.event.method;
+  }
+
+  get event_params(): EventParameters {
+    const { event } = this.event_record;
+
+    let params: EventParameters = {};
+
+    event.data.forEach((data, index) => {
+      params[event.typeDef[index].type] = data.toString();
+    });
+    return params;
   }
 
   log(indent: number, logger: (str: string) => void): void {
