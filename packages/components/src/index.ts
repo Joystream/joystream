@@ -7,5 +7,6 @@ export { default as GenericSection } from "./components/GenericSection";
 export { default as Grid } from "./components/Grid";
 export { default as Label } from "./components/Label";
 export { default as SearchBar } from "./components/SearchBar";
+export { default as Tag } from "./components/Tag";
 export { default as VideoPlayer } from "./components/VideoPlayer";
 export { default as VideoPreview } from "./components/VideoPreview";

@@ -31,6 +31,5 @@ export let makeStyles = ({ img, size = "default" }: AvatarStyleProps) => {
     min-height: ${width};
     max-width: ${width};
     max-height: ${width};
-    margin: auto ${margin} auto;
   `;
 };
