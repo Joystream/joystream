@@ -72,6 +72,14 @@ export default class Indexer extends Command {
     formatted = formatWithPrettier(mappingFileContent);
     createFile(path.resolve(to, 'mappings.ts'), formatted);
 
+    // Create src/mappings.ts
+    const dbHelperTemplate = fs.readFileSync(
+      path.resolve(__dirname, '..', 'helpers', 'templates', 'db-helper.mst'),
+      'utf8'
+    );
+    formatted = formatWithPrettier(dbHelperTemplate);
+    createFile(path.resolve(to, 'helper.ts'), formatted);
+
     // Create .env file
     const dotenvFileContent = fs.readFileSync(
       path.resolve(__dirname, '..', 'helpers', 'templates', 'dotenv.mst'),

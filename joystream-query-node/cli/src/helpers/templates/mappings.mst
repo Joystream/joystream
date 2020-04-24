@@ -1,4 +1,5 @@
 import { QueryEvent } from './index-builder';
+import { insertToDatabase } from './helper';
 
 // This is an example you can delete it :)
 export function handleExtrinsicSuccess(event: QueryEvent) {
