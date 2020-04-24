@@ -2,8 +2,8 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { Option, Vec, Bytes, u32 } from '@polkadot/types';
 import { Codec } from '@polkadot/types/types';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { UserInfo, PaidMembershipTerms, MemberId } from '@joystream/types/lib/members';
-import { Seat, VoteKind } from '@joystream/types';
+import { UserInfo, PaidMembershipTerms, MemberId } from '@rome/types/lib/members';
+import { Seat, VoteKind } from '@rome/types';
 import { Balance, EventRecord } from '@polkadot/types/interfaces';
 import BN = require('bn.js');
 import { SubmittableExtrinsic } from '@polkadot/api/types';
@@ -148,6 +148,10 @@ export class ApiWrapper {
 
   public estimateVoteForRomeRuntimeProposalFee(): BN {
     return this.estimateTxFee(this.api.tx.proposals.voteOnProposal(0, 'Approve'));
+  }
+
+  public newEstimate(): BN {
+    return new BN(100);
   }
 
   private applyForCouncilElection(account: KeyringPair, amount: BN): Promise<void> {
@@ -383,6 +387,7 @@ export class ApiWrapper {
       await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (record.event.method.toString() === 'RuntimeUpdated') {
+            console.log('Runtime updated!!');
             resolve();
           }
         });

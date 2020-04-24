@@ -22,3 +22,6 @@ yarn*
 
 # Visual Studio Code
 .vscode
+
+# Compiled WASM code
+*.wasm

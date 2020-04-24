@@ -9,7 +9,8 @@
     "prettier": "prettier --write ./src"
   },
   "dependencies": {
-    "@joystream/types": "../joystream-apps/packages/joy-types",
+    "@joystream/types": "^0.7.0",
+    "@rome/types@npm:@joystream/types": "^0.7.0",
     "@polkadot/api": "^0.96.1",
     "@polkadot/keyring": "^1.7.0-beta.5",
     "@types/bn.js": "^4.11.5",
