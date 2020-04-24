@@ -34,6 +34,10 @@
 //! - [governance](../substrate_governance_module/index.html)
 //! - [content_working_group](../substrate_content_working_group_module/index.html)
 //!
+//! ### Notes
+//! The module uses [ProposalEncoder](./trait.ProposalEncoder.html) to encode the proposal using
+//! its details. Encoded byte vector is passed to the _proposals engine_ as serialized executable code.
+
 // Clippy linter warning. TODO: remove after the Constaninople release
 #![allow(clippy::type_complexity)]
 // disable it because of possible frontend API break
@@ -48,20 +52,19 @@
 // #![warn(missing_docs)]
 
 mod proposal_types;
+
 #[cfg(test)]
 mod tests;
 
-use codec::Encode;
 use common::origin_validator::ActorOriginValidator;
 use governance::election_params::ElectionParameters;
 use proposal_engine::ProposalParameters;
-use roles::actors::{Role, RoleParameters};
+use roles::actors::RoleParameters;
 use rstd::clone::Clone;
 use rstd::convert::TryInto;
 use rstd::prelude::*;
 use rstd::str::from_utf8;
 use rstd::vec::Vec;
-use runtime_io::blake2_256;
 use sr_primitives::traits::SaturatedConversion;
 use sr_primitives::traits::{One, Zero};
 use sr_primitives::Perbill;
@@ -70,7 +73,7 @@ use srml_support::traits::{Currency, Get};
 use srml_support::{decl_error, decl_module, decl_storage, ensure, print};
 use system::{ensure_root, RawOrigin};
 
-pub use proposal_types::ProposalDetails;
+pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 
 // Percentage of the total token issue as max mint balance value. Shared with spending
 // proposal max balance percentage.
@@ -99,6 +102,9 @@ pub trait Trait:
         MemberId<Self>,
         Self::AccountId,
     >;
+
+    /// Encodes the proposal usint its details
+    type ProposalEncoder: ProposalEncoder<Self>;
 }
 
 /// Balance alias for `stake` module
@@ -256,6 +262,74 @@ decl_storage! {
                 T::AccountId,
                 T::MemberId
             >;
+
+        /// Voting period for the 'set validator count' proposal
+        pub SetValidatorCountProposalVotingPeriod get(set_validator_count_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'set validator count' proposal
+        pub SetValidatorCountProposalGracePeriod get(set_validator_count_proposal_grace_period)
+            config(): T::BlockNumber;
+
+        /// Voting period for the 'runtime upgrade' proposal
+        pub RuntimeUpgradeProposalVotingPeriod get(runtime_upgrade_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'runtime upgrade' proposal
+        pub RuntimeUpgradeProposalGracePeriod get(runtime_upgrade_proposal_grace_period)
+            config(): T::BlockNumber;
+
+        /// Voting period for the 'set election parameters' proposal
+        pub SetElectionParametersProposalVotingPeriod get(set_election_parameters_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'set election parameters' proposal
+        pub SetElectionParametersProposalGracePeriod get(set_election_parameters_proposal_grace_period)
+            config(): T::BlockNumber;
+
+        /// Voting period for the 'text' proposal
+        pub TextProposalVotingPeriod get(text_proposal_voting_period) config(): T::BlockNumber;
+
+        /// Grace period for the 'text' proposal
+        pub TextProposalGracePeriod get(text_proposal_grace_period) config(): T::BlockNumber;
+
+        /// Voting period for the 'set content working group mint capacity' proposal
+        pub SetContentWorkingGroupMintCapacityProposalVotingPeriod get(set_content_working_group_mint_capacity_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'set content working group mint capacity' proposal
+        pub SetContentWorkingGroupMintCapacityProposalGracePeriod get(set_content_working_group_mint_capacity_proposal_grace_period)
+            config(): T::BlockNumber;
+
+        /// Voting period for the 'set lead' proposal
+        pub SetLeadProposalVotingPeriod get(set_lead_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'set lead' proposal
+        pub SetLeadProposalGracePeriod get(set_lead_proposal_grace_period)
+            config(): T::BlockNumber;
+
+        /// Voting period for the 'spending' proposal
+        pub SpendingProposalVotingPeriod get(spending_proposal_voting_period) config(): T::BlockNumber;
+
+        /// Grace period for the 'spending' proposal
+        pub SpendingProposalGracePeriod get(spending_proposal_grace_period) config(): T::BlockNumber;
+
+        /// Voting period for the 'evict storage provider' proposal
+        pub EvictStorageProviderProposalVotingPeriod get(evict_storage_provider_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'evict storage provider' proposal
+        pub EvictStorageProviderProposalGracePeriod get(evict_storage_provider_proposal_grace_period)
+            config(): T::BlockNumber;
+
+        /// Voting period for the 'set storage role parameters' proposal
+        pub SetStorageRoleParametersProposalVotingPeriod get(set_storage_role_parameters_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'set storage role parameters' proposal
+        pub SetStorageRoleParametersProposalGracePeriod get(set_storage_role_parameters_proposal_grace_period)
+            config(): T::BlockNumber;
     }
 }
 
@@ -279,8 +353,8 @@ decl_module! {
                 Error::TextProposalSizeExceeded);
 
             let proposal_parameters = proposal_types::parameters::text_proposal::<T>();
-            let proposal_code =
-                <Call<T>>::execute_text_proposal(title.clone(), description.clone(), text.clone());
+            let proposal_details = ProposalDetails::<BalanceOfMint<T>, BalanceOfGovernanceCurrency<T>, T::BlockNumber, T::AccountId, MemberId<T>>::Text(text);
+            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
 
             Self::create_proposal(
                 origin,
@@ -288,9 +362,9 @@ decl_module! {
                 title,
                 description,
                 stake_balance,
-                proposal_code.encode(),
+                proposal_code,
                 proposal_parameters,
-                ProposalDetails::Text(text),
+                proposal_details,
             )?;
         }
 
@@ -308,12 +382,9 @@ decl_module! {
             ensure!(wasm.len() as u32 <= T::RuntimeUpgradeWasmProposalMaxLength::get(),
                 Error::RuntimeProposalSizeExceeded);
 
-            let wasm_hash = blake2_256(&wasm);
-
-            let proposal_code =
-                <Call<T>>::execute_runtime_upgrade_proposal(title.clone(), description.clone(), wasm);
-
             let proposal_parameters = proposal_types::parameters::runtime_upgrade_proposal::<T>();
+            let proposal_details = ProposalDetails::RuntimeUpgrade(wasm);
+            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
 
             Self::create_proposal(
                 origin,
@@ -321,9 +392,9 @@ decl_module! {
                 title,
                 description,
                 stake_balance,
-                proposal_code.encode(),
+                proposal_code,
                 proposal_parameters,
-                ProposalDetails::RuntimeUpgrade(wasm_hash.to_vec()),
+                proposal_details,
             )?;
         }
 
@@ -341,9 +412,8 @@ decl_module! {
 
             Self::ensure_council_election_parameters_valid(&election_parameters)?;
 
-            let proposal_code =
-                <governance::election::Call<T>>::set_election_parameters(election_parameters);
-
+            let proposal_details = ProposalDetails::SetElectionParameters(election_parameters);
+            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
             let proposal_parameters =
                 proposal_types::parameters::set_election_parameters_proposal::<T>();
 
@@ -353,9 +423,9 @@ decl_module! {
                 title,
                 description,
                 stake_balance,
-                proposal_code.encode(),
+                proposal_code,
                 proposal_parameters,
-                ProposalDetails::SetElectionParameters(election_parameters),
+                proposal_details,
             )?;
         }
 
@@ -378,11 +448,10 @@ decl_module! {
                 Error::InvalidStorageWorkingGroupMintCapacity
             );
 
-            let proposal_code =
-                <content_working_group::Call<T>>::set_mint_capacity(mint_balance);
-
             let proposal_parameters =
                 proposal_types::parameters::set_content_working_group_mint_capacity_proposal::<T>();
+            let proposal_details = ProposalDetails::SetContentWorkingGroupMintCapacity(mint_balance);
+            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
 
             Self::create_proposal(
                 origin,
@@ -390,9 +459,9 @@ decl_module! {
                 title,
                 description,
                 stake_balance,
-                proposal_code.encode(),
+                proposal_code,
                 proposal_parameters,
-                ProposalDetails::SetContentWorkingGroupMintCapacity(mint_balance),
+                proposal_details,
             )?;
         }
 
@@ -421,13 +490,10 @@ decl_module! {
                 Error::InvalidSpendingProposalBalance
             );
 
-            let proposal_code = <governance::council::Call<T>>::spend_from_council_mint(
-                balance,
-                destination.clone()
-            );
-
             let proposal_parameters =
                 proposal_types::parameters::spending_proposal::<T>();
+            let proposal_details = ProposalDetails::Spending(balance, destination);
+            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
 
             Self::create_proposal(
                 origin,
@@ -435,12 +501,11 @@ decl_module! {
                 title,
                 description,
                 stake_balance,
-                proposal_code.encode(),
+                proposal_code,
                 proposal_parameters,
-                ProposalDetails::Spending(balance, destination),
+                proposal_details,
             )?;
         }
-
 
         /// Create 'Set lead' proposal type.
         /// This proposal uses `replace_lead()` extrinsic from the `content_working_group`  module.
@@ -460,11 +525,10 @@ decl_module! {
                 );
             }
 
-            let proposal_code =
-                <content_working_group::Call<T>>::replace_lead(new_lead.clone());
-
             let proposal_parameters =
                 proposal_types::parameters::set_lead_proposal::<T>();
+            let proposal_details = ProposalDetails::SetLead(new_lead);
+            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
 
             Self::create_proposal(
                 origin,
@@ -472,9 +536,9 @@ decl_module! {
                 title,
                 description,
                 stake_balance,
-                proposal_code.encode(),
+                proposal_code,
                 proposal_parameters,
-                ProposalDetails::SetLead(new_lead),
+                proposal_details,
             )?;
         }
 
@@ -488,11 +552,10 @@ decl_module! {
             stake_balance: Option<BalanceOf<T>>,
             actor_account: T::AccountId,
         ) {
-            let proposal_code =
-                <roles::actors::Call<T>>::remove_actor(actor_account.clone());
-
             let proposal_parameters =
                 proposal_types::parameters::evict_storage_provider_proposal::<T>();
+            let proposal_details = ProposalDetails::EvictStorageProvider(actor_account);
+            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
 
             Self::create_proposal(
                 origin,
@@ -500,9 +563,9 @@ decl_module! {
                 title,
                 description,
                 stake_balance,
-                proposal_code.encode(),
+                proposal_code,
                 proposal_parameters,
-                ProposalDetails::EvictStorageProvider(actor_account),
+                proposal_details,
             )?;
         }
 
@@ -526,11 +589,10 @@ decl_module! {
                 Error::InvalidValidatorCount
             );
 
-            let proposal_code =
-                <staking::Call<T>>::set_validator_count(new_validator_count);
-
             let proposal_parameters =
                 proposal_types::parameters::set_validator_count_proposal::<T>();
+            let proposal_details = ProposalDetails::SetValidatorCount(new_validator_count);
+            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
 
             Self::create_proposal(
                 origin,
@@ -538,9 +600,9 @@ decl_module! {
                 title,
                 description,
                 stake_balance,
-                proposal_code.encode(),
+                proposal_code,
                 proposal_parameters,
-                ProposalDetails::SetValidatorCount(new_validator_count),
+                proposal_details,
             )?;
         }
 
@@ -556,13 +618,10 @@ decl_module! {
         ) {
             Self::ensure_storage_role_parameters_valid(&role_parameters)?;
 
-            let proposal_code = <roles::actors::Call<T>>::set_role_parameters(
-                Role::StorageProvider,
-                role_parameters
-            );
-
             let proposal_parameters =
                 proposal_types::parameters::set_storage_role_parameters_proposal::<T>();
+            let proposal_details =  ProposalDetails::SetStorageRoleParameters(role_parameters);
+            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
 
             Self::create_proposal(
                 origin,
@@ -570,47 +629,41 @@ decl_module! {
                 title,
                 description,
                 stake_balance,
-                proposal_code.encode(),
+                proposal_code,
                 proposal_parameters,
-                ProposalDetails::SetStorageRoleParameters(role_parameters),
+                proposal_details,
             )?;
         }
 
 // *************** Extrinsic to execute
 
         /// Text proposal extrinsic. Should be used as callable object to pass to the `engine` module.
-        fn execute_text_proposal(
+        pub fn execute_text_proposal(
             origin,
-            title: Vec<u8>,
-            _description: Vec<u8>,
-            _text: Vec<u8>,
+            text: Vec<u8>,
         ) {
             ensure_root(origin)?;
             print("Text proposal: ");
-            let title_string_result = from_utf8(title.as_slice());
-            if let Ok(title_string) = title_string_result{
-                print(title_string);
+            let text_string_result = from_utf8(text.as_slice());
+            if let Ok(text_string) = text_string_result{
+                print(text_string);
             }
         }
 
         /// Runtime upgrade proposal extrinsic.
         /// Should be used as callable object to pass to the `engine` module.
-        fn execute_runtime_upgrade_proposal(
+        pub fn execute_runtime_upgrade_proposal(
             origin,
-            title: Vec<u8>,
-            _description: Vec<u8>,
             wasm: Vec<u8>,
         ) {
             let (cloned_origin1, cloned_origin2) =  Self::double_origin(origin);
             ensure_root(cloned_origin1)?;
 
-            print("Runtime upgrade proposal: ");
-            let title_string_result = from_utf8(title.as_slice());
-            if let Ok(title_string) = title_string_result{
-                print(title_string);
-            }
+            print("Runtime upgrade proposal execution started.");
 
             <system::Module<T>>::set_code(cloned_origin2, wasm)?;
+
+            print("Runtime upgrade proposal execution finished.");
         }
     }
 }

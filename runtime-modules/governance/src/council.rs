@@ -136,7 +136,7 @@ decl_module! {
 
         /// Sets the capacity of the the council mint, if it doesn't exist, attempts to
         /// create a new one.
-        fn set_council_mint_capacity(origin, capacity: minting::BalanceOf<T>) {
+        pub fn set_council_mint_capacity(origin, capacity: minting::BalanceOf<T>) {
             ensure_root(origin)?;
 
             if let Some(mint_id) = Self::council_mint() {

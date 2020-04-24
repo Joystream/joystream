@@ -59,7 +59,7 @@ pub use srml_support::{
 pub use staking::StakerStatus;
 pub use timestamp::Call as TimestampCall;
 
-use integration::proposals::{CouncilManager, MembershipOriginValidator};
+use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -866,6 +866,7 @@ impl proposals_codex::Trait for Runtime {
     type MembershipOriginValidator = MembershipOriginValidator<Self>;
     type TextProposalMaxLength = TextProposalMaxLength;
     type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
+    type ProposalEncoder = ExtrinsicProposalEncoder;
 }
 
 construct_runtime!(
@@ -913,7 +914,7 @@ construct_runtime!(
         // --- Proposals
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
-        ProposalsCodex: proposals_codex::{Module, Call, Storage, Error},
+        ProposalsCodex: proposals_codex::{Module, Call, Storage, Error, Config<T>},
         // ---
 	}
 );
