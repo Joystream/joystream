@@ -2,7 +2,7 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import { Command, flags } from '@oclif/command';
 
-import { copyFiles, createDir, createFile } from '../utils/utils';
+import { copyFiles, createDir, createFile, getTemplatePath } from '../utils/utils';
 import { formatWithPrettier } from '../helpers/formatter';
 
 export default class Indexer extends Command {
@@ -40,76 +40,62 @@ export default class Indexer extends Command {
     const cwd = process.cwd();
 
     // TODO: If files exists delete them?
-    const to = path.resolve(cwd, 'src');
-    if (!fs.pathExistsSync(to)) {
+    const srcDir = path.resolve(cwd, 'src');
+    if (!fs.pathExistsSync(srcDir)) {
       this.error(
         'src directory does not exists. Go to root of the project dir then run this command'
       );
     }
 
     // Create src/index.ts file
-    const indexFileContent = fs.readFileSync(
-      path.resolve(__dirname, '..', 'helpers', 'templates', 'index-builder-entry.mst'),
-      'utf8'
+    const indexFileContent = formatWithPrettier(
+      fs.readFileSync(getTemplatePath('index-builder-entry.mst'), 'utf8')
     );
-
-    let formatted = formatWithPrettier(indexFileContent);
-    createFile(path.resolve(to, 'index.ts'), formatted);
+    createFile(path.resolve(srcDir, 'index.ts'), indexFileContent);
 
     // Create src/processing_pack.ts
-    const processingPackFileContent = fs.readFileSync(
-      path.resolve(__dirname, '..', 'helpers', 'templates', 'processing-pack.mst'),
-      'utf8'
+    const processingPackFileContent = formatWithPrettier(
+      fs.readFileSync(getTemplatePath('processing-pack.mst'), 'utf8')
     );
-    formatted = formatWithPrettier(processingPackFileContent);
-    createFile(path.resolve(to, 'processingPack.ts'), formatted);
+    createFile(path.resolve(srcDir, 'processingPack.ts'), processingPackFileContent);
 
     // Create src/mappings.ts
-    const mappingFileContent = fs.readFileSync(
-      path.resolve(__dirname, '..', 'helpers', 'templates', 'mappings.mst'),
-      'utf8'
+    const mappingFileContent = formatWithPrettier(
+      fs.readFileSync(getTemplatePath('mappings.mst'), 'utf8')
     );
-    formatted = formatWithPrettier(mappingFileContent);
-    createFile(path.resolve(to, 'mappings.ts'), formatted);
+    createFile(path.resolve(srcDir, 'mappings.ts'), mappingFileContent);
 
-    // Create src/mappings.ts
-    const dbHelperTemplate = fs.readFileSync(
-      path.resolve(__dirname, '..', 'helpers', 'templates', 'db-helper.mst'),
-      'utf8'
+    // Create src/helper.ts
+    const dbHelperTemplate = formatWithPrettier(
+      fs.readFileSync(getTemplatePath('db-helper.mst'), 'utf8')
     );
-    formatted = formatWithPrettier(dbHelperTemplate);
-    createFile(path.resolve(to, 'helper.ts'), formatted);
+    createFile(path.resolve(srcDir, 'helper.ts'), dbHelperTemplate);
 
-    // Create .env file
-    const dotenvFileContent = fs.readFileSync(
-      path.resolve(__dirname, '..', 'helpers', 'templates', 'dotenv.mst'),
-      'utf8'
-    );
+    // Create .env file.
+    const dotenvFileContent = fs.readFileSync(getTemplatePath('dotenv.mst'), 'utf8');
     createFile(path.resolve(cwd, '.env'), dotenvFileContent);
 
-    const indexBuilderDirectoryName = 'index-builder';
-    const queryNodeDirectoryName = 'query-node';
+    // helpers/index-builder: template code for index builder
+    const indexBuilderTemplate = path.resolve(__dirname, '..', 'helpers', 'index-builder');
+    // helpers/query-node: template code for query node
+    const queryNodeTemplate = path.resolve(__dirname, '..', 'helpers', 'query-node');
 
-    const indexBuilderTemplate = path.resolve(
-      __dirname,
-      '..',
-      'helpers',
-      indexBuilderDirectoryName
-    );
-    const queryNodeTemplate = path.resolve(__dirname, '..', 'helpers', queryNodeDirectoryName);
+    // src/index-builder
+    const indexBuilderPath = path.resolve(srcDir, 'index-builder');
+    // src/query-node
+    const queryNodePath = path.resolve(srcDir, 'query-node');
 
-    const indexBuilderPath = path.resolve(to, indexBuilderDirectoryName);
-    const queryNodePath = path.resolve(to, queryNodeDirectoryName);
-
+    // Create substrate-query-node/src/index-builder
     createDir(indexBuilderPath);
+    // substrate-query-node/src/query-node
     createDir(queryNodePath);
 
+    // Copy helpers/index-builder and helpers/query-node to src directory
     copyFiles(indexBuilderTemplate, indexBuilderPath);
     copyFiles(queryNodeTemplate, queryNodePath);
 
-    copyFiles(
-      path.resolve(__dirname, '..', 'helpers', 'templates', 'package.json'),
-      path.resolve(cwd, 'package.json')
-    );
+    // Copy package.json to substrate-query-node directory. substrate-query-node depends on
+    // typeorm, pg, shortid etc. they need to be installed before running the node
+    copyFiles(getTemplatePath('package.json'), path.resolve(cwd, 'package.json'));
   }
 }
