@@ -25,6 +25,8 @@ std = [
     'governance/std',
     'mint/std',
     'roles/std',
+    'common/std',
+    'content_working_group/std',
 ]
 
 
