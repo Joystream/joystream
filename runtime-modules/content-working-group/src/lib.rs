@@ -2660,7 +2660,7 @@ impl<T: Trait> Module<T> {
             false
         };
 
-        // When the curator is staked, unstaking must first be initaated,
+        // When the curator is staked, unstaking must first be initiated,
         // otherwise they can be terminated right away.
 
         // Create exit summary for this termination
