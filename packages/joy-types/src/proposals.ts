@@ -1,4 +1,4 @@
-import { Text, u32, Enum, getTypeRegistry, GenericAccountId, u8, Vec, Option } from "@polkadot/types";
+import { Text, u32, Enum, getTypeRegistry, GenericAccountId, u8, Vec, Option, Struct } from "@polkadot/types";
 import { BlockNumber, Balance } from "@polkadot/types/interfaces";
 import { MemberId } from "./members";
 import { StakeId } from "./stake";
@@ -204,6 +204,21 @@ export class Proposal extends JoyStruct<IProposal> {
   }
 }
 
+export class ProposalOf extends Struct {
+  constructor(value?: any) {
+    super(
+      {
+        id: ProposalId,
+        createdAt: "BlockNumber",
+        proposerId: MemberId,
+        stake: "BalanceOf",
+        sender: "AccountId"
+      },
+      value
+    );
+  }
+}
+
 // export default proposalTypes;
 export function registerProposalTypes() {
   try {
@@ -212,6 +227,7 @@ export function registerProposalTypes() {
       ProposalStatus,
       Proposal,
       ProposalParameters,
+      ProposalOf,
       VoteKind
     });
   } catch (err) {
