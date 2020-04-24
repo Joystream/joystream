@@ -1,6 +1,6 @@
-// Clippy linter requirement
+// Clippy linter warning
 #![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
-// example:  pub Parameters get(parameters) build(|config: &GenesisConfig| {..}
+                                          // example:  pub Parameters get(parameters) build(|config: &GenesisConfig| {..}
 
 use codec::{Decode, Encode};
 use common::currency::{BalanceOf, GovernanceCurrency};
@@ -16,7 +16,6 @@ use system::{self, ensure_root, ensure_signed};
 use serde::{Deserialize, Serialize};
 
 pub use membership::members::Role;
-
 
 const STAKING_ID: LockIdentifier = *b"role_stk";
 

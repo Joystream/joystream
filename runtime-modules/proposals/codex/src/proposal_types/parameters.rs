@@ -46,7 +46,7 @@ pub(crate) fn set_election_parameters_proposal<T: crate::Trait>(
 ) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
     ProposalParameters {
         voting_period: T::BlockNumber::from(72000u32),
-        grace_period: T::BlockNumber::from(201601u32),
+        grace_period: T::BlockNumber::from(201_601_u32),
         approval_quorum_percentage: 66,
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,

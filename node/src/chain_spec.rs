@@ -14,6 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Joystream node.  If not, see <http://www.gnu.org/licenses/>.
 
+// Clippy linter warning.
+#![allow(clippy::identity_op)] // disable it because we use such syntax for a code readability
+                               // Example:  voting_period: 1 * DAY
+
 use node_runtime::{
     versioned_store::InputValidationLengthConstraint as VsInputValidation, ActorsConfig,
     AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
@@ -154,7 +158,7 @@ impl Alternative {
 }
 
 fn new_vs_validation(min: u16, max_min_diff: u16) -> VsInputValidation {
-    return VsInputValidation { min, max_min_diff };
+    VsInputValidation { min, max_min_diff }
 }
 
 pub fn chain_spec_properties() -> json::map::Map<String, json::Value> {
@@ -218,9 +222,7 @@ pub fn testnet_genesis(
             slash_reward_fraction: Perbill::from_percent(10),
             ..Default::default()
         }),
-        sudo: Some(SudoConfig {
-            key: root_key.clone(),
-        }),
+        sudo: Some(SudoConfig { key: root_key }),
         babe: Some(BabeConfig {
             authorities: vec![],
         }),
@@ -274,7 +276,7 @@ pub fn testnet_genesis(
             class_description_constraint: new_vs_validation(1, 999),
         }),
         content_wg: Some(ContentWorkingGroupConfig {
-            mint_capacity: 100000,
+            mint_capacity: 100_000,
             curator_opening_by_id: vec![],
             next_curator_opening_id: 0,
             curator_application_by_id: vec![],

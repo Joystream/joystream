@@ -34,6 +34,12 @@
 //! - [governance](../substrate_governance_module/index.html)
 //! - [content_working_group](../substrate_content_working_group_module/index.html)
 //!
+// Clippy linter warning. TODO: remove after the Constaninople release
+#![allow(clippy::type_complexity)]
+// disable it because of possible frontend API break
+
+// Clippy linter warning. TODO: refactor "this function has too many argument"
+#![allow(clippy::too_many_arguments)] // disable it because of possible API break
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -336,7 +342,7 @@ decl_module! {
             Self::ensure_council_election_parameters_valid(&election_parameters)?;
 
             let proposal_code =
-                <governance::election::Call<T>>::set_election_parameters(election_parameters.clone());
+                <governance::election::Call<T>>::set_election_parameters(election_parameters);
 
             let proposal_parameters =
                 proposal_types::parameters::set_election_parameters_proposal::<T>();
@@ -373,7 +379,7 @@ decl_module! {
             );
 
             let proposal_code =
-                <content_working_group::Call<T>>::set_mint_capacity(mint_balance.clone());
+                <content_working_group::Call<T>>::set_mint_capacity(mint_balance);
 
             let proposal_parameters =
                 proposal_types::parameters::set_content_working_group_mint_capacity_proposal::<T>();
@@ -416,7 +422,7 @@ decl_module! {
             );
 
             let proposal_code = <governance::council::Call<T>>::spend_from_council_mint(
-                balance.clone(),
+                balance,
                 destination.clone()
             );
 
@@ -552,7 +558,7 @@ decl_module! {
 
             let proposal_code = <roles::actors::Call<T>>::set_role_parameters(
                 Role::StorageProvider,
-                role_parameters.clone()
+                role_parameters
             );
 
             let proposal_parameters =
@@ -646,8 +652,7 @@ impl<T: Trait> Module<T> {
             T::MemberId,
         >,
     ) -> DispatchResult<Error> {
-        let account_id =
-            T::MembershipOriginValidator::ensure_actor_origin(origin, member_id.clone())?;
+        let account_id = T::MembershipOriginValidator::ensure_actor_origin(origin, member_id)?;
 
         <proposal_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
             &proposal_parameters,
@@ -656,7 +661,7 @@ impl<T: Trait> Module<T> {
             stake_balance,
         )?;
 
-        <proposal_discussion::Module<T>>::ensure_can_create_thread(member_id.clone(), &title)?;
+        <proposal_discussion::Module<T>>::ensure_can_create_thread(member_id, &title)?;
 
         let discussion_thread_id =
             <proposal_discussion::Module<T>>::create_thread(member_id, title.clone())?;
@@ -829,7 +834,7 @@ impl<T: Trait> Module<T> {
 
         ensure!(
             election_parameters.min_voting_stake
-                <= <BalanceOfGovernanceCurrency<T>>::from(100000u32),
+                <= <BalanceOfGovernanceCurrency<T>>::from(100_000_u32),
             Error::InvalidCouncilElectionParameterMinVotingStake
         );
 
@@ -839,7 +844,7 @@ impl<T: Trait> Module<T> {
         );
 
         ensure!(
-            election_parameters.new_term_duration <= T::BlockNumber::from(432000),
+            election_parameters.new_term_duration <= T::BlockNumber::from(432_000),
             Error::InvalidCouncilElectionParameterNewTermDuration
         );
 
@@ -880,7 +885,7 @@ impl<T: Trait> Module<T> {
 
         ensure!(
             election_parameters.min_council_stake
-                <= <BalanceOfGovernanceCurrency<T>>::from(100000u32),
+                <= <BalanceOfGovernanceCurrency<T>>::from(100_000_u32),
             Error::InvalidCouncilElectionParameterMinCouncilStake
         );
 

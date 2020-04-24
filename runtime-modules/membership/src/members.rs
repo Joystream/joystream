@@ -1,12 +1,12 @@
 // Clippy linter requirement
 #![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
-// example:  pub PaidMembershipTermsById get(paid_membership_terms_by_id) build(|config: &GenesisConfig<T>| {}
+                                          // example:  pub PaidMembershipTermsById get(paid_membership_terms_by_id) build(|config: &GenesisConfig<T>| {}
 
 use codec::{Codec, Decode, Encode};
 use common::currency::{BalanceOf, GovernanceCurrency};
 
-use rstd::prelude::*;
 use rstd::borrow::ToOwned;
+use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
 use srml_support::traits::{Currency, Get};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};

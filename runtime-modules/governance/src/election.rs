@@ -21,6 +21,14 @@
 //!
 //! [`set_election_parameters`]: struct.Module.html#method.set_election_parameters
 
+// Clippy linter warning
+#![allow(clippy::type_complexity)]
+// disable it because of possible frontend API break
+// TODO: remove post-Constaninople
+
+// Clippy linter warning
+#![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
+
 use rstd::prelude::*;
 use srml_support::traits::{Currency, ReservableCurrency};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch::Result, ensure};
@@ -297,6 +305,7 @@ impl<T: Trait> Module<T> {
         if len >= applicants.len() {
             &[]
         } else {
+            #[allow(clippy::redundant_closure)] // disable incorrect Clippy linter warning
             applicants.sort_by_key(|applicant| Self::applicant_stakes(applicant));
             &applicants[0..applicants.len() - len]
         }
@@ -351,17 +360,21 @@ impl<T: Trait> Module<T> {
             }
         }
 
-        if new_council.len() == Self::council_size_usize() {
-            // all applicants in the tally will form the new council
-        } else if new_council.len() > Self::council_size_usize() {
-            // we have more than enough applicants to form the new council.
-            // select top staked
-            Self::filter_top_staked(&mut new_council, Self::council_size_usize());
-        } else {
-            // Not enough applicants with votes to form a council.
-            // This may happen if we didn't add applicants with zero votes to the tally,
-            // or in future if we allow applicants to withdraw candidacy during voting or revealing stages.
-            // or council size was increased during voting, revealing stages.
+        match new_council.len() {
+            ncl if ncl == Self::council_size_usize() => {
+                // all applicants in the tally will form the new council
+            }
+            ncl if ncl > Self::council_size_usize() => {
+                // we have more than enough applicants to form the new council.
+                // select top staked
+                Self::filter_top_staked(&mut new_council, Self::council_size_usize());
+            }
+            _ => {
+                // Not enough applicants with votes to form a council.
+                // This may happen if we didn't add applicants with zero votes to the tally,
+                // or in future if we allow applicants to withdraw candidacy during voting or revealing stages.
+                // or council size was increased during voting, revealing stages.
+            }
         }
 
         // unless we want to add more filtering criteria to what is considered a successful election
@@ -380,7 +393,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn teardown_election(
-        votes: &Vec<SealedVote<T::AccountId, Stake<BalanceOf<T>>, T::Hash, T::AccountId>>,
+        votes: &[SealedVote<T::AccountId, Stake<BalanceOf<T>>, T::Hash, T::AccountId>],
         new_council: &BTreeMap<T::AccountId, Seat<T::AccountId, BalanceOf<T>>>,
         unlock_ts: bool,
     ) {
@@ -469,7 +482,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn refund_voting_stakes(
-        sealed_votes: &Vec<SealedVote<T::AccountId, Stake<BalanceOf<T>>, T::Hash, T::AccountId>>,
+        sealed_votes: &[SealedVote<T::AccountId, Stake<BalanceOf<T>>, T::Hash, T::AccountId>],
         new_council: &BTreeMap<T::AccountId, Seat<T::AccountId, BalanceOf<T>>>,
     ) {
         for sealed_vote in sealed_votes.iter() {
@@ -507,7 +520,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn tally_votes(
-        sealed_votes: &Vec<SealedVote<T::AccountId, Stake<BalanceOf<T>>, T::Hash, T::AccountId>>,
+        sealed_votes: &[SealedVote<T::AccountId, Stake<BalanceOf<T>>, T::Hash, T::AccountId>],
     ) -> BTreeMap<T::AccountId, Seat<T::AccountId, BalanceOf<T>>> {
         let mut tally: BTreeMap<T::AccountId, Seat<T::AccountId, BalanceOf<T>>> = BTreeMap::new();
 
@@ -912,11 +925,7 @@ decl_module! {
 impl<T: Trait> council::CouncilTermEnded for Module<T> {
     fn council_term_ended() {
         if Self::auto_start() {
-            if Self::start_election(<council::Module<T>>::active_council()).is_ok() {
-                // emit ElectionStarted
-            } else {
-                // emit ElectionFailedStart
-            }
+            let _ = Self::start_election(<council::Module<T>>::active_council());
         }
     }
 }

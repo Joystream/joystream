@@ -1,3 +1,8 @@
+// Clippy linter warning
+#![allow(clippy::type_complexity)]
+// disable it because of possible frontend API break
+// TODO: remove post-Constaninople
+
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -947,6 +952,9 @@ impl<T: Trait> Module<T> {
         Self::ensure_can_mutate_in_path_leaf(&category_tree_path)
     }
 
+    // Clippy linter warning
+    #[allow(clippy::ptr_arg)] // disable it because of possible frontend API break
+                              // TODO: remove post-Constaninople
     fn ensure_can_mutate_in_path_leaf(
         category_tree_path: &CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>,
     ) -> dispatch::Result {
@@ -961,6 +969,9 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    // TODO: remove post-Constaninople
+    // Clippy linter warning
+    #[allow(clippy::ptr_arg)] // disable it because of possible frontend API break
     fn ensure_can_add_subcategory_path_leaf(
         category_tree_path: &CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>,
     ) -> dispatch::Result {

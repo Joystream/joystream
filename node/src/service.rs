@@ -16,6 +16,12 @@
 
 #![warn(unused_extern_crates)]
 
+// Clippy linter warning.
+#![allow(clippy::type_complexity)] // disable it because this is foreign code and can be changed any time
+
+// Clippy linter warning.
+#![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
+
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 use client_db::Backend;

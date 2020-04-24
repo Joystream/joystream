@@ -1,3 +1,10 @@
+// Clippy linter warning. TODO: remove after the Constaninople release
+#![allow(clippy::type_complexity)]
+// disable it because of possible frontend API break
+
+// Clippy linter warning. TODO: refactor "this function has too many argument"
+#![allow(clippy::too_many_arguments)] // disable it because of possible API break
+
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -15,6 +22,7 @@ use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode}; // Codec
                              //use rstd::collections::btree_map::BTreeMap;
 use membership::{members, role_types};
+use rstd::borrow::ToOwned;
 use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::convert::From;
@@ -310,12 +318,12 @@ impl<BlockNumber: Clone> CuratorExitSummary<BlockNumber> {
     pub fn new(
         origin: &CuratorExitInitiationOrigin,
         initiated_at_block_number: &BlockNumber,
-        rationale_text: &Vec<u8>,
+        rationale_text: &[u8],
     ) -> Self {
         CuratorExitSummary {
             origin: (*origin).clone(),
             initiated_at_block_number: (*initiated_at_block_number).clone(),
-            rationale_text: (*rationale_text).clone(),
+            rationale_text: rationale_text.to_owned(),
         }
     }
 }
@@ -1190,7 +1198,7 @@ decl_module! {
             ChannelById::<T>::insert(next_channel_id, new_channel);
 
             // Add id to ChannelIdByHandle under handle
-            ChannelIdByHandle::<T>::insert(handle.clone(), next_channel_id);
+            ChannelIdByHandle::<T>::insert(handle, next_channel_id);
 
             // Increment NextChannelId
             NextChannelId::<T>::mutate(|id| *id += <ChannelId<T> as One>::one());
@@ -1231,7 +1239,7 @@ decl_module! {
             // Construct new channel with altered properties
             let new_channel = Channel {
                 owner: new_owner,
-                role_account: new_role_account.clone(),
+                role_account: new_role_account,
                 ..channel
             };
 
@@ -2179,7 +2187,7 @@ impl<T: Trait> Module<T> {
         ),
         &'static str,
     > {
-        let next_channel_id = opt_channel_id.unwrap_or(NextChannelId::<T>::get());
+        let next_channel_id = opt_channel_id.unwrap_or_else(NextChannelId::<T>::get);
 
         Self::ensure_can_register_role_on_member(
             member_id,
@@ -2191,7 +2199,7 @@ impl<T: Trait> Module<T> {
 
     // TODO: convert InputConstraint ensurer routines into macroes
 
-    fn ensure_channel_handle_is_valid(handle: &Vec<u8>) -> dispatch::Result {
+    fn ensure_channel_handle_is_valid(handle: &[u8]) -> dispatch::Result {
         ChannelHandleConstraint::get().ensure_valid(
             handle.len(),
             MSG_CHANNEL_HANDLE_TOO_SHORT,
@@ -2638,7 +2646,7 @@ impl<T: Trait> Module<T> {
             PrincipalId<T>,
         >,
         exit_initiation_origin: &CuratorExitInitiationOrigin,
-        rationale_text: &Vec<u8>,
+        rationale_text: &[u8],
     ) {
         // Stop any possible recurring rewards
         let _did_deactivate_recurring_reward = if let Some(ref reward_relationship_id) =

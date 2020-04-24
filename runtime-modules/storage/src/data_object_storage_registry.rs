@@ -1,3 +1,7 @@
+// Clippy linter requirement
+#![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
+                                          // example:  pub NextRelationshipId get(next_relationship_id) build(|config: &GenesisConfig<T>|
+
 use crate::data_directory::Trait as DDTrait;
 use crate::traits::{ContentHasStorage, ContentIdExists};
 use codec::{Codec, Decode, Encode};
@@ -97,14 +101,14 @@ impl<T: Trait> ContentHasStorage<T> for Module<T> {
     // TODO deprecated
     fn has_storage_provider(which: &T::ContentId) -> bool {
         let dosr_list = Self::relationships_by_content_id(which);
-        return dosr_list.iter().any(|&dosr_id| {
+        dosr_list.iter().any(|&dosr_id| {
             let res = Self::relationships(dosr_id);
             if res.is_none() {
                 return false;
             }
             let dosr = res.unwrap();
             dosr.ready
-        });
+        })
     }
 
     // TODO deprecated

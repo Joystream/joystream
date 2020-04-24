@@ -164,7 +164,7 @@ decl_module! {
 
         fn reject_content(origin, content_id: T::ContentId) {
             let who = ensure_signed(origin)?;
-            Self::update_content_judgement(&who, content_id.clone(), LiaisonJudgement::Rejected)?;
+            Self::update_content_judgement(&who, content_id, LiaisonJudgement::Rejected)?;
             Self::deposit_event(RawEvent::ContentRejected(content_id, who));
         }
 
