@@ -15,15 +15,12 @@ export default class DB extends Command {
 
     if (flags.create) {
       cli.run('db:create');
-      this.exit(0);
     }
     if (flags.migrate) {
       cli.run('db:migrate');
-      this.exit(0);
     }
     if (flags.generatemigration) {
       cli.run(`db:migrate:generate --name=${flags.generatemigration}`);
-      this.exit(0);
     }
   }
 }
