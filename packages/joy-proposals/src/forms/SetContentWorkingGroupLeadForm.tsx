@@ -1,5 +1,4 @@
 import React from "react";
-import { FormikProps } from "formik";
 import { Dropdown, Label } from "semantic-ui-react";
 import { getFormErrorLabelsProps } from "./errorHandling";
 import * as Yup from "yup";
@@ -7,11 +6,13 @@ import {
   GenericProposalForm,
   GenericFormValues,
   genericFormDefaultOptions,
-  DefaultOuterFormProps,
-  genericFormDefaultValues
+  genericFormDefaultValues,
+  withProposalFormData,
+  ProposalFormExportProps,
+  ProposalFormContainerProps,
+  ProposalFormInnerProps
 } from './GenericProposalForm';
 import { FormField } from './FormFields';
-
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
 
@@ -24,14 +25,34 @@ const defaultValues: FormValues = {
   workingGroupLead: ''
 }
 
-type FormAdditionalProps = { members: any[] };
-type SetContentWorkingGroupsLeadFormProps = FormikProps<FormValues> & FormAdditionalProps;
+type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
+type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
+type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
+type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const SetContentWorkingGroupsLeadForm: React.FunctionComponent<SetContentWorkingGroupsLeadFormProps> = props => {
-  const { handleChange, members, errors, touched, values } = props;
+const SetContentWorkingGroupsLeadForm: React.FunctionComponent<FormInnerProps> = props => {
+  const { handleChange, errors, touched, values } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
+  const membersOptions = [{
+    key: "Alice",
+    text: "Alice",
+    value: "207:5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+    image: { avatar: true, src: "https://react.semantic-ui.com/images/avatar/small/jenny.jpg" },
+  }]; // TODO: Fetch real members!
+
   return (
-    <GenericProposalForm {...props}>
+    <GenericProposalForm
+      {...props}
+      txMethod="createSetLeadProposal"
+      requiredStakePercent={0.25}
+      submitParams={[
+        props.myMemberId,
+        values.title,
+        values.rationale,
+        '{STAKE}',
+        values.workingGroupLead.split(':')
+      ]}
+    >
       <FormField
         error={errorLabelsProps.workingGroupLead}
         label="New Content Working Group Lead"
@@ -42,7 +63,7 @@ const SetContentWorkingGroupsLeadForm: React.FunctionComponent<SetContentWorking
           placeholder="Select a member"
           fluid
           selection
-          options={members}
+          options={membersOptions}
           onChange={handleChange}
           value={values.workingGroupLead}
         />
@@ -52,10 +73,8 @@ const SetContentWorkingGroupsLeadForm: React.FunctionComponent<SetContentWorking
   );
 }
 
-type OuterFormProps = DefaultOuterFormProps<FormAdditionalProps, FormValues>;
-
-export default withFormContainer<OuterFormProps, FormValues>({
-  mapPropsToValues: (props:OuterFormProps) => ({
+const FormContainer = withFormContainer<FormContainerProps, FormValues>({
+  mapPropsToValues: (props:FormContainerProps) => ({
     ...defaultValues,
     ...(props.initialData || {})
   }),
@@ -66,3 +85,5 @@ export default withFormContainer<OuterFormProps, FormValues>({
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: "SetContentWorkingGroupLeadForm"
 })(SetContentWorkingGroupsLeadForm);
+
+export default withProposalFormData<FormContainerProps, ExportComponentProps>(FormContainer);

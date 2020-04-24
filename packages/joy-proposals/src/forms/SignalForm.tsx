@@ -1,13 +1,15 @@
 import React from "react";
-import { FormikProps } from "formik";
 import { getFormErrorLabelsProps } from "./errorHandling";
 import * as Yup from "yup";
 import {
   GenericProposalForm,
   GenericFormValues,
   genericFormDefaultOptions,
-  DefaultOuterFormProps,
-  genericFormDefaultValues
+  genericFormDefaultValues,
+  withProposalFormData,
+  ProposalFormExportProps,
+  ProposalFormContainerProps,
+  ProposalFormInnerProps
 } from "./GenericProposalForm";
 import { TextareaFormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
@@ -22,14 +24,27 @@ const defaultValues: FormValues = {
   description: ""
 };
 
-type FormAdditionalProps = {};
-type SingalFormProps = FormikProps<FormValues> & FormAdditionalProps;
+type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
+type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
+type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
+type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const SignalForm: React.FunctionComponent<SingalFormProps> = props => {
-  const { handleChange, errors, touched } = props;
+const SignalForm: React.FunctionComponent<FormInnerProps> = props => {
+  const { handleChange, errors, touched, values } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
+
   return (
-    <GenericProposalForm {...props}>
+    <GenericProposalForm
+      {...props}
+      txMethod="createTextProposal"
+      requiredStakePercent={0.25}
+      submitParams={[
+        props.myMemberId,
+        values.title,
+        values.rationale,
+        '{STAKE}',
+        values.description
+      ]}>
       <TextareaFormField
         label="Description"
         help="The extensive description of your proposal"
@@ -37,15 +52,14 @@ const SignalForm: React.FunctionComponent<SingalFormProps> = props => {
         name="description"
         placeholder="What I would like to propose is..."
         error={errorLabelsProps.description}
+        value={values.description}
       />
     </GenericProposalForm>
   );
 };
 
-type OuterFormProps = DefaultOuterFormProps<FormAdditionalProps, FormValues>;
-
-export default withFormContainer<OuterFormProps, FormValues>({
-  mapPropsToValues: (props: OuterFormProps) => ({
+const FormContainer = withFormContainer<FormContainerProps, FormValues>({
+  mapPropsToValues: (props: FormContainerProps) => ({
     ...defaultValues,
     ...(props.initialData || {})
   }),
@@ -56,3 +70,5 @@ export default withFormContainer<OuterFormProps, FormValues>({
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: "SignalForm"
 })(SignalForm);
+
+export default withProposalFormData<FormContainerProps, ExportComponentProps>(FormContainer);
