@@ -13,6 +13,8 @@
     "bn.js": "^4.11.8",
     "dotenv": "^8.0.0",
     "lodash": "^4.17.15",
+    "pg": "^8.0.3",
+    "shortid": "^2.2.15",
     "typeorm": "^0.2.24"
   },
   "devDependencies": {
