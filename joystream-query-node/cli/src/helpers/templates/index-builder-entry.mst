@@ -1,20 +1,27 @@
-import { registerJoystreamTypes } from '@joystream/types';
-import { config } from 'dotenv';
+import { registerJoystreamTypes } from "@joystream/types";
+import { config } from "dotenv";
+import { createConnection } from "typeorm";
 
-import QueryNodeManager from './query-node/QueryNodeManager';
-import processingPack  from './processingPack'
+import QueryNodeManager from "./query-node/QueryNodeManager";
+import processingPack from "./processingPack";
 
-// Load from .env
-config();
+async function main() {
+  // Load from .env
+  config();
 
-const providerUri = process.env.WS_PROVIDER_ENDPOINT_URI;
+  const providerUri = process.env.WS_PROVIDER_ENDPOINT_URI;
 
-if (!providerUri) {
-  console.error(
-    'WS_PROVIDER_ENDPOINT_URI environment variable is not set! Make sure you set it in your .env file or system wide.'
-  );
-  process.exit(1);
+  if (!providerUri) {
+    console.error(
+      "WS_PROVIDER_ENDPOINT_URI environment variable is not set! Make sure you set it in your .env file or system wide."
+    );
+    process.exit(1);
+  }
+
+  await createConnection();
+
+  const node = new QueryNodeManager(process);
+  node.start(providerUri, processingPack, registerJoystreamTypes);
 }
 
-const node = new QueryNodeManager(process);
-node.start(providerUri, processingPack, registerJoystreamTypes);
+main();
