@@ -62,7 +62,7 @@ export default class New extends Command {
     const ormconfigFilePath = path.resolve(
       path.resolve(process.cwd(), New.substrateQueryNode, 'ormconfig.json')
     );
-    ormconfigTemplate = formatWithPrettier(JSON.stringify(ormconfigTemplate));
+    ormconfigTemplate = JSON.stringify(ormconfigTemplate);
     createFile(ormconfigFilePath, ormconfigTemplate);
   }
 }
