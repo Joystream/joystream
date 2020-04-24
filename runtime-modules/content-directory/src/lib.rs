@@ -1731,13 +1731,13 @@ impl<T: Trait> Module<T> {
             // Update entity values only if new properties have been added.
             if appended_entity_values.len() > entity.values.len() {
                 entity.values = appended_entity_values;
-                entities_rc_to_increment_vec
-                    .iter()
-                    .for_each(|entities_rc_to_increment| {
-                        Self::increment_entities_rc(entities_rc_to_increment);
-                    });
             }
         });
+        entities_rc_to_increment_vec
+            .iter()
+            .for_each(|entities_rc_to_increment| {
+                Self::increment_entities_rc(entities_rc_to_increment);
+            });
 
         Ok(())
     }
