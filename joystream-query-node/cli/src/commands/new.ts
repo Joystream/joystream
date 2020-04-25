@@ -32,7 +32,6 @@ export default class New extends Command {
     createDir(New.substrateQueryNode);
 
     this.generateSubstrateQueryNodeDirs(project_name);
-    this.generateBlockIndexer();
 
     // Change working to joystream-query-node
     process.chdir(New.joystreamQueryNode);
@@ -71,12 +70,6 @@ export default class New extends Command {
     );
     ormconfigTemplate = JSON.stringify(ormconfigTemplate);
     createFile(ormconfigFilePath, ormconfigTemplate);
-  }
-
-  generateBlockIndexer() {
-    process.chdir(New.substrateQueryNode);
-    Indexer.run(['--create']);
-    process.chdir('..');
   }
 
   createDatabase() {
