@@ -2,7 +2,7 @@ import { membershipTest } from './membershipCreationTest';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { ApiWrapper } from './utils/apiWrapper';
 import { WsProvider, Keyring } from '@polkadot/api';
-import { initConfig } from '../../utils/config';
+import { initConfig } from './utils/config';
 import BN = require('bn.js');
 import { registerJoystreamTypes, Seat } from '@rome/types';
 import { assert } from 'chai';

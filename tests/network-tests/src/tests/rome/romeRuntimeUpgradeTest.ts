@@ -1,9 +1,9 @@
-import { initConfig } from '../../utils/config';
+import { initConfig } from './utils/config';
 import { Keyring, WsProvider } from '@polkadot/api';
 import { Bytes } from '@polkadot/types';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { membershipTest } from '../membershipCreationTest';
-import { councilTest } from '../electingCouncilTest';
+import { membershipTest } from './membershipCreationTest';
+import { councilTest } from './electingCouncilTest';
 import { registerJoystreamTypes } from '@rome/types';
 import { ApiWrapper } from './utils/apiWrapper';
 import BN = require('bn.js');
@@ -37,13 +37,9 @@ describe('Runtime upgrade integration tests', () => {
 
   it('Upgrading the runtime test', async () => {
     // Setup
-    console.log('7');
     sudo = keyring.addFromUri(sudoUri);
     // const runtime: Bytes = await apiWrapper.getRuntime();
     const runtime: string = Utils.readRuntimeFromFile('joystream_node_runtime.wasm');
-    console.log('runtime length ' + runtime.length);
-    console.log('runtime strart ' + runtime.slice(0, 10));
-    console.log('runtime end ' + runtime.slice(runtime.length - 10));
     const description: string = 'runtime upgrade proposal which is used for API integration testing';
     const runtimeProposalFee: BN = apiWrapper.estimateRomeProposeRuntimeUpgradeFee(
       proposalStake,
@@ -59,7 +55,6 @@ describe('Runtime upgrade integration tests', () => {
 
     // Proposal creation
     const proposalPromise = apiWrapper.expectProposalCreated();
-    console.log('proposal will be sent');
     await apiWrapper.proposeRuntimeRome(
       m1KeyPairs[0],
       proposalStake,
@@ -67,16 +62,15 @@ describe('Runtime upgrade integration tests', () => {
       'runtime to test proposal functionality',
       runtime
     );
-    console.log('proposal sent');
     const proposalNumber = await proposalPromise;
-    console.log('proposal created');
 
     // Approving runtime update proposal
     const runtimePromise = apiWrapper.expectRomeRuntimeUpgraded();
-    console.log('voting');
     await apiWrapper.batchApproveRomeProposal(m2KeyPairs, proposalNumber);
     // apiWrapper = await ApiWrapper.create(provider);
     await runtimePromise;
+
+    await Utils.wait(apiWrapper.getBlockDuration().muln(2.5).toNumber());
   }).timeout(defaultTimeout);
 
   //membershipTest(new Array<KeyringPair>());

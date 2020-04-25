@@ -7,8 +7,9 @@ import { registerJoystreamTypes } from '@joystream/types';
 import { ApiWrapper } from '../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN = require('bn.js');
+import { Utils } from '../../utils/utils';
 
-describe.skip('Text proposal network tests', () => {
+describe('Text proposal network tests', () => {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
@@ -26,6 +27,8 @@ describe.skip('Text proposal network tests', () => {
     registerJoystreamTypes();
     const provider = new WsProvider(nodeUrl);
     apiWrapper = await ApiWrapper.create(provider);
+
+    await Utils.wait(apiWrapper.getBlockDuration().muln(2.5).toNumber());
   });
 
   membershipTest(m1KeyPairs);

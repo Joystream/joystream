@@ -387,7 +387,6 @@ export class ApiWrapper {
       await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (record.event.method.toString() === 'RuntimeUpdated') {
-            console.log('Runtime updated!!');
             resolve();
           }
         });
@@ -416,8 +415,6 @@ export class ApiWrapper {
 
   public async getProposal(id: BN) {
     const proposal = await this.api.query.proposalsEngine.proposals(id);
-    console.log('proposal to string ' + proposal.toString());
-    console.log('proposal to raw ' + proposal.toRawType());
     return;
   }
 
