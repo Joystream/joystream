@@ -3,7 +3,7 @@ import * as path from 'path';
 const cli = require('warthog/dist/cli/cli');
 import { Command } from '@oclif/command';
 
-import { createDir, createFile } from '../utils/utils';
+import { createDir, createFile, getTemplatePath } from '../utils/utils';
 import Indexer from './indexer';
 import DB from './db';
 
@@ -37,7 +37,7 @@ export default class New extends Command {
     process.chdir(New.joystreamQueryNode);
 
     // Create joystream-query-node/schema.json file
-    createFile(New.schemaFile, '[{}]');
+    createFile(New.schemaFile);
 
     // Create warthog graphql server
     cli.run(`new ${project_name}`);
@@ -53,10 +53,7 @@ export default class New extends Command {
     createDir(srcDir);
 
     let ormconfigTemplate: any;
-    ormconfigTemplate = fs.readFileSync(
-      path.resolve(__dirname, '..', 'helpers', 'templates', 'ormconfig.json'),
-      'utf8'
-    );
+    ormconfigTemplate = fs.readFileSync(getTemplatePath('ormconfig.json'), 'utf8');
     try {
       ormconfigTemplate = JSON.parse(ormconfigTemplate);
 

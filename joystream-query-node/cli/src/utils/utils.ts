@@ -11,7 +11,7 @@ export function createDir(path: string, del: boolean = false) {
   }
 }
 
-export function createFile(path: string, content: string) {
+export function createFile(path: string, content: string = '') {
   if (!fs.existsSync(path)) {
     fs.writeFileSync(path, content);
   }
@@ -26,7 +26,7 @@ export async function copyFiles(from: string, to: string) {
 }
 
 export function getTemplatePath(template: string): string {
-  const templatePath = path.resolve(__dirname, '..', 'helpers', 'templates', template);
+  const templatePath = path.resolve(__dirname, '..', 'templates', template);
   if (!fs.existsSync(templatePath)) {
     console.error(`Tempate ${template} does not exists!`);
     process.exit(1);
