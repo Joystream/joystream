@@ -76,9 +76,9 @@ export default class Indexer extends Command {
     createFile(path.resolve(cwd, '.env'), dotenvFileContent);
 
     // helpers/index-builder: template code for index builder
-    const indexBuilderTemplate = path.resolve(__dirname, '..', 'helpers', 'index-builder');
+    const indexBuilderTemplate = getTemplatePath('index-builder');
     // helpers/query-node: template code for query node
-    const queryNodeTemplate = path.resolve(__dirname, '..', 'helpers', 'query-node');
+    const queryNodeTemplate = getTemplatePath('query-node');
 
     // src/index-builder
     const indexBuilderPath = path.resolve(srcDir, 'index-builder');
