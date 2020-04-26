@@ -97,7 +97,7 @@ $ yarn warthog codegen
 5. Now we have database models but the corresponding tables are not created on the database so we need to create them:
 
 ```sh-session
-$ cli db -g "Created-membership-model"
+$ cli db -g "Created-MemberRegistered-model"
 $ cli db --migrate
 ```
 
