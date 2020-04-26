@@ -7,7 +7,7 @@ import { Command, flags } from '@oclif/command';
 import { deserializeArray } from 'class-transformer';
 
 import { Input } from '../helpers/schema';
-import { createDir, createFile } from '../utils/utils';
+import { createDir, createFile, getTemplatePath } from '../utils/utils';
 import { fieldTypes } from '../helpers/tsTypes';
 
 const prettierOptions: Prettier.Options = {
@@ -41,7 +41,7 @@ export default class Event extends Command {
   }
 
   generateEvents(inputs: Input[]) {
-    const templatePath = path.resolve(path.resolve(__dirname, '..'), 'helpers', 'template.mst');
+    const templatePath = getTemplatePath('event-class-defination.mst');
     const template = fs.readFileSync(templatePath, 'utf8');
 
     const generatedFolder = path.resolve(process.cwd(), 'generated');
