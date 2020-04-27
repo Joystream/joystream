@@ -12,6 +12,7 @@ export let makeStyles = ({}: ChannelSummaryStyleProps) => {
     `,
     avatar: css`
       grid-column: 1 / 1;
+      cursor: pointer;
     `,
     details: css`
       grid-column: 2 / 2;
@@ -25,6 +26,7 @@ export let makeStyles = ({}: ChannelSummaryStyleProps) => {
       color: ${colors.text.accent};
       margin: ${spacing.s3} 0;
       display: inline-block;
+      cursor: pointer;
     `,
     badges: css`
       text-transform: uppercase;

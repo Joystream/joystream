@@ -8,35 +8,31 @@ import { colors } from "./../../theme"
 type ChannelSummaryProps = {
   name: string
   img?: string
-  channelUrl?: string
   description?: string
   size?: "small" | "default" | "large"
   isPublic?: boolean
   isVerified?: boolean
+  onClick?: any
 } & ChannelSummaryStyleProps
 
 export default function ChannelSummary({
   isPublic,
   isVerified,
   description,
-  channelUrl,
   size,
   name,
   img,
+  onClick,
   ...styleProps
 }: ChannelSummaryProps) {
   let styles = makeStyles(styleProps)
   return (
-    <div css={styles.container}>
-      <div css={styles.avatar}>
-        <a href={channelUrl}>
-          <Avatar size={size} img={img} />
-        </a>
+    <div css={styles.container} onClick={onClick}>
+      <div css={styles.avatar} onClick={onClick}>
+        <Avatar size={size} img={img} />
       </div>
       <div css={styles.details}>
-        <a href={channelUrl}>
-          <h1 css={styles.title}>{name}</h1>
-        </a>
+        <h1 css={styles.title} onClick={onClick}>{name}</h1>
         <div css={styles.badges}>
           {isVerified && (
             <Tag icon={faCheck} text="Verified" color={colors.other.success} />
