@@ -2,6 +2,21 @@ import { useState, useEffect } from "react";
 
 import { ProposalType } from "./Proposal/ProposalTypePreview";
 
+export function includeKeys<T extends { [k: string]: any }>(obj: T, ...allowedKeys: string[]) {
+  return Object.keys(obj).filter(objKey => {
+    return allowedKeys.reduce(
+      (hasAllowed: boolean, allowedKey: string) => hasAllowed || objKey.includes(allowedKey),
+      false
+    );
+  });
+}
+
+export function objFromMap(map: Map<string, any>): { [k: string]: any } {
+  return Object.fromEntries(
+    Array.from(map.entries(), ([key, value]) => (value instanceof Map ? [key, MapToObject(value)] : [key, value]))
+  );
+}
+
 export function usePromise<T>(promiseOrFunction: (() => Promise<T>) | Promise<T>, defaultValue: T) {
   const [state, setState] = useState({ value: defaultValue, error: null, isPending: true });
 

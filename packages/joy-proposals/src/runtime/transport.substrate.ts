@@ -5,14 +5,7 @@ import { ApiProps } from "@polkadot/react-api/types";
 import { u32, bool } from "@polkadot/types/";
 import { ApiPromise } from "@polkadot/api";
 
-function includeKeys<T extends { [k: string]: any }>(obj: T, ...allowedKeys: string[]) {
-  return Object.keys(obj).filter(objKey => {
-    return allowedKeys.reduce(
-      (hasAllowed: boolean, allowedKey: string) => hasAllowed || objKey.includes(allowedKey),
-      false
-    );
-  });
-}
+import { includeKeys } from "../utils";
 
 export class SubstrateTransport extends Transport {
   protected api: ApiPromise;
@@ -42,15 +35,7 @@ export class SubstrateTransport extends Transport {
   }
 
   async proposalById(id: ProposalId) {
-    return this.proposalsEngine.proposals<any>(id);
-
-    /*
-        id: ProposalId,
-        createdAt: "BlockNumber",
-        proposerId: MemberId,
-        stake: "BalanceOf",
-        sender: "AccountId"
-    */
+    return this.proposalsEngine.proposals<Proposal>(id);
   }
 
   async proposalsIds() {
@@ -76,7 +61,7 @@ export class SubstrateTransport extends Transport {
 
   async proposedBy(member: MemberId) {
     const proposals = await this.proposals();
-    return proposals.filter(({ proposerId }: Proposal) => proposerId.eq(member));
+    return proposals.filter((proposal: Proposal) => proposal.get("proposerId")?.eq(member));
   }
 
   async proposalDetails(id: ProposalId) {
