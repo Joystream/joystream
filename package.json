@@ -3,7 +3,8 @@
 	"name": "joystream",
 	"license": "GPL-3.0-only",
 	"scripts": {
-		"test": "yarn && yarn workspaces run test"
+		"test": "yarn && yarn workspaces run test",
+		"test-migration": "yarn && yarn workspaces run test-migration"
 	},
 	"workspaces": [
 		"tests/network-tests"
