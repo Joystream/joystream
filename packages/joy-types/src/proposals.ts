@@ -269,6 +269,34 @@ export class Proposal extends Struct {
       value
     );
   }
+
+  get parameters(): ProposalParameters {
+    return this.get("parameters") as ProposalParameters;
+  }
+
+  get proposerId(): MemberId {
+    return this.get("proposerId") as MemberId;
+  }
+
+  get title(): Text {
+    return this.get("description") as Text;
+  }
+
+  get description(): Text {
+    return this.get("description") as Text;
+  }
+
+  get createdAt(): BlockNumber {
+    return this.get("createdAt") as BlockNumber;
+  }
+
+  get status(): ProposalStatus {
+    return this.get("status") as ProposalStatus;
+  }
+
+  get votingResults(): VotingResults {
+    return this.get("votingResults") as VotingResults;
+  }
 }
 
 export class ProposalOf extends Struct {

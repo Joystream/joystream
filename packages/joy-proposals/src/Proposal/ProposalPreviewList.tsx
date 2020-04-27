@@ -3,8 +3,8 @@ import { Card, Menu, Container, Loader } from "semantic-ui-react";
 
 import { ProposalProps } from "./ProposalDetails";
 import ProposalPreview from "./ProposalPreview";
-import { useTransport, SubstrateTransport, TransportContext } from "../runtime";
-import { usePromise } from "../utils";
+import { useTransport } from "../runtime";
+import { usePromise, objFromMap } from "../utils";
 import Loading from "./Loading";
 import Error from "./Error";
 
@@ -45,7 +45,6 @@ export default function ProposalPreviewList() {
   } else if (error) {
     return <Error error={error} />;
   }
-
   console.log(proposals);
 
   return (

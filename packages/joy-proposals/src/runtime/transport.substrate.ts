@@ -5,7 +5,7 @@ import { ApiProps } from "@polkadot/react-api/types";
 import { u32, bool } from "@polkadot/types/";
 import { ApiPromise } from "@polkadot/api";
 
-import { includeKeys } from "../utils";
+import { includeKeys, dateFromBlock } from "../utils";
 
 export class SubstrateTransport extends Transport {
   protected api: ApiPromise;
@@ -38,6 +38,22 @@ export class SubstrateTransport extends Transport {
     return this.proposalsEngine.proposals<Proposal>(id);
   }
 
+  async proposalDetailsById(id: ProposalId) {
+    return this.proposalsCodex.proposalDetailsByProposalId(id);
+  }
+
+  private async cleanProposalById(id: ProposalId) {
+    const rawDetails = (await this.proposalDetailsById(id)).toJSON() as { [k: string]: any };
+    const type = Object.keys(rawDetails)[0];
+    const details = rawDetails[type];
+    const rawProposal = await this.proposalById(id);
+    const proposer = (await this.api.query.members.memberProfile(rawProposal.proposerId)).toJSON();
+    const proposal = rawProposal.toJSON() as { [k: string]: any };
+    const createdAtBlock = rawProposal.createdAt;
+
+    return { ...proposal, details, type, proposer, createdAtBlock, createdAt: dateFromBlock(createdAtBlock) };
+  }
+
   async proposalsIds() {
     const total: number = (await this.proposalCount()).toBn().toNumber();
     return Array.from({ length: total }, (_, i) => new ProposalId(i));
@@ -45,7 +61,7 @@ export class SubstrateTransport extends Transport {
 
   async proposals() {
     const ids = await this.proposalsIds();
-    return Promise.all(ids.map(id => this.proposalById(id)));
+    return Promise.all(ids.map(id => this.cleanProposalById(id)));
   }
 
   async hasVotedOnProposal(proposalId: ProposalId, voterId: MemberId) {

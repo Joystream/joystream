@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 
 import { ProposalType } from "./Proposal/ProposalTypePreview";
+import { BlockNumber } from "@polkadot/types/interfaces";
 
 export function includeKeys<T extends { [k: string]: any }>(obj: T, ...allowedKeys: string[]) {
   return Object.keys(obj).filter(objKey => {
@@ -13,8 +14,13 @@ export function includeKeys<T extends { [k: string]: any }>(obj: T, ...allowedKe
 
 export function objFromMap(map: Map<string, any>): { [k: string]: any } {
   return Object.fromEntries(
-    Array.from(map.entries(), ([key, value]) => (value instanceof Map ? [key, MapToObject(value)] : [key, value]))
+    Array.from(map.entries(), ([key, value]) => (value instanceof Map ? [key, objFromMap(value)] : [key, value]))
   );
+}
+
+export function dateFromBlock(blockNumber: BlockNumber) {
+  const _blockNumber = blockNumber.toNumber();
+  return new Date(Date.now() - 6000 * _blockNumber);
 }
 
 export function usePromise<T>(promiseOrFunction: (() => Promise<T>) | Promise<T>, defaultValue: T) {
