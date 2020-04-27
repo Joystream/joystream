@@ -38,7 +38,6 @@ describe('Runtime upgrade integration tests', () => {
   it('Upgrading the runtime test', async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
-    // const runtime: Bytes = await apiWrapper.getRuntime();
     const runtime: string = Utils.readRuntimeFromFile('joystream_node_runtime.wasm');
     const description: string = 'runtime upgrade proposal which is used for API integration testing';
     const runtimeProposalFee: BN = apiWrapper.estimateRomeProposeRuntimeUpgradeFee(
@@ -67,13 +66,10 @@ describe('Runtime upgrade integration tests', () => {
     // Approving runtime update proposal
     const runtimePromise = apiWrapper.expectRomeRuntimeUpgraded();
     await apiWrapper.batchApproveRomeProposal(m2KeyPairs, proposalNumber);
-    // apiWrapper = await ApiWrapper.create(provider);
     await runtimePromise;
 
     await Utils.wait(apiWrapper.getBlockDuration().muln(2.5).toNumber());
   }).timeout(defaultTimeout);
-
-  //membershipTest(new Array<KeyringPair>());
 
   after(() => {
     apiWrapper.close();

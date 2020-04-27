@@ -8,7 +8,7 @@ import { ApiWrapper } from '../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN = require('bn.js');
 
-describe.skip('Mint capacity proposal network tests', () => {
+describe('Mint capacity proposal network tests', () => {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
@@ -52,9 +52,7 @@ describe.skip('Mint capacity proposal network tests', () => {
     await apiWrapper.transferBalanceToAccounts(sudo, m2KeyPairs, runtimeVoteFee);
 
     // Proposal creation
-    console.log('proposing new mint capacity');
     const proposalPromise = apiWrapper.expectProposalCreated();
-    console.log('sending extr with capacity ' + mintingCapacity);
     await apiWrapper.proposeWorkingGroupMintCapacity(
       m1KeyPairs[0],
       'testing mint capacity' + uuid().substring(0, 8),
@@ -63,12 +61,10 @@ describe.skip('Mint capacity proposal network tests', () => {
       mintingCapacity
     );
     const proposalNumber = await proposalPromise;
-    console.log('proposed');
-    //await apiWrapper.getProposal(proposalNumber);
 
     // Approving runtime update proposal
     console.log('block number ' + (await apiWrapper.getBestBlock()));
-    console.log('approving new mint capacity');
+    console.log('approving new mint capacity of proposal ' + proposalNumber);
     const runtimePromise = apiWrapper.expectProposalFinalized();
     await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber);
     await runtimePromise;

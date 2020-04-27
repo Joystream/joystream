@@ -105,15 +105,6 @@ export class ApiWrapper {
     );
   }
 
-  public estimateRomeProposeRuntimeUpgradeFee(
-    stake: BN,
-    name: string,
-    description: string,
-    runtime: Bytes | string
-  ): BN {
-    return this.estimateTxFee(this.api.tx.proposals.createProposal(stake, name, description, runtime));
-  }
-
   public estimateProposeTextFee(stake: BN, name: string, description: string, text: string): BN {
     return this.estimateTxFee(this.api.tx.proposalsCodex.createTextProposal(stake, name, description, stake, text));
   }
@@ -144,10 +135,6 @@ export class ApiWrapper {
 
   public estimateVoteForProposalFee(): BN {
     return this.estimateTxFee(this.api.tx.proposalsEngine.vote(0, 0, 'Approve'));
-  }
-
-  public estimateVoteForRomeRuntimeProposalFee(): BN {
-    return this.estimateTxFee(this.api.tx.proposals.voteOnProposal(0, 'Approve'));
   }
 
   private applyForCouncilElection(account: KeyringPair, amount: BN): Promise<void> {
@@ -232,7 +219,7 @@ export class ApiWrapper {
 
   public getCouncil(): Promise<Seat[]> {
     return this.api.query.council.activeCouncil<Vec<Codec>>().then(seats => {
-      return JSON.parse(seats.toString());
+      return (seats as unknown) as Seat[];
     });
   }
 
@@ -250,20 +237,6 @@ export class ApiWrapper {
     const memberId: BN = (await this.getMemberIds(account.address))[0].toBn();
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createRuntimeUpgradeProposal(memberId, name, description, stake, runtime),
-      account,
-      false
-    );
-  }
-
-  public proposeRuntimeRome(
-    account: KeyringPair,
-    stake: BN,
-    name: string,
-    description: string,
-    runtime: Bytes | string
-  ): Promise<void> {
-    return this.sender.signAndSend(
-      this.api.tx.proposals.createProposal(stake, name, description, runtime),
       account,
       false
     );
@@ -334,22 +307,6 @@ export class ApiWrapper {
     );
   }
 
-  public approveRomeProposal(account: KeyringPair, proposal: BN): Promise<void> {
-    return this.sender.signAndSend(
-      this.api.tx.proposals.voteOnProposal(proposal, new VoteKind('Approve')),
-      account,
-      false
-    );
-  }
-
-  public batchApproveRomeProposal(council: KeyringPair[], proposal: BN): Promise<void[]> {
-    return Promise.all(
-      council.map(async keyPair => {
-        await this.approveRomeProposal(keyPair, proposal);
-      })
-    );
-  }
-
   public getBlockDuration(): BN {
     return this.api.createType('Moment', this.api.consts.babe.expectedBlockTime).toBn();
   }
@@ -358,7 +315,8 @@ export class ApiWrapper {
     return new Promise(async resolve => {
       await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
-          if (record.event.method.toString() === 'ProposalCreated') {
+          if (record.event.method && record.event.method.toString() === 'ProposalCreated') {
+            console.log('im here');
             resolve(new BN(record.event.data[1].toString()));
           }
         });
@@ -378,25 +336,14 @@ export class ApiWrapper {
     });
   }
 
-  public expectRomeRuntimeUpgraded(): Promise<void> {
-    return new Promise(async resolve => {
-      await this.api.query.system.events<Vec<EventRecord>>(events => {
-        events.forEach(record => {
-          if (record.event.method.toString() === 'RuntimeUpdated') {
-            resolve();
-          }
-        });
-      });
-    });
-  }
-
   public expectProposalFinalized(): Promise<void> {
     return new Promise(async resolve => {
       await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (
+            record.event.method &&
             record.event.method.toString() === 'ProposalStatusUpdated' &&
-            record.event.data[1].toString().includes('Finalized')
+            record.event.data[1].toString().includes('Executed')
           ) {
             resolve();
           }
@@ -411,8 +358,6 @@ export class ApiWrapper {
 
   public async getProposal(id: BN) {
     const proposal = await this.api.query.proposalsEngine.proposals(id);
-    console.log('proposal to string ' + proposal.toString());
-    console.log('proposal to raw ' + proposal.toRawType());
     return;
   }
 
