@@ -27,12 +27,12 @@ export default function ChannelSummary({
 }: ChannelSummaryProps) {
   let styles = makeStyles(styleProps)
   return (
-    <div css={styles.container} onClick={onClick}>
-      <div css={styles.avatar} onClick={onClick}>
+    <div css={styles.container}>
+      <div css={styles.avatar} onClick={event => { event.stopPropagation(); onClick() }}>
         <Avatar size={size} img={img} />
       </div>
       <div css={styles.details}>
-        <h1 css={styles.title} onClick={onClick}>{name}</h1>
+        <h1 css={styles.title} onClick={event => { event.stopPropagation(); onClick() }}>{name}</h1>
         <div css={styles.badges}>
           {isVerified && (
             <Tag icon={faCheck} text="Verified" color={colors.other.success} />
