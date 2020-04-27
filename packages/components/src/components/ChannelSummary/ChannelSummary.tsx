@@ -22,7 +22,7 @@ export default function ChannelSummary({
   size,
   name,
   img,
-  onClick,
+  onClick = () => {},
   ...styleProps
 }: ChannelSummaryProps) {
   let styles = makeStyles({ size, ...styleProps })
