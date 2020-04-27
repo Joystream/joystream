@@ -142,6 +142,23 @@ impl Trait for Runtime {
     type ClassDescriptionConstraint = ClassDescriptionConstraint;
 }
 
+impl ActorAuthenticator for Runtime {
+    type ActorId = u64;
+    type GroupId = u64;
+
+    fn authenticate_authority(account_id: Self::AccountId) -> bool {
+        true
+    }
+
+    fn authenticate_actor_in_group(
+        account_id: Self::AccountId,
+        actor_id: Self::ActorId,
+        group_id: Self::GroupId,
+    ) -> bool {
+        true
+    }
+}
+
 pub struct MockCredentialChecker {}
 
 impl CredentialChecker<Runtime> for MockCredentialChecker {

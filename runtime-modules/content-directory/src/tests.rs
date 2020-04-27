@@ -339,7 +339,7 @@ fn class_set_class_entities_can_be_created() {
         let class_id = create_simple_class(class_minimal_with_admins(vec![0]));
         let class = TestModule::class_by_id(class_id);
 
-        assert_eq!(class.get_permissions().entities_can_be_created, false);
+        assert_eq!(class.get_permissions().entity_creation_blocked, false);
 
         // root
         assert_ok!(TestModule::set_class_entities_can_be_created(
@@ -349,7 +349,7 @@ fn class_set_class_entities_can_be_created() {
             true
         ));
         let class = TestModule::class_by_id(class_id);
-        assert_eq!(class.get_permissions().entities_can_be_created, true);
+        assert_eq!(class.get_permissions().entity_creation_blocked, true);
 
         // admins
         assert_ok!(TestModule::set_class_entities_can_be_created(
@@ -359,7 +359,7 @@ fn class_set_class_entities_can_be_created() {
             false
         ));
         let class = TestModule::class_by_id(class_id);
-        assert_eq!(class.get_permissions().entities_can_be_created, false);
+        assert_eq!(class.get_permissions().entity_creation_blocked, false);
 
         // non-admins
         assert_err!(
@@ -504,7 +504,7 @@ fn batch_transaction_simple() {
         const CREDENTIAL_ONE: u64 = 1;
 
         let new_class_id = create_simple_class(ClassPermissions {
-            entities_can_be_created: true,
+            entity_creation_blocked: true,
             create_entities: vec![CREDENTIAL_ONE].into(),
             reference_constraint: ReferenceConstraint::NoConstraint,
             ..Default::default()
@@ -588,7 +588,7 @@ fn batch_transaction_vector_of_entities() {
         const CREDENTIAL_ONE: u64 = 1;
 
         let new_class_id = create_simple_class(ClassPermissions {
-            entities_can_be_created: true,
+            entity_creation_blocked: true,
             create_entities: vec![CREDENTIAL_ONE].into(),
             reference_constraint: ReferenceConstraint::NoConstraint,
             ..Default::default()

@@ -7,9 +7,7 @@ use rstd::prelude::*;
 use runtime_primitives::traits::{
     MaybeSerialize, MaybeSerializeDeserialize, Member, One, SimpleArithmetic, Zero,
 };
-use srml_support::{
-    decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter, StorageMap,
-};
+use srml_support::{decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter};
 
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
@@ -32,7 +30,7 @@ pub use errors::*;
 pub use operations::*;
 pub use permissions::*;
 
-pub trait Trait: system::Trait + Debug {
+pub trait Trait: system::Trait + ActorAuthenticator + Debug {
     /// Type that represents an actor or group of actors in the system.
     type Credential: Parameter
         + Member
@@ -239,6 +237,9 @@ pub type ClassPermissionsType<T> = ClassPermissions<
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct Entity<T: Trait> {
+    #[cfg_attr(feature = "std", serde(skip))]
+    pub entity_permission: EntityPermission<T>,
+
     /// The class id of this entity.
     pub class_id: ClassId,
 
@@ -257,6 +258,7 @@ pub struct Entity<T: Trait> {
 impl<T: Trait> Default for Entity<T> {
     fn default() -> Self {
         Self {
+            entity_permission: EntityPermission::<T>::default(),
             class_id: ClassId::default(),
             supported_schemas: BTreeSet::new(),
             values: BTreeMap::new(),
@@ -566,6 +568,20 @@ decl_storage! {
         pub NextClassId get(next_class_id) config(): ClassId;
 
         pub NextEntityId get(next_entity_id) config(): EntityId;
+
+        /// Groups who's actors can create entities of class.
+        pub CanCreateEntitiesOfClass get(can_create_entities_of_class): double_map hasher(blake2_128) ClassId, blake2_128(T::GroupId) => ();
+
+        /// Groups who's actors can act as entity maintainers.
+        pub EntityMaintainers get(entity_maintainers): double_map hasher(blake2_128) EntityId, blake2_128(T::GroupId) => ();
+
+        // The voucher associated with entity creation for a given class and controller.
+        // Is updated whenever an entity is created in a given class by a given controller.
+        // Constraint is updated by Root, an initial value comes from `ClassPermissions::per_controller_entity_creation_limit`.
+        pub EntityCreationVouchers get(fn entity_creation_vouchers): double_map hasher(blake2_128) ClassId, blake2_128(EntityController<T>) => EntityCreationVoucher;
+
+        /// Upper limit for how many operations can be included in a single invocation of `atomic_batched_operations`.
+        pub MaximumNumberOfOperationsDuringAtomicBatching: u64;
     }
 }
 
@@ -629,7 +645,7 @@ decl_module! {
                 ClassPermissions::is_admin,
                 class_id,
                 |class_permissions| {
-                    class_permissions.entities_can_be_created = can_be_created;
+                    class_permissions.entity_creation_blocked = can_be_created;
                     Ok(())
                 }
             )

@@ -1,11 +1,92 @@
-use codec::{Decode, Encode};
-use srml_support::{dispatch, ensure};
-
 use crate::constraint::*;
 use crate::credentials::*;
+use codec::{Codec, Decode, Encode};
+use core::fmt::Debug;
+use runtime_primitives::traits::{MaybeSerializeDeserialize, Member, SimpleArithmetic};
+#[cfg(feature = "std")]
+pub use serde::{Deserialize, Serialize};
+use srml_support::{dispatch, ensure, Parameter};
+
+/// Model of authentication manager.
+pub trait ActorAuthenticator: system::Trait + Debug {
+    /// Actor identifier
+    type ActorId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + Clone
+        + MaybeSerializeDeserialize
+        + Eq
+        + PartialEq
+        + Ord;
+
+    /// Group identifier
+    type GroupId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + Clone
+        + MaybeSerializeDeserialize
+        + Eq
+        + PartialEq
+        + Ord;
+
+    /// Authenticate account as being current authority.
+    fn authenticate_authority(account_id: Self::AccountId) -> bool;
+
+    /// Authenticate account as being given actor in given group.
+    fn authenticate_actor_in_group(
+        account_id: Self::AccountId,
+        actor_id: Self::ActorId,
+        group_id: Self::GroupId,
+    ) -> bool;
+}
+
+/// Identifier for a given actor in a given group.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct ActorInGroupId<T: ActorAuthenticator> {
+    pub actor_id: T::ActorId,
+    pub group_id: T::GroupId,
+}
+
+/// Limit for how many entities of a given class may be created.
+enum EntityCreationLimit {
+    /// Look at per class global variable `ClassPermission::per_controller_entity_creation_limit`.
+    ClassLimit,
+
+    /// Individual specified limit.
+    Individual(u64),
+}
+
+/// A voucher for entity creation
+#[derive(Encode, Decode, Default)]
+pub struct EntityCreationVoucher {
+    /// How many are allowed in total
+    pub maximum_entity_count: u64,
+
+    /// How many have currently been created
+    pub current_entity_limit: u64,
+}
+
+/// Who will be set as the controller for any newly created entity in a given class.
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+pub enum InitialControllerPolicy {
+    ActorInGroup,
+    Group,
+}
+
+impl Default for InitialControllerPolicy {
+    fn default() -> Self {
+        Self::ActorInGroup
+    }
+}
 
 /// Permissions for an instance of a Class in the versioned store.
-//#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Eq, PartialEq, Clone, Debug)]
 pub struct ClassPermissions<ClassId, Credential, PropertyIndex, BlockNumber>
 where
@@ -18,8 +99,25 @@ where
     /// root origin can update entities of this class.
     pub entity_permissions: EntityPermissions<Credential>,
 
-    /// Wether new entities of this class be created or not. Is not enforced for root origin.
-    pub entities_can_be_created: bool,
+    /// Whether to prevent everyone from creating an entity.
+    ///
+    /// This could be useful in order to quickly, and possibly temporarily, block new entity creation, without
+    /// having to tear down `can_create_entities`.
+    pub entity_creation_blocked: bool,
+
+    /// Policy for how to set the controller of a created entity.
+    ///
+    /// Examples(s)
+    /// - For a group that represents something like all possible publishers, then `InitialControllerPolicy::ActorInGroup` makes sense.
+    /// - For a group that represents some stable set of curators, then `InitialControllerPolicy::Group` makes sense.
+    pub initial_controller_of_created_entities: InitialControllerPolicy,
+
+    /// Whether to prevent everyone from updating entity properties.
+    ///
+    /// This could be useful in order to quickly, and probably temporarily, block any editing of entities,
+    /// rather than for example having to set, and later clear, `EntityPermission::frozen_for_controller`
+    /// for a large number of entities.
+    pub all_entity_property_values_locked: bool,
 
     /// Who can add new schemas in the versioned store for this class
     pub add_schemas: CredentialSet<Credential>,
@@ -42,6 +140,15 @@ where
 
     // Block where permissions were changed
     pub last_permissions_update: BlockNumber,
+
+    /// The maximum number of entities which can be created.
+    pub maximum_entity_count: u64,
+
+    /// The current number of entities which exist.
+    pub current_number_of_entities: u64,
+
+    /// How many entities a given controller may create at most.
+    pub per_controller_entity_creation_limit: u64,
 }
 
 impl<ClassId, Credential, PropertyIndex, BlockNumber>
@@ -114,7 +221,7 @@ where
         match access_level {
             AccessLevel::System => Ok(()),
             AccessLevel::Credential(credential) => {
-                if !class_permissions.entities_can_be_created {
+                if !class_permissions.entity_creation_blocked {
                     Err("EntitiesCannotBeCreated")
                 } else if class_permissions.create_entities.contains(credential) {
                     Ok(())
@@ -134,13 +241,11 @@ where
         match access_level {
             AccessLevel::System => Ok(()),
             AccessLevel::Credential(credential) => {
-                if !class_permissions.entities_can_be_created {
-                    Err("EntitiesCannotBeRemoved")
-                } else if class_permissions.remove_entities.contains(credential) {
-                    Ok(())
-                } else {
-                    Err("NotInRemoveEntitiesSet")
-                }
+                ensure!(
+                    class_permissions.remove_entities.contains(credential),
+                    "NotInRemoveEntitiesSet"
+                );
+                Ok(())
             }
             AccessLevel::Unspecified => Err("UnspecifiedActor"),
             AccessLevel::EntityMaintainer => Err("AccessLevel::EntityMaintainer-UsedOutOfPlace"),
@@ -175,6 +280,48 @@ where
                 }
             }
             _ => Err("UnknownActor"),
+        }
+    }
+}
+
+/// Owner of an entity.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum EntityController<T: ActorAuthenticator> {
+    Group(T::GroupId),
+    ActorInGroup(ActorInGroupId<T>),
+}
+
+impl<T: ActorAuthenticator> Default for EntityController<T> {
+    fn default() -> Self {
+        Self::Group(T::GroupId::default())
+    }
+}
+
+/// Permissions for a given entity.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct EntityPermission<T: ActorAuthenticator> {
+    /// Current controller, which is initially set based on who created entity and
+    /// `ClassPermission::initial_controller_of_created_entities` for corresponding class permission instance, but it can later be updated.
+    pub controller: EntityController<T>,
+
+    /// Controller is currently unable to mutate any property value.
+    /// Can be useful to use in concert with some curation censorship policy
+    pub frozen_for_controller: bool,
+
+    /// Prevent from being referenced by any entity (including self-references).
+    /// Can be useful to use in concert with some curation censorship policy,
+    /// e.g. to block content from being included in some public playlist.
+    pub referenceable: bool,
+}
+
+impl<T: ActorAuthenticator> Default for EntityPermission<T> {
+    fn default() -> Self {
+        Self {
+            controller: EntityController::<T>::default(),
+            frozen_for_controller: false,
+            referenceable: false,
         }
     }
 }
