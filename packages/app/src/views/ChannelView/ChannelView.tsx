@@ -35,6 +35,7 @@ function ChannelComponent({
       <GenericSection title="Videos">
         <Grid
           minItemWidth="250"
+          maxItemWidth="600"
           items={videos.map((video, idx) => (
             <VideoPreview
               onClick={() => navigate(`/videos/${idx}`)}
