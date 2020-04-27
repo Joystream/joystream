@@ -20,7 +20,7 @@ export let makeStyles = ({
       vertical-align: middle;
     `,
     icon: css`
-      & > *:nth-child(1) {
+      & > path:nth-of-type(1) {
         color: inherit;
         flex-shrink: 0;
       }

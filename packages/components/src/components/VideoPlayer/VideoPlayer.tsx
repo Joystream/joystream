@@ -1,8 +1,8 @@
 import React from "react";
 import ReactPlayer from "react-player";
-import { VideoStyleProps, makeStyles } from "./Video.style";
+import { VideoPlayerStyleProps, makeStyles } from "./VideoPlayer.style";
 
-export type VideoProps = {
+export type VideoPlayerProps = {
   src?: string;
   playing?: boolean;
   poster?: string;
@@ -21,9 +21,9 @@ export type VideoProps = {
   onError?(error: any): void;
   onDuration?(duration: number): void;
   onProgress?(state: { played: number; loaded: number }): void;
-} & VideoStyleProps;
+} & VideoPlayerStyleProps;
 
-export default function Video({
+export default function VideoPlayer({
   src,
   poster,
   playing,
@@ -44,7 +44,7 @@ export default function Video({
   volume = 0.7,
   controls = true,
   ...styleProps
-}: VideoProps) {
+}: VideoPlayerProps) {
   let { playerStyles, containerStyles } = makeStyles(styleProps);
   return (
     <div css={containerStyles}>

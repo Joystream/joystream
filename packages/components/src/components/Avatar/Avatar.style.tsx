@@ -1,10 +1,10 @@
-import { css } from "@emotion/core";
-import { spacing, typography, colors } from "../../theme";
+import { css } from "@emotion/core"
+import { spacing, colors } from "../../theme"
 
 export type AvatarStyleProps = {
-  img?: string;
-  size?: "small" | "default" | "large";
-};
+  img?: string
+  size?: "small" | "default" | "large"
+}
 
 export let makeStyles = ({ img, size = "default" }: AvatarStyleProps) => {
   let width =
@@ -13,13 +13,6 @@ export let makeStyles = ({ img, size = "default" }: AvatarStyleProps) => {
       : size === "default"
       ? spacing.s19
       : spacing.s25;
-
-  let margin =
-    size === "small"
-      ? spacing.s2
-      : size === "default"
-      ? spacing.s4
-      : spacing.s6;
   return css`
     background-image: ${img
       ? `url(${img})`
@@ -31,5 +24,5 @@ export let makeStyles = ({ img, size = "default" }: AvatarStyleProps) => {
     min-height: ${width};
     max-width: ${width};
     max-height: ${width};
-  `;
-};
+  `
+}

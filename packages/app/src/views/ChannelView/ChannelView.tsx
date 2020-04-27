@@ -1,7 +1,7 @@
 import React from "react"
+import { RouteComponentProps, useParams, navigate } from "@reach/router"
 import { GenericSection, VideoPreview, Grid } from "components"
-import { ChannelHeader } from "../../components/ChannelHeader"
-import { RouteComponentProps, useParams } from "@reach/router"
+import ChannelHeader from "./../../components/ChannelHeader"
 
 type ChannelProps = {
   name: string
@@ -32,13 +32,14 @@ function ChannelComponent({
         banner={banner}
         img={img}
       />
-      <GenericSection auto title="Videos">
+      <GenericSection title="Videos">
         <Grid
           minItemWidth="250"
+          maxItemWidth="600"
           items={videos.map((video, idx) => (
             <VideoPreview
-              url={`videos/${idx}`}
-              channelUrl={`channels/${video.channel}`}
+              onClick={() => navigate(`/videos/${idx}`)}
+              onChannelClick={() => navigate(`/channels/${video.channel}`)}
               key={`title-${idx}`}
               title={video.title}
               poster={video.poster}

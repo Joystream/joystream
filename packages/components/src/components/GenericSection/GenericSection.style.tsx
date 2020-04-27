@@ -41,8 +41,9 @@ export let makeStyles = ({
       font-size: ${typography.sizes.normal};
       line-height: 2rem;
       text-transform: uppercase;
-      & > a {
-        text-decoration: none;
+      & > div {
+        display: inline-block;
+        cursor: pointer;
       }
     `
   }

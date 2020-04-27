@@ -1,18 +1,19 @@
-import React from "react";
+import React from "react"
+import { navigate } from "@reach/router"
 
-import { Banner, ChannelSummary } from "components";
+import { Banner, ChannelSummary } from "components"
 
 type ChannelHeaderProps = {
-  img?: string;
-  name: string;
-  banner?: string;
-  isPublic?: boolean;
-  isVerified?: boolean;
-  description?: string;
-  channelUrl?: string;
-};
+  img?: string
+  name: string
+  banner?: string
+  isPublic?: boolean
+  isVerified?: boolean
+  description?: string
+  channelUrl?: string
+}
 
-export function ChannelHeader({
+function ChannelHeader({
   img,
   isPublic = true,
   isVerified = false,
@@ -31,8 +32,10 @@ export function ChannelHeader({
         size="large"
         img={img}
         description={description}
-        channelUrl={channelUrl}
+        onClick={() => navigate(channelUrl)}
       />
     </>
-  );
+  )
 }
+
+export default ChannelHeader

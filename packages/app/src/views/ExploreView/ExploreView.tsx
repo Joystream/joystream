@@ -1,5 +1,5 @@
 import React from "react"
-import { RouteComponentProps } from "@reach/router"
+import { RouteComponentProps, navigate } from "@reach/router"
 import { GenericSection, VideoPreview, ChannelSummary, Grid } from "components"
 
 type ExploreViewProps = {
@@ -9,45 +9,45 @@ type ExploreViewProps = {
 
 export default function ExploreView({
   channels,
-  videos,
-  path,
+  videos
 }: ExploreViewProps) {
+
   let allVideos = Object.values(videos).flat()
   let allChannels: any[] = Object.values(channels)
 
   return (
     <>
-      <GenericSection topDivider title="Latest Videos" link="#" linkText="All Videos">
+      <GenericSection topDivider title="Latest Videos" linkText="All Videos" onLinkClick={() => {}}>
         <Grid
           minItemWidth="250"
           items={allVideos.map((video, idx) => {
             let { img: channelImg } = channels[video.channel] || ""
             return (
               <VideoPreview
-                url={`videos/${idx}`}
                 key={`${video.title}-${idx}`}
                 channelImg={channelImg}
-                channelUrl={`channels/${video.channel}`}
                 channel={video.channel}
                 title={video.title}
                 poster={video.poster}
                 showChannel
+                onClick={() => navigate(`videos/${idx}`)}
+                onChannelClick={() => navigate(`channels/${video.channel}`)}
               />
             )
           })}
         />
       </GenericSection>
-      <GenericSection topDivider title="Latest video channels" link="#" linkText="All Channels">
+      <GenericSection topDivider title="Latest video channels" linkText="All Channels" onLinkClick={() => {}}>
         <div className="channel-gallery">
           {allChannels.map((channel, idx) => (
             <ChannelSummary
               key={`${channel.name}-${idx}`}
-              channelUrl={`channels/${channel.name}`}
               img={channel.img}
               size="default"
               name={channel.name}
               isPublic={channel.isPublic}
               isVerified={channel.isVerified}
+              onClick={() => navigate(`channels/${channel.name}`)}
             />
           ))}
         </div>
