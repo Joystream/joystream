@@ -1,5 +1,5 @@
 import React from "react"
-import { RouteComponentProps, useParams } from "@reach/router"
+import { RouteComponentProps, useParams, navigate } from "@reach/router"
 import { GenericSection, VideoPreview, Grid } from "components"
 import ChannelHeader from "./../../components/ChannelHeader"
 
@@ -37,8 +37,8 @@ function ChannelComponent({
           minItemWidth="250"
           items={videos.map((video, idx) => (
             <VideoPreview
-              url={`videos/${idx}`}
-              channelUrl={`channels/${video.channel}`}
+              onClick={() => navigate(`/videos/${idx}`)}
+              onChannelClick={() => navigate(`/channels/${video.channel}`)}
               key={`title-${idx}`}
               title={video.title}
               poster={video.poster}
