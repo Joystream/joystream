@@ -26,6 +26,22 @@ export class VotingResults extends JoyStruct<IVotingResults> {
   }
 }
 
+export class ProposalDetails extends Struct {
+  constructor(value?: any) {
+    super(
+      {
+        mintedBalance: "Balance",
+        currencyBalance: "Balance",
+        blockNumber: "BlockNumber",
+        accountId: "AccountId",
+        memberId: MemberId
+      },
+      value
+    );
+  }
+}
+// MintedBalance, CurrencyBalance, BlockNumber, AccountId, MemberId;
+
 export type IProposalParameters = {
   // During this period, votes can be accepted
   votingPeriod: BlockNumber;
@@ -225,6 +241,7 @@ export function registerProposalTypes() {
     getTypeRegistry().register({
       ProposalId,
       ProposalStatus,
+      ProposalDetails,
       Proposal,
       ProposalParameters,
       ProposalOf,

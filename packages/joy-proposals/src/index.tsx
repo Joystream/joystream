@@ -41,7 +41,7 @@ function App(props: Props): React.ReactElement<Props> {
           <Route path={`${basePath}/active`} component={NotDone} />
           <Route path={`${basePath}/finalized`} component={NotDone} />
           <Route path={`${basePath}/:id`} component={ProposalFromId} />
-          <Route component={ProposalPreviewList} />
+          <Route component={NotDone} />
         </Switch>
       </main>
     </SubstrateProvider>
