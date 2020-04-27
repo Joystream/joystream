@@ -13,9 +13,9 @@ export default function ProposalFromId(props: RouteComponentProps<any>) {
       params: { id }
     }
   } = props;
-  console.log(`This is ID: ${id} bleeep bloop 🤖`);
+  console.log(`This is ID: ${id} `);
   let transport = useTransport() as SubstrateTransport;
-  console.log("THIS IS THE CONTEXT INSIDE OF PROPOSAL PREVIEW LIST BLEEP BLOOP 🤖");
+
   let [proposal, loading, error] = usePromise<any>(transport.proposalById(id), {});
 
   if (loading && !error) {

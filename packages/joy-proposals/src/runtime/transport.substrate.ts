@@ -43,6 +43,14 @@ export class SubstrateTransport extends Transport {
 
   async proposalById(id: ProposalId) {
     return this.proposalsEngine.proposals<any>(id);
+
+    /*
+        id: ProposalId,
+        createdAt: "BlockNumber",
+        proposerId: MemberId,
+        stake: "BalanceOf",
+        sender: "AccountId"
+    */
   }
 
   async proposalsIds() {

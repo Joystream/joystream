@@ -3,6 +3,7 @@ import ProposalTypePreview, { ProposalTypeInfo } from "./ProposalTypePreview";
 import { Item, Dropdown } from "semantic-ui-react";
 
 import { useTransport } from "../runtime";
+import ProposalTypes from "../proposalTypes.json";
 import "./ChooseProposalType.css";
 
 export const Categories = {
@@ -19,9 +20,13 @@ type ChooseProposalTypeProps = {
   proposalTypes: ProposalTypeInfo[];
 };
 
+// Make this without Props.
 export default function ProposalPreview(props: ChooseProposalTypeProps) {
   const { proposalTypes } = props;
   const transport = useTransport();
+
+  // We need to get: Stake, Cancellation fee, Grace Period.
+  // Fetch them here...
 
   const [category, setCategory] = useState("");
   return (

@@ -35,7 +35,6 @@ function mapFromProposals(proposals: any[]) {
 
 export default function ProposalPreviewList() {
   const transport = useTransport();
-  console.log("THIS IS THE CONTEXT INSIDE OF PROPOSAL PREVIEW LIST BLEEP BLOOP 🤖");
 
   const [proposals, error, loading] = usePromise<any>(transport.proposals(), new Map());
 

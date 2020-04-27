@@ -4,8 +4,19 @@ import { Category } from "./ChooseProposalType";
 
 import "./ProposalType.css";
 
+export type ProposalType =
+  | "EvictStorageProvider"
+  | "Signal"
+  | "SetStorageRoleParams"
+  | "SetMaxValidatorCount"
+  | "SetElectionParameters"
+  | "SpendingProposal"
+  | "SetWGMintCapacity"
+  | "SetLead"
+  | "RuntimeUpgrade";
+
 export type ProposalTypeInfo = {
-  type: string;
+  type: ProposalType;
   category: Category;
   image: string;
   description: string;

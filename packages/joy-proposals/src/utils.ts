@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
-export function usePromise<T> (promiseOrFunction: (() => Promise<T>) | Promise<T>, defaultValue: T) {
+import { ProposalType } from "./Proposal/ProposalTypePreview";
+
+export function usePromise<T>(promiseOrFunction: (() => Promise<T>) | Promise<T>, defaultValue: T) {
   const [state, setState] = useState({ value: defaultValue, error: null, isPending: true });
 
   useEffect(() => {
-    const promise = typeof promiseOrFunction === 'function' ? promiseOrFunction() : promiseOrFunction;
+    const promise = typeof promiseOrFunction === "function" ? promiseOrFunction() : promiseOrFunction;
 
     let isSubscribed = true;
     promise
@@ -20,28 +22,28 @@ export function usePromise<T> (promiseOrFunction: (() => Promise<T>) | Promise<T
   return [value, error, isPending];
 }
 
-export function calculateStake (type: string, issuance: number): number {
+export function calculateStake(type: ProposalType, issuance: number) {
   const basis = issuance / 100;
   let stake = NaN;
   switch (type) {
-    case 'EvictStorageProvider': {
+    case "EvictStorageProvider": {
       stake = basis * 0.1;
       break;
     }
-    case 'Signal':
-    case 'SetStorageRoleParams':
-    case 'SetMaxValidatorCount':
-    case 'SetLead':
-    case 'SetWGMintCapacity':
-    case 'SpendingProposal': {
+    case "Signal":
+    case "SetStorageRoleParams":
+    case "SetMaxValidatorCount":
+    case "SetLead":
+    case "SetWGMintCapacity":
+    case "SpendingProposal": {
       stake = basis * 0.25;
       break;
     }
-    case 'SetElectionParameters': {
+    case "SetElectionParameters": {
       stake = basis * 0.75;
       break;
     }
-    case 'RuntimeUpgrade': {
+    case "RuntimeUpgrade": {
       stake = basis * 1;
       break;
     }
