@@ -1,17 +1,30 @@
-import { css } from "@emotion/core";
-import { spacing, colors, typography } from "../../theme";
+import { css } from "@emotion/core"
+import { spacing, colors, typography } from "../../theme"
 
-export type ChannelSummaryStyleProps = {};
+export type ChannelSummaryStyleProps = {
+  size?: "small" | "default" | "large"
+}
 
-export let makeStyles = ({}: ChannelSummaryStyleProps) => {
+export let makeStyles = ({
+  size = "default"
+}: ChannelSummaryStyleProps) => {
+
+  let gridSize =
+    size === "small"
+      ? spacing.s9
+      : size === "default"
+      ? spacing.s19
+      : spacing.s25;
+
   return {
     container: css`
       display: grid;
-      grid-template: auto / 80px;
+      grid-template: auto / ${gridSize};
       margin: 30px 0;
     `,
     avatar: css`
       grid-column: 1 / 1;
+      cursor: pointer;
     `,
     details: css`
       grid-column: 2 / 2;
@@ -25,6 +38,7 @@ export let makeStyles = ({}: ChannelSummaryStyleProps) => {
       color: ${colors.text.accent};
       margin: ${spacing.s3} 0;
       display: inline-block;
+      cursor: pointer;
     `,
     badges: css`
       text-transform: uppercase;
@@ -39,5 +53,5 @@ export let makeStyles = ({}: ChannelSummaryStyleProps) => {
     tagInfo: css`
       color: ${colors.other.info}
     `
-  };
-};
+  }
+}

@@ -39,12 +39,9 @@ export let makeStyles = ({ showChannel = false }: VideoPreviewStyleProps) => {
       font-size: ${typography.sizes.small};
     `,
     channel: css`
-      text-decoration: none;
-      & > h3 {
-        margin: 5px 0 0;
-        font-size: ${typography.sizes.xsmall};
-        color: ${colors.grey.darker};
-      }
+      margin: 5px 0 0;
+      font-size: ${typography.sizes.xsmall};
+      color: ${colors.grey.darker};
     `
   }
 }

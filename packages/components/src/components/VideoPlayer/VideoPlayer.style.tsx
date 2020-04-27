@@ -1,7 +1,7 @@
 import { css } from "@emotion/core";
-import { spacing, typography, colors, breakpoints } from "../../theme";
+import { breakpoints } from "../../theme";
 
-export type VideoStyleProps = {
+export type VideoPlayerStyleProps = {
   width?: string | number;
   height?: string | number;
   responsive?: boolean;
@@ -13,7 +13,7 @@ export let makeStyles = ({
   height = "100%",
   responsive = true,
   ratio = "16:9",
-}: VideoStyleProps) => {
+}: VideoPlayerStyleProps) => {
   let ratioPerc = ratio
     .split(":")
     .map(x => Number(x))
