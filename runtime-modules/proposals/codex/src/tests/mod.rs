@@ -5,11 +5,13 @@ use srml_support::traits::Currency;
 use srml_support::StorageMap;
 use system::RawOrigin;
 
+use crate::*;
 use crate::{BalanceOf, Error, ProposalDetails};
 use proposal_engine::ProposalParameters;
 use roles::actors::RoleParameters;
 use srml_support::dispatch::DispatchResult;
 
+use crate::proposal_types::ProposalsConfigParameters;
 pub use mock::*;
 
 pub(crate) fn increase_total_balance_issuance(balance: u64) {
@@ -1048,6 +1050,91 @@ fn create_set_storage_role_parameters_proposal_fails_with_invalid_parameters() {
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterReward,
+        );
+    });
+}
+
+#[test]
+fn set_default_proposal_parameters_succeeded() {
+    initial_test_ext().execute_with(|| {
+        let p = ProposalsConfigParameters::default();
+
+        // nothing is set
+        assert_eq!(<SetValidatorCountProposalVotingPeriod<Test>>::get(), 0);
+
+        ProposalCodex::set_default_config_values();
+
+        assert_eq!(
+            <SetValidatorCountProposalVotingPeriod<Test>>::get(),
+            p.set_validator_count_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <SetValidatorCountProposalGracePeriod<Test>>::get(),
+            p.set_validator_count_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <RuntimeUpgradeProposalVotingPeriod<Test>>::get(),
+            p.runtime_upgrade_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <RuntimeUpgradeProposalGracePeriod<Test>>::get(),
+            p.runtime_upgrade_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <TextProposalVotingPeriod<Test>>::get(),
+            p.text_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <TextProposalGracePeriod<Test>>::get(),
+            p.text_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <SetElectionParametersProposalVotingPeriod<Test>>::get(),
+            p.set_election_parameters_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <SetElectionParametersProposalGracePeriod<Test>>::get(),
+            p.set_election_parameters_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <SetContentWorkingGroupMintCapacityProposalVotingPeriod<Test>>::get(),
+            p.set_content_working_group_mint_capacity_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <SetContentWorkingGroupMintCapacityProposalGracePeriod<Test>>::get(),
+            p.set_content_working_group_mint_capacity_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <SetLeadProposalVotingPeriod<Test>>::get(),
+            p.set_lead_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <SetLeadProposalGracePeriod<Test>>::get(),
+            p.set_lead_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <SpendingProposalVotingPeriod<Test>>::get(),
+            p.spending_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <SpendingProposalGracePeriod<Test>>::get(),
+            p.spending_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <EvictStorageProviderProposalVotingPeriod<Test>>::get(),
+            p.evict_storage_provider_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <EvictStorageProviderProposalGracePeriod<Test>>::get(),
+            p.evict_storage_provider_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <SetStorageRoleParametersProposalVotingPeriod<Test>>::get(),
+            p.set_storage_role_parameters_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <SetStorageRoleParametersProposalGracePeriod<Test>>::get(),
+            p.set_storage_role_parameters_proposal_grace_period as u64
         );
     });
 }

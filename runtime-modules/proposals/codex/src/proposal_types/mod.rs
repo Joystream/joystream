@@ -1,3 +1,5 @@
+#![warn(missing_docs)]
+
 pub(crate) mod parameters;
 
 use codec::{Decode, Encode};
@@ -60,5 +62,87 @@ impl<MintedBalance, CurrencyBalance, BlockNumber, AccountId, MemberId> Default
 {
     fn default() -> Self {
         ProposalDetails::Text(b"invalid proposal details".to_vec())
+    }
+}
+
+/// Contains proposal config parameters. Default values are used by migration and genesis config.
+pub struct ProposalsConfigParameters {
+    /// 'Set validator count' proposal voting period
+    pub set_validator_count_proposal_voting_period: u32,
+
+    /// 'Set validator count' proposal grace period
+    pub set_validator_count_proposal_grace_period: u32,
+
+    /// 'Runtime upgrade' proposal voting period
+    pub runtime_upgrade_proposal_voting_period: u32,
+
+    /// 'Runtime upgrade' proposal grace period
+    pub runtime_upgrade_proposal_grace_period: u32,
+
+    /// 'Text' proposal voting period
+    pub text_proposal_voting_period: u32,
+
+    /// 'Text' proposal grace period
+    pub text_proposal_grace_period: u32,
+
+    /// 'Set election parameters' proposal voting period
+    pub set_election_parameters_proposal_voting_period: u32,
+
+    /// 'Set election parameters' proposal grace period
+    pub set_election_parameters_proposal_grace_period: u32,
+
+    /// 'Set content working group mint capacity' proposal voting period
+    pub set_content_working_group_mint_capacity_proposal_voting_period: u32,
+
+    /// 'Set content working group mint capacity' proposal grace period
+    pub set_content_working_group_mint_capacity_proposal_grace_period: u32,
+
+    /// 'Set lead' proposal voting period
+    pub set_lead_proposal_voting_period: u32,
+
+    /// 'Set lead' proposal grace period
+    pub set_lead_proposal_grace_period: u32,
+
+    /// 'Spending' proposal voting period
+    pub spending_proposal_voting_period: u32,
+
+    /// 'Spending' proposal grace period
+    pub spending_proposal_grace_period: u32,
+
+    /// 'Evict storage provider' proposal voting period
+    pub evict_storage_provider_proposal_voting_period: u32,
+
+    /// 'Evict storage provider' proposal grace period
+    pub evict_storage_provider_proposal_grace_period: u32,
+
+    /// 'Set storage role parameters' proposal voting period
+    pub set_storage_role_parameters_proposal_voting_period: u32,
+
+    /// 'Set storage role parameters' proposal grace period
+    pub set_storage_role_parameters_proposal_grace_period: u32,
+}
+
+impl Default for ProposalsConfigParameters {
+    fn default() -> Self {
+        ProposalsConfigParameters {
+            set_validator_count_proposal_voting_period: 43200u32,
+            set_validator_count_proposal_grace_period: 0u32,
+            runtime_upgrade_proposal_voting_period: 72000u32,
+            runtime_upgrade_proposal_grace_period: 72000u32,
+            text_proposal_voting_period: 72000u32,
+            text_proposal_grace_period: 0u32,
+            set_election_parameters_proposal_voting_period: 72000u32,
+            set_election_parameters_proposal_grace_period: 201601u32,
+            set_content_working_group_mint_capacity_proposal_voting_period: 43200u32,
+            set_content_working_group_mint_capacity_proposal_grace_period: 0u32,
+            set_lead_proposal_voting_period: 43200u32,
+            set_lead_proposal_grace_period: 0u32,
+            spending_proposal_voting_period: 72000u32,
+            spending_proposal_grace_period: 14400u32,
+            evict_storage_provider_proposal_voting_period: 43200u32,
+            evict_storage_provider_proposal_grace_period: 0u32,
+            set_storage_role_parameters_proposal_voting_period: 43200u32,
+            set_storage_role_parameters_proposal_grace_period: 14400u32,
+        }
     }
 }
