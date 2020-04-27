@@ -4,17 +4,17 @@ import { makeStyles, SectionStyleProps } from "./GenericSection.style"
 type SectionProps = {
   children?: React.ReactNode
   title?: string
-  link?: string
   linkText?: string
   className?: string
+  onLinkClick?: any
 } & SectionStyleProps
 
 export default function GenericSection({
   children,
   title,
-  link,
   linkText,
   className,
+  onLinkClick,
   ...styleProps
 }: SectionProps) {
   let styles = makeStyles(styleProps)
@@ -22,9 +22,11 @@ export default function GenericSection({
     <section css={styles.section} className={className}>
       <div css={styles.header}>
         <h2 css={styles.title}>{title}</h2>
-        {!!link && !!linkText &&
+        {!!linkText &&
           <div css={styles.link}>
-            <a href={link}>{linkText}</a>
+            <div onClick={onLinkClick}>
+              {linkText}
+            </div>
           </div>
         }
       </div>
