@@ -78,12 +78,14 @@ export class SubstrateTransport extends Transport {
   async proposalTypesGracePeriod() {
     const methods = includeKeys(this.proposalsCodex, "GracePeriod");
     // methods = [proposalTypeGracePeriod...]
+    // return methods.reduce((obj, method) => ({ ...obj, method: this.proposalsCodex[method]() }), {});
     return Promise.all(methods.map(method => this.proposalsCodex[method]()));
   }
 
   async proposalTypesVotingPeriod() {
     const methods = includeKeys(this.proposalsCodex, "VotingPeriod");
     // methods = [proposalTypeVotingPeriod...]
+    // return methods.reduce((obj, method) => ({ ...obj, method: this.proposalsCodex[method]() }), {});
     return Promise.all(methods.map(method => this.proposalsCodex[method]()));
   }
 }

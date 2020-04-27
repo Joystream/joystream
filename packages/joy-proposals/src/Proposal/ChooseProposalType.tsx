@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import ProposalTypePreview, { ProposalTypeInfo } from "./ProposalTypePreview";
 import { Item, Dropdown } from "semantic-ui-react";
 
+import { useTransport } from "../runtime";
 import "./ChooseProposalType.css";
 
 export const Categories = {
@@ -20,6 +21,8 @@ type ChooseProposalTypeProps = {
 
 export default function ProposalPreview(props: ChooseProposalTypeProps) {
   const { proposalTypes } = props;
+  const transport = useTransport();
+
   const [category, setCategory] = useState("");
   return (
     <div className="ChooseProposalType">
