@@ -45,19 +45,19 @@ function App(props: Props): React.ReactElement<Props> {
         <Tabs basePath={basePath} items={tabs} />
       </header>
       <Switch>
-        <Route path={`${basePath}/new`} component={NotDone} />
         <Route path={`${basePath}/active`} component={NotDone} />
         <Route path={`${basePath}/finalized`} component={NotDone} />
-        <Route path={`${basePath}/create/signal`} component={SignalForm} />
-        <Route path={`${basePath}/create/evict-storage-provider`} component={EvictStorageProviderForm} />
-        <Route path={`${basePath}/create/spending`} component={SpendingProposalForm} />
-        <Route path={`${basePath}/create/set-cwg-lead`} component={SetContentWorkingGroupLeadForm} />
-        <Route path={`${basePath}/create/set-cwg-mint-cap`} component={SetContentWorkingGroupMintCapForm} />
-        <Route path={`${basePath}/create/set-council-mint-cap`} component={SetCouncilMintCapForm} />
-        <Route path={`${basePath}/create/set-election-params`} component={SetCouncilParamsForm} />
-        <Route path={`${basePath}/create/set-storage-role-params`} component={SetStorageRoleParamsForm} />
-        <Route path={`${basePath}/create/set-max-validator-count`} component={SetMaxValidatorCountForm} />
-        <Route path={`${basePath}/create/runtime-upgrade`} component={RuntimeUpgradeForm} />
+        <Route path={`${basePath}/new/signal`} component={SignalForm} />
+        <Route path={`${basePath}/new/evict-storage-provider`} component={EvictStorageProviderForm} />
+        <Route path={`${basePath}/new/spending`} component={SpendingProposalForm} />
+        <Route path={`${basePath}/new/set-cwg-lead`} component={SetContentWorkingGroupLeadForm} />
+        <Route path={`${basePath}/new/set-cwg-mint-cap`} component={SetContentWorkingGroupMintCapForm} />
+        <Route path={`${basePath}/new/set-council-mint-cap`} component={SetCouncilMintCapForm} />
+        <Route path={`${basePath}/new/set-election-params`} component={SetCouncilParamsForm} />
+        <Route path={`${basePath}/new/set-storage-role-params`} component={SetStorageRoleParamsForm} />
+        <Route path={`${basePath}/new/set-max-validator-count`} component={SetMaxValidatorCountForm} />
+        <Route path={`${basePath}/new/runtime-upgrade`} component={RuntimeUpgradeForm} />
+        <Route path={`${basePath}/new`} component={NotDone} />
         <Route path={`${basePath}/:id`} component={NotDone} />
         <Route component={NotDone} />
       </Switch>
