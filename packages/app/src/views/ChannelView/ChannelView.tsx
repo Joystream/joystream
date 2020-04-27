@@ -32,7 +32,7 @@ function ChannelComponent({
         banner={banner}
         img={img}
       />
-      <GenericSection auto title="Videos">
+      <GenericSection title="Videos">
         <Grid
           minItemWidth="250"
           items={videos.map((video, idx) => (

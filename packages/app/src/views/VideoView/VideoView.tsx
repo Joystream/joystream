@@ -15,13 +15,12 @@ type VideoViewProps = {
 function VideoViewComponent({ video, channel }: VideoViewProps) {
   return (
     <>
-      <GenericSection auto={false}>
+      <GenericSection>
         <Video src={video.src} poster={video.poster} />
       </GenericSection>
       <GenericSection
         topDivider
         title={video.title}
-        auto={false}
         className="video-details"
       >
         <ChannelSummary
@@ -37,7 +36,6 @@ function VideoViewComponent({ video, channel }: VideoViewProps) {
       <GenericSection
         topDivider
         title="Video details"
-        auto={false}
         className="video-details-table"
       >
         <DetailsTable details={video.details} />
