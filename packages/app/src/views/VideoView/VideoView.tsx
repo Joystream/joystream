@@ -30,6 +30,7 @@ function VideoViewComponent({ video, channel }: VideoViewProps) {
           isVerified={channel.isVerified}
           description={video.description}
           size="default"
+          onClick={() => navigate(`/channels/${channel.name}`)}
         />
       </GenericSection>
       <GenericSection
