@@ -23,8 +23,12 @@ export function dateFromBlock(blockNumber: BlockNumber) {
   return new Date(Date.now() - 6000 * _blockNumber);
 }
 
-export function usePromise<T>(promiseOrFunction: (() => Promise<T>) | Promise<T>, defaultValue: T) {
-  const [state, setState] = useState({ value: defaultValue, error: null, isPending: true });
+export function usePromise<T>(promiseOrFunction: (() => Promise<T>) | Promise<T>, defaultValue: T): [T, any, boolean] {
+  const [state, setState] = useState<{
+    value: T;
+    error: null | any;
+    isPending: boolean;
+  }>({ value: defaultValue, error: null, isPending: true });
 
   useEffect(() => {
     const promise = typeof promiseOrFunction === "function" ? promiseOrFunction() : promiseOrFunction;

@@ -10,28 +10,28 @@ import Error from "./Error";
 
 type ProposalFilter = "all" | "active" | "withdrawn" | "approved" | "rejected" | "slashed";
 
-function filterProposals(filter: ProposalFilter, proposals: ProposalProps[]) {
-  if (filter === "all") {
-    return proposals;
-  } else if (filter === "active") {
-    return proposals.filter((prop: any) => prop.details.stage === "active");
-  }
+// function filterProposals(filter: ProposalFilter, proposals: ParsedProposal[]) {
+//   if (filter === "all") {
+//     return proposals;
+//   } else if (filter === "active") {
+//     return proposals.filter((prop: ParsedProposal) => prop.details.stage === "active");
+//   }
 
-  return proposals.filter((prop: any) => prop.finalized === filter);
-}
+//   return proposals.filter((prop: ParsedProposal) => prop.finalized === filter);
+// }
 
-function mapFromProposals(proposals: any[]) {
-  const proposalsMap = new Map();
+// function mapFromProposals(proposals: ParsedProposal[]) {
+//   const proposalsMap = new Map();
 
-  proposalsMap.set("all", proposals);
-  proposalsMap.set("withdrawn", filterProposals("withdrawn", proposals));
-  proposalsMap.set("active", filterProposals("withdrawn", proposals));
-  proposalsMap.set("approved", filterProposals("approved", proposals));
-  proposalsMap.set("rejected", filterProposals("rejected", proposals));
-  proposalsMap.set("slashed", filterProposals("slashed", proposals));
+//   proposalsMap.set("all", proposals);
+//   proposalsMap.set("withdrawn", filterProposals("withdrawn", proposals));
+//   proposalsMap.set("active", filterProposals("withdrawn", proposals));
+//   proposalsMap.set("approved", filterProposals("approved", proposals));
+//   proposalsMap.set("rejected", filterProposals("rejected", proposals));
+//   proposalsMap.set("slashed", filterProposals("slashed", proposals));
 
-  return proposalsMap;
-}
+//   return proposalsMap;
+// }
 
 export default function ProposalPreviewList() {
   const transport = useTransport();
@@ -49,7 +49,7 @@ export default function ProposalPreviewList() {
 
   return (
     <Container className="Proposal">
-      <Menu tabular className="list-menu">
+      {/* <Menu tabular className="list-menu">
         <Menu.Item
           name={`all - ${proposalsMap.get("withdrawn").length} `}
           active={activeFilter === "all"}
@@ -80,15 +80,19 @@ export default function ProposalPreviewList() {
           active={activeFilter === "slashed"}
           onClick={() => setActiveFilter("slashed")}
         />
-      </Menu>
+      </Menu> */}
 
       <Card.Group>
-        {proposals.get(activeFilter).map((prop: any, idx: number) => (
+        {proposals.map((prop: ParsedProposal, idx: number) => (
           <ProposalPreview
             key={`${prop.title}-${idx}`}
             title={prop.title}
             description={prop.description}
-            details={prop.details}
+            stage={"Active"}
+            createdAt={prop.createdAt}
+            createdBy={prop.proposer}
+            type={prop.type}
+            expiresIn={prop.parameters.votingPeriod - prop.createdAtBlock}
           />
         ))}
       </Card.Group>

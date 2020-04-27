@@ -1,27 +1,31 @@
 import React from "react";
 import { Item, Image, Header } from "semantic-ui-react";
 
-import { Member } from "./ProposalDetails";
+import { ProposalType } from "./ProposalTypePreview";
 
-type DetailsProps = {
-  // FIXME: Stage, substage and type all should be an enum
-  stage: string;
-  substage: string;
-  expiresIn: number;
-  type: string;
-  createdBy: Member;
-  createdAt: string;
+type Proposer = {
+  about: string;
+  handle: string;
+  avatar_uri: string;
 };
 
-export default function Details({ stage, substage, createdAt, createdBy, type, expiresIn }: DetailsProps) {
+export type DetailsProps = {
+  stage: string;
+  expiresIn: number;
+  type: ProposalType;
+  createdBy: Proposer;
+  createdAt: Date;
+};
+
+export default function Details({ stage, createdAt, createdBy, type, expiresIn }: DetailsProps) {
   return (
     <Item.Group className="details-container">
       <Item>
         <Item.Content>
           <Item.Extra>Proposed By:</Item.Extra>
-          <Image src={createdBy?.avatar} avatar floated="left" />
-          <Header as="h4">{createdBy?.name}</Header>
-          <Item.Extra>{createdAt}</Item.Extra>
+          <Image src={createdBy.avatar_uri} avatar floated="left" />
+          <Header as="h4">{createdBy.about}</Header>
+          <Item.Extra>{createdAt.toUTCString()}</Item.Extra>
         </Item.Content>
       </Item>
       <Item>
@@ -34,12 +38,6 @@ export default function Details({ stage, substage, createdAt, createdBy, type, e
         <Item.Content>
           <Item.Extra>Stage:</Item.Extra>
           <Header as="h4">{stage}</Header>
-        </Item.Content>
-      </Item>
-      <Item>
-        <Item.Content>
-          <Item.Extra>Substage:</Item.Extra>
-          <Header as="h4">{substage}</Header>
         </Item.Content>
       </Item>
       <Item>

@@ -11,6 +11,15 @@ export type ParsedProposal = {
   createdAt: Date;
   details: any[];
   votingResults: any;
+  parameters: {
+    approvalQuorumPercentage: number;
+    approvalThresholdPercentage: number;
+    gracePeriod: number;
+    requiredStake: number;
+    slashingQuorumPercentage: number;
+    slashingThresholdPercentage: number;
+    votingPeriod: number;
+  };
 };
 
 export abstract class Transport {

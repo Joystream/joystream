@@ -2,11 +2,15 @@ import React from "react";
 import { Header, Card } from "semantic-ui-react";
 
 import { ProposalProps } from "./ProposalDetails";
-import Details from "./Details";
+import Details, { DetailsProps } from "./Details";
 
 import "./Proposal.css";
 
-export default function ProposalPreview({ title, description, details }: ProposalProps) {
+type ProposalPreviewProps = {
+  title: string;
+  description: string;
+};
+export default function ProposalPreview({ title, description, ...details }: ProposalPreviewProps & DetailsProps) {
   return (
     <Card fluid className="Proposal">
       <Card.Content>
