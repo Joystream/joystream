@@ -1,7 +1,7 @@
 import React from "react"
-import { GenericSection, VideoPreview, Grid } from "components"
-import { ChannelHeader } from "../../components/ChannelHeader"
 import { RouteComponentProps, useParams } from "@reach/router"
+import { GenericSection, VideoPreview, Grid } from "components"
+import ChannelHeader from "./../../components/ChannelHeader"
 
 type ChannelProps = {
   name: string
