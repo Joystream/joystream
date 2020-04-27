@@ -50,7 +50,7 @@ export default function ProposalPreviewList() {
 
   return (
     <Container className="Proposal">
-      <div>{proposals}</div>
+      <div>Ciao</div>
       {/* <Menu tabular className="list-menu">
         <Menu.Item
           name={`all - ${proposalsMap.get("withdrawn").length} `}

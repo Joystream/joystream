@@ -12,7 +12,7 @@ export type IVotingResults = {
   slashes: u32;
 };
 
-export class VotingResults extends JoyStruct<IVotingResults> {
+export class VotingResults extends Struct {
   constructor(value?: any) {
     super(
       {
@@ -26,23 +26,7 @@ export class VotingResults extends JoyStruct<IVotingResults> {
   }
 }
 
-export class ProposalDetails extends Struct {
-  constructor(value?: any) {
-    super(
-      {
-        mintedBalance: "Balance",
-        currencyBalance: "Balance",
-        blockNumber: "BlockNumber",
-        accountId: "AccountId",
-        memberId: MemberId
-      },
-      value
-    );
-  }
-}
-// MintedBalance, CurrencyBalance, BlockNumber, AccountId, MemberId;
-
-export type IProposalParameters = {
+export type ProposalParametersType = {
   // During this period, votes can be accepted
   votingPeriod: BlockNumber;
 
@@ -66,7 +50,7 @@ export type IProposalParameters = {
   requiredStake: Balance;
 };
 
-class ProposalParameters extends JoyStruct<IProposalParameters> {
+class ProposalParameters extends Struct {
   constructor(value?: any) {
     super(
       {
@@ -90,7 +74,7 @@ class ProposalParameters extends JoyStruct<IProposalParameters> {
         slashingThresholdPercentage: "u32",
 
         // Proposal stake
-        requiredStake: "Balance"
+        requiredStake: "Option<Balance>"
       },
       value
     );
@@ -181,12 +165,12 @@ export class ProposalStatus extends Enum {
   }
 }
 
-export const VoteKinds: { [key: string]: string } = {
-  Abstain: "Abstain",
-  Approve: "Approve",
-  Reject: "Reject",
-  Slash: "Slash"
-};
+// export const VoteKinds: { [key: string]: string } = {
+//   Abstain: "Abstain",
+//   Approve: "Approve",
+//   Reject: "Reject",
+//   Slash: "Slash"
+// };
 
 export class VoteKind extends Enum {
   constructor(value?: any) {
@@ -203,16 +187,29 @@ export class ProposalId extends u32 {}
 //   ProposalStatus
 // };
 
-export class Proposal extends JoyStruct<IProposal> {
+export class Proposal extends Struct {
   constructor(value?: any) {
     super(
       {
+        // Proposals parameter, characterize different proposal types.
         parameters: ProposalParameters,
+
+        // Identifier of member proposing.
         proposerId: MemberId,
-        title: "Text",
-        description: "Text",
+
+        // Proposal description
+        title: Text,
+
+        // Proposal body
+        description: Text,
+
+        // When it was created.
         createdAt: "BlockNumber",
+
+        /// Current proposal status
         status: ProposalStatus,
+
+        /// Curring voting result for the proposal
         votingResults: VotingResults
       },
       value
@@ -241,10 +238,9 @@ export function registerProposalTypes() {
     getTypeRegistry().register({
       ProposalId,
       ProposalStatus,
-      ProposalDetails,
+      ProposalOf: Proposal,
       Proposal,
       ProposalParameters,
-      ProposalOf,
       VoteKind
     });
   } catch (err) {
