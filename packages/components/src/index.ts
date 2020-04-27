@@ -5,7 +5,6 @@ export { default as ChannelSummary } from "./components/ChannelSummary";
 export { default as DetailsTable } from "./components/DetailsTable";
 export { default as GenericSection } from "./components/GenericSection";
 export { default as Grid } from "./components/Grid";
-export { default as Label } from "./components/Label";
 export { default as SearchBar } from "./components/SearchBar";
 export { default as Tag } from "./components/Tag";
 export { default as VideoPlayer } from "./components/VideoPlayer";
