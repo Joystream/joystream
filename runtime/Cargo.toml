@@ -59,6 +59,9 @@ std = [
     'roles/std',
     'service_discovery/std',
     'storage/std',
+    'proposals_engine/std',
+    'proposals_discussion/std',
+    'proposals_codex/std',
 ]
 
 # [dependencies]

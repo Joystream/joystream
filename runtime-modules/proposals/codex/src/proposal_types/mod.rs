@@ -8,6 +8,21 @@ use serde::{Deserialize, Serialize};
 use crate::ElectionParameters;
 use roles::actors::RoleParameters;
 
+/// Encodes proposal using its details information.
+pub trait ProposalEncoder<T: crate::Trait> {
+    /// Encodes proposal using its details information.
+    fn encode_proposal(proposal_details: ProposalDetailsOf<T>) -> Vec<u8>;
+}
+
+/// _ProposalDetails_ alias for type simplification
+pub type ProposalDetailsOf<T> = ProposalDetails<
+    crate::BalanceOfMint<T>,
+    crate::BalanceOfGovernanceCurrency<T>,
+    <T as system::Trait>::BlockNumber,
+    <T as system::Trait>::AccountId,
+    crate::MemberId<T>,
+>;
+
 /// Proposal details provide voters the information required for the perceived voting.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug)]
@@ -15,7 +30,7 @@ pub enum ProposalDetails<MintedBalance, CurrencyBalance, BlockNumber, AccountId,
     /// The text of the `text` proposal
     Text(Vec<u8>),
 
-    /// The hash of wasm code for the `runtime upgrade` proposal
+    /// The wasm code for the `runtime upgrade` proposal
     RuntimeUpgrade(Vec<u8>),
 
     /// Election parameters for the `set election parameters` proposal
