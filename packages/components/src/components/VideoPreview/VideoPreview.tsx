@@ -38,7 +38,7 @@ export default function VideoPreview({
         <div css={styles.textContainer}>
           <h3 css={styles.title} onClick={event => { event.stopPropagation(); onClick() }}>{title}</h3>
           {showChannel && (
-            <h3 onClick={event => { event.stopPropagation(); onChannelClick() }}>{channel}</h3>
+            <h3 css={styles.channel} onClick={event => { event.stopPropagation(); onChannelClick() }}>{channel}</h3>
           )}
         </div>
       </div>
