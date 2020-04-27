@@ -1,3 +1,1 @@
-import Video from "./Video";
-
-export default Video;
+export { default } from "./VideoPlayer"
