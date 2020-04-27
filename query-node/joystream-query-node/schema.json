@@ -1,0 +1,12 @@
+[
+	{
+		"name": "MemberRegistered",
+		"fields": [
+			{ "name": "memberId", "type": "int!" },
+			{
+				"name": "accountId",
+				"type": "string!"
+			}
+		]
+	}
+]
