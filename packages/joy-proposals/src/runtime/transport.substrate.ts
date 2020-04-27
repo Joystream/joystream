@@ -1,4 +1,4 @@
-import { Transport } from "./transport";
+import { Transport, ParsedProposal } from "./transport";
 import { Proposal, ProposalId } from "@joystream/types/proposals";
 import { MemberId } from "@joystream/types/members";
 import { ApiProps } from "@polkadot/react-api/types";
@@ -6,6 +6,7 @@ import { u32, bool } from "@polkadot/types/";
 import { ApiPromise } from "@polkadot/api";
 
 import { includeKeys, dateFromBlock } from "../utils";
+import { ProposalType } from "../Proposal/ProposalTypePreview";
 
 export class SubstrateTransport extends Transport {
   protected api: ApiPromise;
@@ -34,7 +35,7 @@ export class SubstrateTransport extends Transport {
     return this.proposalsEngine.proposalCount<u32>();
   }
 
-  async proposalById(id: ProposalId) {
+  async rawProposalById(id: ProposalId) {
     return this.proposalsEngine.proposals<Proposal>(id);
   }
 
@@ -42,16 +43,29 @@ export class SubstrateTransport extends Transport {
     return this.proposalsCodex.proposalDetailsByProposalId(id);
   }
 
-  private async cleanProposalById(id: ProposalId) {
+  async proposalById(id: ProposalId): Promise<ParsedProposal> {
     const rawDetails = (await this.proposalDetailsById(id)).toJSON() as { [k: string]: any };
-    const type = Object.keys(rawDetails)[0];
+    const type = Object.keys(rawDetails)[0] as ProposalType;
     const details = rawDetails[type];
-    const rawProposal = await this.proposalById(id);
+    const rawProposal = await this.rawProposalById(id);
     const proposer = (await this.api.query.members.memberProfile(rawProposal.proposerId)).toJSON();
-    const proposal = rawProposal.toJSON() as { [k: string]: any };
+    const proposal = rawProposal.toJSON() as {
+      title: string;
+      description: string;
+      votingResults: any;
+      proposerId: number;
+      status: any;
+    };
     const createdAtBlock = rawProposal.createdAt;
 
-    return { ...proposal, details, type, proposer, createdAtBlock, createdAt: dateFromBlock(createdAtBlock) };
+    return {
+      ...proposal,
+      details,
+      type,
+      proposer,
+      createdAtBlock: createdAtBlock.toJSON(),
+      createdAt: dateFromBlock(createdAtBlock)
+    };
   }
 
   async proposalsIds() {
@@ -61,7 +75,7 @@ export class SubstrateTransport extends Transport {
 
   async proposals() {
     const ids = await this.proposalsIds();
-    return Promise.all(ids.map(id => this.cleanProposalById(id)));
+    return Promise.all(ids.map(id => this.proposalById(id)));
   }
 
   async hasVotedOnProposal(proposalId: ProposalId, voterId: MemberId) {

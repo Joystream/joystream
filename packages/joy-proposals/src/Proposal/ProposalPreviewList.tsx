@@ -3,8 +3,8 @@ import { Card, Menu, Container, Loader } from "semantic-ui-react";
 
 import { ProposalProps } from "./ProposalDetails";
 import ProposalPreview from "./ProposalPreview";
-import { useTransport } from "../runtime";
-import { usePromise, objFromMap } from "../utils";
+import { useTransport, ParsedProposal } from "../runtime";
+import { usePromise } from "../utils";
 import Loading from "./Loading";
 import Error from "./Error";
 
@@ -36,7 +36,7 @@ function mapFromProposals(proposals: any[]) {
 export default function ProposalPreviewList() {
   const transport = useTransport();
 
-  const [proposals, error, loading] = usePromise<any>(transport.proposals(), new Map());
+  const [proposals, error, loading] = usePromise<ParsedProposal[]>(transport.proposals(), []);
 
   const [activeFilter, setActiveFilter] = useState<ProposalFilter>("all");
 
@@ -49,8 +49,7 @@ export default function ProposalPreviewList() {
 
   return (
     <Container className="Proposal">
-      <div>Ciao</div>
-      {/* <Menu tabular className="list-menu">
+      <Menu tabular className="list-menu">
         <Menu.Item
           name={`all - ${proposalsMap.get("withdrawn").length} `}
           active={activeFilter === "all"}
@@ -92,7 +91,7 @@ export default function ProposalPreviewList() {
             details={prop.details}
           />
         ))}
-      </Card.Group> */}
+      </Card.Group>
     </Container>
   );
 }

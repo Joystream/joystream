@@ -7,15 +7,15 @@ import Details from "./Details";
 import "./Proposal.css";
 
 export default function ProposalPreview({ title, description, details }: ProposalProps) {
-    return (
-        <Card fluid className="Proposal">
-            <Card.Content>
-                <Card.Header>
-                    <Header as="h1">{title}</Header>
-                </Card.Header>
-                <Card.Description>{description}</Card.Description>
-                <Details {...details} />
-            </Card.Content>
-        </Card>
-    );
+  return (
+    <Card fluid className="Proposal">
+      <Card.Content>
+        <Card.Header>
+          <Header as="h1">{title}</Header>
+        </Card.Header>
+        <Card.Description>{description}</Card.Description>
+        <Details {...details} />
+      </Card.Content>
+    </Card>
+  );
 }
