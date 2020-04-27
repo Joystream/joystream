@@ -1,9 +1,11 @@
-import { Text, u32, Enum, getTypeRegistry, GenericAccountId, u8, Vec, Option, Struct } from "@polkadot/types";
+import { Text, u32, Enum, getTypeRegistry, Tuple, GenericAccountId, u8, Vec, Option, Struct } from "@polkadot/types";
 import { BlockNumber, Balance } from "@polkadot/types/interfaces";
 import { MemberId } from "./members";
 import { StakeId } from "./stake";
 import AccountId from "@polkadot/types/primitive/Generic/AccountId";
 import { JoyStruct } from "./JoyStruct";
+
+import { RoleParameters } from "./roles";
 
 export type IVotingResults = {
   abstensions: u32;
@@ -187,6 +189,58 @@ export class ProposalId extends u32 {}
 //   ProposalStatus
 // };
 
+export class ElectionParameters extends Struct {
+  constructor(value?: any) {
+    super(
+      {
+        announcingPeriod: "BlockNumber",
+        votingPeriod: "BlockNumber",
+        revealingPeriod: "BlockNumber",
+        councilSize: "u32",
+        candidacyLimit: "u32",
+        newTermDuration: "BlockNumber",
+        minCouncilStake: "Balance",
+        minVotingStake: "Balance"
+      },
+      value
+    );
+  }
+}
+
+export class SpendingParams extends Tuple {
+  constructor(value?: any) {
+    super(["Balance", "AccountId"], value);
+  }
+}
+
+class SetLeadParams extends Tuple {
+  constructor(value?: any) {
+    super([MemberId, AccountId], value);
+  }
+}
+
+export class SetLead extends Option.with(SetLeadParams) {}
+
+export class ProposalDetails extends Enum {
+  constructor(value?: any, index?: number) {
+    super(
+      {
+        Text: "Text",
+        RuntimeUpgrade: "Vec<u8>",
+        SetElectionParameters: ElectionParameters,
+        Spending: SpendingParams,
+        SetLead: SetLead,
+        SetContentWorkingGroupMintCapacity: "Balance",
+        EvictStorageProvider: "AccountId",
+        SetValidatorCount: "u32",
+        SetStorageRoleParameters: RoleParameters
+      },
+      value,
+      index
+    );
+  }
+}
+
 export class Proposal extends Struct {
   constructor(value?: any) {
     super(
@@ -239,6 +293,7 @@ export function registerProposalTypes() {
       ProposalId,
       ProposalStatus,
       ProposalOf: Proposal,
+      ProposalDetails,
       Proposal,
       ProposalParameters,
       VoteKind
