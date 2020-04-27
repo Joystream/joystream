@@ -126,33 +126,32 @@ pub(crate) fn set_storage_role_parameters_proposal<T: crate::Trait>(
     }
 }
 
-//TODO: uncomment
-// #[cfg(test)]
-// mod test {
-//     use crate::proposal_types::parameters::get_required_stake_by_fraction;
-//     use crate::tests::{increase_total_balance_issuance, initial_test_ext, Test};
-//
-//     pub use sr_primitives::Perbill;
-//
-//     #[test]
-//     fn calculate_get_required_stake_by_fraction_with_zero_issuance() {
-//         initial_test_ext()
-//             .execute_with(|| assert_eq!(get_required_stake_by_fraction::<Test>(5, 7), 0));
-//     }
-//
-//     #[test]
-//     fn calculate_stake_by_percentage_for_defined_issuance_succeeds() {
-//         initial_test_ext().execute_with(|| {
-//             increase_total_balance_issuance(50000);
-//             assert_eq!(get_required_stake_by_fraction::<Test>(1, 1000), 50)
-//         });
-//     }
-//
-//     #[test]
-//     fn calculate_stake_by_percentage_for_defined_issuance_with_fraction_loss() {
-//         initial_test_ext().execute_with(|| {
-//             increase_total_balance_issuance(1111);
-//             assert_eq!(get_required_stake_by_fraction::<Test>(3, 1000), 3);
-//         });
-//     }
-// }
+#[cfg(test)]
+mod test {
+    use crate::proposal_types::parameters::get_required_stake_by_fraction;
+    use crate::tests::{increase_total_balance_issuance, initial_test_ext, Test};
+
+    pub use sr_primitives::Perbill;
+
+    #[test]
+    fn calculate_get_required_stake_by_fraction_with_zero_issuance() {
+        initial_test_ext()
+            .execute_with(|| assert_eq!(get_required_stake_by_fraction::<Test>(5, 7), 0));
+    }
+
+    #[test]
+    fn calculate_stake_by_percentage_for_defined_issuance_succeeds() {
+        initial_test_ext().execute_with(|| {
+            increase_total_balance_issuance(50000);
+            assert_eq!(get_required_stake_by_fraction::<Test>(1, 1000), 50)
+        });
+    }
+
+    #[test]
+    fn calculate_stake_by_percentage_for_defined_issuance_with_fraction_loss() {
+        initial_test_ext().execute_with(|| {
+            increase_total_balance_issuance(1111);
+            assert_eq!(get_required_stake_by_fraction::<Test>(3, 1000), 3);
+        });
+    }
+}
