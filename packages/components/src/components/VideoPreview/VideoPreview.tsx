@@ -4,49 +4,41 @@ import { makeStyles, VideoPreviewStyleProps } from "./VideoPreview.styles"
 import Avatar from "./../Avatar"
 
 type VideoPreviewProps = {
-  url: string
   title: string
   channel?: string
-  channelUrl?: string
   channelImg?: string
   showChannel?: boolean
   poster?: string
+  onClick?: any
+  onChannelClick?: any
 } & VideoPreviewStyleProps
 
 export default function VideoPreview({
-  url,
   title,
   channel,
-  channelUrl,
   channelImg,
   showChannel = false,
   poster,
+  onClick,
+  onChannelClick,
   ...styleProps
 }: VideoPreviewProps) {
   let styles = makeStyles({ showChannel, ...styleProps })
   return (
-    <div css={styles.container}>
+    <div css={styles.container} onClick={onClick}>
       <div css={styles.coverContainer}>
-        <a css={styles.link} href={url}>
-          <img css={styles.cover} src={poster} />
-        </a>
+        <img css={styles.cover} src={poster} onClick={event => { event.stopPropagation(); onClick() }} />
       </div>
       <div css={styles.infoContainer}>
         {showChannel && (
-          <a css={styles.link} href={url}>
-            <div css={styles.avatar}>
-              <Avatar size="small" img={channelImg} />
-            </div>
-          </a>
+          <div css={styles.avatar} onClick={event => { event.stopPropagation(); onChannelClick() }}>
+            <Avatar size="small" img={channelImg} />
+          </div>
         )}
         <div css={styles.textContainer}>
-          <a css={styles.link} href={url}>
-            <h3 css={styles.title}>{title}</h3>
-          </a>
+          <h3 css={styles.title} onClick={event => { event.stopPropagation(); onClick() }}>{title}</h3>
           {showChannel && (
-            <a css={styles.channel} href={channelUrl}>
-              <h3>{channel}</h3>
-            </a>
+            <h3 onClick={event => { event.stopPropagation(); onChannelClick() }}>{channel}</h3>
           )}
         </div>
       </div>
