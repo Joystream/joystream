@@ -1,0 +1,9 @@
+{
+  "name": "indexer",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "substrate-query-node": "file:../../../substrate-query-node"
+  }
+}

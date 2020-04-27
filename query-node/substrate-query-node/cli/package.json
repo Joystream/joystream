@@ -9,7 +9,7 @@
   "bugs": "https://github.com/joystream/joystream/joystream-query-node/cli/issues",
   "dependencies": {
     "@joystream/types": "^0.7.0",
-    "@oclif/command": "^1",
+    "@oclif/command": "^1.5.20",
     "@oclif/config": "^1",
     "@oclif/plugin-help": "^2",
     "@polkadot/api": "^0.96.1",
