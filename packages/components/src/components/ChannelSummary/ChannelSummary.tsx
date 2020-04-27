@@ -25,7 +25,7 @@ export default function ChannelSummary({
   onClick,
   ...styleProps
 }: ChannelSummaryProps) {
-  let styles = makeStyles(styleProps)
+  let styles = makeStyles({ size, ...styleProps })
   return (
     <div css={styles.container}>
       <div css={styles.avatar} onClick={event => { event.stopPropagation(); onClick() }}>
