@@ -55,7 +55,8 @@ pub struct ActorInGroupId<T: ActorAuthenticator> {
 }
 
 /// Limit for how many entities of a given class may be created.
-enum EntityCreationLimit {
+#[derive(Encode, Decode, Clone, Debug, PartialEq)]
+pub enum EntityCreationLimit {
     /// Look at per class global variable `ClassPermission::per_controller_entity_creation_limit`.
     ClassLimit,
 

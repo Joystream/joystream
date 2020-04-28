@@ -634,6 +634,36 @@ decl_module! {
             Ok(())
         }
 
+        pub fn add_entity_creator(
+            origin,
+            class_id: ClassId,
+            group_id: T::GroupId,
+            limit: EntityCreationLimit
+        ) -> dispatch::Result {
+            ensure_root(origin)?;
+            Self::ensure_known_class_id(class_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            if !<CanCreateEntitiesOfClass<T>>::exists(class_id, group_id) {
+                <CanCreateEntitiesOfClass<T>>::insert(class_id, group_id, ());
+                let entity_controller = EntityController::<T>::Group(group_id);
+                if let EntityCreationLimit::Individual(limit) = limit {
+                    <EntityCreationVouchers<T>>::insert(class_id, entity_controller.clone(), 
+                        EntityCreationVoucher::new(limit)
+                    );
+                } else {
+                    let class = Self::class_by_id(class_id);
+                    <EntityCreationVouchers<T>>::insert(class_id, entity_controller, 
+                        EntityCreationVoucher::new(class.get_permissions().per_controller_entity_creation_limit)
+                    );
+                }
+            }
+            Ok(())
+        }
+
         /// Sets the admins for a class
         fn set_class_admins(
             origin,
