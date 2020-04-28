@@ -11,6 +11,6 @@ The only way I was able to fix this issue was to add 'flat' to Typescript global
  */
 
 interface Array<T> {
-  flat(): Array<T>;
-  flatMap(func: (x: T) => T): Array<T>;
+  flat(): Array<T>
+  flatMap(func: (x: T) => T): Array<T>
 }
