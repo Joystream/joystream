@@ -68,28 +68,22 @@ pub enum EntityCreationLimit {
 #[derive(Encode, Decode, Default)]
 pub struct EntityCreationVoucher {
     /// How many are allowed in total
-    pub maximum_entity_count: u64,
+    pub maximum_entities_count: u64,
 
     /// How many have currently been created
-    pub current_entity_count: u64,
+    pub entities_created: u64,
 }
 
 impl EntityCreationVoucher {
-    pub fn new(maximum_entity_count: u64) -> Self {
+    pub fn new(maximum_entities_count: u64) -> Self {
         Self {
-            maximum_entity_count,
-            current_entity_count: 1,
+            maximum_entities_count,
+            entities_created: 1,
         }
     }
 
-    pub fn try_decrement_current_entity_count(&mut self) {
-        if self.current_entity_count > 0 {
-            self.current_entity_count -= 1;
-        }
-    }
-
-    pub fn increment_current_entity_count(&mut self) {
-        self.current_entity_count += 1;
+    pub fn increment_created_entities_count(&mut self) {
+        self.entities_created += 1;
     }
 }
 

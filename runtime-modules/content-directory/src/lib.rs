@@ -613,22 +613,15 @@ decl_module! {
         ) -> dispatch::Result {
             ensure_root(origin)?;
             Self::ensure_known_entity_id(entity_id)?;
-            let (entity, class) = Self::get_entity_and_class(entity_id);
+            let entity = Self::entity_by_id(entity_id);
 
             //
             // == MUTATION SAFE ==
             //
 
-            <EntityCreationVouchers<T>>::mutate(entity.class_id, entity.get_entity_permissions().get_controller(), |entity_creation_voucher| entity_creation_voucher.try_decrement_current_entity_count());
-            if <EntityCreationVouchers<T>>::exists(entity.class_id, &new_controller) {
-                <EntityCreationVouchers<T>>::mutate(entity.class_id, &new_controller, |entity_creation_voucher| 
-                    entity_creation_voucher.increment_current_entity_count()
-                );
-            } else {
-                <EntityCreationVouchers<T>>::insert(entity.class_id, new_controller.clone(), 
-                    EntityCreationVoucher::new(class.get_permissions().per_controller_entity_creation_limit)
-                );
-            }
+            <EntityCreationVouchers<T>>::mutate(entity.class_id, entity.get_entity_permissions().get_controller(), |entity_creation_voucher| 
+                entity_creation_voucher.increment_created_entities_count()
+            );
             <EntityById<T>>::mutate(entity_id, |inner_entity| inner_entity.get_entity_permissions_mut().set_conroller(new_controller));
 
             Ok(())
@@ -662,6 +655,22 @@ decl_module! {
                 }
             }
             Ok(())
+        }
+
+        pub fn remove_entity_creator(
+            origin,
+            class_id: ClassId,
+            group_id: T::GroupId,
+        ) {
+            ensure_root(origin)?;
+            Self::ensure_known_class_id(class_id)?;
+            Self::ensure_entity_creator_exists(class_id, group_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <CanCreateEntitiesOfClass<T>>::remove(class_id, group_id);
         }
 
         /// Sets the admins for a class
@@ -1870,6 +1879,11 @@ impl<T: Trait> Module<T> {
             schema_id < class.schemas.len() as SchemaId,
             ERROR_UNKNOWN_CLASS_SCHEMA_ID
         );
+        Ok(())
+    }
+
+    pub fn ensure_entity_creator_exists(class_id: ClassId, group_id: T::GroupId) -> dispatch::Result {
+        ensure!(<CanCreateEntitiesOfClass<T>>::exists(class_id, group_id), ERROR_ENTITY_CREATOR_DOES_NOT_EXIST);
         Ok(())
     }
 

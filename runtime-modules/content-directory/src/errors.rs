@@ -52,3 +52,5 @@ pub const ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS: &str =
     "Internal property does not match its class";
 pub const ERROR_ENTITY_REFERENCE_COUNTER_DOES_NOT_EQUAL_TO_ZERO: &str =
     "Entity removal can`t be completed, as there are some property values pointing to given entity";
+pub const ERROR_ENTITY_CREATOR_DOES_NOT_EXIST: &str =
+    "Given entity creator does not exist";
