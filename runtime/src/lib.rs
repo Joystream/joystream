@@ -871,11 +871,11 @@ impl proposals_codex::Trait for Runtime {
 }
 
 construct_runtime!(
-	pub enum Runtime where
-		Block = Block,
-		NodeBlock = opaque::Block,
-		UncheckedExtrinsic = UncheckedExtrinsic
-	{
+    pub enum Runtime where
+        Block = Block,
+        NodeBlock = opaque::Block,
+        UncheckedExtrinsic = UncheckedExtrinsic
+    {
         // Substrate
         System: system::{Module, Call, Storage, Config, Event},
         Babe: babe::{Module, Call, Storage, Config, Inherent(Timestamp)},
@@ -917,7 +917,7 @@ construct_runtime!(
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Module, Call, Storage, Error, Config<T>},
         // ---
-	}
+    }
 );
 
 /// The address format for describing accounts.
