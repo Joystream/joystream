@@ -60,6 +60,7 @@ pub use staking::StakerStatus;
 pub use timestamp::Call as TimestampCall;
 
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
+pub use proposals_codex::ProposalsConfigParameters;
 
 /// An index to a block.
 pub type BlockNumber = u32;

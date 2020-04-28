@@ -73,6 +73,7 @@ use srml_support::traits::{Currency, Get};
 use srml_support::{decl_error, decl_module, decl_storage, ensure, print};
 use system::{ensure_root, RawOrigin};
 
+pub use crate::proposal_types::ProposalsConfigParameters;
 pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 
 // Percentage of the total token issue as max mint balance value. Shared with spending
@@ -943,6 +944,63 @@ impl<T: Trait> Module<T> {
         );
 
         Ok(())
+    }
+
+    /// Sets default config values for the proposals.
+    /// Should be called on the migration to the new runtime version.
+    pub fn set_default_config_values() {
+        let p = ProposalsConfigParameters::default();
+
+        <SetValidatorCountProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.set_validator_count_proposal_voting_period,
+        ));
+        <SetValidatorCountProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.set_validator_count_proposal_grace_period,
+        ));
+        <RuntimeUpgradeProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.runtime_upgrade_proposal_voting_period,
+        ));
+        <RuntimeUpgradeProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.runtime_upgrade_proposal_grace_period,
+        ));
+        <TextProposalVotingPeriod<T>>::put(T::BlockNumber::from(p.text_proposal_voting_period));
+        <TextProposalGracePeriod<T>>::put(T::BlockNumber::from(p.text_proposal_grace_period));
+        <SetElectionParametersProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.set_election_parameters_proposal_voting_period,
+        ));
+        <SetElectionParametersProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.set_election_parameters_proposal_grace_period,
+        ));
+        <SetContentWorkingGroupMintCapacityProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.set_content_working_group_mint_capacity_proposal_voting_period,
+        ));
+        <SetContentWorkingGroupMintCapacityProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.set_content_working_group_mint_capacity_proposal_grace_period,
+        ));
+        <SetLeadProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.set_lead_proposal_voting_period,
+        ));
+        <SetLeadProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.set_lead_proposal_grace_period,
+        ));
+        <SpendingProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.spending_proposal_voting_period,
+        ));
+        <SpendingProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.spending_proposal_grace_period,
+        ));
+        <EvictStorageProviderProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.evict_storage_provider_proposal_voting_period,
+        ));
+        <EvictStorageProviderProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.evict_storage_provider_proposal_grace_period,
+        ));
+        <SetStorageRoleParametersProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.set_storage_role_parameters_proposal_voting_period,
+        ));
+        <SetStorageRoleParametersProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.set_storage_role_parameters_proposal_grace_period,
+        ));
     }
 }
 

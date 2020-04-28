@@ -22,6 +22,8 @@ impl<T: Trait> Module<T> {
             minting::BalanceOf::<T>::zero(),
         );
 
+        proposals_codex::Module::<T>::set_default_config_values();
+
         Self::deposit_event(RawEvent::Migrated(
             <system::Module<T>>::block_number(),
             VERSION.spec_version,
@@ -36,6 +38,7 @@ pub trait Trait:
     + forum::Trait
     + sudo::Trait
     + governance::council::Trait
+    + proposals_codex::Trait
 {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
