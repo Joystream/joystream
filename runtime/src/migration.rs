@@ -23,47 +23,43 @@ impl<T: Trait> Module<T> {
         // Runtime Upgrade Code for going from Rome to Constantinople
 
         // Create the Council mint. If it fails, we can't do anything about it here.
-        governance::council::Module::<T>::create_new_council_mint(minting::BalanceOf::<T>::zero())
-            .err()
-            .map(|err| {
-                debug::warn!(
-                    "Failed to create a mint for council during migration: {:?}",
-                    err
-                );
-            });
+        if let Err(err) = governance::council::Module::<T>::create_new_council_mint(
+            minting::BalanceOf::<T>::zero(),
+        ) {
+            debug::warn!(
+                "Failed to create a mint for council during migration: {:?}",
+                err
+            );
+        }
 
         // Reset working group mint capacity
-        content_working_group::Module::<T>::set_mint_capacity(
+        if let Err(err) = content_working_group::Module::<T>::set_mint_capacity(
             system::RawOrigin::Root.into(),
             minting::BalanceOf::<T>::zero(),
-        )
-        .err()
-        .map(|err| {
+        ) {
             debug::warn!(
                 "Failed to reset mint for working group during migration: {:?}",
                 err
             );
-        });
+        }
 
         // Set Storage Role reward to zero
         if let Some(parameters) =
             roles::actors::Parameters::<T>::get(roles::actors::Role::StorageProvider)
         {
-            roles::actors::Module::<T>::set_role_parameters(
+            if let Err(err) = roles::actors::Module::<T>::set_role_parameters(
                 system::RawOrigin::Root.into(),
                 roles::actors::Role::StorageProvider,
                 roles::actors::RoleParameters {
                     reward: BalanceOf::<T>::zero(),
                     ..parameters
                 },
-            )
-            .err()
-            .map(|err| {
+            ) {
                 debug::warn!(
                     "Failed to set zero reward for storage role during migration: {:?}",
                     err
                 );
-            });
+            }
         }
 
         proposals_codex::Module::<T>::set_default_config_values();
