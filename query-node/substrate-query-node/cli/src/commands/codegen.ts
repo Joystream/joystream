@@ -1,10 +1,9 @@
 import * as path from 'path';
-import { readFileSync, existsSync } from 'fs-extra';
+import { readFileSync, copyFileSync } from 'fs-extra';
 import { Command } from '@oclif/command';
-const warthogCli = require('warthog/dist/cli/cli');
-const { exec } = require('child_process');
+import { execSync } from 'child_process';
 
-import { createDir, getTemplatePath, createFile, copyFiles } from '../utils/utils';
+import { createDir, getTemplatePath, createFile, getTypeormModelGeneratorConnectionConfig } from '../utils/utils';
 import { formatWithPrettier } from '../helpers/formatter';
 import WarthogWrapper from '../helpers/WarthogWrapper';
 
@@ -56,9 +55,20 @@ export default class Codegen extends Command {
     createFile(path.resolve('index.ts'), indexFileContent);
 
     // Create package.json
-    copyFiles(getTemplatePath('indexer.package.json'), path.resolve(process.cwd(), 'package.json'));
+    copyFileSync(getTemplatePath('indexer.package.json'), path.resolve(process.cwd(), 'package.json'));
     // Create package.json
-    copyFiles(getTemplatePath('ormconfig.json'), path.resolve(process.cwd(), 'ormconfig.json'));
+    copyFileSync(getTemplatePath('ormconfig.json'), path.resolve(process.cwd(), 'ormconfig.json'));
+
+    // Create package.json
+    copyFileSync(getTemplatePath('indexer.tsconfig.json'), path.resolve(process.cwd(), 'tsconfig.json'));
+
+    this.log('Installing dependendies for indexer...');
+    execSync('yarn install');
+    this.log('done...');
+
+    this.log('Generating typeorm db entities...');
+    execSync(getTypeormModelGeneratorConnectionConfig());
+    this.log('done...');
 
     process.chdir(goBackDir);
   }

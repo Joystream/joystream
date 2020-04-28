@@ -7,6 +7,7 @@
     "start": "ts-node index.ts"
   },
   "dependencies": {
+    "typeorm-model-generator": "^0.4.2",
     "substrate-query-node": "file:../../../substrate-query-node"
   }
 }
