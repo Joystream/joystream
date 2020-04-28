@@ -5,6 +5,11 @@ import { createConnection } from 'typeorm';
 const handlers = require('../../mappings');
 import { QueryNodeManager } from 'substrate-query-node/lib/query-node';
 
+// Each mapping will receive a parameter which is type of QueryEvent
+// so we are going to export this class
+export { QueryEvent } from "substrate-query-node/lib/index-builder";
+
+
 function getProcessingPack() {
   let processingPack: { [key: string]: any } = {};
 
