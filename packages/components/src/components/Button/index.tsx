@@ -1,3 +1,3 @@
-import Button from "./Button";
-
-export default Button;
+import { memo } from "react"
+import Button from "./Button"
+export default memo(Button)
