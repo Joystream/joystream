@@ -303,12 +303,6 @@ export class ProposalOf extends Struct {
   }
 }
 
-export type Seat = {
-  member: AccountId;
-  stake: Balance;
-  backers: Backer[];
-};
-
 export class Baker extends Struct {
   constructor(value?: any) {
     super(

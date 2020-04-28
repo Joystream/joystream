@@ -17,6 +17,7 @@ export default function ProposalFromId(props: RouteComponentProps<any>) {
   const transport = useTransport();
 
   const [proposal, loading, error] = usePromise<any>(transport.proposalById(id), {});
+  const [votes, loadVotes, errorVote] = usePromise<any>(transport.votes(id), []);
 
   if (loading && !error) {
     return <Loading text="Fetching Proposal..." />;
@@ -25,6 +26,9 @@ export default function ProposalFromId(props: RouteComponentProps<any>) {
   }
   console.log(`With ${id} we fetched proposal...`);
   console.log(proposal);
+
+  console.log("With votes...");
+  console.log(votes);
 
   return <NotDone {...props} />;
 }
