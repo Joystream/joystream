@@ -3,7 +3,6 @@ import { Route, Switch } from "react-router";
 
 import { AppProps, I18nProps } from "@polkadot/react-components/types";
 import Tabs, { TabItem } from "@polkadot/react-components/Tabs";
-import { ApiProps } from "@polkadot/react-api/types";
 import { SubstrateProvider } from "./runtime";
 import { ProposalPreviewList, ProposalFromId, ChooseProposalType } from "./Proposal";
 
@@ -11,13 +10,24 @@ import "./index.css";
 
 import translate from "./translate";
 import NotDone from "./NotDone";
+import {
+  SignalForm,
+  EvictStorageProviderForm,
+  SpendingProposalForm,
+  SetContentWorkingGroupLeadForm,
+  SetContentWorkingGroupMintCapForm,
+  SetCouncilMintCapForm,
+  SetCouncilParamsForm,
+  SetStorageRoleParamsForm,
+  SetMaxValidatorCountForm,
+  RuntimeUpgradeForm
+} from "./forms";
 
 interface Props extends AppProps, I18nProps {}
 
 function App(props: Props): React.ReactElement<Props> {
   const { t, basePath } = props;
 
-  // TODO: Can use semantic here?
   const tabs: TabItem[] = [
     {
       isRoot: true,
@@ -38,6 +48,16 @@ function App(props: Props): React.ReactElement<Props> {
         </header>
         <Switch>
           <Route path={`${basePath}/new`} component={ChooseProposalType} />
+          <Route path={`${basePath}/new/signal`} component={SignalForm} />
+          <Route path={`${basePath}/new/evict-storage-provider`} component={EvictStorageProviderForm} />
+          <Route path={`${basePath}/new/spending`} component={SpendingProposalForm} />
+          <Route path={`${basePath}/new/set-cwg-lead`} component={SetContentWorkingGroupLeadForm} />
+          <Route path={`${basePath}/new/set-cwg-mint-cap`} component={SetContentWorkingGroupMintCapForm} />
+          <Route path={`${basePath}/new/set-council-mint-cap`} component={SetCouncilMintCapForm} />
+          <Route path={`${basePath}/new/set-election-params`} component={SetCouncilParamsForm} />
+          <Route path={`${basePath}/new/set-storage-role-params`} component={SetStorageRoleParamsForm} />
+          <Route path={`${basePath}/new/set-max-validator-count`} component={SetMaxValidatorCountForm} />
+          <Route path={`${basePath}/new/runtime-upgrade`} component={RuntimeUpgradeForm} />
           <Route path={`${basePath}/active`} component={NotDone} />
           <Route path={`${basePath}/finalized`} component={NotDone} />
           <Route path={`${basePath}/:id`} component={ProposalFromId} />

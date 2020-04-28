@@ -1,13 +1,15 @@
 import React from "react";
-import { FormikProps, WithFormikConfig } from "formik";
 import * as Yup from "yup";
 import { getFormErrorLabelsProps } from "./errorHandling";
 import {
   GenericProposalForm,
   GenericFormValues,
   genericFormDefaultOptions,
-  DefaultOuterFormProps,
-  genericFormDefaultValues
+  genericFormDefaultValues,
+  withProposalFormData,
+  ProposalFormExportProps,
+  ProposalFormContainerProps,
+  ProposalFormInnerProps
 } from './GenericProposalForm';
 import { InputFormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
@@ -24,17 +26,31 @@ const defaultValues: FormValues = {
 
 type MintCapacityGroup = 'Council' | 'Content Working Group';
 
+// Aditional props coming all the way from export comonent into the inner form.
 type FormAdditionalProps = {
-  mintCapacityGroup: MintCapacityGroup
+  mintCapacityGroup: MintCapacityGroup,
+  txMethod: string
 };
+type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
+type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
+type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-type MintCapacityProps = FormikProps<FormValues> & FormAdditionalProps;
-
-const MintCapacityForm: React.FunctionComponent<MintCapacityProps> = props => {
-  const { handleChange, errors, touched, mintCapacityGroup, values } = props;
+const MintCapacityForm: React.FunctionComponent<FormInnerProps> = props => {
+  const { handleChange, errors, touched, mintCapacityGroup, values, txMethod } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
-    <GenericProposalForm {...props}>
+    <GenericProposalForm
+      {...props}
+      txMethod={txMethod}
+      requiredStakePercent={0.25}
+      submitParams={[
+        props.myMemberId,
+        values.title,
+        values.rationale,
+        '{STAKE}',
+        values.capacity
+      ]}
+    >
       <InputFormField
         error={errorLabelsProps.capacity}
         onChange={handleChange}
@@ -49,21 +65,17 @@ const MintCapacityForm: React.FunctionComponent<MintCapacityProps> = props => {
   );
 }
 
-type OuterFormProps = DefaultOuterFormProps<FormAdditionalProps, FormValues>;
-type OutermostFormProps = OuterFormProps & { handleSubmit: WithFormikConfig<OuterFormProps, FormValues>["handleSubmit"] };
-export default (props:OutermostFormProps) => {
-  const FormContainer = withFormContainer<OuterFormProps, FormValues>({
-    mapPropsToValues: (props:OuterFormProps) => ({
-      ...defaultValues,
-      ...(props.initialData || {})
-    }),
-    validationSchema: Yup.object().shape({
-      ...genericFormDefaultOptions.validationSchema,
-      capacity: Yup.number().required("You need to specify the mint capacity.")
-    }),
-    handleSubmit: props.handleSubmit,
-    displayName: `${ props.mintCapacityGroup }MintCapacityForm`
-  })(MintCapacityForm);
+const FormContainer = withFormContainer<FormContainerProps, FormValues>({
+  mapPropsToValues: (props:FormContainerProps) => ({
+    ...defaultValues,
+    ...(props.initialData || {})
+  }),
+  validationSchema: Yup.object().shape({
+    ...genericFormDefaultOptions.validationSchema,
+    capacity: Yup.number().required("You need to specify the mint capacity.")
+  }),
+  handleSubmit: genericFormDefaultOptions.handleSubmit,
+  displayName: `MintCapacityForm`
+})(MintCapacityForm);
 
-  return <FormContainer mintCapacityGroup={props.mintCapacityGroup}/>
-}
+export default withProposalFormData<FormContainerProps, ExportComponentProps>(FormContainer);
