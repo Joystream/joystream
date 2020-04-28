@@ -619,9 +619,6 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <EntityCreationVouchers<T>>::mutate(entity.class_id, entity.get_entity_permissions().get_controller(), |entity_creation_voucher|
-                entity_creation_voucher.increment_created_entities_count()
-            );
             <EntityById<T>>::mutate(entity_id, |inner_entity| inner_entity.get_entity_permissions_mut().set_conroller(new_controller));
 
             Ok(())
@@ -721,7 +718,63 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <EntityCreationVouchers<T>>::mutate(class_id, controller, |entity_creation_voucher| entity_creation_voucher.set_maximum_entities_count(maximum_entities_count));
+            <EntityCreationVouchers<T>>::mutate(class_id, controller, |entity_creation_voucher|
+                entity_creation_voucher.set_maximum_entities_count(maximum_entities_count)
+            );
+            Ok(())
+        }
+
+        pub fn update_class_permissions(
+            origin,
+            class_id: ClassId,
+            entity_creation_blocked: Option<bool>,
+            initial_controller_of_created_entities: Option<InitialControllerPolicy>,
+        ) -> dispatch::Result {
+            ensure_root(origin)?;
+            Self::ensure_known_class_id(class_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            if let Some(entity_creation_blocked) = entity_creation_blocked {
+                <ClassById<T>>::mutate(class_id, |class| class.get_permissions_mut().entity_creation_blocked = entity_creation_blocked);
+            }
+
+            if let Some(initial_controller_of_created_entities) = initial_controller_of_created_entities {
+                <ClassById<T>>::mutate(class_id, |class|
+                    class.get_permissions_mut().initial_controller_of_created_entities = initial_controller_of_created_entities
+                );
+            }
+
+            Ok(())
+        }
+
+        pub fn update_entity_permissions(
+            origin,
+            entity_id: EntityId,
+            controller: Option<EntityController<T>>,
+            frozen_for_controller: Option<bool>
+        ) -> dispatch::Result {
+            ensure_root(origin)?;
+            Self::ensure_known_entity_id(entity_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            if let Some(controller) = controller {
+                <EntityById<T>>::mutate(entity_id, |inner_entity|
+                    inner_entity.get_entity_permissions_mut().set_conroller(controller)
+                );
+            }
+
+            if let Some(frozen_for_controller) = frozen_for_controller {
+                <EntityById<T>>::mutate(entity_id, |inner_entity|
+                    inner_entity.get_entity_permissions_mut().set_frozen_for_controller(frozen_for_controller)
+                );
+            }
+
             Ok(())
         }
 

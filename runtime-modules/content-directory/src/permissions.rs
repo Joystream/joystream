@@ -339,6 +339,10 @@ impl<T: ActorAuthenticator> EntityPermission<T> {
         self.controller = controller
     }
 
+    pub fn set_frozen_for_controller(&mut self, frozen_for_controller: bool) {
+        self.frozen_for_controller = frozen_for_controller
+    }
+
     pub fn get_controller(&self) -> &EntityController<T> {
         &self.controller
     }
