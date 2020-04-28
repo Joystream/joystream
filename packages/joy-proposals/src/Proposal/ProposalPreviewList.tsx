@@ -36,9 +36,7 @@ type ProposalFilter = "all" | "active" | "withdrawn" | "approved" | "rejected" |
 export default function ProposalPreviewList() {
   const transport = useTransport();
 
-  const [proposals, error, loading] = usePromise<ParsedProposal[]>(transport.proposals(), []);
-
-  const [activeFilter, setActiveFilter] = useState<ProposalFilter>("all");
+  const [proposals, error, loading] = usePromise<ParsedProposal[]>(transport.councilMembers(), []);
 
   if (loading && !error) {
     return <Loading text="Fetching proposals..." />;

@@ -6,6 +6,7 @@ import { useTransport, ParsedProposal } from "../runtime";
 import { usePromise } from "../utils";
 import Error from "./Error";
 import Loading from "./Loading";
+import NotDone from "../NotDone";
 
 export default function ProposalFromId(props: RouteComponentProps<any>) {
   const {
@@ -15,7 +16,7 @@ export default function ProposalFromId(props: RouteComponentProps<any>) {
   } = props;
   const transport = useTransport();
 
-  const [proposal, loading, error] = usePromise<ParsedProposal>(transport.proposalById(id), {});
+  const [proposal, loading, error] = usePromise<any>(transport.proposalById(id), {});
 
   if (loading && !error) {
     return <Loading text="Fetching Proposal..." />;
@@ -25,5 +26,5 @@ export default function ProposalFromId(props: RouteComponentProps<any>) {
   console.log(`With ${id} we fetched proposal...`);
   console.log(proposal);
 
-  return <ProposalDetails {...proposal} />;
+  return <NotDone {...props} />;
 }

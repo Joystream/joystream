@@ -132,62 +132,51 @@ export class ProposalDecisionStatus extends Enum {
 }
 
 export type IFinalizationData = {
-  proposal_status: ProposalDecisionStatus;
-  finalized_at: BlockNumber;
-  encoded_unstaking_error_due_to_broken_runtime: Option<Vec<u8>>;
-  stake_data_after_unstaking_error: Option<ActiveStake>;
+  proposalStatus: ProposalDecisionStatus;
+  finalizedAt: BlockNumber;
+  encodedUnstakingErrorDueToBrokenRuntime: Option<Vec<u8>>;
+  stakeDataAfterUnstakingError: Option<ActiveStake>;
 };
 
 export class FinalizationData extends JoyStruct<IFinalizationData> {
   constructor(value?: IFinalizationData) {
     super(
       {
-        proposal_status: ProposalDecisionStatus,
-        finalized_at: u32,
-        encoded_unstaking_error_due_to_broken_runtime: Option.with(Vec.with(u8)),
-        stake_data_after_unstaking_error: Option.with(ActiveStake)
+        proposalStatus: ProposalDecisionStatus,
+        finalizedAt: u32,
+        encodedUnstakingErrorDueToBrokenRuntime: Option.with(Vec.with(u8)),
+        stakeDataAfterUnstakingError: Option.with(ActiveStake)
       },
       value
     );
   }
 }
 
-export class Active extends ActiveStake {}
+export class Active extends Option.with(ActiveStake) {}
 export class Finalized extends FinalizationData {}
 
 export class ProposalStatus extends Enum {
-  constructor(value?: any) {
+  constructor(value?: any, index?: number) {
     super(
       {
         Active,
         Finalized
       },
-      value
+      value,
+      index
     );
   }
 }
 
-// export const VoteKinds: { [key: string]: string } = {
-//   Abstain: "Abstain",
-//   Approve: "Approve",
-//   Reject: "Reject",
-//   Slash: "Slash"
-// };
-
 export class VoteKind extends Enum {
-  constructor(value?: any) {
-    super(["Abstain", "Approve", "Reject", "Slash"], value);
+  constructor(value?: any, index?: number) {
+    super(["Abstain", "Approve", "Reject", "Slash"], value, index);
   }
 }
 
 export type ProposalVotes = [MemberId, VoteKind][];
 
 export class ProposalId extends u32 {}
-
-// const proposalTypes = {
-//   VoteKind,
-//   ProposalStatus
-// };
 
 export class ElectionParameters extends Struct {
   constructor(value?: any) {
@@ -314,6 +303,42 @@ export class ProposalOf extends Struct {
   }
 }
 
+export type Seat = {
+  member: AccountId;
+  stake: Balance;
+  backers: Backer[];
+};
+
+export class Baker extends Struct {
+  constructor(value?: any) {
+    super(
+      {
+        member: "AccountId",
+        stake: "Balance"
+      },
+      value
+    );
+  }
+}
+export class Seat extends Struct {
+  constructor(value?: any) {
+    super(
+      {
+        member: "AccountId",
+        stake: "Balance",
+        backers: Vec.with(Baker)
+      },
+      value
+    );
+  }
+
+  get member(): AccountId {
+    return this.get("member") as AccountId;
+  }
+}
+
+export class Seats extends Vec.with(Seat) {}
+
 // export default proposalTypes;
 export function registerProposalTypes() {
   try {
@@ -322,9 +347,12 @@ export function registerProposalTypes() {
       ProposalStatus,
       ProposalOf: Proposal,
       ProposalDetails,
-      Proposal,
+      VotingResults,
       ProposalParameters,
-      VoteKind
+      VoteKind,
+      Seat,
+      Seats,
+      Baker
     });
   } catch (err) {
     console.error("Failed to register custom types of proposals module", err);
