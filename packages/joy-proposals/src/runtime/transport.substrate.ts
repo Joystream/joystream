@@ -115,7 +115,7 @@ export class SubstrateTransport extends Transport {
     return Promise.all(
       council.map(async seat => {
         const memberIds = (await this.members.memberIdsByControllerAccountId(seat.member)) as Vec<MemberId>;
-        const member = await this.memberProfile(memberIds[0]);
+        const member = (await this.memberProfile(memberIds[0])).toJSON();
         return {
           ...member,
           memberId: memberIds[0]
