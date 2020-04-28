@@ -82,6 +82,10 @@ impl EntityCreationVoucher {
         }
     }
 
+    pub fn set_maximum_entities_count(&mut self, maximum_entities_count: u64) {
+        self.maximum_entities_count = maximum_entities_count
+    }
+
     pub fn increment_created_entities_count(&mut self) {
         self.entities_created += 1;
     }

@@ -56,3 +56,5 @@ pub const ERROR_ENTITY_CREATOR_ALREADY_EXIST: &str = "Given entity creator alrea
 pub const ERROR_ENTITY_MAINTAINER_ALREADY_EXIST: &str = "Given entity maintainer already exist";
 pub const ERROR_ENTITY_CREATOR_DOES_NOT_EXIST: &str = "Given entity creator does not exist";
 pub const ERROR_ENTITY_MAINTAINER_DOES_NOT_EXIST: &str = "Given entity maintainer does not exist";
+pub const ERROR_ENTITY_CREATION_VOUCHER_DOES_NOT_EXIST: &str =
+    "Given entity creation voucher does not exist";

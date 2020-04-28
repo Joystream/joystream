@@ -707,6 +707,24 @@ decl_module! {
             Ok(())
         }
 
+        pub fn update_entity_creation_voucher(
+            origin,
+            class_id: ClassId,
+            controller: EntityController<T>,
+            maximum_entities_count: u64
+        ) -> dispatch::Result {
+            ensure_root(origin)?;
+            Self::ensure_known_class_id(class_id)?;
+            Self::ensure_entity_creation_voucher_exists(class_id, &controller)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <EntityCreationVouchers<T>>::mutate(class_id, controller, |entity_creation_voucher| entity_creation_voucher.set_maximum_entities_count(maximum_entities_count));
+            Ok(())
+        }
+
         /// Sets the admins for a class
         fn set_class_admins(
             origin,
@@ -1956,6 +1974,17 @@ impl<T: Trait> Module<T> {
         ensure!(
             !<EntityMaintainers<T>>::exists(entity_id, group_id),
             ERROR_ENTITY_MAINTAINER_ALREADY_EXIST
+        );
+        Ok(())
+    }
+
+    pub fn ensure_entity_creation_voucher_exists(
+        class_id: EntityId,
+        controller: &EntityController<T>,
+    ) -> dispatch::Result {
+        ensure!(
+            <EntityCreationVouchers<T>>::exists(class_id, controller),
+            ERROR_ENTITY_CREATION_VOUCHER_DOES_NOT_EXIST
         );
         Ok(())
     }
