@@ -57,6 +57,8 @@ export default class Codegen extends Command {
 
     // Create package.json
     copyFiles(getTemplatePath('indexer.package.json'), path.resolve(process.cwd(), 'package.json'));
+    // Create package.json
+    copyFiles(getTemplatePath('ormconfig.json'), path.resolve(process.cwd(), 'ormconfig.json'));
 
     process.chdir(goBackDir);
   }
