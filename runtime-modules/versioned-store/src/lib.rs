@@ -18,7 +18,6 @@ use codec::{Decode, Encode};
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure};
-use system;
 
 mod example;
 mod mock;

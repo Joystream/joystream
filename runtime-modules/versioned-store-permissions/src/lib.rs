@@ -6,7 +6,6 @@ use rstd::collections::btree_map::BTreeMap;
 use rstd::prelude::*;
 use runtime_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_module, decl_storage, dispatch, ensure, Parameter};
-use system;
 
 // EntityId, ClassId -> should be configured on versioned_store::Trait
 pub use versioned_store::{ClassId, ClassPropertyValue, EntityId, Property, PropertyValue};

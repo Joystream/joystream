@@ -412,16 +412,11 @@ use governance::{council, election};
 use membership::members;
 use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
 pub use versioned_store;
-use versioned_store_permissions;
 
 pub use content_working_group as content_wg;
 mod migration;
-use hiring;
-use minting;
-use recurringrewards;
 use roles::actors;
 use service_discovery::discovery;
-use stake;
 
 /// Alias for ContentId, used in various places.
 pub type ContentId = primitives::H256;

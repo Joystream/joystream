@@ -14,7 +14,6 @@ use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic, 
 use srml_support::{decl_module, decl_storage, ensure, Parameter};
 
 use minting::{self, BalanceOf};
-use system;
 
 mod mock;
 mod tests;

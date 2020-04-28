@@ -195,7 +195,7 @@ decl_event!(
         <T as system::Trait>::AccountId,
         <T as stake::Trait>::StakeId,
     {
-    	/// Emits on proposal creation.
+        /// Emits on proposal creation.
         /// Params:
         /// - Member id of a proposer.
         /// - Id of a newly created proposal after it was saved in storage.

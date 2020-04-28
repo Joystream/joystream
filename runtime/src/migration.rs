@@ -6,7 +6,6 @@ use common::currency::BalanceOf;
 use rstd::prelude::*;
 use sr_primitives::{print, traits::Zero};
 use srml_support::{debug, decl_event, decl_module, decl_storage};
-use system;
 
 impl<T: Trait> Module<T> {
     /// This method is called from on_initialize() when a runtime upgrade is detected. This

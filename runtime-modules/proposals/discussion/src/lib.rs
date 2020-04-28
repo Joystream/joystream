@@ -71,13 +71,13 @@ decl_event!(
         MemberId = MemberId<T>,
         <T as Trait>::PostId,
     {
-    	/// Emits on thread creation.
+        /// Emits on thread creation.
         ThreadCreated(ThreadId, MemberId),
 
-    	/// Emits on post creation.
+        /// Emits on post creation.
         PostCreated(PostId, MemberId),
 
-    	/// Emits on post update.
+        /// Emits on post update.
         PostUpdated(PostId, MemberId),
     }
 );
