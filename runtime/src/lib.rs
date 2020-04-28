@@ -412,16 +412,11 @@ use governance::{council, election};
 use membership::members;
 use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
 pub use versioned_store;
-use versioned_store_permissions;
 
 pub use content_working_group as content_wg;
 mod migration;
-use hiring;
-use minting;
-use recurringrewards;
 use roles::actors;
 use service_discovery::discovery;
-use stake;
 
 /// Alias for ContentId, used in various places.
 pub type ContentId = primitives::H256;
@@ -871,11 +866,11 @@ impl proposals_codex::Trait for Runtime {
 }
 
 construct_runtime!(
-	pub enum Runtime where
-		Block = Block,
-		NodeBlock = opaque::Block,
-		UncheckedExtrinsic = UncheckedExtrinsic
-	{
+    pub enum Runtime where
+        Block = Block,
+        NodeBlock = opaque::Block,
+        UncheckedExtrinsic = UncheckedExtrinsic
+    {
         // Substrate
         System: system::{Module, Call, Storage, Config, Event},
         Babe: babe::{Module, Call, Storage, Config, Inherent(Timestamp)},
@@ -917,7 +912,7 @@ construct_runtime!(
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Module, Call, Storage, Error, Config<T>},
         // ---
-	}
+    }
 );
 
 /// The address format for describing accounts.

@@ -34,7 +34,6 @@ use babe_primitives::AuthorityId as BabeId;
 use grandpa_primitives::AuthorityId as GrandpaId;
 use im_online::sr25519::AuthorityId as ImOnlineId;
 use serde_json as json;
-use substrate_service;
 
 type AccountPublic = <Signature as Verify>::Signer;
 

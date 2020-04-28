@@ -4,8 +4,6 @@
 use crate::VERSION;
 use sr_primitives::{print, traits::Zero};
 use srml_support::{decl_event, decl_module, decl_storage};
-use sudo;
-use system;
 
 impl<T: Trait> Module<T> {
     fn runtime_upgraded() {

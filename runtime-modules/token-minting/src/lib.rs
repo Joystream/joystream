@@ -20,8 +20,6 @@ mod tests;
 
 pub use mint::*;
 
-use system;
-
 pub trait Trait: system::Trait {
     /// The currency to mint.
     type Currency: Currency<Self::AccountId>;
