@@ -15,6 +15,7 @@ describe('Runtime upgrade integration tests', () => {
   const nodeUrl: string = process.env.NODE_URL!;
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const proposalStake: BN = new BN(+process.env.RUNTIME_UPGRADE_PROPOSAL_STAKE!);
+  const runtimePath: string = process.env.RUNTIME_WASM_PATH!;
   const defaultTimeout: number = 180000;
 
   const m1KeyPairs: KeyringPair[] = new Array();
@@ -38,7 +39,7 @@ describe('Runtime upgrade integration tests', () => {
   it('Upgrading the runtime test', async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
-    const runtime: string = Utils.readRuntimeFromFile('joystream_node_runtime.wasm');
+    const runtime: string = Utils.readRuntimeFromFile(runtimePath);
     const description: string = 'runtime upgrade proposal which is used for API integration testing';
     const runtimeProposalFee: BN = apiWrapper.estimateRomeProposeRuntimeUpgradeFee(
       proposalStake,
