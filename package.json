@@ -5,7 +5,8 @@
     "packages/*"
   ],
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "tdd": "jest --watch"
   },
   "lint-staged": {
     "*.{ts, tsx, js, jsx, json}": [
