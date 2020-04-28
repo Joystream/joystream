@@ -70,7 +70,26 @@ pub struct EntityCreationVoucher {
     pub maximum_entity_count: u64,
 
     /// How many have currently been created
-    pub current_entity_limit: u64,
+    pub current_entity_count: u64,
+}
+
+impl EntityCreationVoucher {
+    pub fn new(maximum_entity_count: u64) -> Self {
+        Self {
+            maximum_entity_count,
+            current_entity_count: 1,
+        }
+    }
+
+    pub fn try_decrement_current_entity_count(&mut self) {
+        if self.current_entity_count > 0 {
+            self.current_entity_count -= 1;
+        }
+    }
+
+    pub fn increment_current_entity_count(&mut self) {
+        self.current_entity_count += 1;
+    }
 }
 
 /// Who will be set as the controller for any newly created entity in a given class.
@@ -314,6 +333,16 @@ pub struct EntityPermission<T: ActorAuthenticator> {
     /// Can be useful to use in concert with some curation censorship policy,
     /// e.g. to block content from being included in some public playlist.
     pub referenceable: bool,
+}
+
+impl<T: ActorAuthenticator> EntityPermission<T> {
+    pub fn set_conroller(&mut self, controller: EntityController<T>) {
+        self.controller = controller
+    }
+
+    pub fn get_controller(&self) -> &EntityController<T> {
+        &self.controller
+    }
 }
 
 impl<T: ActorAuthenticator> Default for EntityPermission<T> {

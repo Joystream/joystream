@@ -1,5 +1,6 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![recursion_limit = "256"]
 
 use codec::{Codec, Decode, Encode};
 use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
@@ -7,7 +8,10 @@ use rstd::prelude::*;
 use runtime_primitives::traits::{
     MaybeSerialize, MaybeSerializeDeserialize, Member, One, SimpleArithmetic, Zero,
 };
-use srml_support::{decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter};
+use srml_support::{
+    decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter, StorageDoubleMap,
+};
+use system::ensure_root;
 
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
@@ -279,6 +283,14 @@ impl<T: Trait> Entity<T> {
             values,
             ..Self::default()
         }
+    }
+
+    fn get_entity_permissions_mut(&mut self) -> &mut EntityPermission<T> {
+        &mut self.entity_permission
+    }
+
+    fn get_entity_permissions(&self) -> &EntityPermission<T> {
+        &self.entity_permission
     }
 }
 
@@ -557,7 +569,6 @@ use PropertyValue as PV;
 
 decl_storage! {
     trait Store for Module<T: Trait> as ContentDirectory {
-        /// ClassPermissions of corresponding Classes in the versioned store
         pub ClassById get(class_by_id) config(): linked_map ClassId => Class<T>;
 
         pub EntityById get(entity_by_id) config(): map EntityId => Entity<T>;
@@ -588,6 +599,40 @@ decl_storage! {
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 
+        // ======
+        // Next set of extrinsics can only be invoked by root origin.
+        // ======
+
+        /// Change the controller of an entity.
+        ///
+
+        pub fn update_entity_controller(
+            origin,
+            entity_id: EntityId,
+            new_controller: EntityController<T>
+        ) -> dispatch::Result {
+            ensure_root(origin)?;
+            Self::ensure_known_entity_id(entity_id)?;
+            let (entity, class) = Self::get_entity_and_class(entity_id);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <EntityCreationVouchers<T>>::mutate(entity.class_id, entity.get_entity_permissions().get_controller(), |entity_creation_voucher| entity_creation_voucher.try_decrement_current_entity_count());
+            if <EntityCreationVouchers<T>>::exists(entity.class_id, &new_controller) {
+                <EntityCreationVouchers<T>>::mutate(entity.class_id, &new_controller, |entity_creation_voucher| 
+                    entity_creation_voucher.increment_current_entity_count()
+                );
+            } else {
+                <EntityCreationVouchers<T>>::insert(entity.class_id, new_controller.clone(), 
+                    EntityCreationVoucher::new(class.get_permissions().per_controller_entity_creation_limit)
+                );
+            }
+            <EntityById<T>>::mutate(entity_id, |inner_entity| inner_entity.get_entity_permissions_mut().set_conroller(new_controller));
+
+            Ok(())
+        }
 
         /// Sets the admins for a class
         fn set_class_admins(
