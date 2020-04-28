@@ -3,7 +3,7 @@ import { config } from 'dotenv';
 import { createConnection } from 'typeorm';
 
 const handlers = require('../../mappings');
-import { QueryNodeManager } from 'substrate-query-node/src/query-node';
+import { QueryNodeManager } from 'substrate-query-node/lib/query-node';
 
 function getProcessingPack() {
   let processingPack: { [key: string]: any } = {};
