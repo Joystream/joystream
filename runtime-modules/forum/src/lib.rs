@@ -106,7 +106,6 @@ const ERROR_CATEGORY_CANNOT_BE_UNARCHIVED_WHEN_DELETED: &str =
 //#[cfg(any(feature = "std", test))]
 //use sr_primitives::{StorageOverlay, ChildrenStorageOverlay};
 
-use system;
 use system::{ensure_root, ensure_signed};
 
 /// Represents a user in this forum.
