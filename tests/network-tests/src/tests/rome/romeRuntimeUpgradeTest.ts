@@ -15,7 +15,7 @@ describe('Runtime upgrade integration tests', () => {
   const nodeUrl: string = process.env.NODE_URL!;
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const proposalStake: BN = new BN(+process.env.RUNTIME_UPGRADE_PROPOSAL_STAKE!);
-  const defaultTimeout: number = 120000;
+  const defaultTimeout: number = 180000;
 
   const m1KeyPairs: KeyringPair[] = new Array();
   const m2KeyPairs: KeyringPair[] = new Array();
@@ -67,8 +67,6 @@ describe('Runtime upgrade integration tests', () => {
     const runtimePromise = apiWrapper.expectRomeRuntimeUpgraded();
     await apiWrapper.batchApproveRomeProposal(m2KeyPairs, proposalNumber);
     await runtimePromise;
-
-    await Utils.wait(apiWrapper.getBlockDuration().muln(2.5).toNumber());
   }).timeout(defaultTimeout);
 
   after(() => {

@@ -9,12 +9,12 @@ import { v4 as uuid } from 'uuid';
 import BN = require('bn.js');
 import { Utils } from '../../utils/utils';
 
-describe.skip('Text proposal network tests', () => {
+describe('Text proposal network tests', () => {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
-  const defaultTimeout: number = 120000;
+  const defaultTimeout: number = 180000;
 
   const m1KeyPairs: KeyringPair[] = new Array();
   const m2KeyPairs: KeyringPair[] = new Array();
@@ -27,8 +27,6 @@ describe.skip('Text proposal network tests', () => {
     registerJoystreamTypes();
     const provider = new WsProvider(nodeUrl);
     apiWrapper = await ApiWrapper.create(provider);
-
-    await Utils.wait(apiWrapper.getBlockDuration().muln(2.5).toNumber());
   });
 
   membershipTest(m1KeyPairs);

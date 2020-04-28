@@ -61,12 +61,11 @@ export class ApiWrapper {
     return this.getPaidMembershipTerms(paidTermsId).then(terms => terms.unwrap().fee.toBn());
   }
 
-  public async transferBalanceToAccounts(from: KeyringPair, to: KeyringPair[], amount: BN): Promise<void[]> {
-    return Promise.all(
-      to.map(async keyPair => {
-        await this.transferBalance(from, keyPair.address, amount);
-      })
-    );
+  public async transferBalanceToAccounts(from: KeyringPair, to: KeyringPair[], amount: BN): Promise<void> {
+    for (let i = 0; i < to.length; i++) {
+      await this.transferBalance(from, to[i].address, amount);
+    }
+    return;
   }
 
   private getBaseTxFee(): BN {
@@ -316,7 +315,6 @@ export class ApiWrapper {
       await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (record.event.method && record.event.method.toString() === 'ProposalCreated') {
-            console.log('im here');
             resolve(new BN(record.event.data[1].toString()));
           }
         });

@@ -63,8 +63,6 @@ describe('Mint capacity proposal network tests', () => {
     const proposalNumber = await proposalPromise;
 
     // Approving runtime update proposal
-    console.log('block number ' + (await apiWrapper.getBestBlock()));
-    console.log('approving new mint capacity of proposal ' + proposalNumber);
     const runtimePromise = apiWrapper.expectProposalFinalized();
     await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber);
     await runtimePromise;
