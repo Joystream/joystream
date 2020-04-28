@@ -1,13 +1,15 @@
 import React from "react";
-import { FormikProps } from "formik";
 import { Form } from "semantic-ui-react";
 import * as Yup from "yup";
 import {
   GenericProposalForm,
   GenericFormValues,
   genericFormDefaultOptions,
-  DefaultOuterFormProps,
-  genericFormDefaultValues
+  genericFormDefaultValues,
+  withProposalFormData,
+  ProposalFormExportProps,
+  ProposalFormContainerProps,
+  ProposalFormInnerProps
 } from './GenericProposalForm';
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
@@ -22,13 +24,26 @@ const defaultValues:FormValues = {
   WASM: ''
 }
 
-type FormAdditionalProps = {};
-type RuntimeUpgradeFormProps = FormikProps<FormValues> & FormAdditionalProps;
+type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
+type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
+type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
+type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const RuntimeUpgradeForm: React.FunctionComponent<RuntimeUpgradeFormProps> = props => {
-  const { errors, setFieldValue } = props;
+const RuntimeUpgradeForm: React.FunctionComponent<FormInnerProps> = props => {
+  const { errors, setFieldValue, values } = props;
   return (
-    <GenericProposalForm {...props}>
+    <GenericProposalForm
+      {...props}
+      txMethod="createRuntimeUpgradeProposal"
+      requiredStakePercent={1}
+      submitParams={[
+        props.myMemberId,
+        values.title,
+        values.rationale,
+        '{STAKE}',
+        values.WASM
+      ]}
+    >
       <Form.Field>
         <FileDropdown<FormValues>
           setFieldValue={setFieldValue}
@@ -41,10 +56,8 @@ const RuntimeUpgradeForm: React.FunctionComponent<RuntimeUpgradeFormProps> = pro
   );
 }
 
-type OuterFormProps = DefaultOuterFormProps<FormAdditionalProps, FormValues>;
-
-export default withFormContainer<OuterFormProps, FormValues>({
-  mapPropsToValues: (props:OuterFormProps) => ({
+const FormContainer = withFormContainer<FormContainerProps, FormValues>({
+  mapPropsToValues: (props:FormContainerProps) => ({
     ...defaultValues,
     ...(props.initialData || {})
   }),
@@ -55,3 +68,5 @@ export default withFormContainer<OuterFormProps, FormValues>({
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: "RuntimeUpgradeForm"
 })(RuntimeUpgradeForm);
+
+export default withProposalFormData(FormContainer);

@@ -1,11 +1,12 @@
 import React from 'react';
 import { default as MintCapacityForm } from './MintCapacityForm';
-import { genericFormDefaultOptions } from './GenericProposalForm';
+import { RouteComponentProps } from 'react-router';
 
-const CouncilMintCapForm = () => (
+const CouncilMintCapForm = (props: RouteComponentProps) => (
     <MintCapacityForm
       mintCapacityGroup="Council"
-      handleSubmit={ genericFormDefaultOptions.handleSubmit }/>
+      txMethod="createSetContentWorkingGroupMintCapacityProposal"
+      {...props} />
 );
 
 export default CouncilMintCapForm;

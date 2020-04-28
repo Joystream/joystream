@@ -1,5 +1,4 @@
 import React from "react";
-import { FormikProps } from "formik";
 import { getFormErrorLabelsProps } from "./errorHandling";
 import { Divider, Form } from "semantic-ui-react";
 import * as Yup from "yup";
@@ -7,11 +6,17 @@ import {
   GenericProposalForm,
   GenericFormValues,
   genericFormDefaultOptions,
-  DefaultOuterFormProps,
-  genericFormDefaultValues
+  genericFormDefaultValues,
+  withProposalFormData,
+  ProposalFormExportProps,
+  ProposalFormContainerProps,
+  ProposalFormInnerProps
 } from "./GenericProposalForm";
 import { InputFormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
+import { BlockNumber, Balance } from '@polkadot/types/interfaces';
+import { u32 } from "@polkadot/types/primitive";
+import { createType } from '@polkadot/types';
 import "./forms.css";
 
 type FormValues = GenericFormValues & {
@@ -37,14 +42,55 @@ const defaultValues: FormValues = {
   councilSize: ""
 };
 
-type FromAdditionalProps = {};
-type SetCouncilParamsFormProps = FormikProps<FormValues> & FromAdditionalProps;
+type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
+type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
+type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
+type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const SetCouncilParamsForm: React.FunctionComponent<SetCouncilParamsFormProps> = props => {
+const expectedBlockTimeMs = 6000; // TODO: api.consts.babe.expectedBlockTime;
+const daysToBlocks = (days:number) => days * 24 * 60 * 60 * 1000 / expectedBlockTimeMs;
+
+// TODO: Define in joy-types?
+type ElectionParameters = {
+  announcing_period: BlockNumber;
+  voting_period: BlockNumber;
+  revealing_period: BlockNumber;
+  council_size: u32;
+  candidacy_limit: u32;
+  new_term_duration: BlockNumber;
+  min_council_stake: Balance;
+  min_voting_stake: Balance;
+}
+
+function createElectionParameters(values: FormValues): ElectionParameters {
+  return {
+    announcing_period: createType('BlockNumber', daysToBlocks(parseInt(values.announcingPeriod))),
+    voting_period: createType('BlockNumber', daysToBlocks(parseInt(values.votingPeriod))),
+    revealing_period: createType('BlockNumber', daysToBlocks(parseInt(values.revealingPeriod))),
+    council_size: createType('u32', values.councilSize),
+    candidacy_limit: createType('u32', values.candidacyLimit),
+    new_term_duration: createType('BlockNumber', daysToBlocks(parseInt(values.newTermDuration))),
+    min_council_stake: createType('Balance', values.minCouncilStake),
+    min_voting_stake: createType('Balance', values.minVotingStake)
+  };
+}
+
+const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
   const { handleChange, errors, touched, values } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
-    <GenericProposalForm {...props}>
+    <GenericProposalForm
+      {...props}
+      txMethod="createSetElectionParametersProposal"
+      requiredStakePercent={0.75}
+      submitParams={[
+        props.myMemberId,
+        values.title,
+        values.rationale,
+        '{STAKE}',
+        createElectionParameters(values)
+      ]}
+    >
       <Divider horizontal>Voting </Divider>
       <Form.Group widths="equal" style={{ marginBottom: "8rem" }}>
         <InputFormField
@@ -52,7 +98,7 @@ const SetCouncilParamsForm: React.FunctionComponent<SetCouncilParamsFormProps> =
           help="Announcing period in days"
           onChange={handleChange}
           name="announcingPeriod"
-          placeholder="100"
+          placeholder="3"
           error={errorLabelsProps.announcingPeriod}
           value={values.announcingPeriod}
         />
@@ -61,7 +107,7 @@ const SetCouncilParamsForm: React.FunctionComponent<SetCouncilParamsFormProps> =
           help="Voting period in days"
           onChange={handleChange}
           name="votingPeriod"
-          placeholder="(Currently: x days)"
+          placeholder="1"
           error={errorLabelsProps.votingPeriod}
           value={values.votingPeriod}
         />
@@ -71,7 +117,7 @@ const SetCouncilParamsForm: React.FunctionComponent<SetCouncilParamsFormProps> =
           fluid
           onChange={handleChange}
           name="revealingPeriod"
-          placeholder="100"
+          placeholder="1"
           error={errorLabelsProps.revealingPeriod}
           value={values.revealingPeriod}
         />
@@ -94,7 +140,7 @@ const SetCouncilParamsForm: React.FunctionComponent<SetCouncilParamsFormProps> =
           fluid
           onChange={handleChange}
           name="minCouncilStake"
-          placeholder="100"
+          placeholder="1000"
           error={errorLabelsProps.minCouncilStake}
           value={values.minCouncilStake}
         />
@@ -104,7 +150,7 @@ const SetCouncilParamsForm: React.FunctionComponent<SetCouncilParamsFormProps> =
           fluid
           onChange={handleChange}
           name="newTermDuration"
-          placeholder="100"
+          placeholder="14"
           error={errorLabelsProps.newTermDuration}
           value={values.newTermDuration}
         />
@@ -114,17 +160,17 @@ const SetCouncilParamsForm: React.FunctionComponent<SetCouncilParamsFormProps> =
           fluid
           onChange={handleChange}
           name="councilSize"
-          placeholder="100"
+          placeholder="12"
           error={errorLabelsProps.councilSize}
           value={values.councilSize}
         />
         <InputFormField
           label="Candidacy Limit"
-          help="How many times can a member candidate"
+          help="How many members can candidate"
           fluid
           onChange={handleChange}
           name="candidacyLimit"
-          placeholder="5"
+          placeholder="25"
           error={errorLabelsProps.candidacyLimit}
           value={values.candidacyLimit}
         />
@@ -133,10 +179,8 @@ const SetCouncilParamsForm: React.FunctionComponent<SetCouncilParamsFormProps> =
   );
 };
 
-type OuterFormProps = DefaultOuterFormProps<FromAdditionalProps, FormValues>;
-
-export default withFormContainer<OuterFormProps, FormValues>({
-  mapPropsToValues: (props: OuterFormProps) => ({
+const FormContainer = withFormContainer<FormContainerProps, FormValues>({
+  mapPropsToValues: (props: FormContainerProps) => ({
     ...defaultValues,
     ...(props.initialData || {})
   }),
@@ -154,3 +198,5 @@ export default withFormContainer<OuterFormProps, FormValues>({
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: "SetCouncilParamsForm"
 })(SetCouncilParamsForm);
+
+export default withProposalFormData<FormContainerProps, ExportComponentProps>(FormContainer);

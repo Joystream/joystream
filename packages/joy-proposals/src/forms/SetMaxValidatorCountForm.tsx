@@ -1,13 +1,15 @@
 import React from "react";
-import { FormikProps } from "formik";
 import { getFormErrorLabelsProps } from "./errorHandling";
 import * as Yup from "yup";
 import {
   GenericProposalForm,
   GenericFormValues,
   genericFormDefaultOptions,
-  DefaultOuterFormProps,
-  genericFormDefaultValues
+  genericFormDefaultValues,
+  withProposalFormData,
+  ProposalFormExportProps,
+  ProposalFormContainerProps,
+  ProposalFormInnerProps
 } from './GenericProposalForm';
 import { InputFormField } from './FormFields';
 import { withFormContainer } from "./FormContainer";
@@ -22,14 +24,27 @@ const defaultValues: FormValues = {
   maxValidatorCount: ''
 }
 
-type FromAdditionalProps = {};
-type SetMaxValidatorCountFormProps = FormikProps<FormValues> & FromAdditionalProps;
+type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
+type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
+type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
+type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const SetMaxValidatorCountForm: React.FunctionComponent<SetMaxValidatorCountFormProps> = props => {
+const SetMaxValidatorCountForm: React.FunctionComponent<FormInnerProps> = props => {
   const { handleChange, errors, touched, values } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
-    <GenericProposalForm {...props}>
+    <GenericProposalForm
+      {...props}
+      txMethod="createSetValidatorCountProposal"
+      requiredStakePercent={0.25}
+      submitParams={[
+        props.myMemberId,
+        values.title,
+        values.rationale,
+        '{STAKE}',
+        values.maxValidatorCount
+      ]}
+    >
       <InputFormField
         error={errorLabelsProps.maxValidatorCount}
         label="Max Validator Count"
@@ -43,10 +58,8 @@ const SetMaxValidatorCountForm: React.FunctionComponent<SetMaxValidatorCountForm
   );
 }
 
-type OuterFormProps = DefaultOuterFormProps<FromAdditionalProps, FormValues>;
-
-export default withFormContainer<OuterFormProps, FormValues>({
-  mapPropsToValues: (props:OuterFormProps) => ({
+const FormContainer = withFormContainer<FormContainerProps, FormValues>({
+  mapPropsToValues: (props:FormContainerProps) => ({
     ...defaultValues,
     ...(props.initialData || {})
   }),
@@ -57,3 +70,5 @@ export default withFormContainer<OuterFormProps, FormValues>({
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: "SetMaxValidatorCountForm"
 })(SetMaxValidatorCountForm);
+
+export default withProposalFormData<FormContainerProps, ExportComponentProps>(FormContainer);
