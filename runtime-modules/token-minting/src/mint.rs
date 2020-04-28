@@ -63,7 +63,7 @@ where
             capacity: initial_capacity,
             created_at: now,
             total_minted: Zero::zero(),
-            next_adjustment: next_adjustment,
+            next_adjustment,
         }
     }
 

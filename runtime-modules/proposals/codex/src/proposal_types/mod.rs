@@ -132,7 +132,7 @@ impl Default for ProposalsConfigParameters {
             text_proposal_voting_period: 72000u32,
             text_proposal_grace_period: 0u32,
             set_election_parameters_proposal_voting_period: 72000u32,
-            set_election_parameters_proposal_grace_period: 201601u32,
+            set_election_parameters_proposal_grace_period: 201_601_u32,
             set_content_working_group_mint_capacity_proposal_voting_period: 43200u32,
             set_content_working_group_mint_capacity_proposal_grace_period: 0u32,
             set_lead_proposal_voting_period: 43200u32,
