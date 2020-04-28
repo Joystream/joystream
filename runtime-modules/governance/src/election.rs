@@ -228,30 +228,6 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    pub fn stop_election_and_dissolve_council() -> Result {
-        // Stop running election
-        if Self::is_election_running() {
-            // cannot fail since we checked that election is running and we are using root
-            // origin.
-            Self::force_stop_election(system::RawOrigin::Root.into())?;
-        }
-
-        // Return stakes from the council seat to their stake holders
-        Self::initialize_transferable_stakes(<council::Module<T>>::active_council());
-        Self::unlock_transferable_stakes();
-        Self::clear_transferable_stakes();
-
-        // Clear the council seats
-        // Cannot fail when passing root origin
-        council::Module::<T>::set_council(system::RawOrigin::Root.into(), vec![])?;
-        council::TermEndsAt::<T>::put(system::Module::<T>::block_number());
-
-        // Start a new election after clearing the council
-        Self::start_election(vec![])?;
-
-        Ok(())
-    }
-
     // PRIVATE MUTABLES
 
     /// Starts an election. Will fail if an election is already running

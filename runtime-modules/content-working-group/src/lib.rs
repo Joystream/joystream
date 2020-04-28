@@ -290,9 +290,6 @@ pub enum CuratorExitInitiationOrigin {
 
     /// The curator exiting is the origin.
     Curator,
-
-    /// The system is initiating exit of a curator
-    Root,
 }
 
 /// The exit stage of a curators involvement in the working group.
@@ -1913,31 +1910,6 @@ decl_module! {
             );
         }
 
-        /// Lead can terminate and active curator
-        pub fn terminate_curator_role_as_root(
-            origin,
-            curator_id: CuratorId<T>,
-            rationale_text: Vec<u8>
-        ) {
-
-            // Ensure origin is root
-            ensure_root(origin)?;
-
-            // Ensuring curator actually exists and is active
-            let curator = Self::ensure_active_curator_exists(&curator_id)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            Self::deactivate_curator(
-                &curator_id,
-                &curator,
-                &CuratorExitInitiationOrigin::Root,
-                &rationale_text
-            );
-        }
-
         /// Replace the current lead. First unsets the active lead if there is one.
         /// If a value is provided for new_lead it will then set that new lead.
         /// It is responsibility of the caller to ensure the new lead can be set
@@ -2697,7 +2669,6 @@ impl<T: Trait> Module<T> {
                 let unstaking_period = match curator_exit_summary.origin {
                     CuratorExitInitiationOrigin::Lead => stake_profile.termination_unstaking_period,
                     CuratorExitInitiationOrigin::Curator => stake_profile.exit_unstaking_period,
-                    CuratorExitInitiationOrigin::Root => stake_profile.termination_unstaking_period,
                 };
 
                 (
@@ -2715,9 +2686,6 @@ impl<T: Trait> Module<T> {
                         }
                         CuratorExitInitiationOrigin::Curator => {
                             RawEvent::CuratorExited(curator_id.clone())
-                        }
-                        CuratorExitInitiationOrigin::Root => {
-                            RawEvent::TerminatedCurator(curator_id.clone())
                         }
                     },
                 )
@@ -2869,7 +2837,6 @@ impl<T: Trait> Module<T> {
         let event = match curator_exit_summary.origin {
             CuratorExitInitiationOrigin::Lead => RawEvent::TerminatedCurator(curator_id),
             CuratorExitInitiationOrigin::Curator => RawEvent::CuratorExited(curator_id),
-            CuratorExitInitiationOrigin::Root => RawEvent::TerminatedCurator(curator_id),
         };
 
         Self::deposit_event(event);
