@@ -165,7 +165,7 @@ decl_module! {
         /// Existing council rewards are removed and new council members do NOT get any rewards.
         /// Avoid using this call if possible, will be deprecated. The term of the new council is
         /// not extended.
-        fn set_council(origin, accounts: Vec<T::AccountId>) {
+        pub fn set_council(origin, accounts: Vec<T::AccountId>) {
             ensure_root(origin)?;
 
             // Council is being replaced so remove existing reward relationships if they exist
@@ -236,7 +236,7 @@ decl_module! {
 
         /// Sets the capacity of the the council mint, if it doesn't exist, attempts to
         /// create a new one.
-        fn set_council_mint_capacity(origin, capacity: minting::BalanceOf<T>) {
+        pub fn set_council_mint_capacity(origin, capacity: minting::BalanceOf<T>) {
             ensure_root(origin)?;
 
             if let Some(mint_id) = Self::council_mint() {

@@ -4,7 +4,6 @@
 pub mod council;
 pub mod election;
 pub mod election_params;
-pub mod proposals;
 
 mod sealed_vote;
 mod stake;
