@@ -44,8 +44,12 @@ function VideoViewComponent({ video, channel }: VideoViewProps) {
   )
 }
 
+interface Videos {
+  channels: any
+}
+
 type RouteProps = {
-  videos: any
+  videos: Videos
   channels: any
 } & RouteComponentProps
 
