@@ -153,6 +153,7 @@ export class SubstrateTransport extends Transport {
     return methods.reduce(async (prevProm, method) => {
       const obj = await prevProm;
       const period = (await this.proposalsCodex[method]()) as u32;
+      // setValidatorCountProposalGracePeriod to setValidatorCount
       const key = method
         .split(/(?=[A-Z])/)
         .slice(0, -3)
@@ -167,6 +168,7 @@ export class SubstrateTransport extends Transport {
     return methods.reduce(async (prevProm, method) => {
       const obj = await prevProm;
       const period = (await this.proposalsCodex[method]()) as u32;
+      // setValidatorCountProposalVotingPeriod to setValidatorCount
       const key = method
         .split(/(?=[A-Z])/)
         .slice(0, -3)

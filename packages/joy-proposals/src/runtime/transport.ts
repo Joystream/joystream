@@ -1,14 +1,4 @@
-export type ProposalType =
-  | "EvictStorageProvider"
-  | "Signal"
-  | "SetStorageRoleParams"
-  | "SetMaxValidatorCount"
-  | "SetElectionParameters"
-  | "SpendingProposal"
-  | "SetWGMintCapacity"
-  | "SetLead"
-  | "RuntimeUpgrade";
-
+// FIXME: Those don't have the same names as in the runtime
 export const ProposalTypes = [
   "EvictStorageProvider",
   "Signal",
@@ -20,6 +10,9 @@ export const ProposalTypes = [
   "SetLead",
   "RuntimeUpgrade"
 ] as const;
+
+export type ProposalType = typeof ProposalTypes[number];
+
 export type ParsedProposal = {
   type: ProposalType;
   title: string;

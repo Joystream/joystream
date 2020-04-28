@@ -3,7 +3,7 @@ import ProposalTypePreview, { ProposalTypeInfo } from "./ProposalTypePreview";
 import { Item, Dropdown } from "semantic-ui-react";
 
 import { useTransport } from "../runtime";
-import { usePromise, calculateStake } from "../utils";
+import { usePromise } from "../utils";
 import Error from "./Error";
 import Loading from "./Loading";
 import "./ChooseProposalType.css";
