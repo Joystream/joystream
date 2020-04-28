@@ -130,11 +130,17 @@ impl<T: Trait> Module<T> {
                 );
             });
         }
+        proposals_codex::Module::<T>::set_default_config_values();
+
+        Self::deposit_event(RawEvent::Migrated(
+            <system::Module<T>>::block_number(),
+            VERSION.spec_version,
+        ));
     }
 }
 
 pub trait Trait:
-    system::Trait + governance::election::Trait + content_working_group::Trait + roles::actors::Trait
+    system::Trait + governance::election::Trait + content_working_group::Trait + roles::actors::Trait + proposals_codex::Trait
 {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }

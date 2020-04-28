@@ -181,6 +181,9 @@ pub fn testnet_genesis(
     const STASH: Balance = 20 * DOLLARS;
     const ENDOWMENT: Balance = 100_000 * DOLLARS;
 
+    // default codex proposals config parameters
+    let cpcp = node_runtime::ProposalsConfigParameters::default();
+
     GenesisConfig {
         system: Some(SystemConfig {
             code: WASM_BINARY.to_vec(),
@@ -300,24 +303,34 @@ pub fn testnet_genesis(
         }),
         migration: Some(MigrationConfig {}),
         proposals_codex: Some(ProposalsCodexConfig {
-            set_validator_count_proposal_voting_period: 43200u32,
-            set_validator_count_proposal_grace_period: 0u32,
-            runtime_upgrade_proposal_voting_period: 72000u32,
-            runtime_upgrade_proposal_grace_period: 72000u32,
-            text_proposal_voting_period: 72000u32,
-            text_proposal_grace_period: 0u32,
-            set_election_parameters_proposal_voting_period: 72000u32,
-            set_election_parameters_proposal_grace_period: 201601u32,
-            set_content_working_group_mint_capacity_proposal_voting_period: 43200u32,
-            set_content_working_group_mint_capacity_proposal_grace_period: 0u32,
-            set_lead_proposal_voting_period: 43200u32,
-            set_lead_proposal_grace_period: 0u32,
-            spending_proposal_voting_period: 72000u32,
-            spending_proposal_grace_period: 14400u32,
-            evict_storage_provider_proposal_voting_period: 43200u32,
-            evict_storage_provider_proposal_grace_period: 0u32,
-            set_storage_role_parameters_proposal_voting_period: 43200u32,
-            set_storage_role_parameters_proposal_grace_period: 14400u32,
+            set_validator_count_proposal_voting_period: cpcp
+                .set_validator_count_proposal_voting_period,
+            set_validator_count_proposal_grace_period: cpcp
+                .set_validator_count_proposal_grace_period,
+            runtime_upgrade_proposal_voting_period: cpcp.runtime_upgrade_proposal_voting_period,
+            runtime_upgrade_proposal_grace_period: cpcp.runtime_upgrade_proposal_grace_period,
+            text_proposal_voting_period: cpcp.text_proposal_voting_period,
+            text_proposal_grace_period: cpcp.text_proposal_grace_period,
+            set_election_parameters_proposal_voting_period: cpcp
+                .set_election_parameters_proposal_voting_period,
+            set_election_parameters_proposal_grace_period: cpcp
+                .set_election_parameters_proposal_grace_period,
+            set_content_working_group_mint_capacity_proposal_voting_period: cpcp
+                .set_content_working_group_mint_capacity_proposal_voting_period,
+            set_content_working_group_mint_capacity_proposal_grace_period: cpcp
+                .set_content_working_group_mint_capacity_proposal_grace_period,
+            set_lead_proposal_voting_period: cpcp.set_lead_proposal_voting_period,
+            set_lead_proposal_grace_period: cpcp.set_lead_proposal_voting_period,
+            spending_proposal_voting_period: cpcp.spending_proposal_voting_period,
+            spending_proposal_grace_period: cpcp.spending_proposal_grace_period,
+            evict_storage_provider_proposal_voting_period: cpcp
+                .evict_storage_provider_proposal_voting_period,
+            evict_storage_provider_proposal_grace_period: cpcp
+                .evict_storage_provider_proposal_grace_period,
+            set_storage_role_parameters_proposal_voting_period: cpcp
+                .set_storage_role_parameters_proposal_voting_period,
+            set_storage_role_parameters_proposal_grace_period: cpcp
+                .set_storage_role_parameters_proposal_grace_period,
         }),
     }
 }
