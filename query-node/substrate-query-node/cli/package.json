@@ -21,7 +21,7 @@
     "fs-extra": "^9.0.0",
     "mustache": "^4.0.1",
     "tslib": "^1",
-    "typeorm-model-generator": "^0.4.2"
+    "warthog": "^2.9.1"
   },
   "devDependencies": {
     "@oclif/dev-cli": "^1",

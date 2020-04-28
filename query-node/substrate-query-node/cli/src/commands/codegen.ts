@@ -1,17 +1,19 @@
 import * as path from 'path';
-import { readFileSync } from 'fs-extra';
+import { readFileSync, existsSync } from 'fs-extra';
 import { Command } from '@oclif/command';
-const cli = require('warthog/dist/cli/cli');
+const warthogCli = require('warthog/dist/cli/cli');
+const { exec } = require('child_process');
 
 import { createDir, getTemplatePath, createFile, copyFiles } from '../utils/utils';
 import { formatWithPrettier } from '../helpers/formatter';
+import WarthogWrapper from '../helpers/WarthogWrapper';
 
-export default class Gen extends Command {
+export default class Codegen extends Command {
   static description = 'Code generator';
   static generatedFolderName = 'generated';
 
   async run() {
-    const generatedFolderPath = path.resolve(process.cwd(), Gen.generatedFolderName);
+    const generatedFolderPath = path.resolve(process.cwd(), Codegen.generatedFolderName);
     createDir(generatedFolderPath);
 
     // Change directory to generated
@@ -33,7 +35,8 @@ export default class Gen extends Command {
     createDir(warthogProjectPath);
     process.chdir(warthogProjectPath);
 
-    await cli.run(`new ${warthogProjectName}`);
+    const warthogWrapper = new WarthogWrapper(this);
+    await warthogWrapper.run();
 
     process.chdir(goBackDir);
   }
@@ -49,9 +52,7 @@ export default class Gen extends Command {
     process.chdir(indexerPath);
 
     // Create index.ts file
-    const indexFileContent = formatWithPrettier(
-      readFileSync(getTemplatePath('index-builder-entry.mst'), 'utf8')
-    );
+    const indexFileContent = formatWithPrettier(readFileSync(getTemplatePath('index-builder-entry.mst'), 'utf8'));
     createFile(path.resolve('index.ts'), indexFileContent);
 
     // Create package.json
