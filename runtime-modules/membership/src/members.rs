@@ -12,7 +12,6 @@ use srml_support::traits::{Currency, Get};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
 
 use system::{self, ensure_root, ensure_signed};
-use timestamp;
 
 pub use super::role_types::*;
 

@@ -12,7 +12,6 @@ use srml_support::traits::{Currency, ExistenceRequirement, Get, Imbalance, Withd
 use srml_support::{decl_module, decl_storage, ensure, Parameter};
 
 use rstd::collections::btree_map::BTreeMap;
-use system;
 
 mod errors;
 pub use errors::*;
