@@ -1,7 +1,7 @@
 import React from "react";
 import { withFormik } from "formik";
 
-export function withFormContainer<MyFormProps, FormValues>(formikProps) {
+export function withFormContainer<MyFormProps, FormValues>(formikProps: any) {
   return function(InnerForm: React.ComponentType<any>) {
     return withFormik<MyFormProps, FormValues>(formikProps)(function(props) {
       const handleBlur = (e: React.FocusEvent<HTMLInputElement>, data: any): void => {

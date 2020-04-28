@@ -1,12 +1,12 @@
-import { Transport, ParsedProposal } from "./transport";
+import { Transport, ParsedProposal, ProposalType, ProposalTypes } from "./transport";
 import { Proposal, ProposalId, Seats, VoteKind } from "@joystream/types/proposals";
 import { MemberId } from "@joystream/types/members";
 import { ApiProps } from "@polkadot/react-api/types";
 import { u32, bool, Vec } from "@polkadot/types/";
+import { Balance } from "@polkadot/types/interfaces";
 import { ApiPromise } from "@polkadot/api";
 
-import { includeKeys, dateFromBlock } from "../utils";
-import { ProposalType } from "../Proposal/ProposalTypePreview";
+import { includeKeys, dateFromBlock, calculateStake, calculateMetaFromType } from "../utils";
 
 export class SubstrateTransport extends Transport {
   protected api: ApiPromise;
@@ -37,6 +37,10 @@ export class SubstrateTransport extends Transport {
 
   get council() {
     return this.api.query.council;
+  }
+
+  async totalIssuance() {
+    return this.api.query.balances.totalIssuance<Balance>();
   }
 
   async proposalCount() {
@@ -146,12 +150,47 @@ export class SubstrateTransport extends Transport {
   async proposalTypesGracePeriod() {
     const methods = includeKeys(this.proposalsCodex, "GracePeriod");
     // methods = [proposalTypeGracePeriod...]
-    return methods.reduce((obj, method) => ({ ...obj, method: this.proposalsCodex[method]() }), {});
+    return methods.reduce(async (prevProm, method) => {
+      const obj = await prevProm;
+      const period = (await this.proposalsCodex[method]()) as u32;
+      const key = method
+        .split(/(?=[A-Z])/)
+        .slice(0, -3)
+        .join("");
+      return { ...obj, [`${key}`]: period.toNumber() };
+    }, Promise.resolve({}));
   }
 
   async proposalTypesVotingPeriod() {
     const methods = includeKeys(this.proposalsCodex, "VotingPeriod");
     // methods = [proposalTypeVotingPeriod...]
-    return methods.reduce((obj, method) => ({ ...obj, method: this.proposalsCodex[method]() }), {});
+    return methods.reduce(async (prevProm, method) => {
+      const obj = await prevProm;
+      const period = (await this.proposalsCodex[method]()) as u32;
+      const key = method
+        .split(/(?=[A-Z])/)
+        .slice(0, -3)
+        .join("");
+      return { ...obj, [`${key}`]: period.toNumber() };
+    }, Promise.resolve({}));
+  }
+
+  async parametersFromProposalType(type: ProposalType) {
+    const votingPeriod = ((await this.proposalTypesVotingPeriod()) as { [k in ProposalType]: any })[type];
+    const gracePeriod = ((await this.proposalTypesGracePeriod()) as { [k in ProposalType]: any })[type];
+    const issuance = (await this.totalIssuance()).toNumber();
+    const stake = calculateStake(type, issuance);
+    const meta = calculateMetaFromType(type);
+    return {
+      type,
+      votingPeriod: votingPeriod.toNumber(),
+      gracePeriod: gracePeriod.toNumber(),
+      stake,
+      ...meta
+    };
+  }
+
+  async proposalsTypesParameters() {
+    return Promise.all(ProposalTypes.map(type => this.parametersFromProposalType(type)));
   }
 }

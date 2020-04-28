@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-
-import { ProposalType } from "./Proposal/ProposalTypePreview";
 import { BlockNumber } from "@polkadot/types/interfaces";
+
+import { ProposalType } from "./runtime";
+import { Category } from "./Proposal/ChooseProposalType";
 
 export function includeKeys<T extends { [k: string]: any }>(obj: T, ...allowedKeys: string[]) {
   return Object.keys(obj).filter(objKey => {
@@ -77,4 +78,61 @@ export function calculateStake(type: ProposalType, issuance: number) {
     }
   }
   return stake;
+}
+
+export function calculateMetaFromType(type: ProposalType) {
+  let description = "";
+  const image = "";
+  let category: Category = "Other";
+  switch (type) {
+    case "EvictStorageProvider": {
+      description = "Evicting Storage Provider Proposal";
+      category = "Storage";
+      break;
+    }
+    case "Signal": {
+      description = "Signal Proposal";
+      category = "Other";
+      break;
+    }
+    case "SetStorageRoleParams": {
+      description = "Set Storage Role Params Proposal";
+      category = "Storage";
+      break;
+    }
+    case "SetMaxValidatorCount": {
+      description = "Set Max Validator Count Proposal";
+      category = "Validators";
+      break;
+    }
+    case "SetLead": {
+      description = "Set Lead Proposal";
+      category = "Content Working Group";
+      break;
+    }
+    case "SetWGMintCapacity": {
+      description = "Set WG Mint Capacity Proposal";
+      category = "Content Working Group";
+      break;
+    }
+    case "SpendingProposal": {
+      description = "Spending Proposal";
+      category = "Other";
+      break;
+    }
+    case "SetElectionParameters": {
+      description = "Set Election Parameters Proposal";
+      category = "Council";
+      break;
+    }
+    case "RuntimeUpgrade": {
+      description = "Runtime Upgrade Proposal";
+      category = "Other";
+      break;
+    }
+    default: {
+      throw new Error("'Proposal Type is invalid. Can't calculate metadata.");
+    }
+  }
+  return { description, image, category };
 }

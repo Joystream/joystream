@@ -3,7 +3,9 @@ import ProposalTypePreview, { ProposalTypeInfo } from "./ProposalTypePreview";
 import { Item, Dropdown } from "semantic-ui-react";
 
 import { useTransport } from "../runtime";
-import ProposalTypes from "../proposalTypes.json";
+import { usePromise, calculateStake } from "../utils";
+import Error from "./Error";
+import Loading from "./Loading";
 import "./ChooseProposalType.css";
 
 export const Categories = {
@@ -16,22 +18,24 @@ export const Categories = {
 
 export type Category = typeof Categories[keyof typeof Categories];
 
-type ChooseProposalTypeProps = {
-  proposalTypes: ProposalTypeInfo[];
-};
-
 // Make this without Props.
-export default function ProposalPreview(props: ChooseProposalTypeProps) {
-  const { proposalTypes } = props;
+export default function ProposalPreview() {
   const transport = useTransport();
 
-  // We need to get: Stake, Cancellation fee, Grace Period.
-  // Fetch them here...
+  const [proposalTypes, loading, error] = usePromise(transport.proposalTypesVotingPeriod(), []);
+
+  if (loading && !error) {
+    return <Loading text="Fetching proposals..." />;
+  } else if (error) {
+    return <Error error={error} />;
+  }
+
+  console.log(proposalTypes);
 
   const [category, setCategory] = useState("");
   return (
     <div className="ChooseProposalType">
-      <div className="filters">
+      {/* <div className="filters">
         <Dropdown
           placeholder="Category"
           options={Object.values(Categories).map(category => ({ value: category, text: category }))}
@@ -47,7 +51,7 @@ export default function ProposalPreview(props: ChooseProposalTypeProps) {
           .map((typeInfo, idx) => (
             <ProposalTypePreview key={`${typeInfo} - ${idx}`} typeInfo={typeInfo} />
           ))}
-      </Item.Group>
+      </Item.Group> */}
     </div>
   );
 }

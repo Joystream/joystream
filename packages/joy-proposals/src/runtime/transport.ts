@@ -1,5 +1,25 @@
-import { ProposalType } from "../Proposal/ProposalTypePreview";
+export type ProposalType =
+  | "EvictStorageProvider"
+  | "Signal"
+  | "SetStorageRoleParams"
+  | "SetMaxValidatorCount"
+  | "SetElectionParameters"
+  | "SpendingProposal"
+  | "SetWGMintCapacity"
+  | "SetLead"
+  | "RuntimeUpgrade";
 
+export const ProposalTypes = [
+  "EvictStorageProvider",
+  "Signal",
+  "SetStorageRoleParams",
+  "SetMaxValidatorCount",
+  "SetElectionParameters",
+  "SpendingProposal",
+  "SetWGMintCapacity",
+  "SetLead",
+  "RuntimeUpgrade"
+] as const;
 export type ParsedProposal = {
   type: ProposalType;
   title: string;

@@ -36,14 +36,13 @@ type ProposalFilter = "all" | "active" | "withdrawn" | "approved" | "rejected" |
 export default function ProposalPreviewList() {
   const transport = useTransport();
 
-  const [proposals, error, loading] = usePromise<ParsedProposal[]>(transport.councilMembers(), []);
+  const [proposals, error, loading] = usePromise<ParsedProposal[]>(transport.proposals(), []);
 
   if (loading && !error) {
     return <Loading text="Fetching proposals..." />;
   } else if (error) {
     return <Error error={error} />;
   }
-  console.log(proposals);
 
   return (
     <Container className="Proposal">
@@ -82,16 +81,7 @@ export default function ProposalPreviewList() {
 
       <Card.Group>
         {proposals.map((prop: ParsedProposal, idx: number) => (
-          <ProposalPreview
-            key={`${prop.title}-${idx}`}
-            title={prop.title}
-            description={prop.description}
-            stage={"Active"}
-            createdAt={prop.createdAt}
-            createdBy={prop.proposer}
-            type={prop.type}
-            expiresIn={prop.parameters.votingPeriod - prop.createdAtBlock}
-          />
+          <ProposalPreview key={`${prop.title}-${idx}`} proposal={prop} />
         ))}
       </Card.Group>
     </Container>

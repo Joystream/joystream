@@ -1,19 +1,9 @@
 import React from "react";
 import { Item, Icon, Button } from "semantic-ui-react";
 import { Category } from "./ChooseProposalType";
+import { ProposalType } from "../runtime";
 
 import "./ProposalType.css";
-
-export type ProposalType =
-  | "EvictStorageProvider"
-  | "Signal"
-  | "SetStorageRoleParams"
-  | "SetMaxValidatorCount"
-  | "SetElectionParameters"
-  | "SpendingProposal"
-  | "SetWGMintCapacity"
-  | "SetLead"
-  | "RuntimeUpgrade";
 
 export type ProposalTypeInfo = {
   type: ProposalType;
@@ -21,7 +11,7 @@ export type ProposalTypeInfo = {
   image: string;
   description: string;
   stake: number;
-  cancellationFee: number;
+  cancellationFee?: number;
   gracePeriod: number;
 };
 

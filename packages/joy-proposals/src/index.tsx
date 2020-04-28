@@ -47,6 +47,7 @@ function App(props: Props): React.ReactElement<Props> {
           <Tabs basePath={basePath} items={tabs} />
         </header>
         <Switch>
+          <Route path={`${basePath}/new`} component={ChooseProposalType} />
           <Route path={`${basePath}/new/signal`} component={SignalForm} />
           <Route path={`${basePath}/new/evict-storage-provider`} component={EvictStorageProviderForm} />
           <Route path={`${basePath}/new/spending`} component={SpendingProposalForm} />

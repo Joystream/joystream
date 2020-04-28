@@ -24,11 +24,6 @@ export default function ProposalFromId(props: RouteComponentProps<any>) {
   } else if (error) {
     return <Error error={error} />;
   }
-  console.log(`With ${id} we fetched proposal...`);
-  console.log(proposal);
-
-  console.log("With votes...");
-  console.log(votes);
 
   return <NotDone {...props} />;
 }
