@@ -1,3 +1,10 @@
+// Clippy linter warning. TODO: remove after the Constaninople release
+#![allow(clippy::type_complexity)]
+// disable it because of possible frontend API break
+
+// Clippy linter warning. TODO: refactor the Option<Option<>>
+#![allow(clippy::option_option)] // disable it because of possible API break
+
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 use rstd::prelude::*;

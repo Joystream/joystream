@@ -1,3 +1,5 @@
+#![allow(clippy::new_without_default)] // disable because Default for enums doesn't make sense
+
 use codec::{Decode, Encode};
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;

@@ -38,6 +38,13 @@
 //! The module uses [ProposalEncoder](./trait.ProposalEncoder.html) to encode the proposal using
 //! its details. Encoded byte vector is passed to the _proposals engine_ as serialized executable code.
 
+// Clippy linter warning. TODO: remove after the Constaninople release
+#![allow(clippy::type_complexity)]
+// disable it because of possible frontend API break
+
+// Clippy linter warning. TODO: refactor "this function has too many argument"
+#![allow(clippy::too_many_arguments)] // disable it because of possible API break
+
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -699,8 +706,7 @@ impl<T: Trait> Module<T> {
             T::MemberId,
         >,
     ) -> DispatchResult<Error> {
-        let account_id =
-            T::MembershipOriginValidator::ensure_actor_origin(origin, member_id.clone())?;
+        let account_id = T::MembershipOriginValidator::ensure_actor_origin(origin, member_id)?;
 
         <proposal_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
             &proposal_parameters,
@@ -709,7 +715,7 @@ impl<T: Trait> Module<T> {
             stake_balance,
         )?;
 
-        <proposal_discussion::Module<T>>::ensure_can_create_thread(member_id.clone(), &title)?;
+        <proposal_discussion::Module<T>>::ensure_can_create_thread(member_id, &title)?;
 
         let discussion_thread_id =
             <proposal_discussion::Module<T>>::create_thread(member_id, title.clone())?;
@@ -882,7 +888,7 @@ impl<T: Trait> Module<T> {
 
         ensure!(
             election_parameters.min_voting_stake
-                <= <BalanceOfGovernanceCurrency<T>>::from(100000u32),
+                <= <BalanceOfGovernanceCurrency<T>>::from(100_000_u32),
             Error::InvalidCouncilElectionParameterMinVotingStake
         );
 
@@ -892,7 +898,7 @@ impl<T: Trait> Module<T> {
         );
 
         ensure!(
-            election_parameters.new_term_duration <= T::BlockNumber::from(432000),
+            election_parameters.new_term_duration <= T::BlockNumber::from(432_000),
             Error::InvalidCouncilElectionParameterNewTermDuration
         );
 
@@ -933,7 +939,7 @@ impl<T: Trait> Module<T> {
 
         ensure!(
             election_parameters.min_council_stake
-                <= <BalanceOfGovernanceCurrency<T>>::from(100000u32),
+                <= <BalanceOfGovernanceCurrency<T>>::from(100_000_u32),
             Error::InvalidCouncilElectionParameterMinCouncilStake
         );
 

@@ -516,7 +516,7 @@ impl PropHelper {
     fn next_value(&mut self, value: PropertyValue) -> ClassPropertyValue {
         let value = ClassPropertyValue {
             in_class_index: self.prop_idx,
-            value: value,
+            value,
         };
         self.prop_idx += 1;
         value

@@ -148,7 +148,7 @@ pub fn bool_prop_value() -> ClassPropertyValue {
 pub fn prop_value(index: u16, value: PropertyValue) -> ClassPropertyValue {
     ClassPropertyValue {
         in_class_index: index,
-        value: value,
+        value,
     }
 }
 

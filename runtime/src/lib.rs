@@ -127,7 +127,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 6,
     spec_version: 12,
-    impl_version: 0,
+    impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
 };
 
@@ -484,7 +484,7 @@ impl versioned_store_permissions::CredentialChecker<Runtime> for ContentWorkingG
                     }
                 }
 
-                return false;
+                false
             }
             // Any Active Channel Owner
             credential if credential == AnyActiveChannelOwnerCredential::get() => {
@@ -499,7 +499,7 @@ impl versioned_store_permissions::CredentialChecker<Runtime> for ContentWorkingG
                     }
                 }
 
-                return false;
+                false
             }
             // mapping to workging group principal id
             n if n >= PrincipalIdMappingStartsAtCredential::get() => {
@@ -738,7 +738,7 @@ impl roles::traits::Roles<Runtime> for LookupRoles {
             .filter(|id| !<discovery::Module<Runtime>>::is_account_info_expired(id))
             .collect();
 
-        if live_ids.len() == 0 {
+        if live_ids.is_empty() {
             Err("no staked account found")
         } else {
             let index = random_index(live_ids.len());
@@ -842,7 +842,7 @@ impl Default for Call {
 
 parameter_types! {
     pub const ProposalMaxPostEditionNumber: u32 = 0; // post update is disabled
-    pub const ProposalMaxThreadInARowNumber: u32 = 100000; // will not be used
+    pub const ProposalMaxThreadInARowNumber: u32 = 100_000; // will not be used
     pub const ProposalThreadTitleLengthLimit: u32 = 40;
     pub const ProposalPostLengthLimit: u32 = 1000;
 }
