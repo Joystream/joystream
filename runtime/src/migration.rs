@@ -1,3 +1,6 @@
+// Clippy linter warning
+#![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
+
 use crate::VERSION;
 use common::currency::BalanceOf;
 use rstd::prelude::*;

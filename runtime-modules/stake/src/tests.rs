@@ -321,7 +321,7 @@ fn decreasing_stake() {
                 Stake {
                     created: 0,
                     staking_status: StakingStatus::Staked(StakedState {
-                        staked_amount: staked_amount,
+                        staked_amount,
                         ongoing_slashes: BTreeMap::new(),
                         next_slash_id: 0,
                         staked_status: StakedStatus::Normal,
@@ -379,7 +379,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
             Stake {
                 created: System::block_number(),
                 staking_status: StakingStatus::Staked(StakedState {
-                    staked_amount: staked_amount,
+                    staked_amount,
                     ongoing_slashes: BTreeMap::new(),
                     next_slash_id: 0,
                     staked_status: StakedStatus::Unstaking(UnstakingState {
@@ -413,7 +413,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
             Stake {
                 created: System::block_number(),
                 staking_status: StakingStatus::Staked(StakedState {
-                    staked_amount: staked_amount,
+                    staked_amount,
                     ongoing_slashes: expected_ongoing_slashes.clone(),
                     next_slash_id: slash_id + 1,
                     staked_status: StakedStatus::Unstaking(UnstakingState {
@@ -449,7 +449,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
             Stake {
                 created: System::block_number(),
                 staking_status: StakingStatus::Staked(StakedState {
-                    staked_amount: staked_amount,
+                    staked_amount,
                     ongoing_slashes: expected_ongoing_slashes.clone(),
                     next_slash_id: slash_id + 1,
                     staked_status: StakedStatus::Unstaking(UnstakingState {
@@ -485,7 +485,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
             Stake {
                 created: System::block_number(),
                 staking_status: StakingStatus::Staked(StakedState {
-                    staked_amount: staked_amount,
+                    staked_amount,
                     ongoing_slashes: expected_ongoing_slashes.clone(),
                     next_slash_id: slash_id + 1,
                     staked_status: StakedStatus::Unstaking(UnstakingState {
@@ -512,7 +512,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
             Stake {
                 created: System::block_number(),
                 staking_status: StakingStatus::Staked(StakedState {
-                    staked_amount: staked_amount,
+                    staked_amount,
                     ongoing_slashes: BTreeMap::new(),
                     next_slash_id: slash_id + 1,
                     staked_status: StakedStatus::Unstaking(UnstakingState {
@@ -545,7 +545,7 @@ fn initiating_pausing_resuming_cancelling_slashes() {
             Stake {
                 created: System::block_number(),
                 staking_status: StakingStatus::Staked(StakedState {
-                    staked_amount: staked_amount,
+                    staked_amount,
                     ongoing_slashes: expected_ongoing_slashes.clone(),
                     next_slash_id: slash_id + 1,
                     staked_status: StakedStatus::Unstaking(UnstakingState {

@@ -1,3 +1,7 @@
+// Clippy linter requirement
+#![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
+                                          // example:   NextDataObjectTypeId get(next_data_object_type_id) build(|config: &GenesisConfig<T>|
+
 use crate::traits;
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
@@ -150,7 +154,7 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
     fn ensure_data_object_type(id: T::DataObjectTypeId) -> Result<DataObjectType, &'static str> {
-        return Self::data_object_types(&id).ok_or(MSG_DO_TYPE_NOT_FOUND);
+        Self::data_object_types(&id).ok_or(MSG_DO_TYPE_NOT_FOUND)
     }
 }
 

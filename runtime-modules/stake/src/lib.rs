@@ -378,9 +378,9 @@ where
 
                     Ok((stake_to_reduce, staked_state.staked_amount))
                 }
-                _ => return Err(DecreasingStakeError::CannotDecreaseStakeWhileUnstaking),
+                _ => Err(DecreasingStakeError::CannotDecreaseStakeWhileUnstaking),
             },
-            _ => return Err(DecreasingStakeError::NotStaked),
+            _ => Err(DecreasingStakeError::NotStaked),
         }
     }
 
@@ -463,11 +463,9 @@ where
                 );
 
                 // pause Unstaking if unstaking is active
-                match staked_state.staked_status {
-                    StakedStatus::Unstaking(ref mut unstaking_state) => {
-                        unstaking_state.is_active = false;
-                    }
-                    _ => (),
+                if let StakedStatus::Unstaking(ref mut unstaking_state) = staked_state.staked_status
+                {
+                    unstaking_state.is_active = false;
                 }
 
                 Ok(slash_id)
@@ -523,11 +521,10 @@ where
 
                 // unpause unstaking on last ongoing slash cancelled
                 if staked_state.ongoing_slashes.is_empty() {
-                    match staked_state.staked_status {
-                        StakedStatus::Unstaking(ref mut unstaking_state) => {
-                            unstaking_state.is_active = true;
-                        }
-                        _ => (),
+                    if let StakedStatus::Unstaking(ref mut unstaking_state) =
+                        staked_state.staked_status
+                    {
+                        unstaking_state.is_active = true;
                     }
                 }
 

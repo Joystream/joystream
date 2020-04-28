@@ -1,6 +1,11 @@
+// Clippy linter requirement
+#![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
+                                          // example:  pub PaidMembershipTermsById get(paid_membership_terms_by_id) build(|config: &GenesisConfig<T>| {}
+
 use codec::{Codec, Decode, Encode};
 use common::currency::{BalanceOf, GovernanceCurrency};
 
+use rstd::borrow::ToOwned;
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
 use srml_support::traits::{Currency, Get};
@@ -252,7 +257,7 @@ decl_module! {
             let _ = T::Currency::slash(&who, terms.fee);
             let member_id = Self::insert_member(&who, &user_info, EntryMethod::Paid(paid_terms_id));
 
-            Self::deposit_event(RawEvent::MemberRegistered(member_id, who.clone()));
+            Self::deposit_event(RawEvent::MemberRegistered(member_id, who));
         }
 
         /// Change member's about text
@@ -448,12 +453,13 @@ impl<T: Trait> Module<T> {
         Ok(terms)
     }
 
+    #[allow(clippy::ptr_arg)] // cannot change to the "&[u8]" suggested by clippy
     fn ensure_unique_handle(handle: &Vec<u8>) -> dispatch::Result {
         ensure!(!<Handles<T>>::exists(handle), "handle already registered");
         Ok(())
     }
 
-    fn validate_handle(handle: &Vec<u8>) -> dispatch::Result {
+    fn validate_handle(handle: &[u8]) -> dispatch::Result {
         ensure!(
             handle.len() >= Self::min_handle_length() as usize,
             "handle too short"
@@ -465,13 +471,13 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn validate_text(text: &Vec<u8>) -> Vec<u8> {
-        let mut text = text.clone();
+    fn validate_text(text: &[u8]) -> Vec<u8> {
+        let mut text = text.to_owned();
         text.truncate(Self::max_about_text_length() as usize);
         text
     }
 
-    fn validate_avatar(uri: &Vec<u8>) -> dispatch::Result {
+    fn validate_avatar(uri: &[u8]) -> dispatch::Result {
         ensure!(
             uri.len() <= Self::max_avatar_uri_length() as usize,
             "avatar uri too long"
@@ -533,7 +539,7 @@ impl<T: Trait> Module<T> {
         new_member_id
     }
 
-    fn _change_member_about_text(id: T::MemberId, text: &Vec<u8>) -> dispatch::Result {
+    fn _change_member_about_text(id: T::MemberId, text: &[u8]) -> dispatch::Result {
         let mut profile = Self::ensure_profile(id)?;
         let text = Self::validate_text(text);
         profile.about = text;
@@ -542,10 +548,10 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn _change_member_avatar(id: T::MemberId, uri: &Vec<u8>) -> dispatch::Result {
+    fn _change_member_avatar(id: T::MemberId, uri: &[u8]) -> dispatch::Result {
         let mut profile = Self::ensure_profile(id)?;
         Self::validate_avatar(uri)?;
-        profile.avatar_uri = uri.clone();
+        profile.avatar_uri = uri.to_owned();
         Self::deposit_event(RawEvent::MemberUpdatedAvatar(id));
         <MemberProfile<T>>::insert(id, profile);
         Ok(())
@@ -593,7 +599,7 @@ impl<T: Trait> Module<T> {
             ensure_signed(origin).map_err(|_| MemberControllerAccountDidNotSign::UnsignedOrigin)?;
 
         // Ensure member exists
-        let profile = Self::ensure_profile(member_id.clone())
+        let profile = Self::ensure_profile(*member_id)
             .map_err(|_| MemberControllerAccountDidNotSign::MemberIdInvalid)?;
 
         ensure!(
@@ -609,7 +615,7 @@ impl<T: Trait> Module<T> {
         member_id: &T::MemberId,
     ) -> Result<(), MemberControllerAccountMismatch> {
         // Ensure member exists
-        let profile = Self::ensure_profile(member_id.clone())
+        let profile = Self::ensure_profile(*member_id)
             .map_err(|_| MemberControllerAccountMismatch::MemberIdInvalid)?;
 
         ensure!(
@@ -625,7 +631,7 @@ impl<T: Trait> Module<T> {
         member_id: &T::MemberId,
     ) -> Result<(), MemberRootAccountMismatch> {
         // Ensure member exists
-        let profile = Self::ensure_profile(member_id.clone())
+        let profile = Self::ensure_profile(*member_id)
             .map_err(|_| MemberRootAccountMismatch::MemberIdInvalid)?;
 
         ensure!(
