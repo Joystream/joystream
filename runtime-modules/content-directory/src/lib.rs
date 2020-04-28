@@ -619,7 +619,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <EntityCreationVouchers<T>>::mutate(entity.class_id, entity.get_entity_permissions().get_controller(), |entity_creation_voucher| 
+            <EntityCreationVouchers<T>>::mutate(entity.class_id, entity.get_entity_permissions().get_controller(), |entity_creation_voucher|
                 entity_creation_voucher.increment_created_entities_count()
             );
             <EntityById<T>>::mutate(entity_id, |inner_entity| inner_entity.get_entity_permissions_mut().set_conroller(new_controller));
@@ -627,7 +627,7 @@ decl_module! {
             Ok(())
         }
 
-        pub fn add_entity_creator(
+        pub fn add_entities_creator(
             origin,
             class_id: ClassId,
             group_id: T::GroupId,
@@ -635,33 +635,32 @@ decl_module! {
         ) -> dispatch::Result {
             ensure_root(origin)?;
             Self::ensure_known_class_id(class_id)?;
+            Self::ensure_entity_creator_does_not_exist(class_id, group_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            if !<CanCreateEntitiesOfClass<T>>::exists(class_id, group_id) {
-                <CanCreateEntitiesOfClass<T>>::insert(class_id, group_id, ());
-                let entity_controller = EntityController::<T>::Group(group_id);
-                if let EntityCreationLimit::Individual(limit) = limit {
-                    <EntityCreationVouchers<T>>::insert(class_id, entity_controller.clone(), 
-                        EntityCreationVoucher::new(limit)
-                    );
-                } else {
-                    let class = Self::class_by_id(class_id);
-                    <EntityCreationVouchers<T>>::insert(class_id, entity_controller, 
-                        EntityCreationVoucher::new(class.get_permissions().per_controller_entity_creation_limit)
-                    );
-                }
+            <CanCreateEntitiesOfClass<T>>::insert(class_id, group_id, ());
+            let entity_controller = EntityController::<T>::Group(group_id);
+            if let EntityCreationLimit::Individual(limit) = limit {
+                <EntityCreationVouchers<T>>::insert(class_id, entity_controller.clone(),
+                    EntityCreationVoucher::new(limit)
+                );
+            } else {
+                let class = Self::class_by_id(class_id);
+                <EntityCreationVouchers<T>>::insert(class_id, entity_controller,
+                    EntityCreationVoucher::new(class.get_permissions().per_controller_entity_creation_limit)
+                );
             }
             Ok(())
         }
 
-        pub fn remove_entity_creator(
+        pub fn remove_entities_creator(
             origin,
             class_id: ClassId,
             group_id: T::GroupId,
-        ) {
+        ) -> dispatch::Result {
             ensure_root(origin)?;
             Self::ensure_known_class_id(class_id)?;
             Self::ensure_entity_creator_exists(class_id, group_id)?;
@@ -671,6 +670,41 @@ decl_module! {
             //
 
             <CanCreateEntitiesOfClass<T>>::remove(class_id, group_id);
+            Ok(())
+        }
+
+        pub fn add_entity_maintainer(
+            origin,
+            entity_id: EntityId,
+            group_id: T::GroupId,
+        ) -> dispatch::Result {
+            ensure_root(origin)?;
+            Self::ensure_known_entity_id(entity_id)?;
+            Self::ensure_entity_maintainer_does_not_exist(entity_id, group_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <EntityMaintainers<T>>::insert(entity_id, group_id, ());
+            Ok(())
+        }
+
+        pub fn remove_entity_maintainer(
+            origin,
+            entity_id: EntityId,
+            group_id: T::GroupId,
+        ) -> dispatch::Result {
+            ensure_root(origin)?;
+            Self::ensure_known_entity_id(entity_id)?;
+            Self::ensure_entity_maintainer_exists(entity_id, group_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <EntityMaintainers<T>>::remove(entity_id, group_id);
+            Ok(())
         }
 
         /// Sets the admins for a class
@@ -1882,8 +1916,47 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn ensure_entity_creator_exists(class_id: ClassId, group_id: T::GroupId) -> dispatch::Result {
-        ensure!(<CanCreateEntitiesOfClass<T>>::exists(class_id, group_id), ERROR_ENTITY_CREATOR_DOES_NOT_EXIST);
+    pub fn ensure_entity_creator_exists(
+        class_id: ClassId,
+        group_id: T::GroupId,
+    ) -> dispatch::Result {
+        ensure!(
+            <CanCreateEntitiesOfClass<T>>::exists(class_id, group_id),
+            ERROR_ENTITY_CREATOR_DOES_NOT_EXIST
+        );
+        Ok(())
+    }
+
+    pub fn ensure_entity_creator_does_not_exist(
+        class_id: ClassId,
+        group_id: T::GroupId,
+    ) -> dispatch::Result {
+        ensure!(
+            !<CanCreateEntitiesOfClass<T>>::exists(class_id, group_id),
+            ERROR_ENTITY_CREATOR_ALREADY_EXIST
+        );
+        Ok(())
+    }
+
+    pub fn ensure_entity_maintainer_exists(
+        entity_id: EntityId,
+        group_id: T::GroupId,
+    ) -> dispatch::Result {
+        ensure!(
+            <EntityMaintainers<T>>::exists(entity_id, group_id),
+            ERROR_ENTITY_MAINTAINER_DOES_NOT_EXIST
+        );
+        Ok(())
+    }
+
+    pub fn ensure_entity_maintainer_does_not_exist(
+        entity_id: EntityId,
+        group_id: T::GroupId,
+    ) -> dispatch::Result {
+        ensure!(
+            !<EntityMaintainers<T>>::exists(entity_id, group_id),
+            ERROR_ENTITY_MAINTAINER_ALREADY_EXIST
+        );
         Ok(())
     }
 
