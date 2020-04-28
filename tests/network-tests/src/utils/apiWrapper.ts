@@ -62,8 +62,8 @@ export class ApiWrapper {
   }
 
   public async transferBalanceToAccounts(from: KeyringPair, to: KeyringPair[], amount: BN): Promise<void> {
-    for (let i = 0; i < to.length; i++) {
-      await this.transferBalance(from, to[i].address, amount);
+    for (const keyPair of to) {
+      await this.transferBalance(from, keyPair.address, amount);
     }
     return;
   }
