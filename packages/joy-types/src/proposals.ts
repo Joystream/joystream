@@ -324,21 +324,6 @@ export class Proposal extends Struct {
   }
 }
 
-export class ProposalOf extends Struct {
-  constructor(value?: any) {
-    super(
-      {
-        id: ProposalId,
-        createdAt: "BlockNumber",
-        proposerId: MemberId,
-        stake: "BalanceOf",
-        sender: "AccountId"
-      },
-      value
-    );
-  }
-}
-
 export class Baker extends Struct {
   constructor(value?: any) {
     super(

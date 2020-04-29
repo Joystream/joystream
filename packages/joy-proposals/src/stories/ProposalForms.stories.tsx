@@ -10,7 +10,7 @@ import {
   RuntimeUpgradeForm,
   SetContentWorkingGroupMintCapForm,
   SetCouncilMintCapForm,
-  SetMaxValidatorCountForm,
+  SetMaxValidatorCountForm
 } from "../forms";
 
 export default {

@@ -1,18 +1,48 @@
-import { ParsedProposal } from "@polkadot/joy-proposals/runtime";
+import { ParsedProposal } from "../../runtime";
 
-const mockedProposal: Partial<ParsedProposal> = {
-  title: "Send me some tokens for coffee",
-  description:
-    "Change the total reward across all validators in a given block. This is not the direct reward, but base reward for Pallet staking module. The minimum value must be greater than 450 tJOY based on current runtime. Also, coffee is getting expensive.",
-  proposer: {
-    name: "Satoshi",
-    avatar_uri: "https://react.semantic-ui.com/images/avatar/large/steve.jpg"
+const mockedProposal: ParsedProposal = {
+  title: "Awesome Proposal",
+  description: "Please send me some tokens for coffee",
+  createdAtBlock: 36,
+  type: "Text",
+  details: ["Ciao"],
+  parameters: {
+    approvalQuorumPercentage: 66,
+    approvalThresholdPercentage: 80,
+    gracePeriod: 0,
+    requiredStake: 101520,
+    slashingQuorumPercentage: 60,
+    slashingThresholdPercentage: 80,
+    votingPeriod: 7200
   },
-  type: "SpendingProposal",
-  createdAtBlock: 6554,
-  details: ["1200tJOY", "5hbcehbehbehifbrjjwodk"],
-
-  status: "Active",
+  proposerId: 303,
+  status: {
+    Active: {
+      stakeId: 0,
+      sourceAccountId: "5C4hrfkRjSLwQSFVtCvtbV6wctV1WFnkiexUZWLAh4Bc7jib"
+    }
+  },
+  proposer: {
+    about: "Bob",
+    avatar_uri: "https://react.semantic-ui.com/images/avatar/large/steve.jpg",
+    controller_account: "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+    handle: "bob55",
+    registered_at_block: 18,
+    registered_at_time: 1588087314000,
+    roles: [],
+    entry: {
+      Paid: 0
+    },
+    root_account: "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+    subscription: null,
+    suspended: false
+  },
+  votingResults: {
+    abstensions: 3,
+    approvals: 0,
+    rejections: 1,
+    slashes: 0
+  },
   createdAt: new Date("Mar 25, 2020 at 14:20")
 };
 

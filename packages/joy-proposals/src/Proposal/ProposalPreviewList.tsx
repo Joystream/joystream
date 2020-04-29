@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { Card, Menu, Container, Loader } from "semantic-ui-react";
+import React from "react";
+import { Card, Menu, Container } from "semantic-ui-react";
 
-import { ProposalProps } from "./ProposalDetails";
 import ProposalPreview from "./ProposalPreview";
 import { useTransport, ParsedProposal } from "../runtime";
 import { usePromise } from "../utils";

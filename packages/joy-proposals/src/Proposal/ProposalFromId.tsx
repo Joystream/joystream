@@ -15,14 +15,16 @@ export default function ProposalFromId(props: RouteComponentProps<any>) {
   } = props;
   const transport = useTransport();
 
-  const [proposal, loading, error] = usePromise<ParsedProposal | null>(() => transport.proposalById(id), null);
-  //const [votes, loadVotes, errorVote] = usePromise<any>(transport.votes(id), []);
+  const [proposal, error, loading] = usePromise<ParsedProposal>(
+    () => transport.proposalById(id),
+    {} as ParsedProposal
+  );
 
   if (loading && !error) {
     return <Loading text="Fetching Proposal..." />;
-  } else if (error || proposal === null) {
+  } else if (error) {
     return <Error error={error} />;
   }
 
-  return <ProposalDetails proposal={ proposal as ParsedProposal } proposalId={id}/>;
+  return <ProposalDetails proposal={ proposal } proposalId={id}/>;
 }

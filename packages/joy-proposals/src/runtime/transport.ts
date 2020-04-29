@@ -1,4 +1,3 @@
-import { Profile } from "@joystream/types/members";
 import { ProposalId } from "@joystream/types/proposals";
 // FIXME: Those don't have the same names as in the runtime
 export const ProposalTypes = [
@@ -15,13 +14,27 @@ export const ProposalTypes = [
 
 export type ProposalType = typeof ProposalTypes[number];
 
+export type ParsedMember = {
+  about: string;
+  avatar_uri: string;
+  handle: string;
+  registered_at_block: number;
+  registered_at_time: number;
+  roles: any[];
+  entry: { [k: string]: any };
+  root_account: string;
+  controller_account: string;
+  subscription: any;
+  suspended: boolean;
+};
+
 export type ParsedProposal = {
   id: ProposalId;
   type: ProposalType;
   title: string;
   description: string;
   status: any;
-  proposer: Profile;
+  proposer: ParsedMember;
   proposerId: number;
   createdAtBlock: number;
   createdAt: Date;
