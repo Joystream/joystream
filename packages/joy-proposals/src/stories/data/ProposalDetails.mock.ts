@@ -1,59 +1,49 @@
-import { ProposalProps } from "../../Proposal/ProposalDetails";
+import { ParsedProposal } from "../../runtime";
 
-const mockedProposal: Partial<ProposalProps> = {
-  title: "Send me some tokens for coffee",
-  description:
-    "Change the total reward across all validators in a given block. This is not the direct reward, but base reward for Pallet staking module. The minimum value must be greater than 450 tJOY based on current runtime. Also, coffee is getting expensive.",
-  params: {
-    tokensAmount: 123.45,
-    destinationAccount: "0x4977CA8ADB17758aD2eac7220CE0C21D46421BB7"
+const mockedProposal: ParsedProposal = {
+  title: "Awesome Proposal",
+  description: "Please send me some tokens for coffee",
+  createdAtBlock: 36,
+  type: "Text",
+  details: ["Ciao"],
+  parameters: {
+    approvalQuorumPercentage: 66,
+    approvalThresholdPercentage: 80,
+    gracePeriod: 0,
+    requiredStake: 101520,
+    slashingQuorumPercentage: 60,
+    slashingThresholdPercentage: 80,
+    votingPeriod: 7200
   },
-  details: {
-    createdBy: {
-      name: "Satoshi",
-      avatar: "https://react.semantic-ui.com/images/avatar/large/steve.jpg"
-    },
-    stage: "Active",
-    createdAt: "Mar 25, 2020 at 14:20",
-    type: "Spending Proposal",
-    substage: "Grace period",
-    expiresIn: 5678
-  },
-  votes: [
-    {
-      value: "Approve",
-      by: {
-        name: "Alice Ellison",
-        avatar: "https://react.semantic-ui.com/images/avatar/large/jenny.jpg"
-      },
-      createdAt: "Mar 25, 2020 at 14:20"
-    },
-    {
-      value: "Abstain",
-      by: {
-        name: "Bob Bobston",
-        avatar: "https://react.semantic-ui.com/images/avatar/large/daniel.jpg"
-      },
-      createdAt: "Mar 24, 2020 at 12:11"
-    },
-    {
-      value: "Reject",
-      by: {
-        name: "Charlie Chen",
-        avatar: "https://react.semantic-ui.com/images/avatar/large/matthew.png"
-      },
-      createdAt: "Mar 23, 2020 at 11:34"
-    },
-    {
-      value: "Slash",
-      by: {
-        name: "David Douglas",
-        avatar: "https://react.semantic-ui.com/images/avatar/large/elliot.jpg"
-      },
-      createdAt: "Mar 21, 2020 at 9:54"
+  proposerId: 303,
+  status: {
+    Active: {
+      stakeId: 0,
+      sourceAccountId: "5C4hrfkRjSLwQSFVtCvtbV6wctV1WFnkiexUZWLAh4Bc7jib"
     }
-  ],
-  totalVotes: 12
+  },
+  proposer: {
+    about: "Bob",
+    avatar_uri: "https://react.semantic-ui.com/images/avatar/large/steve.jpg",
+    controller_account: "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+    handle: "bob55",
+    registered_at_block: 18,
+    registered_at_time: 1588087314000,
+    roles: [],
+    entry: {
+      Paid: 0
+    },
+    root_account: "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+    subscription: null,
+    suspended: false
+  },
+  votingResults: {
+    abstensions: 3,
+    approvals: 0,
+    rejections: 1,
+    slashes: 0
+  },
+  createdAt: new Date("Mar 25, 2020 at 14:20")
 };
 
 export default mockedProposal;

@@ -1,18 +1,34 @@
-import { Text, u32, Enum, getTypeRegistry, GenericAccountId, u8, Vec, Option } from '@polkadot/types';
-import { BlockNumber, Balance } from '@polkadot/types/interfaces';
-import { MemberId } from './members';
-import { StakeId } from './stake';
-import AccountId from '@polkadot/types/primitive/Generic/AccountId';
-import { JoyStruct } from './JoyStruct';
+import { Text, u32, Enum, getTypeRegistry, Tuple, GenericAccountId, u8, Vec, Option, Struct } from "@polkadot/types";
+import { BlockNumber, Balance } from "@polkadot/types/interfaces";
+import { MemberId } from "./members";
+import { StakeId } from "./stake";
+import AccountId from "@polkadot/types/primitive/Generic/AccountId";
+import { JoyStruct } from "./JoyStruct";
 
-export type VotingResults = {
+import { RoleParameters } from "./roles";
+
+export type IVotingResults = {
   abstensions: u32;
   approvals: u32;
   rejections: u32;
   slashes: u32;
 };
 
-export type ProposalParameters = {
+export class VotingResults extends Struct {
+  constructor(value?: any) {
+    super(
+      {
+        abstensions: "u32",
+        approvals: "u32",
+        rejections: "u32",
+        slashes: "u32"
+      },
+      value
+    );
+  }
+}
+
+export type ProposalParametersType = {
   // During this period, votes can be accepted
   votingPeriod: BlockNumber;
 
@@ -36,7 +52,38 @@ export type ProposalParameters = {
   requiredStake: Balance;
 };
 
-export type Proposal = {
+class ProposalParameters extends Struct {
+  constructor(value?: any) {
+    super(
+      {
+        // During this period, votes can be accepted
+        votingPeriod: "BlockNumber",
+
+        /* A pause before execution of the approved proposal. Zero means approved proposal would be
+     executed immediately. */
+        gracePeriod: "BlockNumber",
+
+        // Quorum percentage of approving voters required to pass the proposal.
+        approvalQuorumPercentage: "u32",
+
+        // Approval votes percentage threshold to pass the proposal.
+        approvalThresholdPercentage: "u32",
+
+        // Quorum percentage of voters required to slash the proposal.
+        slashingQuorumPercentage: "u32",
+
+        // Slashing votes percentage threshold to slash the proposal.
+        slashingThresholdPercentage: "u32",
+
+        // Proposal stake
+        requiredStake: "Option<Balance>"
+      },
+      value
+    );
+  }
+}
+
+export type IProposal = {
   parameters: ProposalParameters;
   proposerId: MemberId;
   title: Text;
@@ -47,80 +94,83 @@ export type Proposal = {
 };
 
 export const IProposalStatus: { [key: string]: string } = {
-  Active: 'Active',
-  Canceled: 'Canceled',
-  Expired: 'Expired',
-  Approved: 'Approved',
-  Rejected: 'Rejected',
-  Vetoed: 'Vetoed',
-  PendingExecution: 'PendingExecution',
-  Executed: 'Executed',
-  ExecutionFailed: 'ExecutionFailed',
-  Finalized: 'Finalized',
-  Slashed: 'Slashed'
+  Active: "Active",
+  Canceled: "Canceled",
+  Expired: "Expired",
+  Approved: "Approved",
+  Rejected: "Rejected",
+  Vetoed: "Vetoed",
+  PendingExecution: "PendingExecution",
+  Executed: "Executed",
+  ExecutionFailed: "ExecutionFailed",
+  Finalized: "Finalized",
+  Slashed: "Slashed"
 };
 
 export type IActiveStake = {
-  stake_id: StakeId,
-  source_account_id: AccountId,
-}
+  stake_id: StakeId;
+  source_account_id: AccountId;
+};
 export class ActiveStake extends JoyStruct<IActiveStake> {
   constructor(value?: IActiveStake) {
-    super({
-        stake_id: u32,
-        source_account_id: GenericAccountId,
-      }, value);
+    super(
+      {
+        stakeId: u32,
+        sourceAccountId: GenericAccountId
+      },
+      value
+    );
   }
 }
 
-export type ProposalDecisionStatuses = 'Canceled' | 'Vetoed' | 'Rejected' | 'Slashed' | 'Expired'| 'Approved';  
+export type ProposalDecisionStatuses = "Canceled" | "Vetoed" | "Rejected" | "Slashed" | "Expired" | "Approved";
 
 export class ProposalDecisionStatus extends Enum {
   constructor(value?: any, index?: number) {
-    super(['Canceled', 'Vetoed', 'Rejected', 'Slashed', 'Expired', 'Approved'], value, index)
+    super(["Canceled", "Vetoed", "Rejected", "Slashed", "Expired", "Approved"], value, index);
   }
 }
 
 export type IFinalizationData = {
-  proposal_status: ProposalDecisionStatus,
-  finalized_at: BlockNumber,
-  encoded_unstaking_error_due_to_broken_runtime: Option<Vec<u8>>,
-  stake_data_after_unstaking_error: Option<ActiveStake>,
-}
+  proposalStatus: ProposalDecisionStatus;
+  finalizedAt: BlockNumber;
+  encodedUnstakingErrorDueToBrokenRuntime: Option<Vec<u8>>;
+  stakeDataAfterUnstakingError: Option<ActiveStake>;
+};
 
 export class FinalizationData extends JoyStruct<IFinalizationData> {
   constructor(value?: IFinalizationData) {
-    super({
-        proposal_status: ProposalDecisionStatus,
-        finalized_at: u32,
-        encoded_unstaking_error_due_to_broken_runtime: Option.with(Vec.with(u8)),
-        stake_data_after_unstaking_error: Option.with(ActiveStake),
-      }, value);
+    super(
+      {
+        proposalStatus: ProposalDecisionStatus,
+        finalizedAt: u32,
+        encodedUnstakingErrorDueToBrokenRuntime: Option.with(Vec.with(u8)),
+        stakeDataAfterUnstakingError: Option.with(ActiveStake)
+      },
+      value
+    );
   }
 }
 
-export class Active extends ActiveStake{};
-export class Finalized extends FinalizationData{};
+export class Active extends Option.with(ActiveStake) {}
+export class Finalized extends FinalizationData {}
 
 export class ProposalStatus extends Enum {
-  constructor(value?: any) {
-    super({
-      Active,
-      Finalized,
-    }, value);
+  constructor(value?: any, index?: number) {
+    super(
+      {
+        Active,
+        Finalized
+      },
+      value,
+      index
+    );
   }
 }
 
-export const VoteKinds: { [key: string]: string } = {
-  Abstain: 'Abstain',
-  Approve: 'Approve',
-  Reject: 'Reject',
-  Slash: 'Slash'
-};
-
 export class VoteKind extends Enum {
-  constructor(value?: any) {
-    super(['Abstain', 'Approve', 'Reject', 'Slash'], value);
+  constructor(value?: any, index?: number) {
+    super(["Abstain", "Approve", "Reject", "Slash"], value, index);
   }
 }
 
@@ -128,10 +178,145 @@ export type ProposalVotes = [MemberId, VoteKind][];
 
 export class ProposalId extends u32 {}
 
-// const proposalTypes = {
-//   VoteKind,
-//   ProposalStatus
-// };
+export class ElectionParameters extends Struct {
+  constructor(value?: any) {
+    super(
+      {
+        announcingPeriod: "BlockNumber",
+        votingPeriod: "BlockNumber",
+        revealingPeriod: "BlockNumber",
+        councilSize: "u32",
+        candidacyLimit: "u32",
+        newTermDuration: "BlockNumber",
+        minCouncilStake: "Balance",
+        minVotingStake: "Balance"
+      },
+      value
+    );
+  }
+}
+
+export class SpendingParams extends Tuple {
+  constructor(value?: any) {
+    super(["Balance", "AccountId"], value);
+  }
+}
+
+class SetLeadParams extends Tuple {
+  constructor(value?: any) {
+    super([MemberId, AccountId], value);
+  }
+}
+
+export class SetLead extends Option.with(SetLeadParams) {}
+
+export class ProposalDetails extends Enum {
+  constructor(value?: any, index?: number) {
+    super(
+      {
+        Text: "Text",
+        RuntimeUpgrade: "Vec<u8>",
+        SetElectionParameters: ElectionParameters,
+        Spending: SpendingParams,
+        SetLead: SetLead,
+        SetContentWorkingGroupMintCapacity: "Balance",
+        EvictStorageProvider: "AccountId",
+        SetValidatorCount: "u32",
+        SetStorageRoleParameters: RoleParameters
+      },
+      value,
+      index
+    );
+  }
+}
+
+export class Proposal extends Struct {
+  constructor(value?: any) {
+    super(
+      {
+        // Proposals parameter, characterize different proposal types.
+        parameters: ProposalParameters,
+
+        // Identifier of member proposing.
+        proposerId: MemberId,
+
+        // Proposal description
+        title: Text,
+
+        // Proposal body
+        description: Text,
+
+        // When it was created.
+        createdAt: "BlockNumber",
+
+        /// Current proposal status
+        status: ProposalStatus,
+
+        /// Curring voting result for the proposal
+        votingResults: VotingResults
+      },
+      value
+    );
+  }
+
+  get parameters(): ProposalParameters {
+    return this.get("parameters") as ProposalParameters;
+  }
+
+  get proposerId(): MemberId {
+    return this.get("proposerId") as MemberId;
+  }
+
+  get title(): Text {
+    return this.get("description") as Text;
+  }
+
+  get description(): Text {
+    return this.get("description") as Text;
+  }
+
+  get createdAt(): BlockNumber {
+    return this.get("createdAt") as BlockNumber;
+  }
+
+  get status(): ProposalStatus {
+    return this.get("status") as ProposalStatus;
+  }
+
+  get votingResults(): VotingResults {
+    return this.get("votingResults") as VotingResults;
+  }
+}
+
+export class Baker extends Struct {
+  constructor(value?: any) {
+    super(
+      {
+        member: "AccountId",
+        stake: "Balance"
+      },
+      value
+    );
+  }
+}
+export class Seat extends Struct {
+  constructor(value?: any) {
+    super(
+      {
+        member: "AccountId",
+        stake: "Balance",
+        backers: Vec.with(Baker)
+      },
+      value
+    );
+  }
+
+  get member(): AccountId {
+    return this.get("member") as AccountId;
+  }
+}
+
+export class Seats extends Vec.with(Seat) {}
 
 // export default proposalTypes;
 export function registerProposalTypes() {
@@ -139,9 +324,16 @@ export function registerProposalTypes() {
     getTypeRegistry().register({
       ProposalId,
       ProposalStatus,
-      VoteKind
+      ProposalOf: Proposal,
+      ProposalDetails,
+      VotingResults,
+      ProposalParameters,
+      VoteKind,
+      Seat,
+      Seats,
+      Baker
     });
   } catch (err) {
-    console.error('Failed to register custom types of proposals module', err);
+    console.error("Failed to register custom types of proposals module", err);
   }
 }

@@ -1,25 +1,53 @@
-import React, { useState } from "react";
+import React from "react";
 import { Card, Menu, Container } from "semantic-ui-react";
 
-import { ProposalProps } from "./ProposalDetails";
 import ProposalPreview from "./ProposalPreview";
+import { useTransport, ParsedProposal } from "../runtime";
+import { usePromise } from "../utils";
+import Loading from "./Loading";
+import Error from "./Error";
 
 type ProposalFilter = "all" | "active" | "withdrawn" | "approved" | "rejected" | "slashed";
 
-export default function ProposalPreviewList({ proposals }: { proposals: ProposalProps[] }) {
-  const [activeFilter, setActiveFilter] = useState<ProposalFilter>("all");
-  const proposalsMap = new Map();
+// function filterProposals(filter: ProposalFilter, proposals: ParsedProposal[]) {
+//   if (filter === "all") {
+//     return proposals;
+//   } else if (filter === "active") {
+//     return proposals.filter((prop: ParsedProposal) => prop.details.stage === "active");
+//   }
 
-  proposalsMap.set("all", proposals);
-  proposalsMap.set("withdrawn", filterProposals("withdrawn", proposals));
-  proposalsMap.set("active", filterProposals("withdrawn", proposals));
-  proposalsMap.set("approved", filterProposals("approved", proposals));
-  proposalsMap.set("rejected", filterProposals("rejected", proposals));
-  proposalsMap.set("slashed", filterProposals("slashed", proposals));
+//   return proposals.filter((prop: ParsedProposal) => prop.finalized === filter);
+// }
+
+// function mapFromProposals(proposals: ParsedProposal[]) {
+//   const proposalsMap = new Map();
+
+//   proposalsMap.set("all", proposals);
+//   proposalsMap.set("withdrawn", filterProposals("withdrawn", proposals));
+//   proposalsMap.set("active", filterProposals("withdrawn", proposals));
+//   proposalsMap.set("approved", filterProposals("approved", proposals));
+//   proposalsMap.set("rejected", filterProposals("rejected", proposals));
+//   proposalsMap.set("slashed", filterProposals("slashed", proposals));
+
+//   return proposalsMap;
+// }
+
+export default function ProposalPreviewList() {
+  const transport = useTransport();
+
+  const [proposals, error, loading] = usePromise<ParsedProposal[]>(() => transport.proposals(), []);
+
+  if (loading && !error) {
+    return <Loading text="Fetching proposals..." />;
+  } else if (error) {
+    return <Error error={error} />;
+  }
+
+  console.log({ proposals, error, loading });
 
   return (
     <Container className="Proposal">
-      <Menu tabular className="list-menu">
+      {/* <Menu tabular className="list-menu">
         <Menu.Item
           name={`all - ${proposalsMap.get("withdrawn").length} `}
           active={activeFilter === "all"}
@@ -50,28 +78,13 @@ export default function ProposalPreviewList({ proposals }: { proposals: Proposal
           active={activeFilter === "slashed"}
           onClick={() => setActiveFilter("slashed")}
         />
-      </Menu>
+      </Menu> */}
 
       <Card.Group>
-        {proposalsMap.get(activeFilter).map((prop: any, idx: number) => (
-          <ProposalPreview
-            key={`${prop.title}-${idx}`}
-            title={prop.title}
-            description={prop.description}
-            details={prop.details}
-          />
+        {proposals.map((prop: ParsedProposal, idx: number) => (
+          <ProposalPreview key={`${prop.title}-${idx}`} proposal={prop} />
         ))}
       </Card.Group>
     </Container>
   );
-}
-
-function filterProposals(filter: ProposalFilter, proposals: ProposalProps[]) {
-  if (filter === "all") {
-    return proposals;
-  } else if (filter === "active") {
-    return proposals.filter((prop: any) => prop.details.stage === "active");
-  }
-
-  return proposals.filter((prop: any) => prop.finalized === filter);
 }
