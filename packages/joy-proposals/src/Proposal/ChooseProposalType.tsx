@@ -3,7 +3,11 @@ import ProposalTypePreview, { ProposalTypeInfo } from "./ProposalTypePreview";
 import { Item, Dropdown } from "semantic-ui-react";
 
 import { useTransport } from "../runtime";
+import { usePromise } from "../utils";
+import Error from "./Error";
+import Loading from "./Loading";
 import "./ChooseProposalType.css";
+import { RouteComponentProps } from "react-router-dom";
 
 export const Categories = {
   storage: "Storage",
@@ -15,19 +19,19 @@ export const Categories = {
 
 export type Category = typeof Categories[keyof typeof Categories];
 
-type ChooseProposalTypeProps = {
-  proposalTypes: ProposalTypeInfo[];
-};
-
-// Make this without Props.
-export default function ProposalPreview(props: ChooseProposalTypeProps) {
-  const { proposalTypes } = props;
+export default function ChooseProposalType(props: RouteComponentProps) {
   const transport = useTransport();
 
-  // We need to get: Stake, Cancellation fee, Grace Period.
-  // Fetch them here...
-
+  const [proposalTypes, error, loading] = usePromise(() => transport.proposalsTypesParameters(), []);
   const [category, setCategory] = useState("");
+
+  if (loading && !error) {
+    return <Loading text="Fetching proposals..." />;
+  } else if (error || proposalTypes == null) {
+    return <Error error={error} />;
+  }
+
+  console.log({ proposalTypes, loading, error });
   return (
     <div className="ChooseProposalType">
       <div className="filters">

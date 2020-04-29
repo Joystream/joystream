@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
-
-import { ProposalType } from "./Proposal/ProposalTypePreview";
+import { useState, useEffect, useCallback } from "react";
 import { BlockNumber } from "@polkadot/types/interfaces";
+
+import { ProposalType } from "./runtime";
+import { Category } from "./Proposal/ChooseProposalType";
 
 export function includeKeys<T extends { [k: string]: any }>(obj: T, ...allowedKeys: string[]) {
   return Object.keys(obj).filter(objKey => {
@@ -10,6 +11,14 @@ export function includeKeys<T extends { [k: string]: any }>(obj: T, ...allowedKe
       false
     );
   });
+}
+
+export function slugify(str: string) {
+  return str
+    .split(/(?=[A-Z])/) // Splits on UpperCase
+    .map(w => w.toLowerCase())
+    .join("-")
+    .trim();
 }
 
 export function objFromMap(map: Map<string, any>): { [k: string]: any } {
@@ -23,21 +32,22 @@ export function dateFromBlock(blockNumber: BlockNumber) {
   return new Date(Date.now() - 6000 * _blockNumber);
 }
 
-export function usePromise<T>(promiseOrFunction: (() => Promise<T>) | Promise<T>, defaultValue: T): [T, any, boolean] {
+export function usePromise<T>(promise: () => Promise<T>, defaultValue: T): [T, any, boolean] {
   const [state, setState] = useState<{
     value: T;
-    error: null | any;
+    error: any;
     isPending: boolean;
   }>({ value: defaultValue, error: null, isPending: true });
 
-  useEffect(() => {
-    const promise = typeof promiseOrFunction === "function" ? promiseOrFunction() : promiseOrFunction;
-
-    let isSubscribed = true;
-    promise
+  let isSubscribed = true;
+  const execute = useCallback(() => {
+    return promise()
       .then(value => (isSubscribed ? setState({ value, error: null, isPending: false }) : null))
       .catch(error => (isSubscribed ? setState({ value: defaultValue, error: error, isPending: false }) : null));
+  }, [promise]);
 
+  useEffect(() => {
+    execute();
     return () => {
       isSubscribed = false;
     };
@@ -48,33 +58,89 @@ export function usePromise<T>(promiseOrFunction: (() => Promise<T>) | Promise<T>
 }
 
 export function calculateStake(type: ProposalType, issuance: number) {
-  const basis = issuance / 100;
   let stake = NaN;
   switch (type) {
     case "EvictStorageProvider": {
-      stake = basis * 0.1;
+      stake = Math.round(issuance * (0.1 / 100));
       break;
     }
-    case "Signal":
+    case "Text":
     case "SetStorageRoleParams":
-    case "SetMaxValidatorCount":
+    case "SetValidatorCount":
     case "SetLead":
-    case "SetWGMintCapacity":
-    case "SpendingProposal": {
-      stake = basis * 0.25;
+    case "SetContentWorkingGroupMintCapacity":
+    case "Spending": {
+      stake = Math.round(issuance * (0.25 / 100));
       break;
     }
     case "SetElectionParameters": {
-      stake = basis * 0.75;
+      stake = Math.round(issuance * (0.75 / 100));
       break;
     }
     case "RuntimeUpgrade": {
-      stake = basis * 1;
+      stake = Math.round(issuance * (1 / 100));
       break;
     }
     default: {
-      throw new Error("'Proposal Type is invalid. Can't calculate issuance.");
+      throw new Error(`Proposal Type is invalid. Got ${type}. Can't calculate issuance.`);
     }
   }
   return stake;
+}
+
+export function calculateMetaFromType(type: ProposalType) {
+  let description = "";
+  const image = "";
+  let category: Category = "Other";
+  switch (type) {
+    case "EvictStorageProvider": {
+      description = "Evicting Storage Provider Proposal";
+      category = "Storage";
+      break;
+    }
+    case "Text": {
+      description = "Signal Proposal";
+      category = "Other";
+      break;
+    }
+    case "SetStorageRoleParams": {
+      description = "Set Storage Role Params Proposal";
+      category = "Storage";
+      break;
+    }
+    case "SetValidatorCount": {
+      description = "Set Max Validator Count Proposal";
+      category = "Validators";
+      break;
+    }
+    case "SetLead": {
+      description = "Set Lead Proposal";
+      category = "Content Working Group";
+      break;
+    }
+    case "SetContentWorkingGroupMintCapacity": {
+      description = "Set WG Mint Capacity Proposal";
+      category = "Content Working Group";
+      break;
+    }
+    case "Spending": {
+      description = "Spending Proposal";
+      category = "Other";
+      break;
+    }
+    case "SetElectionParameters": {
+      description = "Set Election Parameters Proposal";
+      category = "Council";
+      break;
+    }
+    case "RuntimeUpgrade": {
+      description = "Runtime Upgrade Proposal";
+      category = "Other";
+      break;
+    }
+    default: {
+      throw new Error("'Proposal Type is invalid. Can't calculate metadata.");
+    }
+  }
+  return { description, image, category };
 }

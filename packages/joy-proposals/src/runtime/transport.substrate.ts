@@ -1,12 +1,12 @@
-import { Transport, ParsedProposal } from "./transport";
+import { Transport, ParsedProposal, ProposalType, ProposalTypes } from "./transport";
 import { Proposal, ProposalId, Seats, VoteKind } from "@joystream/types/proposals";
 import { MemberId } from "@joystream/types/members";
 import { ApiProps } from "@polkadot/react-api/types";
 import { u32, bool, Vec } from "@polkadot/types/";
+import { Balance } from "@polkadot/types/interfaces";
 import { ApiPromise } from "@polkadot/api";
 
-import { includeKeys, dateFromBlock } from "../utils";
-import { ProposalType } from "../Proposal/ProposalTypePreview";
+import { includeKeys, dateFromBlock, calculateStake, calculateMetaFromType } from "../utils";
 
 export class SubstrateTransport extends Transport {
   protected api: ApiPromise;
@@ -37,6 +37,10 @@ export class SubstrateTransport extends Transport {
 
   get council() {
     return this.api.query.council;
+  }
+
+  async totalIssuance() {
+    return this.api.query.balances.totalIssuance<Balance>();
   }
 
   async proposalCount() {
@@ -139,16 +143,57 @@ export class SubstrateTransport extends Transport {
     );
   }
 
-  async proposalTypesGracePeriod() {
+  async proposalTypesGracePeriod(): Promise<{ [k in ProposalType]: number }> {
     const methods = includeKeys(this.proposalsCodex, "GracePeriod");
-    // methods = [proposalTypeGracePeriod...]
-    return methods.reduce((obj, method) => ({ ...obj, method: this.proposalsCodex[method]() }), {});
+    // methods = [proposalTypeVotingPeriod...]
+    return methods.reduce(async (prevProm, method) => {
+      const obj = await prevProm;
+      const period = (await this.proposalsCodex[method]()) as u32;
+      // setValidatorCountProposalVotingPeriod to SetValidatorCount
+      const key = method
+        .split(/(?=[A-Z])/)
+        .slice(0, -3)
+        .map((w, i) => (i === 0 ? w.slice(0, 1).toUpperCase() + w.slice(1) : w))
+        .join("") as ProposalType;
+
+      return { ...obj, [`${key}`]: period.toNumber() };
+    }, Promise.resolve({}) as Promise<{ [k in ProposalType]: number }>);
   }
 
-  async proposalTypesVotingPeriod() {
+  async proposalTypesVotingPeriod(): Promise<{ [k in ProposalType]: number }> {
     const methods = includeKeys(this.proposalsCodex, "VotingPeriod");
     // methods = [proposalTypeVotingPeriod...]
-    return methods.reduce((obj, method) => ({ ...obj, method: this.proposalsCodex[method]() }), {});
+    return methods.reduce(async (prevProm, method) => {
+      const obj = await prevProm;
+      const period = (await this.proposalsCodex[method]()) as u32;
+      // setValidatorCountProposalVotingPeriod to SetValidatorCount
+      const key = method
+        .split(/(?=[A-Z])/)
+        .slice(0, -3)
+        .map((w, i) => (i === 0 ? w.slice(0, 1).toUpperCase() + w.slice(1) : w))
+        .join("") as ProposalType;
+
+      return { ...obj, [`${key}`]: period.toNumber() };
+    }, Promise.resolve({}) as Promise<{ [k in ProposalType]: number }>);
+  }
+
+  async parametersFromProposalType(type: ProposalType) {
+    const votingPeriod = (await this.proposalTypesVotingPeriod())[type];
+    const gracePeriod = (await this.proposalTypesGracePeriod())[type];
+    const issuance = (await this.totalIssuance()).toNumber();
+    const stake = calculateStake(type, issuance);
+    const meta = calculateMetaFromType(type);
+    return {
+      type,
+      votingPeriod,
+      gracePeriod,
+      stake,
+      ...meta
+    };
+  }
+
+  async proposalsTypesParameters() {
+    return Promise.all(ProposalTypes.map(type => this.parametersFromProposalType(type)));
   }
 
   async bestBlock() {

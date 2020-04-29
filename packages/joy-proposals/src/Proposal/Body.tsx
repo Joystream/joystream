@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, Header, Item } from "semantic-ui-react";
-import { ProposalType } from "./ProposalTypePreview";
+import { ProposalType } from "../runtime/transport";
 import { blake2AsHex } from '@polkadot/util-crypto';
 import styled from 'styled-components';
 import AddressMini from '@polkadot/react-components/AddressMiniJoy';

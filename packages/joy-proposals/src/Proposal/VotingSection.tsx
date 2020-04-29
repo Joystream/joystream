@@ -57,7 +57,7 @@ export default function VotingSection({
   const transport = useTransport();
   const [voted, setVoted] = useState<VoteKindStr | null >(null);
   const [vote] = usePromise<VoteKind | null | undefined>(
-    transport.voteByProposalAndMember(proposalId, memberId),
+    () => transport.voteByProposalAndMember(proposalId, memberId),
     undefined
   );
 

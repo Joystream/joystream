@@ -42,14 +42,15 @@ type ProposalPreviewListProps = {
 function ProposalPreviewList({ bestNumber }: ProposalPreviewListProps) {
   const transport = useTransport();
 
-  const [proposals, error, loading] = usePromise<ParsedProposal[]>(transport.proposals(), []);
+  const [proposals, error, loading] = usePromise<ParsedProposal[]>(() => transport.proposals(), []);
 
   if (loading && !error) {
     return <Loading text="Fetching proposals..." />;
   } else if (error) {
     return <Error error={error} />;
   }
-  console.log(proposals);
+
+  console.log({ proposals, error, loading });
 
   return (
     <Container className="Proposal">
