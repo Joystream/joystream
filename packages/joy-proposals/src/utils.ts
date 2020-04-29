@@ -58,11 +58,10 @@ export function usePromise<T>(promise: () => Promise<T>, defaultValue: T): [T, a
 }
 
 export function calculateStake(type: ProposalType, issuance: number) {
-  const basis = issuance / 100;
   let stake = NaN;
   switch (type) {
     case "EvictStorageProvider": {
-      stake = Math.round(basis * 0.1);
+      stake = Math.round(issuance * (0.1 / 100));
       break;
     }
     case "Text":
@@ -71,15 +70,15 @@ export function calculateStake(type: ProposalType, issuance: number) {
     case "SetLead":
     case "SetContentWorkingGroupMintCapacity":
     case "Spending": {
-      stake = Math.round(basis * 0.25);
+      stake = Math.round(issuance * (0.25 / 100));
       break;
     }
     case "SetElectionParameters": {
-      stake = Math.round(basis * 0.75);
+      stake = Math.round(issuance * (0.75 / 100));
       break;
     }
     case "RuntimeUpgrade": {
-      stake = Math.round(basis * 1);
+      stake = Math.round(issuance * (1 / 100));
       break;
     }
     default: {

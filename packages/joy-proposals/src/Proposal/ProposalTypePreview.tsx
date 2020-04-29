@@ -49,7 +49,7 @@ export default function ProposalTypePreview(props: ProposalTypePreviewProps) {
           <div className="proposal-detail">
             <div className="detail-title">Grace period:</div>
             <div className="detail-value">
-              {gracePeriod ? `${gracePeriod} day${gracePeriod > 1 ? "s" : ""}` : "NONE"}
+              {gracePeriod ? `${gracePeriod} block${gracePeriod > 1 ? "s" : ""}` : "NONE"}
             </div>
           </div>
         </div>
