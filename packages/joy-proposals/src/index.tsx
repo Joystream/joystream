@@ -45,14 +45,13 @@ function App(props: Props): React.ReactElement<Props> {
         <header>
           <Tabs basePath={basePath} items={tabs} />
         </header>
-
         <Switch>
           <Route exact component={ProposalPreviewList} />
           <Route exact path={`${basePath}/active`} component={NotDone} />
           <Route exact path={`${basePath}/finalized`} component={NotDone} />
           <Route exact path={`${basePath}/:id`} component={ProposalFromId} />
           <Route exact path={`${basePath}/new`} component={ChooseProposalType} />
-          <Route path={`${basePath}/new/text`} component={SignalForm} />
+          <Route exact path={`${basePath}/new/text`} component={SignalForm} />
           <Route exact path={`${basePath}/new/runtime-upgrade`} component={RuntimeUpgradeForm} />
           <Route exact path={`${basePath}/new/set-election-parameters`} component={SetCouncilParamsForm} />
           <Route exact path={`${basePath}/new/spending`} component={SpendingProposalForm} />
