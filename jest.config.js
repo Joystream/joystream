@@ -11,5 +11,8 @@ module.exports = {
   transform: {
     "^.+\\.tsx?$": "ts-jest",
     "^.+\\.jsx?$": "babel-jest"
-  }
+  },
+  snapshotSerializers: [
+    "enzyme-to-json/serializer"
+  ]
 }
