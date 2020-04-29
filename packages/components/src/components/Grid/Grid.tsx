@@ -14,7 +14,7 @@ export default function Grid({
   let styles = makeStyles(styleProps)
   return (
     <div css={styles.container} className={className}>
-      {items.map(item => <div css={styles.item}>{item}</div>)}
+      {items.map((item, index) => <div key={`grid-item-${index}`} css={styles.item}>{item}</div>)}
     </div>
   )
 }
