@@ -603,27 +603,6 @@ decl_module! {
         // Next set of extrinsics can only be invoked by root origin.
         // ======
 
-        /// Change the controller of an entity.
-        ///
-
-        pub fn update_entity_controller(
-            origin,
-            entity_id: EntityId,
-            new_controller: EntityController<T>
-        ) -> dispatch::Result {
-            ensure_root(origin)?;
-            Self::ensure_known_entity_id(entity_id)?;
-            let entity = Self::entity_by_id(entity_id);
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            <EntityById<T>>::mutate(entity_id, |inner_entity| inner_entity.get_entity_permissions_mut().set_conroller(new_controller));
-
-            Ok(())
-        }
-
         pub fn add_entities_creator(
             origin,
             class_id: ClassId,
@@ -749,6 +728,10 @@ decl_module! {
 
             Ok(())
         }
+
+
+        /// Update entity permissions.
+        ///
 
         pub fn update_entity_permissions(
             origin,
