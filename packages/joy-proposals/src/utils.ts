@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { BlockNumber } from "@polkadot/types/interfaces";
 
 import { ProposalType } from "./runtime";
@@ -24,21 +24,22 @@ export function dateFromBlock(blockNumber: BlockNumber) {
   return new Date(Date.now() - 6000 * _blockNumber);
 }
 
-export function usePromise<T>(promiseOrFunction: (() => Promise<T>) | Promise<T>, defaultValue: T): [T, any, boolean] {
+export function usePromise<T>(promise: () => Promise<T>): [T | null, any, boolean] {
   const [state, setState] = useState<{
     value: T;
-    error: null | any;
+    error: any;
     isPending: boolean;
-  }>({ value: defaultValue, error: null, isPending: true });
+  }>({ value: null, error: null, isPending: true });
 
-  useEffect(() => {
-    const promise = typeof promiseOrFunction === "function" ? promiseOrFunction() : promiseOrFunction;
-
-    let isSubscribed = true;
-    promise
+  let isSubscribed = true;
+  const execute = useCallback(() => {
+    return promise()
       .then(value => (isSubscribed ? setState({ value, error: null, isPending: false }) : null))
       .catch(error => (isSubscribed ? setState({ value: defaultValue, error: error, isPending: false }) : null));
+  }, [promise]);
 
+  useEffect(() => {
+    execute();
     return () => {
       isSubscribed = false;
     };

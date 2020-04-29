@@ -5,7 +5,6 @@ type ErrorProps = {
   error: any;
 };
 export default function Error({ error }: ErrorProps) {
-  console.error(error);
   return (
     <Container style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
       <Message negative>

@@ -19,20 +19,20 @@ export const Categories = {
 export type Category = typeof Categories[keyof typeof Categories];
 
 // Make this without Props.
-export default function ProposalPreview() {
+export default function ChooseProposalType() {
   const transport = useTransport();
 
-  const [proposalTypes, loading, error] = usePromise(transport.proposalTypesVotingPeriod(), []);
+  const [proposalTypes, loading, error] = usePromise(() => transport.proposalTypesVotingPeriod());
+  const [category, setCategory] = useState("");
 
   if (loading && !error) {
     return <Loading text="Fetching proposals..." />;
-  } else if (error) {
+  } else if (error || proposalTypes == null) {
     return <Error error={error} />;
   }
 
-  console.log(proposalTypes);
+  console.log({ proposalTypes, loading, error });
 
-  const [category, setCategory] = useState("");
   return (
     <div className="ChooseProposalType">
       {/* <div className="filters">
