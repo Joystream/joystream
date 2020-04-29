@@ -1,5 +1,6 @@
 import React from "react";
 
+import { History } from "history";
 import { Item, Icon, Button } from "semantic-ui-react";
 
 import { Category } from "./ChooseProposalType";
@@ -20,6 +21,7 @@ export type ProposalTypeInfo = {
 
 type ProposalTypePreviewProps = {
   typeInfo: ProposalTypeInfo;
+  history: History;
 };
 
 export default function ProposalTypePreview(props: ProposalTypePreviewProps) {
@@ -29,6 +31,8 @@ export default function ProposalTypePreview(props: ProposalTypePreviewProps) {
 
   const handleClick = () => {
     console.log(`Clicked, should go to ${slugify(type)}`);
+    if (!props.history) return;
+    props.history.push(`/proposals/new/${slugify(type)}`);
   };
 
   return (

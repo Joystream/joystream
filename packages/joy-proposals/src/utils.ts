@@ -24,17 +24,6 @@ export function slugify(str: string) {
     .trim();
 }
 
-export function objFromMap(map: Map<string, any>): { [k: string]: any } {
-  return Object.fromEntries(
-    Array.from(map.entries(), ([key, value]) => (value instanceof Map ? [key, objFromMap(value)] : [key, value]))
-  );
-}
-
-export function dateFromBlock(blockNumber: BlockNumber) {
-  const _blockNumber = blockNumber.toNumber();
-  return new Date(Date.now() - 6000 * _blockNumber);
-}
-
 export function usePromise<T>(promise: () => Promise<T>, defaultValue: T): [T, any, boolean] {
   const [state, setState] = useState<{
     value: T;
@@ -68,7 +57,7 @@ export function calculateStake(type: ProposalType, issuance: number) {
       break;
     }
     case "Text":
-    case "SetStorageRoleParams":
+    case "SetStorageRoleParameters":
     case "SetValidatorCount":
     case "SetLead":
     case "SetContentWorkingGroupMintCapacity":
@@ -106,7 +95,7 @@ export function calculateMetaFromType(type: ProposalType) {
       category = "Other";
       break;
     }
-    case "SetStorageRoleParams": {
+    case "SetStorageRoleParameters": {
       description = "Set Storage Role Params Proposal";
       category = "Storage";
       break;
