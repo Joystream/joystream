@@ -1,6 +1,8 @@
-import { registerJoystreamTypes } from '@joystream/types';
-import { config } from 'dotenv';
+import "reflect-metadata";
+
+import * as dotenv from 'dotenv';
 import { createConnection } from 'typeorm';
+import { {{typeRegistrator}} } from '{{{packageName}}}';
 
 const handlers = require('../../mappings');
 import { QueryNodeManager } from 'substrate-query-node/lib/query-node';
@@ -22,7 +24,7 @@ function getProcessingPack() {
 
 async function main() {
   // Load from .env
-  config({ path: '../../.env' });
+  dotenv.config({ path: '../../.env' });
 
   const providerUri = process.env.WS_PROVIDER_ENDPOINT_URI;
 
@@ -36,7 +38,7 @@ async function main() {
   await createConnection();
 
   const node = new QueryNodeManager(process);
-  node.start(providerUri, getProcessingPack(), registerJoystreamTypes);
+  node.start(providerUri, getProcessingPack(), {{typeRegistrator}});
 }
 
 main();

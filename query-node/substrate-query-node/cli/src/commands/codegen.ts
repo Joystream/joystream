@@ -1,4 +1,6 @@
 import * as path from 'path';
+import * as dotenv from 'dotenv';
+import * as Mustache from 'mustache';
 import { readFileSync, copyFileSync } from 'fs-extra';
 import { Command } from '@oclif/command';
 import { execSync } from 'child_process';
@@ -12,6 +14,8 @@ export default class Codegen extends Command {
   static generatedFolderName = 'generated';
 
   async run() {
+    dotenv.config();
+
     const generatedFolderPath = path.resolve(process.cwd(), Codegen.generatedFolderName);
     createDir(generatedFolderPath);
 
@@ -51,8 +55,12 @@ export default class Codegen extends Command {
     process.chdir(indexerPath);
 
     // Create index.ts file
-    const indexFileContent = formatWithPrettier(readFileSync(getTemplatePath('index-builder-entry.mst'), 'utf8'));
-    createFile(path.resolve('index.ts'), indexFileContent);
+    let indexFileContent = readFileSync(getTemplatePath('index-builder-entry.mst'), 'utf8');
+    indexFileContent = Mustache.render(indexFileContent, {
+      packageName: process.env.TYPE_REGISTER_PACKAGE_NAME,
+      typeRegistrator: process.env.TYPE_REGISTER_FUNCTION
+    });
+    createFile(path.resolve('index.ts'), formatWithPrettier(indexFileContent));
 
     // Create package.json
     copyFileSync(getTemplatePath('indexer.package.json'), path.resolve(process.cwd(), 'package.json'));
@@ -64,6 +72,7 @@ export default class Codegen extends Command {
 
     this.log('Installing dependendies for indexer...');
     execSync('yarn install');
+    execSync(`yarn add ${process.env.TYPE_REGISTER_PACKAGE_NAME}`);
     this.log('done...');
 
     this.log('Generating typeorm db entities...');
