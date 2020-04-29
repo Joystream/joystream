@@ -70,6 +70,10 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
+    pub const InitialMembersBalance: u64 = 2000;
+    pub const ExistentialDeposit: u32 = 0;
+    pub const TransferFee: u32 = 0;
+    pub const CreationFee: u32 = 0;
 }
 
 impl system::Trait for Runtime {
@@ -95,6 +99,45 @@ impl timestamp::Trait for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
+}
+
+impl bureaucracy::Trait<bureaucracy::Instance1> for Runtime {}
+
+impl recurringrewards::Trait for Runtime {
+    type PayoutStatusHandler = ();
+    type RecipientId = u64;
+    type RewardRelationshipId = u64;
+}
+
+impl membership::members::Trait for Runtime {
+    type Event = ();
+    type MemberId = u64;
+    type PaidTermId = u64;
+    type SubscriptionId = u64;
+    type ActorId = u64;
+    type InitialMembersBalance = InitialMembersBalance;
+}
+
+impl balances::Trait for Runtime {
+    type Balance = u64;
+    type OnFreeBalanceZero = ();
+    type OnNewAccount = ();
+    type Event = ();
+    type DustRemoval = ();
+    type TransferPayment = ();
+    type ExistentialDeposit = ExistentialDeposit;
+    type TransferFee = TransferFee;
+    type CreationFee = CreationFee;
+}
+pub type Balances = balances::Module<Runtime>;
+
+impl common::currency::GovernanceCurrency for Runtime {
+    type Currency = Balances;
+}
+
+impl minting::Trait for Runtime {
+    type Currency = Balances;
+    type MintId = u64;
 }
 
 impl Trait for Runtime {
@@ -382,13 +425,14 @@ pub fn assert_not_forum_sudo_cannot_update_category(
     update_operation: fn(OriginType, CategoryId) -> dispatch::Result,
 ) {
     let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
+    let forum_sudo = 33;
+    let origin = OriginType::Signed(forum_sudo);
 
     build_test_externalities(config).execute_with(|| {
         let category_id = create_root_category(origin.clone());
         assert_eq!(
             update_operation(NOT_FORUM_SUDO_ORIGIN, category_id),
-            Err(ERROR_ORIGIN_NOT_FORUM_SUDO)
+            Err(bureaucracy::MSG_ORIGIN_IS_NOT_LEAD)
         );
     });
 }
@@ -408,8 +452,6 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         next_thread_id: 1,
         post_by_id: vec![],
         next_post_id: 1,
-
-        forum_sudo: 33,
 
         category_title_constraint: InputValidationLengthConstraint {
             min: 10,
@@ -489,7 +531,6 @@ pub fn genesis_config(
         next_thread_id,
         post_by_id: post_by_id.clone(),
         next_post_id,
-        forum_sudo,
         category_title_constraint: category_title_constraint.clone(),
         category_description_constraint: category_description_constraint.clone(),
         thread_title_constraint: thread_title_constraint.clone(),

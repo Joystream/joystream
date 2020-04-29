@@ -1645,6 +1645,7 @@ dependencies = [
  "srml-timestamp",
  "srml-transaction-payment",
  "substrate-authority-discovery-primitives",
+ "substrate-bureaucracy-module",
  "substrate-client",
  "substrate-common-module",
  "substrate-consensus-babe-primitives",
@@ -4840,7 +4841,12 @@ dependencies = [
  "srml-support-procedural",
  "srml-system",
  "srml-timestamp",
+ "substrate-bureaucracy-module",
+ "substrate-common-module",
+ "substrate-membership-module",
  "substrate-primitives",
+ "substrate-recurring-reward-module",
+ "substrate-token-mint-module",
 ]
 
 [[package]]

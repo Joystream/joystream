@@ -6,16 +6,16 @@ mod types;
 use sr_primitives::traits::One;
 use srml_support::traits::Currency;
 use srml_support::{decl_module, decl_storage, dispatch, ensure};
-use system::{self, ensure_signed};
+use system::ensure_root;
 
 use membership::role_types::{ActorInRole, Role};
 use types::{Lead, LeadRoleState};
 
-pub static MSG_CHANNEL_DESCRIPTION_TOO_SHORT: &str = "Channel description too short";
-pub static MSG_CHANNEL_DESCRIPTION_TOO_LONG: &str = "Channel description too long";
+//TODO: convert messages to the decl_error! entries
 pub static MSG_ORIGIN_IS_NOT_LEAD: &str = "Origin is not lead";
 pub static MSG_CURRENT_LEAD_NOT_SET: &str = "Current lead is not set";
 pub static MSG_CURRENT_LEAD_ALREADY_SET: &str = "Current lead is already set";
+pub static MSG_IS_NOT_LEAD_ACCOUNT: &str = "Not a lead account";
 
 /// Type identifier for lead role, which must be same as membership actor identifier
 pub type LeadId<T> = <T as membership::members::Trait>::ActorId;
@@ -27,8 +27,9 @@ pub type RewardRelationshipId<T> = <T as recurringrewards::Trait>::RewardRelatio
 pub type BalanceOf<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
+/// The bureaucracy main _Trait_
 pub trait Trait<I: Instance>:
-    system::Trait + hiring::Trait + recurringrewards::Trait + membership::members::Trait
+    system::Trait + recurringrewards::Trait + membership::members::Trait
 {
 }
 
@@ -47,13 +48,10 @@ decl_storage! {
 
 decl_module! {
     pub struct Module<T: Trait<I>, I: Instance> for enum Call where origin: T::Origin {
-
-    }
-}
-
-impl<T: Trait<I>, I: Instance> Module<T, I> {
     /// Introduce a lead when one is not currently set.
-    pub fn set_lead(member: T::MemberId, role_account: T::AccountId) -> dispatch::Result {
+    pub fn set_lead(origin, member: T::MemberId, role_account: T::AccountId) -> dispatch::Result {
+        ensure_root(origin)?;
+
         // Ensure there is no current lead
         ensure!(
             <CurrentLeadId<T, I>>::get().is_none(),
@@ -73,7 +71,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         // Construct lead
         let new_lead = Lead {
-            role_account: role_account.clone(),
+            role_account,
             reward_relationship: None,
             inducted: <system::Module<T>>::block_number(),
             stage: LeadRoleState::Active,
@@ -83,34 +81,36 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         <LeadById<T, I>>::insert(new_lead_id, new_lead);
 
         // Update current lead
-        <CurrentLeadId<T, I>>::put(new_lead_id); // Some(new_lead_id)
+        <CurrentLeadId<T, I>>::put(new_lead_id);
 
         // Update next lead counter
         <NextLeadId<T, I>>::mutate(|id| *id += <LeadId<T> as One>::one());
 
-        // Trigger event
-//        Self::deposit_event(RawEvent::LeadSet(new_lead_id));
+        // Trigger event: TODO: create bureaucracy events
+        //        Self::deposit_event(RawEvent::LeadSet(new_lead_id));
 
         Ok(())
     }
+    }
+}
 
-    pub fn ensure_lead_is_set() -> Result<
-        (
-            LeadId<T>,
-            Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>,
-        ),
-        &'static str,
-    > {
+impl<T: Trait<I>, I: Instance> Module<T, I> {
+    /// Checks that provided lead account id belongs to the current bureaucracy leader
+    pub fn ensure_is_lead_account(lead_account_id: T::AccountId) -> Result<(), &'static str> {
         // Ensure lead id is set
         let lead_id = Self::ensure_lead_id_set()?;
 
         // If so, grab actual lead
-        let lead = <LeadById<T,I>>::get(lead_id);
+        let lead = <LeadById<T, I>>::get(lead_id);
 
-        // and return both
-        Ok((lead_id, lead))
+        if lead.role_account != lead_account_id {
+            return Err(MSG_IS_NOT_LEAD_ACCOUNT);
+        }
+
+        Ok(())
     }
 
+    // checks that storage contains lead_id
     fn ensure_lead_id_set() -> Result<LeadId<T>, &'static str> {
         let opt_current_lead_id = <CurrentLeadId<T, I>>::get();
 
@@ -119,26 +119,5 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         } else {
             Err(MSG_CURRENT_LEAD_NOT_SET)
         }
-    }
-
-    pub fn ensure_origin_is_set_lead(
-        origin: T::Origin,
-    ) -> Result<
-        (
-            LeadId<T>,
-            Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>,
-        ),
-        &'static str,
-    > {
-        // Ensure lead is actually set
-        let (lead_id, lead) = Self::ensure_lead_is_set()?;
-
-        // Ensure is signed
-        let signer = ensure_signed(origin)?;
-
-        // Ensure signer is lead
-        ensure!(signer == lead.role_account, MSG_ORIGIN_IS_NOT_LEAD);
-
-        Ok((lead_id, lead))
     }
 }

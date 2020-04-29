@@ -18,7 +18,8 @@ fn parse_forum_json() -> Result<ForumData> {
     serde_json::from_str(data)
 }
 
-pub fn create(forum_sudo: AccountId) -> ForumConfig {
+//TODO: should we set the forum_sudo account in the bureaucracy module?
+pub fn create(_forum_sudo: AccountId) -> ForumConfig {
     let forum_data = parse_forum_json().expect("failed loading forum data");
 
     let next_category_id: CategoryId = forum_data
@@ -35,7 +36,6 @@ pub fn create(forum_sudo: AccountId) -> ForumConfig {
         next_category_id,
         next_thread_id,
         next_post_id,
-        forum_sudo,
         category_title_constraint: new_validation(10, 90),
         category_description_constraint: new_validation(10, 490),
         thread_title_constraint: new_validation(10, 90),

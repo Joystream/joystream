@@ -790,6 +790,9 @@ impl migration::Trait for Runtime {
     type Event = Event;
 }
 
+// Forum bureaucracy
+impl bureaucracy::Trait<bureaucracy::Instance1> for Runtime {}
+
 impl actors::Trait for Runtime {
     type Event = Event;
     type OnActorRemoved = HandleActorRemoved;
