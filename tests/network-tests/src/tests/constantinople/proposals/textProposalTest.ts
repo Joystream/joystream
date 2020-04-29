@@ -8,7 +8,7 @@ import { ApiWrapper } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN = require('bn.js');
 
-describe.skip('Text proposal network tests', () => {
+describe('Text proposal network tests', () => {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
@@ -56,7 +56,7 @@ describe.skip('Text proposal network tests', () => {
     await apiWrapper.proposeText(m1KeyPairs[0], proposalStake, proposalTitle, description, proposalText);
     const proposalNumber = await proposalPromise;
 
-    // Approving runtime update proposal
+    // Approving text proposal
     const textProposalPromise = apiWrapper.expectProposalFinalized();
     await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber);
     await textProposalPromise;

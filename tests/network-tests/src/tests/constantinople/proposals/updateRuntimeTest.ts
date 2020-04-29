@@ -9,7 +9,7 @@ import { ApiWrapper } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN = require('bn.js');
 
-describe.skip('Runtime upgrade networt tests', () => {
+describe('Runtime upgrade networt tests', () => {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
@@ -52,9 +52,7 @@ describe.skip('Runtime upgrade networt tests', () => {
     await apiWrapper.transferBalanceToAccounts(sudo, m2KeyPairs, runtimeVoteFee);
 
     // Proposal creation
-    console.log('proposing new runtime');
     const proposalPromise = apiWrapper.expectProposalCreated();
-    console.log('sending extr');
     await apiWrapper.proposeRuntime(
       m1KeyPairs[0],
       proposalStake,
@@ -63,11 +61,8 @@ describe.skip('Runtime upgrade networt tests', () => {
       runtime
     );
     const proposalNumber = await proposalPromise;
-    console.log('proposed');
 
     // Approving runtime update proposal
-    console.log('block number ' + apiWrapper.getBestBlock());
-    console.log('approving new runtime');
     const runtimePromise = apiWrapper.expectProposalFinalized();
     await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber);
     await runtimePromise;

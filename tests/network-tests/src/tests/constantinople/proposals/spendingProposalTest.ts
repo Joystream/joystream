@@ -7,13 +7,15 @@ import { registerJoystreamTypes } from '@joystream/types';
 import { ApiWrapper } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN = require('bn.js');
+import { assert } from 'chai';
 
-describe.skip('Spending proposal network tests', () => {
+describe('Spending proposal network tests', () => {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const spendingBalance: BN = new BN(+process.env.SPENDING_BALANCE!);
+  const mintCapacity: BN = new BN(+process.env.COUNCIL_MINTING_CAPACITY!);
   const defaultTimeout: number = 120000;
 
   const m1KeyPairs: KeyringPair[] = new Array();
@@ -50,6 +52,7 @@ describe.skip('Spending proposal network tests', () => {
     );
     await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, runtimeProposalFee.add(proposalStake));
     await apiWrapper.transferBalanceToAccounts(sudo, m2KeyPairs, runtimeVoteFee);
+    await apiWrapper.sudoSetCouncilMintCapacity(sudo, mintCapacity);
 
     // Proposal creation
     const proposalPromise = apiWrapper.expectProposalCreated();
@@ -63,10 +66,18 @@ describe.skip('Spending proposal network tests', () => {
     );
     const proposalNumber = await proposalPromise;
 
-    // Approving runtime update proposal
-    const runtimePromise = apiWrapper.expectProposalFinalized();
+    // Approving spending proposal
+    const balanceBeforeMinting: BN = await apiWrapper.getBalance(sudo.address);
+    const spendingPromise = apiWrapper.expectProposalFinalized();
     await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber);
-    await runtimePromise;
+    await spendingPromise;
+    const balanceAfterMinting: BN = await apiWrapper.getBalance(sudo.address);
+    assert(
+      balanceAfterMinting.sub(balanceBeforeMinting).eq(spendingBalance),
+      `member ${
+        m1KeyPairs[0].address
+      } has unexpected balance ${balanceAfterMinting}, expected ${balanceBeforeMinting.add(spendingBalance)}`
+    );
   }).timeout(defaultTimeout);
 
   after(() => {

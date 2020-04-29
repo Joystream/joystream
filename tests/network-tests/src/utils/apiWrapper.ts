@@ -3,7 +3,8 @@ import { Option, Vec, Bytes, u32 } from '@polkadot/types';
 import { Codec } from '@polkadot/types/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { UserInfo, PaidMembershipTerms, MemberId } from '@joystream/types/lib/members';
-import { Seat, VoteKind } from '@joystream/types';
+import { Mint, MintId } from '@joystream/types/lib/mint';
+import { Seat } from '@joystream/types';
 import { Balance, EventRecord } from '@polkadot/types/interfaces';
 import BN = require('bn.js');
 import { SubmittableExtrinsic } from '@polkadot/api/types';
@@ -212,6 +213,14 @@ export class ApiWrapper {
     );
   }
 
+  public sudoSetCouncilMintCapacity(sudo: KeyringPair, capacity: BN): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx.sudo.sudo(this.api.tx.council.setCouncilMintCapacity(capacity)),
+      sudo,
+      false
+    );
+  }
+
   public getBestBlock(): Promise<BN> {
     return this.api.derive.chain.bestNumber();
   }
@@ -367,5 +376,12 @@ export class ApiWrapper {
 
   public getProposalCount(): Promise<BN> {
     return this.api.query.proposalsEngine.proposalCount<u32>();
+  }
+
+  public async getWorkingGroupMintCapacity(): Promise<BN> {
+    const mintId = await this.api.query.contentWorkingGroup.mint();
+    const mintCodec = await this.api.query.minting.mints<Codec[]>(mintId);
+    const mint = (mintCodec[0] as unknown) as Mint;
+    return mint.getField<Balance>('capacity');
   }
 }
