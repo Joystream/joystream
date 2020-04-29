@@ -7,7 +7,7 @@ import { BlockNumber } from '@polkadot/types/interfaces';
 
 import "./Proposal.css";
 
-type ProposalPreviewProps = {
+export type ProposalPreviewProps = {
   proposal: ParsedProposal,
   bestNumber?: BlockNumber
 };

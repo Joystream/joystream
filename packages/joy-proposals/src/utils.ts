@@ -1,6 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { BlockNumber } from "@polkadot/types/interfaces";
-
 import { ProposalType } from "./runtime";
 import { Category } from "./Proposal/ChooseProposalType";
 

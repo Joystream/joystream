@@ -3,7 +3,7 @@ import { Categories } from "../../Proposal/ChooseProposalType";
 
 const MockProposalTypesInfo: ProposalTypeInfo[] = [
   {
-    type: "Signal Proposal",
+    type: "Text",
     category: Categories.other,
     image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
@@ -15,7 +15,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     gracePeriod: 0,
   },
   {
-    type: "Spending Proposal",
+    type: "Spending",
     category: Categories.other,
     image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
@@ -27,7 +27,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     gracePeriod: 3,
   },
   {
-    type: "Runtime Upgrade",
+    type: "RuntimeUpgrade",
     category: Categories.other,
     image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
@@ -39,7 +39,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     gracePeriod: 14,
   },
   {
-    type: "Evict Storage Provider",
+    type: "EvictStorageProvider",
     category: Categories.storage,
     image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
@@ -51,7 +51,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     gracePeriod: 1,
   },
   {
-    type: "Set Storage Provider Parameters",
+    type: "SetStorageRoleParameters",
     category: Categories.storage,
     image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
@@ -63,7 +63,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     gracePeriod: 14,
   },
   {
-    type: "Set Validator Count",
+    type: "SetValidatorCount",
     category: Categories.validators,
     image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
@@ -75,7 +75,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     gracePeriod: 5,
   },
   {
-    type: "Change Content Working Group Mint Capacity",
+    type: "SetContentWorkingGroupMintCapacity",
     category: Categories.cwg,
     image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
@@ -87,7 +87,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     gracePeriod: 5,
   },
   {
-    type: "Set Content Working Group Lead",
+    type: "SetLead",
     category: Categories.cwg,
     image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
@@ -99,7 +99,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     gracePeriod: 7,
   },
   {
-    type: "Set Council Parameters",
+    type: "SetElectionParameters",
     category: Categories.council,
     image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
@@ -109,18 +109,6 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     stake: 1000,
     cancellationFee: 100,
     gracePeriod: 30,
-  },
-  {
-    type: "Change Council Mint Capacity",
-    category: Categories.council,
-    image: "https://react.semantic-ui.com/images/wireframe/image.png",
-    description:
-        "Change the total reward across all validators in a given block."+
-        "This is not the direct reward, but base reward for Pallet staking module."+
-        "The minimum value must be greater than 450 tJOY based on current runtime.",
-    stake: 100,
-    cancellationFee: 10,
-    gracePeriod: 7,
   },
 ];
 

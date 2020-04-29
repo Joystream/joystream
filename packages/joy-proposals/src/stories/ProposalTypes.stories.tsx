@@ -1,11 +1,9 @@
-import React from "react";
 import "../index.css";
-
-import MockProposalTypesInfo from "./data/ProposalTypesInfo.mock";
 import { ChooseProposalType } from "../Proposal";
+import withMock from './withMock';
 
 export default {
     title: "Proposals | Proposal Types",
 };
 
-export const Default = () => <ChooseProposalType proposalTypes={MockProposalTypesInfo} />;
+export const Default = () => withMock(ChooseProposalType);

@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Menu, Container } from "semantic-ui-react";
+import { Card, Container } from "semantic-ui-react";
 
 import ProposalPreview from "./ProposalPreview";
 import { useTransport, ParsedProposal } from "../runtime";

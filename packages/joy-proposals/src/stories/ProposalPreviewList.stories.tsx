@@ -1,11 +1,9 @@
-import React from "react";
 import "../index.css";
-
-import MockProposalPreviewList from "./data/ProposalPreviewList.mock";
 import { ProposalPreviewList } from "../Proposal";
+import withMock from './withMock';
 
 export default {
     title: "Proposals | Preview List",
 };
 
-export const Default = () => <ProposalPreviewList proposals={MockProposalPreviewList} />;
+export const Default = () => withMock(ProposalPreviewList);
