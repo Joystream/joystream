@@ -8,10 +8,6 @@ describe("Tag component", () => {
 
   const component = mount(<Tag icon={faCheck} text="test" color={colors.other.success} />)
 
-  it("Should render.", () => {
-    expect(component).toBeDefined()
-  })
-
   it("Should render correctly", () => {
     expect(component).toMatchSnapshot()
   })
