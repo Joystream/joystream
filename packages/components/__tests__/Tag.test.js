@@ -12,6 +12,10 @@ describe("Tag component", () => {
     expect(component).toBeDefined()
   })
 
+  it("Should render correctly", () => {
+    expect(component).toMatchSnapshot()
+  })
+
   it("Should render icon.", () => {
     expect(component.find("svg"))
       .toHaveLength(1)
