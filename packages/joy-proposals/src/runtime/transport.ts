@@ -1,14 +1,14 @@
 // FIXME: Those don't have the same names as in the runtime
 export const ProposalTypes = [
-  "EvictStorageProvider",
-  "Signal",
-  "SetStorageRoleParams",
-  "SetMaxValidatorCount",
+  "Text",
+  "RuntimeUpgrade",
   "SetElectionParameters",
-  "SpendingProposal",
-  "SetWGMintCapacity",
+  "Spending",
   "SetLead",
-  "RuntimeUpgrade"
+  "SetContentWorkingGroupMintCapacity",
+  "EvictStorageProvider",
+  "SetValidatorCount",
+  "SetStorageRoleParams"
 ] as const;
 
 export type ProposalType = typeof ProposalTypes[number];

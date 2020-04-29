@@ -7,6 +7,7 @@ import { usePromise } from "../utils";
 import Error from "./Error";
 import Loading from "./Loading";
 import "./ChooseProposalType.css";
+import { RouteComponentProps } from "react-router-dom";
 
 export const Categories = {
   storage: "Storage",
@@ -18,11 +19,10 @@ export const Categories = {
 
 export type Category = typeof Categories[keyof typeof Categories];
 
-// Make this without Props.
-export default function ChooseProposalType() {
+export default function ChooseProposalType(props: RouteComponentProps) {
   const transport = useTransport();
 
-  const [proposalTypes, loading, error] = usePromise(() => transport.proposalTypesVotingPeriod());
+  const [proposalTypes, error, loading] = usePromise(() => transport.proposalsTypesParameters(), []);
   const [category, setCategory] = useState("");
 
   if (loading && !error) {
@@ -32,10 +32,9 @@ export default function ChooseProposalType() {
   }
 
   console.log({ proposalTypes, loading, error });
-
   return (
     <div className="ChooseProposalType">
-      {/* <div className="filters">
+      <div className="filters">
         <Dropdown
           placeholder="Category"
           options={Object.values(Categories).map(category => ({ value: category, text: category }))}
@@ -51,7 +50,7 @@ export default function ChooseProposalType() {
           .map((typeInfo, idx) => (
             <ProposalTypePreview key={`${typeInfo} - ${idx}`} typeInfo={typeInfo} />
           ))}
-      </Item.Group> */}
+      </Item.Group>
     </div>
   );
 }

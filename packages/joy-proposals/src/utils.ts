@@ -13,6 +13,14 @@ export function includeKeys<T extends { [k: string]: any }>(obj: T, ...allowedKe
   });
 }
 
+export function slugify(str: string) {
+  return str
+    .split(/(?=[A-Z])/) // Splits on UpperCase
+    .map(w => w.toLowerCase())
+    .join("-")
+    .trim();
+}
+
 export function objFromMap(map: Map<string, any>): { [k: string]: any } {
   return Object.fromEntries(
     Array.from(map.entries(), ([key, value]) => (value instanceof Map ? [key, objFromMap(value)] : [key, value]))
@@ -24,12 +32,12 @@ export function dateFromBlock(blockNumber: BlockNumber) {
   return new Date(Date.now() - 6000 * _blockNumber);
 }
 
-export function usePromise<T>(promise: () => Promise<T>): [T | null, any, boolean] {
+export function usePromise<T>(promise: () => Promise<T>, defaultValue: T): [T, any, boolean] {
   const [state, setState] = useState<{
     value: T;
     error: any;
     isPending: boolean;
-  }>({ value: null, error: null, isPending: true });
+  }>({ value: defaultValue, error: null, isPending: true });
 
   let isSubscribed = true;
   const execute = useCallback(() => {
@@ -54,28 +62,28 @@ export function calculateStake(type: ProposalType, issuance: number) {
   let stake = NaN;
   switch (type) {
     case "EvictStorageProvider": {
-      stake = basis * 0.1;
+      stake = Math.round(basis * 0.1);
       break;
     }
-    case "Signal":
+    case "Text":
     case "SetStorageRoleParams":
-    case "SetMaxValidatorCount":
+    case "SetValidatorCount":
     case "SetLead":
-    case "SetWGMintCapacity":
-    case "SpendingProposal": {
-      stake = basis * 0.25;
+    case "SetContentWorkingGroupMintCapacity":
+    case "Spending": {
+      stake = Math.round(basis * 0.25);
       break;
     }
     case "SetElectionParameters": {
-      stake = basis * 0.75;
+      stake = Math.round(basis * 0.75);
       break;
     }
     case "RuntimeUpgrade": {
-      stake = basis * 1;
+      stake = Math.round(basis * 1);
       break;
     }
     default: {
-      throw new Error("'Proposal Type is invalid. Can't calculate issuance.");
+      throw new Error(`Proposal Type is invalid. Got ${type}. Can't calculate issuance.`);
     }
   }
   return stake;
@@ -91,7 +99,7 @@ export function calculateMetaFromType(type: ProposalType) {
       category = "Storage";
       break;
     }
-    case "Signal": {
+    case "Text": {
       description = "Signal Proposal";
       category = "Other";
       break;
@@ -101,7 +109,7 @@ export function calculateMetaFromType(type: ProposalType) {
       category = "Storage";
       break;
     }
-    case "SetMaxValidatorCount": {
+    case "SetValidatorCount": {
       description = "Set Max Validator Count Proposal";
       category = "Validators";
       break;
@@ -111,12 +119,12 @@ export function calculateMetaFromType(type: ProposalType) {
       category = "Content Working Group";
       break;
     }
-    case "SetWGMintCapacity": {
+    case "SetContentWorkingGroupMintCapacity": {
       description = "Set WG Mint Capacity Proposal";
       category = "Content Working Group";
       break;
     }
-    case "SpendingProposal": {
+    case "Spending": {
       description = "Spending Proposal";
       category = "Other";
       break;

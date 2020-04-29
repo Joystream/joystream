@@ -147,46 +147,50 @@ export class SubstrateTransport extends Transport {
     );
   }
 
-  async proposalTypesGracePeriod() {
+  async proposalTypesGracePeriod(): Promise<{ [k in ProposalType]: number }> {
     const methods = includeKeys(this.proposalsCodex, "GracePeriod");
-    // methods = [proposalTypeGracePeriod...]
+    // methods = [proposalTypeVotingPeriod...]
     return methods.reduce(async (prevProm, method) => {
       const obj = await prevProm;
       const period = (await this.proposalsCodex[method]()) as u32;
-      // setValidatorCountProposalGracePeriod to setValidatorCount
+      // setValidatorCountProposalVotingPeriod to SetValidatorCount
       const key = method
         .split(/(?=[A-Z])/)
         .slice(0, -3)
-        .join("");
+        .map((w, i) => (i === 0 ? w.slice(0, 1).toUpperCase() + w.slice(1) : w))
+        .join("") as ProposalType;
+
       return { ...obj, [`${key}`]: period.toNumber() };
-    }, Promise.resolve({}));
+    }, Promise.resolve({}) as Promise<{ [k in ProposalType]: number }>);
   }
 
-  async proposalTypesVotingPeriod() {
+  async proposalTypesVotingPeriod(): Promise<{ [k in ProposalType]: number }> {
     const methods = includeKeys(this.proposalsCodex, "VotingPeriod");
     // methods = [proposalTypeVotingPeriod...]
     return methods.reduce(async (prevProm, method) => {
       const obj = await prevProm;
       const period = (await this.proposalsCodex[method]()) as u32;
-      // setValidatorCountProposalVotingPeriod to setValidatorCount
+      // setValidatorCountProposalVotingPeriod to SetValidatorCount
       const key = method
         .split(/(?=[A-Z])/)
         .slice(0, -3)
-        .join("");
+        .map((w, i) => (i === 0 ? w.slice(0, 1).toUpperCase() + w.slice(1) : w))
+        .join("") as ProposalType;
+
       return { ...obj, [`${key}`]: period.toNumber() };
-    }, Promise.resolve({}));
+    }, Promise.resolve({}) as Promise<{ [k in ProposalType]: number }>);
   }
 
   async parametersFromProposalType(type: ProposalType) {
-    const votingPeriod = ((await this.proposalTypesVotingPeriod()) as { [k in ProposalType]: any })[type];
-    const gracePeriod = ((await this.proposalTypesGracePeriod()) as { [k in ProposalType]: any })[type];
+    const votingPeriod = (await this.proposalTypesVotingPeriod())[type];
+    const gracePeriod = (await this.proposalTypesGracePeriod())[type];
     const issuance = (await this.totalIssuance()).toNumber();
     const stake = calculateStake(type, issuance);
     const meta = calculateMetaFromType(type);
     return {
       type,
-      votingPeriod: votingPeriod.toNumber(),
-      gracePeriod: gracePeriod.toNumber(),
+      votingPeriod,
+      gracePeriod,
       stake,
       ...meta
     };

@@ -1,7 +1,10 @@
 import React from "react";
+
 import { Item, Icon, Button } from "semantic-ui-react";
+
 import { Category } from "./ChooseProposalType";
 import { ProposalType } from "../runtime";
+import { slugify } from "../utils";
 
 import "./ProposalType.css";
 
@@ -23,6 +26,11 @@ export default function ProposalTypePreview(props: ProposalTypePreviewProps) {
   const {
     typeInfo: { type, image, description, stake, cancellationFee, gracePeriod }
   } = props;
+
+  const handleClick = () => {
+    console.log(`Clicked, should go to ${slugify(type)}`);
+  };
+
   return (
     <Item className="ProposalType">
       <Item.Image size="tiny" src={image} />
@@ -47,7 +55,7 @@ export default function ProposalTypePreview(props: ProposalTypePreviewProps) {
         </div>
       </Item.Content>
       <div className="actions">
-        <Button primary className="btn-create" size="medium">
+        <Button primary className="btn-create" size="medium" onClick={handleClick}>
           Create
           <Icon name="chevron right" />
         </Button>

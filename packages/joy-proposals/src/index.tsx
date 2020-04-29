@@ -48,10 +48,10 @@ function App(props: Props): React.ReactElement<Props> {
         </header>
         <Switch>
           <Route path={`${basePath}/new`} component={ChooseProposalType} />
-          <Route path={`${basePath}/new/signal`} component={SignalForm} />
+          <Route path={`${basePath}/new/text`} component={SignalForm} />
           <Route path={`${basePath}/new/evict-storage-provider`} component={EvictStorageProviderForm} />
           <Route path={`${basePath}/new/spending`} component={SpendingProposalForm} />
-          <Route path={`${basePath}/new/set-cwg-lead`} component={SetContentWorkingGroupLeadForm} />
+          <Route path={`${basePath}/new/set-content-working-group-lead`} component={SetContentWorkingGroupLeadForm} />
           <Route path={`${basePath}/new/set-cwg-mint-cap`} component={SetContentWorkingGroupMintCapForm} />
           <Route path={`${basePath}/new/set-council-mint-cap`} component={SetCouncilMintCapForm} />
           <Route path={`${basePath}/new/set-election-params`} component={SetCouncilParamsForm} />
