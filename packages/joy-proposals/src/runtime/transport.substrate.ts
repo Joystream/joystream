@@ -1,4 +1,4 @@
-import { Transport, ParsedProposal, ProposalType, ProposalTypes, ParsedMember } from "./transport";
+import { Transport, ParsedProposal, ProposalType, ProposalTypes, ParsedMember, ProposalVote } from "./transport";
 import { Proposal, ProposalId, Seats, VoteKind } from "@joystream/types/proposals";
 import { MemberId } from "@joystream/types/members";
 import { ApiProps } from "@polkadot/react-api/types";
@@ -123,7 +123,7 @@ export class SubstrateTransport extends Transport {
     return this.proposalsCodex.proposalDetailsByProposalId(id);
   }
 
-  async councilMembers() {
+  async councilMembers(): Promise<(ParsedMember & { memberId: MemberId })[]> {
     const council = (await this.council.activeCouncil()) as Seats;
     return Promise.all(
       council.map(async seat => {
@@ -143,7 +143,7 @@ export class SubstrateTransport extends Transport {
     return hasVoted ? vote : null;
   }
 
-  async votes(proposalId: ProposalId) {
+  async votes(proposalId: ProposalId): Promise<ProposalVote[]> {
     const councilMembers = await this.councilMembers();
     return Promise.all(
       councilMembers.map(async member => {

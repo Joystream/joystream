@@ -1,4 +1,5 @@
-import { ProposalId } from "@joystream/types/proposals";
+import { ProposalId, VoteKind } from "@joystream/types/proposals";
+import { MemberId } from "@joystream/types/members";
 // FIXME: Those don't have the same names as in the runtime
 export const ProposalTypes = [
   "Text",
@@ -49,6 +50,11 @@ export type ParsedProposal = {
     slashingThresholdPercentage: number;
     votingPeriod: number;
   };
+};
+
+export type ProposalVote = {
+  vote: VoteKind | null;
+  member: (ParsedMember & { memberId: MemberId });
 };
 
 export abstract class Transport {

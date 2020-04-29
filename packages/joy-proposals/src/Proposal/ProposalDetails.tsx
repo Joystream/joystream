@@ -4,8 +4,9 @@ import { Container } from "semantic-ui-react";
 import Details from "./Details";
 import Body from "./Body";
 import VotingSection from "./VotingSection";
+import Votes from "./Votes";
 import { MyAccountProps, withMyAccount } from "@polkadot/joy-utils/MyAccount"
-import { ParsedProposal } from "../runtime/transport";
+import { ParsedProposal } from "../runtime";
 import { withCalls } from '@polkadot/react-api';
 import { withMulti } from '@polkadot/react-api/with';
 
@@ -74,7 +75,7 @@ function ProposalDetails({ proposal, proposalId, myAddress, myMemberId, iAmMembe
           memberId={ myMemberId as MemberId }
           isVotingPeriod={ extendedStatus.substage === 'Voting period' }/>
       ) }
-      {/* <Votes votes={votes} total={totalVotes} />  TODO: Implement */}
+      <Votes proposalId={proposalId} />
     </Container>
   );
 }

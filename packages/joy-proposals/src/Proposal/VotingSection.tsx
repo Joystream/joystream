@@ -11,7 +11,7 @@ import { usePromise } from "../utils";
 
 // TODO: joy-types (there's something similar already I think)
 const voteKinds = ["Approve", "Slash", "Abstain", "Reject"] as const;
-type VoteKindStr = "Approve" | "Slash" | "Abstain" | "Reject";
+export type VoteKindStr = "Approve" | "Slash" | "Abstain" | "Reject";
 
 type VoteButtonProps = {
   memberId: MemberId,
