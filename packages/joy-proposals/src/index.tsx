@@ -16,7 +16,6 @@ import {
   SpendingProposalForm,
   SetContentWorkingGroupLeadForm,
   SetContentWorkingGroupMintCapForm,
-  SetCouncilMintCapForm,
   SetCouncilParamsForm,
   SetStorageRoleParamsForm,
   SetMaxValidatorCountForm,
@@ -46,25 +45,26 @@ function App(props: Props): React.ReactElement<Props> {
         <header>
           <Tabs basePath={basePath} items={tabs} />
         </header>
+
         <Switch>
+          <Route exact component={ProposalPreviewList} />
+          <Route exact path={`${basePath}/active`} component={NotDone} />
+          <Route exact path={`${basePath}/finalized`} component={NotDone} />
+          <Route exact path={`${basePath}/:id`} component={ProposalFromId} />
+          <Route exact path={`${basePath}/new`} component={ChooseProposalType} />
           <Route path={`${basePath}/new/text`} component={SignalForm} />
-          <Route exact path={`${basePath}/new/evict-storage-provider`} component={EvictStorageProviderForm} />
+          <Route exact path={`${basePath}/new/runtime-upgrade`} component={RuntimeUpgradeForm} />
+          <Route exact path={`${basePath}/new/set-election-parameters`} component={SetCouncilParamsForm} />
           <Route exact path={`${basePath}/new/spending`} component={SpendingProposalForm} />
+          <Route exact path={`${basePath}/new/set-lead`} component={SetContentWorkingGroupLeadForm} />
           <Route
             exact
-            path={`${basePath}/new/set-content-working-group-lead`}
-            component={SetContentWorkingGroupLeadForm}
+            path={`${basePath}/new/set-content-working-group-mint-capacity`}
+            component={SetContentWorkingGroupMintCapForm}
           />
-          <Route path={`${basePath}/new/set-cwg-mint-cap`} component={SetContentWorkingGroupMintCapForm} />
-          <Route path={`${basePath}/new/set-council-mint-cap`} component={SetCouncilMintCapForm} />
-          <Route path={`${basePath}/new/set-election-params`} component={SetCouncilParamsForm} />
-          <Route path={`${basePath}/new/set-max-validator-count`} component={SetMaxValidatorCountForm} />
-          <Route path={`${basePath}/new/runtime-upgrade`} component={RuntimeUpgradeForm} />
-          <Route path={`${basePath}/new`} component={ChooseProposalType} />
-          <Route path={`${basePath}/active`} component={NotDone} />
-          <Route path={`${basePath}/finalized`} component={NotDone} />
-          <Route path={`${basePath}/:id`} component={ProposalFromId} />
-          <Route component={ProposalPreviewList} />
+          <Route exact path={`${basePath}/new/evict-storage-provider`} component={EvictStorageProviderForm} />
+          <Route exact path={`${basePath}/new/set-validator-count`} component={SetMaxValidatorCountForm} />
+          <Route exact path={`${basePath}/new/set-storage-role-parameters`} component={SetStorageRoleParamsForm} />
         </Switch>
       </main>
     </SubstrateProvider>

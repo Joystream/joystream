@@ -57,7 +57,7 @@ export function calculateStake(type: ProposalType, issuance: number) {
       break;
     }
     case "Text":
-    case "SetStorageRoleParams":
+    case "SetStorageRoleParameters":
     case "SetValidatorCount":
     case "SetLead":
     case "SetContentWorkingGroupMintCapacity":
@@ -95,7 +95,7 @@ export function calculateMetaFromType(type: ProposalType) {
       category = "Other";
       break;
     }
-    case "SetStorageRoleParams": {
+    case "SetStorageRoleParameters": {
       description = "Set Storage Role Params Proposal";
       category = "Storage";
       break;

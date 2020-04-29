@@ -7,7 +7,7 @@ export const ProposalTypes = [
   "SetContentWorkingGroupMintCapacity",
   "EvictStorageProvider",
   "SetValidatorCount",
-  "SetStorageRoleParams"
+  "SetStorageRoleParameters"
 ] as const;
 
 export type ProposalType = typeof ProposalTypes[number];
