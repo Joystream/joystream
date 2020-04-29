@@ -45,11 +45,11 @@ function VideoViewComponent({ video, channel }: VideoViewProps) {
 }
 
 interface Videos {
-  channels: any
+  channel: any
 }
 
 type RouteProps = {
-  videos: Videos
+  videos: Array<Videos>
   channels: any
 } & RouteComponentProps
 
