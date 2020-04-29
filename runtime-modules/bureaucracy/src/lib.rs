@@ -3,7 +3,8 @@
 
 mod constraints;
 mod types;
-
+#[cfg(test)]
+mod tests;
 
 use rstd::collections::btree_set::BTreeSet;
 use rstd::vec::Vec;
