@@ -3,10 +3,10 @@ import { Proposal, ProposalId, Seats, VoteKind } from "@joystream/types/proposal
 import { MemberId } from "@joystream/types/members";
 import { ApiProps } from "@polkadot/react-api/types";
 import { u32, Vec } from "@polkadot/types/";
-import { Balance } from "@polkadot/types/interfaces";
+import { Balance, Moment } from "@polkadot/types/interfaces";
 import { ApiPromise } from "@polkadot/api";
 
-import { includeKeys, dateFromBlock, calculateStake, calculateMetaFromType, splitOnUpperCase } from "../utils";
+import { includeKeys, calculateStake, calculateMetaFromType, splitOnUpperCase } from "../utils";
 
 export class SubstrateTransport extends Transport {
   protected api: ApiPromise;
@@ -43,6 +43,17 @@ export class SubstrateTransport extends Transport {
     return this.api.query.balances.totalIssuance<Balance>();
   }
 
+  async blockHash(height: number): Promise<string> {
+    const blockHash = await this.api.query.system.blockHash(height);
+    return blockHash.toString();
+  }
+
+  async blockTimestamp(height: number): Promise<Date> {
+    const blockTime = (await this.api.query.timestamp.now.at(await this.blockHash(height))) as Moment;
+
+    return new Date(blockTime.toNumber());
+  }
+
   async proposalCount() {
     return this.proposalsEngine.proposalCount<u32>();
   }
@@ -74,6 +85,7 @@ export class SubstrateTransport extends Transport {
       status: any;
     };
     const createdAtBlock = rawProposal.createdAt;
+    const createdAt = await this.blockTimestamp(createdAtBlock.toNumber());
 
     return {
       ...proposal,
@@ -81,7 +93,7 @@ export class SubstrateTransport extends Transport {
       type,
       proposer,
       createdAtBlock: createdAtBlock.toJSON(),
-      createdAt: dateFromBlock(createdAtBlock)
+      createdAt
     };
   }
 

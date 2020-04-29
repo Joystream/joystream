@@ -24,17 +24,6 @@ export function slugify(str: string) {
     .trim();
 }
 
-export function objFromMap(map: Map<string, any>): { [k: string]: any } {
-  return Object.fromEntries(
-    Array.from(map.entries(), ([key, value]) => (value instanceof Map ? [key, objFromMap(value)] : [key, value]))
-  );
-}
-
-export function dateFromBlock(blockNumber: BlockNumber) {
-  const _blockNumber = blockNumber.toNumber();
-  return new Date(Date.now() - 6000 * _blockNumber);
-}
-
 export function usePromise<T>(promise: () => Promise<T>, defaultValue: T): [T, any, boolean] {
   const [state, setState] = useState<{
     value: T;

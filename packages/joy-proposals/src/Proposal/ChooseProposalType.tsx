@@ -48,7 +48,7 @@ export default function ChooseProposalType(props: RouteComponentProps) {
         {proposalTypes
           .filter(typeInfo => !category || typeInfo.category === category)
           .map((typeInfo, idx) => (
-            <ProposalTypePreview key={`${typeInfo} - ${idx}`} typeInfo={typeInfo} />
+            <ProposalTypePreview key={`${typeInfo} - ${idx}`} typeInfo={typeInfo} history={props.history} />
           ))}
       </Item.Group>
     </div>
