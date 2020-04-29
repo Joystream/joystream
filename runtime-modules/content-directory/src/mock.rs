@@ -278,19 +278,25 @@ pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
         .execute_with(f)
 }
 
-impl <T: Trait> Property<T> {
+impl<T: Trait> Property<T> {
     pub fn required(mut self) -> Self {
         self.required = true;
         self
     }
 }
 
-pub fn assert_class_props(class_id: <Runtime as Trait>::ClassId, expected_props: Vec<Property<Runtime>>) {
+pub fn assert_class_props(
+    class_id: <Runtime as Trait>::ClassId,
+    expected_props: Vec<Property<Runtime>>,
+) {
     let class = TestModule::class_by_id(class_id);
     assert_eq!(class.properties, expected_props);
 }
 
-pub fn assert_class_schemas(class_id: <Runtime as Trait>::ClassId, expected_schema_prop_ids: Vec<Vec<PropertyId>>) {
+pub fn assert_class_schemas(
+    class_id: <Runtime as Trait>::ClassId,
+    expected_schema_prop_ids: Vec<Vec<PropertyId>>,
+) {
     let class = TestModule::class_by_id(class_id);
     let schemas: Vec<_> = expected_schema_prop_ids
         .iter()
@@ -318,7 +324,9 @@ pub fn simple_test_entity_property_values<T: Trait>() -> BTreeMap<PropertyId, Pr
     property_values
 }
 
-pub fn create_simple_class(permissions: ClassPermissionsType<Runtime>) -> <Runtime as Trait>::ClassId {
+pub fn create_simple_class(
+    permissions: ClassPermissionsType<Runtime>,
+) -> <Runtime as Trait>::ClassId {
     let class_id = TestModule::next_class_id();
     assert_ok!(TestModule::create_class(
         Origin::signed(CLASS_PERMISSIONS_CREATOR1),
@@ -357,7 +365,9 @@ pub fn next_entity_id() -> <Runtime as Trait>::EntityId {
     TestModule::next_entity_id()
 }
 
-pub fn create_entity_of_class(class_id: <Runtime as Trait>::ClassId) -> <Runtime as Trait>::EntityId {
+pub fn create_entity_of_class(
+    class_id: <Runtime as Trait>::ClassId,
+) -> <Runtime as Trait>::EntityId {
     let entity_id = TestModule::next_entity_id();
     assert_eq!(TestModule::perform_entity_creation(class_id,), entity_id);
     entity_id
@@ -395,7 +405,11 @@ pub fn create_class_with_schema() -> (<Runtime as Trait>::ClassId, SchemaId) {
     (class_id, schema_id)
 }
 
-pub fn create_class_with_schema_and_entity() -> (<Runtime as Trait>::ClassId, SchemaId, <Runtime as Trait>::EntityId) {
+pub fn create_class_with_schema_and_entity() -> (
+    <Runtime as Trait>::ClassId,
+    SchemaId,
+    <Runtime as Trait>::EntityId,
+) {
     let (class_id, schema_id) = create_class_with_schema();
     let entity_id = create_entity_of_class(class_id);
     (class_id, schema_id, entity_id)

@@ -23,8 +23,8 @@ mod example;
 mod mock;
 mod operations;
 mod permissions;
-mod tests;
 mod schema;
+mod tests;
 
 pub use constraint::*;
 use core::fmt::Debug;
@@ -62,7 +62,7 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug {
         + PartialEq
         + Ord
         + From<u32>;
-    
+
     type ClassId: Parameter
         + Member
         + SimpleArithmetic
@@ -90,7 +90,7 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug {
         + Eq
         + PartialEq
         + Ord;
-    
+
     /// Security/configuration constraints
 
     type PropertyNameConstraint: Get<InputValidationLengthConstraint>;
@@ -964,7 +964,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn perform_entity_creation(class_id: T::ClassId) -> T::EntityId {
-        let entity_id =  Self::next_entity_id();
+        let entity_id = Self::next_entity_id();
 
         let new_entity = Entity::<T>::new(class_id, BTreeSet::new(), BTreeMap::new());
 
@@ -1864,7 +1864,9 @@ impl<T: Trait> Module<T> {
         (entity, class)
     }
 
-    pub fn get_involved_entities(current_prop_value: &PropertyValue<T>) -> Option<Vec<T::EntityId>> {
+    pub fn get_involved_entities(
+        current_prop_value: &PropertyValue<T>,
+    ) -> Option<Vec<T::EntityId>> {
         match current_prop_value {
             PropertyValue::Reference(entity_id) => Some(vec![*entity_id]),
             PropertyValue::ReferenceVec(entity_ids_vec, _) => Some(entity_ids_vec.clone()),

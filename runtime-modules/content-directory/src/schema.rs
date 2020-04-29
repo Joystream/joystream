@@ -1,7 +1,6 @@
-
+use codec::{Decode, Encode};
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
-use codec::{Decode, Encode};
 
 pub type PropertyId = u16;
 pub type SchemaId = u16;
@@ -83,7 +82,7 @@ pub enum PropertyType<T: Trait> {
     // ExternalVec(u16, ExternalProperty),
 }
 
-impl <T: Trait> Default for PropertyType<T> {
+impl<T: Trait> Default for PropertyType<T> {
     fn default() -> Self {
         PropertyType::Bool
     }
