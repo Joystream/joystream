@@ -76,3 +76,5 @@ Start block indexer:
 $ cd generated/indexer
 $ yarn start
 ```
+
+Looking for an existing example check out: [joystream-query-node](../../joystream-query-node)
