@@ -13,9 +13,12 @@ export function includeKeys<T extends { [k: string]: any }>(obj: T, ...allowedKe
   });
 }
 
+export function splitOnUpperCase(str: string) {
+  return str.split(/(?=[A-Z])/);
+}
+
 export function slugify(str: string) {
-  return str
-    .split(/(?=[A-Z])/) // Splits on UpperCase
+  return splitOnUpperCase(str)
     .map(w => w.toLowerCase())
     .join("-")
     .trim();

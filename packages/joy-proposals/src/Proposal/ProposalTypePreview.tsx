@@ -4,7 +4,7 @@ import { Item, Icon, Button } from "semantic-ui-react";
 
 import { Category } from "./ChooseProposalType";
 import { ProposalType } from "../runtime";
-import { slugify } from "../utils";
+import { slugify, splitOnUpperCase } from "../utils";
 
 import "./ProposalType.css";
 
@@ -35,7 +35,7 @@ export default function ProposalTypePreview(props: ProposalTypePreviewProps) {
     <Item className="ProposalType">
       <Item.Image size="tiny" src={image} />
       <Item.Content>
-        <Item.Header>{type}</Item.Header>
+        <Item.Header>{splitOnUpperCase(type).join(" ")}</Item.Header>
         <Item.Description>{description}</Item.Description>
         <div className="proposal-details">
           <div className="proposal-detail">

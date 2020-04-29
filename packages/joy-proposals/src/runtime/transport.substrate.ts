@@ -1,12 +1,12 @@
-import { Transport, ParsedProposal, ProposalType, ProposalTypes } from "./transport";
+import { Transport, ParsedProposal, ProposalType, ProposalTypes, ParsedMember } from "./transport";
 import { Proposal, ProposalId, Seats, VoteKind } from "@joystream/types/proposals";
 import { MemberId } from "@joystream/types/members";
 import { ApiProps } from "@polkadot/react-api/types";
-import { u32, bool, Vec } from "@polkadot/types/";
+import { u32, Vec } from "@polkadot/types/";
 import { Balance } from "@polkadot/types/interfaces";
 import { ApiPromise } from "@polkadot/api";
 
-import { includeKeys, dateFromBlock, calculateStake, calculateMetaFromType } from "../utils";
+import { includeKeys, dateFromBlock, calculateStake, calculateMetaFromType, splitOnUpperCase } from "../utils";
 
 export class SubstrateTransport extends Transport {
   protected api: ApiPromise;
@@ -64,10 +64,11 @@ export class SubstrateTransport extends Transport {
     const type = Object.keys(rawDetails)[0] as ProposalType;
     const details = rawDetails[type];
     const rawProposal = await this.rawProposalById(id);
-    const proposer = (await this.memberProfile(rawProposal.proposerId)).toJSON();
+    const proposer = (await this.memberProfile(rawProposal.proposerId)).toJSON() as ParsedMember;
     const proposal = rawProposal.toJSON() as {
       title: string;
       description: string;
+      parameters: any;
       votingResults: any;
       proposerId: number;
       status: any;
@@ -85,18 +86,13 @@ export class SubstrateTransport extends Transport {
   }
 
   async proposalsIds() {
-    const total: number = (await this.proposalCount()).toBn().toNumber();
+    const total: number = (await this.proposalCount()).toNumber();
     return Array.from({ length: total + 1 }, (_, i) => new ProposalId(i));
   }
 
   async proposals() {
     const ids = await this.proposalsIds();
     return Promise.all(ids.map(id => this.proposalById(id)));
-  }
-
-  async hasVotedOnProposal(proposalId: ProposalId, voterId: MemberId) {
-    const hasVoted = await this.proposalsEngine.voteExistsByProposalByVoter<bool>(proposalId, voterId);
-    return hasVoted.eq(true);
   }
 
   async activeProposals() {
@@ -119,7 +115,7 @@ export class SubstrateTransport extends Transport {
     return Promise.all(
       council.map(async seat => {
         const memberIds = (await this.members.memberIdsByControllerAccountId(seat.member)) as Vec<MemberId>;
-        const member = (await this.memberProfile(memberIds[0])).toJSON();
+        const member = (await this.memberProfile(memberIds[0])).toJSON() as ParsedMember;
         return {
           ...member,
           memberId: memberIds[0]
@@ -154,8 +150,7 @@ export class SubstrateTransport extends Transport {
       const obj = await prevProm;
       const period = (await this.proposalsCodex[method]()) as u32;
       // setValidatorCountProposalVotingPeriod to SetValidatorCount
-      const key = method
-        .split(/(?=[A-Z])/)
+      const key = splitOnUpperCase(method)
         .slice(0, -3)
         .map((w, i) => (i === 0 ? w.slice(0, 1).toUpperCase() + w.slice(1) : w))
         .join("") as ProposalType;
@@ -171,8 +166,7 @@ export class SubstrateTransport extends Transport {
       const obj = await prevProm;
       const period = (await this.proposalsCodex[method]()) as u32;
       // setValidatorCountProposalVotingPeriod to SetValidatorCount
-      const key = method
-        .split(/(?=[A-Z])/)
+      const key = splitOnUpperCase(method)
         .slice(0, -3)
         .map((w, i) => (i === 0 ? w.slice(0, 1).toUpperCase() + w.slice(1) : w))
         .join("") as ProposalType;

@@ -1,4 +1,3 @@
-// FIXME: Those don't have the same names as in the runtime
 export const ProposalTypes = [
   "Text",
   "RuntimeUpgrade",
@@ -13,12 +12,26 @@ export const ProposalTypes = [
 
 export type ProposalType = typeof ProposalTypes[number];
 
+export type ParsedMember = {
+  about: string;
+  avatar_uri: string;
+  handle: string;
+  registered_at_block: number;
+  registered_at_time: number;
+  roles: any[];
+  entry: { [k: string]: any };
+  root_account: string;
+  controller_account: string;
+  subscription: any;
+  suspended: boolean;
+};
+
 export type ParsedProposal = {
   type: ProposalType;
   title: string;
   description: string;
   status: any;
-  proposer: any;
+  proposer: ParsedMember;
   proposerId: number;
   createdAtBlock: number;
   createdAt: Date;

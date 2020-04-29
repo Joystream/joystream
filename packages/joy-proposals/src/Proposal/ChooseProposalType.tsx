@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import ProposalTypePreview, { ProposalTypeInfo } from "./ProposalTypePreview";
+import ProposalTypePreview from "./ProposalTypePreview";
 import { Item, Dropdown } from "semantic-ui-react";
 
 import { useTransport } from "../runtime";
