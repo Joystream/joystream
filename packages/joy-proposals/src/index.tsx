@@ -46,10 +46,6 @@ function App(props: Props): React.ReactElement<Props> {
           <Tabs basePath={basePath} items={tabs} />
         </header>
         <Switch>
-          <Route exact component={ProposalPreviewList} />
-          <Route exact path={`${basePath}/active`} component={NotDone} />
-          <Route exact path={`${basePath}/finalized`} component={NotDone} />
-          <Route exact path={`${basePath}/:id`} component={ProposalFromId} />
           <Route exact path={`${basePath}/new`} component={ChooseProposalType} />
           <Route exact path={`${basePath}/new/text`} component={SignalForm} />
           <Route exact path={`${basePath}/new/runtime-upgrade`} component={RuntimeUpgradeForm} />
@@ -64,6 +60,10 @@ function App(props: Props): React.ReactElement<Props> {
           <Route exact path={`${basePath}/new/evict-storage-provider`} component={EvictStorageProviderForm} />
           <Route exact path={`${basePath}/new/set-validator-count`} component={SetMaxValidatorCountForm} />
           <Route exact path={`${basePath}/new/set-storage-role-parameters`} component={SetStorageRoleParamsForm} />
+          <Route exact path={`${basePath}/active`} component={NotDone} />
+          <Route exact path={`${basePath}/finalized`} component={NotDone} />
+          <Route exact path={`${basePath}/:id`} component={ProposalFromId} />
+          <Route component={ProposalPreviewList} />
         </Switch>
       </main>
     </SubstrateProvider>
