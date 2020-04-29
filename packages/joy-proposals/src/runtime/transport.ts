@@ -1,6 +1,5 @@
 import { ProposalId, VoteKind } from "@joystream/types/proposals";
 import { MemberId } from "@joystream/types/members";
-// FIXME: Those don't have the same names as in the runtime
 export const ProposalTypes = [
   "Text",
   "RuntimeUpgrade",
