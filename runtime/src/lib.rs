@@ -127,7 +127,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 6,
     spec_version: 12,
-    impl_version: 0,
+    impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
 };
 
@@ -412,16 +412,11 @@ use governance::{council, election};
 use membership::members;
 use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
 pub use versioned_store;
-use versioned_store_permissions;
 
 pub use content_working_group as content_wg;
 mod migration;
-use hiring;
-use minting;
-use recurringrewards;
 use roles::actors;
 use service_discovery::discovery;
-use stake;
 
 /// Alias for ContentId, used in various places.
 pub type ContentId = primitives::H256;
@@ -484,7 +479,7 @@ impl versioned_store_permissions::CredentialChecker<Runtime> for ContentWorkingG
                     }
                 }
 
-                return false;
+                false
             }
             // Any Active Channel Owner
             credential if credential == AnyActiveChannelOwnerCredential::get() => {
@@ -499,7 +494,7 @@ impl versioned_store_permissions::CredentialChecker<Runtime> for ContentWorkingG
                     }
                 }
 
-                return false;
+                false
             }
             // mapping to workging group principal id
             n if n >= PrincipalIdMappingStartsAtCredential::get() => {
@@ -738,7 +733,7 @@ impl roles::traits::Roles<Runtime> for LookupRoles {
             .filter(|id| !<discovery::Module<Runtime>>::is_account_info_expired(id))
             .collect();
 
-        if live_ids.len() == 0 {
+        if live_ids.is_empty() {
             Err("no staked account found")
         } else {
             let index = random_index(live_ids.len());
@@ -842,7 +837,7 @@ impl Default for Call {
 
 parameter_types! {
     pub const ProposalMaxPostEditionNumber: u32 = 0; // post update is disabled
-    pub const ProposalMaxThreadInARowNumber: u32 = 100000; // will not be used
+    pub const ProposalMaxThreadInARowNumber: u32 = 100_000; // will not be used
     pub const ProposalThreadTitleLengthLimit: u32 = 40;
     pub const ProposalPostLengthLimit: u32 = 1000;
 }
@@ -871,11 +866,11 @@ impl proposals_codex::Trait for Runtime {
 }
 
 construct_runtime!(
-	pub enum Runtime where
-		Block = Block,
-		NodeBlock = opaque::Block,
-		UncheckedExtrinsic = UncheckedExtrinsic
-	{
+    pub enum Runtime where
+        Block = Block,
+        NodeBlock = opaque::Block,
+        UncheckedExtrinsic = UncheckedExtrinsic
+    {
         // Substrate
         System: system::{Module, Call, Storage, Config, Event},
         Babe: babe::{Module, Call, Storage, Config, Inherent(Timestamp)},
@@ -894,12 +889,12 @@ construct_runtime!(
         RandomnessCollectiveFlip: randomness_collective_flip::{Module, Call, Storage},
         Sudo: sudo,
         // Joystream
+        Migration: migration::{Module, Call, Storage, Event<T>, Config},
         CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
         Council: council::{Module, Call, Storage, Event<T>, Config<T>},
         Memo: memo::{Module, Call, Storage, Event<T>},
         Members: members::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
-        Migration: migration::{Module, Call, Storage, Event<T>},
         Actors: actors::{Module, Call, Storage, Event<T>, Config},
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
         DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
@@ -917,7 +912,7 @@ construct_runtime!(
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Module, Call, Storage, Error, Config<T>},
         // ---
-	}
+    }
 );
 
 /// The address format for describing accounts.

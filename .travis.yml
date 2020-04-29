@@ -1,7 +1,7 @@
 language: rust
 
 rust:
-  - 1.42.0
+  - 1.43.0
 
 matrix:
   include:
@@ -16,6 +16,8 @@ matrix:
 before_install:
   - rustup component add rustfmt
   - cargo fmt --all -- --check
+  - rustup component add clippy
+  - BUILD_DUMMY_WASM_BINARY=1 cargo clippy -- -D warnings
   - rustup default stable
   - rustup update nightly
   - rustup target add wasm32-unknown-unknown --toolchain nightly

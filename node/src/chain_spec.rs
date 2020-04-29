@@ -14,13 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with Joystream node.  If not, see <http://www.gnu.org/licenses/>.
 
+// Clippy linter warning.
+#![allow(clippy::identity_op)] // disable it because we use such syntax for a code readability
+                               // Example:  voting_period: 1 * DAY
+
 use node_runtime::{
     versioned_store::InputValidationLengthConstraint as VsInputValidation, ActorsConfig,
     AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
     CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
     DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, IndicesConfig,
-    MembersConfig, Perbill, ProposalsCodexConfig, SessionConfig, SessionKeys, Signature,
-    StakerStatus, StakingConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
+    MembersConfig, MigrationConfig, Perbill, ProposalsCodexConfig, SessionConfig, SessionKeys,
+    Signature, StakerStatus, StakingConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS,
+    WASM_BINARY,
 };
 pub use node_runtime::{AccountId, GenesisConfig};
 use primitives::{sr25519, Pair, Public};
@@ -30,7 +35,6 @@ use babe_primitives::AuthorityId as BabeId;
 use grandpa_primitives::AuthorityId as GrandpaId;
 use im_online::sr25519::AuthorityId as ImOnlineId;
 use serde_json as json;
-use substrate_service;
 
 type AccountPublic = <Signature as Verify>::Signer;
 
@@ -154,7 +158,7 @@ impl Alternative {
 }
 
 fn new_vs_validation(min: u16, max_min_diff: u16) -> VsInputValidation {
-    return VsInputValidation { min, max_min_diff };
+    VsInputValidation { min, max_min_diff }
 }
 
 pub fn chain_spec_properties() -> json::map::Map<String, json::Value> {
@@ -221,9 +225,7 @@ pub fn testnet_genesis(
             slash_reward_fraction: Perbill::from_percent(10),
             ..Default::default()
         }),
-        sudo: Some(SudoConfig {
-            key: root_key.clone(),
-        }),
+        sudo: Some(SudoConfig { key: root_key }),
         babe: Some(BabeConfig {
             authorities: vec![],
         }),
@@ -277,7 +279,7 @@ pub fn testnet_genesis(
             class_description_constraint: new_vs_validation(1, 999),
         }),
         content_wg: Some(ContentWorkingGroupConfig {
-            mint_capacity: 100000,
+            mint_capacity: 100_000,
             curator_opening_by_id: vec![],
             next_curator_opening_id: 0,
             curator_application_by_id: vec![],
@@ -300,6 +302,7 @@ pub fn testnet_genesis(
             channel_banner_constraint: crate::forum_config::new_validation(5, 1024),
             channel_title_constraint: crate::forum_config::new_validation(5, 1024),
         }),
+        migration: Some(MigrationConfig {}),
         proposals_codex: Some(ProposalsCodexConfig {
             set_validator_count_proposal_voting_period: cpcp
                 .set_validator_count_proposal_voting_period,

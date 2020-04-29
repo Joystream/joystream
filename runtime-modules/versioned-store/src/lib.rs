@@ -18,7 +18,6 @@ use codec::{Decode, Encode};
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure};
-use system;
 
 mod example;
 mod mock;
@@ -645,7 +644,7 @@ impl<T: Trait> Module<T> {
         Self::ensure_prop_value_matches_its_type(value.clone(), prop.clone())?;
         Self::ensure_valid_internal_prop(value.clone(), prop.clone())?;
         Self::validate_max_len_if_text_prop(value.clone(), prop.clone())?;
-        Self::validate_max_len_if_vec_prop(value.clone(), prop.clone())?;
+        Self::validate_max_len_if_vec_prop(value, prop)?;
         Ok(())
     }
 
@@ -674,7 +673,7 @@ impl<T: Trait> Module<T> {
             vec.len() <= max_len as usize
         }
 
-        fn validate_vec_len_ref<T>(vec: &Vec<T>, max_len: u16) -> bool {
+        fn validate_vec_len_ref<T>(vec: &[T], max_len: u16) -> bool {
             vec.len() <= max_len as usize
         }
 
@@ -702,7 +701,7 @@ impl<T: Trait> Module<T> {
                 Self::ensure_known_class_id(class_id)?;
                 if validate_vec_len_ref(&vec, vec_max_len) {
                     for entity_id in vec.iter() {
-                        Self::ensure_known_entity_id(entity_id.clone())?;
+                        Self::ensure_known_entity_id(*entity_id)?;
                         let entity = Self::entity_by_id(entity_id);
                         ensure!(entity.class_id == class_id, ERROR_INTERNAL_RPOP_DOES_NOT_MATCH_ITS_CLASS);
                     }
@@ -775,7 +774,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    pub fn ensure_property_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    pub fn ensure_property_name_is_valid(text: &[u8]) -> dispatch::Result {
         PropertyNameConstraint::get().ensure_valid(
             text.len(),
             ERROR_PROPERTY_NAME_TOO_SHORT,
@@ -783,7 +782,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    pub fn ensure_property_description_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    pub fn ensure_property_description_is_valid(text: &[u8]) -> dispatch::Result {
         PropertyDescriptionConstraint::get().ensure_valid(
             text.len(),
             ERROR_PROPERTY_DESCRIPTION_TOO_SHORT,
@@ -791,7 +790,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    pub fn ensure_class_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    pub fn ensure_class_name_is_valid(text: &[u8]) -> dispatch::Result {
         ClassNameConstraint::get().ensure_valid(
             text.len(),
             ERROR_CLASS_NAME_TOO_SHORT,
@@ -799,7 +798,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    pub fn ensure_class_description_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    pub fn ensure_class_description_is_valid(text: &[u8]) -> dispatch::Result {
         ClassDescriptionConstraint::get().ensure_valid(
             text.len(),
             ERROR_CLASS_DESCRIPTION_TOO_SHORT,

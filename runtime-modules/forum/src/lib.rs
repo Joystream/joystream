@@ -1,209 +1,7 @@
-// Copyright 2017-2019 Parity Technologies (UK) Ltd.
-
-// This is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Substrate.  If not, see <http://www.gnu.org/licenses/>.
-
-// Copyright 2019 Joystream Contributors
-
-//! # Runtime Example Module
-//!
-//! <!-- Original author of paragraph: @gavofyork -->
-//! The Example: A simple example of a runtime module demonstrating
-//! concepts, APIs and structures common to most runtime modules.
-//!
-//! Run `cargo doc --package runtime-example-module --open` to view this module's documentation.
-//!
-//! ### Documentation Template:<br>
-//! Add heading with custom module name
-//!
-//! # <INSERT_CUSTOM_MODULE_NAME> Module
-//!
-//! Add simple description
-//!
-//! Include the following links that shows what trait needs to be implemented to use the module
-//! and the supported dispatchables that are documented in the Call enum.
-//!
-//! - [`<INSERT_CUSTOM_MODULE_NAME>::Trait`](./trait.Trait.html)
-//! - [`Call`](./enum.Call.html)
-//! - [`Module`](./struct.Module.html)
-//!
-//! ## Overview
-//!
-//! <!-- Original author of paragraph: Various. See https://github.com/paritytech/substrate-developer-hub/issues/44 -->
-//! Short description of module purpose.
-//! Links to Traits that should be implemented.
-//! What this module is for.
-//! What functionality the module provides.
-//! When to use the module (use case examples).
-//! How it is used.
-//! Inputs it uses and the source of each input.
-//! Outputs it produces.
-//!
-//! <!-- Original author of paragraph: @Kianenigma in PR https://github.com/paritytech/substrate/pull/1951 -->
-//! <!-- and comment https://github.com/paritytech/substrate-developer-hub/issues/44#issuecomment-471982710 -->
-//!
-//! ## Terminology
-//!
-//! Add terminology used in the custom module. Include concepts, storage items, or actions that you think
-//! deserve to be noted to give context to the rest of the documentation or module usage. The author needs to
-//! use some judgment about what is included. We don't want a list of every storage item nor types - the user
-//! can go to the code for that. For example, "transfer fee" is obvious and should not be included, but
-//! "free balance" and "reserved balance" should be noted to give context to the module.
-//! Please do not link to outside resources. The reference docs should be the ultimate source of truth.
-//!
-//! <!-- Original author of heading: @Kianenigma in PR https://github.com/paritytech/substrate/pull/1951 -->
-//!
-//! ## Goals
-//!
-//! Add goals that the custom module is designed to achieve.
-//!
-//! <!-- Original author of heading: @Kianenigma in PR https://github.com/paritytech/substrate/pull/1951 -->
-//!
-//! ### Scenarios
-//!
-//! <!-- Original author of paragraph: @Kianenigma. Based on PR https://github.com/paritytech/substrate/pull/1951 -->
-//!
-//! #### <INSERT_SCENARIO_NAME>
-//!
-//! Describe requirements prior to interacting with the custom module.
-//! Describe the process of interacting with the custom module for this scenario and public API functions used.
-//!
-//! ## Interface
-//!
-//! ### Supported Origins
-//!
-//! What origins are used and supported in this module (root, signed, inherent)
-//! i.e. root when `ensure_root` used
-//! i.e. inherent when `ensure_inherent` used
-//! i.e. signed when `ensure_signed` used
-//!
-//! `inherent` <INSERT_DESCRIPTION>
-//!
-//! <!-- Original author of paragraph: @Kianenigma in comment -->
-//! <!-- https://github.com/paritytech/substrate-developer-hub/issues/44#issuecomment-471982710 -->
-//!
-//! ### Types
-//!
-//! Type aliases. Include any associated types and where the user would typically define them.
-//!
-//! `ExampleType` <INSERT_DESCRIPTION>
-//!
-//! <!-- Original author of paragraph: ??? -->
-//!
-//!
-//! ### Dispatchable Functions
-//!
-//! <!-- Original author of paragraph: @AmarRSingh & @joepetrowski -->
-//!
-//! // A brief description of dispatchable functions and a link to the rustdoc with their actual documentation.
-//!
-//! <b>MUST</b> have link to Call enum
-//! <b>MUST</b> have origin information included in function doc
-//! <b>CAN</b> have more info up to the user
-//!
-//! ### Public Functions
-//!
-//! <!-- Original author of paragraph: @joepetrowski -->
-//!
-//! A link to the rustdoc and any notes about usage in the module, not for specific functions.
-//! For example, in the balances module: "Note that when using the publicly exposed functions,
-//! you (the runtime developer) are responsible for implementing any necessary checks
-//! (e.g. that the sender is the signer) before calling a function that will affect storage."
-//!
-//! <!-- Original author of paragraph: @AmarRSingh -->
-//!
-//! It is up to the writer of the respective module (with respect to how much information to provide).
-//!
-//! #### Public Inspection functions - Immutable (getters)
-//!
-//! Insert a subheading for each getter function signature
-//!
-//! ##### `example_getter_name()`
-//!
-//! What it returns
-//! Why, when, and how often to call it
-//! When it could panic or error
-//! When safety issues to consider
-//!
-//! #### Public Mutable functions (changing state)
-//!
-//! Insert a subheading for each setter function signature
-//!
-//! ##### `example_setter_name(origin, parameter_name: T::ExampleType)`
-//!
-//! What state it changes
-//! Why, when, and how often to call it
-//! When it could panic or error
-//! When safety issues to consider
-//! What parameter values are valid and why
-//!
-//! ### Storage Items
-//!
-//! Explain any storage items included in this module
-//!
-//! ### Digest Items
-//!
-//! Explain any digest items included in this module
-//!
-//! ### Inherent Data
-//!
-//! Explain what inherent data (if any) is defined in the module and any other related types
-//!
-//! ### Events:
-//!
-//! Insert events for this module if any
-//!
-//! ### Errors:
-//!
-//! Explain what generates errors
-//!
-//! ## Usage
-//!
-//! Insert 2-3 examples of usage and code snippets that show how to use <INSERT_CUSTOM_MODULE_NAME> module in a custom module.
-//!
-//! ### Prerequisites
-//!
-//! Show how to include necessary imports for <INSERT_CUSTOM_MODULE_NAME> and derive
-//! your module configuration trait with the `INSERT_CUSTOM_MODULE_NAME` trait.
-//!
-//! ```rust
-//! // use <INSERT_CUSTOM_MODULE_NAME>;
-//!
-//! // pub trait Trait: <INSERT_CUSTOM_MODULE_NAME>::Trait { }
-//! ```
-//!
-//! ### Simple Code Snippet
-//!
-//! Show a simple example (e.g. how to query a public getter function of <INSERT_CUSTOM_MODULE_NAME>)
-//!
-//! ## Genesis Config
-//!
-//! <!-- Original author of paragraph: @joepetrowski -->
-//!
-//! ## Dependencies
-//!
-//! Dependencies on other SRML modules and the genesis config should be mentioned,
-//! but not the Rust Standard Library.
-//! Genesis configuration modifications that may be made to incorporate this module
-//! Interaction with other modules
-//!
-//! <!-- Original author of heading: @AmarRSingh -->
-//!
-//! ## Related Modules
-//!
-//! Interaction with other modules in the form of a bullet point list
-//!
-//! ## References
-//!
-//! <!-- Original author of paragraph: @joepetrowski -->
-//!
-//! Links to reference material, if applicable. For example, Phragmen, W3F research, etc.
-//! that the implementation is based on.
+// Clippy linter warning
+#![allow(clippy::type_complexity)]
+// disable it because of possible frontend API break
+// TODO: remove post-Constaninople
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -211,6 +9,7 @@
 #[cfg(feature = "std")]
 use serde_derive::{Deserialize, Serialize};
 
+use rstd::borrow::ToOwned;
 use rstd::prelude::*;
 
 use codec::{Decode, Encode};
@@ -307,7 +106,6 @@ const ERROR_CATEGORY_CANNOT_BE_UNARCHIVED_WHEN_DELETED: &str =
 //#[cfg(any(feature = "std", test))]
 //use sr_primitives::{StorageOverlay, ChildrenStorageOverlay};
 
-use system;
 use system::{ensure_root, ensure_signed};
 
 /// Represents a user in this forum.
@@ -633,7 +431,7 @@ decl_module! {
              */
 
             // Hold on to old value
-            let old_forum_sudo = <ForumSudo<T>>::get().clone();
+            let old_forum_sudo = <ForumSudo<T>>::get();
 
             // Update forum sudo
             match new_forum_sudo.clone() {
@@ -703,8 +501,8 @@ decl_module! {
             // Create new category
             let new_category = Category {
                 id : next_category_id,
-                title : title.clone(),
-                description: description.clone(),
+                title,
+                description,
                 created_at : Self::current_block_and_time(),
                 deleted: false,
                 archived: false,
@@ -753,7 +551,7 @@ decl_module! {
                 // We must skip checking category itself.
                 // NB: This is kind of hacky way to avoid last element,
                 // something clearn can be done later.
-                let mut path_to_check = category_tree_path.clone();
+                let mut path_to_check = category_tree_path;
                 path_to_check.remove(0);
 
                 Self::ensure_can_mutate_in_path_leaf(&path_to_check)?;
@@ -843,7 +641,7 @@ decl_module! {
             Self::ensure_is_forum_sudo(&who)?;
 
             // Get thread
-            let mut thread = Self::ensure_thread_exists(&thread_id)?;
+            let mut thread = Self::ensure_thread_exists(thread_id)?;
 
             // Thread is not already moderated
             ensure!(thread.moderation.is_none(), ERROR_THREAD_ALREADY_MODERATED);
@@ -867,7 +665,7 @@ decl_module! {
             thread.moderation = Some(ModerationAction {
                 moderated_at: Self::current_block_and_time(),
                 moderator_id: who,
-                rationale: rationale.clone()
+                rationale
             });
 
             <ThreadById<T>>::insert(thread_id, thread.clone());
@@ -901,7 +699,7 @@ decl_module! {
             Self::ensure_post_text_is_valid(&text)?;
 
             // Make sure thread exists and is mutable
-            let thread = Self::ensure_thread_is_mutable(&thread_id)?;
+            let thread = Self::ensure_thread_is_mutable(thread_id)?;
 
             // Get path from parent to root of category tree.
             let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(thread.category_id)?;
@@ -939,7 +737,7 @@ decl_module! {
             Self::ensure_post_text_is_valid(&new_text)?;
 
             // Make sure there exists a mutable post with post id `post_id`
-            let post = Self::ensure_post_is_mutable(&post_id)?;
+            let post = Self::ensure_post_is_mutable(post_id)?;
 
             // Signer does not match creator of post with identifier postId
             ensure!(post.author_id == who, ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR);
@@ -978,7 +776,7 @@ decl_module! {
             Self::ensure_is_forum_sudo(&who)?;
 
             // Make sure post exists and is mutable
-            let post = Self::ensure_post_is_mutable(&post_id)?;
+            let post = Self::ensure_post_is_mutable(post_id)?;
 
             Self::ensure_post_moderation_rationale_is_valid(&rationale)?;
 
@@ -990,7 +788,7 @@ decl_module! {
             let moderation_action = ModerationAction{
                 moderated_at: Self::current_block_and_time(),
                 moderator_id: who,
-                rationale: rationale.clone()
+                rationale
             };
 
             <PostById<T>>::mutate(post_id, |p| {
@@ -1013,7 +811,7 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    fn ensure_category_title_is_valid(title: &Vec<u8>) -> dispatch::Result {
+    fn ensure_category_title_is_valid(title: &[u8]) -> dispatch::Result {
         CategoryTitleConstraint::get().ensure_valid(
             title.len(),
             ERROR_CATEGORY_TITLE_TOO_SHORT,
@@ -1021,7 +819,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_category_description_is_valid(description: &Vec<u8>) -> dispatch::Result {
+    fn ensure_category_description_is_valid(description: &[u8]) -> dispatch::Result {
         CategoryDescriptionConstraint::get().ensure_valid(
             description.len(),
             ERROR_CATEGORY_DESCRIPTION_TOO_SHORT,
@@ -1029,7 +827,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_thread_moderation_rationale_is_valid(rationale: &Vec<u8>) -> dispatch::Result {
+    fn ensure_thread_moderation_rationale_is_valid(rationale: &[u8]) -> dispatch::Result {
         ThreadModerationRationaleConstraint::get().ensure_valid(
             rationale.len(),
             ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT,
@@ -1037,7 +835,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_thread_title_is_valid(title: &Vec<u8>) -> dispatch::Result {
+    fn ensure_thread_title_is_valid(title: &[u8]) -> dispatch::Result {
         ThreadTitleConstraint::get().ensure_valid(
             title.len(),
             ERROR_THREAD_TITLE_TOO_SHORT,
@@ -1045,7 +843,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_post_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    fn ensure_post_text_is_valid(text: &[u8]) -> dispatch::Result {
         PostTextConstraint::get().ensure_valid(
             text.len(),
             ERROR_POST_TEXT_TOO_SHORT,
@@ -1053,7 +851,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_post_moderation_rationale_is_valid(rationale: &Vec<u8>) -> dispatch::Result {
+    fn ensure_post_moderation_rationale_is_valid(rationale: &[u8]) -> dispatch::Result {
         PostModerationRationaleConstraint::get().ensure_valid(
             rationale.len(),
             ERROR_POST_MODERATION_RATIONALE_TOO_SHORT,
@@ -1069,7 +867,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_post_is_mutable(
-        post_id: &PostId,
+        post_id: PostId,
     ) -> Result<Post<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
         // Make sure post exists
         let post = Self::ensure_post_exists(post_id)?;
@@ -1078,13 +876,13 @@ impl<T: Trait> Module<T> {
         ensure!(post.moderation.is_none(), ERROR_POST_MODERATED);
 
         // and make sure thread is mutable
-        Self::ensure_thread_is_mutable(&post.thread_id)?;
+        Self::ensure_thread_is_mutable(post.thread_id)?;
 
         Ok(post)
     }
 
     fn ensure_post_exists(
-        post_id: &PostId,
+        post_id: PostId,
     ) -> Result<Post<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
         if <PostById<T>>::exists(post_id) {
             Ok(<PostById<T>>::get(post_id))
@@ -1094,10 +892,10 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_thread_is_mutable(
-        thread_id: &ThreadId,
+        thread_id: ThreadId,
     ) -> Result<Thread<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
         // Make sure thread exists
-        let thread = Self::ensure_thread_exists(&thread_id)?;
+        let thread = Self::ensure_thread_exists(thread_id)?;
 
         // and is unmoderated
         ensure!(thread.moderation.is_none(), ERROR_THREAD_MODERATED);
@@ -1109,7 +907,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_thread_exists(
-        thread_id: &ThreadId,
+        thread_id: ThreadId,
     ) -> Result<Thread<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
         if <ThreadById<T>>::exists(thread_id) {
             Ok(<ThreadById<T>>::get(thread_id))
@@ -1153,6 +951,9 @@ impl<T: Trait> Module<T> {
         Self::ensure_can_mutate_in_path_leaf(&category_tree_path)
     }
 
+    // Clippy linter warning
+    #[allow(clippy::ptr_arg)] // disable it because of possible frontend API break
+                              // TODO: remove post-Constaninople
     fn ensure_can_mutate_in_path_leaf(
         category_tree_path: &CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>,
     ) -> dispatch::Result {
@@ -1167,6 +968,9 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    // TODO: remove post-Constaninople
+    // Clippy linter warning
+    #[allow(clippy::ptr_arg)] // disable it because of possible frontend API break
     fn ensure_can_add_subcategory_path_leaf(
         category_tree_path: &CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>,
     ) -> dispatch::Result {
@@ -1194,7 +998,7 @@ impl<T: Trait> Module<T> {
         // Get path from parent to root of category tree.
         let category_tree_path = Self::build_category_tree_path(category_id);
 
-        assert!(category_tree_path.len() > 0);
+        assert!(!category_tree_path.is_empty());
 
         Ok(category_tree_path)
     }
@@ -1239,7 +1043,7 @@ impl<T: Trait> Module<T> {
 
     fn add_new_thread(
         category_id: CategoryId,
-        title: &Vec<u8>,
+        title: &[u8],
         author_id: &T::AccountId,
     ) -> Thread<T::BlockNumber, T::Moment, T::AccountId> {
         // Get category
@@ -1250,8 +1054,8 @@ impl<T: Trait> Module<T> {
 
         let new_thread = Thread {
             id: new_thread_id,
-            title: title.clone(),
-            category_id: category_id,
+            title: title.to_owned(),
+            category_id,
             nr_in_category: category.num_threads_created() + 1,
             moderation: None,
             num_unmoderated_posts: 0,
@@ -1280,7 +1084,7 @@ impl<T: Trait> Module<T> {
     /// `thread_id` must be valid
     fn add_new_post(
         thread_id: ThreadId,
-        text: &Vec<u8>,
+        text: &[u8],
         author_id: &T::AccountId,
     ) -> Post<T::BlockNumber, T::Moment, T::AccountId> {
         // Get thread
@@ -1291,9 +1095,9 @@ impl<T: Trait> Module<T> {
 
         let new_post = Post {
             id: new_post_id,
-            thread_id: thread_id,
+            thread_id,
             nr_in_thread: thread.num_posts_ever_created() + 1,
-            current_text: text.clone(),
+            current_text: text.to_owned(),
             moderation: None,
             text_change_history: vec![],
             created_at: Self::current_block_and_time(),
