@@ -1271,7 +1271,7 @@ fn cannot_complete_entity_property_vector_cleaning_when_entity_prop_id_is_not_a_
 // Remove at entity property vector
 // --------------------------------------
 
-fn complete_remove_at_entity_property_vector() -> EntityId {
+fn complete_remove_at_entity_property_vector() -> <Runtime as Trait>::EntityId {
     let entity_id = create_entity_with_schema_support();
     let mut prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(true));
     prop_values.insert(PROP_ID_U32, PropertyValue::Bool(false));
@@ -1569,7 +1569,7 @@ fn cannot_complete_insert_at_entity_property_vector_when_nonce_does_not_match() 
     })
 }
 
-fn create_entity_with_prop_value_referencing_another_entity() -> (EntityId, EntityId) {
+fn create_entity_with_prop_value_referencing_another_entity() -> (<Runtime as Trait>::EntityId, <Runtime as Trait>::EntityId) {
     let class_id = create_simple_class_with_default_permissions();
     let schema_id = TestModule::append_class_schema(
         class_id,

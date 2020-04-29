@@ -17,8 +17,8 @@ pub const MEMBER_TWO_WITH_CREDENTIAL_ZERO: u64 = 101;
 pub const MEMBER_ONE_WITH_CREDENTIAL_ONE: u64 = 102;
 pub const MEMBER_TWO_WITH_CREDENTIAL_ONE: u64 = 103;
 
-pub const UNKNOWN_CLASS_ID: ClassId = 111;
-pub const UNKNOWN_ENTITY_ID: EntityId = 222;
+pub const UNKNOWN_CLASS_ID: <Runtime as Trait>::ClassId = 111;
+pub const UNKNOWN_ENTITY_ID: <Runtime as Trait>::EntityId = 222;
 pub const UNKNOWN_PROP_ID: PropertyId = 333;
 pub const UNKNOWN_SCHEMA_ID: SchemaId = 444;
 
@@ -134,6 +134,8 @@ impl Get<InputValidationLengthConstraint> for ClassDescriptionConstraint {
 impl Trait for Runtime {
     type Credential = u64;
     type Nonce = u64;
+    type ClassId = u64;
+    type EntityId = u64;
     type CredentialChecker = MockCredentialChecker;
     type CreateClassPermissionsChecker = MockCreateClassPermissionsChecker;
     type PropertyNameConstraint = PropertyNameConstraint;
@@ -276,19 +278,19 @@ pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
         .execute_with(f)
 }
 
-impl Property {
+impl <T: Trait> Property<T> {
     pub fn required(mut self) -> Self {
         self.required = true;
         self
     }
 }
 
-pub fn assert_class_props(class_id: ClassId, expected_props: Vec<Property>) {
+pub fn assert_class_props(class_id: <Runtime as Trait>::ClassId, expected_props: Vec<Property<Runtime>>) {
     let class = TestModule::class_by_id(class_id);
     assert_eq!(class.properties, expected_props);
 }
 
-pub fn assert_class_schemas(class_id: ClassId, expected_schema_prop_ids: Vec<Vec<PropertyId>>) {
+pub fn assert_class_schemas(class_id: <Runtime as Trait>::ClassId, expected_schema_prop_ids: Vec<Vec<PropertyId>>) {
     let class = TestModule::class_by_id(class_id);
     let schemas: Vec<_> = expected_schema_prop_ids
         .iter()
@@ -301,7 +303,7 @@ pub fn assert_entity_not_found(result: dispatch::Result) {
     assert_err!(result, ERROR_ENTITY_NOT_FOUND);
 }
 
-pub fn simple_test_schema() -> Vec<Property> {
+pub fn simple_test_schema() -> Vec<Property<Runtime>> {
     vec![Property {
         prop_type: PropertyType::Int64,
         required: false,
@@ -316,7 +318,7 @@ pub fn simple_test_entity_property_values<T: Trait>() -> BTreeMap<PropertyId, Pr
     property_values
 }
 
-pub fn create_simple_class(permissions: ClassPermissionsType<Runtime>) -> ClassId {
+pub fn create_simple_class(permissions: ClassPermissionsType<Runtime>) -> <Runtime as Trait>::ClassId {
     let class_id = TestModule::next_class_id();
     assert_ok!(TestModule::create_class(
         Origin::signed(CLASS_PERMISSIONS_CREATOR1),
@@ -327,7 +329,7 @@ pub fn create_simple_class(permissions: ClassPermissionsType<Runtime>) -> ClassI
     class_id
 }
 
-pub fn create_simple_class_with_default_permissions() -> ClassId {
+pub fn create_simple_class_with_default_permissions() -> <Runtime as Trait>::ClassId {
     create_simple_class(Default::default())
 }
 
@@ -351,17 +353,17 @@ pub fn class_minimal_with_admins(
     }
 }
 
-pub fn next_entity_id() -> EntityId {
+pub fn next_entity_id() -> <Runtime as Trait>::EntityId {
     TestModule::next_entity_id()
 }
 
-pub fn create_entity_of_class(class_id: ClassId) -> EntityId {
+pub fn create_entity_of_class(class_id: <Runtime as Trait>::ClassId) -> <Runtime as Trait>::EntityId {
     let entity_id = TestModule::next_entity_id();
     assert_eq!(TestModule::perform_entity_creation(class_id,), entity_id);
     entity_id
 }
 
-pub fn create_entity_with_schema_support() -> EntityId {
+pub fn create_entity_with_schema_support() -> <Runtime as Trait>::EntityId {
     let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
     let mut property_values = BTreeMap::new();
     property_values.insert(PROP_ID_BOOL, PropertyValue::Bool(true));
@@ -377,7 +379,7 @@ pub fn create_entity_with_schema_support() -> EntityId {
     entity_id
 }
 
-pub fn create_class_with_schema() -> (ClassId, SchemaId) {
+pub fn create_class_with_schema() -> (<Runtime as Trait>::ClassId, SchemaId) {
     let class_id = create_simple_class_with_default_permissions();
     let schema_id = TestModule::append_class_schema(
         class_id,
@@ -393,13 +395,13 @@ pub fn create_class_with_schema() -> (ClassId, SchemaId) {
     (class_id, schema_id)
 }
 
-pub fn create_class_with_schema_and_entity() -> (ClassId, SchemaId, EntityId) {
+pub fn create_class_with_schema_and_entity() -> (<Runtime as Trait>::ClassId, SchemaId, <Runtime as Trait>::EntityId) {
     let (class_id, schema_id) = create_class_with_schema();
     let entity_id = create_entity_of_class(class_id);
     (class_id, schema_id, entity_id)
 }
 
-pub fn good_prop_bool() -> Property {
+pub fn good_prop_bool() -> Property<Runtime> {
     Property {
         prop_type: PropertyType::Bool,
         required: false,
@@ -408,7 +410,7 @@ pub fn good_prop_bool() -> Property {
     }
 }
 
-pub fn good_prop_u32() -> Property {
+pub fn good_prop_u32() -> Property<Runtime> {
     Property {
         prop_type: PropertyType::Uint32,
         required: false,
@@ -417,7 +419,7 @@ pub fn good_prop_u32() -> Property {
     }
 }
 
-pub fn good_prop_u32_vec() -> Property {
+pub fn good_prop_u32_vec() -> Property<Runtime> {
     Property {
         prop_type: PropertyType::Uint32Vec(PROP_ID_U32_VEC_MAX_LEN),
         required: false,
@@ -426,7 +428,7 @@ pub fn good_prop_u32_vec() -> Property {
     }
 }
 
-pub fn good_prop_text() -> Property {
+pub fn good_prop_text() -> Property<Runtime> {
     Property {
         prop_type: PropertyType::Text(20),
         required: false,
@@ -435,7 +437,7 @@ pub fn good_prop_text() -> Property {
     }
 }
 
-pub fn new_reference_class_prop(class_id: ClassId) -> Property {
+pub fn new_reference_class_prop(class_id: <Runtime as Trait>::ClassId) -> Property<Runtime> {
     Property {
         prop_type: PropertyType::Reference(class_id),
         required: false,
@@ -444,7 +446,7 @@ pub fn new_reference_class_prop(class_id: ClassId) -> Property {
     }
 }
 
-pub fn new_reference_class_prop_vec(class_id: ClassId) -> Property {
+pub fn new_reference_class_prop_vec(class_id: <Runtime as Trait>::ClassId) -> Property<Runtime> {
     Property {
         prop_type: PropertyType::ReferenceVec(PROP_ID_U32_VEC_MAX_LEN, class_id),
         required: false,
@@ -461,7 +463,7 @@ pub fn good_class_description() -> Vec<u8> {
     b"Description of a class".to_vec()
 }
 
-pub fn good_props() -> Vec<Property> {
+pub fn good_props() -> Vec<Property<Runtime>> {
     vec![good_prop_bool(), good_prop_u32()]
 }
 

@@ -12,11 +12,11 @@ use srml_support::assert_ok;
 #[test]
 fn create_podcast_class_schema() {
     with_test_externalities(|| {
-        fn common_text_prop() -> PropertyType {
+        fn common_text_prop() -> PropertyType<Runtime> {
             PropertyType::Text(200)
         }
 
-        fn long_text_prop() -> PropertyType {
+        fn long_text_prop() -> PropertyType<Runtime> {
             PropertyType::Text(4000)
         }
 

@@ -40,8 +40,8 @@ impl Schema {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Property {
-    pub prop_type: PropertyType,
+pub struct Property<T: Trait> {
+    pub prop_type: PropertyType<T>,
     pub required: bool,
     pub name: Vec<u8>,
     pub description: Vec<u8>,
@@ -49,7 +49,7 @@ pub struct Property {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
-pub enum PropertyType {
+pub enum PropertyType<T: Trait> {
     // Single value:
     Bool,
     Uint16,
@@ -59,7 +59,7 @@ pub enum PropertyType {
     Int32,
     Int64,
     Text(TextMaxLength),
-    Reference(ClassId),
+    Reference(T::ClassId),
 
     // Vector of values.
     // The first value is the max length of this vector.
@@ -78,12 +78,12 @@ pub enum PropertyType {
     /// The first value is the max length of this vector.
     /// The second ClassId value tells that an every element of this vector
     /// should be of a specific ClassId.
-    ReferenceVec(VecMaxLength, ClassId),
+    ReferenceVec(VecMaxLength, T::ClassId),
     // External(ExternalProperty),
     // ExternalVec(u16, ExternalProperty),
 }
 
-impl Default for PropertyType {
+impl <T: Trait> Default for PropertyType<T> {
     fn default() -> Self {
         PropertyType::Bool
     }
@@ -101,7 +101,7 @@ pub enum PropertyValue<T: Trait> {
     Int32(i32),
     Int64(i64),
     Text(Vec<u8>),
-    Reference(EntityId),
+    Reference(T::EntityId),
 
     // Vector of values, second value - nonce used to avoid race update conditions:
     BoolVec(Vec<bool>, T::Nonce),
@@ -112,7 +112,7 @@ pub enum PropertyValue<T: Trait> {
     Int32Vec(Vec<i32>, T::Nonce),
     Int64Vec(Vec<i64>, T::Nonce),
     TextVec(Vec<Vec<u8>>, T::Nonce),
-    ReferenceVec(Vec<EntityId>, T::Nonce),
+    ReferenceVec(Vec<T::EntityId>, T::Nonce),
     // External(ExternalPropertyType),
     // ExternalVec(Vec<ExternalPropertyType>),
 }

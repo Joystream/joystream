@@ -16,8 +16,6 @@ use system::ensure_root;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 
-// EntityId, ClassId -> should be configured on content_directory::Trait
-
 mod constraint;
 mod credentials;
 mod errors;
@@ -64,7 +62,35 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug {
         + PartialEq
         + Ord
         + From<u32>;
+    
+    type ClassId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + Clone
+        + One
+        + Zero
+        + MaybeSerializeDeserialize
+        + Eq
+        + PartialEq
+        + Ord;
 
+    type EntityId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + Clone
+        + One
+        + Zero
+        + MaybeSerializeDeserialize
+        + Eq
+        + PartialEq
+        + Ord;
+    
     /// Security/configuration constraints
 
     type PropertyNameConstraint: Get<InputValidationLengthConstraint>;
@@ -157,10 +183,6 @@ impl InputValidationLengthConstraint {
     }
 }
 
-pub type ClassId = u64;
-pub type EntityId = u64;
-
-
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct Class<T: Trait> {
@@ -171,7 +193,7 @@ pub struct Class<T: Trait> {
     /// All properties that have been used on this class across different class schemas.
     /// Unlikely to be more than roughly 20 properties per class, often less.
     /// For Person, think "height", "weight", etc.
-    pub properties: Vec<Property>,
+    pub properties: Vec<Property<T>>,
 
     /// All scehmas that are available for this class, think v0.0 Person, v.1.0 Person, etc.
     pub schemas: Vec<Schema>,
@@ -231,7 +253,7 @@ impl<T: Trait> Class<T> {
 }
 
 pub type ClassPermissionsType<T> = ClassPermissions<
-    ClassId,
+    <T as Trait>::ClassId,
     <T as Trait>::Credential,
     PropertyId,
     <T as system::Trait>::BlockNumber,
@@ -244,7 +266,7 @@ pub struct Entity<T: Trait> {
     pub entity_permission: EntityPermission<T>,
 
     /// The class id of this entity.
-    pub class_id: ClassId,
+    pub class_id: T::ClassId,
 
     /// What schemas under which this entity of a class is available, think
     /// v.2.0 Person schema for John, v3.0 Person schema for John
@@ -262,7 +284,7 @@ impl<T: Trait> Default for Entity<T> {
     fn default() -> Self {
         Self {
             entity_permission: EntityPermission::<T>::default(),
-            class_id: ClassId::default(),
+            class_id: T::ClassId::default(),
             supported_schemas: BTreeSet::new(),
             values: BTreeMap::new(),
             reference_count: 0,
@@ -272,7 +294,7 @@ impl<T: Trait> Default for Entity<T> {
 
 impl<T: Trait> Entity<T> {
     fn new(
-        class_id: ClassId,
+        class_id: T::ClassId,
         supported_schemas: BTreeSet<SchemaId>,
         values: BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> Self {
@@ -299,27 +321,27 @@ use PropertyValue as PV;
 
 decl_storage! {
     trait Store for Module<T: Trait> as ContentDirectory {
-        pub ClassById get(class_by_id) config(): linked_map ClassId => Class<T>;
+        pub ClassById get(class_by_id) config(): linked_map T::ClassId => Class<T>;
 
-        pub EntityById get(entity_by_id) config(): map EntityId => Entity<T>;
+        pub EntityById get(entity_by_id) config(): map T::EntityId => Entity<T>;
 
         /// Owner of an entity in the versioned store. If it is None then it is owned by the system.
-        pub EntityMaintainerByEntityId get(entity_maintainer_by_entity_id): linked_map EntityId => Option<T::Credential>;
+        pub EntityMaintainerByEntityId get(entity_maintainer_by_entity_id): linked_map T::EntityId => Option<T::Credential>;
 
-        pub NextClassId get(next_class_id) config(): ClassId;
+        pub NextClassId get(next_class_id) config(): T::ClassId;
 
-        pub NextEntityId get(next_entity_id) config(): EntityId;
+        pub NextEntityId get(next_entity_id) config(): T::EntityId;
 
         /// Groups who's actors can create entities of class.
-        pub CanCreateEntitiesOfClass get(can_create_entities_of_class): double_map hasher(blake2_128) ClassId, blake2_128(T::GroupId) => ();
+        pub CanCreateEntitiesOfClass get(can_create_entities_of_class): double_map hasher(blake2_128) T::ClassId, blake2_128(T::GroupId) => ();
 
         /// Groups who's actors can act as entity maintainers.
-        pub EntityMaintainers get(entity_maintainers): double_map hasher(blake2_128) EntityId, blake2_128(T::GroupId) => ();
+        pub EntityMaintainers get(entity_maintainers): double_map hasher(blake2_128) T::EntityId, blake2_128(T::GroupId) => ();
 
         // The voucher associated with entity creation for a given class and controller.
         // Is updated whenever an entity is created in a given class by a given controller.
         // Constraint is updated by Root, an initial value comes from `ClassPermissions::per_controller_entity_creation_limit`.
-        pub EntityCreationVouchers get(fn entity_creation_vouchers): double_map hasher(blake2_128) ClassId, blake2_128(EntityController<T>) => EntityCreationVoucher;
+        pub EntityCreationVouchers get(fn entity_creation_vouchers): double_map hasher(blake2_128) T::ClassId, blake2_128(EntityController<T>) => EntityCreationVoucher;
 
         /// Upper limit for how many operations can be included in a single invocation of `atomic_batched_operations`.
         pub MaximumNumberOfOperationsDuringAtomicBatching: u64;
@@ -335,7 +357,7 @@ decl_module! {
 
         pub fn add_entities_creator(
             origin,
-            class_id: ClassId,
+            class_id: T::ClassId,
             group_id: T::GroupId,
             limit: EntityCreationLimit
         ) -> dispatch::Result {
@@ -364,7 +386,7 @@ decl_module! {
 
         pub fn remove_entities_creator(
             origin,
-            class_id: ClassId,
+            class_id: T::ClassId,
             group_id: T::GroupId,
         ) -> dispatch::Result {
             ensure_root(origin)?;
@@ -381,7 +403,7 @@ decl_module! {
 
         pub fn add_entity_maintainer(
             origin,
-            entity_id: EntityId,
+            entity_id: T::EntityId,
             group_id: T::GroupId,
         ) -> dispatch::Result {
             ensure_root(origin)?;
@@ -398,7 +420,7 @@ decl_module! {
 
         pub fn remove_entity_maintainer(
             origin,
-            entity_id: EntityId,
+            entity_id: T::EntityId,
             group_id: T::GroupId,
         ) -> dispatch::Result {
             ensure_root(origin)?;
@@ -415,7 +437,7 @@ decl_module! {
 
         pub fn update_entity_creation_voucher(
             origin,
-            class_id: ClassId,
+            class_id: T::ClassId,
             controller: EntityController<T>,
             maximum_entities_count: u64
         ) -> dispatch::Result {
@@ -435,7 +457,7 @@ decl_module! {
 
         pub fn update_class_permissions(
             origin,
-            class_id: ClassId,
+            class_id: T::ClassId,
             entity_creation_blocked: Option<bool>,
             initial_controller_of_created_entities: Option<InitialControllerPolicy>,
         ) -> dispatch::Result {
@@ -465,7 +487,7 @@ decl_module! {
 
         pub fn update_entity_permissions(
             origin,
-            entity_id: EntityId,
+            entity_id: T::EntityId,
             controller: Option<EntityController<T>>,
             frozen_for_controller: Option<bool>
         ) -> dispatch::Result {
@@ -494,7 +516,7 @@ decl_module! {
         /// Sets the admins for a class
         fn set_class_admins(
             origin,
-            class_id: ClassId,
+            class_id: T::ClassId,
             admins: CredentialSet<T::Credential>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
@@ -516,7 +538,7 @@ decl_module! {
         fn set_class_entity_permissions(
             origin,
             with_credential: Option<T::Credential>,
-            class_id: ClassId,
+            class_id: T::ClassId,
             entity_permissions: EntityPermissions<T::Credential>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
@@ -536,7 +558,7 @@ decl_module! {
         fn set_class_entities_can_be_created(
             origin,
             with_credential: Option<T::Credential>,
-            class_id: ClassId,
+            class_id: T::ClassId,
             can_be_created: bool
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
@@ -556,7 +578,7 @@ decl_module! {
         fn set_class_add_schemas_set(
             origin,
             with_credential: Option<T::Credential>,
-            class_id: ClassId,
+            class_id: T::ClassId,
             credential_set: CredentialSet<T::Credential>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
@@ -576,7 +598,7 @@ decl_module! {
         fn set_class_update_schemas_status_set(
             origin,
             with_credential: Option<T::Credential>,
-            class_id: ClassId,
+            class_id: T::ClassId,
             credential_set: CredentialSet<T::Credential>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
@@ -596,7 +618,7 @@ decl_module! {
         fn set_class_create_entities_set(
             origin,
             with_credential: Option<T::Credential>,
-            class_id: ClassId,
+            class_id: T::ClassId,
             credential_set: CredentialSet<T::Credential>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
@@ -616,8 +638,8 @@ decl_module! {
         fn set_class_reference_constraint(
             origin,
             with_credential: Option<T::Credential>,
-            class_id: ClassId,
-            constraint: ReferenceConstraint<ClassId, PropertyId>
+            class_id: T::ClassId,
+            constraint: ReferenceConstraint<T::ClassId, PropertyId>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
 
@@ -637,7 +659,7 @@ decl_module! {
         // So for now it is disabled.
         // pub fn set_entity_maintainer(
         //     origin,
-        //     entity_id: EntityId,
+        //     entity_id: T::EntityId,
         //     new_maintainer: Option<T::Credential>
         // ) -> dispatch::Result {
         //     ensure_root(origin)?;
@@ -668,14 +690,14 @@ decl_module! {
 
             // is there a need to assert class_id is unique?
 
-            let class_id = NextClassId::get();
+            let class_id = Self::next_class_id();
 
             let class = Class::new(class_permissions, name, description);
 
             <ClassById<T>>::insert(&class_id, class);
 
             // Increment the next class id:
-            NextClassId::mutate(|n| *n += 1);
+            <NextClassId<T>>::mutate(|n| *n += T::ClassId::one());
 
             Ok(())
         }
@@ -691,9 +713,9 @@ decl_module! {
         pub fn add_class_schema(
             origin,
             with_credential: Option<T::Credential>,
-            class_id: ClassId,
+            class_id: T::ClassId,
             existing_properties: Vec<PropertyId>,
-            new_properties: Vec<Property>
+            new_properties: Vec<Property<T>>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
 
@@ -717,7 +739,7 @@ decl_module! {
         pub fn update_class_schema_status(
             origin,
             with_credential: Option<T::Credential>,
-            class_id: ClassId,
+            class_id: T::ClassId,
             schema_id: SchemaId,
             is_active: bool
         ) -> dispatch::Result {
@@ -751,7 +773,7 @@ decl_module! {
         pub fn create_entity(
             origin,
             with_credential: Option<T::Credential>,
-            class_id: ClassId
+            class_id: T::ClassId
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
             Self::do_create_entity(&raw_origin, with_credential, class_id)?;
@@ -761,7 +783,7 @@ decl_module! {
         pub fn remove_entity(
             origin,
             with_credential: Option<T::Credential>,
-            entity_id: EntityId,
+            entity_id: T::EntityId,
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
             Self::do_remove_entity(&raw_origin, with_credential, entity_id)
@@ -771,7 +793,7 @@ decl_module! {
             origin,
             with_credential: Option<T::Credential>,
             as_entity_maintainer: bool,
-            entity_id: EntityId,
+            entity_id: T::EntityId,
             schema_id: SchemaId,
             property_values: BTreeMap<PropertyId, PropertyValue<T>>
         ) -> dispatch::Result {
@@ -783,7 +805,7 @@ decl_module! {
             origin,
             with_credential: Option<T::Credential>,
             as_entity_maintainer: bool,
-            entity_id: EntityId,
+            entity_id: T::EntityId,
             property_values: BTreeMap<PropertyId, PropertyValue<T>>
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
@@ -794,7 +816,7 @@ decl_module! {
             origin,
             with_credential: Option<T::Credential>,
             as_entity_maintainer: bool,
-            entity_id: EntityId,
+            entity_id: T::EntityId,
             in_class_schema_property_id: PropertyId
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
@@ -805,7 +827,7 @@ decl_module! {
             origin,
             with_credential: Option<T::Credential>,
             as_entity_maintainer: bool,
-            entity_id: EntityId,
+            entity_id: T::EntityId,
             in_class_schema_property_id: PropertyId,
             index_in_property_vec: VecMaxLength,
             nonce: T::Nonce
@@ -818,7 +840,7 @@ decl_module! {
             origin,
             with_credential: Option<T::Credential>,
             as_entity_maintainer: bool,
-            entity_id: EntityId,
+            entity_id: T::EntityId,
             in_class_schema_property_id: PropertyId,
             index_in_property_vec: VecMaxLength,
             property_value: PropertyValue<T>,
@@ -838,9 +860,9 @@ decl_module! {
         }
 
         pub fn transaction(origin, operations: Vec<Operation<T::Credential, T>>) -> dispatch::Result {
-            // This map holds the EntityId of the entity created as a result of executing a CreateEntity Operation
+            // This map holds the T::EntityId of the entity created as a result of executing a CreateEntity Operation
             // keyed by the indexed of the operation, in the operations vector.
-            let mut entity_created_in_operation: BTreeMap<usize, EntityId> = BTreeMap::new();
+            let mut entity_created_in_operation: BTreeMap<usize, T::EntityId> = BTreeMap::new();
 
             let raw_origin = Self::ensure_root_or_signed(origin)?;
 
@@ -897,8 +919,8 @@ impl<T: Trait> Module<T> {
     fn do_create_entity(
         raw_origin: &system::RawOrigin<T::AccountId>,
         with_credential: Option<T::Credential>,
-        class_id: ClassId,
-    ) -> Result<EntityId, &'static str> {
+        class_id: T::ClassId,
+    ) -> Result<T::EntityId, &'static str> {
         Self::if_class_permissions_satisfied(
             raw_origin,
             with_credential,
@@ -926,7 +948,7 @@ impl<T: Trait> Module<T> {
     fn do_remove_entity(
         raw_origin: &system::RawOrigin<T::AccountId>,
         with_credential: Option<T::Credential>,
-        entity_id: EntityId,
+        entity_id: T::EntityId,
     ) -> dispatch::Result {
         // class id of the entity being removed
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
@@ -941,8 +963,8 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn perform_entity_creation(class_id: ClassId) -> EntityId {
-        let entity_id = NextEntityId::get();
+    fn perform_entity_creation(class_id: T::ClassId) -> T::EntityId {
+        let entity_id =  Self::next_entity_id();
 
         let new_entity = Entity::<T>::new(class_id, BTreeSet::new(), BTreeMap::new());
 
@@ -950,7 +972,7 @@ impl<T: Trait> Module<T> {
         EntityById::insert(entity_id, new_entity);
 
         // Increment the next entity id:
-        NextEntityId::mutate(|n| *n += 1);
+        <NextEntityId<T>>::mutate(|n| *n += T::EntityId::one());
 
         entity_id
     }
@@ -959,7 +981,7 @@ impl<T: Trait> Module<T> {
         raw_origin: &system::RawOrigin<T::AccountId>,
         with_credential: Option<T::Credential>,
         as_entity_maintainer: bool,
-        entity_id: EntityId,
+        entity_id: T::EntityId,
         property_values: BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
@@ -988,7 +1010,7 @@ impl<T: Trait> Module<T> {
         raw_origin: &system::RawOrigin<T::AccountId>,
         with_credential: Option<T::Credential>,
         as_entity_maintainer: bool,
-        entity_id: EntityId,
+        entity_id: T::EntityId,
         in_class_schema_property_id: PropertyId,
     ) -> dispatch::Result {
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
@@ -1018,7 +1040,7 @@ impl<T: Trait> Module<T> {
         raw_origin: &system::RawOrigin<T::AccountId>,
         with_credential: Option<T::Credential>,
         as_entity_maintainer: bool,
-        entity_id: EntityId,
+        entity_id: T::EntityId,
         in_class_schema_property_id: PropertyId,
         index_in_property_vec: VecMaxLength,
         nonce: T::Nonce,
@@ -1052,7 +1074,7 @@ impl<T: Trait> Module<T> {
         raw_origin: &system::RawOrigin<T::AccountId>,
         with_credential: Option<T::Credential>,
         as_entity_maintainer: bool,
-        entity_id: EntityId,
+        entity_id: T::EntityId,
         in_class_schema_property_id: PropertyId,
         index_in_property_vec: VecMaxLength,
         property_value: PropertyValue<T>,
@@ -1084,7 +1106,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn complete_entity_removal(entity_id: EntityId) -> dispatch::Result {
+    fn complete_entity_removal(entity_id: T::EntityId) -> dispatch::Result {
         // Ensure there is no property values pointing to given entity
         Self::ensure_rc_is_zero(entity_id)?;
         <EntityById<T>>::remove(entity_id);
@@ -1093,7 +1115,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn complete_class_schema_status_update(
-        class_id: ClassId,
+        class_id: T::ClassId,
         schema_id: SchemaId,
         schema_status: bool,
     ) -> dispatch::Result {
@@ -1106,7 +1128,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn complete_entity_property_values_update(
-        entity_id: EntityId,
+        entity_id: T::EntityId,
         new_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
         Self::ensure_known_entity_id(entity_id)?;
@@ -1143,8 +1165,8 @@ impl<T: Trait> Module<T> {
                         Self::get_involved_entities(&current_prop_value),
                     ) {
                         let (entities_rc_to_decrement, entities_rc_to_increment): (
-                            Vec<EntityId>,
-                            Vec<EntityId>,
+                            Vec<T::EntityId>,
+                            Vec<T::EntityId>,
                         ) = entities_rc_to_decrement
                             .into_iter()
                             .zip(entities_rc_to_increment.into_iter())
@@ -1183,7 +1205,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn complete_entity_property_vector_cleaning(
-        entity_id: EntityId,
+        entity_id: T::EntityId,
         in_class_schema_property_id: PropertyId,
     ) -> dispatch::Result {
         Self::ensure_known_entity_id(entity_id)?;
@@ -1219,7 +1241,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn complete_remove_at_entity_property_vector(
-        entity_id: EntityId,
+        entity_id: T::EntityId,
         in_class_schema_property_id: PropertyId,
         index_in_property_vec: VecMaxLength,
         nonce: T::Nonce,
@@ -1254,7 +1276,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn complete_insert_at_entity_property_vector(
-        entity_id: EntityId,
+        entity_id: T::EntityId,
         in_class_schema_property_id: PropertyId,
         index_in_property_vec: VecMaxLength,
         property_value: PropertyValue<T>,
@@ -1306,7 +1328,7 @@ impl<T: Trait> Module<T> {
         raw_origin: &system::RawOrigin<T::AccountId>,
         with_credential: Option<T::Credential>,
         as_entity_maintainer: bool,
-        entity_id: EntityId,
+        entity_id: T::EntityId,
         schema_id: SchemaId,
         property_values: BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
@@ -1338,7 +1360,7 @@ impl<T: Trait> Module<T> {
     fn derive_access_level(
         raw_origin: &system::RawOrigin<T::AccountId>,
         with_credential: Option<T::Credential>,
-        as_entity_maintainer: Option<EntityId>,
+        as_entity_maintainer: Option<T::EntityId>,
     ) -> Result<AccessLevel<T::Credential>, &'static str> {
         match raw_origin {
             system::RawOrigin::Root => Ok(AccessLevel::System),
@@ -1372,20 +1394,20 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn increment_entities_rc(entity_ids: &[EntityId]) {
+    fn increment_entities_rc(entity_ids: &[T::EntityId]) {
         entity_ids.iter().for_each(|entity_id| {
             <EntityById<T>>::mutate(entity_id, |entity| entity.reference_count += 1)
         });
     }
 
-    fn decrement_entities_rc(entity_ids: &[EntityId]) {
+    fn decrement_entities_rc(entity_ids: &[T::EntityId]) {
         entity_ids.iter().for_each(|entity_id| {
             <EntityById<T>>::mutate(entity_id, |entity| entity.reference_count -= 1)
         });
     }
 
     /// Returns the stored class if exist, error otherwise.
-    fn ensure_class_exists(class_id: ClassId) -> Result<Class<T>, &'static str> {
+    fn ensure_class_exists(class_id: T::ClassId) -> Result<Class<T>, &'static str> {
         ensure!(<ClassById<T>>::exists(class_id), ERROR_CLASS_NOT_FOUND);
         Ok(Self::class_by_id(class_id))
     }
@@ -1398,7 +1420,7 @@ impl<T: Trait> Module<T> {
         // predicate to test
         predicate: Predicate,
         // class permissions to perform mutation on if it exists
-        class_id: ClassId,
+        class_id: T::ClassId,
         // actual mutation to apply.
         mutate: Mutate,
     ) -> dispatch::Result
@@ -1436,11 +1458,11 @@ impl<T: Trait> Module<T> {
     fn if_class_permissions_satisfied<Predicate, Callback, R>(
         raw_origin: &system::RawOrigin<T::AccountId>,
         with_credential: Option<T::Credential>,
-        as_entity_maintainer: Option<EntityId>,
+        as_entity_maintainer: Option<T::EntityId>,
         // predicate to test
         predicate: Predicate,
         // class permissions to test
-        class_id: ClassId,
+        class_id: T::ClassId,
         // callback to invoke if predicate passes
         callback: Callback,
     ) -> Result<R, &'static str>
@@ -1460,7 +1482,7 @@ impl<T: Trait> Module<T> {
         callback(class_permissions, &access_level)
     }
 
-    fn get_class_id_by_entity_id(entity_id: EntityId) -> Result<ClassId, &'static str> {
+    fn get_class_id_by_entity_id(entity_id: T::EntityId) -> Result<T::ClassId, &'static str> {
         // use a utility method on versioned_store module
         ensure!(<EntityById<T>>::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
         let entity = Self::entity_by_id(entity_id);
@@ -1470,7 +1492,7 @@ impl<T: Trait> Module<T> {
     // Ensures property_values of type Reference that point to a class,
     // the target entity and class exists and constraint allows it.
     fn ensure_internal_property_values_permitted(
-        source_class_id: ClassId,
+        source_class_id: T::ClassId,
         property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
         for (in_class_index, property_value) in property_values.iter() {
@@ -1519,9 +1541,9 @@ impl<T: Trait> Module<T> {
 
     /// Returns an index of a newly added class schema on success.
     pub fn append_class_schema(
-        class_id: ClassId,
+        class_id: T::ClassId,
         existing_properties: Vec<PropertyId>,
-        new_properties: Vec<Property>,
+        new_properties: Vec<Property<T>>,
     ) -> Result<SchemaId, &'static str> {
         Self::ensure_known_class_id(class_id)?;
 
@@ -1560,7 +1582,7 @@ impl<T: Trait> Module<T> {
             ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
         );
 
-        // Check validity of Internal(ClassId) for new_properties.
+        // Check validity of Internal(T::ClassId) for new_properties.
         let has_unknown_internal_id = new_properties.iter().any(|prop| match prop.prop_type {
             PropertyType::Reference(other_class_id) => !<ClassById<T>>::exists(other_class_id),
             _ => false,
@@ -1592,7 +1614,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn add_entity_schema_support(
-        entity_id: EntityId,
+        entity_id: T::EntityId,
         schema_id: SchemaId,
         property_values: BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
@@ -1659,7 +1681,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Commented out for now <- requested by Bedeho.
-    // pub fn delete_entity(entity_id: EntityId) -> dispatch::Result {
+    // pub fn delete_entity(entity_id: T::EntityId) -> dispatch::Result {
     //     Self::ensure_known_entity_id(entity_id)?;
 
     //     let is_deleted = EntityById::get(entity_id).deleted;
@@ -1676,17 +1698,17 @@ impl<T: Trait> Module<T> {
     // Helper functions:
     // ----------------------------------------------------------------
 
-    pub fn ensure_known_class_id(class_id: ClassId) -> dispatch::Result {
+    pub fn ensure_known_class_id(class_id: T::ClassId) -> dispatch::Result {
         ensure!(<ClassById<T>>::exists(class_id), ERROR_CLASS_NOT_FOUND);
         Ok(())
     }
 
-    pub fn ensure_known_entity_id(entity_id: EntityId) -> dispatch::Result {
+    pub fn ensure_known_entity_id(entity_id: T::EntityId) -> dispatch::Result {
         ensure!(<EntityById<T>>::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
         Ok(())
     }
 
-    pub fn ensure_rc_is_zero(entity_id: EntityId) -> dispatch::Result {
+    pub fn ensure_rc_is_zero(entity_id: T::EntityId) -> dispatch::Result {
         let entity = Self::entity_by_id(entity_id);
         ensure!(
             entity.reference_count == 0,
@@ -1707,7 +1729,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn ensure_entity_creator_exists(
-        class_id: ClassId,
+        class_id: T::ClassId,
         group_id: T::GroupId,
     ) -> dispatch::Result {
         ensure!(
@@ -1718,7 +1740,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn ensure_entity_creator_does_not_exist(
-        class_id: ClassId,
+        class_id: T::ClassId,
         group_id: T::GroupId,
     ) -> dispatch::Result {
         ensure!(
@@ -1729,7 +1751,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn ensure_entity_maintainer_exists(
-        entity_id: EntityId,
+        entity_id: T::EntityId,
         group_id: T::GroupId,
     ) -> dispatch::Result {
         ensure!(
@@ -1740,7 +1762,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn ensure_entity_maintainer_does_not_exist(
-        entity_id: EntityId,
+        entity_id: T::EntityId,
         group_id: T::GroupId,
     ) -> dispatch::Result {
         ensure!(
@@ -1751,7 +1773,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn ensure_entity_creation_voucher_exists(
-        class_id: EntityId,
+        class_id: T::ClassId,
         controller: &EntityController<T>,
     ) -> dispatch::Result {
         ensure!(
@@ -1783,15 +1805,15 @@ impl<T: Trait> Module<T> {
 
     pub fn ensure_valid_internal_prop(
         value: &PropertyValue<T>,
-        prop: &Property,
+        prop: &Property<T>,
     ) -> dispatch::Result {
-        match (value, prop.prop_type) {
+        match (value, &prop.prop_type) {
             (PV::Reference(entity_id), PT::Reference(class_id)) => {
-                Self::ensure_known_class_id(class_id)?;
+                Self::ensure_known_class_id(*class_id)?;
                 Self::ensure_known_entity_id(*entity_id)?;
                 let entity = Self::entity_by_id(entity_id);
                 ensure!(
-                    entity.class_id == class_id,
+                    entity.class_id == *class_id,
                     ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS
                 );
             }
@@ -1836,13 +1858,13 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    pub fn get_entity_and_class(entity_id: EntityId) -> (Entity<T>, Class<T>) {
+    pub fn get_entity_and_class(entity_id: T::EntityId) -> (Entity<T>, Class<T>) {
         let entity = <EntityById<T>>::get(entity_id);
         let class = ClassById::get(entity.class_id);
         (entity, class)
     }
 
-    pub fn get_involved_entities(current_prop_value: &PropertyValue<T>) -> Option<Vec<EntityId>> {
+    pub fn get_involved_entities(current_prop_value: &PropertyValue<T>) -> Option<Vec<T::EntityId>> {
         match current_prop_value {
             PropertyValue::Reference(entity_id) => Some(vec![*entity_id]),
             PropertyValue::ReferenceVec(entity_ids_vec, _) => Some(entity_ids_vec.clone()),
@@ -1852,7 +1874,7 @@ impl<T: Trait> Module<T> {
 
     pub fn ensure_property_value_to_update_is_valid(
         value: &PropertyValue<T>,
-        prop: &Property,
+        prop: &Property<T>,
     ) -> dispatch::Result {
         Self::ensure_prop_value_matches_its_type(value, prop)?;
         Self::ensure_valid_internal_prop(value, prop)?;
@@ -1865,15 +1887,15 @@ impl<T: Trait> Module<T> {
         value: &PropertyValue<T>,
         entity_prop_value: &PropertyValue<T>,
         index_in_property_vec: VecMaxLength,
-        prop: &Property,
+        prop: &Property<T>,
     ) -> dispatch::Result {
         Self::ensure_index_in_property_vector_is_valid(entity_prop_value, index_in_property_vec)?;
 
-        fn validate_prop_vec_len_after_value_insert<T>(vec: &[T], max_len: VecMaxLength) -> bool {
-            vec.len() < max_len as usize
+        fn validate_prop_vec_len_after_value_insert<T>(vec: &[T], max_len: &VecMaxLength) -> bool {
+            vec.len() < *max_len as usize
         }
 
-        let is_valid_len = match (value, entity_prop_value, prop.prop_type) {
+        let is_valid_len = match (value, entity_prop_value, &prop.prop_type) {
             // Single values
             (PV::Bool(_), PV::BoolVec(vec, _), PT::BoolVec(max_len)) => {
                 validate_prop_vec_len_after_value_insert(vec, max_len)
@@ -1898,7 +1920,7 @@ impl<T: Trait> Module<T> {
             }
             (PV::Text(text_item), PV::TextVec(vec, _), PT::TextVec(vec_max_len, text_max_len)) => {
                 if validate_prop_vec_len_after_value_insert(vec, vec_max_len) {
-                    Self::validate_max_len_of_text(text_item, text_max_len)?;
+                    Self::validate_max_len_of_text(text_item, *text_max_len)?;
                     true
                 } else {
                     false
@@ -1909,12 +1931,12 @@ impl<T: Trait> Module<T> {
                 PV::ReferenceVec(vec, _),
                 PT::ReferenceVec(vec_max_len, class_id),
             ) => {
-                Self::ensure_known_class_id(class_id)?;
+                Self::ensure_known_class_id(*class_id)?;
                 if validate_prop_vec_len_after_value_insert(vec, vec_max_len) {
                     Self::ensure_known_entity_id(*entity_id)?;
                     let entity = Self::entity_by_id(entity_id);
                     ensure!(
-                        entity.class_id == class_id,
+                        entity.class_id == *class_id,
                         ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS
                     );
                     true
@@ -1931,7 +1953,7 @@ impl<T: Trait> Module<T> {
 
     pub fn validate_max_len_if_text_prop(
         value: &PropertyValue<T>,
-        prop: &Property,
+        prop: &Property<T>,
     ) -> dispatch::Result {
         match (value, &prop.prop_type) {
             (PV::Text(text), PT::Text(max_len)) => Self::validate_max_len_of_text(text, *max_len),
@@ -1946,13 +1968,13 @@ impl<T: Trait> Module<T> {
 
     pub fn validate_max_len_if_vec_prop(
         value: &PropertyValue<T>,
-        prop: &Property,
+        prop: &Property<T>,
     ) -> dispatch::Result {
-        fn validate_vec_len<T>(vec: &[T], max_len: VecMaxLength) -> bool {
-            vec.len() <= max_len as usize
+        fn validate_vec_len<T>(vec: &[T], max_len: &VecMaxLength) -> bool {
+            vec.len() <= *max_len as usize
         }
 
-        let is_valid_len = match (value, prop.prop_type) {
+        let is_valid_len = match (value, &prop.prop_type) {
             (PV::BoolVec(vec, _), PT::BoolVec(max_len)) => validate_vec_len(vec, max_len),
             (PV::Uint16Vec(vec, _), PT::Uint16Vec(max_len)) => validate_vec_len(vec, max_len),
             (PV::Uint32Vec(vec, _), PT::Uint32Vec(max_len)) => validate_vec_len(vec, max_len),
@@ -1964,7 +1986,7 @@ impl<T: Trait> Module<T> {
             (PV::TextVec(vec, _), PT::TextVec(vec_max_len, text_max_len)) => {
                 if validate_vec_len(vec, vec_max_len) {
                     for text_item in vec.iter() {
-                        Self::validate_max_len_of_text(text_item, text_max_len)?;
+                        Self::validate_max_len_of_text(text_item, *text_max_len)?;
                     }
                     true
                 } else {
@@ -1973,13 +1995,13 @@ impl<T: Trait> Module<T> {
             }
 
             (PV::ReferenceVec(vec, _), PT::ReferenceVec(vec_max_len, class_id)) => {
-                Self::ensure_known_class_id(class_id)?;
+                Self::ensure_known_class_id(*class_id)?;
                 if validate_vec_len(vec, vec_max_len) {
                     for entity_id in vec.iter() {
                         Self::ensure_known_entity_id(*entity_id)?;
                         let entity = Self::entity_by_id(entity_id);
                         ensure!(
-                            entity.class_id == class_id,
+                            entity.class_id == *class_id,
                             ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS
                         );
                     }
@@ -1998,7 +2020,7 @@ impl<T: Trait> Module<T> {
 
     pub fn ensure_prop_value_matches_its_type(
         value: &PropertyValue<T>,
-        prop: &Property,
+        prop: &Property<T>,
     ) -> dispatch::Result {
         ensure!(
             Self::does_prop_value_match_type(value, prop),
@@ -2007,7 +2029,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn does_prop_value_match_type(value: &PropertyValue<T>, prop: &Property) -> bool {
+    pub fn does_prop_value_match_type(value: &PropertyValue<T>, prop: &Property<T>) -> bool {
         // A non required property can be updated to None:
         if !prop.required && *value == PV::Bool(false) {
             return true;
