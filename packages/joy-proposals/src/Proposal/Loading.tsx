@@ -8,7 +8,7 @@ type LoadingProps = {
 export default function Loading({ text }: LoadingProps) {
   return (
     <Container style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-      <Loader>{text}</Loader>
+      <Loader active>{text}</Loader>
     </Container>
   );
 }

@@ -87,7 +87,7 @@ export class SubstrateTransport extends Transport {
 
   async proposalsIds() {
     const total: number = (await this.proposalCount()).toNumber();
-    return Array.from({ length: total + 1 }, (_, i) => new ProposalId(i));
+    return Array.from({ length: total }, (_, i) => new ProposalId(i + 1));
   }
 
   async proposals() {
@@ -143,8 +143,8 @@ export class SubstrateTransport extends Transport {
     );
   }
 
-  async proposalTypesGracePeriod(): Promise<{ [k in ProposalType]: number }> {
-    const methods = includeKeys(this.proposalsCodex, "GracePeriod");
+  async fetchProposalMethodsFromCodex(includeKey: string) {
+    const methods = includeKeys(this.proposalsCodex, includeKey);
     // methods = [proposalTypeVotingPeriod...]
     return methods.reduce(async (prevProm, method) => {
       const obj = await prevProm;
@@ -159,20 +159,12 @@ export class SubstrateTransport extends Transport {
     }, Promise.resolve({}) as Promise<{ [k in ProposalType]: number }>);
   }
 
-  async proposalTypesVotingPeriod(): Promise<{ [k in ProposalType]: number }> {
-    const methods = includeKeys(this.proposalsCodex, "VotingPeriod");
-    // methods = [proposalTypeVotingPeriod...]
-    return methods.reduce(async (prevProm, method) => {
-      const obj = await prevProm;
-      const period = (await this.proposalsCodex[method]()) as u32;
-      // setValidatorCountProposalVotingPeriod to SetValidatorCount
-      const key = splitOnUpperCase(method)
-        .slice(0, -3)
-        .map((w, i) => (i === 0 ? w.slice(0, 1).toUpperCase() + w.slice(1) : w))
-        .join("") as ProposalType;
+  async proposalTypesGracePeriod(): Promise<{ [k in ProposalType]: number }> {
+    return this.fetchProposalMethodsFromCodex("GracePeriod");
+  }
 
-      return { ...obj, [`${key}`]: period.toNumber() };
-    }, Promise.resolve({}) as Promise<{ [k in ProposalType]: number }>);
+  async proposalTypesVotingPeriod(): Promise<{ [k in ProposalType]: number }> {
+    return this.fetchProposalMethodsFromCodex("VotingPeriod");
   }
 
   async parametersFromProposalType(type: ProposalType) {
