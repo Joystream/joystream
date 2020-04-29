@@ -6,7 +6,7 @@ import { useTransport, ParsedProposal } from "../runtime";
 import { usePromise } from "../utils";
 import Error from "./Error";
 import Loading from "./Loading";
-import NotDone from "../NotDone";
+import { Proposal } from "@joystream/types/proposals";
 
 export default function ProposalFromId(props: RouteComponentProps<any>) {
   const {
@@ -17,7 +17,7 @@ export default function ProposalFromId(props: RouteComponentProps<any>) {
   const transport = useTransport();
 
   const [proposal, loading, error] = usePromise<any>(transport.proposalById(id), {});
-  const [votes, loadVotes, errorVote] = usePromise<any>(transport.votes(id), []);
+  //const [votes, loadVotes, errorVote] = usePromise<any>(transport.votes(id), []);
 
   if (loading && !error) {
     return <Loading text="Fetching Proposal..." />;
@@ -27,8 +27,6 @@ export default function ProposalFromId(props: RouteComponentProps<any>) {
   console.log(`With ${id} we fetched proposal...`);
   console.log(proposal);
 
-  console.log("With votes...");
-  console.log(votes);
 
-  return <NotDone {...props} />;
+  return <ProposalDetails proposal={ proposal as Proposal } proposalId={id}/>;
 }

@@ -58,7 +58,7 @@ export class SubstrateTransport extends Transport {
   async proposalById(id: ProposalId): Promise<ParsedProposal> {
     const rawDetails = (await this.proposalDetailsById(id)).toJSON() as { [k: string]: any };
     const type = Object.keys(rawDetails)[0] as ProposalType;
-    const details = rawDetails[type];
+    const details = Array.isArray(rawDetails[type]) ? rawDetails[type] : [rawDetails[type]];
     const rawProposal = await this.rawProposalById(id);
     const proposer = (await this.memberProfile(rawProposal.proposerId)).toJSON();
     const proposal = rawProposal.toJSON() as {
@@ -71,6 +71,7 @@ export class SubstrateTransport extends Transport {
     const createdAtBlock = rawProposal.createdAt;
 
     return {
+      id,
       ...proposal,
       details,
       type,
@@ -82,17 +83,12 @@ export class SubstrateTransport extends Transport {
 
   async proposalsIds() {
     const total: number = (await this.proposalCount()).toBn().toNumber();
-    return Array.from({ length: total + 1 }, (_, i) => new ProposalId(i));
+    return Array.from({ length: total }, (_, i) => new ProposalId(i+1));
   }
 
   async proposals() {
     const ids = await this.proposalsIds();
     return Promise.all(ids.map(id => this.proposalById(id)));
-  }
-
-  async hasVotedOnProposal(proposalId: ProposalId, voterId: MemberId) {
-    const hasVoted = await this.proposalsEngine.voteExistsByProposalByVoter<bool>(proposalId, voterId);
-    return hasVoted.eq(true);
   }
 
   async activeProposals() {
@@ -124,7 +120,7 @@ export class SubstrateTransport extends Transport {
     );
   }
 
-  async voteByProposalAndMember(proposalId: ProposalId, voterId: MemberId) {
+  async voteByProposalAndMember(proposalId: ProposalId, voterId: MemberId): Promise<VoteKind | null> {
     const vote = await this.proposalsEngine.voteExistsByProposalByVoter<VoteKind>(proposalId, voterId);
     const hasVoted = (await this.proposalsEngine.voteExistsByProposalByVoter.size(proposalId, voterId)).toNumber();
     return hasVoted ? vote : null;
@@ -153,5 +149,9 @@ export class SubstrateTransport extends Transport {
     const methods = includeKeys(this.proposalsCodex, "VotingPeriod");
     // methods = [proposalTypeVotingPeriod...]
     return methods.reduce((obj, method) => ({ ...obj, method: this.proposalsCodex[method]() }), {});
+  }
+
+  async bestBlock() {
+    return await this.api.derive.chain.bestNumber();
   }
 }

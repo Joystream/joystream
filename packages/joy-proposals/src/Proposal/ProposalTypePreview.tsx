@@ -4,16 +4,20 @@ import { Category } from "./ChooseProposalType";
 
 import "./ProposalType.css";
 
-export type ProposalType =
-  | "EvictStorageProvider"
-  | "Signal"
-  | "SetStorageRoleParams"
-  | "SetMaxValidatorCount"
-  | "SetElectionParameters"
-  | "SpendingProposal"
-  | "SetWGMintCapacity"
-  | "SetLead"
-  | "RuntimeUpgrade";
+const ProposalTypes = [
+  "Text",
+  "RuntimeUpgrade",
+  "SetElectionParameters",
+  "Spending",
+  "SetLead",
+  "SetContentWorkingGroupMintCapacity",
+  "EvictStorageProvider",
+  "SetValidatorCount",
+  "SetStorageRoleParameters",
+] as const;
+
+export type ProposalType = typeof ProposalTypes[number];
+
 
 export type ProposalTypeInfo = {
   type: ProposalType;

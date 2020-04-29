@@ -3,7 +3,6 @@ import ProposalTypePreview, { ProposalTypeInfo } from "./ProposalTypePreview";
 import { Item, Dropdown } from "semantic-ui-react";
 
 import { useTransport } from "../runtime";
-import ProposalTypes from "../proposalTypes.json";
 import "./ChooseProposalType.css";
 
 export const Categories = {

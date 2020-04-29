@@ -1,11 +1,14 @@
 import { ProposalType } from "../Proposal/ProposalTypePreview";
+import { Profile } from "@joystream/types/members";
+import { ProposalParametersType, ProposalId } from "@joystream/types/proposals";
 
 export type ParsedProposal = {
+  id: ProposalId;
   type: ProposalType;
   title: string;
   description: string;
   status: any;
-  proposer: any;
+  proposer: Profile;
   proposerId: number;
   createdAtBlock: number;
   createdAt: Date;

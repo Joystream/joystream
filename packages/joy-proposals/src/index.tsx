@@ -57,6 +57,7 @@ function App(props: Props): React.ReactElement<Props> {
           <Route path={`${basePath}/new/set-storage-role-params`} component={SetStorageRoleParamsForm} />
           <Route path={`${basePath}/new/set-max-validator-count`} component={SetMaxValidatorCountForm} />
           <Route path={`${basePath}/new/runtime-upgrade`} component={RuntimeUpgradeForm} />
+          <Route path={`${basePath}/new`} component={ChooseProposalType} />
           <Route path={`${basePath}/active`} component={NotDone} />
           <Route path={`${basePath}/finalized`} component={NotDone} />
           <Route path={`${basePath}/:id`} component={ProposalFromId} />

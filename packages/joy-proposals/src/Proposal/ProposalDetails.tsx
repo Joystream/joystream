@@ -1,69 +1,50 @@
 import React from "react";
 
 import { Container } from "semantic-ui-react";
-import Votes from "./Votes";
 import Details from "./Details";
 import Body from "./Body";
 import VotingSection from "./VotingSection";
+import { MyAccountProps, withMyAccount } from "@polkadot/joy-utils/MyAccount"
+import { ParsedProposal } from "../runtime/transport";
+import { withCalls } from '@polkadot/react-api';
+import { withMulti } from '@polkadot/react-api/with';
 
 import "./Proposal.css";
+import { ProposalId } from "@joystream/types/proposals";
+import { BlockNumber } from '@polkadot/types/interfaces'
+import { MemberId } from "@joystream/types/members";
+import { Seat } from "@joystream/types/";
 
-export type Member = {
-  name: string;
-  avatar: string;
+
+type ProposalDetailsProps = MyAccountProps & {
+  proposal: ParsedProposal,
+  proposalId: ProposalId,
+  bestNumber?: BlockNumber,
+  council?: Seat[]
 };
 
-export type VoteValue = "Approve" | "Slash" | "Abstain" | "Reject";
-
-export type Vote = {
-  value: VoteValue;
-  by: Member;
-  createdAt: string;
-};
-
-export type ProposalProps = {
-  title: string;
-  description: string;
-  finalized: "approved" | "rejected" | "slashed" | "withdrawn";
-  params: {
-    tokensAmount: number;
-    destinationAccount: string;
-  };
-  votes: Vote[];
-  totalVotes: number;
-  details: {
-    // FIXME: Stage, substage and type all should be an enum
-    stage: string;
-    substage: string;
-    expiresIn: number;
-    type: string;
-    createdBy: Member;
-    createdAt: string;
-  };
-  onVote: (vote: VoteValue) => void;
-  vote: {
-    hasVoted: boolean;
-    value: VoteValue;
-  };
-};
-
-export default function ProposalDetails({
-  title,
-  description,
-  params,
-  details,
-  votes,
-  totalVotes,
-  onVote,
-  vote
-}: ProposalProps) {
-  const { hasVoted = false, value = undefined } = vote || {};
+function ProposalDetails({ proposal, proposalId, myAddress, myMemberId, iAmMember, council, bestNumber }: ProposalDetailsProps) {
+  const iAmCouncilMember = iAmMember && council && council.some(seat => seat.member.toString() === myAddress);
   return (
     <Container className="Proposal">
-      <Details {...details} />
-      <Body title={title} description={description} params={params} />
-      <VotingSection onVote={onVote} hasVoted={hasVoted} value={value || "Approve"} />
-      <Votes votes={votes} total={totalVotes} />
+      <Details proposal={proposal} bestNumber={bestNumber}/>
+      <Body
+        type={ proposal.type }
+        title={ proposal.title }
+        description={ proposal.description }
+        params={ proposal.details }
+        />
+      { iAmCouncilMember && <VotingSection proposalId={proposalId} memberId={ myMemberId as MemberId }/> }
+      {/* <Votes votes={votes} total={totalVotes} />  TODO: Implement */}
     </Container>
   );
 }
+
+export default withMulti<ProposalDetailsProps>(
+  ProposalDetails,
+  withMyAccount,
+  withCalls(
+    ['derive.chain.bestNumber', { propName: 'bestNumber' }],
+    ['query.council.activeCouncil', { propName: 'council' }], // TODO: Handle via transport?
+  )
+);

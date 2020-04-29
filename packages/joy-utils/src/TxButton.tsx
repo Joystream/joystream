@@ -130,7 +130,7 @@ function MockTxButton (props: BasicButtonProps) {
 function ResolvedButton (props: BasicButtonProps) {
   const isMock = useTransportContext() instanceof MockTransport;
 
-  return isMock 
+  return isMock
     ? <MockTxButton {...props} />
     : <SubstrateTxButton {...props} />
 }

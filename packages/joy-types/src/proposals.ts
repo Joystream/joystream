@@ -81,6 +81,42 @@ class ProposalParameters extends Struct {
       value
     );
   }
+
+        // During this period, votes can be accepted
+  get votingPeriod(): BlockNumber {
+    return this.get("votingPeriod") as BlockNumber;
+  }
+
+        /* A pause before execution of the approved proposal. Zero means approved proposal would be
+     executed immediately. */
+  get gracePeriod(): BlockNumber {
+    return this.get("gracePeriod") as BlockNumber;
+  }
+
+        // Quorum percentage of approving voters required to pass the proposal.
+  get approvalQuorumPercentage(): u32 {
+    return this.get("approvalQuorumPercentage") as u32;
+  }
+
+        // Approval votes percentage threshold to pass the proposal.
+  get approvalThresholdPercentage(): u32 {
+    return this.get("approvalThresholdPercentage") as u32;
+  }
+
+        // Quorum percentage of voters required to slash the proposal.
+  get slashingQuorumPercentage(): u32 {
+    return this.get("slashingQuorumPercentage") as u32;
+  }
+
+        // Slashing votes percentage threshold to slash the proposal.
+  get slashingThresholdPercentage(): u32 {
+    return this.get("slashingThresholdPercentage") as u32;
+  }
+
+        // Proposal stake
+  get requiredStake(): Option<Balance> {
+    return this.get("requiredStake") as Option<Balance>;
+  }
 }
 
 export type IProposal = {
