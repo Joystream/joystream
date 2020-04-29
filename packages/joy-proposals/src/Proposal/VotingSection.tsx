@@ -9,7 +9,7 @@ import { useTransport } from "../runtime";
 import { VoteKind } from '@joystream/types/proposals';
 import { usePromise } from "../utils";
 
-// TODO: joy-types (there is something similar already I think)
+// TODO: joy-types (there's something similar already I think)
 const voteKinds = ["Approve", "Slash", "Abstain", "Reject"] as const;
 type VoteKindStr = "Approve" | "Slash" | "Abstain" | "Reject";
 
@@ -46,11 +46,13 @@ function VoteButton({ voteKind, proposalId, memberId, onSuccess }: VoteButtonPro
 type VotingSectionProps = {
   memberId: MemberId,
   proposalId: ProposalId,
+  isVotingPeriod: boolean,
 };
 
 export default function VotingSection({
   memberId,
   proposalId,
+  isVotingPeriod
 }: VotingSectionProps) {
   const transport = useTransport();
   const [voted, setVoted] = useState<VoteKindStr | null >(null);
@@ -77,6 +79,9 @@ export default function VotingSection({
         </Message.Content>
       </Message>
     );
+  }
+  else if (!isVotingPeriod) {
+    return null;
   }
 
   return (

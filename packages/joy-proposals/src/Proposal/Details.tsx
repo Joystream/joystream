@@ -2,32 +2,19 @@ import React from "react";
 import { Item, Image, Header } from "semantic-ui-react";
 import { ParsedProposal } from "../runtime/transport";
 import { IdentityIcon } from '@polkadot/react-components';
-import { BlockNumber } from '@polkadot/types/interfaces';
+import { ExtendedProposalStatus } from "./ProposalDetails";
 
 type DetailsProps = {
   proposal: ParsedProposal,
-  bestNumber?: BlockNumber
+  extendedStatus: ExtendedProposalStatus,
 };
 
 export default function Details({
-  proposal: { type, createdAt, createdAtBlock, proposer, status, parameters },
-  bestNumber
+  proposal,
+  extendedStatus
 }: DetailsProps) {
-  const statusStr = Object.keys(status)[0];
-  const isActive = statusStr === 'Active';
-  const { votingPeriod, gracePeriod } = parameters;
-
-  const blockAge = bestNumber ? (bestNumber.toNumber() - createdAtBlock) : 0;
-  const substage = isActive && (
-    votingPeriod - blockAge  > 0 ?
-      'Voting period'
-      : 'Grace period'
-  );
-  const expiresIn = substage && (
-    substage === 'Voting period' ?
-      votingPeriod - blockAge
-      : (gracePeriod + votingPeriod) - blockAge
-  )
+  const { type, createdAt, proposer } = proposal;
+  const { statusStr, substage, expiresIn } = extendedStatus;
   return (
     <Item.Group className="details-container">
       <Item>
@@ -52,7 +39,7 @@ export default function Details({
           <Header as="h4">{ statusStr }</Header>
         </Item.Content>
       </Item>
-      { isActive && (
+      { (substage !== null) && (
         <Item>
           <Item.Content>
             <Item.Extra>Substage:</Item.Extra>
@@ -60,7 +47,7 @@ export default function Details({
           </Item.Content>
         </Item>
       ) }
-      { isActive && (
+      { (expiresIn !== null) && (
         <Item>
           <Item.Content>
             <Item.Extra>Expires in:</Item.Extra>
