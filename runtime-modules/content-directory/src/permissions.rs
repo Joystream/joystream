@@ -36,14 +36,14 @@ pub trait ActorAuthenticator: system::Trait + Debug {
         + Ord;
 
     /// Authenticate account as being current authority.
-    fn authenticate_authority(account_id: Self::AccountId) -> bool;
+    fn authenticate_authority(origin: Self::Origin) -> dispatch::Result;
 
     /// Authenticate account as being given actor in given group.
     fn authenticate_actor_in_group(
-        account_id: Self::AccountId,
+        origin: Self::Origin,
         actor_id: Self::ActorId,
         group_id: Self::GroupId,
-    ) -> bool;
+    ) -> dispatch::Result;
 }
 
 /// Identifier for a given actor in a given group.
@@ -52,6 +52,12 @@ pub trait ActorAuthenticator: system::Trait + Debug {
 pub struct ActorInGroupId<T: ActorAuthenticator> {
     pub actor_id: T::ActorId,
     pub group_id: T::GroupId,
+}
+
+impl<T: ActorAuthenticator> ActorInGroupId<T> {
+    fn from(actor_id: T::ActorId, group_id: T::GroupId) -> Self {
+        Self { actor_id, group_id }
+    }
 }
 
 /// Limit for how many entities of a given class may be created.
@@ -65,7 +71,7 @@ pub enum EntityCreationLimit {
 }
 
 /// A voucher for entity creation
-#[derive(Encode, Decode, Default)]
+#[derive(Encode, Decode, PartialEq, Default)]
 pub struct EntityCreationVoucher {
     /// How many are allowed in total
     pub maximum_entities_count: u64,
@@ -88,6 +94,10 @@ impl EntityCreationVoucher {
 
     pub fn increment_created_entities_count(&mut self) {
         self.entities_created += 1;
+    }
+
+    pub fn limit_not_reached(&self) -> bool {
+        self.entities_created < self.maximum_entities_count
     }
 }
 
@@ -125,7 +135,7 @@ where
 
     /// Policy for how to set the controller of a created entity.
     ///
-    /// Examples(s)
+    /// Example(s)
     /// - For a group that represents something like all possible publishers, then `InitialControllerPolicy::ActorInGroup` makes sense.
     /// - For a group that represents some stable set of curators, then `InitialControllerPolicy::Group` makes sense.
     pub initial_controller_of_created_entities: InitialControllerPolicy,
@@ -160,7 +170,7 @@ where
     pub last_permissions_update: BlockNumber,
 
     /// The maximum number of entities which can be created.
-    pub maximum_entity_count: u64,
+    pub maximum_entities_count: u64,
 
     /// The current number of entities which exist.
     pub current_number_of_entities: u64,
@@ -308,6 +318,16 @@ where
 pub enum EntityController<T: ActorAuthenticator> {
     Group(T::GroupId),
     ActorInGroup(ActorInGroupId<T>),
+}
+
+impl<T: ActorAuthenticator> EntityController<T> {
+    pub fn from_group(group_id: T::GroupId) -> Self {
+        Self::Group(group_id)
+    }
+
+    pub fn from_actor_in_group(actor_id: T::ActorId, group_id: T::GroupId) -> Self {
+        Self::ActorInGroup(ActorInGroupId::from(actor_id, group_id))
+    }
 }
 
 impl<T: ActorAuthenticator> Default for EntityController<T> {

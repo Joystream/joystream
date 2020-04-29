@@ -6,160 +6,160 @@ use core::iter::FromIterator;
 use rstd::collections::btree_set::BTreeSet;
 use srml_support::{assert_err, assert_ok};
 
-#[test]
-fn create_class_then_entity_with_default_class() {
-    with_test_externalities(|| {
-        // Only authorized accounts can create classes
-        assert_err!(
-            TestModule::create_class_with_default_permissions(
-                Origin::signed(UNAUTHORIZED_CLASS_PERMISSIONS_CREATOR),
-                b"class_name".to_vec(),
-                b"class_description".to_vec(),
-            ),
-            "NotPermittedToCreateClass"
-        );
+// #[test]
+// fn create_class_then_entity_with_default_class() {
+//     with_test_externalities(|| {
+//         // Only authorized accounts can create classes
+//         assert_err!(
+//             TestModule::create_class_with_default_permissions(
+//                 Origin::signed(UNAUTHORIZED_CLASS_PERMISSIONS_CREATOR),
+//                 b"class_name".to_vec(),
+//                 b"class_description".to_vec(),
+//             ),
+//             "NotPermittedToCreateClass"
+//         );
 
-        let class_id = create_simple_class_with_default_permissions();
+//         let class_id = create_simple_class_with_default_permissions();
 
-        assert!(<ClassById<Runtime>>::exists(class_id));
+//         assert!(<ClassById<Runtime>>::exists(class_id));
 
-        assert_eq!(TestModule::next_class_id(), class_id + 1);
+//         assert_eq!(TestModule::next_class_id(), class_id + 1);
 
-        // default class permissions have empty add_schema acl
-        assert_err!(
-            TestModule::add_class_schema(
-                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
-                Some(0),
-                class_id,
-                vec![],
-                simple_test_schema()
-            ),
-            "NotInAddSchemasSet"
-        );
+//         // default class permissions have empty add_schema acl
+//         assert_err!(
+//             TestModule::add_class_schema(
+//                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
+//                 Some(0),
+//                 class_id,
+//                 vec![],
+//                 simple_test_schema()
+//             ),
+//             "NotInAddSchemasSet"
+//         );
 
-        // attemt to add class schema to nonexistent class
-        assert_err!(
-            TestModule::add_class_schema(
-                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
-                Some(0),
-                class_id + 1,
-                vec![],
-                simple_test_schema()
-            ),
-            ERROR_CLASS_NOT_FOUND
-        );
+//         // attemt to add class schema to nonexistent class
+//         assert_err!(
+//             TestModule::add_class_schema(
+//                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
+//                 Some(0),
+//                 class_id + 1,
+//                 vec![],
+//                 simple_test_schema()
+//             ),
+//             ERROR_CLASS_NOT_FOUND
+//         );
 
-        // give members of GROUP_ZERO permission to add schemas
-        let add_schema_set = CredentialSet::from(vec![0]);
-        assert_ok!(TestModule::set_class_add_schemas_set(
-            Origin::ROOT,
-            None,
-            class_id,
-            add_schema_set
-        ));
+//         // give members of GROUP_ZERO permission to add schemas
+//         let add_schema_set = CredentialSet::from(vec![0]);
+//         assert_ok!(TestModule::set_class_add_schemas_set(
+//             Origin::ROOT,
+//             None,
+//             class_id,
+//             add_schema_set
+//         ));
 
-        // successfully add a new schema
-        assert_ok!(TestModule::add_class_schema(
-            Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
-            Some(0),
-            class_id,
-            vec![],
-            simple_test_schema()
-        ));
+//         // successfully add a new schema
+//         assert_ok!(TestModule::add_class_schema(
+//             Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
+//             Some(0),
+//             class_id,
+//             vec![],
+//             simple_test_schema()
+//         ));
 
-        // System can always create entities (provided class exists) bypassing any permissions
-        let entity_id_1 = next_entity_id();
-        assert_ok!(TestModule::create_entity(Origin::ROOT, None, class_id,));
-        // entities created by system are "un-owned"
-        assert!(!<EntityMaintainerByEntityId<Runtime>>::exists(entity_id_1));
-        assert_eq!(
-            TestModule::entity_maintainer_by_entity_id(entity_id_1),
-            None
-        );
+//         // System can always create entities (provided class exists) bypassing any permissions
+//         let entity_id_1 = next_entity_id();
+//         assert_ok!(TestModule::create_entity(Origin::ROOT, None, class_id,));
+//         // entities created by system are "un-owned"
+//         assert!(!<EntityMaintainerByEntityId<Runtime>>::exists(entity_id_1));
+//         assert_eq!(
+//             TestModule::entity_maintainer_by_entity_id(entity_id_1),
+//             None
+//         );
 
-        assert_eq!(TestModule::next_entity_id(), entity_id_1 + 1);
+//         assert_eq!(TestModule::next_entity_id(), entity_id_1 + 1);
 
-        // default permissions have empty create_entities set and by default no entities can be created
-        assert_err!(
-            TestModule::create_entity(
-                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
-                Some(1),
-                class_id,
-            ),
-            "EntitiesCannotBeCreated"
-        );
+//         // default permissions have empty create_entities set and by default no entities can be created
+//         assert_err!(
+//             TestModule::create_entity(
+//                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
+//                 Some(1),
+//                 class_id,
+//             ),
+//             "EntitiesCannotBeCreated"
+//         );
 
-        assert_ok!(TestModule::set_class_entities_can_be_created(
-            Origin::ROOT,
-            None,
-            class_id,
-            true
-        ));
+//         assert_ok!(TestModule::set_class_entities_can_be_created(
+//             Origin::ROOT,
+//             None,
+//             class_id,
+//             true
+//         ));
 
-        assert_err!(
-            TestModule::create_entity(
-                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
-                Some(1),
-                class_id,
-            ),
-            "NotInCreateEntitiesSet"
-        );
+//         assert_err!(
+//             TestModule::create_entity(
+//                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
+//                 Some(1),
+//                 class_id,
+//             ),
+//             "NotInCreateEntitiesSet"
+//         );
 
-        // give members of GROUP_ONE permission to create entities
-        let create_entities_set = CredentialSet::from(vec![1]);
-        assert_ok!(TestModule::set_class_create_entities_set(
-            Origin::ROOT,
-            None,
-            class_id,
-            create_entities_set
-        ));
+//         // give members of GROUP_ONE permission to create entities
+//         let create_entities_set = CredentialSet::from(vec![1]);
+//         assert_ok!(TestModule::set_class_create_entities_set(
+//             Origin::ROOT,
+//             None,
+//             class_id,
+//             create_entities_set
+//         ));
 
-        let entity_id_2 = next_entity_id();
-        assert_ok!(TestModule::create_entity(
-            Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
-            Some(1),
-            class_id,
-        ));
+//         let entity_id_2 = next_entity_id();
+//         assert_ok!(TestModule::create_entity(
+//             Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
+//             Some(1),
+//             class_id,
+//         ));
 
-        assert!(<EntityMaintainerByEntityId<Runtime>>::exists(entity_id_2));
-        assert_eq!(
-            TestModule::entity_maintainer_by_entity_id(entity_id_2),
-            Some(1)
-        );
+//         assert!(<EntityMaintainerByEntityId<Runtime>>::exists(entity_id_2));
+//         assert_eq!(
+//             TestModule::entity_maintainer_by_entity_id(entity_id_2),
+//             Some(1)
+//         );
 
-        assert_eq!(TestModule::next_entity_id(), entity_id_2 + 1);
+//         assert_eq!(TestModule::next_entity_id(), entity_id_2 + 1);
 
-        // Updating entity must be authorized
-        assert_err!(
-            TestModule::add_schema_support_to_entity(
-                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
-                Some(0),
-                false, // not claiming to be entity maintainer
-                entity_id_2,
-                0, // first schema created
-                simple_test_entity_property_values()
-            ),
-            "CredentialNotInEntityPermissionsUpdateSet"
-        );
+//         // Updating entity must be authorized
+//         assert_err!(
+//             TestModule::add_schema_support_to_entity(
+//                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
+//                 Some(0),
+//                 false, // not claiming to be entity maintainer
+//                 entity_id_2,
+//                 0, // first schema created
+//                 simple_test_entity_property_values()
+//             ),
+//             "CredentialNotInEntityPermissionsUpdateSet"
+//         );
 
-        // default permissions give entity maintainer permission to update and delete
-        assert_ok!(TestModule::add_schema_support_to_entity(
-            Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
-            Some(1),
-            true, // we are claiming to be the entity maintainer
-            entity_id_2,
-            0,
-            simple_test_entity_property_values()
-        ));
-        assert_ok!(TestModule::update_entity_property_values(
-            Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
-            Some(1),
-            true, // we are claiming to be the entity maintainer
-            entity_id_2,
-            simple_test_entity_property_values()
-        ));
-    })
-}
+//         // default permissions give entity maintainer permission to update and delete
+//         assert_ok!(TestModule::add_schema_support_to_entity(
+//             Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
+//             Some(1),
+//             true, // we are claiming to be the entity maintainer
+//             entity_id_2,
+//             0,
+//             simple_test_entity_property_values()
+//         ));
+//         assert_ok!(TestModule::update_entity_property_values(
+//             Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
+//             Some(1),
+//             true, // we are claiming to be the entity maintainer
+//             entity_id_2,
+//             simple_test_entity_property_values()
+//         ));
+//     })
+// }
 
 #[test]
 fn cannot_create_class_with_empty_name() {
@@ -188,19 +188,19 @@ fn create_class_with_empty_description() {
     })
 }
 
-#[test]
-fn cannot_create_entity_with_unknown_class_id() {
-    with_test_externalities(|| {
-        assert_err!(
-            TestModule::create_entity(
-                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
-                Some(1),
-                UNKNOWN_CLASS_ID,
-            ),
-            ERROR_CLASS_NOT_FOUND
-        );
-    })
-}
+// #[test]
+// fn cannot_create_entity_with_unknown_class_id() {
+//     with_test_externalities(|| {
+//         assert_err!(
+//             TestModule::create_entity(
+//                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
+//                 Some(1),
+//                 UNKNOWN_CLASS_ID,
+//             ),
+//             ERROR_CLASS_NOT_FOUND
+//         );
+//     })
+// }
 
 #[test]
 fn class_set_admins() {

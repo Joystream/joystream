@@ -148,16 +148,16 @@ impl ActorAuthenticator for Runtime {
     type ActorId = u64;
     type GroupId = u64;
 
-    fn authenticate_authority(account_id: Self::AccountId) -> bool {
-        true
+    fn authenticate_authority(account_id: Self::Origin) -> dispatch::Result {
+        Ok(())
     }
 
     fn authenticate_actor_in_group(
-        account_id: Self::AccountId,
-        actor_id: Self::ActorId,
+        account_id: Self::Origin,
         group_id: Self::GroupId,
-    ) -> bool {
-        true
+        actor_id: Self::ActorId,
+    ) -> dispatch::Result {
+        Ok(())
     }
 }
 

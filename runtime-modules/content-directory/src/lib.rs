@@ -772,11 +772,41 @@ decl_module! {
         /// The `as` parameter must match `can_create_entities_of_class`, and the controller is set based on `initial_controller_of_created_entities` in the class permission.
         pub fn create_entity(
             origin,
-            with_credential: Option<T::Credential>,
-            class_id: T::ClassId
+            class_id: T::ClassId,
+            actor_in_group: ActorInGroupId<T>,
         ) -> dispatch::Result {
-            let raw_origin = Self::ensure_root_or_signed(origin)?;
-            Self::do_create_entity(&raw_origin, with_credential, class_id)?;
+            let ActorInGroupId {actor_id, group_id} = actor_in_group;
+            T::authenticate_actor_in_group(origin, actor_id, group_id)?;
+            let class = Self::ensure_class_exists(class_id)?;
+            Self::ensure_entity_creator_exists(class_id, group_id)?;
+            Self::ensure_maximum_entities_count_limit_not_reached(&class)?;
+            let entity_controller =
+                if let InitialControllerPolicy::ActorInGroup = class.get_permissions().initial_controller_of_created_entities {
+                    EntityController::from_actor_in_group(actor_id, group_id)
+                } else {
+                    EntityController::from_group(group_id)
+                };
+
+            let entity_creation_voucher = Self::entity_creation_vouchers(class_id, &entity_controller);
+
+            // Ensure entity creation voucher exists
+            if entity_creation_voucher != EntityCreationVoucher::default() {
+
+                // Ensure voucher limit not reached
+                Self::ensure_voucher_limit_not_reached(&entity_creation_voucher)?;
+
+                //
+                // == MUTATION SAFE ==
+                //
+
+                <EntityCreationVouchers<T>>::mutate(class_id, entity_controller, |entity_creation_voucher| {
+                    entity_creation_voucher.increment_created_entities_count()
+                })
+            } else {
+                <EntityCreationVouchers<T>>::insert(class_id, entity_controller, EntityCreationVoucher::new(class.get_permissions().maximum_entities_count));
+            }
+
+            Self::perform_entity_creation(class_id);
             Ok(())
         }
 
@@ -1736,6 +1766,20 @@ impl<T: Trait> Module<T> {
             <CanCreateEntitiesOfClass<T>>::exists(class_id, group_id),
             ERROR_ENTITY_CREATOR_DOES_NOT_EXIST
         );
+        Ok(())
+    }
+
+    pub fn ensure_maximum_entities_count_limit_not_reached(class: &Class<T>) -> dispatch::Result {
+        let class_permissions = class.get_permissions();
+        ensure!(
+            class_permissions.current_number_of_entities < class_permissions.maximum_entities_count,
+            ERROR_MAX_NUMBER_OF_ENTITIES_PER_CLASS_LIMIT_REACHED
+        );
+        Ok(())
+    }
+
+    pub fn ensure_voucher_limit_not_reached(voucher: &EntityCreationVoucher) -> dispatch::Result {
+        ensure!(voucher.limit_not_reached(), ERROR_VOUCHER_LIMIT_REACHED);
         Ok(())
     }
 
