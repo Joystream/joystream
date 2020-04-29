@@ -32,7 +32,7 @@ export default class WarthogWrapper {
     await this.createMigrations();
   }
 
-  async newProject(projectName: string = 'generated') {
+  async newProject(projectName: string = 'query_node') {
     await warthogCli.run(`new ${projectName}`);
   }
 
