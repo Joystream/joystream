@@ -3,8 +3,9 @@
 
 mod types;
 
+use sr_primitives::traits::EnsureOrigin;
 use srml_support::{decl_event, decl_module, decl_storage, dispatch};
-use system::ensure_root;
+use system::{ensure_root, RawOrigin};
 
 use types::Lead;
 
@@ -31,12 +32,11 @@ decl_event!(
         <T as membership::members::Trait>::MemberId,
         <T as system::Trait>::AccountId
     {
-        /// Emits on settings the leader.
+        /// Emits on setting the leader.
         /// Params:
         /// - Member id of the leader.
         /// - Role account id of the leader.
         LeaderSet(MemberId, AccountId),
-
     }
 );
 
@@ -89,5 +89,23 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         }
 
         Ok(())
+    }
+}
+
+impl<Origin, T, I> EnsureOrigin<Origin> for Module<T, I>
+where
+    Origin: Into<Result<RawOrigin<T::AccountId>, Origin>> + From<RawOrigin<T::AccountId>>,
+    T: Trait<I>,
+    I: Instance,
+{
+    type Success = ();
+
+    fn try_origin(o: Origin) -> Result<Self::Success, Origin> {
+        o.into().and_then(|o| match o {
+            RawOrigin::Signed(account_id) => {
+                Self::ensure_is_lead_account(account_id).map_err(|_| RawOrigin::None.into())
+            }
+            _ => Err(RawOrigin::None.into()),
+        })
     }
 }

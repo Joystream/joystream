@@ -12,8 +12,9 @@ use serde_derive::{Deserialize, Serialize};
 use codec::{Decode, Encode};
 use rstd::borrow::ToOwned;
 use rstd::prelude::*;
+use runtime_primitives::traits::EnsureOrigin;
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure};
-use system::ensure_signed;
+use system::{ensure_signed, RawOrigin};
 
 mod mock;
 mod tests;
@@ -303,12 +304,13 @@ impl<BlockNumber, Moment, AccountId> Category<BlockNumber, Moment, AccountId> {
 type CategoryTreePath<BlockNumber, Moment, AccountId> =
     Vec<Category<BlockNumber, Moment, AccountId>>;
 
-pub trait Trait:
-    system::Trait + timestamp::Trait + bureaucracy::Trait<bureaucracy::Instance1> + Sized
-{
+pub trait Trait: system::Trait + timestamp::Trait + Sized {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type MembershipRegistry: ForumUserRegistry<Self::AccountId>;
+
+    /// Checks that provided signed account belongs to the leader
+    type EnsureForumLeader: EnsureOrigin<Self::Origin>;
 }
 
 decl_storage! {
@@ -877,7 +879,9 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_is_forum_lead(account_id: &T::AccountId) -> dispatch::Result {
-        bureaucracy::Module::<T, bureaucracy::Instance1>::ensure_is_lead_account(account_id.clone())
+        T::EnsureForumLeader::ensure_origin(RawOrigin::Signed(account_id.clone()).into())?;
+
+        Ok(())
     }
 
     fn ensure_is_forum_member(

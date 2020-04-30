@@ -4825,7 +4825,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-forum-module"
-version = "1.1.1"
+version = "1.2.0"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",

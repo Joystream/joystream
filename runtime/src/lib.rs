@@ -784,6 +784,7 @@ impl forum::ForumUserRegistry<AccountId> for ShimMembershipRegistry {
 impl forum::Trait for Runtime {
     type Event = Event;
     type MembershipRegistry = ShimMembershipRegistry;
+    type EnsureForumLeader = bureaucracy::Module<Runtime, bureaucracy::Instance1>;
 }
 
 impl migration::Trait for Runtime {
