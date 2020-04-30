@@ -1,10 +1,12 @@
 import { Transport, ParsedProposal, ProposalType, ProposalTypes, ParsedMember, ProposalVote } from "./transport";
 import { Proposal, ProposalId, Seats, VoteKind } from "@joystream/types/proposals";
-import { MemberId } from "@joystream/types/members";
+import { MemberId, Profile } from "@joystream/types/members";
 import { ApiProps } from "@polkadot/react-api/types";
-import { u32, Vec } from "@polkadot/types/";
-import { Balance, Moment } from "@polkadot/types/interfaces";
+import { u32, Vec, Option } from "@polkadot/types/";
+import { Balance, Moment, AccountId } from "@polkadot/types/interfaces";
 import { ApiPromise } from "@polkadot/api";
+import { RoleKeys } from "@joystream/types/members";
+import { FIRST_MEMBER_ID } from '@polkadot/joy-members/constants';
 
 import { includeKeys, calculateStake, calculateMetaFromType, splitOnUpperCase } from "../utils";
 
@@ -39,7 +41,11 @@ export class SubstrateTransport extends Transport {
     return this.api.query.council;
   }
 
-  async totalIssuance() {
+  get actors() {
+    return this.api.query.actors;
+  }
+
+  totalIssuance() {
     return this.api.query.balances.totalIssuance<Balance>();
   }
 
@@ -54,20 +60,20 @@ export class SubstrateTransport extends Transport {
     return new Date(blockTime.toNumber());
   }
 
-  async proposalCount() {
+  proposalCount() {
     return this.proposalsEngine.proposalCount<u32>();
   }
 
-  async rawProposalById(id: ProposalId) {
+  rawProposalById(id: ProposalId) {
     return this.proposalsEngine.proposals<Proposal>(id);
   }
 
-  async proposalDetailsById(id: ProposalId) {
+  proposalDetailsById(id: ProposalId) {
     return this.proposalsCodex.proposalDetailsByProposalId(id);
   }
 
-  async memberProfile(id: MemberId) {
-    return this.members.memberProfile(id);
+  memberProfile(id: MemberId): Promise<Option<Profile>> {
+    return this.members.memberProfile(id) as Promise<Option<Profile>>;
   }
 
   async proposalById(id: ProposalId): Promise<ParsedProposal> {
@@ -201,5 +207,33 @@ export class SubstrateTransport extends Transport {
 
   async bestBlock() {
     return await this.api.derive.chain.bestNumber();
+  }
+
+  async storageProviders(): Promise<AccountId[]> {
+    const providers = (await this.actors.accountIdsByRole(RoleKeys.StorageProvider)) as Vec<AccountId>;
+    return providers.toArray();
+  }
+
+  async membersExceptCouncil(): Promise<{ id: number, profile: Profile }[]> {
+    // Council members to filter out
+    const activeCouncil = (await this.council.activeCouncil()) as Seats;
+    const membersCount = (await this.members.membersCreated() as MemberId).toNumber();
+    let profiles: { id: number, profile: Profile }[] = [];
+    for (let id=FIRST_MEMBER_ID.toNumber(); id<membersCount; ++id) {
+      const profile = (await this.memberProfile(new MemberId(id))).unwrapOr(null);
+      if (
+        !profile ||
+        // Filter out council members
+        activeCouncil.some(seat => (
+          seat.member.toString() === profile.controller_account.toString()
+          || seat.member.toString() === profile.root_account.toString()
+        ))
+      ) {
+        continue;
+      }
+      profiles.push({ id, profile });
+    }
+
+    return profiles;
   }
 }

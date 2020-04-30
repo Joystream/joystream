@@ -22,4 +22,8 @@
   .form-buttons {
     display: flex;
   }
+
+  .ui.dropdown .ui.avatar.image {
+    width: 2em !important;
+  }
 }

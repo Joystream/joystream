@@ -2,7 +2,6 @@ import React from "react";
 import { FormikProps, WithFormikConfig } from "formik";
 import { Form, Icon, Button, Message } from "semantic-ui-react";
 import { getFormErrorLabelsProps } from "./errorHandling";
-import * as Yup from "yup";
 import Validation from "../validationSchema";
 import { InputFormField, TextareaFormField } from "./FormFields";
 import TxButton from "@polkadot/joy-utils/TxButton";
