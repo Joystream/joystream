@@ -1,13 +1,15 @@
 import * as path from 'path';
+import * as fs from 'fs-extra';
 import * as dotenv from 'dotenv';
 import * as Mustache from 'mustache';
 import { readFileSync, copyFileSync } from 'fs-extra';
 import { Command } from '@oclif/command';
 import { execSync } from 'child_process';
 
-import { createDir, getTemplatePath, createFile, getTypeormModelGeneratorConnectionConfig } from '../utils/utils';
+import { createDir, getTemplatePath, createFile } from '../utils/utils';
 import { formatWithPrettier } from '../helpers/formatter';
 import WarthogWrapper from '../helpers/WarthogWrapper';
+import { getTypeormConfig, getTypeormModelGeneratorConnectionConfig } from '../helpers/db';
 
 export default class Codegen extends Command {
   static description = 'Code generator';
@@ -64,10 +66,11 @@ export default class Codegen extends Command {
 
     // Create package.json
     copyFileSync(getTemplatePath('indexer.package.json'), path.resolve(process.cwd(), 'package.json'));
-    // Create package.json
-    copyFileSync(getTemplatePath('ormconfig.json'), path.resolve(process.cwd(), 'ormconfig.json'));
 
-    // Create package.json
+    // Create .env file for typeorm database connection
+    fs.writeFileSync('.env', getTypeormConfig());
+
+    // Create
     copyFileSync(getTemplatePath('indexer.tsconfig.json'), path.resolve(process.cwd(), 'tsconfig.json'));
 
     this.log('Installing dependendies for indexer...');

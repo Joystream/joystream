@@ -1,6 +1,7 @@
-import { existsSync, readFileSync } from 'fs-extra';
+import * as fs from 'fs-extra';
 import { execSync } from 'child_process';
 import * as path from 'path';
+import * as dotenv from 'dotenv';
 import { deserializeArray } from 'class-transformer';
 const warthogCli = require('warthog/dist/cli/cli');
 
@@ -34,10 +35,11 @@ export default class WarthogWrapper {
 
   async newProject(projectName: string = 'query_node') {
     await warthogCli.run(`new ${projectName}`);
+    this.updateDotenv();
   }
 
   installDependencies() {
-    if (!existsSync('package.json')) {
+    if (!fs.existsSync('package.json')) {
       this.command.error('Could not found package.json file in the current working directory');
     }
 
@@ -58,13 +60,13 @@ export default class WarthogWrapper {
   async createModels() {
     const schemaPath = path.resolve(process.cwd(), this.schemaPath);
 
-    if (!existsSync(schemaPath)) {
+    if (!fs.existsSync(schemaPath)) {
       this.command.error(`File does not exists! ${schemaPath}`);
     }
     if (!path.extname(schemaPath)) {
       this.command.error('Schema file must be a JSON file!');
     }
-    const data = readFileSync(schemaPath, 'utf8');
+    const data = fs.readFileSync(schemaPath, 'utf8');
     const inputs = deserializeArray(Input, data);
 
     // Make arguments ready for "generate" command
@@ -110,5 +112,22 @@ export default class WarthogWrapper {
 
   async codegen() {
     execSync('yarn warthog codegen');
+  }
+
+  updateDotenv() {
+    const envConfig = dotenv.parse(fs.readFileSync('.env'));
+
+    // Override DB_NAME, PORT, ...
+    envConfig['WARTHOG_DB_DATABASE'] = process.env.DB_NAME || envConfig['WARTHOG_DB_DATABASE'];
+    envConfig['WARTHOG_DB_USERNAME'] = process.env.DB_USER || envConfig['WARTHOG_DB_USERNAME'];
+    envConfig['WARTHOG_DB_PASSWORD'] = process.env.DB_PASS || envConfig['WARTHOG_DB_PASSWORD'];
+    envConfig['WARTHOG_DB_HOST'] = process.env.DB_HOST || envConfig['WARTHOG_DB_HOST'];
+    envConfig['WARTHOG_DB_PORT'] = process.env.DB_PORT || envConfig['WARTHOG_DB_PORT'];
+    envConfig['WARTHOG_APP_PORT'] = process.env.GRAPHQL_SERVER_PORT || envConfig['WARTHOG_APP_PORT'];
+
+    const newEnvConfig = Object.keys(envConfig)
+      .map(key => `${key}=${envConfig[key]}`)
+      .join('\n');
+    fs.writeFileSync('.env', newEnvConfig);
   }
 }
