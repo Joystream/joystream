@@ -8,7 +8,6 @@ use srml_support::traits::Currency;
 use srml_support::{decl_module, decl_storage, dispatch, ensure};
 use system::ensure_root;
 
-use membership::role_types::{ActorInRole, Role};
 use types::{Lead, LeadRoleState};
 
 //TODO: convert messages to the decl_error! entries
@@ -39,7 +38,7 @@ decl_storage! {
         pub CurrentLeadId get(current_lead_id) : Option<LeadId<T>>;
 
         /// Maps identifier to corresponding lead.
-        pub LeadById get(lead_by_id): linked_map LeadId<T> => Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>;
+        pub LeadById get(lead_by_id): linked_map LeadId<T> => Lead<T::MemberId, T::AccountId, T::RewardRelationshipId, T::BlockNumber>;
 
         /// Next identifier for new current lead.
         pub NextLeadId get(next_lead_id): LeadId<T>;
@@ -60,22 +59,16 @@ decl_module! {
 
         let new_lead_id = <NextLeadId<T, I>>::get();
 
-        let new_lead_role = ActorInRole::new(Role::CuratorLead, new_lead_id);
-
-        //
-        // == MUTATION SAFE ==
-        //
-
-        // Register in role - will fail if member cannot become lead
-        membership::members::Module::<T>::register_role_on_member(member, &new_lead_role)?;
-
         // Construct lead
         let new_lead = Lead {
+            member_id: member,
             role_account,
             reward_relationship: None,
             inducted: <system::Module<T>>::block_number(),
             stage: LeadRoleState::Active,
         };
+
+        // mutation
 
         // Store lead
         <LeadById<T, I>>::insert(new_lead_id, new_lead);

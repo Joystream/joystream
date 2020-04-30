@@ -34,7 +34,10 @@ impl<BlockNumber> Default for LeadRoleState<BlockNumber> {
 /// hence information about this is missing. Recurring rewards is included, somewhat arbitrarily!
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
-pub struct Lead<AccountId, RewardRelationshipId, BlockNumber> {
+pub struct Lead<MemberId, AccountId, RewardRelationshipId, BlockNumber> {
+    /// Member id of the leader
+    pub member_id: MemberId,
+
     /// Account used to authenticate in this role,
     pub role_account: AccountId,
 
