@@ -12,11 +12,12 @@ import {
   ProposalFormContainerProps,
   ProposalFormInnerProps
 } from "./GenericProposalForm";
+import Validation from "../validationSchema";
 import { InputFormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
-import { BlockNumber, Balance } from '@polkadot/types/interfaces';
+import { BlockNumber, Balance } from "@polkadot/types/interfaces";
 import { u32 } from "@polkadot/types/primitive";
-import { createType } from '@polkadot/types';
+import { createType } from "@polkadot/types";
 import "./forms.css";
 
 type FormValues = GenericFormValues & {
@@ -48,7 +49,7 @@ type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
 const expectedBlockTimeMs = 6000; // TODO: api.consts.babe.expectedBlockTime;
-const daysToBlocks = (days:number) => days * 24 * 60 * 60 * 1000 / expectedBlockTimeMs;
+const daysToBlocks = (days: number) => (days * 24 * 60 * 60 * 1000) / expectedBlockTimeMs;
 
 // TODO: Define in joy-types?
 type ElectionParameters = {
@@ -60,18 +61,18 @@ type ElectionParameters = {
   new_term_duration: BlockNumber;
   min_council_stake: Balance;
   min_voting_stake: Balance;
-}
+};
 
 function createElectionParameters(values: FormValues): ElectionParameters {
   return {
-    announcing_period: createType('BlockNumber', daysToBlocks(parseInt(values.announcingPeriod))),
-    voting_period: createType('BlockNumber', daysToBlocks(parseInt(values.votingPeriod))),
-    revealing_period: createType('BlockNumber', daysToBlocks(parseInt(values.revealingPeriod))),
-    council_size: createType('u32', values.councilSize),
-    candidacy_limit: createType('u32', values.candidacyLimit),
-    new_term_duration: createType('BlockNumber', daysToBlocks(parseInt(values.newTermDuration))),
-    min_council_stake: createType('Balance', values.minCouncilStake),
-    min_voting_stake: createType('Balance', values.minVotingStake)
+    announcing_period: createType("BlockNumber", daysToBlocks(parseInt(values.announcingPeriod))),
+    voting_period: createType("BlockNumber", daysToBlocks(parseInt(values.votingPeriod))),
+    revealing_period: createType("BlockNumber", daysToBlocks(parseInt(values.revealingPeriod))),
+    council_size: createType("u32", values.councilSize),
+    candidacy_limit: createType("u32", values.candidacyLimit),
+    new_term_duration: createType("BlockNumber", daysToBlocks(parseInt(values.newTermDuration))),
+    min_council_stake: createType("Balance", values.minCouncilStake),
+    min_voting_stake: createType("Balance", values.minVotingStake)
   };
 }
 
@@ -83,13 +84,7 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
       {...props}
       txMethod="createSetElectionParametersProposal"
       requiredStakePercent={0.75}
-      submitParams={[
-        props.myMemberId,
-        values.title,
-        values.rationale,
-        '{STAKE}',
-        createElectionParameters(values)
-      ]}
+      submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", createElectionParameters(values)]}
     >
       <Divider horizontal>Voting </Divider>
       <Form.Group widths="equal" style={{ marginBottom: "8rem" }}>
@@ -186,14 +181,14 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
   }),
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    announcingPeriod: Yup.number().required("All fields must be filled!"),
-    votingPeriod: Yup.number().required("All fields must be filled!"),
-    minVotingStake: Yup.number().required("All fields must be filled!"),
-    revealingPeriod: Yup.number().required("All fields must be filled!"),
-    minCouncilStake: Yup.number().required("All fields must be filled!"),
-    newTermDuration: Yup.number().required("All fields must be filled!"),
-    candidacyLimit: Yup.number().required("All fields must be filled!"),
-    councilSize: Yup.number().required("All fields must be filled!")
+    announcingPeriod: Validation.SetElectionParameters.announcingPeriod,
+    votingPeriod: Validation.SetElectionParameters.votingPeriod,
+    minVotingStake: Validation.SetElectionParameters.minVotingStake,
+    revealingPeriod: Validation.SetElectionParameters.revealingPeriod,
+    minCouncilStake: Validation.SetElectionParameters.minCouncilStake,
+    newTermDuration: Validation.SetElectionParameters.newTermDuration,
+    candidacyLimit: Validation.SetElectionParameters.candidacyLimit,
+    councilSize: Validation.SetElectionParameters.councilSize
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: "SetCouncilParamsForm"

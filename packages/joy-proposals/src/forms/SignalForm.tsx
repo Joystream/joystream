@@ -11,6 +11,7 @@ import {
   ProposalFormContainerProps,
   ProposalFormInnerProps
 } from "./GenericProposalForm";
+import Validation from "../validationSchema";
 import { TextareaFormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
@@ -38,13 +39,8 @@ const SignalForm: React.FunctionComponent<FormInnerProps> = props => {
       {...props}
       txMethod="createTextProposal"
       requiredStakePercent={0.25}
-      submitParams={[
-        props.myMemberId,
-        values.title,
-        values.rationale,
-        '{STAKE}',
-        values.description
-      ]}>
+      submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", values.description]}
+    >
       <TextareaFormField
         label="Description"
         help="The extensive description of your proposal"
@@ -65,7 +61,7 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
   }),
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    description: Yup.string().required("Description is required!")
+    description: Validation.Text.description
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: "SignalForm"

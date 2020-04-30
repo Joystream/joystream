@@ -12,11 +12,12 @@ import {
   ProposalFormContainerProps,
   ProposalFormInnerProps
 } from "./GenericProposalForm";
+import Validation from "../validationSchema";
 import { FormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
-import { InputAddress } from '@polkadot/react-components/index';
+import { InputAddress } from "@polkadot/react-components/index";
 import { accountIdsToOptions } from "@polkadot/joy-election/utils";
-import { createType } from '@polkadot/types';
+import { createType } from "@polkadot/types";
 import "./forms.css";
 
 type FormValues = GenericFormValues & {
@@ -44,22 +45,15 @@ const EvictStorageProviderForm: React.FunctionComponent<FormInnerProps> = props 
       {...props}
       txMethod="createEvictStorageProviderProposal"
       requiredStakePercent={0.1}
-      submitParams={[
-        props.myMemberId,
-        values.title,
-        values.rationale,
-        '{STAKE}',
-        values.storageProvider
-      ]}
+      submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", values.storageProvider]}
     >
-
       <FormField
         error={errorLabelsProps.storageProvider}
         label="Storage provider"
         help="The storage provider you propose to evict"
       >
         <InputAddress
-          onChange={(address) => setFieldValue("storageProvider", address) }
+          onChange={address => setFieldValue("storageProvider", address)}
           type="address"
           placeholder="Select storage provider"
           value={values.storageProvider}
@@ -78,7 +72,7 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
   }),
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    storageProvider: Yup.string().nullable().required("Select a storage provider!")
+    storageProvider: Validation.EvictStorageProvider.storageProvider
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: "EvictStorageProvidersForm"

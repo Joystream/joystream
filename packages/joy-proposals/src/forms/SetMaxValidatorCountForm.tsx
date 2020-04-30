@@ -10,19 +10,20 @@ import {
   ProposalFormExportProps,
   ProposalFormContainerProps,
   ProposalFormInnerProps
-} from './GenericProposalForm';
-import { InputFormField } from './FormFields';
+} from "./GenericProposalForm";
+import Validation from "../validationSchema";
+import { InputFormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
 
 type FormValues = GenericFormValues & {
   maxValidatorCount: string;
-}
+};
 
 const defaultValues: FormValues = {
   ...genericFormDefaultValues,
-  maxValidatorCount: ''
-}
+  maxValidatorCount: ""
+};
 
 type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
@@ -37,13 +38,7 @@ const SetMaxValidatorCountForm: React.FunctionComponent<FormInnerProps> = props 
       {...props}
       txMethod="createSetValidatorCountProposal"
       requiredStakePercent={0.25}
-      submitParams={[
-        props.myMemberId,
-        values.title,
-        values.rationale,
-        '{STAKE}',
-        values.maxValidatorCount
-      ]}
+      submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", values.maxValidatorCount]}
     >
       <InputFormField
         error={errorLabelsProps.maxValidatorCount}
@@ -53,19 +48,19 @@ const SetMaxValidatorCountForm: React.FunctionComponent<FormInnerProps> = props 
         name="maxValidatorCount"
         placeholder="20"
         value={values.maxValidatorCount}
-        />
+      />
     </GenericProposalForm>
   );
-}
+};
 
 const FormContainer = withFormContainer<FormContainerProps, FormValues>({
-  mapPropsToValues: (props:FormContainerProps) => ({
+  mapPropsToValues: (props: FormContainerProps) => ({
     ...defaultValues,
     ...(props.initialData || {})
   }),
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    maxValidatorCount: Yup.number().required('Enter the max validator count'),
+    maxValidatorCount: Validation.SetValidatorCount.maxValidatorCount
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: "SetMaxValidatorCountForm"
