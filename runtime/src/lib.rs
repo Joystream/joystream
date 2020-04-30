@@ -791,7 +791,9 @@ impl migration::Trait for Runtime {
 }
 
 // Forum bureaucracy
-impl bureaucracy::Trait<bureaucracy::Instance1> for Runtime {}
+impl bureaucracy::Trait<bureaucracy::Instance1> for Runtime {
+    type Event = Event;
+}
 
 impl actors::Trait for Runtime {
     type Event = Event;
