@@ -1,9 +1,54 @@
 import { ProposalType } from "./runtime";
 import * as Yup from "yup";
+import { StringSchema, NumberSchema } from "@types/yup";
 
-// TODO: Add all forms and fields here.
 type ValidationType = {
-  [k in ProposalType | "All"]: any;
+  All: {
+    title: StringSchema<string>;
+    rationale: StringSchema<string>;
+  };
+  Text: {
+    description: StringSchema<string>;
+  };
+  RuntimeUpgrade: {
+    WASM: StringSchema;
+  };
+  SetElectionParameters: {
+    announcingPeriod: NumberSchema<number>;
+    votingPeriod: NumberSchema<number>;
+    minVotingStake: NumberSchema<number>;
+    revealingPeriod: NumberSchema<number>;
+    minCouncilStake: NumberSchema<number>;
+    newTermDuration: NumberSchema<number>;
+    candidacyLimit: NumberSchema<number>;
+    councilSize: NumberSchema<number>;
+  };
+  Spending: {
+    tokens: NumberSchema<number>;
+    destinationAccount: StringSchema<string>;
+  };
+  SetLead: {
+    workingGroupLead: StringSchema<string>;
+  };
+  SetContentWorkingGroupMintCapacity: {};
+  EvictStorageProvider: {
+    storageProvider: StringSchema<string | null>;
+  };
+  SetValidatorCount: {
+    maxValidatorCount: NumberSchema<number>;
+  };
+  SetStorageRoleParameters: {
+    min_stake: NumberSchema<number>;
+    min_actors: NumberSchema<number>;
+    max_actors: NumberSchema<number>;
+    reward: NumberSchema<number>;
+    reward_period: NumberSchema<number>;
+    bonding_period: NumberSchema<number>;
+    unbonding_period: NumberSchema<number>;
+    min_service_period: NumberSchema<number>;
+    startup_grace_period: NumberSchema<number>;
+    entry_request_fee: NumberSchema<number>;
+  };
 };
 /*
 Validation is used to validate a proposal form.
