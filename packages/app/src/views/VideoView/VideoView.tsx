@@ -51,7 +51,7 @@ type RouteProps = {
 
 export default function VideoView({ videos, channels }: RouteProps) {
   let params = useParams()
-  let video = Object.values(videos).flat()[params.idx]
+  let video: any = Object.values(videos).flat()[params.idx]
   let channel = channels[video.channel]
   return <VideoViewComponent video={video} channel={channel} />
 }

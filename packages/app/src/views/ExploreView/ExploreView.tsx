@@ -12,7 +12,7 @@ export default function ExploreView({
   videos
 }: ExploreViewProps) {
 
-  let allVideos = Object.values(videos).flat()
+  let allVideos: any[] = Object.values(videos).flat()
   let allChannels: any[] = Object.values(channels)
 
   return (
