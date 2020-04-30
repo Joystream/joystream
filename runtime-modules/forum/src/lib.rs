@@ -9,11 +9,12 @@
 #[cfg(feature = "std")]
 use serde_derive::{Deserialize, Serialize};
 
+use codec::{Decode, Encode};
 use rstd::borrow::ToOwned;
 use rstd::prelude::*;
-
-use codec::{Decode, Encode};
+use runtime_primitives::traits::EnsureOrigin;
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure};
+use system::{ensure_signed, RawOrigin};
 
 mod mock;
 mod tests;
@@ -67,8 +68,6 @@ impl InputValidationLengthConstraint {
 const MAX_CATEGORY_DEPTH: u16 = 3;
 
 /// Error messages for dispatchables
-const ERROR_FORUM_SUDO_NOT_SET: &str = "Forum sudo not set.";
-const ERROR_ORIGIN_NOT_FORUM_SUDO: &str = "Origin not forum sudo.";
 const ERROR_CATEGORY_TITLE_TOO_SHORT: &str = "Category title too short.";
 const ERROR_CATEGORY_TITLE_TOO_LONG: &str = "Category title too long.";
 const ERROR_CATEGORY_DESCRIPTION_TOO_SHORT: &str = "Category description too long.";
@@ -95,18 +94,6 @@ const ERROR_POST_MODERATION_RATIONALE_TOO_LONG: &str = "Post moderation rational
 const ERROR_CATEGORY_NOT_BEING_UPDATED: &str = "Category not being updated.";
 const ERROR_CATEGORY_CANNOT_BE_UNARCHIVED_WHEN_DELETED: &str =
     "Category cannot be unarchived when deleted.";
-
-//use srml_support::storage::*;
-
-//use sr_io::{StorageOverlay, ChildrenStorageOverlay};
-
-//#[cfg(feature = "std")]
-//use runtime_io::{StorageOverlay, ChildrenStorageOverlay};
-
-//#[cfg(any(feature = "std", test))]
-//use sr_primitives::{StorageOverlay, ChildrenStorageOverlay};
-
-use system::{ensure_root, ensure_signed};
 
 /// Represents a user in this forum.
 #[derive(Debug, Copy, Clone)]
@@ -321,6 +308,9 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type MembershipRegistry: ForumUserRegistry<Self::AccountId>;
+
+    /// Checks that provided signed account belongs to the leader
+    type EnsureForumLeader: EnsureOrigin<Self::Origin>;
 }
 
 decl_storage! {
@@ -343,9 +333,6 @@ decl_storage! {
 
         /// Post identifier value to be used for for next post created.
         pub NextPostId get(next_post_id) config(): PostId;
-
-        /// Account of forum sudo.
-        pub ForumSudo get(forum_sudo) config(): Option<T::AccountId>;
 
         /// Input constraints
         /// These are all forward looking, that is they are enforced on all
@@ -421,39 +408,14 @@ decl_module! {
 
         fn deposit_event() = default;
 
-        /// Set forum sudo.
-        fn set_forum_sudo(origin, new_forum_sudo: Option<T::AccountId>) -> dispatch::Result {
-            ensure_root(origin)?;
-
-            /*
-             * Question: when this routine is called by non sudo or with bad signature, what error is raised?
-             * Update ERror set in spec
-             */
-
-            // Hold on to old value
-            let old_forum_sudo = <ForumSudo<T>>::get();
-
-            // Update forum sudo
-            match new_forum_sudo.clone() {
-                Some(account_id) => <ForumSudo<T>>::put(account_id),
-                None => <ForumSudo<T>>::kill()
-            };
-
-            // Generate event
-            Self::deposit_event(RawEvent::ForumSudoSet(old_forum_sudo, new_forum_sudo));
-
-            // All good.
-            Ok(())
-        }
-
         /// Add a new category.
         fn create_category(origin, parent: Option<CategoryId>, title: Vec<u8>, description: Vec<u8>) -> dispatch::Result {
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
-            // Not signed by forum SUDO
-            Self::ensure_is_forum_sudo(&who)?;
+            // Not signed by forum lead
+            Self::ensure_is_forum_lead(&who)?;
 
             // Validate title
             Self::ensure_category_title_is_valid(&title)?;
@@ -531,8 +493,8 @@ decl_module! {
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
-            // Not signed by forum SUDO
-            Self::ensure_is_forum_sudo(&who)?;
+            // Not signed by forum lead
+            Self::ensure_is_forum_lead(&who)?;
 
             // Make sure something is actually being changed
             ensure!(
@@ -637,8 +599,8 @@ decl_module! {
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
-            // Signed by forum SUDO
-            Self::ensure_is_forum_sudo(&who)?;
+            // Signed by forum lead
+            Self::ensure_is_forum_lead(&who)?;
 
             // Get thread
             let mut thread = Self::ensure_thread_exists(thread_id)?;
@@ -772,8 +734,8 @@ decl_module! {
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
-            // Signed by forum SUDO
-            Self::ensure_is_forum_sudo(&who)?;
+            // Signed by forum lead
+            Self::ensure_is_forum_lead(&who)?;
 
             // Make sure post exists and is mutable
             let post = Self::ensure_post_is_mutable(post_id)?;
@@ -916,20 +878,9 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_forum_sudo_set() -> Result<T::AccountId, &'static str> {
-        match <ForumSudo<T>>::get() {
-            Some(account_id) => Ok(account_id),
-            None => Err(ERROR_FORUM_SUDO_NOT_SET),
-        }
-    }
+    fn ensure_is_forum_lead(account_id: &T::AccountId) -> dispatch::Result {
+        T::EnsureForumLeader::ensure_origin(RawOrigin::Signed(account_id.clone()).into())?;
 
-    fn ensure_is_forum_sudo(account_id: &T::AccountId) -> dispatch::Result {
-        let forum_sudo_account = Self::ensure_forum_sudo_set()?;
-
-        ensure!(
-            *account_id == forum_sudo_account,
-            ERROR_ORIGIN_NOT_FORUM_SUDO
-        );
         Ok(())
     }
 

@@ -784,9 +784,15 @@ impl forum::ForumUserRegistry<AccountId> for ShimMembershipRegistry {
 impl forum::Trait for Runtime {
     type Event = Event;
     type MembershipRegistry = ShimMembershipRegistry;
+    type EnsureForumLeader = bureaucracy::Module<Runtime, bureaucracy::Instance1>;
 }
 
 impl migration::Trait for Runtime {
+    type Event = Event;
+}
+
+// Forum bureaucracy
+impl bureaucracy::Trait<bureaucracy::Instance1> for Runtime {
     type Event = Event;
 }
 
@@ -912,6 +918,7 @@ construct_runtime!(
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Module, Call, Storage, Error, Config<T>},
         // ---
+        ForumBureaucracy: bureaucracy::<Instance1>::{Module, Call, Storage, Event<T>},
     }
 );
 
