@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "reflect-metadata": "^0.1.13",
+    "shortid": "^2.2.15",
     "typeorm-model-generator": "^0.4.2",
     "substrate-query-node": "file:../../../substrate-query-node"
   }

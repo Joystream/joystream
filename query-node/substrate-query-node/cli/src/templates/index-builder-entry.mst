@@ -1,16 +1,26 @@
 import "reflect-metadata";
-
 import * as dotenv from 'dotenv';
-import { createConnection } from 'typeorm';
+import * as shortid from 'shortid';
+import { createConnection, getConnection } from 'typeorm';
 import { {{typeRegistrator}} } from '{{{packageName}}}';
 
-const handlers = require('../../mappings');
 import { QueryNodeManager } from 'substrate-query-node/lib/query-node';
+// Mappings use!
+export { QueryEvent } from 'substrate-query-node/lib/index-builder';
 
-// Each mapping will receive a parameter which is type of QueryEvent
-// so we are going to export this class
-export { QueryEvent } from "substrate-query-node/lib/index-builder";
+const handlers = require('../../mappings');
 
+/**
+ * Fixes compatibility between typeorm and warthog by filling id, createById and version
+ * @param entity Instance of the entity
+ */
+export function insertIntoDatabase(entity: any) {
+	entity["id"] = shortid.generate();
+	entity["createdById"] = shortid.generate();
+	entity["version"] = 1;
+
+	getConnection().getRepository(entity.constructor.name).insert(entity);
+}
 
 function getProcessingPack() {
   let processingPack: { [key: string]: any } = {};
