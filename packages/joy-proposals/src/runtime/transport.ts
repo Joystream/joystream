@@ -1,3 +1,5 @@
+import { ProposalId, VoteKind } from "@joystream/types/proposals";
+import { MemberId } from "@joystream/types/members";
 export const ProposalTypes = [
   "Text",
   "RuntimeUpgrade",
@@ -27,6 +29,7 @@ export type ParsedMember = {
 };
 
 export type ParsedProposal = {
+  id: ProposalId;
   type: ProposalType;
   title: string;
   description: string;
@@ -46,6 +49,11 @@ export type ParsedProposal = {
     slashingThresholdPercentage: number;
     votingPeriod: number;
   };
+};
+
+export type ProposalVote = {
+  vote: VoteKind | null;
+  member: (ParsedMember & { memberId: MemberId });
 };
 
 export abstract class Transport {

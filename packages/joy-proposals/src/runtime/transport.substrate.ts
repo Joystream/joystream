@@ -1,4 +1,4 @@
-import { Transport, ParsedProposal, ProposalType, ProposalTypes, ParsedMember } from "./transport";
+import { Transport, ParsedProposal, ProposalType, ProposalTypes, ParsedMember, ProposalVote } from "./transport";
 import { Proposal, ProposalId, Seats, VoteKind } from "@joystream/types/proposals";
 import { MemberId } from "@joystream/types/members";
 import { ApiProps } from "@polkadot/react-api/types";
@@ -73,7 +73,7 @@ export class SubstrateTransport extends Transport {
   async proposalById(id: ProposalId): Promise<ParsedProposal> {
     const rawDetails = (await this.proposalDetailsById(id)).toJSON() as { [k: string]: any };
     const type = Object.keys(rawDetails)[0] as ProposalType;
-    const details = rawDetails[type];
+    const details = Array.isArray(rawDetails[type]) ? rawDetails[type] : [rawDetails[type]];
     const rawProposal = await this.rawProposalById(id);
     const proposer = (await this.memberProfile(rawProposal.proposerId)).toJSON() as ParsedMember;
     const proposal = rawProposal.toJSON() as {
@@ -88,6 +88,7 @@ export class SubstrateTransport extends Transport {
     const createdAt = await this.blockTimestamp(createdAtBlock.toNumber());
 
     return {
+      id,
       ...proposal,
       details,
       type,
@@ -122,7 +123,7 @@ export class SubstrateTransport extends Transport {
     return this.proposalsCodex.proposalDetailsByProposalId(id);
   }
 
-  async councilMembers() {
+  async councilMembers(): Promise<(ParsedMember & { memberId: MemberId })[]> {
     const council = (await this.council.activeCouncil()) as Seats;
     return Promise.all(
       council.map(async seat => {
@@ -136,13 +137,13 @@ export class SubstrateTransport extends Transport {
     );
   }
 
-  async voteByProposalAndMember(proposalId: ProposalId, voterId: MemberId) {
+  async voteByProposalAndMember(proposalId: ProposalId, voterId: MemberId): Promise<VoteKind | null> {
     const vote = await this.proposalsEngine.voteExistsByProposalByVoter<VoteKind>(proposalId, voterId);
     const hasVoted = (await this.proposalsEngine.voteExistsByProposalByVoter.size(proposalId, voterId)).toNumber();
     return hasVoted ? vote : null;
   }
 
-  async votes(proposalId: ProposalId) {
+  async votes(proposalId: ProposalId): Promise<ProposalVote[]> {
     const councilMembers = await this.councilMembers();
     return Promise.all(
       councilMembers.map(async member => {
@@ -196,5 +197,9 @@ export class SubstrateTransport extends Transport {
 
   async proposalsTypesParameters() {
     return Promise.all(ProposalTypes.map(type => this.parametersFromProposalType(type)));
+  }
+
+  async bestBlock() {
+    return await this.api.derive.chain.bestNumber();
   }
 }

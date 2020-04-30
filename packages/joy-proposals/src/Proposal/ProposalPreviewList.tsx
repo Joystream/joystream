@@ -1,13 +1,15 @@
 import React from "react";
-import { Card, Menu, Container } from "semantic-ui-react";
+import { Card, Container } from "semantic-ui-react";
 
 import ProposalPreview from "./ProposalPreview";
 import { useTransport, ParsedProposal } from "../runtime";
 import { usePromise } from "../utils";
 import Loading from "./Loading";
 import Error from "./Error";
+import { withCalls } from '@polkadot/react-api';
+import { BlockNumber } from '@polkadot/types/interfaces';
 
-type ProposalFilter = "all" | "active" | "withdrawn" | "approved" | "rejected" | "slashed";
+// type ProposalFilter = "all" | "active" | "withdrawn" | "approved" | "rejected" | "slashed";
 
 // function filterProposals(filter: ProposalFilter, proposals: ParsedProposal[]) {
 //   if (filter === "all") {
@@ -32,7 +34,11 @@ type ProposalFilter = "all" | "active" | "withdrawn" | "approved" | "rejected" |
 //   return proposalsMap;
 // }
 
-export default function ProposalPreviewList() {
+type ProposalPreviewListProps = {
+  bestNumber?: BlockNumber
+};
+
+function ProposalPreviewList({ bestNumber }: ProposalPreviewListProps) {
   const transport = useTransport();
 
   const [proposals, error, loading] = usePromise<ParsedProposal[]>(() => transport.proposals(), []);
@@ -82,9 +88,17 @@ export default function ProposalPreviewList() {
 
       <Card.Group>
         {proposals.map((prop: ParsedProposal, idx: number) => (
-          <ProposalPreview key={`${prop.title}-${idx}`} proposal={prop} />
+          <ProposalPreview
+            key={`${prop.title}-${idx}`}
+            proposal={prop}
+            bestNumber={ bestNumber }
+          />
         ))}
       </Card.Group>
     </Container>
   );
 }
+
+export default withCalls<ProposalPreviewListProps>(
+  ['derive.chain.bestNumber', { propName: 'bestNumber' }]
+)(ProposalPreviewList);
