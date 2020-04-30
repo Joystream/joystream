@@ -206,7 +206,7 @@ export class ProposalStatus extends Enum {
 
 export class VoteKind extends Enum {
   constructor(value?: any, index?: number) {
-    super(["Abstain", "Approve", "Reject", "Slash"], value, index);
+    super(["Approve", "Reject", "Slash", "Abstain"], value, index);
   }
 }
 
