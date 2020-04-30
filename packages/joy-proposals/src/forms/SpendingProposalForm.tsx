@@ -15,8 +15,6 @@ import {
 import { InputFormField, FormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
 import { InputAddress } from '@polkadot/react-components/index';
-import { accountIdsToOptions } from "@polkadot/joy-election/utils";
-import { createType } from '@polkadot/types';
 import "./forms.css";
 
 type FormValues = GenericFormValues & {
@@ -38,9 +36,6 @@ type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 const SpendingProposalForm: React.FunctionComponent<FormInnerProps> = props => {
   const { handleChange, errors, touched, values, setFieldValue } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
-  const destinationAccountsOptions = accountIdsToOptions([
-    createType("AccountId", "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY") // Alice
-  ]); // TODO: Fetch real destination addresses!
   return (
     <GenericProposalForm
       {...props}
@@ -73,10 +68,9 @@ const SpendingProposalForm: React.FunctionComponent<FormInnerProps> = props => {
       >
         <InputAddress
           onChange={(address) => setFieldValue("destinationAccount", address) }
-          type="address"
+          type="all"
           placeholder="Select Destination Account"
           value={values.destinationAccount}
-          options={destinationAccountsOptions}
         />
         {errorLabelsProps.destinationAccount && <Label {...errorLabelsProps.destinationAccount} prompt />}
       </FormField>
