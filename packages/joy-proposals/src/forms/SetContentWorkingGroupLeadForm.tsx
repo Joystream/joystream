@@ -37,7 +37,7 @@ const SetContentWorkingGroupsLeadForm: React.FunctionComponent<FormInnerProps> =
   const { handleChange, errors, touched, values } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const transport = useTransport();
-  const [ members, error, loading ] = usePromise<{ id: number, profile: Profile }[]>(() => transport.membersExceptCouncil(), []);
+  const [ members, /* error */, loading ] = usePromise<{ id: number, profile: Profile }[]>(() => transport.membersExceptCouncil(), []);
   const membersOptions = members.map(({ id, profile }) => ({
     key: profile.handle,
     text: profile.handle,

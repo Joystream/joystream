@@ -39,7 +39,7 @@ const EvictStorageProviderForm: React.FunctionComponent<FormInnerProps> = props 
   const { errors, touched, values, setFieldValue } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const transport = useTransport();
-  const [ storageProviders, error, loading ] = usePromise<AccountId[]>(() => transport.storageProviders(), []);
+  const [ storageProviders, /* error */ , loading ] = usePromise<AccountId[]>(() => transport.storageProviders(), []);
   const storageProvidersOptions = accountIdsToOptions(storageProviders);
   return (
     <GenericProposalForm
