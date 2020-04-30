@@ -3,7 +3,7 @@
 
 mod types;
 
-use srml_support::{decl_module, decl_event, decl_storage, dispatch};
+use srml_support::{decl_event, decl_module, decl_storage, dispatch};
 use system::ensure_root;
 
 use types::Lead;
@@ -15,15 +15,11 @@ pub static MSG_CURRENT_LEAD_ALREADY_SET: &str = "Current lead is already set";
 pub static MSG_IS_NOT_LEAD_ACCOUNT: &str = "Not a lead account";
 
 /// Alias for the _Lead_ type
-pub type LeadOf<T> = Lead<
-    <T as membership::members::Trait>::MemberId,
-    <T as system::Trait>::AccountId,
->;
+pub type LeadOf<T> =
+    Lead<<T as membership::members::Trait>::MemberId, <T as system::Trait>::AccountId>;
 
 /// The bureaucracy main _Trait_
-pub trait Trait<I: Instance>:
-    system::Trait + membership::members::Trait
-{
+pub trait Trait<I: Instance>: system::Trait + membership::members::Trait {
     /// Bureaucracy event type.
     type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
 }

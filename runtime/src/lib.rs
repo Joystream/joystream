@@ -917,6 +917,7 @@ construct_runtime!(
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Module, Call, Storage, Error, Config<T>},
         // ---
+        ForumBureaucracy: bureaucracy::<Instance1>::{Module, Call, Storage, Event<T>},
     }
 );
 

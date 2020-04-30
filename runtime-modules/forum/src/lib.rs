@@ -412,8 +412,8 @@ decl_module! {
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
-            // Not signed by forum SUDO
-            Self::ensure_is_forum_sudo(&who)?;
+            // Not signed by forum lead
+            Self::ensure_is_forum_lead(&who)?;
 
             // Validate title
             Self::ensure_category_title_is_valid(&title)?;
@@ -491,8 +491,8 @@ decl_module! {
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
-            // Not signed by forum SUDO
-            Self::ensure_is_forum_sudo(&who)?;
+            // Not signed by forum lead
+            Self::ensure_is_forum_lead(&who)?;
 
             // Make sure something is actually being changed
             ensure!(
@@ -597,8 +597,8 @@ decl_module! {
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
-            // Signed by forum SUDO
-            Self::ensure_is_forum_sudo(&who)?;
+            // Signed by forum lead
+            Self::ensure_is_forum_lead(&who)?;
 
             // Get thread
             let mut thread = Self::ensure_thread_exists(thread_id)?;
@@ -732,8 +732,8 @@ decl_module! {
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
-            // Signed by forum SUDO
-            Self::ensure_is_forum_sudo(&who)?;
+            // Signed by forum lead
+            Self::ensure_is_forum_lead(&who)?;
 
             // Make sure post exists and is mutable
             let post = Self::ensure_post_is_mutable(post_id)?;
@@ -876,7 +876,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_is_forum_sudo(account_id: &T::AccountId) -> dispatch::Result {
+    fn ensure_is_forum_lead(account_id: &T::AccountId) -> dispatch::Result {
         bureaucracy::Module::<T, bureaucracy::Instance1>::ensure_is_lead_account(account_id.clone())
     }
 
