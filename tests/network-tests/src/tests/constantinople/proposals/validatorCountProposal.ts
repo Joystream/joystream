@@ -1,6 +1,5 @@
 import { initConfig } from '../../../utils/config';
 import { Keyring, WsProvider } from '@polkadot/api';
-import { Bytes } from '@polkadot/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { membershipTest } from '../membershipCreationTest';
 import { councilTest } from '../electingCouncilTest';
@@ -8,13 +7,15 @@ import { registerJoystreamTypes } from '@joystream/types';
 import { ApiWrapper } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN = require('bn.js');
+import { assert } from 'chai';
 
-describe.skip('Runtime upgrade networt tests', () => {
+describe('Validator count proposal network tests', () => {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
-  const defaultTimeout: number = 120000;
+  const validatorCountIncrement: BN = new BN(+process.env.VALIDATOR_COUNT_INCREMENT!);
+  const defaultTimeout: number = 180000;
 
   const m1KeyPairs: KeyringPair[] = new Array();
   const m2KeyPairs: KeyringPair[] = new Array();
@@ -33,42 +34,43 @@ describe.skip('Runtime upgrade networt tests', () => {
   membershipTest(m2KeyPairs);
   councilTest(m1KeyPairs, m2KeyPairs);
 
-  it('Upgrading the runtime test', async () => {
+  it('Validator count proposal test', async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
-    const runtime: Bytes = await apiWrapper.getRuntime();
-    const description: string = 'runtime upgrade proposal which is used for API network testing';
+    const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8);
+    const description: string = 'Testing validator count proposal ' + uuid().substring(0, 8);
     const runtimeVoteFee: BN = apiWrapper.estimateVoteForProposalFee();
-
-    // Topping the balances
-    const proposalStake: BN = await apiWrapper.getRequiredProposalStake(1, 100);
-    const runtimeProposalFee: BN = apiWrapper.estimateProposeRuntimeUpgradeFee(
-      proposalStake,
-      description,
-      description,
-      runtime
-    );
-    await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, runtimeProposalFee.add(proposalStake));
     await apiWrapper.transferBalanceToAccounts(sudo, m2KeyPairs, runtimeVoteFee);
+
+    // Proposal stake calculation
+    const proposalStake: BN = await apiWrapper.getRequiredProposalStake(25, 10000);
+    const proposalFee: BN = apiWrapper.estimateProposeValidatorCountFee(description, description, proposalStake);
+    await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake));
+    const validatorCount: BN = await apiWrapper.getValidatorCount();
 
     // Proposal creation
     const proposalPromise = apiWrapper.expectProposalCreated();
-    await apiWrapper.proposeRuntime(
+    await apiWrapper.proposeValidatorCount(
       m1KeyPairs[0],
+      proposalTitle,
+      description,
       proposalStake,
-      'testing runtime' + uuid().substring(0, 8),
-      'runtime to test proposal functionality' + uuid().substring(0, 8),
-      runtime
+      validatorCount.add(validatorCountIncrement)
     );
     const proposalNumber = await proposalPromise;
 
-    // Approving runtime update proposal
-    const runtimePromise = apiWrapper.expectProposalFinalized();
+    // Approving text proposal
+    const validatorProposalPromise = apiWrapper.expectProposalFinalized();
     await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber);
-    await runtimePromise;
+    await validatorProposalPromise;
+    const newValidatorCount: BN = await apiWrapper.getValidatorCount();
+    assert(
+      newValidatorCount.sub(validatorCount).eq(validatorCountIncrement),
+      `Validator count has unexpeccted value ${newValidatorCount}, expected ${validatorCount.add(
+        validatorCountIncrement
+      )}`
+    );
   }).timeout(defaultTimeout);
-
-  membershipTest(new Array<KeyringPair>());
 
   after(() => {
     apiWrapper.close();

@@ -25,3 +25,6 @@ yarn*
 
 # Compiled WASM code
 *.wasm
+
+# Chain specificaiton
+chainspec.json

@@ -133,6 +133,12 @@ export class ApiWrapper {
     );
   }
 
+  public estimateProposeValidatorCountFee(title: string, description: string, stake: BN): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createSetValidatorCountProposal(stake, title, description, stake, stake)
+    );
+  }
+
   public estimateVoteForProposalFee(): BN {
     return this.estimateTxFee(this.api.tx.proposalsEngine.vote(0, 0, 'Approve'));
   }
@@ -302,6 +308,21 @@ export class ApiWrapper {
     );
   }
 
+  public async proposeValidatorCount(
+    account: KeyringPair,
+    title: string,
+    description: string,
+    stake: BN,
+    validatorCount: BN
+  ): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn();
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createSetValidatorCountProposal(memberId, title, description, stake, validatorCount),
+      account,
+      false
+    );
+  }
+
   public approveProposal(account: KeyringPair, memberId: BN, proposal: BN): Promise<void> {
     return this.sender.signAndSend(this.api.tx.proposalsEngine.vote(memberId, proposal, 'Approve'), account, false);
   }
@@ -383,5 +404,9 @@ export class ApiWrapper {
     const mintCodec = await this.api.query.minting.mints<Codec[]>(mintId);
     const mint = (mintCodec[0] as unknown) as Mint;
     return mint.getField<Balance>('capacity');
+  }
+
+  public getValidatorCount(): Promise<BN> {
+    return this.api.query.staking.validatorCount<u32>();
   }
 }
