@@ -140,7 +140,7 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
             <TxButton
               type="submit"
               label="Submit proposal"
-              isDisabled={isSubmitting}
+              isDisabled={isSubmitting || !isValid}
               params={(submitParams || []).map(p => (p === "{STAKE}" ? requiredStake : p))}
               tx={`proposalsCodex.${txMethod}`}
               onClick={onSubmit}
