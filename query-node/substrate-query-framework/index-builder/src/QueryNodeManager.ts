@@ -1,5 +1,5 @@
 import QueryNode, { QueryNodeState } from './QueryNode';
-import { QueryEventProcessingPack } from '../index-builder';
+import { QueryEventProcessingPack } from '.';
 import { EventEmitter } from 'events';
 
 // Respondible for creating, starting up and shutting down the query node.
@@ -22,11 +22,7 @@ export default class QueryNodeManager {
   ) {
     if (this._query_node) throw Error('Cannot start the same manager multiple times.');
 
-    this._query_node = await QueryNode.create(
-      ws_provider_endpoint_uri,
-      processing_pack,
-      type_registrator
-    );
+    this._query_node = await QueryNode.create(ws_provider_endpoint_uri, processing_pack, type_registrator);
 
     await this._query_node.start();
   }

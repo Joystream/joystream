@@ -8,7 +8,6 @@
   },
   "bugs": "https://github.com/joystream/joystream/joystream-query-node/cli/issues",
   "dependencies": {
-    "@joystream/types": "^0.7.0",
     "@oclif/command": "^1.5.20",
     "@oclif/config": "^1",
     "@oclif/plugin-help": "^2",
@@ -21,6 +20,7 @@
     "fs-extra": "^9.0.0",
     "mustache": "^4.0.1",
     "tslib": "^1",
+    "typeorm-model-generator": "^0.4.2",
     "warthog": "^2.9.1"
   },
   "devDependencies": {

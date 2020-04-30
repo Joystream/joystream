@@ -8,8 +8,9 @@
   },
   "dependencies": {
     "reflect-metadata": "^0.1.13",
+    "@types/shortid": "^0.0.29",
     "shortid": "^2.2.15",
     "typeorm-model-generator": "^0.4.2",
-    "substrate-query-node": "file:../../../substrate-query-node"
+    "index-builder": "file:../../../substrate-query-framework/index-builder"
   }
 }

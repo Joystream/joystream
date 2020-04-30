@@ -2,12 +2,7 @@
 
 import { ApiPromise, WsProvider /*RuntimeVersion*/ } from '@polkadot/api';
 
-import {
-  makeQueryService,
-  IndexBuilder,
-  ISubstrateQueryService,
-  QueryEventProcessingPack,
-} from '../index-builder';
+import { makeQueryService, IndexBuilder, QueryEventProcessingPack } from '.';
 
 export enum QueryNodeState {
   NOT_STARTED,

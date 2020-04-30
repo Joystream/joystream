@@ -3,10 +3,10 @@ import * as dotenv from 'dotenv';
 import * as shortid from 'shortid';
 import { createConnection, getConnection } from 'typeorm';
 import { {{typeRegistrator}} } from '{{{packageName}}}';
+import { QueryNodeManager } from "index-builder/lib";
 
-import { QueryNodeManager } from 'substrate-query-node/lib/query-node';
 // Mappings use!
-export { QueryEvent } from 'substrate-query-node/lib/index-builder';
+export { QueryEvent } from "index-builder/lib";
 
 const handlers = require('../../mappings');
 
