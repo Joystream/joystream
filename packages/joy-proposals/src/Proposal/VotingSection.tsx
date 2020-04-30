@@ -66,7 +66,7 @@ export default function VotingSection({
     return null;
   }
 
-  const voteStr: VoteKindStr | null = voted ? voted : (vote && vote.type.toString() as VoteKindStr);
+  const voteStr: VoteKindStr | null = voted || (vote && vote.type.toString() as VoteKindStr);
 
   if (voteStr) {
     const { icon, color } = useVoteStyles(voteStr);

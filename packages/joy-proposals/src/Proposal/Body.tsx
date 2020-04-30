@@ -26,17 +26,17 @@ function ProposedAddress(props: { address: string }) {
 // The methods for parsing params by Proposal type.
 // They take the params as array and return { LABEL: VALUE } object.
 const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: string | number | JSX.Element } } = {
-  "Text" : ([content]) => ({
+  Text: ([content]) => ({
     "Content": content,
   }),
-  "RuntimeUpgrade" : ([wasm]) => {
+  RuntimeUpgrade: ([wasm]) => {
     const buffer: Buffer = Buffer.from(wasm.replace('0x', ''), 'hex');
     return {
       "Blake2b256 hash of WASM code": blake2AsHex(buffer, 256),
       "File size": buffer.length + ' bytes',
     }
   },
-  "SetElectionParameters" : ([params]) => ({
+  SetElectionParameters: ([params]) => ({
       "Announcing period": params.announcingPeriod + " blocks",
       "Voting period": params.votingPeriod + " blocks",
       "Revealing period": params.revealingPeriod + " blocks",
@@ -46,24 +46,24 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
       "Min. council stake": params.minCouncilStake + " tJOY",
       "Min. voting stake": params.minVotingStake + " tJOY"
   }),
-  "Spending" : ([amount, account]) => ({
+  Spending: ([amount, account]) => ({
     "Amount": amount + ' tJOY',
     "Account": <ProposedAddress address={account}/>,
   }),
-  "SetLead" : ([memberId, accountId]) => ({
+  SetLead: ([memberId, accountId]) => ({
     "Member id": memberId, // TODO: Link with avatar and handle?
     "Account id": <ProposedAddress address={accountId}/>,
   }),
-  "SetContentWorkingGroupMintCapacity" : ([capacity]) => ({
+  SetContentWorkingGroupMintCapacity: ([capacity]) => ({
     "Mint capacity": capacity + ' tJOY',
   }),
-  "EvictStorageProvider" : ([accountId]) => ({
+  EvictStorageProvider: ([accountId]) => ({
     "Storage provider account": <ProposedAddress address={accountId}/>,
   }),
-  "SetValidatorCount" : ([count]) => ({
+  SetValidatorCount: ([count]) => ({
     "Validator count": count,
   }),
-  "SetStorageRoleParameters" : ([params]) => ({
+  SetStorageRoleParameters: ([params]) => ({
     "Min. stake": params.min_stake + " tJOY",
     "Min. actors": params.min_actors,
     "Max. actors": params.max_actors,

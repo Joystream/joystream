@@ -51,7 +51,7 @@ export default function Details({
         <Item>
           <Item.Content>
             <Item.Extra>Expires in:</Item.Extra>
-            <Header as="h4">{`${ expiresIn } blocks`}</Header>
+            <Header as="h4">{`${ expiresIn.toLocaleString('en-US') } blocks`}</Header>
           </Item.Content>
         </Item>
       ) }
