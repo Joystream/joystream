@@ -1,5 +1,4 @@
 import * as Yup from "yup";
-import { StringSchema, NumberSchema, MixedSchema } from "@types/yup";
 import { checkAddress } from "@polkadot/util-crypto";
 
 // Set Election Parameters
@@ -50,7 +49,7 @@ const STARTUP_GRACE_PERIOD_MAX = 8000;
 const ENTRY_REQUEST_FEE_MIN = 400;
 const ENTRY_REQUEST_FEE_MAX = 2000;
 
-function errorMessage(name, min, max) {
+function errorMessage(name: string, min: number | string, max: number | string) {
   return `${name} should be at least ${min} and no more than ${max}.`;
 }
 
@@ -72,52 +71,52 @@ import Validation from 'path/to/validationSchema'
 
 type ValidationType = {
   All: {
-    title: StringSchema<string>;
-    rationale: StringSchema<string>;
+    title: Yup.StringSchema<string>;
+    rationale: Yup.StringSchema<string>;
   };
   Text: {
-    description: StringSchema<string>;
+    description: Yup.StringSchema<string>;
   };
   RuntimeUpgrade: {
-    WASM: MixedSchema;
+    WASM: Yup.MixedSchema;
   };
   SetElectionParameters: {
-    announcingPeriod: NumberSchema<number>;
-    votingPeriod: NumberSchema<number>;
-    minVotingStake: NumberSchema<number>;
-    revealingPeriod: NumberSchema<number>;
-    minCouncilStake: NumberSchema<number>;
-    newTermDuration: NumberSchema<number>;
-    candidacyLimit: NumberSchema<number>;
-    councilSize: NumberSchema<number>;
+    announcingPeriod: Yup.NumberSchema<number>;
+    votingPeriod: Yup.NumberSchema<number>;
+    minVotingStake: Yup.NumberSchema<number>;
+    revealingPeriod: Yup.NumberSchema<number>;
+    minCouncilStake: Yup.NumberSchema<number>;
+    newTermDuration: Yup.NumberSchema<number>;
+    candidacyLimit: Yup.NumberSchema<number>;
+    councilSize: Yup.NumberSchema<number>;
   };
   Spending: {
-    tokens: NumberSchema<number>;
-    destinationAccount: StringSchema<string>;
+    tokens: Yup.NumberSchema<number>;
+    destinationAccount: Yup.StringSchema<string>;
   };
   SetLead: {
-    workingGroupLead: StringSchema<string>;
+    workingGroupLead: Yup.StringSchema<string>;
   };
   SetContentWorkingGroupMintCapacity: {
-    mintCapacity: NumberSchema<number>;
+    mintCapacity: Yup.NumberSchema<number>;
   };
   EvictStorageProvider: {
-    storageProvider: StringSchema<string | null>;
+    storageProvider: Yup.StringSchema<string | null>;
   };
   SetValidatorCount: {
-    maxValidatorCount: NumberSchema<number>;
+    maxValidatorCount: Yup.NumberSchema<number>;
   };
   SetStorageRoleParameters: {
-    min_stake: NumberSchema<number>;
-    min_actors: NumberSchema<number>;
-    max_actors: NumberSchema<number>;
-    reward: NumberSchema<number>;
-    reward_period: NumberSchema<number>;
-    bonding_period: NumberSchema<number>;
-    unbonding_period: NumberSchema<number>;
-    min_service_period: NumberSchema<number>;
-    startup_grace_period: NumberSchema<number>;
-    entry_request_fee: NumberSchema<number>;
+    min_stake: Yup.NumberSchema<number>;
+    min_actors: Yup.NumberSchema<number>;
+    max_actors: Yup.NumberSchema<number>;
+    reward: Yup.NumberSchema<number>;
+    reward_period: Yup.NumberSchema<number>;
+    bonding_period: Yup.NumberSchema<number>;
+    unbonding_period: Yup.NumberSchema<number>;
+    min_service_period: Yup.NumberSchema<number>;
+    startup_grace_period: Yup.NumberSchema<number>;
+    entry_request_fee: Yup.NumberSchema<number>;
   };
 };
 
