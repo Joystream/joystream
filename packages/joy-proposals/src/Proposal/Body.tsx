@@ -1,9 +1,9 @@
 import React from "react";
 import { Card, Header, Item } from "semantic-ui-react";
 import { ProposalType } from "../runtime/transport";
-import { blake2AsHex } from '@polkadot/util-crypto';
-import styled from 'styled-components';
-import AddressMini from '@polkadot/react-components/AddressMiniJoy';
+import { blake2AsHex } from "@polkadot/util-crypto";
+import styled from "styled-components";
+import AddressMini from "@polkadot/react-components/AddressMiniJoy";
 
 type BodyProps = {
   title: string;
@@ -14,12 +14,7 @@ type BodyProps = {
 
 function ProposedAddress(props: { address: string }) {
   return (
-    <AddressMini
-      value={props.address}
-      isShort={false}
-      isPadded={false}
-      withAddress={true}
-      style={{padding: 0}} />
+    <AddressMini value={props.address} isShort={false} isPadded={false} withAddress={true} style={{ padding: 0 }} />
   );
 }
 
@@ -27,54 +22,54 @@ function ProposedAddress(props: { address: string }) {
 // They take the params as array and return { LABEL: VALUE } object.
 const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: string | number | JSX.Element } } = {
   Text: ([content]) => ({
-    "Content": content,
+    Content: content
   }),
   RuntimeUpgrade: ([wasm]) => {
-    const buffer: Buffer = Buffer.from(wasm.replace('0x', ''), 'hex');
+    const buffer: Buffer = Buffer.from(wasm.replace("0x", ""), "hex");
     return {
       "Blake2b256 hash of WASM code": blake2AsHex(buffer, 256),
-      "File size": buffer.length + ' bytes',
-    }
+      "File size": buffer.length + " bytes"
+    };
   },
   SetElectionParameters: ([params]) => ({
-      "Announcing period": params.announcingPeriod + " blocks",
-      "Voting period": params.votingPeriod + " blocks",
-      "Revealing period": params.revealingPeriod + " blocks",
-      "Council size": params.councilSize + " members",
-      "Candidacy limit": params.candidacyLimit + " members",
-      "New term duration": params.newTermDuration + " blocks",
-      "Min. council stake": params.minCouncilStake + " tJOY",
-      "Min. voting stake": params.minVotingStake + " tJOY"
+    "Announcing period": params.announcingPeriod + " blocks",
+    "Voting period": params.votingPeriod + " blocks",
+    "Revealing period": params.revealingPeriod + " blocks",
+    "Council size": params.councilSize + " members",
+    "Candidacy limit": params.candidacyLimit + " members",
+    "New term duration": params.newTermDuration + " blocks",
+    "Min. council stake": params.minCouncilStake + " tJOY",
+    "Min. voting stake": params.minVotingStake + " tJOY"
   }),
   Spending: ([amount, account]) => ({
-    "Amount": amount + ' tJOY',
-    "Account": <ProposedAddress address={account}/>,
+    Amount: amount + " tJOY",
+    Account: <ProposedAddress address={account} />
   }),
   SetLead: ([memberId, accountId]) => ({
     "Member id": memberId, // TODO: Link with avatar and handle?
-    "Account id": <ProposedAddress address={accountId}/>,
+    "Account id": <ProposedAddress address={accountId} />
   }),
   SetContentWorkingGroupMintCapacity: ([capacity]) => ({
-    "Mint capacity": capacity + ' tJOY',
+    "Mint capacity": capacity + " tJOY"
   }),
   EvictStorageProvider: ([accountId]) => ({
-    "Storage provider account": <ProposedAddress address={accountId}/>,
+    "Storage provider account": <ProposedAddress address={accountId} />
   }),
   SetValidatorCount: ([count]) => ({
-    "Validator count": count,
+    "Validator count": count
   }),
   SetStorageRoleParameters: ([params]) => ({
     "Min. stake": params.min_stake + " tJOY",
     "Min. actors": params.min_actors,
     "Max. actors": params.max_actors,
-    "Reward": params.reward + " tJOY",
+    Reward: params.reward + " tJOY",
     "Reward period": params.reward_period + " blocks",
     "Bonding period": params.bonding_period + " blocks",
     "Unbonding period": params.unbonding_period + " blocks",
     "Min. service period": params.min_service_period + " blocks",
     "Startup grace period": params.startup_grace_period + " blocks",
-    "Entry request fee": params.entry_request_fee + " tJOY",
-  }),
+    "Entry request fee": params.entry_request_fee + " tJOY"
+  })
 };
 
 const ProposalParam = styled.div`
@@ -86,18 +81,19 @@ const ProposalParam = styled.div`
   }
 `;
 const ProposalParamName = styled.div`
-  min-width: ${ (p: { longestParamName:number }) =>
-    p.longestParamName > 20 ? '240px'
-    : (p.longestParamName > 15 ? '200px' : '160px') };
+  min-width: ${(p: { longestParamName: number }) =>
+    p.longestParamName > 20 ? "240px" : p.longestParamName > 15 ? "200px" : ""};
 `;
 const ProposalParamValue = styled.div`
-  color: #000;
+  color: black;
+  font-weight: bold;
+  padding-left: 0.5rem;
 `;
 
 export default function Body({ type, title, description, params = [] }: BodyProps) {
   const parseParams = paramParsers[type];
   const parsedParams = parseParams(params);
-  const longestParamName: number = Object.keys(parsedParams).reduce((a, b) => b.length > a ? b.length : a, 0);
+  const longestParamName: number = Object.keys(parsedParams).reduce((a, b) => (b.length > a ? b.length : a), 0);
   return (
     <Card fluid>
       <Card.Content>
@@ -106,13 +102,13 @@ export default function Body({ type, title, description, params = [] }: BodyProp
         </Card.Header>
         <Card.Description>{description}</Card.Description>
         <Header as="h4">Parameters:</Header>
-        <Item.Group textAlign="left" relaxed>
-          { Object.entries(parseParams(params)).map(([paramName, paramValue]) => (
+        <Item.Group style={{ textAlign: "left" }} relaxed>
+          {Object.entries(parseParams(params)).map(([paramName, paramValue]) => (
             <ProposalParam key={paramName}>
               <ProposalParamName longestParamName={longestParamName}>{paramName}:</ProposalParamName>
               <ProposalParamValue>{paramValue}</ProposalParamValue>
             </ProposalParam>
-          )) }
+          ))}
         </Item.Group>
       </Card.Content>
     </Card>
