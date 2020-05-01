@@ -1,5 +1,5 @@
 import React from "react";
-import { IdentityIcon } from '@polkadot/react-components';
+import { IdentityIcon } from "@polkadot/react-components";
 import { Header, Divider, Table, Image, Icon } from "semantic-ui-react";
 import useVoteStyles from "./useVoteStyles";
 import { useTransport, ProposalVote } from "../runtime";
@@ -10,7 +10,7 @@ import Loading from "./Loading";
 import Error from "./Error";
 
 type VotesProps = {
-  proposalId: ProposalId
+  proposalId: ProposalId;
 };
 
 export default function Votes({ proposalId }: VotesProps) {
@@ -26,11 +26,7 @@ export default function Votes({ proposalId }: VotesProps) {
   const nonEmptyVotes = votes.filter(proposalVote => proposalVote.vote !== null);
 
   if (!nonEmptyVotes.length) {
-    return (
-      <Header as="h3">
-        No votes submitted yet!
-      </Header>
-    );
+    return <Header as="h3">No votes submitted yet!</Header>;
   }
 
   return (
@@ -51,11 +47,13 @@ export default function Votes({ proposalId }: VotesProps) {
                   <Icon name={icon} />
                   {voteStr}
                 </Table.Cell>
-                <Table.Cell>
-                { member.avatar_uri ?
-                  <Image src={ member.avatar_uri } avatar floated="left" />
-                  : <IdentityIcon className="image" value={member.root_account} size={40} /> }
-                  { member.handle }
+                <Table.Cell style={{ display: "flex", alignItems: "center" }}>
+                  {member.avatar_uri ? (
+                    <Image src={member.avatar_uri} avatar floated="left" />
+                  ) : (
+                    <IdentityIcon className="image" value={member.root_account} size={40} />
+                  )}
+                  <span style={{ margin: "auto 0 auto 0.5rem", fontWeight: "bold" }}>{member.handle}</span>
                 </Table.Cell>
                 {/*
                   TODO: Integrate:
