@@ -1,15 +1,22 @@
 import React from "react";
-import { Card, Header, Item } from "semantic-ui-react";
+import { Card, Header, Item, Button, Icon } from "semantic-ui-react";
 import { ProposalType } from "../runtime/transport";
 import { blake2AsHex } from '@polkadot/util-crypto';
 import styled from 'styled-components';
 import AddressMini from '@polkadot/react-components/AddressMiniJoy';
+import TxButton from '@polkadot/joy-utils/TxButton';
+import { ProposalId } from "@joystream/types/proposals";
+import { MemberId } from "@joystream/types/members";
 
 type BodyProps = {
   title: string;
   description: string;
   params: any[];
   type: ProposalType;
+  iAmProposer: boolean;
+  proposalId: number | ProposalId;
+  proposerId: number | MemberId;
+  isCancellable: boolean;
 };
 
 function ProposedAddress(props: { address: string }) {
@@ -94,7 +101,16 @@ const ProposalParamValue = styled.div`
   color: #000;
 `;
 
-export default function Body({ type, title, description, params = [] }: BodyProps) {
+export default function Body({
+  type,
+  title,
+  description,
+  params = [],
+  iAmProposer,
+  proposalId,
+  proposerId,
+  isCancellable
+}: BodyProps) {
   const parseParams = paramParsers[type];
   const parsedParams = parseParams(params);
   const longestParamName: number = Object.keys(parsedParams).reduce((a, b) => b.length > a ? b.length : a, 0);
@@ -114,6 +130,18 @@ export default function Body({ type, title, description, params = [] }: BodyProp
             </ProposalParam>
           )) }
         </Item.Group>
+        { iAmProposer && isCancellable && (
+          <Button.Group color="red">
+            <TxButton
+              params={ [ proposerId, proposalId ] }
+              tx={ "proposalsEngine.cancelProposal" }
+              onClick={ sendTx => { sendTx(); } }
+              >
+              <Icon name="times" inverted />
+              Withdraw proposal
+            </TxButton>
+          </Button.Group>
+          ) }
       </Card.Content>
     </Card>
   );
