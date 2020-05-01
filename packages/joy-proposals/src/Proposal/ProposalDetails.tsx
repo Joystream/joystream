@@ -6,7 +6,7 @@ import Body from "./Body";
 import VotingSection from "./VotingSection";
 import Votes from "./Votes";
 import { MyAccountProps, withMyAccount } from "@polkadot/joy-utils/MyAccount"
-import { ParsedProposal } from "../runtime";
+import { ParsedProposal, ProposalVote } from "../runtime";
 import { withCalls } from '@polkadot/react-api';
 import { withMulti } from '@polkadot/react-api/with';
 
@@ -15,6 +15,7 @@ import { ProposalId, ProposalDecisionStatuses, ApprovedProposalStatuses } from "
 import { BlockNumber } from '@polkadot/types/interfaces'
 import { MemberId } from "@joystream/types/members";
 import { Seat } from "@joystream/types/";
+import PromiseComponent from './PromiseComponent';
 
 type BasicProposalStatus = 'Active' | 'Finalized';
 type ProposalPeriodStatus = 'Voting period' | 'Grace period';
@@ -72,11 +73,21 @@ export function getExtendedStatus(proposal: ParsedProposal, bestNumber: BlockNum
 type ProposalDetailsProps = MyAccountProps & {
   proposal: ParsedProposal,
   proposalId: ProposalId,
+  votesListState: { data: ProposalVote[], error: any, loading: boolean },
   bestNumber?: BlockNumber,
   council?: Seat[]
 };
 
-function ProposalDetails({ proposal, proposalId, myAddress, myMemberId, iAmMember, council, bestNumber }: ProposalDetailsProps) {
+function ProposalDetails({
+  proposal,
+  proposalId,
+  myAddress,
+  myMemberId,
+  iAmMember,
+  council,
+  bestNumber,
+  votesListState
+}: ProposalDetailsProps) {
   const iAmCouncilMember = iAmMember && council && council.some(seat => seat.member.toString() === myAddress);
   const extendedStatus = getExtendedStatus(proposal, bestNumber);
   return (
@@ -94,7 +105,12 @@ function ProposalDetails({ proposal, proposalId, myAddress, myMemberId, iAmMembe
           memberId={ myMemberId as MemberId }
           isVotingPeriod={ extendedStatus.periodStatus === 'Voting period' }/>
       ) }
-      <Votes proposalId={proposalId} />
+      <PromiseComponent
+        error={votesListState.error}
+        loading={votesListState.loading}
+        message="Fetching the votes...">
+        <Votes votes={votesListState.data} />
+      </PromiseComponent>
     </Container>
   );
 }

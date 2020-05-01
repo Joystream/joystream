@@ -106,7 +106,7 @@ export default function Body({ type, title, description, params = [] }: BodyProp
         </Card.Header>
         <Card.Description>{description}</Card.Description>
         <Header as="h4">Parameters:</Header>
-        <Item.Group textAlign="left" relaxed>
+        <Item.Group style={{ textAlign: "left" }} relaxed>
           { Object.entries(parseParams(params)).map(([paramName, paramValue]) => (
             <ProposalParam key={paramName}>
               <ProposalParamName longestParamName={longestParamName}>{paramName}:</ProposalParamName>
