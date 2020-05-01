@@ -52,12 +52,23 @@ pub const ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS: &str =
     "Internal property does not match its class";
 pub const ERROR_ENTITY_REFERENCE_COUNTER_DOES_NOT_EQUAL_TO_ZERO: &str =
     "Entity removal can`t be completed, as there are some property values pointing to given entity";
+
+// Permission errors
+
 pub const ERROR_ENTITY_CREATOR_ALREADY_EXIST: &str = "Given entity creator already exist";
-pub const ERROR_ENTITY_MAINTAINER_ALREADY_EXIST: &str = "Given entity maintainer already exist";
 pub const ERROR_ENTITY_CREATOR_DOES_NOT_EXIST: &str = "Given entity creator does not exist";
+pub const ERROR_ENTITY_MAINTAINER_ALREADY_EXIST: &str = "Given entity maintainer already exist";
 pub const ERROR_ENTITY_MAINTAINER_DOES_NOT_EXIST: &str = "Given entity maintainer does not exist";
 pub const ERROR_ENTITY_CREATION_VOUCHER_DOES_NOT_EXIST: &str =
     "Given entity creation voucher does not exist";
 pub const ERROR_MAX_NUMBER_OF_ENTITIES_PER_CLASS_LIMIT_REACHED: &str =
     "Maximum numbers of entities per class limit reached";
 pub const ERROR_VOUCHER_LIMIT_REACHED: &str = "Entities voucher limit reached";
+pub const ERROR_AUTHORITY_AUTH_FAILED: &str = "Authority authentication failed";
+pub const ERROR_ACTOR_IN_GROUP_AUTH_FAILED: &str = "Actor in group authentication failed";
+pub const ERROR_BAD_ORIGIN: &str = "Expected root or signed origin";
+pub const ERROR_ENTITY_REMOVAL_ACCESS_DENIED: &str = "Entity removal access denied";
+pub const ERROR_ENTITY_ADD_SCHEMA_SUPPORT_ACCESS_DENIED: &str =
+    "Add entity schema support access denied";
+pub const ERROR_CLASS_ACCESS_DENIED: &str = "Class access denied";
+pub const ERROR_ENTITY_ACCESS_DENIED: &str = "Entity access denied";

@@ -11,13 +11,11 @@ use runtime_primitives::traits::{
 use srml_support::{
     decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter, StorageDoubleMap,
 };
-use system::ensure_root;
+use system::ensure_signed;
 
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 
-mod constraint;
-mod credentials;
 mod errors;
 mod example;
 mod mock;
@@ -26,9 +24,7 @@ mod permissions;
 mod schema;
 mod tests;
 
-pub use constraint::*;
 use core::fmt::Debug;
-pub use credentials::*;
 pub use errors::*;
 pub use operations::*;
 pub use permissions::*;
@@ -100,46 +96,6 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug {
     type ClassNameConstraint: Get<InputValidationLengthConstraint>;
 
     type ClassDescriptionConstraint: Get<InputValidationLengthConstraint>;
-
-    /// External type for checking if an account has specified credential.
-    type CredentialChecker: CredentialChecker<Self>;
-
-    /// External type used to check if an account has permission to create new Classes.
-    type CreateClassPermissionsChecker: CreateClassPermissionsChecker<Self>;
-}
-
-/// Trait for checking if an account has specified Credential
-pub trait CredentialChecker<T: Trait> {
-    fn account_has_credential(account: &T::AccountId, credential: T::Credential) -> bool;
-}
-
-/// An implementation where no account has any credential. Effectively
-/// only the system will be able to perform any action on the versioned store.
-impl<T: Trait> CredentialChecker<T> for () {
-    fn account_has_credential(_account: &T::AccountId, _credential: T::Credential) -> bool {
-        false
-    }
-}
-
-/// An implementation that calls into multiple checkers. This allows for multiple modules
-/// to maintain AccountId to Credential mappings.
-impl<T: Trait, X: CredentialChecker<T>, Y: CredentialChecker<T>> CredentialChecker<T> for (X, Y) {
-    fn account_has_credential(account: &T::AccountId, group: T::Credential) -> bool {
-        X::account_has_credential(account, group) || Y::account_has_credential(account, group)
-    }
-}
-
-/// Trait for externally checking if an account can create new classes in the versioned store.
-pub trait CreateClassPermissionsChecker<T: Trait> {
-    fn account_can_create_class_permissions(account: &T::AccountId) -> bool;
-}
-
-/// An implementation that does not permit any account to create classes. Effectively
-/// only the system can create classes.
-impl<T: Trait> CreateClassPermissionsChecker<T> for () {
-    fn account_can_create_class_permissions(_account: &T::AccountId) -> bool {
-        false
-    }
 }
 
 /// Length constraint for input validation
@@ -189,7 +145,7 @@ pub struct Class<T: Trait> {
     /// Permissions for an instance of a Class in the versioned store.
 
     #[cfg_attr(feature = "std", serde(skip))]
-    class_permissions: ClassPermissionsType<T>,
+    class_permissions: ClassPermissions,
     /// All properties that have been used on this class across different class schemas.
     /// Unlikely to be more than roughly 20 properties per class, often less.
     /// For Person, think "height", "weight", etc.
@@ -205,7 +161,7 @@ pub struct Class<T: Trait> {
 impl<T: Trait> Default for Class<T> {
     fn default() -> Self {
         Self {
-            class_permissions: ClassPermissionsType::<T>::default(),
+            class_permissions: ClassPermissions::default(),
             properties: vec![],
             schemas: vec![],
             name: vec![],
@@ -216,7 +172,7 @@ impl<T: Trait> Default for Class<T> {
 
 impl<T: Trait> Class<T> {
     fn new(
-        class_permissions: ClassPermissionsType<T>,
+        class_permissions: ClassPermissions,
         name: Vec<u8>,
         description: Vec<u8>,
     ) -> Self {
@@ -239,25 +195,14 @@ impl<T: Trait> Class<T> {
         self.schemas[schema_index as usize].is_active = schema_status;
     }
 
-    fn get_permissions_mut(&mut self) -> &mut ClassPermissionsType<T> {
+    fn get_permissions_mut(&mut self) -> &mut ClassPermissions {
         &mut self.class_permissions
     }
 
-    fn get_permissions(&self) -> &ClassPermissionsType<T> {
+    fn get_permissions(&self) -> &ClassPermissions {
         &self.class_permissions
     }
-
-    fn refresh_last_permissions_update(&mut self) {
-        self.class_permissions.last_permissions_update = <system::Module<T>>::block_number();
-    }
 }
-
-pub type ClassPermissionsType<T> = ClassPermissions<
-    <T as Trait>::ClassId,
-    <T as Trait>::Credential,
-    PropertyId,
-    <T as system::Trait>::BlockNumber,
->;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -294,15 +239,17 @@ impl<T: Trait> Default for Entity<T> {
 
 impl<T: Trait> Entity<T> {
     fn new(
+        controller: Option<EntityController<T>>,
         class_id: T::ClassId,
         supported_schemas: BTreeSet<SchemaId>,
         values: BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> Self {
         Self {
+            entity_permission: EntityPermission::<T>::default_with_controller(controller),
             class_id,
             supported_schemas,
             values,
-            ..Self::default()
+            reference_count: 0,
         }
     }
 
@@ -324,9 +271,6 @@ decl_storage! {
         pub ClassById get(class_by_id) config(): linked_map T::ClassId => Class<T>;
 
         pub EntityById get(entity_by_id) config(): map T::EntityId => Entity<T>;
-
-        /// Owner of an entity in the versioned store. If it is None then it is owned by the system.
-        pub EntityMaintainerByEntityId get(entity_maintainer_by_entity_id): linked_map T::EntityId => Option<T::Credential>;
 
         pub NextClassId get(next_class_id) config(): T::ClassId;
 
@@ -361,7 +305,7 @@ decl_module! {
             group_id: T::GroupId,
             limit: EntityCreationLimit
         ) -> dispatch::Result {
-            ensure_root(origin)?;
+            ensure_authority_auth_success::<T>(origin)?;
             Self::ensure_known_class_id(class_id)?;
             Self::ensure_entity_creator_does_not_exist(class_id, group_id)?;
 
@@ -378,7 +322,7 @@ decl_module! {
             } else {
                 let class = Self::class_by_id(class_id);
                 <EntityCreationVouchers<T>>::insert(class_id, entity_controller,
-                    EntityCreationVoucher::new(class.get_permissions().per_controller_entity_creation_limit)
+                    EntityCreationVoucher::new(class.get_permissions().get_controller_entity_creation_limit())
                 );
             }
             Ok(())
@@ -389,7 +333,7 @@ decl_module! {
             class_id: T::ClassId,
             group_id: T::GroupId,
         ) -> dispatch::Result {
-            ensure_root(origin)?;
+            ensure_authority_auth_success::<T>(origin)?;
             Self::ensure_known_class_id(class_id)?;
             Self::ensure_entity_creator_exists(class_id, group_id)?;
 
@@ -406,7 +350,7 @@ decl_module! {
             entity_id: T::EntityId,
             group_id: T::GroupId,
         ) -> dispatch::Result {
-            ensure_root(origin)?;
+            ensure_authority_auth_success::<T>(origin)?;
             Self::ensure_known_entity_id(entity_id)?;
             Self::ensure_entity_maintainer_does_not_exist(entity_id, group_id)?;
 
@@ -423,7 +367,7 @@ decl_module! {
             entity_id: T::EntityId,
             group_id: T::GroupId,
         ) -> dispatch::Result {
-            ensure_root(origin)?;
+            ensure_authority_auth_success::<T>(origin)?;
             Self::ensure_known_entity_id(entity_id)?;
             Self::ensure_entity_maintainer_exists(entity_id, group_id)?;
 
@@ -441,7 +385,7 @@ decl_module! {
             controller: EntityController<T>,
             maximum_entities_count: u64
         ) -> dispatch::Result {
-            ensure_root(origin)?;
+            ensure_authority_auth_success::<T>(origin)?;
             Self::ensure_known_class_id(class_id)?;
             Self::ensure_entity_creation_voucher_exists(class_id, &controller)?;
 
@@ -460,8 +404,9 @@ decl_module! {
             class_id: T::ClassId,
             entity_creation_blocked: Option<bool>,
             initial_controller_of_created_entities: Option<InitialControllerPolicy>,
+            all_entity_property_values_locked: Option<bool>
         ) -> dispatch::Result {
-            ensure_root(origin)?;
+            ensure_authority_auth_success::<T>(origin)?;
             Self::ensure_known_class_id(class_id)?;
 
             //
@@ -469,190 +414,22 @@ decl_module! {
             //
 
             if let Some(entity_creation_blocked) = entity_creation_blocked {
-                <ClassById<T>>::mutate(class_id, |class| class.get_permissions_mut().entity_creation_blocked = entity_creation_blocked);
+                <ClassById<T>>::mutate(class_id, |class| class.get_permissions_mut().set_entity_creation_blocked(entity_creation_blocked));
             }
 
             if let Some(initial_controller_of_created_entities) = initial_controller_of_created_entities {
                 <ClassById<T>>::mutate(class_id, |class|
-                    class.get_permissions_mut().initial_controller_of_created_entities = initial_controller_of_created_entities
+                    class.get_permissions_mut().set_initial_controller_of_created_entities(initial_controller_of_created_entities)
+                );
+            }
+
+            if let Some(all_entity_property_values_locked) = all_entity_property_values_locked {
+                <ClassById<T>>::mutate(class_id, |class|
+                    class.get_permissions_mut().set_all_entity_property_values_locked(all_entity_property_values_locked)
                 );
             }
 
             Ok(())
-        }
-
-
-        /// Update entity permissions.
-        ///
-
-        pub fn update_entity_permissions(
-            origin,
-            entity_id: T::EntityId,
-            controller: Option<EntityController<T>>,
-            frozen_for_controller: Option<bool>
-        ) -> dispatch::Result {
-            ensure_root(origin)?;
-            Self::ensure_known_entity_id(entity_id)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            if let Some(controller) = controller {
-                <EntityById<T>>::mutate(entity_id, |inner_entity|
-                    inner_entity.get_entity_permissions_mut().set_conroller(controller)
-                );
-            }
-
-            if let Some(frozen_for_controller) = frozen_for_controller {
-                <EntityById<T>>::mutate(entity_id, |inner_entity|
-                    inner_entity.get_entity_permissions_mut().set_frozen_for_controller(frozen_for_controller)
-                );
-            }
-
-            Ok(())
-        }
-
-        /// Sets the admins for a class
-        fn set_class_admins(
-            origin,
-            class_id: T::ClassId,
-            admins: CredentialSet<T::Credential>
-        ) -> dispatch::Result {
-            let raw_origin = Self::ensure_root_or_signed(origin)?;
-
-            Self::mutate_class_permissions(
-                &raw_origin,
-                None,
-                Self::is_system, // root origin
-                class_id,
-                |class_permissions| {
-                    class_permissions.admins = admins;
-                    Ok(())
-                }
-            )
-        }
-
-        // Methods for updating concrete permissions
-
-        fn set_class_entity_permissions(
-            origin,
-            with_credential: Option<T::Credential>,
-            class_id: T::ClassId,
-            entity_permissions: EntityPermissions<T::Credential>
-        ) -> dispatch::Result {
-            let raw_origin = Self::ensure_root_or_signed(origin)?;
-
-            Self::mutate_class_permissions(
-                &raw_origin,
-                with_credential,
-                ClassPermissions::is_admin,
-                class_id,
-                |class_permissions| {
-                    class_permissions.entity_permissions = entity_permissions;
-                    Ok(())
-                }
-            )
-        }
-
-        fn set_class_entities_can_be_created(
-            origin,
-            with_credential: Option<T::Credential>,
-            class_id: T::ClassId,
-            can_be_created: bool
-        ) -> dispatch::Result {
-            let raw_origin = Self::ensure_root_or_signed(origin)?;
-
-            Self::mutate_class_permissions(
-                &raw_origin,
-                with_credential,
-                ClassPermissions::is_admin,
-                class_id,
-                |class_permissions| {
-                    class_permissions.entity_creation_blocked = can_be_created;
-                    Ok(())
-                }
-            )
-        }
-
-        fn set_class_add_schemas_set(
-            origin,
-            with_credential: Option<T::Credential>,
-            class_id: T::ClassId,
-            credential_set: CredentialSet<T::Credential>
-        ) -> dispatch::Result {
-            let raw_origin = Self::ensure_root_or_signed(origin)?;
-
-            Self::mutate_class_permissions(
-                &raw_origin,
-                with_credential,
-                ClassPermissions::is_admin,
-                class_id,
-                |class_permissions| {
-                    class_permissions.add_schemas = credential_set;
-                    Ok(())
-                }
-            )
-        }
-
-        fn set_class_update_schemas_status_set(
-            origin,
-            with_credential: Option<T::Credential>,
-            class_id: T::ClassId,
-            credential_set: CredentialSet<T::Credential>
-        ) -> dispatch::Result {
-            let raw_origin = Self::ensure_root_or_signed(origin)?;
-
-            Self::mutate_class_permissions(
-                &raw_origin,
-                with_credential,
-                ClassPermissions::is_admin,
-                class_id,
-                |class_permissions| {
-                    class_permissions.update_schemas_status = credential_set;
-                    Ok(())
-                }
-            )
-        }
-
-        fn set_class_create_entities_set(
-            origin,
-            with_credential: Option<T::Credential>,
-            class_id: T::ClassId,
-            credential_set: CredentialSet<T::Credential>
-        ) -> dispatch::Result {
-            let raw_origin = Self::ensure_root_or_signed(origin)?;
-
-            Self::mutate_class_permissions(
-                &raw_origin,
-                with_credential,
-                ClassPermissions::is_admin,
-                class_id,
-                |class_permissions| {
-                    class_permissions.create_entities = credential_set;
-                    Ok(())
-                }
-            )
-        }
-
-        fn set_class_reference_constraint(
-            origin,
-            with_credential: Option<T::Credential>,
-            class_id: T::ClassId,
-            constraint: ReferenceConstraint<T::ClassId, PropertyId>
-        ) -> dispatch::Result {
-            let raw_origin = Self::ensure_root_or_signed(origin)?;
-
-            Self::mutate_class_permissions(
-                &raw_origin,
-                with_credential,
-                ClassPermissions::is_admin,
-                class_id,
-                |class_permissions| {
-                    class_permissions.reference_constraint = constraint;
-                    Ok(())
-                }
-            )
         }
 
         // Permissioned proxy calls to versioned store
@@ -661,9 +438,9 @@ decl_module! {
             origin,
             name: Vec<u8>,
             description: Vec<u8>,
-            class_permissions: ClassPermissionsType<T>
+            class_permissions: ClassPermissions
         ) -> dispatch::Result {
-            Self::ensure_can_create_class(origin)?;
+            ensure_authority_auth_success::<T>(origin)?;
 
             Self::ensure_class_name_is_valid(&name)?;
 
@@ -693,54 +470,92 @@ decl_module! {
 
         pub fn add_class_schema(
             origin,
-            with_credential: Option<T::Credential>,
             class_id: T::ClassId,
             existing_properties: Vec<PropertyId>,
             new_properties: Vec<Property<T>>
         ) -> dispatch::Result {
-            let raw_origin = Self::ensure_root_or_signed(origin)?;
+            ensure_authority_auth_success::<T>(origin)?;
+            
+            Self::ensure_known_class_id(class_id)?;
 
-            Self::if_class_permissions_satisfied(
-                &raw_origin,
-                with_credential,
-                None,
-                ClassPermissions::can_add_class_schema,
-                class_id,
-                |_class_permissions, _access_level| {
-                    // If a new property points at another class,
-                    // at this point we don't enforce anything about reference constraints
-                    // because of the chicken and egg problem. Instead enforcement is done
-                    // at the time of creating an entity.
-                    let _schema_index = Self::append_class_schema(class_id, existing_properties, new_properties)?;
-                    Ok(())
-                }
-            )
+            let non_empty_schema = !existing_properties.is_empty() || !new_properties.is_empty();
+    
+            ensure!(non_empty_schema, ERROR_NO_PROPS_IN_CLASS_SCHEMA);
+    
+            let class = <ClassById<T>>::get(class_id);
+    
+            let mut unique_prop_names = BTreeSet::new();
+            for prop in class.properties.iter() {
+                unique_prop_names.insert(prop.name.clone());
+            }
+    
+            for prop in new_properties.iter() {
+                prop.ensure_name_is_valid()?;
+                prop.ensure_description_is_valid()?;
+    
+                // Check that the name of a new property is unique within its class.
+                ensure!(
+                    !unique_prop_names.contains(&prop.name),
+                    ERROR_PROP_NAME_NOT_UNIQUE_IN_CLASS
+                );
+                unique_prop_names.insert(prop.name.clone());
+            }
+    
+            // Check that existing props are valid indices of class properties vector:
+            let has_unknown_props = existing_properties
+                .iter()
+                .any(|&prop_id| prop_id >= class.properties.len() as PropertyId);
+            ensure!(
+                !has_unknown_props,
+                ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
+            );
+    
+            // Check validity of Internal(T::ClassId) for new_properties.
+            let has_unknown_internal_id = new_properties.iter().any(|prop| match prop.prop_type {
+                PropertyType::Reference(other_class_id, _) => !<ClassById<T>>::exists(other_class_id),
+                _ => false,
+            });
+            ensure!(
+                !has_unknown_internal_id,
+                ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID
+            );
+    
+            // Use the current length of schemas in this class as an index
+            // for the next schema that will be sent in a result of this function.
+            let schema_idx = class.schemas.len() as SchemaId;
+    
+            let mut schema = Schema::new(existing_properties);
+    
+            let mut updated_class_props = class.properties;
+            new_properties.into_iter().for_each(|prop| {
+                let prop_id = updated_class_props.len() as PropertyId;
+                updated_class_props.push(prop);
+                schema.properties.push(prop_id);
+            });
+    
+            <ClassById<T>>::mutate(class_id, |class| {
+                class.properties = updated_class_props;
+                class.schemas.push(schema);
+            });     
+
+            Ok(()) 
         }
 
         pub fn update_class_schema_status(
             origin,
-            with_credential: Option<T::Credential>,
             class_id: T::ClassId,
             schema_id: SchemaId,
-            is_active: bool
+            schema_status: bool
         ) -> dispatch::Result {
-            let raw_origin = Self::ensure_root_or_signed(origin)?;
+            ensure_authority_auth_success::<T>(origin)?;
+            Self::ensure_known_class_id(class_id)?;
 
-            Self::if_class_permissions_satisfied(
-                &raw_origin,
-                with_credential,
-                None,
-                ClassPermissions::can_update_schema_status,
-                class_id,
-                |_class_permissions, _access_level| {
-                    // If a new property points at another class,
-                    // at this point we don't enforce anything about reference constraints
-                    // because of the chicken and egg problem. Instead enforcement is done
-                    // at the time of creating an entity.
-                    Self::complete_class_schema_status_update(class_id, schema_id, is_active)?;
-                    Ok(())
-                }
-            )
+            // Check that schema_id is a valid index of class schemas vector:
+            Self::ensure_class_schema_id_exists(&Self::class_by_id(class_id), schema_id)?;
+            <ClassById<T>>::mutate(class_id, |class| {
+                class.update_schema_status(schema_id, schema_status)
+            });
+            Ok(())
         }
 
         // ======
@@ -756,38 +571,38 @@ decl_module! {
             class_id: T::ClassId,
             actor_in_group: ActorInGroupId<T>,
         ) -> dispatch::Result {
-            let ActorInGroupId {actor_id, group_id} = actor_in_group;
-            T::authenticate_actor_in_group(origin, actor_id, group_id)?;
             let class = Self::ensure_class_exists(class_id)?;
-            Self::ensure_entity_creator_exists(class_id, group_id)?;
-            Self::ensure_maximum_entities_count_limit_not_reached(&class)?;
-            let entity_controller =
-                if let InitialControllerPolicy::ActorInGroup = class.get_permissions().initial_controller_of_created_entities {
-                    EntityController::from_actor_in_group(actor_id, group_id)
+            let entity_controller = if !T::authenticate_authority(origin) {
+                let initial_controller_of_created_entities = class.get_permissions().get_initial_controller_of_created_entities();
+                let entity_controller = EntityController::from(initial_controller_of_created_entities, actor_in_group);
+                Self::ensure_entity_creator_exists(class_id, actor_in_group.group_id)?;
+                Self::ensure_maximum_entities_count_limit_not_reached(&class)?;
+                let entity_creation_voucher = Self::entity_creation_vouchers(class_id, &entity_controller);
+
+                // Ensure entity creation voucher exists
+                if entity_creation_voucher != EntityCreationVoucher::default() {
+    
+                    // Ensure voucher limit not reached
+                    Self::ensure_voucher_limit_not_reached(entity_creation_voucher)?;
+    
+                    //
+                    // == MUTATION SAFE ==
+                    //
+    
+                    <EntityCreationVouchers<T>>::mutate(class_id, entity_controller, |entity_creation_voucher| {
+                        entity_creation_voucher.increment_created_entities_count()
+                    })
                 } else {
-                    EntityController::from_group(group_id)
-                };
-
-            let entity_creation_voucher = Self::entity_creation_vouchers(class_id, &entity_controller);
-
-            // Ensure entity creation voucher exists
-            if entity_creation_voucher != EntityCreationVoucher::default() {
-
-                // Ensure voucher limit not reached
-                Self::ensure_voucher_limit_not_reached(&entity_creation_voucher)?;
-
-                //
-                // == MUTATION SAFE ==
-                //
-
-                <EntityCreationVouchers<T>>::mutate(class_id, entity_controller, |entity_creation_voucher| {
-                    entity_creation_voucher.increment_created_entities_count()
-                })
+                    <EntityCreationVouchers<T>>::insert(class_id, entity_controller, 
+                        EntityCreationVoucher::new(class.get_permissions().get_controller_entity_creation_limit())
+                    );
+                }
+                Some(entity_controller)
             } else {
-                <EntityCreationVouchers<T>>::insert(class_id, entity_controller, EntityCreationVoucher::new(class.get_permissions().maximum_entities_count));
-            }
-
-            Self::perform_entity_creation(class_id);
+                None
+            };
+        
+            Self::perform_entity_creation(class_id, entity_controller);
             Ok(())
         }
 
@@ -810,6 +625,44 @@ decl_module! {
         ) -> dispatch::Result {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
             Self::do_add_schema_support_to_entity(&raw_origin, with_credential, as_entity_maintainer, entity_id, schema_id, property_values)
+        }
+
+        /// Update entity permissions.
+        ///
+
+        pub fn update_entity_permissions(
+            origin,
+            entity_id: T::EntityId,
+            controller: Option<EntityController<T>>,
+            frozen_for_controller: Option<bool>,
+            referenceable: Option<bool>
+        ) -> dispatch::Result {
+            ensure_authority_auth_success::<T>(origin)?;
+            Self::ensure_known_entity_id(entity_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            if let Some(controller) = controller {
+                <EntityById<T>>::mutate(entity_id, |inner_entity|
+                    inner_entity.get_entity_permissions_mut().set_conroller(controller)
+                );
+            }
+
+            if let Some(frozen_for_controller) = frozen_for_controller {
+                <EntityById<T>>::mutate(entity_id, |inner_entity|
+                    inner_entity.get_entity_permissions_mut().set_frozen_for_controller(frozen_for_controller)
+                );
+            }
+
+            if let Some(referenceable) = referenceable {
+                <EntityById<T>>::mutate(entity_id, |inner_entity|
+                    inner_entity.get_entity_permissions_mut().set_referencable(referenceable)
+                );
+            }
+
+            Ok(())
         }
 
         pub fn update_entity_property_values(
@@ -913,49 +766,6 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_can_create_class(origin: T::Origin) -> Result<(), &'static str> {
-        let raw_origin = Self::ensure_root_or_signed(origin)?;
-
-        let can_create_class = match raw_origin {
-            system::RawOrigin::Root => true,
-            system::RawOrigin::Signed(sender) => {
-                T::CreateClassPermissionsChecker::account_can_create_class_permissions(&sender)
-            }
-            _ => false,
-        };
-        ensure!(can_create_class, "NotPermittedToCreateClass");
-        Ok(())
-    }
-
-    fn do_create_entity(
-        raw_origin: &system::RawOrigin<T::AccountId>,
-        with_credential: Option<T::Credential>,
-        class_id: T::ClassId,
-    ) -> Result<T::EntityId, &'static str> {
-        Self::if_class_permissions_satisfied(
-            raw_origin,
-            with_credential,
-            None,
-            ClassPermissions::can_create_entity,
-            class_id,
-            |_class_permissions, access_level| {
-                let entity_id = Self::perform_entity_creation(class_id);
-
-                // Note: mutating value to None is equivalient to removing the value from storage map
-                <EntityMaintainerByEntityId<T>>::mutate(
-                    entity_id,
-                    |maintainer| match access_level {
-                        AccessLevel::System => *maintainer = None,
-                        AccessLevel::Credential(credential) => *maintainer = Some(*credential),
-                        _ => *maintainer = None,
-                    },
-                );
-
-                Ok(entity_id)
-            },
-        )
-    }
-
     fn do_remove_entity(
         raw_origin: &system::RawOrigin<T::AccountId>,
         with_credential: Option<T::Credential>,
@@ -974,10 +784,18 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn perform_entity_creation(class_id: T::ClassId) -> T::EntityId {
+    fn perform_entity_creation(
+        class_id: T::ClassId,
+        entity_controller: Some<EntityController<T>>,
+    ) -> T::EntityId {
         let entity_id = Self::next_entity_id();
 
-        let new_entity = Entity::<T>::new(class_id, BTreeSet::new(), BTreeMap::new());
+        let new_entity = Entity::<T>::new(
+            entity_controller,
+            class_id,
+            BTreeSet::new(),
+            BTreeMap::new(),
+        );
 
         // Save newly created entity:
         EntityById::insert(entity_id, new_entity);
@@ -996,8 +814,6 @@ impl<T: Trait> Module<T> {
         property_values: BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
-
-        Self::ensure_internal_property_values_permitted(class_id, &property_values)?;
 
         let as_entity_maintainer = if as_entity_maintainer {
             Some(entity_id)
@@ -1117,24 +933,11 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn complete_entity_removal(entity_id: T::EntityId) -> dispatch::Result {
+    fn complete_entity_removal(entity_id: T::EntityId, group_id: T::GroupId) -> dispatch::Result {
         // Ensure there is no property values pointing to given entity
         Self::ensure_rc_is_zero(entity_id)?;
         <EntityById<T>>::remove(entity_id);
-        <EntityMaintainerByEntityId<T>>::remove(entity_id);
-        Ok(())
-    }
-
-    pub fn complete_class_schema_status_update(
-        class_id: T::ClassId,
-        schema_id: SchemaId,
-        schema_status: bool,
-    ) -> dispatch::Result {
-        // Check that schema_id is a valid index of class schemas vector:
-        Self::ensure_class_schema_id_exists(&Self::class_by_id(class_id), schema_id)?;
-        <ClassById<T>>::mutate(class_id, |class| {
-            class.update_schema_status(schema_id, schema_status)
-        });
+        <EntityMaintainers<T>>::remove(entity_id, group_id);
         Ok(())
     }
 
@@ -1346,8 +1149,6 @@ impl<T: Trait> Module<T> {
         // class id of the entity being updated
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
 
-        Self::ensure_internal_property_values_permitted(class_id, &property_values)?;
-
         let as_entity_maintainer = if as_entity_maintainer {
             Some(entity_id)
         } else {
@@ -1364,45 +1165,6 @@ impl<T: Trait> Module<T> {
                 Self::add_entity_schema_support(entity_id, schema_id, property_values)
             },
         )
-    }
-
-    /// Derives the AccessLevel the caller is attempting to act with.
-    /// It expects only signed or root origin.
-    fn derive_access_level(
-        raw_origin: &system::RawOrigin<T::AccountId>,
-        with_credential: Option<T::Credential>,
-        as_entity_maintainer: Option<T::EntityId>,
-    ) -> Result<AccessLevel<T::Credential>, &'static str> {
-        match raw_origin {
-            system::RawOrigin::Root => Ok(AccessLevel::System),
-            system::RawOrigin::Signed(account_id) => {
-                if let Some(credential) = with_credential {
-                    ensure!(
-                        T::CredentialChecker::account_has_credential(&account_id, credential),
-                        "OriginCannotActWithRequestedCredential"
-                    );
-                    if let Some(entity_id) = as_entity_maintainer {
-                        // is entity maintained by system
-                        ensure!(
-                            <EntityMaintainerByEntityId<T>>::exists(entity_id),
-                            "NotEnityMaintainer"
-                        );
-                        // ensure entity maintainer matches
-                        match Self::entity_maintainer_by_entity_id(entity_id) {
-                            Some(maintainer_credential) if credential == maintainer_credential => {
-                                Ok(AccessLevel::EntityMaintainer)
-                            }
-                            _ => Err("NotEnityMaintainer"),
-                        }
-                    } else {
-                        Ok(AccessLevel::Credential(credential))
-                    }
-                } else {
-                    Ok(AccessLevel::Unspecified)
-                }
-            }
-            _ => Err("BadOrigin:ExpectedRootOrSigned"),
-        }
     }
 
     fn increment_entities_rc(entity_ids: &[T::EntityId]) {
@@ -1437,8 +1199,8 @@ impl<T: Trait> Module<T> {
     ) -> dispatch::Result
     where
         Predicate:
-            FnOnce(&ClassPermissionsType<T>, &AccessLevel<T::Credential>) -> dispatch::Result,
-        Mutate: FnOnce(&mut ClassPermissionsType<T>) -> dispatch::Result,
+            FnOnce(&ClassPermissions, ClassAccessLevel) -> dispatch::Result,
+        Mutate: FnOnce(&mut ClassPermissions) -> dispatch::Result,
     {
         let access_level = Self::derive_access_level(raw_origin, with_credential, None)?;
         let class = Self::ensure_class_exists(class_id)?;
@@ -1446,21 +1208,8 @@ impl<T: Trait> Module<T> {
         <ClassById<T>>::mutate(class_id, |inner_class| {
             //It is safe to not check for an error here, as result always be  Ok(())
             let _ = mutate(inner_class.get_permissions_mut());
-            // Refresh last permissions update block number.
-            inner_class.refresh_last_permissions_update();
         });
         Ok(())
-    }
-
-    fn is_system(
-        _: &ClassPermissionsType<T>,
-        access_level: &AccessLevel<T::Credential>,
-    ) -> dispatch::Result {
-        if *access_level == AccessLevel::System {
-            Ok(())
-        } else {
-            Err("NotRootOrigin")
-        }
     }
 
     /// Derives the access level of the caller.
@@ -1468,8 +1217,7 @@ impl<T: Trait> Module<T> {
     /// or error from failed predicate.
     fn if_class_permissions_satisfied<Predicate, Callback, R>(
         raw_origin: &system::RawOrigin<T::AccountId>,
-        with_credential: Option<T::Credential>,
-        as_entity_maintainer: Option<T::EntityId>,
+        actor_in_group: ActorInGroupId<T>,
         // predicate to test
         predicate: Predicate,
         // class permissions to test
@@ -1479,14 +1227,14 @@ impl<T: Trait> Module<T> {
     ) -> Result<R, &'static str>
     where
         Predicate:
-            FnOnce(&ClassPermissionsType<T>, &AccessLevel<T::Credential>) -> dispatch::Result,
+            FnOnce(&ClassPermissions, ClassAccessLevel) -> dispatch::Result,
         Callback: FnOnce(
-            &ClassPermissionsType<T>,
-            &AccessLevel<T::Credential>,
+            &ClassPermissions,
+            ClassAccessLevel,
         ) -> Result<R, &'static str>,
     {
         let access_level =
-            Self::derive_access_level(raw_origin, with_credential, as_entity_maintainer)?;
+            ClassAccessLevel::derive(raw_origin, class_id, actor_in_group)?;
         let class = Self::ensure_class_exists(class_id)?;
         let class_permissions = class.get_permissions();
         predicate(class_permissions, &access_level)?;
@@ -1498,117 +1246,6 @@ impl<T: Trait> Module<T> {
         ensure!(<EntityById<T>>::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
         let entity = Self::entity_by_id(entity_id);
         Ok(entity.class_id)
-    }
-
-    // Ensures property_values of type Reference that point to a class,
-    // the target entity and class exists and constraint allows it.
-    fn ensure_internal_property_values_permitted(
-        source_class_id: T::ClassId,
-        property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
-    ) -> dispatch::Result {
-        for (in_class_index, property_value) in property_values.iter() {
-            if let PropertyValue::Reference(ref target_entity_id) = property_value {
-                // get the class permissions for target class
-                let target_class_id = Self::get_class_id_by_entity_id(*target_entity_id)?;
-                // assert class permissions exists for target class
-                let class = Self::class_by_id(target_class_id);
-
-                // ensure internal reference is permitted
-                match &class.get_permissions().reference_constraint {
-                    ReferenceConstraint::NoConstraint => Ok(()),
-                    ReferenceConstraint::NoReferencingAllowed => {
-                        Err("EntityCannotReferenceTargetEntity")
-                    }
-                    ReferenceConstraint::Restricted(permitted_properties) => {
-                        ensure!(
-                            permitted_properties.contains(&PropertyOfClass {
-                                class_id: source_class_id,
-                                property_index: *in_class_index,
-                            }),
-                            "EntityCannotReferenceTargetEntity"
-                        );
-                        Ok(())
-                    }
-                }?;
-            }
-        }
-
-        // if we reach here all Internal properties have passed the constraint check
-        Ok(())
-    }
-
-    /// Returns an index of a newly added class schema on success.
-    pub fn append_class_schema(
-        class_id: T::ClassId,
-        existing_properties: Vec<PropertyId>,
-        new_properties: Vec<Property<T>>,
-    ) -> Result<SchemaId, &'static str> {
-        Self::ensure_known_class_id(class_id)?;
-
-        let non_empty_schema = !existing_properties.is_empty() || !new_properties.is_empty();
-
-        ensure!(non_empty_schema, ERROR_NO_PROPS_IN_CLASS_SCHEMA);
-
-        let class = <ClassById<T>>::get(class_id);
-
-        // TODO Use BTreeSet for prop unique names when switched to Substrate 2.
-        // There is no support for BTreeSet in Substrate 1 runtime.
-        // use rstd::collections::btree_set::BTreeSet;
-        let mut unique_prop_names = BTreeSet::new();
-        for prop in class.properties.iter() {
-            unique_prop_names.insert(prop.name.clone());
-        }
-
-        for prop in new_properties.iter() {
-            prop.ensure_name_is_valid()?;
-            prop.ensure_description_is_valid()?;
-
-            // Check that the name of a new property is unique within its class.
-            ensure!(
-                !unique_prop_names.contains(&prop.name),
-                ERROR_PROP_NAME_NOT_UNIQUE_IN_CLASS
-            );
-            unique_prop_names.insert(prop.name.clone());
-        }
-
-        // Check that existing props are valid indices of class properties vector:
-        let has_unknown_props = existing_properties
-            .iter()
-            .any(|&prop_id| prop_id >= class.properties.len() as PropertyId);
-        ensure!(
-            !has_unknown_props,
-            ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
-        );
-
-        // Check validity of Internal(T::ClassId) for new_properties.
-        let has_unknown_internal_id = new_properties.iter().any(|prop| match prop.prop_type {
-            PropertyType::Reference(other_class_id) => !<ClassById<T>>::exists(other_class_id),
-            _ => false,
-        });
-        ensure!(
-            !has_unknown_internal_id,
-            ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID
-        );
-
-        // Use the current length of schemas in this class as an index
-        // for the next schema that will be sent in a result of this function.
-        let schema_idx = class.schemas.len() as SchemaId;
-
-        let mut schema = Schema::new(existing_properties);
-
-        let mut updated_class_props = class.properties;
-        new_properties.into_iter().for_each(|prop| {
-            let prop_id = updated_class_props.len() as PropertyId;
-            updated_class_props.push(prop);
-            schema.properties.push(prop_id);
-        });
-
-        <ClassById<T>>::mutate(class_id, |class| {
-            class.properties = updated_class_props;
-            class.schemas.push(schema);
-        });
-
-        Ok(schema_idx)
     }
 
     pub fn add_entity_schema_support(
@@ -1728,7 +1365,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn ensure_voucher_limit_not_reached(voucher: &EntityCreationVoucher) -> dispatch::Result {
+    pub fn ensure_voucher_limit_not_reached(voucher: EntityCreationVoucher) -> dispatch::Result {
         ensure!(voucher.limit_not_reached(), ERROR_VOUCHER_LIMIT_REACHED);
         Ok(())
     }

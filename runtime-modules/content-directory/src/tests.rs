@@ -202,482 +202,482 @@ fn create_class_with_empty_description() {
 //     })
 // }
 
-#[test]
-fn class_set_admins() {
-    with_test_externalities(|| {
-        // create a class where all permission sets are empty
-        let class_id = create_simple_class(class_minimal());
-        let class = TestModule::class_by_id(class_id);
+// #[test]
+// fn class_set_admins() {
+//     with_test_externalities(|| {
+//         // create a class where all permission sets are empty
+//         let class_id = create_simple_class(class_minimal());
+//         let class = TestModule::class_by_id(class_id);
 
-        assert!(class.get_permissions().admins.is_empty());
+//         assert!(class.get_permissions().admins.is_empty());
 
-        let credential_set = CredentialSet::from(vec![1]);
+//         let credential_set = CredentialSet::from(vec![1]);
 
-        // only root should be able to set admins
-        assert_err!(
-            TestModule::set_class_admins(Origin::signed(1), class_id, credential_set.clone()),
-            "NotRootOrigin"
-        );
-        assert_err!(
-            TestModule::set_class_admins(
-                Origin::NONE, //unsigned inherent?
-                class_id,
-                credential_set.clone()
-            ),
-            "BadOrigin:ExpectedRootOrSigned"
-        );
+//         // only root should be able to set admins
+//         assert_err!(
+//             TestModule::set_class_admins(Origin::signed(1), class_id, credential_set.clone()),
+//             "NotRootOrigin"
+//         );
+//         assert_err!(
+//             TestModule::set_class_admins(
+//                 Origin::NONE, //unsigned inherent?
+//                 class_id,
+//                 credential_set.clone()
+//             ),
+//             "BadOrigin:ExpectedRootOrSigned"
+//         );
 
-        // root origin can set admins
-        assert_ok!(TestModule::set_class_admins(
-            Origin::ROOT,
-            class_id,
-            credential_set.clone()
-        ));
+//         // root origin can set admins
+//         assert_ok!(TestModule::set_class_admins(
+//             Origin::ROOT,
+//             class_id,
+//             credential_set.clone()
+//         ));
 
-        let class = TestModule::class_by_id(class_id);
-        assert_eq!(class.get_permissions().admins, credential_set);
-    })
-}
+//         let class = TestModule::class_by_id(class_id);
+//         assert_eq!(class.get_permissions().admins, credential_set);
+//     })
+// }
 
-#[test]
-fn class_set_add_schemas_set() {
-    with_test_externalities(|| {
-        const ADMIN_ACCOUNT: u64 = MEMBER_ONE_WITH_CREDENTIAL_ZERO;
-        // create a class where all permission sets are empty
-        let class_id = create_simple_class(class_minimal_with_admins(vec![0]));
-        let class = TestModule::class_by_id(class_id);
+// #[test]
+// fn class_set_add_schemas_set() {
+//     with_test_externalities(|| {
+//         const ADMIN_ACCOUNT: u64 = MEMBER_ONE_WITH_CREDENTIAL_ZERO;
+//         // create a class where all permission sets are empty
+//         let class_id = create_simple_class(class_minimal_with_admins(vec![0]));
+//         let class = TestModule::class_by_id(class_id);
 
-        assert!(class.get_permissions().add_schemas.is_empty());
+//         assert!(class.get_permissions().add_schemas.is_empty());
 
-        let credential_set1 = CredentialSet::from(vec![1, 2]);
-        let credential_set2 = CredentialSet::from(vec![3, 4]);
+//         let credential_set1 = CredentialSet::from(vec![1, 2]);
+//         let credential_set2 = CredentialSet::from(vec![3, 4]);
 
-        // root
-        assert_ok!(TestModule::set_class_add_schemas_set(
-            Origin::ROOT,
-            None,
-            class_id,
-            credential_set1.clone()
-        ));
-        let class = TestModule::class_by_id(class_id);
-        assert_eq!(class.get_permissions().add_schemas, credential_set1);
+//         // root
+//         assert_ok!(TestModule::set_class_add_schemas_set(
+//             Origin::ROOT,
+//             None,
+//             class_id,
+//             credential_set1.clone()
+//         ));
+//         let class = TestModule::class_by_id(class_id);
+//         assert_eq!(class.get_permissions().add_schemas, credential_set1);
 
-        // admins
-        assert_ok!(TestModule::set_class_add_schemas_set(
-            Origin::signed(ADMIN_ACCOUNT),
-            Some(0),
-            class_id,
-            credential_set2.clone()
-        ));
-        let class = TestModule::class_by_id(class_id);
-        assert_eq!(class.get_permissions().add_schemas, credential_set2);
+//         // admins
+//         assert_ok!(TestModule::set_class_add_schemas_set(
+//             Origin::signed(ADMIN_ACCOUNT),
+//             Some(0),
+//             class_id,
+//             credential_set2.clone()
+//         ));
+//         let class = TestModule::class_by_id(class_id);
+//         assert_eq!(class.get_permissions().add_schemas, credential_set2);
 
-        // non-admins
-        assert_err!(
-            TestModule::set_class_add_schemas_set(
-                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
-                Some(1),
-                class_id,
-                credential_set2.clone()
-            ),
-            "NotInAdminsSet"
-        );
-    })
-}
+//         // non-admins
+//         assert_err!(
+//             TestModule::set_class_add_schemas_set(
+//                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
+//                 Some(1),
+//                 class_id,
+//                 credential_set2.clone()
+//             ),
+//             "NotInAdminsSet"
+//         );
+//     })
+// }
 
-#[test]
-fn class_set_class_create_entities_set() {
-    with_test_externalities(|| {
-        const ADMIN_ACCOUNT: u64 = MEMBER_ONE_WITH_CREDENTIAL_ZERO;
-        // create a class where all permission sets are empty
-        let class_id = create_simple_class(class_minimal_with_admins(vec![0]));
-        let class = TestModule::class_by_id(class_id);
+// #[test]
+// fn class_set_class_create_entities_set() {
+//     with_test_externalities(|| {
+//         const ADMIN_ACCOUNT: u64 = MEMBER_ONE_WITH_CREDENTIAL_ZERO;
+//         // create a class where all permission sets are empty
+//         let class_id = create_simple_class(class_minimal_with_admins(vec![0]));
+//         let class = TestModule::class_by_id(class_id);
 
-        assert!(class.get_permissions().create_entities.is_empty());
+//         assert!(class.get_permissions().create_entities.is_empty());
 
-        let credential_set1 = CredentialSet::from(vec![1, 2]);
-        let credential_set2 = CredentialSet::from(vec![3, 4]);
+//         let credential_set1 = CredentialSet::from(vec![1, 2]);
+//         let credential_set2 = CredentialSet::from(vec![3, 4]);
 
-        // root
-        assert_ok!(TestModule::set_class_create_entities_set(
-            Origin::ROOT,
-            None,
-            class_id,
-            credential_set1.clone()
-        ));
-        let class = TestModule::class_by_id(class_id);
-        assert_eq!(class.get_permissions().create_entities, credential_set1);
+//         // root
+//         assert_ok!(TestModule::set_class_create_entities_set(
+//             Origin::ROOT,
+//             None,
+//             class_id,
+//             credential_set1.clone()
+//         ));
+//         let class = TestModule::class_by_id(class_id);
+//         assert_eq!(class.get_permissions().create_entities, credential_set1);
 
-        // admins
-        assert_ok!(TestModule::set_class_create_entities_set(
-            Origin::signed(ADMIN_ACCOUNT),
-            Some(0),
-            class_id,
-            credential_set2.clone()
-        ));
-        let class = TestModule::class_by_id(class_id);
-        assert_eq!(class.get_permissions().create_entities, credential_set2);
+//         // admins
+//         assert_ok!(TestModule::set_class_create_entities_set(
+//             Origin::signed(ADMIN_ACCOUNT),
+//             Some(0),
+//             class_id,
+//             credential_set2.clone()
+//         ));
+//         let class = TestModule::class_by_id(class_id);
+//         assert_eq!(class.get_permissions().create_entities, credential_set2);
 
-        // non-admins
-        assert_err!(
-            TestModule::set_class_create_entities_set(
-                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
-                Some(1),
-                class_id,
-                credential_set2.clone()
-            ),
-            "NotInAdminsSet"
-        );
-    })
-}
+//         // non-admins
+//         assert_err!(
+//             TestModule::set_class_create_entities_set(
+//                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
+//                 Some(1),
+//                 class_id,
+//                 credential_set2.clone()
+//             ),
+//             "NotInAdminsSet"
+//         );
+//     })
+// }
 
-#[test]
-fn class_set_class_entities_can_be_created() {
-    with_test_externalities(|| {
-        const ADMIN_ACCOUNT: u64 = MEMBER_ONE_WITH_CREDENTIAL_ZERO;
-        // create a class where all permission sets are empty
-        let class_id = create_simple_class(class_minimal_with_admins(vec![0]));
-        let class = TestModule::class_by_id(class_id);
+// #[test]
+// fn class_set_class_entities_can_be_created() {
+//     with_test_externalities(|| {
+//         const ADMIN_ACCOUNT: u64 = MEMBER_ONE_WITH_CREDENTIAL_ZERO;
+//         // create a class where all permission sets are empty
+//         let class_id = create_simple_class(class_minimal_with_admins(vec![0]));
+//         let class = TestModule::class_by_id(class_id);
 
-        assert_eq!(class.get_permissions().entity_creation_blocked, false);
+//         assert_eq!(class.get_permissions().entity_creation_blocked, false);
 
-        // root
-        assert_ok!(TestModule::set_class_entities_can_be_created(
-            Origin::ROOT,
-            None,
-            class_id,
-            true
-        ));
-        let class = TestModule::class_by_id(class_id);
-        assert_eq!(class.get_permissions().entity_creation_blocked, true);
+//         // root
+//         assert_ok!(TestModule::set_class_entities_can_be_created(
+//             Origin::ROOT,
+//             None,
+//             class_id,
+//             true
+//         ));
+//         let class = TestModule::class_by_id(class_id);
+//         assert_eq!(class.get_permissions().entity_creation_blocked, true);
 
-        // admins
-        assert_ok!(TestModule::set_class_entities_can_be_created(
-            Origin::signed(ADMIN_ACCOUNT),
-            Some(0),
-            class_id,
-            false
-        ));
-        let class = TestModule::class_by_id(class_id);
-        assert_eq!(class.get_permissions().entity_creation_blocked, false);
+//         // admins
+//         assert_ok!(TestModule::set_class_entities_can_be_created(
+//             Origin::signed(ADMIN_ACCOUNT),
+//             Some(0),
+//             class_id,
+//             false
+//         ));
+//         let class = TestModule::class_by_id(class_id);
+//         assert_eq!(class.get_permissions().entity_creation_blocked, false);
 
-        // non-admins
-        assert_err!(
-            TestModule::set_class_entities_can_be_created(
-                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
-                Some(1),
-                class_id,
-                true
-            ),
-            "NotInAdminsSet"
-        );
-    })
-}
+//         // non-admins
+//         assert_err!(
+//             TestModule::set_class_entities_can_be_created(
+//                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
+//                 Some(1),
+//                 class_id,
+//                 true
+//             ),
+//             "NotInAdminsSet"
+//         );
+//     })
+// }
 
-#[test]
-fn class_set_class_entity_permissions() {
-    with_test_externalities(|| {
-        const ADMIN_ACCOUNT: u64 = MEMBER_ONE_WITH_CREDENTIAL_ZERO;
-        // create a class where all permission sets are empty
-        let class_id = create_simple_class(class_minimal_with_admins(vec![0]));
-        let class = TestModule::class_by_id(class_id);
+// #[test]
+// fn class_set_class_entity_permissions() {
+//     with_test_externalities(|| {
+//         const ADMIN_ACCOUNT: u64 = MEMBER_ONE_WITH_CREDENTIAL_ZERO;
+//         // create a class where all permission sets are empty
+//         let class_id = create_simple_class(class_minimal_with_admins(vec![0]));
+//         let class = TestModule::class_by_id(class_id);
 
-        assert!(class.get_permissions().entity_permissions.update.is_empty());
+//         assert!(class.get_permissions().entity_permissions.update.is_empty());
 
-        let entity_permissions1 = EntityPermissions {
-            update: CredentialSet::from(vec![1]),
-            maintainer_has_all_permissions: true,
-        };
+//         let entity_permissions1 = EntityPermissions {
+//             update: CredentialSet::from(vec![1]),
+//             maintainer_has_all_permissions: true,
+//         };
 
-        //root
-        assert_ok!(TestModule::set_class_entity_permissions(
-            Origin::ROOT,
-            None,
-            class_id,
-            entity_permissions1.clone()
-        ));
-        let class = TestModule::class_by_id(class_id);
-        assert_eq!(
-            class.get_permissions().entity_permissions,
-            entity_permissions1
-        );
+//         //root
+//         assert_ok!(TestModule::set_class_entity_permissions(
+//             Origin::ROOT,
+//             None,
+//             class_id,
+//             entity_permissions1.clone()
+//         ));
+//         let class = TestModule::class_by_id(class_id);
+//         assert_eq!(
+//             class.get_permissions().entity_permissions,
+//             entity_permissions1
+//         );
 
-        let entity_permissions2 = EntityPermissions {
-            update: CredentialSet::from(vec![4]),
-            maintainer_has_all_permissions: true,
-        };
-        //admins
-        assert_ok!(TestModule::set_class_entity_permissions(
-            Origin::signed(ADMIN_ACCOUNT),
-            Some(0),
-            class_id,
-            entity_permissions2.clone()
-        ));
-        let class = TestModule::class_by_id(class_id);
-        assert_eq!(
-            class.get_permissions().entity_permissions,
-            entity_permissions2
-        );
+//         let entity_permissions2 = EntityPermissions {
+//             update: CredentialSet::from(vec![4]),
+//             maintainer_has_all_permissions: true,
+//         };
+//         //admins
+//         assert_ok!(TestModule::set_class_entity_permissions(
+//             Origin::signed(ADMIN_ACCOUNT),
+//             Some(0),
+//             class_id,
+//             entity_permissions2.clone()
+//         ));
+//         let class = TestModule::class_by_id(class_id);
+//         assert_eq!(
+//             class.get_permissions().entity_permissions,
+//             entity_permissions2
+//         );
 
-        // non admins
-        assert_err!(
-            TestModule::set_class_entity_permissions(
-                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
-                Some(1),
-                class_id,
-                entity_permissions2.clone()
-            ),
-            "NotInAdminsSet"
-        );
-    })
-}
+//         // non admins
+//         assert_err!(
+//             TestModule::set_class_entity_permissions(
+//                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
+//                 Some(1),
+//                 class_id,
+//                 entity_permissions2.clone()
+//             ),
+//             "NotInAdminsSet"
+//         );
+//     })
+// }
 
-#[test]
-fn class_set_class_reference_constraint() {
-    with_test_externalities(|| {
-        const ADMIN_ACCOUNT: u64 = MEMBER_ONE_WITH_CREDENTIAL_ZERO;
-        // create a class where all permission sets are empty
-        let class_id = create_simple_class(class_minimal_with_admins(vec![0]));
-        let class = TestModule::class_by_id(class_id);
+// #[test]
+// fn class_set_class_reference_constraint() {
+//     with_test_externalities(|| {
+//         const ADMIN_ACCOUNT: u64 = MEMBER_ONE_WITH_CREDENTIAL_ZERO;
+//         // create a class where all permission sets are empty
+//         let class_id = create_simple_class(class_minimal_with_admins(vec![0]));
+//         let class = TestModule::class_by_id(class_id);
 
-        assert_eq!(
-            class.get_permissions().reference_constraint,
-            Default::default()
-        );
+//         assert_eq!(
+//             class.get_permissions().reference_constraint,
+//             Default::default()
+//         );
 
-        let mut constraints_set = BTreeSet::new();
-        constraints_set.insert(PropertyOfClass {
-            class_id: 1,
-            property_index: 0,
-        });
-        let reference_constraint1 = ReferenceConstraint::Restricted(constraints_set);
+//         let mut constraints_set = BTreeSet::new();
+//         constraints_set.insert(PropertyOfClass {
+//             class_id: 1,
+//             property_index: 0,
+//         });
+//         let reference_constraint1 = ReferenceConstraint::Restricted(constraints_set);
 
-        //root
-        assert_ok!(TestModule::set_class_reference_constraint(
-            Origin::ROOT,
-            None,
-            class_id,
-            reference_constraint1.clone()
-        ));
-        let class = TestModule::class_by_id(class_id);
-        assert_eq!(
-            class.get_permissions().reference_constraint,
-            reference_constraint1
-        );
+//         //root
+//         assert_ok!(TestModule::set_class_reference_constraint(
+//             Origin::ROOT,
+//             None,
+//             class_id,
+//             reference_constraint1.clone()
+//         ));
+//         let class = TestModule::class_by_id(class_id);
+//         assert_eq!(
+//             class.get_permissions().reference_constraint,
+//             reference_constraint1
+//         );
 
-        let mut constraints_set = BTreeSet::new();
-        constraints_set.insert(PropertyOfClass {
-            class_id: 2,
-            property_index: 2,
-        });
-        let reference_constraint2 = ReferenceConstraint::Restricted(constraints_set);
+//         let mut constraints_set = BTreeSet::new();
+//         constraints_set.insert(PropertyOfClass {
+//             class_id: 2,
+//             property_index: 2,
+//         });
+//         let reference_constraint2 = ReferenceConstraint::Restricted(constraints_set);
 
-        //admins
-        assert_ok!(TestModule::set_class_reference_constraint(
-            Origin::signed(ADMIN_ACCOUNT),
-            Some(0),
-            class_id,
-            reference_constraint2.clone()
-        ));
-        let class = TestModule::class_by_id(class_id);
-        assert_eq!(
-            class.get_permissions().reference_constraint,
-            reference_constraint2
-        );
+//         //admins
+//         assert_ok!(TestModule::set_class_reference_constraint(
+//             Origin::signed(ADMIN_ACCOUNT),
+//             Some(0),
+//             class_id,
+//             reference_constraint2.clone()
+//         ));
+//         let class = TestModule::class_by_id(class_id);
+//         assert_eq!(
+//             class.get_permissions().reference_constraint,
+//             reference_constraint2
+//         );
 
-        // non admins
-        assert_err!(
-            TestModule::set_class_reference_constraint(
-                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
-                Some(1),
-                class_id,
-                reference_constraint2.clone()
-            ),
-            "NotInAdminsSet"
-        );
-    })
-}
+//         // non admins
+//         assert_err!(
+//             TestModule::set_class_reference_constraint(
+//                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
+//                 Some(1),
+//                 class_id,
+//                 reference_constraint2.clone()
+//             ),
+//             "NotInAdminsSet"
+//         );
+//     })
+// }
 
-#[test]
-fn batch_transaction_simple() {
-    with_test_externalities(|| {
-        const CREDENTIAL_ONE: u64 = 1;
+// #[test]
+// fn batch_transaction_simple() {
+//     with_test_externalities(|| {
+//         const CREDENTIAL_ONE: u64 = 1;
 
-        let new_class_id = create_simple_class(ClassPermissions {
-            entity_creation_blocked: true,
-            create_entities: vec![CREDENTIAL_ONE].into(),
-            reference_constraint: ReferenceConstraint::NoConstraint,
-            ..Default::default()
-        });
+//         let new_class_id = create_simple_class(ClassPermissions {
+//             entity_creation_blocked: true,
+//             create_entities: vec![CREDENTIAL_ONE].into(),
+//             reference_constraint: ReferenceConstraint::NoConstraint,
+//             ..Default::default()
+//         });
 
-        let new_properties = vec![Property {
-            prop_type: PropertyType::Reference(new_class_id),
-            required: true,
-            name: b"entity".to_vec(),
-            description: b"another entity of same class".to_vec(),
-        }];
+//         let new_properties = vec![Property {
+//             prop_type: PropertyType::Reference(new_class_id),
+//             required: true,
+//             name: b"entity".to_vec(),
+//             description: b"another entity of same class".to_vec(),
+//         }];
 
-        assert_ok!(TestModule::add_class_schema(
-            Origin::ROOT,
-            None,
-            new_class_id,
-            vec![],
-            new_properties
-        ));
+//         assert_ok!(TestModule::add_class_schema(
+//             Origin::ROOT,
+//             None,
+//             new_class_id,
+//             vec![],
+//             new_properties
+//         ));
 
-        let operations = vec![
-            Operation {
-                with_credential: Some(CREDENTIAL_ONE),
-                as_entity_maintainer: false,
-                operation_type: OperationType::CreateEntity(CreateEntityOperation {
-                    class_id: new_class_id,
-                }),
-            },
-            Operation {
-                with_credential: Some(CREDENTIAL_ONE),
-                as_entity_maintainer: true, // in prior operation CREDENTIAL_ONE became the maintainer
-                operation_type: OperationType::AddSchemaSupportToEntity(
-                    AddSchemaSupportToEntityOperation {
-                        entity_id: ParameterizedEntity::InternalEntityJustAdded(0), // index 0 (prior operation)
-                        schema_id: 0,
-                        parametrized_property_values: vec![ParametrizedClassPropertyValue {
-                            in_class_index: 0,
-                            value: ParametrizedPropertyValue::InternalEntityJustAdded(0),
-                        }],
-                    },
-                ),
-            },
-            Operation {
-                with_credential: Some(CREDENTIAL_ONE),
-                as_entity_maintainer: false,
-                operation_type: OperationType::CreateEntity(CreateEntityOperation {
-                    class_id: new_class_id,
-                }),
-            },
-            Operation {
-                with_credential: Some(CREDENTIAL_ONE),
-                as_entity_maintainer: true, // in prior operation CREDENTIAL_ONE became the maintainer
-                operation_type: OperationType::UpdatePropertyValues(
-                    UpdatePropertyValuesOperation {
-                        entity_id: ParameterizedEntity::InternalEntityJustAdded(0), // index 0 (prior operation)
-                        new_parametrized_property_values: vec![ParametrizedClassPropertyValue {
-                            in_class_index: 0,
-                            value: ParametrizedPropertyValue::InternalEntityJustAdded(2),
-                        }],
-                    },
-                ),
-            },
-        ];
+//         let operations = vec![
+//             Operation {
+//                 with_credential: Some(CREDENTIAL_ONE),
+//                 as_entity_maintainer: false,
+//                 operation_type: OperationType::CreateEntity(CreateEntityOperation {
+//                     class_id: new_class_id,
+//                 }),
+//             },
+//             Operation {
+//                 with_credential: Some(CREDENTIAL_ONE),
+//                 as_entity_maintainer: true, // in prior operation CREDENTIAL_ONE became the maintainer
+//                 operation_type: OperationType::AddSchemaSupportToEntity(
+//                     AddSchemaSupportToEntityOperation {
+//                         entity_id: ParameterizedEntity::InternalEntityJustAdded(0), // index 0 (prior operation)
+//                         schema_id: 0,
+//                         parametrized_property_values: vec![ParametrizedClassPropertyValue {
+//                             in_class_index: 0,
+//                             value: ParametrizedPropertyValue::InternalEntityJustAdded(0),
+//                         }],
+//                     },
+//                 ),
+//             },
+//             Operation {
+//                 with_credential: Some(CREDENTIAL_ONE),
+//                 as_entity_maintainer: false,
+//                 operation_type: OperationType::CreateEntity(CreateEntityOperation {
+//                     class_id: new_class_id,
+//                 }),
+//             },
+//             Operation {
+//                 with_credential: Some(CREDENTIAL_ONE),
+//                 as_entity_maintainer: true, // in prior operation CREDENTIAL_ONE became the maintainer
+//                 operation_type: OperationType::UpdatePropertyValues(
+//                     UpdatePropertyValuesOperation {
+//                         entity_id: ParameterizedEntity::InternalEntityJustAdded(0), // index 0 (prior operation)
+//                         new_parametrized_property_values: vec![ParametrizedClassPropertyValue {
+//                             in_class_index: 0,
+//                             value: ParametrizedPropertyValue::InternalEntityJustAdded(2),
+//                         }],
+//                     },
+//                 ),
+//             },
+//         ];
 
-        let entity_id = next_entity_id();
+//         let entity_id = next_entity_id();
 
-        assert_ok!(TestModule::transaction(
-            Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
-            operations
-        ));
+//         assert_ok!(TestModule::transaction(
+//             Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
+//             operations
+//         ));
 
-        // two entities created
-        assert!(<EntityById<Runtime>>::exists(entity_id));
-        assert!(<EntityById<Runtime>>::exists(entity_id + 1));
-    })
-}
+//         // two entities created
+//         assert!(<EntityById<Runtime>>::exists(entity_id));
+//         assert!(<EntityById<Runtime>>::exists(entity_id + 1));
+//     })
+// }
 
-#[test]
-fn batch_transaction_vector_of_entities() {
-    with_test_externalities(|| {
-        const CREDENTIAL_ONE: u64 = 1;
+// #[test]
+// fn batch_transaction_vector_of_entities() {
+//     with_test_externalities(|| {
+//         const CREDENTIAL_ONE: u64 = 1;
 
-        let new_class_id = create_simple_class(ClassPermissions {
-            entity_creation_blocked: true,
-            create_entities: vec![CREDENTIAL_ONE].into(),
-            reference_constraint: ReferenceConstraint::NoConstraint,
-            ..Default::default()
-        });
+//         let new_class_id = create_simple_class(ClassPermissions {
+//             entity_creation_blocked: true,
+//             create_entities: vec![CREDENTIAL_ONE].into(),
+//             reference_constraint: ReferenceConstraint::NoConstraint,
+//             ..Default::default()
+//         });
 
-        let new_properties = vec![Property {
-            prop_type: PropertyType::ReferenceVec(10, new_class_id),
-            required: true,
-            name: b"entities".to_vec(),
-            description: b"vector of entities of same class".to_vec(),
-        }];
+//         let new_properties = vec![Property {
+//             prop_type: PropertyType::ReferenceVec(10, new_class_id),
+//             required: true,
+//             name: b"entities".to_vec(),
+//             description: b"vector of entities of same class".to_vec(),
+//         }];
 
-        assert_ok!(TestModule::add_class_schema(
-            Origin::ROOT,
-            None,
-            new_class_id,
-            vec![],
-            new_properties
-        ));
+//         assert_ok!(TestModule::add_class_schema(
+//             Origin::ROOT,
+//             None,
+//             new_class_id,
+//             vec![],
+//             new_properties
+//         ));
 
-        let operations = vec![
-            Operation {
-                with_credential: Some(CREDENTIAL_ONE),
-                as_entity_maintainer: false,
-                operation_type: OperationType::CreateEntity(CreateEntityOperation {
-                    class_id: new_class_id,
-                }),
-            },
-            Operation {
-                with_credential: Some(CREDENTIAL_ONE),
-                as_entity_maintainer: false,
-                operation_type: OperationType::CreateEntity(CreateEntityOperation {
-                    class_id: new_class_id,
-                }),
-            },
-            Operation {
-                with_credential: Some(CREDENTIAL_ONE),
-                as_entity_maintainer: false,
-                operation_type: OperationType::CreateEntity(CreateEntityOperation {
-                    class_id: new_class_id,
-                }),
-            },
-            Operation {
-                with_credential: Some(CREDENTIAL_ONE),
-                as_entity_maintainer: true, // in prior operation CREDENTIAL_ONE became the maintainer
-                operation_type: OperationType::AddSchemaSupportToEntity(
-                    AddSchemaSupportToEntityOperation {
-                        entity_id: ParameterizedEntity::InternalEntityJustAdded(0),
-                        schema_id: 0,
-                        parametrized_property_values: vec![ParametrizedClassPropertyValue {
-                            in_class_index: 0,
-                            value: ParametrizedPropertyValue::InternalEntityVec(vec![
-                                ParameterizedEntity::InternalEntityJustAdded(1),
-                                ParameterizedEntity::InternalEntityJustAdded(2),
-                            ]),
-                        }],
-                    },
-                ),
-            },
-        ];
+//         let operations = vec![
+//             Operation {
+//                 with_credential: Some(CREDENTIAL_ONE),
+//                 as_entity_maintainer: false,
+//                 operation_type: OperationType::CreateEntity(CreateEntityOperation {
+//                     class_id: new_class_id,
+//                 }),
+//             },
+//             Operation {
+//                 with_credential: Some(CREDENTIAL_ONE),
+//                 as_entity_maintainer: false,
+//                 operation_type: OperationType::CreateEntity(CreateEntityOperation {
+//                     class_id: new_class_id,
+//                 }),
+//             },
+//             Operation {
+//                 with_credential: Some(CREDENTIAL_ONE),
+//                 as_entity_maintainer: false,
+//                 operation_type: OperationType::CreateEntity(CreateEntityOperation {
+//                     class_id: new_class_id,
+//                 }),
+//             },
+//             Operation {
+//                 with_credential: Some(CREDENTIAL_ONE),
+//                 as_entity_maintainer: true, // in prior operation CREDENTIAL_ONE became the maintainer
+//                 operation_type: OperationType::AddSchemaSupportToEntity(
+//                     AddSchemaSupportToEntityOperation {
+//                         entity_id: ParameterizedEntity::InternalEntityJustAdded(0),
+//                         schema_id: 0,
+//                         parametrized_property_values: vec![ParametrizedClassPropertyValue {
+//                             in_class_index: 0,
+//                             value: ParametrizedPropertyValue::InternalEntityVec(vec![
+//                                 ParameterizedEntity::InternalEntityJustAdded(1),
+//                                 ParameterizedEntity::InternalEntityJustAdded(2),
+//                             ]),
+//                         }],
+//                     },
+//                 ),
+//             },
+//         ];
 
-        let entity_id = next_entity_id();
+//         let entity_id = next_entity_id();
 
-        assert_ok!(TestModule::transaction(
-            Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
-            operations
-        ));
+//         assert_ok!(TestModule::transaction(
+//             Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ONE),
+//             operations
+//         ));
 
-        // three entities created
-        assert!(<EntityById<Runtime>>::exists(entity_id));
-        assert!(<EntityById<Runtime>>::exists(entity_id + 1));
-        assert!(<EntityById<Runtime>>::exists(entity_id + 2));
+//         // three entities created
+//         assert!(<EntityById<Runtime>>::exists(entity_id));
+//         assert!(<EntityById<Runtime>>::exists(entity_id + 1));
+//         assert!(<EntityById<Runtime>>::exists(entity_id + 2));
 
-        assert_eq!(
-            TestModule::entity_by_id(entity_id),
-            Entity::new(
-                new_class_id,
-                BTreeSet::from_iter(vec![SCHEMA_ID_0].into_iter()),
-                prop_value(
-                    0,
-                    PropertyValue::ReferenceVec(
-                        vec![entity_id + 1, entity_id + 2,],
-                        <Runtime as Trait>::Nonce::default()
-                    )
-                )
-            )
-        );
-    })
-}
+//         assert_eq!(
+//             TestModule::entity_by_id(entity_id),
+//             Entity::new(
+//                 new_class_id,
+//                 BTreeSet::from_iter(vec![SCHEMA_ID_0].into_iter()),
+//                 prop_value(
+//                     0,
+//                     PropertyValue::ReferenceVec(
+//                         vec![entity_id + 1, entity_id + 2,],
+//                         <Runtime as Trait>::Nonce::default()
+//                     )
+//                 )
+//             )
+//         );
+//     })
+// }
 
 // Add class schema
 // --------------------------------------
@@ -866,59 +866,59 @@ fn should_add_class_schema_when_both_prop_ids_and_new_props_passed() {
 // Update class schema status
 // --------------------------------------
 
-#[test]
-fn update_class_schema_status_success() {
-    with_test_externalities(|| {
-        let (class_id, schema_id) = create_class_with_schema();
+// #[test]
+// fn update_class_schema_status_success() {
+//     with_test_externalities(|| {
+//         let (class_id, schema_id) = create_class_with_schema();
 
-        // Check given class schema status before update performed
-        assert_eq!(
-            TestModule::class_by_id(class_id).is_active_schema(schema_id),
-            true
-        );
+//         // Check given class schema status before update performed
+//         assert_eq!(
+//             TestModule::class_by_id(class_id).is_active_schema(schema_id),
+//             true
+//         );
 
-        // Give members of GROUP_ZERO permission to add schemas
-        let update_schema_set = CredentialSet::from(vec![0]);
-        assert_ok!(TestModule::set_class_update_schemas_status_set(
-            Origin::ROOT,
-            None,
-            class_id,
-            update_schema_set
-        ));
+//         // Give members of GROUP_ZERO permission to add schemas
+//         let update_schema_set = CredentialSet::from(vec![0]);
+//         assert_ok!(TestModule::set_class_update_schemas_status_set(
+//             Origin::ROOT,
+//             None,
+//             class_id,
+//             update_schema_set
+//         ));
 
-        // Make class schema under given index inactive.
-        assert_ok!(TestModule::update_class_schema_status(
-            Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
-            Some(0),
-            class_id,
-            schema_id,
-            false
-        ));
+//         // Make class schema under given index inactive.
+//         assert_ok!(TestModule::update_class_schema_status(
+//             Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
+//             Some(0),
+//             class_id,
+//             schema_id,
+//             false
+//         ));
 
-        // Check given class schema status after update performed
-        assert_eq!(
-            TestModule::class_by_id(class_id).is_active_schema(schema_id),
-            false
-        );
-    })
-}
+//         // Check given class schema status after update performed
+//         assert_eq!(
+//             TestModule::class_by_id(class_id).is_active_schema(schema_id),
+//             false
+//         );
+//     })
+// }
 
-#[test]
-fn update_class_schema_status_class_not_found() {
-    with_test_externalities(|| {
-        // attemt to update class schema of nonexistent class
-        assert_err!(
-            TestModule::update_class_schema_status(
-                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
-                Some(0),
-                UNKNOWN_CLASS_ID,
-                UNKNOWN_SCHEMA_ID,
-                false
-            ),
-            ERROR_CLASS_NOT_FOUND
-        );
-    })
-}
+// #[test]
+// fn update_class_schema_status_class_not_found() {
+//     with_test_externalities(|| {
+//         // attemt to update class schema of nonexistent class
+//         assert_err!(
+//             TestModule::update_class_schema_status(
+//                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
+//                 Some(0),
+//                 UNKNOWN_CLASS_ID,
+//                 UNKNOWN_SCHEMA_ID,
+//                 false
+//             ),
+//             ERROR_CLASS_NOT_FOUND
+//         );
+//     })
+// }
 
 #[test]
 fn update_class_schema_status_not_in_update_class_schema_status_set() {
@@ -951,33 +951,33 @@ fn update_class_schema_status_not_in_update_class_schema_status_set() {
     })
 }
 
-#[test]
-fn update_class_schema_status_schema_not_found() {
-    with_test_externalities(|| {
-        let class_id = create_simple_class_with_default_permissions();
+// #[test]
+// fn update_class_schema_status_schema_not_found() {
+//     with_test_externalities(|| {
+//         let class_id = create_simple_class_with_default_permissions();
 
-        // give members of GROUP_ZERO permission to update schemas
-        let update_schema_set = CredentialSet::from(vec![0]);
-        assert_ok!(TestModule::set_class_update_schemas_status_set(
-            Origin::ROOT,
-            None,
-            class_id,
-            update_schema_set
-        ));
+//         // give members of GROUP_ZERO permission to update schemas
+//         let update_schema_set = CredentialSet::from(vec![0]);
+//         assert_ok!(TestModule::set_class_update_schemas_status_set(
+//             Origin::ROOT,
+//             None,
+//             class_id,
+//             update_schema_set
+//         ));
 
-        // attemt to update class schema of nonexistent class
-        assert_err!(
-            TestModule::update_class_schema_status(
-                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
-                Some(0),
-                class_id,
-                UNKNOWN_SCHEMA_ID,
-                false
-            ),
-            ERROR_UNKNOWN_CLASS_SCHEMA_ID
-        );
-    })
-}
+//         // attemt to update class schema of nonexistent class
+//         assert_err!(
+//             TestModule::update_class_schema_status(
+//                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
+//                 Some(0),
+//                 class_id,
+//                 UNKNOWN_SCHEMA_ID,
+//                 false
+//             ),
+//             ERROR_UNKNOWN_CLASS_SCHEMA_ID
+//         );
+//     })
+// }
 
 // Add schema support to entity
 // --------------------------------------
@@ -1617,19 +1617,19 @@ fn cannot_complete_insert_at_entity_property_vector_when_unknown_internal_entity
 // Remove entity
 // --------------------------------------
 
-#[test]
-fn remove_entity_successfully() {
-    with_test_externalities(|| {
-        let (_, _, entity_id) = create_class_with_schema_and_entity();
-        assert_ok!(TestModule::remove_entity(Origin::ROOT, None, entity_id));
-        // Ensure entity related storage was cleared successfully.
-        assert_eq!(
-            TestModule::entity_by_id(entity_id),
-            Entity::<Runtime>::default()
-        );
-        assert_eq!(TestModule::entity_maintainer_by_entity_id(entity_id), None);
-    })
-}
+// #[test]
+// fn remove_entity_successfully() {
+//     with_test_externalities(|| {
+//         let (_, _, entity_id) = create_class_with_schema_and_entity();
+//         assert_ok!(TestModule::remove_entity(Origin::ROOT, None, entity_id));
+//         // Ensure entity related storage was cleared successfully.
+//         assert_eq!(
+//             TestModule::entity_by_id(entity_id),
+//             Entity::<Runtime>::default()
+//         );
+//         assert_eq!(TestModule::entity_maintainer_by_entity_id(entity_id), None);
+//     })
+// }
 
 #[test]
 fn remove_entity_not_found() {

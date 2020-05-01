@@ -1,11 +1,13 @@
-use crate::constraint::*;
-use crate::credentials::*;
+use crate::errors::*;
+use crate::*;
 use codec::{Codec, Decode, Encode};
 use core::fmt::Debug;
 use runtime_primitives::traits::{MaybeSerializeDeserialize, Member, SimpleArithmetic};
+
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use srml_support::{dispatch, ensure, Parameter};
+use system::ensure_signed;
 
 /// Model of authentication manager.
 pub trait ActorAuthenticator: system::Trait + Debug {
@@ -36,19 +38,41 @@ pub trait ActorAuthenticator: system::Trait + Debug {
         + Ord;
 
     /// Authenticate account as being current authority.
-    fn authenticate_authority(origin: Self::Origin) -> dispatch::Result;
+    fn authenticate_authority(origin: Self::Origin) -> bool;
 
     /// Authenticate account as being given actor in given group.
     fn authenticate_actor_in_group(
-        origin: Self::Origin,
+        account_id: Self::AccountId,
         actor_id: Self::ActorId,
         group_id: Self::GroupId,
-    ) -> dispatch::Result;
+    ) -> bool;
+}
+
+pub fn ensure_actor_in_group_auth_success<T: ActorAuthenticator>(
+    account_id: T::AccountId,
+    actor_id: T::ActorId,
+    group_id: T::GroupId,
+) -> dispatch::Result {
+    ensure!(
+        T::authenticate_actor_in_group(account_id, actor_id, group_id),
+        ERROR_ACTOR_IN_GROUP_AUTH_FAILED
+    );
+    Ok(())
+}
+
+pub fn ensure_authority_auth_success<T: ActorAuthenticator>(
+    origin: T::Origin,
+) -> dispatch::Result {
+    ensure!(
+        T::authenticate_authority(origin),
+        ERROR_AUTHORITY_AUTH_FAILED
+    );
+    Ok(())
 }
 
 /// Identifier for a given actor in a given group.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ActorInGroupId<T: ActorAuthenticator> {
     pub actor_id: T::ActorId,
     pub group_id: T::GroupId,
@@ -71,7 +95,7 @@ pub enum EntityCreationLimit {
 }
 
 /// A voucher for entity creation
-#[derive(Encode, Decode, PartialEq, Default)]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Default)]
 pub struct EntityCreationVoucher {
     /// How many are allowed in total
     pub maximum_entities_count: u64,
@@ -116,217 +140,102 @@ impl Default for InitialControllerPolicy {
 
 /// Permissions for an instance of a Class in the versioned store.
 #[derive(Encode, Decode, Default, Eq, PartialEq, Clone, Debug)]
-pub struct ClassPermissions<ClassId, Credential, PropertyIndex, BlockNumber>
-where
-    ClassId: Ord,
-    Credential: Ord + Clone,
-    PropertyIndex: Ord,
-{
-    // concrete permissions
-    /// Permissions that are applied to entities of this class, define who in addition to
-    /// root origin can update entities of this class.
-    pub entity_permissions: EntityPermissions<Credential>,
-
+pub struct ClassPermissions {
     /// Whether to prevent everyone from creating an entity.
     ///
     /// This could be useful in order to quickly, and possibly temporarily, block new entity creation, without
     /// having to tear down `can_create_entities`.
-    pub entity_creation_blocked: bool,
+    entity_creation_blocked: bool,
 
     /// Policy for how to set the controller of a created entity.
     ///
     /// Example(s)
     /// - For a group that represents something like all possible publishers, then `InitialControllerPolicy::ActorInGroup` makes sense.
     /// - For a group that represents some stable set of curators, then `InitialControllerPolicy::Group` makes sense.
-    pub initial_controller_of_created_entities: InitialControllerPolicy,
+    initial_controller_of_created_entities: InitialControllerPolicy,
 
     /// Whether to prevent everyone from updating entity properties.
     ///
     /// This could be useful in order to quickly, and probably temporarily, block any editing of entities,
     /// rather than for example having to set, and later clear, `EntityPermission::frozen_for_controller`
     /// for a large number of entities.
-    pub all_entity_property_values_locked: bool,
-
-    /// Who can add new schemas in the versioned store for this class
-    pub add_schemas: CredentialSet<Credential>,
-
-    /// Who can activate/deactivate already existing schemas for this class
-    pub update_schemas_status: CredentialSet<Credential>,
-
-    /// Who can create new entities in the versioned store of this class
-    pub create_entities: CredentialSet<Credential>,
-
-    /// Who can remove entities from the versioned store of this class
-    pub remove_entities: CredentialSet<Credential>,
-
-    /// The type of constraint on referencing the class from other entities.
-    pub reference_constraint: ReferenceConstraint<ClassId, PropertyIndex>,
-
-    /// Who (in addition to root origin) can update all concrete permissions.
-    /// The admins can only be set by the root origin, "System".
-    pub admins: CredentialSet<Credential>,
-
-    // Block where permissions were changed
-    pub last_permissions_update: BlockNumber,
+    all_entity_property_values_locked: bool,
 
     /// The maximum number of entities which can be created.
-    pub maximum_entities_count: u64,
+    maximum_entities_count: u64,
 
     /// The current number of entities which exist.
-    pub current_number_of_entities: u64,
+    current_number_of_entities: u64,
 
     /// How many entities a given controller may create at most.
-    pub per_controller_entity_creation_limit: u64,
+    per_controller_entity_creation_limit: u64,
 }
 
-impl<ClassId, Credential, PropertyIndex, BlockNumber>
-    ClassPermissions<ClassId, Credential, PropertyIndex, BlockNumber>
-where
-    ClassId: Ord,
-    Credential: Ord + Clone,
-    PropertyIndex: Ord,
-{
-    /// Returns Ok if access_level is root origin or credential is in admins set, Err otherwise
-    pub fn is_admin(
-        class_permissions: &Self,
-        access_level: &AccessLevel<Credential>,
-    ) -> dispatch::Result {
-        match access_level {
-            AccessLevel::System => Ok(()),
-            AccessLevel::Credential(credential) => {
-                if class_permissions.admins.contains(credential) {
-                    Ok(())
-                } else {
-                    Err("NotInAdminsSet")
-                }
-            }
-            AccessLevel::Unspecified => Err("UnspecifiedActor"),
-            AccessLevel::EntityMaintainer => Err("AccessLevel::EntityMaintainer-UsedOutOfPlace"),
-        }
+impl ClassPermissions {
+    pub fn is_all_entity_property_values_locked(&self) -> bool {
+        self.all_entity_property_values_locked
     }
 
-    pub fn can_add_class_schema(
-        class_permissions: &Self,
-        access_level: &AccessLevel<Credential>,
-    ) -> dispatch::Result {
-        match access_level {
-            AccessLevel::System => Ok(()),
-            AccessLevel::Credential(credential) => {
-                ensure!(
-                    class_permissions.add_schemas.contains(credential),
-                    "NotInAddSchemasSet"
-                );
-                Ok(())
-            }
-            AccessLevel::Unspecified => Err("UnspecifiedActor"),
-            AccessLevel::EntityMaintainer => Err("AccessLevel::EntityMaintainer-UsedOutOfPlace"),
-        }
+    pub fn is_entity_creation_blocked(&self) -> bool {
+        self.entity_creation_blocked
     }
 
-    pub fn can_update_schema_status(
-        class_permissions: &Self,
-
-        access_level: &AccessLevel<Credential>,
-    ) -> dispatch::Result {
-        match access_level {
-            AccessLevel::System => Ok(()),
-            AccessLevel::Credential(credential) => {
-                ensure!(
-                    class_permissions.update_schemas_status.contains(credential),
-                    "NotInUpdateSchemasStatusSet"
-                );
-                Ok(())
-            }
-            AccessLevel::Unspecified => Err("UnspecifiedActor"),
-            AccessLevel::EntityMaintainer => Err("AccessLevel::EntityMaintainer-UsedOutOfPlace"),
-        }
+    pub fn set_entity_creation_blocked(&mut self, entity_creation_blocked: bool) {
+        self.entity_creation_blocked = entity_creation_blocked
     }
 
-    pub fn can_create_entity(
-        class_permissions: &Self,
-        access_level: &AccessLevel<Credential>,
-    ) -> dispatch::Result {
-        match access_level {
-            AccessLevel::System => Ok(()),
-            AccessLevel::Credential(credential) => {
-                if !class_permissions.entity_creation_blocked {
-                    Err("EntitiesCannotBeCreated")
-                } else if class_permissions.create_entities.contains(credential) {
-                    Ok(())
-                } else {
-                    Err("NotInCreateEntitiesSet")
-                }
-            }
-            AccessLevel::Unspecified => Err("UnspecifiedActor"),
-            AccessLevel::EntityMaintainer => Err("AccessLevel::EntityMaintainer-UsedOutOfPlace"),
-        }
+    pub fn set_all_entity_property_values_locked(&mut self, all_entity_property_values_locked: bool) {
+        self.all_entity_property_values_locked = all_entity_property_values_locked
     }
 
-    pub fn can_remove_entity(
-        class_permissions: &Self,
-        access_level: &AccessLevel<Credential>,
-    ) -> dispatch::Result {
-        match access_level {
-            AccessLevel::System => Ok(()),
-            AccessLevel::Credential(credential) => {
-                ensure!(
-                    class_permissions.remove_entities.contains(credential),
-                    "NotInRemoveEntitiesSet"
-                );
-                Ok(())
-            }
-            AccessLevel::Unspecified => Err("UnspecifiedActor"),
-            AccessLevel::EntityMaintainer => Err("AccessLevel::EntityMaintainer-UsedOutOfPlace"),
-        }
+    pub fn set_initial_controller_of_created_entities(&mut self, initial_controller_of_created_entities: InitialControllerPolicy) {
+        self.initial_controller_of_created_entities = initial_controller_of_created_entities
     }
 
-    pub fn can_update_entity(
-        class_permissions: &Self,
-        access_level: &AccessLevel<Credential>,
-    ) -> dispatch::Result {
-        match access_level {
-            AccessLevel::System => Ok(()),
-            AccessLevel::Credential(credential) => {
-                if class_permissions
-                    .entity_permissions
-                    .update
-                    .contains(credential)
-                {
-                    Ok(())
-                } else {
-                    Err("CredentialNotInEntityPermissionsUpdateSet")
-                }
-            }
-            AccessLevel::EntityMaintainer => {
-                if class_permissions
-                    .entity_permissions
-                    .maintainer_has_all_permissions
-                {
-                    Ok(())
-                } else {
-                    Err("MaintainerNotGivenAllPermissions")
-                }
-            }
-            _ => Err("UnknownActor"),
-        }
+    pub fn get_controller_entity_creation_limit(&self) -> u64 {
+        self.per_controller_entity_creation_limit
+    }
+
+    pub fn get_maximum_entities_count(&self) -> u64 {
+        self.maximum_entities_count
+    }
+
+    pub fn get_initial_controller_of_created_entities(&self) -> InitialControllerPolicy {
+        self.initial_controller_of_created_entities
+    }
+
+    pub fn ensure_maximum_entities_count_limit_not_reached(&self) -> dispatch::Result {
+        ensure!(
+            self.current_number_of_entities < self.maximum_entities_count,
+            ERROR_MAX_NUMBER_OF_ENTITIES_PER_CLASS_LIMIT_REACHED
+        );
+        Ok(())
     }
 }
 
 /// Owner of an entity.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum EntityController<T: ActorAuthenticator> {
     Group(T::GroupId),
     ActorInGroup(ActorInGroupId<T>),
 }
 
 impl<T: ActorAuthenticator> EntityController<T> {
-    pub fn from_group(group_id: T::GroupId) -> Self {
+    fn from_group(group_id: T::GroupId) -> Self {
         Self::Group(group_id)
     }
 
-    pub fn from_actor_in_group(actor_id: T::ActorId, group_id: T::GroupId) -> Self {
+    fn from_actor_in_group(actor_id: T::ActorId, group_id: T::GroupId) -> Self {
         Self::ActorInGroup(ActorInGroupId::from(actor_id, group_id))
+    }
+
+    pub fn from(initial_controller_policy: InitialControllerPolicy, actor_in_group: ActorInGroupId<T>) -> Self {
+        if let InitialControllerPolicy::ActorInGroup = initial_controller_policy {
+            EntityController::from_actor_in_group(actor_in_group.actor_id, actor_in_group.group_id)
+        } else {
+            EntityController::from_group(actor_in_group.group_id)
+        };
     }
 }
 
@@ -342,11 +251,12 @@ impl<T: ActorAuthenticator> Default for EntityController<T> {
 pub struct EntityPermission<T: ActorAuthenticator> {
     /// Current controller, which is initially set based on who created entity and
     /// `ClassPermission::initial_controller_of_created_entities` for corresponding class permission instance, but it can later be updated.
-    pub controller: EntityController<T>,
+    /// In case, when entity was created from authority call, controller is set to None
+    pub controller: Option<EntityController<T>>,
 
-    /// Controller is currently unable to mutate any property value.
+    /// Forbid groups to mutate any property value.
     /// Can be useful to use in concert with some curation censorship policy
-    pub frozen_for_controller: bool,
+    pub frozen: bool,
 
     /// Prevent from being referenced by any entity (including self-references).
     /// Can be useful to use in concert with some curation censorship policy,
@@ -355,16 +265,57 @@ pub struct EntityPermission<T: ActorAuthenticator> {
 }
 
 impl<T: ActorAuthenticator> EntityPermission<T> {
+    pub fn default_with_controller(controller: Option<EntityController<T>>) -> Self {
+        Self {
+            controller,
+            ..EntityPermission::default()
+        }
+    }
+
     pub fn set_conroller(&mut self, controller: EntityController<T>) {
         self.controller = controller
     }
 
-    pub fn set_frozen_for_controller(&mut self, frozen_for_controller: bool) {
-        self.frozen_for_controller = frozen_for_controller
+    pub fn is_controller(&self, actor_in_group: &ActorInGroupId<T>) -> bool {
+        match self.controller {
+            EntityController::Group(controller_group_id) => {
+                controller_group_id == actor_in_group.group_id
+            }
+            EntityController::ActorInGroup(controller_actor_in_group) => {
+                controller_actor_in_group == *actor_in_group
+            }
+            _ => false,
+        }
+    }
+
+    pub fn set_frozen(&mut self, frozen: bool) {
+        self.frozen = frozen
+    }
+
+    pub fn set_referencable(&mut self, referenceable: bool) {
+        self.referenceable = referenceable;
     }
 
     pub fn get_controller(&self) -> &EntityController<T> {
         &self.controller
+    }
+
+    pub fn ensure_group_can_remove_entity(access_level: EntityAccessLevel) -> dispatch::Result {
+        match access_level {
+            EntityAccessLevel::EntityController => Ok(()),
+            EntityAccessLevel::EntityControllerAndMaintainer => Ok(()),
+            _ => Err(ERROR_ENTITY_REMOVAL_ACCESS_DENIED),
+        }
+    }
+
+    pub fn ensure_group_can_add_schema_support(
+        access_level: EntityAccessLevel,
+    ) -> dispatch::Result {
+        match access_level {
+            EntityAccessLevel::EntityController => Ok(()),
+            EntityAccessLevel::EntityControllerAndMaintainer => Ok(()),
+            _ => Err(ERROR_ENTITY_ADD_SCHEMA_SUPPORT_ACCESS_DENIED),
+        }
     }
 }
 
@@ -372,29 +323,47 @@ impl<T: ActorAuthenticator> Default for EntityPermission<T> {
     fn default() -> Self {
         Self {
             controller: EntityController::<T>::default(),
-            frozen_for_controller: false,
+            frozen: false,
             referenceable: false,
         }
     }
 }
 
-//#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, Debug, Eq, PartialEq)]
-pub struct EntityPermissions<Credential>
-where
-    Credential: Ord,
-{
-    // Principals permitted to update any entity of the class which this permission is associated with.
-    pub update: CredentialSet<Credential>,
-    /// Wether the designated maintainer (if set) of an entity has permission to update it.
-    pub maintainer_has_all_permissions: bool,
+/// Type, derived from dispatchable call, identifies the caller
+#[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
+pub enum EntityAccessLevel {
+    /// Caller identified as the entity controller
+    EntityController,
+    /// Caller identified as the entity maintainer
+    EntityMaintainer,
+    /// Caller, that can act as controller and maintainer simultaneously
+    /// (can be useful, when controller and maintainer have features, that do not intersect)
+    EntityControllerAndMaintainer,
 }
 
-impl<Credential: Ord> Default for EntityPermissions<Credential> {
-    fn default() -> Self {
-        EntityPermissions {
-            maintainer_has_all_permissions: true,
-            update: CredentialSet::new(),
+impl EntityAccessLevel {
+    /// Derives the EntityAccessLevel the caller is attempting to act with.
+    /// It expects only signed or root origin.
+    pub fn derive_signed<T: Trait>(
+        origin: T::Origin,
+        entity_id: T::EntityId,
+        entity_permissions: &EntityPermission<T>,
+        actor_in_group: ActorInGroupId<T>,
+    ) -> Result<Self, &'static str> {
+        let account_id = ensure_signed(origin)?;
+        ensure_actor_in_group_auth_success::<T>(
+            account_id,
+            actor_in_group.actor_id,
+            actor_in_group.group_id,
+        )?;
+        match (
+            entity_permissions.is_controller(&actor_in_group),
+            <EntityMaintainers<T>>::exists(entity_id, actor_in_group.group_id),
+        ) {
+            (true, true) => Ok(Self::EntityControllerAndMaintainer),
+            (true, false) => Ok(Self::EntityController),
+            (false, true) => Ok(Self::EntityMaintainer),
+            (false, false) => Err(ERROR_ENTITY_ACCESS_DENIED),
         }
     }
 }

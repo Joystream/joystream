@@ -324,9 +324,7 @@ pub fn simple_test_entity_property_values<T: Trait>() -> BTreeMap<PropertyId, Pr
     property_values
 }
 
-pub fn create_simple_class(
-    permissions: ClassPermissionsType<Runtime>,
-) -> <Runtime as Trait>::ClassId {
+pub fn create_simple_class(permissions: ClassPermissions) -> <Runtime as Trait>::ClassId {
     let class_id = TestModule::next_class_id();
     assert_ok!(TestModule::create_class(
         Origin::signed(CLASS_PERMISSIONS_CREATOR1),
@@ -341,24 +339,12 @@ pub fn create_simple_class_with_default_permissions() -> <Runtime as Trait>::Cla
     create_simple_class(Default::default())
 }
 
-pub fn class_minimal() -> ClassPermissionsType<Runtime> {
-    ClassPermissions {
-        // remove special permissions for entity maintainers
-        entity_permissions: EntityPermissions {
-            maintainer_has_all_permissions: false,
-            ..Default::default()
-        },
-        ..Default::default()
-    }
+pub fn class_minimal() -> ClassPermissions {
+    ClassPermissions::default()
 }
 
-pub fn class_minimal_with_admins(
-    admins: Vec<<Runtime as Trait>::Credential>,
-) -> ClassPermissionsType<Runtime> {
-    ClassPermissions {
-        admins: admins.into(),
-        ..class_minimal()
-    }
+pub fn class_minimal_with_admins(admins: Vec<<Runtime as Trait>::Credential>) -> ClassPermissions {
+    ClassPermissions { ..class_minimal() }
 }
 
 pub fn next_entity_id() -> <Runtime as Trait>::EntityId {

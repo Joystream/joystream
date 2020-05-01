@@ -6,47 +6,90 @@ pub type PropertyId = u16;
 pub type SchemaId = u16;
 pub type VecMaxLength = u16;
 pub type TextMaxLength = u16;
-use crate::*;
+use crate::{permissions::EntityAccessLevel, *};
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Default, Decode, Clone, Copy, PartialEq, Eq, Debug)]
+struct IsLocked {
+    is_locked_from_maintainer: bool,
+    is_locked_from_controller: bool,
+}
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum PropertyType<T: Trait> {
     // Single value:
-    Bool,
-    Uint16,
-    Uint32,
-    Uint64,
-    Int16,
-    Int32,
-    Int64,
-    Text(TextMaxLength),
-    Reference(T::ClassId),
+    Bool(IsLocked),
+    Uint16(IsLocked),
+    Uint32(IsLocked),
+    Uint64(IsLocked),
+    Int16(IsLocked),
+    Int32(IsLocked),
+    Int64(IsLocked),
+    Text(TextMaxLength, IsLocked),
+    Reference(T::ClassId, IsLocked),
 
     // Vector of values.
     // The first value is the max length of this vector.
-    BoolVec(VecMaxLength),
-    Uint16Vec(VecMaxLength),
-    Uint32Vec(VecMaxLength),
-    Uint64Vec(VecMaxLength),
-    Int16Vec(VecMaxLength),
-    Int32Vec(VecMaxLength),
-    Int64Vec(VecMaxLength),
+    BoolVec(VecMaxLength, IsLocked),
+    Uint16Vec(VecMaxLength, IsLocked),
+    Uint32Vec(VecMaxLength, IsLocked),
+    Uint64Vec(VecMaxLength, IsLocked),
+    Int16Vec(VecMaxLength, IsLocked),
+    Int32Vec(VecMaxLength, IsLocked),
+    Int64Vec(VecMaxLength, IsLocked),
 
     /// The first value is the max length of this vector.
     /// The second value is the max length of every text item in this vector.
-    TextVec(VecMaxLength, TextMaxLength),
+    TextVec(VecMaxLength, TextMaxLength, IsLocked),
 
     /// The first value is the max length of this vector.
     /// The second ClassId value tells that an every element of this vector
     /// should be of a specific ClassId.
-    ReferenceVec(VecMaxLength, T::ClassId),
-    // External(ExternalProperty),
-    // ExternalVec(u16, ExternalProperty),
+    ReferenceVec(VecMaxLength, T::ClassId, IsLocked),
+}
+
+impl<T: Trait> PropertyType<T> {
+    fn get_locked(&self) -> &IsLocked {
+        match self {
+            // Single value:
+            PropertyType::Bool(is_locked)
+            | PropertyType::Uint16(is_locked)
+            | PropertyType::Uint32(is_locked)
+            | PropertyType::Uint64(is_locked)
+            | PropertyType::Int16(is_locked)
+            | PropertyType::Int32(is_locked)
+            | PropertyType::Int64(is_locked)
+            | PropertyType::Text(_, is_locked)
+            | PropertyType::Reference(_, is_locked)
+            | PropertyType::BoolVec(_, is_locked)
+            | PropertyType::Uint16Vec(_, is_locked)
+            | PropertyType::Uint32Vec(_, is_locked)
+            | PropertyType::Uint64Vec(_, is_locked)
+            | PropertyType::Int16Vec(_, is_locked)
+            | PropertyType::Int32Vec(_, is_locked)
+            | PropertyType::Int64Vec(_, is_locked)
+            | PropertyType::TextVec(_, _, is_locked)
+            | PropertyType::ReferenceVec(_, _, is_locked) => is_locked,
+        }
+    }
+
+    pub fn is_locked_from(&self, access_level: EntityAccessLevel) -> bool {
+        let locked_from_controller = self.get_locked().is_locked_from_controller;
+        let is_locked_from_maintainer = self.get_locked().is_locked_from_maintainer;
+        match access_level {
+            EntityAccessLevel::EntityControllerAndMaintainer => {
+                locked_from_controller && is_locked_from_maintainer
+            }
+            EntityAccessLevel::EntityController => locked_from_controller,
+            EntityAccessLevel::EntityMaintainer => is_locked_from_maintainer,
+        }
+    }
 }
 
 impl<T: Trait> Default for PropertyType<T> {
     fn default() -> Self {
-        PropertyType::Bool
+        PropertyType::Bool(IsLocked::default())
     }
 }
 
@@ -357,28 +400,32 @@ impl<T: Trait> Property<T> {
 
         let is_valid_len = match (value, entity_prop_value, &self.prop_type) {
             // Single values
-            (PV::Bool(_), PV::BoolVec(vec, _), PT::BoolVec(max_len)) => {
+            (PV::Bool(_), PV::BoolVec(vec, _), PT::BoolVec(max_len, _)) => {
                 validate_prop_vec_len_after_value_insert(vec, max_len)
             }
-            (PV::Uint16(_), PV::Uint16Vec(vec, _), PT::Uint16Vec(max_len)) => {
+            (PV::Uint16(_), PV::Uint16Vec(vec, _), PT::Uint16Vec(max_len, _)) => {
                 validate_prop_vec_len_after_value_insert(vec, max_len)
             }
-            (PV::Uint32(_), PV::Uint32Vec(vec, _), PT::Uint32Vec(max_len)) => {
+            (PV::Uint32(_), PV::Uint32Vec(vec, _), PT::Uint32Vec(max_len, _)) => {
                 validate_prop_vec_len_after_value_insert(vec, max_len)
             }
-            (PV::Uint64(_), PV::Uint64Vec(vec, _), PT::Uint64Vec(max_len)) => {
+            (PV::Uint64(_), PV::Uint64Vec(vec, _), PT::Uint64Vec(max_len, _)) => {
                 validate_prop_vec_len_after_value_insert(vec, max_len)
             }
-            (PV::Int16(_), PV::Int16Vec(vec, _), PT::Int16Vec(max_len)) => {
+            (PV::Int16(_), PV::Int16Vec(vec, _), PT::Int16Vec(max_len, _)) => {
                 validate_prop_vec_len_after_value_insert(vec, max_len)
             }
-            (PV::Int32(_), PV::Int32Vec(vec, _), PT::Int32Vec(max_len)) => {
+            (PV::Int32(_), PV::Int32Vec(vec, _), PT::Int32Vec(max_len, _)) => {
                 validate_prop_vec_len_after_value_insert(vec, max_len)
             }
-            (PV::Int64(_), PV::Int64Vec(vec, _), PT::Int64Vec(max_len)) => {
+            (PV::Int64(_), PV::Int64Vec(vec, _), PT::Int64Vec(max_len, _)) => {
                 validate_prop_vec_len_after_value_insert(vec, max_len)
             }
-            (PV::Text(text_item), PV::TextVec(vec, _), PT::TextVec(vec_max_len, text_max_len)) => {
+            (
+                PV::Text(text_item),
+                PV::TextVec(vec, _),
+                PT::TextVec(vec_max_len, text_max_len, _),
+            ) => {
                 if validate_prop_vec_len_after_value_insert(vec, vec_max_len) {
                     Self::validate_max_len_of_text(text_item, *text_max_len)?;
                     true
@@ -389,7 +436,7 @@ impl<T: Trait> Property<T> {
             (
                 PV::Reference(entity_id),
                 PV::ReferenceVec(vec, _),
-                PT::ReferenceVec(vec_max_len, class_id),
+                PT::ReferenceVec(vec_max_len, class_id, _),
             ) => {
                 Module::<T>::ensure_known_class_id(*class_id)?;
                 if validate_prop_vec_len_after_value_insert(vec, vec_max_len) {
@@ -413,7 +460,9 @@ impl<T: Trait> Property<T> {
 
     pub fn validate_max_len_if_text_prop(&self, value: &PropertyValue<T>) -> dispatch::Result {
         match (value, &self.prop_type) {
-            (PV::Text(text), PT::Text(max_len)) => Self::validate_max_len_of_text(text, *max_len),
+            (PV::Text(text), PT::Text(max_len, _)) => {
+                Self::validate_max_len_of_text(text, *max_len)
+            }
             _ => Ok(()),
         }
     }
@@ -429,15 +478,15 @@ impl<T: Trait> Property<T> {
         }
 
         let is_valid_len = match (value, &self.prop_type) {
-            (PV::BoolVec(vec, _), PT::BoolVec(max_len)) => validate_vec_len(vec, max_len),
-            (PV::Uint16Vec(vec, _), PT::Uint16Vec(max_len)) => validate_vec_len(vec, max_len),
-            (PV::Uint32Vec(vec, _), PT::Uint32Vec(max_len)) => validate_vec_len(vec, max_len),
-            (PV::Uint64Vec(vec, _), PT::Uint64Vec(max_len)) => validate_vec_len(vec, max_len),
-            (PV::Int16Vec(vec, _), PT::Int16Vec(max_len)) => validate_vec_len(vec, max_len),
-            (PV::Int32Vec(vec, _), PT::Int32Vec(max_len)) => validate_vec_len(vec, max_len),
-            (PV::Int64Vec(vec, _), PT::Int64Vec(max_len)) => validate_vec_len(vec, max_len),
+            (PV::BoolVec(vec, _), PT::BoolVec(max_len, _)) => validate_vec_len(vec, max_len),
+            (PV::Uint16Vec(vec, _), PT::Uint16Vec(max_len, _)) => validate_vec_len(vec, max_len),
+            (PV::Uint32Vec(vec, _), PT::Uint32Vec(max_len, _)) => validate_vec_len(vec, max_len),
+            (PV::Uint64Vec(vec, _), PT::Uint64Vec(max_len, _)) => validate_vec_len(vec, max_len),
+            (PV::Int16Vec(vec, _), PT::Int16Vec(max_len, _)) => validate_vec_len(vec, max_len),
+            (PV::Int32Vec(vec, _), PT::Int32Vec(max_len, _)) => validate_vec_len(vec, max_len),
+            (PV::Int64Vec(vec, _), PT::Int64Vec(max_len, _)) => validate_vec_len(vec, max_len),
 
-            (PV::TextVec(vec, _), PT::TextVec(vec_max_len, text_max_len)) => {
+            (PV::TextVec(vec, _), PT::TextVec(vec_max_len, text_max_len, _)) => {
                 if validate_vec_len(vec, vec_max_len) {
                     for text_item in vec.iter() {
                         Self::validate_max_len_of_text(text_item, *text_max_len)?;
@@ -448,7 +497,7 @@ impl<T: Trait> Property<T> {
                 }
             }
 
-            (PV::ReferenceVec(vec, _), PT::ReferenceVec(vec_max_len, class_id)) => {
+            (PV::ReferenceVec(vec, _), PT::ReferenceVec(vec_max_len, class_id, _)) => {
                 Module::<T>::ensure_known_class_id(*class_id)?;
                 if validate_vec_len(vec, vec_max_len) {
                     for entity_id in vec.iter() {
@@ -487,34 +536,32 @@ impl<T: Trait> Property<T> {
         }
         match (value, &self.prop_type) {
                 // Single values
-                (PV::Bool(_),     PT::Bool) |
-                (PV::Uint16(_),   PT::Uint16) |
-                (PV::Uint32(_),   PT::Uint32) |
-                (PV::Uint64(_),   PT::Uint64) |
-                (PV::Int16(_),    PT::Int16) |
-                (PV::Int32(_),    PT::Int32) |
-                (PV::Int64(_),    PT::Int64) |
-                (PV::Text(_),     PT::Text(_)) |
-                (PV::Reference(_), PT::Reference(_)) |
+                (PV::Bool(_),     PT::Bool(_)) |
+                (PV::Uint16(_),   PT::Uint16(_)) |
+                (PV::Uint32(_),   PT::Uint32(_)) |
+                (PV::Uint64(_),   PT::Uint64(_)) |
+                (PV::Int16(_),    PT::Int16(_)) |
+                (PV::Int32(_),    PT::Int32(_)) |
+                (PV::Int64(_),    PT::Int64(_)) |
+                (PV::Text(_),     PT::Text(_, _)) |
+                (PV::Reference(_), PT::Reference(_, _)) |
                 // Vectors:
-                (PV::BoolVec(_, _),     PT::BoolVec(_)) |
-                (PV::Uint16Vec(_, _),   PT::Uint16Vec(_)) |
-                (PV::Uint32Vec(_, _),   PT::Uint32Vec(_)) |
-                (PV::Uint64Vec(_, _),   PT::Uint64Vec(_)) |
-                (PV::Int16Vec(_, _),    PT::Int16Vec(_)) |
-                (PV::Int32Vec(_, _),    PT::Int32Vec(_)) |
-                (PV::Int64Vec(_, _),    PT::Int64Vec(_)) |
-                (PV::TextVec(_, _),     PT::TextVec(_, _)) |
-                (PV::ReferenceVec(_, _), PT::ReferenceVec(_, _)) => true,
-                // (PV::External(_), PT::External(_)) => true,
-                // (PV::ExternalVec(_), PT::ExternalVec(_, _)) => true,
+                (PV::BoolVec(_, _),     PT::BoolVec(_, _)) |
+                (PV::Uint16Vec(_, _),   PT::Uint16Vec(_, _)) |
+                (PV::Uint32Vec(_, _),   PT::Uint32Vec(_, _)) |
+                (PV::Uint64Vec(_, _),   PT::Uint64Vec(_, _)) |
+                (PV::Int16Vec(_, _),    PT::Int16Vec(_, _)) |
+                (PV::Int32Vec(_, _),    PT::Int32Vec(_, _)) |
+                (PV::Int64Vec(_, _),    PT::Int64Vec(_, _)) |
+                (PV::TextVec(_, _),     PT::TextVec(_, _, _)) |
+                (PV::ReferenceVec(_, _), PT::ReferenceVec(_, _, _)) => true,
                 _ => false,
             }
     }
 
     pub fn ensure_valid_internal_prop(&self, value: &PropertyValue<T>) -> dispatch::Result {
         match (value, &self.prop_type) {
-            (PV::Reference(entity_id), PT::Reference(class_id)) => {
+            (PV::Reference(entity_id), PT::Reference(class_id, _)) => {
                 Module::<T>::ensure_known_class_id(*class_id)?;
                 Module::<T>::ensure_known_entity_id(*entity_id)?;
                 let entity = Module::<T>::entity_by_id(entity_id);
