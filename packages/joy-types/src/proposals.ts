@@ -1,4 +1,4 @@
-import { Text, u32, Enum, getTypeRegistry, Tuple, GenericAccountId, u8, Vec, Option, Struct } from "@polkadot/types";
+import { Text, u32, Enum, getTypeRegistry, Tuple, GenericAccountId, u8, Vec, Option, Struct, Null } from "@polkadot/types";
 import { BlockNumber, Balance } from "@polkadot/types/interfaces";
 import { MemberId } from "./members";
 import { StakeId } from "./stake";
@@ -159,11 +159,44 @@ export class ActiveStake extends JoyStruct<IActiveStake> {
   }
 }
 
+export class ExecutionFailedStatus extends Struct {
+  constructor(value?: any) {
+    super(
+      {
+        error: "Vec<u8>",
+      },
+      value
+    );
+  }
+}
+
+class ExecutionFailed extends ExecutionFailedStatus {}
+
+export type ApprovedProposalStatuses = "PendingExecution" | "Executed" | "ExecutionFailed";
+
+export class ApprovedProposalStatus extends Enum {
+  constructor(value?: any, index?: number) {
+    super({
+      PendingExecution: Null,
+      Executed: Null,
+      ExecutionFailed
+    }, value, index);
+  }
+}
+export class Approved extends ApprovedProposalStatus {};
+
 export type ProposalDecisionStatuses = "Canceled" | "Vetoed" | "Rejected" | "Slashed" | "Expired" | "Approved";
 
 export class ProposalDecisionStatus extends Enum {
   constructor(value?: any, index?: number) {
-    super(["Canceled", "Vetoed", "Rejected", "Slashed", "Expired", "Approved"], value, index);
+    super({
+      Canceled: Null,
+      Vetoed: Null,
+      Rejected: Null,
+      Slashed: Null,
+      Expired: Null,
+      Approved
+    }, value, index);
   }
 }
 
