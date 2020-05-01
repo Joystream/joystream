@@ -1,18 +1,15 @@
 import React from "react";
 import { Item, Image, Header } from "semantic-ui-react";
 import { ParsedProposal } from "../runtime/transport";
-import { IdentityIcon } from '@polkadot/react-components';
+import { IdentityIcon } from "@polkadot/react-components";
 import { ExtendedProposalStatus } from "./ProposalDetails";
 
 type DetailsProps = {
-  proposal: ParsedProposal,
-  extendedStatus: ExtendedProposalStatus,
+  proposal: ParsedProposal;
+  extendedStatus: ExtendedProposalStatus;
 };
 
-export default function Details({
-  proposal,
-  extendedStatus
-}: DetailsProps) {
+export default function Details({ proposal, extendedStatus }: DetailsProps) {
   const { type, createdAt, proposer } = proposal;
   const { statusStr, substage, expiresIn } = extendedStatus;
   return (
@@ -20,11 +17,17 @@ export default function Details({
       <Item>
         <Item.Content>
           <Item.Extra>Proposed By:</Item.Extra>
-          { proposer.avatar_uri ?
-            <Image src={ proposer.avatar_uri } avatar floated="left" />
-            : <IdentityIcon className="image" value={proposer.root_account} size={40} /> }
-          <Header as="h4">{ proposer.handle }</Header>
-          <Item.Extra>{ createdAt.toLocaleString() }</Item.Extra>
+          <div className="details-profile">
+            {proposer.avatar_uri ? (
+              <Image src={proposer.avatar_uri} avatar floated="left" />
+            ) : (
+              <IdentityIcon className="image" value={proposer.root_account} size={40} />
+            )}
+            <Header as="h4" className="details-handle">
+              {proposer.handle}
+            </Header>
+          </div>
+          <Item.Extra>{createdAt.toLocaleString()}</Item.Extra>
         </Item.Content>
       </Item>
       <Item>
@@ -36,25 +39,25 @@ export default function Details({
       <Item>
         <Item.Content>
           <Item.Extra>Stage:</Item.Extra>
-          <Header as="h4">{ statusStr }</Header>
+          <Header as="h4">{statusStr}</Header>
         </Item.Content>
       </Item>
-      { (substage !== null) && (
+      {substage !== null && (
         <Item>
           <Item.Content>
             <Item.Extra>Substage:</Item.Extra>
-            <Header as="h4">{ substage }</Header>
+            <Header as="h4">{substage}</Header>
           </Item.Content>
         </Item>
-      ) }
-      { (expiresIn !== null) && (
+      )}
+      {expiresIn !== null && (
         <Item>
           <Item.Content>
             <Item.Extra>Expires in:</Item.Extra>
-            <Header as="h4">{`${ expiresIn.toLocaleString('en-US') } blocks`}</Header>
+            <Header as="h4">{`${expiresIn.toLocaleString("en-US")} blocks`}</Header>
           </Item.Content>
         </Item>
-      ) }
+      )}
     </Item.Group>
   );
 }
