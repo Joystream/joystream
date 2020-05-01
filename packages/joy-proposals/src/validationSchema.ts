@@ -186,8 +186,8 @@ const Validation: ValidationType = {
   SetContentWorkingGroupMintCapacity: {
     mintCapacity: Yup.number()
       .positive("Mint capacity should be positive.")
-      .min(MINT_CAPACITY_MIN, errorMessage("Mint capacity", MINT_CAPACITY_MIN, MIN_CAPACITY_MAX))
-      .max(MINT_CAPACITY_MAX, errorMessage("Mint capacity", MINT_CAPACITY_MIN, MIN_CAPACITY_MAX))
+      .min(MINT_CAPACITY_MIN, errorMessage("Mint capacity", MINT_CAPACITY_MIN, MINT_CAPACITY_MAX))
+      .max(MINT_CAPACITY_MAX, errorMessage("Mint capacity", MINT_CAPACITY_MIN, MINT_CAPACITY_MAX))
       .required("You need to specify a mint capacity.")
   },
   EvictStorageProvider: {
