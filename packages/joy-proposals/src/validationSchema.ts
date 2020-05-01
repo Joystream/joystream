@@ -1,5 +1,5 @@
 import * as Yup from "yup";
-import { StringSchema, NumberSchema } from "@types/yup";
+import { StringSchema, NumberSchema, MixedSchema } from "@types/yup";
 import { checkAddress } from "@polkadot/util-crypto";
 
 // Set Election Parameters
@@ -79,7 +79,7 @@ type ValidationType = {
     description: StringSchema<string>;
   };
   RuntimeUpgrade: {
-    WASM: StringSchema;
+    WASM: MixedSchema;
   };
   SetElectionParameters: {
     announcingPeriod: NumberSchema<number>;
@@ -130,7 +130,7 @@ const Validation: ValidationType = {
     description: Yup.string().required("Description is required!")
   },
   RuntimeUpgrade: {
-    WASM: Yup.string().required("The file is empty!")
+    WASM: Yup.mixed().required("A file is required")
   },
   SetElectionParameters: {
     announcingPeriod: Yup.number()
