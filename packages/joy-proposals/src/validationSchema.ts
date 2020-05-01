@@ -24,6 +24,10 @@ const COUNCIL_SIZE_MIN = 5;
 const MAX_VALIDATOR_COUNT_MIN = 1;
 const MAX_VALIDATOR_COUNT_MAX = 25;
 
+// Content Working Group Mint Capacity
+const MINT_CAPACITY_MIN = 4000;
+const MINT_CAPACITY_MAX = 12000;
+
 // Set Storage Role Parameters
 const MIN_STAKE_MIN = 1;
 const MIN_STAKE_MAX = 1000;
@@ -94,7 +98,9 @@ type ValidationType = {
   SetLead: {
     workingGroupLead: StringSchema<string>;
   };
-  SetContentWorkingGroupMintCapacity: {};
+  SetContentWorkingGroupMintCapacity: {
+    mintCapacity: NumberSchema<number>;
+  };
   EvictStorageProvider: {
     storageProvider: StringSchema<string | null>;
   };
@@ -177,7 +183,13 @@ const Validation: ValidationType = {
   SetLead: {
     workingGroupLead: Yup.string().required("Select a proposed lead!")
   },
-  SetContentWorkingGroupMintCapacity: {},
+  SetContentWorkingGroupMintCapacity: {
+    mintCapacity: Yup.number()
+      .positive("Mint capacity should be positive.")
+      .min(MINT_CAPACITY_MIN, errorMessage("Mint capacity", MINT_CAPACITY_MIN, MIN_CAPACITY_MAX))
+      .max(MINT_CAPACITY_MAX, errorMessage("Mint capacity", MINT_CAPACITY_MIN, MIN_CAPACITY_MAX))
+      .required("You need to specify a mint capacity.")
+  },
   EvictStorageProvider: {
     storageProvider: Yup.string()
       .nullable()
