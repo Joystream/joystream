@@ -1,0 +1,14 @@
+import { getConnection } from "typeorm";
+import * as shortid from "shortid";
+
+/**
+ * Fixes compatibility between typeorm and warthog by filling id, createById and version
+ * @param entity Instance of the entity
+ */
+export function insertToDatabase<T>(entity: T) {
+  entity["id"] = shortid.generate();
+  entity["createdById"] = shortid.generate();
+  entity["version"] = 1;
+
+  getConnection().getRepository(entity.constructor.name).insert(entity);
+}

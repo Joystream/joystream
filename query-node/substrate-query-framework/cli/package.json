@@ -1,0 +1,74 @@
+{
+  "name": "cli",
+  "description": "Query node cli",
+  "version": "0.0.0",
+  "author": "metmirr @metmirr",
+  "bin": {
+    "cli": "./bin/run"
+  },
+  "bugs": "https://github.com/joystream/joystream/joystream-query-node/cli/issues",
+  "dependencies": {
+    "@oclif/command": "^1.5.20",
+    "@oclif/config": "^1",
+    "@oclif/plugin-help": "^2",
+    "@polkadot/api": "^0.96.1",
+    "@polkadot/keyring": "^1.7.0-beta.5",
+    "@types/bn.js": "^4.11.5",
+    "@types/fs-extra": "^8.1.0",
+    "@types/mustache": "^4.0.1",
+    "bn.js": "^4.11.8",
+    "fs-extra": "^9.0.0",
+    "mustache": "^4.0.1",
+    "tslib": "^1",
+    "typeorm-model-generator": "^0.4.2",
+    "warthog": "^2.9.1"
+  },
+  "devDependencies": {
+    "@oclif/dev-cli": "^1",
+    "@oclif/test": "^1",
+    "@polkadot/ts": "^0.3.14",
+    "@types/chai": "^4",
+    "@types/mocha": "^5",
+    "@types/node": "^10",
+    "chai": "^4",
+    "eslint": "^5.13",
+    "eslint-config-oclif": "^3.1",
+    "eslint-config-oclif-typescript": "^0.1",
+    "globby": "^10",
+    "mocha": "^5",
+    "nyc": "^14",
+    "ts-node": "^8",
+    "typescript": "^3.3"
+  },
+  "engines": {
+    "node": ">=8.0.0"
+  },
+  "files": [
+    "/bin",
+    "/lib",
+    "/npm-shrinkwrap.json",
+    "/oclif.manifest.json"
+  ],
+  "homepage": "https://github.com/joystream/joystream/joystream-query-node/cli",
+  "keywords": [
+    "oclif"
+  ],
+  "license": "MIT",
+  "main": "lib/index.js",
+  "oclif": {
+    "commands": "./lib/commands",
+    "bin": "cli",
+    "plugins": [
+      "@oclif/plugin-help"
+    ]
+  },
+  "repository": "joystream/joystream/joystream-query-node/cli",
+  "scripts": {
+    "postpack": "rm -f oclif.manifest.json",
+    "posttest": "eslint . --ext .ts --config .eslintrc",
+    "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
+    "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
+    "version": "oclif-dev readme && git add README.md"
+  },
+  "types": "lib/index.d.ts"
+}

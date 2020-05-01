@@ -1,0 +1,54 @@
+import "reflect-metadata";
+import * as dotenv from 'dotenv';
+import * as shortid from 'shortid';
+import { createConnection, getConnection } from 'typeorm';
+import { {{typeRegistrator}} } from '{{{packageName}}}';
+import { QueryNodeManager } from "index-builder/lib";
+
+// Mappings use!
+export { QueryEvent } from "index-builder/lib";
+
+const handlers = require('../../mappings');
+
+/**
+ * Fixes compatibility between typeorm and warthog by filling id, createById and version
+ * @param entity Instance of the entity
+ */
+export function insertIntoDatabase(entity: any) {
+	entity["id"] = shortid.generate();
+	entity["createdById"] = shortid.generate();
+	entity["version"] = 1;
+
+	getConnection().getRepository(entity.constructor.name).insert(entity);
+}
+
+function getProcessingPack() {
+  let processingPack: { [key: string]: any } = {};
+
+  Object.keys(handlers).map((handler: string) => {
+    let eventName = handler.replace('handle', '');
+    processingPack[eventName] = handlers[handler];
+  });
+  return processingPack;
+}
+
+async function main() {
+  // Load from .env
+  dotenv.config({ path: '../../.env' });
+
+  const providerUri = process.env.WS_PROVIDER_ENDPOINT_URI;
+
+  if (!providerUri) {
+    console.error(
+      'WS_PROVIDER_ENDPOINT_URI environment variable is not set! Make sure you set it in your .env file or system wide.'
+    );
+    process.exit(1);
+  }
+
+  await createConnection();
+
+  const node = new QueryNodeManager(process);
+  node.start(providerUri, getProcessingPack(), {{typeRegistrator}});
+}
+
+main();
