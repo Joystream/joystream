@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { ProposalType } from "./runtime";
 import { Category } from "./Proposal/ChooseProposalType";
+import { useTransport, ParsedProposal, ProposalVote } from "./runtime";
+import { ProposalId } from "@joystream/types/proposals";
 
 export function includeKeys<T extends { [k: string]: any }>(obj: T, ...allowedKeys: string[]) {
   return Object.keys(obj).filter(objKey => {
@@ -22,7 +24,7 @@ export function slugify(str: string) {
     .trim();
 }
 
-export function usePromise<T>(promise: () => Promise<T>, defaultValue: T): [T, any, boolean] {
+export function usePromise<T>(promise: () => Promise<T>, defaultValue: T): [T, any, boolean, () => Promise<void|null>] {
   const [state, setState] = useState<{
     value: T;
     error: any;
@@ -44,8 +46,59 @@ export function usePromise<T>(promise: () => Promise<T>, defaultValue: T): [T, a
   }, []);
 
   const { value, error, isPending } = state;
-  return [value, error, isPending];
+  return [value, error, isPending, execute];
 }
+
+// Take advantage of polkadot api subscriptions to re-fetch proposal data and votes
+// each time there is some runtime change in the proposal
+export const useProposalSubscription = (id: ProposalId) => {
+  const transport = useTransport();
+  // State holding an "unsubscribe method"
+  const [unsubscribeProposal, setUnsubscribeProposal] = useState<(() => void) | null>(null);
+
+  const [proposal, proposalError, proposalLoading, refreshProposal] = usePromise<ParsedProposal>(
+    () => transport.proposalById(id),
+    {} as ParsedProposal
+  );
+
+  const [votes, votesError, votesLoading, refreshVotes] = usePromise<ProposalVote[]>(
+    () => transport.votes(id),
+    []
+  );
+
+  // Function to re-fetch the data using transport
+  const refreshProposalData = () => {
+    refreshProposal();
+    refreshVotes();
+  }
+
+  useEffect(() => {
+    // onMount...
+    let unmounted = false;
+    // Create the subscription
+    transport.proposalsEngine.proposals(id, refreshProposalData)
+      .then(unsubscribe => {
+        if (!unmounted) {
+          setUnsubscribeProposal(() => unsubscribe);
+        }
+        else {
+          unsubscribe(); // If already unmounted - unsubscribe immedietally!
+        }
+      });
+    return () => {
+      // onUnmount...
+      // Clean the subscription
+      unmounted = true;
+      if (unsubscribeProposal !== null) unsubscribeProposal();
+    }
+  }, []);
+
+  return {
+    proposal: { data: proposal, error: proposalError, loading: proposalLoading },
+    votes: { data: votes, error: votesError, loading: votesLoading }
+  }
+};
+
 
 export function calculateStake(type: ProposalType, issuance: number) {
   let stake = NaN;
