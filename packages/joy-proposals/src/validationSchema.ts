@@ -174,13 +174,14 @@ const Validation: ValidationType = {
       .max(VOTING_PERIOD_MAX, errorMessage("The voting period", VOTING_PERIOD_MIN, VOTING_PERIOD_MAX, "blocks")),
     minVotingStake: Yup.number()
       .required("All fields must be filled!")
+      .integer("This field must be an integer.")
       .min(
         MIN_VOTING_STAKE_MIN,
-        errorMessage("The minimum voting stake", MIN_VOTING_STAKE_MIN, MIN_VOTING_STAKE_MAX, "JOY")
+        errorMessage("The minimum voting stake", MIN_VOTING_STAKE_MIN, MIN_VOTING_STAKE_MAX, "tJOY")
       )
       .max(
         MIN_VOTING_STAKE_MAX,
-        errorMessage("The minimum voting stake", MIN_VOTING_STAKE_MIN, MIN_VOTING_STAKE_MAX, "JOY")
+        errorMessage("The minimum voting stake", MIN_VOTING_STAKE_MIN, MIN_VOTING_STAKE_MAX, "tJOY")
       ),
     revealingPeriod: Yup.number()
       .required("All fields must be filled!")
@@ -195,13 +196,14 @@ const Validation: ValidationType = {
       ),
     minCouncilStake: Yup.number()
       .required("All fields must be filled!")
+      .integer("This field must be an integer.")
       .min(
         MIN_COUNCIL_STAKE_MIN,
-        errorMessage("The minimum council stake", MIN_COUNCIL_STAKE_MIN, MIN_COUNCIL_STAKE_MAX, "JOY")
+        errorMessage("The minimum council stake", MIN_COUNCIL_STAKE_MIN, MIN_COUNCIL_STAKE_MAX, "tJOY")
       )
       .max(
         MIN_COUNCIL_STAKE_MAX,
-        errorMessage("The minimum council stake", MIN_COUNCIL_STAKE_MIN, MIN_COUNCIL_STAKE_MAX, "JOY")
+        errorMessage("The minimum council stake", MIN_COUNCIL_STAKE_MIN, MIN_COUNCIL_STAKE_MAX, "tJOY")
       ),
     newTermDuration: Yup.number()
       .required("All fields must be filled!")
@@ -228,6 +230,7 @@ const Validation: ValidationType = {
   Spending: {
     tokens: Yup.number()
       .positive("The token amount should be positive.")
+      .integer("This field must be an integer.")
       .max(TOKENS_MAX, errorMessage("The amount of tokens", TOKENS_MIN, TOKENS_MAX))
       .required("You need to specify an amount of tokens."),
     destinationAccount: Yup.string()
@@ -240,8 +243,9 @@ const Validation: ValidationType = {
   SetContentWorkingGroupMintCapacity: {
     mintCapacity: Yup.number()
       .positive("Mint capacity should be positive.")
-      .min(MINT_CAPACITY_MIN, errorMessage("Mint capacity", MINT_CAPACITY_MIN, MINT_CAPACITY_MAX, "JOY"))
-      .max(MINT_CAPACITY_MAX, errorMessage("Mint capacity", MINT_CAPACITY_MIN, MINT_CAPACITY_MAX, "JOY"))
+      .integer("This field must be an integer.")
+      .min(MINT_CAPACITY_MIN, errorMessage("Mint capacity", MINT_CAPACITY_MIN, MINT_CAPACITY_MAX, "tJOY"))
+      .max(MINT_CAPACITY_MAX, errorMessage("Mint capacity", MINT_CAPACITY_MIN, MINT_CAPACITY_MAX, "tJOY"))
       .required("You need to specify a mint capacity.")
   },
   EvictStorageProvider: {
@@ -266,13 +270,16 @@ const Validation: ValidationType = {
     min_stake: Yup.number()
       .required("All parameters are required")
       .positive("The minimum stake should be positive.")
+      .integer("This field must be an integer.")
       .max(MIN_STAKE_MAX, errorMessage("Minimum stake", MIN_STAKE_MIN, MIN_STAKE_MAX, "tJOY")),
     min_actors: Yup.number()
       .required("All parameters are required")
+      .integer("This field must be an integer.")
       .min(MIN_ACTORS_MIN, errorMessage("Minimum actors", MIN_ACTORS_MIN, MIN_ACTORS_MAX))
       .max(MIN_ACTORS_MAX, errorMessage("Minimum actors", MIN_ACTORS_MIN, MIN_ACTORS_MAX)),
     max_actors: Yup.number()
       .required("All parameters are required")
+      .integer("This field must be an integer.")
       .min(MAX_ACTORS_MIN, errorMessage("Max actors", MAX_ACTORS_MIN, MAX_ACTORS_MAX))
       .max(MAX_ACTORS_MAX, errorMessage("Max actors", MAX_ACTORS_MIN, MAX_ACTORS_MAX)),
     reward: Yup.number()
@@ -326,6 +333,7 @@ const Validation: ValidationType = {
     entry_request_fee: Yup.number()
       .required("All parameters are required")
       .positive("The entry request fee should be positive.")
+      .integer("This field must be an integer.")
       .max(ENTRY_REQUEST_FEE_MAX, `The entry request fee should be less than ${ENTRY_REQUEST_FEE_MAX} tJOY.`)
   }
 };
