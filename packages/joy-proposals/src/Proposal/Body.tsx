@@ -1,15 +1,23 @@
 import React from "react";
-import { Card, Header, Item } from "semantic-ui-react";
+import { Card, Header, Item, Button, Icon, Message } from "semantic-ui-react";
 import { ProposalType } from "../runtime/transport";
 import { blake2AsHex } from '@polkadot/util-crypto';
 import styled from 'styled-components';
 import AddressMini from '@polkadot/react-components/AddressMiniJoy';
+import TxButton from '@polkadot/joy-utils/TxButton';
+import { ProposalId } from "@joystream/types/proposals";
+import { MemberId } from "@joystream/types/members";
 
 type BodyProps = {
   title: string;
   description: string;
   params: any[];
   type: ProposalType;
+  iAmProposer: boolean;
+  proposalId: number | ProposalId;
+  proposerId: number | MemberId;
+  isCancellable: boolean;
+  cancellationFee: number;
 };
 
 function ProposedAddress(props: { address: string }) {
@@ -94,7 +102,17 @@ const ProposalParamValue = styled.div`
   color: #000;
 `;
 
-export default function Body({ type, title, description, params = [] }: BodyProps) {
+export default function Body({
+  type,
+  title,
+  description,
+  params = [],
+  iAmProposer,
+  proposalId,
+  proposerId,
+  isCancellable,
+  cancellationFee
+}: BodyProps) {
   const parseParams = paramParsers[type];
   const parsedParams = parseParams(params);
   const longestParamName: number = Object.keys(parsedParams).reduce((a, b) => b.length > a ? b.length : a, 0);
@@ -114,6 +132,30 @@ export default function Body({ type, title, description, params = [] }: BodyProp
             </ProposalParam>
           )) }
         </Item.Group>
+        { iAmProposer && isCancellable && (<>
+          <Message warning active>
+            <Message.Content>
+              <Message.Header>Proposal cancellation</Message.Header>
+              <p style={{ margin: '0.5em 0', padding: '0' }}>
+                You can only cancel your proposal while it's still in the Voting Period.
+              </p>
+              <p style={{ margin: '0.5em 0', padding: '0' }}>
+                The cancellation fee for this type of proposal is: <b>{ cancellationFee || 'NONE' }</b>
+              </p>
+              <Button.Group color="red">
+                <TxButton
+                  params={ [ proposerId, proposalId ] }
+                  tx={ "proposalsEngine.cancelProposal" }
+                  onClick={ sendTx => { sendTx(); } }
+                  className={'icon left labeled'}
+                  >
+                  <Icon name="cancel" inverted />
+                  Withdraw proposal
+                </TxButton>
+              </Button.Group>
+            </Message.Content>
+          </Message>
+          </>) }
       </Card.Content>
     </Card>
   );

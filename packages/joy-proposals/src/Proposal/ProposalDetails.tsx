@@ -88,8 +88,10 @@ function ProposalDetails({
   bestNumber,
   votesListState
 }: ProposalDetailsProps) {
-  const iAmCouncilMember = iAmMember && council && council.some(seat => seat.member.toString() === myAddress);
+  const iAmCouncilMember = Boolean(iAmMember && council && council.some(seat => seat.member.toString() === myAddress));
+  const iAmProposer = Boolean(iAmMember && myMemberId !== undefined && proposal.proposerId === myMemberId.toNumber());
   const extendedStatus = getExtendedStatus(proposal, bestNumber);
+  const isVotingPeriod = extendedStatus.periodStatus === 'Voting period';
   return (
     <Container className="Proposal">
       <Details proposal={proposal} extendedStatus={extendedStatus}/>
@@ -98,12 +100,17 @@ function ProposalDetails({
         title={ proposal.title }
         description={ proposal.description }
         params={ proposal.details }
+        iAmProposer={ iAmProposer }
+        proposalId={ proposalId }
+        proposerId={ proposal.proposerId }
+        isCancellable={ isVotingPeriod }
+        cancellationFee={ 0 } // TODO: We need to access it from the runtime!
         />
       { iAmCouncilMember && (
         <VotingSection
           proposalId={proposalId}
           memberId={ myMemberId as MemberId }
-          isVotingPeriod={ extendedStatus.periodStatus === 'Voting period' }/>
+          isVotingPeriod={ isVotingPeriod }/>
       ) }
       <PromiseComponent
         error={votesListState.error}
