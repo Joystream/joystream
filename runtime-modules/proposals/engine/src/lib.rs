@@ -315,6 +315,21 @@ decl_module! {
         /// Emits an event. Default substrate implementation.
         fn deposit_event() = default;
 
+        /// Exports const - the fee is applied when cancel the proposal. A fee would be slashed (burned).
+        const CancellationFee: BalanceOf<T> = T::CancellationFee::get();
+
+        /// Exports const -  the fee is applied when the proposal gets rejected. A fee would be slashed (burned).
+        const RejectionFee: BalanceOf<T> = T::RejectionFee::get();
+
+        /// Exports const -  max allowed proposal title length.
+        const TitleMaxLength: u32 = T::TitleMaxLength::get();
+
+        /// Exports const -  max allowed proposal description length.
+        const DescriptionMaxLength: u32 = T::DescriptionMaxLength::get();
+
+        /// Exports const -  max simultaneous active proposals number.
+        const MaxActiveProposalLimit: u32 = T::MaxActiveProposalLimit::get();
+
         /// Vote extrinsic. Conditions:  origin must allow votes.
         pub fn vote(origin, voter_id: MemberId<T>, proposal_id: T::ProposalId, vote: VoteKind)  {
             T::VoterOriginValidator::ensure_actor_origin(
