@@ -848,7 +848,10 @@ fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
 fn create_set_storage_role_parameters_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance_using_account_id(1, 500000);
-
+        let role_parameters = RoleParameters{
+            min_actors: 3,
+            ..RoleParameters::default()
+        };
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_set_storage_role_parameters_proposal(
@@ -857,7 +860,7 @@ fn create_set_storage_role_parameters_proposal_common_checks_succeed() {
                     b"title".to_vec(),
                     b"body".to_vec(),
                     None,
-                    RoleParameters::default(),
+                    role_parameters.clone(),
                 )
             },
             empty_stake_call: || {
@@ -867,7 +870,7 @@ fn create_set_storage_role_parameters_proposal_common_checks_succeed() {
                     b"title".to_vec(),
                     b"body".to_vec(),
                     None,
-                    RoleParameters::default(),
+                    role_parameters.clone(),
                 )
             },
             invalid_stake_call: || {
@@ -877,7 +880,7 @@ fn create_set_storage_role_parameters_proposal_common_checks_succeed() {
                     b"title".to_vec(),
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(5000u32)),
-                    RoleParameters::default(),
+                    role_parameters.clone(),
                 )
             },
             successful_call: || {
@@ -887,12 +890,12 @@ fn create_set_storage_role_parameters_proposal_common_checks_succeed() {
                     b"title".to_vec(),
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(100_000_u32)),
-                    RoleParameters::default(),
+                    role_parameters.clone(),
                 )
             },
             proposal_parameters:
                 crate::proposal_types::parameters::set_storage_role_parameters_proposal::<Test>(),
-            proposal_details: ProposalDetails::SetStorageRoleParameters(RoleParameters::default()),
+            proposal_details: ProposalDetails::SetStorageRoleParameters(role_parameters),
         };
         proposal_fixture.check_all();
     });

@@ -81,8 +81,7 @@ pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 const COUNCIL_MINT_MAX_BALANCE_PERCENT: u32 = 2;
 
 // 'Set working group mint capacity' proposal limit
-const CONTENT_WORKING_GROUP_MINT_CAPACITY_MAX_VALUE: u32 = 1000000;
-
+const CONTENT_WORKING_GROUP_MINT_CAPACITY_MAX_VALUE: u32 = 1_000_000;
 
 /// 'Proposals codex' substrate module Trait
 pub trait Trait:
@@ -741,12 +740,12 @@ impl<T: Trait> Module<T> {
         role_parameters: &RoleParameters<BalanceOfGovernanceCurrency<T>, T::BlockNumber>,
     ) -> Result<(), Error> {
         ensure!(
-            role_parameters.min_actors <= 5,
+            role_parameters.min_actors < 2,
             Error::InvalidStorageRoleParameterMinActors
         );
 
         ensure!(
-            role_parameters.max_actors >= 5,
+            role_parameters.max_actors >= 2,
             Error::InvalidStorageRoleParameterMaxActors
         );
 
@@ -810,12 +809,8 @@ impl<T: Trait> Module<T> {
             Error::InvalidStorageRoleParameterMinStake
         );
 
-        let max_min_stake: u32 = get_required_stake_by_fraction::<T>(1, 100)
-            .try_into()
-            .unwrap_or_default() as u32;
-
         ensure!(
-            role_parameters.min_stake < <BalanceOfGovernanceCurrency<T>>::from(max_min_stake),
+            role_parameters.min_stake <= <BalanceOfGovernanceCurrency<T>>::from(10_000_000),
             Error::InvalidStorageRoleParameterMinStake
         );
 
@@ -824,13 +819,8 @@ impl<T: Trait> Module<T> {
             Error::InvalidStorageRoleParameterEntryRequestFee
         );
 
-        let max_entry_request_fee: u32 = get_required_stake_by_fraction::<T>(1, 100)
-            .try_into()
-            .unwrap_or_default() as u32;
-
         ensure!(
-            role_parameters.entry_request_fee
-                < <BalanceOfGovernanceCurrency<T>>::from(max_entry_request_fee),
+            role_parameters.entry_request_fee <= <BalanceOfGovernanceCurrency<T>>::from(100_000),
             Error::InvalidStorageRoleParameterEntryRequestFee
         );
 
@@ -839,12 +829,8 @@ impl<T: Trait> Module<T> {
             Error::InvalidStorageRoleParameterReward
         );
 
-        let max_reward: u32 = get_required_stake_by_fraction::<T>(1, 1000)
-            .try_into()
-            .unwrap_or_default() as u32;
-
         ensure!(
-            role_parameters.reward < <BalanceOfGovernanceCurrency<T>>::from(max_reward),
+            role_parameters.reward < <BalanceOfGovernanceCurrency<T>>::from(1000),
             Error::InvalidStorageRoleParameterReward
         );
 
