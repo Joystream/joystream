@@ -59,10 +59,10 @@ describe('Validator count proposal network tests', () => {
     );
     const proposalNumber = await proposalPromise;
 
-    // Approving text proposal
-    const validatorProposalPromise = apiWrapper.expectProposalFinalized();
+    // Approving the proposal
+    const proposalExecutionPromise = apiWrapper.expectProposalFinalized();
     await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber);
-    await validatorProposalPromise;
+    await proposalExecutionPromise;
     const newValidatorCount: BN = await apiWrapper.getValidatorCount();
     assert(
       newValidatorCount.sub(validatorCount).eq(validatorCountIncrement),

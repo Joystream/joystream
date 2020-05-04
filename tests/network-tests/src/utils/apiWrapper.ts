@@ -4,6 +4,7 @@ import { Codec } from '@polkadot/types/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { UserInfo, PaidMembershipTerms, MemberId } from '@joystream/types/lib/members';
 import { Mint, MintId } from '@joystream/types/lib/mint';
+import { Lead, LeadId } from '@joystream/types/lib/content-working-group';
 import { Seat } from '@joystream/types';
 import { Balance, EventRecord } from '@polkadot/types/interfaces';
 import BN = require('bn.js');
@@ -136,6 +137,12 @@ export class ApiWrapper {
   public estimateProposeValidatorCountFee(title: string, description: string, stake: BN): BN {
     return this.estimateTxFee(
       this.api.tx.proposalsCodex.createSetValidatorCountProposal(stake, title, description, stake, stake)
+    );
+  }
+
+  public estimateProposeLeadFee(title: string, description: string, stake: BN, address: string): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createSetLeadProposal(stake, title, description, stake, { stake, address })
     );
   }
 
@@ -323,6 +330,26 @@ export class ApiWrapper {
     );
   }
 
+  public async proposeLead(
+    account: KeyringPair,
+    title: string,
+    description: string,
+    stake: BN,
+    leadAccount: KeyringPair
+  ): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn();
+    const leadMemberId: BN = (await this.getMemberIds(leadAccount.address))[0].toBn();
+    const addressString: string = leadAccount.address;
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createSetLeadProposal(memberId, title, description, stake, [
+        leadMemberId,
+        addressString,
+      ]),
+      account,
+      false
+    );
+  }
+
   public approveProposal(account: KeyringPair, memberId: BN, proposal: BN): Promise<void> {
     return this.sender.signAndSend(this.api.tx.proposalsEngine.vote(memberId, proposal, 'Approve'), account, false);
   }
@@ -400,13 +427,20 @@ export class ApiWrapper {
   }
 
   public async getWorkingGroupMintCapacity(): Promise<BN> {
-    const mintId = await this.api.query.contentWorkingGroup.mint();
+    const mintId: MintId = await this.api.query.contentWorkingGroup.mint<MintId>();
     const mintCodec = await this.api.query.minting.mints<Codec[]>(mintId);
-    const mint = (mintCodec[0] as unknown) as Mint;
+    const mint: Mint = (mintCodec[0] as unknown) as Mint;
     return mint.getField<Balance>('capacity');
   }
 
   public getValidatorCount(): Promise<BN> {
     return this.api.query.staking.validatorCount<u32>();
+  }
+
+  public async getCurrentLeadAddress(): Promise<string> {
+    const leadId: Option<LeadId> = await this.api.query.contentWorkingGroup.currentLeadId<Option<LeadId>>();
+    const leadCodec = await this.api.query.contentWorkingGroup.leadById<Codec[]>(leadId.unwrap());
+    const lead = (leadCodec[0] as unknown) as Lead;
+    return lead.role_account.toString();
   }
 }
