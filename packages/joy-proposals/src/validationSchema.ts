@@ -15,15 +15,15 @@ const DESCRIPTION_MAX_LENGTH = 5000;
 const ANNOUNCING_PERIOD_MAX = 43200;
 const ANNOUNCING_PERIOD_MIN = 14400;
 const VOTING_PERIOD_MIN = 14400;
-const VOTING_PERIOD_MAX = 43200;
+const VOTING_PERIOD_MAX = 28800;
 const REVEALING_PERIOD_MIN = 14400;
-const REVEALING_PERIOD_MAX = 43200;
+const REVEALING_PERIOD_MAX = 28800;
 const MIN_COUNCIL_STAKE_MIN = 0;
 const MIN_COUNCIL_STAKE_MAX = 100000;
 const NEW_TERM_DURATION_MIN = 14400;
 const NEW_TERM_DURATION_MAX = 43200;
-const CANDIDACY_LIMIT_MIN = 23000;
-const CANDIDACY_LIMIT_MAX = 45000;
+const CANDIDACY_LIMIT_MIN = 25;
+const CANDIDACY_LIMIT_MAX = 100;
 const COUNCIL_SIZE_MAX = 20;
 const COUNCIL_SIZE_MIN = 4;
 const MIN_VOTING_STAKE_MIN = 0;
@@ -31,25 +31,25 @@ const MIN_VOTING_STAKE_MAX = 100000;
 
 // Spending
 const TOKENS_MIN = 0;
-const TOKENS_MAX = percentageOfIssuance(2);
+const TOKENS_MAX = 2000000;
 
 // Set Validator Count
 const MAX_VALIDATOR_COUNT_MIN = 4;
-const MAX_VALIDATOR_COUNT_MAX = 1000;
+const MAX_VALIDATOR_COUNT_MAX = 100;
 
 // Content Working Group Mint Capacity
 const MINT_CAPACITY_MIN = 0;
-const MINT_CAPACITY_MAX = percentageOfIssuance(1);
+const MINT_CAPACITY_MAX = 1000000;
 
 // Set Storage Role Parameters
 const MIN_STAKE_MIN = 1;
 const MIN_STAKE_MAX = percentageOfIssuance(1);
 const MIN_ACTORS_MIN = 0;
-const MIN_ACTORS_MAX = 4;
-const MAX_ACTORS_MIN = 5;
+const MIN_ACTORS_MAX = 1;
+const MAX_ACTORS_MIN = 2;
 const MAX_ACTORS_MAX = 99;
 const REWARD_MIN = 0;
-const REWARD_MAX = percentageOfIssuance(0.1);
+const REWARD_MAX = 999;
 const REWARD_PERIOD_MIN = 600;
 const REWARD_PERIOD_MAX = 3600;
 const BONDING_PERIOD_MIN = 600;
@@ -61,7 +61,7 @@ const MIN_SERVICE_PERIOD_MAX = 28800;
 const STARTUP_GRACE_PERIOD_MIN = 600;
 const STARTUP_GRACE_PERIOD_MAX = 28800;
 // const ENTRY_REQUEST_FEE_MIN = 0;
-const ENTRY_REQUEST_FEE_MAX = percentageOfIssuance(1);
+const ENTRY_REQUEST_FEE_MAX = 100000;
 
 function errorMessage(name: string, min?: number | string, max?: number | string, unit?: string): string {
   return `${name} should be at least ${min} and no more than ${max} ${unit ? `${unit}.` : "."}`;
@@ -138,15 +138,15 @@ const Validation: ValidationType = {
   All: {
     title: Yup.string()
       .required("Title is required!")
-      .max(TITLE_MAX_LENGTH, "Title max length is 40 characters."),
+      .max(TITLE_MAX_LENGTH, `Title should be under ${TITLE_MAX_LENGTH} characters.`),
     rationale: Yup.string()
       .required("Rationale is required!")
-      .max(RATIONALE_MAX_LENGTH, "Description max length is 3000 characters.")
+      .max(RATIONALE_MAX_LENGTH, `Rationale should be under ${RATIONALE_MAX_LENGTH} characters.`)
   },
   Text: {
     description: Yup.string()
       .required("Description is required!")
-      .max(DESCRIPTION_MAX_LENGTH, "The description should be under 5000 characters.")
+      .max(DESCRIPTION_MAX_LENGTH, `Description should be under ${DESCRIPTION_MAX_LENGTH}`)
   },
   RuntimeUpgrade: {
     WASM: Yup.mixed().required("A file is required")
@@ -154,6 +154,7 @@ const Validation: ValidationType = {
   SetElectionParameters: {
     announcingPeriod: Yup.number()
       .required("All fields must be filled!")
+      .integer("This field must be an integer.")
       .min(
         ANNOUNCING_PERIOD_MIN,
         errorMessage("The announcing period", ANNOUNCING_PERIOD_MIN, ANNOUNCING_PERIOD_MAX, "blocks")
@@ -164,6 +165,7 @@ const Validation: ValidationType = {
       ),
     votingPeriod: Yup.number()
       .required("All fields must be filled!")
+      .integer("This field must be an integer.")
       .min(VOTING_PERIOD_MIN, errorMessage("The voting period", VOTING_PERIOD_MIN, VOTING_PERIOD_MAX, "blocks"))
       .max(VOTING_PERIOD_MAX, errorMessage("The voting period", VOTING_PERIOD_MIN, VOTING_PERIOD_MAX, "blocks")),
     minVotingStake: Yup.number()
@@ -178,6 +180,7 @@ const Validation: ValidationType = {
       ),
     revealingPeriod: Yup.number()
       .required("All fields must be filled!")
+      .integer("This field must be an integer.")
       .min(
         REVEALING_PERIOD_MIN,
         errorMessage("The revealing period", REVEALING_PERIOD_MIN, REVEALING_PERIOD_MAX, "blocks")
@@ -198,6 +201,7 @@ const Validation: ValidationType = {
       ),
     newTermDuration: Yup.number()
       .required("All fields must be filled!")
+      .integer("This field must be an integer.")
       .min(
         NEW_TERM_DURATION_MIN,
         errorMessage("The new term duration", NEW_TERM_DURATION_MIN, NEW_TERM_DURATION_MAX, "blocks")
@@ -208,10 +212,12 @@ const Validation: ValidationType = {
       ),
     candidacyLimit: Yup.number()
       .required("All fields must be filled!")
+      .integer("This field must be an integer.")
       .min(CANDIDACY_LIMIT_MIN, errorMessage("The candidacy limit", CANDIDACY_LIMIT_MIN, CANDIDACY_LIMIT_MAX))
       .max(CANDIDACY_LIMIT_MAX, errorMessage("The candidacy limit", CANDIDACY_LIMIT_MIN, CANDIDACY_LIMIT_MAX)),
     councilSize: Yup.number()
       .required("All fields must be filled!")
+      .integer("This field must be an integer.")
       .min(COUNCIL_SIZE_MIN, errorMessage("The council size", COUNCIL_SIZE_MIN, COUNCIL_SIZE_MAX))
       .max(COUNCIL_SIZE_MAX, errorMessage("The council size", COUNCIL_SIZE_MIN, COUNCIL_SIZE_MAX))
   },
@@ -242,6 +248,7 @@ const Validation: ValidationType = {
   SetValidatorCount: {
     maxValidatorCount: Yup.number()
       .required("Enter the max validator count")
+      .integer("This field must be an integer.")
       .min(
         MAX_VALIDATOR_COUNT_MIN,
         errorMessage("The max validator count", MAX_VALIDATOR_COUNT_MIN, MAX_VALIDATOR_COUNT_MAX)
@@ -271,14 +278,17 @@ const Validation: ValidationType = {
       .max(REWARD_MAX, errorMessage("Reward", REWARD_MIN, REWARD_MAX, "JOY")),
     reward_period: Yup.number()
       .required("All parameters are required")
+      .integer("This field must be an integer.")
       .positive("The reward should be positive.")
       .max(REWARD_PERIOD_MAX, errorMessage("The reward period", REWARD_PERIOD_MIN, REWARD_PERIOD_MAX, "blocks")),
     bonding_period: Yup.number()
       .required("All parameters are required")
+      .integer("This field must be an integer.")
       .min(BONDING_PERIOD_MIN, errorMessage("The bonding period", BONDING_PERIOD_MIN, BONDING_PERIOD_MAX, "blocks"))
       .max(BONDING_PERIOD_MAX, errorMessage("The bonding period", BONDING_PERIOD_MIN, BONDING_PERIOD_MAX, "blocks")),
     unbonding_period: Yup.number()
       .required("All parameters are required")
+      .integer("This field must be an integer.")
       .min(
         UNBONDING_PERIOD_MIN,
         errorMessage("The unbonding period", UNBONDING_PERIOD_MIN, UNBONDING_PERIOD_MAX, "blocks")
@@ -289,6 +299,7 @@ const Validation: ValidationType = {
       ),
     min_service_period: Yup.number()
       .required("All parameters are required")
+      .integer("This field must be an integer.")
       .min(
         MIN_SERVICE_PERIOD_MIN,
         errorMessage("The minimum service period", MIN_SERVICE_PERIOD_MIN, MIN_SERVICE_PERIOD_MAX, "blocks")
@@ -299,6 +310,7 @@ const Validation: ValidationType = {
       ),
     startup_grace_period: Yup.number()
       .required("All parameters are required")
+      .integer("This field must be an integer.")
       .min(
         STARTUP_GRACE_PERIOD_MIN,
         errorMessage("The startup grace period", STARTUP_GRACE_PERIOD_MIN, STARTUP_GRACE_PERIOD_MAX, "blocks")
