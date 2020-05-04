@@ -9,7 +9,9 @@ import Error from "./Error";
 import { withCalls } from "@polkadot/react-api";
 import { BlockNumber } from "@polkadot/types/interfaces";
 
-type ProposalFilter = "All" | "Active" | "Withdrawn" | "Approved" | "Rejected" | "Slashed";
+const filters = ["All", "Active", "Withdrawn", "Approved", "Rejected", "Slashed"] as const;
+
+type ProposalFilter = typeof filters[number];
 
 function filterProposals(filter: ProposalFilter, proposals: ParsedProposal[]) {
   if (filter === "All") {
@@ -22,6 +24,11 @@ function filterProposals(filter: ProposalFilter, proposals: ParsedProposal[]) {
   }
 
   return proposals.filter((prop: ParsedProposal) => {
+    // Either Active or undefined for some reason
+    if (prop.status.Finalized == null || prop.status.Finalized.proposalStatus == null) {
+      return false;
+    }
+
     const [finalStatus] = Object.keys(prop.status.Finalized.proposalStatus);
     return finalStatus === filter;
   });
@@ -63,36 +70,14 @@ function ProposalPreviewList({ bestNumber }: ProposalPreviewListProps) {
   return (
     <Container className="Proposal">
       <Menu tabular className="list-menu">
-        <Menu.Item
-          name={`all - ${(proposalsMap.get("All") as ParsedProposal[]).length} `}
-          active={activeFilter === "All"}
-          onClick={() => setActiveFilter("All")}
-        />
-        <Menu.Item
-          name={`withdrawn ${(proposalsMap.get("Withdrawn") as ParsedProposal[]).length}`}
-          active={activeFilter === "Withdrawn"}
-          onClick={() => setActiveFilter("Withdrawn")}
-        />
-        <Menu.Item
-          name={`active (${(proposalsMap.get("Active") as ParsedProposal[]).length})`}
-          active={activeFilter === "Active"}
-          onClick={() => setActiveFilter("Active")}
-        />
-        <Menu.Item
-          name={`approved ${(proposalsMap.get("Approved") as ParsedProposal[]).length}`}
-          active={activeFilter === "Approved"}
-          onClick={() => setActiveFilter("Approved")}
-        />
-        <Menu.Item
-          name={`rejected ${(proposalsMap.get("Rejected") as ParsedProposal[]).length}`}
-          active={activeFilter === "Rejected"}
-          onClick={() => setActiveFilter("Rejected")}
-        />
-        <Menu.Item
-          name={`slashed ${(proposalsMap.get("Slashed") as ParsedProposal[]).length}`}
-          active={activeFilter === "Slashed"}
-          onClick={() => setActiveFilter("Slashed")}
-        />
+        {filters.map((filter, idx) => (
+          <Menu.Item
+            key={`${filter} - ${idx}`}
+            name={`${filter.toLowerCase()} - ${(proposalsMap.get(filter) as ParsedProposal[]).length}`}
+            active={activeFilter === filter}
+            onClick={() => setActiveFilter(filter)}
+          />
+        ))}
       </Menu>
 
       <Card.Group>
