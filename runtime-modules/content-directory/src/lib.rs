@@ -942,35 +942,39 @@ impl<T: Trait> Module<T> {
                 // Throw an error if a property was not found on entity
                 // by an in-class index of a property update.
                 .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?;
+
             // Get class-level information about this property
             if let Some(class_prop) = class.properties.get(id as usize) {
-                if new_value != *current_prop_value {
-                    // Validate a new property value against the type of this property
-                    // and check any additional constraints like the length of a vector
-                    // if it's a vector property or the length of a text if it's a text property.
-                    class_prop.ensure_property_value_to_update_is_valid(&new_value)?;
-                    // Get unique entity ids to update rc
-                    if let (Some(entities_rc_to_increment), Some(entities_rc_to_decrement)) = (
-                        new_value.get_involved_entities(),
-                        current_prop_value.get_involved_entities(),
-                    ) {
-                        let (entities_rc_to_decrement, entities_rc_to_increment): (
-                            Vec<T::EntityId>,
-                            Vec<T::EntityId>,
-                        ) = entities_rc_to_decrement
-                            .into_iter()
-                            .zip(entities_rc_to_increment.into_iter())
-                            .filter(|(entity_rc_to_decrement, entity_rc_to_increment)| {
-                                entity_rc_to_decrement != entity_rc_to_increment
-                            })
-                            .unzip();
-                        entities_rc_to_increment_vec.push(entities_rc_to_increment);
-                        entities_rc_to_decrement_vec.push(entities_rc_to_decrement);
-                    }
-                    // Update a current prop value in a mutable vector, if a new value is valid.
-                    current_prop_value.update(new_value);
-                    updated = true;
+                // Skip update if new value is equal to the current one or class property type
+                // is locked for update from current actor
+                if new_value == *current_prop_value || class_prop.is_locked_from(access_level) {
+                    continue;
                 }
+                // Validate a new property value against the type of this property
+                // and check any additional constraints like the length of a vector
+                // if it's a vector property or the length of a text if it's a text property.
+                class_prop.ensure_property_value_to_update_is_valid(&new_value)?;
+                // Get unique entity ids to update rc
+                if let (Some(entities_rc_to_increment), Some(entities_rc_to_decrement)) = (
+                    new_value.get_involved_entities(),
+                    current_prop_value.get_involved_entities(),
+                ) {
+                    let (entities_rc_to_decrement, entities_rc_to_increment): (
+                        Vec<T::EntityId>,
+                        Vec<T::EntityId>,
+                    ) = entities_rc_to_decrement
+                        .into_iter()
+                        .zip(entities_rc_to_increment.into_iter())
+                        .filter(|(entity_rc_to_decrement, entity_rc_to_increment)| {
+                            entity_rc_to_decrement != entity_rc_to_increment
+                        })
+                        .unzip();
+                    entities_rc_to_increment_vec.push(entities_rc_to_increment);
+                    entities_rc_to_decrement_vec.push(entities_rc_to_decrement);
+                }
+                // Update a current prop value in a mutable vector, if a new value is valid.
+                current_prop_value.update(new_value);
+                updated = true;
             }
         }
 
@@ -1006,6 +1010,12 @@ impl<T: Trait> Module<T> {
             // Throw an error if a property was not found on entity
             // by an in-class index of a property.
             .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?;
+
+        Self::ensure_class_property_type_unlocked_for(
+            entity.class_id,
+            in_class_schema_property_id,
+            access_level,
+        )?;
 
         // Ensure prop value under given class schema property id is vector
         ensure!(
@@ -1044,7 +1054,11 @@ impl<T: Trait> Module<T> {
             // Throw an error if a property was not found on entity
             // by an in-class index of a property.
             .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?;
-
+        Self::ensure_class_property_type_unlocked_for(
+            entity.class_id,
+            in_class_schema_property_id,
+            access_level,
+        )?;
         // Ensure property value vector nonces equality to avoid possible data races,
         // when performing vector specific operations
         current_prop_value.ensure_nonce_equality(nonce)?;
@@ -1074,19 +1088,14 @@ impl<T: Trait> Module<T> {
         nonce: T::Nonce,
         access_level: Option<EntityAccessLevel>,
     ) -> dispatch::Result {
-        let class = Self::class_by_id(entity.class_id);
-
-        // Get class-level information about this property
-        let class_prop = class
-            .properties
-            .get(in_class_schema_property_id as usize)
-            // Throw an error if a property was not found on entity
-            // by an in-class index of a property update.
-            .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?;
-
         // Try to find a current property value in the entity
         // by matching its id to the id of a property with an updated value.
         if let Some(entity_prop_value) = entity.values.get(&in_class_schema_property_id) {
+            let class_prop = Self::ensure_class_property_type_unlocked_for(
+                entity.class_id,
+                in_class_schema_property_id,
+                access_level,
+            )?;
             // Ensure property value vector nonces equality to avoid possible data races,
             // when performing vector specific operations
             entity_prop_value.ensure_nonce_equality(nonce)?;
@@ -1131,36 +1140,26 @@ impl<T: Trait> Module<T> {
         Ok(Self::class_by_id(class_id))
     }
 
-    /// Derives the access level of the caller.
-    /// If the peridcate passes the callback is invoked. Returns result of the callback
-    /// or error from failed predicate.
-    // fn if_entity_permissions_satisfied<Predicate, Callback, R>(
-    //     origin: T::Origin,
-    //     actor_in_group: ActorInGroupId<T>,
-    //     // entity permissions to test
-    //     entity_id: T::EntityId,
-    //     // predicate to test
-    //     predicate: Predicate,
-    //     // callback to invoke if predicate passes
-    //     callback: Callback,
-    // ) -> Result<R, &'static str>
-    // where
-    //     Predicate:
-    //         FnOnce(&EntityPermission<T>, EntityAccessLevel) -> dispatch::Result,
-    //     Callback: FnOnce(
-    //         &EntityPermission<T>,
-    //         EntityAccessLevel,
-    //     ) -> Result<R, &'static str>,
-    // {
-    //     Self::ensure_known_entity_id(entity_id)?;
-    //     let entity = Self::entity_by_id(entity_id);
-    //     let access_level =
-    //         EntityAccessLevel::derive_signed(origin, entity_id, entity.get_permissions(), actor_in_group)?;
-    //     let class = Self::ensure_class_exists(class_id)?;
-    //     let class_permissions = class.get_permissions();
-    //     predicate(class_permissions, &access_level)?;
-    //     callback(class_permissions, &access_level)
-    // }
+    pub fn ensure_class_property_type_unlocked_for(
+        class_id: T::ClassId,
+        in_class_schema_property_id: PropertyId,
+        entity_access_level: Option<EntityAccessLevel>,
+    ) -> Result<Property<T>, &'static str> {
+        let class = Self::class_by_id(class_id);
+
+        // Get class-level information about this property
+        let class_prop = class
+            .properties
+            .get(in_class_schema_property_id as usize)
+            // Throw an error if a property was not found on entity
+            // by an in-class index of a property update.
+            .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?;
+        ensure!(
+            !class_prop.is_locked_from(entity_access_level),
+            ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR
+        );
+        Ok(class_prop.to_owned())
+    }
 
     fn get_class_id_by_entity_id(entity_id: T::EntityId) -> Result<T::ClassId, &'static str> {
         // use a utility method on versioned_store module

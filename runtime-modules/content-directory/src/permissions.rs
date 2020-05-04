@@ -353,7 +353,7 @@ impl<T: ActorAuthenticator> Default for EntityPermission<T> {
 }
 
 /// Type, derived from dispatchable call, identifies the caller
-#[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]
+#[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Copy, Debug)]
 pub enum EntityAccessLevel {
     /// Caller identified as the entity controller
     EntityController,

@@ -386,6 +386,14 @@ impl<T: Trait> Property<T> {
         Ok(())
     }
 
+    pub fn is_locked_from(&self, entity_access_level: Option<EntityAccessLevel>) -> bool {
+        if let Some(entity_access_level) = entity_access_level {
+            self.prop_type.is_locked_from(entity_access_level)
+        } else {
+            false
+        }
+    }
+
     pub fn ensure_prop_value_can_be_inserted_at_prop_vec(
         &self,
         value: &PropertyValue<T>,

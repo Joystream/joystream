@@ -73,3 +73,5 @@ pub const ERROR_ENTITY_ADD_SCHEMA_SUPPORT_ACCESS_DENIED: &str =
     "Add entity schema support access denied";
 pub const ERROR_CLASS_ACCESS_DENIED: &str = "Class access denied";
 pub const ERROR_ENTITY_ACCESS_DENIED: &str = "Entity access denied";
+pub const ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR: &str =
+    "Given class property type is locked for updating";
