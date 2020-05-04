@@ -262,7 +262,7 @@ const Validation: ValidationType = {
     min_stake: Yup.number()
       .required("All parameters are required")
       .positive("The minimum stake should be positive.")
-      .max(MIN_STAKE_MAX, errorMessage("Minimum stake", MIN_STAKE_MIN, MIN_STAKE_MAX, "JOY")),
+      .max(MIN_STAKE_MAX, errorMessage("Minimum stake", MIN_STAKE_MIN, MIN_STAKE_MAX, "tJOY")),
     min_actors: Yup.number()
       .required("All parameters are required")
       .min(MIN_ACTORS_MIN, errorMessage("Minimum actors", MIN_ACTORS_MIN, MIN_ACTORS_MAX))
@@ -274,8 +274,8 @@ const Validation: ValidationType = {
     reward: Yup.number()
       .required("All parameters are required")
       .positive()
-      .min(REWARD_MIN, errorMessage("Reward", REWARD_MIN, REWARD_MAX, "JOY"))
-      .max(REWARD_MAX, errorMessage("Reward", REWARD_MIN, REWARD_MAX, "JOY")),
+      .min(REWARD_MIN, errorMessage("Reward", REWARD_MIN, REWARD_MAX, "tJOY"))
+      .max(REWARD_MAX, errorMessage("Reward", REWARD_MIN, REWARD_MAX, "tJOY")),
     reward_period: Yup.number()
       .required("All parameters are required")
       .integer("This field must be an integer.")
@@ -322,7 +322,7 @@ const Validation: ValidationType = {
     entry_request_fee: Yup.number()
       .required("All parameters are required")
       .positive("The entry request fee should be positive.")
-      .max(ENTRY_REQUEST_FEE_MAX, `The entry request fee should be less than ${ENTRY_REQUEST_FEE_MAX} JOY.`)
+      .max(ENTRY_REQUEST_FEE_MAX, `The entry request fee should be less than ${ENTRY_REQUEST_FEE_MAX} tJOY.`)
   }
 };
 
