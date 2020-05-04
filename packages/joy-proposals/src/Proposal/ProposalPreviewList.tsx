@@ -1,47 +1,60 @@
-import React from "react";
-import { Card, Container } from "semantic-ui-react";
+import React, { useState } from "react";
+import { Card, Container, Menu } from "semantic-ui-react";
 
 import ProposalPreview from "./ProposalPreview";
 import { useTransport, ParsedProposal } from "../runtime";
 import { usePromise } from "../utils";
 import Loading from "./Loading";
 import Error from "./Error";
-import { withCalls } from '@polkadot/react-api';
-import { BlockNumber } from '@polkadot/types/interfaces';
+import { withCalls } from "@polkadot/react-api";
+import { BlockNumber } from "@polkadot/types/interfaces";
 
-// type ProposalFilter = "all" | "active" | "withdrawn" | "approved" | "rejected" | "slashed";
+const filters = ["All", "Active", "Canceled", "Approved", "Rejected", "Slashed"] as const;
 
-// function filterProposals(filter: ProposalFilter, proposals: ParsedProposal[]) {
-//   if (filter === "all") {
-//     return proposals;
-//   } else if (filter === "active") {
-//     return proposals.filter((prop: ParsedProposal) => prop.details.stage === "active");
-//   }
+type ProposalFilter = typeof filters[number];
 
-//   return proposals.filter((prop: ParsedProposal) => prop.finalized === filter);
-// }
+function filterProposals(filter: ProposalFilter, proposals: ParsedProposal[]) {
+  if (filter === "All") {
+    return proposals;
+  } else if (filter === "Active") {
+    return proposals.filter((prop: ParsedProposal) => {
+      const [activeOrFinalized] = Object.keys(prop.status);
+      return activeOrFinalized === "Active";
+    });
+  }
 
-// function mapFromProposals(proposals: ParsedProposal[]) {
-//   const proposalsMap = new Map();
+  return proposals.filter((prop: ParsedProposal) => {
+    // Either Active or undefined for some reason
+    if (prop.status.Finalized == null || prop.status.Finalized.proposalStatus == null) {
+      return false;
+    }
 
-//   proposalsMap.set("all", proposals);
-//   proposalsMap.set("withdrawn", filterProposals("withdrawn", proposals));
-//   proposalsMap.set("active", filterProposals("withdrawn", proposals));
-//   proposalsMap.set("approved", filterProposals("approved", proposals));
-//   proposalsMap.set("rejected", filterProposals("rejected", proposals));
-//   proposalsMap.set("slashed", filterProposals("slashed", proposals));
+    const [finalStatus] = Object.keys(prop.status.Finalized.proposalStatus);
+    return finalStatus === filter;
+  });
+}
 
-//   return proposalsMap;
-// }
+function mapFromProposals(proposals: ParsedProposal[]) {
+  const proposalsMap = new Map<ProposalFilter, ParsedProposal[]>();
+
+  proposalsMap.set("All", proposals);
+  proposalsMap.set("Canceled", filterProposals("Canceled", proposals));
+  proposalsMap.set("Active", filterProposals("Active", proposals));
+  proposalsMap.set("Approved", filterProposals("Approved", proposals));
+  proposalsMap.set("Rejected", filterProposals("Rejected", proposals));
+  proposalsMap.set("Slashed", filterProposals("Slashed", proposals));
+
+  return proposalsMap;
+}
 
 type ProposalPreviewListProps = {
-  bestNumber?: BlockNumber
+  bestNumber?: BlockNumber;
 };
 
 function ProposalPreviewList({ bestNumber }: ProposalPreviewListProps) {
   const transport = useTransport();
-
   const [proposals, error, loading] = usePromise<ParsedProposal[]>(() => transport.proposals(), []);
+  const [activeFilter, setActiveFilter] = useState<ProposalFilter>("All");
 
   if (loading && !error) {
     return <Loading text="Fetching proposals..." />;
@@ -49,56 +62,33 @@ function ProposalPreviewList({ bestNumber }: ProposalPreviewListProps) {
     return <Error error={error} />;
   }
 
+  const proposalsMap = mapFromProposals(proposals);
+
   console.log({ proposals, error, loading });
+  console.log(proposalsMap);
 
   return (
     <Container className="Proposal">
-      {/* <Menu tabular className="list-menu">
-        <Menu.Item
-          name={`all - ${proposalsMap.get("withdrawn").length} `}
-          active={activeFilter === "all"}
-          onClick={() => setActiveFilter("all")}
-        />
-        <Menu.Item
-          name={`withdrawn (${proposalsMap.get("withdrawn").length})`}
-          active={activeFilter === "withdrawn"}
-          onClick={() => setActiveFilter("withdrawn")}
-        />
-        <Menu.Item
-          name={`active (${proposalsMap.get("active").length})`}
-          active={activeFilter === "active"}
-          onClick={() => setActiveFilter("active")}
-        />
-        <Menu.Item
-          name={`approved (${proposalsMap.get("approved").length})`}
-          active={activeFilter === "approved"}
-          onClick={() => setActiveFilter("approved")}
-        />
-        <Menu.Item
-          name={`rejected (${proposalsMap.get("rejected").length})`}
-          active={activeFilter === "rejected"}
-          onClick={() => setActiveFilter("rejected")}
-        />
-        <Menu.Item
-          name={`slashed (${proposalsMap.get("slashed").length})`}
-          active={activeFilter === "slashed"}
-          onClick={() => setActiveFilter("slashed")}
-        />
-      </Menu> */}
+      <Menu tabular className="list-menu">
+        {filters.map((filter, idx) => (
+          <Menu.Item
+            key={`${filter} - ${idx}`}
+            name={`${filter.toLowerCase()} - ${(proposalsMap.get(filter) as ParsedProposal[]).length}`}
+            active={activeFilter === filter}
+            onClick={() => setActiveFilter(filter)}
+          />
+        ))}
+      </Menu>
 
       <Card.Group>
-        {proposals.map((prop: ParsedProposal, idx: number) => (
-          <ProposalPreview
-            key={`${prop.title}-${idx}`}
-            proposal={prop}
-            bestNumber={ bestNumber }
-          />
+        {(proposalsMap.get(activeFilter) as ParsedProposal[]).map((prop: ParsedProposal, idx: number) => (
+          <ProposalPreview key={`${prop.title}-${idx}`} proposal={prop} bestNumber={bestNumber} />
         ))}
       </Card.Group>
     </Container>
   );
 }
 
-export default withCalls<ProposalPreviewListProps>(
-  ['derive.chain.bestNumber', { propName: 'bestNumber' }]
-)(ProposalPreviewList);
+export default withCalls<ProposalPreviewListProps>(["derive.chain.bestNumber", { propName: "bestNumber" }])(
+  ProposalPreviewList
+);
