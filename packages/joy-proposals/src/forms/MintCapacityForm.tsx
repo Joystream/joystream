@@ -10,26 +10,27 @@ import {
   ProposalFormExportProps,
   ProposalFormContainerProps,
   ProposalFormInnerProps
-} from './GenericProposalForm';
+} from "./GenericProposalForm";
+import Validation from "../validationSchema";
 import { InputFormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
 
 type FormValues = GenericFormValues & {
-  capacity: string
-}
+  capacity: string;
+};
 
 const defaultValues: FormValues = {
   ...genericFormDefaultValues,
-  capacity: '',
+  capacity: ""
 };
 
-type MintCapacityGroup = 'Council' | 'Content Working Group';
+type MintCapacityGroup = "Council" | "Content Working Group";
 
 // Aditional props coming all the way from export comonent into the inner form.
 type FormAdditionalProps = {
-  mintCapacityGroup: MintCapacityGroup,
-  txMethod: string
+  mintCapacityGroup: MintCapacityGroup;
+  txMethod: string;
 };
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
@@ -43,39 +44,33 @@ const MintCapacityForm: React.FunctionComponent<FormInnerProps> = props => {
       {...props}
       txMethod={txMethod}
       requiredStakePercent={0.25}
-      submitParams={[
-        props.myMemberId,
-        values.title,
-        values.rationale,
-        '{STAKE}',
-        values.capacity
-      ]}
+      submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", values.capacity]}
     >
       <InputFormField
         error={errorLabelsProps.capacity}
         onChange={handleChange}
         name="capacity"
         placeholder="100"
-        label={ `${ mintCapacityGroup } Mint Capacity` }
-        help={ `The new mint capacity you propse for ${ mintCapacityGroup }` }
+        label={`${mintCapacityGroup} Mint Capacity`}
+        help={`The new mint capacity you propse for ${mintCapacityGroup}`}
         unit="tJOY"
         value={values.capacity}
       />
     </GenericProposalForm>
   );
-}
+};
 
 const FormContainer = withFormContainer<FormContainerProps, FormValues>({
-  mapPropsToValues: (props:FormContainerProps) => ({
+  mapPropsToValues: (props: FormContainerProps) => ({
     ...defaultValues,
     ...(props.initialData || {})
   }),
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    capacity: Yup.number().required("You need to specify the mint capacity.")
+    capacity: Validation.SetContentWorkingGroupMintCapacity.mintCapacity
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
-  displayName: `MintCapacityForm`
+  displayName: "MintCapacityForm"
 })(MintCapacityForm);
 
 export default withProposalFormData<FormContainerProps, ExportComponentProps>(FormContainer);

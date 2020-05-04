@@ -10,19 +10,20 @@ import {
   ProposalFormExportProps,
   ProposalFormContainerProps,
   ProposalFormInnerProps
-} from './GenericProposalForm';
+} from "./GenericProposalForm";
+import Validation from "../validationSchema";
 import { withFormContainer } from "./FormContainer";
 import "./forms.css";
-import FileDropdown from './FileDropdown';
+import FileDropdown from "./FileDropdown";
 
 type FormValues = GenericFormValues & {
-  WASM: string
+  WASM: string;
 };
 
-const defaultValues:FormValues = {
+const defaultValues: FormValues = {
   ...genericFormDefaultValues,
-  WASM: ''
-}
+  WASM: ""
+};
 
 type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
@@ -36,13 +37,7 @@ const RuntimeUpgradeForm: React.FunctionComponent<FormInnerProps> = props => {
       {...props}
       txMethod="createRuntimeUpgradeProposal"
       requiredStakePercent={1}
-      submitParams={[
-        props.myMemberId,
-        values.title,
-        values.rationale,
-        '{STAKE}',
-        values.WASM
-      ]}
+      submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", values.WASM]}
     >
       <Form.Field>
         <FileDropdown<FormValues>
@@ -50,20 +45,21 @@ const RuntimeUpgradeForm: React.FunctionComponent<FormInnerProps> = props => {
           defaultText="Drag-n-drop WASM bytecode of a runtime upgrade (*.wasm)"
           acceptedFormats=".wasm"
           name="WASM"
-          error={ errors.WASM }/>
+          error={errors.WASM}
+        />
       </Form.Field>
     </GenericProposalForm>
   );
-}
+};
 
 const FormContainer = withFormContainer<FormContainerProps, FormValues>({
-  mapPropsToValues: (props:FormContainerProps) => ({
+  mapPropsToValues: (props: FormContainerProps) => ({
     ...defaultValues,
     ...(props.initialData || {})
   }),
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    WASM: Yup.string().required('The file is empty!'),
+    WASM: Validation.RuntimeUpgrade.WASM
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: "RuntimeUpgradeForm"

@@ -12,9 +12,10 @@ import {
   ProposalFormContainerProps,
   ProposalFormInnerProps
 } from "./GenericProposalForm";
+import Validation from "../validationSchema";
 import { FormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
-import { InputAddress } from '@polkadot/react-components/index';
+import { InputAddress } from "@polkadot/react-components/index";
 import { accountIdsToOptions } from "@polkadot/joy-election/utils";
 import { AccountId } from "@polkadot/types/interfaces";
 import { useTransport } from "../runtime";
@@ -39,40 +40,35 @@ const EvictStorageProviderForm: React.FunctionComponent<FormInnerProps> = props 
   const { errors, touched, values, setFieldValue } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const transport = useTransport();
-  const [ storageProviders, /* error */ , loading ] = usePromise<AccountId[]>(() => transport.storageProviders(), []);
+  const [storageProviders /* error */, , loading] = usePromise<AccountId[]>(() => transport.storageProviders(), []);
   const storageProvidersOptions = accountIdsToOptions(storageProviders);
   return (
     <GenericProposalForm
       {...props}
       txMethod="createEvictStorageProviderProposal"
       requiredStakePercent={0.1}
-      submitParams={[
-        props.myMemberId,
-        values.title,
-        values.rationale,
-        '{STAKE}',
-        values.storageProvider
-      ]}
+      submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", values.storageProvider]}
     >
-      { loading ?
-        <><Loader active inline style={ { marginRight: '5px' } }/> Fetching storage providers...</>
-        : (
-          <FormField
-            error={errorLabelsProps.storageProvider}
-            label="Storage provider"
-            help="The storage provider you propose to evict"
-          >
-            <InputAddress
-              onChange={(address) => setFieldValue("storageProvider", address) }
-              type="address"
-              placeholder="Select storage provider"
-              value={values.storageProvider}
-              options={storageProvidersOptions}
-            />
-            {errorLabelsProps.storageProvider && <Label {...errorLabelsProps.storageProvider} prompt />}
-          </FormField>
-        )
-      }
+      {loading ? (
+        <>
+          <Loader active inline style={{ marginRight: "5px" }} /> Fetching storage providers...
+        </>
+      ) : (
+        <FormField
+          error={errorLabelsProps.storageProvider}
+          label="Storage provider"
+          help="The storage provider you propose to evict"
+        >
+          <InputAddress
+            onChange={address => setFieldValue("storageProvider", address)}
+            type="address"
+            placeholder="Select storage provider"
+            value={values.storageProvider}
+            options={storageProvidersOptions}
+          />
+          {errorLabelsProps.storageProvider && <Label {...errorLabelsProps.storageProvider} prompt />}
+        </FormField>
+      )}
     </GenericProposalForm>
   );
 };
@@ -84,7 +80,7 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
   }),
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    storageProvider: Yup.string().nullable().required("Select a storage provider!")
+    storageProvider: Validation.EvictStorageProvider.storageProvider
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: "EvictStorageProvidersForm"

@@ -12,35 +12,37 @@ import {
   ProposalFormContainerProps,
   ProposalFormInnerProps
 } from "./GenericProposalForm";
+import Validation from "../validationSchema";
 import { InputFormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
-import { BlockNumber, Balance } from '@polkadot/types/interfaces';
+import { BlockNumber, Balance } from "@polkadot/types/interfaces";
 import { u32 } from "@polkadot/types/primitive";
-import { createType } from '@polkadot/types';
+import { createType } from "@polkadot/types";
 import "./forms.css";
 
 // Move to joy-types?
 type RoleParameters = {
-  min_stake:  Balance,
-  min_actors: u32,
-  max_actors: u32,
-  reward: Balance,
-  reward_period: BlockNumber,
-  bonding_period: BlockNumber,
-  unbonding_period: BlockNumber,
-  min_service_period: BlockNumber,
-  startup_grace_period: BlockNumber,
-  entry_request_fee: Balance
+  min_stake: Balance;
+  min_actors: u32;
+  max_actors: u32;
+  reward: Balance;
+  reward_period: BlockNumber;
+  bonding_period: BlockNumber;
+  unbonding_period: BlockNumber;
+  min_service_period: BlockNumber;
+  startup_grace_period: BlockNumber;
+  entry_request_fee: Balance;
 };
 
 // All of those are strings, because that's how those values are beeing passed from inputs
-type FormValues = GenericFormValues & {
-  [K in keyof RoleParameters]: string
-};
+type FormValues = GenericFormValues &
+  {
+    [K in keyof RoleParameters]: string;
+  };
 
 const defaultValues: FormValues = {
   ...genericFormDefaultValues,
-  min_stake:  "",
+  min_stake: "",
   min_actors: "",
   max_actors: "",
   reward: "",
@@ -49,7 +51,7 @@ const defaultValues: FormValues = {
   unbonding_period: "",
   min_service_period: "",
   startup_grace_period: "",
-  entry_request_fee: "",
+  entry_request_fee: ""
 };
 
 type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
@@ -59,16 +61,16 @@ type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
 function createRoleParameters(values: FormValues): RoleParameters {
   return {
-    min_stake:  createType('Balance', values.min_stake),
-    min_actors: createType('u32', values.min_actors),
-    max_actors: createType('u32', values.max_actors),
-    reward: createType('Balance', values.reward),
-    reward_period: createType('BlockNumber', values.reward_period),
-    bonding_period: createType('BlockNumber', values.bonding_period),
-    unbonding_period: createType('BlockNumber', values.unbonding_period),
-    min_service_period: createType('BlockNumber', values.min_service_period),
-    startup_grace_period: createType('BlockNumber', values.startup_grace_period),
-    entry_request_fee: createType('Balance', values.entry_request_fee)
+    min_stake: createType("Balance", values.min_stake),
+    min_actors: createType("u32", values.min_actors),
+    max_actors: createType("u32", values.max_actors),
+    reward: createType("Balance", values.reward),
+    reward_period: createType("BlockNumber", values.reward_period),
+    bonding_period: createType("BlockNumber", values.bonding_period),
+    unbonding_period: createType("BlockNumber", values.unbonding_period),
+    min_service_period: createType("BlockNumber", values.min_service_period),
+    startup_grace_period: createType("BlockNumber", values.startup_grace_period),
+    entry_request_fee: createType("Balance", values.entry_request_fee)
   };
 }
 
@@ -80,13 +82,7 @@ const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props 
       {...props}
       txMethod="createSetStorageRoleParametersProposal"
       requiredStakePercent={0.25}
-      submitParams={[
-        props.myMemberId,
-        values.title,
-        values.rationale,
-        '{STAKE}',
-        createRoleParameters(values)
-      ]}
+      submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", createRoleParameters(values)]}
     >
       <Divider horizontal>Parameters</Divider>
       <Form.Group widths="equal" style={{ marginBottom: "2em" }}>
@@ -216,16 +212,16 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
   }),
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    min_stake: Yup.number().required("All parameters are required"),
-    min_actors: Yup.number().required("All parameters are required"),
-    max_actors: Yup.number().required("All parameters are required"),
-    reward: Yup.number().required("All parameters are required"),
-    reward_period: Yup.number().required("All parameters are required"),
-    bonding_period: Yup.number().required("All parameters are required"),
-    unbonding_period: Yup.number().required("All parameters are required"),
-    min_service_period: Yup.number().required("All parameters are required"),
-    startup_grace_period: Yup.number().required("All parameters are required"),
-    entry_request_fee: Yup.number().required("All parameters are required"),
+    min_stake: Validation.SetStorageRoleParameters.min_stake,
+    min_actors: Validation.SetStorageRoleParameters.min_actors,
+    max_actors: Validation.SetStorageRoleParameters.max_actors,
+    reward: Validation.SetStorageRoleParameters.reward,
+    reward_period: Validation.SetStorageRoleParameters.reward_period,
+    bonding_period: Validation.SetStorageRoleParameters.bonding_period,
+    unbonding_period: Validation.SetStorageRoleParameters.unbonding_period,
+    min_service_period: Validation.SetStorageRoleParameters.min_service_period,
+    startup_grace_period: Validation.SetStorageRoleParameters.startup_grace_period,
+    entry_request_fee: Validation.SetStorageRoleParameters.entry_request_fee
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: "SetStorageRoleParamsForm"
