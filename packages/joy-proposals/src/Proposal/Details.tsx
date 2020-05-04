@@ -14,7 +14,7 @@ export default function Details({
   extendedStatus
 }: DetailsProps) {
   const { type, createdAt, proposer } = proposal;
-  const { statusStr, substage, expiresIn } = extendedStatus;
+  const { displayStatus, periodStatus, expiresIn } = extendedStatus;
   return (
     <Item.Group className="details-container">
       <Item>
@@ -36,14 +36,14 @@ export default function Details({
       <Item>
         <Item.Content>
           <Item.Extra>Stage:</Item.Extra>
-          <Header as="h4">{ statusStr }</Header>
+          <Header as="h4">{ displayStatus }</Header>
         </Item.Content>
       </Item>
-      { (substage !== null) && (
+      { (periodStatus !== null) && (
         <Item>
           <Item.Content>
             <Item.Extra>Substage:</Item.Extra>
-            <Header as="h4">{ substage }</Header>
+            <Header as="h4">{ periodStatus }</Header>
           </Item.Content>
         </Item>
       ) }
