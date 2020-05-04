@@ -80,6 +80,10 @@ pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 // proposal max balance percentage.
 const COUNCIL_MINT_MAX_BALANCE_PERCENT: u32 = 2;
 
+// 'Set working group mint capacity' proposal limit
+const CONTENT_WORKING_GROUP_MINT_CAPACITY_MAX_VALUE: u32 = 1000000;
+
+
 /// 'Proposals codex' substrate module Trait
 pub trait Trait:
     system::Trait
@@ -440,12 +444,8 @@ decl_module! {
             stake_balance: Option<BalanceOf<T>>,
             mint_balance: BalanceOfMint<T>,
         ) {
-
-            let max_mint_capacity: u32 = get_required_stake_by_fraction::<T>(1, 100)
-                .try_into()
-                .unwrap_or_default() as u32;
             ensure!(
-                mint_balance < <BalanceOfMint<T>>::from(max_mint_capacity),
+                mint_balance <= <BalanceOfMint<T>>::from(CONTENT_WORKING_GROUP_MINT_CAPACITY_MAX_VALUE),
                 Error::InvalidStorageWorkingGroupMintCapacity
             );
 

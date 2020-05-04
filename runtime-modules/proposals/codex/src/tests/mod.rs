@@ -469,7 +469,7 @@ fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
 #[test]
 fn create_working_group_mint_capacity_proposal_fails_with_invalid_parameters() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance(500000);
+        increase_total_balance_issuance_using_account_id(1, 500000);
 
         assert_eq!(
             ProposalCodex::create_set_content_working_group_mint_capacity_proposal(
@@ -477,8 +477,8 @@ fn create_working_group_mint_capacity_proposal_fails_with_invalid_parameters() {
                 1,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(<BalanceOf<Test>>::from(1250u32)),
-                5001,
+                Some(<BalanceOf<Test>>::from(50000u32)),
+                (crate::CONTENT_WORKING_GROUP_MINT_CAPACITY_MAX_VALUE + 1) as u64,
             ),
             Err(Error::InvalidStorageWorkingGroupMintCapacity)
         );
