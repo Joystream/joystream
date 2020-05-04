@@ -24,7 +24,7 @@ $ cd generated/indexer
 $ yarn start
 ```
 
-#### Add a new mapping for Joystream MemberRegistered event
+## Add a new mapping for Joystream MemberRegistered event
 
 1. Every mapping function get a parameter of `QueryEvent` type
 
@@ -99,7 +99,7 @@ export async function handleMemberRegistered(event: QueryEvent) {
 }
 ```
 
-#### Query Node Constructs Explained
+## Query Node Constructs Explained
 
 1. `schema.json` is where you define types for graphql server. Graphql server use these types to generate db models, db tables, graphql resolvers.
 
