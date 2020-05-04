@@ -1,56 +1,70 @@
 import * as Yup from "yup";
 import { checkAddress } from "@polkadot/util-crypto";
 
+// FIXME: Read this from storage. (How?)
+const TOTAL_ISSUANCE = 40608000;
+const percentageOfIssuance = (percent: number) => Math.round(TOTAL_ISSUANCE * (percent / 100));
+// All
+const TITLE_MAX_LENGTH = 40;
+const RATIONALE_MAX_LENGTH = 3000;
+
+// Text
+const DESCRIPTION_MAX_LENGTH = 5000;
+
 // Set Election Parameters
-const ANNOUNCING_PERIOD_MAX = 23000;
-const ANNOUNCING_PERIOD_MIN = 48000;
-const VOTING_PERIOD_MIN = 23000;
-const VOTING_PERIOD_MAX = 48000;
-const MIN_VOTING_STAKE_MIN = 23000;
-const MIN_VOTING_STAKE_MAX = 49000;
-const REVEALING_PERIOD_MIN = 23000;
-const REVEALING_PERIOD_MAX = 48000;
-const MIN_COUNCIL_STAKE_MIN = 1000000;
-const MIN_COUNCIL_STAKE_MAX = 10000000;
-const NEW_TERM_DURATION_MIN = 23000;
-const NEW_TERM_DURATION_MAX = 46000;
+const ANNOUNCING_PERIOD_MAX = 43200;
+const ANNOUNCING_PERIOD_MIN = 14400;
+const VOTING_PERIOD_MIN = 14400;
+const VOTING_PERIOD_MAX = 43200;
+const REVEALING_PERIOD_MIN = 14400;
+const REVEALING_PERIOD_MAX = 43200;
+const MIN_COUNCIL_STAKE_MIN = 0;
+const MIN_COUNCIL_STAKE_MAX = 100000;
+const NEW_TERM_DURATION_MIN = 14400;
+const NEW_TERM_DURATION_MAX = 43200;
 const CANDIDACY_LIMIT_MIN = 23000;
 const CANDIDACY_LIMIT_MAX = 45000;
-const COUNCIL_SIZE_MAX = 23;
-const COUNCIL_SIZE_MIN = 5;
+const COUNCIL_SIZE_MAX = 20;
+const COUNCIL_SIZE_MIN = 4;
+const MIN_VOTING_STAKE_MIN = 0;
+const MIN_VOTING_STAKE_MAX = 100000;
+
+// Spending
+const TOKENS_MIN = 0;
+const TOKENS_MAX = percentageOfIssuance(2);
 
 // Set Validator Count
-const MAX_VALIDATOR_COUNT_MIN = 1;
-const MAX_VALIDATOR_COUNT_MAX = 25;
+const MAX_VALIDATOR_COUNT_MIN = 4;
+const MAX_VALIDATOR_COUNT_MAX = 1000;
 
 // Content Working Group Mint Capacity
-const MINT_CAPACITY_MIN = 4000;
-const MINT_CAPACITY_MAX = 12000;
+const MINT_CAPACITY_MIN = 0;
+const MINT_CAPACITY_MAX = percentageOfIssuance(1);
 
 // Set Storage Role Parameters
 const MIN_STAKE_MIN = 1;
-const MIN_STAKE_MAX = 1000;
-const MIN_ACTORS_MIN = 1;
-const MIN_ACTORS_MAX = 20;
-const MAX_ACTORS_MIN = 1;
-const MAX_ACTORS_MAX = 40;
-const REWARD_MIN = 100;
-const REWARD_MAX = 1000;
-const REWARD_PERIOD_MIN = 2000;
-const REWARD_PERIOD_MAX = 42000;
-const BONDING_PERIOD_MIN = 43000;
-const BONDING_PERIOD_MAX = 56000;
-const UNBONDING_PERIOD_MIN = 34000;
-const UNBONDING_PERIOD_MAX = 36000;
-const MIN_SERVICE_PERIOD_MIN = 23000;
-const MIN_SERVICE_PERIOD_MAX = 26000;
-const STARTUP_GRACE_PERIOD_MIN = 4000;
-const STARTUP_GRACE_PERIOD_MAX = 8000;
-const ENTRY_REQUEST_FEE_MIN = 400;
-const ENTRY_REQUEST_FEE_MAX = 2000;
+const MIN_STAKE_MAX = percentageOfIssuance(1);
+const MIN_ACTORS_MIN = 0;
+const MIN_ACTORS_MAX = 4;
+const MAX_ACTORS_MIN = 5;
+const MAX_ACTORS_MAX = 99;
+const REWARD_MIN = 0;
+const REWARD_MAX = percentageOfIssuance(0.1);
+const REWARD_PERIOD_MIN = 600;
+const REWARD_PERIOD_MAX = 3600;
+const BONDING_PERIOD_MIN = 600;
+const BONDING_PERIOD_MAX = 28800;
+const UNBONDING_PERIOD_MIN = 600;
+const UNBONDING_PERIOD_MAX = 28800;
+const MIN_SERVICE_PERIOD_MIN = 600;
+const MIN_SERVICE_PERIOD_MAX = 28800;
+const STARTUP_GRACE_PERIOD_MIN = 600;
+const STARTUP_GRACE_PERIOD_MAX = 28800;
+// const ENTRY_REQUEST_FEE_MIN = 0;
+const ENTRY_REQUEST_FEE_MAX = percentageOfIssuance(1);
 
-function errorMessage(name: string, min: number | string, max: number | string) {
-  return `${name} should be at least ${min} and no more than ${max}.`;
+function errorMessage(name: string, min: number | string, max: number | string, unit: string): string {
+  return `${name} should be at least ${min} and no more than ${max} ${unit ? `${unit}.` : "."}`;
 }
 
 /*
@@ -122,11 +136,17 @@ type ValidationType = {
 
 const Validation: ValidationType = {
   All: {
-    title: Yup.string().required("Title is required!"),
-    rationale: Yup.string().required("Rationale is required!")
+    title: Yup.string()
+      .required("Title is required!")
+      .max(TITLE_MAX_LENGTH, "Title max length is 40 characters."),
+    rationale: Yup.string()
+      .required("Rationale is required!")
+      .max(RATIONALE_MAX_LENGTH, "Description max length is 3000 characters.")
   },
   Text: {
-    description: Yup.string().required("Description is required!")
+    description: Yup.string()
+      .required("Description is required!")
+      .max(DESCRIPTION_MAX_LENGTH, "The description should be under 5000 characters.")
   },
   RuntimeUpgrade: {
     WASM: Yup.mixed().required("A file is required")
@@ -134,34 +154,58 @@ const Validation: ValidationType = {
   SetElectionParameters: {
     announcingPeriod: Yup.number()
       .required("All fields must be filled!")
-      .min(ANNOUNCING_PERIOD_MIN, errorMessage("The announcing period", ANNOUNCING_PERIOD_MIN, ANNOUNCING_PERIOD_MAX))
-      .max(ANNOUNCING_PERIOD_MAX, errorMessage("The announcing period", ANNOUNCING_PERIOD_MIN, ANNOUNCING_PERIOD_MAX)),
+      .min(
+        ANNOUNCING_PERIOD_MIN,
+        errorMessage("The announcing period", ANNOUNCING_PERIOD_MIN, ANNOUNCING_PERIOD_MAX, "blocks")
+      )
+      .max(
+        ANNOUNCING_PERIOD_MAX,
+        errorMessage("The announcing period", ANNOUNCING_PERIOD_MIN, ANNOUNCING_PERIOD_MAX, "blocks")
+      ),
     votingPeriod: Yup.number()
       .required("All fields must be filled!")
-      .min(VOTING_PERIOD_MIN, errorMessage("The voting period", VOTING_PERIOD_MIN, VOTING_PERIOD_MAX))
-      .max(VOTING_PERIOD_MAX, errorMessage("The voting period", VOTING_PERIOD_MIN, VOTING_PERIOD_MAX)),
+      .min(VOTING_PERIOD_MIN, errorMessage("The voting period", VOTING_PERIOD_MIN, VOTING_PERIOD_MAX, "blocks"))
+      .max(VOTING_PERIOD_MAX, errorMessage("The voting period", VOTING_PERIOD_MIN, VOTING_PERIOD_MAX, "blocks")),
     minVotingStake: Yup.number()
       .required("All fields must be filled!")
-      .min(MIN_VOTING_STAKE_MIN, errorMessage("The minimum voting stake", MIN_VOTING_STAKE_MIN, MIN_VOTING_STAKE_MAX))
-      .max(MIN_VOTING_STAKE_MAX, errorMessage("The minimum voting stake", MIN_VOTING_STAKE_MIN, MIN_VOTING_STAKE_MAX)),
+      .min(
+        MIN_VOTING_STAKE_MIN,
+        errorMessage("The minimum voting stake", MIN_VOTING_STAKE_MIN, MIN_VOTING_STAKE_MAX, "JOY")
+      )
+      .max(
+        MIN_VOTING_STAKE_MAX,
+        errorMessage("The minimum voting stake", MIN_VOTING_STAKE_MIN, MIN_VOTING_STAKE_MAX, "JOY")
+      ),
     revealingPeriod: Yup.number()
       .required("All fields must be filled!")
-      .min(REVEALING_PERIOD_MIN, errorMessage("The revealing period", REVEALING_PERIOD_MIN, REVEALING_PERIOD_MAX))
-      .max(REVEALING_PERIOD_MAX, errorMessage("The revealing period", REVEALING_PERIOD_MIN, REVEALING_PERIOD_MAX)),
+      .min(
+        REVEALING_PERIOD_MIN,
+        errorMessage("The revealing period", REVEALING_PERIOD_MIN, REVEALING_PERIOD_MAX, "blocks")
+      )
+      .max(
+        REVEALING_PERIOD_MAX,
+        errorMessage("The revealing period", REVEALING_PERIOD_MIN, REVEALING_PERIOD_MAX, "blocks")
+      ),
     minCouncilStake: Yup.number()
       .required("All fields must be filled!")
       .min(
         MIN_COUNCIL_STAKE_MIN,
-        errorMessage("The minimum council stake", MIN_COUNCIL_STAKE_MIN, MIN_COUNCIL_STAKE_MAX)
+        errorMessage("The minimum council stake", MIN_COUNCIL_STAKE_MIN, MIN_COUNCIL_STAKE_MAX, "JOY")
       )
       .max(
         MIN_COUNCIL_STAKE_MAX,
-        errorMessage("The minimum council stake", MIN_COUNCIL_STAKE_MIN, MIN_COUNCIL_STAKE_MAX)
+        errorMessage("The minimum council stake", MIN_COUNCIL_STAKE_MIN, MIN_COUNCIL_STAKE_MAX, "JOY")
       ),
     newTermDuration: Yup.number()
       .required("All fields must be filled!")
-      .min(NEW_TERM_DURATION_MIN, errorMessage("The new term duration", NEW_TERM_DURATION_MIN, NEW_TERM_DURATION_MAX))
-      .max(NEW_TERM_DURATION_MAX, errorMessage("The new term duration", NEW_TERM_DURATION_MIN, NEW_TERM_DURATION_MAX)),
+      .min(
+        NEW_TERM_DURATION_MIN,
+        errorMessage("The new term duration", NEW_TERM_DURATION_MIN, NEW_TERM_DURATION_MAX, "blocks")
+      )
+      .max(
+        NEW_TERM_DURATION_MAX,
+        errorMessage("The new term duration", NEW_TERM_DURATION_MIN, NEW_TERM_DURATION_MAX, "blocks")
+      ),
     candidacyLimit: Yup.number()
       .required("All fields must be filled!")
       .min(CANDIDACY_LIMIT_MIN, errorMessage("The candidacy limit", CANDIDACY_LIMIT_MIN, CANDIDACY_LIMIT_MAX))
@@ -174,6 +218,7 @@ const Validation: ValidationType = {
   Spending: {
     tokens: Yup.number()
       .positive("The token amount should be positive.")
+      .max(TOKENS_MAX, errorMessage("The amount of tokens", TOKENS_MIN, TOKENS_MAX))
       .required("You need to specify an amount of tokens."),
     destinationAccount: Yup.string()
       .required("Select a destination account!")
@@ -185,8 +230,8 @@ const Validation: ValidationType = {
   SetContentWorkingGroupMintCapacity: {
     mintCapacity: Yup.number()
       .positive("Mint capacity should be positive.")
-      .min(MINT_CAPACITY_MIN, errorMessage("Mint capacity", MINT_CAPACITY_MIN, MINT_CAPACITY_MAX))
-      .max(MINT_CAPACITY_MAX, errorMessage("Mint capacity", MINT_CAPACITY_MIN, MINT_CAPACITY_MAX))
+      .min(MINT_CAPACITY_MIN, errorMessage("Mint capacity", MINT_CAPACITY_MIN, MINT_CAPACITY_MAX, "JOY"))
+      .max(MINT_CAPACITY_MAX, errorMessage("Mint capacity", MINT_CAPACITY_MIN, MINT_CAPACITY_MAX, "JOY"))
       .required("You need to specify a mint capacity.")
   },
   EvictStorageProvider: {
@@ -209,8 +254,8 @@ const Validation: ValidationType = {
   SetStorageRoleParameters: {
     min_stake: Yup.number()
       .required("All parameters are required")
-      .min(MIN_STAKE_MIN, errorMessage("Minimum stake", MIN_STAKE_MIN, MIN_STAKE_MAX))
-      .max(MIN_STAKE_MAX, errorMessage("Minimum stake", MIN_STAKE_MIN, MIN_STAKE_MAX)),
+      .positive("The minimum stake should be positive.")
+      .max(MIN_STAKE_MAX, errorMessage("Minimum stake", MIN_STAKE_MIN, MIN_STAKE_MAX, "JOY")),
     min_actors: Yup.number()
       .required("All parameters are required")
       .min(MIN_ACTORS_MIN, errorMessage("Minimum actors", MIN_ACTORS_MIN, MIN_ACTORS_MAX))
@@ -222,44 +267,50 @@ const Validation: ValidationType = {
     reward: Yup.number()
       .required("All parameters are required")
       .positive()
-      .min(REWARD_MIN, errorMessage("Reward", REWARD_MIN, REWARD_MAX))
-      .max(REWARD_MAX, errorMessage("Reward", REWARD_MIN, REWARD_MAX)),
+      .min(REWARD_MIN, errorMessage("Reward", REWARD_MIN, REWARD_MAX, "JOY"))
+      .max(REWARD_MAX, errorMessage("Reward", REWARD_MIN, REWARD_MAX, "JOY")),
     reward_period: Yup.number()
       .required("All parameters are required")
-      .min(REWARD_PERIOD_MIN, errorMessage("The reward period", REWARD_PERIOD_MIN, REWARD_PERIOD_MAX))
-      .max(REWARD_PERIOD_MAX, errorMessage("The reward period", REWARD_PERIOD_MIN, REWARD_PERIOD_MAX)),
+      .positive("The reward should be positive.")
+      .max(REWARD_PERIOD_MAX, errorMessage("The reward period", REWARD_PERIOD_MIN, REWARD_PERIOD_MAX, "blocks")),
     bonding_period: Yup.number()
       .required("All parameters are required")
-      .min(BONDING_PERIOD_MIN, errorMessage("The bonding period", BONDING_PERIOD_MIN, BONDING_PERIOD_MAX))
-      .max(BONDING_PERIOD_MAX, errorMessage("The bonding period", BONDING_PERIOD_MIN, BONDING_PERIOD_MAX)),
+      .min(BONDING_PERIOD_MIN, errorMessage("The bonding period", BONDING_PERIOD_MIN, BONDING_PERIOD_MAX, "blocks"))
+      .max(BONDING_PERIOD_MAX, errorMessage("The bonding period", BONDING_PERIOD_MIN, BONDING_PERIOD_MAX, "blocks")),
     unbonding_period: Yup.number()
       .required("All parameters are required")
-      .min(UNBONDING_PERIOD_MIN, errorMessage("The unbonding period", UNBONDING_PERIOD_MIN, UNBONDING_PERIOD_MAX))
-      .max(UNBONDING_PERIOD_MAX, errorMessage("The unbonding period", UNBONDING_PERIOD_MIN, UNBONDING_PERIOD_MAX)),
+      .min(
+        UNBONDING_PERIOD_MIN,
+        errorMessage("The unbonding period", UNBONDING_PERIOD_MIN, UNBONDING_PERIOD_MAX, "blocks")
+      )
+      .max(
+        UNBONDING_PERIOD_MAX,
+        errorMessage("The unbonding period", UNBONDING_PERIOD_MIN, UNBONDING_PERIOD_MAX, "blocks")
+      ),
     min_service_period: Yup.number()
       .required("All parameters are required")
       .min(
         MIN_SERVICE_PERIOD_MIN,
-        errorMessage("The minimum service period", MIN_SERVICE_PERIOD_MIN, MIN_SERVICE_PERIOD_MAX)
+        errorMessage("The minimum service period", MIN_SERVICE_PERIOD_MIN, MIN_SERVICE_PERIOD_MAX, "blocks")
       )
       .max(
         MIN_SERVICE_PERIOD_MAX,
-        errorMessage("The minimum service period", MIN_SERVICE_PERIOD_MIN, MIN_SERVICE_PERIOD_MAX)
+        errorMessage("The minimum service period", MIN_SERVICE_PERIOD_MIN, MIN_SERVICE_PERIOD_MAX, "blocks")
       ),
     startup_grace_period: Yup.number()
       .required("All parameters are required")
       .min(
         STARTUP_GRACE_PERIOD_MIN,
-        errorMessage("The startup grace period", STARTUP_GRACE_PERIOD_MIN, STARTUP_GRACE_PERIOD_MAX)
+        errorMessage("The startup grace period", STARTUP_GRACE_PERIOD_MIN, STARTUP_GRACE_PERIOD_MAX, "blocks")
       )
       .max(
         STARTUP_GRACE_PERIOD_MAX,
-        errorMessage("The startup grace period", STARTUP_GRACE_PERIOD_MIN, STARTUP_GRACE_PERIOD_MAX)
+        errorMessage("The startup grace period", STARTUP_GRACE_PERIOD_MIN, STARTUP_GRACE_PERIOD_MAX, "blocks")
       ),
     entry_request_fee: Yup.number()
       .required("All parameters are required")
-      .min(ENTRY_REQUEST_FEE_MIN, errorMessage("The entry request fee", ENTRY_REQUEST_FEE_MIN, ENTRY_REQUEST_FEE_MAX))
-      .max(ENTRY_REQUEST_FEE_MAX, errorMessage("The entry request fee", ENTRY_REQUEST_FEE_MIN, ENTRY_REQUEST_FEE_MAX))
+      .positive("The entry request fee should be positive.")
+      .max(ENTRY_REQUEST_FEE_MAX, `The entry request fee should be less than ${ENTRY_REQUEST_FEE_MAX}`, "JOY")
   }
 };
 
