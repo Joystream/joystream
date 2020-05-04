@@ -61,13 +61,10 @@ use governance::election_params::ElectionParameters;
 use proposal_engine::ProposalParameters;
 use roles::actors::RoleParameters;
 use rstd::clone::Clone;
-use rstd::convert::TryInto;
 use rstd::prelude::*;
 use rstd::str::from_utf8;
 use rstd::vec::Vec;
-use sr_primitives::traits::SaturatedConversion;
 use sr_primitives::traits::{One, Zero};
-use sr_primitives::Perbill;
 use srml_support::dispatch::DispatchResult;
 use srml_support::traits::{Currency, Get};
 use srml_support::{decl_error, decl_module, decl_storage, ensure, print};
@@ -75,10 +72,6 @@ use system::{ensure_root, RawOrigin};
 
 pub use crate::proposal_types::ProposalsConfigParameters;
 pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
-
-// Percentage of the total token issue as max mint balance value. Shared with spending
-// proposal max balance percentage.
-const COUNCIL_MINT_MAX_BALANCE_PERCENT: u32 = 2;
 
 // 'Set working group mint capacity' proposal limit
 const CONTENT_WORKING_GROUP_MINT_CAPACITY_MAX_VALUE: u32 = 1_000_000;
@@ -477,16 +470,8 @@ decl_module! {
             destination: T::AccountId,
         ) {
             ensure!(balance != BalanceOfMint::<T>::zero(), Error::InvalidSpendingProposalBalance);
-
-            let max_balance: u32 = get_required_stake_by_fraction::<T>(
-                COUNCIL_MINT_MAX_BALANCE_PERCENT,
-                100
-            )
-            .try_into()
-            .unwrap_or_default() as u32;
-
             ensure!(
-                balance < <BalanceOfMint<T>>::from(max_balance),
+                balance <= <BalanceOfMint<T>>::from(2_000_000_u32),
                 Error::InvalidSpendingProposalBalance
             );
 
@@ -988,19 +973,4 @@ impl<T: Trait> Module<T> {
             p.set_storage_role_parameters_proposal_grace_period,
         ));
     }
-}
-
-// calculates required stake value using total issuance value and stake percentage. Truncates to
-// lowest integer value. Value fraction is defined by numerator and denominator.
-pub(crate) fn get_required_stake_by_fraction<T: crate::Trait>(
-    numerator: u32,
-    denominator: u32,
-) -> BalanceOf<T> {
-    let total_issuance: u128 = <CurrencyOf<T>>::total_issuance().try_into().unwrap_or(0) as u128;
-    let required_stake =
-        Perbill::from_rational_approximation(numerator, denominator) * total_issuance;
-
-    let balance: BalanceOf<T> = required_stake.saturated_into();
-
-    balance
 }

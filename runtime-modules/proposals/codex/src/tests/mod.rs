@@ -620,7 +620,7 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
                 b"title".to_vec(),
                 b"body".to_vec(),
                 Some(<BalanceOf<Test>>::from(1250u32)),
-                1001,
+                2000001,
                 2,
             ),
             Err(Error::InvalidSpendingProposalBalance)
