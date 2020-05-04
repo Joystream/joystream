@@ -64,39 +64,39 @@ function ProposalPreviewList({ bestNumber }: ProposalPreviewListProps) {
     <Container className="Proposal">
       <Menu tabular className="list-menu">
         <Menu.Item
-          name={`all - ${proposalsMap.get("All").length} `}
+          name={`all - ${(proposalsMap.get("All") as ParsedProposal[]).length} `}
           active={activeFilter === "All"}
           onClick={() => setActiveFilter("All")}
         />
         <Menu.Item
-          name={`withdrawn (${proposalsMap.get("Withdrawn").length})`}
+          name={`withdrawn ${(proposalsMap.get("Withdrawn") as ParsedProposal[]).length}`}
           active={activeFilter === "Withdrawn"}
           onClick={() => setActiveFilter("Withdrawn")}
         />
         <Menu.Item
-          name={`active (${proposalsMap.get("Active").length})`}
+          name={`active (${(proposalsMap.get("Active") as ParsedProposal[]).length})`}
           active={activeFilter === "Active"}
           onClick={() => setActiveFilter("Active")}
         />
         <Menu.Item
-          name={`approved (${proposalsMap.get("Approved").length})`}
+          name={`approved ${(proposalsMap.get("Approved") as ParsedProposal[]).length}`}
           active={activeFilter === "Approved"}
           onClick={() => setActiveFilter("Approved")}
         />
         <Menu.Item
-          name={`rejected (${proposalsMap.get("Rejected").length})`}
+          name={`rejected ${(proposalsMap.get("Rejected") as ParsedProposal[]).length}`}
           active={activeFilter === "Rejected"}
           onClick={() => setActiveFilter("Rejected")}
         />
         <Menu.Item
-          name={`slashed (${proposalsMap.get("Slashed").length})`}
+          name={`slashed ${(proposalsMap.get("Slashed") as ParsedProposal[]).length}`}
           active={activeFilter === "Slashed"}
           onClick={() => setActiveFilter("Slashed")}
         />
       </Menu>
 
       <Card.Group>
-        {proposalsMap.get(activeFilter).map((prop: ParsedProposal, idx: number) => (
+        {(proposalsMap.get(activeFilter) as ParsedProposal[]).map((prop: ParsedProposal, idx: number) => (
           <ProposalPreview key={`${prop.title}-${idx}`} proposal={prop} bestNumber={bestNumber} />
         ))}
       </Card.Group>
