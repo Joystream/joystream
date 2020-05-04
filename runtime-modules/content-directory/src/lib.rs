@@ -292,7 +292,7 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 
         // ======
-        // Next set of extrinsics can only be invoked by root origin.
+        // Next set of extrinsics can only be invoked by authority.
         // ======
 
         pub fn add_entities_creator(
@@ -314,7 +314,7 @@ decl_module! {
             <CanCreateEntitiesOfClass<T>>::insert(class_id, group_id, ());
             let entity_controller = EntityController::<T>::Group(group_id);
             if let EntityCreationLimit::Individual(limit) = limit {
-                <EntityCreationVouchers<T>>::insert(class_id, entity_controller.clone(),
+                <EntityCreationVouchers<T>>::insert(class_id, entity_controller,
                     EntityCreationVoucher::new(limit)
                 );
             } else {
@@ -1159,13 +1159,6 @@ impl<T: Trait> Module<T> {
             ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR
         );
         Ok(class_prop.to_owned())
-    }
-
-    fn get_class_id_by_entity_id(entity_id: T::EntityId) -> Result<T::ClassId, &'static str> {
-        // use a utility method on versioned_store module
-        ensure!(<EntityById<T>>::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
-        let entity = Self::entity_by_id(entity_id);
-        Ok(entity.class_id)
     }
 
     fn get_entity_and_access_level(
