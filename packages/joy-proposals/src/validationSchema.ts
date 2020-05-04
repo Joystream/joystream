@@ -1,15 +1,16 @@
 import * as Yup from "yup";
 import { checkAddress } from "@polkadot/util-crypto";
 
-// FIXME: Read this from storage. (How?)
-const TOTAL_ISSUANCE = 40608000;
-const percentageOfIssuance = (percent: number) => Math.round(TOTAL_ISSUANCE * (percent / 100));
 // All
 const TITLE_MAX_LENGTH = 40;
 const RATIONALE_MAX_LENGTH = 3000;
 
 // Text
 const DESCRIPTION_MAX_LENGTH = 5000;
+
+// Runtime Upgrade
+const FILE_SIZE_BYTES_MIN = 1;
+const FILE_SIZE_BYTES_MAX = 2000000;
 
 // Set Election Parameters
 const ANNOUNCING_PERIOD_MAX = 43200;
@@ -18,7 +19,7 @@ const VOTING_PERIOD_MIN = 14400;
 const VOTING_PERIOD_MAX = 28800;
 const REVEALING_PERIOD_MIN = 14400;
 const REVEALING_PERIOD_MAX = 28800;
-const MIN_COUNCIL_STAKE_MIN = 0;
+const MIN_COUNCIL_STAKE_MIN = 1;
 const MIN_COUNCIL_STAKE_MAX = 100000;
 const NEW_TERM_DURATION_MIN = 14400;
 const NEW_TERM_DURATION_MAX = 43200;
@@ -26,7 +27,7 @@ const CANDIDACY_LIMIT_MIN = 25;
 const CANDIDACY_LIMIT_MAX = 100;
 const COUNCIL_SIZE_MAX = 20;
 const COUNCIL_SIZE_MIN = 4;
-const MIN_VOTING_STAKE_MIN = 0;
+const MIN_VOTING_STAKE_MIN = 1;
 const MIN_VOTING_STAKE_MAX = 100000;
 
 // Spending
@@ -43,12 +44,12 @@ const MINT_CAPACITY_MAX = 1000000;
 
 // Set Storage Role Parameters
 const MIN_STAKE_MIN = 1;
-const MIN_STAKE_MAX = percentageOfIssuance(1);
+const MIN_STAKE_MAX = 10000000;
 const MIN_ACTORS_MIN = 0;
 const MIN_ACTORS_MAX = 1;
 const MAX_ACTORS_MIN = 2;
 const MAX_ACTORS_MAX = 99;
-const REWARD_MIN = 0;
+const REWARD_MIN = 1;
 const REWARD_MAX = 999;
 const REWARD_PERIOD_MIN = 600;
 const REWARD_PERIOD_MAX = 3600;
@@ -92,7 +93,7 @@ type ValidationType = {
     description: Yup.StringSchema<string>;
   };
   RuntimeUpgrade: {
-    WASM: Yup.MixedSchema;
+    WASM: Yup.StringSchema<string>;
   };
   SetElectionParameters: {
     announcingPeriod: Yup.NumberSchema<number>;
@@ -149,7 +150,10 @@ const Validation: ValidationType = {
       .max(DESCRIPTION_MAX_LENGTH, `Description should be under ${DESCRIPTION_MAX_LENGTH}`)
   },
   RuntimeUpgrade: {
-    WASM: Yup.mixed().required("A file is required")
+    WASM: Yup.string()
+      .required("A file is required")
+      .min(FILE_SIZE_BYTES_MIN, "File is empty.")
+      .max(FILE_SIZE_BYTES_MAX, `The maximum file size is ${FILE_SIZE_BYTES_MAX} bytes.`)
   },
   SetElectionParameters: {
     announcingPeriod: Yup.number()
@@ -273,13 +277,13 @@ const Validation: ValidationType = {
       .max(MAX_ACTORS_MAX, errorMessage("Max actors", MAX_ACTORS_MIN, MAX_ACTORS_MAX)),
     reward: Yup.number()
       .required("All parameters are required")
-      .positive()
+      .integer("This field must be an integer.")
       .min(REWARD_MIN, errorMessage("Reward", REWARD_MIN, REWARD_MAX, "tJOY"))
       .max(REWARD_MAX, errorMessage("Reward", REWARD_MIN, REWARD_MAX, "tJOY")),
     reward_period: Yup.number()
       .required("All parameters are required")
       .integer("This field must be an integer.")
-      .positive("The reward should be positive.")
+      .min(REWARD_PERIOD_MIN, errorMessage("The reward period", REWARD_PERIOD_MIN, REWARD_PERIOD_MAX, "blocks"))
       .max(REWARD_PERIOD_MAX, errorMessage("The reward period", REWARD_PERIOD_MIN, REWARD_PERIOD_MAX, "blocks")),
     bonding_period: Yup.number()
       .required("All parameters are required")
