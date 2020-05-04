@@ -191,6 +191,17 @@ impl<T: Trait> Class<T> {
         self.schemas[schema_index as usize].is_active = schema_status;
     }
 
+    fn set_property_lock_status_at_index(
+        &mut self,
+        access_level: EntityAccessLevel,
+        in_class_schema_property_id: PropertyId,
+        is_locked: bool,
+    ) {
+        self.properties[in_class_schema_property_id as usize]
+            .prop_type
+            .set_locked_for(access_level, is_locked)
+    }
+
     fn get_permissions_mut(&mut self) -> &mut ClassPermissions {
         &mut self.class_permissions
     }
@@ -530,10 +541,6 @@ decl_module! {
                 ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID
             );
 
-            // Use the current length of schemas in this class as an index
-            // for the next schema that will be sent in a result of this function.
-            let schema_idx = class.schemas.len() as SchemaId;
-
             let mut schema = Schema::new(existing_properties);
 
             let mut updated_class_props = class.properties;
@@ -565,6 +572,25 @@ decl_module! {
             Self::ensure_class_schema_id_exists(&Self::class_by_id(class_id), schema_id)?;
             <ClassById<T>>::mutate(class_id, |class| {
                 class.update_schema_status(schema_id, schema_status)
+            });
+            Ok(())
+        }
+
+        pub fn set_class_property_lock_status_at_index(
+            origin,
+            class_id: T::ClassId,
+            locked_for: EntityAccessLevel,
+            in_class_schema_property_id: PropertyId,
+            is_locked: bool
+        ) -> dispatch::Result {
+            let account_id = ensure_signed(origin)?;
+            ensure_authority_auth_success::<T>(&account_id)?;
+            Self::ensure_known_class_id(class_id)?;
+
+            // Check that schema_id is a valid index of class schemas vector:
+            Self::ensure_class_schema_id_exists(&Self::class_by_id(class_id), in_class_schema_property_id)?;
+            <ClassById<T>>::mutate(class_id, |class| {
+                class.set_property_lock_status_at_index(locked_for, in_class_schema_property_id, is_locked)
             });
             Ok(())
         }

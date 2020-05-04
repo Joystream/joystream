@@ -50,9 +50,31 @@ pub enum PropertyType<T: Trait> {
 }
 
 impl<T: Trait> PropertyType<T> {
+    fn get_locked_mut(&mut self) -> &mut IsLocked {
+        match self {
+            PropertyType::Bool(is_locked)
+            | PropertyType::Uint16(is_locked)
+            | PropertyType::Uint32(is_locked)
+            | PropertyType::Uint64(is_locked)
+            | PropertyType::Int16(is_locked)
+            | PropertyType::Int32(is_locked)
+            | PropertyType::Int64(is_locked)
+            | PropertyType::Text(_, is_locked)
+            | PropertyType::Reference(_, is_locked)
+            | PropertyType::BoolVec(_, is_locked)
+            | PropertyType::Uint16Vec(_, is_locked)
+            | PropertyType::Uint32Vec(_, is_locked)
+            | PropertyType::Uint64Vec(_, is_locked)
+            | PropertyType::Int16Vec(_, is_locked)
+            | PropertyType::Int32Vec(_, is_locked)
+            | PropertyType::Int64Vec(_, is_locked)
+            | PropertyType::TextVec(_, _, is_locked)
+            | PropertyType::ReferenceVec(_, _, is_locked) => is_locked,
+        }
+    }
+
     fn get_locked(&self) -> &IsLocked {
         match self {
-            // Single value:
             PropertyType::Bool(is_locked)
             | PropertyType::Uint16(is_locked)
             | PropertyType::Uint32(is_locked)
@@ -83,6 +105,21 @@ impl<T: Trait> PropertyType<T> {
             }
             EntityAccessLevel::EntityController => locked_from_controller,
             EntityAccessLevel::EntityMaintainer => is_locked_from_maintainer,
+        }
+    }
+
+    pub fn set_locked_for(&mut self, access_level: EntityAccessLevel, is_locked: bool) {
+        match access_level {
+            EntityAccessLevel::EntityControllerAndMaintainer => {
+                self.get_locked_mut().is_locked_from_controller = is_locked;
+                self.get_locked_mut().is_locked_from_maintainer = is_locked;
+            }
+            EntityAccessLevel::EntityController => {
+                self.get_locked_mut().is_locked_from_controller = is_locked
+            }
+            EntityAccessLevel::EntityMaintainer => {
+                self.get_locked_mut().is_locked_from_maintainer = is_locked
+            }
         }
     }
 }
