@@ -9,7 +9,7 @@ import Error from "./Error";
 import { withCalls } from "@polkadot/react-api";
 import { BlockNumber } from "@polkadot/types/interfaces";
 
-const filters = ["All", "Active", "Withdrawn", "Approved", "Rejected", "Slashed"] as const;
+const filters = ["All", "Active", "Canceled", "Approved", "Rejected", "Slashed"] as const;
 
 type ProposalFilter = typeof filters[number];
 
@@ -38,7 +38,7 @@ function mapFromProposals(proposals: ParsedProposal[]) {
   const proposalsMap = new Map<ProposalFilter, ParsedProposal[]>();
 
   proposalsMap.set("All", proposals);
-  proposalsMap.set("Withdrawn", filterProposals("Withdrawn", proposals));
+  proposalsMap.set("Canceled", filterProposals("Canceled", proposals));
   proposalsMap.set("Active", filterProposals("Active", proposals));
   proposalsMap.set("Approved", filterProposals("Approved", proposals));
   proposalsMap.set("Rejected", filterProposals("Rejected", proposals));
