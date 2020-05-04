@@ -462,7 +462,7 @@ fn text_proposal_execution_succeeds() {
                     member_id as u64,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Runtime>>::from(1250u32)),
+                    Some(<BalanceOf<Runtime>>::from(25000u32)),
                     b"text".to_vec(),
                 )
             },
@@ -486,7 +486,7 @@ fn set_lead_proposal_execution_succeeds() {
                     member_id as u64,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Runtime>>::from(1250u32)),
+                    Some(<BalanceOf<Runtime>>::from(50000u32)),
                     Some((member_id as u64, account_id.into())),
                 )
             },
@@ -519,7 +519,7 @@ fn spending_proposal_execution_succeeds() {
                     member_id as u64,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Runtime>>::from(1250u32)),
+                    Some(<BalanceOf<Runtime>>::from(25_000_u32)),
                     new_balance,
                     target_account_id.clone().into(),
                 )
@@ -561,7 +561,7 @@ fn set_content_working_group_mint_capacity_execution_succeeds() {
                     member_id as u64,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Runtime>>::from(1250u32)),
+                    Some(<BalanceOf<Runtime>>::from(50000u32)),
                     new_balance,
                 )
             },
@@ -599,7 +599,7 @@ fn set_election_parameters_proposal_execution_succeeds() {
                     member_id as u64,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Runtime>>::from(3750u32)),
+                    Some(<BalanceOf<Runtime>>::from(200_000_u32)),
                     election_parameters,
                 )
             },
@@ -648,7 +648,7 @@ fn evict_storage_provider_proposal_execution_succeeds() {
                     member_id as u64,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Runtime>>::from(500u32)),
+                    Some(<BalanceOf<Runtime>>::from(25000u32)),
                     target_account.into(),
                 )
             },
@@ -686,7 +686,7 @@ fn set_storage_role_parameters_proposal_execution_succeeds() {
                     member_id as u64,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Runtime>>::from(1250u32)),
+                    Some(<BalanceOf<Runtime>>::from(100_000_u32)),
                     target_role_parameters.clone(),
                 )
             },
@@ -717,7 +717,7 @@ fn set_validator_count_proposal_execution_succeeds() {
                     member_id as u64,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Runtime>>::from(1250u32)),
+                    Some(<BalanceOf<Runtime>>::from(100_000_u32)),
                     new_validator_count,
                 )
             },
