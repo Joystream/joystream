@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Header, Item, Button, Icon } from "semantic-ui-react";
+import { Card, Header, Item, Button, Icon, Message } from "semantic-ui-react";
 import { ProposalType } from "../runtime/transport";
 import { blake2AsHex } from '@polkadot/util-crypto';
 import styled from 'styled-components';
@@ -17,6 +17,7 @@ type BodyProps = {
   proposalId: number | ProposalId;
   proposerId: number | MemberId;
   isCancellable: boolean;
+  cancellationFee: number;
 };
 
 function ProposedAddress(props: { address: string }) {
@@ -109,7 +110,8 @@ export default function Body({
   iAmProposer,
   proposalId,
   proposerId,
-  isCancellable
+  isCancellable,
+  cancellationFee
 }: BodyProps) {
   const parseParams = paramParsers[type];
   const parsedParams = parseParams(params);
@@ -130,18 +132,30 @@ export default function Body({
             </ProposalParam>
           )) }
         </Item.Group>
-        { iAmProposer && isCancellable && (
-          <Button.Group color="red">
-            <TxButton
-              params={ [ proposerId, proposalId ] }
-              tx={ "proposalsEngine.cancelProposal" }
-              onClick={ sendTx => { sendTx(); } }
-              >
-              <Icon name="times" inverted />
-              Withdraw proposal
-            </TxButton>
-          </Button.Group>
-          ) }
+        { iAmProposer && isCancellable && (<>
+          <Message warning active>
+            <Message.Content>
+              <Message.Header>Proposal cancellation</Message.Header>
+              <p style={{ margin: '0.5em 0', padding: '0' }}>
+                You can only cancel your proposal while it's still in the Voting Period.
+              </p>
+              <p style={{ margin: '0.5em 0', padding: '0' }}>
+                The cancellation fee for this type of proposal is: <b>{ cancellationFee || 'NONE' }</b>
+              </p>
+              <Button.Group color="red">
+                <TxButton
+                  params={ [ proposerId, proposalId ] }
+                  tx={ "proposalsEngine.cancelProposal" }
+                  onClick={ sendTx => { sendTx(); } }
+                  className={'icon left labeled'}
+                  >
+                  <Icon name="cancel" inverted />
+                  Withdraw proposal
+                </TxButton>
+              </Button.Group>
+            </Message.Content>
+          </Message>
+          </>) }
       </Card.Content>
     </Card>
   );

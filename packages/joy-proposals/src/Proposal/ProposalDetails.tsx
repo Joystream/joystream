@@ -104,6 +104,7 @@ function ProposalDetails({
         proposalId={ proposalId }
         proposerId={ proposal.proposerId }
         isCancellable={ isVotingPeriod }
+        cancellationFee={ 0 } // TODO: We need to access it from the runtime!
         />
       { iAmCouncilMember && (
         <VotingSection
