@@ -3,7 +3,7 @@ import { Proposal, ProposalId, Seats, VoteKind } from "@joystream/types/proposal
 import { MemberId, Profile } from "@joystream/types/members";
 import { ApiProps } from "@polkadot/react-api/types";
 import { u32, Vec, Option } from "@polkadot/types/";
-import { Balance, Moment, AccountId } from "@polkadot/types/interfaces";
+import { Balance, Moment, AccountId, BalanceOf } from "@polkadot/types/interfaces";
 import { ApiPromise } from "@polkadot/api";
 import { RoleKeys } from "@joystream/types/members";
 import { FIRST_MEMBER_ID } from '@polkadot/joy-members/constants';
@@ -76,6 +76,10 @@ export class SubstrateTransport extends Transport {
     return this.members.memberProfile(id) as Promise<Option<Profile>>;
   }
 
+  async cancellationFee(): Promise<number> {
+    return (await this.api.consts.proposalsEngine.cancellationFee as BalanceOf).toNumber()
+  }
+
   async proposalById(id: ProposalId): Promise<ParsedProposal> {
     const rawDetails = (await this.proposalDetailsById(id)).toJSON() as { [k: string]: any };
     const type = Object.keys(rawDetails)[0] as ProposalType;
@@ -92,6 +96,7 @@ export class SubstrateTransport extends Transport {
     };
     const createdAtBlock = rawProposal.createdAt;
     const createdAt = await this.blockTimestamp(createdAtBlock.toNumber());
+    const cancellationFee = await this.cancellationFee();
 
     return {
       id,
@@ -100,7 +105,8 @@ export class SubstrateTransport extends Transport {
       type,
       proposer,
       createdAtBlock: createdAtBlock.toJSON(),
-      createdAt
+      createdAt,
+      cancellationFee
     };
   }
 
@@ -192,11 +198,14 @@ export class SubstrateTransport extends Transport {
     const issuance = (await this.totalIssuance()).toNumber();
     const stake = calculateStake(type, issuance);
     const meta = calculateMetaFromType(type);
+    // Currently it's same for all types, but this will change soon
+    const cancellationFee = await this.cancellationFee();
     return {
       type,
       votingPeriod,
       gracePeriod,
       stake,
+      cancellationFee,
       ...meta
     };
   }
