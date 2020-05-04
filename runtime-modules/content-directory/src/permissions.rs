@@ -7,7 +7,6 @@ use runtime_primitives::traits::{MaybeSerializeDeserialize, Member, SimpleArithm
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use srml_support::{dispatch, ensure, Parameter};
-use system::ensure_signed;
 
 /// Model of authentication manager.
 pub trait ActorAuthenticator: system::Trait + Debug {
@@ -38,18 +37,18 @@ pub trait ActorAuthenticator: system::Trait + Debug {
         + Ord;
 
     /// Authenticate account as being current authority.
-    fn authenticate_authority(origin: Self::Origin) -> bool;
+    fn authenticate_authority(origin: &Self::AccountId) -> bool;
 
     /// Authenticate account as being given actor in given group.
     fn authenticate_actor_in_group(
-        account_id: Self::AccountId,
+        account_id: &Self::AccountId,
         actor_id: Self::ActorId,
         group_id: Self::GroupId,
     ) -> bool;
 }
 
 pub fn ensure_actor_in_group_auth_success<T: ActorAuthenticator>(
-    account_id: T::AccountId,
+    account_id: &T::AccountId,
     actor_id: T::ActorId,
     group_id: T::GroupId,
 ) -> dispatch::Result {
@@ -61,10 +60,10 @@ pub fn ensure_actor_in_group_auth_success<T: ActorAuthenticator>(
 }
 
 pub fn ensure_authority_auth_success<T: ActorAuthenticator>(
-    origin: T::Origin,
+    account_id: &T::AccountId,
 ) -> dispatch::Result {
     ensure!(
-        T::authenticate_authority(origin),
+        T::authenticate_authority(account_id),
         ERROR_AUTHORITY_AUTH_FAILED
     );
     Ok(())
@@ -74,8 +73,18 @@ pub fn ensure_authority_auth_success<T: ActorAuthenticator>(
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ActorInGroupId<T: ActorAuthenticator> {
-    pub actor_id: T::ActorId,
-    pub group_id: T::GroupId,
+    actor_id: T::ActorId,
+    group_id: T::GroupId,
+}
+
+impl<T: ActorAuthenticator> ActorInGroupId<T> {
+    pub fn get_actor_id(&self) -> T::ActorId {
+        self.actor_id
+    }
+
+    pub fn get_group_id(&self) -> T::GroupId {
+        self.group_id
+    }
 }
 
 impl<T: ActorAuthenticator> ActorInGroupId<T> {
@@ -126,7 +135,7 @@ impl EntityCreationVoucher {
 }
 
 /// Who will be set as the controller for any newly created entity in a given class.
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Copy, Debug)]
 pub enum InitialControllerPolicy {
     ActorInGroup,
     Group,
@@ -184,11 +193,17 @@ impl ClassPermissions {
         self.entity_creation_blocked = entity_creation_blocked
     }
 
-    pub fn set_all_entity_property_values_locked(&mut self, all_entity_property_values_locked: bool) {
+    pub fn set_all_entity_property_values_locked(
+        &mut self,
+        all_entity_property_values_locked: bool,
+    ) {
         self.all_entity_property_values_locked = all_entity_property_values_locked
     }
 
-    pub fn set_initial_controller_of_created_entities(&mut self, initial_controller_of_created_entities: InitialControllerPolicy) {
+    pub fn set_initial_controller_of_created_entities(
+        &mut self,
+        initial_controller_of_created_entities: InitialControllerPolicy,
+    ) {
         self.initial_controller_of_created_entities = initial_controller_of_created_entities
     }
 
@@ -235,7 +250,10 @@ impl<T: ActorAuthenticator> EntityController<T> {
         Self::ActorInGroup(ActorInGroupId::from(actor_id, group_id))
     }
 
-    pub fn from(initial_controller_policy: InitialControllerPolicy, actor_in_group: ActorInGroupId<T>) -> Self {
+    pub fn from(
+        initial_controller_policy: InitialControllerPolicy,
+        actor_in_group: ActorInGroupId<T>,
+    ) -> Self {
         if let InitialControllerPolicy::ActorInGroup = initial_controller_policy {
             EntityController::from_actor_in_group(actor_in_group.actor_id, actor_in_group.group_id)
         } else {
@@ -282,12 +300,12 @@ impl<T: ActorAuthenticator> EntityPermission<T> {
     }
 
     pub fn is_controller(&self, actor_in_group: &ActorInGroupId<T>) -> bool {
-        match self.controller {
+        match &self.controller {
             Some(EntityController::Group(controller_group_id)) => {
-                controller_group_id == actor_in_group.group_id
+                *controller_group_id == actor_in_group.group_id
             }
             Some(EntityController::ActorInGroup(controller_actor_in_group)) => {
-                controller_actor_in_group == *actor_in_group
+                *controller_actor_in_group == *actor_in_group
             }
             _ => false,
         }
@@ -347,15 +365,13 @@ pub enum EntityAccessLevel {
 }
 
 impl EntityAccessLevel {
-    /// Derives the EntityAccessLevel the caller is attempting to act with.
-    /// It expects only signed.
+    /// Derives the EntityAccessLevel for the caller, attempting to act.
     pub fn derive_signed<T: Trait>(
-        origin: T::Origin,
+        account_id: &T::AccountId,
         entity_id: T::EntityId,
         entity_permissions: &EntityPermission<T>,
         actor_in_group: ActorInGroupId<T>,
     ) -> Result<Self, &'static str> {
-        let account_id = ensure_signed(origin)?;
         ensure_actor_in_group_auth_success::<T>(
             account_id,
             actor_in_group.actor_id,

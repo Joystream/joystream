@@ -10,7 +10,7 @@ use crate::{permissions::EntityAccessLevel, *};
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Default, Decode, Clone, Copy, PartialEq, Eq, Debug)]
-struct IsLocked {
+pub struct IsLocked {
     is_locked_from_maintainer: bool,
     is_locked_from_controller: bool,
 }

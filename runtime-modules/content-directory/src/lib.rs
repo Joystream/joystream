@@ -171,11 +171,7 @@ impl<T: Trait> Default for Class<T> {
 }
 
 impl<T: Trait> Class<T> {
-    fn new(
-        class_permissions: ClassPermissions,
-        name: Vec<u8>,
-        description: Vec<u8>,
-    ) -> Self {
+    fn new(class_permissions: ClassPermissions, name: Vec<u8>, description: Vec<u8>) -> Self {
         Self {
             class_permissions,
             properties: vec![],
@@ -305,7 +301,9 @@ decl_module! {
             group_id: T::GroupId,
             limit: EntityCreationLimit
         ) -> dispatch::Result {
-            ensure_authority_auth_success::<T>(origin)?;
+            let account_id = ensure_signed(origin)?;
+
+            ensure_authority_auth_success::<T>(&account_id)?;
             Self::ensure_known_class_id(class_id)?;
             Self::ensure_entity_creator_does_not_exist(class_id, group_id)?;
 
@@ -333,7 +331,9 @@ decl_module! {
             class_id: T::ClassId,
             group_id: T::GroupId,
         ) -> dispatch::Result {
-            ensure_authority_auth_success::<T>(origin)?;
+            let account_id = ensure_signed(origin)?;
+
+            ensure_authority_auth_success::<T>(&account_id)?;
             Self::ensure_known_class_id(class_id)?;
             Self::ensure_entity_creator_exists(class_id, group_id)?;
 
@@ -350,7 +350,9 @@ decl_module! {
             entity_id: T::EntityId,
             group_id: T::GroupId,
         ) -> dispatch::Result {
-            ensure_authority_auth_success::<T>(origin)?;
+            let account_id = ensure_signed(origin)?;
+
+            ensure_authority_auth_success::<T>(&account_id)?;
             Self::ensure_known_entity_id(entity_id)?;
             Self::ensure_entity_maintainer_does_not_exist(entity_id, group_id)?;
 
@@ -367,7 +369,9 @@ decl_module! {
             entity_id: T::EntityId,
             group_id: T::GroupId,
         ) -> dispatch::Result {
-            ensure_authority_auth_success::<T>(origin)?;
+            let account_id = ensure_signed(origin)?;
+
+            ensure_authority_auth_success::<T>(&account_id)?;
             Self::ensure_known_entity_id(entity_id)?;
             Self::ensure_entity_maintainer_exists(entity_id, group_id)?;
 
@@ -385,7 +389,9 @@ decl_module! {
             controller: EntityController<T>,
             maximum_entities_count: u64
         ) -> dispatch::Result {
-            ensure_authority_auth_success::<T>(origin)?;
+            let account_id = ensure_signed(origin)?;
+
+            ensure_authority_auth_success::<T>(&account_id)?;
             Self::ensure_known_class_id(class_id)?;
             Self::ensure_entity_creation_voucher_exists(class_id, &controller)?;
 
@@ -406,7 +412,9 @@ decl_module! {
             initial_controller_of_created_entities: Option<InitialControllerPolicy>,
             all_entity_property_values_locked: Option<bool>
         ) -> dispatch::Result {
-            ensure_authority_auth_success::<T>(origin)?;
+            let account_id = ensure_signed(origin)?;
+
+            ensure_authority_auth_success::<T>(&account_id)?;
             Self::ensure_known_class_id(class_id)?;
 
             //
@@ -440,7 +448,8 @@ decl_module! {
             description: Vec<u8>,
             class_permissions: ClassPermissions
         ) -> dispatch::Result {
-            ensure_authority_auth_success::<T>(origin)?;
+            let account_id = ensure_signed(origin)?;
+            ensure_authority_auth_success::<T>(&account_id)?;
 
             Self::ensure_class_name_is_valid(&name)?;
 
@@ -474,25 +483,26 @@ decl_module! {
             existing_properties: Vec<PropertyId>,
             new_properties: Vec<Property<T>>
         ) -> dispatch::Result {
-            ensure_authority_auth_success::<T>(origin)?;
-            
+            let account_id = ensure_signed(origin)?;
+            ensure_authority_auth_success::<T>(&account_id)?;
+
             Self::ensure_known_class_id(class_id)?;
 
             let non_empty_schema = !existing_properties.is_empty() || !new_properties.is_empty();
-    
+
             ensure!(non_empty_schema, ERROR_NO_PROPS_IN_CLASS_SCHEMA);
-    
+
             let class = <ClassById<T>>::get(class_id);
-    
+
             let mut unique_prop_names = BTreeSet::new();
             for prop in class.properties.iter() {
                 unique_prop_names.insert(prop.name.clone());
             }
-    
+
             for prop in new_properties.iter() {
                 prop.ensure_name_is_valid()?;
                 prop.ensure_description_is_valid()?;
-    
+
                 // Check that the name of a new property is unique within its class.
                 ensure!(
                     !unique_prop_names.contains(&prop.name),
@@ -500,7 +510,7 @@ decl_module! {
                 );
                 unique_prop_names.insert(prop.name.clone());
             }
-    
+
             // Check that existing props are valid indices of class properties vector:
             let has_unknown_props = existing_properties
                 .iter()
@@ -509,7 +519,7 @@ decl_module! {
                 !has_unknown_props,
                 ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
             );
-    
+
             // Check validity of Internal(T::ClassId) for new_properties.
             let has_unknown_internal_id = new_properties.iter().any(|prop| match prop.prop_type {
                 PropertyType::Reference(other_class_id, _) => !<ClassById<T>>::exists(other_class_id),
@@ -519,26 +529,26 @@ decl_module! {
                 !has_unknown_internal_id,
                 ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID
             );
-    
+
             // Use the current length of schemas in this class as an index
             // for the next schema that will be sent in a result of this function.
             let schema_idx = class.schemas.len() as SchemaId;
-    
+
             let mut schema = Schema::new(existing_properties);
-    
+
             let mut updated_class_props = class.properties;
             new_properties.into_iter().for_each(|prop| {
                 let prop_id = updated_class_props.len() as PropertyId;
                 updated_class_props.push(prop);
                 schema.properties.push(prop_id);
             });
-    
+
             <ClassById<T>>::mutate(class_id, |class| {
                 class.properties = updated_class_props;
                 class.schemas.push(schema);
-            });     
+            });
 
-            Ok(()) 
+            Ok(())
         }
 
         pub fn update_class_schema_status(
@@ -547,7 +557,8 @@ decl_module! {
             schema_id: SchemaId,
             schema_status: bool
         ) -> dispatch::Result {
-            ensure_authority_auth_success::<T>(origin)?;
+            let account_id = ensure_signed(origin)?;
+            ensure_authority_auth_success::<T>(&account_id)?;
             Self::ensure_known_class_id(class_id)?;
 
             // Check that schema_id is a valid index of class schemas vector:
@@ -568,7 +579,8 @@ decl_module! {
             frozen_for_controller: Option<bool>,
             referenceable: Option<bool>
         ) -> dispatch::Result {
-            ensure_authority_auth_success::<T>(origin)?;
+            let account_id = ensure_signed(origin)?;
+            ensure_authority_auth_success::<T>(&account_id)?;
             Self::ensure_known_entity_id(entity_id)?;
 
             //
@@ -609,33 +621,34 @@ decl_module! {
             class_id: T::ClassId,
             actor_in_group: ActorInGroupId<T>,
         ) -> dispatch::Result {
+            let account_id = ensure_signed(origin)?;
             let class = Self::ensure_class_exists(class_id)?;
             let class_permissions = class.get_permissions();
             class_permissions.ensure_maximum_entities_count_limit_not_reached()?;
             class_permissions.ensure_entity_creation_not_blocked()?;
             // If origin is not an authority
-            let entity_controller = if !T::authenticate_authority(origin) {
+            let entity_controller = if !T::authenticate_authority(&account_id) {
+                Self::ensure_entity_creator_exists(class_id, actor_in_group.get_group_id())?;
                 let initial_controller_of_created_entities = class.get_permissions().get_initial_controller_of_created_entities();
                 let entity_controller = EntityController::from(initial_controller_of_created_entities, actor_in_group);
-                Self::ensure_entity_creator_exists(class_id, actor_in_group.group_id)?;
 
                 // Ensure entity creation voucher exists
                 if <EntityCreationVouchers<T>>::exists(class_id, &entity_controller) {
-    
+
                     let entity_creation_voucher = Self::entity_creation_vouchers(class_id, &entity_controller);
 
                     // Ensure voucher limit not reached
                     Self::ensure_voucher_limit_not_reached(entity_creation_voucher)?;
-    
+
                     //
                     // == MUTATION SAFE ==
                     //
-    
-                    <EntityCreationVouchers<T>>::mutate(class_id, entity_controller, |entity_creation_voucher| {
+
+                    <EntityCreationVouchers<T>>::mutate(class_id, &entity_controller, |entity_creation_voucher| {
                         entity_creation_voucher.increment_created_entities_count()
                     })
                 } else {
-                    <EntityCreationVouchers<T>>::insert(class_id, entity_controller, 
+                    <EntityCreationVouchers<T>>::insert(class_id, entity_controller.clone(),
                         EntityCreationVoucher::new(class.get_permissions().get_controller_entity_creation_limit())
                     );
                 }
@@ -643,7 +656,7 @@ decl_module! {
             } else {
                 None
             };
-        
+
             Self::perform_entity_creation(class_id, entity_controller);
             Ok(())
         }
@@ -653,11 +666,13 @@ decl_module! {
             actor_in_group: ActorInGroupId<T>,
             entity_id: T::EntityId,
         ) -> dispatch::Result {
+            let account_id = ensure_signed(origin)?;
+
+            Self::ensure_known_entity_id(entity_id)?;
+
             // If origin is not an authority
-            if !T::authenticate_authority(origin) {
-                Self::ensure_known_entity_id(entity_id)?;
-                let entity = Self::entity_by_id(entity_id);
-                let access_level = EntityAccessLevel::derive_signed(origin, entity_id, entity.get_permissions(), actor_in_group)?;
+            if !T::authenticate_authority(&account_id) {
+                let (_, access_level) = Self::get_entity_and_access_level(account_id, entity_id, actor_in_group)?;
                 EntityPermission::<T>::ensure_group_can_remove_entity(access_level)?;
             }
 
@@ -679,65 +694,100 @@ decl_module! {
             schema_id: SchemaId,
             property_values: BTreeMap<PropertyId, PropertyValue<T>>
         ) -> dispatch::Result {
-            let raw_origin = Self::ensure_root_or_signed(origin)?;
-            Self::do_add_schema_support_to_entity(&raw_origin, with_credential, as_entity_maintainer, entity_id, schema_id, property_values)
+            let account_id = ensure_signed(origin)?;
+
+            Self::ensure_known_entity_id(entity_id)?;
+            // If origin is not an authority
+            let entity = if !T::authenticate_authority(&account_id) {
+                let (entity, access_level) = Self::get_entity_and_access_level(account_id, entity_id, actor_in_group)?;
+                EntityPermission::<T>::ensure_group_can_add_schema_support(access_level)?;
+                entity
+            } else {
+                Self::entity_by_id(entity_id)
+            };
+            Self::add_entity_schema_support(entity_id, entity, schema_id, property_values)
         }
 
         pub fn update_entity_property_values(
             origin,
-            with_credential: Option<T::Credential>,
-            as_entity_maintainer: bool,
+            actor_in_group: ActorInGroupId<T>,
             entity_id: T::EntityId,
             property_values: BTreeMap<PropertyId, PropertyValue<T>>
         ) -> dispatch::Result {
-            let raw_origin = Self::ensure_root_or_signed(origin)?;
-            Self::do_update_entity_property_values(&raw_origin, with_credential, as_entity_maintainer, entity_id, property_values)
+            let account_id = ensure_signed(origin)?;
+
+            Self::ensure_known_entity_id(entity_id)?;
+            let entity = Self::entity_by_id(entity_id);
+
+            // If origin is not an authority
+            let access_level = Self::get_entity_access_level(account_id, entity_id, &entity, actor_in_group)?;
+            Self::complete_entity_property_values_update(entity_id, entity, property_values, access_level)
         }
 
         pub fn clear_entity_property_vector(
             origin,
-            with_credential: Option<T::Credential>,
-            as_entity_maintainer: bool,
+            actor_in_group: ActorInGroupId<T>,
             entity_id: T::EntityId,
             in_class_schema_property_id: PropertyId
         ) -> dispatch::Result {
-            let raw_origin = Self::ensure_root_or_signed(origin)?;
-            Self::do_clear_entity_property_vector(&raw_origin, with_credential, as_entity_maintainer, entity_id, in_class_schema_property_id)
+            let account_id = ensure_signed(origin)?;
+
+            Self::ensure_known_entity_id(entity_id)?;
+            let entity = Self::entity_by_id(entity_id);
+
+            // If origin is not an authority
+            let access_level = Self::get_entity_access_level(account_id, entity_id, &entity, actor_in_group)?;
+
+            Self::complete_entity_property_vector_cleaning(
+                entity_id,
+                entity,
+                in_class_schema_property_id,
+                access_level
+            )
         }
 
         pub fn remove_at_entity_property_vector(
             origin,
-            with_credential: Option<T::Credential>,
-            as_entity_maintainer: bool,
+            actor_in_group: ActorInGroupId<T>,
             entity_id: T::EntityId,
             in_class_schema_property_id: PropertyId,
             index_in_property_vec: VecMaxLength,
             nonce: T::Nonce
         ) -> dispatch::Result {
-            let raw_origin = Self::ensure_root_or_signed(origin)?;
-            Self::do_remove_at_entity_property_vector(&raw_origin, with_credential, as_entity_maintainer, entity_id, in_class_schema_property_id, index_in_property_vec, nonce)
+            let account_id = ensure_signed(origin)?;
+
+            Self::ensure_known_entity_id(entity_id)?;
+            let entity = Self::entity_by_id(entity_id);
+
+            // If origin is not an authority
+            let access_level = Self::get_entity_access_level(account_id, entity_id, &entity, actor_in_group)?;
+            Self::complete_remove_at_entity_property_vector(entity_id, entity, in_class_schema_property_id, index_in_property_vec, nonce, access_level)
         }
 
         pub fn insert_at_entity_property_vector(
             origin,
-            with_credential: Option<T::Credential>,
-            as_entity_maintainer: bool,
+            actor_in_group: ActorInGroupId<T>,
             entity_id: T::EntityId,
             in_class_schema_property_id: PropertyId,
             index_in_property_vec: VecMaxLength,
             property_value: PropertyValue<T>,
             nonce: T::Nonce
         ) -> dispatch::Result {
-            let raw_origin = Self::ensure_root_or_signed(origin)?;
-            Self::do_insert_at_entity_property_vector(
-                &raw_origin,
-                with_credential,
-                as_entity_maintainer,
+            let account_id = ensure_signed(origin)?;
+
+            Self::ensure_known_entity_id(entity_id)?;
+            let entity = Self::entity_by_id(entity_id);
+
+            // If origin is not an authority
+            let access_level = Self::get_entity_access_level(account_id, entity_id, &entity, actor_in_group)?;
+            Self::complete_insert_at_entity_property_vector(
                 entity_id,
+                entity,
                 in_class_schema_property_id,
                 index_in_property_vec,
                 property_value,
-                nonce
+                nonce,
+                access_level
             )
         }
 
@@ -774,16 +824,6 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    fn ensure_root_or_signed(
-        origin: T::Origin,
-    ) -> Result<system::RawOrigin<T::AccountId>, &'static str> {
-        match origin.into() {
-            Ok(system::RawOrigin::Root) => Ok(system::RawOrigin::Root),
-            Ok(system::RawOrigin::Signed(account_id)) => Ok(system::RawOrigin::Signed(account_id)),
-            _ => Err("BadOrigin:ExpectedRootOrSigned"),
-        }
-    }
-
     fn perform_entity_creation(
         class_id: T::ClassId,
         entity_controller: Option<EntityController<T>>,
@@ -806,121 +846,84 @@ impl<T: Trait> Module<T> {
         entity_id
     }
 
-    fn do_update_entity_property_values(
-        raw_origin: &system::RawOrigin<T::AccountId>,
-        with_credential: Option<T::Credential>,
-        as_entity_maintainer: bool,
-        entity_id: T::EntityId,
-        property_values: BTreeMap<PropertyId, PropertyValue<T>>,
-    ) -> dispatch::Result {
-        let class_id = Self::get_class_id_by_entity_id(entity_id)?;
-
-        Self::if_entity_permissions_satisfied(
-            raw_origin,
-            with_credential,
-            as_entity_maintainer,
-            ClassPermissions::can_update_entity,
-            class_id,
-            |_class_permissions, _access_level| {
-                Self::complete_entity_property_values_update(entity_id, property_values)
-            },
-        )
-    }
-
-    fn do_clear_entity_property_vector(
-        raw_origin: &system::RawOrigin<T::AccountId>,
-        with_credential: Option<T::Credential>,
-        as_entity_maintainer: bool,
-        entity_id: T::EntityId,
-        in_class_schema_property_id: PropertyId,
-    ) -> dispatch::Result {
-        let class_id = Self::get_class_id_by_entity_id(entity_id)?;
-
-        Self::if_entity_permissions_satisfied(
-            raw_origin,
-            with_credential,
-            as_entity_maintainer,
-            ClassPermissions::can_update_entity,
-            class_id,
-            |_class_permissions, _access_level| {
-                Self::complete_entity_property_vector_cleaning(
-                    entity_id,
-                    in_class_schema_property_id,
-                )
-            },
-        )
-    }
-
-    fn do_remove_at_entity_property_vector(
-        raw_origin: &system::RawOrigin<T::AccountId>,
-        with_credential: Option<T::Credential>,
-        as_entity_maintainer: bool,
-        entity_id: T::EntityId,
-        in_class_schema_property_id: PropertyId,
-        index_in_property_vec: VecMaxLength,
-        nonce: T::Nonce,
-    ) -> dispatch::Result {
-        let class_id = Self::get_class_id_by_entity_id(entity_id)?;
-
-        Self::if_entity_permissions_satisfied(
-            raw_origin,
-            with_credential,
-            as_entity_maintainer,
-            ClassPermissions::can_update_entity,
-            class_id,
-            |_class_permissions, _access_level| {
-                Self::complete_remove_at_entity_property_vector(
-                    entity_id,
-                    in_class_schema_property_id,
-                    index_in_property_vec,
-                    nonce,
-                )
-            },
-        )
-    }
-
-    fn do_insert_at_entity_property_vector(
-        raw_origin: &system::RawOrigin<T::AccountId>,
-        with_credential: Option<T::Credential>,
-        as_entity_maintainer: bool,
-        entity_id: T::EntityId,
-        in_class_schema_property_id: PropertyId,
-        index_in_property_vec: VecMaxLength,
-        property_value: PropertyValue<T>,
-        nonce: T::Nonce,
-    ) -> dispatch::Result {
-        let class_id = Self::get_class_id_by_entity_id(entity_id)?;
-
-        Self::if_entity_permissions_satisfied(
-            raw_origin,
-            with_credential,
-            as_entity_maintainer,
-            ClassPermissions::can_update_entity,
-            class_id,
-            |_class_permissions, _access_level| {
-                Self::complete_insert_at_entity_property_vector(
-                    entity_id,
-                    in_class_schema_property_id,
-                    index_in_property_vec,
-                    property_value,
-                    nonce,
-                )
-            },
-        )
-    }
-
     fn complete_entity_removal(entity_id: T::EntityId) {
         <EntityById<T>>::remove(entity_id);
         <EntityMaintainers<T>>::remove_prefix(entity_id);
     }
 
+    pub fn add_entity_schema_support(
+        entity_id: T::EntityId,
+        entity: Entity<T>,
+        schema_id: SchemaId,
+        property_values: BTreeMap<PropertyId, PropertyValue<T>>,
+    ) -> dispatch::Result {
+        let class = Self::class_by_id(entity.class_id);
+
+        // Check that schema_id is a valid index of class schemas vector:
+        Self::ensure_class_schema_id_exists(&class, schema_id)?;
+
+        // Ensure class schema is active
+        Self::ensure_class_schema_is_active(&class, schema_id)?;
+
+        // Check that schema id is not yet added to this entity:
+        Self::ensure_schema_id_is_not_added(&entity, schema_id)?;
+
+        let class_schema_opt = class.schemas.get(schema_id as usize);
+        let schema_prop_ids = &class_schema_opt.unwrap().properties;
+
+        let current_entity_values = entity.values.clone();
+        let mut appended_entity_values = entity.values;
+        let mut entities_rc_to_increment_vec = vec![];
+
+        for prop_id in schema_prop_ids.iter() {
+            if current_entity_values.contains_key(prop_id) {
+                // A property is already added to the entity and cannot be updated
+                // while adding a schema support to this entity.
+                continue;
+            }
+
+            let class_prop = &class.properties[*prop_id as usize];
+
+            // If a value was not povided for the property of this schema:
+            if let Some(new_value) = property_values.get(prop_id) {
+                class_prop.ensure_property_value_to_update_is_valid(new_value)?;
+                if let Some(entities_rc_to_increment) = new_value.get_involved_entities() {
+                    entities_rc_to_increment_vec.push(entities_rc_to_increment);
+                }
+                appended_entity_values.insert(*prop_id, new_value.to_owned());
+            } else {
+                // All required prop values should be are provided
+                ensure!(!class_prop.required, ERROR_MISSING_REQUIRED_PROP);
+                // Add all missing non required schema prop values as PropertyValue::Bool(false)
+                appended_entity_values.insert(*prop_id, PropertyValue::Bool(false));
+            }
+        }
+
+        <EntityById<T>>::mutate(entity_id, |entity| {
+            // Add a new schema to the list of schemas supported by this entity.
+            entity.supported_schemas.insert(schema_id);
+
+            // Update entity values only if new properties have been added.
+            if appended_entity_values.len() > entity.values.len() {
+                entity.values = appended_entity_values;
+            }
+        });
+        entities_rc_to_increment_vec
+            .iter()
+            .for_each(|entities_rc_to_increment| {
+                Self::increment_entities_rc(entities_rc_to_increment);
+            });
+
+        Ok(())
+    }
+
     pub fn complete_entity_property_values_update(
         entity_id: T::EntityId,
+        entity: Entity<T>,
         new_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
+        access_level: Option<EntityAccessLevel>,
     ) -> dispatch::Result {
-        Self::ensure_known_entity_id(entity_id)?;
-
-        let (entity, class) = Self::get_entity_and_class(entity_id);
+        let class = Self::class_by_id(entity.class_id);
 
         // Get current property values of an entity as a mutable vector,
         // so we can update them if new values provided present in new_property_values.
@@ -993,10 +996,10 @@ impl<T: Trait> Module<T> {
 
     fn complete_entity_property_vector_cleaning(
         entity_id: T::EntityId,
+        entity: Entity<T>,
         in_class_schema_property_id: PropertyId,
+        access_level: Option<EntityAccessLevel>,
     ) -> dispatch::Result {
-        Self::ensure_known_entity_id(entity_id)?;
-        let entity = Self::entity_by_id(entity_id);
         let current_prop_value = entity
             .values
             .get(&in_class_schema_property_id)
@@ -1029,13 +1032,12 @@ impl<T: Trait> Module<T> {
 
     fn complete_remove_at_entity_property_vector(
         entity_id: T::EntityId,
+        entity: Entity<T>,
         in_class_schema_property_id: PropertyId,
         index_in_property_vec: VecMaxLength,
         nonce: T::Nonce,
+        access_level: Option<EntityAccessLevel>,
     ) -> dispatch::Result {
-        Self::ensure_known_entity_id(entity_id)?;
-        let entity = Self::entity_by_id(entity_id);
-
         let current_prop_value = entity
             .values
             .get(&in_class_schema_property_id)
@@ -1065,14 +1067,14 @@ impl<T: Trait> Module<T> {
 
     fn complete_insert_at_entity_property_vector(
         entity_id: T::EntityId,
+        entity: Entity<T>,
         in_class_schema_property_id: PropertyId,
         index_in_property_vec: VecMaxLength,
         property_value: PropertyValue<T>,
         nonce: T::Nonce,
+        access_level: Option<EntityAccessLevel>,
     ) -> dispatch::Result {
-        Self::ensure_known_entity_id(entity_id)?;
-
-        let (entity, class) = Self::get_entity_and_class(entity_id);
+        let class = Self::class_by_id(entity.class_id);
 
         // Get class-level information about this property
         let class_prop = class
@@ -1111,28 +1113,6 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn do_add_schema_support_to_entity(
-        raw_origin: &system::RawOrigin<T::AccountId>,
-        with_credential: Option<T::Credential>,
-        as_entity_maintainer: bool,
-        entity_id: T::EntityId,
-        schema_id: SchemaId,
-        property_values: BTreeMap<PropertyId, PropertyValue<T>>,
-    ) -> dispatch::Result {
-        // class id of the entity being updated
-        let class_id = Self::get_class_id_by_entity_id(entity_id)?;
-
-        Self::if_entity_permissions_satisfied(
-            raw_origin,
-            with_credential,
-            ClassPermissions::can_update_entity,
-            class_id,
-            |_class_permissions, _access_level| {
-                Self::add_entity_schema_support(entity_id, schema_id, property_values)
-            },
-        )
-    }
-
     fn increment_entities_rc(entity_ids: &[T::EntityId]) {
         entity_ids.iter().for_each(|entity_id| {
             <EntityById<T>>::mutate(entity_id, |entity| entity.reference_count += 1)
@@ -1149,33 +1129,6 @@ impl<T: Trait> Module<T> {
     fn ensure_class_exists(class_id: T::ClassId) -> Result<Class<T>, &'static str> {
         ensure!(<ClassById<T>>::exists(class_id), ERROR_CLASS_NOT_FOUND);
         Ok(Self::class_by_id(class_id))
-    }
-
-    /// Derives the access level of the caller.
-    /// If the predicate passes, the mutate method is invoked.
-    fn mutate_class_permissions<Predicate, Mutate>(
-        raw_origin: &system::RawOrigin<T::AccountId>,
-        with_credential: Option<T::Credential>,
-        // predicate to test
-        predicate: Predicate,
-        // class permissions to perform mutation on if it exists
-        class_id: T::ClassId,
-        // actual mutation to apply.
-        mutate: Mutate,
-    ) -> dispatch::Result
-    where
-        Predicate:
-            FnOnce(&ClassPermissions, ClassAccessLevel) -> dispatch::Result,
-        Mutate: FnOnce(&mut ClassPermissions) -> dispatch::Result,
-    {
-        let access_level = Self::derive_access_level(raw_origin, with_credential, None)?;
-        let class = Self::ensure_class_exists(class_id)?;
-        predicate(class.get_permissions(), &access_level)?;
-        <ClassById<T>>::mutate(class_id, |inner_class| {
-            //It is safe to not check for an error here, as result always be  Ok(())
-            let _ = mutate(inner_class.get_permissions_mut());
-        });
-        Ok(())
     }
 
     /// Derives the access level of the caller.
@@ -1216,71 +1169,39 @@ impl<T: Trait> Module<T> {
         Ok(entity.class_id)
     }
 
-    pub fn add_entity_schema_support(
+    fn get_entity_and_access_level(
+        account_id: T::AccountId,
         entity_id: T::EntityId,
-        schema_id: SchemaId,
-        property_values: BTreeMap<PropertyId, PropertyValue<T>>,
-    ) -> dispatch::Result {
-        Self::ensure_known_entity_id(entity_id)?;
+        actor_in_group: ActorInGroupId<T>,
+    ) -> Result<(Entity<T>, EntityAccessLevel), &'static str> {
+        let entity = Self::entity_by_id(entity_id);
+        let access_level = EntityAccessLevel::derive_signed(
+            &account_id,
+            entity_id,
+            entity.get_permissions(),
+            actor_in_group,
+        )?;
+        Ok((entity, access_level))
+    }
 
-        let (entity, class) = Self::get_entity_and_class(entity_id);
-
-        // Check that schema_id is a valid index of class schemas vector:
-        Self::ensure_class_schema_id_exists(&class, schema_id)?;
-
-        // Ensure class schema is active
-        Self::ensure_class_schema_is_active(&class, schema_id)?;
-
-        // Check that schema id is not yet added to this entity:
-        Self::ensure_schema_id_is_not_added(&entity, schema_id)?;
-
-        let class_schema_opt = class.schemas.get(schema_id as usize);
-        let schema_prop_ids = &class_schema_opt.unwrap().properties;
-
-        let current_entity_values = entity.values.clone();
-        let mut appended_entity_values = entity.values;
-        let mut entities_rc_to_increment_vec = vec![];
-
-        for prop_id in schema_prop_ids.iter() {
-            if current_entity_values.contains_key(prop_id) {
-                // A property is already added to the entity and cannot be updated
-                // while adding a schema support to this entity.
-                continue;
-            }
-
-            let class_prop = &class.properties[*prop_id as usize];
-
-            // If a value was not povided for the property of this schema:
-            if let Some(new_value) = property_values.get(prop_id) {
-                class_prop.ensure_property_value_to_update_is_valid(new_value)?;
-                if let Some(entities_rc_to_increment) = new_value.get_involved_entities() {
-                    entities_rc_to_increment_vec.push(entities_rc_to_increment);
-                }
-                appended_entity_values.insert(*prop_id, new_value.to_owned());
-            } else {
-                // All required prop values should be are provided
-                ensure!(!class_prop.required, ERROR_MISSING_REQUIRED_PROP);
-                // Add all missing non required schema prop values as PropertyValue::Bool(false)
-                appended_entity_values.insert(*prop_id, PropertyValue::Bool(false));
-            }
-        }
-
-        <EntityById<T>>::mutate(entity_id, |entity| {
-            // Add a new schema to the list of schemas supported by this entity.
-            entity.supported_schemas.insert(schema_id);
-
-            // Update entity values only if new properties have been added.
-            if appended_entity_values.len() > entity.values.len() {
-                entity.values = appended_entity_values;
-            }
-        });
-        entities_rc_to_increment_vec
-            .iter()
-            .for_each(|entities_rc_to_increment| {
-                Self::increment_entities_rc(entities_rc_to_increment);
-            });
-
-        Ok(())
+    pub fn get_entity_access_level(
+        account_id: T::AccountId,
+        entity_id: T::EntityId,
+        entity: &Entity<T>,
+        actor_in_group: ActorInGroupId<T>,
+    ) -> Result<Option<EntityAccessLevel>, &'static str> {
+        // If origin is not an authority
+        let access_level = if !T::authenticate_authority(&account_id) {
+            Some(EntityAccessLevel::derive_signed(
+                &account_id,
+                entity_id,
+                entity.get_permissions(),
+                actor_in_group,
+            )?)
+        } else {
+            None
+        };
+        Ok(access_level)
     }
 
     pub fn ensure_known_class_id(class_id: T::ClassId) -> dispatch::Result {
