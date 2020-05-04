@@ -24,7 +24,82 @@ $ cd generated/indexer
 $ yarn start
 ```
 
-## Query Node Constructs Explained
+#### Add a new mapping for Joystream MemberRegistered event
+
+1. Every mapping function get a parameter of `QueryEvent` type
+
+```ts
+import { QueryEvent, db } from "../generated/indexer/index";
+```
+
+2. `db` object for database operations: save/get/remove
+
+```ts
+import { db } from "../generated/indexer/index";
+```
+
+3. Define the event handler function with the following signature
+
+```ts
+export async function handleMemberRegistered(event: QueryEvent) {}
+```
+
+4. Inside the handler function create a new instance of the entity and fill properties with event data.
+
+```ts
+const member = new MemberRegistereds();
+// Get event data
+const { AccountId, MemberId } = event.event_params;
+
+member.accountId = AccountId;
+member.memberId = +MemberId;
+```
+
+5. Call `db.save()` method to save data on database
+
+```ts
+// Save to database.
+db.save(member, event);
+```
+
+6. Query database
+
+```ts
+// Query from database
+const m = await db.get("MemberRegistereds", { memberId: MemberId });
+console.log(m);
+```
+
+**Notes**
+`db.save()` method take two parameters entity instance and event. `db.save()` method use `event` to keep track of last processed event.
+
+`db.get()` method. The first parameter is the name of the entity class to query and the second parameter is the find options (to match record).
+
+**Complete code**
+
+```ts
+import { MemberRegistereds } from "../generated/indexer/entities/MemberRegistereds";
+import { QueryEvent, db } from "../generated/indexer/index";
+
+export async function handleMemberRegistered(event: QueryEvent) {
+  const member = new MemberRegistereds();
+
+  // Get event data
+  const { AccountId, MemberId } = event.event_params;
+
+  member.accountId = AccountId;
+  member.memberId = +MemberId;
+
+  // Save to database.
+  db.save(member, event);
+
+  // Query from database
+  const m = await db.get("MemberRegistereds", { memberId: MemberId });
+  console.log(m);
+}
+```
+
+#### Query Node Constructs Explained
 
 1. `schema.json` is where you define types for graphql server. Graphql server use these types to generate db models, db tables, graphql resolvers.
 
@@ -32,16 +107,16 @@ Below you can find a type defination example:
 
 ```json
 [
-	{
-		"name": "MemberRegistered",
-		"fields": [
-			{ "name": "memberId", "type": "int!" },
-			{
-				"name": "accountId",
-				"type": "string!"
-			}
-		]
-	}
+  {
+    "name": "MemberRegistered",
+    "fields": [
+      { "name": "memberId", "type": "int!" },
+      {
+        "name": "accountId",
+        "type": "string!"
+      }
+    ]
+  }
 ]
 ```
 
@@ -53,7 +128,7 @@ Below you can find a type defination example:
 import { QueryEvent } from "../generated/indexer/index";
 
 export function handleMemberRegistered(event: QueryEvent) {
-	console.log(`Event parameters: ${event.event_params}`);
+  console.log(`Event parameters: ${event.event_params}`);
 }
 ```
 
@@ -63,4 +138,15 @@ export function handleMemberRegistered(event: QueryEvent) {
 WS_PROVIDER_ENDPOINT_URI=ws://localhost:9944
 TYPE_REGISTER_PACKAGE_NAME=@joystream/types
 TYPE_REGISTER_FUNCTION=registerJoystreamTypes
+```
+
+4. Database connections options are defined in `.env`:
+
+```
+DB_NAME=test
+DB_USER=postgres
+DB_PASS=postgres
+DB_HOST=localhost
+DB_PORT=5432
+GRAPHQL_SERVER_PORT=4000
 ```
