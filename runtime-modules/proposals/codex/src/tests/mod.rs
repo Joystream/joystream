@@ -848,8 +848,8 @@ fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
 fn create_set_storage_role_parameters_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance_using_account_id(1, 500000);
-        let role_parameters = RoleParameters{
-            min_actors: 3,
+        let role_parameters = RoleParameters {
+            min_actors: 1,
             ..RoleParameters::default()
         };
         let proposal_fixture = ProposalTestFixture {
@@ -911,7 +911,7 @@ fn assert_failed_set_storage_parameters_call(
             1,
             b"title".to_vec(),
             b"body".to_vec(),
-            Some(<BalanceOf<Test>>::from(500u32)),
+            Some(<BalanceOf<Test>>::from(100_000_u32)),
             role_parameters,
         ),
         Err(error)
@@ -921,30 +921,34 @@ fn assert_failed_set_storage_parameters_call(
 #[test]
 fn create_set_storage_role_parameters_proposal_fails_with_invalid_parameters() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance(500000);
+        increase_total_balance_issuance_using_account_id(1, 500000);
 
-        let mut role_parameters = RoleParameters::default();
-        role_parameters.min_actors = 6;
+        let working_role_parameters = RoleParameters {
+            min_actors: 1,
+            ..RoleParameters::default()
+        };
+        let mut role_parameters = working_role_parameters.clone();
+        role_parameters.min_actors = 2;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterMinActors,
         );
 
-        role_parameters = RoleParameters::default();
-        role_parameters.max_actors = 4;
+        role_parameters = working_role_parameters.clone();
+        role_parameters.max_actors = 1;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterMaxActors,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.max_actors = 100;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterMaxActors,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.reward_period = 599;
         assert_failed_set_storage_parameters_call(
             role_parameters,
@@ -957,99 +961,99 @@ fn create_set_storage_role_parameters_proposal_fails_with_invalid_parameters() {
             Error::InvalidStorageRoleParameterRewardPeriod,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.bonding_period = 599;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterBondingPeriod,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.bonding_period = 28801;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterBondingPeriod,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.unbonding_period = 599;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterUnbondingPeriod,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.unbonding_period = 28801;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterUnbondingPeriod,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.min_service_period = 599;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterMinServicePeriod,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.min_service_period = 28801;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterMinServicePeriod,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.startup_grace_period = 599;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterStartupGracePeriod,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.startup_grace_period = 28801;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterStartupGracePeriod,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.min_stake = 0;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterMinStake,
         );
 
-        role_parameters = RoleParameters::default();
-        role_parameters.min_stake = 5001;
+        role_parameters = working_role_parameters.clone();
+        role_parameters.min_stake = 10000001;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterMinStake,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.entry_request_fee = 0;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterEntryRequestFee,
         );
 
-        role_parameters = RoleParameters::default();
-        role_parameters.entry_request_fee = 5001;
+        role_parameters = working_role_parameters.clone();
+        role_parameters.entry_request_fee = 100001;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterEntryRequestFee,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.reward = 0;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterReward,
         );
 
-        role_parameters = RoleParameters::default();
-        role_parameters.reward = 501;
+        role_parameters = working_role_parameters;
+        role_parameters.reward = 1001;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterReward,

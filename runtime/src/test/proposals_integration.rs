@@ -668,14 +668,19 @@ fn set_storage_role_parameters_proposal_execution_succeeds() {
         let member_id = 1;
         let account_id: [u8; 32] = [member_id; 32];
 
+        let default_role_parameters = RoleParameters {
+            min_actors: 1,
+            ..RoleParameters::default()
+        };
+
         <roles::actors::Parameters<Runtime>>::insert(
             Role::StorageProvider,
-            RoleParameters::default(),
+            default_role_parameters.clone(),
         );
 
         let target_role_parameters = RoleParameters {
             startup_grace_period: 700,
-            ..RoleParameters::default()
+            ..default_role_parameters
         };
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture {
