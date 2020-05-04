@@ -879,7 +879,7 @@ impl<T: Trait> Module<T> {
         );
 
         ensure!(
-            election_parameters.revealing_period <= T::BlockNumber::from(43200),
+            election_parameters.revealing_period <= T::BlockNumber::from(28800),
             Error::InvalidCouncilElectionParameterRevealingPeriod
         );
 
@@ -889,7 +889,7 @@ impl<T: Trait> Module<T> {
         );
 
         ensure!(
-            election_parameters.voting_period <= T::BlockNumber::from(43200),
+            election_parameters.voting_period <= T::BlockNumber::from(28800),
             Error::InvalidCouncilElectionParameterVotingPeriod
         );
 
