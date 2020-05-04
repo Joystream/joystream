@@ -63,7 +63,7 @@ const STARTUP_GRACE_PERIOD_MAX = 28800;
 // const ENTRY_REQUEST_FEE_MIN = 0;
 const ENTRY_REQUEST_FEE_MAX = percentageOfIssuance(1);
 
-function errorMessage(name: string, min: number | string, max: number | string, unit: string): string {
+function errorMessage(name: string, min?: number | string, max?: number | string, unit?: string): string {
   return `${name} should be at least ${min} and no more than ${max} ${unit ? `${unit}.` : "."}`;
 }
 
@@ -310,7 +310,7 @@ const Validation: ValidationType = {
     entry_request_fee: Yup.number()
       .required("All parameters are required")
       .positive("The entry request fee should be positive.")
-      .max(ENTRY_REQUEST_FEE_MAX, `The entry request fee should be less than ${ENTRY_REQUEST_FEE_MAX}`, "JOY")
+      .max(ENTRY_REQUEST_FEE_MAX, `The entry request fee should be less than ${ENTRY_REQUEST_FEE_MAX} JOY.`)
   }
 };
 
