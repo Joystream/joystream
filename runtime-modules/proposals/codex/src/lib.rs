@@ -336,6 +336,12 @@ decl_module! {
         /// Predefined errors
         type Error = Error;
 
+        /// Exports max allowed text proposal length const.
+        const TextProposalMaxLength: u32 = T::TextProposalMaxLength::get();
+
+        /// Exports max wasm code length of the runtime upgrade proposal const.
+        const RuntimeUpgradeWasmProposalMaxLength: u32 = T::RuntimeUpgradeWasmProposalMaxLength::get();
+
         /// Create 'Text (signal)' proposal type.
         pub fn create_text_proposal(
             origin,
