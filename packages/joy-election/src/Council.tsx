@@ -30,7 +30,7 @@ class Council extends React.PureComponent<Props, State> {
             <Table.HeaderCell>#</Table.HeaderCell>
             <Table.HeaderCell>Council member</Table.HeaderCell>
             <Table.HeaderCell>Own stake</Table.HeaderCell>
-            <Table.HeaderCell>Backers&apos stake</Table.HeaderCell>
+            <Table.HeaderCell>Backers' stake</Table.HeaderCell>
             <Table.HeaderCell>Backers count</Table.HeaderCell>
           </Table.Row>
         </Table.Header>
