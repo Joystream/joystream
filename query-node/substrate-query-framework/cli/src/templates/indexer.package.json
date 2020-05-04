@@ -4,7 +4,8 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "ts-node index.ts"
+    "start": "ts-node index.ts",
+    "postinstall": "rm -rf node_modules/index-builder/node_modules"
   },
   "dependencies": {
     "reflect-metadata": "^0.1.13",
