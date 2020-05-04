@@ -585,7 +585,7 @@ decl_module! {
             );
 
             ensure!(
-                new_validator_count <= 1000, // max validator count
+                new_validator_count <= 100, // max validator count
                 Error::InvalidValidatorCount
             );
 
