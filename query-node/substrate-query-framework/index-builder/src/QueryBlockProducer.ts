@@ -99,9 +99,7 @@ export default class QueryBlockProducer extends EventEmitter {
     while (this._block_to_be_produced_next <= this._height_of_chain) {
       debug(`Fetching block #${this._block_to_be_produced_next}`);
 
-      let block_hash_of_target = await this._query_service.getBlockHash(
-        this._block_to_be_produced_next
-      );
+      let block_hash_of_target = await this._query_service.getBlockHash(this._block_to_be_produced_next);
       // TODO: CATCH HERE
 
       debug(`\tHash ${block_hash_of_target.toString()}.`);
@@ -131,7 +129,7 @@ export default class QueryBlockProducer extends EventEmitter {
               ? extrinsics_array[phase.asApplyExtrinsic.toBn()]
               : undefined;
 
-          let query_event = new QueryEvent(record, extrinsic);
+          let query_event = new QueryEvent(record, this._block_to_be_produced_next, extrinsic);
 
           // Logging
           query_event.log(0, debug);
