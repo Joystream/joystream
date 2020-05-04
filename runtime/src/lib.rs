@@ -808,8 +808,8 @@ impl discovery::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const ProposalCancellationFee: u64 = 5;
-    pub const ProposalRejectionFee: u64 = 3;
+    pub const ProposalCancellationFee: u64 = 10000;
+    pub const ProposalRejectionFee: u64 = 5000;
     pub const ProposalTitleMaxLength: u32 = 40;
     pub const ProposalDescriptionMaxLength: u32 = 3000;
     pub const ProposalMaxActiveProposalLimit: u32 = 5;

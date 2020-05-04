@@ -269,7 +269,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         setup_members(2);
         let member_id = 0; // newly created member_id
 
-        let stake_amount = 200u128;
+        let stake_amount = 20000u128;
         let parameters = ProposalParameters {
             voting_period: 3,
             approval_quorum_percentage: 50,
@@ -285,7 +285,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             .with_stake(stake_amount)
             .with_proposer(member_id);
 
-        let account_balance = 500;
+        let account_balance = 500000;
         let _imbalance =
             <Runtime as stake::Trait>::Currency::deposit_creating(&account_id, account_balance);
 
