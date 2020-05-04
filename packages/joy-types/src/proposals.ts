@@ -151,7 +151,7 @@ export class ActiveStake extends JoyStruct<IActiveStake> {
   constructor(value?: IActiveStake) {
     super(
       {
-        stakeId: u32,
+        stakeId: StakeId,
         sourceAccountId: GenericAccountId
       },
       value
