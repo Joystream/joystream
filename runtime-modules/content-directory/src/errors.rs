@@ -63,6 +63,8 @@ pub const ERROR_ENTITY_CREATION_VOUCHER_DOES_NOT_EXIST: &str =
     "Given entity creation voucher does not exist";
 pub const ERROR_MAX_NUMBER_OF_ENTITIES_PER_CLASS_LIMIT_REACHED: &str =
     "Maximum numbers of entities per class limit reached";
+pub const ERROR_ENTITY_CREATION_BLOCKED: &str =
+    "Current class entities creation blocked";
 pub const ERROR_VOUCHER_LIMIT_REACHED: &str = "Entities voucher limit reached";
 pub const ERROR_AUTHORITY_AUTH_FAILED: &str = "Authority authentication failed";
 pub const ERROR_ACTOR_IN_GROUP_AUTH_FAILED: &str = "Actor in group authentication failed";

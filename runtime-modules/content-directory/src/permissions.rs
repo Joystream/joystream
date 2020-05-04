@@ -211,6 +211,11 @@ impl ClassPermissions {
         );
         Ok(())
     }
+
+    pub fn ensure_entity_creation_not_blocked(&self) -> dispatch::Result {
+        ensure!(self.entity_creation_blocked, ERROR_ENTITY_CREATION_BLOCKED);
+        Ok(())
+    }
 }
 
 /// Owner of an entity.
@@ -235,7 +240,7 @@ impl<T: ActorAuthenticator> EntityController<T> {
             EntityController::from_actor_in_group(actor_in_group.actor_id, actor_in_group.group_id)
         } else {
             EntityController::from_group(actor_in_group.group_id)
-        };
+        }
     }
 }
 
@@ -272,16 +277,16 @@ impl<T: ActorAuthenticator> EntityPermission<T> {
         }
     }
 
-    pub fn set_conroller(&mut self, controller: EntityController<T>) {
+    pub fn set_conroller(&mut self, controller: Option<EntityController<T>>) {
         self.controller = controller
     }
 
     pub fn is_controller(&self, actor_in_group: &ActorInGroupId<T>) -> bool {
         match self.controller {
-            EntityController::Group(controller_group_id) => {
+            Some(EntityController::Group(controller_group_id)) => {
                 controller_group_id == actor_in_group.group_id
             }
-            EntityController::ActorInGroup(controller_actor_in_group) => {
+            Some(EntityController::ActorInGroup(controller_actor_in_group)) => {
                 controller_actor_in_group == *actor_in_group
             }
             _ => false,
@@ -296,7 +301,7 @@ impl<T: ActorAuthenticator> EntityPermission<T> {
         self.referenceable = referenceable;
     }
 
-    pub fn get_controller(&self) -> &EntityController<T> {
+    pub fn get_controller(&self) -> &Option<EntityController<T>> {
         &self.controller
     }
 
@@ -322,7 +327,7 @@ impl<T: ActorAuthenticator> EntityPermission<T> {
 impl<T: ActorAuthenticator> Default for EntityPermission<T> {
     fn default() -> Self {
         Self {
-            controller: EntityController::<T>::default(),
+            controller: None,
             frozen: false,
             referenceable: false,
         }
@@ -343,7 +348,7 @@ pub enum EntityAccessLevel {
 
 impl EntityAccessLevel {
     /// Derives the EntityAccessLevel the caller is attempting to act with.
-    /// It expects only signed or root origin.
+    /// It expects only signed.
     pub fn derive_signed<T: Trait>(
         origin: T::Origin,
         entity_id: T::EntityId,
