@@ -100,3 +100,38 @@ pub struct Lead<MemberId, AccountId> {
     /// Account used to authenticate in this role,
     pub role_account_id: AccountId,
 }
+
+/// An application for the curator role.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
+pub struct CuratorApplication<AccountId, CuratorOpeningId, MemberId, ApplicationId> {
+    /// Account used to authenticate in this role,
+    pub role_account: AccountId,
+
+    /// Opening on which this application applies
+    pub curator_opening_id: CuratorOpeningId,
+
+    /// Member applying
+    pub member_id: MemberId,
+
+    /// Underlying application in hiring module
+    pub application_id: ApplicationId,
+}
+
+impl<AccountId: Clone, CuratorOpeningId: Clone, MemberId: Clone, ApplicationId: Clone>
+CuratorApplication<AccountId, CuratorOpeningId, MemberId, ApplicationId>
+{
+    pub fn new(
+        role_account: &AccountId,
+        curator_opening_id: &CuratorOpeningId,
+        member_id: &MemberId,
+        application_id: &ApplicationId,
+    ) -> Self {
+        CuratorApplication {
+            role_account: (*role_account).clone(),
+            curator_opening_id: (*curator_opening_id).clone(),
+            member_id: (*member_id).clone(),
+            application_id: (*application_id).clone(),
+        }
+    }
+}
