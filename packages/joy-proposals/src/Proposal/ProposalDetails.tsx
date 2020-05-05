@@ -94,7 +94,7 @@ function ProposalDetails({
   const isVotingPeriod = extendedStatus.periodStatus === 'Voting period';
   return (
     <Container className="Proposal">
-      <Details proposal={proposal} extendedStatus={extendedStatus}/>
+      <Details proposal={proposal} extendedStatus={extendedStatus} proposerLink={ true }/>
       <Body
         type={ proposal.type }
         title={ proposal.title }

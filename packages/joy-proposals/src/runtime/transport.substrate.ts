@@ -72,7 +72,7 @@ export class SubstrateTransport extends Transport {
     return this.proposalsCodex.proposalDetailsByProposalId(id);
   }
 
-  memberProfile(id: MemberId): Promise<Option<Profile>> {
+  memberProfile(id: MemberId | number): Promise<Option<Profile>> {
     return this.members.memberProfile(id) as Promise<Option<Profile>>;
   }
 
