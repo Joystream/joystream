@@ -1,0 +1,3 @@
+joystream:
+    ws_provider: "ws://localhost:9944"
+
