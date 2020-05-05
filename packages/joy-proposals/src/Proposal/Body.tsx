@@ -40,14 +40,14 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
     };
   },
   SetElectionParameters: ([params]) => ({
-    "Announcing period": params.announcingPeriod + " blocks",
-    "Voting period": params.votingPeriod + " blocks",
-    "Revealing period": params.revealingPeriod + " blocks",
-    "Council size": params.councilSize + " members",
-    "Candidacy limit": params.candidacyLimit + " members",
-    "New term duration": params.newTermDuration + " blocks",
-    "Min. council stake": params.minCouncilStake + " tJOY",
-    "Min. voting stake": params.minVotingStake + " tJOY"
+      "Announcing period": params.announcing_period + " blocks",
+      "Voting period": params.voting_period + " blocks",
+      "Revealing period": params.revealing_period + " blocks",
+      "Council size": params.council_size + " members",
+      "Candidacy limit": params.candidacy_limit + " members",
+      "New term duration": params.new_term_duration + " blocks",
+      // "Min. council stake": params.min_council_stake + " tJOY",
+      // "Min. voting stake": params.min_voting_stake + " tJOY"
   }),
   Spending: ([amount, account]) => ({
     Amount: amount + " tJOY",

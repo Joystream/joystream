@@ -1,14 +1,16 @@
 import { Transport, ParsedProposal, ProposalType, ProposalTypes, ParsedMember, ProposalVote } from "./transport";
-import { Proposal, ProposalId, Seats, VoteKind } from "@joystream/types/proposals";
-import { MemberId, Profile } from "@joystream/types/members";
+import { Proposal, ProposalId, Seats, VoteKind, ElectionParameters } from "@joystream/types/proposals";
+import { MemberId, Profile, ActorInRole } from "@joystream/types/members";
 import { ApiProps } from "@polkadot/react-api/types";
-import { u32, Vec, Option } from "@polkadot/types/";
-import { Balance, Moment, AccountId, BalanceOf } from "@polkadot/types/interfaces";
+import { u32, u128, Vec, Option } from "@polkadot/types/";
+import { Balance, Moment, AccountId, BlockNumber, BalanceOf } from "@polkadot/types/interfaces";
 import { ApiPromise } from "@polkadot/api";
-import { RoleKeys } from "@joystream/types/members";
+import { RoleKeys, Role } from "@joystream/types/members";
 import { FIRST_MEMBER_ID } from '@polkadot/joy-members/constants';
 
 import { includeKeys, calculateStake, calculateMetaFromType, splitOnUpperCase } from "../utils";
+import { MintId, Mint } from "@joystream/types/mint";
+import { LeadId } from "@joystream/types/content-working-group";
 
 export class SubstrateTransport extends Transport {
   protected api: ApiPromise;
@@ -41,8 +43,20 @@ export class SubstrateTransport extends Transport {
     return this.api.query.council;
   }
 
+  get councilElection() {
+    return this.api.query.councilElection;
+  }
+
   get actors() {
     return this.api.query.actors;
+  }
+
+  get contentWorkingGroup() {
+    return this.api.query.contentWorkingGroup;
+  }
+
+  get minting() {
+    return this.api.query.minting;
   }
 
   totalIssuance() {
@@ -244,5 +258,49 @@ export class SubstrateTransport extends Transport {
     }
 
     return profiles;
+  }
+
+  async electionParameters(): Promise<ElectionParameters> {
+    const announcing_period = await this.councilElection.announcingPeriod() as BlockNumber;
+    const voting_period = await this.councilElection.votingPeriod() as BlockNumber;
+    const revealing_period = await this.councilElection.revealingPeriod() as BlockNumber;
+    const new_term_duration = await this.councilElection.newTermDuration() as BlockNumber;
+    const min_council_stake = await this.councilElection.minCouncilStake() as Balance;
+    const min_voting_stake = await this.councilElection.minVotingStake() as Balance;
+    const candidacy_limit = await this.councilElection.candidacyLimit() as u32;
+    const council_size = await this.councilElection.councilSize() as u32;
+
+    return new ElectionParameters({
+      announcing_period,
+      voting_period,
+      revealing_period,
+      new_term_duration,
+      min_council_stake,
+      min_voting_stake,
+      candidacy_limit,
+      council_size,
+    });
+  }
+
+  async WGMintCap(): Promise<number> {
+    const WGMintId = await this.contentWorkingGroup.mint() as MintId;
+    const WGMint = await this.minting.mints(WGMintId) as Vec<Mint>;
+    return (WGMint[0].get('capacity') as u128).toNumber();
+  }
+
+  async WGLead(): Promise<{ id: number, profile: Profile } | null> {
+    const optLeadId = (await this.contentWorkingGroup.currentLeadId()) as Option<LeadId>;
+    const leadId = optLeadId.unwrapOr(null);
+
+    if (!leadId) return null;
+
+    const actorInRole = new ActorInRole({
+      role: new Role(RoleKeys.CuratorLead),
+      actor_id: leadId
+    })
+    const memberId = await this.members.membershipIdByActorInRole(actorInRole) as MemberId;
+    const profile = (await this.memberProfile(memberId)).unwrapOr(null);
+
+    return profile && { id: memberId.toNumber(), profile };
   }
 }

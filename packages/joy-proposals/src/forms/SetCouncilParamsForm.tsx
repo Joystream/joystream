@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { getFormErrorLabelsProps } from "./errorHandling";
 import { Divider, Form } from "semantic-ui-react";
 import * as Yup from "yup";
@@ -15,10 +15,12 @@ import {
 import Validation from "../validationSchema";
 import { InputFormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
-import { BlockNumber, Balance } from "@polkadot/types/interfaces";
-import { u32 } from "@polkadot/types/primitive";
 import { createType } from "@polkadot/types";
 import "./forms.css";
+import { useTransport } from "../runtime";
+import { usePromise, snakeCaseToCamelCase } from "../utils";
+import { ElectionParameters } from "@joystream/types/proposals";
+import PromiseComponent from "../Proposal/PromiseComponent";
 
 type FormValues = GenericFormValues & {
   announcingPeriod: string;
@@ -48,129 +50,149 @@ type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormVal
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const expectedBlockTimeMs = 6000; // TODO: api.consts.babe.expectedBlockTime;
-const daysToBlocks = (days: number) => (days * 24 * 60 * 60 * 1000) / expectedBlockTimeMs;
-
-// TODO: Define in joy-types?
-type ElectionParameters = {
-  announcing_period: BlockNumber;
-  voting_period: BlockNumber;
-  revealing_period: BlockNumber;
-  council_size: u32;
-  candidacy_limit: u32;
-  new_term_duration: BlockNumber;
-  min_council_stake: Balance;
-  min_voting_stake: Balance;
-};
-
 function createElectionParameters(values: FormValues): ElectionParameters {
-  return {
-    announcing_period: createType("BlockNumber", daysToBlocks(parseInt(values.announcingPeriod))),
-    voting_period: createType("BlockNumber", daysToBlocks(parseInt(values.votingPeriod))),
-    revealing_period: createType("BlockNumber", daysToBlocks(parseInt(values.revealingPeriod))),
+  return new ElectionParameters({
+    announcing_period: createType("BlockNumber", parseInt(values.announcingPeriod)),
+    voting_period: createType("BlockNumber", parseInt(values.votingPeriod)),
+    revealing_period: createType("BlockNumber", parseInt(values.revealingPeriod)),
     council_size: createType("u32", values.councilSize),
     candidacy_limit: createType("u32", values.candidacyLimit),
-    new_term_duration: createType("BlockNumber", daysToBlocks(parseInt(values.newTermDuration))),
+    new_term_duration: createType("BlockNumber", parseInt(values.newTermDuration)),
     min_council_stake: createType("Balance", values.minCouncilStake),
     min_voting_stake: createType("Balance", values.minVotingStake)
-  };
+  });
 }
 
 const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
-  const { handleChange, errors, touched, values } = props;
+  const { handleChange, errors, touched, values, setFieldValue, setFieldError } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
+  const [ placeholders, setPlaceholders ] = useState<{ [k in keyof FormValues]: string }>(defaultValues);
+
+  const transport = useTransport();
+  const [ councilParams, error, loading ] = usePromise<ElectionParameters | null>(() => transport.electionParameters(), null);
+  useEffect(() => {
+    if (councilParams) {
+      let fetchedPlaceholders = {...placeholders};
+      const fieldsToPopulate = [
+        "announcing_period",
+        "voting_period",
+        "min_voting_stake",
+        "revealing_period",
+        "min_council_stake",
+        "new_term_duration",
+        "candidacy_limit",
+        "council_size"
+      ] as const;
+      fieldsToPopulate.forEach(field => {
+        const camelCaseField = snakeCaseToCamelCase(field) as keyof FormValues;
+        setFieldValue(camelCaseField, councilParams[field].toString());
+        fetchedPlaceholders[camelCaseField] = councilParams[field].toString();
+      });
+      setPlaceholders(fetchedPlaceholders);
+    }
+  }, [councilParams]);
+
+  // This logic may be moved somewhere else in the future, but it's quite easy to enforce it here:
+  if (!errors.candidacyLimit && !errors.councilSize && values.candidacyLimit < values.councilSize) {
+    setFieldError('candidacyLimit', `Candidacy limit must be >= council size (${ values.councilSize })`);
+  }
+
   return (
-    <GenericProposalForm
-      {...props}
-      txMethod="createSetElectionParametersProposal"
-      requiredStakePercent={0.75}
-      submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", createElectionParameters(values)]}
-    >
-      <Divider horizontal>Voting </Divider>
-      <Form.Group widths="equal" style={{ marginBottom: "8rem" }}>
-        <InputFormField
-          label="Announcing Period"
-          help="Announcing period in days"
-          onChange={handleChange}
-          name="announcingPeriod"
-          placeholder="3"
-          error={errorLabelsProps.announcingPeriod}
-          value={values.announcingPeriod}
-        />
-        <InputFormField
-          label="Voting Period"
-          help="Voting period in days"
-          onChange={handleChange}
-          name="votingPeriod"
-          placeholder="1"
-          error={errorLabelsProps.votingPeriod}
-          value={values.votingPeriod}
-        />
-        <InputFormField
-          label="Revealing Period"
-          help="Revealing period in days"
-          fluid
-          onChange={handleChange}
-          name="revealingPeriod"
-          placeholder="1"
-          error={errorLabelsProps.revealingPeriod}
-          value={values.revealingPeriod}
-        />
-        <InputFormField
-          label="Minimum Voting Stake"
-          help="The minimum voting stake"
-          fluid
-          onChange={handleChange}
-          name="minVotingStake"
-          placeholder="100"
-          error={errorLabelsProps.minVotingStake}
-          value={values.minVotingStake}
-        />
-      </Form.Group>
-      <Divider horizontal>Council</Divider>
-      <Form.Group widths="equal" style={{ marginBottom: "8rem" }}>
-        <InputFormField
-          label="Minimum Council Stake"
-          help="The minimum council stake"
-          fluid
-          onChange={handleChange}
-          name="minCouncilStake"
-          placeholder="1000"
-          error={errorLabelsProps.minCouncilStake}
-          value={values.minCouncilStake}
-        />
-        <InputFormField
-          label="New Term Duration"
-          help="Duration of the new term in days"
-          fluid
-          onChange={handleChange}
-          name="newTermDuration"
-          placeholder="14"
-          error={errorLabelsProps.newTermDuration}
-          value={values.newTermDuration}
-        />
-        <InputFormField
-          label="Council Size"
-          help="The size of the council (number of seats)"
-          fluid
-          onChange={handleChange}
-          name="councilSize"
-          placeholder="12"
-          error={errorLabelsProps.councilSize}
-          value={values.councilSize}
-        />
-        <InputFormField
-          label="Candidacy Limit"
-          help="How many members can candidate"
-          fluid
-          onChange={handleChange}
-          name="candidacyLimit"
-          placeholder="25"
-          error={errorLabelsProps.candidacyLimit}
-          value={values.candidacyLimit}
-        />
-      </Form.Group>
-    </GenericProposalForm>
+    <PromiseComponent error={error} loading={loading} message="Fetching current parameters...">
+      <GenericProposalForm
+        {...props}
+        txMethod="createSetElectionParametersProposal"
+        requiredStakePercent={0.75}
+        submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", createElectionParameters(values)]}
+      >
+        <Divider horizontal>Voting </Divider>
+        <Form.Group widths="equal" style={{ marginBottom: "8rem" }}>
+          <InputFormField
+            label="Announcing Period"
+            help="Announcing period in blocks"
+            onChange={handleChange}
+            name="announcingPeriod"
+            error={errorLabelsProps.announcingPeriod}
+            value={values.announcingPeriod}
+            placeholder={ placeholders.announcingPeriod }
+          />
+          <InputFormField
+            label="Voting Period"
+            help="Voting period in blocks"
+            onChange={handleChange}
+            name="votingPeriod"
+            error={errorLabelsProps.votingPeriod}
+            value={values.votingPeriod}
+            placeholder={ placeholders.votingPeriod }
+          />
+          <InputFormField
+            label="Revealing Period"
+            help="Revealing period in blocks"
+            fluid
+            onChange={handleChange}
+            name="revealingPeriod"
+            error={errorLabelsProps.revealingPeriod}
+            value={values.revealingPeriod}
+            placeholder={ placeholders.revealingPeriod }
+          />
+          <InputFormField
+            label="Minimum Voting Stake"
+            help="The minimum voting stake"
+            fluid
+            onChange={handleChange}
+            name="minVotingStake"
+            error={errorLabelsProps.minVotingStake}
+            value={values.minVotingStake}
+            placeholder={ placeholders.minVotingStake }
+            disabled
+          />
+        </Form.Group>
+        <Divider horizontal>Council</Divider>
+        <Form.Group widths="equal" style={{ marginBottom: "8rem" }}>
+          <InputFormField
+            label="Minimum Council Stake"
+            help="The minimum council stake"
+            fluid
+            onChange={handleChange}
+            name="minCouncilStake"
+            error={errorLabelsProps.minCouncilStake}
+            value={values.minCouncilStake}
+            placeholder={ placeholders.minCouncilStake }
+            disabled
+          />
+          <InputFormField
+            label="New Term Duration"
+            help="Duration of the new term in blocks"
+            fluid
+            onChange={handleChange}
+            name="newTermDuration"
+            error={errorLabelsProps.newTermDuration}
+            value={values.newTermDuration}
+            placeholder={ placeholders.newTermDuration }
+          />
+          <InputFormField
+            label="Council Size"
+            help="The size of the council (number of seats)"
+            fluid
+            onChange={handleChange}
+            name="councilSize"
+            error={errorLabelsProps.councilSize}
+            value={values.councilSize}
+            placeholder={ placeholders.councilSize }
+          />
+          <InputFormField
+            label="Candidacy Limit"
+            help="How many members can candidate"
+            fluid
+            onChange={handleChange}
+            name="candidacyLimit"
+            error={errorLabelsProps.candidacyLimit}
+            value={values.candidacyLimit}
+            placeholder={ placeholders.candidacyLimit }
+          />
+        </Form.Group>
+      </GenericProposalForm>
+    </PromiseComponent>
   );
 };
 
