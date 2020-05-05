@@ -6,7 +6,7 @@ use sr_primitives::{
 };
 use srml_support::{impl_outer_origin, parameter_types};
 
-use crate::{Instance1, Trait};
+use crate::{Instance1, Module, Trait};
 
 impl_outer_origin! {
         pub enum Origin for Test {}
@@ -25,15 +25,15 @@ parameter_types! {
     pub const CreationFee: u32 = 0;
 }
 
-// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
+// Workaround for https://github.com/rust-lang/rust/issues/26925 - remove when sorted.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
 
 impl system::Trait for Test {
     type Origin = Origin;
+    type Call = ();
     type Index = u64;
     type BlockNumber = u64;
-    type Call = ();
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;
@@ -90,9 +90,9 @@ impl balances::Trait for Test {
     type Balance = u64;
     type OnFreeBalanceZero = ();
     type OnNewAccount = ();
-    type Event = ();
-    type DustRemoval = ();
     type TransferPayment = ();
+    type DustRemoval = ();
+    type Event = ();
     type ExistentialDeposit = ExistentialDeposit;
     type TransferFee = TransferFee;
     type CreationFee = CreationFee;
@@ -104,10 +104,7 @@ impl Trait<Instance1> for Test {
     type Event = ();
 }
 
-// use crate::Instance2;
-//
-// type Bureaucracy1 = Module<Test, Instance1>;
-// type Bureaucracy2 = Module<Test, Instance2>;
+pub type Bureaucracy1 = Module<Test, Instance1>;
 
 pub fn build_test_externalities() -> runtime_io::TestExternalities {
     let t = system::GenesisConfig::default()
@@ -115,9 +112,4 @@ pub fn build_test_externalities() -> runtime_io::TestExternalities {
         .unwrap();
 
     t.into()
-}
-
-#[test]
-fn test_instances_storage_separation() {
-    build_test_externalities().execute_with(|| {});
 }

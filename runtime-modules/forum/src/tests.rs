@@ -10,64 +10,6 @@ use srml_support::{assert_err, assert_ok};
 */
 
 /*
- * set_forum_sudo
- * ==============================================================================
- *
- * Missing cases
- *
- * set_forum_bad_origin
- *
- */
-
-// #[test] //TODO - restore forum_sudo
-// fn set_forum_sudo_unset() {
-//     let config = default_genesis_config();
-//
-//     build_test_externalities(config).execute_with(|| {
-//         // Ensure that forum sudo is default
-//         assert_eq!(TestForumModule::forum_sudo(), Some(33));
-//
-//         // Unset forum sudo
-//         assert_ok!(TestForumModule::set_forum_sudo(
-//             mock_origin(OriginType::Root),
-//             None
-//         ));
-//
-//         // Sudo no longer set
-//         assert!(TestForumModule::forum_sudo().is_none());
-//
-//         // event emitted?!
-//     });
-// }
-//
-// #[test] //TODO - restore forum_sudo
-// fn set_forum_sudo_update() {
-//     let config = default_genesis_config();
-//
-//     build_test_externalities(config).execute_with(|| {
-//         // Ensure that forum sudo is default
-//         assert_eq!(
-//             TestForumModule::forum_sudo(),
-//             Some(default_genesis_config().forum_sudo)
-//         );
-//
-//         let new_forum_sudo_account_id = 780;
-//
-//         // Unset forum sudo
-//         assert_ok!(TestForumModule::set_forum_sudo(
-//             mock_origin(OriginType::Root),
-//             Some(new_forum_sudo_account_id)
-//         ));
-//
-//         // Sudo no longer set
-//         assert_eq!(
-//             TestForumModule::forum_sudo(),
-//             Some(new_forum_sudo_account_id)
-//         );
-//     });
-// }
-
-/*
  * create_category
  * ==============================================================================
  *
