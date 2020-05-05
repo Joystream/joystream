@@ -1,9 +1,9 @@
 import { Transport, ParsedProposal, ProposalType, ProposalTypes, ParsedMember, ProposalVote } from "./transport";
-import { Proposal, ProposalId, Seats, VoteKind } from "@joystream/types/proposals";
+import { Proposal, ProposalId, Seats, VoteKind, ElectionParameters } from "@joystream/types/proposals";
 import { MemberId, Profile } from "@joystream/types/members";
 import { ApiProps } from "@polkadot/react-api/types";
 import { u32, Vec, Option } from "@polkadot/types/";
-import { Balance, Moment, AccountId } from "@polkadot/types/interfaces";
+import { Balance, Moment, AccountId, BlockNumber } from "@polkadot/types/interfaces";
 import { ApiPromise } from "@polkadot/api";
 import { RoleKeys } from "@joystream/types/members";
 import { FIRST_MEMBER_ID } from '@polkadot/joy-members/constants';
@@ -39,6 +39,10 @@ export class SubstrateTransport extends Transport {
 
   get council() {
     return this.api.query.council;
+  }
+
+  get councilElection() {
+    return this.api.query.councilElection;
   }
 
   get actors() {
@@ -235,5 +239,27 @@ export class SubstrateTransport extends Transport {
     }
 
     return profiles;
+  }
+
+  async electionParameters(): Promise<ElectionParameters> {
+    const announcing_period = await this.councilElection.announcingPeriod() as BlockNumber;
+    const voting_period = await this.councilElection.votingPeriod() as BlockNumber;
+    const revealing_period = await this.councilElection.revealingPeriod() as BlockNumber;
+    const new_term_duration = await this.councilElection.newTermDuration() as BlockNumber;
+    const min_council_stake = await this.councilElection.minCouncilStake() as Balance;
+    const min_voting_stake = await this.councilElection.minVotingStake() as Balance;
+    const candidacy_limit = await this.councilElection.candidacyLimit() as u32;
+    const council_size = await this.councilElection.councilSize() as u32;
+
+    return new ElectionParameters({
+      announcing_period,
+      voting_period,
+      revealing_period,
+      new_term_duration,
+      min_council_stake,
+      min_voting_stake,
+      candidacy_limit,
+      council_size,
+    });
   }
 }

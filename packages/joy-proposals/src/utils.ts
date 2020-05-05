@@ -24,6 +24,19 @@ export function slugify(str: string) {
     .trim();
 }
 
+export function snakeCaseToCamelCase(str: string) {
+  return str
+    .split('_')
+    .map((w, i) => i ? w[0].toUpperCase() + w.substr(1) : w)
+    .join('');
+}
+
+export function camelCaseToSnakeCase(str: string) {
+  return splitOnUpperCase(str)
+    .map(w => w[0].toLocaleLowerCase() + w.substr(1))
+    .join('_');
+}
+
 export function usePromise<T>(promise: () => Promise<T>, defaultValue: T): [T, any, boolean, () => Promise<void|null>] {
   const [state, setState] = useState<{
     value: T;

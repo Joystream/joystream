@@ -247,21 +247,56 @@ export type ProposalVotes = [MemberId, VoteKind][];
 
 export class ProposalId extends u32 {}
 
+export type IElectionParameters = {
+  announcing_period: BlockNumber;
+  voting_period: BlockNumber;
+  revealing_period: BlockNumber;
+  council_size: u32;
+  candidacy_limit: u32;
+  new_term_duration: BlockNumber;
+  min_council_stake: Balance;
+  min_voting_stake: Balance;
+};
+
 export class ElectionParameters extends Struct {
   constructor(value?: any) {
     super(
       {
-        announcingPeriod: "BlockNumber",
-        votingPeriod: "BlockNumber",
-        revealingPeriod: "BlockNumber",
-        councilSize: "u32",
-        candidacyLimit: "u32",
-        newTermDuration: "BlockNumber",
-        minCouncilStake: "Balance",
-        minVotingStake: "Balance"
+        announcing_period: "BlockNumber",
+        voting_period: "BlockNumber",
+        revealing_period: "BlockNumber",
+        council_size: "u32",
+        candidacy_limit: "u32",
+        new_term_duration: "BlockNumber",
+        min_council_stake: "Balance",
+        min_voting_stake: "Balance"
       },
       value
     );
+  }
+  get announcing_period () {
+    return this.get('announcing_period') as BlockNumber;
+  }
+  get voting_period () {
+    return this.get('voting_period') as BlockNumber;
+  }
+  get revealing_period () {
+    return this.get('revealing_period') as BlockNumber;
+  }
+  get council_size () {
+    return this.get('council_size') as u32;
+  }
+  get candidacy_limit () {
+    return this.get('candidacy_limit') as u32;
+  }
+  get new_term_duration () {
+    return this.get('new_term_duration') as BlockNumber;
+  }
+  get min_council_stake () {
+    return this.get('min_council_stake') as Balance;
+  }
+  get min_voting_stake () {
+    return this.get('min_voting_stake') as Balance;
   }
 }
 
