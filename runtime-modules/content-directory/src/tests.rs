@@ -139,7 +139,7 @@ use srml_support::{assert_err, assert_ok};
 //                 0, // first schema created
 //                 simple_test_entity_property_values()
 //             ),
-//             "CredentialNotInEntityPermissionsUpdateSet"
+//             "CredentialNotInEntityPermissionssUpdateSet"
 //         );
 
 //         // default permissions give entity maintainer permission to update and delete
@@ -384,7 +384,7 @@ fn create_class_with_empty_description() {
 
 //         assert!(class.get_permissions().entity_permissions.update.is_empty());
 
-//         let entity_permissions1 = EntityPermissions {
+//         let entity_permissions1 = EntityPermissionss {
 //             update: CredentialSet::from(vec![1]),
 //             maintainer_has_all_permissions: true,
 //         };
@@ -402,7 +402,7 @@ fn create_class_with_empty_description() {
 //             entity_permissions1
 //         );
 
-//         let entity_permissions2 = EntityPermissions {
+//         let entity_permissions2 = EntityPermissionss {
 //             update: CredentialSet::from(vec![4]),
 //             maintainer_has_all_permissions: true,
 //         };

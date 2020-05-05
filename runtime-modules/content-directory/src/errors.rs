@@ -24,7 +24,6 @@ pub const ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID: &str =
 pub const ERROR_NO_PROPS_IN_CLASS_SCHEMA: &str =
     "Cannot add a class schema with an empty list of properties";
 pub const ERROR_ENTITY_NOT_FOUND: &str = "Entity was not found by id";
-// pub const ERROR_ENTITY_ALREADY_DELETED: &str = "Entity is already deleted";
 pub const ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY: &str =
     "Cannot add a schema that is already added to this entity";
 pub const ERROR_PROP_VALUE_DONT_MATCH_TYPE: &str =
@@ -52,6 +51,8 @@ pub const ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS: &str =
     "Internal property does not match its class";
 pub const ERROR_ENTITY_REFERENCE_COUNTER_DOES_NOT_EQUAL_TO_ZERO: &str =
     "Entity removal can`t be completed, as there are some property values pointing to given entity";
+pub const ERROR_CLASS_PROP_NOT_FOUND: &str =
+    "Class property under given index not found";
 
 // Permission errors
 

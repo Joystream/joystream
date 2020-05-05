@@ -197,6 +197,7 @@ impl<T: Trait> Class<T> {
         in_class_schema_property_id: PropertyId,
         is_locked: bool,
     ) {
+        // Such indexing is safe, when length bounds were previously checked
         self.properties[in_class_schema_property_id as usize]
             .prop_type
             .set_locked_for(access_level, is_locked)
@@ -215,7 +216,7 @@ impl<T: Trait> Class<T> {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct Entity<T: Trait> {
     #[cfg_attr(feature = "std", serde(skip))]
-    pub entity_permission: EntityPermission<T>,
+    pub entity_permission: EntityPermissions<T>,
 
     /// The class id of this entity.
     pub class_id: T::ClassId,
@@ -235,7 +236,7 @@ pub struct Entity<T: Trait> {
 impl<T: Trait> Default for Entity<T> {
     fn default() -> Self {
         Self {
-            entity_permission: EntityPermission::<T>::default(),
+            entity_permission: EntityPermissions::<T>::default(),
             class_id: T::ClassId::default(),
             supported_schemas: BTreeSet::new(),
             values: BTreeMap::new(),
@@ -252,7 +253,7 @@ impl<T: Trait> Entity<T> {
         values: BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> Self {
         Self {
-            entity_permission: EntityPermission::<T>::default_with_controller(controller),
+            entity_permission: EntityPermissions::<T>::default_with_controller(controller),
             class_id,
             supported_schemas,
             values,
@@ -260,11 +261,11 @@ impl<T: Trait> Entity<T> {
         }
     }
 
-    fn get_permissions_mut(&mut self) -> &mut EntityPermission<T> {
+    fn get_permissions_mut(&mut self) -> &mut EntityPermissions<T> {
         &mut self.entity_permission
     }
 
-    fn get_permissions(&self) -> &EntityPermission<T> {
+    fn get_permissions(&self) -> &EntityPermissions<T> {
         &self.entity_permission
     }
 }
@@ -583,8 +584,8 @@ decl_module! {
             ensure_authority_auth_success::<T>(&account_id)?;
             Self::ensure_known_class_id(class_id)?;
 
-            // Check that schema_id is a valid index of class schemas vector:
-            Self::ensure_class_schema_id_exists(&Self::class_by_id(class_id), in_class_schema_property_id)?;
+            // Ensure property_id is a valid index of class properties vector:
+            Self::ensure_property_id_exists(&Self::class_by_id(class_id), in_class_schema_property_id)?;
             <ClassById<T>>::mutate(class_id, |class| {
                 class.set_property_lock_status_at_index(locked_for, in_class_schema_property_id, is_locked)
             });
@@ -696,7 +697,7 @@ decl_module! {
             // If origin is not an authority
             if !T::authenticate_authority(&account_id) {
                 let (_, access_level) = Self::get_entity_and_access_level(account_id, entity_id, actor_in_group)?;
-                EntityPermission::<T>::ensure_group_can_remove_entity(access_level)?;
+                EntityPermissions::<T>::ensure_group_can_remove_entity(access_level)?;
             }
 
             // Ensure there is no property values pointing to the given entity
@@ -723,7 +724,7 @@ decl_module! {
             // If origin is not an authority
             let entity = if !T::authenticate_authority(&account_id) {
                 let (entity, access_level) = Self::get_entity_and_access_level(account_id, entity_id, actor_in_group)?;
-                EntityPermission::<T>::ensure_group_can_add_schema_support(access_level)?;
+                EntityPermissions::<T>::ensure_group_can_add_schema_support(access_level)?;
                 entity
             } else {
                 Self::entity_by_id(entity_id)
@@ -1253,6 +1254,17 @@ impl<T: Trait> Module<T> {
         ensure!(
             schema_id < class.schemas.len() as SchemaId,
             ERROR_UNKNOWN_CLASS_SCHEMA_ID
+        );
+        Ok(())
+    }
+
+    pub fn ensure_property_id_exists(
+        class: &Class<T>,
+        in_class_schema_property_id: PropertyId,
+    ) -> dispatch::Result {
+        ensure!(
+            in_class_schema_property_id < class.properties.len() as PropertyId,
+            ERROR_CLASS_PROP_NOT_FOUND
         );
         Ok(())
     }

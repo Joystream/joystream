@@ -166,7 +166,7 @@ pub struct ClassPermissions {
     /// Whether to prevent everyone from updating entity properties.
     ///
     /// This could be useful in order to quickly, and probably temporarily, block any editing of entities,
-    /// rather than for example having to set, and later clear, `EntityPermission::frozen_for_controller`
+    /// rather than for example having to set, and later clear, `EntityPermissions::frozen_for_controller`
     /// for a large number of entities.
     all_entity_property_values_locked: bool,
 
@@ -271,7 +271,7 @@ impl<T: ActorAuthenticator> Default for EntityController<T> {
 /// Permissions for a given entity.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct EntityPermission<T: ActorAuthenticator> {
+pub struct EntityPermissions<T: ActorAuthenticator> {
     /// Current controller, which is initially set based on who created entity and
     /// `ClassPermission::initial_controller_of_created_entities` for corresponding class permission instance, but it can later be updated.
     /// In case, when entity was created from authority call, controller is set to None
@@ -287,11 +287,11 @@ pub struct EntityPermission<T: ActorAuthenticator> {
     pub referenceable: bool,
 }
 
-impl<T: ActorAuthenticator> EntityPermission<T> {
+impl<T: ActorAuthenticator> EntityPermissions<T> {
     pub fn default_with_controller(controller: Option<EntityController<T>>) -> Self {
         Self {
             controller,
-            ..EntityPermission::default()
+            ..EntityPermissions::default()
         }
     }
 
@@ -342,7 +342,7 @@ impl<T: ActorAuthenticator> EntityPermission<T> {
     }
 }
 
-impl<T: ActorAuthenticator> Default for EntityPermission<T> {
+impl<T: ActorAuthenticator> Default for EntityPermissions<T> {
     fn default() -> Self {
         Self {
             controller: None,
@@ -369,7 +369,7 @@ impl EntityAccessLevel {
     pub fn derive_signed<T: Trait>(
         account_id: &T::AccountId,
         entity_id: T::EntityId,
-        entity_permissions: &EntityPermission<T>,
+        entity_permissions: &EntityPermissions<T>,
         actor_in_group: ActorInGroupId<T>,
     ) -> Result<Self, &'static str> {
         ensure_actor_in_group_auth_success::<T>(
