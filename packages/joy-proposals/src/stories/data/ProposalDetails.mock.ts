@@ -45,7 +45,8 @@ const mockedProposal: ParsedProposal = {
     rejections: 1,
     slashes: 0
   },
-  createdAt: new Date("Mar 25, 2020 at 14:20")
+  createdAt: new Date("Mar 25, 2020 at 14:20"),
+  cancellationFee: 5
 };
 
 export default mockedProposal;

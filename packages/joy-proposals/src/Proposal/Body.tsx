@@ -138,7 +138,8 @@ export default function Body({
                 You can only cancel your proposal while it's still in the Voting Period.
               </p>
               <p style={{ margin: '0.5em 0', padding: '0' }}>
-                The cancellation fee for this type of proposal is: <b>{ cancellationFee || 'NONE' }</b>
+                The cancellation fee for this type of proposal is:&nbsp;
+                <b>{ cancellationFee ? `${ cancellationFee } tJOY` : 'NONE' }</b>
               </p>
               <Button.Group color="red">
                 <TxButton
