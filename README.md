@@ -79,14 +79,23 @@ This will build and run a fresh new local development chain purging existing one
 cargo test
 ```
 
-### API integration tests
+### Network tests
 
 ```bash
-./scripts/run-dev-chain.sh
+./scripts/run-test-chain.sh
 yarn test
 ```
 
 To run the integration tests with a different chain, you can omit step running the local development chain and set the node URL using `NODE_URL` environment variable.
+Proposal grace periods should be set to 0, otherwise proposal network tests will fail.
+
+### Rome-Constantinople migration network test
+
+Ensure Rome node is up and running, and node URL is set using `NODE_URL` environment variable (default value is `localhost:9944`).
+
+```bash
+yarn test-migration
+```
 
 ## Joystream Runtime
 
