@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { getFormErrorLabelsProps } from "./errorHandling";
 import * as Yup from "yup";
 import {
@@ -14,6 +14,8 @@ import {
 import Validation from "../validationSchema";
 import { InputFormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
+import { useTransport } from "../runtime";
+import { usePromise, snakeCaseToCamelCase } from "../utils";
 import "./forms.css";
 
 type FormValues = GenericFormValues & {
@@ -31,8 +33,16 @@ type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
 const SetMaxValidatorCountForm: React.FunctionComponent<FormInnerProps> = props => {
-  const { handleChange, errors, touched, values } = props;
+  const transport = useTransport();
+  const [validatorCount] = usePromise<number>(() => transport.maxValidatorCount(), NaN);
+  const { handleChange, errors, touched, values, setFieldValue } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
+
+  useEffect(() => {
+    if (validatorCount) {
+      setFieldValue("maxValidatorCount", validatorCount);
+    }
+  }, [validatorCount]);
   return (
     <GenericProposalForm
       {...props}
@@ -46,7 +56,7 @@ const SetMaxValidatorCountForm: React.FunctionComponent<FormInnerProps> = props 
         help="The new value for maximum number of Validators that you propose"
         onChange={handleChange}
         name="maxValidatorCount"
-        placeholder="20"
+        placeholder={validatorCount}
         value={values.maxValidatorCount}
       />
     </GenericProposalForm>
