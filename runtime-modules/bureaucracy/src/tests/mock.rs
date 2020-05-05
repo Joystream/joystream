@@ -6,7 +6,7 @@ use sr_primitives::{
 };
 use srml_support::{impl_outer_origin, parameter_types};
 
-use crate::{Module, Trait};
+use crate::{Instance1, Trait};
 
 impl_outer_origin! {
         pub enum Origin for Test {}
@@ -45,12 +45,6 @@ impl system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-}
-
-impl recurringrewards::Trait for Test {
-    type PayoutStatusHandler = ();
-    type RecipientId = u64;
-    type RewardRelationshipId = u64;
 }
 
 impl hiring::Trait for Test {
@@ -106,13 +100,14 @@ impl balances::Trait for Test {
 
 pub type Balances = balances::Module<Test>;
 
-impl Trait<Instance1> for Test {}
+impl Trait<Instance1> for Test {
+    type Event = ();
+}
 
-use crate::Instance1;
-use crate::Instance2;
-
-type Bureaucracy1 = Module<Test, Instance1>;
-type Bureaucracy2 = Module<Test, Instance2>;
+// use crate::Instance2;
+//
+// type Bureaucracy1 = Module<Test, Instance1>;
+// type Bureaucracy2 = Module<Test, Instance2>;
 
 pub fn build_test_externalities() -> runtime_io::TestExternalities {
     let t = system::GenesisConfig::default()
