@@ -85,11 +85,10 @@ const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props 
 
   useEffect(() => {
     if (params) {
-      // Object.keys(params).reduce(
-      //   (acc, key: keyof IStorageRoleParameters) => ({ ...acc, [`${key}`]: String(params[key]) }),
-      //   {}
-      // );
-      const fetchedPlaceholders = { ...placeholders, ...params };
+      const stringParams = Object.keys(params).reduce((obj, key) => {
+        return { ...obj, [`${key}`]: String(params[key as keyof IStorageRoleParameters]) };
+      }, {});
+      const fetchedPlaceholders = { ...placeholders, ...stringParams };
 
       StorageRoleParameters.forEach(field => {
         setFieldValue(field, params[field].toString());
