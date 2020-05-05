@@ -49,6 +49,7 @@ export type ParsedProposal = {
     slashingThresholdPercentage: number;
     votingPeriod: number;
   };
+  cancellationFee: number;
 };
 
 export type ProposalVote = {
