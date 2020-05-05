@@ -2,13 +2,14 @@ import { Transport, ParsedProposal, ProposalType, ProposalTypes, ParsedMember, P
 import { Proposal, ProposalId, Seats, VoteKind, ElectionParameters } from "@joystream/types/proposals";
 import { MemberId, Profile } from "@joystream/types/members";
 import { ApiProps } from "@polkadot/react-api/types";
-import { u32, Vec, Option } from "@polkadot/types/";
+import { u32, u128, Vec, Option } from "@polkadot/types/";
 import { Balance, Moment, AccountId, BlockNumber } from "@polkadot/types/interfaces";
 import { ApiPromise } from "@polkadot/api";
 import { RoleKeys } from "@joystream/types/members";
 import { FIRST_MEMBER_ID } from '@polkadot/joy-members/constants';
 
 import { includeKeys, calculateStake, calculateMetaFromType, splitOnUpperCase } from "../utils";
+import { MintId, Mint } from "@joystream/types/mint";
 
 export class SubstrateTransport extends Transport {
   protected api: ApiPromise;
@@ -47,6 +48,14 @@ export class SubstrateTransport extends Transport {
 
   get actors() {
     return this.api.query.actors;
+  }
+
+  get contentWorkingGroup() {
+    return this.api.query.contentWorkingGroup;
+  }
+
+  get minting() {
+    return this.api.query.minting;
   }
 
   totalIssuance() {
@@ -261,5 +270,11 @@ export class SubstrateTransport extends Transport {
       candidacy_limit,
       council_size,
     });
+  }
+
+  async WGMintCap(): Promise<number> {
+    const WGMintId = await this.contentWorkingGroup.mint() as MintId;
+    const WGMint = await this.minting.mints(WGMintId) as Vec<Mint>;
+    return (WGMint[0].get('capacity') as u128).toNumber();
   }
 }

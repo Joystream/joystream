@@ -37,7 +37,7 @@ type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
 const MintCapacityForm: React.FunctionComponent<FormInnerProps> = props => {
-  const { handleChange, errors, touched, mintCapacityGroup, values, txMethod } = props;
+  const { handleChange, errors, touched, mintCapacityGroup, values, txMethod, initialData } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
     <GenericProposalForm
@@ -50,7 +50,7 @@ const MintCapacityForm: React.FunctionComponent<FormInnerProps> = props => {
         error={errorLabelsProps.capacity}
         onChange={handleChange}
         name="capacity"
-        placeholder="100"
+        placeholder={ (initialData && initialData.capacity) }
         label={`${mintCapacityGroup} Mint Capacity`}
         help={`The new mint capacity you propse for ${mintCapacityGroup}`}
         unit="tJOY"
