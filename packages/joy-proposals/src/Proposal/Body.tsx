@@ -48,8 +48,8 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
       "Announcing period": params.announcing_period + " blocks",
       "Voting period": params.voting_period + " blocks",
       "Revealing period": params.revealing_period + " blocks",
-      // "Council size": params.council_size + " members",
-      // "Candidacy limit": params.candidacy_limit + " members",
+      "Council size": params.council_size + " members",
+      "Candidacy limit": params.candidacy_limit + " members",
       "New term duration": params.new_term_duration + " blocks",
       // "Min. council stake": params.min_council_stake + " tJOY",
       // "Min. voting stake": params.min_voting_stake + " tJOY"

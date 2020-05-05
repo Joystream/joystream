@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { getFormErrorLabelsProps } from "./errorHandling";
 import { Divider, Form } from "semantic-ui-react";
 import * as Yup from "yup";
@@ -64,13 +64,15 @@ function createElectionParameters(values: FormValues): ElectionParameters {
 }
 
 const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
-  const { handleChange, errors, touched, values, setFieldValue } = props;
+  const { handleChange, errors, touched, values, setFieldValue, setFieldError } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
+  const [ placeholders, setPlaceholders ] = useState<{ [k in keyof FormValues]: string }>(defaultValues);
 
   const transport = useTransport();
   const [ councilParams, error, loading ] = usePromise<ElectionParameters | null>(() => transport.electionParameters(), null);
   useEffect(() => {
     if (councilParams) {
+      let fetchedPlaceholders = {...placeholders};
       const fieldsToPopulate = [
         "announcing_period",
         "voting_period",
@@ -81,11 +83,19 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
         "candidacy_limit",
         "council_size"
       ] as const;
-      fieldsToPopulate.forEach(field =>
-        setFieldValue(snakeCaseToCamelCase(field), councilParams[field].toString())
-      );
+      fieldsToPopulate.forEach(field => {
+        const camelCaseField = snakeCaseToCamelCase(field) as keyof FormValues;
+        setFieldValue(camelCaseField, councilParams[field].toString());
+        fetchedPlaceholders[camelCaseField] = councilParams[field].toString();
+      });
+      setPlaceholders(fetchedPlaceholders);
     }
   }, [councilParams]);
+
+  // This logic may be moved somewhere else in the future, but it's quite easy to enforce it here:
+  if (!errors.candidacyLimit && !errors.councilSize && values.candidacyLimit < values.councilSize) {
+    setFieldError('candidacyLimit', `Candidacy limit must be >= council size (${ values.councilSize })`);
+  }
 
   return (
     <PromiseComponent error={error} loading={loading} message="Fetching current parameters...">
@@ -104,6 +114,7 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
             name="announcingPeriod"
             error={errorLabelsProps.announcingPeriod}
             value={values.announcingPeriod}
+            placeholder={ placeholders.announcingPeriod }
           />
           <InputFormField
             label="Voting Period"
@@ -112,6 +123,7 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
             name="votingPeriod"
             error={errorLabelsProps.votingPeriod}
             value={values.votingPeriod}
+            placeholder={ placeholders.votingPeriod }
           />
           <InputFormField
             label="Revealing Period"
@@ -121,6 +133,7 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
             name="revealingPeriod"
             error={errorLabelsProps.revealingPeriod}
             value={values.revealingPeriod}
+            placeholder={ placeholders.revealingPeriod }
           />
           <InputFormField
             label="Minimum Voting Stake"
@@ -130,6 +143,7 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
             name="minVotingStake"
             error={errorLabelsProps.minVotingStake}
             value={values.minVotingStake}
+            placeholder={ placeholders.minVotingStake }
             disabled
           />
         </Form.Group>
@@ -143,6 +157,7 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
             name="minCouncilStake"
             error={errorLabelsProps.minCouncilStake}
             value={values.minCouncilStake}
+            placeholder={ placeholders.minCouncilStake }
             disabled
           />
           <InputFormField
@@ -153,6 +168,7 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
             name="newTermDuration"
             error={errorLabelsProps.newTermDuration}
             value={values.newTermDuration}
+            placeholder={ placeholders.newTermDuration }
           />
           <InputFormField
             label="Council Size"
@@ -162,7 +178,7 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
             name="councilSize"
             error={errorLabelsProps.councilSize}
             value={values.councilSize}
-            disabled
+            placeholder={ placeholders.councilSize }
           />
           <InputFormField
             label="Candidacy Limit"
@@ -172,7 +188,7 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
             name="candidacyLimit"
             error={errorLabelsProps.candidacyLimit}
             value={values.candidacyLimit}
-            disabled
+            placeholder={ placeholders.candidacyLimit }
           />
         </Form.Group>
       </GenericProposalForm>
