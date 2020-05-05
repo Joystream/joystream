@@ -193,14 +193,13 @@ impl<T: Trait> Class<T> {
 
     fn set_property_lock_status_at_index(
         &mut self,
-        access_level: EntityAccessLevel,
         in_class_schema_property_id: PropertyId,
-        is_locked: bool,
+        is_locked: IsLocked,
     ) {
         // Such indexing is safe, when length bounds were previously checked
         self.properties[in_class_schema_property_id as usize]
             .prop_type
-            .set_locked_for(access_level, is_locked)
+            .set_locked_for(is_locked)
     }
 
     fn get_permissions_mut(&mut self) -> &mut ClassPermissions {
@@ -576,9 +575,8 @@ decl_module! {
         pub fn set_class_property_lock_status_at_index(
             origin,
             class_id: T::ClassId,
-            locked_for: EntityAccessLevel,
             in_class_schema_property_id: PropertyId,
-            is_locked: bool
+            is_locked: IsLocked
         ) -> dispatch::Result {
             let account_id = ensure_signed(origin)?;
             ensure_authority_auth_success::<T>(&account_id)?;
@@ -587,7 +585,7 @@ decl_module! {
             // Ensure property_id is a valid index of class properties vector:
             Self::ensure_property_id_exists(&Self::class_by_id(class_id), in_class_schema_property_id)?;
             <ClassById<T>>::mutate(class_id, |class| {
-                class.set_property_lock_status_at_index(locked_for, in_class_schema_property_id, is_locked)
+                class.set_property_lock_status_at_index(in_class_schema_property_id, is_locked)
             });
             Ok(())
         }
@@ -1172,27 +1170,6 @@ impl<T: Trait> Module<T> {
         Ok(Self::class_by_id(class_id))
     }
 
-    pub fn ensure_class_property_type_unlocked_for(
-        class_id: T::ClassId,
-        in_class_schema_property_id: PropertyId,
-        entity_access_level: Option<EntityAccessLevel>,
-    ) -> Result<Property<T>, &'static str> {
-        let class = Self::class_by_id(class_id);
-
-        // Get class-level information about this property
-        let class_prop = class
-            .properties
-            .get(in_class_schema_property_id as usize)
-            // Throw an error if a property was not found on entity
-            // by an in-class index of a property update.
-            .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?;
-        ensure!(
-            !class_prop.is_locked_from(entity_access_level),
-            ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR
-        );
-        Ok(class_prop.to_owned())
-    }
-
     fn get_entity_and_access_level(
         account_id: T::AccountId,
         entity_id: T::EntityId,
@@ -1226,6 +1203,33 @@ impl<T: Trait> Module<T> {
             None
         };
         Ok(access_level)
+    }
+
+    pub fn get_entity_and_class(entity_id: T::EntityId) -> (Entity<T>, Class<T>) {
+        let entity = <EntityById<T>>::get(entity_id);
+        let class = ClassById::get(entity.class_id);
+        (entity, class)
+    }
+
+    pub fn ensure_class_property_type_unlocked_for(
+        class_id: T::ClassId,
+        in_class_schema_property_id: PropertyId,
+        entity_access_level: Option<EntityAccessLevel>,
+    ) -> Result<Property<T>, &'static str> {
+        let class = Self::class_by_id(class_id);
+
+        // Get class-level information about this property
+        let class_prop = class
+            .properties
+            .get(in_class_schema_property_id as usize)
+            // Throw an error if a property was not found on class
+            // by an in-class index of a property.
+            .ok_or(ERROR_CLASS_PROP_NOT_FOUND)?;
+        ensure!(
+            !class_prop.is_locked_from(entity_access_level),
+            ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR
+        );
+        Ok(class_prop.to_owned())
     }
 
     pub fn ensure_known_class_id(class_id: T::ClassId) -> dispatch::Result {
@@ -1347,12 +1351,6 @@ impl<T: Trait> Module<T> {
         let schema_not_added = !entity.supported_schemas.contains(&schema_id);
         ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY);
         Ok(())
-    }
-
-    pub fn get_entity_and_class(entity_id: T::EntityId) -> (Entity<T>, Class<T>) {
-        let entity = <EntityById<T>>::get(entity_id);
-        let class = ClassById::get(entity.class_id);
-        (entity, class)
     }
 
     pub fn ensure_class_name_is_valid(text: &[u8]) -> dispatch::Result {

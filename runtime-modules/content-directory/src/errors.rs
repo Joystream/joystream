@@ -51,8 +51,7 @@ pub const ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS: &str =
     "Internal property does not match its class";
 pub const ERROR_ENTITY_REFERENCE_COUNTER_DOES_NOT_EQUAL_TO_ZERO: &str =
     "Entity removal can`t be completed, as there are some property values pointing to given entity";
-pub const ERROR_CLASS_PROP_NOT_FOUND: &str =
-    "Class property under given index not found";
+pub const ERROR_CLASS_PROP_NOT_FOUND: &str = "Class property under given index not found";
 
 // Permission errors
 

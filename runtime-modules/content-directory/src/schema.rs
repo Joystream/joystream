@@ -50,7 +50,7 @@ pub enum PropertyType<T: Trait> {
 }
 
 impl<T: Trait> PropertyType<T> {
-    fn get_locked_mut(&mut self) -> &mut IsLocked {
+    pub fn set_locked_for(&mut self, is_locked_for: IsLocked) {
         match self {
             PropertyType::Bool(is_locked)
             | PropertyType::Uint16(is_locked)
@@ -69,7 +69,7 @@ impl<T: Trait> PropertyType<T> {
             | PropertyType::Int32Vec(_, is_locked)
             | PropertyType::Int64Vec(_, is_locked)
             | PropertyType::TextVec(_, _, is_locked)
-            | PropertyType::ReferenceVec(_, _, is_locked) => is_locked,
+            | PropertyType::ReferenceVec(_, _, is_locked) => *is_locked = is_locked_for,
         }
     }
 
@@ -105,21 +105,6 @@ impl<T: Trait> PropertyType<T> {
             }
             EntityAccessLevel::EntityController => is_locked_from_controller,
             EntityAccessLevel::EntityMaintainer => is_locked_from_maintainer,
-        }
-    }
-
-    pub fn set_locked_for(&mut self, access_level: EntityAccessLevel, is_locked: bool) {
-        match access_level {
-            EntityAccessLevel::EntityControllerAndMaintainer => {
-                self.get_locked_mut().is_locked_from_controller = is_locked;
-                self.get_locked_mut().is_locked_from_maintainer = is_locked;
-            }
-            EntityAccessLevel::EntityController => {
-                self.get_locked_mut().is_locked_from_controller = is_locked
-            }
-            EntityAccessLevel::EntityMaintainer => {
-                self.get_locked_mut().is_locked_from_maintainer = is_locked
-            }
         }
     }
 }
