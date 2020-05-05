@@ -1,3 +1,13 @@
 joystream:
     ws_provider: "ws://localhost:9944"
 
+logging:
+    config:
+        appenders:
+            out: 
+                type: "stdout"
+        categories:
+            default:
+                appenders:
+                    - out
+                level: "debug"
