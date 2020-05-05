@@ -8,9 +8,10 @@ import ProfilePreview from "./ProfilePreview";
 type DetailsProps = {
   proposal: ParsedProposal;
   extendedStatus: ExtendedProposalStatus;
+  proposerLink?: boolean;
 };
 
-export default function Details({ proposal, extendedStatus }: DetailsProps) {
+export default function Details({ proposal, extendedStatus, proposerLink = false }: DetailsProps) {
   const { type, createdAt, proposer } = proposal;
   const { displayStatus, periodStatus, expiresIn } = extendedStatus;
   return (
@@ -22,6 +23,7 @@ export default function Details({ proposal, extendedStatus }: DetailsProps) {
             avatar_uri={proposer.avatar_uri}
             root_account={proposer.root_account}
             handle={proposer.handle}
+            link={ proposerLink }
           />
           <Item.Extra>{createdAt.toLocaleString()}</Item.Extra>
         </Item.Content>

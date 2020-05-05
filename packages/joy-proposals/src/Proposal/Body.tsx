@@ -7,6 +7,12 @@ import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { ProposalId } from "@joystream/types/proposals";
 import { MemberId } from "@joystream/types/members";
+import ProfilePreview from "./ProfilePreview";
+import { useTransport } from "../runtime";
+import { usePromise } from "../utils";
+import { Profile } from "@joystream/types/members";
+import { Option } from "@polkadot/types/";
+import PromiseComponent from "./PromiseComponent";
 
 type BodyProps = {
   title: string;
@@ -23,6 +29,29 @@ type BodyProps = {
 function ProposedAddress(props: { address: string }) {
   return (
     <AddressMini value={props.address} isShort={false} isPadded={false} withAddress={true} style={{ padding: 0 }} />
+  );
+}
+
+function ProposedMember(props: { memberId: MemberId | number }) {
+  const transport = useTransport();
+  const [ member, error, loading ] = usePromise<Option<Profile> | null>(
+    () => transport.memberProfile(props.memberId),
+    null
+  );
+
+  const profile = member && member.unwrapOr(null);
+
+  return (
+    <PromiseComponent error={error} loading={loading} message="Fetching profile...">
+      { profile ? (
+        <ProfilePreview
+          avatar_uri={ profile.avatar_uri.toString() }
+          root_account={ profile.root_account.toString() }
+          handle={ profile.handle.toString() }
+          link={ true }
+        />
+      ) : 'Profile not found' }
+    </PromiseComponent>
   );
 }
 
@@ -54,7 +83,7 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
     Account: <ProposedAddress address={account} />
   }),
   SetLead: ([memberId, accountId]) => ({
-    "Member id": memberId, // TODO: Link with avatar and handle?
+    "Member": <ProposedMember memberId={ memberId } />,
     "Account id": <ProposedAddress address={accountId} />
   }),
   SetContentWorkingGroupMintCapacity: ([capacity]) => ({
