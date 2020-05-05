@@ -1,8 +1,9 @@
 import React from "react";
-import { Item, Image, Header } from "semantic-ui-react";
+import { Item, Header } from "semantic-ui-react";
 import { ParsedProposal } from "../runtime/transport";
-import { IdentityIcon } from "@polkadot/react-components";
 import { ExtendedProposalStatus } from "./ProposalDetails";
+
+import ProfilePreview from "./ProfilePreview";
 
 type DetailsProps = {
   proposal: ParsedProposal;
@@ -17,16 +18,11 @@ export default function Details({ proposal, extendedStatus }: DetailsProps) {
       <Item>
         <Item.Content>
           <Item.Extra>Proposed By:</Item.Extra>
-          <div className="details-profile">
-            {proposer.avatar_uri ? (
-              <Image src={proposer.avatar_uri} avatar floated="left" />
-            ) : (
-              <IdentityIcon className="image" value={proposer.root_account} size={40} />
-            )}
-            <Header as="h4" className="details-handle">
-              {proposer.handle}
-            </Header>
-          </div>
+          <ProfilePreview
+            avatar_uri={proposer.avatar_uri}
+            root_account={proposer.root_account}
+            handle={proposer.handle}
+          />
           <Item.Extra>{createdAt.toLocaleString()}</Item.Extra>
         </Item.Content>
       </Item>

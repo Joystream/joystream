@@ -1,6 +1,5 @@
 import React from "react";
-import { IdentityIcon } from "@polkadot/react-components";
-import { Header, Divider, Table, Image, Icon } from "semantic-ui-react";
+import { Header, Divider, Table, Icon } from "semantic-ui-react";
 import useVoteStyles from "./useVoteStyles";
 import { useTransport, ProposalVote } from "../runtime";
 import { ProposalId, VoteKind } from "@joystream/types/proposals";
@@ -8,6 +7,7 @@ import { VoteKindStr } from "./VotingSection";
 import { usePromise } from "../utils";
 import Loading from "./Loading";
 import Error from "./Error";
+import ProfilePreview from "./ProfilePreview";
 
 type VotesProps = {
   proposalId: ProposalId;
@@ -47,18 +47,13 @@ export default function Votes({ proposalId }: VotesProps) {
                   <Icon name={icon} />
                   {voteStr}
                 </Table.Cell>
-                <Table.Cell style={{ display: "flex", alignItems: "center" }}>
-                  {member.avatar_uri ? (
-                    <Image src={member.avatar_uri} avatar floated="left" />
-                  ) : (
-                    <IdentityIcon className="image" value={member.root_account} size={40} />
-                  )}
-                  <span style={{ margin: "auto 0 auto 0.5rem", fontWeight: "bold" }}>{member.handle}</span>
+                <Table.Cell>
+                  <ProfilePreview
+                    handle={member.handle}
+                    avatar_uri={member.avatar_uri}
+                    root_account={member.root_account}
+                  />
                 </Table.Cell>
-                {/*
-                  TODO: Integrate:
-                  <Table.Cell className="text-grey">{vote.createdAt}</Table.Cell>
-                */}
               </Table.Row>
             );
           })}
