@@ -6,7 +6,7 @@ import { UserInfo, PaidMembershipTerms, MemberId } from '@joystream/types/lib/me
 import { Mint, MintId } from '@joystream/types/lib/mint';
 import { Lead, LeadId } from '@joystream/types/lib/content-working-group';
 import { Seat } from '@joystream/types';
-import { Balance, EventRecord } from '@polkadot/types/interfaces';
+import { Balance, EventRecord, AccountId } from '@polkadot/types/interfaces';
 import BN = require('bn.js');
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { Sender } from './sender';
@@ -143,6 +143,12 @@ export class ApiWrapper {
   public estimateProposeLeadFee(title: string, description: string, stake: BN, address: string): BN {
     return this.estimateTxFee(
       this.api.tx.proposalsCodex.createSetLeadProposal(stake, title, description, stake, { stake, address })
+    );
+  }
+
+  public estimateProposeEvictStorageProviderFee(title: string, description: string, stake: BN, address: string): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createEvictStorageProviderProposal(stake, title, description, stake, address)
     );
   }
 
@@ -350,6 +356,27 @@ export class ApiWrapper {
     );
   }
 
+  public async proposeEvictStorageProvider(
+    account: KeyringPair,
+    title: string,
+    description: string,
+    stake: BN,
+    storageProvider: string
+  ): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn();
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createEvictStorageProviderProposal(
+        memberId,
+        title,
+        description,
+        stake,
+        storageProvider
+      ),
+      account,
+      false
+    );
+  }
+
   public approveProposal(account: KeyringPair, memberId: BN, proposal: BN): Promise<void> {
     return this.sender.signAndSend(this.api.tx.proposalsEngine.vote(memberId, proposal, 'Approve'), account, false);
   }
@@ -411,11 +438,6 @@ export class ApiWrapper {
     return this.api.query.balances.totalIssuance<Balance>();
   }
 
-  public async getProposal(id: BN) {
-    const proposal = await this.api.query.proposalsEngine.proposals(id);
-    return;
-  }
-
   public async getRequiredProposalStake(numerator: number, denominator: number): Promise<BN> {
     const issuance: number = await (await this.getTotalIssuance()).toNumber();
     const stake = (issuance * numerator) / denominator;
@@ -442,5 +464,19 @@ export class ApiWrapper {
     const leadCodec = await this.api.query.contentWorkingGroup.leadById<Codec[]>(leadId.unwrap());
     const lead = (leadCodec[0] as unknown) as Lead;
     return lead.role_account.toString();
+  }
+
+  public async createStorageProvider(account: KeyringPair): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn();
+    await this.sender.signAndSend(this.api.tx.actors.roleEntryRequest('StorageProvider', memberId), account, false);
+    await this.sender.signAndSend(this.api.tx.actors.stake('StorageProvider', account.address), account, false);
+    return;
+  }
+
+  public async isStorageProvider(address: string): Promise<boolean> {
+    const storageProviders: Vec<AccountId> = await this.api.query.actors.accountIdsByRole<Vec<AccountId>>(
+      'StorageProvider'
+    );
+    return storageProviders.map(accountId => accountId.toString()).includes(address);
   }
 }
