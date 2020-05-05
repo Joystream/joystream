@@ -1,4 +1,4 @@
-import { Text, u32, Enum, getTypeRegistry, Tuple, GenericAccountId, u8, Vec, Option, Struct } from "@polkadot/types";
+import { Text, u32, Enum, getTypeRegistry, Tuple, GenericAccountId, u8, Vec, Option, Struct, Null } from "@polkadot/types";
 import { BlockNumber, Balance } from "@polkadot/types/interfaces";
 import { MemberId } from "./members";
 import { StakeId } from "./stake";
@@ -82,38 +82,38 @@ class ProposalParameters extends Struct {
     );
   }
 
-        // During this period, votes can be accepted
+  // During this period, votes can be accepted
   get votingPeriod(): BlockNumber {
     return this.get("votingPeriod") as BlockNumber;
   }
 
-        /* A pause before execution of the approved proposal. Zero means approved proposal would be
+  /* A pause before execution of the approved proposal. Zero means approved proposal would be
      executed immediately. */
   get gracePeriod(): BlockNumber {
     return this.get("gracePeriod") as BlockNumber;
   }
 
-        // Quorum percentage of approving voters required to pass the proposal.
+  // Quorum percentage of approving voters required to pass the proposal.
   get approvalQuorumPercentage(): u32 {
     return this.get("approvalQuorumPercentage") as u32;
   }
 
-        // Approval votes percentage threshold to pass the proposal.
+  // Approval votes percentage threshold to pass the proposal.
   get approvalThresholdPercentage(): u32 {
     return this.get("approvalThresholdPercentage") as u32;
   }
 
-        // Quorum percentage of voters required to slash the proposal.
+  // Quorum percentage of voters required to slash the proposal.
   get slashingQuorumPercentage(): u32 {
     return this.get("slashingQuorumPercentage") as u32;
   }
 
-        // Slashing votes percentage threshold to slash the proposal.
+  // Slashing votes percentage threshold to slash the proposal.
   get slashingThresholdPercentage(): u32 {
     return this.get("slashingThresholdPercentage") as u32;
   }
 
-        // Proposal stake
+  // Proposal stake
   get requiredStake(): Option<Balance> {
     return this.get("requiredStake") as Option<Balance>;
   }
@@ -151,7 +151,7 @@ export class ActiveStake extends JoyStruct<IActiveStake> {
   constructor(value?: IActiveStake) {
     super(
       {
-        stakeId: u32,
+        stakeId: StakeId,
         sourceAccountId: GenericAccountId
       },
       value
@@ -159,11 +159,44 @@ export class ActiveStake extends JoyStruct<IActiveStake> {
   }
 }
 
+export class ExecutionFailedStatus extends Struct {
+  constructor(value?: any) {
+    super(
+      {
+        error: "Vec<u8>",
+      },
+      value
+    );
+  }
+}
+
+class ExecutionFailed extends ExecutionFailedStatus {}
+
+export type ApprovedProposalStatuses = "PendingExecution" | "Executed" | "ExecutionFailed";
+
+export class ApprovedProposalStatus extends Enum {
+  constructor(value?: any, index?: number) {
+    super({
+      PendingExecution: Null,
+      Executed: Null,
+      ExecutionFailed
+    }, value, index);
+  }
+}
+export class Approved extends ApprovedProposalStatus {};
+
 export type ProposalDecisionStatuses = "Canceled" | "Vetoed" | "Rejected" | "Slashed" | "Expired" | "Approved";
 
 export class ProposalDecisionStatus extends Enum {
   constructor(value?: any, index?: number) {
-    super(["Canceled", "Vetoed", "Rejected", "Slashed", "Expired", "Approved"], value, index);
+    super({
+      Canceled: Null,
+      Vetoed: Null,
+      Rejected: Null,
+      Slashed: Null,
+      Expired: Null,
+      Approved
+    }, value, index);
   }
 }
 
@@ -324,7 +357,7 @@ export class Proposal extends Struct {
   }
 }
 
-export class Baker extends Struct {
+export class Backer extends Struct {
   constructor(value?: any) {
     super(
       {
@@ -334,14 +367,24 @@ export class Baker extends Struct {
       value
     );
   }
+
+  get member(): MemberId {
+    return this.get("member") as MemberId;
+  }
+
+  get stake(): Balance {
+    return this.get("stake") as Balance;
+  }
 }
+
+export class Backers extends Vec.with(Backer) {}
 export class Seat extends Struct {
   constructor(value?: any) {
     super(
       {
         member: "AccountId",
         stake: "Balance",
-        backers: Vec.with(Baker)
+        backers: Backers
       },
       value
     );
@@ -349,6 +392,14 @@ export class Seat extends Struct {
 
   get member(): AccountId {
     return this.get("member") as AccountId;
+  }
+
+  get stake(): Balance {
+    return this.get("stake") as Balance;
+  }
+
+  get backers(): Backers {
+    return this.get("backers") as Backers;
   }
 }
 
@@ -367,7 +418,8 @@ export function registerProposalTypes() {
       VoteKind,
       Seat,
       Seats,
-      Baker
+      Backer,
+      Backers
     });
   } catch (err) {
     console.error("Failed to register custom types of proposals module", err);

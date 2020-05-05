@@ -1,19 +1,20 @@
-import React from 'react';
-import { FormikProps, WithFormikConfig } from 'formik';
-import { Form, Icon, Button, Message } from 'semantic-ui-react';
-import { getFormErrorLabelsProps } from './errorHandling';
-import * as Yup from 'yup';
-import { InputFormField, TextareaFormField } from './FormFields';
-import TxButton from '@polkadot/joy-utils/TxButton';
-import { SubmittableResult } from '@polkadot/api';
-import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
-import { MyAccountProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
-import { withMulti } from '@polkadot/react-api/with';
-import { withCalls } from '@polkadot/react-api';
-import { CallProps } from '@polkadot/react-api/types';
-import { Balance } from '@polkadot/types/interfaces';
-import { RouteComponentProps } from 'react-router';
-import './forms.css';
+import React from "react";
+import { FormikProps, WithFormikConfig } from "formik";
+import { Form, Icon, Button, Message } from "semantic-ui-react";
+import { getFormErrorLabelsProps } from "./errorHandling";
+import Validation from "../validationSchema";
+import { InputFormField, TextareaFormField } from "./FormFields";
+import TxButton from "@polkadot/joy-utils/TxButton";
+import { SubmittableResult } from "@polkadot/api";
+import { TxFailedCallback, TxCallback } from "@polkadot/react-components/Status/types";
+import { MyAccountProps, withOnlyMembers } from "@polkadot/joy-utils/MyAccount";
+import { withMulti } from "@polkadot/react-api/with";
+import { withCalls } from "@polkadot/react-api";
+import { CallProps } from "@polkadot/react-api/types";
+import { Balance } from "@polkadot/types/interfaces";
+import { RouteComponentProps } from "react-router";
+import "./forms.css";
+
 
 // Generic form values
 export type GenericFormValues = {
@@ -22,20 +23,22 @@ export type GenericFormValues = {
 };
 
 export const genericFormDefaultValues: GenericFormValues = {
-  title: '',
-  rationale: ''
+  title: "",
+  rationale: ""
 };
 
 // Helper generic types for defining form's Export, Container and Inner component prop types
 export type ProposalFormExportProps<AdditionalPropsT, FormValuesT> = RouteComponentProps &
-AdditionalPropsT & {
-  initialData?: Partial<FormValuesT>;
-};
+
+  AdditionalPropsT & {
+    initialData?: Partial<FormValuesT>;
+  };
 export type ProposalFormContainerProps<ExportPropsT> = ExportPropsT &
-MyAccountProps &
-CallProps & {
-  balances_totalIssuance?: Balance;
-};
+  MyAccountProps &
+  CallProps & {
+    balances_totalIssuance?: Balance;
+  };
+
 export type ProposalFormInnerProps<ContainerPropsT, FormValuesT> = ContainerPropsT & FormikProps<FormValuesT>;
 
 // Types only used in this file
@@ -46,7 +49,9 @@ type GenericProposalFormAdditionalProps = {
 };
 
 type GenericFormContainerProps = ProposalFormContainerProps<
-ProposalFormExportProps<GenericProposalFormAdditionalProps, GenericFormValues>
+
+  ProposalFormExportProps<GenericProposalFormAdditionalProps, GenericFormValues>
+
 >;
 type GenericFormInnerProps = ProposalFormInnerProps<GenericFormContainerProps, GenericFormValues>;
 type GenericFormDefaultOptions = WithFormikConfig<GenericFormContainerProps, GenericFormValues>;
@@ -58,8 +63,10 @@ export const genericFormDefaultOptions: GenericFormDefaultOptions = {
     ...(props.initialData || {})
   }),
   validationSchema: {
-    title: Yup.string().required('Title is required!'),
-    rationale: Yup.string().required('Rationale is required!')
+
+    title: Validation.All.title,
+    rationale: Validation.All.rationale
+
   },
   handleSubmit: (values, { setSubmitting, resetForm }) => {
     // This is handled via TxButton
@@ -99,7 +106,7 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
   const onTxSuccess: TxCallback = (txResult: SubmittableResult) => {
     setSubmitting(false);
     if (!history) return;
-    history.push('/proposals');
+    history.push("/proposals");
   };
 
   const requiredStake: number | undefined =
@@ -141,8 +148,8 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
               type="submit"
               label="Submit proposal"
               icon="paper plane"
-              isDisabled={isSubmitting}
-              params={(submitParams || []).map(p => (p === '{STAKE}' ? requiredStake : p))}
+              isDisabled={isSubmitting || !isValid}
+              params={(submitParams || []).map(p => (p === "{STAKE}" ? requiredStake : p))}
               tx={`proposalsCodex.${txMethod}`}
               onClick={onSubmit}
               txFailedCb={onTxFailed}
@@ -154,6 +161,7 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
               Submit
             </Button>
           )}
+
           <Button type="button" color="grey" onClick={handleReset}>
             <Icon name="times" />
             Clear
@@ -165,8 +173,10 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
 };
 
 // Helper that provides additional wrappers for proposal forms
-export function withProposalFormData<ContainerPropsT, ExportPropsT> (
+
+export function withProposalFormData<ContainerPropsT, ExportPropsT>(
   FormContainerComponent: React.ComponentType<ContainerPropsT>
 ): React.ComponentType<ExportPropsT> {
-  return withMulti(FormContainerComponent, withOnlyMembers, withCalls('query.balances.totalIssuance'));
+  return withMulti(FormContainerComponent, withOnlyMembers, withCalls("query.balances.totalIssuance"));
+
 }

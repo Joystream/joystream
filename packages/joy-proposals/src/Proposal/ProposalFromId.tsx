@@ -1,11 +1,10 @@
 import React from "react";
 import { RouteComponentProps } from "react-router-dom";
-
 import ProposalDetails from "./ProposalDetails";
-import { useTransport, ParsedProposal } from "../runtime";
-import { usePromise } from "../utils";
+import { useProposalSubscription } from "../utils";
 import Error from "./Error";
 import Loading from "./Loading";
+
 
 export default function ProposalFromId(props: RouteComponentProps<any>) {
   const {
@@ -13,18 +12,14 @@ export default function ProposalFromId(props: RouteComponentProps<any>) {
       params: { id }
     }
   } = props;
-  const transport = useTransport();
 
-  const [proposal, error, loading] = usePromise<ParsedProposal>(
-    () => transport.proposalById(id),
-    {} as ParsedProposal
-  );
+  const { proposal: proposalState, votes: votesState } = useProposalSubscription(id);
 
-  if (loading && !error) {
+  if (proposalState.loading && !proposalState.error) {
     return <Loading text="Fetching Proposal..." />;
-  } else if (error) {
-    return <Error error={error} />;
+  } else if (proposalState.error) {
+    return <Error error={proposalState.error} />;
   }
 
-  return <ProposalDetails proposal={ proposal } proposalId={id}/>;
+  return <ProposalDetails proposal={ proposalState.data } proposalId={ id } votesListState={ votesState }/>;
 }

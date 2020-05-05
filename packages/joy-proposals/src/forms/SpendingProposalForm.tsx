@@ -12,9 +12,10 @@ import {
   ProposalFormContainerProps,
   ProposalFormInnerProps
 } from "./GenericProposalForm";
+import Validation from "../validationSchema";
 import { InputFormField, FormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
-import { InputAddress } from '@polkadot/react-components/index';
+import { InputAddress } from "@polkadot/react-components/index";
 import "./forms.css";
 
 type FormValues = GenericFormValues & {
@@ -45,7 +46,7 @@ const SpendingProposalForm: React.FunctionComponent<FormInnerProps> = props => {
         props.myMemberId,
         values.title,
         values.rationale,
-        '{STAKE}',
+        "{STAKE}",
         values.tokens,
         values.destinationAccount
       ]}
@@ -67,7 +68,7 @@ const SpendingProposalForm: React.FunctionComponent<FormInnerProps> = props => {
         help="The account you propose to send the tokens into"
       >
         <InputAddress
-          onChange={(address) => setFieldValue("destinationAccount", address) }
+          onChange={address => setFieldValue("destinationAccount", address)}
           type="all"
           placeholder="Select Destination Account"
           value={values.destinationAccount}
@@ -85,8 +86,8 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
   }),
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    tokens: Yup.number().required("You need to specify an amount of tokens."),
-    destinationAccount: Yup.string().required("Select a destination account!")
+    tokens: Validation.Spending.tokens,
+    destinationAccount: Validation.Spending.destinationAccount
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: "SpendingProposalsForm"

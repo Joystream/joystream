@@ -6,45 +6,65 @@ import Body from "./Body";
 import VotingSection from "./VotingSection";
 import Votes from "./Votes";
 import { MyAccountProps, withMyAccount } from "@polkadot/joy-utils/MyAccount"
-import { ParsedProposal } from "../runtime";
+import { ParsedProposal, ProposalVote } from "../runtime";
 import { withCalls } from '@polkadot/react-api';
 import { withMulti } from '@polkadot/react-api/with';
 
 import "./Proposal.css";
-import { ProposalId } from "@joystream/types/proposals";
+import { ProposalId, ProposalDecisionStatuses, ApprovedProposalStatuses } from "@joystream/types/proposals";
 import { BlockNumber } from '@polkadot/types/interfaces'
 import { MemberId } from "@joystream/types/members";
 import { Seat } from "@joystream/types/";
+import PromiseComponent from './PromiseComponent';
+
+type BasicProposalStatus = 'Active' | 'Finalized';
+type ProposalPeriodStatus = 'Voting period' | 'Grace period';
+type ProposalDisplayStatus = BasicProposalStatus | ProposalDecisionStatuses | ApprovedProposalStatuses;
 
 export type ExtendedProposalStatus = {
-  statusStr: string, // TODO: Active / Finalized?
-  substage: 'Voting period' | 'Grace period' | null,
+  displayStatus: ProposalDisplayStatus,
+  periodStatus: ProposalPeriodStatus | null,
   expiresIn: number | null,
 }
 
 export function getExtendedStatus(proposal: ParsedProposal, bestNumber: BlockNumber | undefined): ExtendedProposalStatus {
-  const statusStr = Object.keys(proposal.status)[0];
-  const isActive = statusStr === 'Active';
-  const { votingPeriod, gracePeriod } = proposal.parameters;
+  const basicStatus = Object.keys(proposal.status)[0] as BasicProposalStatus;
+  let expiresIn: number | null = null;
 
-  const blockAge = bestNumber ? (bestNumber.toNumber() - proposal.createdAtBlock) : 0;
-  const substage =
-    (
-      isActive && (
-      votingPeriod - blockAge  > 0 ?
-        'Voting period'
-        : 'Grace period'
-      )
-    ) || null;
-  const expiresIn = substage && (
-    substage === 'Voting period' ?
-      votingPeriod - blockAge
-      : (gracePeriod + votingPeriod) - blockAge
-  )
+  let displayStatus: ProposalDisplayStatus = basicStatus;
+  let periodStatus: ProposalPeriodStatus | null = null;
+
+  if (!bestNumber) return { displayStatus, periodStatus, expiresIn };
+
+  const { votingPeriod, gracePeriod } = proposal.parameters;
+  const blockAge = bestNumber.toNumber() - proposal.createdAtBlock;
+
+  if (basicStatus === 'Active') {
+    expiresIn = Math.max(votingPeriod - blockAge, 0) || null;
+    if (expiresIn) periodStatus = 'Voting period';
+  }
+
+  if (basicStatus === 'Finalized') {
+    const { finalizedAt, proposalStatus } = proposal.status['Finalized'];
+
+    const decisionStatus: ProposalDecisionStatuses = Object.keys(proposalStatus)[0] as ProposalDecisionStatuses;
+    displayStatus = decisionStatus;
+    if (decisionStatus === 'Approved') {
+      const approvedStatus: ApprovedProposalStatuses = Object.keys(proposalStatus["Approved"])[0] as ApprovedProposalStatuses;
+      if (approvedStatus === 'PendingExecution') {
+        const finalizedAge = bestNumber.toNumber() - finalizedAt;
+        expiresIn = Math.max(gracePeriod - finalizedAge, 0) || null;
+        if (expiresIn) periodStatus = 'Grace period';
+      }
+      else {
+        displayStatus = approvedStatus; // Executed / ExecutionFailed
+      }
+    }
+  }
 
   return {
-    statusStr,
-    substage,
+    displayStatus,
+    periodStatus,
     expiresIn
   }
 }
@@ -53,13 +73,25 @@ export function getExtendedStatus(proposal: ParsedProposal, bestNumber: BlockNum
 type ProposalDetailsProps = MyAccountProps & {
   proposal: ParsedProposal,
   proposalId: ProposalId,
+  votesListState: { data: ProposalVote[], error: any, loading: boolean },
   bestNumber?: BlockNumber,
   council?: Seat[]
 };
 
-function ProposalDetails({ proposal, proposalId, myAddress, myMemberId, iAmMember, council, bestNumber }: ProposalDetailsProps) {
-  const iAmCouncilMember = iAmMember && council && council.some(seat => seat.member.toString() === myAddress);
+function ProposalDetails({
+  proposal,
+  proposalId,
+  myAddress,
+  myMemberId,
+  iAmMember,
+  council,
+  bestNumber,
+  votesListState
+}: ProposalDetailsProps) {
+  const iAmCouncilMember = Boolean(iAmMember && council && council.some(seat => seat.member.toString() === myAddress));
+  const iAmProposer = Boolean(iAmMember && myMemberId !== undefined && proposal.proposerId === myMemberId.toNumber());
   const extendedStatus = getExtendedStatus(proposal, bestNumber);
+  const isVotingPeriod = extendedStatus.periodStatus === 'Voting period';
   return (
     <Container className="Proposal">
       <Details proposal={proposal} extendedStatus={extendedStatus}/>
@@ -68,14 +100,24 @@ function ProposalDetails({ proposal, proposalId, myAddress, myMemberId, iAmMembe
         title={ proposal.title }
         description={ proposal.description }
         params={ proposal.details }
+        iAmProposer={ iAmProposer }
+        proposalId={ proposalId }
+        proposerId={ proposal.proposerId }
+        isCancellable={ isVotingPeriod }
+        cancellationFee={ 0 } // TODO: We need to access it from the runtime!
         />
       { iAmCouncilMember && (
         <VotingSection
           proposalId={proposalId}
           memberId={ myMemberId as MemberId }
-          isVotingPeriod={ extendedStatus.substage === 'Voting period' }/>
+          isVotingPeriod={ isVotingPeriod }/>
       ) }
-      <Votes proposalId={proposalId} />
+      <PromiseComponent
+        error={votesListState.error}
+        loading={votesListState.loading}
+        message="Fetching the votes...">
+        <Votes votes={votesListState.data} />
+      </PromiseComponent>
     </Container>
   );
 }

@@ -1,28 +1,17 @@
 import React from "react";
 import { Header, Divider, Table, Icon } from "semantic-ui-react";
 import useVoteStyles from "./useVoteStyles";
-import { useTransport, ProposalVote } from "../runtime";
-import { ProposalId, VoteKind } from "@joystream/types/proposals";
+import { ProposalVote } from "../runtime";
+import { VoteKind } from "@joystream/types/proposals";
 import { VoteKindStr } from "./VotingSection";
-import { usePromise } from "../utils";
-import Loading from "./Loading";
-import Error from "./Error";
 import ProfilePreview from "./ProfilePreview";
 
+
 type VotesProps = {
-  proposalId: ProposalId;
+  votes: ProposalVote[]
 };
 
-export default function Votes({ proposalId }: VotesProps) {
-  const transport = useTransport();
-  const [votes, loading, error] = usePromise<ProposalVote[]>(() => transport.votes(proposalId), []);
-
-  if (loading && !error) {
-    return <Loading text="Fetching the votes..." />;
-  } else if (error) {
-    return <Error error={error} />;
-  }
-
+export default function Votes({ votes }: VotesProps) {
   const nonEmptyVotes = votes.filter(proposalVote => proposalVote.vote !== null);
 
   if (!nonEmptyVotes.length) {
