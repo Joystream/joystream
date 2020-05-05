@@ -90,33 +90,6 @@ pub struct CuratorOpening<OpeningId, BlockNumber, Balance, CuratorApplicationId:
     pub policy_commitment: OpeningPolicyCommitment<BlockNumber, Balance>,
 }
 
-/// The exit stage of a lead involvement in the working group.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Clone, PartialEq)]
-pub struct ExitedLeadRole<BlockNumber> {
-    /// When exit was initiated.
-    pub initiated_at_block_number: BlockNumber,
-}
-
-/// The stage of the involvement of a lead in the working group.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Clone, PartialEq)]
-pub enum LeadRoleState<BlockNumber> {
-    /// Currently active.
-    Active,
-
-    /// No longer active, for some reason
-    Exited(ExitedLeadRole<BlockNumber>),
-}
-
-/// Must be default constructible because it indirectly is a value in a storage map.
-/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED TO DUE BAD STORAGE MODEL IN SUBSTRATE***
-impl<BlockNumber> Default for LeadRoleState<BlockNumber> {
-    fn default() -> Self {
-        LeadRoleState::Active
-    }
-}
-
 /// Working group lead: curator lead
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]

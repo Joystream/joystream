@@ -8,14 +8,13 @@ mod tests;
 
 use rstd::collections::btree_set::BTreeSet;
 use rstd::vec::Vec;
-use sr_primitives::traits::One;
+use sr_primitives::traits::{One, EnsureOrigin};
 use srml_support::traits::Currency;
-use srml_support::{decl_module, decl_storage, dispatch, ensure};
-use system::{ensure_root, ensure_signed};
+use srml_support::{decl_module, decl_storage, decl_event, dispatch, ensure};
+use system::{ensure_root, ensure_signed, RawOrigin};
 
 use constraints::InputValidationLengthConstraint;
-use membership::role_types::{ActorInRole, Role};
-use types::{CuratorOpening, Lead, LeadRoleState, OpeningPolicyCommitment};
+use types::{CuratorOpening, Lead, OpeningPolicyCommitment};
 
 //TODO: convert messages to the decl_error! entries
 pub static MSG_ORIGIN_IS_NOT_LEAD: &str = "Origin is not lead";
@@ -41,8 +40,10 @@ pub type BalanceOf<T> =
 
 /// The bureaucracy main _Trait_
 pub trait Trait<I: Instance>:
-    system::Trait + recurringrewards::Trait + membership::members::Trait + hiring::Trait
+    system::Trait + membership::members::Trait + hiring::Trait
 {
+    /// Engine event type.
+    type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
 }
 
 decl_event!(
@@ -63,7 +64,6 @@ decl_event!(
 decl_storage! {
     trait Store for Module<T: Trait<I>, I: Instance> as Bureaucracy {
         /// The current lead.
-
         pub CurrentLead get(current_lead) : Option<LeadOf<T>>;
 
         /// Next identifier value for new curator opening.
@@ -85,7 +85,7 @@ decl_module! {
         pub fn add_curator_opening(origin, activate_at: hiring::ActivateOpeningAt<T::BlockNumber>, commitment: OpeningPolicyCommitment<T::BlockNumber, BalanceOf<T>>, human_readable_text: Vec<u8>)  {
 
             // Ensure lead is set and is origin signer
-            Self::ensure_origin_is_set_lead(origin)?;
+            //Self::ensure_origin_is_set_lead(origin)?;
 
             Self::ensure_opening_human_readable_text_is_valid(&human_readable_text)?;
 
@@ -175,13 +175,60 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         Ok(())
     }
+
+    fn ensure_opening_human_readable_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
+        <OpeningHumanReadableText<I>>::get().ensure_valid(
+            text.len(),
+            MSG_CHANNEL_DESCRIPTION_TOO_SHORT,
+            MSG_CHANNEL_DESCRIPTION_TOO_LONG,
+        )
+    }
+
+    // fn ensure_origin_is_set_lead(
+    //     origin: T::Origin,
+    // ) -> Result<
+    //     (
+    //         LeadId<T>,
+    //         Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>,
+    //     ),
+    //     &'static str,
+    // > {
+    //     // Ensure lead is actually set
+    //     let (lead_id, lead) = Self::ensure_lead_is_set()?;
+    //
+    //     // Ensure is signed
+    //     let signer = ensure_signed(origin)?;
+    //
+    //     // Ensure signer is lead
+    //     ensure!(signer == lead.role_account, MSG_ORIGIN_IS_NOT_LEAD);
+    //
+    //     Ok((lead_id, lead))
+    // }
+
+    // pub fn ensure_lead_is_set() -> Result<
+    //     (
+    //         LeadId<T>,
+    //         Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>,
+    //     ),
+    //     &'static str,
+    // > {
+    //     // Ensure lead id is set
+    //     let lead_id = Self::ensure_lead_id_set()?;
+    //
+    //     // If so, grab actual lead
+    //     let lead = <LeadById<T, I>>::get(lead_id);
+    //
+    //     // and return both
+    //     Ok((lead_id, lead))
+    // }
 }
 
+
 impl<Origin, T, I> EnsureOrigin<Origin> for Module<T, I>
-where
-    Origin: Into<Result<RawOrigin<T::AccountId>, Origin>> + From<RawOrigin<T::AccountId>>,
-    T: Trait<I>,
-    I: Instance,
+    where
+        Origin: Into<Result<RawOrigin<T::AccountId>, Origin>> + From<RawOrigin<T::AccountId>>,
+        T: Trait<I>,
+        I: Instance,
 {
     type Success = ();
 
@@ -192,51 +239,5 @@ where
             }
             _ => Err(RawOrigin::None.into()),
         })
-    }
-
-    fn ensure_opening_human_readable_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
-        <OpeningHumanReadableText<I>>::get().ensure_valid(
-            text.len(),
-            MSG_CHANNEL_DESCRIPTION_TOO_SHORT,
-            MSG_CHANNEL_DESCRIPTION_TOO_LONG,
-        )
-    }
-
-    fn ensure_origin_is_set_lead(
-        origin: T::Origin,
-    ) -> Result<
-        (
-            LeadId<T>,
-            Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>,
-        ),
-        &'static str,
-    > {
-        // Ensure lead is actually set
-        let (lead_id, lead) = Self::ensure_lead_is_set()?;
-
-        // Ensure is signed
-        let signer = ensure_signed(origin)?;
-
-        // Ensure signer is lead
-        ensure!(signer == lead.role_account, MSG_ORIGIN_IS_NOT_LEAD);
-
-        Ok((lead_id, lead))
-    }
-
-    pub fn ensure_lead_is_set() -> Result<
-        (
-            LeadId<T>,
-            Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>,
-        ),
-        &'static str,
-    > {
-        // Ensure lead id is set
-        let lead_id = Self::ensure_lead_id_set()?;
-
-        // If so, grab actual lead
-        let lead = <LeadById<T, I>>::get(lead_id);
-
-        // and return both
-        Ok((lead_id, lead))
     }
 }
