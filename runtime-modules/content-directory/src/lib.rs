@@ -202,6 +202,17 @@ impl<T: Trait> Class<T> {
             .set_locked_for(is_locked)
     }
 
+    fn set_reference_property_same_controller_status(
+        &mut self,
+        in_class_schema_property_id: PropertyId,
+        same_controller: SameController,
+    ) {
+        // Such indexing is safe, when length bounds were previously checked
+        self.properties[in_class_schema_property_id as usize]
+            .prop_type
+            .set_same_controller_status(same_controller)
+    }
+
     fn get_permissions_mut(&mut self) -> &mut ClassPermissions {
         &mut self.class_permissions
     }
@@ -529,7 +540,7 @@ decl_module! {
 
             // Check validity of Internal(T::ClassId) for new_properties.
             let has_unknown_internal_id = new_properties.iter().any(|prop| match prop.prop_type {
-                PropertyType::Reference(other_class_id, _) => !<ClassById<T>>::exists(other_class_id),
+                PropertyType::Reference(other_class_id, _, _) => !<ClassById<T>>::exists(other_class_id),
                 _ => false,
             });
             ensure!(
@@ -586,6 +597,24 @@ decl_module! {
             Self::ensure_property_id_exists(&Self::class_by_id(class_id), in_class_schema_property_id)?;
             <ClassById<T>>::mutate(class_id, |class| {
                 class.set_property_lock_status_at_index(in_class_schema_property_id, is_locked)
+            });
+            Ok(())
+        }
+
+        pub fn set_reference_property_same_controller_status(
+            origin,
+            class_id: T::ClassId,
+            in_class_schema_property_id: PropertyId,
+            same_controller: SameController
+        ) -> dispatch::Result {
+            let account_id = ensure_signed(origin)?;
+            ensure_authority_auth_success::<T>(&account_id)?;
+            Self::ensure_known_class_id(class_id)?;
+
+            // Ensure property_id is a valid index of class properties vector:
+            Self::ensure_property_id_exists(&Self::class_by_id(class_id), in_class_schema_property_id)?;
+            <ClassById<T>>::mutate(class_id, |class| {
+                class.set_reference_property_same_controller_status(in_class_schema_property_id, same_controller)
             });
             Ok(())
         }
@@ -894,7 +923,7 @@ impl<T: Trait> Module<T> {
         let schema_prop_ids = &class_schema_opt.unwrap().properties;
 
         let current_entity_values = entity.values.clone();
-        let mut appended_entity_values = entity.values;
+        let mut appended_entity_values = entity.values.clone();
         let mut entities_rc_to_increment_vec = vec![];
 
         for prop_id in schema_prop_ids.iter() {
@@ -908,7 +937,10 @@ impl<T: Trait> Module<T> {
 
             // If a value was not povided for the property of this schema:
             if let Some(new_value) = property_values.get(prop_id) {
-                class_prop.ensure_property_value_to_update_is_valid(new_value)?;
+                class_prop.ensure_property_value_to_update_is_valid(
+                    new_value,
+                    entity.get_permissions().get_controller(),
+                )?;
                 if let Some(entities_rc_to_increment) = new_value.get_involved_entities() {
                     entities_rc_to_increment_vec.push(entities_rc_to_increment);
                 }
@@ -950,7 +982,7 @@ impl<T: Trait> Module<T> {
 
         // Get current property values of an entity as a mutable vector,
         // so we can update them if new values provided present in new_property_values.
-        let mut updated_values = entity.values;
+        let mut updated_values = entity.values.clone();
         let mut updated = false;
 
         let mut entities_rc_to_decrement_vec = vec![];
@@ -975,10 +1007,19 @@ impl<T: Trait> Module<T> {
                     continue;
                 }
 
+                // Skip update if new property value is reference
+                // and cannot be referenced due to same controller flag constraint violation
+                // if !class_prop.can_reference_non_controlled_entity(&new_value) {
+                //     continue;
+                // }
+
                 // Validate a new property value against the type of this property
                 // and check any additional constraints like the length of a vector
                 // if it's a vector property or the length of a text if it's a text property.
-                class_prop.ensure_property_value_to_update_is_valid(&new_value)?;
+                class_prop.ensure_property_value_to_update_is_valid(
+                    &new_value,
+                    entity.get_permissions().get_controller(),
+                )?;
 
                 // Get unique entity ids to update rc
                 if let (Some(entities_rc_to_increment), Some(entities_rc_to_decrement)) = (
@@ -1136,6 +1177,7 @@ impl<T: Trait> Module<T> {
                 &property_value,
                 entity_prop_value,
                 index_in_property_vec,
+                entity.get_permissions().get_controller(),
             )?;
         };
 

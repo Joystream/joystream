@@ -408,7 +408,7 @@ pub fn good_prop_text() -> Property<Runtime> {
 
 pub fn new_reference_class_prop(class_id: <Runtime as Trait>::ClassId) -> Property<Runtime> {
     Property {
-        prop_type: PropertyType::Reference(class_id, IsLocked::default()),
+        prop_type: PropertyType::Reference(class_id, IsLocked::default(), false),
         required: false,
         name: b"Name of a internal property".to_vec(),
         description: b"Description of a internal property".to_vec(),
@@ -421,6 +421,7 @@ pub fn new_reference_class_prop_vec(class_id: <Runtime as Trait>::ClassId) -> Pr
             PROP_ID_U32_VEC_MAX_LEN,
             class_id,
             IsLocked::default(),
+            false,
         ),
         required: false,
         name: b"Name of a internal property".to_vec(),

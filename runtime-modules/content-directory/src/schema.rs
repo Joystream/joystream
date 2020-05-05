@@ -6,6 +6,8 @@ pub type PropertyId = u16;
 pub type SchemaId = u16;
 pub type VecMaxLength = u16;
 pub type TextMaxLength = u16;
+// Used to force property values to only reference entities, owned by the same controller
+pub type SameController = bool;
 use crate::{permissions::EntityAccessLevel, *};
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -27,7 +29,7 @@ pub enum PropertyType<T: Trait> {
     Int32(IsLocked),
     Int64(IsLocked),
     Text(TextMaxLength, IsLocked),
-    Reference(T::ClassId, IsLocked),
+    Reference(T::ClassId, IsLocked, SameController),
 
     // Vector of values.
     // The first value is the max length of this vector.
@@ -46,7 +48,7 @@ pub enum PropertyType<T: Trait> {
     /// The first value is the max length of this vector.
     /// The second ClassId value tells that an every element of this vector
     /// should be of a specific ClassId.
-    ReferenceVec(VecMaxLength, T::ClassId, IsLocked),
+    ReferenceVec(VecMaxLength, T::ClassId, IsLocked, SameController),
 }
 
 impl<T: Trait> PropertyType<T> {
@@ -60,7 +62,7 @@ impl<T: Trait> PropertyType<T> {
             | PropertyType::Int32(is_locked)
             | PropertyType::Int64(is_locked)
             | PropertyType::Text(_, is_locked)
-            | PropertyType::Reference(_, is_locked)
+            | PropertyType::Reference(_, is_locked, _)
             | PropertyType::BoolVec(_, is_locked)
             | PropertyType::Uint16Vec(_, is_locked)
             | PropertyType::Uint32Vec(_, is_locked)
@@ -69,7 +71,26 @@ impl<T: Trait> PropertyType<T> {
             | PropertyType::Int32Vec(_, is_locked)
             | PropertyType::Int64Vec(_, is_locked)
             | PropertyType::TextVec(_, _, is_locked)
-            | PropertyType::ReferenceVec(_, _, is_locked) => *is_locked = is_locked_for,
+            | PropertyType::ReferenceVec(_, _, is_locked, _) => *is_locked = is_locked_for,
+        }
+    }
+
+    pub fn set_same_controller_status(&mut self, same_controller_new: SameController) {
+        match self {
+            PropertyType::Reference(_, _, same_controller)
+            | PropertyType::ReferenceVec(_, _, _, same_controller) => {
+                *same_controller = same_controller_new
+            }
+            _ => (),
+        }
+    }
+
+    pub fn get_same_controller_status(&self) -> SameController {
+        match self {
+            PropertyType::Reference(_, _, same_controller)
+            | PropertyType::ReferenceVec(_, _, _, same_controller) => *same_controller,
+            // false
+            _ => SameController::default(),
         }
     }
 
@@ -83,7 +104,7 @@ impl<T: Trait> PropertyType<T> {
             | PropertyType::Int32(is_locked)
             | PropertyType::Int64(is_locked)
             | PropertyType::Text(_, is_locked)
-            | PropertyType::Reference(_, is_locked)
+            | PropertyType::Reference(_, is_locked, _)
             | PropertyType::BoolVec(_, is_locked)
             | PropertyType::Uint16Vec(_, is_locked)
             | PropertyType::Uint32Vec(_, is_locked)
@@ -92,7 +113,7 @@ impl<T: Trait> PropertyType<T> {
             | PropertyType::Int32Vec(_, is_locked)
             | PropertyType::Int64Vec(_, is_locked)
             | PropertyType::TextVec(_, _, is_locked)
-            | PropertyType::ReferenceVec(_, _, is_locked) => is_locked,
+            | PropertyType::ReferenceVec(_, _, is_locked, _) => is_locked,
         }
     }
 
@@ -139,8 +160,6 @@ pub enum PropertyValue<T: Trait> {
     Int64Vec(Vec<i64>, T::Nonce),
     TextVec(Vec<Vec<u8>>, T::Nonce),
     ReferenceVec(Vec<T::EntityId>, T::Nonce),
-    // External(ExternalPropertyType),
-    // ExternalVec(Vec<ExternalPropertyType>),
 }
 
 impl<T: Trait> PropertyValue<T> {
@@ -397,17 +416,6 @@ pub struct Property<T: Trait> {
 }
 
 impl<T: Trait> Property<T> {
-    pub fn ensure_property_value_to_update_is_valid(
-        &self,
-        value: &PropertyValue<T>,
-    ) -> dispatch::Result {
-        self.ensure_prop_value_matches_its_type(value)?;
-        self.ensure_valid_reference_prop(value)?;
-        self.validate_max_len_if_text_prop(value)?;
-        self.validate_max_len_if_vec_prop(value)?;
-        Ok(())
-    }
-
     pub fn is_locked_from(&self, entity_access_level: Option<EntityAccessLevel>) -> bool {
         if let Some(entity_access_level) = entity_access_level {
             self.prop_type.is_locked_from(entity_access_level)
@@ -416,11 +424,28 @@ impl<T: Trait> Property<T> {
         }
     }
 
+    pub fn same_controller_status(&self) -> SameController {
+        self.prop_type.get_same_controller_status()
+    }
+
+    pub fn ensure_property_value_to_update_is_valid(
+        &self,
+        value: &PropertyValue<T>,
+        current_entity_controller: &Option<EntityController<T>>,
+    ) -> dispatch::Result {
+        self.ensure_prop_value_matches_its_type(value)?;
+        self.ensure_valid_reference_prop(value, current_entity_controller)?;
+        self.validate_max_len_if_text_prop(value)?;
+        self.validate_max_len_if_vec_prop(value)?;
+        Ok(())
+    }
+
     pub fn ensure_prop_value_can_be_inserted_at_prop_vec(
         &self,
         value: &PropertyValue<T>,
         entity_prop_value: &PropertyValue<T>,
         index_in_property_vec: VecMaxLength,
+        current_entity_controller: &Option<EntityController<T>>,
     ) -> dispatch::Result {
         entity_prop_value.ensure_index_in_property_vector_is_valid(index_in_property_vec)?;
 
@@ -466,7 +491,7 @@ impl<T: Trait> Property<T> {
             (
                 PV::Reference(entity_id),
                 PV::ReferenceVec(vec, _),
-                PT::ReferenceVec(vec_max_len, class_id, _),
+                PT::ReferenceVec(vec_max_len, class_id, _, same_controller_status),
             ) => {
                 Module::<T>::ensure_known_class_id(*class_id)?;
                 if validate_prop_vec_len_after_value_insert(vec, vec_max_len) {
@@ -474,8 +499,16 @@ impl<T: Trait> Property<T> {
                     let entity = Module::<T>::entity_by_id(entity_id);
                     ensure!(
                         entity.class_id == *class_id,
-                        ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS
+                        ERROR_PROP_DOES_NOT_MATCH_ITS_CLASS
                     );
+                    if *same_controller_status {
+                        ensure!(
+                            entity
+                                .get_permissions()
+                                .controller_is_equal_to(current_entity_controller),
+                            ERROR_SAME_CONTROLLER_CONSTRAINT_VIOLATION
+                        );
+                    }
                     true
                 } else {
                     false
@@ -527,23 +560,9 @@ impl<T: Trait> Property<T> {
                 }
             }
 
-            (PV::ReferenceVec(vec, _), PT::ReferenceVec(vec_max_len, class_id, _)) => {
-                Module::<T>::ensure_known_class_id(*class_id)?;
-                if validate_vec_len(vec, vec_max_len) {
-                    for entity_id in vec.iter() {
-                        Module::<T>::ensure_known_entity_id(*entity_id)?;
-                        let entity = Module::<T>::entity_by_id(entity_id);
-                        ensure!(
-                            entity.class_id == *class_id,
-                            ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS
-                        );
-                    }
-                    true
-                } else {
-                    false
-                }
+            (PV::ReferenceVec(vec, _), PT::ReferenceVec(vec_max_len, _, _, _)) => {
+                validate_vec_len(vec, vec_max_len)
             }
-
             _ => true,
         };
 
@@ -574,7 +593,7 @@ impl<T: Trait> Property<T> {
                 (PV::Int32(_),    PT::Int32(_)) |
                 (PV::Int64(_),    PT::Int64(_)) |
                 (PV::Text(_),     PT::Text(_, _)) |
-                (PV::Reference(_), PT::Reference(_, _)) |
+                (PV::Reference(_), PT::Reference(_, _, _)) |
                 // Vectors:
                 (PV::BoolVec(_, _),     PT::BoolVec(_, _)) |
                 (PV::Uint16Vec(_, _),   PT::Uint16Vec(_, _)) |
@@ -584,20 +603,57 @@ impl<T: Trait> Property<T> {
                 (PV::Int32Vec(_, _),    PT::Int32Vec(_, _)) |
                 (PV::Int64Vec(_, _),    PT::Int64Vec(_, _)) |
                 (PV::TextVec(_, _),     PT::TextVec(_, _, _)) |
-                (PV::ReferenceVec(_, _), PT::ReferenceVec(_, _, _)) => true,
+                (PV::ReferenceVec(_, _), PT::ReferenceVec(_, _, _, _)) => true,
                 _ => false,
             }
     }
 
-    pub fn ensure_valid_reference_prop(&self, value: &PropertyValue<T>) -> dispatch::Result {
-        if let (PV::Reference(entity_id), PT::Reference(class_id, _)) = (value, &self.prop_type) {
-            Module::<T>::ensure_known_class_id(*class_id)?;
-            Module::<T>::ensure_known_entity_id(*entity_id)?;
-            let entity = Module::<T>::entity_by_id(entity_id);
-            ensure!(
-                entity.class_id == *class_id,
-                ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS
-            );
+    pub fn ensure_valid_reference_prop(
+        &self,
+        value: &PropertyValue<T>,
+        current_entity_controller: &Option<EntityController<T>>,
+    ) -> dispatch::Result {
+        match (value, &self.prop_type) {
+            (PV::Reference(entity_id), PT::Reference(class_id, _, same_controller_status)) => {
+                Module::<T>::ensure_known_class_id(*class_id)?;
+                Module::<T>::ensure_known_entity_id(*entity_id)?;
+                let entity = Module::<T>::entity_by_id(entity_id);
+                ensure!(
+                    entity.class_id == *class_id,
+                    ERROR_PROP_DOES_NOT_MATCH_ITS_CLASS
+                );
+                if *same_controller_status {
+                    ensure!(
+                        entity
+                            .get_permissions()
+                            .controller_is_equal_to(current_entity_controller),
+                        ERROR_SAME_CONTROLLER_CONSTRAINT_VIOLATION
+                    );
+                }
+            }
+            (
+                PV::ReferenceVec(vec, _),
+                PT::ReferenceVec(_, class_id, _, same_controller_status),
+            ) => {
+                for entity_id in vec.iter() {
+                    Module::<T>::ensure_known_class_id(*class_id)?;
+                    Module::<T>::ensure_known_entity_id(*entity_id)?;
+                    let entity = Module::<T>::entity_by_id(entity_id);
+                    ensure!(
+                        entity.class_id == *class_id,
+                        ERROR_PROP_DOES_NOT_MATCH_ITS_CLASS
+                    );
+                    if *same_controller_status {
+                        ensure!(
+                            entity
+                                .get_permissions()
+                                .controller_is_equal_to(current_entity_controller),
+                            ERROR_SAME_CONTROLLER_CONSTRAINT_VIOLATION
+                        );
+                    }
+                }
+            }
+            _ => (),
         }
         Ok(())
     }

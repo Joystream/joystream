@@ -47,8 +47,7 @@ pub const ERROR_ENTITY_PROP_VALUE_VECTOR_INDEX_IS_OUT_OF_RANGE: &str =
     "Given property value vector index is out of range";
 pub const ERROR_PROP_VALUE_TYPE_DOESNT_MATCH_INTERNAL_ENTITY_VECTOR_TYPE: &str =
     "Propery value type does not match internal entity vector type";
-pub const ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS: &str =
-    "Internal property does not match its class";
+pub const ERROR_PROP_DOES_NOT_MATCH_ITS_CLASS: &str = "Internal property does not match its class";
 pub const ERROR_ENTITY_REFERENCE_COUNTER_DOES_NOT_EQUAL_TO_ZERO: &str =
     "Entity removal can`t be completed, as there are some property values pointing to given entity";
 pub const ERROR_CLASS_PROP_NOT_FOUND: &str = "Class property under given index not found";
@@ -57,8 +56,10 @@ pub const ERROR_CLASS_PROP_NOT_FOUND: &str = "Class property under given index n
 
 pub const ERROR_ENTITY_CREATOR_ALREADY_EXIST: &str = "Given entity creator already exist";
 pub const ERROR_ENTITY_CREATOR_DOES_NOT_EXIST: &str = "Given entity creator does not exist";
-pub const ERROR_ENTITY_MAINTAINER_ALREADY_EXIST: &str = "Given entity maintainer already exist";
+pub const ERROR_SAME_CONTROLLER_CONSTRAINT_VIOLATION: &str =
+    "Entity should be referenced from the entity, owned by the same controller";
 pub const ERROR_ENTITY_MAINTAINER_DOES_NOT_EXIST: &str = "Given entity maintainer does not exist";
+pub const ERROR_ENTITY_MAINTAINER_ALREADY_EXIST: &str = "Given entity maintainer already exist";
 pub const ERROR_ENTITY_CREATION_VOUCHER_DOES_NOT_EXIST: &str =
     "Given entity creation voucher does not exist";
 pub const ERROR_MAX_NUMBER_OF_ENTITIES_PER_CLASS_LIMIT_REACHED: &str =

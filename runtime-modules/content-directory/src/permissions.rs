@@ -311,6 +311,14 @@ impl<T: ActorAuthenticator> EntityPermissions<T> {
         }
     }
 
+    pub fn controller_is_equal_to(&self, controller: &Option<EntityController<T>>) -> bool {
+        if let (Some(entity_controller), Some(controller)) = (&self.controller, controller) {
+            *entity_controller == *controller
+        } else {
+            false
+        }
+    }
+
     pub fn set_frozen(&mut self, frozen: bool) {
         self.frozen = frozen
     }
