@@ -3,7 +3,7 @@ import { Proposal, ProposalId, Seats, VoteKind, ElectionParameters } from "@joys
 import { MemberId, Profile, ActorInRole } from "@joystream/types/members";
 import { ApiProps } from "@polkadot/react-api/types";
 import { u32, u128, Vec, Option } from "@polkadot/types/";
-import { Balance, Moment, AccountId, BlockNumber } from "@polkadot/types/interfaces";
+import { Balance, Moment, AccountId, BlockNumber, BalanceOf } from "@polkadot/types/interfaces";
 import { ApiPromise } from "@polkadot/api";
 import { RoleKeys, Role } from "@joystream/types/members";
 import { FIRST_MEMBER_ID } from '@polkadot/joy-members/constants';
