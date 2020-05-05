@@ -2,31 +2,30 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod constraints;
-mod types;
 #[cfg(test)]
 mod tests;
+mod types;
 
 use rstd::collections::btree_set::BTreeSet;
-use rstd::vec::Vec;
 use rstd::prelude::*;
-use sr_primitives::traits::{One, Zero, EnsureOrigin};
+use rstd::vec::Vec;
+use sr_primitives::traits::{EnsureOrigin, One, Zero};
 use srml_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
-use srml_support::{decl_module, decl_storage, decl_event, dispatch, ensure};
+use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure};
 use system::{ensure_root, ensure_signed, RawOrigin};
 
 use constraints::InputValidationLengthConstraint;
-use types::{CuratorOpening, Lead, OpeningPolicyCommitment, CuratorApplication};
+use types::{CuratorApplication, CuratorOpening, Lead, OpeningPolicyCommitment};
 
 /*
 + add_curator_opening
-- accept_curator_applications
++ accept_curator_applications
 - begin_curator_applicant_review
 - fill_curator_opening
 - withdraw_curator_application
 - terminate_curator_application
-- apply_on_curator_opening
++ apply_on_curator_opening
 */
-
 
 //TODO: convert messages to the decl_error! entries
 pub static MSG_ORIGIN_IS_NOT_LEAD: &str = "Origin is not lead";
@@ -41,7 +40,7 @@ pub static MSG_APPLY_ON_CURATOR_OPENING_UNSIGNED_ORIGIN: &str = "Unsigned origin
 pub static MSG_APPLY_ON_CURATOR_OPENING_MEMBER_ID_INVALID: &str = "Member id is invalid";
 pub static MSG_APPLY_ON_CURATOR_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT: &str =
     "Signer does not match controller account";
-pub static MSG_ORIGIN_IS_NIETHER_MEMBER_CONTROLLER_OR_ROOT: &str =
+pub static MSG_ORIGIN_IS_NEITHER_MEMBER_CONTROLLER_OR_ROOT: &str =
     "Origin must be controller or root account of member";
 pub static MSG_MEMBER_HAS_ACTIVE_APPLICATION_ON_OPENING: &str =
     "Member already has an active application on the opening";
@@ -51,9 +50,9 @@ pub static MSG_INSUFFICIENT_BALANCE_TO_COVER_STAKE: &str = "Insuffieicnt balance
 
 /// Alias for the _Lead_ type
 pub type LeadOf<T> =
-Lead<<T as membership::members::Trait>::MemberId, <T as system::Trait>::AccountId>;
+    Lead<<T as membership::members::Trait>::MemberId, <T as system::Trait>::AccountId>;
 
-// Workaround for BTreeSet type
+/// Workaround for BTreeSet type
 pub type CuratorApplicationIdSet<T> = BTreeSet<CuratorApplicationId<T>>;
 
 /// Type for the identifier for an opening for a curator.
@@ -71,15 +70,28 @@ pub type CurrencyOf<T> = <T as stake::Trait>::Currency;
 
 /// Negative imbalance of runtime.
 pub type NegativeImbalance<T> =
-<<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
+    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
 
 /// The bureaucracy main _Trait_
-pub trait Trait<I: Instance>:
-    system::Trait + membership::members::Trait + hiring::Trait
-{
+pub trait Trait<I: Instance>: system::Trait + membership::members::Trait + hiring::Trait {
     /// Engine event type.
     type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
 }
+
+// Type simplification
+type CuratorOpeningData<T> = (
+    CuratorOpening<
+        <T as hiring::Trait>::OpeningId,
+        <T as system::Trait>::BlockNumber,
+        BalanceOf<T>,
+        CuratorApplicationId<T>,
+    >,
+    hiring::Opening<
+        BalanceOf<T>,
+        <T as system::Trait>::BlockNumber,
+        <T as hiring::Trait>::ApplicationId,
+    >,
+);
 
 decl_event!(
     /// Proposals engine events
@@ -107,8 +119,8 @@ decl_storage! {
         /// Maps identifier to curator opening.
         pub CuratorOpeningById get(curator_opening_by_id): linked_map CuratorOpeningId<T> => CuratorOpening<T::OpeningId, T::BlockNumber, BalanceOf<T>, CuratorApplicationId<T>>;
 
+        /// Opening human readable text length limits
         pub OpeningHumanReadableText get(opening_human_readable_text): InputValidationLengthConstraint;
-
 
         /// Maps identifier to curator application on opening.
         pub CuratorApplicationById get(curator_application_by_id) : linked_map CuratorApplicationId<T> => CuratorApplication<T::AccountId, CuratorOpeningId<T>, T::MemberId, T::ApplicationId>;
@@ -116,8 +128,8 @@ decl_storage! {
         /// Next identifier value for new curator application.
         pub NextCuratorApplicationId get(next_curator_application_id) : CuratorApplicationId<T>;
 
+        /// Curator application human readable text length limits
         pub CuratorApplicationHumanReadableText get(curator_application_human_readable_text) : InputValidationLengthConstraint;
-
     }
 }
 
@@ -125,7 +137,6 @@ decl_module! {
     pub struct Module<T: Trait<I>, I: Instance> for enum Call where origin: T::Origin {
         /// Default deposit_event() handler
         fn deposit_event() = default;
-
 
         /// Introduce a lead when one is not currently set.
         pub fn set_lead(origin, member_id: T::MemberId, role_account_id: T::AccountId) -> dispatch::Result {
@@ -145,11 +156,10 @@ decl_module! {
             // Trigger an event
             Self::deposit_event(RawEvent::LeaderSet(member_id, role_account_id));
 
-
             Ok(())
         }
 
-            /// Add an opening for a curator role.
+         /// Add an opening for a curator role.
         pub fn add_curator_opening(_origin, activate_at: hiring::ActivateOpeningAt<T::BlockNumber>, commitment: OpeningPolicyCommitment<T::BlockNumber, BalanceOf<T>>, human_readable_text: Vec<u8>)  {
 
             // Ensure lead is set and is origin signer
@@ -202,7 +212,7 @@ decl_module! {
 
             // Trigger event
             //Self::deposit_event(RawEvent::CuratorOpeningAdded(new_curator_opening_id));
-    }
+        }
 
             /// Begin accepting curator applications to an opening that is active.
         pub fn accept_curator_applications(_origin, curator_opening_id: CuratorOpeningId<T>)  {
@@ -233,10 +243,7 @@ decl_module! {
             // Self::deposit_event(RawEvent::AcceptedCuratorApplications(curator_opening_id));
         }
 
-
-
-
-           /// Apply on a curator opening.
+        /// Apply on a curator opening.
         pub fn apply_on_curator_opening(
             origin,
             member_id: T::MemberId,
@@ -249,14 +256,14 @@ decl_module! {
             // Ensure origin which will server as the source account for staked funds is signed
             let source_account = ensure_signed(origin)?;
 
-            // In absense of a more general key delegation system which allows an account with some funds to
+            // In absence of a more general key delegation system which allows an account with some funds to
             // grant another account permission to stake from its funds, the origin of this call must have the funds
             // and cannot specify another arbitrary account as the source account.
             // Ensure the source_account is either the controller or root account of member with given id
             ensure!(
                 membership::members::Module::<T>::ensure_member_controller_account(&source_account, &member_id).is_ok() ||
                 membership::members::Module::<T>::ensure_member_root_account(&source_account, &member_id).is_ok(),
-                MSG_ORIGIN_IS_NIETHER_MEMBER_CONTROLLER_OR_ROOT
+                MSG_ORIGIN_IS_NEITHER_MEMBER_CONTROLLER_OR_ROOT
             );
 
             // Ensure curator opening exists
@@ -332,10 +339,10 @@ decl_module! {
 }
 
 impl<Origin, T, I> EnsureOrigin<Origin> for Module<T, I>
-    where
-        Origin: Into<Result<RawOrigin<T::AccountId>, Origin>> + From<RawOrigin<T::AccountId>>,
-        T: Trait<I>,
-        I: Instance,
+where
+    Origin: Into<Result<RawOrigin<T::AccountId>, Origin>> + From<RawOrigin<T::AccountId>>,
+    T: Trait<I>,
+    I: Instance,
 {
     type Success = ();
 
@@ -365,7 +372,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Ok(())
     }
 
-    fn ensure_opening_human_readable_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    fn ensure_opening_human_readable_text_is_valid(text: &[u8]) -> dispatch::Result {
         <OpeningHumanReadableText<I>>::get().ensure_valid(
             text.len(),
             MSG_CHANNEL_DESCRIPTION_TOO_SHORT,
@@ -411,18 +418,9 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     //     Ok((lead_id, lead))
     // }
 
-
-
-
     fn ensure_curator_opening_exists(
         curator_opening_id: &CuratorOpeningId<T>,
-    ) -> Result<
-        (
-            CuratorOpening<T::OpeningId, T::BlockNumber, BalanceOf<T>, CuratorApplicationId<T>>,
-            hiring::Opening<BalanceOf<T>, T::BlockNumber, <T as hiring::Trait>::ApplicationId>,
-        ),
-        &'static str,
-    > {
+    ) -> Result<CuratorOpeningData<T>, &'static str> {
         ensure!(
             CuratorOpeningById::<T, I>::exists(curator_opening_id),
             MSG_CURATOR_OPENING_DOES_NOT_EXIST
@@ -484,13 +482,13 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         )
     }
 
-    /// CRITICAL:
- /// https://github.com/Joystream/substrate-runtime-joystream/issues/92
- /// This assumes that ensure_can_withdraw can be don
- /// for a sum of balance that later will be actually withdrawn
- /// using individual terms in that sum.
- /// This needs to be fully checked across all possibly scenarios
- /// of actual balance, minimum balance limit, reservation, vesting and locking.
+    // CRITICAL:
+    // https://github.com/Joystream/substrate-runtime-joystream/issues/92
+    // This assumes that ensure_can_withdraw can be don
+    // for a sum of balance that later will be actually withdrawn
+    // using individual terms in that sum.
+    // This needs to be fully checked across all possibly scenarios
+    // of actual balance, minimum balance limit, reservation, vesting and locking.
     fn ensure_can_make_stake_imbalance(
         opt_balances: Vec<&Option<BalanceOf<T>>>,
         source_account: &T::AccountId,
@@ -524,5 +522,4 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             Ok(())
         }
     }
-
 }

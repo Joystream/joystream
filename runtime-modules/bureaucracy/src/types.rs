@@ -119,7 +119,7 @@ pub struct CuratorApplication<AccountId, CuratorOpeningId, MemberId, Application
 }
 
 impl<AccountId: Clone, CuratorOpeningId: Clone, MemberId: Clone, ApplicationId: Clone>
-CuratorApplication<AccountId, CuratorOpeningId, MemberId, ApplicationId>
+    CuratorApplication<AccountId, CuratorOpeningId, MemberId, ApplicationId>
 {
     pub fn new(
         role_account: &AccountId,
