@@ -682,186 +682,186 @@ fn create_class_with_empty_description() {
 // Add class schema
 // --------------------------------------
 
-#[test]
-fn cannot_add_schema_to_unknown_class() {
-    with_test_externalities(|| {
-        assert_err!(
-            TestModule::append_class_schema(UNKNOWN_CLASS_ID, good_prop_ids(), good_props()),
-            ERROR_CLASS_NOT_FOUND
-        );
-    })
-}
+// #[test]
+// fn cannot_add_schema_to_unknown_class() {
+//     with_test_externalities(|| {
+//         assert_err!(
+//             TestModule::append_class_schema(UNKNOWN_CLASS_ID, good_prop_ids(), good_props()),
+//             ERROR_CLASS_NOT_FOUND
+//         );
+//     })
+// }
 
-#[test]
-fn cannot_add_class_schema_when_no_props_passed() {
-    with_test_externalities(|| {
-        let class_id = create_simple_class_with_default_permissions();
-        assert_err!(
-            TestModule::append_class_schema(class_id, vec![], vec![]),
-            ERROR_NO_PROPS_IN_CLASS_SCHEMA
-        );
-    })
-}
+// #[test]
+// fn cannot_add_class_schema_when_no_props_passed() {
+//     with_test_externalities(|| {
+//         let class_id = create_simple_class_with_default_permissions();
+//         assert_err!(
+//             TestModule::append_class_schema(class_id, vec![], vec![]),
+//             ERROR_NO_PROPS_IN_CLASS_SCHEMA
+//         );
+//     })
+// }
 
-#[test]
-fn cannot_add_class_schema_when_it_refers_unknown_prop_index_and_class_has_no_props() {
-    with_test_externalities(|| {
-        let class_id = create_simple_class_with_default_permissions();
-        assert_err!(
-            TestModule::append_class_schema(class_id, vec![UNKNOWN_PROP_ID], vec![]),
-            ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
-        );
-    })
-}
+// #[test]
+// fn cannot_add_class_schema_when_it_refers_unknown_prop_index_and_class_has_no_props() {
+//     with_test_externalities(|| {
+//         let class_id = create_simple_class_with_default_permissions();
+//         assert_err!(
+//             TestModule::append_class_schema(class_id, vec![UNKNOWN_PROP_ID], vec![]),
+//             ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
+//         );
+//     })
+// }
 
-#[test]
-fn cannot_add_class_schema_when_it_refers_unknown_prop_index() {
-    with_test_externalities(|| {
-        let class_id = create_simple_class_with_default_permissions();
+// #[test]
+// fn cannot_add_class_schema_when_it_refers_unknown_prop_index() {
+//     with_test_externalities(|| {
+//         let class_id = create_simple_class_with_default_permissions();
 
-        assert_eq!(
-            TestModule::append_class_schema(class_id, vec![], good_props()),
-            Ok(SCHEMA_ID_0)
-        );
+//         assert_eq!(
+//             TestModule::append_class_schema(class_id, vec![], good_props()),
+//             Ok(SCHEMA_ID_0)
+//         );
 
-        // Try to add a new schema that is based on one valid prop ids
-        // plus another prop id is unknown on this class.
-        assert_err!(
-            TestModule::append_class_schema(class_id, vec![0, UNKNOWN_PROP_ID], vec![]),
-            ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
-        );
+//         // Try to add a new schema that is based on one valid prop ids
+//         // plus another prop id is unknown on this class.
+//         assert_err!(
+//             TestModule::append_class_schema(class_id, vec![0, UNKNOWN_PROP_ID], vec![]),
+//             ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
+//         );
 
-        // Verify that class props and schemas remain unchanged:
-        assert_class_props(class_id, good_props());
-        assert_class_schemas(class_id, vec![good_prop_ids()]);
-    })
-}
+//         // Verify that class props and schemas remain unchanged:
+//         assert_class_props(class_id, good_props());
+//         assert_class_schemas(class_id, vec![good_prop_ids()]);
+//     })
+// }
 
-#[test]
-fn cannot_add_class_schema_when_it_refers_unknown_internal_id() {
-    with_test_externalities(|| {
-        let class_id = create_simple_class_with_default_permissions();
-        let bad_internal_prop = new_reference_class_prop(UNKNOWN_CLASS_ID);
+// #[test]
+// fn cannot_add_class_schema_when_it_refers_unknown_internal_id() {
+//     with_test_externalities(|| {
+//         let class_id = create_simple_class_with_default_permissions();
+//         let bad_internal_prop = new_reference_class_prop(UNKNOWN_CLASS_ID);
 
-        assert_err!(
-            TestModule::append_class_schema(
-                class_id,
-                vec![],
-                vec![good_prop_bool(), bad_internal_prop]
-            ),
-            ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID
-        );
-    })
-}
+//         assert_err!(
+//             TestModule::append_class_schema(
+//                 class_id,
+//                 vec![],
+//                 vec![good_prop_bool(), bad_internal_prop]
+//             ),
+//             ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID
+//         );
+//     })
+// }
 
-#[test]
-fn should_add_class_schema_with_internal_class_prop() {
-    with_test_externalities(|| {
-        let class_id = create_simple_class_with_default_permissions();
-        let internal_class_prop = new_reference_class_prop(class_id);
+// #[test]
+// fn should_add_class_schema_with_internal_class_prop() {
+//     with_test_externalities(|| {
+//         let class_id = create_simple_class_with_default_permissions();
+//         let internal_class_prop = new_reference_class_prop(class_id);
 
-        // Add first schema with new props.
-        // No other props on the class at this time.
-        assert_eq!(
-            TestModule::append_class_schema(class_id, vec![], vec![internal_class_prop.clone()]),
-            Ok(SCHEMA_ID_0)
-        );
+//         // Add first schema with new props.
+//         // No other props on the class at this time.
+//         assert_eq!(
+//             TestModule::append_class_schema(class_id, vec![], vec![internal_class_prop.clone()]),
+//             Ok(SCHEMA_ID_0)
+//         );
 
-        assert_class_props(class_id, vec![internal_class_prop]);
-        assert_class_schemas(class_id, vec![vec![SCHEMA_ID_0]]);
-    })
-}
+//         assert_class_props(class_id, vec![internal_class_prop]);
+//         assert_class_schemas(class_id, vec![vec![SCHEMA_ID_0]]);
+//     })
+// }
 
-#[test]
-fn should_add_class_schema_when_only_new_props_passed() {
-    with_test_externalities(|| {
-        let class_id = create_simple_class_with_default_permissions();
+// #[test]
+// fn should_add_class_schema_when_only_new_props_passed() {
+//     with_test_externalities(|| {
+//         let class_id = create_simple_class_with_default_permissions();
 
-        // Add first schema with new props.
-        // No other props on the class at this time.
-        assert_eq!(
-            TestModule::append_class_schema(class_id, vec![], good_props()),
-            Ok(SCHEMA_ID_0)
-        );
+//         // Add first schema with new props.
+//         // No other props on the class at this time.
+//         assert_eq!(
+//             TestModule::append_class_schema(class_id, vec![], good_props()),
+//             Ok(SCHEMA_ID_0)
+//         );
 
-        assert_class_props(class_id, good_props());
-        assert_class_schemas(class_id, vec![good_prop_ids()]);
-    })
-}
+//         assert_class_props(class_id, good_props());
+//         assert_class_schemas(class_id, vec![good_prop_ids()]);
+//     })
+// }
 
-#[test]
-fn should_add_class_schema_when_only_prop_ids_passed() {
-    with_test_externalities(|| {
-        let class_id = create_simple_class_with_default_permissions();
+// #[test]
+// fn should_add_class_schema_when_only_prop_ids_passed() {
+//     with_test_externalities(|| {
+//         let class_id = create_simple_class_with_default_permissions();
 
-        // Add first schema with new props.
-        // No other props on the class at this time.
-        assert_eq!(
-            TestModule::append_class_schema(class_id, vec![], good_props()),
-            Ok(SCHEMA_ID_0)
-        );
+//         // Add first schema with new props.
+//         // No other props on the class at this time.
+//         assert_eq!(
+//             TestModule::append_class_schema(class_id, vec![], good_props()),
+//             Ok(SCHEMA_ID_0)
+//         );
 
-        // Add a new schema that is based solely on the props ids
-        // of the previously added schema.
-        assert_eq!(
-            TestModule::append_class_schema(class_id, good_prop_ids(), vec![]),
-            Ok(SCHEMA_ID_1)
-        );
-    })
-}
+//         // Add a new schema that is based solely on the props ids
+//         // of the previously added schema.
+//         assert_eq!(
+//             TestModule::append_class_schema(class_id, good_prop_ids(), vec![]),
+//             Ok(SCHEMA_ID_1)
+//         );
+//     })
+// }
 
-#[test]
-fn cannot_add_class_schema_when_new_props_have_duplicate_names() {
-    with_test_externalities(|| {
-        let class_id = create_simple_class_with_default_permissions();
+// #[test]
+// fn cannot_add_class_schema_when_new_props_have_duplicate_names() {
+//     with_test_externalities(|| {
+//         let class_id = create_simple_class_with_default_permissions();
 
-        // Add first schema with new props.
-        // No other props on the class at this time.
-        assert_eq!(
-            TestModule::append_class_schema(class_id, vec![], good_props()),
-            Ok(SCHEMA_ID_0)
-        );
+//         // Add first schema with new props.
+//         // No other props on the class at this time.
+//         assert_eq!(
+//             TestModule::append_class_schema(class_id, vec![], good_props()),
+//             Ok(SCHEMA_ID_0)
+//         );
 
-        // Add a new schema with not unique property names:
-        assert_err!(
-            TestModule::append_class_schema(class_id, vec![], good_props()),
-            ERROR_PROP_NAME_NOT_UNIQUE_IN_CLASS
-        );
-    })
-}
+//         // Add a new schema with not unique property names:
+//         assert_err!(
+//             TestModule::append_class_schema(class_id, vec![], good_props()),
+//             ERROR_PROP_NAME_NOT_UNIQUE_IN_CLASS
+//         );
+//     })
+// }
 
-#[test]
-fn should_add_class_schema_when_both_prop_ids_and_new_props_passed() {
-    with_test_externalities(|| {
-        let class_id = create_simple_class_with_default_permissions();
+// #[test]
+// fn should_add_class_schema_when_both_prop_ids_and_new_props_passed() {
+//     with_test_externalities(|| {
+//         let class_id = create_simple_class_with_default_permissions();
 
-        // Add first schema with new props.
-        // No other props on the class at this time.
-        assert_eq!(
-            TestModule::append_class_schema(
-                class_id,
-                vec![],
-                vec![good_prop_bool(), good_prop_u32()]
-            ),
-            Ok(SCHEMA_ID_0)
-        );
+//         // Add first schema with new props.
+//         // No other props on the class at this time.
+//         assert_eq!(
+//             TestModule::append_class_schema(
+//                 class_id,
+//                 vec![],
+//                 vec![good_prop_bool(), good_prop_u32()]
+//             ),
+//             Ok(SCHEMA_ID_0)
+//         );
 
-        // Add a new schema that is based on some prop ids
-        // added with previous schema plus some new props,
-        // introduced by this new schema.
-        assert_eq!(
-            TestModule::append_class_schema(class_id, vec![1], vec![good_prop_text()]),
-            Ok(SCHEMA_ID_1)
-        );
+//         // Add a new schema that is based on some prop ids
+//         // added with previous schema plus some new props,
+//         // introduced by this new schema.
+//         assert_eq!(
+//             TestModule::append_class_schema(class_id, vec![1], vec![good_prop_text()]),
+//             Ok(SCHEMA_ID_1)
+//         );
 
-        assert_class_props(
-            class_id,
-            vec![good_prop_bool(), good_prop_u32(), good_prop_text()],
-        );
+//         assert_class_props(
+//             class_id,
+//             vec![good_prop_bool(), good_prop_u32(), good_prop_text()],
+//         );
 
-        assert_class_schemas(class_id, vec![vec![0, 1], vec![1, 2]]);
-    })
-}
+//         assert_class_schemas(class_id, vec![vec![0, 1], vec![1, 2]]);
+//     })
+// }
 
 // Update class schema status
 // --------------------------------------
@@ -920,699 +920,699 @@ fn should_add_class_schema_when_both_prop_ids_and_new_props_passed() {
 //     })
 // }
 
-#[test]
-fn update_class_schema_status_not_in_update_class_schema_status_set() {
-    with_test_externalities(|| {
-        let (class_id, schema_id) = create_class_with_schema();
-
-        // Check given class schema status before update performed
-        assert_eq!(
-            TestModule::class_by_id(class_id).is_active_schema(schema_id),
-            true
-        );
-
-        // attemt to update class schema of nonexistent schema
-        assert_err!(
-            TestModule::update_class_schema_status(
-                Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
-                Some(0),
-                class_id,
-                schema_id,
-                false
-            ),
-            "NotInUpdateSchemasStatusSet"
-        );
-
-        // Check given class schema status after update performed
-        assert_eq!(
-            TestModule::class_by_id(class_id).is_active_schema(schema_id),
-            true
-        );
-    })
-}
-
 // #[test]
-// fn update_class_schema_status_schema_not_found() {
+// fn update_class_schema_status_not_in_update_class_schema_status_set() {
 //     with_test_externalities(|| {
-//         let class_id = create_simple_class_with_default_permissions();
+//         let (class_id, schema_id) = create_class_with_schema();
 
-//         // give members of GROUP_ZERO permission to update schemas
-//         let update_schema_set = CredentialSet::from(vec![0]);
-//         assert_ok!(TestModule::set_class_update_schemas_status_set(
-//             Origin::ROOT,
-//             None,
-//             class_id,
-//             update_schema_set
-//         ));
+//         // Check given class schema status before update performed
+//         assert_eq!(
+//             TestModule::class_by_id(class_id).is_active_schema(schema_id),
+//             true
+//         );
 
-//         // attemt to update class schema of nonexistent class
+//         // attemt to update class schema of nonexistent schema
 //         assert_err!(
 //             TestModule::update_class_schema_status(
 //                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
 //                 Some(0),
 //                 class_id,
-//                 UNKNOWN_SCHEMA_ID,
+//                 schema_id,
 //                 false
+//             ),
+//             "NotInUpdateSchemasStatusSet"
+//         );
+
+//         // Check given class schema status after update performed
+//         assert_eq!(
+//             TestModule::class_by_id(class_id).is_active_schema(schema_id),
+//             true
+//         );
+//     })
+// }
+
+// // #[test]
+// // fn update_class_schema_status_schema_not_found() {
+// //     with_test_externalities(|| {
+// //         let class_id = create_simple_class_with_default_permissions();
+
+// //         // give members of GROUP_ZERO permission to update schemas
+// //         let update_schema_set = CredentialSet::from(vec![0]);
+// //         assert_ok!(TestModule::set_class_update_schemas_status_set(
+// //             Origin::ROOT,
+// //             None,
+// //             class_id,
+// //             update_schema_set
+// //         ));
+
+// //         // attemt to update class schema of nonexistent class
+// //         assert_err!(
+// //             TestModule::update_class_schema_status(
+// //                 Origin::signed(MEMBER_ONE_WITH_CREDENTIAL_ZERO),
+// //                 Some(0),
+// //                 class_id,
+// //                 UNKNOWN_SCHEMA_ID,
+// //                 false
+// //             ),
+// //             ERROR_UNKNOWN_CLASS_SCHEMA_ID
+// //         );
+// //     })
+// // }
+
+// // Add schema support to entity
+// // --------------------------------------
+
+// #[test]
+// fn cannot_add_schema_to_entity_when_entity_not_found() {
+//     with_test_externalities(|| {
+//         assert_entity_not_found(TestModule::add_entity_schema_support(
+//             UNKNOWN_ENTITY_ID,
+//             1,
+//             BTreeMap::new(),
+//         ));
+//     })
+// }
+
+// #[test]
+// fn cannot_add_schema_to_entity_when_schema_is_not_active() {
+//     with_test_externalities(|| {
+//         let (class_id, schema_id, entity_id) = create_class_with_schema_and_entity();
+
+//         // Firstly we make class schema under given index inactive.
+//         assert_ok!(TestModule::complete_class_schema_status_update(
+//             class_id, schema_id, false
+//         ));
+
+//         // Secondly we try to add support for the same schema.
+//         assert_err!(
+//             TestModule::add_entity_schema_support(entity_id, schema_id, bool_prop_value()),
+//             ERROR_CLASS_SCHEMA_NOT_ACTIVE
+//         );
+//     })
+// }
+
+// #[test]
+// fn cannot_add_schema_to_entity_when_schema_already_added_to_entity() {
+//     with_test_externalities(|| {
+//         let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
+
+//         // Firstly we just add support for a valid class schema.
+//         assert_ok!(TestModule::add_entity_schema_support(
+//             entity_id,
+//             schema_id,
+//             bool_prop_value()
+//         ));
+
+//         // Secondly we try to add support for the same schema.
+//         assert_err!(
+//             TestModule::add_entity_schema_support(entity_id, schema_id, BTreeMap::new()),
+//             ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY
+//         );
+//     })
+// }
+
+// #[test]
+// fn cannot_add_schema_to_entity_when_schema_id_is_unknown() {
+//     with_test_externalities(|| {
+//         let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
+//         let unknown_schema_id = schema_id + 1;
+//         assert_err!(
+//             TestModule::add_entity_schema_support(
+//                 entity_id,
+//                 unknown_schema_id,
+//                 prop_value(0, PropertyValue::Bool(false))
 //             ),
 //             ERROR_UNKNOWN_CLASS_SCHEMA_ID
 //         );
 //     })
 // }
 
-// Add schema support to entity
-// --------------------------------------
+// #[test]
+// fn cannot_add_schema_to_entity_when_prop_value_dont_match_type() {
+//     with_test_externalities(|| {
+//         let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
+//         let mut prop_values = bool_prop_value();
+//         prop_values.insert(PROP_ID_U32, PropertyValue::Bool(true));
+//         assert_err!(
+//             TestModule::add_entity_schema_support(entity_id, schema_id, prop_values),
+//             ERROR_PROP_VALUE_DONT_MATCH_TYPE
+//         );
+//     })
+// }
 
-#[test]
-fn cannot_add_schema_to_entity_when_entity_not_found() {
-    with_test_externalities(|| {
-        assert_entity_not_found(TestModule::add_entity_schema_support(
-            UNKNOWN_ENTITY_ID,
-            1,
-            BTreeMap::new(),
-        ));
-    })
-}
+// #[test]
+// fn cannot_add_schema_to_entity_when_unknown_internal_entity_id() {
+//     with_test_externalities(|| {
+//         let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
+//         let mut prop_values = bool_prop_value();
+//         prop_values.insert(
+//             PROP_ID_REFERENCE,
+//             PropertyValue::Reference(UNKNOWN_ENTITY_ID),
+//         );
+//         assert_err!(
+//             TestModule::add_entity_schema_support(entity_id, schema_id, prop_values),
+//             ERROR_ENTITY_NOT_FOUND
+//         );
+//     })
+// }
 
-#[test]
-fn cannot_add_schema_to_entity_when_schema_is_not_active() {
-    with_test_externalities(|| {
-        let (class_id, schema_id, entity_id) = create_class_with_schema_and_entity();
+// #[test]
+// fn cannot_add_schema_to_entity_when_missing_required_prop() {
+//     with_test_externalities(|| {
+//         let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
+//         assert_err!(
+//             TestModule::add_entity_schema_support(
+//                 entity_id,
+//                 schema_id,
+//                 prop_value(PROP_ID_U32, PropertyValue::Uint32(456))
+//             ),
+//             ERROR_MISSING_REQUIRED_PROP
+//         );
+//     })
+// }
 
-        // Firstly we make class schema under given index inactive.
-        assert_ok!(TestModule::complete_class_schema_status_update(
-            class_id, schema_id, false
-        ));
+// #[test]
+// fn should_add_schema_to_entity_when_some_optional_props_provided() {
+//     with_test_externalities(|| {
+//         let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
+//         let mut prop_values = bool_prop_value();
+//         prop_values.insert(PROP_ID_U32, PropertyValue::Uint32(123));
+//         assert_ok!(TestModule::add_entity_schema_support(
+//             entity_id,
+//             schema_id,
+//             // Note that an optional internal prop is not provided here.
+//             prop_values.clone()
+//         ));
 
-        // Secondly we try to add support for the same schema.
-        assert_err!(
-            TestModule::add_entity_schema_support(entity_id, schema_id, bool_prop_value()),
-            ERROR_CLASS_SCHEMA_NOT_ACTIVE
-        );
-    })
-}
+//         let entity = TestModule::entity_by_id(entity_id);
+//         assert_eq!(
+//             entity.supported_schemas,
+//             BTreeSet::from_iter(vec![SCHEMA_ID_0].into_iter())
+//         );
+//         prop_values.insert(PROP_ID_REFERENCE, PropertyValue::Bool(false));
+//         prop_values.insert(PROP_ID_U32_VEC, PropertyValue::Bool(false));
+//         assert_eq!(entity.values, prop_values);
+//     })
+// }
 
-#[test]
-fn cannot_add_schema_to_entity_when_schema_already_added_to_entity() {
-    with_test_externalities(|| {
-        let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
+// // Update entity properties
+// // --------------------------------------
 
-        // Firstly we just add support for a valid class schema.
-        assert_ok!(TestModule::add_entity_schema_support(
-            entity_id,
-            schema_id,
-            bool_prop_value()
-        ));
+// #[test]
+// fn update_entity_props_successfully() {
+//     with_test_externalities(|| {
+//         let entity_id = create_entity_with_schema_support();
+//         let mut prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(true));
+//         prop_values.insert(PROP_ID_U32, PropertyValue::Bool(false));
+//         prop_values.insert(PROP_ID_REFERENCE, PropertyValue::Bool(false));
+//         prop_values.insert(
+//             PROP_ID_U32_VEC,
+//             PropertyValue::Uint32Vec(vec![123, 234, 44], <Runtime as Trait>::Nonce::default()),
+//         );
+//         assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
+//         prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(false));
+//         prop_values.insert(PROP_ID_U32, PropertyValue::Uint32(123));
+//         prop_values.insert(PROP_ID_REFERENCE, PropertyValue::Reference(entity_id));
+//         prop_values.insert(
+//             PROP_ID_U32_VEC,
+//             PropertyValue::Uint32Vec(vec![123, 234, 44, 88, 43], <Runtime as Trait>::Nonce::one()),
+//         );
+//         assert_ok!(TestModule::complete_entity_property_values_update(
+//             entity_id,
+//             prop_values.clone()
+//         ));
+//         assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
+//     })
+// }
 
-        // Secondly we try to add support for the same schema.
-        assert_err!(
-            TestModule::add_entity_schema_support(entity_id, schema_id, BTreeMap::new()),
-            ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY
-        );
-    })
-}
+// #[test]
+// fn cannot_update_entity_props_when_entity_not_found() {
+//     with_test_externalities(|| {
+//         assert_entity_not_found(TestModule::complete_entity_property_values_update(
+//             UNKNOWN_ENTITY_ID,
+//             BTreeMap::new(),
+//         ));
+//     })
+// }
 
-#[test]
-fn cannot_add_schema_to_entity_when_schema_id_is_unknown() {
-    with_test_externalities(|| {
-        let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
-        let unknown_schema_id = schema_id + 1;
-        assert_err!(
-            TestModule::add_entity_schema_support(
-                entity_id,
-                unknown_schema_id,
-                prop_value(0, PropertyValue::Bool(false))
-            ),
-            ERROR_UNKNOWN_CLASS_SCHEMA_ID
-        );
-    })
-}
+// #[test]
+// fn cannot_update_entity_props_when_prop_value_dont_match_type() {
+//     with_test_externalities(|| {
+//         let entity_id = create_entity_with_schema_support();
+//         assert_err!(
+//             TestModule::complete_entity_property_values_update(
+//                 entity_id,
+//                 prop_value(PROP_ID_BOOL, PropertyValue::Uint32(1))
+//             ),
+//             ERROR_PROP_VALUE_DONT_MATCH_TYPE
+//         );
+//     })
+// }
 
-#[test]
-fn cannot_add_schema_to_entity_when_prop_value_dont_match_type() {
-    with_test_externalities(|| {
-        let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
-        let mut prop_values = bool_prop_value();
-        prop_values.insert(PROP_ID_U32, PropertyValue::Bool(true));
-        assert_err!(
-            TestModule::add_entity_schema_support(entity_id, schema_id, prop_values),
-            ERROR_PROP_VALUE_DONT_MATCH_TYPE
-        );
-    })
-}
+// #[test]
+// fn cannot_update_entity_props_when_unknown_internal_entity_id() {
+//     with_test_externalities(|| {
+//         let entity_id = create_entity_with_schema_support();
+//         assert_err!(
+//             TestModule::complete_entity_property_values_update(
+//                 entity_id,
+//                 prop_value(
+//                     PROP_ID_REFERENCE,
+//                     PropertyValue::Reference(UNKNOWN_ENTITY_ID)
+//                 )
+//             ),
+//             ERROR_ENTITY_NOT_FOUND
+//         );
+//     })
+// }
 
-#[test]
-fn cannot_add_schema_to_entity_when_unknown_internal_entity_id() {
-    with_test_externalities(|| {
-        let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
-        let mut prop_values = bool_prop_value();
-        prop_values.insert(
-            PROP_ID_REFERENCE,
-            PropertyValue::Reference(UNKNOWN_ENTITY_ID),
-        );
-        assert_err!(
-            TestModule::add_entity_schema_support(entity_id, schema_id, prop_values),
-            ERROR_ENTITY_NOT_FOUND
-        );
-    })
-}
+// #[test]
+// fn cannot_update_entity_props_when_unknown_entity_prop_id() {
+//     with_test_externalities(|| {
+//         let entity_id = create_entity_with_schema_support();
+//         assert_err!(
+//             TestModule::complete_entity_property_values_update(
+//                 entity_id,
+//                 prop_value(UNKNOWN_PROP_ID, PropertyValue::Bool(true))
+//             ),
+//             ERROR_UNKNOWN_ENTITY_PROP_ID
+//         );
+//     })
+// }
 
-#[test]
-fn cannot_add_schema_to_entity_when_missing_required_prop() {
-    with_test_externalities(|| {
-        let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
-        assert_err!(
-            TestModule::add_entity_schema_support(
-                entity_id,
-                schema_id,
-                prop_value(PROP_ID_U32, PropertyValue::Uint32(456))
-            ),
-            ERROR_MISSING_REQUIRED_PROP
-        );
-    })
-}
+// // Entity property vector cleaning
+// // --------------------------------------
 
-#[test]
-fn should_add_schema_to_entity_when_some_optional_props_provided() {
-    with_test_externalities(|| {
-        let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
-        let mut prop_values = bool_prop_value();
-        prop_values.insert(PROP_ID_U32, PropertyValue::Uint32(123));
-        assert_ok!(TestModule::add_entity_schema_support(
-            entity_id,
-            schema_id,
-            // Note that an optional internal prop is not provided here.
-            prop_values.clone()
-        ));
+// #[test]
+// fn complete_entity_property_vector_cleaning_successfully() {
+//     with_test_externalities(|| {
+//         let entity_id = create_entity_with_schema_support();
+//         let mut prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(true));
+//         prop_values.insert(PROP_ID_U32, PropertyValue::Bool(false));
+//         prop_values.insert(
+//             PROP_ID_U32_VEC,
+//             PropertyValue::Uint32Vec(vec![123, 234, 44], <Runtime as Trait>::Nonce::default()),
+//         );
+//         prop_values.insert(PROP_ID_REFERENCE, PropertyValue::Bool(false));
 
-        let entity = TestModule::entity_by_id(entity_id);
-        assert_eq!(
-            entity.supported_schemas,
-            BTreeSet::from_iter(vec![SCHEMA_ID_0].into_iter())
-        );
-        prop_values.insert(PROP_ID_REFERENCE, PropertyValue::Bool(false));
-        prop_values.insert(PROP_ID_U32_VEC, PropertyValue::Bool(false));
-        assert_eq!(entity.values, prop_values);
-    })
-}
+//         // Check property values runtime storage related to an entity before cleaning of entity property vector value under given schema id
+//         assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
 
-// Update entity properties
-// --------------------------------------
+//         // Perform cleaning of entity property vector value under given schema id
+//         assert_ok!(TestModule::complete_entity_property_vector_cleaning(
+//             entity_id,
+//             PROP_ID_U32_VEC
+//         ));
 
-#[test]
-fn update_entity_props_successfully() {
-    with_test_externalities(|| {
-        let entity_id = create_entity_with_schema_support();
-        let mut prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(true));
-        prop_values.insert(PROP_ID_U32, PropertyValue::Bool(false));
-        prop_values.insert(PROP_ID_REFERENCE, PropertyValue::Bool(false));
-        prop_values.insert(
-            PROP_ID_U32_VEC,
-            PropertyValue::Uint32Vec(vec![123, 234, 44], <Runtime as Trait>::Nonce::default()),
-        );
-        assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
-        prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(false));
-        prop_values.insert(PROP_ID_U32, PropertyValue::Uint32(123));
-        prop_values.insert(PROP_ID_REFERENCE, PropertyValue::Reference(entity_id));
-        prop_values.insert(
-            PROP_ID_U32_VEC,
-            PropertyValue::Uint32Vec(vec![123, 234, 44, 88, 43], <Runtime as Trait>::Nonce::one()),
-        );
-        assert_ok!(TestModule::complete_entity_property_values_update(
-            entity_id,
-            prop_values.clone()
-        ));
-        assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
-    })
-}
+//         // Update entity property values to compare with runtime storage entity value under given schema id
+//         prop_values.insert(
+//             PROP_ID_U32_VEC,
+//             PropertyValue::Uint32Vec(vec![], <Runtime as Trait>::Nonce::one()),
+//         );
 
-#[test]
-fn cannot_update_entity_props_when_entity_not_found() {
-    with_test_externalities(|| {
-        assert_entity_not_found(TestModule::complete_entity_property_values_update(
-            UNKNOWN_ENTITY_ID,
-            BTreeMap::new(),
-        ));
-    })
-}
+//         // Check property values runtime storage related to a entity right after
+//         // cleaning entity property vector under given schema id
+//         assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
+//     })
+// }
 
-#[test]
-fn cannot_update_entity_props_when_prop_value_dont_match_type() {
-    with_test_externalities(|| {
-        let entity_id = create_entity_with_schema_support();
-        assert_err!(
-            TestModule::complete_entity_property_values_update(
-                entity_id,
-                prop_value(PROP_ID_BOOL, PropertyValue::Uint32(1))
-            ),
-            ERROR_PROP_VALUE_DONT_MATCH_TYPE
-        );
-    })
-}
+// #[test]
+// fn cannot_complete_entity_property_vector_cleaning_when_entity_not_found() {
+//     with_test_externalities(|| {
+//         assert_entity_not_found(TestModule::complete_entity_property_vector_cleaning(
+//             UNKNOWN_ENTITY_ID,
+//             PROP_ID_U32_VEC,
+//         ));
+//     })
+// }
 
-#[test]
-fn cannot_update_entity_props_when_unknown_internal_entity_id() {
-    with_test_externalities(|| {
-        let entity_id = create_entity_with_schema_support();
-        assert_err!(
-            TestModule::complete_entity_property_values_update(
-                entity_id,
-                prop_value(
-                    PROP_ID_REFERENCE,
-                    PropertyValue::Reference(UNKNOWN_ENTITY_ID)
-                )
-            ),
-            ERROR_ENTITY_NOT_FOUND
-        );
-    })
-}
+// #[test]
+// fn cannot_complete_entity_property_vector_cleaning_when_unknown_entity_prop_id() {
+//     with_test_externalities(|| {
+//         let entity_id = create_entity_with_schema_support();
+//         assert_err!(
+//             TestModule::complete_entity_property_vector_cleaning(entity_id, UNKNOWN_PROP_ID),
+//             ERROR_UNKNOWN_ENTITY_PROP_ID
+//         );
+//     })
+// }
 
-#[test]
-fn cannot_update_entity_props_when_unknown_entity_prop_id() {
-    with_test_externalities(|| {
-        let entity_id = create_entity_with_schema_support();
-        assert_err!(
-            TestModule::complete_entity_property_values_update(
-                entity_id,
-                prop_value(UNKNOWN_PROP_ID, PropertyValue::Bool(true))
-            ),
-            ERROR_UNKNOWN_ENTITY_PROP_ID
-        );
-    })
-}
+// #[test]
+// fn cannot_complete_entity_property_vector_cleaning_when_entity_prop_id_is_not_a_vector() {
+//     with_test_externalities(|| {
+//         let entity_id = create_entity_with_schema_support();
+//         assert_err!(
+//             TestModule::complete_entity_property_vector_cleaning(entity_id, PROP_ID_U32),
+//             ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR
+//         );
+//     })
+// }
 
-// Entity property vector cleaning
-// --------------------------------------
+// // Remove at entity property vector
+// // --------------------------------------
 
-#[test]
-fn complete_entity_property_vector_cleaning_successfully() {
-    with_test_externalities(|| {
-        let entity_id = create_entity_with_schema_support();
-        let mut prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(true));
-        prop_values.insert(PROP_ID_U32, PropertyValue::Bool(false));
-        prop_values.insert(
-            PROP_ID_U32_VEC,
-            PropertyValue::Uint32Vec(vec![123, 234, 44], <Runtime as Trait>::Nonce::default()),
-        );
-        prop_values.insert(PROP_ID_REFERENCE, PropertyValue::Bool(false));
+// fn complete_remove_at_entity_property_vector() -> <Runtime as Trait>::EntityId {
+//     let entity_id = create_entity_with_schema_support();
+//     let mut prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(true));
+//     prop_values.insert(PROP_ID_U32, PropertyValue::Bool(false));
+//     prop_values.insert(
+//         PROP_ID_U32_VEC,
+//         PropertyValue::Uint32Vec(vec![123, 234, 44], <Runtime as Trait>::Nonce::default()),
+//     );
+//     prop_values.insert(PROP_ID_REFERENCE, PropertyValue::Bool(false));
 
-        // Check property values runtime storage related to an entity before cleaning of entity property vector value under given schema id
-        assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
+//     // Check property values runtime storage related to an entity before removing at given index of entity property vector value
+//     assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
 
-        // Perform cleaning of entity property vector value under given schema id
-        assert_ok!(TestModule::complete_entity_property_vector_cleaning(
-            entity_id,
-            PROP_ID_U32_VEC
-        ));
+//     // Perform removing at given index of entity property vector value
+//     assert_ok!(TestModule::complete_remove_at_entity_property_vector(
+//         entity_id,
+//         PROP_ID_U32_VEC,
+//         VALID_PROPERTY_VEC_INDEX,
+//         ZERO_NONCE
+//     ));
 
-        // Update entity property values to compare with runtime storage entity value under given schema id
-        prop_values.insert(
-            PROP_ID_U32_VEC,
-            PropertyValue::Uint32Vec(vec![], <Runtime as Trait>::Nonce::one()),
-        );
+//     // Update entity property values to compare with runtime storage entity value under given schema id
+//     prop_values.insert(
+//         PROP_ID_U32_VEC,
+//         PropertyValue::Uint32Vec(vec![234, 44], <Runtime as Trait>::Nonce::one()),
+//     );
 
-        // Check property values runtime storage related to a entity right after
-        // cleaning entity property vector under given schema id
-        assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
-    })
-}
+//     // Check property values runtime storage related to a entity right after
+//     // removing at given index of entity property vector value
+//     assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
+//     entity_id
+// }
 
-#[test]
-fn cannot_complete_entity_property_vector_cleaning_when_entity_not_found() {
-    with_test_externalities(|| {
-        assert_entity_not_found(TestModule::complete_entity_property_vector_cleaning(
-            UNKNOWN_ENTITY_ID,
-            PROP_ID_U32_VEC,
-        ));
-    })
-}
+// #[test]
+// fn complete_remove_at_entity_property_vector_successfully() {
+//     with_test_externalities(|| {
+//         let entity_id = complete_remove_at_entity_property_vector();
+//         // Perform second removal at given index of entity property vector value with new nonce
+//         assert_ok!(TestModule::complete_remove_at_entity_property_vector(
+//             entity_id,
+//             PROP_ID_U32_VEC,
+//             VALID_PROPERTY_VEC_INDEX,
+//             FIRST_NONCE
+//         ));
+//     })
+// }
 
-#[test]
-fn cannot_complete_entity_property_vector_cleaning_when_unknown_entity_prop_id() {
-    with_test_externalities(|| {
-        let entity_id = create_entity_with_schema_support();
-        assert_err!(
-            TestModule::complete_entity_property_vector_cleaning(entity_id, UNKNOWN_PROP_ID),
-            ERROR_UNKNOWN_ENTITY_PROP_ID
-        );
-    })
-}
+// #[test]
+// fn cannot_complete_remove_at_entity_property_vector_when_entity_not_found() {
+//     with_test_externalities(|| {
+//         assert_entity_not_found(TestModule::complete_remove_at_entity_property_vector(
+//             UNKNOWN_ENTITY_ID,
+//             PROP_ID_U32_VEC,
+//             VALID_PROPERTY_VEC_INDEX,
+//             ZERO_NONCE,
+//         ));
+//     })
+// }
 
-#[test]
-fn cannot_complete_entity_property_vector_cleaning_when_entity_prop_id_is_not_a_vector() {
-    with_test_externalities(|| {
-        let entity_id = create_entity_with_schema_support();
-        assert_err!(
-            TestModule::complete_entity_property_vector_cleaning(entity_id, PROP_ID_U32),
-            ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR
-        );
-    })
-}
+// #[test]
+// fn cannot_complete_remove_at_entity_property_vector_when_unknown_entity_prop_id() {
+//     with_test_externalities(|| {
+//         let entity_id = create_entity_with_schema_support();
+//         assert_err!(
+//             TestModule::complete_remove_at_entity_property_vector(
+//                 entity_id,
+//                 UNKNOWN_PROP_ID,
+//                 VALID_PROPERTY_VEC_INDEX,
+//                 ZERO_NONCE
+//             ),
+//             ERROR_UNKNOWN_ENTITY_PROP_ID
+//         );
+//     })
+// }
 
-// Remove at entity property vector
-// --------------------------------------
+// #[test]
+// fn cannot_complete_remove_at_entity_property_vector_when_entity_prop_vector_index_out_of_range() {
+//     with_test_externalities(|| {
+//         let entity_id = create_entity_with_schema_support();
+//         assert_err!(
+//             TestModule::complete_remove_at_entity_property_vector(
+//                 entity_id,
+//                 PROP_ID_U32,
+//                 INVALID_PROPERTY_VEC_INDEX,
+//                 ZERO_NONCE
+//             ),
+//             ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR
+//         );
+//     })
+// }
 
-fn complete_remove_at_entity_property_vector() -> <Runtime as Trait>::EntityId {
-    let entity_id = create_entity_with_schema_support();
-    let mut prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(true));
-    prop_values.insert(PROP_ID_U32, PropertyValue::Bool(false));
-    prop_values.insert(
-        PROP_ID_U32_VEC,
-        PropertyValue::Uint32Vec(vec![123, 234, 44], <Runtime as Trait>::Nonce::default()),
-    );
-    prop_values.insert(PROP_ID_REFERENCE, PropertyValue::Bool(false));
+// #[test]
+// fn cannot_complete_remove_at_entity_property_vector_when_entity_prop_id_is_not_a_vector() {
+//     with_test_externalities(|| {
+//         let entity_id = create_entity_with_schema_support();
+//         assert_err!(
+//             TestModule::complete_remove_at_entity_property_vector(
+//                 entity_id,
+//                 PROP_ID_U32,
+//                 VALID_PROPERTY_VEC_INDEX,
+//                 ZERO_NONCE
+//             ),
+//             ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR
+//         );
+//     })
+// }
 
-    // Check property values runtime storage related to an entity before removing at given index of entity property vector value
-    assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
+// #[test]
+// fn cannot_complete_remove_at_entity_property_vector_when_already_updated() {
+//     with_test_externalities(|| {
+//         let entity_id = complete_remove_at_entity_property_vector();
+//         assert_err!(
+//             TestModule::complete_remove_at_entity_property_vector(
+//                 entity_id,
+//                 PROP_ID_U32_VEC,
+//                 VALID_PROPERTY_VEC_INDEX,
+//                 SECOND_NONCE
+//             ),
+//             ERROR_PROP_VALUE_VEC_NONCES_DOES_NOT_MATCH
+//         );
+//     })
+// }
 
-    // Perform removing at given index of entity property vector value
-    assert_ok!(TestModule::complete_remove_at_entity_property_vector(
-        entity_id,
-        PROP_ID_U32_VEC,
-        VALID_PROPERTY_VEC_INDEX,
-        ZERO_NONCE
-    ));
+// #[test]
+// fn complete_insert_at_entity_property_vector_successfully() {
+//     with_test_externalities(|| {
+//         let entity_id = create_entity_with_schema_support();
+//         let mut prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(true));
+//         prop_values.insert(PROP_ID_U32, PropertyValue::Bool(false));
+//         prop_values.insert(
+//             PROP_ID_U32_VEC,
+//             PropertyValue::Uint32Vec(vec![123, 234, 44], <Runtime as Trait>::Nonce::default()),
+//         );
+//         prop_values.insert(PROP_ID_REFERENCE, PropertyValue::Bool(false));
 
-    // Update entity property values to compare with runtime storage entity value under given schema id
-    prop_values.insert(
-        PROP_ID_U32_VEC,
-        PropertyValue::Uint32Vec(vec![234, 44], <Runtime as Trait>::Nonce::one()),
-    );
+//         // Check property values runtime storage related to an entity before inserting at given index of entity property vector value
+//         assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
 
-    // Check property values runtime storage related to a entity right after
-    // removing at given index of entity property vector value
-    assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
-    entity_id
-}
+//         // Perform inserting at given index of entity property vector value
+//         assert_ok!(TestModule::complete_insert_at_entity_property_vector(
+//             entity_id,
+//             PROP_ID_U32_VEC,
+//             VALID_PROPERTY_VEC_INDEX,
+//             PropertyValue::Uint32(33),
+//             ZERO_NONCE
+//         ));
 
-#[test]
-fn complete_remove_at_entity_property_vector_successfully() {
-    with_test_externalities(|| {
-        let entity_id = complete_remove_at_entity_property_vector();
-        // Perform second removal at given index of entity property vector value with new nonce
-        assert_ok!(TestModule::complete_remove_at_entity_property_vector(
-            entity_id,
-            PROP_ID_U32_VEC,
-            VALID_PROPERTY_VEC_INDEX,
-            FIRST_NONCE
-        ));
-    })
-}
+//         // Perform second inserting at given index of entity property vector value with new nonce
+//         assert_ok!(TestModule::complete_insert_at_entity_property_vector(
+//             entity_id,
+//             PROP_ID_U32_VEC,
+//             VALID_PROPERTY_VEC_INDEX,
+//             PropertyValue::Uint32(55),
+//             FIRST_NONCE
+//         ));
 
-#[test]
-fn cannot_complete_remove_at_entity_property_vector_when_entity_not_found() {
-    with_test_externalities(|| {
-        assert_entity_not_found(TestModule::complete_remove_at_entity_property_vector(
-            UNKNOWN_ENTITY_ID,
-            PROP_ID_U32_VEC,
-            VALID_PROPERTY_VEC_INDEX,
-            ZERO_NONCE,
-        ));
-    })
-}
+//         // Update entity property values to compare with runtime storage entity value under given schema id
+//         prop_values.insert(
+//             PROP_ID_U32_VEC,
+//             PropertyValue::Uint32Vec(vec![55, 33, 123, 234, 44], 2_u32.into()),
+//         );
 
-#[test]
-fn cannot_complete_remove_at_entity_property_vector_when_unknown_entity_prop_id() {
-    with_test_externalities(|| {
-        let entity_id = create_entity_with_schema_support();
-        assert_err!(
-            TestModule::complete_remove_at_entity_property_vector(
-                entity_id,
-                UNKNOWN_PROP_ID,
-                VALID_PROPERTY_VEC_INDEX,
-                ZERO_NONCE
-            ),
-            ERROR_UNKNOWN_ENTITY_PROP_ID
-        );
-    })
-}
+//         // Check property values runtime storage related to a entity right after
+//         // inserting at given index of entity property vector value
+//         assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
+//     })
+// }
 
-#[test]
-fn cannot_complete_remove_at_entity_property_vector_when_entity_prop_vector_index_out_of_range() {
-    with_test_externalities(|| {
-        let entity_id = create_entity_with_schema_support();
-        assert_err!(
-            TestModule::complete_remove_at_entity_property_vector(
-                entity_id,
-                PROP_ID_U32,
-                INVALID_PROPERTY_VEC_INDEX,
-                ZERO_NONCE
-            ),
-            ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR
-        );
-    })
-}
+// #[test]
+// fn cannot_complete_insert_at_entity_property_vector_when_entity_not_found() {
+//     with_test_externalities(|| {
+//         assert_entity_not_found(TestModule::complete_insert_at_entity_property_vector(
+//             UNKNOWN_ENTITY_ID,
+//             PROP_ID_U32_VEC,
+//             VALID_PROPERTY_VEC_INDEX,
+//             PropertyValue::Uint32(33),
+//             ZERO_NONCE,
+//         ));
+//     })
+// }
 
-#[test]
-fn cannot_complete_remove_at_entity_property_vector_when_entity_prop_id_is_not_a_vector() {
-    with_test_externalities(|| {
-        let entity_id = create_entity_with_schema_support();
-        assert_err!(
-            TestModule::complete_remove_at_entity_property_vector(
-                entity_id,
-                PROP_ID_U32,
-                VALID_PROPERTY_VEC_INDEX,
-                ZERO_NONCE
-            ),
-            ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR
-        );
-    })
-}
+// #[test]
+// fn cannot_complete_insert_at_entity_property_vector_when_unknown_entity_prop_id() {
+//     with_test_externalities(|| {
+//         let entity_id = create_entity_with_schema_support();
+//         assert_err!(
+//             TestModule::complete_insert_at_entity_property_vector(
+//                 entity_id,
+//                 UNKNOWN_PROP_ID,
+//                 VALID_PROPERTY_VEC_INDEX,
+//                 PropertyValue::Uint32(33),
+//                 ZERO_NONCE
+//             ),
+//             ERROR_UNKNOWN_ENTITY_PROP_ID
+//         );
+//     })
+// }
 
-#[test]
-fn cannot_complete_remove_at_entity_property_vector_when_already_updated() {
-    with_test_externalities(|| {
-        let entity_id = complete_remove_at_entity_property_vector();
-        assert_err!(
-            TestModule::complete_remove_at_entity_property_vector(
-                entity_id,
-                PROP_ID_U32_VEC,
-                VALID_PROPERTY_VEC_INDEX,
-                SECOND_NONCE
-            ),
-            ERROR_PROP_VALUE_VEC_NONCES_DOES_NOT_MATCH
-        );
-    })
-}
+// #[test]
+// fn cannot_complete_insert_at_entity_property_vector_when_entity_prop_id_is_not_a_vector() {
+//     with_test_externalities(|| {
+//         let entity_id = create_entity_with_schema_support();
+//         assert_err!(
+//             TestModule::complete_insert_at_entity_property_vector(
+//                 entity_id,
+//                 PROP_ID_U32,
+//                 VALID_PROPERTY_VEC_INDEX,
+//                 PropertyValue::Uint32(17),
+//                 ZERO_NONCE
+//             ),
+//             ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR
+//         );
+//     })
+// }
 
-#[test]
-fn complete_insert_at_entity_property_vector_successfully() {
-    with_test_externalities(|| {
-        let entity_id = create_entity_with_schema_support();
-        let mut prop_values = prop_value(PROP_ID_BOOL, PropertyValue::Bool(true));
-        prop_values.insert(PROP_ID_U32, PropertyValue::Bool(false));
-        prop_values.insert(
-            PROP_ID_U32_VEC,
-            PropertyValue::Uint32Vec(vec![123, 234, 44], <Runtime as Trait>::Nonce::default()),
-        );
-        prop_values.insert(PROP_ID_REFERENCE, PropertyValue::Bool(false));
+// #[test]
+// fn cannot_complete_insert_at_entity_when_entity_prop_value_vector_index_out_of_range() {
+//     with_test_externalities(|| {
+//         let entity_id = create_entity_with_schema_support();
+//         assert_err!(
+//             TestModule::complete_insert_at_entity_property_vector(
+//                 entity_id,
+//                 PROP_ID_U32_VEC,
+//                 INVALID_PROPERTY_VEC_INDEX,
+//                 PropertyValue::Uint32(33),
+//                 ZERO_NONCE
+//             ),
+//             ERROR_ENTITY_PROP_VALUE_VECTOR_INDEX_IS_OUT_OF_RANGE
+//         );
+//     })
+// }
 
-        // Check property values runtime storage related to an entity before inserting at given index of entity property vector value
-        assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
+// #[test]
+// fn cannot_complete_insert_at_entity_when_property_type_does_not_match_internal_entity_vector_type()
+// {
+//     with_test_externalities(|| {
+//         let entity_id = create_entity_with_schema_support();
+//         assert_err!(
+//             TestModule::complete_insert_at_entity_property_vector(
+//                 entity_id,
+//                 PROP_ID_U32_VEC,
+//                 VALID_PROPERTY_VEC_INDEX,
+//                 PropertyValue::Uint16(33),
+//                 ZERO_NONCE
+//             ),
+//             ERROR_PROP_VALUE_TYPE_DOESNT_MATCH_INTERNAL_ENTITY_VECTOR_TYPE
+//         );
+//     })
+// }
 
-        // Perform inserting at given index of entity property vector value
-        assert_ok!(TestModule::complete_insert_at_entity_property_vector(
-            entity_id,
-            PROP_ID_U32_VEC,
-            VALID_PROPERTY_VEC_INDEX,
-            PropertyValue::Uint32(33),
-            ZERO_NONCE
-        ));
+// #[test]
+// fn cannot_complete_insert_at_entity_property_vector_when_entity_prop_value_vector_is_too_long() {
+//     with_test_externalities(|| {
+//         let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
+//         let mut property_values = BTreeMap::new();
+//         property_values.insert(PROP_ID_BOOL, PropertyValue::Bool(true));
+//         property_values.insert(
+//             PROP_ID_U32_VEC,
+//             PropertyValue::Uint32Vec(
+//                 vec![5; PROP_ID_U32_VEC_MAX_LEN as usize],
+//                 <Runtime as Trait>::Nonce::default(),
+//             ),
+//         );
+//         assert_ok!(TestModule::add_entity_schema_support(
+//             entity_id,
+//             schema_id,
+//             property_values
+//         ));
+//         assert_err!(
+//             TestModule::complete_insert_at_entity_property_vector(
+//                 entity_id,
+//                 PROP_ID_U32_VEC,
+//                 VALID_PROPERTY_VEC_INDEX,
+//                 PropertyValue::Uint32(33),
+//                 ZERO_NONCE
+//             ),
+//             ERROR_ENTITY_PROP_VALUE_VECTOR_IS_TOO_LONG
+//         );
+//     })
+// }
 
-        // Perform second inserting at given index of entity property vector value with new nonce
-        assert_ok!(TestModule::complete_insert_at_entity_property_vector(
-            entity_id,
-            PROP_ID_U32_VEC,
-            VALID_PROPERTY_VEC_INDEX,
-            PropertyValue::Uint32(55),
-            FIRST_NONCE
-        ));
+// #[test]
+// fn cannot_complete_insert_at_entity_property_vector_when_nonce_does_not_match() {
+//     with_test_externalities(|| {
+//         let entity_id = complete_remove_at_entity_property_vector();
+//         assert_err!(
+//             TestModule::complete_insert_at_entity_property_vector(
+//                 entity_id,
+//                 PROP_ID_U32_VEC,
+//                 VALID_PROPERTY_VEC_INDEX,
+//                 PropertyValue::Uint32(33),
+//                 SECOND_NONCE
+//             ),
+//             ERROR_PROP_VALUE_VEC_NONCES_DOES_NOT_MATCH
+//         );
+//     })
+// }
 
-        // Update entity property values to compare with runtime storage entity value under given schema id
-        prop_values.insert(
-            PROP_ID_U32_VEC,
-            PropertyValue::Uint32Vec(vec![55, 33, 123, 234, 44], 2_u32.into()),
-        );
+// fn create_entity_with_prop_value_referencing_another_entity(
+// ) -> (<Runtime as Trait>::EntityId, <Runtime as Trait>::EntityId) {
+//     let class_id = create_simple_class_with_default_permissions();
+//     let schema_id = TestModule::append_class_schema(
+//         class_id,
+//         vec![],
+//         vec![
+//             good_prop_bool().required(),
+//             new_reference_class_prop_vec(class_id),
+//         ],
+//     )
+//     .expect("This should not happen");
+//     let entity_id = create_entity_of_class(class_id);
+//     let entity_id_2 = create_entity_of_class(class_id);
+//     let mut property_values = BTreeMap::new();
+//     property_values.insert(PROP_ID_BOOL, PropertyValue::Bool(true));
+//     property_values.insert(
+//         PROP_ID_REFERENCE_VEC,
+//         PropertyValue::ReferenceVec(vec![entity_id_2], <Runtime as Trait>::Nonce::default()),
+//     );
+//     assert_ok!(TestModule::add_entity_schema_support(
+//         entity_id,
+//         schema_id,
+//         property_values
+//     ));
+//     (entity_id, entity_id_2)
+// }
 
-        // Check property values runtime storage related to a entity right after
-        // inserting at given index of entity property vector value
-        assert_eq!(TestModule::entity_by_id(entity_id).values, prop_values);
-    })
-}
-
-#[test]
-fn cannot_complete_insert_at_entity_property_vector_when_entity_not_found() {
-    with_test_externalities(|| {
-        assert_entity_not_found(TestModule::complete_insert_at_entity_property_vector(
-            UNKNOWN_ENTITY_ID,
-            PROP_ID_U32_VEC,
-            VALID_PROPERTY_VEC_INDEX,
-            PropertyValue::Uint32(33),
-            ZERO_NONCE,
-        ));
-    })
-}
-
-#[test]
-fn cannot_complete_insert_at_entity_property_vector_when_unknown_entity_prop_id() {
-    with_test_externalities(|| {
-        let entity_id = create_entity_with_schema_support();
-        assert_err!(
-            TestModule::complete_insert_at_entity_property_vector(
-                entity_id,
-                UNKNOWN_PROP_ID,
-                VALID_PROPERTY_VEC_INDEX,
-                PropertyValue::Uint32(33),
-                ZERO_NONCE
-            ),
-            ERROR_UNKNOWN_ENTITY_PROP_ID
-        );
-    })
-}
-
-#[test]
-fn cannot_complete_insert_at_entity_property_vector_when_entity_prop_id_is_not_a_vector() {
-    with_test_externalities(|| {
-        let entity_id = create_entity_with_schema_support();
-        assert_err!(
-            TestModule::complete_insert_at_entity_property_vector(
-                entity_id,
-                PROP_ID_U32,
-                VALID_PROPERTY_VEC_INDEX,
-                PropertyValue::Uint32(17),
-                ZERO_NONCE
-            ),
-            ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR
-        );
-    })
-}
-
-#[test]
-fn cannot_complete_insert_at_entity_when_entity_prop_value_vector_index_out_of_range() {
-    with_test_externalities(|| {
-        let entity_id = create_entity_with_schema_support();
-        assert_err!(
-            TestModule::complete_insert_at_entity_property_vector(
-                entity_id,
-                PROP_ID_U32_VEC,
-                INVALID_PROPERTY_VEC_INDEX,
-                PropertyValue::Uint32(33),
-                ZERO_NONCE
-            ),
-            ERROR_ENTITY_PROP_VALUE_VECTOR_INDEX_IS_OUT_OF_RANGE
-        );
-    })
-}
-
-#[test]
-fn cannot_complete_insert_at_entity_when_property_type_does_not_match_internal_entity_vector_type()
-{
-    with_test_externalities(|| {
-        let entity_id = create_entity_with_schema_support();
-        assert_err!(
-            TestModule::complete_insert_at_entity_property_vector(
-                entity_id,
-                PROP_ID_U32_VEC,
-                VALID_PROPERTY_VEC_INDEX,
-                PropertyValue::Uint16(33),
-                ZERO_NONCE
-            ),
-            ERROR_PROP_VALUE_TYPE_DOESNT_MATCH_INTERNAL_ENTITY_VECTOR_TYPE
-        );
-    })
-}
-
-#[test]
-fn cannot_complete_insert_at_entity_property_vector_when_entity_prop_value_vector_is_too_long() {
-    with_test_externalities(|| {
-        let (_, schema_id, entity_id) = create_class_with_schema_and_entity();
-        let mut property_values = BTreeMap::new();
-        property_values.insert(PROP_ID_BOOL, PropertyValue::Bool(true));
-        property_values.insert(
-            PROP_ID_U32_VEC,
-            PropertyValue::Uint32Vec(
-                vec![5; PROP_ID_U32_VEC_MAX_LEN as usize],
-                <Runtime as Trait>::Nonce::default(),
-            ),
-        );
-        assert_ok!(TestModule::add_entity_schema_support(
-            entity_id,
-            schema_id,
-            property_values
-        ));
-        assert_err!(
-            TestModule::complete_insert_at_entity_property_vector(
-                entity_id,
-                PROP_ID_U32_VEC,
-                VALID_PROPERTY_VEC_INDEX,
-                PropertyValue::Uint32(33),
-                ZERO_NONCE
-            ),
-            ERROR_ENTITY_PROP_VALUE_VECTOR_IS_TOO_LONG
-        );
-    })
-}
-
-#[test]
-fn cannot_complete_insert_at_entity_property_vector_when_nonce_does_not_match() {
-    with_test_externalities(|| {
-        let entity_id = complete_remove_at_entity_property_vector();
-        assert_err!(
-            TestModule::complete_insert_at_entity_property_vector(
-                entity_id,
-                PROP_ID_U32_VEC,
-                VALID_PROPERTY_VEC_INDEX,
-                PropertyValue::Uint32(33),
-                SECOND_NONCE
-            ),
-            ERROR_PROP_VALUE_VEC_NONCES_DOES_NOT_MATCH
-        );
-    })
-}
-
-fn create_entity_with_prop_value_referencing_another_entity(
-) -> (<Runtime as Trait>::EntityId, <Runtime as Trait>::EntityId) {
-    let class_id = create_simple_class_with_default_permissions();
-    let schema_id = TestModule::append_class_schema(
-        class_id,
-        vec![],
-        vec![
-            good_prop_bool().required(),
-            new_reference_class_prop_vec(class_id),
-        ],
-    )
-    .expect("This should not happen");
-    let entity_id = create_entity_of_class(class_id);
-    let entity_id_2 = create_entity_of_class(class_id);
-    let mut property_values = BTreeMap::new();
-    property_values.insert(PROP_ID_BOOL, PropertyValue::Bool(true));
-    property_values.insert(
-        PROP_ID_REFERENCE_VEC,
-        PropertyValue::ReferenceVec(vec![entity_id_2], <Runtime as Trait>::Nonce::default()),
-    );
-    assert_ok!(TestModule::add_entity_schema_support(
-        entity_id,
-        schema_id,
-        property_values
-    ));
-    (entity_id, entity_id_2)
-}
-
-#[test]
-fn cannot_complete_insert_at_entity_property_vector_when_unknown_internal_entity_id() {
-    with_test_externalities(|| {
-        let (entity_id, _) = create_entity_with_prop_value_referencing_another_entity();
-        assert_err!(
-            TestModule::complete_insert_at_entity_property_vector(
-                entity_id,
-                PROP_ID_REFERENCE_VEC,
-                VALID_PROPERTY_VEC_INDEX,
-                PropertyValue::Reference(UNKNOWN_ENTITY_ID),
-                ZERO_NONCE
-            ),
-            ERROR_ENTITY_NOT_FOUND
-        );
-    })
-}
+// #[test]
+// fn cannot_complete_insert_at_entity_property_vector_when_unknown_internal_entity_id() {
+//     with_test_externalities(|| {
+//         let (entity_id, _) = create_entity_with_prop_value_referencing_another_entity();
+//         assert_err!(
+//             TestModule::complete_insert_at_entity_property_vector(
+//                 entity_id,
+//                 PROP_ID_REFERENCE_VEC,
+//                 VALID_PROPERTY_VEC_INDEX,
+//                 PropertyValue::Reference(UNKNOWN_ENTITY_ID),
+//                 ZERO_NONCE
+//             ),
+//             ERROR_ENTITY_NOT_FOUND
+//         );
+//     })
+// }
 
 // Remove entity
 // --------------------------------------
@@ -1631,26 +1631,26 @@ fn cannot_complete_insert_at_entity_property_vector_when_unknown_internal_entity
 //     })
 // }
 
-#[test]
-fn remove_entity_not_found() {
-    with_test_externalities(|| {
-        assert_err!(
-            TestModule::remove_entity(Origin::ROOT, None, UNKNOWN_ENTITY_ID),
-            ERROR_ENTITY_NOT_FOUND
-        );
-    })
-}
+// #[test]
+// fn remove_entity_not_found() {
+//     with_test_externalities(|| {
+//         assert_err!(
+//             TestModule::remove_entity(Origin::ROOT, None, UNKNOWN_ENTITY_ID),
+//             ERROR_ENTITY_NOT_FOUND
+//         );
+//     })
+// }
 
-#[test]
-fn remove_entity_reference_counter_does_not_equal_zero() {
-    with_test_externalities(|| {
-        let (_, entity_by_id_2) = create_entity_with_prop_value_referencing_another_entity();
-        assert_err!(
-            TestModule::remove_entity(Origin::ROOT, None, entity_by_id_2),
-            ERROR_ENTITY_REFERENCE_COUNTER_DOES_NOT_EQUAL_TO_ZERO
-        );
-    })
-}
+// #[test]
+// fn remove_entity_reference_counter_does_not_equal_zero() {
+//     with_test_externalities(|| {
+//         let (_, entity_by_id_2) = create_entity_with_prop_value_referencing_another_entity();
+//         assert_err!(
+//             TestModule::remove_entity(Origin::ROOT, None, entity_by_id_2),
+//             ERROR_ENTITY_REFERENCE_COUNTER_DOES_NOT_EQUAL_TO_ZERO
+//         );
+//     })
+// }
 
 // TODO test text max len
 
