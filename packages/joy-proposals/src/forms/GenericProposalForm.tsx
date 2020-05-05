@@ -15,6 +15,7 @@ import { Balance } from "@polkadot/types/interfaces";
 import { RouteComponentProps } from "react-router";
 import "./forms.css";
 
+
 // Generic form values
 export type GenericFormValues = {
   title: string;
@@ -28,6 +29,7 @@ export const genericFormDefaultValues: GenericFormValues = {
 
 // Helper generic types for defining form's Export, Container and Inner component prop types
 export type ProposalFormExportProps<AdditionalPropsT, FormValuesT> = RouteComponentProps &
+
   AdditionalPropsT & {
     initialData?: Partial<FormValuesT>;
   };
@@ -36,6 +38,7 @@ export type ProposalFormContainerProps<ExportPropsT> = ExportPropsT &
   CallProps & {
     balances_totalIssuance?: Balance;
   };
+
 export type ProposalFormInnerProps<ContainerPropsT, FormValuesT> = ContainerPropsT & FormikProps<FormValuesT>;
 
 // Types only used in this file
@@ -46,7 +49,9 @@ type GenericProposalFormAdditionalProps = {
 };
 
 type GenericFormContainerProps = ProposalFormContainerProps<
+
   ProposalFormExportProps<GenericProposalFormAdditionalProps, GenericFormValues>
+
 >;
 type GenericFormInnerProps = ProposalFormInnerProps<GenericFormContainerProps, GenericFormValues>;
 type GenericFormDefaultOptions = WithFormikConfig<GenericFormContainerProps, GenericFormValues>;
@@ -58,8 +63,10 @@ export const genericFormDefaultOptions: GenericFormDefaultOptions = {
     ...(props.initialData || {})
   }),
   validationSchema: {
+
     title: Validation.All.title,
     rationale: Validation.All.rationale
+
   },
   handleSubmit: (values, { setSubmitting, resetForm }) => {
     // This is handled via TxButton
@@ -140,6 +147,7 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
             <TxButton
               type="submit"
               label="Submit proposal"
+              icon="paper plane"
               isDisabled={isSubmitting || !isValid}
               params={(submitParams || []).map(p => (p === "{STAKE}" ? requiredStake : p))}
               tx={`proposalsCodex.${txMethod}`}
@@ -153,7 +161,8 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
               Submit
             </Button>
           )}
-          <Button type="button" color="grey" icon="times" onClick={handleReset}>
+
+          <Button type="button" color="grey" onClick={handleReset}>
             <Icon name="times" />
             Clear
           </Button>
@@ -164,8 +173,10 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
 };
 
 // Helper that provides additional wrappers for proposal forms
+
 export function withProposalFormData<ContainerPropsT, ExportPropsT>(
   FormContainerComponent: React.ComponentType<ContainerPropsT>
 ): React.ComponentType<ExportPropsT> {
   return withMulti(FormContainerComponent, withOnlyMembers, withCalls("query.balances.totalIssuance"));
+
 }

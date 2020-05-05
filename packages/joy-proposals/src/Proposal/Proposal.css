@@ -8,6 +8,15 @@
     display: flex;
   }
 
+  h4.ui.header.details-handle {
+    margin: auto 0 auto 0.5rem;
+  }
+
+  .details-profile {
+    display: flex;
+    align-items: center;
+  }
+
   .ui.items > .item .extra.proposed-by {
     /* This is to ensure Proposed By: is above the name of the creator. The image is 50x50 and has 14pxs of margin right*/
     padding-left: 64px;

@@ -1,18 +1,16 @@
 import React from "react";
-import { Item, Image, Header } from "semantic-ui-react";
+import { Item, Header } from "semantic-ui-react";
 import { ParsedProposal } from "../runtime/transport";
-import { IdentityIcon } from '@polkadot/react-components';
 import { ExtendedProposalStatus } from "./ProposalDetails";
 
+import ProfilePreview from "./ProfilePreview";
+
 type DetailsProps = {
-  proposal: ParsedProposal,
-  extendedStatus: ExtendedProposalStatus,
+  proposal: ParsedProposal;
+  extendedStatus: ExtendedProposalStatus;
 };
 
-export default function Details({
-  proposal,
-  extendedStatus
-}: DetailsProps) {
+export default function Details({ proposal, extendedStatus }: DetailsProps) {
   const { type, createdAt, proposer } = proposal;
   const { displayStatus, periodStatus, expiresIn } = extendedStatus;
   return (
@@ -20,11 +18,12 @@ export default function Details({
       <Item>
         <Item.Content>
           <Item.Extra>Proposed By:</Item.Extra>
-          { proposer.avatar_uri ?
-            <Image src={ proposer.avatar_uri } avatar floated="left" />
-            : <IdentityIcon className="image" value={proposer.root_account} size={40} /> }
-          <Header as="h4">{ proposer.handle }</Header>
-          <Item.Extra>{ createdAt.toLocaleString() }</Item.Extra>
+          <ProfilePreview
+            avatar_uri={proposer.avatar_uri}
+            root_account={proposer.root_account}
+            handle={proposer.handle}
+          />
+          <Item.Extra>{createdAt.toLocaleString()}</Item.Extra>
         </Item.Content>
       </Item>
       <Item>
@@ -46,15 +45,15 @@ export default function Details({
             <Header as="h4">{ periodStatus }</Header>
           </Item.Content>
         </Item>
-      ) }
-      { (expiresIn !== null) && (
+      )}
+      {expiresIn !== null && (
         <Item>
           <Item.Content>
             <Item.Extra>Expires in:</Item.Extra>
-            <Header as="h4">{`${ expiresIn.toLocaleString('en-US') } blocks`}</Header>
+            <Header as="h4">{`${expiresIn.toLocaleString("en-US")} blocks`}</Header>
           </Item.Content>
         </Item>
-      ) }
+      )}
     </Item.Group>
   );
 }
