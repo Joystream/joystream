@@ -97,13 +97,13 @@ impl<T: Trait> PropertyType<T> {
     }
 
     pub fn is_locked_from(&self, access_level: EntityAccessLevel) -> bool {
-        let locked_from_controller = self.get_locked().is_locked_from_controller;
+        let is_locked_from_controller = self.get_locked().is_locked_from_controller;
         let is_locked_from_maintainer = self.get_locked().is_locked_from_maintainer;
         match access_level {
             EntityAccessLevel::EntityControllerAndMaintainer => {
-                locked_from_controller && is_locked_from_maintainer
+                is_locked_from_controller && is_locked_from_maintainer
             }
-            EntityAccessLevel::EntityController => locked_from_controller,
+            EntityAccessLevel::EntityController => is_locked_from_controller,
             EntityAccessLevel::EntityMaintainer => is_locked_from_maintainer,
         }
     }
@@ -417,7 +417,7 @@ impl<T: Trait> Property<T> {
         value: &PropertyValue<T>,
     ) -> dispatch::Result {
         self.ensure_prop_value_matches_its_type(value)?;
-        self.ensure_valid_internal_prop(value)?;
+        self.ensure_valid_reference_prop(value)?;
         self.validate_max_len_if_text_prop(value)?;
         self.validate_max_len_if_vec_prop(value)?;
         Ok(())
@@ -604,18 +604,15 @@ impl<T: Trait> Property<T> {
             }
     }
 
-    pub fn ensure_valid_internal_prop(&self, value: &PropertyValue<T>) -> dispatch::Result {
-        match (value, &self.prop_type) {
-            (PV::Reference(entity_id), PT::Reference(class_id, _)) => {
-                Module::<T>::ensure_known_class_id(*class_id)?;
-                Module::<T>::ensure_known_entity_id(*entity_id)?;
-                let entity = Module::<T>::entity_by_id(entity_id);
-                ensure!(
-                    entity.class_id == *class_id,
-                    ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS
-                );
-            }
-            _ => (),
+    pub fn ensure_valid_reference_prop(&self, value: &PropertyValue<T>) -> dispatch::Result {
+        if let (PV::Reference(entity_id), PT::Reference(class_id, _)) = (value, &self.prop_type) {
+            Module::<T>::ensure_known_class_id(*class_id)?;
+            Module::<T>::ensure_known_entity_id(*entity_id)?;
+            let entity = Module::<T>::entity_by_id(entity_id);
+            ensure!(
+                entity.class_id == *class_id,
+                ERROR_INTERNAL_PROP_DOES_NOT_MATCH_ITS_CLASS
+            );
         }
         Ok(())
     }

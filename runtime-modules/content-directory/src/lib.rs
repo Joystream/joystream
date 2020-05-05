@@ -451,8 +451,6 @@ decl_module! {
             Ok(())
         }
 
-        // Permissioned proxy calls to versioned store
-
         pub fn create_class(
             origin,
             name: Vec<u8>,
@@ -465,8 +463,6 @@ decl_module! {
             Self::ensure_class_name_is_valid(&name)?;
 
             Self::ensure_class_description_is_valid(&description)?;
-
-            // is there a need to assert class_id is unique?
 
             let class_id = Self::next_class_id();
 
@@ -652,6 +648,7 @@ decl_module! {
             let class_permissions = class.get_permissions();
             class_permissions.ensure_maximum_entities_count_limit_not_reached()?;
             class_permissions.ensure_entity_creation_not_blocked()?;
+
             // If origin is not an authority
             let entity_controller = if !T::authenticate_authority(&account_id) {
                 Self::ensure_entity_creator_exists(class_id, actor_in_group.get_group_id())?;
@@ -702,7 +699,7 @@ decl_module! {
                 EntityPermission::<T>::ensure_group_can_remove_entity(access_level)?;
             }
 
-            // Ensure there is no property values pointing to given entity
+            // Ensure there is no property values pointing to the given entity
             Self::ensure_rc_is_zero(entity_id)?;
 
             //
@@ -920,6 +917,7 @@ impl<T: Trait> Module<T> {
             } else {
                 // All required prop values should be are provided
                 ensure!(!class_prop.required, ERROR_MISSING_REQUIRED_PROP);
+
                 // Add all missing non required schema prop values as PropertyValue::Bool(false)
                 appended_entity_values.insert(*prop_id, PropertyValue::Bool(false));
             }
@@ -958,6 +956,7 @@ impl<T: Trait> Module<T> {
 
         let mut entities_rc_to_decrement_vec = vec![];
         let mut entities_rc_to_increment_vec = vec![];
+
         // Iterate over a vector of new values and update corresponding properties
         // of this entity if new values are valid.
         for (id, new_value) in new_property_values.into_iter() {
@@ -976,10 +975,12 @@ impl<T: Trait> Module<T> {
                 if new_value == *current_prop_value || class_prop.is_locked_from(access_level) {
                     continue;
                 }
+
                 // Validate a new property value against the type of this property
                 // and check any additional constraints like the length of a vector
                 // if it's a vector property or the length of a text if it's a text property.
                 class_prop.ensure_property_value_to_update_is_valid(&new_value)?;
+
                 // Get unique entity ids to update rc
                 if let (Some(entities_rc_to_increment), Some(entities_rc_to_decrement)) = (
                     new_value.get_involved_entities(),
@@ -998,6 +999,7 @@ impl<T: Trait> Module<T> {
                     entities_rc_to_increment_vec.push(entities_rc_to_increment);
                     entities_rc_to_decrement_vec.push(entities_rc_to_decrement);
                 }
+
                 // Update a current prop value in a mutable vector, if a new value is valid.
                 current_prop_value.update(new_value);
                 updated = true;
@@ -1085,6 +1087,7 @@ impl<T: Trait> Module<T> {
             in_class_schema_property_id,
             access_level,
         )?;
+
         // Ensure property value vector nonces equality to avoid possible data races,
         // when performing vector specific operations
         current_prop_value.ensure_nonce_equality(nonce)?;
@@ -1122,9 +1125,11 @@ impl<T: Trait> Module<T> {
                 in_class_schema_property_id,
                 access_level,
             )?;
+
             // Ensure property value vector nonces equality to avoid possible data races,
             // when performing vector specific operations
             entity_prop_value.ensure_nonce_equality(nonce)?;
+
             // Validate a new property value against the type of this property
             // and check any additional constraints like the length of a vector
             // if it's a vector property or the length of a text if it's a text property.

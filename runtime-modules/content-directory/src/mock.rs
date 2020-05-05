@@ -147,7 +147,7 @@ impl ActorAuthenticator for Runtime {
     type GroupId = u64;
 
     fn authenticate_authority(account_id: &Self::AccountId) -> bool {
-        true    
+        true
     }
 
     fn authenticate_actor_in_group(
@@ -155,8 +155,8 @@ impl ActorAuthenticator for Runtime {
         group_id: Self::GroupId,
         actor_id: Self::ActorId,
     ) -> bool {
-        true 
-   }
+        true
+    }
 }
 
 pub struct ExtBuilder {
@@ -417,7 +417,11 @@ pub fn new_reference_class_prop(class_id: <Runtime as Trait>::ClassId) -> Proper
 
 pub fn new_reference_class_prop_vec(class_id: <Runtime as Trait>::ClassId) -> Property<Runtime> {
     Property {
-        prop_type: PropertyType::ReferenceVec(PROP_ID_U32_VEC_MAX_LEN, class_id, IsLocked::default()),
+        prop_type: PropertyType::ReferenceVec(
+            PROP_ID_U32_VEC_MAX_LEN,
+            class_id,
+            IsLocked::default(),
+        ),
         required: false,
         name: b"Name of a internal property".to_vec(),
         description: b"Description of a internal property".to_vec(),
