@@ -190,6 +190,18 @@ decl_module! {
         /// Emits an event. Default substrate implementation.
         fn deposit_event() = default;
 
+        /// Exports post edition number limit const.
+        const MaxPostEditionNumber: u32 = T::MaxPostEditionNumber::get();
+
+        /// Exports thread title length limit const.
+        const ThreadTitleLengthLimit: u32 = T::ThreadTitleLengthLimit::get();
+
+        /// Exports post length limit const.
+        const PostLengthLimit: u32 = T::PostLengthLimit::get();
+
+        /// Exports max thread by same author in a row number limit const.
+        const MaxThreadInARowNumber: u32 = T::MaxThreadInARowNumber::get();
+
         /// Adds a post with author origin check.
         pub fn add_post(
             origin,
