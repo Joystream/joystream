@@ -181,7 +181,7 @@ pub struct ClassPermissions {
 }
 
 impl ClassPermissions {
-    pub fn is_all_entity_property_values_locked(&self) -> bool {
+    pub fn all_entity_property_values_locked(&self) -> bool {
         self.all_entity_property_values_locked
     }
 
