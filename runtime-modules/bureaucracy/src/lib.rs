@@ -5,6 +5,8 @@ mod constraints;
 #[cfg(test)]
 mod tests;
 mod types;
+#[macro_use]
+mod wrapped_error;
 
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
@@ -16,6 +18,7 @@ use system::{ensure_root, ensure_signed, RawOrigin};
 
 use constraints::InputValidationLengthConstraint;
 use types::{CuratorApplication, CuratorOpening, Lead, OpeningPolicyCommitment};
+use wrapped_error::WrappedError;
 
 /*
 + add_curator_opening
@@ -173,28 +176,17 @@ decl_module! {
 
             let policy_commitment = commitment.clone();
 
-            // let opening_id = ensure_on_wrapped_error!(
-            //     hiring::Module::<T>::add_opening(
-            //         activate_at,
-            //         commitment.max_review_period_length,
-            //         commitment.application_rationing_policy,
-            //         commitment.application_staking_policy,
-            //         commitment.role_staking_policy,
-            //         human_readable_text,
-            //     ))?;
+            let opening_id = ensure_on_wrapped_error!(
+                hiring::Module::<T>::add_opening(
+                    activate_at,
+                    commitment.max_review_period_length,
+                    commitment.application_rationing_policy,
+                    commitment.application_staking_policy,
+                    commitment.role_staking_policy,
+                    human_readable_text,
+            ))?;
 
-            let opening_id = hiring::Module::<T>::add_opening(
-                activate_at,
-                commitment.max_review_period_length,
-                commitment.application_rationing_policy,
-                commitment.application_staking_policy,
-                commitment.role_staking_policy,
-                human_readable_text,
-            ).unwrap(); //TODO
-
-            //
-            // == MUTATION SAFE ==
-            //
+            // mutation
 
             let new_curator_opening_id = NextCuratorOpeningId::<T, I>::get();
 
@@ -229,14 +221,11 @@ decl_module! {
             // Attempt to begin accepting applications
             // NB: Combined ensure check and mutation in hiring module
 
-            // ensure_on_wrapped_error!(
-            //     hiring::Module::<T>::begin_accepting_applications(curator_opening.opening_id)
-            //     )?;
-
-
             // mutation
 
-            hiring::Module::<T>::begin_accepting_applications(curator_opening.opening_id).unwrap(); //TODO
+            ensure_on_wrapped_error!(
+                hiring::Module::<T>::begin_accepting_applications(curator_opening.opening_id)
+            )?;
 
 
             // Trigger event
@@ -282,11 +271,9 @@ decl_module! {
             Self::ensure_curator_application_text_is_valid(&human_readable_text)?;
 
             // Ensure application can actually be added
-            // ensure_on_wrapped_error!(
-            //     hiring::Module::<T>::ensure_can_add_application(curator_opening.opening_id, opt_role_stake_balance, opt_application_stake_balance)
-            // )?;
+            ensure_on_wrapped_error!(
                 hiring::Module::<T>::ensure_can_add_application(curator_opening.opening_id, opt_role_stake_balance, opt_application_stake_balance)
-            .unwrap(); //TODO
+            )?;
 
             // Ensure member does not have an active application to this opening
             Self::ensure_member_has_no_active_application_on_opening(
@@ -294,9 +281,7 @@ decl_module! {
                 member_id
             )?;
 
-            //
-            // == MUTATION SAFE ==
-            //
+            // mutation
 
             // Make imbalances for staking
             let opt_role_stake_imbalance = Self::make_stake_opt_imbalance(&opt_role_stake_balance, &source_account);
