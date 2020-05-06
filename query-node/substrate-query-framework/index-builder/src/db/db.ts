@@ -1,8 +1,14 @@
 import * as shortid from 'shortid';
-import { Connection, EntityManager } from 'typeorm';
+import { Connection, EntityManager, FindOneOptions, DeepPartial } from 'typeorm';
 import { EventHistory } from '.';
 import { QueryEvent } from '..';
 
+/**
+ * Database access object based on typeorm. Use typeorm database connection to run get/save/remove
+ * methods on entities.
+ * Generic get/save/remove methods are generic. Entitites registered to the typeorm connection
+ * are valid entities for get/save/remove methods.
+ */
 export default class DB {
   private readonly _connection: Connection;
 
@@ -28,17 +34,20 @@ export default class DB {
    * Fixes compatibility between typeorm and warthog models
    * @param entity
    */
-  fillRequiredWarthogFields(entity: any) {
-    entity['id'] = shortid.generate();
-    entity['createdById'] = shortid.generate();
-    entity['version'] = 1;
+  fillRequiredWarthogFields<T>(entity: DeepPartial<T>): DeepPartial<T> {
+    const requiredFields = {
+      id: shortid.generate(),
+      createdById: shortid.generate(),
+      version: 1,
+    };
+    return Object.assign(entity, requiredFields);
   }
 
   /**
    * Save given entity instance, if entity is exists then just update
    * @param entity
    */
-  async save(entity: any, event: QueryEvent) {
+  async save<T>(entity: DeepPartial<T>, event: QueryEvent) {
     this.fillRequiredWarthogFields(entity);
 
     const eventHistory = await this.getLastProcessedEvent(event);
@@ -50,8 +59,7 @@ export default class DB {
   }
 
   // Find entity that match find options
-  async get(entityName: string, options: {}) {
-    // Entity is basicly a class so it has name property
-    return await this._connection.getRepository(entityName).findOne(options);
+  async get<T>(entity: { new (...args: any[]): T }, options: FindOneOptions<T>) {
+    return await this._connection.getRepository(entity).findOne(options);
   }
 }
