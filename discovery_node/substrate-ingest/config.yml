@@ -11,4 +11,4 @@ logging:
             default:
                 appenders:
                     - out
-                level: "debug"
+                level: "trace"
