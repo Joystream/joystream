@@ -772,6 +772,7 @@ decl_module! {
 
             // If origin is not an authority
             let access_level = Self::get_entity_access_level(account_id, entity_id, &entity, actor_in_group)?;
+
             Self::complete_entity_property_values_update(entity_id, entity, property_values, access_level)
         }
 
@@ -980,6 +981,12 @@ impl<T: Trait> Module<T> {
     ) -> dispatch::Result {
         let class = Self::class_by_id(entity.class_id);
 
+        // Ensure property values were not locked on class level
+        ensure!(
+            !class.get_permissions().all_entity_property_values_locked(),
+            ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL
+        );
+
         // Get current property values of an entity as a mutable vector,
         // so we can update them if new values provided present in new_property_values.
         let mut updated_values = entity.values.clone();
@@ -1006,12 +1013,6 @@ impl<T: Trait> Module<T> {
                 if new_value == *current_prop_value || class_prop.is_locked_from(access_level) {
                     continue;
                 }
-
-                // Skip update if new property value is reference
-                // and cannot be referenced due to same controller flag constraint violation
-                // if !class_prop.can_reference_non_controlled_entity(&new_value) {
-                //     continue;
-                // }
 
                 // Validate a new property value against the type of this property
                 // and check any additional constraints like the length of a vector
@@ -1259,7 +1260,11 @@ impl<T: Trait> Module<T> {
         entity_access_level: Option<EntityAccessLevel>,
     ) -> Result<Property<T>, &'static str> {
         let class = Self::class_by_id(class_id);
-
+        // Ensure property values were not locked on class level
+        ensure!(
+            !class.get_permissions().all_entity_property_values_locked(),
+            ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL
+        );
         // Get class-level information about this property
         let class_prop = class
             .properties

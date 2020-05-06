@@ -36,6 +36,8 @@ pub const ERROR_PROP_VALUE_VEC_NONCES_DOES_NOT_MATCH: &str =
     "Current property value vector nonce does not equal to provided one";
 pub const ERROR_PROP_NAME_NOT_UNIQUE_IN_CLASS: &str =
     "Property name is not unique within its class";
+pub const ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL: &str =
+    "All property values, related to a given entity were locked on class level";
 pub const ERROR_MISSING_REQUIRED_PROP: &str =
     "Some required property was not found when adding schema support to entity";
 pub const ERROR_UNKNOWN_ENTITY_PROP_ID: &str = "Some of the provided property ids cannot be found on the current list of propery values of this entity";
