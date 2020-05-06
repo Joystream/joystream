@@ -3,9 +3,66 @@ mod mock;
 use crate::constraints::InputValidationLengthConstraint;
 use crate::types::{Lead, OpeningPolicyCommitment};
 use crate::{Instance1, RawEvent};
-use mock::{build_test_externalities, Bureaucracy1, System, TestEvent};
+use mock::{build_test_externalities, Bureaucracy1, Membership, System, TestEvent};
 use srml_support::StorageValue;
 use system::{EventRecord, Phase, RawOrigin};
+
+fn setup_members(count: u8) {
+    let authority_account_id = 1;
+    Membership::set_screening_authority(RawOrigin::Root.into(), authority_account_id).unwrap();
+
+    for i in 0..count {
+        let account_id: u64 = i as u64;
+        let handle: [u8; 20] = [i; 20];
+        Membership::add_screened_member(
+            RawOrigin::Signed(authority_account_id).into(),
+            account_id,
+            membership::members::UserInfo {
+                handle: Some(handle.to_vec()),
+                avatar_uri: None,
+                about: None,
+            },
+        )
+        .unwrap();
+    }
+}
+
+struct ApplyOnCuratorOpeningFixture {
+    origin: RawOrigin<u64>,
+    member_id: u64,
+    curator_opening_id: u64,
+    role_account: u64,
+    opt_role_stake_balance: Option<u64>,
+    opt_application_stake_balance: Option<u64>,
+    human_readable_text: Vec<u8>,
+}
+
+impl ApplyOnCuratorOpeningFixture {
+    pub fn default_for_opening_id(opening_id: u64) -> Self {
+        ApplyOnCuratorOpeningFixture {
+            origin: RawOrigin::Signed(1),
+            member_id: 1,
+            curator_opening_id: opening_id,
+            role_account: 1,
+            opt_role_stake_balance: None,
+            opt_application_stake_balance: None,
+            human_readable_text: Vec::new(),
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: Result<(), &str>) {
+        let actual_result = Bureaucracy1::apply_on_curator_opening(
+            self.origin.clone().into(),
+            self.member_id,
+            self.curator_opening_id,
+            self.role_account,
+            self.opt_role_stake_balance,
+            self.opt_application_stake_balance,
+            self.human_readable_text.clone(),
+        );
+        assert_eq!(actual_result, expected_result);
+    }
+}
 
 struct AcceptCuratorApplicationsFixture {
     origin: RawOrigin<u64>,
@@ -83,12 +140,26 @@ impl AddCuratorOpeningFixture {
 
 struct EventFixture;
 impl EventFixture {
-    fn assert_events(expected_raw_events: Vec<RawEvent<u64, u64, u64, u64, crate::Instance1>>) {
+    fn assert_crate_events(
+        expected_raw_events: Vec<RawEvent<u64, u64, u64, u64, crate::Instance1>>,
+    ) {
         let expected_events = expected_raw_events
             .iter()
             .map(|ev| EventRecord {
                 phase: Phase::ApplyExtrinsic(0),
                 event: TestEvent::bureaucracy_Instance1(ev.clone()),
+                topics: vec![],
+            })
+            .collect::<Vec<EventRecord<_, _>>>();
+
+        assert_eq!(System::events(), expected_events);
+    }
+    fn assert_global_events(expected_raw_events: Vec<TestEvent>) {
+        let expected_events = expected_raw_events
+            .iter()
+            .map(|ev| EventRecord {
+                phase: Phase::ApplyExtrinsic(0),
+                event: ev.clone(),
                 topics: vec![],
             })
             .collect::<Vec<EventRecord<_, _>>>();
@@ -118,7 +189,10 @@ fn set_forum_sudo_set() {
         };
         assert_eq!(Bureaucracy1::current_lead(), Some(lead));
 
-        EventFixture::assert_events(vec![RawEvent::LeaderSet(lead_member_id, lead_account_id)]);
+        EventFixture::assert_crate_events(vec![RawEvent::LeaderSet(
+            lead_member_id,
+            lead_account_id,
+        )]);
     });
 }
 
@@ -132,7 +206,7 @@ fn add_curator_opening_succeeds() {
 
         add_curator_opening_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_events(vec![
+        EventFixture::assert_crate_events(vec![
             RawEvent::LeaderSet(1, lead_account_id),
             RawEvent::CuratorOpeningAdded(0),
         ]);
@@ -197,10 +271,10 @@ fn accept_curator_applications_succeeds() {
             AcceptCuratorApplicationsFixture::default_for_opening_id(opening_id);
         accept_curator_applications_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_events(vec![
+        EventFixture::assert_crate_events(vec![
             RawEvent::LeaderSet(1, lead_account_id),
-            RawEvent::CuratorOpeningAdded(0),
-            RawEvent::AcceptedCuratorApplications(0),
+            RawEvent::CuratorOpeningAdded(opening_id),
+            RawEvent::AcceptedCuratorApplications(opening_id),
         ]);
     });
 }
@@ -237,5 +311,32 @@ fn accept_curator_applications_fails_with_not_lead() {
         let accept_curator_applications_fixture =
             AcceptCuratorApplicationsFixture::default_for_opening_id(opening_id);
         accept_curator_applications_fixture.call_and_assert(Err(crate::MSG_IS_NOT_LEAD_ACCOUNT));
+    });
+}
+
+#[test]
+fn appy_on_curator_opening_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        SetLeadFixture::set_lead(lead_account_id);
+
+        setup_members(2);
+
+        let add_curator_opening_fixture = AddCuratorOpeningFixture::default();
+        add_curator_opening_fixture.call_and_assert(Ok(()));
+
+        let opening_id = 0; // newly created opening
+
+        let appy_on_curator_opening_fixture =
+            ApplyOnCuratorOpeningFixture::default_for_opening_id(opening_id);
+        appy_on_curator_opening_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_global_events(vec![
+            TestEvent::bureaucracy_Instance1(RawEvent::LeaderSet(1, lead_account_id)),
+            TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(0, 0)),
+            TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(1, 1)),
+            TestEvent::bureaucracy_Instance1(RawEvent::CuratorOpeningAdded(opening_id)),
+            TestEvent::bureaucracy_Instance1(RawEvent::AppliedOnCuratorOpening(opening_id, 0)),
+        ]);
     });
 }

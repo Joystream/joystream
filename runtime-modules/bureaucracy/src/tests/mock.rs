@@ -122,6 +122,7 @@ impl Trait<Instance1> for Test {
     type Event = TestEvent;
 }
 
+pub type Membership = membership::members::Module<Test>;
 pub type Bureaucracy1 = Module<Test, Instance1>;
 
 pub fn build_test_externalities() -> runtime_io::TestExternalities {
