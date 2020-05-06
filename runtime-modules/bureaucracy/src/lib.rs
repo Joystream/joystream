@@ -178,10 +178,15 @@ decl_module! {
         }
 
          /// Add an opening for a curator role.
-        pub fn add_curator_opening(_origin, activate_at: hiring::ActivateOpeningAt<T::BlockNumber>, commitment: OpeningPolicyCommitment<T::BlockNumber, BalanceOf<T>>, human_readable_text: Vec<u8>)  {
-
+        pub fn add_curator_opening(
+            origin,
+            activate_at: hiring::ActivateOpeningAt<T::BlockNumber>,
+            commitment: OpeningPolicyCommitment<T::BlockNumber,
+            BalanceOf<T>>,
+            human_readable_text: Vec<u8>
+        ){
             // Ensure lead is set and is origin signer
-            //Self::ensure_origin_is_set_lead(origin)?;
+            Self::ensure_origin_is_set_lead(origin)?;
 
             Self::ensure_opening_human_readable_text_is_valid(&human_readable_text)?;
 
@@ -222,10 +227,10 @@ decl_module! {
         }
 
             /// Begin accepting curator applications to an opening that is active.
-        pub fn accept_curator_applications(_origin, curator_opening_id: CuratorOpeningId<T>)  {
+        pub fn accept_curator_applications(origin, curator_opening_id: CuratorOpeningId<T>)  {
 
             // Ensure lead is set and is origin signer
-            //Self::ensure_origin_is_set_lead(origin)?;
+            Self::ensure_origin_is_set_lead(origin)?;
 
             // Ensure opening exists in this working group
             // NB: Even though call to hiring module will have implicit check for
@@ -273,6 +278,7 @@ decl_module! {
             // Ensure curator opening exists
             let (curator_opening, _opening) = Self::ensure_curator_opening_exists(&curator_opening_id)?;
 
+            //TODO do we need this?
             // Ensure new owner can actually become a curator
             //let (_member_as_curator, _new_curator_id) = Self::ensure_can_register_curator_role_on_member(&member_id)?;
 
@@ -380,43 +386,12 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         )
     }
 
-    // fn ensure_origin_is_set_lead(
-    //     origin: T::Origin,
-    // ) -> Result<
-    //     (
-    //         LeadId<T>,
-    //         Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>,
-    //     ),
-    //     &'static str,
-    // > {
-    //     // Ensure lead is actually set
-    //     let (lead_id, lead) = Self::ensure_lead_is_set()?;
-    //
-    //     // Ensure is signed
-    //     let signer = ensure_signed(origin)?;
-    //
-    //     // Ensure signer is lead
-    //     ensure!(signer == lead.role_account, MSG_ORIGIN_IS_NOT_LEAD);
-    //
-    //     Ok((lead_id, lead))
-    // }
+    fn ensure_origin_is_set_lead(origin: T::Origin) -> Result<(), &'static str> {
+        // Ensure is signed
+        let signer = ensure_signed(origin)?;
 
-    // pub fn ensure_lead_is_set() -> Result<
-    //     (
-    //         LeadId<T>,
-    //         Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>,
-    //     ),
-    //     &'static str,
-    // > {
-    //     // Ensure lead id is set
-    //     let lead_id = Self::ensure_lead_id_set()?;
-    //
-    //     // If so, grab actual lead
-    //     let lead = <LeadById<T, I>>::get(lead_id);
-    //
-    //     // and return both
-    //     Ok((lead_id, lead))
-    // }
+        Self::ensure_is_lead_account(signer)
+    }
 
     fn ensure_curator_opening_exists(
         curator_opening_id: &CuratorOpeningId<T>,
