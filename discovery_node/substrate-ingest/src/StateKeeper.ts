@@ -4,7 +4,7 @@ export class State {
     private _lastProcessedBlock: number;
 
     constructor() {
-        this._lastProcessedBlock = 1;
+        this._lastProcessedBlock = 0;
     }
 
     get lastProcessedBlock(): number {
