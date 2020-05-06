@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Form, Divider } from "semantic-ui-react";
 import { getFormErrorLabelsProps } from "./errorHandling";
 import * as Yup from "yup";
@@ -18,6 +18,8 @@ import { withFormContainer } from "./FormContainer";
 import { BlockNumber, Balance } from "@polkadot/types/interfaces";
 import { u32 } from "@polkadot/types/primitive";
 import { createType } from "@polkadot/types";
+import { useTransport, StorageRoleParameters, IStorageRoleParameters } from "../runtime";
+import { usePromise } from "../utils";
 import "./forms.css";
 
 // Move to joy-types?
@@ -75,8 +77,26 @@ function createRoleParameters(values: FormValues): RoleParameters {
 }
 
 const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props => {
-  const { handleChange, errors, touched, values } = props;
+  const transport = useTransport();
+  const [params] = usePromise<IStorageRoleParameters | null>(() => transport.storageRoleParameters(), null);
+  const { handleChange, errors, touched, values, setFieldValue } = props;
+  const [placeholders, setPlaceholders] = useState<{ [k in keyof FormValues]: string }>(defaultValues);
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
+
+  useEffect(() => {
+    if (params) {
+      const stringParams = Object.keys(params).reduce((obj, key) => {
+        return { ...obj, [`${key}`]: String(params[key as keyof IStorageRoleParameters]) };
+      }, {});
+      const fetchedPlaceholders = { ...placeholders, ...stringParams };
+
+      StorageRoleParameters.forEach(field => {
+        setFieldValue(field, params[field].toString());
+      });
+      setPlaceholders(fetchedPlaceholders);
+    }
+  }, [params]);
+
   return (
     <GenericProposalForm
       {...props}
@@ -91,9 +111,10 @@ const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props 
           help="Minimum number of actors in this role"
           onChange={handleChange}
           name="min_actors"
-          placeholder="5"
+          placeholder={placeholders.min_actors}
           error={errorLabelsProps.min_actors}
           value={values.min_actors}
+          disabled
         />
         <InputFormField
           label="Max. actors"
@@ -101,7 +122,7 @@ const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props 
           fluid
           onChange={handleChange}
           name="max_actors"
-          placeholder="20"
+          placeholder={placeholders.max_actors}
           error={errorLabelsProps.max_actors}
           value={values.max_actors}
         />
@@ -113,7 +134,7 @@ const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props 
           fluid
           onChange={handleChange}
           name="reward"
-          placeholder="10"
+          placeholder={placeholders.reward}
           error={errorLabelsProps.reward}
           value={values.reward}
           unit="tJOY"
@@ -124,10 +145,11 @@ const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props 
           fluid
           onChange={handleChange}
           name="reward_period"
-          placeholder="600"
+          placeholder={placeholders.reward_period}
           error={errorLabelsProps.reward_period}
           value={values.reward_period}
           unit="blocks"
+          disabled
         />
       </Form.Group>
       <Form.Group widths="equal" style={{ marginBottom: "2em" }}>
@@ -136,7 +158,7 @@ const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props 
           help="Minimum stake for this role"
           onChange={handleChange}
           name="min_stake"
-          placeholder="3000"
+          placeholder={placeholders.min_stake}
           error={errorLabelsProps.min_stake}
           value={values.min_stake}
           unit="tJOY"
@@ -147,10 +169,11 @@ const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props 
           fluid
           onChange={handleChange}
           name="min_service_period"
-          placeholder="600"
+          placeholder={placeholders.min_service_period}
           error={errorLabelsProps.min_service_period}
           value={values.min_service_period}
           unit="blocks"
+          disabled
         />
       </Form.Group>
       <Form.Group widths="equal" style={{ marginBottom: "2em" }}>
@@ -160,10 +183,11 @@ const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props 
           fluid
           onChange={handleChange}
           name="bonding_period"
-          placeholder="600"
+          placeholder={placeholders.bonding_period}
           error={errorLabelsProps.bonding_period}
           value={values.bonding_period}
           unit="blocks"
+          disabled
         />
         <InputFormField
           label="Unbounding period"
@@ -171,7 +195,7 @@ const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props 
           fluid
           onChange={handleChange}
           name="unbonding_period"
-          placeholder="600"
+          placeholder={placeholders.unbonding_period}
           error={errorLabelsProps.unbonding_period}
           value={values.unbonding_period}
           unit="blocks"
@@ -184,10 +208,11 @@ const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props 
           fluid
           onChange={handleChange}
           name="startup_grace_period"
-          placeholder="600"
+          placeholder={placeholders.startup_grace_period}
           error={errorLabelsProps.startup_grace_period}
           value={values.startup_grace_period}
           unit="blocks"
+          disabled
         />
         <InputFormField
           label="Entry request fee"
@@ -195,7 +220,7 @@ const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props 
           fluid
           onChange={handleChange}
           name="entry_request_fee"
-          placeholder="100"
+          placeholder={placeholders.entry_request_fee}
           error={errorLabelsProps.entry_request_fee}
           value={values.entry_request_fee}
           unit="tJOY"

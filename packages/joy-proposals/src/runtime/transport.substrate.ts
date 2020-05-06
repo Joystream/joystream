@@ -1,12 +1,20 @@
-import { Transport, ParsedProposal, ProposalType, ProposalTypes, ParsedMember, ProposalVote } from "./transport";
+import {
+  Transport,
+  ParsedProposal,
+  ProposalType,
+  ProposalTypes,
+  ParsedMember,
+  ProposalVote,
+  IStorageRoleParameters
+} from "./transport";
 import { Proposal, ProposalId, Seats, VoteKind, ElectionParameters } from "@joystream/types/proposals";
-import { MemberId, Profile, ActorInRole } from "@joystream/types/members";
+import { MemberId, Profile, ActorInRole, RoleKeys, Role } from "@joystream/types/members";
 import { ApiProps } from "@polkadot/react-api/types";
 import { u32, u128, Vec, Option } from "@polkadot/types/";
 import { Balance, Moment, AccountId, BlockNumber, BalanceOf } from "@polkadot/types/interfaces";
 import { ApiPromise } from "@polkadot/api";
-import { RoleKeys, Role } from "@joystream/types/members";
-import { FIRST_MEMBER_ID } from '@polkadot/joy-members/constants';
+
+import { FIRST_MEMBER_ID } from "@polkadot/joy-members/constants";
 
 import { includeKeys, calculateStake, calculateMetaFromType, splitOnUpperCase } from "../utils";
 import { MintId, Mint } from "@joystream/types/mint";
@@ -91,7 +99,7 @@ export class SubstrateTransport extends Transport {
   }
 
   async cancellationFee(): Promise<number> {
-    return (await this.api.consts.proposalsEngine.cancellationFee as BalanceOf).toNumber()
+    return ((await this.api.consts.proposalsEngine.cancellationFee) as BalanceOf).toNumber();
   }
 
   async proposalById(id: ProposalId): Promise<ParsedProposal> {
@@ -237,20 +245,21 @@ export class SubstrateTransport extends Transport {
     return providers.toArray();
   }
 
-  async membersExceptCouncil(): Promise<{ id: number, profile: Profile }[]> {
+  async membersExceptCouncil(): Promise<{ id: number; profile: Profile }[]> {
     // Council members to filter out
     const activeCouncil = (await this.council.activeCouncil()) as Seats;
-    const membersCount = (await this.members.membersCreated() as MemberId).toNumber();
-    let profiles: { id: number, profile: Profile }[] = [];
-    for (let id=FIRST_MEMBER_ID.toNumber(); id<membersCount; ++id) {
+    const membersCount = ((await this.members.membersCreated()) as MemberId).toNumber();
+    const profiles: { id: number; profile: Profile }[] = [];
+    for (let id = FIRST_MEMBER_ID.toNumber(); id < membersCount; ++id) {
       const profile = (await this.memberProfile(new MemberId(id))).unwrapOr(null);
       if (
         !profile ||
         // Filter out council members
-        activeCouncil.some(seat => (
-          seat.member.toString() === profile.controller_account.toString()
-          || seat.member.toString() === profile.root_account.toString()
-        ))
+        activeCouncil.some(
+          seat =>
+            seat.member.toString() === profile.controller_account.toString() ||
+            seat.member.toString() === profile.root_account.toString()
+        )
       ) {
         continue;
       }
@@ -260,15 +269,27 @@ export class SubstrateTransport extends Transport {
     return profiles;
   }
 
+  async storageRoleParameters(): Promise<IStorageRoleParameters> {
+    const params = (
+      await this.api.query.actors.parameters(RoleKeys.StorageProvider)
+    ).toJSON() as IStorageRoleParameters;
+    return params;
+  }
+
+  async maxValidatorCount(): Promise<number> {
+    const count = ((await this.api.query.staking.validatorCount()) as u32).toNumber();
+    return count;
+  }
+
   async electionParameters(): Promise<ElectionParameters> {
-    const announcing_period = await this.councilElection.announcingPeriod() as BlockNumber;
-    const voting_period = await this.councilElection.votingPeriod() as BlockNumber;
-    const revealing_period = await this.councilElection.revealingPeriod() as BlockNumber;
-    const new_term_duration = await this.councilElection.newTermDuration() as BlockNumber;
-    const min_council_stake = await this.councilElection.minCouncilStake() as Balance;
-    const min_voting_stake = await this.councilElection.minVotingStake() as Balance;
-    const candidacy_limit = await this.councilElection.candidacyLimit() as u32;
-    const council_size = await this.councilElection.councilSize() as u32;
+    const announcing_period = (await this.councilElection.announcingPeriod()) as BlockNumber;
+    const voting_period = (await this.councilElection.votingPeriod()) as BlockNumber;
+    const revealing_period = (await this.councilElection.revealingPeriod()) as BlockNumber;
+    const new_term_duration = (await this.councilElection.newTermDuration()) as BlockNumber;
+    const min_council_stake = (await this.councilElection.minCouncilStake()) as Balance;
+    const min_voting_stake = (await this.councilElection.minVotingStake()) as Balance;
+    const candidacy_limit = (await this.councilElection.candidacyLimit()) as u32;
+    const council_size = (await this.councilElection.councilSize()) as u32;
 
     return new ElectionParameters({
       announcing_period,
@@ -278,17 +299,17 @@ export class SubstrateTransport extends Transport {
       min_council_stake,
       min_voting_stake,
       candidacy_limit,
-      council_size,
+      council_size
     });
   }
 
   async WGMintCap(): Promise<number> {
-    const WGMintId = await this.contentWorkingGroup.mint() as MintId;
-    const WGMint = await this.minting.mints(WGMintId) as Vec<Mint>;
-    return (WGMint[0].get('capacity') as u128).toNumber();
+    const WGMintId = (await this.contentWorkingGroup.mint()) as MintId;
+    const WGMint = (await this.minting.mints(WGMintId)) as Vec<Mint>;
+    return (WGMint[0].get("capacity") as u128).toNumber();
   }
 
-  async WGLead(): Promise<{ id: number, profile: Profile } | null> {
+  async WGLead(): Promise<{ id: number; profile: Profile } | null> {
     const optLeadId = (await this.contentWorkingGroup.currentLeadId()) as Option<LeadId>;
     const leadId = optLeadId.unwrapOr(null);
 
@@ -297,8 +318,8 @@ export class SubstrateTransport extends Transport {
     const actorInRole = new ActorInRole({
       role: new Role(RoleKeys.CuratorLead),
       actor_id: leadId
-    })
-    const memberId = await this.members.membershipIdByActorInRole(actorInRole) as MemberId;
+    });
+    const memberId = (await this.members.membershipIdByActorInRole(actorInRole)) as MemberId;
     const profile = (await this.memberProfile(memberId)).unwrapOr(null);
 
     return profile && { id: memberId.toNumber(), profile };

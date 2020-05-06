@@ -52,9 +52,26 @@ export type ParsedProposal = {
   cancellationFee: number;
 };
 
+export const StorageRoleParameters = [
+  "min_stake",
+  "min_actors",
+  "max_actors",
+  "reward",
+  "reward_period",
+  "bonding_period",
+  "unbonding_period",
+  "min_service_period",
+  "startup_grace_period",
+  "entry_request_fee"
+] as const;
+
+export type IStorageRoleParameters = {
+  [k in typeof StorageRoleParameters[number]]: number;
+};
+
 export type ProposalVote = {
   vote: VoteKind | null;
-  member: (ParsedMember & { memberId: MemberId });
+  member: ParsedMember & { memberId: MemberId };
 };
 
 export abstract class Transport {
