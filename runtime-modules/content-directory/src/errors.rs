@@ -36,8 +36,6 @@ pub const ERROR_PROP_VALUE_VEC_NONCES_DOES_NOT_MATCH: &str =
     "Current property value vector nonce does not equal to provided one";
 pub const ERROR_PROP_NAME_NOT_UNIQUE_IN_CLASS: &str =
     "Property name is not unique within its class";
-pub const ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL: &str =
-    "All property values, related to a given entity were locked on class level";
 pub const ERROR_MISSING_REQUIRED_PROP: &str =
     "Some required property was not found when adding schema support to entity";
 pub const ERROR_UNKNOWN_ENTITY_PROP_ID: &str = "Some of the provided property ids cannot be found on the current list of propery values of this entity";
@@ -56,6 +54,8 @@ pub const ERROR_CLASS_PROP_NOT_FOUND: &str = "Class property under given index n
 
 // Permission errors
 
+pub const ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL: &str =
+    "All property values, related to a given entity were locked on class level";
 pub const ERROR_ENTITY_CREATOR_ALREADY_EXIST: &str = "Given entity creator already exist";
 pub const ERROR_ENTITY_CREATOR_DOES_NOT_EXIST: &str = "Given entity creator does not exist";
 pub const ERROR_SAME_CONTROLLER_CONSTRAINT_VIOLATION: &str =
@@ -76,5 +76,6 @@ pub const ERROR_ENTITY_ADD_SCHEMA_SUPPORT_ACCESS_DENIED: &str =
     "Add entity schema support access denied";
 pub const ERROR_CLASS_ACCESS_DENIED: &str = "Class access denied";
 pub const ERROR_ENTITY_ACCESS_DENIED: &str = "Entity access denied";
+pub const ERROR_ENTITY_CAN_NOT_BE_REFRENCED: &str = "Given entity can`t be referenced";
 pub const ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR: &str =
     "Given class property type is locked for updating";

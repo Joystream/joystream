@@ -185,10 +185,6 @@ impl ClassPermissions {
         self.all_entity_property_values_locked
     }
 
-    pub fn is_entity_creation_blocked(&self) -> bool {
-        self.entity_creation_blocked
-    }
-
     pub fn set_entity_creation_blocked(&mut self, entity_creation_blocked: bool) {
         self.entity_creation_blocked = entity_creation_blocked
     }
@@ -287,6 +283,16 @@ pub struct EntityPermissions<T: ActorAuthenticator> {
     pub referenceable: bool,
 }
 
+impl <T: ActorAuthenticator> Default for EntityPermissions<T> {
+    fn default() -> Self {
+        Self {
+            controller: None,
+            frozen: false,
+            referenceable: true
+        }
+    }
+}
+
 impl<T: ActorAuthenticator> EntityPermissions<T> {
     pub fn default_with_controller(controller: Option<EntityController<T>>) -> Self {
         Self {
@@ -327,6 +333,10 @@ impl<T: ActorAuthenticator> EntityPermissions<T> {
         self.referenceable = referenceable;
     }
 
+    pub fn is_referancable(&self) -> bool {
+        self.referenceable
+    }
+
     pub fn get_controller(&self) -> &Option<EntityController<T>> {
         &self.controller
     }
@@ -346,16 +356,6 @@ impl<T: ActorAuthenticator> EntityPermissions<T> {
             EntityAccessLevel::EntityController => Ok(()),
             EntityAccessLevel::EntityControllerAndMaintainer => Ok(()),
             _ => Err(ERROR_ENTITY_ADD_SCHEMA_SUPPORT_ACCESS_DENIED),
-        }
-    }
-}
-
-impl<T: ActorAuthenticator> Default for EntityPermissions<T> {
-    fn default() -> Self {
-        Self {
-            controller: None,
-            frozen: false,
-            referenceable: false,
         }
     }
 }

@@ -497,14 +497,17 @@ impl<T: Trait> Property<T> {
                 if validate_prop_vec_len_after_value_insert(vec, vec_max_len) {
                     Module::<T>::ensure_known_entity_id(*entity_id)?;
                     let entity = Module::<T>::entity_by_id(entity_id);
+                    let entity_permissions = entity.get_permissions();
+
+                    ensure!(entity_permissions.is_referancable(), ERROR_ENTITY_CAN_NOT_BE_REFRENCED);
+
                     ensure!(
                         entity.class_id == *class_id,
                         ERROR_PROP_DOES_NOT_MATCH_ITS_CLASS
                     );
                     if *same_controller_status {
                         ensure!(
-                            entity
-                                .get_permissions()
+                            entity_permissions
                                 .controller_is_equal_to(current_entity_controller),
                             ERROR_SAME_CONTROLLER_CONSTRAINT_VIOLATION
                         );
@@ -639,14 +642,18 @@ impl<T: Trait> Property<T> {
                     Module::<T>::ensure_known_class_id(*class_id)?;
                     Module::<T>::ensure_known_entity_id(*entity_id)?;
                     let entity = Module::<T>::entity_by_id(entity_id);
+
+                    let entity_permissions = entity.get_permissions();
+
+                    ensure!(entity_permissions.is_referancable(), ERROR_ENTITY_CAN_NOT_BE_REFRENCED);
+
                     ensure!(
                         entity.class_id == *class_id,
                         ERROR_PROP_DOES_NOT_MATCH_ITS_CLASS
                     );
                     if *same_controller_status {
                         ensure!(
-                            entity
-                                .get_permissions()
+                            entity_permissions
                                 .controller_is_equal_to(current_entity_controller),
                             ERROR_SAME_CONTROLLER_CONSTRAINT_VIOLATION
                         );
