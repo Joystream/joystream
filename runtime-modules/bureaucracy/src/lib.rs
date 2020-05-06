@@ -101,13 +101,28 @@ decl_event!(
     pub enum Event<T, I>
     where
         <T as membership::members::Trait>::MemberId,
-        <T as system::Trait>::AccountId
+        <T as system::Trait>::AccountId,
+        CuratorOpeningId = CuratorOpeningId<T>,
+        CuratorApplicationId = CuratorApplicationId<T>,
     {
         /// Emits on setting the leader.
         /// Params:
         /// - Member id of the leader.
         /// - Role account id of the leader.
         LeaderSet(MemberId, AccountId),
+        /// Emits on adding new curator opening.
+        /// Params:
+        /// - Curator opening id
+        CuratorOpeningAdded(CuratorOpeningId),
+        /// Emits on accepting application for the curator opening.
+        /// Params:
+        /// - Curator opening id
+        AcceptedCuratorApplications(CuratorOpeningId),
+        /// Emits on adding the application for the curator opening.
+        /// Params:
+        /// - Curator opening id
+        /// - Curator application id
+        AppliedOnCuratorOpening(CuratorOpeningId, CuratorApplicationId),
     }
 );
 
@@ -203,7 +218,7 @@ decl_module! {
             NextCuratorOpeningId::<T, I>::mutate(|id| *id += <CuratorOpeningId<T> as One>::one());
 
             // Trigger event
-            //Self::deposit_event(RawEvent::CuratorOpeningAdded(new_curator_opening_id));
+            Self::deposit_event(RawEvent::CuratorOpeningAdded(new_curator_opening_id));
         }
 
             /// Begin accepting curator applications to an opening that is active.
@@ -229,7 +244,7 @@ decl_module! {
 
 
             // Trigger event
-            // Self::deposit_event(RawEvent::AcceptedCuratorApplications(curator_opening_id));
+            Self::deposit_event(RawEvent::AcceptedCuratorApplications(curator_opening_id));
         }
 
         /// Apply on a curator opening.
@@ -318,7 +333,7 @@ decl_module! {
             });
 
             // Trigger event
-            //Self::deposit_event(RawEvent::AppliedOnCuratorOpening(curator_opening_id, new_curator_application_id));
+            Self::deposit_event(RawEvent::AppliedOnCuratorOpening(curator_opening_id, new_curator_application_id));
         }
     }
 }
