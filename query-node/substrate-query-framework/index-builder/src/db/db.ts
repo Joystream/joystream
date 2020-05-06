@@ -17,20 +17,6 @@ export default class DB {
   }
 
   /**
-   * Return the last processed event. If does not exists create a new one
-   */
-  async getLastProcessedEvent(event: QueryEvent): Promise<SavedEntityEvent> {
-    let savedEE = await this._connection.getRepository(SavedEntityEvent).findOne();
-    if (!savedEE) {
-      savedEE = new SavedEntityEvent();
-    }
-    savedEE.index = event.index;
-    savedEE.eventName = event.event_method;
-    savedEE.blockNumber = event.block_number;
-    return savedEE;
-  }
-
-  /**
    * Fixes compatibility between typeorm and warthog models
    * @param entity
    */
@@ -50,7 +36,7 @@ export default class DB {
   async save<T>(entity: DeepPartial<T>, event: QueryEvent) {
     this.fillRequiredWarthogFields(entity);
 
-    const eventHistory = await this.getLastProcessedEvent(event);
+    const eventHistory = await SavedEntityEvent.updateOrCreate(event);
 
     await this._connection.manager.transaction(async (manager: EntityManager) => {
       await manager.save(entity);

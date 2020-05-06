@@ -1,8 +1,9 @@
-import { Entity, Column, PrimaryColumn } from 'typeorm';
+import { Entity, Column, PrimaryColumn, getRepository } from 'typeorm';
+import { QueryEvent } from '..';
 
 /**
- * Represents the last processed event. Corresponding database table will only hold one record
- *  the single record will be updated accordingly
+ * Represents the last processed event. Corresponding database table will hold only one record
+ *  and the single record will be updated
  */
 @Entity()
 export class SavedEntityEvent {
@@ -26,5 +27,21 @@ export class SavedEntityEvent {
 
   constructor(init?: Partial<SavedEntityEvent>) {
     Object.assign(this, init);
+  }
+
+  /**
+   * Get the single database record or create a new instance and then update entity properties
+   * with the event parameter
+   * @param event
+   */
+  static async updateOrCreate(event: QueryEvent): Promise<SavedEntityEvent> {
+    let savedEE = await getRepository(SavedEntityEvent).findOne();
+    if (!savedEE) {
+      savedEE = new SavedEntityEvent();
+    }
+    savedEE.index = event.index;
+    savedEE.eventName = event.event_method;
+    savedEE.blockNumber = event.block_number;
+    return savedEE;
   }
 }
