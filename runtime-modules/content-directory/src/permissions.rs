@@ -283,12 +283,12 @@ pub struct EntityPermissions<T: ActorAuthenticator> {
     pub referenceable: bool,
 }
 
-impl <T: ActorAuthenticator> Default for EntityPermissions<T> {
+impl<T: ActorAuthenticator> Default for EntityPermissions<T> {
     fn default() -> Self {
         Self {
             controller: None,
             frozen: false,
-            referenceable: true
+            referenceable: true,
         }
     }
 }

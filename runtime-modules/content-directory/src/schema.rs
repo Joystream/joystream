@@ -495,23 +495,12 @@ impl<T: Trait> Property<T> {
             ) => {
                 Module::<T>::ensure_known_class_id(*class_id)?;
                 if validate_prop_vec_len_after_value_insert(vec, vec_max_len) {
-                    Module::<T>::ensure_known_entity_id(*entity_id)?;
-                    let entity = Module::<T>::entity_by_id(entity_id);
-                    let entity_permissions = entity.get_permissions();
-
-                    ensure!(entity_permissions.is_referancable(), ERROR_ENTITY_CAN_NOT_BE_REFRENCED);
-
-                    ensure!(
-                        entity.class_id == *class_id,
-                        ERROR_PROP_DOES_NOT_MATCH_ITS_CLASS
-                    );
-                    if *same_controller_status {
-                        ensure!(
-                            entity_permissions
-                                .controller_is_equal_to(current_entity_controller),
-                            ERROR_SAME_CONTROLLER_CONSTRAINT_VIOLATION
-                        );
-                    }
+                    Self::ensure_referancable(
+                        *class_id,
+                        *entity_id,
+                        *same_controller_status,
+                        current_entity_controller,
+                    )?;
                     true
                 } else {
                     false
@@ -618,49 +607,57 @@ impl<T: Trait> Property<T> {
     ) -> dispatch::Result {
         match (value, &self.prop_type) {
             (PV::Reference(entity_id), PT::Reference(class_id, _, same_controller_status)) => {
-                Module::<T>::ensure_known_class_id(*class_id)?;
-                Module::<T>::ensure_known_entity_id(*entity_id)?;
-                let entity = Module::<T>::entity_by_id(entity_id);
-                ensure!(
-                    entity.class_id == *class_id,
-                    ERROR_PROP_DOES_NOT_MATCH_ITS_CLASS
-                );
-                if *same_controller_status {
-                    ensure!(
-                        entity
-                            .get_permissions()
-                            .controller_is_equal_to(current_entity_controller),
-                        ERROR_SAME_CONTROLLER_CONSTRAINT_VIOLATION
-                    );
-                }
+                Self::ensure_referancable(
+                    *class_id,
+                    *entity_id,
+                    *same_controller_status,
+                    current_entity_controller,
+                )?;
             }
             (
                 PV::ReferenceVec(vec, _),
                 PT::ReferenceVec(_, class_id, _, same_controller_status),
             ) => {
                 for entity_id in vec.iter() {
-                    Module::<T>::ensure_known_class_id(*class_id)?;
-                    Module::<T>::ensure_known_entity_id(*entity_id)?;
-                    let entity = Module::<T>::entity_by_id(entity_id);
-
-                    let entity_permissions = entity.get_permissions();
-
-                    ensure!(entity_permissions.is_referancable(), ERROR_ENTITY_CAN_NOT_BE_REFRENCED);
-
-                    ensure!(
-                        entity.class_id == *class_id,
-                        ERROR_PROP_DOES_NOT_MATCH_ITS_CLASS
-                    );
-                    if *same_controller_status {
-                        ensure!(
-                            entity_permissions
-                                .controller_is_equal_to(current_entity_controller),
-                            ERROR_SAME_CONTROLLER_CONSTRAINT_VIOLATION
-                        );
-                    }
+                    Self::ensure_referancable(
+                        *class_id,
+                        *entity_id,
+                        *same_controller_status,
+                        current_entity_controller,
+                    )?;
                 }
             }
             _ => (),
+        }
+        Ok(())
+    }
+
+    pub fn ensure_referancable(
+        class_id: T::ClassId,
+        entity_id: T::EntityId,
+        same_controller_status: bool,
+        current_entity_controller: &Option<EntityController<T>>,
+    ) -> dispatch::Result {
+        Module::<T>::ensure_known_class_id(class_id)?;
+        Module::<T>::ensure_known_entity_id(entity_id)?;
+        let entity = Module::<T>::entity_by_id(entity_id);
+
+        let entity_permissions = entity.get_permissions();
+
+        ensure!(
+            entity_permissions.is_referancable(),
+            ERROR_ENTITY_CAN_NOT_BE_REFRENCED
+        );
+
+        ensure!(
+            entity.class_id == class_id,
+            ERROR_PROP_DOES_NOT_MATCH_ITS_CLASS
+        );
+        if same_controller_status {
+            ensure!(
+                entity_permissions.controller_is_equal_to(current_entity_controller),
+                ERROR_SAME_CONTROLLER_CONSTRAINT_VIOLATION
+            );
         }
         Ok(())
     }
