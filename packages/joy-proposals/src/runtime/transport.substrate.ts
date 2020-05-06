@@ -72,7 +72,8 @@ export class SubstrateTransport extends Transport {
   }
 
   async blockHash(height: number): Promise<string> {
-    const blockHash = await this.api.query.system.blockHash(height);
+    const blockHash = await this.api.rpc.chain.getBlockHash(height);
+
     return blockHash.toString();
   }
 
