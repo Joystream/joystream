@@ -4,12 +4,29 @@ use sr_primitives::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use srml_support::{impl_outer_origin, parameter_types};
+use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
 
 use crate::{Instance1, Module, Trait};
 
 impl_outer_origin! {
         pub enum Origin for Test {}
+}
+
+mod bureaucracy {
+    pub use crate::Event;
+    pub use crate::Instance1;
+}
+
+mod membership_mod {
+    pub use membership::members::Event;
+}
+
+impl_outer_event! {
+    pub enum TestEvent for Test {
+        balances<T>,
+        bureaucracy Instance1 <T>,
+        membership_mod<T>,
+    }
 }
 
 parameter_types! {
@@ -39,7 +56,7 @@ impl system::Trait for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = ();
+    type Event = TestEvent;
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
     type MaximumBlockLength = MaximumBlockLength;
@@ -68,7 +85,7 @@ impl stake::Trait for Test {
 }
 
 impl membership::members::Trait for Test {
-    type Event = ();
+    type Event = TestEvent;
     type MemberId = u64;
     type PaidTermId = u64;
     type SubscriptionId = u64;
@@ -92,16 +109,17 @@ impl balances::Trait for Test {
     type OnNewAccount = ();
     type TransferPayment = ();
     type DustRemoval = ();
-    type Event = ();
+    type Event = TestEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type TransferFee = TransferFee;
     type CreationFee = CreationFee;
 }
 
 pub type Balances = balances::Module<Test>;
+pub type System = system::Module<Test>;
 
 impl Trait<Instance1> for Test {
-    type Event = ();
+    type Event = TestEvent;
 }
 
 pub type Bureaucracy1 = Module<Test, Instance1>;

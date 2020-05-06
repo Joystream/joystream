@@ -1,8 +1,26 @@
 mod mock;
 
 use crate::types::Lead;
-use mock::{build_test_externalities, Bureaucracy1};
+use crate::RawEvent;
+use mock::{build_test_externalities, Bureaucracy1, System, TestEvent};
 use system::RawOrigin;
+use system::{EventRecord, Phase};
+
+struct EventFixture;
+impl EventFixture {
+    fn assert_events(expected_raw_events: Vec<RawEvent<u64, u64, crate::Instance1>>) {
+        let expected_events = expected_raw_events
+            .iter()
+            .map(|ev| EventRecord {
+                phase: Phase::ApplyExtrinsic(0),
+                event: TestEvent::bureaucracy_Instance1(ev.clone()),
+                topics: vec![],
+            })
+            .collect::<Vec<EventRecord<_, _>>>();
+
+        assert_eq!(System::events(), expected_events);
+    }
+}
 
 #[test]
 fn set_forum_sudo_set() {
@@ -26,6 +44,6 @@ fn set_forum_sudo_set() {
 
         assert_eq!(Bureaucracy1::current_lead(), Some(lead));
 
-        // event emitted?!
+        EventFixture::assert_events(vec![RawEvent::LeaderSet(lead_member_id, lead_account_id)]);
     });
 }
