@@ -143,16 +143,12 @@ impl EventFixture {
     fn assert_crate_events(
         expected_raw_events: Vec<RawEvent<u64, u64, u64, u64, crate::Instance1>>,
     ) {
-        let expected_events = expected_raw_events
+        let converted_events = expected_raw_events
             .iter()
-            .map(|ev| EventRecord {
-                phase: Phase::ApplyExtrinsic(0),
-                event: TestEvent::bureaucracy_Instance1(ev.clone()),
-                topics: vec![],
-            })
-            .collect::<Vec<EventRecord<_, _>>>();
+            .map(|ev| TestEvent::bureaucracy_Instance1(ev.clone()))
+            .collect::<Vec<TestEvent>>();
 
-        assert_eq!(System::events(), expected_events);
+        Self::assert_global_events(converted_events)
     }
     fn assert_global_events(expected_raw_events: Vec<TestEvent>) {
         let expected_events = expected_raw_events
