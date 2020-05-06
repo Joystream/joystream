@@ -1,10 +1,11 @@
 mod mock;
 
 use crate::constraints::InputValidationLengthConstraint;
-use crate::types::{Lead, OpeningPolicyCommitment};
+use crate::types::{CuratorOpening, Lead, OpeningPolicyCommitment};
 use crate::{Instance1, RawEvent};
 use mock::{build_test_externalities, Bureaucracy1, Membership, System, TestEvent};
 use srml_support::StorageValue;
+use std::collections::BTreeSet;
 use system::{EventRecord, Phase, RawOrigin};
 
 fn setup_members(count: u8) {
@@ -114,13 +115,32 @@ impl Default for AddCuratorOpeningFixture {
 
 impl AddCuratorOpeningFixture {
     pub fn call_and_assert(&self, expected_result: Result<(), &str>) {
+        let saved_opening_next_id = Bureaucracy1::next_curator_opening_id();
         let actual_result = Bureaucracy1::add_curator_opening(
             self.origin.clone().into(),
             self.activate_at.clone(),
             self.commitment.clone(),
             self.human_readable_text.clone(),
         );
-        assert_eq!(actual_result, expected_result);
+        assert_eq!(actual_result.clone(), expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                Bureaucracy1::next_curator_opening_id(),
+                saved_opening_next_id + 1
+            );
+            let opening_id = saved_opening_next_id;
+
+            let actual_opening = Bureaucracy1::curator_opening_by_id(opening_id);
+
+            let expected_opening = CuratorOpening::<u64, u64, u64, u64> {
+                opening_id,
+                curator_applications: BTreeSet::new(),
+                policy_commitment: OpeningPolicyCommitment::default(),
+            };
+
+            assert_eq!(actual_opening, expected_opening);
+        }
     }
 
     fn with_text(self, text: Vec<u8>) -> Self {

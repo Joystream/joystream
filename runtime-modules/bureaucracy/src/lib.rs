@@ -196,6 +196,8 @@ decl_module! {
 
             let policy_commitment = commitment.clone();
 
+            // mutation
+
             let opening_id = ensure_on_wrapped_error!(
                 hiring::Module::<T>::add_opening(
                     activate_at,
@@ -205,8 +207,6 @@ decl_module! {
                     commitment.role_staking_policy,
                     human_readable_text,
             ))?;
-
-            // mutation
 
             let new_curator_opening_id = NextCuratorOpeningId::<T, I>::get();
 
