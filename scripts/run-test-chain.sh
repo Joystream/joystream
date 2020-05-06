@@ -9,6 +9,6 @@ sed -i 's/"setContentWorkingGroupMintCapacityProposalGracePeriod":.*/"setContent
 sed -i 's/"setLeadProposalGracePeriod":.*/"setLeadProposalGracePeriod": 0,/' chainspec.json
 sed -i 's/"spendingProposalGracePeriod":.*/"spendingProposalGracePeriod": 0,/' chainspec.json
 sed -i 's/"evictStorageProviderProposalGracePeriod":.*/"evictStorageProviderProposalGracePeriod": 0,/' chainspec.json
-sed -i 's/"setStorageRoleParametersProposalGracePeriod":.*/"setStorageRoleParametersProposalGracePeriod": 0,/' chainspec.json
+sed -i 's/"setStorageRoleParametersProposalGracePeriod":.*/"setStorageRoleParametersProposalGracePeriod": 0/' chainspec.json
 yes | cargo run --release -p joystream-node -- purge-chain --dev
 cargo run --release -p joystream-node -- --dev

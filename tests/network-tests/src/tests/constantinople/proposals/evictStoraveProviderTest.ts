@@ -10,7 +10,7 @@ import BN = require('bn.js');
 import { assert } from 'chai';
 import { Utils } from '../../../utils/utils';
 
-describe('Evict storage provider proposal network tests', () => {
+describe.skip('Evict storage provider proposal network tests', () => {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;

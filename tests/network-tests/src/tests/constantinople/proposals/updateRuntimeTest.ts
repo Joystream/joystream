@@ -9,7 +9,7 @@ import { ApiWrapper } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN = require('bn.js');
 
-describe('Runtime upgrade networt tests', () => {
+describe.skip('Runtime upgrade networt tests', () => {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;

@@ -94,7 +94,7 @@ pub(crate) fn set_lead_proposal<T: crate::Trait>(
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(get_required_stake_by_fraction::<T>(1, 1000)),
+        required_stake: Some(get_required_stake_by_fraction::<T>(25, 10000)),
     }
 }
 

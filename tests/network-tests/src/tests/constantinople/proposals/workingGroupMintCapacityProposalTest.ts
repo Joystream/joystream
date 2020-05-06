@@ -9,7 +9,7 @@ import { v4 as uuid } from 'uuid';
 import BN = require('bn.js');
 import { assert } from 'chai';
 
-describe('Working group mint capacity proposal network tests', () => {
+describe.skip('Working group mint capacity proposal network tests', () => {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;

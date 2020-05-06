@@ -5,6 +5,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { UserInfo, PaidMembershipTerms, MemberId } from '@joystream/types/lib/members';
 import { Mint, MintId } from '@joystream/types/lib/mint';
 import { Lead, LeadId } from '@joystream/types/lib/content-working-group';
+import { RoleParameters } from '@joystream/types/lib/roles';
 import { Seat } from '@joystream/types';
 import { Balance, EventRecord, AccountId } from '@polkadot/types/interfaces';
 import BN = require('bn.js');
@@ -149,6 +150,37 @@ export class ApiWrapper {
   public estimateProposeEvictStorageProviderFee(title: string, description: string, stake: BN, address: string): BN {
     return this.estimateTxFee(
       this.api.tx.proposalsCodex.createEvictStorageProviderProposal(stake, title, description, stake, address)
+    );
+  }
+
+  public estimateProposeStorageRoleParametersFee(
+    title: string,
+    description: string,
+    stake: BN,
+    min_stake: BN,
+    min_actors: BN,
+    max_actors: BN,
+    reward: BN,
+    reward_period: BN,
+    bonding_period: BN,
+    unbonding_period: BN,
+    min_service_period: BN,
+    startup_grace_period: BN,
+    entry_request_fee: BN
+  ): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createSetStorageRoleParametersProposal(stake, title, description, stake, [
+        min_stake,
+        min_actors,
+        max_actors,
+        reward,
+        reward_period,
+        bonding_period,
+        unbonding_period,
+        min_service_period,
+        startup_grace_period,
+        entry_request_fee,
+      ])
     );
   }
 
@@ -377,6 +409,40 @@ export class ApiWrapper {
     );
   }
 
+  public async proposeStorageRoleParameters(
+    account: KeyringPair,
+    title: string,
+    description: string,
+    stake: BN,
+    min_stake: BN,
+    min_actors: BN,
+    max_actors: BN,
+    reward: BN,
+    reward_period: BN,
+    bonding_period: BN,
+    unbonding_period: BN,
+    min_service_period: BN,
+    startup_grace_period: BN,
+    entry_request_fee: BN
+  ): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createSetStorageRoleParametersProposal(stake, title, description, stake, [
+        min_stake,
+        min_actors,
+        max_actors,
+        reward,
+        reward_period,
+        bonding_period,
+        unbonding_period,
+        min_service_period,
+        startup_grace_period,
+        entry_request_fee,
+      ]),
+      account,
+      false
+    );
+  }
+
   public approveProposal(account: KeyringPair, memberId: BN, proposal: BN): Promise<void> {
     return this.sender.signAndSend(this.api.tx.proposalsEngine.vote(memberId, proposal, 'Approve'), account, false);
   }
@@ -478,5 +544,9 @@ export class ApiWrapper {
       'StorageProvider'
     );
     return storageProviders.map(accountId => accountId.toString()).includes(address);
+  }
+
+  public async getStorageRoleParameters(): Promise<RoleParameters> {
+    return (await this.api.query.actors.parameters<Option<RoleParameters>>('StorageProvider')).unwrap();
   }
 }
