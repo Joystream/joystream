@@ -21,7 +21,7 @@ export default class QueryBlockProducer extends EventEmitter {
   private _block_to_be_produced_next: number;
 
   // Index of the last processed event
-  private _event_to_be_processed_from: number;
+  private _last_processed_event_index: number;
 
   private _height_of_chain: number;
 
@@ -39,7 +39,7 @@ export default class QueryBlockProducer extends EventEmitter {
 
     this._block_to_be_produced_next = 0;
     this._height_of_chain = 0;
-    this._event_to_be_processed_from = 0;
+    this._last_processed_event_index = 0;
   }
 
   // TODO: We cannot assume first block has events... we need more robust logic.
@@ -143,9 +143,9 @@ export default class QueryBlockProducer extends EventEmitter {
       );
 
       // This will run only once when at_block provided. And remove already processed events from the list.
-      if (this._event_to_be_processed_from !== 0) {
-        query_events = query_events.filter((event) => this._event_to_be_processed_from < event.index);
-        this._event_to_be_processed_from = 0;
+      if (this._last_processed_event_index !== 0) {
+        query_events = query_events.filter((event) => this._last_processed_event_index < event.index);
+        this._last_processed_event_index = 0;
       }
 
       let query_block = new QueryEventBlock(this._block_to_be_produced_next, query_events);
