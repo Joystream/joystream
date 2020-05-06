@@ -30,10 +30,11 @@ async function main () {
   // responsible for keeping track of the pipeline state 
   const stateKeeper = new StateKeeper(config);
   // responsible for emitting the blockchain events & data
-  const joyNode = new JoyNode(config)
-  await joyNode.build();
+  const joyNode = new JoyNode()
+  await joyNode.build(config);
 
   const state: State = await stateKeeper.state();
+  // starts a long-running loop
   await joyNode.run(state);
 
   // catching signals and do something before exit
