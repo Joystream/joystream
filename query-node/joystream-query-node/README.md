@@ -47,27 +47,23 @@ export async function handleMemberRegistered(event: QueryEvent) {}
 4. Inside the handler function create a new instance of the entity and fill properties with event data.
 
 ```ts
-const member = new MemberRegistereds();
 // Get event data
 const { AccountId, MemberId } = event.event_params;
-
-member.accountId = AccountId;
-member.memberId = +MemberId;
+const member = new MemberRegistereds({ accountId: AccountId, memberId: +MemberId });
 ```
 
 5. Call `db.save()` method to save data on database
 
 ```ts
 // Save to database.
-db.save(member, event);
+db.save<MemberRegistereds>(member, event);
 ```
 
 6. Query database
 
 ```ts
 // Query from database
-const m = await db.get("MemberRegistereds", { memberId: MemberId });
-console.log(m);
+const m = await db.get(MemberRegistereds, { where: { memberId: 123 } });
 ```
 
 **Notes**
@@ -82,20 +78,16 @@ import { MemberRegistereds } from "../generated/indexer/entities/MemberRegistere
 import { QueryEvent, db } from "../generated/indexer/index";
 
 export async function handleMemberRegistered(event: QueryEvent) {
-  const member = new MemberRegistereds();
-
   // Get event data
   const { AccountId, MemberId } = event.event_params;
 
-  member.accountId = AccountId;
-  member.memberId = +MemberId;
+  const member = new MemberRegistereds({ accountId: AccountId, memberId: +MemberId });
 
   // Save to database.
-  db.save(member, event);
+  db.save<MemberRegistereds>(member, event);
 
   // Query from database
-  const m = await db.get("MemberRegistereds", { memberId: MemberId });
-  console.log(m);
+  const m = await db.get(MemberRegistereds, { where: { memberId: 123 } });
 }
 ```
 
