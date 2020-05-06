@@ -47,7 +47,7 @@ const SetMaxValidatorCountForm: React.FunctionComponent<FormInnerProps> = props 
     <GenericProposalForm
       {...props}
       txMethod="createSetValidatorCountProposal"
-      requiredStakePercent={0.25}
+      proposalType="SetValidatorCount"
       submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", values.maxValidatorCount]}
     >
       <InputFormField

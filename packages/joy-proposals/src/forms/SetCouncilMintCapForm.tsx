@@ -1,12 +1,14 @@
-import React from 'react';
-import { default as MintCapacityForm } from './MintCapacityForm';
+// import React from 'react';
+// import { default as MintCapacityForm } from './MintCapacityForm';
 import { RouteComponentProps } from 'react-router';
 
 const CouncilMintCapForm = (props: RouteComponentProps) => (
-    <MintCapacityForm
-      mintCapacityGroup="Council"
-      txMethod="createSetContentWorkingGroupMintCapacityProposal"
-      {...props} />
+  null
+    // <MintCapacityForm
+    //   mintCapacityGroup="Council"
+    //   txMethod="createSetContentWorkingGroupMintCapacityProposal"
+    //   proposalType="SetCouncilMintCapacity"
+    //   {...props} />
 );
 
 export default CouncilMintCapForm;

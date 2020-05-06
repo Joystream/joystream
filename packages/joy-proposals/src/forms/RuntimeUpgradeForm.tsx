@@ -36,7 +36,7 @@ const RuntimeUpgradeForm: React.FunctionComponent<FormInnerProps> = props => {
     <GenericProposalForm
       {...props}
       txMethod="createRuntimeUpgradeProposal"
-      requiredStakePercent={1}
+      proposalType="RuntimeUpgrade"
       submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", values.WASM]}
     >
       <Form.Field>

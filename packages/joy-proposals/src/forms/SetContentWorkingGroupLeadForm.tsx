@@ -71,7 +71,7 @@ const SetContentWorkingGroupsLeadForm: React.FunctionComponent<FormInnerProps> =
       <GenericProposalForm
         {...props}
         txMethod="createSetLeadProposal"
-        requiredStakePercent={0.25}
+        proposalType="SetLead"
         submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", values.workingGroupLead.split(":")]}
       >
         {loading ? (

@@ -14,6 +14,7 @@ const ContentWorkingGroupMintCapForm = (props: RouteComponentProps) => {
       <MintCapacityForm
         mintCapacityGroup="Content Working Group"
         txMethod="createSetContentWorkingGroupMintCapacityProposal"
+        proposalType="SetContentWorkingGroupMintCapacity"
         initialData={{ capacity: mintCapacity.toString() }}
         {...props} />
     </PromiseComponent>
