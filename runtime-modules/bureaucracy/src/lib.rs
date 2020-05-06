@@ -35,8 +35,8 @@ pub static MSG_ORIGIN_IS_NOT_LEAD: &str = "Origin is not lead";
 pub static MSG_CURRENT_LEAD_NOT_SET: &str = "Current lead is not set";
 pub static MSG_CURRENT_LEAD_ALREADY_SET: &str = "Current lead is already set";
 pub static MSG_IS_NOT_LEAD_ACCOUNT: &str = "Not a lead account";
-pub static MSG_CHANNEL_DESCRIPTION_TOO_SHORT: &str = "Channel description too short";
-pub static MSG_CHANNEL_DESCRIPTION_TOO_LONG: &str = "Channel description too long";
+pub static MSG_OPENING_TEXT_TOO_SHORT: &str = "Opening text too short";
+pub static MSG_OPENING_TEXT_TOO_LONG: &str = "Opening text too long";
 pub static MSG_CURATOR_OPENING_DOES_NOT_EXIST: &str = "Curator opening does not exist";
 pub static MSG_INSUFFICIENT_BALANCE_TO_APPLY: &str = "Insufficient balance to apply";
 pub static MSG_APPLY_ON_CURATOR_OPENING_UNSIGNED_ORIGIN: &str = "Unsigned origin";
@@ -381,8 +381,8 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     fn ensure_opening_human_readable_text_is_valid(text: &[u8]) -> dispatch::Result {
         <OpeningHumanReadableText<I>>::get().ensure_valid(
             text.len(),
-            MSG_CHANNEL_DESCRIPTION_TOO_SHORT,
-            MSG_CHANNEL_DESCRIPTION_TOO_LONG,
+            MSG_OPENING_TEXT_TOO_SHORT,
+            MSG_OPENING_TEXT_TOO_LONG,
         )
     }
 
