@@ -1,15 +1,8 @@
 // @ts-check
 
-import { Hash, Header, BlockNumber } from '@polkadot/types/interfaces';
-import { Callback } from '@polkadot/types/types';
-
-import {
-  QueryBlockProducer,
-  QueryEventProcessingPack,
-  QueryEvent,
-  QueryEventBlock,
-  ISubstrateQueryService,
-} from '.';
+import { QueryBlockProducer, QueryEventProcessingPack, QueryEventBlock, ISubstrateQueryService } from '.';
+import { SavedEntityEvent } from './db/entities';
+import { getRepository } from 'typeorm';
 
 const debug = require('debug')('index');
 
@@ -23,10 +16,7 @@ export default class IndexBuilder {
     this._processing_pack = processing_pack;
   }
 
-  static create(
-    service: ISubstrateQueryService,
-    processing_pack: QueryEventProcessingPack
-  ): IndexBuilder {
+  static create(service: ISubstrateQueryService, processing_pack: QueryEventProcessingPack): IndexBuilder {
     const producer = new QueryBlockProducer(service);
 
     return new IndexBuilder(producer, processing_pack);
@@ -42,10 +32,16 @@ export default class IndexBuilder {
 
     debug('Spawned worker.');
 
-    // open database??
+    // Get the last processed event
+    // Should use db.get(SavedEntityEvent, {}) ???
+    const savedEntityEvent = await getRepository(SavedEntityEvent).findOne();
 
-    // Setup worker
-    await this._producer.start();
+    if (savedEntityEvent !== undefined) {
+      await this._producer.start(savedEntityEvent.blockNumber);
+    } else {
+      // Setup worker
+      await this._producer.start();
+    }
 
     debug('Started worker.');
   }

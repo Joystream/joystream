@@ -20,6 +20,9 @@ export default class QueryBlockProducer extends EventEmitter {
 
   private _block_to_be_produced_next: number;
 
+  // Index of the last processed event
+  private _event_to_be_processed_from: number;
+
   private _height_of_chain: number;
 
   constructor(query_service: ISubstrateQueryService) {
@@ -36,10 +39,11 @@ export default class QueryBlockProducer extends EventEmitter {
 
     this._block_to_be_produced_next = 0;
     this._height_of_chain = 0;
+    this._event_to_be_processed_from = 0;
   }
 
   // TODO: We cannot assume first block has events... we need more robust logic.
-  async start(at_block?: number) {
+  async start(at_block?: number, at_event_index?: number) {
     if (this._started) throw Error(`Cannot start when already started.`);
 
     // mark as started
@@ -137,6 +141,12 @@ export default class QueryBlockProducer extends EventEmitter {
           return query_event;
         }
       );
+
+      // This will run only once when at_block provided. And remove already processed events from the list.
+      if (this._event_to_be_processed_from !== 0) {
+        query_events = query_events.filter((event) => this._event_to_be_processed_from < event.index);
+        this._event_to_be_processed_from = 0;
+      }
 
       let query_block = new QueryEventBlock(this._block_to_be_produced_next, query_events);
 
