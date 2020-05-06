@@ -1,6 +1,6 @@
 import * as shortid from 'shortid';
 import { Connection, EntityManager, FindOneOptions, DeepPartial } from 'typeorm';
-import { EventHistory } from '.';
+import { SavedEntityEvent } from '.';
 import { QueryEvent } from '..';
 
 /**
@@ -19,15 +19,15 @@ export default class DB {
   /**
    * Return the last processed event. If does not exists create a new one
    */
-  async getLastProcessedEvent(event: QueryEvent): Promise<EventHistory> {
-    let eventHistory = await this._connection.getRepository(EventHistory).findOne();
-    if (!eventHistory) {
-      eventHistory = new EventHistory();
+  async getLastProcessedEvent(event: QueryEvent): Promise<SavedEntityEvent> {
+    let savedEE = await this._connection.getRepository(SavedEntityEvent).findOne();
+    if (!savedEE) {
+      savedEE = new SavedEntityEvent();
     }
-    eventHistory.index = event.index;
-    eventHistory.eventName = event.event_method;
-    eventHistory.blockNumber = event.block_number;
-    return eventHistory;
+    savedEE.index = event.index;
+    savedEE.eventName = event.event_method;
+    savedEE.blockNumber = event.block_number;
+    return savedEE;
   }
 
   /**

@@ -1,4 +1,4 @@
 import DB from './db';
-import { EventHistory } from './entities';
+import { SavedEntityEvent } from './entities';
 
-export { DB, EventHistory };
+export { DB, SavedEntityEvent };
