@@ -4,10 +4,10 @@ import QueryEventBlock from './QueryEventBlock';
 import { EventRecord, SignedBlock, Hash } from '@polkadot/types/interfaces';
 import { Codec } from '@polkadot/types/types';
 import { EventEmitter } from 'events';
+import Config from '../Config';
 const logger = require('log4js').getLogger('producer');
 
-// TODO: read off the config
-const NEW_BLOCK_POLL_INTERVAL_MS = 5000;
+const DEFAULT_NEW_BLOCK_POLL_INTERVAL_MS = 5000;
 
 export default class QueryBlockProducer extends EventEmitter {
     private _started: boolean;
@@ -15,13 +15,15 @@ export default class QueryBlockProducer extends EventEmitter {
     private _newHeadsUnsubscriber: () => void;
     private _nextBlockHeight: number;
     private _chainHeight: number;
+    private _pollIntervalMs: number;
 
-    constructor(query_service: ISubstrateQueryService) {
+    constructor(query_service: ISubstrateQueryService, config: Config) {
         super();
 
         this._started = false;
         this._queryService = query_service;
-
+        this._pollIntervalMs = config.get().joysteam?.poll_interval || DEFAULT_NEW_BLOCK_POLL_INTERVAL_MS;
+        
         // TODO
         // need to set this up, when state is better, it
         // will be refactored
@@ -48,12 +50,7 @@ export default class QueryBlockProducer extends EventEmitter {
                 return header.number.toNumber();
             });
 
-        if (at_block) {
-            this._nextBlockHeight = at_block;
-
-            if (this._chainHeight < at_block) throw Error(`Provided block is ahead of chain.`);
-        }
-
+        this._nextBlockHeight = at_block ? at_block : 0;
         
         this._newHeadsUnsubscriber = await this._queryService.subscribeNewHeads((header) => {
             this._chainHeight = header.number.toNumber();
@@ -107,7 +104,7 @@ export default class QueryBlockProducer extends EventEmitter {
                         .catch((e) => reject(e));
                 } else {
                     logger.debug(`Current chain height: ${this._chainHeight}, waiting for: ${height}`);
-                    setTimeout(checkHeight, NEW_BLOCK_POLL_INTERVAL_MS);
+                    setTimeout(checkHeight, this._pollIntervalMs);
                 }    
 
             }

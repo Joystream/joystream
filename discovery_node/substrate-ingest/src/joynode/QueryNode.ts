@@ -21,8 +21,7 @@ export default class QueryNode {
     private _state: QueryNodeState;
 
     private _websocketProvider?: WsProvider;
-    private _provider_url: string;
-
+    
     // API instance for talking to Substrate full node.
     private _queryService?: ISubstrateQueryService;
     private _queryBlockProducer?: QueryBlockProducer;
@@ -30,22 +29,22 @@ export default class QueryNode {
     // Query index building node.
     //private _indexBuilder: IndexBuilder;
 
-    constructor(config: Config) {
-        this._provider_url = config.get()?.joystream?.ws_provider || process.env.JOYSTREAM_PROVIDER;
-        if (!this._provider_url) {
-            throw Error('Invalid config: joystream.ws_provider is not set');
-        }
+    constructor() {
         this._state = QueryNodeState.NOT_STARTED;
     }
 
-    async build() {
-        this._websocketProvider = new WsProvider(this._provider_url);
+    async build(config: Config) {
+        let providerUrl = config.get()?.joystream?.ws_provider || process.env.JOYSTREAM_PROVIDER;
+        if (!providerUrl) {
+            throw Error('Invalid config: joystream.ws_provider is not set');
+        }
+
+        this._websocketProvider = new WsProvider(providerUrl);
         registerJoystreamTypes()
 
         const api  = await ApiPromise.create({ provider: this._websocketProvider });
         this._queryService = makeQueryService(api);
-        this._queryBlockProducer = new QueryBlockProducer(this._queryService);
-
+        this._queryBlockProducer = new QueryBlockProducer(this._queryService, config);
     }
 
     async run(state: State) {
