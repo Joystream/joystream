@@ -7,6 +7,26 @@ use mock::{build_test_externalities, Bureaucracy1, System, TestEvent};
 use srml_support::StorageValue;
 use system::{EventRecord, Phase, RawOrigin};
 
+struct AcceptCuratorApplicationsFixture {
+    origin: RawOrigin<u64>,
+    opening_id: u64,
+}
+
+impl AcceptCuratorApplicationsFixture {
+    pub fn default_for_opening_id(opening_id: u64) -> Self {
+        AcceptCuratorApplicationsFixture {
+            origin: RawOrigin::Signed(1),
+            opening_id,
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: Result<(), &str>) {
+        let actual_result =
+            Bureaucracy1::accept_curator_applications(self.origin.clone().into(), self.opening_id);
+        assert_eq!(actual_result, expected_result);
+    }
+}
+
 struct SetLeadFixture;
 impl SetLeadFixture {
     fn set_lead(lead_account_id: u64) {
@@ -105,11 +125,17 @@ fn set_forum_sudo_set() {
 #[test]
 fn add_curator_opening_succeeds() {
     build_test_externalities().execute_with(|| {
-        SetLeadFixture::set_lead(1);
+        let lead_account_id = 1;
+        SetLeadFixture::set_lead(lead_account_id);
 
         let add_curator_opening_fixture = AddCuratorOpeningFixture::default();
 
         add_curator_opening_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_events(vec![
+            RawEvent::LeaderSet(1, lead_account_id),
+            RawEvent::CuratorOpeningAdded(0),
+        ]);
     });
 }
 
@@ -118,7 +144,7 @@ fn add_curator_opening_fails_with_lead_is_not_set() {
     build_test_externalities().execute_with(|| {
         let add_curator_opening_fixture = AddCuratorOpeningFixture::default();
 
-        add_curator_opening_fixture.call_and_assert(Err("Current lead is not set"));
+        add_curator_opening_fixture.call_and_assert(Err(crate::MSG_CURRENT_LEAD_NOT_SET));
     });
 }
 
@@ -152,5 +178,64 @@ fn add_curator_opening_fails_with_hiring_error() {
             .with_activate_at(hiring::ActivateOpeningAt::ExactBlock(0));
 
         add_curator_opening_fixture.call_and_assert(Err("Opening does not activate in the future"));
+    });
+}
+
+#[test]
+fn accept_curator_applications_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        SetLeadFixture::set_lead(lead_account_id);
+
+        let add_curator_opening_fixture = AddCuratorOpeningFixture::default()
+            .with_activate_at(hiring::ActivateOpeningAt::ExactBlock(5));
+        add_curator_opening_fixture.call_and_assert(Ok(()));
+
+        let opening_id = 0; // newly created opening
+
+        let accept_curator_applications_fixture =
+            AcceptCuratorApplicationsFixture::default_for_opening_id(opening_id);
+        accept_curator_applications_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_events(vec![
+            RawEvent::LeaderSet(1, lead_account_id),
+            RawEvent::CuratorOpeningAdded(0),
+            RawEvent::AcceptedCuratorApplications(0),
+        ]);
+    });
+}
+
+#[test]
+fn accept_curator_applications_fails_with_hiring_error() {
+    build_test_externalities().execute_with(|| {
+        SetLeadFixture::set_lead(1);
+
+        let add_curator_opening_fixture = AddCuratorOpeningFixture::default();
+        add_curator_opening_fixture.call_and_assert(Ok(()));
+
+        let opening_id = 0; // newly created opening
+
+        let accept_curator_applications_fixture =
+            AcceptCuratorApplicationsFixture::default_for_opening_id(opening_id);
+        accept_curator_applications_fixture
+            .call_and_assert(Err("Opening Is Not in Waiting to begin"));
+    });
+}
+
+#[test]
+fn accept_curator_applications_fails_with_not_lead() {
+    build_test_externalities().execute_with(|| {
+        SetLeadFixture::set_lead(1);
+
+        let add_curator_opening_fixture = AddCuratorOpeningFixture::default();
+        add_curator_opening_fixture.call_and_assert(Ok(()));
+
+        SetLeadFixture::set_lead(2);
+
+        let opening_id = 0; // newly created opening
+
+        let accept_curator_applications_fixture =
+            AcceptCuratorApplicationsFixture::default_for_opening_id(opening_id);
+        accept_curator_applications_fixture.call_and_assert(Err(crate::MSG_IS_NOT_LEAD_ACCOUNT));
     });
 }
