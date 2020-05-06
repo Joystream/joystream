@@ -75,8 +75,8 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
       "Council size": params.council_size + " members",
       "Candidacy limit": params.candidacy_limit + " members",
       "New term duration": params.new_term_duration + " blocks",
-      // "Min. council stake": params.min_council_stake + " tJOY",
-      // "Min. voting stake": params.min_voting_stake + " tJOY"
+      "Min. council stake": params.min_council_stake + " tJOY",
+      "Min. voting stake": params.min_voting_stake + " tJOY"
   }),
   Spending: ([amount, account]) => ({
     Amount: amount + " tJOY",
@@ -97,14 +97,14 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
   }),
   SetStorageRoleParameters: ([params]) => ({
     "Min. stake": params.min_stake + " tJOY",
-    "Min. actors": params.min_actors,
+    // "Min. actors": params.min_actors,
     "Max. actors": params.max_actors,
     Reward: params.reward + " tJOY",
     "Reward period": params.reward_period + " blocks",
-    "Bonding period": params.bonding_period + " blocks",
+    // "Bonding period": params.bonding_period + " blocks",
     "Unbonding period": params.unbonding_period + " blocks",
-    "Min. service period": params.min_service_period + " blocks",
-    "Startup grace period": params.startup_grace_period + " blocks",
+    // "Min. service period": params.min_service_period + " blocks",
+    // "Startup grace period": params.startup_grace_period + " blocks",
     "Entry request fee": params.entry_request_fee + " tJOY"
   })
 };
