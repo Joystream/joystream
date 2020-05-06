@@ -1,10 +1,10 @@
-#![cfg(test)]
+// #![cfg(test)]
 
-use super::*;
-use crate::mock::*;
-use core::iter::FromIterator;
-use rstd::collections::btree_set::BTreeSet;
-use srml_support::{assert_err, assert_ok};
+// use super::*;
+// use crate::mock::*;
+// use core::iter::FromIterator;
+// use rstd::collections::btree_set::BTreeSet;
+// use srml_support::{assert_err, assert_ok};
 
 // #[test]
 // fn create_class_then_entity_with_default_class() {
@@ -161,32 +161,32 @@ use srml_support::{assert_err, assert_ok};
 //     })
 // }
 
-#[test]
-fn cannot_create_class_with_empty_name() {
-    with_test_externalities(|| {
-        let empty_name = vec![];
-        assert_err!(
-            TestModule::create_class_with_default_permissions(
-                Origin::signed(CLASS_PERMISSIONS_CREATOR1),
-                empty_name,
-                good_class_description(),
-            ),
-            ERROR_CLASS_NAME_TOO_SHORT
-        );
-    })
-}
+// #[test]
+// fn cannot_create_class_with_empty_name() {
+//     with_test_externalities(|| {
+//         let empty_name = vec![];
+//         assert_err!(
+//             TestModule::create_class_with_default_permissions(
+//                 Origin::signed(CLASS_PERMISSIONS_CREATOR1),
+//                 empty_name,
+//                 good_class_description(),
+//             ),
+//             ERROR_CLASS_NAME_TOO_SHORT
+//         );
+//     })
+// }
 
-#[test]
-fn create_class_with_empty_description() {
-    with_test_externalities(|| {
-        let empty_description = vec![];
-        assert_ok!(TestModule::create_class_with_default_permissions(
-            Origin::signed(CLASS_PERMISSIONS_CREATOR1),
-            good_class_name(),
-            empty_description
-        ));
-    })
-}
+// #[test]
+// fn create_class_with_empty_description() {
+//     with_test_externalities(|| {
+//         let empty_description = vec![];
+//         assert_ok!(TestModule::create_class_with_default_permissions(
+//             Origin::signed(CLASS_PERMISSIONS_CREATOR1),
+//             good_class_name(),
+//             empty_description
+//         ));
+//     })
+// }
 
 // #[test]
 // fn cannot_create_entity_with_unknown_class_id() {
