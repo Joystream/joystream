@@ -3,10 +3,15 @@ mod mock;
 use crate::constraints::InputValidationLengthConstraint;
 use crate::types::{CuratorApplication, CuratorOpening, Lead, OpeningPolicyCommitment};
 use crate::{Instance1, RawEvent};
-use mock::{build_test_externalities, Bureaucracy1, Membership, System, TestEvent};
+use mock::{build_test_externalities, Balances, Bureaucracy1, Membership, System, TestEvent};
 use srml_support::StorageValue;
 use std::collections::BTreeSet;
 use system::{EventRecord, Phase, RawOrigin};
+
+pub(crate) fn increase_total_balance_issuance_using_account_id(account_id: u64, balance: u64) {
+    let _ =
+        <Balances as srml_support::traits::Currency<u64>>::deposit_creating(&account_id, balance);
+}
 
 fn setup_members(count: u8) {
     let authority_account_id = 1;
@@ -39,6 +44,27 @@ struct ApplyOnCuratorOpeningFixture {
 }
 
 impl ApplyOnCuratorOpeningFixture {
+    fn with_text(self, text: Vec<u8>) -> Self {
+        ApplyOnCuratorOpeningFixture {
+            human_readable_text: text,
+            ..self
+        }
+    }
+
+    fn with_role_stake(self, stake: u64) -> Self {
+        ApplyOnCuratorOpeningFixture {
+            opt_role_stake_balance: Some(stake),
+            ..self
+        }
+    }
+
+    fn with_application_stake(self, stake: u64) -> Self {
+        ApplyOnCuratorOpeningFixture {
+            opt_application_stake_balance: Some(stake),
+            ..self
+        }
+    }
+
     pub fn default_for_opening_id(opening_id: u64) -> Self {
         ApplyOnCuratorOpeningFixture {
             origin: RawOrigin::Signed(1),
@@ -292,7 +318,9 @@ fn add_curator_opening_fails_with_hiring_error() {
         let add_curator_opening_fixture = AddCuratorOpeningFixture::default()
             .with_activate_at(hiring::ActivateOpeningAt::ExactBlock(0));
 
-        add_curator_opening_fixture.call_and_assert(Err("Opening does not activate in the future"));
+        add_curator_opening_fixture.call_and_assert(Err(
+            crate::wrapped_error::MSG_ADD_CURATOR_OPENING_ACTIVATES_IN_THE_PAST,
+        ));
     });
 }
 
@@ -332,8 +360,9 @@ fn accept_curator_applications_fails_with_hiring_error() {
 
         let accept_curator_applications_fixture =
             AcceptCuratorApplicationsFixture::default_for_opening_id(opening_id);
-        accept_curator_applications_fixture
-            .call_and_assert(Err("Opening Is Not in Waiting to begin"));
+        accept_curator_applications_fixture.call_and_assert(Err(
+            crate::wrapped_error::MSG_ACCEPT_CURATOR_APPLICATIONS_OPENING_IS_NOT_WAITING_TO_BEGIN,
+        ));
     });
 }
 
@@ -428,5 +457,125 @@ fn apply_on_curator_opening_fails_with_not_set_members() {
             ApplyOnCuratorOpeningFixture::default_for_opening_id(opening_id);
         appy_on_curator_opening_fixture
             .call_and_assert(Err(crate::MSG_ORIGIN_IS_NEITHER_MEMBER_CONTROLLER_OR_ROOT));
+    });
+}
+
+#[test]
+fn apply_on_curator_opening_fails_with_hiring_error() {
+    build_test_externalities().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 500000);
+
+        let lead_account_id = 1;
+        SetLeadFixture::set_lead(lead_account_id);
+
+        setup_members(2);
+
+        let add_curator_opening_fixture = AddCuratorOpeningFixture::default();
+        add_curator_opening_fixture.call_and_assert(Ok(()));
+
+        let opening_id = 0; // newly created opening
+
+        let appy_on_curator_opening_fixture =
+            ApplyOnCuratorOpeningFixture::default_for_opening_id(opening_id)
+                .with_application_stake(100);
+        appy_on_curator_opening_fixture.call_and_assert(Err(
+            crate::wrapped_error::MSG_ADD_CURATOR_OPENING_STAKE_PROVIDED_WHEN_REDUNDANT,
+        ));
+    });
+}
+
+#[test]
+fn apply_on_curator_opening_fails_with_invalid_application_stake() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        SetLeadFixture::set_lead(lead_account_id);
+
+        setup_members(2);
+
+        let add_curator_opening_fixture = AddCuratorOpeningFixture::default();
+        add_curator_opening_fixture.call_and_assert(Ok(()));
+
+        let opening_id = 0; // newly created opening
+
+        let appy_on_curator_opening_fixture =
+            ApplyOnCuratorOpeningFixture::default_for_opening_id(opening_id)
+                .with_application_stake(100);
+        appy_on_curator_opening_fixture
+            .call_and_assert(Err(crate::MSG_INSUFFICIENT_BALANCE_TO_APPLY));
+    });
+}
+
+#[test]
+fn apply_on_curator_opening_fails_with_invalid_role_stake() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        SetLeadFixture::set_lead(lead_account_id);
+
+        setup_members(2);
+
+        let add_curator_opening_fixture = AddCuratorOpeningFixture::default();
+        add_curator_opening_fixture.call_and_assert(Ok(()));
+
+        let opening_id = 0; // newly created opening
+
+        let appy_on_curator_opening_fixture =
+            ApplyOnCuratorOpeningFixture::default_for_opening_id(opening_id).with_role_stake(100);
+        appy_on_curator_opening_fixture
+            .call_and_assert(Err(crate::MSG_INSUFFICIENT_BALANCE_TO_APPLY));
+    });
+}
+
+#[test]
+fn apply_on_curator_opening_fails_with_invalid_text() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        SetLeadFixture::set_lead(lead_account_id);
+
+        setup_members(2);
+
+        let add_curator_opening_fixture = AddCuratorOpeningFixture::default();
+        add_curator_opening_fixture.call_and_assert(Ok(()));
+
+        let opening_id = 0; // newly created opening
+
+        <crate::CuratorApplicationHumanReadableText<Instance1>>::put(
+            InputValidationLengthConstraint {
+                min: 1,
+                max_min_diff: 5,
+            },
+        );
+
+        let appy_on_curator_opening_fixture =
+            ApplyOnCuratorOpeningFixture::default_for_opening_id(opening_id).with_text(Vec::new());
+        appy_on_curator_opening_fixture
+            .call_and_assert(Err(crate::MSG_CURATOR_APPLICATION_TEXT_TOO_SHORT));
+
+        let appy_on_curator_opening_fixture =
+            ApplyOnCuratorOpeningFixture::default_for_opening_id(opening_id)
+                .with_text(b"Long text".to_vec());
+        appy_on_curator_opening_fixture
+            .call_and_assert(Err(crate::MSG_CURATOR_APPLICATION_TEXT_TOO_LONG));
+    });
+}
+
+#[test]
+fn apply_on_curator_opening_fails_with_already_active_application() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        SetLeadFixture::set_lead(lead_account_id);
+
+        setup_members(2);
+
+        let add_curator_opening_fixture = AddCuratorOpeningFixture::default();
+        add_curator_opening_fixture.call_and_assert(Ok(()));
+
+        let opening_id = 0; // newly created opening
+
+        let appy_on_curator_opening_fixture =
+            ApplyOnCuratorOpeningFixture::default_for_opening_id(opening_id);
+        appy_on_curator_opening_fixture.call_and_assert(Ok(()));
+
+        appy_on_curator_opening_fixture
+            .call_and_assert(Err(crate::MSG_MEMBER_HAS_ACTIVE_APPLICATION_ON_OPENING));
     });
 }
