@@ -66,16 +66,15 @@ export default class QueryNode {
     }
 
     _onQueryEventBlock(query_event_block: QueryEventBlock): void {
-        console.log(`Yay, block producer at height: #${query_event_block.block_number}`);
     
         query_event_block.query_events.forEach((query_event, index) => {
-            logger.debug(`Processing event: ${JSON.stringify(query_event, null, 2)}`);    
+            logger.debug(`Processing event: ${query_event.event_name}`);    
         });
       }
     
     get state() {
         return this._state;
-    }
+    }g
 
     async stop() {
         this._state = QueryNodeState.STOPPING;

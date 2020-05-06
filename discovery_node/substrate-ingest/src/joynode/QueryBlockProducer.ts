@@ -16,6 +16,8 @@ export default class QueryBlockProducer extends EventEmitter {
     private _nextBlockHeight: number;
     private _chainHeight: number;
     private _pollIntervalMs: number;
+    private _lastAckedBlockHeight: number; 
+    private _maxUnackedBlocks: number;
 
     constructor(query_service: ISubstrateQueryService, config: Config) {
         super();
@@ -30,6 +32,8 @@ export default class QueryBlockProducer extends EventEmitter {
         this._newHeadsUnsubscriber = () => { };
 
         this._nextBlockHeight = 0;
+        this._lastAckedBlockHeight = 0;
+        this._maxUnackedBlocks = Number.MAX_SAFE_INTEGER; // todo: read from config
         this._chainHeight = 0;
     }
 
@@ -51,6 +55,7 @@ export default class QueryBlockProducer extends EventEmitter {
             });
 
         this._nextBlockHeight = at_block ? at_block : 0;
+        this._lastAckedBlockHeight = 0; // TODO: listen for the global state keeper and update
         
         this._newHeadsUnsubscriber = await this._queryService.subscribeNewHeads((header) => {
             this._chainHeight = header.number.toNumber();
@@ -76,9 +81,13 @@ export default class QueryBlockProducer extends EventEmitter {
             logger.info("Block producer is not started");
             return;
         }
+        
 
         let height = this._nextBlockHeight;
-        let block_hash_of_target = await this.getBlockHashOrWait(height);
+        let block_hash_of_target = await this.getBlockHashOrWait(height, () => {
+            return (this._chainHeight >= height) && 
+                (height - this._lastAckedBlockHeight <= this._maxUnackedBlocks)
+        });
         let records = await this._queryService.eventsAt(block_hash_of_target);
         logger.debug(`\tRead ${records.length} events of the block at height ${height}.`);
 
@@ -92,13 +101,13 @@ export default class QueryBlockProducer extends EventEmitter {
              
     }
 
-    private async getBlockHashOrWait(height: number): Promise<Hash> {
+    private async getBlockHashOrWait(height: number, waitFor:()=>boolean): Promise<Hash> {
         return new Promise<Hash>((resolve, reject) => {
             if (!this._started) {
                 reject("The block producer is stopped")
             }
             let checkHeight = () => {
-                if (this._chainHeight >= height) {
+                if (waitFor()) {
                     this._queryService.getBlockHash(height)
                         .then((h: Hash) => resolve(h))
                         .catch((e) => reject(e));
@@ -111,6 +120,8 @@ export default class QueryBlockProducer extends EventEmitter {
             checkHeight();
         });
     }
+
+
 
     private emitBlockEvent(signed_block: SignedBlock, records: EventRecord[] & Codec):void {
         let extrinsics_array = signed_block.block.extrinsics.toArray();
@@ -129,7 +140,7 @@ export default class QueryBlockProducer extends EventEmitter {
                     let query_event = new QueryEvent(record, extrinsic);
 
                     // Logging
-                    query_event.log(0, (x) => logger.debug(x));
+                    query_event.log(0, (x) => logger.trace(x));
 
                     return query_event;
                 }
