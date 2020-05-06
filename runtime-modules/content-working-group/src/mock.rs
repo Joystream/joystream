@@ -68,7 +68,9 @@ pub type RawLibTestEvent = RawEvent<
     CuratorApplicationId<Test>,
     CuratorId<Test>,
     CuratorApplicationIdToCuratorIdMap<Test>,
+    minting::BalanceOf<Test>,
     <Test as system::Trait>::AccountId,
+    <Test as minting::Trait>::MintId,
 >;
 
 pub fn get_last_event_or_panic() -> RawLibTestEvent {
@@ -220,11 +222,13 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
         self.membership_config = Some(membership_config);
         self
     }
-    pub fn set_content_wg_config(mut self, conteng_wg_config: GenesisConfig<T>) -> Self {
+    */
+
+    pub fn with_content_wg_config(mut self, conteng_wg_config: GenesisConfig<T>) -> Self {
         self.content_wg_config = Some(conteng_wg_config);
         self
     }
-    */
+
     pub fn build(self) -> runtime_io::TestExternalities {
         // Add system
         let mut t = self
@@ -260,3 +264,4 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
 pub type System = system::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type ContentWorkingGroup = Module<Test>;
+pub type Minting = minting::Module<Test>;

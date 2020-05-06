@@ -1,18 +1,12 @@
-# Joystream [![Build Status](https://travis-ci.org/Joystream/substrate-runtime-joystream.svg?branch=master)](https://travis-ci.org/Joystream/substrate-runtime-joystream)
+# Joystream
 
 This is the main code reposity for all joystream software. It will  house the substrate chain project, the full node and runtime and all reusable substrate runtime modules that make up the joystream runtime. In addition to all front-end apps and infrastructure servers necessary for operating the network.
 
 The repository is currently just a cargo workspace, but eventually will also contain yarn workspaces, and possibly other project type workspaces.
 
-## Build Status
-
-Development [![Development Branch Build Status](https://travis-ci.org/Joystream/substrate-runtime-joystream.svg?branch=development)](https://travis-ci.org/Joystream/substrate-runtime-joystream)
-
-More detailed build history on [Travis CI](https://travis-ci.org/github/Joystream/substrate-runtime-joystream/builds)
-
 ## Overview
 
-The Joystream network builds on a pre-release version of [substrate v2.0](https://substrate.dev/) and adds additional
+The joystream network builds on a pre-release version of [substrate v2.0](https://substrate.dev/) and adds additional
 functionality to support the [various roles](https://www.joystream.org/roles) that can be entered into on the platform.
 
 
