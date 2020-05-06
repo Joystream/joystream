@@ -102,7 +102,7 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
       <GenericProposalForm
         {...props}
         txMethod="createSetElectionParametersProposal"
-        requiredStakePercent={0.75}
+        proposalType="SetElectionParameters"
         submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", createElectionParameters(values)]}
       >
         <Divider horizontal>Voting </Divider>

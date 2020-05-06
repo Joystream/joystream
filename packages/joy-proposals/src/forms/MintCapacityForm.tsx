@@ -14,6 +14,7 @@ import {
 import Validation from "../validationSchema";
 import { InputFormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
+import { ProposalType } from "../runtime";
 import "./forms.css";
 
 type FormValues = GenericFormValues & {
@@ -31,19 +32,20 @@ type MintCapacityGroup = "Council" | "Content Working Group";
 type FormAdditionalProps = {
   mintCapacityGroup: MintCapacityGroup;
   txMethod: string;
+  proposalType: ProposalType;
 };
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
 const MintCapacityForm: React.FunctionComponent<FormInnerProps> = props => {
-  const { handleChange, errors, touched, mintCapacityGroup, values, txMethod, initialData } = props;
+  const { handleChange, errors, touched, mintCapacityGroup, values, txMethod, initialData, proposalType } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
     <GenericProposalForm
       {...props}
       txMethod={txMethod}
-      requiredStakePercent={0.25}
+      proposalType={proposalType}
       submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", values.capacity]}
     >
       <InputFormField

@@ -38,7 +38,7 @@ const SignalForm: React.FunctionComponent<FormInnerProps> = props => {
     <GenericProposalForm
       {...props}
       txMethod="createTextProposal"
-      requiredStakePercent={0.25}
+      proposalType="Text"
       submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", values.description]}
     >
       <TextareaFormField

@@ -46,7 +46,7 @@ const EvictStorageProviderForm: React.FunctionComponent<FormInnerProps> = props 
     <GenericProposalForm
       {...props}
       txMethod="createEvictStorageProviderProposal"
-      requiredStakePercent={0.1}
+      proposalType="EvictStorageProvider"
       submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", values.storageProvider]}
     >
       {loading ? (

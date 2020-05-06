@@ -41,7 +41,7 @@ const SpendingProposalForm: React.FunctionComponent<FormInnerProps> = props => {
     <GenericProposalForm
       {...props}
       txMethod="createSpendingProposal"
-      requiredStakePercent={0.25}
+      proposalType="Spending"
       submitParams={[
         props.myMemberId,
         values.title,

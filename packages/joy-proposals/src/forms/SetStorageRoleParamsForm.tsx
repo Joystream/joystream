@@ -81,7 +81,7 @@ const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props 
     <GenericProposalForm
       {...props}
       txMethod="createSetStorageRoleParametersProposal"
-      requiredStakePercent={0.25}
+      proposalType="SetStorageRoleParameters"
       submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", createRoleParameters(values)]}
     >
       <Divider horizontal>Parameters</Divider>

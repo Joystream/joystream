@@ -13,6 +13,8 @@ import { withCalls } from "@polkadot/react-api";
 import { CallProps } from "@polkadot/react-api/types";
 import { Balance } from "@polkadot/types/interfaces";
 import { RouteComponentProps } from "react-router";
+import { ProposalType } from "../runtime";
+import { calculateStake } from "../utils";
 import "./forms.css";
 
 
@@ -45,7 +47,7 @@ export type ProposalFormInnerProps<ContainerPropsT, FormValuesT> = ContainerProp
 type GenericProposalFormAdditionalProps = {
   txMethod?: string;
   submitParams?: any[];
-  requiredStakePercent?: number;
+  proposalType?: ProposalType;
 };
 
 type GenericFormContainerProps = ProposalFormContainerProps<
@@ -91,7 +93,7 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
     setSubmitting,
     history,
     balances_totalIssuance,
-    requiredStakePercent
+    proposalType
   } = props;
   const errorLabelsProps = getFormErrorLabelsProps<GenericFormValues>(errors, touched);
 
@@ -111,8 +113,8 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
 
   const requiredStake: number | undefined =
     balances_totalIssuance &&
-    requiredStakePercent &&
-    Math.round(balances_totalIssuance.toNumber() * (requiredStakePercent / 100));
+    proposalType &&
+    calculateStake(proposalType, balances_totalIssuance.toNumber());
 
   return (
     <div className="Forms">

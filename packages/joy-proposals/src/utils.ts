@@ -117,24 +117,34 @@ export function calculateStake(type: ProposalType, issuance: number) {
   let stake = NaN;
   switch (type) {
     case "EvictStorageProvider": {
-      stake = Math.round(issuance * (0.1 / 100));
+      stake = 25000;
       break;
     }
     case "Text":
+      stake = 25000;
+      break;
     case "SetStorageRoleParameters":
+      stake = 100000;
+      break;
     case "SetValidatorCount":
+      stake = 100000;
+      break;
     case "SetLead":
+      stake = 50000;
+      break;
     case "SetContentWorkingGroupMintCapacity":
+      stake = 50000;
+      break;
     case "Spending": {
-      stake = Math.round(issuance * (0.25 / 100));
+      stake = 25000;
       break;
     }
     case "SetElectionParameters": {
-      stake = Math.round(issuance * (0.75 / 100));
+      stake = 200000;
       break;
     }
     case "RuntimeUpgrade": {
-      stake = Math.round(issuance * (1 / 100));
+      stake = 1000000;
       break;
     }
     default: {
