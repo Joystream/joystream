@@ -21,12 +21,15 @@ use errors::bureaucracy_errors::*;
 use errors::WrappedError;
 use types::{CuratorApplication, CuratorOpening, Lead, OpeningPolicyCommitment};
 
+//TODO: docs
+//TODO: migrate to decl_error
+
 /*
 + add_curator_opening
 + accept_curator_applications
 - begin_curator_applicant_review
 - fill_curator_opening
-- withdraw_curator_application
++ withdraw_curator_application
 - terminate_curator_application
 + apply_on_curator_opening
 */
@@ -62,7 +65,7 @@ pub trait Trait<I: Instance>: system::Trait + membership::members::Trait + hirin
 }
 
 // Type simplification
-type CuratorOpeningData<T> = (
+type CuratorOpeningInfo<T> = (
     CuratorOpening<
         <T as hiring::Trait>::OpeningId,
         <T as system::Trait>::BlockNumber,
@@ -73,6 +76,23 @@ type CuratorOpeningData<T> = (
         BalanceOf<T>,
         <T as system::Trait>::BlockNumber,
         <T as hiring::Trait>::ApplicationId,
+    >,
+);
+
+// Type simplification
+type CuratorApplicationInfo<T> = (
+    CuratorApplication<
+        <T as system::Trait>::AccountId,
+        CuratorOpeningId<T>,
+        <T as membership::members::Trait>::MemberId,
+        <T as hiring::Trait>::ApplicationId,
+    >,
+    CuratorApplicationId<T>,
+    CuratorOpening<
+        <T as hiring::Trait>::OpeningId,
+        <T as system::Trait>::BlockNumber,
+        BalanceOf<T>,
+        CuratorApplicationId<T>,
     >,
 );
 
@@ -103,6 +123,10 @@ decl_event!(
         /// - Curator opening id
         /// - Curator application id
         AppliedOnCuratorOpening(CuratorOpeningId, CuratorApplicationId),
+        /// Emits on withdrawing the application for the curator opening.
+        /// Params:
+        /// - Curator application id
+        CuratorApplicationWithdrawn(CuratorApplicationId),
     }
 );
 
@@ -321,6 +345,39 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::AppliedOnCuratorOpening(curator_opening_id, new_curator_application_id));
         }
+
+        pub fn withdraw_curator_application(
+            origin,
+            curator_application_id: CuratorApplicationId<T>
+        ) {
+            // Ensuring curator application actually exists
+            let (curator_application, _, curator_opening) = Self::ensure_curator_application_exists(&curator_application_id)?;
+
+            // Ensure that it is signed
+            let signer_account = ensure_signed(origin)?;
+
+            // Ensure that signer is applicant role account
+            ensure!(
+                signer_account == curator_application.role_account,
+                MSG_ORIGIN_IS_NOT_APPLICANT
+            );
+
+            // Attempt to deactivate application
+            // NB: Combined ensure check and mutation in hiring module
+            ensure_on_wrapped_error!(
+                hiring::Module::<T>::deactive_application(
+                    curator_application.application_id,
+                    curator_opening.policy_commitment.exit_curator_role_application_stake_unstaking_period,
+                    curator_opening.policy_commitment.exit_curator_role_stake_unstaking_period
+                )
+            )?;
+
+            // mutation
+
+            // Trigger event
+            Self::deposit_event(RawEvent::CuratorApplicationWithdrawn(curator_application_id));
+
+        }
     }
 }
 
@@ -375,7 +432,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     fn ensure_curator_opening_exists(
         curator_opening_id: &CuratorOpeningId<T>,
-    ) -> Result<CuratorOpeningData<T>, &'static str> {
+    ) -> Result<CuratorOpeningInfo<T>, &'static str> {
         ensure!(
             CuratorOpeningById::<T, I>::exists(curator_opening_id),
             MSG_CURATOR_OPENING_DOES_NOT_EXIST
@@ -476,5 +533,25 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         } else {
             Ok(())
         }
+    }
+
+    fn ensure_curator_application_exists(
+        curator_application_id: &CuratorApplicationId<T>,
+    ) -> Result<CuratorApplicationInfo<T>, &'static str> {
+        ensure!(
+            CuratorApplicationById::<T, I>::exists(curator_application_id),
+            MSG_CURATOR_APPLICATION_DOES_NOT_EXIST
+        );
+
+        let curator_application = CuratorApplicationById::<T, I>::get(curator_application_id);
+
+        let curator_opening =
+            CuratorOpeningById::<T, I>::get(curator_application.curator_opening_id);
+
+        Ok((
+            curator_application,
+            *curator_application_id,
+            curator_opening,
+        ))
     }
 }

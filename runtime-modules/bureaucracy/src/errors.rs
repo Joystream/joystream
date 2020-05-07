@@ -20,6 +20,8 @@ pub mod bureaucracy_errors {
     pub static MSG_CURATOR_APPLICATION_TEXT_TOO_SHORT: &str = "Curator application text too short";
     pub static MSG_INSUFFICIENT_BALANCE_TO_COVER_STAKE: &str =
         "Insuffieicnt balance to cover stake";
+    pub static MSG_ORIGIN_IS_NOT_APPLICANT: &str = "Origin is not applicant";
+    pub static MSG_CURATOR_APPLICATION_DOES_NOT_EXIST: &str = "Curator application does not exist";
 }
 /*
  * The errors below, while in many cases encoding similar outcomes,
