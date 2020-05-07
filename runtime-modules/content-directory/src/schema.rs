@@ -2,10 +2,10 @@ use codec::{Decode, Encode};
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 
-pub type PropertyId = u16;
-pub type SchemaId = u16;
 pub type VecMaxLength = u16;
 pub type TextMaxLength = u16;
+pub type PropertyId = u16;
+pub type SchemaId = u16;
 // Used to force property values to only reference entities, owned by the same controller
 pub type SameController = bool;
 use crate::{permissions::EntityAccessLevel, *};
@@ -535,38 +535,35 @@ impl<T: Trait> Property<T> {
         Ok(())
     }
 
-    pub fn validate_max_len_if_vec_prop(&self, value: &PropertyValue<T>) -> dispatch::Result {
-        fn validate_vec_len<T>(vec: &[T], max_len: VecMaxLength) -> bool {
-            vec.len() <= max_len as usize
-        }
+    fn validate_vec_len<V>(vec: &[V], max_len: VecMaxLength) -> dispatch::Result {
+        ensure!(vec.len() <= max_len as usize, ERROR_VEC_PROP_IS_TOO_LONG);
+        Ok(())
+    }
 
-        let is_valid_len = match (value, &self.prop_type) {
-            (PV::BoolVec(vec, _), PT::BoolVec(max_len, _)) => validate_vec_len(vec, *max_len),
-            (PV::Uint16Vec(vec, _), PT::Uint16Vec(max_len, _)) => validate_vec_len(vec, *max_len),
-            (PV::Uint32Vec(vec, _), PT::Uint32Vec(max_len, _)) => validate_vec_len(vec, *max_len),
-            (PV::Uint64Vec(vec, _), PT::Uint64Vec(max_len, _)) => validate_vec_len(vec, *max_len),
-            (PV::Int16Vec(vec, _), PT::Int16Vec(max_len, _)) => validate_vec_len(vec, *max_len),
-            (PV::Int32Vec(vec, _), PT::Int32Vec(max_len, _)) => validate_vec_len(vec, *max_len),
-            (PV::Int64Vec(vec, _), PT::Int64Vec(max_len, _)) => validate_vec_len(vec, *max_len),
+    pub fn validate_max_len_if_vec_prop(&self, value: &PropertyValue<T>) -> dispatch::Result {
+
+        match (value, &self.prop_type) {
+            (PV::BoolVec(vec, _), PT::BoolVec(max_len, _)) => Self::validate_vec_len(vec, *max_len)?,
+            (PV::Uint16Vec(vec, _), PT::Uint16Vec(max_len, _)) => Self::validate_vec_len(vec, *max_len)?,
+            (PV::Uint32Vec(vec, _), PT::Uint32Vec(max_len, _)) => Self::validate_vec_len(vec, *max_len)?,
+            (PV::Uint64Vec(vec, _), PT::Uint64Vec(max_len, _)) => Self::validate_vec_len(vec, *max_len)?,
+            (PV::Int16Vec(vec, _), PT::Int16Vec(max_len, _)) => Self::validate_vec_len(vec, *max_len)?,
+            (PV::Int32Vec(vec, _), PT::Int32Vec(max_len, _)) => Self::validate_vec_len(vec, *max_len)?,
+            (PV::Int64Vec(vec, _), PT::Int64Vec(max_len, _)) => Self::validate_vec_len(vec, *max_len)?,
 
             (PV::TextVec(vec, _), PT::TextVec(vec_max_len, text_max_len, _)) => {
-                if validate_vec_len(vec, *vec_max_len) {
-                    for text_item in vec.iter() {
-                        Self::validate_max_len_of_text(text_item, *text_max_len)?;
-                    }
-                    true
-                } else {
-                    false
+                Self::validate_vec_len(vec, *vec_max_len)?; 
+                for text_item in vec.iter() {
+                    Self::validate_max_len_of_text(text_item, *text_max_len)?;
                 }
             }
 
             (PV::ReferenceVec(vec, _), PT::ReferenceVec(vec_max_len, _, _, _)) => {
-                validate_vec_len(vec, *vec_max_len)
+                Self::validate_vec_len(vec, *vec_max_len)?
             }
-            _ => true,
+            _ => (),
         };
 
-        ensure!(is_valid_len, ERROR_VEC_PROP_IS_TOO_LONG);
         Ok(())
     }
 
