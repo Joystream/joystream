@@ -457,11 +457,18 @@ impl<T: Trait> Property<T> {
     ) -> dispatch::Result {
         entity_prop_value.ensure_index_in_property_vector_is_valid(index_in_property_vec)?;
 
-        fn validate_prop_vec_len_after_value_insert<T>(vec: &[T], max_len: VecMaxLength) -> bool {
-            vec.len() < max_len as usize
+        fn validate_prop_vec_len_after_value_insert<T>(
+            vec: &[T],
+            max_len: VecMaxLength,
+        ) -> dispatch::Result {
+            ensure!(
+                vec.len() < max_len as usize,
+                ERROR_ENTITY_PROP_VALUE_VECTOR_IS_TOO_LONG
+            );
+            Ok(())
         }
 
-        let is_valid_len = match (value, entity_prop_value, &self.prop_type) {
+        match (value, entity_prop_value, &self.prop_type) {
             // Single values
             (PV::Bool(_), PV::BoolVec(vec, _), PT::BoolVec(max_len, _)) => {
                 validate_prop_vec_len_after_value_insert(vec, *max_len)
@@ -489,36 +496,24 @@ impl<T: Trait> Property<T> {
                 PV::TextVec(vec, _),
                 PT::TextVec(vec_max_len, text_max_len, _),
             ) => {
-                if validate_prop_vec_len_after_value_insert(vec, *vec_max_len) {
-                    Self::validate_max_len_of_text(text_item, *text_max_len)?;
-                    true
-                } else {
-                    false
-                }
+                validate_prop_vec_len_after_value_insert(vec, *vec_max_len)?;
+                Self::validate_max_len_of_text(text_item, *text_max_len)
             }
             (
                 PV::Reference(entity_id),
                 PV::ReferenceVec(vec, _),
                 PT::ReferenceVec(vec_max_len, class_id, _, same_controller_status),
             ) => {
-                Module::<T>::ensure_known_class_id(*class_id)?;
-                if validate_prop_vec_len_after_value_insert(vec, *vec_max_len) {
-                    Self::ensure_referancable(
-                        *class_id,
-                        *entity_id,
-                        *same_controller_status,
-                        current_entity_controller,
-                    )?;
-                    true
-                } else {
-                    false
-                }
+                validate_prop_vec_len_after_value_insert(vec, *vec_max_len)?;
+                Self::ensure_referancable(
+                    *class_id,
+                    *entity_id,
+                    *same_controller_status,
+                    current_entity_controller,
+                )
             }
             _ => return Err(ERROR_PROP_VALUE_TYPE_DOESNT_MATCH_INTERNAL_ENTITY_VECTOR_TYPE),
-        };
-
-        ensure!(is_valid_len, ERROR_ENTITY_PROP_VALUE_VECTOR_IS_TOO_LONG);
-        Ok(())
+        }
     }
 
     pub fn validate_max_len_if_text_prop(&self, value: &PropertyValue<T>) -> dispatch::Result {

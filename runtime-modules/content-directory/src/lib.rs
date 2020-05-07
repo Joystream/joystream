@@ -589,7 +589,7 @@ decl_module! {
                 prop.ensure_name_is_valid()?;
                 prop.ensure_description_is_valid()?;
                 prop.ensure_prop_type_size_is_valid()?;
-                
+
                 // Check that the name of a new property is unique within its class.
                 ensure!(
                     !unique_prop_names.contains(&prop.name),
