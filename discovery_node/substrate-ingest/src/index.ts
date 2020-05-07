@@ -7,11 +7,11 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { Command } from 'commander'; 
 
 import Config from './Config';
-import { StateKeeper, State } from './StateKeeper'
+import { StateKeeper, State } from './state/StateKeeper'
 import JoyNode  from './joynode/QueryNode'
 import ESUploader from './esearch/ESUploader'
-import { Logger } from 'log4js';
 
+const logger = require('log4js').getLogger('main') 
 const command = new Command();
 
 async function main () {
@@ -42,7 +42,8 @@ async function main () {
 
   // starts a long-running loop
   await joyNode.run(state);
-
+  
+  
 }
 
-main().then(() => process.exit(0)).catch((e) => console.error(e));
+main().catch((e) => logger.warn(e)).finally(() => process.exit());

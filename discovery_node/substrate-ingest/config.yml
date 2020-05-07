@@ -2,6 +2,14 @@ joystream:
     ws_provider: "ws://localhost:9944"
     poll_interval: 10000
 
+state:
+    bootstrap:
+        block: 0
+    recover: elasticsearch
+
+elasticsearch:
+    node: "http://localhost:9200"
+
 logging:
     config:
         appenders:
