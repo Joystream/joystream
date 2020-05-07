@@ -1,4 +1,9 @@
 .Proposal {
+  .description {
+    word-wrap: break-word;
+    word-break: break-all;
+  }
+
   /* Ovverrides Semantic UI for the details page.*/
   .ui.items > .item:first-child {
     margin: 1em 0;
