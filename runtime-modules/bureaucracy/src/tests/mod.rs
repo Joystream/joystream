@@ -319,7 +319,7 @@ fn add_curator_opening_fails_with_hiring_error() {
             .with_activate_at(hiring::ActivateOpeningAt::ExactBlock(0));
 
         add_curator_opening_fixture.call_and_assert(Err(
-            crate::wrapped_error::MSG_ADD_CURATOR_OPENING_ACTIVATES_IN_THE_PAST,
+            crate::errors::MSG_ADD_CURATOR_OPENING_ACTIVATES_IN_THE_PAST,
         ));
     });
 }
@@ -361,7 +361,7 @@ fn accept_curator_applications_fails_with_hiring_error() {
         let accept_curator_applications_fixture =
             AcceptCuratorApplicationsFixture::default_for_opening_id(opening_id);
         accept_curator_applications_fixture.call_and_assert(Err(
-            crate::wrapped_error::MSG_ACCEPT_CURATOR_APPLICATIONS_OPENING_IS_NOT_WAITING_TO_BEGIN,
+            crate::errors::MSG_ACCEPT_CURATOR_APPLICATIONS_OPENING_IS_NOT_WAITING_TO_BEGIN,
         ));
     });
 }
@@ -479,7 +479,7 @@ fn apply_on_curator_opening_fails_with_hiring_error() {
             ApplyOnCuratorOpeningFixture::default_for_opening_id(opening_id)
                 .with_application_stake(100);
         appy_on_curator_opening_fixture.call_and_assert(Err(
-            crate::wrapped_error::MSG_ADD_CURATOR_OPENING_STAKE_PROVIDED_WHEN_REDUNDANT,
+            crate::errors::MSG_ADD_CURATOR_OPENING_STAKE_PROVIDED_WHEN_REDUNDANT,
         ));
     });
 }

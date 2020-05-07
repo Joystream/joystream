@@ -6,7 +6,7 @@ mod constraints;
 mod tests;
 mod types;
 #[macro_use]
-mod wrapped_error;
+mod errors;
 
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
@@ -17,9 +17,9 @@ use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure};
 use system::{ensure_root, ensure_signed, RawOrigin};
 
 use constraints::InputValidationLengthConstraint;
+use errors::bureaucracy_errors::*;
+use errors::WrappedError;
 use types::{CuratorApplication, CuratorOpening, Lead, OpeningPolicyCommitment};
-use wrapped_error::bureaucracy_errors::*;
-use wrapped_error::WrappedError;
 
 /*
 + add_curator_opening
