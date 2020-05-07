@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Table } from 'semantic-ui-react';
+import { Table, Loader } from 'semantic-ui-react';
 import ReactMarkdown from 'react-markdown';
 import { IdentityIcon } from '@polkadot/react-components';
 import { ApiProps } from '@polkadot/react-api/types';
@@ -31,7 +31,11 @@ class Component extends React.PureComponent<Props> {
     const { memberProfile } = this.props;
     return memberProfile
       ? this.renderProfile(memberProfile.unwrap() as Profile)
-      : null;
+      : (
+        <div className={`item ProfileDetails`}>
+          <Loader active inline/>
+        </div>
+      );
   }
 
   private renderProfile (memberProfile: Profile) {
