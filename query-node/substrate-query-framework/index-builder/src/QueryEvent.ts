@@ -1,7 +1,8 @@
-import { EventRecord, Extrinsic, EventId } from '@polkadot/types/interfaces';
+import { EventRecord, Extrinsic } from '@polkadot/types/interfaces';
+import { Codec } from '@polkadot/types/types';
 
 interface EventParameters {
-  [key: string]: string;
+  [key: string]: Codec;
 }
 
 export default class QueryEvent {
@@ -33,7 +34,7 @@ export default class QueryEvent {
     let params: EventParameters = {};
 
     event.data.forEach((data, index) => {
-      params[event.typeDef[index].type] = data.toString();
+      params[event.typeDef[index].type] = data;
     });
     return params;
   }
