@@ -10,7 +10,7 @@ import BN = require('bn.js');
 import { assert } from 'chai';
 import { Utils } from '../../../utils/utils';
 
-describe.skip('Evict storage provider proposal network tests', () => {
+describe('Evict storage provider proposal network tests', () => {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
@@ -47,7 +47,7 @@ describe.skip('Evict storage provider proposal network tests', () => {
     assert(await apiWrapper.isStorageProvider(sudo.address), `Account ${sudo.address} is not storage provider`);
 
     // Proposal stake calculation
-    const proposalStake: BN = await apiWrapper.getRequiredProposalStake(1, 1000);
+    const proposalStake: BN = new BN(25000);
     const proposalFee: BN = apiWrapper.estimateProposeEvictStorageProviderFee(
       description,
       description,

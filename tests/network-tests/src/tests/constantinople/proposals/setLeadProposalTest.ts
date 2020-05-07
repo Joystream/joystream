@@ -9,7 +9,7 @@ import { v4 as uuid } from 'uuid';
 import BN = require('bn.js');
 import { assert } from 'chai';
 
-describe.skip('Lead proposal network tests', () => {
+describe('Lead proposal network tests', () => {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
@@ -42,7 +42,7 @@ describe.skip('Lead proposal network tests', () => {
     await apiWrapper.transferBalanceToAccounts(sudo, m2KeyPairs, runtimeVoteFee);
 
     // Proposal stake calculation
-    const proposalStake: BN = await apiWrapper.getRequiredProposalStake(25, 10000);
+    const proposalStake: BN = new BN(50000);
     const proposalFee: BN = apiWrapper.estimateProposeLeadFee(description, description, proposalStake, sudo.address);
     await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake));
 

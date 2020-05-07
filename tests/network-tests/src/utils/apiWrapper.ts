@@ -7,7 +7,7 @@ import { Mint, MintId } from '@joystream/types/lib/mint';
 import { Lead, LeadId } from '@joystream/types/lib/content-working-group';
 import { RoleParameters } from '@joystream/types/lib/roles';
 import { Seat } from '@joystream/types';
-import { Balance, EventRecord, AccountId } from '@polkadot/types/interfaces';
+import { Balance, EventRecord, AccountId, BlockNumber, BalanceOf } from '@polkadot/types/interfaces';
 import BN = require('bn.js');
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { Sender } from './sender';
@@ -64,11 +64,12 @@ export class ApiWrapper {
     return this.getPaidMembershipTerms(paidTermsId).then(terms => terms.unwrap().fee.toBn());
   }
 
-  public async transferBalanceToAccounts(from: KeyringPair, to: KeyringPair[], amount: BN): Promise<void> {
-    for (let i = 0; i < to.length; i++) {
-      await this.transferBalance(from, to[i].address, amount);
-    }
-    return;
+  public async transferBalanceToAccounts(from: KeyringPair, to: KeyringPair[], amount: BN): Promise<void[]> {
+    return Promise.all(
+      to.map(async keyPair => {
+        await this.transferBalance(from, keyPair.address, amount);
+      })
+    );
   }
 
   private getBaseTxFee(): BN {
@@ -157,29 +158,56 @@ export class ApiWrapper {
     title: string,
     description: string,
     stake: BN,
-    min_stake: BN,
-    min_actors: BN,
-    max_actors: BN,
+    minStake: BN,
+    minActors: BN,
+    maxActors: BN,
     reward: BN,
-    reward_period: BN,
-    bonding_period: BN,
-    unbonding_period: BN,
-    min_service_period: BN,
-    startup_grace_period: BN,
-    entry_request_fee: BN
+    rewardPeriod: BN,
+    bondingPeriod: BN,
+    unbondingPeriod: BN,
+    minServicePeriod: BN,
+    startupGracePeriod: BN,
+    entryRequestFee: BN
   ): BN {
     return this.estimateTxFee(
       this.api.tx.proposalsCodex.createSetStorageRoleParametersProposal(stake, title, description, stake, [
-        min_stake,
-        min_actors,
-        max_actors,
+        minStake,
+        minActors,
+        maxActors,
         reward,
-        reward_period,
-        bonding_period,
-        unbonding_period,
-        min_service_period,
-        startup_grace_period,
-        entry_request_fee,
+        rewardPeriod,
+        bondingPeriod,
+        unbondingPeriod,
+        minServicePeriod,
+        startupGracePeriod,
+        entryRequestFee,
+      ])
+    );
+  }
+
+  public estimateProposeElectionParametersFee(
+    title: string,
+    description: string,
+    stake: BN,
+    announcingPeriod: BN,
+    votingPeriod: BN,
+    revealingPeriod: BN,
+    councilSize: BN,
+    candidacyLimit: BN,
+    newTermDuration: BN,
+    minCouncilStake: BN,
+    minVotingStake: BN
+  ): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createSetElectionParametersProposal(stake, title, description, stake, [
+        announcingPeriod,
+        votingPeriod,
+        revealingPeriod,
+        councilSize,
+        candidacyLimit,
+        newTermDuration,
+        minCouncilStake,
+        minVotingStake,
       ])
     );
   }
@@ -414,30 +442,61 @@ export class ApiWrapper {
     title: string,
     description: string,
     stake: BN,
-    min_stake: BN,
-    min_actors: BN,
-    max_actors: BN,
+    minStake: BN,
+    minActors: BN,
+    maxActors: BN,
     reward: BN,
-    reward_period: BN,
-    bonding_period: BN,
-    unbonding_period: BN,
-    min_service_period: BN,
-    startup_grace_period: BN,
-    entry_request_fee: BN
+    rewardPeriod: BN,
+    bondingPeriod: BN,
+    unbondingPeriod: BN,
+    minServicePeriod: BN,
+    startupGracePeriod: BN,
+    entryRequestFee: BN
   ): Promise<void> {
     const memberId: BN = (await this.getMemberIds(account.address))[0].toBn();
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSetStorageRoleParametersProposal(memberId, title, description, stake, [
-        min_stake,
-        min_actors,
-        max_actors,
+        minStake,
+        minActors,
+        maxActors,
         reward,
-        reward_period,
-        bonding_period,
-        unbonding_period,
-        min_service_period,
-        startup_grace_period,
-        entry_request_fee,
+        rewardPeriod,
+        bondingPeriod,
+        unbondingPeriod,
+        minServicePeriod,
+        startupGracePeriod,
+        entryRequestFee,
+      ]),
+      account,
+      false
+    );
+  }
+
+  public async proposeElectionParameters(
+    account: KeyringPair,
+    title: string,
+    description: string,
+    stake: BN,
+    announcingPeriod: BN,
+    votingPeriod: BN,
+    revealingPeriod: BN,
+    councilSize: BN,
+    candidacyLimit: BN,
+    newTermDuration: BN,
+    minCouncilStake: BN,
+    minVotingStake: BN
+  ): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn();
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createSetElectionParametersProposal(memberId, title, description, stake, [
+        announcingPeriod,
+        votingPeriod,
+        revealingPeriod,
+        councilSize,
+        candidacyLimit,
+        newTermDuration,
+        minCouncilStake,
+        minVotingStake,
       ]),
       account,
       false
@@ -549,5 +608,37 @@ export class ApiWrapper {
 
   public async getStorageRoleParameters(): Promise<RoleParameters> {
     return (await this.api.query.actors.parameters<Option<RoleParameters>>('StorageProvider')).unwrap();
+  }
+
+  public async getAnnouncingPeriod(): Promise<BN> {
+    return await this.api.query.councilElection.announcingPeriod<BlockNumber>();
+  }
+
+  public async getVotingPeriod(): Promise<BN> {
+    return await this.api.query.councilElection.votingPeriod<BlockNumber>();
+  }
+
+  public async getRevealingPeriod(): Promise<BN> {
+    return await this.api.query.councilElection.revealingPeriod<BlockNumber>();
+  }
+
+  public async getCouncilSize(): Promise<BN> {
+    return await this.api.query.councilElection.councilSize<u32>();
+  }
+
+  public async getCandidacyLimit(): Promise<BN> {
+    return await this.api.query.councilElection.candidacyLimit<u32>();
+  }
+
+  public async getNewTermDuration(): Promise<BN> {
+    return await this.api.query.councilElection.newTermDuration<BlockNumber>();
+  }
+
+  public async getMinCouncilStake(): Promise<BN> {
+    return await this.api.query.councilElection.minCouncilStake<BalanceOf>();
+  }
+
+  public async getMinVotingStake(): Promise<BN> {
+    return await this.api.query.councilElection.minVotingStake<BalanceOf>();
   }
 }

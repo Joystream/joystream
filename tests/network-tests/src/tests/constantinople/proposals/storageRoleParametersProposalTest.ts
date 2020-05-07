@@ -86,6 +86,8 @@ describe('Storage role parameters proposal network tests', () => {
     const proposalExecutionPromise = apiWrapper.expectProposalFinalized();
     await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber);
     await proposalExecutionPromise;
+
+    // Assertions
     const newRoleParameters: RoleParameters = await apiWrapper.getStorageRoleParameters();
     assert(
       roleParameters.min_stake.toBn().addn(1).eq(newRoleParameters.min_stake.toBn()),

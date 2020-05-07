@@ -9,7 +9,7 @@ import { v4 as uuid } from 'uuid';
 import BN = require('bn.js');
 import { assert } from 'chai';
 
-describe.skip('Spending proposal network tests', () => {
+describe('Spending proposal network tests', () => {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
@@ -42,7 +42,7 @@ describe.skip('Spending proposal network tests', () => {
     const runtimeVoteFee: BN = apiWrapper.estimateVoteForProposalFee();
 
     // Topping the balances
-    const proposalStake: BN = await apiWrapper.getRequiredProposalStake(25, 10000);
+    const proposalStake: BN = new BN(25000);
     const runtimeProposalFee: BN = apiWrapper.estimateProposeSpendingFee(
       description,
       description,

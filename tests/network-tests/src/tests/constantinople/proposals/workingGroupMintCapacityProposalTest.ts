@@ -9,7 +9,7 @@ import { v4 as uuid } from 'uuid';
 import BN = require('bn.js');
 import { assert } from 'chai';
 
-describe.skip('Working group mint capacity proposal network tests', () => {
+describe('Working group mint capacity proposal network tests', () => {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
@@ -43,7 +43,7 @@ describe.skip('Working group mint capacity proposal network tests', () => {
     const initialMintingCapacity: BN = await apiWrapper.getWorkingGroupMintCapacity();
 
     // Topping the balances
-    const proposalStake: BN = await apiWrapper.getRequiredProposalStake(25, 10000);
+    const proposalStake: BN = new BN(50000);
     const runtimeProposalFee: BN = apiWrapper.estimateProposeWorkingGroupMintCapacityFee(
       description,
       description,

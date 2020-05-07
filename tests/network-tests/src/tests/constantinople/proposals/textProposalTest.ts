@@ -8,7 +8,7 @@ import { ApiWrapper } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN = require('bn.js');
 
-describe.skip('Text proposal network tests', () => {
+describe('Text proposal network tests', () => {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
@@ -42,7 +42,7 @@ describe.skip('Text proposal network tests', () => {
     await apiWrapper.transferBalanceToAccounts(sudo, m2KeyPairs, runtimeVoteFee);
 
     // Proposal stake calculation
-    const proposalStake: BN = await apiWrapper.getRequiredProposalStake(25, 10000);
+    const proposalStake: BN = new BN(25000);
     const runtimeProposalFee: BN = apiWrapper.estimateProposeTextFee(
       proposalStake,
       description,

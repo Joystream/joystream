@@ -9,7 +9,7 @@ import { ApiWrapper } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN = require('bn.js');
 
-describe.skip('Runtime upgrade networt tests', () => {
+describe('Runtime upgrade networt tests', () => {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
@@ -41,7 +41,7 @@ describe.skip('Runtime upgrade networt tests', () => {
     const runtimeVoteFee: BN = apiWrapper.estimateVoteForProposalFee();
 
     // Topping the balances
-    const proposalStake: BN = await apiWrapper.getRequiredProposalStake(1, 100);
+    const proposalStake: BN = new BN(1000000);
     const runtimeProposalFee: BN = apiWrapper.estimateProposeRuntimeUpgradeFee(
       proposalStake,
       description,
