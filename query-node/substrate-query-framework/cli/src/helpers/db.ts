@@ -32,7 +32,8 @@ export function getTypeormModelGeneratorConnectionConfig() {
     `--output entities`,
     `--user ${envConfig['TYPEORM_USERNAME']}`,
     `--pass ${envConfig['TYPEORM_PASSWORD']}`,
-    '--noConfig'
+    '--noConfig',
+    '--generateConstructor'
   ].join(' ');
   return command;
 }

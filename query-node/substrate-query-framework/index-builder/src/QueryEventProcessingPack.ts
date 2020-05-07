@@ -1,9 +1,9 @@
 // @ts-check
 
-import QueryEvent from './QueryEvent'
+import { DB } from '.';
 
-export type QueryEventProcessorResult = void | Promise<void>
+export type QueryEventProcessorResult = void | Promise<void>;
 
 export default interface QueryEventProcessingPack {
-    [index: string] : (query_event: QueryEvent) => QueryEventProcessorResult
+  [index: string]: (db: DB) => QueryEventProcessorResult;
 }

@@ -6,6 +6,7 @@ import QueryEventBlock from './QueryEventBlock';
 import IndexBuilder from './IndexBuilder';
 import QueryNode, { QueryNodeState } from './QueryNode';
 import QueryNodeManager from './QueryNodeManager';
+import { DB, SavedEntityEvent } from './db';
 
 export {
   ISubstrateQueryService,
@@ -18,4 +19,6 @@ export {
   QueryNode,
   QueryNodeState,
   QueryNodeManager,
+  DB,
+  SavedEntityEvent,
 };

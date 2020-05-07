@@ -1,28 +1,15 @@
 import "reflect-metadata";
 import * as dotenv from 'dotenv';
-import * as shortid from 'shortid';
-import { createConnection, getConnection } from 'typeorm';
+import { createConnection } from 'typeorm';
 import { {{typeRegistrator}} } from '{{{packageName}}}';
-import { QueryNodeManager } from "index-builder/lib";
+import { QueryNodeManager, QueryEvent, DB } from "index-builder/lib";
 
 // Mappings use!
-export { QueryEvent } from "index-builder/lib";
-
-const handlers = require('../../mappings');
-
-/**
- * Fixes compatibility between typeorm and warthog by filling id, createById and version
- * @param entity Instance of the entity
- */
-export function insertIntoDatabase(entity: any) {
-	entity["id"] = shortid.generate();
-	entity["createdById"] = shortid.generate();
-	entity["version"] = 1;
-
-	getConnection().getRepository(entity.constructor.name).insert(entity);
-}
+export { DB }
 
 function getProcessingPack() {
+  const handlers = require('../../mappings');
+
   let processingPack: { [key: string]: any } = {};
 
   Object.keys(handlers).map((handler: string) => {
@@ -45,7 +32,7 @@ async function main() {
     process.exit(1);
   }
 
-  await createConnection();
+	const conn = await createConnection();
 
   const node = new QueryNodeManager(process);
   node.start(providerUri, getProcessingPack(), {{typeRegistrator}});
