@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Dropdown, Label, Loader, Message, Icon } from "semantic-ui-react";
+import { Dropdown, Label, Loader, Message, Icon, DropdownItemProps } from "semantic-ui-react";
 import { getFormErrorLabelsProps } from "./errorHandling";
 import * as Yup from "yup";
 import {
@@ -39,13 +39,19 @@ function memberOptionKey(id: number, profile: Profile) {
   return `${id}:${profile.root_account.toString()}`;
 }
 
+const NONE_OPTION_VALUE = 'none';
+
 function membersToOptions(members: { id: number, profile: Profile }[]) {
-  return members.map(({ id, profile }) => ({
-    key: profile.handle,
-    text: profile.handle,
-    value: memberOptionKey(id, profile),
-    image: profile.avatar_uri.toString() ? { avatar: true, src: profile.avatar_uri } : null
-  }));
+  let noneOption: DropdownItemProps = { key: '- NONE -', text: '- NONE -', value: NONE_OPTION_VALUE };
+  return [noneOption].concat(
+    members
+      .map(({ id, profile }) => ({
+        key: profile.handle,
+        text: profile.handle,
+        value: memberOptionKey(id, profile),
+        image: profile.avatar_uri.toString() ? { avatar: true, src: profile.avatar_uri } : null
+      }))
+  );
 }
 
 const SetContentWorkingGroupsLeadForm: React.FunctionComponent<FormInnerProps> = props => {
@@ -72,7 +78,13 @@ const SetContentWorkingGroupsLeadForm: React.FunctionComponent<FormInnerProps> =
         {...props}
         txMethod="createSetLeadProposal"
         proposalType="SetLead"
-        submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", values.workingGroupLead.split(":")]}
+        submitParams={[
+          props.myMemberId,
+          values.title,
+          values.rationale,
+          "{STAKE}",
+          values.workingGroupLead !== NONE_OPTION_VALUE ? values.workingGroupLead.split(":") : undefined
+        ]}
       >
         {loading ? (
           <>
