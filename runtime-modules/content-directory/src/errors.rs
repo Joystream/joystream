@@ -16,7 +16,6 @@ pub const ERROR_CLASS_SCHEMAS_LIMIT_REACHED: &str =
     "Maximum number of given class schemas limit reached";
 pub const ERROR_CLASS_PROPERTIES_LIMIT_REACHED: &str =
     "Maximum number of properties in schema limit reached";
-
 // Main logic errors
 // --------------------------------------
 
@@ -45,8 +44,8 @@ pub const ERROR_PROP_NAME_NOT_UNIQUE_IN_A_CLASS: &str =
 pub const ERROR_MISSING_REQUIRED_PROP: &str =
     "Some required property was not found when adding schema support to entity";
 pub const ERROR_UNKNOWN_ENTITY_PROP_ID: &str = "Some of the provided property ids cannot be found on the current list of propery values of this entity";
-pub const ERROR_TEXT_PROP_IS_TOO_LONG: &str = "Text propery is too long";
-pub const ERROR_VEC_PROP_IS_TOO_LONG: &str = "Vector propery is too long";
+pub const ERROR_TEXT_PROP_IS_TOO_LONG: &str = "Text property is too long";
+pub const ERROR_VEC_PROP_IS_TOO_LONG: &str = "Vector property is too long";
 pub const ERROR_ENTITY_PROP_VALUE_VECTOR_IS_TOO_LONG: &str =
     "Propery value vector can`t contain more values";
 pub const ERROR_ENTITY_PROP_VALUE_VECTOR_INDEX_IS_OUT_OF_RANGE: &str =

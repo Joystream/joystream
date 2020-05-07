@@ -104,6 +104,10 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug {
     type NumberOfSchemasConstraint: Get<MaxNumber>;
 
     type NumberOfPropertiesConstraint: Get<MaxNumber>;
+
+    type VecMaxLengthConstraint: Get<VecMaxLength>;
+
+    type TextMaxLengthConstraint: Get<TextMaxLength>;
 }
 
 /// Length constraint for input validation
@@ -262,9 +266,13 @@ impl<T: Trait> Class<T> {
         Ok(())
     }
 
-    pub fn ensure_properties_limit_not_reached(&self, new_properties: &[Property<T>]) -> dispatch::Result {
+    pub fn ensure_properties_limit_not_reached(
+        &self,
+        new_properties: &[Property<T>],
+    ) -> dispatch::Result {
         ensure!(
-            T::NumberOfPropertiesConstraint::get() <= (self.properties.len() + new_properties.len()) as MaxNumber,
+            T::NumberOfPropertiesConstraint::get()
+                <= (self.properties.len() + new_properties.len()) as MaxNumber,
             ERROR_CLASS_PROPERTIES_LIMIT_REACHED
         );
         Ok(())
@@ -571,7 +579,7 @@ decl_module! {
             class.ensure_properties_limit_not_reached(&new_properties)?;
 
             let mut schema = Schema::new(existing_properties);
-            
+
             let mut unique_prop_names = BTreeSet::new();
             for prop in class.properties.iter() {
                 unique_prop_names.insert(prop.name.clone());
@@ -580,7 +588,8 @@ decl_module! {
             for prop in new_properties.iter() {
                 prop.ensure_name_is_valid()?;
                 prop.ensure_description_is_valid()?;
-
+                prop.ensure_prop_type_size_is_valid()?;
+                
                 // Check that the name of a new property is unique within its class.
                 ensure!(
                     !unique_prop_names.contains(&prop.name),

@@ -541,18 +541,31 @@ impl<T: Trait> Property<T> {
     }
 
     pub fn validate_max_len_if_vec_prop(&self, value: &PropertyValue<T>) -> dispatch::Result {
-
         match (value, &self.prop_type) {
-            (PV::BoolVec(vec, _), PT::BoolVec(max_len, _)) => Self::validate_vec_len(vec, *max_len)?,
-            (PV::Uint16Vec(vec, _), PT::Uint16Vec(max_len, _)) => Self::validate_vec_len(vec, *max_len)?,
-            (PV::Uint32Vec(vec, _), PT::Uint32Vec(max_len, _)) => Self::validate_vec_len(vec, *max_len)?,
-            (PV::Uint64Vec(vec, _), PT::Uint64Vec(max_len, _)) => Self::validate_vec_len(vec, *max_len)?,
-            (PV::Int16Vec(vec, _), PT::Int16Vec(max_len, _)) => Self::validate_vec_len(vec, *max_len)?,
-            (PV::Int32Vec(vec, _), PT::Int32Vec(max_len, _)) => Self::validate_vec_len(vec, *max_len)?,
-            (PV::Int64Vec(vec, _), PT::Int64Vec(max_len, _)) => Self::validate_vec_len(vec, *max_len)?,
+            (PV::BoolVec(vec, _), PT::BoolVec(max_len, _)) => {
+                Self::validate_vec_len(vec, *max_len)?
+            }
+            (PV::Uint16Vec(vec, _), PT::Uint16Vec(max_len, _)) => {
+                Self::validate_vec_len(vec, *max_len)?
+            }
+            (PV::Uint32Vec(vec, _), PT::Uint32Vec(max_len, _)) => {
+                Self::validate_vec_len(vec, *max_len)?
+            }
+            (PV::Uint64Vec(vec, _), PT::Uint64Vec(max_len, _)) => {
+                Self::validate_vec_len(vec, *max_len)?
+            }
+            (PV::Int16Vec(vec, _), PT::Int16Vec(max_len, _)) => {
+                Self::validate_vec_len(vec, *max_len)?
+            }
+            (PV::Int32Vec(vec, _), PT::Int32Vec(max_len, _)) => {
+                Self::validate_vec_len(vec, *max_len)?
+            }
+            (PV::Int64Vec(vec, _), PT::Int64Vec(max_len, _)) => {
+                Self::validate_vec_len(vec, *max_len)?
+            }
 
             (PV::TextVec(vec, _), PT::TextVec(vec_max_len, text_max_len, _)) => {
-                Self::validate_vec_len(vec, *vec_max_len)?; 
+                Self::validate_vec_len(vec, *vec_max_len)?;
                 for text_item in vec.iter() {
                     Self::validate_max_len_of_text(text_item, *text_max_len)?;
                 }
@@ -681,5 +694,38 @@ impl<T: Trait> Property<T> {
             ERROR_PROPERTY_DESCRIPTION_TOO_SHORT,
             ERROR_PROPERTY_DESCRIPTION_TOO_LONG,
         )
+    }
+
+    pub fn ensure_prop_type_size_is_valid(&self) -> dispatch::Result {
+        match &self.prop_type {
+            PropertyType::BoolVec(vec_max_len, _)
+            | PropertyType::Uint16Vec(vec_max_len, _)
+            | PropertyType::Uint32Vec(vec_max_len, _)
+            | PropertyType::Uint64Vec(vec_max_len, _)
+            | PropertyType::Int16Vec(vec_max_len, _)
+            | PropertyType::Int32Vec(vec_max_len, _)
+            | PropertyType::Int64Vec(vec_max_len, _)
+            | PropertyType::ReferenceVec(vec_max_len, _, _, _) => ensure!(
+                *vec_max_len <= T::VecMaxLengthConstraint::get(),
+                ERROR_VEC_PROP_IS_TOO_LONG
+            ),
+            PropertyType::Text(text_max_len, _) => ensure!(
+                *text_max_len <= T::TextMaxLengthConstraint::get(),
+                ERROR_TEXT_PROP_IS_TOO_LONG
+            ),
+            PropertyType::TextVec(vec_max_len, text_max_len, _) => {
+                ensure!(
+                    *vec_max_len <= T::VecMaxLengthConstraint::get(),
+                    ERROR_VEC_PROP_IS_TOO_LONG
+                );
+                ensure!(
+                    *text_max_len <= T::TextMaxLengthConstraint::get(),
+                    ERROR_TEXT_PROP_IS_TOO_LONG
+                );
+            }
+            _ => (),
+        }
+
+        Ok(())
     }
 }
