@@ -2,10 +2,12 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { registerJoystreamTypes } from '@joystream/types';
 import Config from '../Config'
-import { State } from '../StateKeeper'
+import { State } from '../state/StateKeeper'
 import ISubstrateQueryService, { makeQueryService } from './ISubstrateQueryService';
 import QueryBlockProducer from './QueryBlockProducer';
 import QueryEventBlock from './QueryEventBlock';
+import { EventEmitter } from 'events';
+import StateBootstrap from './StateBootstrap';
 
 const logger = require('log4js').getLogger('query_node');
 
@@ -17,7 +19,7 @@ export enum QueryNodeState {
     STOPPED,
   }
 
-export default class QueryNode {
+export default class QueryNode extends EventEmitter {
     private _state: QueryNodeState;
 
     private _websocketProvider?: WsProvider;
@@ -25,11 +27,14 @@ export default class QueryNode {
     // API instance for talking to Substrate full node.
     private _queryService?: ISubstrateQueryService;
     private _queryBlockProducer?: QueryBlockProducer;
+    private _stateBootstrap?: StateBootstrap;
+    private _api?: ApiPromise;
 
     // Query index building node.
     //private _indexBuilder: IndexBuilder;
 
     constructor() {
+        super();
         this._state = QueryNodeState.NOT_STARTED;
     }
 
@@ -40,11 +45,12 @@ export default class QueryNode {
         }
 
         this._websocketProvider = new WsProvider(providerUrl);
-        registerJoystreamTypes()
-
-        const api  = await ApiPromise.create({ provider: this._websocketProvider });
-        this._queryService = makeQueryService(api);
+        registerJoystreamTypes();
+        
+        this._api  = await ApiPromise.create({ provider: this._websocketProvider });
+        this._queryService = makeQueryService(this._api);
         this._queryBlockProducer = new QueryBlockProducer(this._queryService, config);
+        this._stateBootstrap = new StateBootstrap(this._queryService, config);
     }
 
     async run(state: State) {
@@ -52,17 +58,16 @@ export default class QueryNode {
             throw Error('Query block producer is not initialized');
         }
 
-        this._queryBlockProducer.on('QueryEventBlock', (query_event_block: QueryEventBlock): void => {
-            this._onQueryEventBlock(query_event_block);
-        });
+        //this._queryBlockProducer.on('QueryEventBlock', (query_event_block: QueryEventBlock): void => {
+        //    this._onQueryEventBlock(query_event_block);
+        //});
 
-        this._state = QueryNodeState.STARTING;
-        await this._queryBlockProducer.start(state.lastProcessedBlock);
         this._state = QueryNodeState.STARTED;
-
-        //while (this._state == QueryNodeState.STARTED) {
-        //
-        //}
+        await this._queryBlockProducer.start(state.lastProcessedBlock + 1);
+        for await (const query_event of this._queryBlockProducer.blockGenerator()) {
+            this._onQueryEventBlock(query_event);
+        }
+        
     }
 
     _onQueryEventBlock(query_event_block: QueryEventBlock): void {
@@ -70,7 +75,7 @@ export default class QueryNode {
         query_event_block.query_events.forEach((query_event, index) => {
             logger.debug(`Processing event: ${query_event.event_name}`);    
         });
-      }
+    }
     
     get state() {
         return this._state;

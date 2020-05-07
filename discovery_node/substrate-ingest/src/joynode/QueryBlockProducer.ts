@@ -2,8 +2,9 @@ import ISubstrateQueryService from './ISubstrateQueryService';
 import QueryEvent from './QueryEvent';
 import QueryEventBlock from './QueryEventBlock';
 import { EventRecord, SignedBlock, Hash } from '@polkadot/types/interfaces';
-import { Codec } from '@polkadot/types/types';
 import { EventEmitter } from 'events';
+import { Codec } from '@polkadot/types/types';
+
 import Config from '../Config';
 const logger = require('log4js').getLogger('producer');
 
@@ -25,7 +26,8 @@ export default class QueryBlockProducer extends EventEmitter {
         this._started = false;
         this._queryService = query_service;
         this._pollIntervalMs = config.get().joysteam?.poll_interval || DEFAULT_NEW_BLOCK_POLL_INTERVAL_MS;
-        
+        logger.debug(`Polling ${this._pollIntervalMs} ms`);
+
         // TODO
         // need to set this up, when state is better, it
         // will be refactored
@@ -62,8 +64,6 @@ export default class QueryBlockProducer extends EventEmitter {
             logger.debug(`New block found at height #${this._chainHeight}`)
         });
 
-        // starts a long-running loop producing new blocks
-        await this.produceNextBlock();
     }
 
     async stop() {
@@ -76,37 +76,38 @@ export default class QueryBlockProducer extends EventEmitter {
         this._started = false;
     }
 
-    private async produceNextBlock():Promise<void> { 
-        if (!this._started) {
-            logger.debug("Block producer is stopped");
-            return;
+    async * blockGenerator():AsyncGenerator<QueryEventBlock> { 
+        while (this._started) {
+            let height = this._nextBlockHeight;
+            let block_hash_of_target = await this.getBlockHashOrWait(height, () => {
+                return (this._chainHeight >= height) && 
+                    (height - this._lastAckedBlockHeight <= this._maxUnackedBlocks)
+            });
+            let records = await this._queryService.eventsAt(block_hash_of_target);
+            logger.debug(`\tRead ${records.length} events of the block at height ${height}.`);
+
+            let signed_block = await this._queryService.getBlock(block_hash_of_target);
+            logger.debug(`\tFetched full block at height ${height}.`);    
+            
+            this._nextBlockHeight++;
+            yield this.emitBlockEvent(signed_block, records);
         }
-        
-
-        let height = this._nextBlockHeight;
-        let block_hash_of_target = await this.getBlockHashOrWait(height, () => {
-            return (this._chainHeight >= height) && 
-                (height - this._lastAckedBlockHeight <= this._maxUnackedBlocks)
-        });
-        let records = await this._queryService.eventsAt(block_hash_of_target);
-        logger.debug(`\tRead ${records.length} events of the block at height ${height}.`);
-
-        let signed_block = await this._queryService.getBlock(block_hash_of_target);
-        logger.debug(`\tFetched full block at height ${height}.`);    
-        
-        this.emitBlockEvent(signed_block, records);
-        this._nextBlockHeight++;
-        
-        await this.produceNextBlock();
-             
     }
+
+    // async * blocksGenerator():AsyncGenerator<QueryEventBlock> {
+    //     while (this._started) {
+    //         yield await this.produceNextBlock();
+    //     }
+    // }
 
     private async getBlockHashOrWait(height: number, waitFor:()=>boolean): Promise<Hash> {
         return new Promise<Hash>((resolve, reject) => {
-            if (!this._started) {
-                reject("The block producer is stopped")
-            }
             let checkHeight = () => {
+                if (!this._started) {
+                    reject("The block producer is stopped")
+                    return;
+                }
+                
                 if (waitFor()) {
                     this._queryService.getBlockHash(height)
                         .then((h: Hash) => resolve(h))
@@ -121,9 +122,7 @@ export default class QueryBlockProducer extends EventEmitter {
         });
     }
 
-
-
-    private emitBlockEvent(signed_block: SignedBlock, records: EventRecord[] & Codec):void {
+    private emitBlockEvent(signed_block: SignedBlock, records: EventRecord[] & Codec):QueryEventBlock {
         let extrinsics_array = signed_block.block.extrinsics.toArray();
         let query_events: QueryEvent[] = records.map(
                 (record, index): QueryEvent => {
@@ -149,6 +148,7 @@ export default class QueryBlockProducer extends EventEmitter {
             let query_block = new QueryEventBlock(this._nextBlockHeight, query_events);
             this.emit('QueryEventBlock', query_block);
             logger.debug(`\tEmitted query event block.`);
+            return query_block;
     }
 
 
