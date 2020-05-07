@@ -26,65 +26,60 @@ $ yarn start
 
 ## Add a new mapping for Joystream MemberRegistered event
 
-1. Every mapping function get a parameter of `QueryEvent` type
+1. Every mapping function get a parameter of `DB` type
 
 ```ts
-import { QueryEvent, db } from "../generated/indexer/index";
+import { DB } from '../generated/indexer';
 ```
 
-2. `db` object for database operations: save/get/remove
+2. `db` object is for database operations save/get/remove and access to event itself
+
+3. Define the event handler function with the following signature and import the entity class
 
 ```ts
-import { db } from "../generated/indexer/index";
-```
-
-3. Define the event handler function with the following signature
-
-```ts
-export async function handleMemberRegistered(event: QueryEvent) {}
+import { MemberRegistereds } from '../generated/indexer/entities/MemberRegistereds';
+export async function handleMemberRegistered(db: DB) {}
 ```
 
 4. Inside the handler function create a new instance of the entity and fill properties with event data.
 
 ```ts
 // Get event data
-const { AccountId, MemberId } = event.event_params;
-const member = new MemberRegistereds({ accountId: AccountId, memberId: +MemberId });
+const { AccountId, MemberId } = db.event.event_params;
+const member = new MemberRegistereds({ accountId: AccountId.toString(), memberId: +MemberId });
 ```
 
 5. Call `db.save()` method to save data on database
 
 ```ts
 // Save to database.
-db.save<MemberRegistereds>(member, event);
+db.save<MemberRegistereds>(member);
 ```
 
 6. Query database
 
 ```ts
 // Query from database
-const m = await db.get(MemberRegistereds, { where: { memberId: 123 } });
+const findOptions = { where: { memberId: 123 } }; // match the record
+const m = await db.get(MemberRegistereds, findOptions);
 ```
 
-**Notes**
-`db.save()` method take two parameters entity instance and event. `db.save()` method use `event` to keep track of last processed event.
-
-`db.get()` method. The first parameter is the name of the entity class to query and the second parameter is the find options (to match record).
+Below you can find the complete code
 
 **Complete code**
 
 ```ts
 import { MemberRegistereds } from "../generated/indexer/entities/MemberRegistereds";
-import { QueryEvent, db } from "../generated/indexer/index";
+import { DB } from "../generated/indexer";
 
-export async function handleMemberRegistered(event: QueryEvent) {
+export async function handleMemberRegistered(db: DB) {
   // Get event data
-  const { AccountId, MemberId } = event.event_params;
+  const { AccountId, MemberId } = db.event.event_params;
 
-  const member = new MemberRegistereds({ accountId: AccountId, memberId: +MemberId });
+  const member = new MemberRegistereds({ accountId: AccountId.toString(), memberId: +MemberId };
 
   // Save to database.
-  db.save<MemberRegistereds>(member, event);
+  db.save<MemberRegistereds>(member);
 
   // Query from database
   const m = await db.get(MemberRegistereds, { where: { memberId: 123 } });
@@ -112,19 +107,19 @@ Below you can find a type defination example:
 ]
 ```
 
-2. Block indexer is block consumer and every block can have events that we want to store their data. So indexing data from events we need to send the event to a function or a class that can handle the event and store the event data on database. `mappings` are the functions that we use to update our database with events data. Functions that we define in our mappings will be called only when an event name match our function name (function name pattern is `'handle' + eventName`). We call mapping functions as event handlers. Each event handler will have only one parameter which is the event that handler called for. Below you can find an example for event an handler:
+2. Block indexer is block consumer and every block can have events that we want to store their data. So indexing data from events we need to send the event to a function or a class that can handle the event and stores the event data on the database. `mappings` are the functions that we use to update our database with events data. Functions that we define in our mappings will be called only when the event name match our function name (function name pattern is `'handle' + eventName`). We call mapping functions as event handlers. Each event handler have only one parameter which is the `db: DB`. Every database operation is made with `db` object and the event can be accessed with `db` object. Below you can find an example for the event a handler:
 
 ```ts
 // mappings/index.ts
 
-import { QueryEvent } from "../generated/indexer/index";
+import { DB } from '../generated/indexer';
 
-export function handleMemberRegistered(event: QueryEvent) {
-  console.log(`Event parameters: ${event.event_params}`);
+export function handleMemberRegistered(db: DB) {
+  console.log(`Event parameters: ${db.event.event_params}`);
 }
 ```
 
-3. Block indexer connect to a blockchain node via websockets so we need to tell block indexer where to find the address of the node. Also, on the initialization of the indexer we must pass type register function as a parameter. So we put these variables inside the `.env` file that indexer can find and use them. For Joystream we will be running a local development node and add name of the function, package for the type registrator:
+3. Block indexer connects to a blockchain node via WebSocket so we need to tell block indexer where to find the address of the node. Also, on the initialization of the indexer, we must pass the type register function as a parameter. So we put these variables inside the `.env` file that indexer can find and use them. For Joystream we will be running a local development node and add the name of the function, the package for the type registration:
 
 ```
 WS_PROVIDER_ENDPOINT_URI=ws://localhost:9944
