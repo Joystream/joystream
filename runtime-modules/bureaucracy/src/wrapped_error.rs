@@ -1,5 +1,26 @@
 use membership::members;
 
+//TODO: convert messages to the decl_error! entries
+pub mod bureaucracy_errors {
+    pub static MSG_CURRENT_LEAD_NOT_SET: &str = "Current lead is not set";
+    pub static MSG_IS_NOT_LEAD_ACCOUNT: &str = "Not a lead account";
+    pub static MSG_OPENING_TEXT_TOO_SHORT: &str = "Opening text too short";
+    pub static MSG_OPENING_TEXT_TOO_LONG: &str = "Opening text too long";
+    pub static MSG_CURATOR_OPENING_DOES_NOT_EXIST: &str = "Curator opening does not exist";
+    pub static MSG_INSUFFICIENT_BALANCE_TO_APPLY: &str = "Insufficient balance to apply";
+    pub static MSG_APPLY_ON_CURATOR_OPENING_UNSIGNED_ORIGIN: &str = "Unsigned origin";
+    pub static MSG_APPLY_ON_CURATOR_OPENING_MEMBER_ID_INVALID: &str = "Member id is invalid";
+    pub static MSG_APPLY_ON_CURATOR_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT: &str =
+        "Signer does not match controller account";
+    pub static MSG_ORIGIN_IS_NEITHER_MEMBER_CONTROLLER_OR_ROOT: &str =
+        "Origin must be controller or root account of member";
+    pub static MSG_MEMBER_HAS_ACTIVE_APPLICATION_ON_OPENING: &str =
+        "Member already has an active application on the opening";
+    pub static MSG_CURATOR_APPLICATION_TEXT_TOO_LONG: &str = "Curator application text too long";
+    pub static MSG_CURATOR_APPLICATION_TEXT_TOO_SHORT: &str = "Curator application text too short";
+    pub static MSG_INSUFFICIENT_BALANCE_TO_COVER_STAKE: &str =
+        "Insuffieicnt balance to cover stake";
+}
 /*
  * The errors below, while in many cases encoding similar outcomes,
  * are scoped to the specific extrinsic for which they are used.
@@ -78,12 +99,6 @@ pub static MSG_ADD_CURATOR_OPENING_NEW_APPLICATION_WAS_CROWDED_OUT: &str =
     "NewApplicationWasCrowdedOut";
 pub static MSG_ADD_CURATOR_OPENING_ZERO_MAX_APPLICANT_COUNT: &str =
     "Application rationing has zero max active applicants";
-
-// Errors for `apply_on_curator_opening`
-pub static MSG_APPLY_ON_CURATOR_OPENING_UNSIGNED_ORIGIN: &str = "Unsigned origin";
-pub static MSG_APPLY_ON_CURATOR_OPENING_MEMBER_ID_INVALID: &str = "Member id is invalid";
-pub static MSG_APPLY_ON_CURATOR_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT: &str =
-    "Signer does not match controller account";
 
 /// Error wrapper for external module error conversions
 pub struct WrappedError<E> {
@@ -253,13 +268,13 @@ impl rstd::convert::From<WrappedError<members::MemberControllerAccountDidNotSign
     fn from(wrapper: WrappedError<members::MemberControllerAccountDidNotSign>) -> Self {
         match wrapper.error {
             members::MemberControllerAccountDidNotSign::UnsignedOrigin => {
-                MSG_APPLY_ON_CURATOR_OPENING_UNSIGNED_ORIGIN
+                bureaucracy_errors::MSG_APPLY_ON_CURATOR_OPENING_UNSIGNED_ORIGIN
             }
             members::MemberControllerAccountDidNotSign::MemberIdInvalid => {
-                MSG_APPLY_ON_CURATOR_OPENING_MEMBER_ID_INVALID
+                bureaucracy_errors::MSG_APPLY_ON_CURATOR_OPENING_MEMBER_ID_INVALID
             }
             members::MemberControllerAccountDidNotSign::SignerControllerAccountMismatch => {
-                MSG_APPLY_ON_CURATOR_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT
+                bureaucracy_errors::MSG_APPLY_ON_CURATOR_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT
             }
         }
     }
