@@ -19,7 +19,11 @@ use system::{ensure_root, ensure_signed, RawOrigin};
 use constraints::InputValidationLengthConstraint;
 use errors::bureaucracy_errors::*;
 use errors::WrappedError;
-use types::{CuratorApplication, CuratorOpening, Lead, OpeningPolicyCommitment};
+use rstd::collections::btree_map::BTreeMap;
+use types::{
+    Curator, CuratorApplication, CuratorOpening, CuratorRoleStakeProfile, Lead,
+    OpeningPolicyCommitment,
+};
 
 //TODO: docs
 //TODO: migrate to decl_error
@@ -32,7 +36,7 @@ pub type LeadOf<T> =
 + add_curator_opening
 + accept_curator_applications
 + begin_curator_applicant_review
-- fill_curator_opening
++ fill_curator_opening
 + withdraw_curator_application
 + terminate_curator_application
 + apply_on_curator_opening
@@ -58,11 +62,11 @@ pub type CurrencyOf<T> = <T as stake::Trait>::Currency;
 pub type NegativeImbalance<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
 
-/// The bureaucracy main _Trait_
-pub trait Trait<I: Instance>: system::Trait + membership::members::Trait + hiring::Trait {
-    /// Engine event type.
-    type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
-}
+/// Alias for the curator application id to the curator id dictionary
+pub type CuratorApplicationIdToCuratorIdMap<T> = BTreeMap<CuratorApplicationId<T>, CuratorId<T>>;
+
+/// Type identifier for curator role, which must be same as membership actor identifier
+pub type CuratorId<T> = <T as membership::members::Trait>::ActorId;
 
 // Type simplification
 type CuratorOpeningInfo<T> = (
@@ -96,6 +100,22 @@ type CuratorApplicationInfo<T> = (
     >,
 );
 
+type CuratorOf<T> = Curator<
+    <T as system::Trait>::AccountId,
+    //    T::RewardRelationshipId,
+    //    T::StakeId,
+    //    <T as system::Trait>::BlockNumber,
+    //    LeadId<T>,
+    //    CuratorApplicationId<T>,
+    //    PrincipalId<T>,
+>;
+
+/// The bureaucracy main _Trait_
+pub trait Trait<I: Instance>: system::Trait + membership::members::Trait + hiring::Trait {
+    /// Engine event type.
+    type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
+}
+
 decl_event!(
     /// Proposals engine events
     pub enum Event<T, I>
@@ -104,6 +124,7 @@ decl_event!(
         <T as system::Trait>::AccountId,
         CuratorOpeningId = CuratorOpeningId<T>,
         CuratorApplicationId = CuratorApplicationId<T>,
+        CuratorApplicationIdToCuratorIdMap = CuratorApplicationIdToCuratorIdMap<T>,
     {
         /// Emits on setting the leader.
         /// Params:
@@ -135,6 +156,11 @@ decl_event!(
         /// Params:
         /// - Curator opening id
         BeganCuratorApplicationReview(CuratorOpeningId),
+        /// Emits on filling the curator opening.
+        /// Params:
+        /// - Curator opening id
+        /// - Curator application id to the curator id dictionary
+        CuratorOpeningFilled(CuratorOpeningId, CuratorApplicationIdToCuratorIdMap),
     }
 );
 
@@ -160,6 +186,12 @@ decl_storage! {
 
         /// Curator application human readable text length limits
         pub CuratorApplicationHumanReadableText get(curator_application_human_readable_text) : InputValidationLengthConstraint;
+
+        /// Maps identifier to corresponding curator.
+        pub CuratorById get(curator_by_id) : linked_map CuratorId<T> => CuratorOf<T>;
+
+        /// Next identifier for new curator.
+        pub NextCuratorId get(next_curator_id) : CuratorId<T>;
     }
 }
 
@@ -435,6 +467,185 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::BeganCuratorApplicationReview(curator_opening_id));
+        }
+
+                /// Fill opening for curator
+        pub fn fill_curator_opening(
+            origin,
+            curator_opening_id: CuratorOpeningId<T>,
+            successful_curator_application_ids: CuratorApplicationIdSet<T>,
+//            reward_policy: Option<RewardPolicy<minting::BalanceOf<T>, T::BlockNumber>>
+        ) {
+            // Ensure lead is set and is origin signer
+            Self::ensure_origin_is_set_lead(origin)?;
+
+            // Ensure curator opening exists
+            let (curator_opening, _) = Self::ensure_curator_opening_exists(&curator_opening_id)?;
+
+            // Make iterator over successful curator application
+            let successful_iter = successful_curator_application_ids
+                                    .iter()
+                                    // recover curator application from id
+                                    .map(|curator_application_id| { Self::ensure_curator_application_exists(curator_application_id)})
+                                    // remove Err cases, i.e. non-existing applications
+                                    .filter_map(|result| result.ok());
+
+            // Count number of successful curators provided
+            let num_provided_successful_curator_application_ids = successful_curator_application_ids.len();
+
+            // Ensure all curator applications exist
+            let number_of_successful_applications = successful_iter
+                                                    .clone()
+                                                    .count();
+
+            ensure!(
+                number_of_successful_applications == num_provided_successful_curator_application_ids,
+                MSG_SUCCESSFUL_CURATOR_APPLICATION_DOES_NOT_EXIST
+            );
+
+            // Attempt to fill opening
+            let successful_application_ids = successful_iter
+                                            .clone()
+                                            .map(|(successful_curator_application, _, _)| successful_curator_application.application_id)
+                                            .collect::<BTreeSet<_>>();
+            // TODO: should we implement this?
+            // // Ensure all applications are from members that _still_ can step into the given role
+            // let num_successful_applications_that_can_register_as_curator = successful_iter
+            //                                                             .clone()
+            //                                                             .map(|(successful_curator_application, _, _)| successful_curator_application.member_id)
+            //                                                             .filter_map(|successful_member_id| Self::ensure_can_register_curator_role_on_member(&successful_member_id).ok() )
+            //                                                             .count();
+
+            // ensure!(
+            //     num_successful_applications_that_can_register_as_curator == num_provided_successful_curator_application_ids,
+            //     MSG_MEMBER_NO_LONGER_REGISTRABLE_AS_CURATOR
+            // );
+
+            // NB: Combined ensure check and mutation in hiring module
+            ensure_on_wrapped_error!(
+                hiring::Module::<T>::fill_opening(
+                    curator_opening.opening_id,
+                    successful_application_ids,
+                    curator_opening.policy_commitment.fill_opening_successful_applicant_application_stake_unstaking_period,
+                    curator_opening.policy_commitment.fill_opening_failed_applicant_application_stake_unstaking_period,
+                    curator_opening.policy_commitment.fill_opening_failed_applicant_role_stake_unstaking_period
+                )
+            )?;
+
+            // TODO: should we implement this?
+            // let create_reward_settings = if let Some(policy) = reward_policy {
+            //     // A reward will need to be created so ensure our configured mint exists
+            //     let mint_id = Self::mint();
+            //
+            //     ensure!(<minting::Mints<T>>::exists(mint_id), MSG_FILL_CURATOR_OPENING_MINT_DOES_NOT_EXIST);
+            //
+            //     // Make sure valid parameters are selected for next payment at block number
+            //     ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(), MSG_FILL_CURATOR_OPENING_INVALID_NEXT_PAYMENT_BLOCK);
+            //
+            //     // The verified reward settings to use
+            //     Some((mint_id, policy))
+            // } else {
+            //     None
+            // };
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let _current_block = <system::Module<T>>::block_number();
+
+            // For each successful application
+            // - create and hold on to curator
+            // - register role with membership module
+
+            let mut curator_application_id_to_curator_id = BTreeMap::new();
+
+            successful_iter
+            .clone()
+            .for_each(|(successful_curator_application, id, _)| {
+                // TODO: should we implement this?
+                // // Create a reward relationship
+                // let reward_relationship = if let Some((mint_id, checked_policy)) = create_reward_settings.clone() {
+                //
+                //     // Create a new recipient for the new relationship
+                //     let recipient = <recurringrewards::Module<T>>::add_recipient();
+                //
+                //     // member must exist, since it was checked that it can enter the role
+                //     let member_profile = <members::Module<T>>::member_profile(successful_curator_application.member_id).unwrap();
+                //
+                //     // rewards are deposited in the member's root account
+                //     let reward_destination_account = member_profile.root_account;
+                //
+                //     // values have been checked so this should not fail!
+                //     let relationship_id = <recurringrewards::Module<T>>::add_reward_relationship(
+                //         mint_id,
+                //         recipient,
+                //         reward_destination_account,
+                //         checked_policy.amount_per_payout,
+                //         checked_policy.next_payment_at_block,
+                //         checked_policy.payout_interval,
+                //     ).expect("Failed to create reward relationship!");
+                //
+                //     Some(relationship_id)
+                // } else {
+                //     None
+                // };
+
+                // Get possible stake for role
+                let application = hiring::ApplicationById::<T>::get(successful_curator_application.application_id);
+
+                // Staking profile for curator
+                let _stake_profile =
+                    if let Some(ref stake_id) = application.active_role_staking_id {
+
+                        Some(
+                            CuratorRoleStakeProfile::new(
+                                stake_id,
+                                &curator_opening.policy_commitment.terminate_curator_role_stake_unstaking_period,
+                                &curator_opening.policy_commitment.exit_curator_role_stake_unstaking_period
+                            )
+                        )
+                    } else {
+                        None
+                    };
+
+                // Get curator id
+                let new_curator_id = <NextCuratorId<T, I>>::get();
+
+                // Make and add new principal
+ //               let principal_id = Self::add_new_principal(&Principal::Curator(new_curator_id));
+
+                // TODO: should we implement this?
+                // Construct curator
+                let curator = Curator::new(
+                    &(successful_curator_application.role_account),
+//                    &reward_relationship,
+//                    &stake_profile,
+//                    &CuratorRoleStage::Active,
+//                    &CuratorInduction::new(&lead_id, &id, &current_block),
+//                    &principal_id
+                );
+
+                // Store curator
+                <CuratorById<T, I>>::insert(new_curator_id, curator);
+
+                // TODO: should we implement this?
+                // // Register role on member
+                // let registered_role = members::Module::<T>::register_role_on_member(
+                //     successful_curator_application.member_id,
+                //     &role_types::ActorInRole::new(role_types::Role::Curator, new_curator_id)
+                // ).is_ok();
+
+                //assert!(registered_role);
+
+                // Update next curator id
+                <NextCuratorId<T, I>>::mutate(|id| *id += <CuratorId<T> as One>::one());
+
+                curator_application_id_to_curator_id.insert(id, new_curator_id);
+            });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::CuratorOpeningFilled(curator_opening_id, curator_application_id_to_curator_id));
         }
     }
 }

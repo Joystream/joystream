@@ -135,3 +135,98 @@ impl<AccountId: Clone, CuratorOpeningId: Clone, MemberId: Clone, ApplicationId: 
         }
     }
 }
+
+/// Role stake information for a curator.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
+pub struct CuratorRoleStakeProfile<StakeId, BlockNumber> {
+    /// Whether participant is staked, and if so, the identifier for this staking in the staking module.
+    pub stake_id: StakeId,
+
+    /// Unstaking period when terminated.
+    pub termination_unstaking_period: Option<BlockNumber>,
+
+    /// Unstaking period when exiting.
+    pub exit_unstaking_period: Option<BlockNumber>,
+}
+
+impl<StakeId: Clone, BlockNumber: Clone> CuratorRoleStakeProfile<StakeId, BlockNumber> {
+    pub fn new(
+        stake_id: &StakeId,
+        termination_unstaking_period: &Option<BlockNumber>,
+        exit_unstaking_period: &Option<BlockNumber>,
+    ) -> Self {
+        Self {
+            stake_id: (*stake_id).clone(),
+            termination_unstaking_period: (*termination_unstaking_period).clone(),
+            exit_unstaking_period: (*exit_unstaking_period).clone(),
+        }
+    }
+}
+
+/// Working group participant: curator
+/// This role can be staked, have reward and be inducted through the hiring module.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
+pub struct Curator<
+    AccountId,
+    //    RewardRelationshipId,
+    //    StakeId,
+    //    BlockNumber,
+    //    LeadId,
+    //    CuratorApplicationId,
+    //    PrincipalId,
+> {
+    /// Account used to authenticate in this role,
+    pub role_account: AccountId,
+    //    /// Whether the role has recurring reward, and if so an identifier for this.
+    //    pub reward_relationship: Option<RewardRelationshipId>,
+    //    /// When set, describes role stake of curator.
+    //    pub role_stake_profile: Option<CuratorRoleStakeProfile<StakeId, BlockNumber>>,
+    //    /// The stage of this curator in the working group.
+    //    pub stage: CuratorRoleStage<BlockNumber>,
+
+    //    /// How the curator was inducted into the working group.
+    //    pub induction: CuratorInduction<LeadId, CuratorApplicationId, BlockNumber>,
+
+    //    /// Permissions module principal id
+    //    pub principal_id: PrincipalId,
+}
+
+impl<
+        AccountId: Clone,
+        //    RewardRelationshipId: Clone,
+        //        StakeId: Clone,
+        //        BlockNumber: Clone,
+        //    LeadId: Clone,
+        //    ApplicationId: Clone,
+        //    PrincipalId: Clone,
+    >
+    Curator<
+        AccountId,
+        //    RewardRelationshipId,
+        //        StakeId,
+        //        BlockNumber,
+        //    LeadId,
+        //    ApplicationId,
+        //    PrincipalId,
+    >
+{
+    pub fn new(
+        role_account: &AccountId,
+        //        reward_relationship: &Option<RewardRelationshipId>,
+        //        role_stake_profile: &Option<CuratorRoleStakeProfile<StakeId, BlockNumber>>,
+        //        stage: &CuratorRoleStage<BlockNumber>,
+        //        induction: &CuratorInduction<LeadId, ApplicationId, BlockNumber>,
+        //        principal_id: &PrincipalId,
+    ) -> Self {
+        Curator {
+            role_account: (*role_account).clone(),
+            //            reward_relationship: (*reward_relationship).clone(),
+            //            role_stake_profile: (*role_stake_profile).clone(),
+            //            stage: (*stage).clone(),
+            //            induction: (*induction).clone(),
+            //            principal_id: (*principal_id).clone(),
+        }
+    }
+}
