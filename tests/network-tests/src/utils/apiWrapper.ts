@@ -425,8 +425,9 @@ export class ApiWrapper {
     startup_grace_period: BN,
     entry_request_fee: BN
   ): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn();
     return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createSetStorageRoleParametersProposal(stake, title, description, stake, [
+      this.api.tx.proposalsCodex.createSetStorageRoleParametersProposal(memberId, title, description, stake, [
         min_stake,
         min_actors,
         max_actors,

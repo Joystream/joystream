@@ -42,12 +42,9 @@ describe('Storage role parameters proposal network tests', () => {
     const runtimeVoteFee: BN = apiWrapper.estimateVoteForProposalFee();
     await apiWrapper.transferBalanceToAccounts(sudo, m2KeyPairs, runtimeVoteFee);
     const roleParameters: RoleParameters = ((await apiWrapper.getStorageRoleParameters()) as unknown) as RoleParameters;
-    console.log('role parameters ' + roleParameters);
-    console.log('role parameters ' + roleParameters.toRawType());
-    console.log('role parameters min stake ' + roleParameters.min_stake);
 
     // Proposal stake calculation
-    const proposalStake: BN = await apiWrapper.getRequiredProposalStake(25, 10000);
+    const proposalStake: BN = new BN(100000);
     const proposalFee: BN = apiWrapper.estimateProposeStorageRoleParametersFee(
       description,
       description,
@@ -66,23 +63,22 @@ describe('Storage role parameters proposal network tests', () => {
     await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake));
 
     // Proposal creation
-    console.log('proposing new parameters');
     const proposalPromise = apiWrapper.expectProposalCreated();
     await apiWrapper.proposeStorageRoleParameters(
       m1KeyPairs[0],
       proposalTitle,
       description,
       proposalStake,
-      roleParameters.min_stake.toBn(),
+      roleParameters.min_stake.toBn().addn(1),
       roleParameters.min_actors.toBn(),
-      roleParameters.max_actors.toBn(),
-      roleParameters.reward.toBn(),
-      roleParameters.reward_period.toBn(),
-      roleParameters.bonding_period.toBn(),
-      roleParameters.unbonding_period.toBn(),
-      roleParameters.min_service_period.toBn(),
-      roleParameters.startup_grace_period.toBn(),
-      roleParameters.entry_request_fee.toBn()
+      roleParameters.max_actors.toBn().addn(1),
+      roleParameters.reward.toBn().addn(1),
+      roleParameters.reward_period.toBn().addn(1),
+      roleParameters.bonding_period.toBn().addn(1),
+      roleParameters.unbonding_period.toBn().addn(1),
+      roleParameters.min_service_period.toBn().addn(1),
+      roleParameters.startup_grace_period.toBn().addn(1),
+      roleParameters.entry_request_fee.toBn().addn(1)
     );
     const proposalNumber = await proposalPromise;
 
@@ -91,13 +87,58 @@ describe('Storage role parameters proposal network tests', () => {
     await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber);
     await proposalExecutionPromise;
     const newRoleParameters: RoleParameters = await apiWrapper.getStorageRoleParameters();
-    console.log('new role parameters ' + newRoleParameters);
-
-    // const newLead: string = await apiWrapper.getCurrentLeadAddress();
-    // assert(
-    //   newLead === m1KeyPairs[1].address,
-    //   `New lead has unexpected value ${newLead}, expected ${m1KeyPairs[1].address}`
-    // );
+    assert(
+      roleParameters.min_stake.toBn().addn(1).eq(newRoleParameters.min_stake.toBn()),
+      `Min stake has unexpected value ${newRoleParameters.min_stake.toBn()}, expected ${roleParameters.min_stake
+        .toBn()
+        .addn(1)}`
+    );
+    assert(
+      roleParameters.max_actors.toBn().addn(1).eq(newRoleParameters.max_actors.toBn()),
+      `Max actors has unexpected value ${newRoleParameters.max_actors.toBn()}, expected ${roleParameters.max_actors
+        .toBn()
+        .addn(1)}`
+    );
+    assert(
+      roleParameters.reward.toBn().addn(1).eq(newRoleParameters.reward.toBn()),
+      `Reward has unexpected value ${newRoleParameters.reward.toBn()}, expected ${roleParameters.reward.toBn().addn(1)}`
+    );
+    assert(
+      roleParameters.reward_period.toBn().addn(1).eq(newRoleParameters.reward_period.toBn()),
+      `Reward period has unexpected value ${newRoleParameters.reward_period.toBn()}, expected ${roleParameters.reward_period
+        .toBn()
+        .addn(1)}`
+    );
+    assert(
+      roleParameters.bonding_period.toBn().addn(1).eq(newRoleParameters.bonding_period.toBn()),
+      `Bonding period has unexpected value ${newRoleParameters.bonding_period.toBn()}, expected ${roleParameters.bonding_period
+        .toBn()
+        .addn(1)}`
+    );
+    assert(
+      roleParameters.unbonding_period.toBn().addn(1).eq(newRoleParameters.unbonding_period.toBn()),
+      `Unbonding period has unexpected value ${newRoleParameters.unbonding_period.toBn()}, expected ${roleParameters.unbonding_period
+        .toBn()
+        .addn(1)}`
+    );
+    assert(
+      roleParameters.min_service_period.toBn().addn(1).eq(newRoleParameters.min_service_period.toBn()),
+      `Min service period has unexpected value ${newRoleParameters.min_service_period.toBn()}, expected ${roleParameters.min_service_period
+        .toBn()
+        .addn(1)}`
+    );
+    assert(
+      roleParameters.startup_grace_period.toBn().addn(1).eq(newRoleParameters.startup_grace_period.toBn()),
+      `Startup grace period has unexpected value ${newRoleParameters.startup_grace_period.toBn()}, expected ${roleParameters.startup_grace_period
+        .toBn()
+        .addn(1)}`
+    );
+    assert(
+      roleParameters.entry_request_fee.toBn().addn(1).eq(newRoleParameters.entry_request_fee.toBn()),
+      `Entry request fee has unexpected value ${newRoleParameters.entry_request_fee.toBn()}, expected ${roleParameters.entry_request_fee
+        .toBn()
+        .addn(1)}`
+    );
   }).timeout(defaultTimeout);
 
   after(() => {
