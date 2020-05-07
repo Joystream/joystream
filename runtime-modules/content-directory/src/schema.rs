@@ -512,7 +512,7 @@ impl<T: Trait> Property<T> {
                     current_entity_controller,
                 )
             }
-            _ => return Err(ERROR_PROP_VALUE_TYPE_DOESNT_MATCH_INTERNAL_ENTITY_VECTOR_TYPE),
+            _ => Err(ERROR_PROP_VALUE_TYPE_DOESNT_MATCH_INTERNAL_ENTITY_VECTOR_TYPE),
         }
     }
 
