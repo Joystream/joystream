@@ -31,7 +31,7 @@
   font-weight: 700;
 }
 
-@media only screen and (max-width: 991px) {
+@media only screen and (max-width: 1199px) {
   .ProposalType .proposal-details {
     flex-direction: column;
     margin: 1em 0;
