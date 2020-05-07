@@ -9,6 +9,7 @@
     "lint": "eslint . --ext .ts"
   },
   "dependencies": {
+    "@elastic/elasticsearch": "^7.6.1",
     "@joystream/types": "^0.7.0",
     "@polkadot/api": "^0.96.1",
     "@types/js-yaml": "^3.12.3",
