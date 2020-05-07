@@ -749,7 +749,7 @@
 //                 vec![],
 //                 vec![good_prop_bool(), bad_internal_prop]
 //             ),
-//             ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID
+//             ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_CLASS
 //         );
 //     })
 // }
@@ -825,7 +825,7 @@
 //         // Add a new schema with not unique property names:
 //         assert_err!(
 //             TestModule::append_class_schema(class_id, vec![], good_props()),
-//             ERROR_PROP_NAME_NOT_UNIQUE_IN_CLASS
+//             ERROR_PROP_NAME_NOT_UNIQUE_IN_A_CLASS
 //         );
 //     })
 // }

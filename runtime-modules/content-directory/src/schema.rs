@@ -374,8 +374,8 @@ impl<T: Trait> Default for PropertyValue<T> {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct Schema {
     /// Indices into properties vector for the corresponding class.
-    pub properties: Vec<PropertyId>,
-    pub is_active: bool,
+    properties: Vec<PropertyId>,
+    is_active: bool,
 }
 
 impl Default for Schema {
@@ -395,6 +395,22 @@ impl Schema {
             // Default schema status
             is_active: true,
         }
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.is_active
+    }
+
+    pub fn get_properties(&self) -> &[PropertyId] {
+        &self.properties
+    }
+
+    pub fn get_properties_mut(&mut self) -> &mut Vec<PropertyId> {
+        &mut self.properties
+    }
+
+    pub fn set_status(&mut self, is_active: bool) {
+        self.is_active = is_active;
     }
 }
 

@@ -135,6 +135,7 @@ impl EntityCreationVoucher {
 }
 
 /// Who will be set as the controller for any newly created entity in a given class.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Copy, Debug)]
 pub enum InitialControllerPolicy {
     ActorInGroup,
@@ -148,6 +149,7 @@ impl Default for InitialControllerPolicy {
 }
 
 /// Permissions for an instance of a Class in the versioned store.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Eq, PartialEq, Clone, Debug)]
 pub struct ClassPermissions {
     /// Whether to prevent everyone from creating an entity.

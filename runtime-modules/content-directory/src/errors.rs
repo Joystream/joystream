@@ -11,6 +11,12 @@ pub const ERROR_CLASS_NAME_TOO_LONG: &str = "Class name is too long";
 pub const ERROR_CLASS_DESCRIPTION_TOO_SHORT: &str = "Class description is too long";
 pub const ERROR_CLASS_DESCRIPTION_TOO_LONG: &str = "Class description is too long";
 
+pub const ERROR_CLASS_LIMIT_REACHED: &str = "Maximum number of classes limit reached";
+pub const ERROR_CLASS_SCHEMAS_LIMIT_REACHED: &str =
+    "Maximum number of given class schemas limit reached";
+pub const ERROR_CLASS_PROPERTIES_LIMIT_REACHED: &str =
+    "Maximum number of properties in schema limit reached";
+
 // Main logic errors
 // --------------------------------------
 
@@ -19,8 +25,8 @@ pub const ERROR_UNKNOWN_CLASS_SCHEMA_ID: &str = "Unknown class schema id";
 pub const ERROR_CLASS_SCHEMA_NOT_ACTIVE: &str = "Given class schema is not active";
 pub const ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX: &str =
     "New class schema refers to an unknown property index";
-pub const ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID: &str =
-    "New class schema refers to an unknown internal class id";
+pub const ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_CLASS: &str =
+    "New class schema refers to an unknown class id";
 pub const ERROR_NO_PROPS_IN_CLASS_SCHEMA: &str =
     "Cannot add a class schema with an empty list of properties";
 pub const ERROR_ENTITY_NOT_FOUND: &str = "Entity was not found by id";
@@ -34,7 +40,7 @@ pub const ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR: &str =
     "Property value under given index is not a vector";
 pub const ERROR_PROP_VALUE_VEC_NONCES_DOES_NOT_MATCH: &str =
     "Current property value vector nonce does not equal to provided one";
-pub const ERROR_PROP_NAME_NOT_UNIQUE_IN_CLASS: &str =
+pub const ERROR_PROP_NAME_NOT_UNIQUE_IN_A_CLASS: &str =
     "Property name is not unique within its class";
 pub const ERROR_MISSING_REQUIRED_PROP: &str =
     "Some required property was not found when adding schema support to entity";

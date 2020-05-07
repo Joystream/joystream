@@ -30,6 +30,8 @@ pub use operations::*;
 pub use permissions::*;
 pub use schema::*;
 
+type MaxNumber = u32;
+
 pub trait Trait: system::Trait + ActorAuthenticator + Debug {
     /// Type that represents an actor or group of actors in the system.
     type Credential: Parameter
@@ -96,6 +98,12 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug {
     type ClassNameConstraint: Get<InputValidationLengthConstraint>;
 
     type ClassDescriptionConstraint: Get<InputValidationLengthConstraint>;
+
+    type NumberOfClassesConstraint: Get<MaxNumber>;
+
+    type NumberOfSchemasConstraint: Get<MaxNumber>;
+
+    type NumberOfPropertiesConstraint: Get<MaxNumber>;
 }
 
 /// Length constraint for input validation
@@ -142,16 +150,14 @@ impl InputValidationLengthConstraint {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct Class<T: Trait> {
-    /// Permissions for an instance of a Class in the versioned store.
-
-    #[cfg_attr(feature = "std", serde(skip))]
+    /// Permissions for an instance of a Class.
     class_permissions: ClassPermissions,
     /// All properties that have been used on this class across different class schemas.
     /// Unlikely to be more than roughly 20 properties per class, often less.
     /// For Person, think "height", "weight", etc.
     pub properties: Vec<Property<T>>,
 
-    /// All scehmas that are available for this class, think v0.0 Person, v.1.0 Person, etc.
+    /// All schemas that are available for this class, think v0.0 Person, v.1.0 Person, etc.
     pub schemas: Vec<Schema>,
 
     pub name: Vec<u8>,
@@ -183,12 +189,12 @@ impl<T: Trait> Class<T> {
 
     fn is_active_schema(&self, schema_index: SchemaId) -> bool {
         // Such indexing is safe, when length bounds were previously checked
-        self.schemas[schema_index as usize].is_active
+        self.schemas[schema_index as usize].is_active()
     }
 
     fn update_schema_status(&mut self, schema_index: SchemaId, schema_status: bool) {
         // Such indexing is safe, when length bounds were previously checked
-        self.schemas[schema_index as usize].is_active = schema_status;
+        self.schemas[schema_index as usize].set_status(schema_status);
     }
 
     fn set_property_lock_status_at_index(
@@ -220,12 +226,55 @@ impl<T: Trait> Class<T> {
     fn get_permissions(&self) -> &ClassPermissions {
         &self.class_permissions
     }
+
+    pub fn ensure_schema_id_exists(&self, schema_id: SchemaId) -> dispatch::Result {
+        ensure!(
+            schema_id < self.schemas.len() as SchemaId,
+            ERROR_UNKNOWN_CLASS_SCHEMA_ID
+        );
+        Ok(())
+    }
+
+    pub fn ensure_property_id_exists(
+        &self,
+        in_class_schema_property_id: PropertyId,
+    ) -> dispatch::Result {
+        ensure!(
+            in_class_schema_property_id < self.properties.len() as PropertyId,
+            ERROR_CLASS_PROP_NOT_FOUND
+        );
+        Ok(())
+    }
+
+    pub fn ensure_schema_is_active(&self, schema_id: SchemaId) -> dispatch::Result {
+        ensure!(
+            self.is_active_schema(schema_id),
+            ERROR_CLASS_SCHEMA_NOT_ACTIVE
+        );
+        Ok(())
+    }
+
+    pub fn ensure_schemas_limit_not_reached(&self) -> dispatch::Result {
+        ensure!(
+            T::NumberOfSchemasConstraint::get() < self.schemas.len() as MaxNumber,
+            ERROR_CLASS_SCHEMAS_LIMIT_REACHED
+        );
+        Ok(())
+    }
+
+    pub fn ensure_properties_limit_not_reached(&self, new_properties: &[Property<T>]) -> dispatch::Result {
+        ensure!(
+            T::NumberOfPropertiesConstraint::get() <= (self.properties.len() + new_properties.len()) as MaxNumber,
+            ERROR_CLASS_PROPERTIES_LIMIT_REACHED
+        );
+        Ok(())
+    }
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct Entity<T: Trait> {
-    #[cfg_attr(feature = "std", serde(skip))]
+    /// Permissions for an instance of an Entity.
     pub entity_permission: EntityPermissions<T>,
 
     /// The class id of this entity.
@@ -239,7 +288,6 @@ pub struct Entity<T: Trait> {
     /// Values for properties on class that are used by some schema used by this entity!
     /// Length is no more than Class.properties.
     pub values: BTreeMap<PropertyId, PropertyValue<T>>,
-    // pub deleted: bool
     pub reference_count: u32,
 }
 
@@ -278,6 +326,12 @@ impl<T: Trait> Entity<T> {
     fn get_permissions(&self) -> &EntityPermissions<T> {
         &self.entity_permission
     }
+
+    pub fn ensure_schema_id_is_not_added(&self, schema_id: SchemaId) -> dispatch::Result {
+        let schema_not_added = !self.supported_schemas.contains(&schema_id);
+        ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY);
+        Ok(())
+    }
 }
 
 // Shortcuts for faster readability of match expression:
@@ -303,7 +357,7 @@ decl_storage! {
         // The voucher associated with entity creation for a given class and controller.
         // Is updated whenever an entity is created in a given class by a given controller.
         // Constraint is updated by Root, an initial value comes from `ClassPermissions::per_controller_entity_creation_limit`.
-        pub EntityCreationVouchers get(fn entity_creation_vouchers): double_map hasher(blake2_128) T::ClassId, blake2_128(EntityController<T>) => EntityCreationVoucher;
+        pub EntityCreationVouchers get(entity_creation_vouchers): double_map hasher(blake2_128) T::ClassId, blake2_128(EntityController<T>) => EntityCreationVoucher;
 
         /// Upper limit for how many operations can be included in a single invocation of `atomic_batched_operations`.
         pub MaximumNumberOfOperationsDuringAtomicBatching: u64;
@@ -471,8 +525,9 @@ decl_module! {
             let account_id = ensure_signed(origin)?;
             ensure_authority_auth_success::<T>(&account_id)?;
 
-            Self::ensure_class_name_is_valid(&name)?;
+            Self::ensure_class_limit_not_reached()?;
 
+            Self::ensure_class_name_is_valid(&name)?;
             Self::ensure_class_description_is_valid(&description)?;
 
             let class_id = Self::next_class_id();
@@ -512,6 +567,13 @@ decl_module! {
 
             let class = <ClassById<T>>::get(class_id);
 
+            class.ensure_schemas_limit_not_reached()?;
+            class.ensure_properties_limit_not_reached()?;
+            
+            let mut schema = Schema::new(existing_properties);
+
+            Self::ensure_properties_in_schema_limit_not_reached(&schema, &new_properties)?;
+            
             let mut unique_prop_names = BTreeSet::new();
             for prop in class.properties.iter() {
                 unique_prop_names.insert(prop.name.clone());
@@ -524,13 +586,13 @@ decl_module! {
                 // Check that the name of a new property is unique within its class.
                 ensure!(
                     !unique_prop_names.contains(&prop.name),
-                    ERROR_PROP_NAME_NOT_UNIQUE_IN_CLASS
+                    ERROR_PROP_NAME_NOT_UNIQUE_IN_A_CLASS
                 );
                 unique_prop_names.insert(prop.name.clone());
             }
 
             // Check that existing props are valid indices of class properties vector:
-            let has_unknown_props = existing_properties
+            let has_unknown_props = schema.get_properties()
                 .iter()
                 .any(|&prop_id| prop_id >= class.properties.len() as PropertyId);
             ensure!(
@@ -538,23 +600,22 @@ decl_module! {
                 ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
             );
 
-            // Check validity of Internal(T::ClassId) for new_properties.
-            let has_unknown_internal_id = new_properties.iter().any(|prop| match prop.prop_type {
+            // Check validity of Reference Types for new_properties.
+            let has_unknown_reference = new_properties.iter().any(|prop| match prop.prop_type {
                 PropertyType::Reference(other_class_id, _, _) => !<ClassById<T>>::exists(other_class_id),
+                PropertyType::ReferenceVec(_, other_class_id, _, _) => !<ClassById<T>>::exists(other_class_id),
                 _ => false,
             });
             ensure!(
-                !has_unknown_internal_id,
-                ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_INTERNAL_ID
+                !has_unknown_reference,
+                ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_CLASS
             );
-
-            let mut schema = Schema::new(existing_properties);
 
             let mut updated_class_props = class.properties;
             new_properties.into_iter().for_each(|prop| {
                 let prop_id = updated_class_props.len() as PropertyId;
                 updated_class_props.push(prop);
-                schema.properties.push(prop_id);
+                schema.get_properties_mut().push(prop_id);
             });
 
             <ClassById<T>>::mutate(class_id, |class| {
@@ -575,8 +636,12 @@ decl_module! {
             ensure_authority_auth_success::<T>(&account_id)?;
             Self::ensure_known_class_id(class_id)?;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             // Check that schema_id is a valid index of class schemas vector:
-            Self::ensure_class_schema_id_exists(&Self::class_by_id(class_id), schema_id)?;
+            Self::class_by_id(class_id).ensure_schema_id_exists(schema_id)?;
             <ClassById<T>>::mutate(class_id, |class| {
                 class.update_schema_status(schema_id, schema_status)
             });
@@ -594,7 +659,12 @@ decl_module! {
             Self::ensure_known_class_id(class_id)?;
 
             // Ensure property_id is a valid index of class properties vector:
-            Self::ensure_property_id_exists(&Self::class_by_id(class_id), in_class_schema_property_id)?;
+            Self::class_by_id(class_id).ensure_property_id_exists(in_class_schema_property_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
             <ClassById<T>>::mutate(class_id, |class| {
                 class.set_property_lock_status_at_index(in_class_schema_property_id, is_locked)
             });
@@ -612,7 +682,12 @@ decl_module! {
             Self::ensure_known_class_id(class_id)?;
 
             // Ensure property_id is a valid index of class properties vector:
-            Self::ensure_property_id_exists(&Self::class_by_id(class_id), in_class_schema_property_id)?;
+            Self::class_by_id(class_id).ensure_property_id_exists(in_class_schema_property_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
             <ClassById<T>>::mutate(class_id, |class| {
                 class.set_reference_property_same_controller_status(in_class_schema_property_id, same_controller)
             });
@@ -912,16 +987,16 @@ impl<T: Trait> Module<T> {
         let class = Self::class_by_id(entity.class_id);
 
         // Check that schema_id is a valid index of class schemas vector:
-        Self::ensure_class_schema_id_exists(&class, schema_id)?;
+        class.ensure_schema_id_exists(schema_id)?;
 
         // Ensure class schema is active
-        Self::ensure_class_schema_is_active(&class, schema_id)?;
+        class.ensure_schema_is_active(schema_id)?;
 
         // Check that schema id is not yet added to this entity:
-        Self::ensure_schema_id_is_not_added(&entity, schema_id)?;
+        entity.ensure_schema_id_is_not_added(schema_id)?;
 
         let class_schema_opt = class.schemas.get(schema_id as usize);
-        let schema_prop_ids = &class_schema_opt.unwrap().properties;
+        let schema_prop_ids = class_schema_opt.unwrap().get_properties();
 
         let current_entity_values = entity.values.clone();
         let mut appended_entity_values = entity.values.clone();
@@ -954,6 +1029,10 @@ impl<T: Trait> Module<T> {
                 appended_entity_values.insert(*prop_id, PropertyValue::Bool(false));
             }
         }
+
+        //
+        // == MUTATION SAFE ==
+        //
 
         <EntityById<T>>::mutate(entity_id, |entity| {
             // Add a new schema to the list of schemas supported by this entity.
@@ -1049,6 +1128,10 @@ impl<T: Trait> Module<T> {
 
         // If property values should be updated:
         if updated {
+            //
+            // == MUTATION SAFE ==
+            //
+
             <EntityById<T>>::mutate(entity_id, |entity| {
                 entity.values = updated_values;
             });
@@ -1094,6 +1177,10 @@ impl<T: Trait> Module<T> {
 
         let entities_rc_to_decrement = current_prop_value.get_involved_entities();
 
+        //
+        // == MUTATION SAFE ==
+        //
+
         // Clear property value vector:
         <EntityById<T>>::mutate(entity_id, |entity| {
             if let Some(current_property_value_vec) =
@@ -1136,6 +1223,10 @@ impl<T: Trait> Module<T> {
         let involved_entity_id = current_prop_value
             .get_involved_entities()
             .map(|involved_entities| involved_entities[index_in_property_vec as usize]);
+
+        //
+        // == MUTATION SAFE ==
+        //
 
         // Remove property value vector
         <EntityById<T>>::mutate(entity_id, |entity| {
@@ -1181,6 +1272,10 @@ impl<T: Trait> Module<T> {
                 entity.get_permissions().get_controller(),
             )?;
         };
+
+        //
+        // == MUTATION SAFE ==
+        //
 
         // Insert property value into property value vector
         <EntityById<T>>::mutate(entity_id, |entity| {
@@ -1298,28 +1393,6 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn ensure_class_schema_id_exists(
-        class: &Class<T>,
-        schema_id: SchemaId,
-    ) -> dispatch::Result {
-        ensure!(
-            schema_id < class.schemas.len() as SchemaId,
-            ERROR_UNKNOWN_CLASS_SCHEMA_ID
-        );
-        Ok(())
-    }
-
-    pub fn ensure_property_id_exists(
-        class: &Class<T>,
-        in_class_schema_property_id: PropertyId,
-    ) -> dispatch::Result {
-        ensure!(
-            in_class_schema_property_id < class.properties.len() as PropertyId,
-            ERROR_CLASS_PROP_NOT_FOUND
-        );
-        Ok(())
-    }
-
     pub fn ensure_entity_creator_exists(
         class_id: T::ClassId,
         group_id: T::GroupId,
@@ -1380,26 +1453,6 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn ensure_class_schema_is_active(
-        class: &Class<T>,
-        schema_id: SchemaId,
-    ) -> dispatch::Result {
-        ensure!(
-            class.is_active_schema(schema_id),
-            ERROR_CLASS_SCHEMA_NOT_ACTIVE
-        );
-        Ok(())
-    }
-
-    pub fn ensure_schema_id_is_not_added(
-        entity: &Entity<T>,
-        schema_id: SchemaId,
-    ) -> dispatch::Result {
-        let schema_not_added = !entity.supported_schemas.contains(&schema_id);
-        ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY);
-        Ok(())
-    }
-
     pub fn ensure_class_name_is_valid(text: &[u8]) -> dispatch::Result {
         T::ClassNameConstraint::get().ensure_valid(
             text.len(),
@@ -1414,5 +1467,13 @@ impl<T: Trait> Module<T> {
             ERROR_CLASS_DESCRIPTION_TOO_SHORT,
             ERROR_CLASS_DESCRIPTION_TOO_LONG,
         )
+    }
+
+    pub fn ensure_class_limit_not_reached() -> dispatch::Result {
+        ensure!(
+            T::NumberOfClassesConstraint::get() < <ClassById<T>>::enumerate().count() as MaxNumber,
+            ERROR_CLASS_LIMIT_REACHED
+        );
+        Ok(())
     }
 }
