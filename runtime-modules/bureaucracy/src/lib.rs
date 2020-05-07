@@ -24,19 +24,19 @@ use types::{CuratorApplication, CuratorOpening, Lead, OpeningPolicyCommitment};
 //TODO: docs
 //TODO: migrate to decl_error
 
+/// Alias for the _Lead_ type
+pub type LeadOf<T> =
+    Lead<<T as membership::members::Trait>::MemberId, <T as system::Trait>::AccountId>;
+
 /*
 + add_curator_opening
 + accept_curator_applications
 - begin_curator_applicant_review
 - fill_curator_opening
 + withdraw_curator_application
-- terminate_curator_application
++ terminate_curator_application
 + apply_on_curator_opening
 */
-
-/// Alias for the _Lead_ type
-pub type LeadOf<T> =
-    Lead<<T as membership::members::Trait>::MemberId, <T as system::Trait>::AccountId>;
 
 /// Workaround for BTreeSet type
 pub type CuratorApplicationIdSet<T> = BTreeSet<CuratorApplicationId<T>>;
@@ -127,6 +127,10 @@ decl_event!(
         /// Params:
         /// - Curator application id
         CuratorApplicationWithdrawn(CuratorApplicationId),
+        /// Emits on terminating the application for the curator opening.
+        /// Params:
+        /// - Curator application id
+        CuratorApplicationTerminated(CuratorApplicationId),
     }
 );
 
@@ -376,7 +380,33 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::CuratorApplicationWithdrawn(curator_application_id));
+        }
 
+        pub fn terminate_curator_application(
+            origin,
+            curator_application_id: CuratorApplicationId<T>
+        ) {
+
+            // Ensure lead is set and is origin signer
+            Self::ensure_origin_is_set_lead(origin)?;
+
+            // Ensuring curator application actually exists
+            let (curator_application, _, curator_opening) = Self::ensure_curator_application_exists(&curator_application_id)?;
+
+            // Attempt to deactivate application
+            // NB: Combined ensure check and mutation in hiring module
+            ensure_on_wrapped_error!(
+                hiring::Module::<T>::deactive_application(
+                    curator_application.application_id,
+                    curator_opening.policy_commitment.terminate_curator_application_stake_unstaking_period,
+                    curator_opening.policy_commitment.terminate_curator_role_stake_unstaking_period
+                )
+            )?;
+
+            // mutation
+
+            // Trigger event
+            Self::deposit_event(RawEvent::CuratorApplicationTerminated(curator_application_id));
         }
     }
 }

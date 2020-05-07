@@ -8,6 +8,35 @@ use srml_support::StorageValue;
 use std::collections::BTreeSet;
 use system::{EventRecord, Phase, RawOrigin};
 
+struct TerminateApplicationFixture {
+    origin: RawOrigin<u64>,
+    curator_application_id: u64,
+}
+
+impl TerminateApplicationFixture {
+    fn with_signer(self, account_id: u64) -> Self {
+        TerminateApplicationFixture {
+            origin: RawOrigin::Signed(account_id),
+            ..self
+        }
+    }
+    fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        TerminateApplicationFixture { origin, ..self }
+    }
+    pub fn default_for_application_id(application_id: u64) -> Self {
+        TerminateApplicationFixture {
+            origin: RawOrigin::Signed(1),
+            curator_application_id: application_id,
+        }
+    }
+    pub fn call_and_assert(&self, expected_result: Result<(), &str>) {
+        let actual_result = Bureaucracy1::terminate_curator_application(
+            self.origin.clone().into(),
+            self.curator_application_id,
+        );
+        assert_eq!(actual_result.clone(), expected_result);
+    }
+}
 struct WithdrawApplicationFixture {
     origin: RawOrigin<u64>,
     curator_application_id: u64,
@@ -734,6 +763,140 @@ fn withdraw_curator_application_fails_with_hiring_error() {
             WithdrawApplicationFixture::default_for_application_id(application_id);
         withdraw_application_fixture.call_and_assert(Ok(()));
         withdraw_application_fixture.call_and_assert(Err(
+            crate::errors::MSG_WITHDRAW_CURATOR_APPLICATION_APPLICATION_NOT_ACTIVE,
+        ));
+    });
+}
+
+#[test]
+fn terminate_curator_application_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        SetLeadFixture::set_lead(lead_account_id);
+
+        setup_members(2);
+
+        let add_curator_opening_fixture = AddCuratorOpeningFixture::default();
+        add_curator_opening_fixture.call_and_assert(Ok(()));
+
+        let opening_id = 0; // newly created opening
+
+        let appy_on_curator_opening_fixture =
+            ApplyOnCuratorOpeningFixture::default_for_opening_id(opening_id);
+        appy_on_curator_opening_fixture.call_and_assert(Ok(()));
+
+        let application_id = 0; // newly created application
+
+        let terminate_application_fixture =
+            TerminateApplicationFixture::default_for_application_id(application_id);
+        terminate_application_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_global_events(vec![
+            TestEvent::bureaucracy_Instance1(RawEvent::LeaderSet(1, lead_account_id)),
+            TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(0, 0)),
+            TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(1, 1)),
+            TestEvent::bureaucracy_Instance1(RawEvent::CuratorOpeningAdded(opening_id)),
+            TestEvent::bureaucracy_Instance1(RawEvent::AppliedOnCuratorOpening(
+                opening_id,
+                application_id,
+            )),
+            TestEvent::bureaucracy_Instance1(RawEvent::CuratorApplicationTerminated(
+                application_id,
+            )),
+        ]);
+    });
+}
+
+#[test]
+fn terminate_curator_application_fails_with_invalid_application_author() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        SetLeadFixture::set_lead(lead_account_id);
+
+        setup_members(2);
+
+        let add_curator_opening_fixture = AddCuratorOpeningFixture::default();
+        add_curator_opening_fixture.call_and_assert(Ok(()));
+
+        let opening_id = 0; // newly created opening
+
+        let appy_on_curator_opening_fixture =
+            ApplyOnCuratorOpeningFixture::default_for_opening_id(opening_id);
+        appy_on_curator_opening_fixture.call_and_assert(Ok(()));
+
+        let application_id = 0; // newly created application
+        let invalid_author_account_id = 55;
+        let terminate_application_fixture =
+            TerminateApplicationFixture::default_for_application_id(application_id)
+                .with_signer(invalid_author_account_id);
+        terminate_application_fixture.call_and_assert(Err(crate::MSG_IS_NOT_LEAD_ACCOUNT));
+    });
+}
+
+#[test]
+fn terminate_curator_application_fails_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        SetLeadFixture::set_lead(lead_account_id);
+
+        setup_members(2);
+
+        let add_curator_opening_fixture = AddCuratorOpeningFixture::default();
+        add_curator_opening_fixture.call_and_assert(Ok(()));
+
+        let opening_id = 0; // newly created opening
+
+        let appy_on_curator_opening_fixture =
+            ApplyOnCuratorOpeningFixture::default_for_opening_id(opening_id);
+        appy_on_curator_opening_fixture.call_and_assert(Ok(()));
+
+        let application_id = 0; // newly created application
+
+        let terminate_application_fixture =
+            TerminateApplicationFixture::default_for_application_id(application_id)
+                .with_origin(RawOrigin::None);
+        terminate_application_fixture.call_and_assert(Err("RequireSignedOrigin"));
+    });
+}
+
+#[test]
+fn terminate_curator_application_fails_invalid_application_id() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        SetLeadFixture::set_lead(lead_account_id);
+
+        let invalid_application_id = 6;
+
+        let terminate_application_fixture =
+            TerminateApplicationFixture::default_for_application_id(invalid_application_id);
+        terminate_application_fixture
+            .call_and_assert(Err(crate::MSG_CURATOR_APPLICATION_DOES_NOT_EXIST));
+    });
+}
+
+#[test]
+fn terminate_curator_application_fails_with_hiring_error() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        SetLeadFixture::set_lead(lead_account_id);
+
+        setup_members(2);
+
+        let add_curator_opening_fixture = AddCuratorOpeningFixture::default();
+        add_curator_opening_fixture.call_and_assert(Ok(()));
+
+        let opening_id = 0; // newly created opening
+
+        let appy_on_curator_opening_fixture =
+            ApplyOnCuratorOpeningFixture::default_for_opening_id(opening_id);
+        appy_on_curator_opening_fixture.call_and_assert(Ok(()));
+
+        let application_id = 0; // newly created application
+
+        let terminate_application_fixture =
+            TerminateApplicationFixture::default_for_application_id(application_id);
+        terminate_application_fixture.call_and_assert(Ok(()));
+        terminate_application_fixture.call_and_assert(Err(
             crate::errors::MSG_WITHDRAW_CURATOR_APPLICATION_APPLICATION_NOT_ACTIVE,
         ));
     });
