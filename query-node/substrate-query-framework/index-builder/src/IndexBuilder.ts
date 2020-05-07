@@ -1,8 +1,8 @@
 // @ts-check
 
-import { QueryBlockProducer, QueryEventProcessingPack, QueryEventBlock, ISubstrateQueryService } from '.';
-import { SavedEntityEvent } from './db/entities';
 import { getRepository } from 'typeorm';
+import { QueryBlockProducer, QueryEventProcessingPack, QueryEventBlock, ISubstrateQueryService } from '.';
+import { DB, SavedEntityEvent } from './db';
 
 const debug = require('debug')('index');
 
@@ -60,7 +60,7 @@ export default class IndexBuilder {
         console.log(`Recognized: ` + query_event.event_name);
 
         // Call event handler to store data on database
-        this._processing_pack[query_event.event_method](query_event);
+        this._processing_pack[query_event.event_method](new DB(query_event));
       }
     });
   }

@@ -2,12 +2,10 @@ import "reflect-metadata";
 import * as dotenv from 'dotenv';
 import { createConnection } from 'typeorm';
 import { {{typeRegistrator}} } from '{{{packageName}}}';
-import { QueryNodeManager } from "index-builder/lib";
-import { DB } from "index-builder/lib/db";
+import { QueryNodeManager, QueryEvent, DB } from "index-builder/lib";
 
 // Mappings use!
-export { QueryEvent } from "index-builder/lib";
-export let db: DB;
+export { DB }
 
 function getProcessingPack() {
   const handlers = require('../../mappings');
@@ -35,7 +33,6 @@ async function main() {
   }
 
 	const conn = await createConnection();
-	db = new DB(conn);
 
   const node = new QueryNodeManager(process);
   node.start(providerUri, getProcessingPack(), {{typeRegistrator}});

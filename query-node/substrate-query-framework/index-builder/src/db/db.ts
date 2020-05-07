@@ -1,4 +1,4 @@
-import { Connection, EntityManager, FindOneOptions, DeepPartial } from 'typeorm';
+import { Connection, EntityManager, FindOneOptions, DeepPartial, getConnection } from 'typeorm';
 import { SavedEntityEvent } from '.';
 import { QueryEvent } from '..';
 import * as helper from './helper';
@@ -14,19 +14,29 @@ import * as helper from './helper';
  */
 export default class DB {
   private readonly _connection: Connection;
+  private _event: QueryEvent;
 
-  constructor(connection: Connection) {
-    this._connection = connection;
+  constructor(event: QueryEvent) {
+    this._connection = getConnection();
+    this._event = event;
+  }
+
+  get event(): QueryEvent {
+    return this._event;
+  }
+
+  set event(event: QueryEvent) {
+    this._event = event;
   }
 
   /**
    * Save given entity instance, if entity is exists then just update
    * @param entity
    */
-  async save<T>(entity: DeepPartial<T>, event: QueryEvent): Promise<void> {
+  async save<T>(entity: DeepPartial<T>): Promise<void> {
     entity = helper.fillRequiredWarthogFields(entity);
 
-    const eventHistory = await SavedEntityEvent.updateOrCreate(event);
+    const eventHistory = await SavedEntityEvent.updateOrCreate(this.event);
 
     await this._connection.manager.transaction(async (manager: EntityManager) => {
       await manager.save(entity);
