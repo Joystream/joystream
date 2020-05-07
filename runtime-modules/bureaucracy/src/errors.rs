@@ -23,7 +23,7 @@ pub mod bureaucracy_errors {
     pub static MSG_ORIGIN_IS_NOT_APPLICANT: &str = "Origin is not applicant";
     pub static MSG_CURATOR_APPLICATION_DOES_NOT_EXIST: &str = "Curator application does not exist";
     pub static MSG_SUCCESSFUL_CURATOR_APPLICATION_DOES_NOT_EXIST: &str =
-        "Successful curatora pplication does not exist";
+        "Successful curator application does not exist";
 }
 /*
  * The errors below, while in many cases encoding similar outcomes,

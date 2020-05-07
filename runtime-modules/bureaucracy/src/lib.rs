@@ -8,6 +8,7 @@ mod types;
 #[macro_use]
 mod errors;
 
+use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 use rstd::vec::Vec;
@@ -19,7 +20,6 @@ use system::{ensure_root, ensure_signed, RawOrigin};
 use constraints::InputValidationLengthConstraint;
 use errors::bureaucracy_errors::*;
 use errors::WrappedError;
-use rstd::collections::btree_map::BTreeMap;
 use types::{
     Curator, CuratorApplication, CuratorOpening, CuratorRoleStakeProfile, Lead,
     OpeningPolicyCommitment,
@@ -476,6 +476,8 @@ decl_module! {
             successful_curator_application_ids: CuratorApplicationIdSet<T>,
 //            reward_policy: Option<RewardPolicy<minting::BalanceOf<T>, T::BlockNumber>>
         ) {
+            // successful_curator_application_ids.len() == zero check?
+
             // Ensure lead is set and is origin signer
             Self::ensure_origin_is_set_lead(origin)?;
 
