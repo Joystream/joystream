@@ -23,7 +23,7 @@ export default class DB {
    * Save given entity instance, if entity is exists then just update
    * @param entity
    */
-  async save<T>(entity: DeepPartial<T>, event: QueryEvent) {
+  async save<T>(entity: DeepPartial<T>, event: QueryEvent): Promise<void> {
     entity = helper.fillRequiredWarthogFields(entity);
 
     const eventHistory = await SavedEntityEvent.updateOrCreate(event);
@@ -34,8 +34,22 @@ export default class DB {
     });
   }
 
-  // Find entity that match find options
-  async get<T>(entity: { new (...args: any[]): T }, options: FindOneOptions<T>) {
+  /**
+   * Removes a given entity from the database.
+   * @param entity: DeepPartial<T>
+   */
+  async remove<T>(entity: DeepPartial<T>) {
+    await this._connection.manager.transaction(async (manager: EntityManager) => {
+      await manager.remove(entity);
+    });
+  }
+
+  /**
+   * Finds first entity that matches given options.
+   * @param entity: T
+   * @param options: FindOneOptions<T>
+   */
+  async get<T>(entity: { new (...args: any[]): T }, options: FindOneOptions<T>): Promise<T | undefined> {
     return await this._connection.getRepository(entity).findOne(options);
   }
 }
