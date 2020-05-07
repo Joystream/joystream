@@ -568,11 +568,9 @@ decl_module! {
             let class = <ClassById<T>>::get(class_id);
 
             class.ensure_schemas_limit_not_reached()?;
-            class.ensure_properties_limit_not_reached()?;
-            
-            let mut schema = Schema::new(existing_properties);
+            class.ensure_properties_limit_not_reached(&new_properties)?;
 
-            Self::ensure_properties_in_schema_limit_not_reached(&schema, &new_properties)?;
+            let mut schema = Schema::new(existing_properties);
             
             let mut unique_prop_names = BTreeSet::new();
             for prop in class.properties.iter() {
