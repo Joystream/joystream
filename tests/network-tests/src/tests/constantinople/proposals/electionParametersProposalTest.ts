@@ -73,9 +73,9 @@ describe('Election parameters proposal network tests', () => {
       proposalTitle,
       description,
       proposalStake,
-      announcingPeriod,
-      votingPeriod,
-      revealingPeriod,
+      announcingPeriod.subn(1),
+      votingPeriod.addn(1),
+      revealingPeriod.addn(1),
       councilSize.addn(1),
       candidacyLimit.addn(1),
       newTermDuration.addn(1),
@@ -99,16 +99,16 @@ describe('Election parameters proposal network tests', () => {
     const newMinCouncilStake: BN = await apiWrapper.getMinCouncilStake();
     const newMinVotingStake: BN = await apiWrapper.getMinVotingStake();
     assert(
-      announcingPeriod.eq(newAnnouncingPeriod),
-      `Announcing period has unexpected value ${newAnnouncingPeriod}, expected ${announcingPeriod}`
+      announcingPeriod.subn(1).eq(newAnnouncingPeriod),
+      `Announcing period has unexpected value ${newAnnouncingPeriod}, expected ${announcingPeriod.subn(1)}`
     );
     assert(
-      votingPeriod.eq(newVotingPeriod),
-      `Voting period has unexpected value ${newVotingPeriod}, expected ${votingPeriod}`
+      votingPeriod.addn(1).eq(newVotingPeriod),
+      `Voting period has unexpected value ${newVotingPeriod}, expected ${votingPeriod.addn(1)}`
     );
     assert(
-      revealingPeriod.eq(newRevealingPeriod),
-      `Revealing has unexpected value ${newRevealingPeriod}, expected ${revealingPeriod}`
+      revealingPeriod.addn(1).eq(newRevealingPeriod),
+      `Revealing has unexpected value ${newRevealingPeriod}, expected ${revealingPeriod.addn(1)}`
     );
     assert(
       councilSize.addn(1).eq(newCouncilSize),
