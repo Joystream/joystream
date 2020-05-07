@@ -70,15 +70,15 @@ export default class QueryBlockProducer extends EventEmitter {
         if (!this._started) throw new Error(`Cannot stop when not already started.`);
 
         // THIS IS VERY CRUDE, NEED TO MANAGE LOTS OF STUFF HERE!
-
+        logger.debug("Stopping Query Block Producer");
         (await this._newHeadsUnsubscriber)();
 
         this._started = false;
     }
 
-    private async produceNextBlock() { 
+    private async produceNextBlock():Promise<void> { 
         if (!this._started) {
-            logger.info("Block producer is not started");
+            logger.debug("Block producer is stopped");
             return;
         }
         

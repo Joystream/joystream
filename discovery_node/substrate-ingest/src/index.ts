@@ -10,6 +10,7 @@ import Config from './Config';
 import { StateKeeper, State } from './StateKeeper'
 import JoyNode  from './joynode/QueryNode'
 import ESUploader from './esearch/ESUploader'
+import { Logger } from 'log4js';
 
 const command = new Command();
 
@@ -34,15 +35,14 @@ async function main () {
   await joyNode.build(config);
 
   const state: State = await stateKeeper.state();
+
+  process.on('SIGINT',  async () => {
+     await joyNode.stop();
+  });
+
   // starts a long-running loop
   await joyNode.run(state);
 
-  // catching signals and do something before exit
-  process.on('beforeExit', async () => {
-    console.log("Stopping the node");
-    await joyNode.stop();
-  });
-
 }
 
-main().catch(console.error).finally(() => process.exit());
+main().then(() => process.exit(0)).catch((e) => console.error(e));

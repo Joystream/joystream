@@ -74,9 +74,10 @@ export default class QueryNode {
     
     get state() {
         return this._state;
-    }g
+    }
 
     async stop() {
+        logger.info("Stopping the query node");
         this._state = QueryNodeState.STOPPING;
         await this._queryBlockProducer?.stop();
         this._state = QueryNodeState.STOPPED;
