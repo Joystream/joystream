@@ -344,14 +344,6 @@ impl<T: Trait> PropertyValue<T> {
         Ok(())
     }
 
-    pub fn is_unknown_internal_entity_id(id: PropertyValue<T>) -> bool {
-        if let PropertyValue::Reference(entity_id) = id {
-            !<EntityById<T>>::exists(entity_id)
-        } else {
-            false
-        }
-    }
-
     pub fn get_involved_entities(&self) -> Option<Vec<T::EntityId>> {
         match self {
             PropertyValue::Reference(entity_id) => Some(vec![*entity_id]),
@@ -449,39 +441,39 @@ impl<T: Trait> Property<T> {
     ) -> dispatch::Result {
         entity_prop_value.ensure_index_in_property_vector_is_valid(index_in_property_vec)?;
 
-        fn validate_prop_vec_len_after_value_insert<T>(vec: &[T], max_len: &VecMaxLength) -> bool {
-            vec.len() < *max_len as usize
+        fn validate_prop_vec_len_after_value_insert<T>(vec: &[T], max_len: VecMaxLength) -> bool {
+            vec.len() < max_len as usize
         }
 
         let is_valid_len = match (value, entity_prop_value, &self.prop_type) {
             // Single values
             (PV::Bool(_), PV::BoolVec(vec, _), PT::BoolVec(max_len, _)) => {
-                validate_prop_vec_len_after_value_insert(vec, max_len)
+                validate_prop_vec_len_after_value_insert(vec, *max_len)
             }
             (PV::Uint16(_), PV::Uint16Vec(vec, _), PT::Uint16Vec(max_len, _)) => {
-                validate_prop_vec_len_after_value_insert(vec, max_len)
+                validate_prop_vec_len_after_value_insert(vec, *max_len)
             }
             (PV::Uint32(_), PV::Uint32Vec(vec, _), PT::Uint32Vec(max_len, _)) => {
-                validate_prop_vec_len_after_value_insert(vec, max_len)
+                validate_prop_vec_len_after_value_insert(vec, *max_len)
             }
             (PV::Uint64(_), PV::Uint64Vec(vec, _), PT::Uint64Vec(max_len, _)) => {
-                validate_prop_vec_len_after_value_insert(vec, max_len)
+                validate_prop_vec_len_after_value_insert(vec, *max_len)
             }
             (PV::Int16(_), PV::Int16Vec(vec, _), PT::Int16Vec(max_len, _)) => {
-                validate_prop_vec_len_after_value_insert(vec, max_len)
+                validate_prop_vec_len_after_value_insert(vec, *max_len)
             }
             (PV::Int32(_), PV::Int32Vec(vec, _), PT::Int32Vec(max_len, _)) => {
-                validate_prop_vec_len_after_value_insert(vec, max_len)
+                validate_prop_vec_len_after_value_insert(vec, *max_len)
             }
             (PV::Int64(_), PV::Int64Vec(vec, _), PT::Int64Vec(max_len, _)) => {
-                validate_prop_vec_len_after_value_insert(vec, max_len)
+                validate_prop_vec_len_after_value_insert(vec, *max_len)
             }
             (
                 PV::Text(text_item),
                 PV::TextVec(vec, _),
                 PT::TextVec(vec_max_len, text_max_len, _),
             ) => {
-                if validate_prop_vec_len_after_value_insert(vec, vec_max_len) {
+                if validate_prop_vec_len_after_value_insert(vec, *vec_max_len) {
                     Self::validate_max_len_of_text(text_item, *text_max_len)?;
                     true
                 } else {
@@ -494,7 +486,7 @@ impl<T: Trait> Property<T> {
                 PT::ReferenceVec(vec_max_len, class_id, _, same_controller_status),
             ) => {
                 Module::<T>::ensure_known_class_id(*class_id)?;
-                if validate_prop_vec_len_after_value_insert(vec, vec_max_len) {
+                if validate_prop_vec_len_after_value_insert(vec, *vec_max_len) {
                     Self::ensure_referancable(
                         *class_id,
                         *entity_id,
@@ -528,21 +520,21 @@ impl<T: Trait> Property<T> {
     }
 
     pub fn validate_max_len_if_vec_prop(&self, value: &PropertyValue<T>) -> dispatch::Result {
-        fn validate_vec_len<T>(vec: &[T], max_len: &VecMaxLength) -> bool {
-            vec.len() <= *max_len as usize
+        fn validate_vec_len<T>(vec: &[T], max_len: VecMaxLength) -> bool {
+            vec.len() <= max_len as usize
         }
 
         let is_valid_len = match (value, &self.prop_type) {
-            (PV::BoolVec(vec, _), PT::BoolVec(max_len, _)) => validate_vec_len(vec, max_len),
-            (PV::Uint16Vec(vec, _), PT::Uint16Vec(max_len, _)) => validate_vec_len(vec, max_len),
-            (PV::Uint32Vec(vec, _), PT::Uint32Vec(max_len, _)) => validate_vec_len(vec, max_len),
-            (PV::Uint64Vec(vec, _), PT::Uint64Vec(max_len, _)) => validate_vec_len(vec, max_len),
-            (PV::Int16Vec(vec, _), PT::Int16Vec(max_len, _)) => validate_vec_len(vec, max_len),
-            (PV::Int32Vec(vec, _), PT::Int32Vec(max_len, _)) => validate_vec_len(vec, max_len),
-            (PV::Int64Vec(vec, _), PT::Int64Vec(max_len, _)) => validate_vec_len(vec, max_len),
+            (PV::BoolVec(vec, _), PT::BoolVec(max_len, _)) => validate_vec_len(vec, *max_len),
+            (PV::Uint16Vec(vec, _), PT::Uint16Vec(max_len, _)) => validate_vec_len(vec, *max_len),
+            (PV::Uint32Vec(vec, _), PT::Uint32Vec(max_len, _)) => validate_vec_len(vec, *max_len),
+            (PV::Uint64Vec(vec, _), PT::Uint64Vec(max_len, _)) => validate_vec_len(vec, *max_len),
+            (PV::Int16Vec(vec, _), PT::Int16Vec(max_len, _)) => validate_vec_len(vec, *max_len),
+            (PV::Int32Vec(vec, _), PT::Int32Vec(max_len, _)) => validate_vec_len(vec, *max_len),
+            (PV::Int64Vec(vec, _), PT::Int64Vec(max_len, _)) => validate_vec_len(vec, *max_len),
 
             (PV::TextVec(vec, _), PT::TextVec(vec_max_len, text_max_len, _)) => {
-                if validate_vec_len(vec, vec_max_len) {
+                if validate_vec_len(vec, *vec_max_len) {
                     for text_item in vec.iter() {
                         Self::validate_max_len_of_text(text_item, *text_max_len)?;
                     }
@@ -553,7 +545,7 @@ impl<T: Trait> Property<T> {
             }
 
             (PV::ReferenceVec(vec, _), PT::ReferenceVec(vec_max_len, _, _, _)) => {
-                validate_vec_len(vec, vec_max_len)
+                validate_vec_len(vec, *vec_max_len)
             }
             _ => true,
         };
