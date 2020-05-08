@@ -6,6 +6,7 @@ import { Item, Icon, Button } from "semantic-ui-react";
 import { Category } from "./ChooseProposalType";
 import { ProposalType } from "../runtime";
 import { slugify, splitOnUpperCase } from "../utils";
+import { formatBalance } from "@polkadot/util";
 
 import "./ProposalType.css";
 
@@ -54,10 +55,10 @@ export default function ProposalTypePreview(props: ProposalTypePreviewProps) {
         <div className="proposal-details">
           <ProposalTypeDetail
             title="Stake"
-            value={ stake + "tJOY" } />
+            value={ formatBalance(stake) } />
           <ProposalTypeDetail
             title="Cancellation fee"
-            value={ cancellationFee ? `${cancellationFee} tJOY` : "NONE" } />
+            value={ cancellationFee ? formatBalance(cancellationFee) : "NONE" } />
           <ProposalTypeDetail
             title="Grace period"
             value={ gracePeriod ? `${gracePeriod} block${gracePeriod > 1 ? "s" : ""}` : "NONE" } />

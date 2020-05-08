@@ -12,6 +12,7 @@ import { useTransport } from "../runtime";
 import { usePromise } from "../utils";
 import { Profile } from "@joystream/types/members";
 import { Option } from "@polkadot/types/";
+import { formatBalance } from "@polkadot/util";
 import PromiseComponent from "./PromiseComponent";
 
 type BodyProps = {
@@ -84,11 +85,11 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
       "Council size": params.council_size + " members",
       "Candidacy limit": params.candidacy_limit + " members",
       "New term duration": params.new_term_duration + " blocks",
-      "Min. council stake": params.min_council_stake + " tJOY",
-      "Min. voting stake": params.min_voting_stake + " tJOY"
+      "Min. council stake": formatBalance(params.min_council_stake),
+      "Min. voting stake": formatBalance(params.min_voting_stake)
   }),
   Spending: ([amount, account]) => ({
-    Amount: amount + " tJOY",
+    Amount: formatBalance(amount),
     Account: <ProposedAddress address={account} />
   }),
   SetLead: ([memberId, accountId]) => ({
@@ -96,7 +97,7 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
     "Account id": <ProposedAddress address={accountId} />
   }),
   SetContentWorkingGroupMintCapacity: ([capacity]) => ({
-    "Mint capacity": capacity + " tJOY"
+    "Mint capacity": formatBalance(capacity)
   }),
   EvictStorageProvider: ([accountId]) => ({
     "Storage provider account": <ProposedAddress address={accountId} />
@@ -105,16 +106,16 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
     "Validator count": count
   }),
   SetStorageRoleParameters: ([params]) => ({
-    "Min. stake": params.min_stake + " tJOY",
+    "Min. stake": formatBalance(params.min_stake),
     // "Min. actors": params.min_actors,
     "Max. actors": params.max_actors,
-    Reward: params.reward + " tJOY",
+    Reward: formatBalance(params.reward),
     "Reward period": params.reward_period + " blocks",
     // "Bonding period": params.bonding_period + " blocks",
     "Unbonding period": params.unbonding_period + " blocks",
     // "Min. service period": params.min_service_period + " blocks",
     // "Startup grace period": params.startup_grace_period + " blocks",
-    "Entry request fee": params.entry_request_fee + " tJOY"
+    "Entry request fee": formatBalance(params.entry_request_fee)
   })
 };
 
@@ -179,7 +180,7 @@ export default function Body({
               </p>
               <p style={{ margin: '0.5em 0', padding: '0' }}>
                 The cancellation fee for this type of proposal is:&nbsp;
-                <b>{ cancellationFee ? `${ cancellationFee } tJOY` : 'NONE' }</b>
+                <b>{ cancellationFee ? formatBalance(cancellationFee) : 'NONE' }</b>
               </p>
               <Button.Group color="red">
                 <TxButton

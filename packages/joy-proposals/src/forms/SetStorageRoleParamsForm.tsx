@@ -20,6 +20,7 @@ import { u32 } from "@polkadot/types/primitive";
 import { createType } from "@polkadot/types";
 import { useTransport, StorageRoleParameters, IStorageRoleParameters } from "../runtime";
 import { usePromise } from "../utils";
+import { formatBalance } from "@polkadot/util";
 import "./forms.css";
 
 // Move to joy-types?
@@ -137,7 +138,7 @@ const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props 
           placeholder={placeholders.reward}
           error={errorLabelsProps.reward}
           value={values.reward}
-          unit="tJOY"
+          unit={ formatBalance.getDefaults().unit }
         />
         <InputFormField
           label="Reward period"
@@ -161,7 +162,7 @@ const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props 
           placeholder={placeholders.min_stake}
           error={errorLabelsProps.min_stake}
           value={values.min_stake}
-          unit="tJOY"
+          unit={ formatBalance.getDefaults().unit }
         />
         <InputFormField
           label="Min. service period"
@@ -223,7 +224,7 @@ const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props 
           placeholder={placeholders.entry_request_fee}
           error={errorLabelsProps.entry_request_fee}
           value={values.entry_request_fee}
-          unit="tJOY"
+          unit={ formatBalance.getDefaults().unit }
         />
       </Form.Group>
     </GenericProposalForm>

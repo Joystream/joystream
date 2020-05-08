@@ -1,6 +1,13 @@
 import * as Yup from "yup";
 import { checkAddress } from "@polkadot/util-crypto";
 
+// TODO: If we really need this (currency unit) we can we make "Validation" a functiction that returns an object.
+// We could then "instantialize" it in "withFormContainer" where instead of passing
+// "validationSchema" (in each form component file) we would just pass "validationSchemaKey" or just "proposalType" (ie. SetLead).
+// Then we could let the "withFormContainer" handle the actual "validationSchema" for "withFormik". In that case it could easily
+// pass stuff like totalIssuance or currencyUnit here (ie.: const validationSchema = Validation(currencyUnit, totalIssuance)[proposalType];)
+const CURRENCY_UNIT = undefined;
+
 // All
 const TITLE_MAX_LENGTH = 40;
 const RATIONALE_MAX_LENGTH = 3000;
@@ -61,11 +68,11 @@ const MIN_SERVICE_PERIOD_MIN = 600;
 const MIN_SERVICE_PERIOD_MAX = 28800;
 const STARTUP_GRACE_PERIOD_MIN = 600;
 const STARTUP_GRACE_PERIOD_MAX = 28800;
-// const ENTRY_REQUEST_FEE_MIN = 0;
+const ENTRY_REQUEST_FEE_MIN = 1;
 const ENTRY_REQUEST_FEE_MAX = 100000;
 
 function errorMessage(name: string, min?: number | string, max?: number | string, unit?: string): string {
-  return `${name} should be at least ${min} and no more than ${max} ${unit ? `${unit}.` : "."}`;
+  return `${name} should be at least ${min} and no more than ${max}${unit ? ` ${unit}.` : "."}`;
 }
 
 /*
@@ -177,11 +184,11 @@ const Validation: ValidationType = {
       .integer("This field must be an integer.")
       .min(
         MIN_VOTING_STAKE_MIN,
-        errorMessage("The minimum voting stake", MIN_VOTING_STAKE_MIN, MIN_VOTING_STAKE_MAX, "tJOY")
+        errorMessage("The minimum voting stake", MIN_VOTING_STAKE_MIN, MIN_VOTING_STAKE_MAX, CURRENCY_UNIT)
       )
       .max(
         MIN_VOTING_STAKE_MAX,
-        errorMessage("The minimum voting stake", MIN_VOTING_STAKE_MIN, MIN_VOTING_STAKE_MAX, "tJOY")
+        errorMessage("The minimum voting stake", MIN_VOTING_STAKE_MIN, MIN_VOTING_STAKE_MAX, CURRENCY_UNIT)
       ),
     revealingPeriod: Yup.number()
       .required("All fields must be filled!")
@@ -199,11 +206,11 @@ const Validation: ValidationType = {
       .integer("This field must be an integer.")
       .min(
         MIN_COUNCIL_STAKE_MIN,
-        errorMessage("The minimum council stake", MIN_COUNCIL_STAKE_MIN, MIN_COUNCIL_STAKE_MAX, "tJOY")
+        errorMessage("The minimum council stake", MIN_COUNCIL_STAKE_MIN, MIN_COUNCIL_STAKE_MAX, CURRENCY_UNIT)
       )
       .max(
         MIN_COUNCIL_STAKE_MAX,
-        errorMessage("The minimum council stake", MIN_COUNCIL_STAKE_MIN, MIN_COUNCIL_STAKE_MAX, "tJOY")
+        errorMessage("The minimum council stake", MIN_COUNCIL_STAKE_MIN, MIN_COUNCIL_STAKE_MAX, CURRENCY_UNIT)
       ),
     newTermDuration: Yup.number()
       .required("All fields must be filled!")
@@ -244,8 +251,8 @@ const Validation: ValidationType = {
     mintCapacity: Yup.number()
       .positive("Mint capacity should be positive.")
       .integer("This field must be an integer.")
-      .min(MINT_CAPACITY_MIN, errorMessage("Mint capacity", MINT_CAPACITY_MIN, MINT_CAPACITY_MAX, "tJOY"))
-      .max(MINT_CAPACITY_MAX, errorMessage("Mint capacity", MINT_CAPACITY_MIN, MINT_CAPACITY_MAX, "tJOY"))
+      .min(MINT_CAPACITY_MIN, errorMessage("Mint capacity", MINT_CAPACITY_MIN, MINT_CAPACITY_MAX, CURRENCY_UNIT))
+      .max(MINT_CAPACITY_MAX, errorMessage("Mint capacity", MINT_CAPACITY_MIN, MINT_CAPACITY_MAX, CURRENCY_UNIT))
       .required("You need to specify a mint capacity.")
   },
   EvictStorageProvider: {
@@ -271,7 +278,7 @@ const Validation: ValidationType = {
       .required("All parameters are required")
       .positive("The minimum stake should be positive.")
       .integer("This field must be an integer.")
-      .max(MIN_STAKE_MAX, errorMessage("Minimum stake", MIN_STAKE_MIN, MIN_STAKE_MAX, "tJOY")),
+      .max(MIN_STAKE_MAX, errorMessage("Minimum stake", MIN_STAKE_MIN, MIN_STAKE_MAX, CURRENCY_UNIT)),
     min_actors: Yup.number()
       .required("All parameters are required")
       .integer("This field must be an integer.")
@@ -285,8 +292,8 @@ const Validation: ValidationType = {
     reward: Yup.number()
       .required("All parameters are required")
       .integer("This field must be an integer.")
-      .min(REWARD_MIN, errorMessage("Reward", REWARD_MIN, REWARD_MAX, "tJOY"))
-      .max(REWARD_MAX, errorMessage("Reward", REWARD_MIN, REWARD_MAX, "tJOY")),
+      .min(REWARD_MIN, errorMessage("Reward", REWARD_MIN, REWARD_MAX, CURRENCY_UNIT))
+      .max(REWARD_MAX, errorMessage("Reward", REWARD_MIN, REWARD_MAX, CURRENCY_UNIT)),
     reward_period: Yup.number()
       .required("All parameters are required")
       .integer("This field must be an integer.")
@@ -332,9 +339,15 @@ const Validation: ValidationType = {
       ),
     entry_request_fee: Yup.number()
       .required("All parameters are required")
-      .positive("The entry request fee should be positive.")
       .integer("This field must be an integer.")
-      .max(ENTRY_REQUEST_FEE_MAX, `The entry request fee should be less than ${ENTRY_REQUEST_FEE_MAX} tJOY.`)
+      .min(
+        ENTRY_REQUEST_FEE_MIN,
+        errorMessage("The entry request fee", ENTRY_REQUEST_FEE_MIN, ENTRY_REQUEST_FEE_MAX, CURRENCY_UNIT)
+      )
+      .max(
+        STARTUP_GRACE_PERIOD_MAX,
+        errorMessage("The entry request fee", ENTRY_REQUEST_FEE_MIN, ENTRY_REQUEST_FEE_MAX, CURRENCY_UNIT)
+      ),
   }
 };
 

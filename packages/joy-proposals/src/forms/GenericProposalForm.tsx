@@ -15,6 +15,7 @@ import { Balance } from "@polkadot/types/interfaces";
 import { RouteComponentProps } from "react-router";
 import { ProposalType } from "../runtime";
 import { calculateStake } from "../utils";
+import { formatBalance } from "@polkadot/util"
 import "./forms.css";
 
 
@@ -141,7 +142,7 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
         <Message warning visible>
           <Message.Content>
             <Icon name="warning circle" />
-            Required stake: <b>{requiredStake} tJOY</b>
+            Required stake: <b>{ formatBalance(requiredStake) }</b>
           </Message.Content>
         </Message>
         <div className="form-buttons">

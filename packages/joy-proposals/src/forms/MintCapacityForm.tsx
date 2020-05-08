@@ -15,6 +15,7 @@ import Validation from "../validationSchema";
 import { InputFormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
 import { ProposalType } from "../runtime";
+import { formatBalance } from "@polkadot/util";
 import "./forms.css";
 
 type FormValues = GenericFormValues & {
@@ -55,7 +56,7 @@ const MintCapacityForm: React.FunctionComponent<FormInnerProps> = props => {
         placeholder={ (initialData && initialData.capacity) }
         label={`${mintCapacityGroup} Mint Capacity`}
         help={`The new mint capacity you propse for ${mintCapacityGroup}`}
-        unit="tJOY"
+        unit={ formatBalance.getDefaults().unit }
         value={values.capacity}
       />
     </GenericProposalForm>
