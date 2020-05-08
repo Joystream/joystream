@@ -7,5 +7,14 @@
 	},
 	"workspaces": [
 		"tests/network-tests"
-	]
+	],
+	"devDependencies": {
+		"husky": "^4.2.5"
+	},
+	"husky": {
+	  "hooks": {
+		"pre-commit": "devops/git-hooks/pre-commit",
+		"pre-push": "devops/git-hooks/pre-push"
+	  }
+	}
 }
