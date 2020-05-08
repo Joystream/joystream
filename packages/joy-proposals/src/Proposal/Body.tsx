@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Header, Item, Button, Icon, Message } from "semantic-ui-react";
+import { Card, Header, Button, Icon, Message } from "semantic-ui-react";
 import { ProposalType } from "../runtime/transport";
 import { blake2AsHex } from '@polkadot/util-crypto';
 import styled from 'styled-components';
@@ -129,10 +129,10 @@ const ProposalParams = styled.div`
 `;
 const ProposalParamName = styled.div`
   margin-right: 1rem;
+  white-space: nowrap;
 `;
 const ProposalParamValue = styled.div`
   color: black;
-  padding-left: 1rem;
   word-wrap: break-word;
   word-break: break-all;
   @media screen and (max-width: 767px) {
