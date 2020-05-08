@@ -16,6 +16,13 @@ pub const ERROR_CLASS_SCHEMAS_LIMIT_REACHED: &str =
     "Maximum number of given class schemas limit reached";
 pub const ERROR_CLASS_PROPERTIES_LIMIT_REACHED: &str =
     "Maximum number of properties in schema limit reached";
+pub const ERROR_PER_ACTOR_ENTITIES_CREATION_LIMIT_EXCEEDS_OVERALL_LIMIT: &str =
+    "Entities creation limit per individual actor should be less than overall entities creation limit";
+pub const ERROR_ENTITIES_NUMBER_PER_CLASS_CONSTRAINT_VIOLATED: &str =
+    "Number of entities per class is to big";
+pub const ERROR_NUMBER_OF_CLASS_ENTITIES_PER_ACTOR_CONSTRAINT_VIOLATED: &str =
+    "Number of class entities per actor is to big";
+
 // Main logic errors
 // --------------------------------------
 

@@ -8,6 +8,8 @@ use runtime_primitives::traits::{MaybeSerializeDeserialize, Member, SimpleArithm
 pub use serde::{Deserialize, Serialize};
 use srml_support::{dispatch, ensure, Parameter};
 
+pub type CreationLimit = u32;
+
 /// Model of authentication manager.
 pub trait ActorAuthenticator: system::Trait + Debug {
     /// Actor identifier
@@ -100,28 +102,28 @@ pub enum EntityCreationLimit {
     ClassLimit,
 
     /// Individual specified limit.
-    Individual(u64),
+    Individual(CreationLimit),
 }
 
 /// A voucher for entity creation
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Default)]
 pub struct EntityCreationVoucher {
     /// How many are allowed in total
-    pub maximum_entities_count: u64,
+    pub maximum_entities_count: CreationLimit,
 
     /// How many have currently been created
-    pub entities_created: u64,
+    pub entities_created: CreationLimit,
 }
 
 impl EntityCreationVoucher {
-    pub fn new(maximum_entities_count: u64) -> Self {
+    pub fn new(maximum_entities_count: CreationLimit) -> Self {
         Self {
             maximum_entities_count,
             entities_created: 1,
         }
     }
 
-    pub fn set_maximum_entities_count(&mut self, maximum_entities_count: u64) {
+    pub fn set_maximum_entities_count(&mut self, maximum_entities_count: CreationLimit) {
         self.maximum_entities_count = maximum_entities_count
     }
 
@@ -129,7 +131,7 @@ impl EntityCreationVoucher {
         self.entities_created += 1;
     }
 
-    pub fn limit_not_reached(&self) -> bool {
+    pub fn limit_not_reached(self) -> bool {
         self.entities_created < self.maximum_entities_count
     }
 }
@@ -171,15 +173,6 @@ pub struct ClassPermissions {
     /// rather than for example having to set, and later clear, `EntityPermissions::frozen_for_controller`
     /// for a large number of entities.
     all_entity_property_values_locked: bool,
-
-    /// The maximum number of entities which can be created.
-    maximum_entities_count: u64,
-
-    /// The current number of entities which exist.
-    current_number_of_entities: u64,
-
-    /// How many entities a given controller may create at most.
-    per_controller_entity_creation_limit: u64,
 }
 
 impl ClassPermissions {
@@ -205,24 +198,8 @@ impl ClassPermissions {
         self.initial_controller_of_created_entities = initial_controller_of_created_entities
     }
 
-    pub fn get_controller_entity_creation_limit(&self) -> u64 {
-        self.per_controller_entity_creation_limit
-    }
-
-    pub fn get_maximum_entities_count(&self) -> u64 {
-        self.maximum_entities_count
-    }
-
     pub fn get_initial_controller_of_created_entities(&self) -> InitialControllerPolicy {
         self.initial_controller_of_created_entities
-    }
-
-    pub fn ensure_maximum_entities_count_limit_not_reached(&self) -> dispatch::Result {
-        ensure!(
-            self.current_number_of_entities < self.maximum_entities_count,
-            ERROR_MAX_NUMBER_OF_ENTITIES_PER_CLASS_LIMIT_REACHED
-        );
-        Ok(())
     }
 
     pub fn ensure_entity_creation_not_blocked(&self) -> dispatch::Result {

@@ -108,6 +108,12 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug {
     type VecMaxLengthConstraint: Get<VecMaxLength>;
 
     type TextMaxLengthConstraint: Get<TextMaxLength>;
+
+    /// Entities creation constraint per class
+    type EntitiesCreationConstraint: Get<CreationLimit>;
+
+    /// Entities creation constraint per individual
+    type IndividualEntitiesCreationConstraint: Get<CreationLimit>;
 }
 
 /// Length constraint for input validation
@@ -166,6 +172,15 @@ pub struct Class<T: Trait> {
 
     pub name: Vec<u8>,
     pub description: Vec<u8>,
+
+    /// The maximum number of entities which can be created.
+    maximum_entities_count: CreationLimit,
+
+    /// The current number of entities which exist.
+    current_number_of_entities: CreationLimit,
+
+    /// How many entities a given controller may create at most.
+    per_controller_entity_creation_limit: CreationLimit,
 }
 
 impl<T: Trait> Default for Class<T> {
@@ -176,18 +191,30 @@ impl<T: Trait> Default for Class<T> {
             schemas: vec![],
             name: vec![],
             description: vec![],
+            maximum_entities_count: CreationLimit::default(),
+            current_number_of_entities: CreationLimit::default(),
+            per_controller_entity_creation_limit: CreationLimit::default(),
         }
     }
 }
 
 impl<T: Trait> Class<T> {
-    fn new(class_permissions: ClassPermissions, name: Vec<u8>, description: Vec<u8>) -> Self {
+    fn new(
+        class_permissions: ClassPermissions,
+        name: Vec<u8>,
+        description: Vec<u8>,
+        maximum_entities_count: CreationLimit,
+        per_controller_entity_creation_limit: CreationLimit,
+    ) -> Self {
         Self {
             class_permissions,
             properties: vec![],
             schemas: vec![],
             name,
             description,
+            maximum_entities_count,
+            current_number_of_entities: 0,
+            per_controller_entity_creation_limit,
         }
     }
 
@@ -274,6 +301,22 @@ impl<T: Trait> Class<T> {
             T::NumberOfPropertiesConstraint::get()
                 <= (self.properties.len() + new_properties.len()) as MaxNumber,
             ERROR_CLASS_PROPERTIES_LIMIT_REACHED
+        );
+        Ok(())
+    }
+
+    pub fn get_controller_entity_creation_limit(&self) -> CreationLimit {
+        self.per_controller_entity_creation_limit
+    }
+
+    pub fn get_maximum_entities_count(&self) -> CreationLimit {
+        self.maximum_entities_count
+    }
+
+    pub fn ensure_maximum_entities_count_limit_not_reached(&self) -> dispatch::Result {
+        ensure!(
+            self.current_number_of_entities < self.maximum_entities_count,
+            ERROR_MAX_NUMBER_OF_ENTITIES_PER_CLASS_LIMIT_REACHED
         );
         Ok(())
     }
@@ -404,7 +447,7 @@ decl_module! {
             } else {
                 let class = Self::class_by_id(class_id);
                 <EntityCreationVouchers<T>>::insert(class_id, entity_controller,
-                    EntityCreationVoucher::new(class.get_permissions().get_controller_entity_creation_limit())
+                    EntityCreationVoucher::new(class.get_controller_entity_creation_limit())
                 );
             }
             Ok(())
@@ -471,7 +514,7 @@ decl_module! {
             origin,
             class_id: T::ClassId,
             controller: EntityController<T>,
-            maximum_entities_count: u64
+            maximum_entities_count: CreationLimit
         ) -> dispatch::Result {
             let account_id = ensure_signed(origin)?;
 
@@ -528,10 +571,14 @@ decl_module! {
             origin,
             name: Vec<u8>,
             description: Vec<u8>,
-            class_permissions: ClassPermissions
+            class_permissions: ClassPermissions,
+            maximum_entities_count: CreationLimit,
+            per_controller_entity_creation_limit: CreationLimit
         ) -> dispatch::Result {
             let account_id = ensure_signed(origin)?;
             ensure_authority_auth_success::<T>(&account_id)?;
+
+            Self::ensure_entities_limits_are_valid(maximum_entities_count, per_controller_entity_creation_limit)?;
 
             Self::ensure_class_limit_not_reached()?;
 
@@ -540,7 +587,7 @@ decl_module! {
 
             let class_id = Self::next_class_id();
 
-            let class = Class::new(class_permissions, name, description);
+            let class = Class::new(class_permissions, name, description, maximum_entities_count, per_controller_entity_creation_limit);
 
             <ClassById<T>>::insert(&class_id, class);
 
@@ -553,9 +600,11 @@ decl_module! {
         pub fn create_class_with_default_permissions(
             origin,
             name: Vec<u8>,
-            description: Vec<u8>
+            description: Vec<u8>,
+            maximum_entities_count: CreationLimit,
+            per_controller_entity_creation_limit: CreationLimit
         ) -> dispatch::Result {
-            Self::create_class(origin, name, description, ClassPermissions::default())
+            Self::create_class(origin, name, description, ClassPermissions::default(), maximum_entities_count, per_controller_entity_creation_limit)
         }
 
         pub fn add_class_schema(
@@ -755,14 +804,15 @@ decl_module! {
         ) -> dispatch::Result {
             let account_id = ensure_signed(origin)?;
             let class = Self::ensure_class_exists(class_id)?;
+            class.ensure_maximum_entities_count_limit_not_reached()?;
+
             let class_permissions = class.get_permissions();
-            class_permissions.ensure_maximum_entities_count_limit_not_reached()?;
             class_permissions.ensure_entity_creation_not_blocked()?;
 
             // If origin is not an authority
             let entity_controller = if !T::authenticate_authority(&account_id) {
                 Self::ensure_entity_creator_exists(class_id, actor_in_group.get_group_id())?;
-                let initial_controller_of_created_entities = class.get_permissions().get_initial_controller_of_created_entities();
+                let initial_controller_of_created_entities = class_permissions.get_initial_controller_of_created_entities();
                 let entity_controller = EntityController::from(initial_controller_of_created_entities, actor_in_group);
 
                 // Ensure entity creation voucher exists
@@ -782,7 +832,7 @@ decl_module! {
                     })
                 } else {
                     <EntityCreationVouchers<T>>::insert(class_id, entity_controller.clone(),
-                        EntityCreationVoucher::new(class.get_permissions().get_controller_entity_creation_limit())
+                        EntityCreationVoucher::new(class.get_controller_entity_creation_limit())
                     );
                 }
                 Some(entity_controller)
@@ -1480,6 +1530,25 @@ impl<T: Trait> Module<T> {
         ensure!(
             T::NumberOfClassesConstraint::get() < <ClassById<T>>::enumerate().count() as MaxNumber,
             ERROR_CLASS_LIMIT_REACHED
+        );
+        Ok(())
+    }
+
+    pub fn ensure_entities_limits_are_valid(
+        maximum_entities_count: CreationLimit,
+        per_controller_entity_creation_limit: CreationLimit,
+    ) -> dispatch::Result {
+        ensure!(
+            per_controller_entity_creation_limit < maximum_entities_count,
+            ERROR_PER_ACTOR_ENTITIES_CREATION_LIMIT_EXCEEDS_OVERALL_LIMIT
+        );
+        ensure!(
+            maximum_entities_count < T::EntitiesCreationConstraint::get(),
+            ERROR_ENTITIES_NUMBER_PER_CLASS_CONSTRAINT_VIOLATED
+        );
+        ensure!(
+            maximum_entities_count < T::IndividualEntitiesCreationConstraint::get(),
+            ERROR_NUMBER_OF_CLASS_ENTITIES_PER_ACTOR_CONSTRAINT_VIOLATED
         );
         Ok(())
     }
