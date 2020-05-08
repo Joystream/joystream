@@ -1,5 +1,6 @@
 import Config from '../Config'
-import ESUploader from '../esearch/ESUploader';
+
+const logger = require('log4js').getLogger('state-keeper');
 
 export interface State {
     lastProcessedBlock: number;  
@@ -15,19 +16,20 @@ export class StateKeeper {
         this._state = StateKeeper.nullState();
     }
 
-    async state(): Promise<State> {
-        // first, try to recover
-        //this._state = await this._esUploader.restore();
-        return this._state;
+    set state(s: State) {
+        logger.info(`State updated: ${JSON.stringify(s, null, 2)}`);
+        this._state = s;
     }
-
-
 
     public static nullState(): State {
         return {
             lastProcessedBlock: -1,
             eventIndex: 0
         }
+    }
+
+    public shouldBootstrap(): boolean {
+        return (this._state.lastProcessedBlock < 0)
     }
 }
 
