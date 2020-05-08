@@ -2,45 +2,131 @@ import Config from '../Config';
 import { State, StateKeeper } from '../state/StateKeeper';
 import { Client } from '@elastic/elasticsearch'
 import QueryEventBlock from '../joynode/QueryEventBlock';
+import { JoyEntity } from '../joynode/StateBootstrap';
+
+const logger = require('log4js').getLogger('es-uploader');
+
+const ENTITY_TYPES_TO_INDEX: { [type: string]: string } = {
+    "profile": "members"
+}
 
 export default class ESUploader {
     private _client: Client;
 
     constructor(config: Config) {
         this._client = new Client({ node: config.get().elasticsearch.node })
+        this._client.on('response', (err:any, result:any) => {
+            if (err) {
+              logger.error(`ES response ERROR: ${JSON.stringify(err, null, 2)}`)
+            } 
+            logger.trace(`ES response: ${JSON.stringify(result, null, 2)}`);
+        })
+        
+        this._client.on('request', (err:any, result: any) => {
+            if (err) {
+                logger.error(`ES request ERROR: ${JSON.stringify(err, null, 2)}`)
+            } 
+            logger.trace(`ES request: ${JSON.stringify(result, null, 2)}`);
+        })
     }
 
     async restore(): Promise<State> {
-        const { body } = await this._client.search({
-            index: 'processed-events',
+
+        await this.createIfNotExists("events");
+        await this.createIfNotExists("members");
+        
+        const response = await this._client.search({
+            index: 'events',
+            size: 1,        
             body: {
-                size: 1,
-                sort: { blockNumber: "desc", index: "desc" },
                 query: {
                     match_all: {}
-                }
+                },
+                sort: [
+                     {
+                         "blockNumber": {
+                             "order":"desc" 
+                         }
+                     }
+                ]
             }    
         })
-        if (!body.hits.hits ) {
+        if (response.body.hits.total.value == 0) {
             return StateKeeper.nullState()
         }
         return {
-            lastProcessedBlock: body.hits.hits[0].blockNumber,
-            eventIndex: body.hits.hits[0].index
+            lastProcessedBlock: response.body.hits.hits[0]._source.blockNumber,
+            eventIndex: response.body.hits.hits[0]._source.index
         }
+    }
+
+    async createIfNotExists(index: string) {
+        const exists = await this._client.indices.exists({index});
+        logger.trace(`Index ${index}: ${JSON.stringify(exists, null, 2)}`);
+        if (!exists.body) {
+            logger.debug(`Creating index ${index}`);
+            // TODO: specify mappings and settings from the schema files
+            const response = await this._client.indices.create({
+                index,
+                body: {
+                    mappings: {
+                        properties: {
+                            "blockNumber": {"type": "integer"}
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    async bootstrap(entities: AsyncGenerator<JoyEntity>):Promise<State> {
+        let toLoad: JoyEntity[] = [];
+        for await (const entity of entities) {
+            toLoad.push(entity);
+            if (toLoad.length >= 10) {
+                await this.flush(toLoad);
+                toLoad = [];
+            }   
+        }
+        await this.flush(toLoad);
+        return {
+            lastProcessedBlock: 0,
+            eventIndex: -1
+        }
+    }
+
+    async * sync(blocks: AsyncGenerator<QueryEventBlock>):AsyncGenerator<State> {
+        for await (const block of blocks) {
+            await this.process(block);
+            yield {
+                lastProcessedBlock: block.block_number,
+                eventIndex: block.query_events.length
+            }
+        }
+    }
+
+    async flush(toLoad: JoyEntity[]) {
+        const body = toLoad.
+            filter((x:JoyEntity) => x.type in ENTITY_TYPES_TO_INDEX).flatMap(
+                (doc, i) => [
+                    { index: { _index: ENTITY_TYPES_TO_INDEX[doc.type], _id: doc.id } },
+                    doc
+                ]
+            );
+        await this._client.bulk({ refresh: 'true', body });
     }
 
     async process(eventBlock: QueryEventBlock) {
         const body = eventBlock.query_events.flatMap(
-            (doc, i) => [{ index: { _index: 'processed-events' } }, 
+            (doc, i) => [{ index: { _index: 'events' } }, 
             {   
-                ...doc, 
+                eventRecord: doc.toDTO(),
                 blockNumber: eventBlock.block_number,
-                index: i
+                index: i,
             }]
         );
-
-        const { body: bulkResponse } = await this._client.bulk({ body });
+        
+        const { body: bulkResponse } = await this._client.bulk({ refresh: 'true', body });
         if (bulkResponse.errors) {
             const erroredDocuments: any[] = [];
             // The items array has the same order of the dataset we just indexed.
@@ -60,7 +146,7 @@ export default class ESUploader {
                 })
               }
             })
-            console.log(erroredDocuments)
+            logger.error(erroredDocuments)
         }
     }
 }
