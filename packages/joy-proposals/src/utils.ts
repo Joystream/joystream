@@ -4,6 +4,16 @@ import { Category } from "./Proposal/ChooseProposalType";
 import { useTransport, ParsedProposal, ProposalVote } from "./runtime";
 import { ProposalId } from "@joystream/types/proposals";
 
+type ProposalMeta = {
+  description: string;
+  category: Category;
+  image: string;
+  approvalQuorum: number;
+  approvalThreshold: number;
+  slashingQuorum: number;
+  slashingThreshold: number;
+}
+
 export function includeKeys<T extends { [k: string]: any }>(obj: T, ...allowedKeys: string[]) {
   return Object.keys(obj).filter(objKey => {
     return allowedKeys.reduce(
@@ -154,7 +164,7 @@ export function calculateStake(type: ProposalType, issuance: number) {
   return stake;
 }
 
-export function calculateMetaFromType(type: ProposalType) {
+export function calculateMetaFromType(type: ProposalType): ProposalMeta {
   const image = "";
   switch (type) {
     case "EvictStorageProvider": {

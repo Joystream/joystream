@@ -87,7 +87,7 @@ export default function VotingSection({
     <>
       <Header as="h3">Sumbit your vote</Header>
       <Divider />
-      { voteKinds.map((voteKind) =>
+      { VoteKinds.map((voteKind) =>
         <VoteButton
           voteKind={voteKind}
           memberId={memberId}
