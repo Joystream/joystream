@@ -218,11 +218,6 @@ impl<T: Trait> Class<T> {
         }
     }
 
-    fn is_active_schema(&self, schema_index: SchemaId) -> bool {
-        // Such indexing is safe, when length bounds were previously checked
-        self.schemas[schema_index as usize].is_active()
-    }
-
     fn update_schema_status(&mut self, schema_index: SchemaId, schema_status: bool) {
         // Such indexing is safe, when length bounds were previously checked
         self.schemas[schema_index as usize].set_status(schema_status);
@@ -250,12 +245,33 @@ impl<T: Trait> Class<T> {
             .set_same_controller_status(same_controller)
     }
 
+    fn increment_entities_count(&mut self) {
+        self.current_number_of_entities += 1;
+    }
+
+    fn decrement_entities_count(&mut self) {
+        self.current_number_of_entities -= 1;
+    }
+
     fn get_permissions_mut(&mut self) -> &mut ClassPermissions {
         &mut self.class_permissions
     }
 
     fn get_permissions(&self) -> &ClassPermissions {
         &self.class_permissions
+    }
+
+    pub fn get_controller_entity_creation_limit(&self) -> CreationLimit {
+        self.per_controller_entity_creation_limit
+    }
+
+    pub fn get_maximum_entities_count(&self) -> CreationLimit {
+        self.maximum_entities_count
+    }
+
+    fn is_active_schema(&self, schema_index: SchemaId) -> bool {
+        // Such indexing is safe, when length bounds were previously checked
+        self.schemas[schema_index as usize].is_active()
     }
 
     pub fn ensure_schema_id_exists(&self, schema_id: SchemaId) -> dispatch::Result {
@@ -303,14 +319,6 @@ impl<T: Trait> Class<T> {
             ERROR_CLASS_PROPERTIES_LIMIT_REACHED
         );
         Ok(())
-    }
-
-    pub fn get_controller_entity_creation_limit(&self) -> CreationLimit {
-        self.per_controller_entity_creation_limit
-    }
-
-    pub fn get_maximum_entities_count(&self) -> CreationLimit {
-        self.maximum_entities_count
     }
 
     pub fn ensure_maximum_entities_count_limit_not_reached(&self) -> dispatch::Result {
@@ -526,6 +534,7 @@ decl_module! {
             // and runtime entities creation constraint per actor satisfied
             Self::entity_creation_vouchers(class_id, &controller)
                 .ensure_new_max_entities_count_is_valid::<T>(maximum_entities_count)?;
+
             //
             // == MUTATION SAFE ==
             //
@@ -844,7 +853,7 @@ decl_module! {
                 None
             };
 
-            Self::perform_entity_creation(class_id, entity_controller);
+            Self::complete_entity_creation(class_id, entity_controller);
             Ok(())
         }
 
@@ -1012,10 +1021,10 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    fn perform_entity_creation(
+    fn complete_entity_creation(
         class_id: T::ClassId,
         entity_controller: Option<EntityController<T>>,
-    ) -> T::EntityId {
+    ) {
         let entity_id = Self::next_entity_id();
 
         let new_entity = Entity::<T>::new(
@@ -1031,12 +1040,17 @@ impl<T: Trait> Module<T> {
         // Increment the next entity id:
         <NextEntityId<T>>::mutate(|n| *n += T::EntityId::one());
 
-        entity_id
+        <ClassById<T>>::mutate(class_id, |class| {
+            class.increment_entities_count();
+        });
     }
 
     fn complete_entity_removal(entity_id: T::EntityId) {
+        let class_id = Self::get_class_id_by_entity_id(entity_id);
         <EntityById<T>>::remove(entity_id);
         <EntityMaintainers<T>>::remove_prefix(entity_id);
+
+        <ClassById<T>>::mutate(class_id, |class| class.decrement_entities_count());
     }
 
     pub fn add_entity_schema_support(
@@ -1408,6 +1422,10 @@ impl<T: Trait> Module<T> {
         let entity = <EntityById<T>>::get(entity_id);
         let class = ClassById::get(entity.class_id);
         (entity, class)
+    }
+
+    pub fn get_class_id_by_entity_id(entity_id: T::EntityId) -> T::ClassId {
+        <EntityById<T>>::get(entity_id).class_id
     }
 
     pub fn ensure_class_property_type_unlocked_for(
