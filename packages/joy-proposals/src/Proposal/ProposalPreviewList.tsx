@@ -9,7 +9,7 @@ import Error from "./Error";
 import { withCalls } from "@polkadot/react-api";
 import { BlockNumber } from "@polkadot/types/interfaces";
 
-const filters = ["All", "Active", "Canceled", "Approved", "Rejected", "Slashed"] as const;
+const filters = ["All", "Active", "Canceled", "Approved", "Rejected", "Slashed", "Expired"] as const;
 
 type ProposalFilter = typeof filters[number];
 
@@ -24,7 +24,6 @@ function filterProposals(filter: ProposalFilter, proposals: ParsedProposal[]) {
   }
 
   return proposals.filter((prop: ParsedProposal) => {
-    // Either Active or undefined for some reason
     if (prop.status.Finalized == null || prop.status.Finalized.proposalStatus == null) {
       return false;
     }
@@ -43,6 +42,7 @@ function mapFromProposals(proposals: ParsedProposal[]) {
   proposalsMap.set("Approved", filterProposals("Approved", proposals));
   proposalsMap.set("Rejected", filterProposals("Rejected", proposals));
   proposalsMap.set("Slashed", filterProposals("Slashed", proposals));
+  proposalsMap.set("Expired", filterProposals("Expired", proposals));
 
   return proposalsMap;
 }
