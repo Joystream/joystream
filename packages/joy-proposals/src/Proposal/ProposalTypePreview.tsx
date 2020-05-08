@@ -17,6 +17,7 @@ export type ProposalTypeInfo = {
   stake: number;
   cancellationFee?: number;
   gracePeriod: number;
+  votingPeriod: number;
 };
 
 type ProposalTypePreviewProps = {
@@ -24,38 +25,45 @@ type ProposalTypePreviewProps = {
   history: History;
 };
 
+const ProposalTypeDetail = (props: { title: string, value: string }) => (
+  <div className="proposal-detail">
+    <div className="detail-title">{ `${props.title}:` }</div>
+    <div className="detail-value">{ props.value }</div>
+  </div>
+);
+
 export default function ProposalTypePreview(props: ProposalTypePreviewProps) {
   const {
-    typeInfo: { type, image, description, stake, cancellationFee, gracePeriod }
+    typeInfo: { type, description, stake, cancellationFee, gracePeriod, votingPeriod }
   } = props;
 
   const handleClick = () => {
-    console.log(`Clicked, should go to ${slugify(type)}`);
     if (!props.history) return;
     props.history.push(`/proposals/new/${slugify(type)}`);
   };
 
   return (
     <Item className="ProposalType">
-      <Item.Image size="tiny" src={image} />
+      {/*
+        TODO: We can add it once we have the actual assets
+        <Item.Image size="tiny" src={image} />
+      */}
       <Item.Content>
         <Item.Header>{splitOnUpperCase(type).join(" ")}</Item.Header>
         <Item.Description>{description}</Item.Description>
         <div className="proposal-details">
-          <div className="proposal-detail">
-            <div className="detail-title">Stake:</div>
-            <div className="detail-value">{stake} tJOY</div>
-          </div>
-          <div className="proposal-detail">
-            <div className="detail-title">Cancellation fee:</div>
-            <div className="detail-value">{cancellationFee ? `${cancellationFee} tJOY` : "NONE"}</div>
-          </div>
-          <div className="proposal-detail">
-            <div className="detail-title">Grace period:</div>
-            <div className="detail-value">
-              {gracePeriod ? `${gracePeriod} block${gracePeriod > 1 ? "s" : ""}` : "NONE"}
-            </div>
-          </div>
+          <ProposalTypeDetail
+            title="Stake"
+            value={ stake + "tJOY" } />
+          <ProposalTypeDetail
+            title="Cancellation fee"
+            value={ cancellationFee ? `${cancellationFee} tJOY` : "NONE" } />
+          <ProposalTypeDetail
+            title="Grace period"
+            value={ gracePeriod ? `${gracePeriod} block${gracePeriod > 1 ? "s" : ""}` : "NONE" } />
+          <ProposalTypeDetail
+            title="Voting period"
+            value={ votingPeriod ? `${votingPeriod} block${votingPeriod > 1 ? "s" : ""}` : "NONE" } />
         </div>
       </Item.Content>
       <div className="actions">

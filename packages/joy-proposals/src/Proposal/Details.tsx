@@ -51,7 +51,7 @@ export default function Details({ proposal, extendedStatus, proposerLink = false
       {expiresIn !== null && (
         <Item>
           <Item.Content>
-            <Item.Extra>Expires in:</Item.Extra>
+            <Item.Extra>{ periodStatus === 'Grace period' ? 'Executes in' : 'Expires in' }:</Item.Extra>
             <Header as="h4">{`${expiresIn.toLocaleString("en-US")} blocks`}</Header>
           </Item.Content>
         </Item>

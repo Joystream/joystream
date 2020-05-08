@@ -26,16 +26,25 @@ type BodyProps = {
   cancellationFee: number;
 };
 
-function ProposedAddress(props: { address: string }) {
+function ProposedAddress(props: { address?: string | null }) {
+  if (props.address === null || props.address === undefined) {
+    return <>NONE</>;
+  }
+
   return (
     <AddressMini value={props.address} isShort={false} isPadded={false} withAddress={true} style={{ padding: 0 }} />
   );
 }
 
-function ProposedMember(props: { memberId: MemberId | number }) {
+function ProposedMember(props: { memberId?: MemberId | number | null }) {
+  if (props.memberId === null || props.memberId === undefined) {
+    return <>NONE</>;
+  }
+  const memberId: MemberId | number = props.memberId;
+
   const transport = useTransport();
   const [ member, error, loading ] = usePromise<Option<Profile> | null>(
-    () => transport.memberProfile(props.memberId),
+    () => transport.memberProfile(memberId),
     null
   );
 
@@ -123,7 +132,9 @@ const ProposalParamName = styled.div`
 `;
 const ProposalParamValue = styled.div`
   color: black;
-  font-weight: bold;
+  padding-left: 1rem;
+  word-wrap: break-word;
+  word-break: break-all;
   @media screen and (max-width: 767px) {
     margin-top: -0.25rem;
   }
