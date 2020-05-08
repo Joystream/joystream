@@ -43,6 +43,7 @@ export default class QueryBlockProducer extends EventEmitter {
     async start(at_block?: number) {
         if (this._started) throw Error(`Cannot start when already started.`);
 
+        logger.debug(`Starting at block ${at_block}`);
         // mark as started
         this._started = true;
 
@@ -76,7 +77,7 @@ export default class QueryBlockProducer extends EventEmitter {
         this._started = false;
     }
 
-    async * blockGenerator():AsyncGenerator<QueryEventBlock> { 
+    async * blocks():AsyncGenerator<QueryEventBlock> { 
         while (this._started) {
             let height = this._nextBlockHeight;
             let block_hash_of_target = await this.getBlockHashOrWait(height, () => {
@@ -93,12 +94,6 @@ export default class QueryBlockProducer extends EventEmitter {
             yield this.emitBlockEvent(signed_block, records);
         }
     }
-
-    // async * blocksGenerator():AsyncGenerator<QueryEventBlock> {
-    //     while (this._started) {
-    //         yield await this.produceNextBlock();
-    //     }
-    // }
 
     private async getBlockHashOrWait(height: number, waitFor:()=>boolean): Promise<Hash> {
         return new Promise<Hash>((resolve, reject) => {
