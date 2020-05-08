@@ -63,34 +63,34 @@ pub struct OpeningPolicyCommitment<BlockNumber, Balance> {
     /// When filling an opening:
     pub fill_opening_failed_applicant_role_stake_unstaking_period: Option<BlockNumber>,
 
-    /// When terminating a curator:
-    pub terminate_curator_application_stake_unstaking_period: Option<BlockNumber>,
+    /// When terminating a worker:
+    pub terminate_worker_application_stake_unstaking_period: Option<BlockNumber>,
 
-    /// When terminating a curator:
-    pub terminate_curator_role_stake_unstaking_period: Option<BlockNumber>,
+    /// When terminating a worker:
+    pub terminate_worker_role_stake_unstaking_period: Option<BlockNumber>,
 
-    /// When a curator exists: ..
-    pub exit_curator_role_application_stake_unstaking_period: Option<BlockNumber>,
+    /// When a worker exists: ..
+    pub exit_worker_role_application_stake_unstaking_period: Option<BlockNumber>,
 
-    /// When a curator exists: ..
-    pub exit_curator_role_stake_unstaking_period: Option<BlockNumber>,
+    /// When a worker exists: ..
+    pub exit_worker_role_stake_unstaking_period: Option<BlockNumber>,
 }
 
-/// An opening for a curator role.
+/// An opening for a worker role.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
-pub struct CuratorOpening<OpeningId, BlockNumber, Balance, CuratorApplicationId: core::cmp::Ord> {
+pub struct WorkerOpening<OpeningId, BlockNumber, Balance, WorkerApplicationId: core::cmp::Ord> {
     /// Identifer for underlying opening in the hiring module.
     pub opening_id: OpeningId,
 
-    /// Set of identifiers for all curator applications ever added
-    pub curator_applications: BTreeSet<CuratorApplicationId>,
+    /// Set of identifiers for all worker applications ever added
+    pub worker_applications: BTreeSet<WorkerApplicationId>,
 
     /// Commitment to policies in opening.
     pub policy_commitment: OpeningPolicyCommitment<BlockNumber, Balance>,
 }
 
-/// Working group lead: curator lead
+/// Working group lead: worker lead
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Lead<MemberId, AccountId> {
@@ -101,15 +101,15 @@ pub struct Lead<MemberId, AccountId> {
     pub role_account_id: AccountId,
 }
 
-/// An application for the curator role.
+/// An application for the worker role.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
-pub struct CuratorApplication<AccountId, CuratorOpeningId, MemberId, ApplicationId> {
+pub struct WorkerApplication<AccountId, WorkerOpeningId, MemberId, ApplicationId> {
     /// Account used to authenticate in this role,
     pub role_account: AccountId,
 
     /// Opening on which this application applies
-    pub curator_opening_id: CuratorOpeningId,
+    pub worker_opening_id: WorkerOpeningId,
 
     /// Member applying
     pub member_id: MemberId,
@@ -118,28 +118,28 @@ pub struct CuratorApplication<AccountId, CuratorOpeningId, MemberId, Application
     pub application_id: ApplicationId,
 }
 
-impl<AccountId: Clone, CuratorOpeningId: Clone, MemberId: Clone, ApplicationId: Clone>
-    CuratorApplication<AccountId, CuratorOpeningId, MemberId, ApplicationId>
+impl<AccountId: Clone, WorkerOpeningId: Clone, MemberId: Clone, ApplicationId: Clone>
+    WorkerApplication<AccountId, WorkerOpeningId, MemberId, ApplicationId>
 {
     pub fn new(
         role_account: &AccountId,
-        curator_opening_id: &CuratorOpeningId,
+        worker_opening_id: &WorkerOpeningId,
         member_id: &MemberId,
         application_id: &ApplicationId,
     ) -> Self {
-        CuratorApplication {
+        WorkerApplication {
             role_account: (*role_account).clone(),
-            curator_opening_id: (*curator_opening_id).clone(),
+            worker_opening_id: (*worker_opening_id).clone(),
             member_id: (*member_id).clone(),
             application_id: (*application_id).clone(),
         }
     }
 }
 
-/// Role stake information for a curator.
+/// Role stake information for a worker.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
-pub struct CuratorRoleStakeProfile<StakeId, BlockNumber> {
+pub struct WorkerRoleStakeProfile<StakeId, BlockNumber> {
     /// Whether participant is staked, and if so, the identifier for this staking in the staking module.
     pub stake_id: StakeId,
 
@@ -150,7 +150,7 @@ pub struct CuratorRoleStakeProfile<StakeId, BlockNumber> {
     pub exit_unstaking_period: Option<BlockNumber>,
 }
 
-impl<StakeId: Clone, BlockNumber: Clone> CuratorRoleStakeProfile<StakeId, BlockNumber> {
+impl<StakeId: Clone, BlockNumber: Clone> WorkerRoleStakeProfile<StakeId, BlockNumber> {
     pub fn new(
         stake_id: &StakeId,
         termination_unstaking_period: &Option<BlockNumber>,
@@ -164,33 +164,33 @@ impl<StakeId: Clone, BlockNumber: Clone> CuratorRoleStakeProfile<StakeId, BlockN
     }
 }
 
-/// Working group participant: curator
+/// Working group participant: worker
 /// This role can be staked, have reward and be inducted through the hiring module.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
-pub struct Curator<
+pub struct Worker<
     AccountId,
     //    RewardRelationshipId,
     //    StakeId,
     //    BlockNumber,
     //    LeadId,
-    //    CuratorApplicationId,
+    //    WorkerApplicationId,
     //    PrincipalId,
 > {
     /// Account used to authenticate in this role,
     pub role_account: AccountId,
-    //    /// Whether the role has recurring reward, and if so an identifier for this.
-    //    pub reward_relationship: Option<RewardRelationshipId>,
-    //    /// When set, describes role stake of curator.
-    //    pub role_stake_profile: Option<CuratorRoleStakeProfile<StakeId, BlockNumber>>,
-    //    /// The stage of this curator in the working group.
-    //    pub stage: CuratorRoleStage<BlockNumber>,
-
-    //    /// How the curator was inducted into the working group.
-    //    pub induction: CuratorInduction<LeadId, CuratorApplicationId, BlockNumber>,
-
-    //    /// Permissions module principal id
-    //    pub principal_id: PrincipalId,
+    // /// Whether the role has recurring reward, and if so an identifier for this.
+    // pub reward_relationship: Option<RewardRelationshipId>,
+    // /// When set, describes role stake of worker.
+    // pub role_stake_profile: Option<WorkerRoleStakeProfile<StakeId, BlockNumber>>,
+    // /// The stage of this worker in the working group.
+    // pub stage: WorkerRoleStage<BlockNumber>,
+    //
+    // /// How the worker was inducted into the working group.
+    // pub induction: WorkerInduction<LeadId, WorkerApplicationId, BlockNumber>,
+    //
+    // /// Permissions module principal id
+    // pub principal_id: PrincipalId,
 }
 
 impl<
@@ -202,7 +202,7 @@ impl<
         //    ApplicationId: Clone,
         //    PrincipalId: Clone,
     >
-    Curator<
+    Worker<
         AccountId,
         //    RewardRelationshipId,
         //        StakeId,
@@ -215,12 +215,12 @@ impl<
     pub fn new(
         role_account: &AccountId,
         //        reward_relationship: &Option<RewardRelationshipId>,
-        //        role_stake_profile: &Option<CuratorRoleStakeProfile<StakeId, BlockNumber>>,
-        //        stage: &CuratorRoleStage<BlockNumber>,
-        //        induction: &CuratorInduction<LeadId, ApplicationId, BlockNumber>,
+        //        role_stake_profile: &Option<WorkerRoleStakeProfile<StakeId, BlockNumber>>,
+        //        stage: &WorkerRoleStage<BlockNumber>,
+        //        induction: &WorkerInduction<LeadId, ApplicationId, BlockNumber>,
         //        principal_id: &PrincipalId,
     ) -> Self {
-        Curator {
+        Worker {
             role_account: (*role_account).clone(),
             //            reward_relationship: (*reward_relationship).clone(),
             //            role_stake_profile: (*role_stake_profile).clone(),

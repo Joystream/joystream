@@ -21,8 +21,7 @@ use constraints::InputValidationLengthConstraint;
 use errors::bureaucracy_errors::*;
 use errors::WrappedError;
 use types::{
-    Curator, CuratorApplication, CuratorOpening, CuratorRoleStakeProfile, Lead,
-    OpeningPolicyCommitment,
+    Lead, OpeningPolicyCommitment, Worker, WorkerApplication, WorkerOpening, WorkerRoleStakeProfile,
 };
 
 //TODO: docs
@@ -33,23 +32,23 @@ pub type LeadOf<T> =
     Lead<<T as membership::members::Trait>::MemberId, <T as system::Trait>::AccountId>;
 
 /*
-+ add_curator_opening
-+ accept_curator_applications
-+ begin_curator_applicant_review
-+ fill_curator_opening
-+ withdraw_curator_application
-+ terminate_curator_application
-+ apply_on_curator_opening
++ add_worker_opening
++ accept_worker_applications
++ begin_worker_applicant_review
++ fill_worker_opening
++ withdraw_worker_application
++ terminate_worker_application
++ apply_on_worker_opening
 */
 
 /// Workaround for BTreeSet type
-pub type CuratorApplicationIdSet<T> = BTreeSet<CuratorApplicationId<T>>;
+pub type WorkerApplicationIdSet<T> = BTreeSet<WorkerApplicationId<T>>;
 
-/// Type for the identifier for an opening for a curator.
-pub type CuratorOpeningId<T> = <T as hiring::Trait>::OpeningId;
+/// Type for the identifier for an opening for a worker.
+pub type WorkerOpeningId<T> = <T as hiring::Trait>::OpeningId;
 
-/// Type for the identifier for an application as a curator.
-pub type CuratorApplicationId<T> = <T as hiring::Trait>::ApplicationId;
+/// Type for the identifier for an application as a worker.
+pub type WorkerApplicationId<T> = <T as hiring::Trait>::ApplicationId;
 
 /// Balance type of runtime
 pub type BalanceOf<T> =
@@ -62,19 +61,19 @@ pub type CurrencyOf<T> = <T as stake::Trait>::Currency;
 pub type NegativeImbalance<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
 
-/// Alias for the curator application id to the curator id dictionary
-pub type CuratorApplicationIdToCuratorIdMap<T> = BTreeMap<CuratorApplicationId<T>, CuratorId<T>>;
+/// Alias for the worker application id to the worker id dictionary
+pub type WorkerApplicationIdToWorkerIdMap<T> = BTreeMap<WorkerApplicationId<T>, WorkerId<T>>;
 
-/// Type identifier for curator role, which must be same as membership actor identifier
-pub type CuratorId<T> = <T as membership::members::Trait>::ActorId;
+/// Type identifier for worker role, which must be same as membership actor identifier
+pub type WorkerId<T> = <T as membership::members::Trait>::ActorId;
 
 // Type simplification
-type CuratorOpeningInfo<T> = (
-    CuratorOpening<
+type WorkerOpeningInfo<T> = (
+    WorkerOpening<
         <T as hiring::Trait>::OpeningId,
         <T as system::Trait>::BlockNumber,
         BalanceOf<T>,
-        CuratorApplicationId<T>,
+        WorkerApplicationId<T>,
     >,
     hiring::Opening<
         BalanceOf<T>,
@@ -84,29 +83,29 @@ type CuratorOpeningInfo<T> = (
 );
 
 // Type simplification
-type CuratorApplicationInfo<T> = (
-    CuratorApplication<
+type WorkerApplicationInfo<T> = (
+    WorkerApplication<
         <T as system::Trait>::AccountId,
-        CuratorOpeningId<T>,
+        WorkerOpeningId<T>,
         <T as membership::members::Trait>::MemberId,
         <T as hiring::Trait>::ApplicationId,
     >,
-    CuratorApplicationId<T>,
-    CuratorOpening<
+    WorkerApplicationId<T>,
+    WorkerOpening<
         <T as hiring::Trait>::OpeningId,
         <T as system::Trait>::BlockNumber,
         BalanceOf<T>,
-        CuratorApplicationId<T>,
+        WorkerApplicationId<T>,
     >,
 );
 
-type CuratorOf<T> = Curator<
+type WorkerOf<T> = Worker<
     <T as system::Trait>::AccountId,
     //    T::RewardRelationshipId,
     //    T::StakeId,
     //    <T as system::Trait>::BlockNumber,
     //    LeadId<T>,
-    //    CuratorApplicationId<T>,
+    //    WorkerApplicationId<T>,
     //    PrincipalId<T>,
 >;
 
@@ -122,45 +121,45 @@ decl_event!(
     where
         <T as membership::members::Trait>::MemberId,
         <T as system::Trait>::AccountId,
-        CuratorOpeningId = CuratorOpeningId<T>,
-        CuratorApplicationId = CuratorApplicationId<T>,
-        CuratorApplicationIdToCuratorIdMap = CuratorApplicationIdToCuratorIdMap<T>,
+        WorkerOpeningId = WorkerOpeningId<T>,
+        WorkerApplicationId = WorkerApplicationId<T>,
+        WorkerApplicationIdToWorkerIdMap = WorkerApplicationIdToWorkerIdMap<T>,
     {
         /// Emits on setting the leader.
         /// Params:
         /// - Member id of the leader.
         /// - Role account id of the leader.
         LeaderSet(MemberId, AccountId),
-        /// Emits on adding new curator opening.
+        /// Emits on adding new worker opening.
         /// Params:
-        /// - Curator opening id
-        CuratorOpeningAdded(CuratorOpeningId),
-        /// Emits on accepting application for the curator opening.
+        /// - Worker opening id
+        WorkerOpeningAdded(WorkerOpeningId),
+        /// Emits on accepting application for the worker opening.
         /// Params:
-        /// - Curator opening id
-        AcceptedCuratorApplications(CuratorOpeningId),
-        /// Emits on adding the application for the curator opening.
+        /// - Worker opening id
+        AcceptedWorkerApplications(WorkerOpeningId),
+        /// Emits on adding the application for the worker opening.
         /// Params:
-        /// - Curator opening id
-        /// - Curator application id
-        AppliedOnCuratorOpening(CuratorOpeningId, CuratorApplicationId),
-        /// Emits on withdrawing the application for the curator opening.
+        /// - Worker opening id
+        /// - Worker application id
+        AppliedOnWorkerOpening(WorkerOpeningId, WorkerApplicationId),
+        /// Emits on withdrawing the application for the worker opening.
         /// Params:
-        /// - Curator application id
-        CuratorApplicationWithdrawn(CuratorApplicationId),
-        /// Emits on terminating the application for the curator opening.
+        /// - Worker application id
+        WorkerApplicationWithdrawn(WorkerApplicationId),
+        /// Emits on terminating the application for the worker opening.
         /// Params:
-        /// - Curator application id
-        CuratorApplicationTerminated(CuratorApplicationId),
-        /// Emits on beginning the application review for the curator opening.
+        /// - Worker application id
+        WorkerApplicationTerminated(WorkerApplicationId),
+        /// Emits on beginning the application review for the worker opening.
         /// Params:
-        /// - Curator opening id
-        BeganCuratorApplicationReview(CuratorOpeningId),
-        /// Emits on filling the curator opening.
+        /// - Worker opening id
+        BeganWorkerApplicationReview(WorkerOpeningId),
+        /// Emits on filling the worker opening.
         /// Params:
-        /// - Curator opening id
-        /// - Curator application id to the curator id dictionary
-        CuratorOpeningFilled(CuratorOpeningId, CuratorApplicationIdToCuratorIdMap),
+        /// - Worker opening id
+        /// - Worker application id to the worker id dictionary
+        WorkerOpeningFilled(WorkerOpeningId, WorkerApplicationIdToWorkerIdMap),
     }
 );
 
@@ -169,29 +168,29 @@ decl_storage! {
         /// The current lead.
         pub CurrentLead get(current_lead) : Option<LeadOf<T>>;
 
-        /// Next identifier value for new curator opening.
-        pub NextCuratorOpeningId get(next_curator_opening_id): CuratorOpeningId<T>;
+        /// Next identifier value for new worker opening.
+        pub NextWorkerOpeningId get(next_worker_opening_id): WorkerOpeningId<T>;
 
-        /// Maps identifier to curator opening.
-        pub CuratorOpeningById get(curator_opening_by_id): linked_map CuratorOpeningId<T> => CuratorOpening<T::OpeningId, T::BlockNumber, BalanceOf<T>, CuratorApplicationId<T>>;
+        /// Maps identifier to worker opening.
+        pub WorkerOpeningById get(worker_opening_by_id): linked_map WorkerOpeningId<T> => WorkerOpening<T::OpeningId, T::BlockNumber, BalanceOf<T>, WorkerApplicationId<T>>;
 
         /// Opening human readable text length limits
         pub OpeningHumanReadableText get(opening_human_readable_text): InputValidationLengthConstraint;
 
-        /// Maps identifier to curator application on opening.
-        pub CuratorApplicationById get(curator_application_by_id) : linked_map CuratorApplicationId<T> => CuratorApplication<T::AccountId, CuratorOpeningId<T>, T::MemberId, T::ApplicationId>;
+        /// Maps identifier to worker application on opening.
+        pub WorkerApplicationById get(worker_application_by_id) : linked_map WorkerApplicationId<T> => WorkerApplication<T::AccountId, WorkerOpeningId<T>, T::MemberId, T::ApplicationId>;
 
-        /// Next identifier value for new curator application.
-        pub NextCuratorApplicationId get(next_curator_application_id) : CuratorApplicationId<T>;
+        /// Next identifier value for new worker application.
+        pub NextWorkerApplicationId get(next_worker_application_id) : WorkerApplicationId<T>;
 
-        /// Curator application human readable text length limits
-        pub CuratorApplicationHumanReadableText get(curator_application_human_readable_text) : InputValidationLengthConstraint;
+        /// Worker application human readable text length limits
+        pub WorkerApplicationHumanReadableText get(worker_application_human_readable_text) : InputValidationLengthConstraint;
 
-        /// Maps identifier to corresponding curator.
-        pub CuratorById get(curator_by_id) : linked_map CuratorId<T> => CuratorOf<T>;
+        /// Maps identifier to corresponding worker.
+        pub WorkerById get(worker_by_id) : linked_map WorkerId<T> => WorkerOf<T>;
 
-        /// Next identifier for new curator.
-        pub NextCuratorId get(next_curator_id) : CuratorId<T>;
+        /// Next identifier for new worker.
+        pub NextWorkerId get(next_worker_id) : WorkerId<T>;
     }
 }
 
@@ -221,8 +220,8 @@ decl_module! {
             Ok(())
         }
 
-         /// Add an opening for a curator role.
-        pub fn add_curator_opening(
+         /// Add an opening for a worker role.
+        pub fn add_worker_opening(
             origin,
             activate_at: hiring::ActivateOpeningAt<T::BlockNumber>,
             commitment: OpeningPolicyCommitment<T::BlockNumber,
@@ -252,26 +251,26 @@ decl_module! {
                     human_readable_text,
             ))?;
 
-            let new_curator_opening_id = NextCuratorOpeningId::<T, I>::get();
+            let new_worker_opening_id = NextWorkerOpeningId::<T, I>::get();
 
-            // Create and add curator opening.
-            let new_opening_by_id = CuratorOpening::<CuratorOpeningId<T>, T::BlockNumber, BalanceOf<T>, CuratorApplicationId<T>> {
+            // Create and add worker opening.
+            let new_opening_by_id = WorkerOpening::<WorkerOpeningId<T>, T::BlockNumber, BalanceOf<T>, WorkerApplicationId<T>> {
                 opening_id : opening_id,
-                curator_applications: BTreeSet::new(),
+                worker_applications: BTreeSet::new(),
                 policy_commitment: policy_commitment
             };
 
-            CuratorOpeningById::<T, I>::insert(new_curator_opening_id, new_opening_by_id);
+            WorkerOpeningById::<T, I>::insert(new_worker_opening_id, new_opening_by_id);
 
-            // Update NextCuratorOpeningId
-            NextCuratorOpeningId::<T, I>::mutate(|id| *id += <CuratorOpeningId<T> as One>::one());
+            // Update NextWorkerOpeningId
+            NextWorkerOpeningId::<T, I>::mutate(|id| *id += <WorkerOpeningId<T> as One>::one());
 
             // Trigger event
-            Self::deposit_event(RawEvent::CuratorOpeningAdded(new_curator_opening_id));
+            Self::deposit_event(RawEvent::WorkerOpeningAdded(new_worker_opening_id));
         }
 
-            /// Begin accepting curator applications to an opening that is active.
-        pub fn accept_curator_applications(origin, curator_opening_id: CuratorOpeningId<T>)  {
+            /// Begin accepting worker applications to an opening that is active.
+        pub fn accept_worker_applications(origin, worker_opening_id: WorkerOpeningId<T>)  {
 
             // Ensure lead is set and is origin signer
             Self::ensure_origin_is_set_lead(origin)?;
@@ -280,7 +279,7 @@ decl_module! {
             // NB: Even though call to hiring module will have implicit check for
             // existence of opening as well, this check is to make sure that the opening is for
             // this working group, not something else.
-            let (curator_opening, _opening) = Self::ensure_curator_opening_exists(&curator_opening_id)?;
+            let (worker_opening, _opening) = Self::ensure_worker_opening_exists(&worker_opening_id)?;
 
             // Attempt to begin accepting applications
             // NB: Combined ensure check and mutation in hiring module
@@ -288,19 +287,19 @@ decl_module! {
             // mutation
 
             ensure_on_wrapped_error!(
-                hiring::Module::<T>::begin_accepting_applications(curator_opening.opening_id)
+                hiring::Module::<T>::begin_accepting_applications(worker_opening.opening_id)
             )?;
 
 
             // Trigger event
-            Self::deposit_event(RawEvent::AcceptedCuratorApplications(curator_opening_id));
+            Self::deposit_event(RawEvent::AcceptedWorkerApplications(worker_opening_id));
         }
 
-        /// Apply on a curator opening.
-        pub fn apply_on_curator_opening(
+        /// Apply on a worker opening.
+        pub fn apply_on_worker_opening(
             origin,
             member_id: T::MemberId,
-            curator_opening_id: CuratorOpeningId<T>,
+            worker_opening_id: WorkerOpeningId<T>,
             role_account: T::AccountId,
             opt_role_stake_balance: Option<BalanceOf<T>>,
             opt_application_stake_balance: Option<BalanceOf<T>>,
@@ -319,12 +318,8 @@ decl_module! {
                 MSG_ORIGIN_IS_NEITHER_MEMBER_CONTROLLER_OR_ROOT
             );
 
-            // Ensure curator opening exists
-            let (curator_opening, _opening) = Self::ensure_curator_opening_exists(&curator_opening_id)?;
-
-            //TODO do we need this?
-            // Ensure new owner can actually become a curator
-            //let (_member_as_curator, _new_curator_id) = Self::ensure_can_register_curator_role_on_member(&member_id)?;
+            // Ensure worker opening exists
+            let (worker_opening, _opening) = Self::ensure_worker_opening_exists(&worker_opening_id)?;
 
             // Ensure that there is sufficient balance to cover stake proposed
             Self::ensure_can_make_stake_imbalance(
@@ -333,16 +328,16 @@ decl_module! {
                 .map_err(|_err| MSG_INSUFFICIENT_BALANCE_TO_APPLY)?;
 
             // Ensure application text is valid
-            Self::ensure_curator_application_text_is_valid(&human_readable_text)?;
+            Self::ensure_worker_application_text_is_valid(&human_readable_text)?;
 
             // Ensure application can actually be added
             ensure_on_wrapped_error!(
-                hiring::Module::<T>::ensure_can_add_application(curator_opening.opening_id, opt_role_stake_balance, opt_application_stake_balance)
+                hiring::Module::<T>::ensure_can_add_application(worker_opening.opening_id, opt_role_stake_balance, opt_application_stake_balance)
             )?;
 
             // Ensure member does not have an active application to this opening
             Self::ensure_member_has_no_active_application_on_opening(
-                curator_opening.curator_applications,
+                worker_opening.worker_applications,
                 member_id
             )?;
 
@@ -354,7 +349,7 @@ decl_module! {
 
             // Call hiring module to add application
             let add_application_result = hiring::Module::<T>::add_application(
-                curator_opening.opening_id,
+                worker_opening.opening_id,
                 opt_role_stake_imbalance,
                 opt_application_stake_imbalance,
                 human_readable_text
@@ -365,40 +360,40 @@ decl_module! {
 
             let application_id = add_application_result.unwrap().application_id_added;
 
-            // Get id of new curator application
-            let new_curator_application_id = NextCuratorApplicationId::<T, I>::get();
+            // Get id of new worker application
+            let new_worker_application_id = NextWorkerApplicationId::<T, I>::get();
 
-            // Make curator application
-            let curator_application = CuratorApplication::new(&role_account, &curator_opening_id, &member_id, &application_id);
+            // Make worker application
+            let worker_application = WorkerApplication::new(&role_account, &worker_opening_id, &member_id, &application_id);
 
             // Store application
-            CuratorApplicationById::<T, I>::insert(new_curator_application_id, curator_application);
+            WorkerApplicationById::<T, I>::insert(new_worker_application_id, worker_application);
 
-            // Update next curator application identifier value
-            NextCuratorApplicationId::<T, I>::mutate(|id| *id += <CuratorApplicationId<T> as One>::one());
+            // Update next worker application identifier value
+            NextWorkerApplicationId::<T, I>::mutate(|id| *id += <WorkerApplicationId<T> as One>::one());
 
-            // Add application to set of application in curator opening
-            CuratorOpeningById::<T, I>::mutate(curator_opening_id, |curator_opening| {
-                curator_opening.curator_applications.insert(new_curator_application_id);
+            // Add application to set of application in worker opening
+            WorkerOpeningById::<T, I>::mutate(worker_opening_id, |worker_opening| {
+                worker_opening.worker_applications.insert(new_worker_application_id);
             });
 
             // Trigger event
-            Self::deposit_event(RawEvent::AppliedOnCuratorOpening(curator_opening_id, new_curator_application_id));
+            Self::deposit_event(RawEvent::AppliedOnWorkerOpening(worker_opening_id, new_worker_application_id));
         }
 
-        pub fn withdraw_curator_application(
+        pub fn withdraw_worker_application(
             origin,
-            curator_application_id: CuratorApplicationId<T>
+            worker_application_id: WorkerApplicationId<T>
         ) {
-            // Ensuring curator application actually exists
-            let (curator_application, _, curator_opening) = Self::ensure_curator_application_exists(&curator_application_id)?;
+            // Ensuring worker application actually exists
+            let (worker_application, _, worker_opening) = Self::ensure_worker_application_exists(&worker_application_id)?;
 
             // Ensure that it is signed
             let signer_account = ensure_signed(origin)?;
 
             // Ensure that signer is applicant role account
             ensure!(
-                signer_account == curator_application.role_account,
+                signer_account == worker_application.role_account,
                 MSG_ORIGIN_IS_NOT_APPLICANT
             );
 
@@ -406,47 +401,47 @@ decl_module! {
             // NB: Combined ensure check and mutation in hiring module
             ensure_on_wrapped_error!(
                 hiring::Module::<T>::deactive_application(
-                    curator_application.application_id,
-                    curator_opening.policy_commitment.exit_curator_role_application_stake_unstaking_period,
-                    curator_opening.policy_commitment.exit_curator_role_stake_unstaking_period
+                    worker_application.application_id,
+                    worker_opening.policy_commitment.exit_worker_role_application_stake_unstaking_period,
+                    worker_opening.policy_commitment.exit_worker_role_stake_unstaking_period
                 )
             )?;
 
             // mutation
 
             // Trigger event
-            Self::deposit_event(RawEvent::CuratorApplicationWithdrawn(curator_application_id));
+            Self::deposit_event(RawEvent::WorkerApplicationWithdrawn(worker_application_id));
         }
 
-        pub fn terminate_curator_application(
+        pub fn terminate_worker_application(
             origin,
-            curator_application_id: CuratorApplicationId<T>
+            worker_application_id: WorkerApplicationId<T>
         ) {
 
             // Ensure lead is set and is origin signer
             Self::ensure_origin_is_set_lead(origin)?;
 
-            // Ensuring curator application actually exists
-            let (curator_application, _, curator_opening) = Self::ensure_curator_application_exists(&curator_application_id)?;
+            // Ensuring worker application actually exists
+            let (worker_application, _, worker_opening) = Self::ensure_worker_application_exists(&worker_application_id)?;
 
             // Attempt to deactivate application
             // NB: Combined ensure check and mutation in hiring module
             ensure_on_wrapped_error!(
                 hiring::Module::<T>::deactive_application(
-                    curator_application.application_id,
-                    curator_opening.policy_commitment.terminate_curator_application_stake_unstaking_period,
-                    curator_opening.policy_commitment.terminate_curator_role_stake_unstaking_period
+                    worker_application.application_id,
+                    worker_opening.policy_commitment.terminate_worker_application_stake_unstaking_period,
+                    worker_opening.policy_commitment.terminate_worker_role_stake_unstaking_period
                 )
             )?;
 
             // mutation
 
             // Trigger event
-            Self::deposit_event(RawEvent::CuratorApplicationTerminated(curator_application_id));
+            Self::deposit_event(RawEvent::WorkerApplicationTerminated(worker_application_id));
         }
 
         /// Begin reviewing, and therefore not accepting new applications.
-        pub fn begin_curator_applicant_review(origin, curator_opening_id: CuratorOpeningId<T>) {
+        pub fn begin_worker_applicant_review(origin, worker_opening_id: WorkerOpeningId<T>) {
 
             // Ensure lead is set and is origin signer
             Self::ensure_origin_is_set_lead(origin)?;
@@ -455,82 +450,68 @@ decl_module! {
             // NB: Even though call to hiring modul will have implicit check for
             // existence of opening as well, this check is to make sure that the opening is for
             // this working group, not something else.
-            let (curator_opening, _opening) = Self::ensure_curator_opening_exists(&curator_opening_id)?;
+            let (worker_opening, _opening) = Self::ensure_worker_opening_exists(&worker_opening_id)?;
 
             // Attempt to begin review of applications
             // NB: Combined ensure check and mutation in hiring module
             ensure_on_wrapped_error!(
-                hiring::Module::<T>::begin_review(curator_opening.opening_id)
+                hiring::Module::<T>::begin_review(worker_opening.opening_id)
                 )?;
 
             // mutation
 
             // Trigger event
-            Self::deposit_event(RawEvent::BeganCuratorApplicationReview(curator_opening_id));
+            Self::deposit_event(RawEvent::BeganWorkerApplicationReview(worker_opening_id));
         }
 
-                /// Fill opening for curator
-        pub fn fill_curator_opening(
+                /// Fill opening for worker
+        pub fn fill_worker_opening(
             origin,
-            curator_opening_id: CuratorOpeningId<T>,
-            successful_curator_application_ids: CuratorApplicationIdSet<T>,
+            worker_opening_id: WorkerOpeningId<T>,
+            successful_worker_application_ids: WorkerApplicationIdSet<T>,
 //            reward_policy: Option<RewardPolicy<minting::BalanceOf<T>, T::BlockNumber>>
         ) {
-            // successful_curator_application_ids.len() == zero check?
-
             // Ensure lead is set and is origin signer
             Self::ensure_origin_is_set_lead(origin)?;
 
-            // Ensure curator opening exists
-            let (curator_opening, _) = Self::ensure_curator_opening_exists(&curator_opening_id)?;
+            // Ensure worker opening exists
+            let (worker_opening, _) = Self::ensure_worker_opening_exists(&worker_opening_id)?;
 
-            // Make iterator over successful curator application
-            let successful_iter = successful_curator_application_ids
+            // Make iterator over successful worker application
+            let successful_iter = successful_worker_application_ids
                                     .iter()
-                                    // recover curator application from id
-                                    .map(|curator_application_id| { Self::ensure_curator_application_exists(curator_application_id)})
+                                    // recover worker application from id
+                                    .map(|worker_application_id| { Self::ensure_worker_application_exists(worker_application_id)})
                                     // remove Err cases, i.e. non-existing applications
                                     .filter_map(|result| result.ok());
 
-            // Count number of successful curators provided
-            let num_provided_successful_curator_application_ids = successful_curator_application_ids.len();
+            // Count number of successful workers provided
+            let num_provided_successful_worker_application_ids = successful_worker_application_ids.len();
 
-            // Ensure all curator applications exist
+            // Ensure all worker applications exist
             let number_of_successful_applications = successful_iter
                                                     .clone()
                                                     .count();
 
             ensure!(
-                number_of_successful_applications == num_provided_successful_curator_application_ids,
-                MSG_SUCCESSFUL_CURATOR_APPLICATION_DOES_NOT_EXIST
+                number_of_successful_applications == num_provided_successful_worker_application_ids,
+                MSG_SUCCESSFUL_WORKER_APPLICATION_DOES_NOT_EXIST
             );
 
             // Attempt to fill opening
             let successful_application_ids = successful_iter
                                             .clone()
-                                            .map(|(successful_curator_application, _, _)| successful_curator_application.application_id)
+                                            .map(|(successful_worker_application, _, _)| successful_worker_application.application_id)
                                             .collect::<BTreeSet<_>>();
-            // TODO: should we implement this?
-            // // Ensure all applications are from members that _still_ can step into the given role
-            // let num_successful_applications_that_can_register_as_curator = successful_iter
-            //                                                             .clone()
-            //                                                             .map(|(successful_curator_application, _, _)| successful_curator_application.member_id)
-            //                                                             .filter_map(|successful_member_id| Self::ensure_can_register_curator_role_on_member(&successful_member_id).ok() )
-            //                                                             .count();
-
-            // ensure!(
-            //     num_successful_applications_that_can_register_as_curator == num_provided_successful_curator_application_ids,
-            //     MSG_MEMBER_NO_LONGER_REGISTRABLE_AS_CURATOR
-            // );
 
             // NB: Combined ensure check and mutation in hiring module
             ensure_on_wrapped_error!(
                 hiring::Module::<T>::fill_opening(
-                    curator_opening.opening_id,
+                    worker_opening.opening_id,
                     successful_application_ids,
-                    curator_opening.policy_commitment.fill_opening_successful_applicant_application_stake_unstaking_period,
-                    curator_opening.policy_commitment.fill_opening_failed_applicant_application_stake_unstaking_period,
-                    curator_opening.policy_commitment.fill_opening_failed_applicant_role_stake_unstaking_period
+                    worker_opening.policy_commitment.fill_opening_successful_applicant_application_stake_unstaking_period,
+                    worker_opening.policy_commitment.fill_opening_failed_applicant_application_stake_unstaking_period,
+                    worker_opening.policy_commitment.fill_opening_failed_applicant_role_stake_unstaking_period
                 )
             )?;
 
@@ -539,10 +520,10 @@ decl_module! {
             //     // A reward will need to be created so ensure our configured mint exists
             //     let mint_id = Self::mint();
             //
-            //     ensure!(<minting::Mints<T>>::exists(mint_id), MSG_FILL_CURATOR_OPENING_MINT_DOES_NOT_EXIST);
+            //     ensure!(<minting::Mints<T>>::exists(mint_id), MSG_FILL_WORKER_OPENING_MINT_DOES_NOT_EXIST);
             //
             //     // Make sure valid parameters are selected for next payment at block number
-            //     ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(), MSG_FILL_CURATOR_OPENING_INVALID_NEXT_PAYMENT_BLOCK);
+            //     ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(), MSG_FILL_WORKER_OPENING_INVALID_NEXT_PAYMENT_BLOCK);
             //
             //     // The verified reward settings to use
             //     Some((mint_id, policy))
@@ -557,14 +538,14 @@ decl_module! {
             let _current_block = <system::Module<T>>::block_number();
 
             // For each successful application
-            // - create and hold on to curator
+            // - create and hold on to worker
             // - register role with membership module
 
-            let mut curator_application_id_to_curator_id = BTreeMap::new();
+            let mut worker_application_id_to_worker_id = BTreeMap::new();
 
             successful_iter
             .clone()
-            .for_each(|(successful_curator_application, id, _)| {
+            .for_each(|(successful_worker_application, id, _)| {
                 // TODO: should we implement this?
                 // // Create a reward relationship
                 // let reward_relationship = if let Some((mint_id, checked_policy)) = create_reward_settings.clone() {
@@ -573,7 +554,7 @@ decl_module! {
                 //     let recipient = <recurringrewards::Module<T>>::add_recipient();
                 //
                 //     // member must exist, since it was checked that it can enter the role
-                //     let member_profile = <members::Module<T>>::member_profile(successful_curator_application.member_id).unwrap();
+                //     let member_profile = <members::Module<T>>::member_profile(successful_worker_application.member_id).unwrap();
                 //
                 //     // rewards are deposited in the member's root account
                 //     let reward_destination_account = member_profile.root_account;
@@ -594,60 +575,60 @@ decl_module! {
                 // };
 
                 // Get possible stake for role
-                let application = hiring::ApplicationById::<T>::get(successful_curator_application.application_id);
+                let application = hiring::ApplicationById::<T>::get(successful_worker_application.application_id);
 
-                // Staking profile for curator
+                // Staking profile for worker
                 let _stake_profile =
                     if let Some(ref stake_id) = application.active_role_staking_id {
 
                         Some(
-                            CuratorRoleStakeProfile::new(
+                            WorkerRoleStakeProfile::new(
                                 stake_id,
-                                &curator_opening.policy_commitment.terminate_curator_role_stake_unstaking_period,
-                                &curator_opening.policy_commitment.exit_curator_role_stake_unstaking_period
+                                &worker_opening.policy_commitment.terminate_worker_role_stake_unstaking_period,
+                                &worker_opening.policy_commitment.exit_worker_role_stake_unstaking_period
                             )
                         )
                     } else {
                         None
                     };
 
-                // Get curator id
-                let new_curator_id = <NextCuratorId<T, I>>::get();
+                // Get worker id
+                let new_worker_id = <NextWorkerId<T, I>>::get();
 
                 // Make and add new principal
- //               let principal_id = Self::add_new_principal(&Principal::Curator(new_curator_id));
+ //               let principal_id = Self::add_new_principal(&Principal::Worker(new_worker_id));
 
                 // TODO: should we implement this?
-                // Construct curator
-                let curator = Curator::new(
-                    &(successful_curator_application.role_account),
+                // Construct worker
+                let worker = Worker::new(
+                    &(successful_worker_application.role_account),
 //                    &reward_relationship,
 //                    &stake_profile,
-//                    &CuratorRoleStage::Active,
-//                    &CuratorInduction::new(&lead_id, &id, &current_block),
+//                    &WorkerRoleStage::Active,
+//                    &WorkerInduction::new(&lead_id, &id, &current_block),
 //                    &principal_id
                 );
 
-                // Store curator
-                <CuratorById<T, I>>::insert(new_curator_id, curator);
+                // Store worker
+                <WorkerById<T, I>>::insert(new_worker_id, worker);
 
                 // TODO: should we implement this?
                 // // Register role on member
                 // let registered_role = members::Module::<T>::register_role_on_member(
-                //     successful_curator_application.member_id,
-                //     &role_types::ActorInRole::new(role_types::Role::Curator, new_curator_id)
+                //     successful_worker_application.member_id,
+                //     &role_types::ActorInRole::new(role_types::Role::Worker, new_worker_id)
                 // ).is_ok();
 
                 //assert!(registered_role);
 
-                // Update next curator id
-                <NextCuratorId<T, I>>::mutate(|id| *id += <CuratorId<T> as One>::one());
+                // Update next worker id
+                <NextWorkerId<T, I>>::mutate(|id| *id += <WorkerId<T> as One>::one());
 
-                curator_application_id_to_curator_id.insert(id, new_curator_id);
+                worker_application_id_to_worker_id.insert(id, new_worker_id);
             });
 
             // Trigger event
-            Self::deposit_event(RawEvent::CuratorOpeningFilled(curator_opening_id, curator_application_id_to_curator_id));
+            Self::deposit_event(RawEvent::WorkerOpeningFilled(worker_opening_id, worker_application_id_to_worker_id));
         }
     }
 }
@@ -701,19 +682,19 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Self::ensure_is_lead_account(signer)
     }
 
-    fn ensure_curator_opening_exists(
-        curator_opening_id: &CuratorOpeningId<T>,
-    ) -> Result<CuratorOpeningInfo<T>, &'static str> {
+    fn ensure_worker_opening_exists(
+        worker_opening_id: &WorkerOpeningId<T>,
+    ) -> Result<WorkerOpeningInfo<T>, &'static str> {
         ensure!(
-            CuratorOpeningById::<T, I>::exists(curator_opening_id),
-            MSG_CURATOR_OPENING_DOES_NOT_EXIST
+            WorkerOpeningById::<T, I>::exists(worker_opening_id),
+            MSG_WORKER_OPENING_DOES_NOT_EXIST
         );
 
-        let curator_opening = CuratorOpeningById::<T, I>::get(curator_opening_id);
+        let worker_opening = WorkerOpeningById::<T, I>::get(worker_opening_id);
 
-        let opening = hiring::OpeningById::<T>::get(curator_opening.opening_id);
+        let opening = hiring::OpeningById::<T>::get(worker_opening.opening_id);
 
-        Ok((curator_opening, opening))
+        Ok((worker_opening, opening))
     }
 
     fn make_stake_opt_imbalance(
@@ -737,17 +718,17 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     fn ensure_member_has_no_active_application_on_opening(
-        curator_applications: CuratorApplicationIdSet<T>,
+        worker_applications: WorkerApplicationIdSet<T>,
         member_id: T::MemberId,
     ) -> Result<(), &'static str> {
-        for curator_application_id in curator_applications {
-            let curator_application = CuratorApplicationById::<T, I>::get(curator_application_id);
+        for worker_application_id in worker_applications {
+            let worker_application = WorkerApplicationById::<T, I>::get(worker_application_id);
             // Look for application by the member for the opening
-            if curator_application.member_id != member_id {
+            if worker_application.member_id != member_id {
                 continue;
             }
             // Get application details
-            let application = <hiring::ApplicationById<T>>::get(curator_application.application_id);
+            let application = <hiring::ApplicationById<T>>::get(worker_application.application_id);
             // Return error if application is in active stage
             if application.stage == hiring::ApplicationStage::Active {
                 return Err(MSG_MEMBER_HAS_ACTIVE_APPLICATION_ON_OPENING);
@@ -757,11 +738,11 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Ok(())
     }
 
-    fn ensure_curator_application_text_is_valid(text: &[u8]) -> dispatch::Result {
-        <CuratorApplicationHumanReadableText<I>>::get().ensure_valid(
+    fn ensure_worker_application_text_is_valid(text: &[u8]) -> dispatch::Result {
+        <WorkerApplicationHumanReadableText<I>>::get().ensure_valid(
             text.len(),
-            MSG_CURATOR_APPLICATION_TEXT_TOO_SHORT,
-            MSG_CURATOR_APPLICATION_TEXT_TOO_LONG,
+            MSG_WORKER_APPLICATION_TEXT_TOO_SHORT,
+            MSG_WORKER_APPLICATION_TEXT_TOO_LONG,
         )
     }
 
@@ -806,23 +787,18 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         }
     }
 
-    fn ensure_curator_application_exists(
-        curator_application_id: &CuratorApplicationId<T>,
-    ) -> Result<CuratorApplicationInfo<T>, &'static str> {
+    fn ensure_worker_application_exists(
+        worker_application_id: &WorkerApplicationId<T>,
+    ) -> Result<WorkerApplicationInfo<T>, &'static str> {
         ensure!(
-            CuratorApplicationById::<T, I>::exists(curator_application_id),
-            MSG_CURATOR_APPLICATION_DOES_NOT_EXIST
+            WorkerApplicationById::<T, I>::exists(worker_application_id),
+            MSG_WORKER_APPLICATION_DOES_NOT_EXIST
         );
 
-        let curator_application = CuratorApplicationById::<T, I>::get(curator_application_id);
+        let worker_application = WorkerApplicationById::<T, I>::get(worker_application_id);
 
-        let curator_opening =
-            CuratorOpeningById::<T, I>::get(curator_application.curator_opening_id);
+        let worker_opening = WorkerOpeningById::<T, I>::get(worker_application.worker_opening_id);
 
-        Ok((
-            curator_application,
-            *curator_application_id,
-            curator_opening,
-        ))
+        Ok((worker_application, *worker_application_id, worker_opening))
     }
 }
