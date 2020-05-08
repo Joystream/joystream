@@ -17,6 +17,7 @@ std = [
     'stake/std',
     'membership/std',
     'minting/std',
+    'recurringrewards/std',
 ]
 
 [dependencies.primitives]
@@ -79,6 +80,11 @@ path = '../membership'
 default_features = false
 package = 'substrate-token-mint-module'
 path = '../token-minting'
+
+[dependencies.recurringrewards]
+default_features = false
+package = 'substrate-recurring-reward-module'
+path = '../recurring-reward'
 
 [dev-dependencies.runtime-io]
 default_features = false

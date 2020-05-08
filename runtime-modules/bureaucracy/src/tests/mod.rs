@@ -1,7 +1,10 @@
 mod mock;
 
 use crate::constraints::InputValidationLengthConstraint;
-use crate::types::{Lead, OpeningPolicyCommitment, Worker, WorkerApplication, WorkerOpening};
+use crate::types::{
+    Lead, OpeningPolicyCommitment, RewardPolicy, Worker, WorkerApplication, WorkerOpening,
+    WorkerRoleStage,
+};
 use crate::{Instance1, RawEvent};
 use mock::{build_test_externalities, Balances, Bureaucracy1, Membership, System, TestEvent};
 use srml_support::StorageValue;
@@ -13,6 +16,7 @@ struct FillWorkerOpeningFixture {
     opening_id: u64,
     successful_worker_application_ids: BTreeSet<u64>,
     role_account: u64,
+    reward_policy: Option<RewardPolicy<u64, u64>>,
 }
 
 impl FillWorkerOpeningFixture {
@@ -24,6 +28,7 @@ impl FillWorkerOpeningFixture {
             opening_id,
             successful_worker_application_ids: application_ids,
             role_account: 1,
+            reward_policy: None,
         }
     }
 
@@ -37,6 +42,7 @@ impl FillWorkerOpeningFixture {
             self.origin.clone().into(),
             self.opening_id,
             self.successful_worker_application_ids.clone(),
+            self.reward_policy.clone(),
         );
         assert_eq!(actual_result.clone(), expected_result);
 
@@ -48,6 +54,10 @@ impl FillWorkerOpeningFixture {
 
             let expected_worker = Worker {
                 role_account: self.role_account,
+
+                reward_relationship: None,
+                role_stake_profile: None,
+                stage: WorkerRoleStage::Active,
             };
 
             assert_eq!(actual_worker, expected_worker);

@@ -115,6 +115,12 @@ impl balances::Trait for Test {
     type CreationFee = CreationFee;
 }
 
+impl recurringrewards::Trait for Test {
+    type PayoutStatusHandler = ();
+    type RecipientId = u64;
+    type RewardRelationshipId = u64;
+}
+
 pub type Balances = balances::Module<Test>;
 pub type System = system::Module<Test>;
 

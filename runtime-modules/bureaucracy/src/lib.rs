@@ -21,11 +21,14 @@ use constraints::InputValidationLengthConstraint;
 use errors::bureaucracy_errors::*;
 use errors::WrappedError;
 use types::{
-    Lead, OpeningPolicyCommitment, Worker, WorkerApplication, WorkerOpening, WorkerRoleStakeProfile,
+    Lead, OpeningPolicyCommitment, RewardPolicy, Worker, WorkerApplication, WorkerOpening,
+    WorkerRoleStage, WorkerRoleStakeProfile,
 };
 
 //TODO: docs
 //TODO: migrate to decl_error
+//TODO: 'roles' extrinsics
+//TODO: initialize a mint!
 
 /// Alias for the _Lead_ type
 pub type LeadOf<T> =
@@ -99,18 +102,23 @@ type WorkerApplicationInfo<T> = (
     >,
 );
 
+// Type simplification
 type WorkerOf<T> = Worker<
     <T as system::Trait>::AccountId,
-    //    T::RewardRelationshipId,
-    //    T::StakeId,
-    //    <T as system::Trait>::BlockNumber,
-    //    LeadId<T>,
-    //    WorkerApplicationId<T>,
-    //    PrincipalId<T>,
+    <T as recurringrewards::Trait>::RewardRelationshipId,
+    <T as stake::Trait>::StakeId,
+    <T as system::Trait>::BlockNumber,
 >;
 
 /// The bureaucracy main _Trait_
-pub trait Trait<I: Instance>: system::Trait + membership::members::Trait + hiring::Trait {
+pub trait Trait<I: Instance>:
+    system::Trait
+    + membership::members::Trait
+    + hiring::Trait
+    + minting::Trait
+    + stake::Trait
+    + recurringrewards::Trait
+{
     /// Engine event type.
     type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
 }
@@ -165,6 +173,9 @@ decl_event!(
 
 decl_storage! {
     trait Store for Module<T: Trait<I>, I: Instance> as Bureaucracy {
+        /// The mint currently funding the rewards for this module.
+        pub Mint get(mint) : <T as minting::Trait>::MintId;
+
         /// The current lead.
         pub CurrentLead get(current_lead) : Option<LeadOf<T>>;
 
@@ -469,7 +480,7 @@ decl_module! {
             origin,
             worker_opening_id: WorkerOpeningId<T>,
             successful_worker_application_ids: WorkerApplicationIdSet<T>,
-//            reward_policy: Option<RewardPolicy<minting::BalanceOf<T>, T::BlockNumber>>
+            reward_policy: Option<RewardPolicy<minting::BalanceOf<T>, T::BlockNumber>>
         ) {
             // Ensure lead is set and is origin signer
             Self::ensure_origin_is_set_lead(origin)?;
@@ -515,70 +526,60 @@ decl_module! {
                 )
             )?;
 
-            // TODO: should we implement this?
-            // let create_reward_settings = if let Some(policy) = reward_policy {
-            //     // A reward will need to be created so ensure our configured mint exists
-            //     let mint_id = Self::mint();
-            //
-            //     ensure!(<minting::Mints<T>>::exists(mint_id), MSG_FILL_WORKER_OPENING_MINT_DOES_NOT_EXIST);
-            //
-            //     // Make sure valid parameters are selected for next payment at block number
-            //     ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(), MSG_FILL_WORKER_OPENING_INVALID_NEXT_PAYMENT_BLOCK);
-            //
-            //     // The verified reward settings to use
-            //     Some((mint_id, policy))
-            // } else {
-            //     None
-            // };
+            let create_reward_settings = if let Some(policy) = reward_policy {
+                // A reward will need to be created so ensure our configured mint exists
+                let mint_id = Self::mint();
 
-            //
-            // == MUTATION SAFE ==
-            //
+                ensure!(<minting::Mints<T>>::exists(mint_id), MSG_FILL_WORKER_OPENING_MINT_DOES_NOT_EXIST);
 
-            let _current_block = <system::Module<T>>::block_number();
+                // Make sure valid parameters are selected for next payment at block number
+                ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(), MSG_FILL_WORKER_OPENING_INVALID_NEXT_PAYMENT_BLOCK);
 
-            // For each successful application
-            // - create and hold on to worker
-            // - register role with membership module
+                // The verified reward settings to use
+                Some((mint_id, policy))
+            } else {
+                None
+            };
+
+            // mutation
 
             let mut worker_application_id_to_worker_id = BTreeMap::new();
 
             successful_iter
             .clone()
             .for_each(|(successful_worker_application, id, _)| {
-                // TODO: should we implement this?
-                // // Create a reward relationship
-                // let reward_relationship = if let Some((mint_id, checked_policy)) = create_reward_settings.clone() {
-                //
-                //     // Create a new recipient for the new relationship
-                //     let recipient = <recurringrewards::Module<T>>::add_recipient();
-                //
-                //     // member must exist, since it was checked that it can enter the role
-                //     let member_profile = <members::Module<T>>::member_profile(successful_worker_application.member_id).unwrap();
-                //
-                //     // rewards are deposited in the member's root account
-                //     let reward_destination_account = member_profile.root_account;
-                //
-                //     // values have been checked so this should not fail!
-                //     let relationship_id = <recurringrewards::Module<T>>::add_reward_relationship(
-                //         mint_id,
-                //         recipient,
-                //         reward_destination_account,
-                //         checked_policy.amount_per_payout,
-                //         checked_policy.next_payment_at_block,
-                //         checked_policy.payout_interval,
-                //     ).expect("Failed to create reward relationship!");
-                //
-                //     Some(relationship_id)
-                // } else {
-                //     None
-                // };
+                // Create a reward relationship
+                let reward_relationship = if let Some((mint_id, checked_policy)) = create_reward_settings.clone() {
+
+                    // Create a new recipient for the new relationship
+                    let recipient = <recurringrewards::Module<T>>::add_recipient();
+
+                    // member must exist, since it was checked that it can enter the role
+                    let member_profile = <membership::members::Module<T>>::member_profile(successful_worker_application.member_id).unwrap();
+
+                    // rewards are deposited in the member's root account
+                    let reward_destination_account = member_profile.root_account;
+
+                    // values have been checked so this should not fail!
+                    let relationship_id = <recurringrewards::Module<T>>::add_reward_relationship(
+                        mint_id,
+                        recipient,
+                        reward_destination_account,
+                        checked_policy.amount_per_payout,
+                        checked_policy.next_payment_at_block,
+                        checked_policy.payout_interval,
+                    ).expect("Failed to create reward relationship!");
+
+                    Some(relationship_id)
+                } else {
+                    None
+                };
 
                 // Get possible stake for role
                 let application = hiring::ApplicationById::<T>::get(successful_worker_application.application_id);
 
                 // Staking profile for worker
-                let _stake_profile =
+                let stake_profile =
                     if let Some(ref stake_id) = application.active_role_staking_id {
 
                         Some(
@@ -595,31 +596,16 @@ decl_module! {
                 // Get worker id
                 let new_worker_id = <NextWorkerId<T, I>>::get();
 
-                // Make and add new principal
- //               let principal_id = Self::add_new_principal(&Principal::Worker(new_worker_id));
-
-                // TODO: should we implement this?
                 // Construct worker
                 let worker = Worker::new(
                     &(successful_worker_application.role_account),
-//                    &reward_relationship,
-//                    &stake_profile,
-//                    &WorkerRoleStage::Active,
-//                    &WorkerInduction::new(&lead_id, &id, &current_block),
-//                    &principal_id
+                   &reward_relationship,
+                   &stake_profile,
+                   &WorkerRoleStage::Active,
                 );
 
                 // Store worker
                 <WorkerById<T, I>>::insert(new_worker_id, worker);
-
-                // TODO: should we implement this?
-                // // Register role on member
-                // let registered_role = members::Module::<T>::register_role_on_member(
-                //     successful_worker_application.member_id,
-                //     &role_types::ActorInRole::new(role_types::Role::Worker, new_worker_id)
-                // ).is_ok();
-
-                //assert!(registered_role);
 
                 // Update next worker id
                 <NextWorkerId<T, I>>::mutate(|id| *id += <WorkerId<T> as One>::one());

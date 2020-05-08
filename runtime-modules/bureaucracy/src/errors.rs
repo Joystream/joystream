@@ -24,6 +24,10 @@ pub mod bureaucracy_errors {
     pub static MSG_WORKER_APPLICATION_DOES_NOT_EXIST: &str = "Worker application does not exist";
     pub static MSG_SUCCESSFUL_WORKER_APPLICATION_DOES_NOT_EXIST: &str =
         "Successful worker application does not exist";
+    pub static MSG_FILL_WORKER_OPENING_INVALID_NEXT_PAYMENT_BLOCK: &str =
+        "Reward policy has invalid next payment block number";
+    pub static MSG_FILL_WORKER_OPENING_MINT_DOES_NOT_EXIST: &str =
+        "Working group mint does not exist";
 }
 /*
  * The errors below, while in many cases encoding similar outcomes,

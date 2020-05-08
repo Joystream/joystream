@@ -1,5 +1,8 @@
 use codec::{Decode, Encode};
+use rstd::borrow::ToOwned;
 use rstd::collections::btree_set::BTreeSet;
+use rstd::vec::Vec;
+
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
@@ -168,65 +171,100 @@ impl<StakeId: Clone, BlockNumber: Clone> WorkerRoleStakeProfile<StakeId, BlockNu
 /// This role can be staked, have reward and be inducted through the hiring module.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
-pub struct Worker<
-    AccountId,
-    //    RewardRelationshipId,
-    //    StakeId,
-    //    BlockNumber,
-    //    LeadId,
-    //    WorkerApplicationId,
-    //    PrincipalId,
-> {
+pub struct Worker<AccountId, RewardRelationshipId, StakeId, BlockNumber> {
     /// Account used to authenticate in this role,
     pub role_account: AccountId,
-    // /// Whether the role has recurring reward, and if so an identifier for this.
-    // pub reward_relationship: Option<RewardRelationshipId>,
-    // /// When set, describes role stake of worker.
-    // pub role_stake_profile: Option<WorkerRoleStakeProfile<StakeId, BlockNumber>>,
-    // /// The stage of this worker in the working group.
-    // pub stage: WorkerRoleStage<BlockNumber>,
-    //
-    // /// How the worker was inducted into the working group.
-    // pub induction: WorkerInduction<LeadId, WorkerApplicationId, BlockNumber>,
-    //
-    // /// Permissions module principal id
-    // pub principal_id: PrincipalId,
+    /// Whether the role has recurring reward, and if so an identifier for this.
+    pub reward_relationship: Option<RewardRelationshipId>,
+    /// When set, describes role stake of worker.
+    pub role_stake_profile: Option<WorkerRoleStakeProfile<StakeId, BlockNumber>>,
+    /// The stage of this worker in the working group.
+    pub stage: WorkerRoleStage<BlockNumber>,
 }
 
-impl<
-        AccountId: Clone,
-        //    RewardRelationshipId: Clone,
-        //        StakeId: Clone,
-        //        BlockNumber: Clone,
-        //    LeadId: Clone,
-        //    ApplicationId: Clone,
-        //    PrincipalId: Clone,
-    >
-    Worker<
-        AccountId,
-        //    RewardRelationshipId,
-        //        StakeId,
-        //        BlockNumber,
-        //    LeadId,
-        //    ApplicationId,
-        //    PrincipalId,
-    >
+impl<AccountId: Clone, RewardRelationshipId: Clone, StakeId: Clone, BlockNumber: Clone>
+    Worker<AccountId, RewardRelationshipId, StakeId, BlockNumber>
 {
     pub fn new(
         role_account: &AccountId,
-        //        reward_relationship: &Option<RewardRelationshipId>,
-        //        role_stake_profile: &Option<WorkerRoleStakeProfile<StakeId, BlockNumber>>,
-        //        stage: &WorkerRoleStage<BlockNumber>,
-        //        induction: &WorkerInduction<LeadId, ApplicationId, BlockNumber>,
-        //        principal_id: &PrincipalId,
+        reward_relationship: &Option<RewardRelationshipId>,
+        role_stake_profile: &Option<WorkerRoleStakeProfile<StakeId, BlockNumber>>,
+        stage: &WorkerRoleStage<BlockNumber>,
     ) -> Self {
         Worker {
             role_account: (*role_account).clone(),
-            //            reward_relationship: (*reward_relationship).clone(),
-            //            role_stake_profile: (*role_stake_profile).clone(),
-            //            stage: (*stage).clone(),
-            //            induction: (*induction).clone(),
-            //            principal_id: (*principal_id).clone(),
+            reward_relationship: (*reward_relationship).clone(),
+            role_stake_profile: (*role_stake_profile).clone(),
+            stage: (*stage).clone(),
         }
     }
+}
+
+// The stage of the involvement of a curator in the working group.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Debug, Clone, PartialEq)]
+pub enum WorkerRoleStage<BlockNumber> {
+    /// Currently active.
+    Active,
+
+    /// Currently unstaking
+    Unstaking(CuratorExitSummary<BlockNumber>),
+
+    /// No longer active and unstaked
+    Exited(CuratorExitSummary<BlockNumber>),
+}
+
+/// Must be default constructible because it indirectly is a value in a storage map.
+/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED TO DUE BAD STORAGE MODEL IN SUBSTRATE***
+impl<BlockNumber> Default for WorkerRoleStage<BlockNumber> {
+    fn default() -> Self {
+        WorkerRoleStage::Active
+    }
+}
+
+/// The exit stage of a curators involvement in the working group.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Debug, Clone, PartialEq)]
+pub struct CuratorExitSummary<BlockNumber> {
+    /// Origin for exit.
+    pub origin: CuratorExitInitiationOrigin,
+
+    /// When exit was initiated.
+    pub initiated_at_block_number: BlockNumber,
+
+    /// Explainer for why exit was initited.
+    pub rationale_text: Vec<u8>,
+}
+
+impl<BlockNumber: Clone> CuratorExitSummary<BlockNumber> {
+    pub fn new(
+        origin: &CuratorExitInitiationOrigin,
+        initiated_at_block_number: &BlockNumber,
+        rationale_text: &[u8],
+    ) -> Self {
+        CuratorExitSummary {
+            origin: (*origin).clone(),
+            initiated_at_block_number: (*initiated_at_block_number).clone(),
+            rationale_text: rationale_text.to_owned(),
+        }
+    }
+}
+
+/// Origin of exit initiation on behalf of a curator.'
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Debug, Clone, PartialEq)]
+pub enum CuratorExitInitiationOrigin {
+    /// Lead is origin.
+    Lead,
+
+    /// The curator exiting is the origin.
+    Curator,
+}
+
+/// The recurring reward if any to be assigned to an actor when filling in the position.
+#[derive(Encode, Decode, Clone, Eq, PartialEq, Debug)]
+pub struct RewardPolicy<Balance, BlockNumber> {
+    pub amount_per_payout: Balance,
+    pub next_payment_at_block: BlockNumber,
+    pub payout_interval: Option<BlockNumber>,
 }
