@@ -448,16 +448,15 @@ decl_module! {
 
             <CanCreateEntitiesOfClass<T>>::insert(class_id, group_id, ());
             let entity_controller = EntityController::<T>::Group(group_id);
-            if let EntityCreationLimit::Individual(limit) = limit {
-                <EntityCreationVouchers<T>>::insert(class_id, entity_controller,
-                    EntityCreationVoucher::new(limit)
-                );
+            let limit = if let EntityCreationLimit::Individual(individual_limit) = limit {
+                Self::ensure_valid_number_of_class_entities_per_actor(individual_limit)?;
+                individual_limit
             } else {
-                let class = Self::class_by_id(class_id);
-                <EntityCreationVouchers<T>>::insert(class_id, entity_controller,
-                    EntityCreationVoucher::new(class.get_controller_entity_creation_limit())
-                );
-            }
+                Self::class_by_id(class_id).get_controller_entity_creation_limit()
+            };
+            <EntityCreationVouchers<T>>::insert(class_id, entity_controller,
+                EntityCreationVoucher::new(limit)
+            );
             Ok(())
         }
 
