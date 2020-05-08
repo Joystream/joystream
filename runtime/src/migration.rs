@@ -2,7 +2,6 @@
 #![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
 
 use crate::VERSION;
-use common::currency::BalanceOf;
 use rstd::prelude::*;
 use sr_primitives::{print, traits::Zero};
 use srml_support::{debug, decl_event, decl_module, decl_storage};
