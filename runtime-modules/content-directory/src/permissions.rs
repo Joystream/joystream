@@ -134,6 +134,17 @@ impl EntityCreationVoucher {
     pub fn limit_not_reached(self) -> bool {
         self.entities_created < self.maximum_entities_count
     }
+
+    pub fn ensure_new_max_entities_count_is_valid<T: Trait>(
+        &self,
+        maximum_entities_count: CreationLimit,
+    ) -> dispatch::Result {
+        ensure!(
+            maximum_entities_count >= self.entities_created,
+            ERROR_NEW_ENTITIES_MAX_COUNT_IS_LESS_THAN_NUMBER_OF_ALREADY_CREATED
+        );
+        Module::<T>::ensure_valid_number_of_class_entities_per_actor(maximum_entities_count)
+    }
 }
 
 /// Who will be set as the controller for any newly created entity in a given class.

@@ -522,6 +522,10 @@ decl_module! {
             Self::ensure_known_class_id(class_id)?;
             Self::ensure_entity_creation_voucher_exists(class_id, &controller)?;
 
+            // Ensure new  voucher`s max entities count is less than number of already created entities in given voucher
+            // and runtime entities creation constraint per actor satisfied
+            Self::entity_creation_vouchers(class_id, &controller)
+                .ensure_new_max_entities_count_is_valid::<T>(maximum_entities_count)?;
             //
             // == MUTATION SAFE ==
             //
@@ -1534,22 +1538,35 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn ensure_entities_limits_are_valid(
+    pub fn ensure_valid_number_of_entities_per_class(
         maximum_entities_count: CreationLimit,
-        per_controller_entity_creation_limit: CreationLimit,
     ) -> dispatch::Result {
-        ensure!(
-            per_controller_entity_creation_limit < maximum_entities_count,
-            ERROR_PER_ACTOR_ENTITIES_CREATION_LIMIT_EXCEEDS_OVERALL_LIMIT
-        );
         ensure!(
             maximum_entities_count < T::EntitiesCreationConstraint::get(),
             ERROR_ENTITIES_NUMBER_PER_CLASS_CONSTRAINT_VIOLATED
         );
+        Ok(())
+    }
+
+    pub fn ensure_valid_number_of_class_entities_per_actor(
+        per_controller_entity_creation_limit: CreationLimit,
+    ) -> dispatch::Result {
         ensure!(
-            maximum_entities_count < T::IndividualEntitiesCreationConstraint::get(),
+            per_controller_entity_creation_limit < T::IndividualEntitiesCreationConstraint::get(),
             ERROR_NUMBER_OF_CLASS_ENTITIES_PER_ACTOR_CONSTRAINT_VIOLATED
         );
         Ok(())
+    }
+
+    pub fn ensure_entities_limits_are_valid(
+        maximum_entities_count: CreationLimit,
+        per_actor_entities_creation_limit: CreationLimit,
+    ) -> dispatch::Result {
+        ensure!(
+            per_actor_entities_creation_limit < maximum_entities_count,
+            ERROR_PER_ACTOR_ENTITIES_CREATION_LIMIT_EXCEEDS_OVERALL_LIMIT
+        );
+        Self::ensure_valid_number_of_entities_per_class(maximum_entities_count)?;
+        Self::ensure_valid_number_of_class_entities_per_actor(per_actor_entities_creation_limit)
     }
 }

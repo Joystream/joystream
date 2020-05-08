@@ -22,6 +22,8 @@ pub const ERROR_ENTITIES_NUMBER_PER_CLASS_CONSTRAINT_VIOLATED: &str =
     "Number of entities per class is to big";
 pub const ERROR_NUMBER_OF_CLASS_ENTITIES_PER_ACTOR_CONSTRAINT_VIOLATED: &str =
     "Number of class entities per actor is to big";
+pub const ERROR_NEW_ENTITIES_MAX_COUNT_IS_LESS_THAN_NUMBER_OF_ALREADY_CREATED: &str =
+    "Cannot set voucher entities count to be less than number of already created entities";
 
 // Main logic errors
 // --------------------------------------
