@@ -4,8 +4,7 @@ import { Card, Container, Menu } from "semantic-ui-react";
 import ProposalPreview from "./ProposalPreview";
 import { useTransport, ParsedProposal } from "../runtime";
 import { usePromise } from "../utils";
-import Loading from "./Loading";
-import Error from "./Error";
+import PromiseComponent from './PromiseComponent';
 import { withCalls } from "@polkadot/react-api";
 import { BlockNumber } from "@polkadot/types/interfaces";
 
@@ -56,35 +55,32 @@ function ProposalPreviewList({ bestNumber }: ProposalPreviewListProps) {
   const [proposals, error, loading] = usePromise<ParsedProposal[]>(() => transport.proposals(), []);
   const [activeFilter, setActiveFilter] = useState<ProposalFilter>("All");
 
-  if (loading && !error) {
-    return <Loading text="Fetching proposals..." />;
-  } else if (error) {
-    return <Error error={error} />;
-  }
-
   const proposalsMap = mapFromProposals(proposals);
-
-  console.log({ proposals, error, loading });
-  console.log(proposalsMap);
+  const filteredProposals = proposalsMap.get(activeFilter) as ParsedProposal[];
 
   return (
     <Container className="Proposal">
-      <Menu tabular className="list-menu">
-        {filters.map((filter, idx) => (
-          <Menu.Item
-            key={`${filter} - ${idx}`}
-            name={`${filter.toLowerCase()} - ${(proposalsMap.get(filter) as ParsedProposal[]).length}`}
-            active={activeFilter === filter}
-            onClick={() => setActiveFilter(filter)}
-          />
-        ))}
-      </Menu>
-
-      <Card.Group>
-        {(proposalsMap.get(activeFilter) as ParsedProposal[]).map((prop: ParsedProposal, idx: number) => (
-          <ProposalPreview key={`${prop.title}-${idx}`} proposal={prop} bestNumber={bestNumber} />
-        ))}
-      </Card.Group>
+      <PromiseComponent error={ error } loading={ loading } message="Fetching proposals...">
+        <Menu tabular className="list-menu">
+          {filters.map((filter, idx) => (
+            <Menu.Item
+              key={`${filter} - ${idx}`}
+              name={`${filter.toLowerCase()} - ${(proposalsMap.get(filter) as ParsedProposal[]).length}`}
+              active={activeFilter === filter}
+              onClick={() => setActiveFilter(filter)}
+            />
+          ))}
+        </Menu>
+        {
+          filteredProposals.length ? (
+            <Card.Group>
+              {filteredProposals.map((prop: ParsedProposal, idx: number) => (
+                <ProposalPreview key={`${prop.title}-${idx}`} proposal={prop} bestNumber={bestNumber} />
+              ))}
+            </Card.Group>
+          ) : `There are currently no ${ activeFilter !== 'All' ? activeFilter.toLocaleLowerCase() : 'submitted' } proposals.`
+        }
+      </PromiseComponent>
     </Container>
   );
 }

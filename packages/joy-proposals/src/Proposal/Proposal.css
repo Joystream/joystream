@@ -5,7 +5,12 @@
   }
 
   .details-container {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(5, auto);
+  }
+
+  .details-container .item .extra {
+    margin-bottom: 0.5em !important;
   }
 
   h4.ui.header.details-handle {
@@ -36,5 +41,18 @@
 
   .ui.tabular.list-menu {
     margin-bottom: 2rem;
+  }
+
+  @media screen and (max-width: 767px) {
+    .details-container {
+      grid-template-columns: repeat(2, auto);
+      grid-template-rows: repeat(3, auto);
+    }
+    .details-container .item:first-child {
+      grid-column: 1/3;
+    }
+    .details-container .item {
+      margin: 0.5em 0 !important;
+    }
   }
 }
