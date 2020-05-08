@@ -53,7 +53,7 @@ export default class QueryNode extends EventEmitter {
         this._stateBootstrap = new StateBootstrap(this._queryService, config);
     }
 
-    async run(state: State) {
+    async start(state: State) {
         if (!this._queryBlockProducer) {
             throw Error('Query block producer is not initialized');
         }
@@ -63,18 +63,23 @@ export default class QueryNode extends EventEmitter {
         //});
 
         this._state = QueryNodeState.STARTED;
+        logger.debug(`Starting at state ${state}`);
         await this._queryBlockProducer.start(state.lastProcessedBlock + 1);
-        for await (const query_event of this._queryBlockProducer.blockGenerator()) {
-            this._onQueryEventBlock(query_event);
-        }
         
     }
 
-    _onQueryEventBlock(query_event_block: QueryEventBlock): void {
-    
-        query_event_block.query_events.forEach((query_event, index) => {
-            logger.debug(`Processing event: ${query_event.event_name}`);    
-        });
+    get producer(): QueryBlockProducer {
+        if (this._queryBlockProducer == undefined) {
+            throw new Error("QueryBlockProducer is not initialized");
+        }
+        return this._queryBlockProducer;
+    }
+
+    get bootstrapper(): StateBootstrap {
+        if (this._stateBootstrap == undefined) {
+            throw new Error("Bootstrapper is not initialized");
+        }
+        return this._stateBootstrap;
     }
     
     get state() {
