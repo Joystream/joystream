@@ -475,7 +475,7 @@ decl_module! {
             Self::deposit_event(RawEvent::BeganWorkerApplicationReview(worker_opening_id));
         }
 
-                /// Fill opening for worker
+        /// Fill opening for worker
         pub fn fill_worker_opening(
             origin,
             worker_opening_id: WorkerOpeningId<T>,
@@ -581,7 +581,6 @@ decl_module! {
                 // Staking profile for worker
                 let stake_profile =
                     if let Some(ref stake_id) = application.active_role_staking_id {
-
                         Some(
                             WorkerRoleStakeProfile::new(
                                 stake_id,

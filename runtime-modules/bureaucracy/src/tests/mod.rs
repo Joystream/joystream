@@ -1,15 +1,24 @@
 mod mock;
 
 use crate::constraints::InputValidationLengthConstraint;
+use crate::tests::mock::Test;
 use crate::types::{
     Lead, OpeningPolicyCommitment, RewardPolicy, Worker, WorkerApplication, WorkerOpening,
-    WorkerRoleStage,
+    WorkerRoleStage, WorkerRoleStakeProfile,
 };
 use crate::{Instance1, RawEvent};
 use mock::{build_test_externalities, Balances, Bureaucracy1, Membership, System, TestEvent};
 use srml_support::StorageValue;
 use std::collections::{BTreeMap, BTreeSet};
 use system::{EventRecord, Phase, RawOrigin};
+
+fn set_mint_id(mint_id: u64) {
+    <crate::Mint<Test, crate::Instance1>>::put(mint_id);
+}
+
+fn create_mint() -> u64 {
+    <minting::Module<Test>>::add_mint(100, None).unwrap()
+}
 
 struct FillWorkerOpeningFixture {
     origin: RawOrigin<u64>,
@@ -36,6 +45,13 @@ impl FillWorkerOpeningFixture {
         FillWorkerOpeningFixture { origin, ..self }
     }
 
+    fn with_reward_policy(self, reward_policy: RewardPolicy<u64, u64>) -> Self {
+        FillWorkerOpeningFixture {
+            reward_policy: Some(reward_policy),
+            ..self
+        }
+    }
+
     pub fn call_and_assert(&self, expected_result: Result<(), &str>) {
         let saved_worker_next_id = Bureaucracy1::next_worker_id();
         let actual_result = Bureaucracy1::fill_worker_opening(
@@ -50,15 +66,37 @@ impl FillWorkerOpeningFixture {
             assert_eq!(Bureaucracy1::next_worker_id(), saved_worker_next_id + 1);
             let worker_id = saved_worker_next_id;
 
-            let actual_worker = Bureaucracy1::worker_by_id(worker_id);
+            let opening = Bureaucracy1::worker_opening_by_id(self.opening_id);
+
+            let role_stake_profile = if opening
+                .policy_commitment
+                .application_staking_policy
+                .is_some()
+                || opening.policy_commitment.role_staking_policy.is_some()
+            {
+                let stake_id = 0;
+                Some(WorkerRoleStakeProfile::new(
+                    &stake_id,
+                    &opening
+                        .policy_commitment
+                        .terminate_worker_role_stake_unstaking_period,
+                    &opening
+                        .policy_commitment
+                        .exit_worker_role_stake_unstaking_period,
+                ))
+            } else {
+                None
+            };
+            let reward_relationship = self.reward_policy.clone().map(|_| 0);
 
             let expected_worker = Worker {
                 role_account: self.role_account,
-
-                reward_relationship: None,
-                role_stake_profile: None,
+                reward_relationship,
+                role_stake_profile,
                 stage: WorkerRoleStage::Active,
             };
+
+            let actual_worker = Bureaucracy1::worker_by_id(worker_id);
 
             assert_eq!(actual_worker, expected_worker);
         }
@@ -305,6 +343,13 @@ impl Default for AddWorkerOpeningFixture {
 }
 
 impl AddWorkerOpeningFixture {
+    fn with_policy_commitment(self, policy_commitment: OpeningPolicyCommitment<u64, u64>) -> Self {
+        AddWorkerOpeningFixture {
+            commitment: policy_commitment,
+            ..self
+        }
+    }
+
     pub fn call_and_assert(&self, expected_result: Result<(), &str>) {
         let saved_opening_next_id = Bureaucracy1::next_worker_opening_id();
         let actual_result = Bureaucracy1::add_worker_opening(
@@ -327,7 +372,7 @@ impl AddWorkerOpeningFixture {
             let expected_opening = WorkerOpening::<u64, u64, u64, u64> {
                 opening_id,
                 worker_applications: BTreeSet::new(),
-                policy_commitment: OpeningPolicyCommitment::default(),
+                policy_commitment: self.commitment.clone(),
             };
 
             assert_eq!(actual_opening, expected_opening);
@@ -374,6 +419,31 @@ impl EventFixture {
             .collect::<Vec<EventRecord<_, _>>>();
 
         assert_eq!(System::events(), expected_events);
+    }
+
+    fn assert_last_crate_event(
+        expected_raw_event: RawEvent<
+            u64,
+            u64,
+            u64,
+            u64,
+            std::collections::BTreeMap<u64, u64>,
+            crate::Instance1,
+        >,
+    ) {
+        let converted_event = TestEvent::bureaucracy_Instance1(expected_raw_event);
+
+        Self::assert_last_global_event(converted_event)
+    }
+
+    fn assert_last_global_event(expected_event: TestEvent) {
+        let expected_event = EventRecord {
+            phase: Phase::ApplyExtrinsic(0),
+            event: expected_event,
+            topics: vec![],
+        };
+
+        assert_eq!(System::events().pop().unwrap(), expected_event);
     }
 }
 
@@ -1085,16 +1155,25 @@ fn fill_worker_opening_succeeds() {
     build_test_externalities().execute_with(|| {
         let lead_account_id = 1;
         SetLeadFixture::set_lead(lead_account_id);
-
+        increase_total_balance_issuance_using_account_id(1, 10000);
         setup_members(2);
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
+        let add_worker_opening_fixture =
+            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
+                role_staking_policy: Some(hiring::StakingPolicy {
+                    amount: 10,
+                    amount_mode: hiring::StakingAmountLimitMode::AtLeast,
+                    crowded_out_unstaking_period_length: None,
+                    review_period_expired_unstaking_period_length: None,
+                }),
+                ..OpeningPolicyCommitment::default()
+            });
         add_worker_opening_fixture.call_and_assert(Ok(()));
 
         let opening_id = 0; // newly created opening
 
         let appy_on_worker_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
+            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id).with_role_stake(10);
         appy_on_worker_opening_fixture.call_and_assert(Ok(()));
 
         let application_id = 0; // newly created application
@@ -1103,29 +1182,26 @@ fn fill_worker_opening_succeeds() {
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
         begin_review_worker_applications_fixture.call_and_assert(Ok(()));
 
+        let mint_id = create_mint();
+        set_mint_id(mint_id);
+
         let fill_worker_opening_fixture =
-            FillWorkerOpeningFixture::default_for_ids(opening_id, vec![application_id]);
+            FillWorkerOpeningFixture::default_for_ids(opening_id, vec![application_id])
+                .with_reward_policy(RewardPolicy {
+                    amount_per_payout: 1000,
+                    next_payment_at_block: 20,
+                    payout_interval: None,
+                });
         fill_worker_opening_fixture.call_and_assert(Ok(()));
 
         let worker_id = 0; // newly created worker
         let mut worker_application_dictionary = BTreeMap::new();
         worker_application_dictionary.insert(application_id, worker_id);
 
-        EventFixture::assert_global_events(vec![
-            TestEvent::bureaucracy_Instance1(RawEvent::LeaderSet(1, lead_account_id)),
-            TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(0, 0)),
-            TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(1, 1)),
-            TestEvent::bureaucracy_Instance1(RawEvent::WorkerOpeningAdded(opening_id)),
-            TestEvent::bureaucracy_Instance1(RawEvent::AppliedOnWorkerOpening(
-                opening_id,
-                application_id,
-            )),
-            TestEvent::bureaucracy_Instance1(RawEvent::BeganWorkerApplicationReview(opening_id)),
-            TestEvent::bureaucracy_Instance1(RawEvent::WorkerOpeningFilled(
-                opening_id,
-                worker_application_dictionary,
-            )),
-        ]);
+        EventFixture::assert_last_crate_event(RawEvent::WorkerOpeningFilled(
+            opening_id,
+            worker_application_dictionary,
+        ));
     });
 }
 
@@ -1229,6 +1305,55 @@ fn fill_worker_opening_fails_with_invalid_application_with_hiring_error() {
 
         let fill_worker_opening_fixture =
             FillWorkerOpeningFixture::default_for_ids(opening_id, Vec::new());
+        fill_worker_opening_fixture.call_and_assert(Err(
+            crate::errors::MSG_FULL_WORKER_OPENING_OPENING_NOT_IN_REVIEW_PERIOD_STAGE,
+        ));
+    });
+}
+
+#[test]
+fn fill_worker_opening_fails_with_invalid_reward_policy() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        SetLeadFixture::set_lead(lead_account_id);
+
+        setup_members(2);
+
+        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
+        add_worker_opening_fixture.call_and_assert(Ok(()));
+
+        let opening_id = 0; // newly created opening
+
+        let appy_on_worker_opening_fixture =
+            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
+        appy_on_worker_opening_fixture.call_and_assert(Ok(()));
+
+        let application_id = 0; // newly created application
+
+        let begin_review_worker_applications_fixture =
+            BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
+        begin_review_worker_applications_fixture.call_and_assert(Ok(()));
+
+        let fill_worker_opening_fixture =
+            FillWorkerOpeningFixture::default_for_ids(opening_id, vec![application_id])
+                .with_reward_policy(RewardPolicy {
+                    amount_per_payout: 10000,
+                    next_payment_at_block: 100,
+                    payout_interval: None,
+                });
+
+        fill_worker_opening_fixture
+            .call_and_assert(Err(crate::MSG_FILL_WORKER_OPENING_MINT_DOES_NOT_EXIST));
+
+        set_mint_id(22);
+
+        let fill_worker_opening_fixture =
+            FillWorkerOpeningFixture::default_for_ids(opening_id, vec![application_id])
+                .with_reward_policy(RewardPolicy {
+                    amount_per_payout: 10000,
+                    next_payment_at_block: 0,
+                    payout_interval: None,
+                });
         fill_worker_opening_fixture.call_and_assert(Err(
             crate::errors::MSG_FULL_WORKER_OPENING_OPENING_NOT_IN_REVIEW_PERIOD_STAGE,
         ));
