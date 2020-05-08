@@ -124,7 +124,9 @@ const ProposalParamName = styled.div`
 const ProposalParamValue = styled.div`
   color: black;
   font-weight: bold;
-  padding-left: 0.5rem;
+  padding-left: 1rem;
+  word-wrap: break-word;
+  word-break: break-all;
 `;
 
 export default function Body({
