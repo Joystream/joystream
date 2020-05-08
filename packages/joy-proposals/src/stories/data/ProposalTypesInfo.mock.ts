@@ -13,6 +13,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     stake: 5,
     cancellationFee: 0,
     gracePeriod: 0,
+    votingPeriod: 10000,
   },
   {
     type: "Spending",
@@ -25,6 +26,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     stake: 10,
     cancellationFee: 5,
     gracePeriod: 3,
+    votingPeriod: 10000,
   },
   {
     type: "RuntimeUpgrade",
@@ -37,6 +39,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     stake: 100,
     cancellationFee: 10,
     gracePeriod: 14,
+    votingPeriod: 10000,
   },
   {
     type: "EvictStorageProvider",
@@ -49,6 +52,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     stake: 100,
     cancellationFee: 10,
     gracePeriod: 1,
+    votingPeriod: 10000,
   },
   {
     type: "SetStorageRoleParameters",
@@ -61,6 +65,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     stake: 500,
     cancellationFee: 60,
     gracePeriod: 14,
+    votingPeriod: 10000,
   },
   {
     type: "SetValidatorCount",
@@ -73,6 +78,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     stake: 45,
     cancellationFee: 10,
     gracePeriod: 5,
+    votingPeriod: 10000,
   },
   {
     type: "SetContentWorkingGroupMintCapacity",
@@ -85,6 +91,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     stake: 90,
     cancellationFee: 8,
     gracePeriod: 5,
+    votingPeriod: 10000,
   },
   {
     type: "SetLead",
@@ -97,6 +104,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     stake: 500,
     cancellationFee: 50,
     gracePeriod: 7,
+    votingPeriod: 10000,
   },
   {
     type: "SetElectionParameters",
@@ -109,6 +117,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     stake: 1000,
     cancellationFee: 100,
     gracePeriod: 30,
+    votingPeriod: 10000,
   },
 ];
 
