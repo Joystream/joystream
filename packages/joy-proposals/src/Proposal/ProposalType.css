@@ -13,11 +13,7 @@
 }
 .ProposalType .actions {
   margin: 0 2em;
-  padding-top: 2em;
-}
-.ProposalType .btn-create {
-  white-space: nowrap;
-  margin-right: 0;
+  padding-top: 1em;
 }
 .ProposalType .proposal-details {
   display: flex;

@@ -8,10 +8,9 @@ import { ProposalId } from "@joystream/types/proposals";
 import { useTransport } from "../runtime";
 import { VoteKind } from '@joystream/types/proposals';
 import { usePromise } from "../utils";
+import { VoteKinds } from "@joystream/types/proposals";
 
-// TODO: joy-types (there's something similar already I think)
-const voteKinds = ["Approve", "Slash", "Abstain", "Reject"] as const;
-export type VoteKindStr = "Approve" | "Slash" | "Abstain" | "Reject";
+export type VoteKindStr = typeof VoteKinds[number];
 
 type VoteButtonProps = {
   memberId: MemberId,
