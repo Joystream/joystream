@@ -1,8 +1,15 @@
 // @ts-check
 
-import { getRepository } from 'typeorm';
-import { QueryBlockProducer, QueryEventProcessingPack, QueryEventBlock, ISubstrateQueryService } from '.';
-import { DB, SavedEntityEvent } from './db';
+import { getRepository, getConnection } from 'typeorm';
+
+import {
+  QueryBlockProducer,
+  QueryEventProcessingPack,
+  QueryEventBlock,
+  ISubstrateQueryService,
+  DB,
+  SavedEntityEvent,
+} from '.';
 
 const debug = require('debug')('index');
 
@@ -51,7 +58,7 @@ export default class IndexBuilder {
   _onQueryEventBlock(query_event_block: QueryEventBlock): void {
     console.log(`Yay, block producer at height: #${query_event_block.block_number}`);
 
-    query_event_block.query_events.forEach((query_event, index) => {
+    query_event_block.query_events.forEach(async (query_event, index) => {
       if (!this._processing_pack[query_event.event_method]) {
         console.log(`Unrecognized: ` + query_event.event_name);
 
@@ -59,8 +66,30 @@ export default class IndexBuilder {
       } else {
         console.log(`Recognized: ` + query_event.event_name);
 
-        // Call event handler to store data on database
-        this._processing_pack[query_event.event_method](new DB(query_event));
+        const queryRunner = getConnection().createQueryRunner();
+        try {
+          // establish real database connection
+          await queryRunner.connect();
+          await queryRunner.startTransaction();
+
+          const db = new DB(query_event, queryRunner.manager);
+
+          // Call event handler
+          await this._processing_pack[query_event.event_method](db);
+
+          // Update last processed event
+          await SavedEntityEvent.update(query_event, queryRunner.manager);
+
+          await queryRunner.commitTransaction();
+        } catch (error) {
+          console.log(`There are errors. Rolling back the transaction. Reason: ${error.message}`);
+
+          // Since we have errors lets rollback changes we made
+          await queryRunner.rollbackTransaction();
+        } finally {
+          // Query runner needs to be released manually.
+          await queryRunner.release();
+        }
       }
     });
   }

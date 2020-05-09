@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryColumn, getRepository } from 'typeorm';
+import { Entity, Column, PrimaryColumn, EntityManager } from 'typeorm';
 import { QueryEvent } from '..';
 
 /**
@@ -34,14 +34,17 @@ export class SavedEntityEvent {
    * with the event parameter
    * @param event
    */
-  static async updateOrCreate(event: QueryEvent): Promise<SavedEntityEvent> {
-    let savedEE = await getRepository(SavedEntityEvent).findOne();
-    if (!savedEE) {
-      savedEE = new SavedEntityEvent();
+  static async update(event: QueryEvent, manager: EntityManager): Promise<void> {
+    let lastProcessedEvent = await manager.findOne(SavedEntityEvent);
+
+    if (!lastProcessedEvent) {
+      lastProcessedEvent = new SavedEntityEvent();
     }
-    savedEE.index = event.index;
-    savedEE.eventName = event.event_method;
-    savedEE.blockNumber = event.block_number;
-    return savedEE;
+
+    lastProcessedEvent.index = event.index;
+    lastProcessedEvent.eventName = event.event_method;
+    lastProcessedEvent.blockNumber = event.block_number;
+
+    await manager.save(lastProcessedEvent);
   }
 }
