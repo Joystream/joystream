@@ -70,7 +70,7 @@ class Component extends React.PureComponent<Props, State> {
     const ids: MemberId[] = [];
     if (membersCount > 0) {
       const firstId = firstMemberId.toNumber() + (currentPage - 1) * MEMBERS_PER_PAGE;
-      const lastId = Math.min(firstId + MEMBERS_PER_PAGE, membersCount - 1) - 1;
+      const lastId = Math.min(firstId + MEMBERS_PER_PAGE, membersCount) - 1;
       for (let i = firstId; i <= lastId; i++) {
         ids.push(new MemberId(i));
       }
