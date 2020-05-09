@@ -1,5 +1,7 @@
 import * as dotenv from 'dotenv';
 import * as fs from 'fs-extra';
+import { createConnection, getConnection } from 'typeorm';
+
 import { getTemplatePath } from '../utils/utils';
 
 /**
@@ -36,4 +38,28 @@ export function getTypeormModelGeneratorConnectionConfig() {
     '--generateConstructor'
   ].join(' ');
   return command;
+}
+
+export async function resetLastProcessedEvent() {
+  await createConnection();
+  // get a connection and create a new query runner
+  const queryRunner = getConnection().createQueryRunner();
+
+  // establish real database connection using our new query runner
+  await queryRunner.connect();
+  const lastProcessedEvent = {
+    blockNumber: 0,
+    eventName: 'ExtrinsicSuccess',
+    index: 0
+  };
+
+  // now we can execute any queries on a query runner, for example:
+  await queryRunner.query(
+    `UPDATE saved_entity_event SET 
+    "blockNumber" = ${lastProcessedEvent.blockNumber}, 
+    index = ${lastProcessedEvent.index},
+    "eventName" = '${lastProcessedEvent.eventName}';`
+  );
+
+  await queryRunner.release();
 }
