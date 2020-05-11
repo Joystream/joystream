@@ -22,3 +22,6 @@ yarn*
 
 # Visual Studio Code
 .vscode
+
+# Chain specificaiton
+chainspec.json
