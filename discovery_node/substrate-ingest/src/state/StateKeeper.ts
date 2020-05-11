@@ -3,8 +3,8 @@ import Config from '../Config'
 const logger = require('log4js').getLogger('state-keeper');
 
 export interface State {
-    lastProcessedBlock: number;  
-    eventIndex: number;  
+    inBlock: number;  
+    lastProcessedEventInBlock: number;  
 }
 
 export class StateKeeper {
@@ -23,13 +23,13 @@ export class StateKeeper {
 
     public static nullState(): State {
         return {
-            lastProcessedBlock: -1,
-            eventIndex: 0
+            inBlock: -1,
+            lastProcessedEventInBlock: 0
         }
     }
 
     public shouldBootstrap(): boolean {
-        return (this._state.lastProcessedBlock < 0)
+        return (this._state.inBlock < 0)
     }
 }
 

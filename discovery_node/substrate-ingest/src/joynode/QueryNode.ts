@@ -64,7 +64,7 @@ export default class QueryNode extends EventEmitter {
 
         this._state = QueryNodeState.STARTED;
         logger.debug(`Starting at state ${state}`);
-        await this._queryBlockProducer.start(state.lastProcessedBlock + 1);
+        await this._queryBlockProducer.start(state.inBlock + 1);
         
     }
 

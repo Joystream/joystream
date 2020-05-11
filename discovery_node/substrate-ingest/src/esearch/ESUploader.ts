@@ -55,8 +55,8 @@ export default class ESUploader {
             return StateKeeper.nullState()
         }
         return {
-            lastProcessedBlock: response.body.hits.hits[0]._source.blockNumber,
-            eventIndex: response.body.hits.hits[0]._source.index
+            inBlock: response.body.hits.hits[0]._source.blockNumber,
+            lastProcessedEventInBlock: response.body.hits.hits[0]._source.index
         }
     }
 
@@ -90,8 +90,8 @@ export default class ESUploader {
         }
         await this.flush(toLoad);
         return {
-            lastProcessedBlock: 0,
-            eventIndex: -1
+            inBlock: 0,
+            lastProcessedEventInBlock: -1
         }
     }
 
@@ -99,8 +99,8 @@ export default class ESUploader {
         for await (const block of blocks) {
             await this.process(block);
             yield {
-                lastProcessedBlock: block.block_number,
-                eventIndex: block.query_events.length
+                inBlock: block.block_number,
+                lastProcessedEventInBlock: block.query_events.length
             }
         }
     }
