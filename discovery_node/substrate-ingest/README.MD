@@ -1,6 +1,6 @@
 # Substrate ingest node
 
-This tool is responsible for taking quering the blockchain data and posting to the relevant ElasticSearch indexes.
+This tool is responsible for taking quering the blockchain data and posting to the relevant ElasticSearch indexes. It will create ES indices `events` and `members` and populate them from the Joystream blockchain.
 
 ## Install
 
