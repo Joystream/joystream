@@ -20,3 +20,4 @@ joystream_runtime.wasm
 # node_modules
 **/node_modules
 **/discovery_node/**/lib
+**/discovery_node/**/yarn.lock
