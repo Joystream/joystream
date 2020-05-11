@@ -4,8 +4,8 @@ import { Keyring } from '@polkadot/keyring';
 import { assert } from 'chai';
 import { KeyringPair } from '@polkadot/keyring/types';
 import BN = require('bn.js');
-import { ApiWrapper } from '../../utils/apiWrapper';
-import { initConfig } from '../../utils/config';
+import { ApiWrapper } from './utils/apiWrapper';
+import { initConfig } from './utils/config';
 import { v4 as uuid } from 'uuid';
 
 export function membershipTest(nKeyPairs: KeyringPair[]) {

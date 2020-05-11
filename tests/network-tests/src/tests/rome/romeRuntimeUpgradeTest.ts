@@ -1,6 +1,5 @@
 import { initConfig } from './utils/config';
 import { Keyring, WsProvider } from '@polkadot/api';
-import { Bytes } from '@polkadot/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { membershipTest } from './membershipCreationTest';
 import { councilTest } from './electingCouncilTest';
@@ -41,13 +40,13 @@ describe('Runtime upgrade integration tests', () => {
     sudo = keyring.addFromUri(sudoUri);
     const runtime: string = Utils.readRuntimeFromFile(runtimePath);
     const description: string = 'runtime upgrade proposal which is used for API integration testing';
-    const runtimeProposalFee: BN = apiWrapper.estimateRomeProposeRuntimeUpgradeFee(
+    const runtimeProposalFee: BN = apiWrapper.estimateProposeRuntimeUpgradeFee(
       proposalStake,
       description,
       description,
       runtime
     );
-    const runtimeVoteFee: BN = apiWrapper.estimateVoteForRomeRuntimeProposalFee();
+    const runtimeVoteFee: BN = apiWrapper.estimateVoteForRuntimeProposalFee();
 
     // Topping the balances
     await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, runtimeProposalFee.add(proposalStake));
@@ -55,7 +54,7 @@ describe('Runtime upgrade integration tests', () => {
 
     // Proposal creation
     const proposalPromise = apiWrapper.expectProposalCreated();
-    await apiWrapper.proposeRuntimeRome(
+    await apiWrapper.proposeRuntime(
       m1KeyPairs[0],
       proposalStake,
       'testing runtime',
@@ -65,8 +64,8 @@ describe('Runtime upgrade integration tests', () => {
     const proposalNumber = await proposalPromise;
 
     // Approving runtime update proposal
-    const runtimePromise = apiWrapper.expectRomeRuntimeUpgraded();
-    await apiWrapper.batchApproveRomeProposal(m2KeyPairs, proposalNumber);
+    const runtimePromise = apiWrapper.expectRuntimeUpgraded();
+    await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber);
     await runtimePromise;
   }).timeout(defaultTimeout);
 

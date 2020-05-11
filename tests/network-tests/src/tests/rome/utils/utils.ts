@@ -1,6 +1,5 @@
 import { IExtrinsic } from '@polkadot/types/types';
-import { Bytes } from '@polkadot/types';
-import { compactToU8a, stringToU8a } from '@polkadot/util';
+import { compactToU8a, stringToU8a, u8aToHex } from '@polkadot/util';
 import { blake2AsHex } from '@polkadot/util-crypto';
 import BN = require('bn.js');
 import fs = require('fs');
@@ -46,6 +45,6 @@ export class Utils {
   }
 
   public static readRuntimeFromFile(path: string): string {
-    return '0x' + fs.readFileSync(path).toString('hex');
+    return u8aToHex(fs.readFileSync(path));
   }
 }
