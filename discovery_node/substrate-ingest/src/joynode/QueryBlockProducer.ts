@@ -10,6 +10,15 @@ const logger = require('log4js').getLogger('producer');
 
 const DEFAULT_NEW_BLOCK_POLL_INTERVAL_MS = 5000;
 
+/**
+ * QueryBlockProducer yields new blocks of the JoyStream blockchain though the 
+ * `blocks()` async generator.  Each block is an instance of `QueryEventBlock` and 
+ * represents all the mutations of the Joystream-state (including extrinsics) which allows
+ * to replay them by the downstream consumers. The `block()` generator waits until
+ *  - new `QueryEventBlock` is consumed by a downstream client
+ *  - next block height is not greater than `_chainHeight` which follows 
+ *  the last known finalized block height
+ */
 export default class QueryBlockProducer extends EventEmitter {
     private _started: boolean;
     private readonly _queryService: ISubstrateQueryService;

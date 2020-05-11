@@ -19,6 +19,13 @@ export enum QueryNodeState {
     STOPPED,
   }
 
+ /**
+  * This class encapsulates the data ingestion from the JoyStream node.
+  * Currently it has 
+  *  - a QueryBlockProducer which reads off all the events contained in the 
+  * blocks through the Substrate API, 
+  *  - StateBootstrap which is responsible for reading off blockchain state at a given height. 
+  */ 
 export default class QueryNode extends EventEmitter {
     private _state: QueryNodeState;
 

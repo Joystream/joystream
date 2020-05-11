@@ -7,6 +7,13 @@ export interface State {
     lastProcessedEventInBlock: number;  
 }
 
+/**
+ * This class is currently very thin. It's purpose is to keep the whole state of the ETL
+ * process by taking the blocks from the producer, sending to the transformer (not yet implemented)
+ * and finally to the the loader (ESUploader). All the intermediary steps are going to change the state,
+ * which in turn will also be more fine-grained. This will enable fail-safe restart and observability using 
+ * e.g. prometheus exporter listening to the state changes and the stats. 
+ */
 export class StateKeeper {
     private _config: Config;
     private _state: State;

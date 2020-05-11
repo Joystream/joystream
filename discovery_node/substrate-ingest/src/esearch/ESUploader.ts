@@ -10,6 +10,21 @@ const ENTITY_TYPES_TO_INDEX: { [type: string]: string } = {
     "profile": "members"
 }
 
+/**
+ * This class encapsulates all the logic related to reading/writing/creating 
+ * ElasticSearch indices. First, it tries to recover the last state of the ETL process by
+ * looking at the last event in `events`. If there's no such index, it goes to the bootstrap mode, 
+ * creates all the necessary indices (currently with very basic schemas).
+ * 
+ * It has a `bootstrap()` handle to load the initial state (typically a snapshotted from the Jostream at given
+ * height, e.g. genesis). 
+ * 
+ * In the normal operation is simply uploades all the Joystream events directly to `events`, but
+ * in the future will also update the `members`, `content` and other indices consumed from the 
+ * Transfomer
+ * 
+ *
+ */
 export default class ESUploader {
     private _client: Client;
 
