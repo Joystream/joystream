@@ -53,13 +53,33 @@ export async function resetLastProcessedEvent() {
     index: 0
   };
 
-  // now we can execute any queries on a query runner, for example:
+  // now we can execute any queries on a query runner
   await queryRunner.query(
     `UPDATE saved_entity_event SET 
     "blockNumber" = ${lastProcessedEvent.blockNumber}, 
     index = ${lastProcessedEvent.index},
     "eventName" = '${lastProcessedEvent.eventName}';`
   );
+
+  await queryRunner.release();
+}
+
+export async function createSavedEntityEventTable() {
+  const query = `CREATE TABLE "saved_entity_event" (
+      "index" integer PRIMARY KEY,
+      "eventName" character varying NOT NULL,
+      "blockNumber" integer NOT NULL,
+      "createdAt" TIMESTAMP NOT NULL DEFAULT now())`;
+
+  await createConnection();
+  // get a connection and create a new query runner
+  const queryRunner = getConnection().createQueryRunner();
+
+  // establish real database connection using our new query runner
+  await queryRunner.connect();
+
+  // now we can execute any queries on a query runner
+  await queryRunner.query(query);
 
   await queryRunner.release();
 }
