@@ -1,0 +1,16 @@
+type Membership {
+  # Member's root account id
+  accountId: String!
+
+  # Member's id
+  memberId: String!
+
+  # The unique handle chosen by member
+  handle: String
+
+  # A Url to member's Avatar image
+  avatarUri: String
+
+  # Short text chosen by member to share information about themselves
+  about: String
+}
