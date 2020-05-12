@@ -88,24 +88,30 @@ export async function handleMemberRegistered(db: DB) {
 
 ## Query Node Constructs Explained
 
-1. `schema.json` is where you define types for graphql server. Graphql server use these types to generate db models, db tables, graphql resolvers.
+1. `schema.graphql` is where you define types for graphql server. Graphql server use these types to generate db models, db tables, graphql resolvers.
 
 Below you can find a type defination example:
 
-```json
-[
-  {
-    "name": "MemberRegistered",
-    "fields": [
-      { "name": "memberId", "type": "int!" },
-      {
-        "name": "accountId",
-        "type": "string!"
-      }
-    ]
-  }
-]
+```graphql
+type Membership {
+  # Member's root account id
+  accountId: String!
+
+  # Member's id
+  memberId: Int!
+
+  # The unique handle chosen by member
+  handle: String
+
+  # A Url to member's Avatar image
+  avatarUri: String
+
+  # Short text chosen by member to share information about themselves
+  about: String
+}
 ```
+
+**Important** Relationship between types not supported yet!
 
 2. Block indexer is block consumer and every block can have events that we want to store their data. So indexing data from events we need to send the event to a function or a class that can handle the event and stores the event data on the database. `mappings` are the functions that we use to update our database with events data. Functions that we define in our mappings will be called only when the event name match our function name (function name pattern is `'handle' + eventName`). We call mapping functions as event handlers. Each event handler have only one parameter which is the `db: DB`. Every database operation is made with `db` object and the event can be accessed with `db` object. Below you can find an example for the event a handler:
 
