@@ -3,7 +3,7 @@ type Membership {
   accountId: String!
 
   # Member's id
-  memberId: String!
+  memberId: Int!
 
   # The unique handle chosen by member
   handle: String
