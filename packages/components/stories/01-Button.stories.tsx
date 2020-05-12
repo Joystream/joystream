@@ -21,4 +21,3 @@ export const PrimaryFullSize = () => (
 export const SecondaryFullSize = () => (
   <Button size="full" type="secondary">Load More</Button>
 )
-
