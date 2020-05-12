@@ -1,5 +1,7 @@
 import React from "react"
 import { makeStyles, NavButtonStyleProps } from "./NavButton.styles"
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
+import { faChevronLeft, faChevronRight } from "@fortawesome/free-solid-svg-icons"
 
 type NavButtonProps = {
   direction?: "right" | "left",
@@ -14,7 +16,7 @@ export default function NavButton({
   let styles = makeStyles(styleProps)
   return (
     <div css={styles} onClick={onClick}>
-      {direction === "right" ? ">" : "<"}
+      {direction === "right" ? <FontAwesomeIcon icon={faChevronRight} /> : <FontAwesomeIcon icon={faChevronLeft} />}
     </div>
   )
 }
