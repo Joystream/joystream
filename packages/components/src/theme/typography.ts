@@ -5,14 +5,15 @@ export default {
   },
   weights: {
     light: "100",
-    regular: "500",
+    regular: "300",
+    medium: "500",
     bold: "700",
   },
   sizes: {
-    xsmall: "0.625rem",
-    small: "0.825rem",
-    normal: "1rem",
-    large: "2rem",
-    xlarge: "2.5rem",
+    xsmall: "0.8rem",
+    small: "1rem",
+    normal: "1.3rem",
+    large: "3rem",
+    xlarge: "4rem",
   },
 };
