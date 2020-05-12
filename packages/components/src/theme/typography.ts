@@ -1,7 +1,7 @@
 export default {
   fonts: {
-    base: "'Lato','Helvetica Neue',Arial,Helvetica,sans-serif",
-    headers: "'Lato','Helvetica Neue',Arial,Helvetica,sans-serif",
+    base: "Lato, 'Helvetica Neue', Arial, Helvetica, sans-serif",
+    headers: "Lato, 'Helvetica Neue', Arial, Helvetica, sans-serif",
   },
   weights: {
     light: "100",

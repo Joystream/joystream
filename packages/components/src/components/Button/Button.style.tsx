@@ -1,26 +1,24 @@
 import { css } from "@emotion/core";
-import { spacing, typography, colors } from "../../theme";
-import * as fragments from "../../theme/fragments";
+import { typography, colors } from "../../theme";
 
 export type ButtonStyleProps = {
-  color?: "primary" | "danger" | "success" | "neutral";
-  size?: "normal" | "large" | "small" | "full";
-  outlined?: boolean;
+  type?: "primary" | "secondary"
+  size?: "normal" | "full"
 };
 
 export let makeStyles = ({
-  color = "primary",
-  size = "normal",
-  outlined = false,
+  type = "primary",
+  size = "normal"
 }: ButtonStyleProps) => {
   return css`
-    ${fragments.withSize(size)}
-    border-radius: ${spacing.s1};
-    border-color: ${outlined ? colors.bg[color] : ""};
-    border-style: solid;
-    border-width: ${size === "small" ? 1 : 2}px;
-    font-style: ${typography.fonts.base};
-    background-color: ${outlined ? colors.text.white : colors.bg[color]};
-    color: ${outlined ? colors.bg[color] : colors.text.white};
+    border: 1px solid ${colors.blue};
+    color: ${colors.white};
+    background-color: ${type === "primary" ? colors.blue : colors.black};
+    text-align: center;
+    padding: 15px 30px;
+    display: ${size === "normal" ? "inline-block" : "block"};
+    cursor: pointer;
+    font-family: ${typography.fonts.base};
+    font-weight: ${typography.weights.regular};
   `;
 };
