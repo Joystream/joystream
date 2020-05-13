@@ -11,12 +11,13 @@ import { MyAccountProps, withOnlyMembers } from "@polkadot/joy-utils/MyAccount";
 import { withMulti } from "@polkadot/react-api/with";
 import { withCalls } from "@polkadot/react-api";
 import { CallProps } from "@polkadot/react-api/types";
-import { Balance } from "@polkadot/types/interfaces";
+import { Balance, Event } from "@polkadot/types/interfaces";
 import { RouteComponentProps } from "react-router";
 import { ProposalType } from "../runtime";
 import { calculateStake } from "../utils";
 import { formatBalance } from "@polkadot/util"
 import "./forms.css";
+import { ProposalId } from "@joystream/types/proposals";
 
 
 // Generic form values
@@ -107,9 +108,18 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
   };
 
   const onTxSuccess: TxCallback = (txResult: SubmittableResult) => {
-    setSubmitting(false);
     if (!history) return;
-    history.push("/proposals");
+    // Determine proposal id
+    let createdProposalId: number | null = null;
+    for (let e of txResult.events) {
+      const event = e.get('event') as Event | undefined;
+      if (event !== undefined && event.method === 'ProposalCreated') {
+        createdProposalId = (event.data[1] as ProposalId).toNumber();
+        break;
+      }
+    }
+    setSubmitting(false);
+    history.push(`/proposals/${ createdProposalId }`);
   };
 
   const requiredStake: number | undefined =

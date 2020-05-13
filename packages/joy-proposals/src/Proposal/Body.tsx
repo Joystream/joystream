@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Header, Item, Button, Icon, Message } from "semantic-ui-react";
+import { Card, Header, Button, Icon, Message } from "semantic-ui-react";
 import { ProposalType } from "../runtime/transport";
 import { blake2AsHex } from '@polkadot/util-crypto';
 import styled from 'styled-components';
@@ -119,24 +119,26 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
   })
 };
 
-const ProposalParam = styled.div`
-  display: flex;
+const ProposalParams = styled.div`
+  display: grid;
   font-weight: bold;
-  margin-bottom: 0.5em;
-  @media only screen and (max-width: 767px) {
-    flex-direction: column;
+  grid-template-columns: min-content 1fr;
+  grid-row-gap: 0.5rem;
+  @media screen and (max-width: 767px) {
+    grid-template-columns: 1fr;
   }
 `;
 const ProposalParamName = styled.div`
-  min-width: ${(p: { longestParamName: number }) =>
-    p.longestParamName > 20 ? "240px" : p.longestParamName > 15 ? "200px" : ""};
+  margin-right: 1rem;
+  white-space: nowrap;
 `;
 const ProposalParamValue = styled.div`
   color: black;
-  font-weight: bold;
-  padding-left: 1rem;
   word-wrap: break-word;
   word-break: break-all;
+  @media screen and (max-width: 767px) {
+    margin-top: -0.25rem;
+  }
 `;
 
 export default function Body({
@@ -152,7 +154,6 @@ export default function Body({
 }: BodyProps) {
   const parseParams = paramParsers[type];
   const parsedParams = parseParams(params);
-  const longestParamName: number = Object.keys(parsedParams).reduce((a, b) => (b.length > a ? b.length : a), 0);
   return (
     <Card fluid>
       <Card.Content>
@@ -161,16 +162,14 @@ export default function Body({
         </Card.Header>
         <Card.Description>{description}</Card.Description>
         <Header as="h4">Parameters:</Header>
-        <Item.Group style={{ textAlign: "left" }} relaxed>
-
-          { Object.entries(parseParams(params)).map(([paramName, paramValue]) => (
-
-            <ProposalParam key={paramName}>
-              <ProposalParamName longestParamName={longestParamName}>{paramName}:</ProposalParamName>
+        <ProposalParams>
+          { Object.entries(parsedParams).map(([paramName, paramValue]) => (
+            <React.Fragment key={paramName}>
+              <ProposalParamName>{paramName}:</ProposalParamName>
               <ProposalParamValue>{paramValue}</ProposalParamValue>
-            </ProposalParam>
+            </React.Fragment>
           ))}
-        </Item.Group>
+        </ProposalParams>
         { iAmProposer && isCancellable && (<>
           <Message warning active>
             <Message.Content>
