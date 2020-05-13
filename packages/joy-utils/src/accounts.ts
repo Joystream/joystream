@@ -9,6 +9,12 @@ import keyring from '@polkadot/ui-keyring';
 import { isHex, u8aToHex } from '@polkadot/util';
 import { keyExtractSuri, mnemonicGenerate, mnemonicValidate, randomAsU8a } from '@polkadot/util-crypto';
 
+import { ApiPromise } from "@polkadot/api";
+import { MemberId, Profile } from "@joystream/types/members";
+import { Option } from "@polkadot/types";
+import { AccountId } from "@polkadot/types/interfaces";
+import { Vec } from "@polkadot/types/codec";
+
 export type SeedType = 'bip' | 'raw' | 'dev';
 
 export interface AddressState {
@@ -134,4 +140,19 @@ export function createAccount (suri: string, pairType: KeypairType, name: string
 
 export function isPasswordValid(password: string): boolean {
   return password.length == 0 || keyring.isPassValid(password)
+}
+
+export type MemberFromAccount = { account: string, id: number; profile?: Profile };
+
+export async function memberFromAccount(api: ApiPromise, accountId: AccountId | string): Promise<MemberFromAccount> {
+  const [memberId] =
+    ((await api.query.members.memberIdsByRootAccountId(accountId)) as Vec<MemberId>)
+    .concat((await api.query.members.memberIdsByControllerAccountId(accountId)) as Vec<MemberId>);
+  const member = (await api.query.members.memberProfile(memberId)) as Option<Profile>;
+
+  return {
+    account: accountId.toString(),
+    id: memberId.toNumber(),
+    profile: member.unwrapOr(undefined)
+  };
 }

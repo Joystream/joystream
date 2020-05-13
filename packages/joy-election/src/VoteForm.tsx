@@ -8,17 +8,18 @@ import { AppProps, I18nProps } from '@polkadot/react-components/types';
 import { ApiProps } from '@polkadot/react-api/types';
 import { withCalls, withMulti } from '@polkadot/react-api/with';
 import { AccountId, Balance } from '@polkadot/types/interfaces';
-import { Button, Input, Labelled, InputAddress } from '@polkadot/react-components/index';
+import { Button, Input, Labelled } from '@polkadot/react-components/index';
 import { SubmittableResult } from '@polkadot/api';
 import { formatBalance } from '@polkadot/util';
 
 import translate from './translate';
-import { accountIdsToOptions, hashVote } from './utils';
+import { hashVote } from './utils';
 import { queryToProp, ZERO, getUrlParam, nonEmptyStr } from '@polkadot/joy-utils/index';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import InputStake from '@polkadot/joy-utils/InputStake';
 import CandidatePreview from "./CandidatePreview";
 import { MyAccountProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
+import MembersDropdown from "@polkadot/joy-utils/MembersDropdown";
 import { saveVote, NewVote } from './myVotesStore';
 import { TxFailedCallback } from '@polkadot/react-components/Status/types';
 
@@ -63,7 +64,6 @@ class Component extends React.PureComponent<Props, State> {
     const { myAddress } = this.props;
     const { applicantId, stake, salt, isStakeValid, isFormSubmitted } = this.state;
     const isFormValid = nonEmptyStr(applicantId) && isStakeValid;
-    const applicantOpts = accountIdsToOptions(this.props.applicants || []);
     const hashedVote = hashVote(applicantId, salt);
 
     const buildNewVote = (): Partial<NewVote> => ({
@@ -117,13 +117,11 @@ class Component extends React.PureComponent<Props, State> {
       // New vote form:
       : <div>
         <div className='ui--row'>
-          <InputAddress
-            label='Applicant to vote for:'
-            onChange={this.onChangeApplicant}
-            type='address'
-            options={applicantOpts}
-            value={applicantId}
-            placeholder='Select an applicant you support'
+          <MembersDropdown
+            onChange={ (event, data) => this.onChangeApplicant(data.value as string) }
+            accounts={this.props.applicants || []}
+            value={applicantId || ''}
+            placeholder="Select an applicant you support"
           />
         </div>
         <InputStake
