@@ -515,6 +515,54 @@ decl_module! {
             Ok(())
         }
 
+        pub fn add_entities_creator(
+            origin,
+            class_id: T::ClassId,
+            curator_group_id: T::CuratorGroupId,
+        ) -> dispatch::Result {
+            let account_id = ensure_signed(origin)?;
+
+            ensure_lead_auth_success::<T>(&account_id)?;
+            Self::ensure_known_class_id(class_id)?;
+
+            Self::class_by_id(class_id).get_permissions().get_entity_creation_permissions()
+                .ensure_curator_group_does_not_exist(&curator_group_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <ClassById<T>>::mutate(class_id, |class|
+                class.get_permissions_mut().get_entity_creation_permissions_mut()
+                    .get_curator_groups_mut().insert(curator_group_id)
+            );
+            Ok(())
+        }
+
+        pub fn remove_entities_creator(
+            origin,
+            class_id: T::ClassId,
+            curator_group_id: T::CuratorGroupId,
+        ) -> dispatch::Result {
+            let account_id = ensure_signed(origin)?;
+
+            ensure_lead_auth_success::<T>(&account_id)?;
+            Self::ensure_known_class_id(class_id)?;
+
+            Self::class_by_id(class_id).get_permissions().get_entity_creation_permissions()
+                .ensure_curator_group_exists(&curator_group_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <ClassById<T>>::mutate(class_id, |class|
+                class.get_permissions_mut().get_entity_creation_permissions_mut()
+                    .get_curator_groups_mut().remove(&curator_group_id)
+            );
+            Ok(())
+        }
+
         pub fn update_entity_creation_voucher(
             origin,
             class_id: T::ClassId,

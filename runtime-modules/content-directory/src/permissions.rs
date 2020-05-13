@@ -226,6 +226,28 @@ impl<T: Trait> EntityCreationPermissions<T> {
         &mut self.curator_groups
     }
 
+    pub fn ensure_curator_group_exists(
+        &self,
+        curator_group_id: &T::CuratorGroupId,
+    ) -> Result<(), &'static str> {
+        ensure!(
+            self.curator_groups.contains(curator_group_id),
+            ERROR_ENTITY_CREATOR_CURATOR_GROUP_DOES_NOT_EXIST
+        );
+        Ok(())
+    }
+
+    pub fn ensure_curator_group_does_not_exist(
+        &self,
+        curator_group_id: &T::CuratorGroupId,
+    ) -> Result<(), &'static str> {
+        ensure!(
+            !self.curator_groups.contains(curator_group_id),
+            ERROR_ENTITY_CREATOR_CURATOR_GROUP_ALREADY_EXISTS
+        );
+        Ok(())
+    }
+
     pub fn ensure_can_create_entities(
         &self,
         account_id: &T::AccountId,
