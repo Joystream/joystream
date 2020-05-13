@@ -2,37 +2,156 @@ import { css } from "@emotion/core"
 import { typography, colors } from "../../theme"
 
 export type ButtonStyleProps = {
+  text?: string
   type?: "primary" | "secondary"
-  size?: "normal" | "full"
+  width?: "normal" | "full"
+  size?: "regular" | "small" | "smaller"
+  disabled?: boolean
 }
 
 export let makeStyles = ({
+  text,
   type = "primary",
-  size = "normal"
+  width = "normal",
+  size = "regular",
+  disabled = false
 }: ButtonStyleProps) => {
-  return css`
-    border: 1px solid ${colors.blue.regular};
-    color: ${colors.white};
-    background-color: ${type === "primary" ? colors.blue.regular : colors.black.regular};
-    text-align: center;
-    padding: 15px ${type === "primary" ? "40px" : "25px"};
-    display: ${size === "normal" ? "inline-block" : "block"};
-    cursor: default;
-    font-family: ${typography.fonts.base};
-    font-weight: ${typography.weights.medium};
-    font-size: ${typography.sizes.small};
-    margin: 0 ${size === "normal" ? "15px" : "0"} 0 0;
 
-    &:hover {
-      background-color: ${type === "primary" ? colors.blue.hover : colors.black.hover};
-    }
+  const buttonHeight = size === "regular" ? "20px" : size === "small" ? "15px" : "10px";
 
-    &:active {
-      background-color: ${type === "primary" ? colors.blue.regular : colors.black.regular};
-    }
+  const primaryButton = {
+    container: css`
+      border: 1px solid ${colors.blue[500]};
+      color: ${colors.white};
+      background-color: ${colors.blue[500]};
+      justify-content:center;
+      padding: ${size === "regular" ? (!!text ? "14px 17px" : "14px") :
+        size === "small" ? (!!text ? "12px 14px" : "12px") : "10px"
+      };
+      display: ${width === "normal" ? "inline-flex" : "flex"};
+      align-items: center;
+      cursor: default;
+      font-family: ${typography.fonts.base};
+      font-weight: ${typography.weights.medium};
+      font-size: ${size === "regular" ? typography.sizes.small :
+        size === "small" ? typography.sizes.xsmall : 
+        typography.sizes.xxsmall
+      };
+      margin: 0 ${width === "normal" ? "15px" : "0"} 0 0;
+      height: ${buttonHeight};
+      max-height: ${buttonHeight};
 
-    &::selection {
-      background: transparent;
+      &:hover {
+        background-color: ${colors.blue[700]};
+        border-color: ${colors.blue[700]};
+        color: ${colors.white};
+      }
+
+      &:active {
+        background-color: ${colors.blue[900]};
+        border-color: ${colors.blue[900]};
+        color: ${colors.white};
+      }
+
+      &::selection {
+        background: transparent;
+      }
+    `
+  }
+
+  const secondaryButton = {
+    container: css`
+      border: 1px solid ${colors.blue[500]};
+      color: ${colors.white};
+      background-color: ${colors.black};
+      justify-content:center;
+      padding: ${size === "regular" ? (!!text ? "14px 17px" : "14px") :
+        size === "small" ? (!!text ? "12px 14px" : "12px") : "10px"
+      };
+      display: ${width === "normal" ? "inline-flex" : "flex"};
+      align-items: center;
+      cursor: default;
+      font-family: ${typography.fonts.base};
+      font-weight: ${typography.weights.medium};
+      font-size: ${size === "regular" ? typography.sizes.small :
+        size === "small" ? typography.sizes.xsmall : 
+        typography.sizes.xxsmall
+      };
+      margin: 0 ${width === "normal" ? "15px" : "0"} 0 0;
+      height: ${buttonHeight};
+      max-height: ${buttonHeight};
+
+      &:hover {
+        background-color: ${colors.black};
+        border-color: ${colors.blue[700]};
+        color: ${colors.blue[300]};
+      }
+
+      &:active {
+        background-color: ${colors.black};
+        border-color: ${colors.blue[900]};
+        color: ${colors.blue[700]};
+      }
+
+      &::selection {
+        background: transparent;
+      }
+    `
+  }
+
+  const disabledButton = {
+    container: css`
+      border: 1px solid ${colors.white};
+      color: ${colors.white};
+      background-color: ${colors.gray[100]};
+      justify-content:center;
+      padding: ${size === "regular" ? (!!text ? "14px 17px" : "14px") :
+        size === "small" ? (!!text ? "12px 14px" : "12px") : "10px"
+      };
+      display: ${width === "normal" ? "inline-flex" : "flex"};
+      align-items: center;
+      cursor: ${disabled ? "not-allowed" : "default"};
+      font-family: ${typography.fonts.base};
+      font-weight: ${typography.weights.medium};
+      font-size: ${size === "regular" ? typography.sizes.small :
+        size === "small" ? typography.sizes.xsmall : 
+        typography.sizes.xxsmall
+      };
+      margin: 0 ${width === "normal" ? "15px" : "0"} 0 0;
+      height: ${buttonHeight};
+      max-height: ${buttonHeight};
+
+      &:hover {
+        background-color: ${colors.gray[100]};
+        border-color: ${colors.white};
+        color: ${colors.white};
+      }
+
+      &:active {
+        background-color: ${colors.gray[100]};
+        border-color: ${colors.white};
+        color: ${colors.white};
+      }
+
+      &::selection {
+        background: transparent;
+      }
+    `
+  }
+
+  const icon = css`
+    margin-right: ${!!text ? "10px" : "0"};
+    font-size: ${size === "regular" ? typography.sizes.normal :
+      size === "small" ? typography.sizes.small : 
+      typography.sizes.xsmall
+    };
+
+    & > path:nth-of-type(1) {	
+      color: inherit;	
+      flex-shrink: 0;
     }
   `
+
+  const result = disabled ? disabledButton : type === "primary" ? primaryButton : secondaryButton
+  return { icon, ...result }
 }
