@@ -241,6 +241,13 @@ export class ProposalStatus extends Enum {
   }
 }
 
+export const VoteKinds = [
+  "Approve",
+  "Reject",
+  "Slash",
+  "Abstain"
+] as const;
+
 export class VoteKind extends Enum {
   constructor(value?: any, index?: number) {
     super(["Approve", "Reject", "Slash", "Abstain"], value, index);
