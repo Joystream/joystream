@@ -462,7 +462,10 @@ decl_module! {
             let class_ids: Vec<T::ClassId> = <ClassById<T>>::enumerate().map(|(class_id, _)| class_id).collect();
             for class_id in class_ids {
                 <ClassById<T>>::mutate(class_id, |class| {
-                    class.get_permissions_mut().get_entity_creation_permissions_mut().get_curator_groups_mut().remove(&group_id);
+                    let class_permissions = class.get_permissions_mut();
+                    class_permissions.get_entity_creation_permissions_mut().get_curator_groups_mut().remove(&group_id);
+                    class_permissions.get_entity_maintainers_mut().remove(&group_id);
+                    // If group is an entity controller, should be updated manually to a new one
                 })
             };
             Ok(())

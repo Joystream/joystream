@@ -322,6 +322,10 @@ impl<T: Trait> ClassPermissions<T> {
         &self.maintainers
     }
 
+    pub fn get_entity_maintainers_mut(&mut self) -> &mut BTreeSet<T::CuratorGroupId> {
+        &mut self.maintainers
+    }
+
     pub fn get_entity_creation_permissions(&self) -> &EntityCreationPermissions<T> {
         &self.entity_creation_permissions
     }
