@@ -47,7 +47,7 @@ const MemberByAccountPreview: React.FunctionComponent<Props> = ({ accountId }) =
               link={true}/>
             : 'Member profile not found!'
         )
-        : <Loader active>Fetching member profile...</Loader>
+        : <Loader inline active>Fetching member profile...</Loader>
       }
     </MemberByAccount>
   );
