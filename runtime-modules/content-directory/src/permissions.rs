@@ -342,7 +342,7 @@ impl<T: Trait> ClassPermissions<T> {
     pub fn ensure_maintainer_exists(&self, group_id: &T::CuratorGroupId) -> dispatch::Result {
         ensure!(
             self.maintainers.contains(group_id),
-            ERROR_ENTITY_MAINTAINER_DOES_NOT_EXIST
+            ERROR_MAINTAINER_DOES_NOT_EXIST
         );
         Ok(())
     }
@@ -353,7 +353,7 @@ impl<T: Trait> ClassPermissions<T> {
     ) -> dispatch::Result {
         ensure!(
             !self.maintainers.contains(group_id),
-            ERROR_ENTITY_MAINTAINER_ALREADY_EXIST
+            ERROR_MAINTAINER_ALREADY_EXISTS
         );
         Ok(())
     }

@@ -76,8 +76,8 @@ pub const ERROR_CURATOR_GROUP_ALREADY_EXISTS: &str = "Given curator group alread
 pub const ERROR_CURATOR_GROUP_DOES_NOT_EXIST: &str = "Given curator group does not exist";
 pub const ERROR_SAME_CONTROLLER_CONSTRAINT_VIOLATION: &str =
     "Entity should be referenced from the entity, owned by the same controller";
-pub const ERROR_ENTITY_MAINTAINER_DOES_NOT_EXIST: &str = "Given entity maintainer does not exist";
-pub const ERROR_ENTITY_MAINTAINER_ALREADY_EXIST: &str = "Given entity maintainer already exist";
+pub const ERROR_MAINTAINER_DOES_NOT_EXIST: &str = "Given maintainer does not exist";
+pub const ERROR_MAINTAINER_ALREADY_EXISTS: &str = "Given maintainer already exist";
 pub const ERROR_ENTITY_CREATION_VOUCHER_DOES_NOT_EXIST: &str =
     "Given entity creation voucher does not exist";
 pub const ERROR_ACTOR_CAN_NOT_CREATE_ENTITIES: &str =
