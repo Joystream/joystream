@@ -318,11 +318,11 @@ impl<T: Trait> ClassPermissions<T> {
         self.maintainers = maintainers
     }
 
-    pub fn get_entity_maintainers(&self) -> &BTreeSet<T::CuratorGroupId> {
+    pub fn get_maintainers(&self) -> &BTreeSet<T::CuratorGroupId> {
         &self.maintainers
     }
 
-    pub fn get_entity_maintainers_mut(&mut self) -> &mut BTreeSet<T::CuratorGroupId> {
+    pub fn get_maintainers_mut(&mut self) -> &mut BTreeSet<T::CuratorGroupId> {
         &mut self.maintainers
     }
 
@@ -336,6 +336,25 @@ impl<T: Trait> ClassPermissions<T> {
 
     pub fn ensure_entity_creation_not_blocked(&self) -> dispatch::Result {
         ensure!(self.entity_creation_blocked, ERROR_ENTITY_CREATION_BLOCKED);
+        Ok(())
+    }
+
+    pub fn ensure_maintainer_exists(&self, group_id: &T::CuratorGroupId) -> dispatch::Result {
+        ensure!(
+            self.maintainers.contains(group_id),
+            ERROR_ENTITY_MAINTAINER_DOES_NOT_EXIST
+        );
+        Ok(())
+    }
+
+    pub fn ensure_maintainer_does_not_exist(
+        &self,
+        group_id: &T::CuratorGroupId,
+    ) -> dispatch::Result {
+        ensure!(
+            !self.maintainers.contains(group_id),
+            ERROR_ENTITY_MAINTAINER_ALREADY_EXIST
+        );
         Ok(())
     }
 

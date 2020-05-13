@@ -464,50 +464,56 @@ decl_module! {
                 <ClassById<T>>::mutate(class_id, |class| {
                     let class_permissions = class.get_permissions_mut();
                     class_permissions.get_entity_creation_permissions_mut().get_curator_groups_mut().remove(&group_id);
-                    class_permissions.get_entity_maintainers_mut().remove(&group_id);
+                    class_permissions.get_maintainers_mut().remove(&group_id);
                     // If group is an entity controller, should be updated manually to a new one
                 })
             };
             Ok(())
         }
 
-        // pub fn add_entity_maintainer(
-        //     origin,
-        //     entity_id: T::EntityId,
-        //     group_id: T::GroupId,
-        // ) -> dispatch::Result {
-        //     let account_id = ensure_signed(origin)?;
+        pub fn add_maintainer(
+            origin,
+            class_id: T::ClassId,
+            curator_group_id: T::CuratorGroupId,
+        ) -> dispatch::Result {
+            let account_id = ensure_signed(origin)?;
 
-        //     ensure_lead_auth_success::<T>(&account_id)?;
-        //     Self::ensure_known_entity_id(entity_id)?;
-        //     Self::ensure_entity_maintainer_does_not_exist(entity_id, group_id)?;
+            ensure_lead_auth_success::<T>(&account_id)?;
+            Self::ensure_known_class_id(class_id)?;
 
-        //     //
-        //     // == MUTATION SAFE ==
-        //     //
+            Self::class_by_id(class_id).get_permissions().ensure_maintainer_does_not_exist(&curator_group_id)?;
 
-        //     <EntityMaintainers<T>>::insert(entity_id, group_id, ());
-        //     Ok(())
-        // }
+            //
+            // == MUTATION SAFE ==
+            //
 
-        // pub fn remove_entity_maintainer(
-        //     origin,
-        //     entity_id: T::EntityId,
-        //     group_id: T::GroupId,
-        // ) -> dispatch::Result {
-        //     let account_id = ensure_signed(origin)?;
+            <ClassById<T>>::mutate(class_id, |class|
+                class.get_permissions_mut().get_maintainers_mut().insert(curator_group_id)
+            );
+            Ok(())
+        }
 
-        //     ensure_lead_auth_success::<T>(&account_id)?;
-        //     Self::ensure_known_entity_id(entity_id)?;
-        //     Self::ensure_entity_maintainer_exists(entity_id, group_id)?;
+        pub fn remove_maintainer(
+            origin,
+            class_id: T::ClassId,
+            curator_group_id: T::CuratorGroupId,
+        ) -> dispatch::Result {
+            let account_id = ensure_signed(origin)?;
 
-        //     //
-        //     // == MUTATION SAFE ==
-        //     //
+            ensure_lead_auth_success::<T>(&account_id)?;
+            Self::ensure_known_class_id(class_id)?;
 
-        //     <EntityMaintainers<T>>::remove(entity_id, group_id);
-        //     Ok(())
-        // }
+            Self::class_by_id(class_id).get_permissions().ensure_maintainer_exists(&curator_group_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <ClassById<T>>::mutate(class_id, |class|
+                class.get_permissions_mut().get_maintainers_mut().remove(&curator_group_id)
+            );
+            Ok(())
+        }
 
         pub fn update_entity_creation_voucher(
             origin,
@@ -1467,28 +1473,6 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // pub fn ensure_entity_maintainer_exists(
-    //     entity_id: T::EntityId,
-    //     group_id: T::GroupId,
-    // ) -> dispatch::Result {
-    //     ensure!(
-    //         <EntityMaintainers<T>>::exists(entity_id, group_id),
-    //         ERROR_ENTITY_MAINTAINER_DOES_NOT_EXIST
-    //     );
-    //     Ok(())
-    // }
-
-    // pub fn ensure_entity_maintainer_does_not_exist(
-    //     entity_id: T::EntityId,
-    //     group_id: T::GroupId,
-    // ) -> dispatch::Result {
-    //     ensure!(
-    //         !<EntityMaintainers<T>>::exists(entity_id, group_id),
-    //         ERROR_ENTITY_MAINTAINER_ALREADY_EXIST
-    //     );
-    //     Ok(())
-    // }
-
     pub fn ensure_curator_groups_exist(
         curator_groups: &BTreeSet<T::CuratorGroupId>,
     ) -> dispatch::Result {
@@ -1501,7 +1485,7 @@ impl<T: Trait> Module<T> {
     pub fn ensure_class_permissions_are_valid(
         class_permissions: &ClassPermissions<T>,
     ) -> dispatch::Result {
-        Self::ensure_curator_groups_exist(class_permissions.get_entity_maintainers())?;
+        Self::ensure_curator_groups_exist(class_permissions.get_maintainers())?;
         Self::ensure_curator_groups_exist(
             class_permissions
                 .get_entity_creation_permissions()
