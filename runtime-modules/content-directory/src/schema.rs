@@ -121,6 +121,7 @@ impl<T: Trait> PropertyType<T> {
         let is_locked_from_controller = self.get_locked().is_locked_from_controller;
         let is_locked_from_maintainer = self.get_locked().is_locked_from_maintainer;
         match access_level {
+            EntityAccessLevel::Lead => false,
             EntityAccessLevel::EntityControllerAndMaintainer => {
                 is_locked_from_controller && is_locked_from_maintainer
             }
@@ -424,14 +425,6 @@ pub struct Property<T: Trait> {
 }
 
 impl<T: Trait> Property<T> {
-    pub fn is_locked_from(&self, entity_access_level: Option<EntityAccessLevel>) -> bool {
-        if let Some(entity_access_level) = entity_access_level {
-            self.prop_type.is_locked_from(entity_access_level)
-        } else {
-            false
-        }
-    }
-
     pub fn same_controller_status(&self) -> SameController {
         self.prop_type.get_same_controller_status()
     }
@@ -439,7 +432,7 @@ impl<T: Trait> Property<T> {
     pub fn ensure_property_value_to_update_is_valid(
         &self,
         value: &PropertyValue<T>,
-        current_entity_controller: &Option<EntityController<T>>,
+        current_entity_controller: &EntityController<T>,
     ) -> dispatch::Result {
         self.ensure_prop_value_matches_its_type(value)?;
         self.ensure_valid_reference_prop(value, current_entity_controller)?;
@@ -453,7 +446,7 @@ impl<T: Trait> Property<T> {
         value: &PropertyValue<T>,
         entity_prop_value: &PropertyValue<T>,
         index_in_property_vec: VecMaxLength,
-        current_entity_controller: &Option<EntityController<T>>,
+        current_entity_controller: &EntityController<T>,
     ) -> dispatch::Result {
         entity_prop_value.ensure_index_in_property_vector_is_valid(index_in_property_vec)?;
 
@@ -584,7 +577,7 @@ impl<T: Trait> Property<T> {
     }
 
     pub fn does_prop_value_match_type(&self, value: &PropertyValue<T>) -> bool {
-        // A non required property can be updated to None:
+        // A non required property can be updated to Bool(false):
         if !self.required && *value == PV::Bool(false) {
             return true;
         }
@@ -616,7 +609,7 @@ impl<T: Trait> Property<T> {
     pub fn ensure_valid_reference_prop(
         &self,
         value: &PropertyValue<T>,
-        current_entity_controller: &Option<EntityController<T>>,
+        current_entity_controller: &EntityController<T>,
     ) -> dispatch::Result {
         match (value, &self.prop_type) {
             (PV::Reference(entity_id), PT::Reference(class_id, _, same_controller_status)) => {
@@ -649,7 +642,7 @@ impl<T: Trait> Property<T> {
         class_id: T::ClassId,
         entity_id: T::EntityId,
         same_controller_status: bool,
-        current_entity_controller: &Option<EntityController<T>>,
+        current_entity_controller: &EntityController<T>,
     ) -> dispatch::Result {
         Module::<T>::ensure_known_class_id(class_id)?;
         Module::<T>::ensure_known_entity_id(entity_id)?;

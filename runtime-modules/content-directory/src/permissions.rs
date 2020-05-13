@@ -12,8 +12,8 @@ pub type CreationLimit = u32;
 
 /// Model of authentication manager.
 pub trait ActorAuthenticator: system::Trait + Debug {
-    /// Actor identifier
-    type ActorId: Parameter
+    /// Curator identifier
+    type CuratorId: Parameter
         + Member
         + SimpleArithmetic
         + Codec
@@ -25,8 +25,8 @@ pub trait ActorAuthenticator: system::Trait + Debug {
         + PartialEq
         + Ord;
 
-    /// Group identifier
-    type GroupId: Parameter
+    /// Member identifier
+    type MemberId: Parameter
         + Member
         + SimpleArithmetic
         + Codec
@@ -38,60 +38,88 @@ pub trait ActorAuthenticator: system::Trait + Debug {
         + PartialEq
         + Ord;
 
-    /// Authenticate account as being current authority.
-    fn authenticate_authority(origin: &Self::AccountId) -> bool;
+    /// Curator group identifier
+    type CuratorGroupId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + Clone
+        + MaybeSerializeDeserialize
+        + Eq
+        + PartialEq
+        + Ord;
 
-    /// Authenticate account as being given actor in given group.
-    fn authenticate_actor_in_group(
-        account_id: &Self::AccountId,
-        actor_id: Self::ActorId,
-        group_id: Self::GroupId,
-    ) -> bool;
+    fn is_lead(account_id: &Self::AccountId) -> bool;
+    fn is_curator(curator_id: &Self::CuratorId, account_id: &Self::AccountId) -> bool;
+    fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool;
 }
 
-pub fn ensure_actor_in_group_auth_success<T: ActorAuthenticator>(
+pub fn ensure_curator_auth_success<T: ActorAuthenticator>(
+    curator_id: &T::CuratorId,
     account_id: &T::AccountId,
-    actor_id: T::ActorId,
-    group_id: T::GroupId,
 ) -> dispatch::Result {
     ensure!(
-        T::authenticate_actor_in_group(account_id, actor_id, group_id),
-        ERROR_ACTOR_IN_GROUP_AUTH_FAILED
+        T::is_curator(curator_id, account_id),
+        ERROR_CURATOR_AUTH_FAILED
     );
     Ok(())
 }
 
-pub fn ensure_authority_auth_success<T: ActorAuthenticator>(
+pub fn ensure_member_auth_success<T: ActorAuthenticator>(
+    member_id: &T::MemberId,
     account_id: &T::AccountId,
 ) -> dispatch::Result {
     ensure!(
-        T::authenticate_authority(account_id),
-        ERROR_AUTHORITY_AUTH_FAILED
+        T::is_member(member_id, account_id),
+        ERROR_MEMBER_AUTH_FAILED
     );
     Ok(())
 }
 
-/// Identifier for a given actor in a given group.
+pub fn ensure_lead_auth_success<T: ActorAuthenticator>(
+    account_id: &T::AccountId,
+) -> dispatch::Result {
+    ensure!(T::is_lead(account_id), ERROR_LEAD_AUTH_FAILED);
+    Ok(())
+}
+
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
-pub struct ActorInGroupId<T: ActorAuthenticator> {
-    actor_id: T::ActorId,
-    group_id: T::GroupId,
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+pub struct CuratorGroup<T: ActorAuthenticator> {
+    // Arsen comment: its ok to use an inline set here, because it shuold never really get that large,
+    // so there must be some upper limit to the size of this set, can come as paramter in T::
+    curators: BTreeSet<T::CuratorId>,
+
+    active: bool,
 }
 
-impl<T: ActorAuthenticator> ActorInGroupId<T> {
-    pub fn get_actor_id(&self) -> T::ActorId {
-        self.actor_id
-    }
-
-    pub fn get_group_id(&self) -> T::GroupId {
-        self.group_id
+impl<T: ActorAuthenticator> Default for CuratorGroup<T> {
+    fn default() -> Self {
+        Self {
+            curators: BTreeSet::new(),
+            active: true,
+        }
     }
 }
 
-impl<T: ActorAuthenticator> ActorInGroupId<T> {
-    fn from(actor_id: T::ActorId, group_id: T::GroupId) -> Self {
-        Self { actor_id, group_id }
+impl<T: ActorAuthenticator> CuratorGroup<T> {
+    pub fn is_curator(&self, curator_id: &T::CuratorId) -> bool {
+        self.curators.contains(curator_id)
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.active
+    }
+
+    pub fn set_status(&mut self, is_active: bool) {
+        self.active = is_active
+    }
+
+    pub fn add_curator(&mut self, curator_id: T::CuratorId) {
+        // TODO check security max len constraint
+        self.curators.insert(curator_id);
     }
 }
 
@@ -136,7 +164,7 @@ impl EntityCreationVoucher {
     }
 
     pub fn ensure_new_max_entities_count_is_valid<T: Trait>(
-        &self,
+        self,
         maximum_entities_count: CreationLimit,
     ) -> dispatch::Result {
         ensure!(
@@ -147,36 +175,99 @@ impl EntityCreationVoucher {
     }
 }
 
-/// Who will be set as the controller for any newly created entity in a given class.
+/// Enum, representing all possible actors
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Copy, Debug)]
-pub enum InitialControllerPolicy {
-    ActorInGroup,
-    Group,
+pub enum Actor<T: Trait> {
+    Curator(T::CuratorGroupId, T::CuratorId),
+    Member(T::MemberId),
+    Lead,
 }
 
-impl Default for InitialControllerPolicy {
+impl<T: Trait> Default for Actor<T> {
     fn default() -> Self {
-        Self::ActorInGroup
+        Self::Lead
     }
 }
 
-/// Permissions for an instance of a Class in the versioned store.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Eq, PartialEq, Clone, Debug)]
-pub struct ClassPermissions {
-    /// Whether to prevent everyone from creating an entity.
-    ///
-    /// This could be useful in order to quickly, and possibly temporarily, block new entity creation, without
-    /// having to tear down `can_create_entities`.
-    entity_creation_blocked: bool,
-
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+pub struct EntityCreationPermissions<T: Trait> {
     /// Policy for how to set the controller of a created entity.
     ///
     /// Example(s)
     /// - For a group that represents something like all possible publishers, then `InitialControllerPolicy::ActorInGroup` makes sense.
     /// - For a group that represents some stable set of curators, then `InitialControllerPolicy::Group` makes sense.
-    initial_controller_of_created_entities: InitialControllerPolicy,
+    // Arsen comment: for this permission, the group becomes controller, not individual curator creating entity.
+    // its ok to use an inline set here, because it shuold never really get that large,
+    // so there must be some upper limit to the size of this set, can come as paramter in T::
+    curator_groups: BTreeSet<T::CuratorGroupId>,
+
+    // Arsen comment: for this permission, the individual member creating the entity becomes the controller, not all members.
+    any_member: bool, // Arsen comment: note lead is not here, as lead can always create for any class,
+                      // and controller becomes lead.
+}
+
+impl<T: Trait> Default for EntityCreationPermissions<T> {
+    fn default() -> Self {
+        Self {
+            curator_groups: BTreeSet::new(),
+            any_member: false,
+        }
+    }
+}
+
+impl<T: Trait> EntityCreationPermissions<T> {
+    pub fn get_curator_groups(&self) -> &BTreeSet<T::CuratorGroupId> {
+        &self.curator_groups
+    }
+
+    pub fn get_curator_groups_mut(&mut self) -> &mut BTreeSet<T::CuratorGroupId> {
+        &mut self.curator_groups
+    }
+
+    pub fn ensure_can_create_entities(
+        &self,
+        account_id: &T::AccountId,
+        actor: &Actor<T>,
+    ) -> Result<(), &'static str> {
+        let can_create = match &actor {
+            Actor::Lead => {
+                ensure_lead_auth_success::<T>(account_id)?;
+                true
+            }
+            Actor::Member(member_id) if self.any_member => {
+                ensure_member_auth_success::<T>(member_id, account_id)?;
+                true
+            }
+            Actor::Curator(curator_group_id, curator_id)
+                if !self.any_member && self.curator_groups.contains(curator_group_id) =>
+            {
+                ensure_curator_auth_success::<T>(curator_id, account_id)?;
+                Module::<T>::ensure_curator_group_exists(curator_group_id)?;
+                ensure!(
+                    Module::<T>::curator_group_by_id(curator_group_id).is_curator(curator_id),
+                    ERROR_CURATOR_IS_NOT_A_MEMBER_OF_A_GIVEN_CURATOR_GROUP
+                );
+                true
+            }
+            _ => false,
+        };
+        ensure!(can_create, ERROR_ACTOR_CAN_NOT_CREATE_ENTITIES);
+        Ok(())
+    }
+}
+
+/// Permissions for an instance of a Class in the versioned store.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+pub struct ClassPermissions<T: Trait> {
+    entity_creation_permissions: EntityCreationPermissions<T>,
+    /// Whether to prevent everyone from creating an entity.
+    ///
+    /// This could be useful in order to quickly, and possibly temporarily, block new entity creation, without
+    /// having to tear down `can_create_entities`.
+    entity_creation_blocked: bool,
 
     /// Whether to prevent everyone from updating entity properties.
     ///
@@ -184,9 +275,23 @@ pub struct ClassPermissions {
     /// rather than for example having to set, and later clear, `EntityPermissions::frozen_for_controller`
     /// for a large number of entities.
     all_entity_property_values_locked: bool,
+    // its ok to use an inline set here, because it shuold never really get that large,
+    // so there must be some upper limit to the size of this set, can come as paramter in T::
+    maintainers: BTreeSet<T::CuratorGroupId>,
 }
 
-impl ClassPermissions {
+impl<T: Trait> Default for ClassPermissions<T> {
+    fn default() -> Self {
+        Self {
+            entity_creation_permissions: EntityCreationPermissions::<T>::default(),
+            entity_creation_blocked: false,
+            all_entity_property_values_locked: false,
+            maintainers: BTreeSet::new(),
+        }
+    }
+}
+
+impl<T: Trait> ClassPermissions<T> {
     pub fn all_entity_property_values_locked(&self) -> bool {
         self.all_entity_property_values_locked
     }
@@ -202,66 +307,72 @@ impl ClassPermissions {
         self.all_entity_property_values_locked = all_entity_property_values_locked
     }
 
-    pub fn set_initial_controller_of_created_entities(
+    pub fn set_entity_creation_permissions(
         &mut self,
-        initial_controller_of_created_entities: InitialControllerPolicy,
+        entity_creation_permissions: EntityCreationPermissions<T>,
     ) {
-        self.initial_controller_of_created_entities = initial_controller_of_created_entities
+        self.entity_creation_permissions = entity_creation_permissions
     }
 
-    pub fn get_initial_controller_of_created_entities(&self) -> InitialControllerPolicy {
-        self.initial_controller_of_created_entities
+    pub fn set_maintainers(&mut self, maintainers: BTreeSet<T::CuratorGroupId>) {
+        self.maintainers = maintainers
+    }
+
+    pub fn get_entity_maintainers(&self) -> &BTreeSet<T::CuratorGroupId> {
+        &self.maintainers
+    }
+
+    pub fn get_entity_creation_permissions(&self) -> &EntityCreationPermissions<T> {
+        &self.entity_creation_permissions
+    }
+
+    pub fn get_entity_creation_permissions_mut(&mut self) -> &mut EntityCreationPermissions<T> {
+        &mut self.entity_creation_permissions
     }
 
     pub fn ensure_entity_creation_not_blocked(&self) -> dispatch::Result {
         ensure!(self.entity_creation_blocked, ERROR_ENTITY_CREATION_BLOCKED);
         Ok(())
     }
+
+    pub fn is_maintainer(&self, curator_group_id: &T::CuratorGroupId) -> bool {
+        self.maintainers.contains(curator_group_id)
+    }
 }
 
 /// Owner of an entity.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
-pub enum EntityController<T: ActorAuthenticator> {
-    Group(T::GroupId),
-    ActorInGroup(ActorInGroupId<T>),
+pub enum EntityController<T: Trait> {
+    CuratorGroup(T::CuratorGroupId),
+    Member(T::MemberId),
+    Lead,
 }
 
-impl<T: ActorAuthenticator> EntityController<T> {
-    fn from_group(group_id: T::GroupId) -> Self {
-        Self::Group(group_id)
-    }
-
-    fn from_actor_in_group(actor_id: T::ActorId, group_id: T::GroupId) -> Self {
-        Self::ActorInGroup(ActorInGroupId::from(actor_id, group_id))
-    }
-
-    pub fn from(
-        initial_controller_policy: InitialControllerPolicy,
-        actor_in_group: ActorInGroupId<T>,
-    ) -> Self {
-        if let InitialControllerPolicy::ActorInGroup = initial_controller_policy {
-            EntityController::from_actor_in_group(actor_in_group.actor_id, actor_in_group.group_id)
-        } else {
-            EntityController::from_group(actor_in_group.group_id)
+impl<T: Trait> EntityController<T> {
+    pub fn from_actor(actor: &Actor<T>) -> Self {
+        match &actor {
+            Actor::Lead => Self::Lead,
+            Actor::Member(member_id) => Self::Member(*member_id),
+            Actor::Curator(curator_group, _) => Self::CuratorGroup(*curator_group),
         }
     }
 }
 
-impl<T: ActorAuthenticator> Default for EntityController<T> {
+impl<T: Trait> Default for EntityController<T> {
     fn default() -> Self {
-        Self::Group(T::GroupId::default())
+        Self::Lead
     }
 }
 
 /// Permissions for a given entity.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct EntityPermissions<T: ActorAuthenticator> {
+pub struct EntityPermissions<T: Trait> {
     /// Current controller, which is initially set based on who created entity and
     /// `ClassPermission::initial_controller_of_created_entities` for corresponding class permission instance, but it can later be updated.
     /// In case, when entity was created from authority call, controller is set to None
-    pub controller: Option<EntityController<T>>,
+    pub controller: EntityController<T>,
 
     /// Forbid groups to mutate any property value.
     /// Can be useful to use in concert with some curation censorship policy
@@ -273,46 +384,30 @@ pub struct EntityPermissions<T: ActorAuthenticator> {
     pub referenceable: bool,
 }
 
-impl<T: ActorAuthenticator> Default for EntityPermissions<T> {
+impl<T: Trait> Default for EntityPermissions<T> {
     fn default() -> Self {
         Self {
-            controller: None,
+            controller: EntityController::<T>::default(),
             frozen: false,
             referenceable: true,
         }
     }
 }
 
-impl<T: ActorAuthenticator> EntityPermissions<T> {
-    pub fn default_with_controller(controller: Option<EntityController<T>>) -> Self {
+impl<T: Trait> EntityPermissions<T> {
+    pub fn default_with_controller(controller: EntityController<T>) -> Self {
         Self {
             controller,
             ..EntityPermissions::default()
         }
     }
 
-    pub fn set_conroller(&mut self, controller: Option<EntityController<T>>) {
+    pub fn set_conroller(&mut self, controller: EntityController<T>) {
         self.controller = controller
     }
 
-    pub fn is_controller(&self, actor_in_group: &ActorInGroupId<T>) -> bool {
-        match &self.controller {
-            Some(EntityController::Group(controller_group_id)) => {
-                *controller_group_id == actor_in_group.group_id
-            }
-            Some(EntityController::ActorInGroup(controller_actor_in_group)) => {
-                *controller_actor_in_group == *actor_in_group
-            }
-            _ => false,
-        }
-    }
-
-    pub fn controller_is_equal_to(&self, controller: &Option<EntityController<T>>) -> bool {
-        if let (Some(entity_controller), Some(controller)) = (&self.controller, controller) {
-            *entity_controller == *controller
-        } else {
-            false
-        }
+    pub fn controller_is_equal_to(&self, entity_controller: &EntityController<T>) -> bool {
+        self.controller == *entity_controller
     }
 
     pub fn set_frozen(&mut self, frozen: bool) {
@@ -327,7 +422,7 @@ impl<T: ActorAuthenticator> EntityPermissions<T> {
         self.referenceable
     }
 
-    pub fn get_controller(&self) -> &Option<EntityController<T>> {
+    pub fn get_controller(&self) -> &EntityController<T> {
         &self.controller
     }
 
@@ -343,8 +438,9 @@ impl<T: ActorAuthenticator> EntityPermissions<T> {
         access_level: EntityAccessLevel,
     ) -> dispatch::Result {
         match access_level {
-            EntityAccessLevel::EntityController => Ok(()),
-            EntityAccessLevel::EntityControllerAndMaintainer => Ok(()),
+            EntityAccessLevel::EntityController
+            | EntityAccessLevel::EntityControllerAndMaintainer
+            | EntityAccessLevel::Lead => Ok(()),
             _ => Err(ERROR_ENTITY_ADD_SCHEMA_SUPPORT_ACCESS_DENIED),
         }
     }
@@ -353,36 +449,49 @@ impl<T: ActorAuthenticator> EntityPermissions<T> {
 /// Type, derived from dispatchable call, identifies the caller
 #[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Copy, Debug)]
 pub enum EntityAccessLevel {
-    /// Caller identified as the entity controller
-    EntityController,
     /// Caller identified as the entity maintainer
     EntityMaintainer,
+    /// Caller identified as the entity controller
+    EntityController,
     /// Caller, that can act as controller and maintainer simultaneously
     /// (can be useful, when controller and maintainer have features, that do not intersect)
     EntityControllerAndMaintainer,
+    Lead,
 }
 
 impl EntityAccessLevel {
     /// Derives the EntityAccessLevel for the caller, attempting to act.
-    pub fn derive_signed<T: Trait>(
+    pub fn derive<T: Trait>(
         account_id: &T::AccountId,
-        entity_id: T::EntityId,
         entity_permissions: &EntityPermissions<T>,
-        actor_in_group: ActorInGroupId<T>,
+        class_permissions: &ClassPermissions<T>,
+        actor: Actor<T>,
     ) -> Result<Self, &'static str> {
-        ensure_actor_in_group_auth_success::<T>(
-            account_id,
-            actor_in_group.actor_id,
-            actor_in_group.group_id,
-        )?;
-        match (
-            entity_permissions.is_controller(&actor_in_group),
-            <EntityMaintainers<T>>::exists(entity_id, actor_in_group.group_id),
-        ) {
-            (true, true) => Ok(Self::EntityControllerAndMaintainer),
-            (true, false) => Ok(Self::EntityController),
-            (false, true) => Ok(Self::EntityMaintainer),
-            (false, false) => Err(ERROR_ENTITY_ACCESS_DENIED),
+        let controller = EntityController::<T>::from_actor(&actor);
+        match &actor {
+            Actor::Lead => ensure_lead_auth_success::<T>(account_id).map(|_| Self::Lead),
+            Actor::Member(member_id) if entity_permissions.controller_is_equal_to(&controller) => {
+                ensure_member_auth_success::<T>(member_id, account_id)
+                    .map(|_| Self::EntityController)
+            }
+            Actor::Curator(curator_group_id, curator_id) => {
+                Module::<T>::ensure_curator_group_exists(curator_group_id)?;
+                ensure!(
+                    Module::<T>::curator_group_by_id(curator_group_id).is_curator(curator_id),
+                    ERROR_CURATOR_IS_NOT_A_MEMBER_OF_A_GIVEN_CURATOR_GROUP
+                );
+                ensure_curator_auth_success::<T>(curator_id, account_id)?;
+                match (
+                    entity_permissions.controller_is_equal_to(&controller),
+                    class_permissions.is_maintainer(curator_group_id),
+                ) {
+                    (true, true) => Ok(Self::EntityControllerAndMaintainer),
+                    (true, false) => Ok(Self::EntityController),
+                    (false, true) => Ok(Self::EntityMaintainer),
+                    (false, false) => Err(ERROR_ENTITY_ACCESS_DENIED),
+                }
+            }
+            _ => Err(ERROR_ENTITY_ACCESS_DENIED),
         }
     }
 }

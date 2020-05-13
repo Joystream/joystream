@@ -70,20 +70,25 @@ pub const ERROR_CLASS_PROP_NOT_FOUND: &str = "Class property under given index n
 
 pub const ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL: &str =
     "All property values, related to a given entity were locked on class level";
-pub const ERROR_ENTITY_CREATOR_ALREADY_EXIST: &str = "Given entity creator already exist";
-pub const ERROR_ENTITY_CREATOR_DOES_NOT_EXIST: &str = "Given entity creator does not exist";
+pub const ERROR_CURATOR_IS_NOT_A_MEMBER_OF_A_GIVEN_CURATOR_GROUP: &str =
+    "Curator under provided curator id is not a member of curaror group under given id";
+pub const ERROR_CURATOR_GROUP_ALREADY_EXISTS: &str = "Given curator group already exist";
+pub const ERROR_CURATOR_GROUP_DOES_NOT_EXIST: &str = "Given curator group does not exist";
 pub const ERROR_SAME_CONTROLLER_CONSTRAINT_VIOLATION: &str =
     "Entity should be referenced from the entity, owned by the same controller";
 pub const ERROR_ENTITY_MAINTAINER_DOES_NOT_EXIST: &str = "Given entity maintainer does not exist";
 pub const ERROR_ENTITY_MAINTAINER_ALREADY_EXIST: &str = "Given entity maintainer already exist";
 pub const ERROR_ENTITY_CREATION_VOUCHER_DOES_NOT_EXIST: &str =
     "Given entity creation voucher does not exist";
+pub const ERROR_ACTOR_CAN_NOT_CREATE_ENTITIES: &str =
+    "Provided actor can`t create entities of given class";
 pub const ERROR_MAX_NUMBER_OF_ENTITIES_PER_CLASS_LIMIT_REACHED: &str =
     "Maximum numbers of entities per class limit reached";
 pub const ERROR_ENTITY_CREATION_BLOCKED: &str = "Current class entities creation blocked";
 pub const ERROR_VOUCHER_LIMIT_REACHED: &str = "Entities voucher limit reached";
-pub const ERROR_AUTHORITY_AUTH_FAILED: &str = "Authority authentication failed";
-pub const ERROR_ACTOR_IN_GROUP_AUTH_FAILED: &str = "Actor in group authentication failed";
+pub const ERROR_LEAD_AUTH_FAILED: &str = "Lead authentication failed";
+pub const ERROR_MEMBER_AUTH_FAILED: &str = "Member authentication failed";
+pub const ERROR_CURATOR_AUTH_FAILED: &str = "Curator authentication failed";
 pub const ERROR_BAD_ORIGIN: &str = "Expected root or signed origin";
 pub const ERROR_ENTITY_REMOVAL_ACCESS_DENIED: &str = "Entity removal access denied";
 pub const ERROR_ENTITY_ADD_SCHEMA_SUPPORT_ACCESS_DENIED: &str =
