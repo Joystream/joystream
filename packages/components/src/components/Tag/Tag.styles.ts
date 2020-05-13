@@ -14,7 +14,7 @@ export let makeStyles = ({}: TagStyleProps) => {
     cursor: default;
     font-family: ${typography.fonts.base};
     font-weight: ${typography.weights.regular};
-    font-size: ${typography.sizes.xsmall};
+    font-size: ${typography.sizes.button.medium};
     margin: 0 15px 0 0;
 
     &::selection {

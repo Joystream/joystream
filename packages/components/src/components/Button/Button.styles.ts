@@ -33,9 +33,9 @@ export let makeStyles = ({
       cursor: default;
       font-family: ${typography.fonts.base};
       font-weight: ${typography.weights.medium};
-      font-size: ${size === "regular" ? typography.sizes.small :
-        size === "small" ? typography.sizes.xsmall : 
-        typography.sizes.xxsmall
+      font-size: ${size === "regular" ? typography.sizes.button.large :
+        size === "small" ? typography.sizes.button.medium : 
+        typography.sizes.button.small
       };
       margin: 0 ${width === "normal" ? "15px" : "0"} 0 0;
       height: ${buttonHeight};
@@ -73,9 +73,9 @@ export let makeStyles = ({
       cursor: default;
       font-family: ${typography.fonts.base};
       font-weight: ${typography.weights.medium};
-      font-size: ${size === "regular" ? typography.sizes.small :
-        size === "small" ? typography.sizes.xsmall : 
-        typography.sizes.xxsmall
+      font-size: ${size === "regular" ? typography.sizes.button.large :
+        size === "small" ? typography.sizes.button.medium : 
+        typography.sizes.button.small
       };
       margin: 0 ${width === "normal" ? "15px" : "0"} 0 0;
       height: ${buttonHeight};
@@ -113,9 +113,9 @@ export let makeStyles = ({
       cursor: ${disabled ? "not-allowed" : "default"};
       font-family: ${typography.fonts.base};
       font-weight: ${typography.weights.medium};
-      font-size: ${size === "regular" ? typography.sizes.small :
-        size === "small" ? typography.sizes.xsmall : 
-        typography.sizes.xxsmall
+      font-size: ${size === "regular" ? typography.sizes.button.large :
+        size === "small" ? typography.sizes.button.medium : 
+        typography.sizes.button.small
       };
       margin: 0 ${width === "normal" ? "15px" : "0"} 0 0;
       height: ${buttonHeight};
@@ -141,10 +141,10 @@ export let makeStyles = ({
 
   const icon = css`
     margin-right: ${!!text ? "10px" : "0"};
-    font-size: ${size === "regular" ? typography.sizes.normal :
-      size === "small" ? typography.sizes.small : 
-      typography.sizes.xsmall
-    };
+    font-size: ${size === "regular" ? typography.sizes.icon.large :
+        size === "small" ? typography.sizes.icon.medium : 
+        typography.sizes.icon.small
+      };
 
     & > path:nth-of-type(1) {	
       color: inherit;	

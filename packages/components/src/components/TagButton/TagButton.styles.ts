@@ -18,14 +18,14 @@ export let makeStyles = ({
     cursor: default;
     font-family: ${typography.fonts.base};
     font-weight: ${typography.weights.medium};
-    font-size: ${typography.sizes.small};
+    font-size: ${typography.sizes.button.large};
     margin: 0 15px 0 0;
-    line-height: ${typography.sizes.normal};
+    line-height: ${typography.sizes.button.large};
     box-shadow: ${selected ? `3px 3px ${colors.blue[500]}` : "none"};
 
     span {
       margin-left: 20px;
-      font-size: ${typography.sizes.medium};
+      font-size: ${typography.sizes.icon.xxlarge};
       font-weight: ${typography.weights.regular};
       line-height: 0;
       vertical-align: sub;
