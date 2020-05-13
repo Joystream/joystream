@@ -168,6 +168,10 @@ export class ExecutionFailedStatus extends Struct {
       value
     );
   }
+
+  get error() {
+    return this.get('error') as Vec<u8>;
+  }
 }
 
 class ExecutionFailed extends ExecutionFailedStatus {}
