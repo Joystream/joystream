@@ -89,7 +89,7 @@ export let makeStyles = ({
 
       &:active {
         background-color: ${colors.black};
-        border-color: ${colors.blue[900]};
+        border-color: ${colors.blue[700]};
         color: ${colors.blue[700]};
       }
 

@@ -12,7 +12,7 @@ export const Default = () => (
     subtext="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore."
     background="https://raw.githubusercontent.com/Joystream/design/master/illustrations/SVG/mask.svg"
   >
-    <Button>Play</Button>
-    <Button type="secondary">Share</Button>
+    <Button text="Play" />
+    <Button text="Share" type="secondary" />
   </Header>
 )

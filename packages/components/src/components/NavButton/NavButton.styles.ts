@@ -11,7 +11,7 @@ export let makeStyles = ({
   return css`
     border: 0;
     color: ${colors.white};
-    background-color: ${type === "primary" ? colors.blue.regular : colors.black.regular};
+    background-color: ${type === "primary" ? colors.blue[500] : colors.black};
     text-align: center;
     display: inline-block;
     cursor: default;
@@ -25,11 +25,15 @@ export let makeStyles = ({
     line-height: 50px;
 
     &:hover {
-      background-color: ${type === "primary" ? colors.blue.hover : colors.black.hover};
+      background-color: ${type === "primary" ? colors.blue[700] : colors.black};
+      border-color: ${colors.blue[700]};
+      color: ${type === "primary" ? colors.white : colors.blue[300]};
     }
 
     &:active {
-      background-color: ${type === "primary" ? colors.blue.regular : colors.black.regular};
+      background-color: ${type === "primary" ? colors.blue[900] : colors.black};
+      border-color: ${colors.blue[900]};
+      color: ${type === "primary" ? colors.white : colors.blue[700]};
     }
 
     &::selection {

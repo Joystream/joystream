@@ -9,7 +9,7 @@ export let makeStyles = ({
   background = ""
 }: HeaderStyleProps) => {
   return css`
-    background-color: ${colors.black.regular};
+    background-color: ${colors.black};
     text-align: left;
     cursor: default;
     color: ${colors.white};

@@ -5,9 +5,9 @@ export type TagStyleProps = {}
 
 export let makeStyles = ({}: TagStyleProps) => {
   return css`
-    border: 1px solid ${colors.blue.regular};
+    border: 1px solid ${colors.blue[700]};
     color: ${colors.white};
-    background-color: ${colors.black.regular};
+    background-color: ${colors.black};
     text-align: center;
     padding: 10px 15px;
     display: inline-block;
