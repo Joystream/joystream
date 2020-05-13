@@ -16,6 +16,7 @@ import Validation from "../validationSchema";
 import { InputFormField, FormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
 import { InputAddress } from "@polkadot/react-components/index";
+import { formatBalance } from "@polkadot/util";
 import "./forms.css";
 
 type FormValues = GenericFormValues & {
@@ -55,11 +56,10 @@ const SpendingProposalForm: React.FunctionComponent<FormInnerProps> = props => {
         label="Amount of tokens"
         help="The amount of tokens you propose to spend"
         onChange={handleChange}
-        className="tokens"
         name="tokens"
         placeholder="100"
         error={errorLabelsProps.tokens}
-        unit={"tJOY"}
+        unit={ formatBalance.getDefaults().unit }
         value={values.tokens}
       />
       <FormField

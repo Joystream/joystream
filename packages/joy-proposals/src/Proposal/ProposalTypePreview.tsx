@@ -8,6 +8,7 @@ import { ProposalType } from "../runtime";
 import { slugify, splitOnUpperCase } from "../utils";
 import styled from 'styled-components';
 import useVoteStyles from './useVoteStyles';
+import { formatBalance } from "@polkadot/util";
 
 import "./ProposalType.css";
 
@@ -102,10 +103,10 @@ export default function ProposalTypePreview(props: ProposalTypePreviewProps) {
         <div className="proposal-details">
           <ProposalTypeDetail
             title="Stake"
-            value={ stake + "tJOY" } />
+            value={ formatBalance(stake) } />
           <ProposalTypeDetail
             title="Cancellation fee"
-            value={ cancellationFee ? `${cancellationFee} tJOY` : "NONE" } />
+            value={ cancellationFee ? formatBalance(cancellationFee) : "NONE" } />
           <ProposalTypeDetail
             title="Grace period"
             value={ gracePeriod ? `${gracePeriod} block${gracePeriod > 1 ? "s" : ""}` : "NONE" } />
