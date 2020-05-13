@@ -7,7 +7,7 @@ import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { ProposalId } from "@joystream/types/proposals";
 import { MemberId } from "@joystream/types/members";
-import ProfilePreview from "./ProfilePreview";
+import ProfilePreview from "@polkadot/joy-utils/MemberProfilePreview";
 import { useTransport } from "../runtime";
 import { usePromise } from "../utils";
 import { Profile } from "@joystream/types/members";

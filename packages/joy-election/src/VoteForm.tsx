@@ -17,7 +17,7 @@ import { accountIdsToOptions, hashVote } from './utils';
 import { queryToProp, ZERO, getUrlParam, nonEmptyStr } from '@polkadot/joy-utils/index';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import InputStake from '@polkadot/joy-utils/InputStake';
-import AddressMini from '@polkadot/react-components/AddressMiniJoy';
+import CandidatePreview from "./CandidatePreview";
 import { MyAccountProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import { saveVote, NewVote } from './myVotesStore';
 import { TxFailedCallback } from '@polkadot/react-components/Status/types';
@@ -86,7 +86,9 @@ class Component extends React.PureComponent<Props, State> {
         <Table.Body>
           <Table.Row>
             <Table.Cell>Applicant</Table.Cell>
-            <Table.Cell><AddressMini value={applicantId} isShort={false} isPadded={false} withBalance={true}  /></Table.Cell>
+            <Table.Cell>
+              { applicantId && <CandidatePreview accountId={applicantId}/> }
+            </Table.Cell>
           </Table.Row>
           <Table.Row>
             <Table.Cell>Stake</Table.Cell>

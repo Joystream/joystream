@@ -4,7 +4,7 @@ import useVoteStyles from "./useVoteStyles";
 import { ProposalVote } from "../runtime";
 import { VoteKind } from "@joystream/types/proposals";
 import { VoteKindStr } from "./VotingSection";
-import ProfilePreview from "./ProfilePreview";
+import ProfilePreview from "@polkadot/joy-utils/MemberProfilePreview";
 
 
 type VotesProps = {
