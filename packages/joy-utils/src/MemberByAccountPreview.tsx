@@ -12,12 +12,12 @@ import { Vec } from "@polkadot/types/codec";
 import styled from 'styled-components';
 
 const memberFromAccount = async (api: ApiPromise, accountId: AccountId | string) => {
-  const memberIds =
+  const [memberId] =
     ((await api.query.members.memberIdsByRootAccountId(accountId)) as Vec<MemberId>)
     .concat((await api.query.members.memberIdsByControllerAccountId(accountId)) as Vec<MemberId>);
-  const member = (await api.query.members.memberProfile(memberIds[0])) as Option<Profile>;
+  const member = (await api.query.members.memberProfile(memberId)) as Option<Profile>;
 
-  return member.unwrapOr(null);
+  return { id: memberId, profile: member.unwrapOr(undefined) };
 }
 
 const MemberByAccount = styled.div``;
@@ -28,7 +28,7 @@ type Props = {
 
 const MemberByAccountPreview: React.FunctionComponent<Props> = ({ accountId }) => {
   const { api } = useContext(ApiContext);
-  const [ member, setMember ] = useState(null as Profile | null);
+  const [ member, setMember ] = useState(null as { id: MemberId, profile?: Profile } | null);
   useEffect(
     () => { memberFromAccount(api, accountId).then(member => setMember(member)); },
     [accountId]
@@ -38,11 +38,14 @@ const MemberByAccountPreview: React.FunctionComponent<Props> = ({ accountId }) =
     <MemberByAccount>
       { member ?
         (
-          <ProfilePreview
-            avatar_uri={member.avatar_uri.toString()}
-            root_account={member.root_account.toString()}
-            handle={member.handle.toString()}
-            link={true}/>
+          member.profile ?
+            <ProfilePreview
+              avatar_uri={member.profile.avatar_uri.toString()}
+              root_account={member.profile.root_account.toString()}
+              handle={member.profile.handle.toString()}
+              id={member.id.toNumber()}
+              link={true}/>
+            : 'Member profile not found!'
         )
         : <Loader active>Fetching member profile...</Loader>
       }

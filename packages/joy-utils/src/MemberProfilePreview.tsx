@@ -9,6 +9,7 @@ type ProfileItemProps = {
   root_account: string;
   handle: string;
   link?: boolean;
+  id?: number;
 };
 
 const StyledProfilePreview = styled.div`
@@ -21,6 +22,8 @@ const StyledProfilePreview = styled.div`
   }
 `;
 
+const Details = styled.div``;
+
 const DetailsHandle = styled.h4`
   margin: 0;
   margin-left: 1rem;
@@ -28,7 +31,14 @@ const DetailsHandle = styled.h4`
   color: #333;
 `;
 
-export default function ProfilePreview({ avatar_uri, root_account, handle, link = false }: ProfileItemProps) {
+const DetailsID = styled.div`
+  margin: 0;
+  margin-top: 0.25rem;
+  margin-left: 1rem;
+  color: #777;
+`;
+
+export default function ProfilePreview({ id, avatar_uri, root_account, handle, link = false }: ProfileItemProps) {
   const Preview = (
     <StyledProfilePreview>
       {avatar_uri ? (
@@ -36,7 +46,10 @@ export default function ProfilePreview({ avatar_uri, root_account, handle, link 
       ) : (
         <IdentityIcon className="image" value={root_account} size={40} />
       )}
-      <DetailsHandle>{handle}</DetailsHandle>
+      <Details>
+        <DetailsHandle>{handle}</DetailsHandle>
+        { id !== undefined && <DetailsID>ID: {id}</DetailsID> }
+      </Details>
     </StyledProfilePreview>
   );
 
