@@ -3,14 +3,20 @@
 import { ApiPromise, WsProvider /*RuntimeVersion*/ } from '@polkadot/api';
 
 import { makeQueryService, IndexBuilder, QueryEventProcessingPack } from '.';
+import { getConnection } from 'typeorm';
+
+import BootstrapPack from './BootstrapPack';
 
 export enum QueryNodeState {
   NOT_STARTED,
+  BOOTSTRAPPING,
   STARTING,
   STARTED,
   STOPPING,
   STOPPED,
 }
+
+const debug = require('debug')('index-builder:query-node');
 
 export default class QueryNode {
   // State of the node,
@@ -24,8 +30,10 @@ export default class QueryNode {
 
   // Query index building node.
   private _indexBuilder: IndexBuilder;
+  
 
-  private constructor(websocketProvider: WsProvider, api: ApiPromise, indexBuilder: IndexBuilder) {
+  private constructor(websocketProvider: WsProvider, api: ApiPromise, 
+    indexBuilder: IndexBuilder) {
     this._state = QueryNodeState.NOT_STARTED;
     this._websocketProvider = websocketProvider;
     this._api = api;
@@ -35,7 +43,7 @@ export default class QueryNode {
   static async create(
     ws_provider_endpoint_uri: string,
     processing_pack: QueryEventProcessingPack,
-    type_registrator: () => void
+    type_registrator: () => void,
   ) {
     // TODO: Do we really need to do it like this?
     // Its pretty ugly, but the registrtion appears to be
@@ -67,6 +75,31 @@ export default class QueryNode {
     await this._indexBuilder.start();
 
     this._state = QueryNodeState.STARTED;
+  }
+
+  async bootstrap(bootstrapPack: BootstrapPack) {
+    debug("Bootstraping the database");
+    const queryRunner = getConnection().createQueryRunner();
+    const api = this._api;
+    await queryRunner.connect();
+      
+    try {
+      // establish real database connection
+      // perform all the bootstrap logic in one large
+      // atomic transaction 
+      for (const boot of bootstrapPack.pack) {
+        await queryRunner.startTransaction();
+        await boot(api, queryRunner)
+        await queryRunner.commitTransaction();
+      }
+      debug("Database bootstrap successfull");
+      
+    } catch (error) {
+      console.error(error);
+      await queryRunner.rollbackTransaction();
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async stop() {

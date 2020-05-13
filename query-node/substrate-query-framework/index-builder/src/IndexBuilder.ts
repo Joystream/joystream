@@ -4,7 +4,7 @@ import { getRepository } from 'typeorm';
 import { QueryBlockProducer, QueryEventProcessingPack, QueryEventBlock, ISubstrateQueryService } from '.';
 import { DB, SavedEntityEvent } from './db';
 
-const debug = require('debug')('index');
+const debug = require('debug')('index-builder:indexer');
 
 export default class IndexBuilder {
   private _producer: QueryBlockProducer;
