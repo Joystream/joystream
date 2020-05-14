@@ -19,18 +19,20 @@ import './index.css';
 
 import translate from './translate';
 
-type Props = AppProps & ApiProps & I18nProps & {
-  requests?: Array<Request>,
-  actorAccountIds?: Array<AccountId>,
-  roles?: Array<Role>,
-  allAccounts?: SubjectInfo,
-};
+type Props = AppProps &
+  ApiProps &
+  I18nProps & {
+    requests?: Array<Request>;
+    actorAccountIds?: Array<AccountId>;
+    roles?: Array<Role>;
+    allAccounts?: SubjectInfo;
+  };
 
 type State = {
-  tabs: Array<TabItem>,
-  actorAccountIds: Array<string>,
-  requests: Array<Request>,
-  roles: Array<Role>,
+  tabs: Array<TabItem>;
+  actorAccountIds: Array<string>;
+  requests: Array<Request>;
+  roles: Array<Role>;
 };
 
 class App extends React.PureComponent<Props, State> {
@@ -58,22 +60,16 @@ class App extends React.PureComponent<Props, State> {
         {
           name: 'requests',
           text: t('My Staking Requests')
-        },
-      ],
+        }
+      ]
     };
   }
 
   static getDerivedStateFromProps({ actorAccountIds, requests, roles }: Props): State {
     return {
-      actorAccountIds: (actorAccountIds || []).map((accountId) =>
-        accountId.toString()
-      ),
-      requests: (requests || []).map((request) =>
-        request
-      ),
-      roles: (roles || []).map((role) =>
-        role
-      ),
+      actorAccountIds: (actorAccountIds || []).map(accountId => accountId.toString()),
+      requests: (requests || []).map(request => request),
+      roles: (roles || []).map(role => role)
     } as State;
   }
 
@@ -81,20 +77,11 @@ class App extends React.PureComponent<Props, State> {
     const { allAccounts } = this.props;
     const { tabs } = this.state;
     const { basePath } = this.props;
-    const hasAccounts = allAccounts && Object.keys(allAccounts).length;
-    const filteredTabs = hasAccounts
-      ? tabs
-      : tabs.filter(({ name }) =>
-        !['requests'].includes(name)
-      );
 
     return (
-      <main className='actors--App'>
+      <main className="actors--App">
         <header>
-          <Tabs
-            basePath={basePath}
-            items={filteredTabs}
-          />
+          <Tabs basePath={basePath} items={tabs} />
         </header>
         <Switch>
           <Route path={`${basePath}/requests`} render={this.renderComponent(MyRequests)} />
@@ -109,16 +96,9 @@ class App extends React.PureComponent<Props, State> {
     return (): React.ReactNode => {
       const { actorAccountIds, requests, roles } = this.state;
 
-      return (
-        <Component
-          actorAccountIds={actorAccountIds}
-          requests={requests}
-          roles={roles}
-        />
-      );
+      return <Component actorAccountIds={actorAccountIds} requests={requests} roles={roles} />;
     };
   }
-
 }
 
 export default withMulti(
@@ -128,6 +108,6 @@ export default withMulti(
   withCalls<Props>(
     ['query.actors.actorAccountIds', { propName: 'actorAccountIds' }],
     ['query.actors.roleEntryRequests', { propName: 'requests' }],
-    ['query.actors.availableRoles', { propName: 'roles' }],
+    ['query.actors.availableRoles', { propName: 'roles' }]
   )
 );

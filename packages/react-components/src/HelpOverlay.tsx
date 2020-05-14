@@ -14,31 +14,21 @@ interface Props extends BareProps {
   md: string;
 }
 
-function HelpOverlay ({ className, md }: Props): React.ReactElement<Props> {
+function HelpOverlay({ className, md, style }: Props): React.ReactElement<Props> {
   const [isVisible, setIsVisible] = useState(false);
 
   const _toggleVisible = (): void => setIsVisible(!isVisible);
 
   return (
     <div className={className}>
-      <div className='help-button'>
-        <Icon
-          name='help circle'
-          onClick={_toggleVisible}
-        />
+      <div className="help-button" style={style}>
+        <Icon name="help circle" onClick={_toggleVisible} />
       </div>
       <div className={`help-slideout ${isVisible ? 'open' : 'closed'}`}>
-        <div className='help-button'>
-          <Icon
-            name='close'
-            onClick={_toggleVisible}
-          />
+        <div className="help-button">
+          <Icon name="close" onClick={_toggleVisible} />
         </div>
-        <ReactMd
-          className='help-content'
-          escapeHtml={false}
-          source={md}
-        />
+        <ReactMd className="help-content" escapeHtml={false} source={md} />
       </div>
     </div>
   );
@@ -55,7 +45,6 @@ export default styled(HelpOverlay)`
   > .help-button {
     position: absolute;
     right: 0rem;
-    top: 5.25rem;
   }
 
   .help-slideout {
@@ -67,7 +56,7 @@ export default styled(HelpOverlay)`
     position: fixed;
     right: -50rem;
     top: 0;
-    transition-duration: .5s;
+    transition-duration: 0.5s;
     transition-property: all;
     z-index: 10;
 

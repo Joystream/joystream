@@ -11,48 +11,48 @@ import * as JoyForms from '@polkadot/joy-utils/forms';
 import { SubmittableResult } from '@polkadot/api';
 import { MemberId, UserInfo, Profile, PaidTermId, PaidMembershipTerms } from '@joystream/types/members';
 import { OptionText } from '@joystream/types/';
-import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
+import { MyAccountProps, withMyAccount, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import { queryMembershipToProp } from './utils';
 import { withCalls } from '@polkadot/react-api/index';
 import { Button, Message } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
-import isEqual from 'lodash/isEqual'
+import isEqual from 'lodash/isEqual';
 
 // TODO get next settings from Substrate:
 const HANDLE_REGEX = /^[a-z0-9_]+$/;
 
-const buildSchema = (p: ValidationProps) => Yup.object().shape({
-  handle: Yup.string()
-    .matches(HANDLE_REGEX, 'Handle can have only lowercase letters (a-z), numbers (0-9) and underscores (_).')
-    .min(p.minHandleLength, `Handle is too short. Minimum length is ${p.minHandleLength} chars.`)
-    .max(p.maxHandleLength, `Handle is too long. Maximum length is ${p.maxHandleLength} chars.`)
-    .required('Handle is required'),
-  avatar: Yup.string()
-    .url('Avatar must be a valid URL of an image.')
-    .max(p.maxAvatarUriLength, `Avatar URL is too long. Maximum length is ${p.maxAvatarUriLength} chars.`),
-  about: Yup.string()
-    .max(p.maxAboutTextLength, `Text is too long. Maximum length is ${p.maxAboutTextLength} chars.`)
-});
+const buildSchema = (p: ValidationProps) =>
+  Yup.object().shape({
+    handle: Yup.string()
+      .matches(HANDLE_REGEX, 'Handle can have only lowercase letters (a-z), numbers (0-9) and underscores (_).')
+      .min(p.minHandleLength, `Handle is too short. Minimum length is ${p.minHandleLength} chars.`)
+      .max(p.maxHandleLength, `Handle is too long. Maximum length is ${p.maxHandleLength} chars.`)
+      .required('Handle is required'),
+    avatar: Yup.string()
+      .url('Avatar must be a valid URL of an image.')
+      .max(p.maxAvatarUriLength, `Avatar URL is too long. Maximum length is ${p.maxAvatarUriLength} chars.`),
+    about: Yup.string().max(p.maxAboutTextLength, `Text is too long. Maximum length is ${p.maxAboutTextLength} chars.`)
+  });
 
 type ValidationProps = {
-  minHandleLength: number,
-  maxHandleLength: number,
-  maxAvatarUriLength: number,
-  maxAboutTextLength: number
+  minHandleLength: number;
+  maxHandleLength: number;
+  maxAvatarUriLength: number;
+  maxAboutTextLength: number;
 };
 
 type OuterProps = ValidationProps & {
-  profile?: Profile,
-  paidTerms: PaidMembershipTerms,
-  paidTermId: PaidTermId,
-  memberId? : MemberId,
+  profile?: Profile;
+  paidTerms: PaidMembershipTerms;
+  paidTermId: PaidTermId;
+  memberId?: MemberId;
 };
 
 type FormValues = {
-  handle: string,
-  avatar: string,
-  about: string
+  handle: string;
+  avatar: string;
+  about: string;
 };
 
 type FieldName = keyof FormValues;
@@ -76,7 +76,7 @@ const InnerForm = (props: FormProps) => {
     isSubmitting,
     setSubmitting,
     resetForm,
-    memberId,
+    memberId
   } = props;
 
   const onSubmit = (sendTx: () => void) => {
@@ -102,91 +102,101 @@ const InnerForm = (props: FormProps) => {
 
   // TODO extract to forms.tsx
   const fieldToTextOption = (field: FieldName): OptionText => {
-    return isFieldChanged(field)
-      ? OptionText.some(values[field])
-      : OptionText.none();
+    return isFieldChanged(field) ? OptionText.some(values[field]) : OptionText.none();
   };
 
   const buildTxParams = () => {
     if (!isValid) return [];
 
     const userInfo = new UserInfo({
-      handle:     fieldToTextOption('handle'),
+      handle: fieldToTextOption('handle'),
       avatar_uri: fieldToTextOption('avatar'),
-      about:      fieldToTextOption('about')
+      about: fieldToTextOption('about')
     });
 
     if (profile) {
       // update profile
-      return [ memberId, userInfo ];
+      return [memberId, userInfo];
     } else {
       // register as new member
-      return [ paidTermId, userInfo ];
+      return [paidTermId, userInfo];
     }
   };
 
   // TODO show warning that you don't have enough balance to buy a membership
 
   return (
-    <Section title='My Membership Profile'>
-    <Form className='ui form JoyForm'>
-      <LabelledText name='handle' label='Handle/nickname' placeholder={`You can use a-z, 0-9 and underscores.`} style={{ maxWidth: '30rem' }} {...props}/>
-      <LabelledText name='avatar' label='Avatar URL' placeholder='Paste here an URL of your avatar image.' {...props}/>
-      <LabelledField name='about' label='About' {...props}>
-        <Field component='textarea' id='about' name='about' disabled={isSubmitting} rows={3} placeholder='Write here anything you would like to share about yourself with Joystream community.' />
-      </LabelledField>
-      {!profile && paidTerms &&
-        <Message warning style={{ display: 'block', marginBottom: '0' }}>
-          <p>Membership costs <b>{formatBalance(paidTerms.fee)}</b> tokens.</p>
-          <p>
-            <span>By clicking the "Register" button you agree to our </span>
-            <Link to={`/pages/tos`}>Terms of Service</Link>
-            <span> and </span>
-            <Link to={`/pages/privacy`}>Privacy Policy</Link>
-            .
-          </p>
-        </Message>
-      }
-      <LabelledField invisibleLabel {...props}>
-        <TxButton
-          type='submit'
-          size='large'
-          label={profile
-            ? 'Update my profile'
-            : 'Register'
-          }
-          isDisabled={!dirty || isSubmitting}
-          params={buildTxParams()}
-          tx={profile
-            ? 'members.updateProfile'
-            : 'members.buyMembership'
-          }
-          onClick={onSubmit}
-          txFailedCb={onTxFailed}
-          txSuccessCb={onTxSuccess}
+    <Section title="My Membership Profile">
+      <Form className="ui form JoyForm">
+        <LabelledText
+          name="handle"
+          label="Handle/nickname"
+          placeholder={`You can use a-z, 0-9 and underscores.`}
+          style={{ maxWidth: '30rem' }}
+          {...props}
         />
-        <Button
-          type='button'
-          size='large'
-          disabled={!dirty || isSubmitting}
-          onClick={() => resetForm()}
-          content='Reset form'
+        <LabelledText
+          name="avatar"
+          label="Avatar URL"
+          placeholder="Paste here an URL of your avatar image."
+          {...props}
         />
-      </LabelledField>
-    </Form>
+        <LabelledField name="about" label="About" {...props}>
+          <Field
+            component="textarea"
+            id="about"
+            name="about"
+            disabled={isSubmitting}
+            rows={3}
+            placeholder="Write here anything you would like to share about yourself with Joystream community."
+          />
+        </LabelledField>
+        {!profile && paidTerms && (
+          <Message warning style={{ display: 'block', marginBottom: '0' }}>
+            <p>
+              Membership costs <b>{formatBalance(paidTerms.fee)}</b> tokens.
+            </p>
+            <p>
+              <span>By clicking the "Register" button you agree to our </span>
+              <Link to={`/pages/tos`}>Terms of Service</Link>
+              <span> and </span>
+              <Link to={`/pages/privacy`}>Privacy Policy</Link>.
+            </p>
+          </Message>
+        )}
+        <LabelledField invisibleLabel {...props}>
+          <TxButton
+            type="submit"
+            size="large"
+            label={profile ? 'Update my profile' : 'Register'}
+            isDisabled={!dirty || isSubmitting}
+            params={buildTxParams()}
+            tx={profile ? 'members.updateProfile' : 'members.buyMembership'}
+            onClick={onSubmit}
+            txFailedCb={onTxFailed}
+            txSuccessCb={onTxSuccess}
+          />
+          <Button
+            type="button"
+            size="large"
+            disabled={!dirty || isSubmitting}
+            onClick={() => resetForm()}
+            content="Reset form"
+          />
+        </LabelledField>
+      </Form>
     </Section>
   );
 };
 
 const EditForm = withFormik<OuterProps, FormValues>({
-
   // Transform outer props into form values
   mapPropsToValues: props => {
     const { profile: p } = props;
     return {
       handle: p ? p.handle.toString() : '',
       avatar: p ? p.avatar_uri.toString() : '',
-      about:  p ? p.about.toString() : ''
+      about: p ? p.about.toString() : ''
     };
   },
 
@@ -198,17 +208,17 @@ const EditForm = withFormik<OuterProps, FormValues>({
 })(InnerForm);
 
 type WithMyProfileProps = {
-  memberId?: MemberId,
-  memberProfile?: Option<any>, // TODO refactor to Option<Profile>
-  paidTermsId: PaidTermId,
-  paidTerms?: Option<PaidMembershipTerms>,
-  minHandleLength?: BN,
-  maxHandleLength?: BN,
-  maxAvatarUriLength?: BN,
-  maxAboutTextLength?: BN
+  memberId?: MemberId;
+  memberProfile?: Option<any>; // TODO refactor to Option<Profile>
+  paidTermsId: PaidTermId;
+  paidTerms?: Option<PaidMembershipTerms>;
+  minHandleLength?: BN;
+  maxHandleLength?: BN;
+  maxAvatarUriLength?: BN;
+  maxAboutTextLength?: BN;
 };
 
-function WithMyProfileInner (p: WithMyProfileProps) {
+function WithMyProfileInner(p: WithMyProfileProps) {
   const triedToFindProfile = !p.memberId || p.memberProfile;
   if (
     triedToFindProfile &&
@@ -224,16 +234,18 @@ function WithMyProfileInner (p: WithMyProfileProps) {
       console.error('Could not find active paid membership terms');
     }
 
-    return <EditForm
-      minHandleLength={p.minHandleLength.toNumber()}
-      maxHandleLength={p.maxHandleLength.toNumber()}
-      maxAvatarUriLength={p.maxAvatarUriLength.toNumber()}
-      maxAboutTextLength={p.maxAboutTextLength.toNumber()}
-      profile={profile as Profile}
-      paidTerms={p.paidTerms.unwrap()}
-      paidTermId={p.paidTermsId}
-      memberId={p.memberId}
-    />;
+    return (
+      <EditForm
+        minHandleLength={p.minHandleLength.toNumber()}
+        maxHandleLength={p.maxHandleLength.toNumber()}
+        maxAvatarUriLength={p.maxAvatarUriLength.toNumber()}
+        maxAboutTextLength={p.maxAboutTextLength.toNumber()}
+        profile={profile as Profile}
+        paidTerms={p.paidTerms.unwrap()}
+        paidTermId={p.paidTermsId}
+        memberId={p.memberId}
+      />
+    );
   } else return <em>Loading...</em>;
 }
 
@@ -243,17 +255,16 @@ const WithMyProfile = withCalls<WithMyProfileProps>(
   queryMembershipToProp('maxAvatarUriLength'),
   queryMembershipToProp('maxAboutTextLength'),
   queryMembershipToProp('memberProfile', 'memberId'),
-  queryMembershipToProp('paidMembershipTermsById',
-    { paramName: 'paidTermsId', propName: 'paidTerms' })
+  queryMembershipToProp('paidMembershipTermsById', { paramName: 'paidTermsId', propName: 'paidTerms' })
 )(WithMyProfileInner);
 
 type WithMyMemberIdProps = MyAccountProps & {
-  memberIdsByRootAccountId?: Vec<MemberId>,
-  memberIdsByControllerAccountId?: Vec<MemberId>,
-  paidTermsIds?: Vec<PaidTermId>
+  memberIdsByRootAccountId?: Vec<MemberId>;
+  memberIdsByControllerAccountId?: Vec<MemberId>;
+  paidTermsIds?: Vec<PaidTermId>;
 };
 
-function WithMyMemberIdInner (p: WithMyMemberIdProps) {
+function WithMyMemberIdInner(p: WithMyMemberIdProps) {
   if (p.memberIdsByRootAccountId && p.memberIdsByControllerAccountId && p.paidTermsIds) {
     if (p.paidTermsIds.length) {
       // let member_ids = p.memberIdsByRootAccountId.slice(); // u8a.subarray is not a function!!
@@ -268,10 +279,14 @@ function WithMyMemberIdInner (p: WithMyMemberIdProps) {
   return <em>Loading...</em>;
 }
 
-const WithMyMemberId = withMyAccount(withCalls<WithMyMemberIdProps>(
-  queryMembershipToProp('memberIdsByRootAccountId', 'myAddress'),
-  queryMembershipToProp('memberIdsByControllerAccountId', 'myAddress'),
-  queryMembershipToProp('activePaidMembershipTerms', { propName: 'paidTermsIds' })
-)(WithMyMemberIdInner));
+const WithMyMemberId = withOnlyMembers(
+  withMyAccount(
+    withCalls<WithMyMemberIdProps>(
+      queryMembershipToProp('memberIdsByRootAccountId', 'myAddress'),
+      queryMembershipToProp('memberIdsByControllerAccountId', 'myAddress'),
+      queryMembershipToProp('activePaidMembershipTerms', { propName: 'paidTermsIds' })
+    )(WithMyMemberIdInner)
+  )
+);
 
 export default WithMyMemberId;
