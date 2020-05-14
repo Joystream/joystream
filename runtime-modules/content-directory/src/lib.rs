@@ -531,6 +531,7 @@ decl_module! {
             origin,
             class_id: T::ClassId,
             curator_group_id: T::CuratorGroupId,
+            limit: Option<CreationLimit>
         ) -> dispatch::Result {
             let account_id = ensure_signed(origin)?;
 
@@ -545,6 +546,10 @@ decl_module! {
             entity_creation_permissions.ensure_curator_groups_limit_not_reached()?;
             entity_creation_permissions.ensure_curator_group_does_not_exist(&curator_group_id)?;
 
+            if let Some(limit) = limit {
+                Self::ensure_valid_number_of_class_entities_per_actor(limit)?;
+            }
+
             //
             // == MUTATION SAFE ==
             //
@@ -553,6 +558,16 @@ decl_module! {
                 class.get_permissions_mut().get_entity_creation_permissions_mut()
                     .get_curator_groups_mut().insert(curator_group_id)
             );
+
+
+            // Create entity creation voucher in case, if not exist yet and individual voucher limit specified.
+            if let Some(limit) = limit {
+                let entity_controller = EntityController::from_curator_group(curator_group_id);
+                if !<EntityCreationVouchers<T>>::exists(class_id, &entity_controller) {
+                    <EntityCreationVouchers<T>>::insert(class_id, entity_controller, EntityCreationVoucher::new(limit));
+                }
+            }
+
             Ok(())
         }
 
@@ -577,6 +592,8 @@ decl_module! {
                 class.get_permissions_mut().get_entity_creation_permissions_mut()
                     .get_curator_groups_mut().remove(&curator_group_id)
             );
+
+            // Should we remove entities creation voucher after creator removal?
             Ok(())
         }
 
@@ -908,29 +925,30 @@ decl_module! {
             let entity_controller = EntityController::from_actor(&actor);
 
             // Check if entity creation voucher exists
-            let entity_creation_voucher = if <EntityCreationVouchers<T>>::exists(class_id, &entity_controller) {
+            let voucher_exists = if <EntityCreationVouchers<T>>::exists(class_id, &entity_controller) {
                 let entity_creation_voucher = Self::entity_creation_vouchers(class_id, &entity_controller);
 
                 // Ensure voucher limit not reached
                 Self::ensure_voucher_limit_not_reached(entity_creation_voucher)?;
-                Some(entity_creation_voucher)
+                true
             } else {
-                None
+                false
             };
 
             //
             // == MUTATION SAFE ==
             //
 
-            if entity_creation_voucher.is_some() {
+            if voucher_exists {
                 // Increment number of created entities count, if voucher already exist
                 <EntityCreationVouchers<T>>::mutate(class_id, &entity_controller, |entity_creation_voucher| {
                     entity_creation_voucher.increment_created_entities_count()
                 });
             } else {
-                // Create new voucher for given entity creator with default limit
-                <EntityCreationVouchers<T>>::insert(class_id, entity_controller.clone(),
-                EntityCreationVoucher::new(class.get_controller_entity_creation_limit()));
+                // Create new voucher for given entity creator with default limit and increment created entities count
+                let mut entity_creation_voucher = EntityCreationVoucher::new(class.get_controller_entity_creation_limit());
+                entity_creation_voucher.increment_created_entities_count();
+                <EntityCreationVouchers<T>>::insert(class_id, entity_controller.clone(), entity_creation_voucher);
             }
 
             Self::complete_entity_creation(class_id, entity_controller);

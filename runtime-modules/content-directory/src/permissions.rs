@@ -147,7 +147,7 @@ impl EntityCreationVoucher {
     pub fn new(maximum_entities_count: CreationLimit) -> Self {
         Self {
             maximum_entities_count,
-            entities_created: 1,
+            entities_created: 0,
         }
     }
 
@@ -417,6 +417,10 @@ impl<T: Trait> EntityController<T> {
             Actor::Member(member_id) => Self::Member(*member_id),
             Actor::Curator(curator_group, _) => Self::CuratorGroup(*curator_group),
         }
+    }
+
+    pub fn from_curator_group(curator_group_id: T::CuratorGroupId) -> Self {
+        Self::CuratorGroup(curator_group_id)
     }
 }
 
