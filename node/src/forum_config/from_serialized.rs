@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 use super::new_validation;
 use node_runtime::{
     forum::{Category, CategoryId, Post, Thread},
