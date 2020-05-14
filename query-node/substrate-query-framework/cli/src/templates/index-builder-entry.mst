@@ -2,21 +2,34 @@ import "reflect-metadata";
 import * as dotenv from 'dotenv';
 import { createConnection } from 'typeorm';
 import { {{typeRegistrator}} } from '{{{packageName}}}';
-import { QueryNodeManager, QueryEvent, DB } from "index-builder/lib";
+import { QueryNodeManager, QueryEvent, BootstrapPack, BootstrapFunc, DB } from "index-builder/lib";
 
 // Mappings use!
 export { DB }
 
 function getProcessingPack() {
-  const handlers = require('../../mappings');
+  const handlers = require("../../mappings");
 
-  let processingPack: { [key: string]: (db: DB) => void | Promise<void> } = {};
+  let processingPack: { [key: string]: any } = {};
 
-  Object.keys(handlers).map((handler: string) => {
-    let eventName = handler.replace('handle', '');
-    processingPack[eventName] = handlers[handler];
-  });
+  Object.keys(handlers).
+    filter((handler) => handler.startsWith('handle')).
+    map((handler: string) => {
+        let eventName = handler.replace("handle", "");
+        processingPack[eventName] = handlers[handler];
+    });
   return processingPack;
+}
+
+function getBootstrapPack() {
+   const bootstrapPack: BootstrapPack = { pack: []};
+   const handlers = require("../../mappings");
+
+   Object.keys(handlers)
+    .filter((handler) =>  handler.startsWith('boot'))
+    .map((handler: string ) => bootstrapPack.pack.push(handlers[handler]));
+
+   return bootstrapPack;
 }
 
 async function main() {
@@ -32,9 +45,27 @@ async function main() {
     process.exit(1);
   }
 
-	await createConnection();
+  const conn = await createConnection();
 
   const node = new QueryNodeManager(process);
+
+  const bootstrap = process.env.QUERY_NODE_BOOTSTRAP_DB;
+  if (bootstrap) {
+    try {
+        await node.start(
+            providerUri,
+            {},
+            registerJoystreamTypes,
+            getBootstrapPack()
+          );
+        console.log("Bootstrap done");
+        process.exit(0);
+    } catch (error) {
+        console.error(error);
+        process.exit(1);
+    } 
+  }
+
   node.start(providerUri, getProcessingPack(), {{typeRegistrator}});
 }
 
