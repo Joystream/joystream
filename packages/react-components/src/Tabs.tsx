@@ -22,6 +22,7 @@ export interface TabItem {
   hasParams?: boolean;
   isExact?: boolean;
   isRoot?: boolean;
+  forcedExact?: boolean;
   name: string;
   text: React.ReactNode;
 }
@@ -40,7 +41,9 @@ function renderItem ({ basePath, isSequence, items }: Props): (tabItem: TabItem,
       : `${basePath}/${name}`;
     // only do exact matching when not the fallback (first position tab),
     // params are problematic for dynamic hidden such as app-accounts
-    const isExact = tab.isExact || !hasParams || (!isSequence && index === 0);
+    const isExact = tab.forcedExact !== undefined ? tab.forcedExact : (
+      tab.isExact || !hasParams || (!isSequence && index === 0)
+    );
 
     return (
       <React.Fragment key={to}>
