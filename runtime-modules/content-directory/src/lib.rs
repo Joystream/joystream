@@ -471,7 +471,7 @@ decl_module! {
                     let class_permissions = class.get_permissions_mut();
                     class_permissions.get_entity_creation_permissions_mut().get_curator_groups_mut().remove(&curator_group_id);
                     class_permissions.get_maintainers_mut().remove(&curator_group_id);
-                    // If group is an entity controller, should be updated manually to the new one
+                    // If group is an entity controller, it should be updated manually to the new one
                 })
             };
             Ok(())
@@ -1568,6 +1568,8 @@ impl<T: Trait> Module<T> {
     pub fn ensure_class_permissions_are_valid(
         class_permissions: &ClassPermissions<T>,
     ) -> dispatch::Result {
+        class_permissions.ensure_maintainers_limit_not_reached()?;
+        class_permissions.get_entity_creation_permissions().ensure_curator_groups_limit_not_reached()?;
         Self::ensure_curator_groups_exist(class_permissions.get_maintainers())?;
         Self::ensure_curator_groups_exist(
             class_permissions
