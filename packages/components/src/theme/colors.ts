@@ -1,44 +1,28 @@
 export default {
-  bg: {
-    primary: "#2578C2",
-    neutral: "#000",
-    success: "#56BA46",
-    danger: "#EF6236",
-    warning: "#FEEB83",
-    base: "#fafafa",
-    white: "#fff",
-  },
-  text: {
-    base: "#646464",
-    accent: "#2E86AB",
-    white: "#fff",
-    success: "#56BA46",
-    danger: "#EF6236",
-    warning: "#FEEB83",
-  },
-  black: {
-    base: "#000",
-    medium: "#121519",
-    light: "1f252e"
+  white: "#FFFFFF",
+  black: "#000000",
+  gray: {
+    900: "#0B0C0F",
+    800: "#181C20",
+    700: "#272D33",
+    600: "#343D44",
+    500: "#424E57",
+    400: "#52616B",
+    300: "#7B8A95",
+    200: "#B5C1C9",
+    100: "#DAE2EB",
+    50: "#F4F6F8"
   },
   blue: {
-    darker: "#261ee4",
-    dark: "#2f2ff4",
-    base: "#4038ff",
-    light: "#5252ff",
-    lighter: "#6c6cff"
+    900: "#030041",
+    700: "#261EE4",
+    600: "#2F2FF4",
+    500: "#4038FF",
+    400: "#5252FF",
+    300: "#6C6CFF",
+    100: "#B4BBFF",
+    50: "#E0E1FF"
   },
-  grey: {
-    darker: "#a7aeb7",
-    dark: "#d3d8e0",
-    base: "#e8edf6",
-    light: "#f2f5f9"
-  },
-  white: "#fff",
-  other: {
-    info: "#2F80ED",
-    success: "#219653",
-    danger: "#EB5757",
-    warning: "#F2C94C"
-  }
-};
+  success: "#B00020",
+  error: "#1CCB00"
+}

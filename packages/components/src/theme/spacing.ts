@@ -1,7 +1,12 @@
-export default Array.from({ length: 25 }, (_, i) => i + 1).reduce(
-  (spaces: { [k: string]: string }, n: number) => {
-    spaces[`s${n}`] = `${0.25 * n}rem`;
-    return spaces;
-  },
-  {}
-);
+export default {
+  xxs: "2px",
+  xs: "4px",
+  s: "8px",
+  m: "16px",
+  l: "20px",
+  xl: "24px",
+  xxl: "32px",
+  xxxl: "40px",
+  "4l": "48px",
+  "5l": "64px"
+}
