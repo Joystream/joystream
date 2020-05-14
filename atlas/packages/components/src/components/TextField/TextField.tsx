@@ -28,7 +28,7 @@ export default function TextField({
   const inputRef = useRef(null)
   const [isActive, setIsActive] = useState(!!value)
   const [inputTextValue, setInputTextValue] = useState(value)
-  const styles = makeStyles(styleProps)
+  const styles = makeStyles({ isActive, ...styleProps })
 
   useEffect(() => {
     if (isActive) {
@@ -54,11 +54,7 @@ export default function TextField({
   
   return (
     <div css={styles.container} onClick={onTextFieldClick}>
-      <div
-        css={styles.border}
-        style={!inputTextValue && !isActive ? {} : {
-          border: `1px solid ${colors.gray[200]}`
-        }}>
+      <div css={styles.border}>
         <div
           css={styles.label}
           style={!inputTextValue && !isActive ? {} : {

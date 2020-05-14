@@ -23,6 +23,6 @@ export default {
     100: "#B4BBFF",
     50: "#E0E1FF"
   },
-  success: "#B00020",
-  error: "#1CCB00"
+  success: "#1CCB00",
+  error: "#B00020"
 }

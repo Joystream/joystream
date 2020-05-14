@@ -3,11 +3,22 @@ import { typography, colors } from "./../../theme"
 
 export type TextFieldStyleProps = {
   disabled?: boolean
+  focus?: boolean
+  error?: boolean
+  isActive: boolean
 }
 
 export let makeStyles = ({
-  disabled = false
+  disabled = false,
+  focus = false,
+  error = false,
+  isActive
 }: TextFieldStyleProps) => {
+
+  const borderColor = disabled ? colors.gray[200] :
+    error ? colors.error :
+    focus ? colors.blue[500] :
+    isActive ? colors.gray[200] : colors.gray[400]
 
   return {
     container: css`
@@ -23,7 +34,7 @@ export let makeStyles = ({
       left: 0;
       right: 0;
       bottom: 0;
-      border: 1px solid ${colors.gray[400]};
+      border: 1px solid ${borderColor};
       display: flex;
       align-items: center;
       justify-content: left;
