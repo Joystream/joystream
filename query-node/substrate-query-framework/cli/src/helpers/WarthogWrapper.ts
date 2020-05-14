@@ -43,6 +43,11 @@ export default class WarthogWrapper {
       this.command.error('Could not found package.json file in the current working directory');
     }
 
+    // Temporary tslib fix
+    let pkgFile = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    pkgFile.resolutions["tslib"] = "1.11.2"
+    fs.writeFileSync('package.json', JSON.stringify(pkgFile, null, 2));
+
     this.command.log('Installing graphql-server dependencies...');
 
     execSync('yarn install');
