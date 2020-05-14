@@ -18,7 +18,7 @@ export async function handleMemberRegistered(db: DB) {
   db.save<Memberships>(member);
 
   // Query from database
-  await db.get(Memberships, { where: { memberId: MemberId } });
+  member = await db.get(Memberships, { where: { memberId: MemberId } });
 }
 
 export async function handleMemberUpdatedAboutText(db: DB) {
@@ -37,6 +37,7 @@ export async function handleMemberUpdatedAboutText(db: DB) {
     db.save<Memberships>(member);
   }
 }
+
 
 export async function bootMembers(api: ApiPromise, queryRunner: QueryRunner) {
     let blkHash: Hash = await api.rpc.chain.getBlockHash(0);

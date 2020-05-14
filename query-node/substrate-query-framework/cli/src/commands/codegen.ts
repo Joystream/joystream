@@ -3,7 +3,7 @@ import * as fs from 'fs-extra';
 import * as dotenv from 'dotenv';
 import * as Mustache from 'mustache';
 import { readFileSync, copyFileSync } from 'fs-extra';
-import { Command } from '@oclif/command';
+import { Command, flags } from '@oclif/command';
 import { execSync } from 'child_process';
 
 import { createDir, getTemplatePath, createFile } from '../utils/utils';
@@ -15,8 +15,14 @@ export default class Codegen extends Command {
   static description = 'Code generator';
   static generatedFolderName = 'generated';
 
+  static flags = {
+    schema: flags.string({ char: 's', description: 'Schema path', default: '../../schema.graphql' })
+  };
+
   async run() {
     dotenv.config();
+
+    const { flags } = this.parse(Codegen);
 
     const generatedFolderPath = path.resolve(process.cwd(), Codegen.generatedFolderName);
     createDir(generatedFolderPath);
@@ -25,13 +31,13 @@ export default class Codegen extends Command {
     process.chdir(generatedFolderPath);
 
     // Create warthog graphql server
-    await this.createGraphQLServer();
+    await this.createGraphQLServer(flags.schema);
 
     // Create block indexer
     await this.createBlockIndexer();
   }
 
-  async createGraphQLServer() {
+  async createGraphQLServer(schemaPath: string) {
     const goBackDir = process.cwd();
 
     const warthogProjectName = 'graphql-server';
@@ -40,7 +46,7 @@ export default class Codegen extends Command {
     createDir(warthogProjectPath);
     process.chdir(warthogProjectPath);
 
-    const warthogWrapper = new WarthogWrapper(this);
+    const warthogWrapper = new WarthogWrapper(this, schemaPath);
     await warthogWrapper.run();
 
     process.chdir(goBackDir);
