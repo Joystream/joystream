@@ -101,6 +101,12 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug {
 
     type NumberOfClassesConstraint: Get<MaxNumber>;
 
+    /// Maximum number of maintainers per class constraint
+    type NumberOfMaintainersConstraint: Get<MaxNumber>;
+
+    /// Maximum number of entity creators per class constraint
+    type NumberOfEntityCreatorsConstraint: Get<MaxNumber>;
+
     type NumberOfSchemasConstraint: Get<MaxNumber>;
 
     type NumberOfPropertiesConstraint: Get<MaxNumber>;
@@ -483,7 +489,11 @@ decl_module! {
 
             Self::ensure_curator_group_exists(&curator_group_id)?;
 
-            Self::class_by_id(class_id).get_permissions().ensure_maintainer_does_not_exist(&curator_group_id)?;
+            let class =  Self::class_by_id(class_id);
+            let class_permissions = class.get_permissions();
+
+            class_permissions.ensure_maintainers_limit_not_reached()?;
+            class_permissions.ensure_maintainer_does_not_exist(&curator_group_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -529,8 +539,11 @@ decl_module! {
 
             Self::ensure_curator_group_exists(&curator_group_id)?;
 
-            Self::class_by_id(class_id).get_permissions().get_entity_creation_permissions()
-                .ensure_curator_group_does_not_exist(&curator_group_id)?;
+            let class =  Self::class_by_id(class_id);
+            let entity_creation_permissions = class.get_permissions().get_entity_creation_permissions();
+
+            entity_creation_permissions.ensure_curator_groups_limit_not_reached()?;
+            entity_creation_permissions.ensure_curator_group_does_not_exist(&curator_group_id)?;
 
             //
             // == MUTATION SAFE ==

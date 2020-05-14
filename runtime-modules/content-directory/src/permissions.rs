@@ -226,6 +226,14 @@ impl<T: Trait> EntityCreationPermissions<T> {
         &mut self.curator_groups
     }
 
+    pub fn ensure_curator_groups_limit_not_reached(&self) -> Result<(), &'static str> {
+        ensure!(
+            self.curator_groups.len() < T::NumberOfEntityCreatorsConstraint::get() as usize,
+            ERROR_NUMBER_OF_ENTITY_CREATORS_PER_CLASS_LIMIT_REACHED
+        );
+        Ok(())
+    }
+
     pub fn ensure_curator_group_exists(
         &self,
         curator_group_id: &T::CuratorGroupId,
@@ -358,6 +366,14 @@ impl<T: Trait> ClassPermissions<T> {
 
     pub fn ensure_entity_creation_not_blocked(&self) -> dispatch::Result {
         ensure!(self.entity_creation_blocked, ERROR_ENTITY_CREATION_BLOCKED);
+        Ok(())
+    }
+
+    pub fn ensure_maintainers_limit_not_reached(&self) -> Result<(), &'static str> {
+        ensure!(
+            self.maintainers.len() < T::NumberOfMaintainersConstraint::get() as usize,
+            ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED
+        );
         Ok(())
     }
 
