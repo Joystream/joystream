@@ -680,10 +680,13 @@ decl_module! {
 
             if let Some(ref maintainers) = maintainers {
                 Self::ensure_curator_groups_exist(maintainers)?;
+                ensure!(maintainers.len() <= T::NumberOfMaintainersConstraint::get() as usize, ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED);
             }
 
             if let Some(ref entity_creation_permissions) = entity_creation_permissions {
-                Self::ensure_curator_groups_exist(entity_creation_permissions.get_curator_groups())?;
+                let curator_groups = entity_creation_permissions.get_curator_groups();
+                ensure!(curator_groups.len() <= T::NumberOfEntityCreatorsConstraint::get() as usize, ERROR_NUMBER_OF_ENTITY_CREATORS_PER_CLASS_LIMIT_REACHED);
+                Self::ensure_curator_groups_exist(curator_groups)?;
             }
 
             //
