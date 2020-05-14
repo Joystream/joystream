@@ -1,5 +1,5 @@
 import React from "react"
-import { makeStyles, NavButtonStyleProps } from "./NavButton.styles"
+import { makeStyles, NavButtonStyleProps } from "./NavButton.style"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faChevronLeft, faChevronRight } from "@fortawesome/free-solid-svg-icons"
 

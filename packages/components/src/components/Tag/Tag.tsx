@@ -1,5 +1,5 @@
 import React from "react"
-import { makeStyles, TagStyleProps } from "./Tag.styles"
+import { makeStyles, TagStyleProps } from "./Tag.style"
 
 type TagProps = {
   text: string

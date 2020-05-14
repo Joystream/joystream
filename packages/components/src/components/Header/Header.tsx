@@ -1,5 +1,5 @@
 import React, { Children } from "react"
-import { makeStyles, HeaderStyleProps } from "./Header.styles"
+import { makeStyles, HeaderStyleProps } from "./Header.style"
 
 type HeaderProps = {
   text: string,

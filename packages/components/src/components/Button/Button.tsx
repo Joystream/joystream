@@ -1,5 +1,5 @@
 import React from "react"
-import { makeStyles, ButtonStyleProps } from "./Button.styles"
+import { makeStyles, ButtonStyleProps } from "./Button.style"
 import { IconProp } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 

@@ -1,5 +1,5 @@
 import React from "react"
-import { makeStyles, TypographyStyleProps } from "./Typography.styles"
+import { makeStyles, TypographyStyleProps } from "./Typography.style"
 
 type TypographyProps = {
   children: React.ReactNode

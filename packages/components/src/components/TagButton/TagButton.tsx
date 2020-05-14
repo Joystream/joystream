@@ -1,5 +1,5 @@
 import React from "react"
-import { makeStyles, TagButtonStyleProps } from "./TagButton.styles"
+import { makeStyles, TagButtonStyleProps } from "./TagButton.style"
 
 type TagButtonProps = {
   text: string
