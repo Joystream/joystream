@@ -9,14 +9,14 @@ import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
 import { SubmittableResult } from '@polkadot/api';
 import { Option } from '@polkadot/types/codec';
-import { withMulti } from '@polkadot/react-api';
+import { withMulti, withApi } from '@polkadot/react-api';
 import { formatNumber } from '@polkadot/util';
 import { AccountId } from '@polkadot/types/interfaces';
 
 import translate from './translate';
 import { fileNameWoExt } from './utils';
 import { ContentId, DataObject } from '@joystream/types/media';
-import { MyAccountProps, withMembershipRequired } from '@polkadot/joy-utils/MyAccount';
+import { withMembershipRequired } from '@polkadot/joy-utils/MyAccount';
 import { DiscoveryProviderProps, withDiscoveryProvider } from './DiscoveryProvider';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import IpfsHash from 'ipfs-only-hash';
@@ -27,7 +27,7 @@ import { JoyInfo } from '@polkadot/joy-utils/JoyStatus';
 const MAX_FILE_SIZE_MB = 500;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
-type Props = ApiProps & I18nProps & MyAccountProps & DiscoveryProviderProps & {
+type Props = ApiProps & I18nProps & DiscoveryProviderProps & {
   channelId: ChannelId
   history?: History
   match: {
@@ -314,6 +314,7 @@ class Component extends React.PureComponent<Props, State> {
 export const UploadWithRouter = withMulti(
   Component,
   translate,
+  withApi,
   withMembershipRequired,
   withDiscoveryProvider
 )

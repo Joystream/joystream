@@ -160,9 +160,9 @@ export abstract class MediaTransport extends Transport {
 
   abstract allMusicAlbums(): Promise<MusicAlbumType[]>
 
-  async videosByChannelId(channelId: ChannelId, limit?: number): Promise<VideoType[]> {
+  async videosByChannelId(channelId: ChannelId, limit?: number, additionalFilter?: (x: VideoType) => boolean): Promise<VideoType[]> {
     let videos = (await this.allVideos())
-      .filter(x => channelId && channelId.eq(x.channelId))
+      .filter(x => channelId && channelId.eq(x.channelId) && (additionalFilter || (() => true))(x))
       .sort(x => -1 * x.id)
 
     if (limit && limit > 0) {
@@ -226,7 +226,7 @@ export abstract class MediaTransport extends Transport {
       .find(x =>
         insensitiveEq(x.value, 'Public')
       )?.id
-    
+
     const idsOfCuratedCS = (await this.allCurationStatuses())
       .filter(x =>
         insensitiveEq(x.value, 'Under review') ||

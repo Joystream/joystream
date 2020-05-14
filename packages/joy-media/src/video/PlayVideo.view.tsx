@@ -19,7 +19,7 @@ export const PlayVideoView = MediaView<Props>({
 
     const channelId = new ChannelId(video.channelId)
     const channel = await transport.channelById(channelId)
-    const moreChannelVideos = (await transport.videosByChannelId(channelId, 5)).filter(x => x.id !== video.id)
+    const moreChannelVideos = (await transport.videosByChannelId(channelId, 5, x => x.id !== video.id));
     const featuredVideos = await transport.featuredVideos()
     const mediaObject = video.object
 
