@@ -4,19 +4,19 @@
 
 import { Routing, Routes } from './types';
 
-import appSettings from '@polkadot/joy-settings/';
+// import appSettings from '@polkadot/joy-settings/';
 
 import election from './joy-election';
 import forum from './joy-forum';
-import help from './joy-help';
+// import help from './joy-help';
 import media from './joy-media';
 import members from './joy-members';
 import proposals from './joy-proposals';
 import roles from './joy-roles';
 import storageRoles from './joy-storage';
-import pages from './joy-pages';
+// import pages from './joy-pages';
 
-import template from './123code';
+// import template from './123code';
 import accounts from './accounts';
 import addressbook from './addressbook';
 // import claims from './claims';
@@ -24,74 +24,35 @@ import addressbook from './addressbook';
 // import council from './council';
 // import dashboard from './dashboard';
 // import democracy from './democracy';
-import explorer from './explorer';
-import extrinsics from './extrinsics';
+// import explorer from './explorer';
+// import extrinsics from './extrinsics';
 // import genericAsset from './generic-asset';
-import js from './js';
+// import js from './js';
 // import parachains from './parachains';
-import settings from './settings';
+// import settings from './settings';
 import staking from './staking';
-import storage from './storage';
-import sudo from './sudo';
-import toolbox from './toolbox';
-import transfer from './transfer';
+// import storage from './storage';
+// import sudo from './sudo';
+// import toolbox from './toolbox';
+// import transfer from './transfer';
 // import treasury from './treasury';
 
-const routes: Routes = appSettings.isBasicMode
-  ? ([] as Routes).concat(
-    explorer,
-    staking,
-    roles,
-    storageRoles,
-    transfer,
-    null,
-    media,
-    forum,
-    members,
-    accounts,
-    addressbook,
-    null,
-    election,
-    proposals,
-    null,
-    help,
-    settings,
-    template,
-    null,
-    pages
-  )
-  : ([] as Routes).concat(
-    // dashboard,
-    explorer,
-    staking,
-    roles,
-    storageRoles,
-    transfer,
-    null,
-    media,
-    forum,
-    members,
-    accounts,
-    addressbook,
-    null,
-    election,
-    proposals,
-    null,
-    storage,
-    extrinsics,
-    sudo,
-    null,
-    help,
-    settings,
-    toolbox,
-    js,
-    template,
-    null,
-    pages
-  );
-
+const routes: Routes = ([] as Routes).concat(
+  staking,
+  roles,
+  storageRoles,
+  null,
+  media,
+  forum,
+  members,
+  accounts,
+  addressbook,
+  null,
+  election,
+  proposals
+);
 const setup: Routing = {
-  default: 'explorer',
+  default: 'staking',
   routes
 };
 
