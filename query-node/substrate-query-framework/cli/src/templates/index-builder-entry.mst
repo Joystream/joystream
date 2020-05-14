@@ -10,7 +10,7 @@ export { DB }
 function getProcessingPack() {
   const handlers = require('../../mappings');
 
-  let processingPack: { [key: string]: any } = {};
+  let processingPack: { [key: string]: (db: DB) => void | Promise<void> } = {};
 
   Object.keys(handlers).map((handler: string) => {
     let eventName = handler.replace('handle', '');
@@ -32,7 +32,7 @@ async function main() {
     process.exit(1);
   }
 
-	const conn = await createConnection();
+	await createConnection();
 
   const node = new QueryNodeManager(process);
   node.start(providerUri, getProcessingPack(), {{typeRegistrator}});

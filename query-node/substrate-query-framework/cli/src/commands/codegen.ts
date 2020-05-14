@@ -9,7 +9,7 @@ import { execSync } from 'child_process';
 import { createDir, getTemplatePath, createFile } from '../utils/utils';
 import { formatWithPrettier } from '../helpers/formatter';
 import WarthogWrapper from '../helpers/WarthogWrapper';
-import { getTypeormConfig, getTypeormModelGeneratorConnectionConfig } from '../helpers/db';
+import { getTypeormConfig, getTypeormModelGeneratorConnectionConfig, createSavedEntityEventTable } from '../helpers/db';
 
 export default class Codegen extends Command {
   static description = 'Code generator';
@@ -79,6 +79,7 @@ export default class Codegen extends Command {
     this.log('done...');
 
     this.log('Generating typeorm db entities...');
+    await createSavedEntityEventTable();
     execSync(getTypeormModelGeneratorConnectionConfig());
     this.log('done...');
 
