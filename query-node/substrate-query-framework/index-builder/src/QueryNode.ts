@@ -84,19 +84,21 @@ export default class QueryNode {
     await queryRunner.connect();
       
     try {
+      await queryRunner.startTransaction();
+        
       // establish real database connection
       // perform all the bootstrap logic in one large
       // atomic transaction 
       for (const boot of bootstrapPack.pack) {
-        await queryRunner.startTransaction();
-        await boot(api, queryRunner)
-        await queryRunner.commitTransaction();
+        await boot(api, queryRunner);
       }
       debug("Database bootstrap successfull");
-      
+      await queryRunner.commitTransaction();
+
     } catch (error) {
       console.error(error);
       await queryRunner.rollbackTransaction();
+      throw new Error(`Bootstrapping failed: ${error}`);
     } finally {
       await queryRunner.release();
     }
