@@ -95,9 +95,19 @@ pub type Moment = u64;
 pub type Credential = u64;
 
 /// Represents a thread identifier for both Forum and Proposals Discussion
+///
+/// Note: Both modules expose type names ThreadId and PostId (which are defined on their Trait) and
+/// used in state storage and dispatchable method's argument types,
+/// and are therefore part of the public API/metadata of the runtime.
+/// In the currenlty version the polkadot-js/api that is used and is compatible with the runtime,
+/// the type registry has flat namespace and its not possible
+/// to register identically named types from different modules, separately. And so we MUST configure
+/// the underlying types to be identicaly to avoid issues with encoding/decoding these types on the client side.
 pub type ThreadId = u64;
 
 /// Represents a post identifier for both Forum and Proposals Discussion
+///
+/// See the Note about ThreadId
 pub type PostId = u64;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
