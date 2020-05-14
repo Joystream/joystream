@@ -6,6 +6,7 @@ import Command from '@oclif/command';
 const warthogCli = require('warthog/dist/cli/cli');
 
 import { DatabaseModelCodeGenerator } from './ModelCodeGenerator';
+import { getTemplatePath } from '../utils/utils';
 
 export default class WarthogWrapper {
   private readonly command: Command;
@@ -34,6 +35,11 @@ export default class WarthogWrapper {
 
   async newProject(projectName: string = 'query_node') {
     await warthogCli.run(`new ${projectName}`);
+
+    // Override warthog's files for model naming strategy
+    fs.copyFileSync(getTemplatePath('graphql-server.index.mst'), path.resolve(process.cwd(), 'src/index.ts'));
+    fs.copyFileSync(getTemplatePath('sync.mst'), path.resolve(process.cwd(), 'src/sync.ts'));
+
     this.updateDotenv();
   }
 
@@ -77,8 +83,7 @@ export default class WarthogWrapper {
   }
 
   async createMigrations() {
-    await warthogCli.run(`db:migrate:generate --name=Create-database-table`);
-    await warthogCli.run('db:migrate');
+    execSync('yarn ts-node src/sync.ts');
   }
 
   async codegen() {

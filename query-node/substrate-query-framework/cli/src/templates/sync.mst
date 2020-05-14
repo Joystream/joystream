@@ -1,0 +1,33 @@
+import 'reflect-metadata';
+
+import { SnakeNamingStrategy } from 'warthog';
+import { snakeCase } from 'typeorm/util/StringUtils';
+
+import { loadConfig } from '../src/config';
+import { Logger } from '../src/logger';
+
+import { getServer } from './server';
+
+class CustomNamingStrategy extends SnakeNamingStrategy {
+  constructor() {
+    super();
+  }
+  tableName(className: string, customName?: string): string {
+    return customName ? customName : `${snakeCase(className)}`;
+  }
+}
+
+async function bootstrap() {
+  await loadConfig();
+
+  const server = getServer({}, { namingStrategy: new CustomNamingStrategy() });
+  await server.establishDBConnection();
+}
+
+bootstrap().catch((error: Error) => {
+  Logger.error(error);
+  if (error.stack) {
+    Logger.error(error.stack.split('\n'));
+  }
+  process.exit(1);
+});
