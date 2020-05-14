@@ -17,7 +17,7 @@ export let makeStyles = ({
     cursor: default;
     font-family: ${typography.fonts.base};
     font-weight: ${typography.weights.medium};
-    font-size: ${typography.sizes.small};
+    font-size: ${typography.sizes.subtitle1};
     margin: 1px;
     padding: 0;
     width: 50px;

@@ -25,21 +25,6 @@ export let makeStyles = ({
 
     div#content {
       margin: 0 100px;
-    }
-
-    h1 {
-      font-size: ${typography.sizes.xlarge};
-      line-height: ${typography.sizes.xlarge};
-      font-weight: ${typography.weights.medium};
-      max-width: 620px;
-      margin: 0;
-    }
-    
-    p {
-      font-size: ${typography.sizes.normal};
-      font-weight: ${typography.weights.regular};
-      max-width: 620px;
-      margin-bottom: 40px;
-    }    
+    }   
   `
 }
