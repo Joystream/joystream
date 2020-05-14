@@ -1572,7 +1572,9 @@ impl<T: Trait> Module<T> {
         class_permissions: &ClassPermissions<T>,
     ) -> dispatch::Result {
         class_permissions.ensure_maintainers_limit_not_reached()?;
-        class_permissions.get_entity_creation_permissions().ensure_curator_groups_limit_not_reached()?;
+        class_permissions
+            .get_entity_creation_permissions()
+            .ensure_curator_groups_limit_not_reached()?;
         Self::ensure_curator_groups_exist(class_permissions.get_maintainers())?;
         Self::ensure_curator_groups_exist(
             class_permissions
