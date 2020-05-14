@@ -94,6 +94,12 @@ pub type Moment = u64;
 /// Credential type
 pub type Credential = u64;
 
+/// Represents a thread identifier for both Forum and Proposals Discussion
+pub type ThreadId = u64;
+
+/// Represents a post identifier for both Forum and Proposals Discussion
+pub type PostId = u64;
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -784,6 +790,8 @@ impl forum::ForumUserRegistry<AccountId> for ShimMembershipRegistry {
 impl forum::Trait for Runtime {
     type Event = Event;
     type MembershipRegistry = ShimMembershipRegistry;
+    type ThreadId = ThreadId;
+    type PostId = PostId;
 }
 
 impl migration::Trait for Runtime {
@@ -845,8 +853,8 @@ parameter_types! {
 impl proposals_discussion::Trait for Runtime {
     type Event = Event;
     type PostAuthorOriginValidator = MembershipOriginValidator<Self>;
-    type ThreadId = u64;
-    type PostId = u64;
+    type ThreadId = ThreadId;
+    type PostId = PostId;
     type MaxPostEditionNumber = ProposalMaxPostEditionNumber;
     type ThreadTitleLengthLimit = ProposalThreadTitleLengthLimit;
     type PostLengthLimit = ProposalPostLengthLimit;
