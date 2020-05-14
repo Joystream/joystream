@@ -429,43 +429,43 @@ decl_module! {
 
         pub fn add_curator_group(
             origin,
-            group_id: T::CuratorGroupId,
+            curator_group_id: T::CuratorGroupId,
             curator_group: CuratorGroup<T>
         ) -> dispatch::Result {
             let account_id = ensure_signed(origin)?;
 
             ensure_lead_auth_success::<T>(&account_id)?;
-            Self::ensure_curator_group_does_not_exist(group_id)?;
+            Self::ensure_curator_group_does_not_exist(curator_group_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            <CuratorGroupById<T>>::insert(group_id, curator_group);
+            <CuratorGroupById<T>>::insert(curator_group_id, curator_group);
             Ok(())
         }
 
         pub fn remove_curator_group(
             origin,
-            group_id: T::CuratorGroupId,
+            curator_group_id: T::CuratorGroupId,
         ) -> dispatch::Result {
             let account_id = ensure_signed(origin)?;
 
             ensure_lead_auth_success::<T>(&account_id)?;
-            Self::ensure_curator_group_exists(&group_id)?;
+            Self::ensure_curator_group_exists(&curator_group_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            <CuratorGroupById<T>>::remove(group_id);
+            <CuratorGroupById<T>>::remove(curator_group_id);
             let class_ids: Vec<T::ClassId> = <ClassById<T>>::enumerate().map(|(class_id, _)| class_id).collect();
             for class_id in class_ids {
                 <ClassById<T>>::mutate(class_id, |class| {
                     let class_permissions = class.get_permissions_mut();
-                    class_permissions.get_entity_creation_permissions_mut().get_curator_groups_mut().remove(&group_id);
-                    class_permissions.get_maintainers_mut().remove(&group_id);
-                    // If group is an entity controller, should be updated manually to a new one
+                    class_permissions.get_entity_creation_permissions_mut().get_curator_groups_mut().remove(&curator_group_id);
+                    class_permissions.get_maintainers_mut().remove(&curator_group_id);
+                    // If group is an entity controller, should be updated manually to the new one
                 })
             };
             Ok(())
@@ -480,6 +480,8 @@ decl_module! {
 
             ensure_lead_auth_success::<T>(&account_id)?;
             Self::ensure_known_class_id(class_id)?;
+
+            Self::ensure_curator_group_exists(&curator_group_id)?;
 
             Self::class_by_id(class_id).get_permissions().ensure_maintainer_does_not_exist(&curator_group_id)?;
 
@@ -524,6 +526,8 @@ decl_module! {
 
             ensure_lead_auth_success::<T>(&account_id)?;
             Self::ensure_known_class_id(class_id)?;
+
+            Self::ensure_curator_group_exists(&curator_group_id)?;
 
             Self::class_by_id(class_id).get_permissions().get_entity_creation_permissions()
                 .ensure_curator_group_does_not_exist(&curator_group_id)?;
