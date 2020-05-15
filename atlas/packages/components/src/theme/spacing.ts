@@ -1,7 +1,7 @@
 export default {
-  xxs: "2px",
-  xs: "4px",
-  s: "8px",
+  xxs: "4px",
+  xs: "8px",
+  s: "12px",
   m: "16px",
   l: "20px",
   xl: "24px",

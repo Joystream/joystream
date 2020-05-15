@@ -1,14 +1,13 @@
 import React, { useState, useRef, useEffect } from "react"
 import { makeStyles, TextFieldStyleProps } from "./TextField.style"
-import { colors } from "./../../theme"
 import { IconProp } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
+import { spacing } from "./../../theme"
 
 type TextFieldProps = {
   label: string
-  value?: string,
+  value?: string
   icon?: IconProp
-  iconPosition?: "right" | "left"
   onClick?: (e: React.MouseEvent<HTMLDivElement>) => void
   onChange?: (e: React.ChangeEvent) => void
 } & TextFieldStyleProps
@@ -17,7 +16,6 @@ export default function TextField({
   label,
   value = "",
   icon = null,
-  iconPosition = "right",
   disabled = false,
   onClick,
   onChange,
@@ -46,9 +44,9 @@ export default function TextField({
     setIsActive(false)
   }
 
-  function onInputTextChange(event: React.FormEvent<HTMLInputElement>): React.ChangeEventHandler {
+  function onInputTextChange(event: React.FormEvent<HTMLInputElement>): void {
     if (!disabled) setInputTextValue(event.currentTarget.value)
-  }
+  } 
   
   return (
     <div css={styles.container} onClick={onTextFieldClick}>
@@ -59,7 +57,8 @@ export default function TextField({
             position: "absolute",
             top: "-8px",
             left: "5px",
-            fontSize: "0.7rem"
+            fontSize: "0.7rem",
+            padding: `0 ${spacing.xs}`
           }}>
             {label}
         </div>
@@ -72,6 +71,9 @@ export default function TextField({
           onChange={disabled ? null : onInputTextChange}
           onBlur={onInputTextBlur}
         />
+        {!!icon &&
+          <FontAwesomeIcon icon={icon} css={styles.icon} />
+        }
       </div>
     </div>
   )
