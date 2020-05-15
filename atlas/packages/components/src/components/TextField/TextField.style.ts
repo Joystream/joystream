@@ -18,6 +18,8 @@ export let makeStyles = ({
   iconPosition = "right"
 }: TextFieldStyleProps) => {
 
+  const fieldWidth = "250px"
+
   const borderColor = disabled ? colors.gray[200] :
     error ? colors.error :
     focus ? colors.blue[500] :
@@ -26,12 +28,13 @@ export let makeStyles = ({
   return {
     wrapper: css`
       display: block;
+      max-width: ${fieldWidth};
       font-family: ${typography.fonts.base};
     `,
     container: css`
       position: relative;
-      min-width: 250px;
-      height: 50px;
+      width: 100%;
+      height: 48px;
       display: inline-flex;
       cursor: ${disabled ? "not-allowed" : "default"};
     `,
@@ -51,6 +54,7 @@ export let makeStyles = ({
       padding: 0 ${spacing.s};
       ${icon ? `padding-${iconPosition}: ${spacing.xxxxl};` : ""}
       background-color: ${colors.black};
+      font-size: ${typography.sizes.body2};
       transition: all 0.1s linear;
     `,
     input: css`
@@ -62,6 +66,8 @@ export let makeStyles = ({
       border: none;
       color: ${colors.white};
       outline: none;
+      font-size: ${typography.sizes.body2};
+      padding: 5px 0;
     `,
     icon: css`
       color: ${colors.gray[300]};
