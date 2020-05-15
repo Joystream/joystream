@@ -8,7 +8,6 @@ import { I18nProps } from '@polkadot/react-components/types';
 import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import { KeyringSectionOption } from '@polkadot/ui-keyring/options/types';
 import { withCalls, withMulti } from '@polkadot/react-api/with';
-import { MyAddressProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 
 import React, { useState } from 'react';
 import styled from 'styled-components';
@@ -83,11 +82,11 @@ function Accounts({
 }
 
 export default withMulti(
-  withOnlyMembers(styled(Accounts)`
+  styled(Accounts)`
     .ui--CardGrid-buttons {
       text-align: right;
     }
-  `),
+  `,
   translate,
   withCalls<Props>([
     'query.staking.bonded',

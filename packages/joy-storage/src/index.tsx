@@ -74,7 +74,6 @@ class App extends React.PureComponent<Props, State> {
   }
 
   render() {
-    const { allAccounts } = this.props;
     const { tabs } = this.state;
     const { basePath } = this.props;
 

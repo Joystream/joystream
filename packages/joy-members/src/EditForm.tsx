@@ -11,7 +11,7 @@ import * as JoyForms from '@polkadot/joy-utils/forms';
 import { SubmittableResult } from '@polkadot/api';
 import { MemberId, UserInfo, Profile, PaidTermId, PaidMembershipTerms } from '@joystream/types/members';
 import { OptionText } from '@joystream/types/';
-import { MyAccountProps, withMyAccount, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
+import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
 import { queryMembershipToProp } from './utils';
 import { withCalls } from '@polkadot/react-api/index';
 import { Button, Message } from 'semantic-ui-react';
@@ -265,6 +265,19 @@ type WithMyMemberIdProps = MyAccountProps & {
 };
 
 function WithMyMemberIdInner(p: WithMyMemberIdProps) {
+  if (p.allAccounts && !Object.keys(p.allAccounts).length) {
+    return (
+      <Message warning className="JoyMainStatus">
+        <Message.Header>Please create a key to get started.</Message.Header>
+        <div style={{ marginTop: '1rem' }}>
+          <Link to={`/accounts`} className="ui button orange">
+            Create key
+          </Link>
+        </div>
+      </Message>
+    );
+  }
+
   if (p.memberIdsByRootAccountId && p.memberIdsByControllerAccountId && p.paidTermsIds) {
     if (p.paidTermsIds.length) {
       // let member_ids = p.memberIdsByRootAccountId.slice(); // u8a.subarray is not a function!!
@@ -276,17 +289,16 @@ function WithMyMemberIdInner(p: WithMyMemberIdProps) {
       console.error('Active paid membership terms is empty');
     }
   }
+
   return <em>Loading...</em>;
 }
 
-const WithMyMemberId = withOnlyMembers(
-  withMyAccount(
-    withCalls<WithMyMemberIdProps>(
-      queryMembershipToProp('memberIdsByRootAccountId', 'myAddress'),
-      queryMembershipToProp('memberIdsByControllerAccountId', 'myAddress'),
-      queryMembershipToProp('activePaidMembershipTerms', { propName: 'paidTermsIds' })
-    )(WithMyMemberIdInner)
-  )
+const WithMyMemberId = withMyAccount(
+  withCalls<WithMyMemberIdProps>(
+    queryMembershipToProp('memberIdsByRootAccountId', 'myAddress'),
+    queryMembershipToProp('memberIdsByControllerAccountId', 'myAddress'),
+    queryMembershipToProp('activePaidMembershipTerms', { propName: 'paidTermsIds' })
+  )(WithMyMemberIdInner)
 );
 
 export default WithMyMemberId;

@@ -273,8 +273,9 @@ export const withMyAccount = <P extends MyAccountProps>(Component: React.Compone
 
 function OnlyMembers<P extends MyAccountProps>(Component: React.ComponentType<P>) {
   return function(props: P) {
-    const { myMemberIdChecked, iAmMember } = props;
-    if (!myMemberIdChecked) {
+    const { myMemberIdChecked, iAmMember, allAccounts } = props;
+
+    if (allAccounts && !Object.keys(allAccounts).length) {
       return (
         <Message warning className="JoyMainStatus">
           <Message.Header>Please create a key to get started.</Message.Header>
@@ -285,6 +286,10 @@ function OnlyMembers<P extends MyAccountProps>(Component: React.ComponentType<P>
           </div>
         </Message>
       );
+    }
+
+    if (!myMemberIdChecked) {
+      return <em>Loading...</em>;
     } else if (iAmMember) {
       return <Component {...props} />;
     } else {
