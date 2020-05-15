@@ -907,12 +907,12 @@ construct_runtime!(
         RandomnessCollectiveFlip: randomness_collective_flip::{Module, Call, Storage},
         Sudo: sudo,
         // Joystream
+        Migration: migration::{Module, Call, Storage, Event<T>, Config},
         CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
         Council: council::{Module, Call, Storage, Event<T>, Config<T>},
         Memo: memo::{Module, Call, Storage, Event<T>},
         Members: members::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
-        Migration: migration::{Module, Call, Storage, Event<T>},
         Actors: actors::{Module, Call, Storage, Event<T>, Config},
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
         DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
