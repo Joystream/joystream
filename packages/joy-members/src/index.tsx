@@ -18,6 +18,7 @@ import DetailsByHandle from './DetailsByHandle';
 import EditForm from './EditForm';
 import { withMyAccount, MyAccountProps } from '@polkadot/joy-utils/MyAccount';
 import {FIRST_MEMBER_ID} from './constants';
+import { RouteComponentProps } from 'react-router-dom';
 
 // define out internal types
 type Props = AppProps & ApiProps & I18nProps & MyAccountProps & {
@@ -31,9 +32,9 @@ class App extends React.PureComponent<Props> {
 
     return [
       {
-        isRoot: true,
-        name: 'members',
-        text: t('All members') + ` (${memberCount})`
+        name: 'list',
+        text: t('All members') + ` (${memberCount})`,
+        forcedExact: false
       },
       {
         name: 'edit',
@@ -46,17 +47,16 @@ class App extends React.PureComponent<Props> {
     ];
   }
 
-  private renderList () {
+  private renderList (routeProps: RouteComponentProps) {
     const { membersCreated, ...otherProps } = this.props;
     return membersCreated ?
-      <List firstMemberId={FIRST_MEMBER_ID} membersCreated={membersCreated} {...otherProps} />
+      <List firstMemberId={FIRST_MEMBER_ID} membersCreated={membersCreated} {...otherProps} {...routeProps}/>
       : <em>Loading...</em>;
   }
 
   render () {
     const { basePath } = this.props;
     const tabs = this.buildTabs();
-    const list = () => this.renderList();
 
     return (
       <main className='members--App'>
@@ -66,8 +66,9 @@ class App extends React.PureComponent<Props> {
         <Switch>
           <Route path={`${basePath}/edit`} component={EditForm} />
           <Route path={`${basePath}/dashboard`} component={Dashboard} />
-          <Route path={`${basePath}/:handle`} component={DetailsByHandle} />
-          <Route render={list} />
+          <Route path={`${basePath}/list/:page([0-9]+)?`} render={ props => this.renderList(props) } />
+          <Route exact={true} path={`${basePath}/:handle`} component={DetailsByHandle} />
+          <Route render={ props => this.renderList(props) } />
         </Switch>
       </main>
     );
