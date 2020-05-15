@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react"
 import { makeStyles, DropdownStyleProps } from "./Dropdown.style"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faChevronDown } from "@fortawesome/free-solid-svg-icons"
+import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons"
 import { spacing } from "./../../theme"
 
 type DropdownOption = {
@@ -23,7 +23,7 @@ export default function Dropdown({
   value = "",
   options,
   disabled = false,
-  onChange,
+  onChange = () => {},
   ...styleProps
 }: DropdownProps) {
 
@@ -68,7 +68,12 @@ export default function Dropdown({
             disabled={true}
             value={inputTextValue}
           />
-          <FontAwesomeIcon icon={faChevronDown} css={styles.icon} />
+          {!showOptions && 
+            <FontAwesomeIcon icon={faChevronDown} css={styles.iconOpen} />
+          }
+          {!!showOptions && 
+            <FontAwesomeIcon icon={faChevronUp} css={styles.iconClose} />
+          }
         </div>
         {showOptions &&
           <div css={styles.options}>

@@ -31,7 +31,7 @@ export let makeStyles = ({
     container: css`
       position: relative;
       width: 100%;
-      height: 50px;
+      height: 48px;
       display: inline-flex;
       cursor: ${disabled ? "not-allowed" : "default"};
     `,
@@ -50,6 +50,10 @@ export let makeStyles = ({
       color: ${error ? colors.error : colors.gray[400]};
       padding: 0 ${spacing.xxxxl} 0 ${spacing.s};
       background-color: ${colors.black};
+      font-size: ${typography.sizes.body2};
+      &::selection {
+        background-color: transparent;
+      }
     `,
     input: css`
       display: none;
@@ -59,9 +63,18 @@ export let makeStyles = ({
       border: none;
       color: ${colors.white};
       outline: none;
+      font-size: ${typography.sizes.body2};
+      padding: 5px 0;
     `,
-    icon: css`
+    iconOpen: css`
       color: ${colors.gray[300]};
+      font-size: ${typography.sizes.icon.medium};
+      position: absolute;
+      top: ${spacing.m};
+      right: ${spacing.s};
+    `,
+    iconClose: css`
+      color: ${colors.blue[500]};
       font-size: ${typography.sizes.icon.medium};
       position: absolute;
       top: ${spacing.m};
@@ -82,6 +95,7 @@ export let makeStyles = ({
     `,
     option: css`
       padding: ${spacing.s};
+      font-size: ${typography.sizes.body2};
       &:hover {
         background-color: ${colors.gray[600]}
       }

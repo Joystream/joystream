@@ -23,13 +23,24 @@ const options = [
 
 export const Primary = () => (
   <div style={{ backgroundColor: "black", padding: "50px 20px" }}>
-    <Dropdown label="Label" options={options} onChange={(option) => console.log(option)} />
+    <Dropdown label="Label" options={options} />
   </div>
 )
 
 export const PrimaryWithValue = () => (
   <div style={{ backgroundColor: "black", padding: "50px 20px" }}>
-    <Dropdown label="Label" options={options} value={options[1].value} onChange={(option) => console.log(option)} />
+    <Dropdown label="Label" options={options} value={options[1].value} />
   </div>
 )
 
+export const PrimaryFocus = () => (
+  <div style={{ backgroundColor: "black", padding: "50px 20px" }}>
+    <Dropdown label="Label" options={options} focus={true} />
+  </div>
+)
+
+export const PrimaryError = () => (
+  <div style={{ backgroundColor: "black", padding: "50px 20px" }}>
+    <Dropdown label="Label" options={options} error={true} />
+  </div>
+)
