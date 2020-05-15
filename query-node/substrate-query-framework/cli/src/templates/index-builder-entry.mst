@@ -18,6 +18,8 @@ export {
     DB 
 };
 
+const logger = getLogger();
+
 function getProcessingPack() {
   const handlers = require("../../mappings");
 
@@ -49,39 +51,37 @@ function banner():Command {
           figlet.textSync('Joystream-Indexer')
         )
     );
-    const command = new Command();
+    const program = new Command();
     const version = require('./package.json').version;
 
-    command
+    program
         .version(version)
         .description("Joystream Indexer")
+        .option('-b, --bootstrap', 'Load initial data using the boot* mappings')
         .option('-l, --logging <file>', 'Path to log4js config', null)
-        .option('-b, --bootstrap', 'Bootstrap data')
-        .option('-B, --force-bootstrap', 'Force bootstrap even if there are bootstrap checkmarks')
         .option('-h, --height <height>', 'Block height to start from', 0)
-        .option('-e, --env <file>', '.env file location', '../../.env')
-        .parse(process.argv);
+        .option('-e, --env <file>', '.env file location', '../../.env');
     
-    return command;
+    program.parse(process.argv);
+    
+    return program;
 }
 
-function setUp(command: Command) {
-    
-    if (command.bootstrap) {
-        process.env.QUERY_NODE_BOOTSTRAP_DB = 'true'; 
-    }
-    if (command.force_bootstrap) {
-        process.env.FORCE_BOOTSTRAP = 'true';     
-    }
-    const height:string = command.height || '0';
+function setUp(opts: any) {
+      
+    const height:string = opts.height || '0';
     process.env.BLOCK_HEIGHT = height;
-    
+
+    if (opts.bootstrap) {
+        process.env.QUERY_NODE_BOOTSTRAP_DB = 'true'
+    }
+
     // dotenv config
-    dotenv.config({ path: command.env });
+    dotenv.config({ path: opts.env });
 
     //log4js config
-    if (command.logging) {
-        configure(command.logging)
+    if (opts.logging) {
+        configure(opts.logging)
     } else {
         // log4js default: DEBUG to console output;
         getLogger().level = 'debug';
@@ -90,19 +90,13 @@ function setUp(command: Command) {
 }
 
 async function doBootstrap(node: QueryNodeManager) {
-    try {
-        await node.start(
-          process.env.WS_PROVIDER_ENDPOINT_URI as string,
-          {},
-          {{typeRegistrator}},
-          getBootstrapPack()
-        );
-        console.log("Bootstrap done");
-        process.exit(0);
-    } catch (error) {
-        console.error(error);
-        process.exit(1);
-    }
+    await node.start(
+        process.env.WS_PROVIDER_ENDPOINT_URI as string,
+        {},
+        {{typeRegistrator}},
+        getBootstrapPack()
+    );
+    logger.info("Bootstrap done");
 }
 
 async function main() {
@@ -112,22 +106,25 @@ async function main() {
   const providerUri = process.env.WS_PROVIDER_ENDPOINT_URI;
 
   if (!providerUri) {
-    console.error(
+    throw new Error(
       "WS_PROVIDER_ENDPOINT_URI environment variable is not set! Make sure you set it in your .env file or system wide."
     );
-    process.exit(1);
   }
 
-  const conn = await createConnection();
+  await createConnection();
 
   const node = new QueryNodeManager(process);
 
   const bootstrap = process.env.QUERY_NODE_BOOTSTRAP_DB;
   if (bootstrap) {
-    doBootstrap(node) 
+    await doBootstrap(node) 
   }
 
   node.start(providerUri, getProcessingPack(), {{typeRegistrator}});
 }
 
-main();
+main().catch((e) => {
+    console.error(e);
+    process.exit(1)
+});
+
