@@ -1,12 +1,13 @@
 import { Memberships } from '../generated/indexer/entities/Memberships';
 import { DB } from '../generated/indexer';
-import { ApiPromise } from '../generated/indexer/node_modules/@polkadot/api';
-import { QueryRunner, DeepPartial } from '../generated/indexer/node_modules/typeorm';
-import { Hash } from '../generated/indexer/node_modules/@polkadot/types/interfaces';
-import { Option } from '../generated/indexer/node_modules/@polkadot/types/codec';
-import type { Profile } from '../generated/indexer/node_modules/@joystream/types/lib/members';
+import { ApiPromise } from '@polkadot/api';
+import { QueryRunner, DeepPartial } from 'typeorm';
+import { Hash } from '@polkadot/types/interfaces';
+import { Option } from '@polkadot/types/codec';
+import type { Profile } from '@joystream/types/lib/members';
 import { fillRequiredWarthogFields } from  '../generated/indexer/node_modules/index-builder/lib/db/helper'
 import { SavedEntityEvent } from  '../generated/indexer/node_modules/index-builder/lib/db'
+import { Codec } from '@polkadot/types/types';
 
 const debug = require('debug')('indexer:mappings')
 
@@ -42,12 +43,13 @@ export async function handleMemberUpdatedAboutText(db: DB) {
 
 
 export async function bootMembers(api: ApiPromise, queryRunner: QueryRunner) {
-    let blkHash: Hash = await api.rpc.chain.getBlockHash(0);
+    let blkHeight: number = process.env.BLOCK_HEIGHT ? parseInt(process.env.BLOCK_HEIGHT) : 0;
+    let blkHash: Hash = await api.rpc.chain.getBlockHash(blkHeight);
     let ids = await api.query.members.membersCreated.at(blkHash);
     let num: number = parseInt(ids.toString())
       
     for (let i = 0; i < num; i++) {
-        let profileOpt = await api.query.members.memberProfile.at(blkHash, i) as Option<Profile>;
+        let profileOpt = await api.query.members.memberProfile.at(blkHash, i) as Option<Profile & Codec>;
         let profile: Profile | null = profileOpt.unwrapOr(null);
         
         if (!profile) {
