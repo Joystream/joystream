@@ -24,11 +24,14 @@ export let makeStyles = ({
     isActive ? colors.gray[200] : colors.gray[400]
 
   return {
+    wrapper: css`
+      display: block;
+      font-family: ${typography.fonts.base};
+    `,
     container: css`
       position: relative;
       min-width: 250px;
       height: 50px;
-      font-family: ${typography.fonts.base};
       display: inline-flex;
       cursor: ${disabled ? "not-allowed" : "default"};
     `,
@@ -46,7 +49,7 @@ export let makeStyles = ({
     label: css`
       color: ${error ? colors.error : colors.gray[400]};
       padding: 0 ${spacing.s};
-      ${icon ? `padding-${iconPosition}: ${spacing["4l"]};` : ""}
+      ${icon ? `padding-${iconPosition}: ${spacing.xxxxl};` : ""}
       background-color: ${colors.black};
       transition: all 0.1s linear;
     `,
@@ -54,7 +57,7 @@ export let makeStyles = ({
       display: none;
       width: 100%;
       margin: 0 ${spacing.s};
-      ${icon ? `margin-${iconPosition}: ${spacing["4l"]};` : ""}
+      ${icon ? `margin-${iconPosition}: ${spacing.xxxxl};` : ""}
       background: none;
       border: none;
       color: ${colors.white};
@@ -66,6 +69,11 @@ export let makeStyles = ({
       position: absolute;
       top: ${spacing.s};
       ${iconPosition}: ${spacing.s};
+    `,
+    helper: css`
+      color: ${error ? colors.error : colors.gray[400]};
+      font-size: ${typography.sizes.caption};
+      margin: ${spacing.xxs} ${spacing.xs};
     `
   }
 }

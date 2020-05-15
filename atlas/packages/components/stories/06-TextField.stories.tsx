@@ -48,3 +48,21 @@ export const PrimaryWithIconLeft = () => (
     <TextField label="Label" icon={faBan} iconPosition="left" />
   </div>
 )
+
+export const PrimaryWithHelperText = () => (
+  <div style={{ backgroundColor: "black", padding: "50px 20px" }}>
+    <TextField label="Label" helper="Helper text" />
+  </div>
+)
+
+export const FocusWithHelperText = () => (
+  <div style={{ backgroundColor: "black", padding: "50px 20px" }}>
+    <TextField label="Label" focus={true} helper="Helper text" />
+  </div>
+)
+
+export const ErrorWithHelperText = () => (
+  <div style={{ backgroundColor: "black", padding: "50px 20px" }}>
+    <TextField label="Label" error={true} helper="Helper text" />
+  </div>
+)

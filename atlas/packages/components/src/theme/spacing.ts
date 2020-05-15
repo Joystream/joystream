@@ -7,6 +7,6 @@ export default {
   xl: "24px",
   xxl: "32px",
   xxxl: "40px",
-  "4l": "48px",
-  "5l": "64px"
+  xxxxl: "48px",
+  xxxxxl: "64px"
 }
