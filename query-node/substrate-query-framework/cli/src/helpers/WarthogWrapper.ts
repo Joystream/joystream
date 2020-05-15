@@ -2,19 +2,19 @@ import * as fs from 'fs-extra';
 import { execSync } from 'child_process';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
-import { deserializeArray } from 'class-transformer';
+import Command from '@oclif/command';
 const warthogCli = require('warthog/dist/cli/cli');
 
-import { Input } from './schema';
-import Command from '@oclif/command';
+import { DatabaseModelCodeGenerator } from './ModelCodeGenerator';
+import { getTemplatePath } from '../utils/utils';
 
 export default class WarthogWrapper {
   private readonly command: Command;
   private readonly schemaPath: string;
 
-  constructor(command: Command) {
+  constructor(command: Command, schemaPath: string) {
     this.command = command;
-    this.schemaPath = '../../schema.json';
+    this.schemaPath = schemaPath;
   }
 
   async run() {
@@ -35,6 +35,11 @@ export default class WarthogWrapper {
 
   async newProject(projectName: string = 'query_node') {
     await warthogCli.run(`new ${projectName}`);
+
+    // Override warthog's files for model naming strategy
+    fs.copyFileSync(getTemplatePath('graphql-server.index.mst'), path.resolve(process.cwd(), 'src/index.ts'));
+    fs.copyFileSync(getTemplatePath('sync.mst'), path.resolve(process.cwd(), 'src/sync.ts'));
+
     this.updateDotenv();
   }
 
@@ -65,41 +70,13 @@ export default class WarthogWrapper {
   async createModels() {
     const schemaPath = path.resolve(process.cwd(), this.schemaPath);
 
-    if (!fs.existsSync(schemaPath)) {
-      this.command.error(`File does not exists! ${schemaPath}`);
-    }
-    if (!path.extname(schemaPath)) {
-      this.command.error('Schema file must be a JSON file!');
-    }
-    const data = fs.readFileSync(schemaPath, 'utf8');
-    const inputs = deserializeArray(Input, data);
-
-    // Make arguments ready for "generate" command
-    const commands = inputs.map(input => {
-      if (!input.name) {
-        this.command.error('A type must have "name" property');
-      }
-      if (!input.fields) {
-        this.command.error(
-          `A defined type must have at least one field. Got name: ${input.name} fields:"${input.fields}"`
-        );
-      }
-
-      const fields = input.fields
-        .map(f => {
-          if (!f.name) this.command.error(`Empty field name. Got ${f.name}`);
-          if (!f.type) this.command.error(`Empty field type. Got ${f.type}`);
-          return `${f.name}:${f.type}`;
-        })
-        .join(' ');
-
-      // e.g generate user name:string! age:int!
-      return ['yarn warthog generate', input.name, fields].join(' ');
-    });
+    const modelGenerator = new DatabaseModelCodeGenerator(schemaPath);
+    const commands = modelGenerator
+      .generateModelDefinationsForWarthog()
+      .map(model => ['yarn warthog generate', model].join(' '));
 
     // Execute commands
     commands.forEach(async command => {
-      console.log(command);
       if (command) {
         // Doesnt wait for the process to finish
         // await warthogCli.run(command);
@@ -111,8 +88,7 @@ export default class WarthogWrapper {
   }
 
   async createMigrations() {
-    await warthogCli.run(`db:migrate:generate --name=Create-database-table`);
-    await warthogCli.run('db:migrate');
+    execSync('yarn ts-node src/sync.ts');
   }
 
   async codegen() {
