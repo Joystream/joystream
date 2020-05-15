@@ -100,6 +100,8 @@ impl timestamp::Trait for Runtime {
 impl Trait for Runtime {
     type Event = ();
     type MembershipRegistry = registry::TestMembershipRegistryModule;
+    type ThreadId = u64;
+    type PostId = u64;
 }
 
 #[derive(Clone)]
@@ -123,9 +125,9 @@ pub const NOT_MEMBER_ORIGIN: OriginType = OriginType::Signed(222);
 
 pub const INVLAID_CATEGORY_ID: CategoryId = 333;
 
-pub const INVLAID_THREAD_ID: ThreadId = 444;
+pub const INVLAID_THREAD_ID: RuntimeThreadId = 444;
 
-pub const INVLAID_POST_ID: ThreadId = 555;
+pub const INVLAID_POST_ID: RuntimePostId = 555;
 
 pub fn generate_text(len: usize) -> Vec<u8> {
     vec![b'x'; len]
@@ -228,7 +230,7 @@ impl CreateThreadFixture {
 
 pub struct CreatePostFixture {
     pub origin: OriginType,
-    pub thread_id: ThreadId,
+    pub thread_id: RuntimeThreadId,
     pub text: Vec<u8>,
     pub result: dispatch::Result,
 }
@@ -285,7 +287,7 @@ pub fn assert_create_thread(
 
 pub fn assert_create_post(
     forum_sudo: OriginType,
-    thread_id: ThreadId,
+    thread_id: RuntimeThreadId,
     expected_result: dispatch::Result,
 ) {
     CreatePostFixture {
@@ -312,7 +314,7 @@ pub fn create_root_category(forum_sudo: OriginType) -> CategoryId {
 
 pub fn create_root_category_and_thread(
     forum_sudo: OriginType,
-) -> (OriginType, CategoryId, ThreadId) {
+) -> (OriginType, CategoryId, RuntimeThreadId) {
     let member_origin = create_forum_member();
     let category_id = create_root_category(forum_sudo);
     let thread_id = TestForumModule::next_thread_id();
@@ -331,7 +333,7 @@ pub fn create_root_category_and_thread(
 
 pub fn create_root_category_and_thread_and_post(
     forum_sudo: OriginType,
-) -> (OriginType, CategoryId, ThreadId, PostId) {
+) -> (OriginType, CategoryId, RuntimeThreadId, RuntimePostId) {
     let (member_origin, category_id, thread_id) = create_root_category_and_thread(forum_sudo);
     let post_id = TestForumModule::next_post_id();
 
@@ -348,7 +350,7 @@ pub fn create_root_category_and_thread_and_post(
 
 pub fn moderate_thread(
     forum_sudo: OriginType,
-    thread_id: ThreadId,
+    thread_id: RuntimeThreadId,
     rationale: Vec<u8>,
 ) -> dispatch::Result {
     TestForumModule::moderate_thread(mock_origin(forum_sudo), thread_id, rationale)
@@ -356,7 +358,7 @@ pub fn moderate_thread(
 
 pub fn moderate_post(
     forum_sudo: OriginType,
-    post_id: PostId,
+    post_id: RuntimePostId,
     rationale: Vec<u8>,
 ) -> dispatch::Result {
     TestForumModule::moderate_post(mock_origin(forum_sudo), post_id, rationale)
@@ -456,23 +458,28 @@ pub type RuntimeThread = Thread<
     <Runtime as system::Trait>::BlockNumber,
     <Runtime as timestamp::Trait>::Moment,
     <Runtime as system::Trait>::AccountId,
+    RuntimeThreadId,
 >;
 pub type RuntimePost = Post<
     <Runtime as system::Trait>::BlockNumber,
     <Runtime as timestamp::Trait>::Moment,
     <Runtime as system::Trait>::AccountId,
+    RuntimeThreadId,
+    RuntimePostId,
 >;
 pub type RuntimeBlockchainTimestamp = BlockchainTimestamp<
     <Runtime as system::Trait>::BlockNumber,
     <Runtime as timestamp::Trait>::Moment,
 >;
+pub type RuntimeThreadId = <Runtime as Trait>::ThreadId;
+pub type RuntimePostId = <Runtime as Trait>::PostId;
 
 pub fn genesis_config(
     category_by_id: &RuntimeMap<CategoryId, RuntimeCategory>,
     next_category_id: u64,
-    thread_by_id: &RuntimeMap<ThreadId, RuntimeThread>,
+    thread_by_id: &RuntimeMap<RuntimeThreadId, RuntimeThread>,
     next_thread_id: u64,
-    post_by_id: &RuntimeMap<PostId, RuntimePost>,
+    post_by_id: &RuntimeMap<RuntimePostId, RuntimePost>,
     next_post_id: u64,
     forum_sudo: <Runtime as system::Trait>::AccountId,
     category_title_constraint: &InputValidationLengthConstraint,
