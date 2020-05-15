@@ -5,14 +5,14 @@ export type TextFieldStyleProps = {
   disabled?: boolean
   focus?: boolean
   error?: boolean
-  isActive: boolean
+  isActive?: boolean
 }
 
 export let makeStyles = ({
   disabled = false,
   focus = false,
   error = false,
-  isActive
+  isActive = false
 }: TextFieldStyleProps) => {
 
   const borderColor = disabled ? colors.gray[200] :
@@ -27,6 +27,7 @@ export let makeStyles = ({
       height: 50px;
       font-family: ${typography.fonts.base};
       display: inline-flex;
+      cursor: ${disabled ? "not-allowed" : "default"};
     `,
     border: css`
       position: absolute;
@@ -40,7 +41,7 @@ export let makeStyles = ({
       justify-content: left;
     `,
     label: css`
-      color: ${colors.gray[400]};
+      color: ${error ? colors.error : colors.gray[400]};
       padding: 0 10px;
       background-color: ${colors.black};
       transition: all 0.1s linear;

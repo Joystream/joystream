@@ -9,7 +9,6 @@ type TextFieldProps = {
   value?: string,
   icon?: IconProp
   iconPosition?: "right" | "left"
-  disabled?: boolean
   onClick?: (e: React.MouseEvent<HTMLDivElement>) => void
   onChange?: (e: React.ChangeEvent) => void
 } & TextFieldStyleProps
@@ -28,7 +27,7 @@ export default function TextField({
   const inputRef = useRef(null)
   const [isActive, setIsActive] = useState(!!value)
   const [inputTextValue, setInputTextValue] = useState(value)
-  const styles = makeStyles({ isActive, ...styleProps })
+  const styles = makeStyles({ isActive, disabled, ...styleProps })
 
   useEffect(() => {
     if (isActive) {
@@ -40,7 +39,7 @@ export default function TextField({
   }, [isActive, inputRef]);
 
   function onTextFieldClick() {
-    setIsActive(true)
+    if (!disabled) setIsActive(true)
   }
 
   function onInputTextBlur() {
@@ -48,8 +47,7 @@ export default function TextField({
   }
 
   function onInputTextChange(event: React.FormEvent<HTMLInputElement>): React.ChangeEventHandler {
-    if (disabled) return
-    setInputTextValue(event.currentTarget.value)
+    if (!disabled) setInputTextValue(event.currentTarget.value)
   }
   
   return (

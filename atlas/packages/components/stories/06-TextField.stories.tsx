@@ -23,3 +23,15 @@ export const Error = () => (
     <TextField label="Label" error={true} />
   </div>
 )
+
+export const Disabled = () => (
+  <div style={{ backgroundColor: "black", padding: "50px 20px" }}>
+    <TextField label="Label" disabled={true} />
+  </div>
+)
+
+export const DisabledWithValue = () => (
+  <div style={{ backgroundColor: "black", padding: "50px 20px" }}>
+    <TextField label="Label" value="Disabled" disabled={true} />
+  </div>
+)
