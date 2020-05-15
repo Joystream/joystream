@@ -4,30 +4,31 @@ import axios, { CancelTokenSource } from 'axios';
 import { History } from 'history';
 import { Progress, Message } from 'semantic-ui-react';
 
-import { InputFile } from '@polkadot/react-components/index';
+import { InputFileAsync } from '@polkadot/react-components/index';
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
 import { SubmittableResult } from '@polkadot/api';
 import { Option } from '@polkadot/types/codec';
-import { withMulti } from '@polkadot/react-api';
+import { withMulti, withApi } from '@polkadot/react-api';
 import { formatNumber } from '@polkadot/util';
 import { AccountId } from '@polkadot/types/interfaces';
 
 import translate from './translate';
 import { fileNameWoExt } from './utils';
 import { ContentId, DataObject } from '@joystream/types/media';
-import { MyAccountProps, withMembershipRequired } from '@polkadot/joy-utils/MyAccount';
+import { withMembershipRequired } from '@polkadot/joy-utils/MyAccount';
 import { DiscoveryProviderProps, withDiscoveryProvider } from './DiscoveryProvider';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import IpfsHash from 'ipfs-only-hash';
 import { ChannelId } from '@joystream/types/content-working-group';
 import { EditVideoView } from './upload/EditVideo.view';
 import { JoyInfo } from '@polkadot/joy-utils/JoyStatus';
+import { IterableFile } from './IterableFile';
 
 const MAX_FILE_SIZE_MB = 500;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
-type Props = ApiProps & I18nProps & MyAccountProps & DiscoveryProviderProps & {
+type Props = ApiProps & I18nProps & DiscoveryProviderProps & {
   channelId: ChannelId
   history?: History
   match: {
@@ -39,8 +40,8 @@ type Props = ApiProps & I18nProps & MyAccountProps & DiscoveryProviderProps & {
 
 type State = {
   error?: any,
-  file_name?: string,
-  file_data?: Uint8Array,
+  file?: File,
+  computingHash: boolean,
   ipfs_cid?: string,
   newContentId: ContentId,
   discovering: boolean,
@@ -51,8 +52,9 @@ type State = {
 
 const defaultState = (): State => ({
   error: undefined,
-  file_name: undefined,
-  file_data: undefined,
+  file: undefined,
+  computingHash: false,
+  ipfs_cid: undefined,
   newContentId: ContentId.generate(),
   discovering: false,
   uploading: false,
@@ -83,11 +85,12 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   private renderContent () {
-    const { error, uploading, discovering } = this.state;
+    const { error, uploading, discovering, computingHash } = this.state;
 
     if (error) return this.renderError();
     else if (discovering) return this.renderDiscovering();
     else if (uploading) return this.renderUploading();
+    else if (computingHash) return this.renderComputingHash();
     else return this.renderFileInput();
   }
 
@@ -103,15 +106,16 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   private resetForm = () => {
-    let newDefaultState = defaultState();
     const { cancelSource } = this.state;
-    newDefaultState.cancelSource = cancelSource;
-    this.setState(newDefaultState);
+    this.setState({
+      cancelSource,
+      ...defaultState()
+    });
   }
 
   private renderUploading () {
-    const { file_name, newContentId, progress, error } = this.state;
-    if (!file_name) return <JoyInfo title='Loading...' />
+    const { file, newContentId, progress, error } = this.state;
+    if (!file || !file.name) return <JoyInfo title='Loading...' />;
 
     const success = !error && progress >= 100;
     const { history, match: { params: { channelId } } } = this.props
@@ -122,7 +126,7 @@ class Component extends React.PureComponent<Props, State> {
         <EditVideoView
           channelId={new ChannelId(channelId)}
           contentId={newContentId}
-          fileName={fileNameWoExt(file_name)}
+          fileName={fileNameWoExt(file.name)}
           history={history}
         />
       }
@@ -156,11 +160,12 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   private renderFileInput () {
-    const { file_name, file_data } = this.state;
-    const file_size = file_data ? file_data.length : 0;
+    const { file } = this.state;
+    const file_size = file ? file.size : 0;
+    const file_name = file ? file.name : '';
 
     return <div className='UploadSelectForm'>
-      <InputFile
+      <InputFileAsync
         label=""
         withLabel={false}
         className={`UploadInputFile ${file_name ? 'FileSelected' : ''}`}
@@ -191,29 +196,60 @@ class Component extends React.PureComponent<Props, State> {
     </div>;
   }
 
-  private onFileSelected = async (data: Uint8Array, file_name: string) => {
-    if (!data || data.length === 0) {
+  private onFileSelected = async (file: File) => {
+    if (!file.size) {
       this.setState({ error: `You cannot upload an empty file.` });
-    } else if (data.length > MAX_FILE_SIZE_BYTES) {
+    } else if (file.size > MAX_FILE_SIZE_BYTES) {
       this.setState({ error:
-        `You cannot upload a file that is more than ${MAX_FILE_SIZE_MB} MB.`
+        `You can't upload files larger than ${MAX_FILE_SIZE_MB} MBytes in size.`
       });
     } else {
-      const ipfs_cid = await IpfsHash.of(Buffer.from(data));
-      console.log('computed IPFS hash:', ipfs_cid)
-      // File size is valid and can be uploaded:
-      this.setState({ file_name, file_data: data, ipfs_cid });
+      this.setState({ file, computingHash: true })
+      this.startComputingHash();
     }
   }
 
+  private async startComputingHash() {
+    const { file } = this.state;
+
+    if (!file) {
+      return this.hashComputationComplete(undefined, 'No file passed to hasher');
+    }
+
+    try {
+      const iterableFile = new IterableFile(file, { chunkSize: 65535 });
+      const ipfs_cid = await IpfsHash.of(iterableFile);
+
+      this.hashComputationComplete(ipfs_cid)
+    } catch (err) {
+      return this.hashComputationComplete(undefined, err);
+    }
+  }
+
+  private hashComputationComplete(ipfs_cid: string | undefined, error?: string) {
+    if (!error) {
+      console.log('Computed IPFS hash:', ipfs_cid)
+    }
+
+    this.setState({
+      computingHash: false,
+      ipfs_cid,
+      error
+    })
+  }
+
+  private renderComputingHash() {
+    return <JoyInfo title='Processing your file. Please wait...' />
+  }
+
   private buildTxParams = () => {
-    const { file_name, file_data, newContentId, ipfs_cid } = this.state;
-    if (!file_name || !file_data || !ipfs_cid) return [];
+    const { file, newContentId, ipfs_cid } = this.state;
+    if (!file || !ipfs_cid) return [];
 
     // TODO get corresponding data type id based on file content
     const dataObjectTypeId = new BN(1);
 
-    return [ newContentId, dataObjectTypeId, new BN(file_data.length), ipfs_cid];
+    return [ newContentId, dataObjectTypeId, new BN(file.size), ipfs_cid];
   }
 
   private onDataObjectCreated = async (_txResult: SubmittableResult) => {
@@ -249,8 +285,8 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   private uploadFileTo = async (storageProvider: AccountId) => {
-    const { file_data, newContentId, cancelSource } = this.state;
-    if (!file_data || !file_data.length) {
+    const { file, newContentId, cancelSource } = this.state;
+    if (!file || !file.size) {
       this.setState({
         error: new Error('No file to upload!'),
         discovering: false,
@@ -297,7 +333,7 @@ class Component extends React.PureComponent<Props, State> {
     this.setState({ discovering: false, uploading: true, progress: 0 });
 
     try {
-      await axios.put<{ message: string }>(url, file_data, config);
+      await axios.put<{ message: string }>(url, file, config);
     } catch(err) {
       this.setState({ progress: 0, error: err, uploading: false });
       if (axios.isCancel(err)) {
@@ -314,6 +350,7 @@ class Component extends React.PureComponent<Props, State> {
 export const UploadWithRouter = withMulti(
   Component,
   translate,
+  withApi,
   withMembershipRequired,
   withDiscoveryProvider
 )

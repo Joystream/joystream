@@ -1,8 +1,10 @@
-# Joystream webapp
+<p align="center"><img src="img/pioneer_new.svg"></p>
+
+![Content Directory](https://user-images.githubusercontent.com/4144334/67765742-bbfab280-fa44-11e9-8b13-494b1bfb6014.jpeg)
 
 A Portal into the Joystream network. Provides a view and interaction layer from a browser.
 
-This can be accessed as a hosted application via [https://sparta.joystream.org/apps/](https://sparta.joystream.org/apps/).
+This can be accessed as a hosted application via [https://testnet.joystream.org/acropolis/pioneer](https://testnet.joystream.org/acropolis/pioneer).
 
 ## overview
 
