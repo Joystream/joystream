@@ -9,7 +9,6 @@ type TextFieldProps = {
   helper?: string
   value?: string
   icon?: IconProp
-  onClick?: (e: React.MouseEvent<HTMLDivElement>) => void
   onChange?: (e: React.ChangeEvent) => void
 } & TextFieldStyleProps
 
@@ -19,7 +18,6 @@ export default function TextField({
   value = "",
   icon = null,
   disabled = false,
-  onClick,
   onChange,
   ...styleProps
 }: TextFieldProps) {
