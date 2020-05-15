@@ -95,10 +95,10 @@ pub trait Trait: system::Trait + membership::members::Trait {
     >;
 
     /// Discussion thread Id type
-    type ThreadId: From<u32> + Into<u32> + Parameter + Default + Copy;
+    type ThreadId: From<u64> + Into<u64> + Parameter + Default + Copy;
 
     /// Post Id type
-    type PostId: From<u32> + Parameter + Default + Copy;
+    type PostId: From<u64> + Parameter + Default + Copy;
 
     /// Defines post edition number limit.
     type MaxPostEditionNumber: Get<u32>;
@@ -166,14 +166,14 @@ decl_storage! {
             Thread<MemberId<T>, T::BlockNumber>;
 
         /// Count of all threads that have been created.
-        pub ThreadCount get(fn thread_count): u32;
+        pub ThreadCount get(fn thread_count): u64;
 
         /// Map thread id and post id to corresponding post.
         pub PostThreadIdByPostId: double_map T::ThreadId, twox_128(T::PostId) =>
              Post<MemberId<T>, T::BlockNumber, T::ThreadId>;
 
         /// Count of all posts that have been created.
-        pub PostCount get(fn post_count): u32;
+        pub PostCount get(fn post_count): u64;
 
         /// Last author thread counter (part of the antispam mechanism)
         pub LastThreadAuthorCounter get(fn last_thread_author_counter):
@@ -189,6 +189,18 @@ decl_module! {
 
         /// Emits an event. Default substrate implementation.
         fn deposit_event() = default;
+
+        /// Exports post edition number limit const.
+        const MaxPostEditionNumber: u32 = T::MaxPostEditionNumber::get();
+
+        /// Exports thread title length limit const.
+        const ThreadTitleLengthLimit: u32 = T::ThreadTitleLengthLimit::get();
+
+        /// Exports post length limit const.
+        const PostLengthLimit: u32 = T::PostLengthLimit::get();
+
+        /// Exports max thread by same author in a row number limit const.
+        const MaxThreadInARowNumber: u32 = T::MaxThreadInARowNumber::get();
 
         /// Adds a post with author origin check.
         pub fn add_post(
