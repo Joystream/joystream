@@ -14,6 +14,7 @@ import { CuratorId, LeadId, Lead, CurationActor, Curator } from '@joystream/type
 import { queryMembershipToProp } from '@polkadot/joy-members/utils';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { queryToProp, MultipleLinkedMapEntry, SingleLinkedMapEntry } from '@polkadot/joy-utils/index';
+import { useMyMembership } from './MyMembershipContext';
 
 export type MyAddressProps = {
   myAddress?: string;
@@ -273,20 +274,7 @@ export const withMyAccount = <P extends MyAccountProps>(Component: React.Compone
 
 function OnlyMembers<P extends MyAccountProps>(Component: React.ComponentType<P>) {
   return function(props: P) {
-    const { myMemberIdChecked, iAmMember, allAccounts } = props;
-
-    if (allAccounts && !Object.keys(allAccounts).length) {
-      return (
-        <Message warning className="JoyMainStatus">
-          <Message.Header>Please create a key to get started.</Message.Header>
-          <div style={{ marginTop: '1rem' }}>
-            <Link to={`/accounts`} className="ui button orange">
-              Create key
-            </Link>
-          </div>
-        </Message>
-      );
-    }
+    const { myMemberIdChecked, iAmMember } = props;
 
     if (!myMemberIdChecked) {
       return <em>Loading...</em>;
@@ -311,5 +299,29 @@ function OnlyMembers<P extends MyAccountProps>(Component: React.ComponentType<P>
   };
 }
 
+export function AccountRequired<P extends {}>(Component: React.ComponentType<P>): React.ComponentType<P> {
+  return function(props: P) {
+    const { allAccounts } = useMyMembership();
+
+    if (allAccounts && !Object.keys(allAccounts).length) {
+      return (
+        <Message warning className="JoyMainStatus">
+          <Message.Header>Please create a key to get started.</Message.Header>
+          <div style={{ marginTop: '1rem' }}>
+            <Link to={`/accounts`} className="ui button orange">
+              Create key
+            </Link>
+          </div>
+        </Message>
+      );
+    }
+
+    return <Component {...props} />;
+  };
+}
+
 export const withOnlyMembers = <P extends MyAccountProps>(Component: React.ComponentType<P>) =>
-  withMulti(Component, withMyAccount, OnlyMembers);
+  withMulti(Component, withMyAccount, AccountRequired, OnlyMembers);
+
+export const withAccountRequired = <P extends MyAccountProps>(Component: React.ComponentType<P>) =>
+  withMulti(Component, withMyAccount, AccountRequired);
