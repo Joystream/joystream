@@ -24,4 +24,4 @@ yarn*
 .vscode
 
 # Warthog codegen
-generated/
+**/generated/

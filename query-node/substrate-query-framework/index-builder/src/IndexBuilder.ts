@@ -11,7 +11,7 @@ import {
   SavedEntityEvent,
 } from '.';
 
-const debug = require('debug')('index');
+const debug = require('debug')('index-builder:indexer');
 
 export default class IndexBuilder {
   private _producer: QueryBlockProducer;

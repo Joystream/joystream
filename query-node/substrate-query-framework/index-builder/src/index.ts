@@ -7,6 +7,7 @@ import IndexBuilder from './IndexBuilder';
 import QueryNode, { QueryNodeState } from './QueryNode';
 import QueryNodeManager from './QueryNodeManager';
 import { DB, SavedEntityEvent } from './db';
+import BootstrapPack, { BootstrapFunc } from './BootstrapPack';
 
 export {
   ISubstrateQueryService,
@@ -21,4 +22,6 @@ export {
   QueryNodeManager,
   DB,
   SavedEntityEvent,
+  BootstrapPack,
+  BootstrapFunc
 };
