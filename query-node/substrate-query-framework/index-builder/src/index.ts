@@ -7,7 +7,7 @@ import IndexBuilder from './IndexBuilder';
 import QueryNode, { QueryNodeState } from './QueryNode';
 import QueryNodeManager from './QueryNodeManager';
 import { DB, SavedEntityEvent } from './db';
-import BootstrapPack, { BootstrapFunc } from './BootstrapPack';
+import BootstrapPack, { BootstrapFunc } from './bootstrap/BootstrapPack';
 
 export {
   ISubstrateQueryService,
