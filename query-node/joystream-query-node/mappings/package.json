@@ -13,6 +13,7 @@
     "@joystream/types": "^0.8.0",
     "@polkadot/api": "^1.14.1",
     "@polkadot/types": "^1.14.1",
+    "log4js": "^6.2.1",
     "typeorm": "^0.2.24"
   }
 }
