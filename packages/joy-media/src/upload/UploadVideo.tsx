@@ -30,6 +30,7 @@ import { ParametrizedPropertyValue } from '@joystream/types/versioned-store/perm
 import { ParameterizedClassPropertyValues } from '@joystream/types/versioned-store/permissions/batching/operations';
 import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
 import { isAccountAChannelOwner } from '../channels/ChannelHelpers';
+import { JoyError } from '@polkadot/joy-utils/JoyStatus';
 
 /** Example: "2019-01-23" -> 1548201600 */
 function humanDateToUnixTs(humanFriendlyDate: string): number | undefined {
@@ -90,15 +91,15 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const { thumbnail } = values
 
   if (!mediaObjectClass) {
-    return <em>ERROR: "Media Object" entity class is undefined</em>
+    return <JoyError title={`"Media Object" entity class is undefined`} />
   }
 
   if (!entityClass) {
-    return <em>ERROR: Video entity class is undefined</em>
+    return <JoyError title={`"Video" entity class is undefined<`} />
   }
 
   if (entity && !isAccountAChannelOwner(entity.channel, myAccountId)) {
-    return <em>ERROR: Only owner can edit video</em>
+    return <JoyError title={`Only owner can edit video`} />
   }
 
   // Next consts are used in tx params:

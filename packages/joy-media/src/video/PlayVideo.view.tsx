@@ -4,6 +4,7 @@ import { MediaView } from '../MediaView';
 import { PlayVideoProps, PlayVideo } from './PlayVideo';
 import { ChannelId } from '@joystream/types/content-working-group';
 import { EntityId } from '@joystream/types/versioned-store';
+import { JoyError } from '@polkadot/joy-utils/JoyStatus';
 
 type Props = PlayVideoProps;
 
@@ -18,10 +19,11 @@ export const PlayVideoView = MediaView<Props>({
 
     const channelId = new ChannelId(video.channelId)
     const channel = await transport.channelById(channelId)
+    const moreChannelVideos = (await transport.videosByChannelId(channelId, 5, x => x.id !== video.id));
     const featuredVideos = await transport.featuredVideos()
     const mediaObject = video.object
 
-    return { mediaObject, video, channel, featuredVideos }
+    return { channel, mediaObject, video, moreChannelVideos, featuredVideos }
   }
 });
 
@@ -36,5 +38,5 @@ export const PlayVideoWithRouter = (props: Props & RouteComponentProps<any>) => 
     }
   }
 
-  return <em>ERROR: Invalid video id in URL: ${id}</em>;
+  return <JoyError title={`Invalid video id in URL`}>{id}</JoyError>
 }

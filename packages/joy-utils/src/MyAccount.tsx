@@ -14,6 +14,7 @@ import { CuratorId, LeadId, Lead, CurationActor, Curator } from '@joystream/type
 import { queryMembershipToProp } from '@polkadot/joy-members/utils';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { queryToProp, MultipleLinkedMapEntry, SingleLinkedMapEntry } from '@polkadot/joy-utils/index';
+import { useMyMembership } from './MyMembershipContext';
 
 export type MyAddressProps = {
   myAddress?: string
@@ -284,31 +285,33 @@ withMulti(
   withCurationActor,
 );
 
-function OnlyMembers<P extends MyAccountProps> (Component: React.ComponentType<P>) {
+export function withMembershipRequired<P extends {}> (Component: React.ComponentType<P>): React.ComponentType<P> {
   return function (props: P) {
-    const { myMemberIdChecked, iAmMember } = props;
+    const { myMemberIdChecked, iAmMember } = useMyMembership()
+
     if (!myMemberIdChecked) {
       return <em>Loading...</em>;
     } else if (iAmMember) {
       return <Component {...props} />;
-    } else {
-      return (
-        <Message warning className='JoyMainStatus'>
-          <Message.Header>Only members can access this functionality.</Message.Header>
-          <div style={{ marginTop: '1rem' }}>
-            <Link to={`/members/edit`} className='ui button orange'>Register here</Link>
-            <span style={{ margin: '0 .5rem' }}> or </span>
-            <Link to={`/accounts`} className='ui button'>Change key</Link>
-          </div>
-        </Message>
-      );
     }
+
+    return (
+      <Message warning className='JoyMainStatus'>
+        <Message.Header>Only members can access this functionality.</Message.Header>
+        <div style={{ marginTop: '1rem' }}>
+          <Link to={`/members/edit`} className='ui button orange'>Register here</Link>
+          <span style={{ margin: '0 .5rem' }}> or </span>
+          <Link to={`/accounts`} className='ui button'>Change key</Link>
+        </div>
+      </Message>
+    );
   };
 }
 
-export const withOnlyMembers = <P extends MyAccountProps> (Component: React.ComponentType<P>) =>
+// TODO (minor) this HOC should be renamed from 'withOnlyMembers' to 'withMyAccountAndMembersOnly'
+export const withOnlyMembers = <P extends MyAccountProps> (Component: React.ComponentType<P>): React.ComponentType<P> =>
 withMulti(
   Component,
   withMyAccount,
-  OnlyMembers
+  withMembershipRequired
 );

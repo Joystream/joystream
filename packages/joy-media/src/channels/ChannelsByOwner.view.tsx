@@ -4,6 +4,7 @@ import { RouteComponentProps } from 'react-router';
 import { GenericAccountId } from '@polkadot/types';
 import { MediaView } from '../MediaView';
 import { ChannelsByOwnerProps, ChannelsByOwner } from './ChannelsByOwner';
+import { JoyError } from '@polkadot/joy-utils/JoyStatus';
 
 type Props = ChannelsByOwnerProps;
 
@@ -27,5 +28,5 @@ export const ChannelsByOwnerWithRouter = (props: Props & RouteComponentProps<any
     }
   }
 
-  return <em>ERROR: Invalid account id in URL: ${account}</em>;
+  return <JoyError title={`Invalid account address in URL`}>{account}</JoyError>
 }
