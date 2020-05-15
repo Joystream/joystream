@@ -1,7 +1,9 @@
 import { IExtrinsic } from '@polkadot/types/types';
+import { Bytes } from '@polkadot/types';
 import { compactToU8a, stringToU8a } from '@polkadot/util';
 import { blake2AsHex } from '@polkadot/util-crypto';
 import BN = require('bn.js');
+import fs = require('fs');
 import { decodeAddress } from '@polkadot/keyring';
 import { Seat } from '@joystream/types';
 
@@ -41,5 +43,9 @@ export class Utils {
 
   public static getTotalStake(seat: Seat): BN {
     return new BN(+seat.stake.toString() + seat.backers.reduce((a, baker) => a + +baker.stake.toString(), 0));
+  }
+
+  public static readRuntimeFromFile(path: string): string {
+    return '0x' + fs.readFileSync(path).toString('hex');
   }
 }
