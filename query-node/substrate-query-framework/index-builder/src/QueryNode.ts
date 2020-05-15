@@ -3,9 +3,6 @@
 import { ApiPromise, WsProvider /*RuntimeVersion*/ } from '@polkadot/api';
 
 import { makeQueryService, IndexBuilder, QueryEventProcessingPack } from '.';
-import { getConnection } from 'typeorm';
-
-import BootstrapPack from './BootstrapPack';
 
 export enum QueryNodeState {
   NOT_STARTED,
@@ -75,33 +72,6 @@ export default class QueryNode {
     await this._indexBuilder.start();
 
     this._state = QueryNodeState.STARTED;
-  }
-
-  async bootstrap(bootstrapPack: BootstrapPack) {
-    debug("Bootstraping the database");
-    const queryRunner = getConnection().createQueryRunner();
-    const api = this._api;
-    await queryRunner.connect();
-      
-    try {
-      await queryRunner.startTransaction();
-        
-      // establish real database connection
-      // perform all the bootstrap logic in one large
-      // atomic transaction 
-      for (const boot of bootstrapPack.pack) {
-        await boot(api, queryRunner);
-      }
-      debug("Database bootstrap successfull");
-      await queryRunner.commitTransaction();
-
-    } catch (error) {
-      console.error(error);
-      await queryRunner.rollbackTransaction();
-      throw new Error(`Bootstrapping failed: ${error}`);
-    } finally {
-      await queryRunner.release();
-    }
   }
 
   async stop() {
