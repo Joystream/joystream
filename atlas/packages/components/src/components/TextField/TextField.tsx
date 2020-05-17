@@ -1,26 +1,23 @@
 import React, { useState, useRef, useEffect } from "react"
 import { makeStyles, TextFieldStyleProps } from "./TextField.style"
-import { colors } from "./../../theme"
 import { IconProp } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
+import { spacing } from "./../../theme"
 
 type TextFieldProps = {
   label: string
-  value?: string,
+  helper?: string
+  value?: string
   icon?: IconProp
-  iconPosition?: "right" | "left"
-  disabled?: boolean
-  onClick?: (e: React.MouseEvent<HTMLDivElement>) => void
   onChange?: (e: React.ChangeEvent) => void
 } & TextFieldStyleProps
 
 export default function TextField({
   label,
+  helper = "",
   value = "",
   icon = null,
-  iconPosition = "right",
   disabled = false,
-  onClick,
   onChange,
   ...styleProps
 }: TextFieldProps) {
@@ -28,7 +25,7 @@ export default function TextField({
   const inputRef = useRef(null)
   const [isActive, setIsActive] = useState(!!value)
   const [inputTextValue, setInputTextValue] = useState(value)
-  const styles = makeStyles(styleProps)
+  const styles = makeStyles({ isActive, disabled, ...styleProps })
 
   useEffect(() => {
     if (isActive) {
@@ -40,45 +37,49 @@ export default function TextField({
   }, [isActive, inputRef]);
 
   function onTextFieldClick() {
-    setIsActive(true)
+    if (!disabled) setIsActive(true)
   }
 
   function onInputTextBlur() {
     setIsActive(false)
   }
 
-  function onInputTextChange(event: React.FormEvent<HTMLInputElement>): React.ChangeEventHandler {
-    if (disabled) return
-    setInputTextValue(event.currentTarget.value)
-  }
+  function onInputTextChange(event: React.FormEvent<HTMLInputElement>): void {
+    if (!disabled) setInputTextValue(event.currentTarget.value)
+  } 
   
   return (
-    <div css={styles.container} onClick={onTextFieldClick}>
-      <div
-        css={styles.border}
-        style={!inputTextValue && !isActive ? {} : {
-          border: `1px solid ${colors.gray[200]}`
-        }}>
-        <div
-          css={styles.label}
-          style={!inputTextValue && !isActive ? {} : {
-            position: "absolute",
-            top: "-8px",
-            left: "5px",
-            fontSize: "0.7rem"
-          }}>
-            {label}
+    <div css={styles.wrapper}>
+      <div css={styles.container} onClick={onTextFieldClick}>
+        <div css={styles.border}>
+          <div
+            css={styles.label}
+            style={!inputTextValue && !isActive ? {} : {
+              position: "absolute",
+              top: "-8px",
+              left: "5px",
+              fontSize: "0.7rem",
+              padding: `0 ${spacing.xs}`
+            }}>
+              {label}
+          </div>
+          <input
+            css={styles.input}
+            style={{ display: !!inputTextValue || isActive ? "block" : "none"}}
+            ref={inputRef}
+            type="text"
+            value={inputTextValue}
+            onChange={disabled ? null : onInputTextChange}
+            onBlur={onInputTextBlur}
+          />
+          {!!icon &&
+            <FontAwesomeIcon icon={icon} css={styles.icon} />
+          }
         </div>
-        <input
-          css={styles.input}
-          style={{ display: !!inputTextValue || isActive ? "block" : "none"}}
-          ref={inputRef}
-          type="text"
-          value={inputTextValue}
-          onChange={disabled ? null : onInputTextChange}
-          onBlur={onInputTextBlur}
-        />
       </div>
+      {!!helper &&
+        <p css={styles.helper}>{helper}</p>
+      }
     </div>
   )
 }
