@@ -92,6 +92,9 @@ export let makeStyles = ({
       width: 100%;
       position: absolute;
       top: 50px;
+      max-height: 145px;
+      overflow-x: none;
+      overflow-y: auto;
     `,
     option: css`
       padding: ${spacing.s};
