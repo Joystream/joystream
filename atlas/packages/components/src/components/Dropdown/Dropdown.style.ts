@@ -1,13 +1,11 @@
 import { css } from "@emotion/core"
 import { typography, colors, spacing } from "./../../theme"
-import { icon } from "@fortawesome/fontawesome-svg-core"
 
-export type TextFieldStyleProps = {
+export type DropdownStyleProps = {
   disabled?: boolean
   focus?: boolean
   error?: boolean
   isActive?: boolean
-  iconPosition?: "right" | "left"
 }
 
 export let makeStyles = ({
@@ -15,8 +13,7 @@ export let makeStyles = ({
   focus = false,
   error = false,
   isActive = false,
-  iconPosition = "right"
-}: TextFieldStyleProps) => {
+}: DropdownStyleProps) => {
 
   const fieldWidth = "250px"
 
@@ -51,17 +48,17 @@ export let makeStyles = ({
     `,
     label: css`
       color: ${error ? colors.error : colors.gray[400]};
-      padding: 0 ${spacing.s};
-      ${icon ? `padding-${iconPosition}: ${spacing.xxxxl};` : ""}
+      padding: 0 ${spacing.xxxxl} 0 ${spacing.s};
       background-color: ${colors.black};
       font-size: ${typography.sizes.body2};
-      transition: all 0.1s linear;
+      &::selection {
+        background-color: transparent;
+      }
     `,
     input: css`
       display: none;
       width: 100%;
-      margin: 0 ${spacing.s};
-      ${icon ? `margin-${iconPosition}: ${spacing.xxxxl};` : ""}
+      margin: 0 ${spacing.xxxxl} 0 ${spacing.s};
       background: none;
       border: none;
       color: ${colors.white};
@@ -69,17 +66,39 @@ export let makeStyles = ({
       font-size: ${typography.sizes.body2};
       padding: 5px 0;
     `,
-    icon: css`
+    iconOpen: css`
       color: ${colors.gray[300]};
-      font-size: ${typography.sizes.icon.xlarge};
+      font-size: ${typography.sizes.icon.medium};
       position: absolute;
-      top: ${spacing.s};
-      ${iconPosition}: ${spacing.s};
+      top: ${spacing.m};
+      right: ${spacing.s};
+    `,
+    iconClose: css`
+      color: ${colors.blue[500]};
+      font-size: ${typography.sizes.icon.medium};
+      position: absolute;
+      top: ${spacing.m};
+      right: ${spacing.s};
     `,
     helper: css`
       color: ${error ? colors.error : colors.gray[400]};
       font-size: ${typography.sizes.caption};
       margin: ${spacing.xxs} ${spacing.xs};
+    `,
+    options: css`
+      background-color: ${colors.gray[700]};
+      color: ${colors.white};
+      display: block;
+      width: 100%;
+      position: absolute;
+      top: 50px;
+    `,
+    option: css`
+      padding: ${spacing.s};
+      font-size: ${typography.sizes.body2};
+      &:hover {
+        background-color: ${colors.gray[600]}
+      }
     `
   }
 }
