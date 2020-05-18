@@ -33,6 +33,15 @@ export const UnselectedDisabled = () => {
   )
 }
 
+export const Error = () => {
+  const [isSelected, setIsSelected] = useState(false)
+  return (
+    <div style={{ backgroundColor: "black", padding: "50px 20px" }}>
+      <RadioButton selected={isSelected} error={true} onClick={() => setIsSelected(!isSelected)} />
+    </div>
+  )
+}
+
 export const WithLabel = () => {
   const [isSelected, setIsSelected] = useState(false)
   return (

@@ -4,12 +4,14 @@ import { typography, colors, spacing } from "../../theme"
 export type RadioButtonStyleProps = {
   selected?: boolean
   disabled?: boolean
+  error?: boolean
   position?: "end" | "start" | "top" | "bottom"
 }
 
 export let makeStyles = ({
   selected = false,
   disabled = false,
+  error = false,
   position = "end"
 }: RadioButtonStyleProps) => {
 
@@ -43,14 +45,16 @@ export let makeStyles = ({
     dot: css`
       width: ${spacing.m};
       height: ${spacing.m};
-      border: 1px solid ${disabled ? colors.gray[200] : selected ? colors.blue[500] : colors.gray[300]};
+      border: 1px solid ${disabled ? colors.gray[200] :
+        error ? colors.error :
+        selected ? colors.blue[500] : colors.gray[300]};
       border-radius: 50%;
       ${disabled ? `background-color: ${colors.gray[50]};` : ""}
       ${disabled && selected ?
         `background-image: repeating-radial-gradient(circle, ${colors.gray[200]} 0px, ${colors.gray[200]} 3px, transparent 3px, transparent 6px, ${colors.gray[200]} 6px, ${colors.gray[200]} 8px);` :
         disabled && !selected ? `background-color: ${colors.gray[50]};` :
-        selected ?
-        `background-image: repeating-radial-gradient(circle, ${colors.blue[500]} 0px, ${colors.blue[500]} 3px, transparent 3px, transparent 6px, ${colors.blue[500]} 6px, ${colors.blue[500]} 8px);` : ""}
+        error && selected ? `background-image: repeating-radial-gradient(circle, ${colors.error} 0px, ${colors.error} 3px, transparent 3px, transparent 6px, ${colors.error} 6px, ${colors.error} 8px);` :
+        selected ? `background-image: repeating-radial-gradient(circle, ${colors.blue[500]} 0px, ${colors.blue[500]} 3px, transparent 3px, transparent 6px, ${colors.blue[500]} 6px, ${colors.blue[500]} 8px);` : ""}
       position: absolute;
       top: 7px;
       left: 7px;
