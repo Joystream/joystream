@@ -107,6 +107,17 @@ pub static MSG_ADD_WORKER_OPENING_NEW_APPLICATION_WAS_CROWDED_OUT: &str =
     "NewApplicationWasCrowdedOut";
 pub static MSG_ADD_WORKER_OPENING_ZERO_MAX_APPLICANT_COUNT: &str =
     "Application rationing has zero max active applicants";
+pub static MSG_WORKER_DOES_NOT_EXIST: &str = "Worker does not exist";
+pub static MSG_WORKER_IS_NOT_ACTIVE: &str = "Worker is not active";
+pub static MSG_SIGNER_IS_NOT_WORKER_ROLE_ACCOUNT: &str = "Signer is not worker role account";
+pub static MSG_WORKER_HAS_NO_REWARD: &str = "Worker has no recurring reward";
+pub static MSG_RECURRING_REWARDS_NEXT_PAYMENT_NOT_IN_FUTURE: &str =
+    "Next payment is not in the future";
+pub static MSG_RECURRING_REWARDS_RECIPIENT_NOT_FOUND: &str = "Recipient not found";
+pub static MSG_RECURRING_REWARDS_REWARD_SOURCE_NOT_FOUND: &str =
+    "Recipient reward source not found";
+pub static MSG_RECURRING_REWARDS_REWARD_RELATIONSHIP_NOT_FOUND: &str =
+    "Reward relationship not found";
 
 /// Error wrapper for external module error conversions
 pub struct WrappedError<E> {
@@ -283,6 +294,25 @@ impl rstd::convert::From<WrappedError<members::MemberControllerAccountDidNotSign
             }
             members::MemberControllerAccountDidNotSign::SignerControllerAccountMismatch => {
                 bureaucracy_errors::MSG_APPLY_ON_WORKER_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT
+            }
+        }
+    }
+}
+
+impl rstd::convert::From<WrappedError<recurringrewards::RewardsError>> for &str {
+    fn from(wrapper: WrappedError<recurringrewards::RewardsError>) -> Self {
+        match wrapper.error {
+            recurringrewards::RewardsError::NextPaymentNotInFuture => {
+                MSG_RECURRING_REWARDS_NEXT_PAYMENT_NOT_IN_FUTURE
+            }
+            recurringrewards::RewardsError::RecipientNotFound => {
+                MSG_RECURRING_REWARDS_RECIPIENT_NOT_FOUND
+            }
+            recurringrewards::RewardsError::RewardSourceNotFound => {
+                MSG_RECURRING_REWARDS_REWARD_SOURCE_NOT_FOUND
+            }
+            recurringrewards::RewardsError::RewardRelationshipNotFound => {
+                MSG_RECURRING_REWARDS_REWARD_RELATIONSHIP_NOT_FOUND
             }
         }
     }

@@ -3,14 +3,44 @@ mod mock;
 use crate::constraints::InputValidationLengthConstraint;
 use crate::tests::mock::Test;
 use crate::types::{
-    Lead, OpeningPolicyCommitment, RewardPolicy, Worker, WorkerApplication, WorkerOpening,
-    WorkerRoleStage, WorkerRoleStakeProfile,
+    CuratorExitInitiationOrigin, CuratorExitSummary, Lead, OpeningPolicyCommitment, RewardPolicy,
+    Worker, WorkerApplication, WorkerOpening, WorkerRoleStage, WorkerRoleStakeProfile,
 };
 use crate::{Instance1, RawEvent};
 use mock::{build_test_externalities, Balances, Bureaucracy1, Membership, System, TestEvent};
-use srml_support::StorageValue;
+use srml_support::{StorageLinkedMap, StorageValue};
 use std::collections::{BTreeMap, BTreeSet};
 use system::{EventRecord, Phase, RawOrigin};
+
+struct UpdateWorkerRewardAccountFixture {
+    worker_id: u64,
+    new_role_account_id: u64,
+    origin: RawOrigin<u64>,
+}
+
+impl UpdateWorkerRewardAccountFixture {
+    fn default_with_ids(worker_id: u64, new_role_account_id: u64) -> Self {
+        UpdateWorkerRewardAccountFixture {
+            worker_id,
+            new_role_account_id,
+            origin: RawOrigin::Signed(1),
+        }
+    }
+    fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        UpdateWorkerRewardAccountFixture { origin, ..self }
+    }
+
+    fn call_and_assert(&self, expected_result: Result<(), &str>) {
+        assert_eq!(
+            Bureaucracy1::update_worker_reward_account(
+                self.origin.clone().into(),
+                self.worker_id,
+                self.new_role_account_id
+            ),
+            expected_result
+        );
+    }
+}
 
 struct UpdateWorkerRoleAccountFixture {
     member_id: u64,
@@ -33,15 +63,19 @@ impl UpdateWorkerRoleAccountFixture {
     }
 
     fn call_and_assert(&self, expected_result: Result<(), &str>) {
-        assert_eq!(
-            Bureaucracy1::update_worker_role_account(
-                self.origin.clone().into(),
-                self.member_id,
-                self.worker_id,
-                self.new_role_account_id
-            ),
-            expected_result
+        let actual_result = Bureaucracy1::update_worker_role_account(
+            self.origin.clone().into(),
+            self.member_id,
+            self.worker_id,
+            self.new_role_account_id,
         );
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            let worker = Bureaucracy1::worker_by_id(self.worker_id);
+
+            assert_eq!(worker.role_account, self.new_role_account_id);
+        }
     }
 }
 
@@ -1474,58 +1508,24 @@ fn set_lead_fails_with_invalid_origin() {
 #[test]
 fn update_worker_role_account_succeeds() {
     build_test_externalities().execute_with(|| {
-        let lead_account_id = 1;
+        let new_account_id = 10;
         let member_id = 1;
-
-        SetLeadFixture::set_lead(lead_account_id);
-        increase_total_balance_issuance_using_account_id(1, 10000);
-        setup_members(2);
-
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        add_worker_opening_fixture.call_and_assert(Ok(()));
-
-        let opening_id = 0; // newly created opening
-
-        let appy_on_worker_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        appy_on_worker_opening_fixture.call_and_assert(Ok(()));
-
-        let application_id = 0; // newly created application
-
-        let begin_review_worker_applications_fixture =
-            BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        begin_review_worker_applications_fixture.call_and_assert(Ok(()));
-
-        let mint_id = create_mint();
-        set_mint_id(mint_id);
-
-        let fill_worker_opening_fixture =
-            FillWorkerOpeningFixture::default_for_ids(opening_id, vec![application_id])
-                .with_reward_policy(RewardPolicy {
-                    amount_per_payout: 1000,
-                    next_payment_at_block: 20,
-                    payout_interval: None,
-                });
-        fill_worker_opening_fixture.call_and_assert(Ok(()));
-
-        let worker_id = 0; // newly created worker
-        let mut worker_application_dictionary = BTreeMap::new();
-        worker_application_dictionary.insert(application_id, worker_id);
+        let worker_id = fill_default_worker_position();
 
         let update_worker_account_fixture =
-            UpdateWorkerRoleAccountFixture::default_with_ids(member_id, worker_id, lead_account_id);
+            UpdateWorkerRoleAccountFixture::default_with_ids(member_id, worker_id, new_account_id);
 
         update_worker_account_fixture.call_and_assert(Ok(()));
 
         EventFixture::assert_last_crate_event(RawEvent::WorkerRoleAccountUpdated(
             worker_id,
-            lead_account_id,
+            new_account_id,
         ));
     });
 }
 
 #[test]
-fn update_worker_role_account_fails_with_memberhip_error() {
+fn update_worker_role_account_fails_with_membership_error() {
     build_test_externalities().execute_with(|| {
         let update_worker_account_fixture =
             UpdateWorkerRoleAccountFixture::default_with_ids(1, 1, 1);
@@ -1541,5 +1541,149 @@ fn update_worker_role_account_fails_with_invalid_origin() {
             UpdateWorkerRoleAccountFixture::default_with_ids(1, 1, 1).with_origin(RawOrigin::None);
 
         update_worker_account_fixture.call_and_assert(Err(crate::MSG_MEMBERSHIP_UNSIGNED_ORIGIN));
+    });
+}
+
+#[test]
+fn update_worker_reward_account_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        let worker_id = fill_default_worker_position();
+
+        let update_worker_account_fixture =
+            UpdateWorkerRewardAccountFixture::default_with_ids(worker_id, lead_account_id);
+
+        update_worker_account_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkerRewardAccountUpdated(
+            worker_id,
+            lead_account_id,
+        ));
+    });
+}
+
+#[test]
+fn update_worker_reward_account_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let update_worker_account_fixture =
+            UpdateWorkerRewardAccountFixture::default_with_ids(1, 1).with_origin(RawOrigin::None);
+
+        update_worker_account_fixture.call_and_assert(Err("RequireSignedOrigin"));
+    });
+}
+
+#[test]
+fn update_worker_reward_account_fails_with_invalid_origin_signed_account() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        let worker_id = fill_default_worker_position();
+
+        let update_worker_account_fixture =
+            UpdateWorkerRewardAccountFixture::default_with_ids(worker_id, lead_account_id)
+                .with_origin(RawOrigin::Signed(2));
+
+        update_worker_account_fixture
+            .call_and_assert(Err(crate::errors::MSG_SIGNER_IS_NOT_WORKER_ROLE_ACCOUNT));
+    });
+}
+
+fn fill_default_worker_position() -> u64 {
+    fill_worker_position(Some(RewardPolicy {
+        amount_per_payout: 1000,
+        next_payment_at_block: 20,
+        payout_interval: None,
+    }))
+}
+
+fn fill_worker_position_with_no_reward() -> u64 {
+    fill_worker_position(None)
+}
+
+fn fill_worker_position(reward_policy: Option<RewardPolicy<u64, u64>>) -> u64 {
+    let lead_account_id = 1;
+
+    SetLeadFixture::set_lead(lead_account_id);
+    increase_total_balance_issuance_using_account_id(1, 10000);
+    setup_members(2);
+
+    let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
+    add_worker_opening_fixture.call_and_assert(Ok(()));
+
+    let opening_id = 0; // newly created opening
+
+    let appy_on_worker_opening_fixture =
+        ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
+    appy_on_worker_opening_fixture.call_and_assert(Ok(()));
+
+    let application_id = 0; // newly created application
+
+    let begin_review_worker_applications_fixture =
+        BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
+    begin_review_worker_applications_fixture.call_and_assert(Ok(()));
+
+    let mint_id = create_mint();
+    set_mint_id(mint_id);
+
+    let mut fill_worker_opening_fixture =
+        FillWorkerOpeningFixture::default_for_ids(opening_id, vec![application_id]);
+
+    if let Some(reward_policy) = reward_policy {
+        fill_worker_opening_fixture = fill_worker_opening_fixture.with_reward_policy(reward_policy);
+    }
+
+    fill_worker_opening_fixture.call_and_assert(Ok(()));
+
+    let worker_id = 0; // newly created worker
+
+    worker_id
+}
+
+#[test]
+fn update_worker_reward_account_fails_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        let invalid_worker_id = 1;
+        fill_default_worker_position();
+
+        let update_worker_account_fixture =
+            UpdateWorkerRewardAccountFixture::default_with_ids(invalid_worker_id, lead_account_id);
+
+        update_worker_account_fixture
+            .call_and_assert(Err(crate::errors::MSG_WORKER_DOES_NOT_EXIST));
+    });
+}
+
+#[test]
+fn update_worker_reward_account_fails_with_inactive_worker() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        let worker_id = fill_default_worker_position();
+
+        let mut worker = Bureaucracy1::worker_by_id(worker_id);
+        worker.stage = WorkerRoleStage::Exited(CuratorExitSummary {
+            origin: CuratorExitInitiationOrigin::Lead,
+            initiated_at_block_number: 333,
+            rationale_text: Vec::new(),
+        });
+
+        <crate::WorkerById<Test, crate::Instance1>>::insert(worker_id, worker);
+
+        let update_worker_account_fixture =
+            UpdateWorkerRewardAccountFixture::default_with_ids(worker_id, lead_account_id);
+
+        update_worker_account_fixture.call_and_assert(Err(crate::errors::MSG_WORKER_IS_NOT_ACTIVE));
+    });
+}
+
+#[test]
+fn update_worker_reward_account_fails_with_no_recurring_reward() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        let worker_id = fill_worker_position_with_no_reward();
+
+        let update_worker_account_fixture =
+            UpdateWorkerRewardAccountFixture::default_with_ids(worker_id, lead_account_id);
+
+        update_worker_account_fixture.call_and_assert(Err(crate::errors::MSG_WORKER_HAS_NO_REWARD));
     });
 }

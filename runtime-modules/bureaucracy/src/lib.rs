@@ -148,6 +148,11 @@ decl_event!(
         /// - Member id of the worker.
         /// - Role account id of the worker.
         WorkerRoleAccountUpdated(ActorId, AccountId),
+        /// Emits on updating the reward account of the worker.
+        /// Params:
+        /// - Member id of the worker.
+        /// - Reward account id of the worker.
+        WorkerRewardAccountUpdated(ActorId, AccountId),
         /// Emits on adding new worker opening.
         /// Params:
         /// - Worker opening id
@@ -286,6 +291,35 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::WorkerRoleAccountUpdated(worker_id, new_role_account_id));
+        }
+
+        /// An active worker can update the reward account associated
+        /// with a set reward relationship.
+        pub fn update_worker_reward_account(
+            origin,
+            worker_id: WorkerId<T>,
+            new_reward_account_id: T::AccountId
+        ) {
+            // Ensure there is a signer which matches role account of worker corresponding to provided id.
+            let worker = Self::ensure_active_worker_signed(origin, &worker_id)?;
+
+            // Ensure the worker actually has a recurring reward
+            let relationship_id = Self::ensure_worker_has_recurring_reward(&worker)?;
+
+            // mutation
+
+            // Update only the reward account.
+            ensure_on_wrapped_error!(
+                recurringrewards::Module::<T>::set_reward_relationship(
+                    relationship_id,
+                    Some(new_reward_account_id.clone()), // new_account
+                    None, // new_payout
+                    None, //new_next_payment_at
+                    None) //new_payout_interval
+            )?;
+
+            // Trigger event
+            Self::deposit_event(RawEvent::WorkerRewardAccountUpdated(worker_id, new_reward_account_id));
         }
 
         // ****************** Hiring flow **********************
@@ -844,5 +878,61 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         let worker_opening = WorkerOpeningById::<T, I>::get(worker_application.worker_opening_id);
 
         Ok((worker_application, *worker_application_id, worker_opening))
+    }
+
+    fn ensure_active_worker_signed(
+        origin: T::Origin,
+        worker_id: &WorkerId<T>,
+    ) -> Result<WorkerOf<T>, &'static str> {
+        // Ensure that it is signed
+        let signer_account = ensure_signed(origin)?;
+
+        // Ensure that id corresponds to active worker
+        let worker = Self::ensure_active_worker_exists(&worker_id)?;
+
+        // Ensure that signer is actually role account of worker
+        ensure!(
+            signer_account == worker.role_account,
+            crate::errors::MSG_SIGNER_IS_NOT_WORKER_ROLE_ACCOUNT
+        );
+
+        Ok(worker)
+    }
+
+    fn ensure_active_worker_exists(worker_id: &WorkerId<T>) -> Result<WorkerOf<T>, &'static str> {
+        // Ensuring worker actually exists
+        let worker = Self::ensure_worker_exists(worker_id)?;
+
+        // Ensure worker is still active
+        ensure!(
+            match worker.stage {
+                WorkerRoleStage::Active => true,
+                _ => false,
+            },
+            crate::errors::MSG_WORKER_IS_NOT_ACTIVE
+        );
+
+        Ok(worker)
+    }
+
+    fn ensure_worker_exists(worker_id: &WorkerId<T>) -> Result<WorkerOf<T>, &'static str> {
+        ensure!(
+            WorkerById::<T, I>::exists(worker_id),
+            crate::errors::MSG_WORKER_DOES_NOT_EXIST
+        );
+
+        let worker = WorkerById::<T, I>::get(worker_id);
+
+        Ok(worker)
+    }
+
+    fn ensure_worker_has_recurring_reward(
+        worker: &WorkerOf<T>,
+    ) -> Result<T::RewardRelationshipId, &'static str> {
+        if let Some(relationship_id) = worker.reward_relationship {
+            Ok(relationship_id)
+        } else {
+            Err(crate::errors::MSG_WORKER_HAS_NO_REWARD)
+        }
     }
 }
