@@ -4,11 +4,13 @@ import { MediaView } from '../MediaView';
 import { OuterProps, EditForm } from './UploadVideo';
 import EntityId from '@joystream/types/versioned-store/EntityId';
 import { ChannelId } from '@joystream/types/content-working-group';
+import { JoyError } from '@polkadot/joy-utils/JoyStatus';
 
 type Props = OuterProps;
 
 export const EditVideoView = MediaView<Props>({
   component: EditForm,
+  membersOnly: true,
   triggers: [ 'id' ],
   resolveProps: async (props) => {
     const { transport, id, channelId } = props;
@@ -19,9 +21,11 @@ export const EditVideoView = MediaView<Props>({
     const opts = await transport.dropdownOptions();
     return { channel, mediaObjectClass, entityClass, entity, opts };
   }
-});
+})
 
-export const UploadVideoWithRouter = (props: Props & RouteComponentProps<any>) => {
+type WithRouterProps = Props & RouteComponentProps<any>
+
+export const UploadVideoWithRouter = (props: WithRouterProps) => {
   const { match: { params: { channelId }}} = props;
 
   if (channelId) {
@@ -32,10 +36,10 @@ export const UploadVideoWithRouter = (props: Props & RouteComponentProps<any>) =
     }
   }
 
-  return <em>ERROR: Invalid channel id in URL: ${channelId}</em>;
+  return <JoyError title={`Invalid channel id in URL`}>{channelId}</JoyError>
 }
 
-export const EditVideoWithRouter = (props: Props & RouteComponentProps<any>) => {
+export const EditVideoWithRouter = (props: WithRouterProps) => {
   const { match: { params: { id }}} = props;
 
   if (id) {
@@ -46,7 +50,7 @@ export const EditVideoWithRouter = (props: Props & RouteComponentProps<any>) => 
     }
   }
 
-  return <em>ERROR: Invalid video id in URL: ${id}</em>;
+  return <JoyError title={`Invalid video id in URL`}>{id}</JoyError>
 }
 
 export default EditVideoView;

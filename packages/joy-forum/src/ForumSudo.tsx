@@ -14,7 +14,7 @@ import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { withOnlySudo } from '@polkadot/joy-utils/Sudo';
 import { AccountId } from '@polkadot/types/interfaces';
-import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
+import { JoyError } from '@polkadot/joy-utils/JoyStatus';
 import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import { withForumCalls } from './calls';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
@@ -212,10 +212,10 @@ function innerWithOnlyForumSudo<P extends LoadStructProps> (Component: React.Com
       return <Component {...props} />;
     } else {
       return (
-        <JoyWarn title={`Only forum sudo can access this functionality.`}>
+        <JoyError title={`Only forum sudo can access this functionality.`}>
           <div>Current forum sudo:</div>
           <div>{sudo ? <AddressMini value={sudo} /> : 'UNDEFINED'}</div>
-        </JoyWarn>
+        </JoyError>
       );
     }
   };
