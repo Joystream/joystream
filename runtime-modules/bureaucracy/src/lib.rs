@@ -35,13 +35,13 @@ pub type LeadOf<T> =
     Lead<<T as membership::members::Trait>::MemberId, <T as system::Trait>::AccountId>;
 
 /*
-+ add_worker_opening
-+ accept_worker_applications
-+ begin_worker_applicant_review
-+ fill_worker_opening
-+ withdraw_worker_application
-+ terminate_worker_application
-+ apply_on_worker_opening
+- update_curator_role_account
+- update_curator_reward_account
+- leave_curator_role
+- terminate_curator_role
+- set_lead
+- unset_lead
+- unstaking
 */
 
 /// Workaround for BTreeSet type
@@ -138,6 +138,11 @@ decl_event!(
         /// - Member id of the leader.
         /// - Role account id of the leader.
         LeaderSet(MemberId, AccountId),
+        /// Emits on un-setting the leader.
+        /// Params:
+        /// - Member id of the leader.
+        /// - Role account id of the leader.
+        LeaderUnset(MemberId, AccountId),
         /// Emits on adding new worker opening.
         /// Params:
         /// - Worker opening id
@@ -210,8 +215,11 @@ decl_module! {
         /// Default deposit_event() handler
         fn deposit_event() = default;
 
+
+        // ****************** Roles lifecycle **********************
+
         /// Introduce a lead when one is not currently set.
-        pub fn set_lead(origin, member_id: T::MemberId, role_account_id: T::AccountId) -> dispatch::Result {
+        pub fn set_lead(origin, member_id: T::MemberId, role_account_id: T::AccountId) {
             ensure_root(origin)?;
 
             // Construct lead
@@ -227,9 +235,32 @@ decl_module! {
 
             // Trigger an event
             Self::deposit_event(RawEvent::LeaderSet(member_id, role_account_id));
-
-            Ok(())
         }
+
+        /// Evict the currently set lead
+        pub fn unset_lead(origin) {
+            ensure_root(origin)?;
+
+            // Ensure there is a lead set
+            let lead = <CurrentLead<T, I>>::get();
+
+            if lead.is_none() {
+                return Err(MSG_CURRENT_LEAD_NOT_SET);
+            }
+
+            // mutation
+
+            // Update current lead
+            <CurrentLead<T, I>>::kill();
+
+            // Unwrap lead
+            if let Some(lead) = lead {
+                // Trigger event
+                Self::deposit_event(RawEvent::LeaderUnset(lead.member_id, lead.role_account_id));
+            }
+        }
+
+        // ****************** Hiring flow **********************
 
          /// Add an opening for a worker role.
         pub fn add_worker_opening(

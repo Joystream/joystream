@@ -12,6 +12,17 @@ use srml_support::StorageValue;
 use std::collections::{BTreeMap, BTreeSet};
 use system::{EventRecord, Phase, RawOrigin};
 
+struct UnsetLeadFixture;
+impl UnsetLeadFixture {
+    fn unset_lead() {
+        assert_eq!(Bureaucracy1::unset_lead(RawOrigin::Root.into()), Ok(()));
+    }
+
+    fn call_and_assert(origin: RawOrigin<u64>, expected_result: Result<(), &str>) {
+        assert_eq!(Bureaucracy1::unset_lead(origin.into()), expected_result);
+    }
+}
+
 fn set_mint_id(mint_id: u64) {
     <crate::Mint<Test, crate::Instance1>>::put(mint_id);
 }
@@ -322,6 +333,18 @@ impl SetLeadFixture {
             Ok(())
         );
     }
+
+    pub fn call_and_assert(
+        origin: RawOrigin<u64>,
+        member_id: u64,
+        account_id: u64,
+        expected_result: Result<(), &str>,
+    ) {
+        assert_eq!(
+            Bureaucracy1::set_lead(origin.into(), member_id, account_id),
+            expected_result
+        );
+    }
 }
 
 struct AddWorkerOpeningFixture {
@@ -448,7 +471,7 @@ impl EventFixture {
 }
 
 #[test]
-fn set_forum_sudo_set() {
+fn set_lead_succeeds() {
     build_test_externalities().execute_with(|| {
         // Ensure that lead is default
         assert_eq!(Bureaucracy1::current_lead(), None);
@@ -1357,5 +1380,44 @@ fn fill_worker_opening_fails_with_invalid_reward_policy() {
         fill_worker_opening_fixture.call_and_assert(Err(
             crate::errors::MSG_FULL_WORKER_OPENING_OPENING_NOT_IN_REVIEW_PERIOD_STAGE,
         ));
+    });
+}
+
+#[test]
+fn unset_lead_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        let lead_member_id = 1;
+
+        SetLeadFixture::set_lead(lead_account_id);
+
+        let lead = Lead {
+            member_id: lead_member_id,
+            role_account_id: lead_account_id,
+        };
+        assert_eq!(Bureaucracy1::current_lead(), Some(lead));
+
+        UnsetLeadFixture::unset_lead();
+
+        assert_eq!(Bureaucracy1::current_lead(), None);
+
+        EventFixture::assert_crate_events(vec![
+            RawEvent::LeaderSet(lead_member_id, lead_account_id),
+            RawEvent::LeaderUnset(lead_member_id, lead_account_id),
+        ]);
+    });
+}
+
+#[test]
+fn unset_lead_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        UnsetLeadFixture::call_and_assert(RawOrigin::None, Err("RequireRootOrigin"));
+    });
+}
+
+#[test]
+fn set_lead_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        SetLeadFixture::call_and_assert(RawOrigin::None, 1, 1, Err("RequireRootOrigin"));
     });
 }
