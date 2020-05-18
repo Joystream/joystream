@@ -23,40 +23,52 @@ interface Props extends I18nProps {
   stakingOverview?: DerivedStakingOverview;
 }
 
-function renderColumn (myAccounts: string[], addresses: AccountId[] | string[], defaultName: string, withOnline: boolean, filter: string, { authorsMap, lastAuthors, recentlyOnline, stakingOverview }: Props, pointIndexes?: number[]): React.ReactNode {
-  return (addresses as AccountId[]).map((address, index): React.ReactNode => (
-    <Address
-      address={address}
-      authorsMap={authorsMap}
-      defaultName={defaultName}
-      filter={filter}
-      isElected={stakingOverview && stakingOverview.currentElected.some((accountId): boolean => accountId.eq(address))}
-      lastAuthors={lastAuthors}
-      key={address.toString()}
-      myAccounts={myAccounts}
-      points={
-        stakingOverview && pointIndexes && pointIndexes[index] !== -1
-          ? stakingOverview.eraPoints.individual[pointIndexes[index]]
-          : undefined
-      }
-      recentlyOnline={
-        withOnline
-          ? recentlyOnline
-          : undefined
-      }
-    />
-  ));
+function renderColumn(
+  myAccounts: string[],
+  addresses: AccountId[] | string[],
+  defaultName: string,
+  withOnline: boolean,
+  filter: string,
+  { authorsMap, lastAuthors, recentlyOnline, stakingOverview }: Props,
+  pointIndexes?: number[]
+): React.ReactNode {
+  return (addresses as AccountId[]).map(
+    (address, index): React.ReactNode => (
+      <Address
+        address={address}
+        authorsMap={authorsMap}
+        defaultName={defaultName}
+        filter={filter}
+        isElected={
+          stakingOverview && stakingOverview.currentElected.some((accountId): boolean => accountId.eq(address))
+        }
+        lastAuthors={lastAuthors}
+        key={address.toString()}
+        myAccounts={myAccounts}
+        points={
+          stakingOverview && pointIndexes && pointIndexes[index] !== -1
+            ? stakingOverview.eraPoints.individual[pointIndexes[index]]
+            : undefined
+        }
+        recentlyOnline={withOnline ? recentlyOnline : undefined}
+      />
+    )
+  );
 }
 
-function filterAccounts (list: string[] = [], without: AccountId[] | string[]): string[] {
+function filterAccounts(list: string[] = [], without: AccountId[] | string[]): string[] {
   return list.filter((accountId): boolean => !without.includes(accountId as any));
 }
 
-function CurrentList (props: Props): React.ReactElement<Props> {
+function CurrentList(props: Props): React.ReactElement<Props> {
   const { isSubstrateV2 } = useContext(ApiContext);
   const [filter, setFilter] = useState<ValidatorFilter>('all');
   const [myAccounts] = useState(keyring.getAccounts().map(({ address }): string => address));
-  const [{ electedFiltered, nextFiltered, pointIndexes }, setFiltered] = useState<{ electedFiltered: string[]; nextFiltered: string[]; pointIndexes: number[] }>({ electedFiltered: [], nextFiltered: [], pointIndexes: [] });
+  const [{ electedFiltered, nextFiltered, pointIndexes }, setFiltered] = useState<{
+    electedFiltered: string[];
+    nextFiltered: string[];
+    pointIndexes: number[];
+  }>({ electedFiltered: [], nextFiltered: [], pointIndexes: [] });
   const { next, stakingOverview, t } = props;
 
   useEffect((): void => {
@@ -73,7 +85,11 @@ function CurrentList (props: Props): React.ReactElement<Props> {
 
   return (
     <div>
-      <FilterOverlay>
+      <FilterOverlay
+        style={{
+          top: myAccounts.length ? '5.5rem' : '5px'
+        }}
+      >
         <Dropdown
           onChange={setFilter}
           options={[
@@ -89,17 +105,12 @@ function CurrentList (props: Props): React.ReactElement<Props> {
           withLabel={false}
         />
       </FilterOverlay>
-      <Columar className='validator--ValidatorsList'>
-        <Column
-          emptyText={t('No addresses found')}
-          headerText={t('validators')}
-        >
-          {stakingOverview && renderColumn(myAccounts, stakingOverview.validators, t('validator'), true, filter, props, pointIndexes)}
+      <Columar className="validator--ValidatorsList">
+        <Column emptyText={t('No addresses found')} headerText={t('validators')}>
+          {stakingOverview &&
+            renderColumn(myAccounts, stakingOverview.validators, t('validator'), true, filter, props, pointIndexes)}
         </Column>
-        <Column
-          emptyText={t('No addresses found')}
-          headerText={t('next up')}
-        >
+        <Column emptyText={t('No addresses found')} headerText={t('next up')}>
           {(electedFiltered.length !== 0 || nextFiltered.length !== 0) && (
             <>
               {renderColumn(myAccounts, electedFiltered, t('intention'), false, filter, props)}

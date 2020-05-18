@@ -8,6 +8,7 @@ import { I18nProps } from '@polkadot/react-components/types';
 import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import { KeyringSectionOption } from '@polkadot/ui-keyring/options/types';
 import { withCalls, withMulti } from '@polkadot/react-api/with';
+import { withAccountRequired } from '@polkadot/joy-utils/MyAccount';
 
 import React, { useState } from 'react';
 import styled from 'styled-components';
@@ -23,7 +24,7 @@ interface Props extends I18nProps, ComponentProps, ApiProps {
   myControllers?: string[];
 }
 
-function getMyStashes (myControllers?: string[], allAccounts?: SubjectInfo): string[] | null {
+function getMyStashes(myControllers?: string[], allAccounts?: SubjectInfo): string[] | null {
   const result: string[] = [];
 
   if (!myControllers) {
@@ -39,11 +40,18 @@ function getMyStashes (myControllers?: string[], allAccounts?: SubjectInfo): str
   return result;
 }
 
-function Accounts ({ allAccounts, allStashes, className, myControllers, recentlyOnline, t }: Props): React.ReactElement<Props> {
+function Accounts({
+  allAccounts,
+  allStashes,
+  className,
+  myControllers,
+  recentlyOnline,
+  t
+}: Props): React.ReactElement<Props> {
   const [isNewStakeOpen, setIsNewStateOpen] = useState(false);
   const myStashes = getMyStashes(myControllers, allAccounts);
-  const stashOptions = allStashes.map((stashId): KeyringSectionOption =>
-    createOption(stashId, (<AccountName params={stashId} />) as any)
+  const stashOptions = allStashes.map(
+    (stashId): KeyringSectionOption => createOption(stashId, (<AccountName params={stashId} />) as any)
   );
   const isEmpty = !isNewStakeOpen && (!myStashes || myStashes.length === 0);
 
@@ -51,51 +59,46 @@ function Accounts ({ allAccounts, allStashes, className, myControllers, recently
 
   return (
     <CardGrid
-      buttons={
-        <Button
-          isPrimary
-          key='new-stake'
-          label={t('New stake')}
-          icon='add'
-          onClick={_toggleNewStake}
-        />
-      }
+      buttons={<Button isPrimary key="new-stake" label={t('New stake')} icon="add" onClick={_toggleNewStake} />}
       className={className}
       emptyText={t('No funds staked yet.')}
       isEmpty={isEmpty}
     >
-      {isNewStakeOpen && (
-        <StartStaking onClose={_toggleNewStake} />
-      )}
-      {myStashes && myStashes.map((address, index): React.ReactNode => (
-        address && (
-          <Account
-            allStashes={allStashes}
-            accountId={address}
-            key={index}
-            recentlyOnline={recentlyOnline}
-            stashOptions={stashOptions}
-          />
-        )
-      ))}
+      {isNewStakeOpen && <StartStaking onClose={_toggleNewStake} />}
+      {myStashes &&
+        myStashes.map(
+          (address, index): React.ReactNode =>
+            address && (
+              <Account
+                allStashes={allStashes}
+                accountId={address}
+                key={index}
+                recentlyOnline={recentlyOnline}
+                stashOptions={stashOptions}
+              />
+            )
+        )}
     </CardGrid>
   );
 }
 
 export default withMulti(
-  styled(Accounts)`
-    .ui--CardGrid-buttons {
-      text-align: right;
-    }
-  `,
+  withAccountRequired(
+    styled(Accounts)`
+      .ui--CardGrid-buttons {
+        text-align: right;
+      }
+    `
+  ),
   translate,
-  withCalls<Props>(
-    ['query.staking.bonded', {
+  withCalls<Props>([
+    'query.staking.bonded',
+    {
       isMulti: true,
       paramPick: ({ allAccounts }: Props): undefined | string[] => {
         return allAccounts && Object.keys(allAccounts);
       },
       propName: 'myControllers'
-    }]
-  )
+    }
+  ])
 );

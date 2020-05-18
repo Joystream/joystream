@@ -2,14 +2,11 @@ import { Routes } from './types';
 
 import Storage from '@polkadot/joy-storage/index';
 
-export default ([
+export default [
   {
     Component: Storage,
     display: {
-      needsAccounts: true,
-      needsApi: [
-        'query.actors.actorAccountIds'
-      ]
+      needsApi: ['query.actors.actorAccountIds']
     },
     i18n: {
       defaultValue: 'Storage'
@@ -17,4 +14,4 @@ export default ([
     icon: 'database',
     name: 'storage'
   }
-] as Routes);
+] as Routes;

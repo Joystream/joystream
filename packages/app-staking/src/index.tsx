@@ -34,8 +34,16 @@ interface Props extends AppProps, ApiProps, I18nProps {
 const EMPY_ACCOUNTS: string[] = [];
 const EMPTY_ALL: [string[], string[]] = [EMPY_ACCOUNTS, EMPY_ACCOUNTS];
 
-function App ({ allAccounts, allStashesAndControllers: [allStashes, allControllers] = EMPTY_ALL, basePath, className, recentlyOnline, stakingOverview, t }: Props): React.ReactElement<Props> {
-  const _renderComponent = (Component: React.ComponentType<ComponentProps>): () => React.ReactNode => {
+function App({
+  allAccounts,
+  allStashesAndControllers: [allStashes, allControllers] = EMPTY_ALL,
+  basePath,
+  className,
+  recentlyOnline,
+  stakingOverview,
+  t
+}: Props): React.ReactElement<Props> {
+  const _renderComponent = (Component: React.ComponentType<ComponentProps>): (() => React.ReactNode) => {
     // eslint-disable-next-line react/display-name
     return (): React.ReactNode => {
       if (!allAccounts) {
@@ -54,17 +62,19 @@ function App ({ allAccounts, allStashesAndControllers: [allStashes, allControlle
     };
   };
 
+  const hasAccount = allAccounts && Object.keys(allAccounts).length;
+
   return (
     <main className={`staking--App ${className}`}>
-      <HelpOverlay md={basicMd} />
+      <HelpOverlay
+        md={basicMd}
+        style={{
+          top: hasAccount ? '5.25rem' : 0
+        }}
+      />
       <header>
         <Tabs
           basePath={basePath}
-          hidden={
-            !allAccounts || Object.keys(allAccounts).length === 0
-              ? ['actions']
-              : []
-          }
           items={[
             {
               isRoot: true,
@@ -95,15 +105,16 @@ export default withMulti(
   translate,
   withCalls<Props>(
     ['derive.imOnline.receivedHeartbeats', { propName: 'recentlyOnline' }],
-    ['derive.staking.controllers', {
-      propName: 'allStashesAndControllers',
-      transform: ([stashes, controllers]: [AccountId[], Option<AccountId>[]]): [string[], string[]] => [
-        stashes.map((accountId): string => accountId.toString()),
-        controllers
-          .filter((optId): boolean => optId.isSome)
-          .map((accountId): string => accountId.unwrap().toString())
-      ]
-    }],
+    [
+      'derive.staking.controllers',
+      {
+        propName: 'allStashesAndControllers',
+        transform: ([stashes, controllers]: [AccountId[], Option<AccountId>[]]): [string[], string[]] => [
+          stashes.map((accountId): string => accountId.toString()),
+          controllers.filter((optId): boolean => optId.isSome).map((accountId): string => accountId.unwrap().toString())
+        ]
+      }
+    ],
     ['derive.staking.overview', { propName: 'stakingOverview' }]
   ),
   withObservable(accountObservable.subject, { propName: 'allAccounts' })
