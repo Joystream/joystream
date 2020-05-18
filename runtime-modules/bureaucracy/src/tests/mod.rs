@@ -1416,6 +1416,13 @@ fn unset_lead_fails_with_invalid_origin() {
 }
 
 #[test]
+fn unset_lead_fails_with_no_lead() {
+    build_test_externalities().execute_with(|| {
+        UnsetLeadFixture::call_and_assert(RawOrigin::Root, Err(crate::MSG_CURRENT_LEAD_NOT_SET));
+    });
+}
+
+#[test]
 fn set_lead_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
         SetLeadFixture::call_and_assert(RawOrigin::None, 1, 1, Err("RequireRootOrigin"));
