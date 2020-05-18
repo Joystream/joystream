@@ -36,7 +36,18 @@ function getProcessingPack() {
 
 function getBootstrapPack() {
   const bootstrapPack: BootstrapPack = { pack: [] };
-  const handlers = require("../../mappings");
+  if (!process.env.BOOTSTRAP_PACK_LOCATION) {
+      // TODO: very basic, we should read form the config file
+      throw new Error(`No boostrap location found. 
+Please set BOOTSTRAP_FILE_LOCATION environment variable`)
+  }
+  let handlers: { [key: string]: BootstrapFunc } = {};
+  try {
+    handlers = require(process.env.BOOTSTRAP_PACK_LOCATION);
+  } catch (e) {
+    throw new Error(`Cannot load bootstrap mappings from ${process.env.BOOTSTRAP_FILE_LOCATION}: ${e}`);
+  }
+  
 
   Object.keys(handlers)
     .filter(handler => handler.startsWith("boot"))
