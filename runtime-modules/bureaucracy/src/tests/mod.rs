@@ -12,6 +12,39 @@ use srml_support::StorageValue;
 use std::collections::{BTreeMap, BTreeSet};
 use system::{EventRecord, Phase, RawOrigin};
 
+struct UpdateWorkerRoleAccountFixture {
+    member_id: u64,
+    worker_id: u64,
+    new_role_account_id: u64,
+    origin: RawOrigin<u64>,
+}
+
+impl UpdateWorkerRoleAccountFixture {
+    fn default_with_ids(member_id: u64, worker_id: u64, new_role_account_id: u64) -> Self {
+        UpdateWorkerRoleAccountFixture {
+            member_id,
+            worker_id,
+            new_role_account_id,
+            origin: RawOrigin::Signed(1),
+        }
+    }
+    fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        UpdateWorkerRoleAccountFixture { origin, ..self }
+    }
+
+    fn call_and_assert(&self, expected_result: Result<(), &str>) {
+        assert_eq!(
+            Bureaucracy1::update_worker_role_account(
+                self.origin.clone().into(),
+                self.member_id,
+                self.worker_id,
+                self.new_role_account_id
+            ),
+            expected_result
+        );
+    }
+}
+
 struct UnsetLeadFixture;
 impl UnsetLeadFixture {
     fn unset_lead() {
@@ -421,7 +454,15 @@ struct EventFixture;
 impl EventFixture {
     fn assert_crate_events(
         expected_raw_events: Vec<
-            RawEvent<u64, u64, u64, u64, std::collections::BTreeMap<u64, u64>, crate::Instance1>,
+            RawEvent<
+                u64,
+                u64,
+                u64,
+                u64,
+                u64,
+                std::collections::BTreeMap<u64, u64>,
+                crate::Instance1,
+            >,
         >,
     ) {
         let converted_events = expected_raw_events
@@ -446,6 +487,7 @@ impl EventFixture {
 
     fn assert_last_crate_event(
         expected_raw_event: RawEvent<
+            u64,
             u64,
             u64,
             u64,
@@ -1426,5 +1468,78 @@ fn unset_lead_fails_with_no_lead() {
 fn set_lead_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
         SetLeadFixture::call_and_assert(RawOrigin::None, 1, 1, Err("RequireRootOrigin"));
+    });
+}
+
+#[test]
+fn update_worker_role_account_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        let member_id = 1;
+
+        SetLeadFixture::set_lead(lead_account_id);
+        increase_total_balance_issuance_using_account_id(1, 10000);
+        setup_members(2);
+
+        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
+        add_worker_opening_fixture.call_and_assert(Ok(()));
+
+        let opening_id = 0; // newly created opening
+
+        let appy_on_worker_opening_fixture =
+            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
+        appy_on_worker_opening_fixture.call_and_assert(Ok(()));
+
+        let application_id = 0; // newly created application
+
+        let begin_review_worker_applications_fixture =
+            BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
+        begin_review_worker_applications_fixture.call_and_assert(Ok(()));
+
+        let mint_id = create_mint();
+        set_mint_id(mint_id);
+
+        let fill_worker_opening_fixture =
+            FillWorkerOpeningFixture::default_for_ids(opening_id, vec![application_id])
+                .with_reward_policy(RewardPolicy {
+                    amount_per_payout: 1000,
+                    next_payment_at_block: 20,
+                    payout_interval: None,
+                });
+        fill_worker_opening_fixture.call_and_assert(Ok(()));
+
+        let worker_id = 0; // newly created worker
+        let mut worker_application_dictionary = BTreeMap::new();
+        worker_application_dictionary.insert(application_id, worker_id);
+
+        let update_worker_account_fixture =
+            UpdateWorkerRoleAccountFixture::default_with_ids(member_id, worker_id, lead_account_id);
+
+        update_worker_account_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkerRoleAccountUpdated(
+            worker_id,
+            lead_account_id,
+        ));
+    });
+}
+
+#[test]
+fn update_worker_role_account_fails_with_memberhip_error() {
+    build_test_externalities().execute_with(|| {
+        let update_worker_account_fixture =
+            UpdateWorkerRoleAccountFixture::default_with_ids(1, 1, 1);
+
+        update_worker_account_fixture.call_and_assert(Err(crate::MSG_MEMBERSHIP_INVALID_MEMBER_ID));
+    });
+}
+
+#[test]
+fn update_worker_role_account_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let update_worker_account_fixture =
+            UpdateWorkerRoleAccountFixture::default_with_ids(1, 1, 1).with_origin(RawOrigin::None);
+
+        update_worker_account_fixture.call_and_assert(Err(crate::MSG_MEMBERSHIP_UNSIGNED_ORIGIN));
     });
 }

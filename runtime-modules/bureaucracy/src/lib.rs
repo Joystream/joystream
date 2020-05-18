@@ -27,7 +27,6 @@ use types::{
 
 //TODO: docs
 //TODO: migrate to decl_error
-//TODO: 'roles' extrinsics
 //TODO: initialize a mint!
 
 /// Alias for the _Lead_ type
@@ -35,12 +34,12 @@ pub type LeadOf<T> =
     Lead<<T as membership::members::Trait>::MemberId, <T as system::Trait>::AccountId>;
 
 /*
-- update_curator_role_account
++ update_curator_role_account
 - update_curator_reward_account
 - leave_curator_role
 - terminate_curator_role
-- set_lead
-- unset_lead
++ set_lead
++ unset_lead
 - unstaking
 */
 
@@ -128,6 +127,7 @@ decl_event!(
     pub enum Event<T, I>
     where
         <T as membership::members::Trait>::MemberId,
+        <T as membership::members::Trait>::ActorId,
         <T as system::Trait>::AccountId,
         WorkerOpeningId = WorkerOpeningId<T>,
         WorkerApplicationId = WorkerApplicationId<T>,
@@ -143,6 +143,11 @@ decl_event!(
         /// - Member id of the leader.
         /// - Role account id of the leader.
         LeaderUnset(MemberId, AccountId),
+        /// Emits on updating the role account of the worker.
+        /// Params:
+        /// - Member id of the worker.
+        /// - Role account id of the worker.
+        WorkerRoleAccountUpdated(ActorId, AccountId),
         /// Emits on adding new worker opening.
         /// Params:
         /// - Worker opening id
@@ -258,6 +263,29 @@ decl_module! {
                 // Trigger event
                 Self::deposit_event(RawEvent::LeaderUnset(lead.member_id, lead.role_account_id));
             }
+        }
+
+        /// An active worker can update the associated role account.
+        pub fn update_worker_role_account(
+            origin,
+            member_id: T::MemberId,
+            worker_id: WorkerId<T>,
+            new_role_account_id: T::AccountId
+        ) {
+            // Ensure that origin is signed by member with given id.
+            ensure_on_wrapped_error!(
+                membership::members::Module::<T>::ensure_member_controller_account_signed(origin, &member_id)
+            )?;
+
+            // mutation
+
+            // Update role account
+            WorkerById::<T, I>::mutate(worker_id, |worker| {
+                worker.role_account = new_role_account_id.clone()
+            });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::WorkerRoleAccountUpdated(worker_id, new_role_account_id));
         }
 
         // ****************** Hiring flow **********************

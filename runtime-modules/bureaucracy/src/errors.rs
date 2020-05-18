@@ -8,8 +8,8 @@ pub mod bureaucracy_errors {
     pub static MSG_OPENING_TEXT_TOO_LONG: &str = "Opening text too long";
     pub static MSG_WORKER_OPENING_DOES_NOT_EXIST: &str = "Worker opening does not exist";
     pub static MSG_INSUFFICIENT_BALANCE_TO_APPLY: &str = "Insufficient balance to apply";
-    pub static MSG_APPLY_ON_WORKER_OPENING_UNSIGNED_ORIGIN: &str = "Unsigned origin";
-    pub static MSG_APPLY_ON_WORKER_OPENING_MEMBER_ID_INVALID: &str = "Member id is invalid";
+    pub static MSG_MEMBERSHIP_UNSIGNED_ORIGIN: &str = "Unsigned origin";
+    pub static MSG_MEMBERSHIP_INVALID_MEMBER_ID: &str = "Member id is invalid";
     pub static MSG_APPLY_ON_WORKER_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT: &str =
         "Signer does not match controller account";
     pub static MSG_ORIGIN_IS_NEITHER_MEMBER_CONTROLLER_OR_ROOT: &str =
@@ -276,10 +276,10 @@ impl rstd::convert::From<WrappedError<members::MemberControllerAccountDidNotSign
     fn from(wrapper: WrappedError<members::MemberControllerAccountDidNotSign>) -> Self {
         match wrapper.error {
             members::MemberControllerAccountDidNotSign::UnsignedOrigin => {
-                bureaucracy_errors::MSG_APPLY_ON_WORKER_OPENING_UNSIGNED_ORIGIN
+                bureaucracy_errors::MSG_MEMBERSHIP_UNSIGNED_ORIGIN
             }
             members::MemberControllerAccountDidNotSign::MemberIdInvalid => {
-                bureaucracy_errors::MSG_APPLY_ON_WORKER_OPENING_MEMBER_ID_INVALID
+                bureaucracy_errors::MSG_MEMBERSHIP_INVALID_MEMBER_ID
             }
             members::MemberControllerAccountDidNotSign::SignerControllerAccountMismatch => {
                 bureaucracy_errors::MSG_APPLY_ON_WORKER_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT
