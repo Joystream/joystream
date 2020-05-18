@@ -9,16 +9,13 @@ import { v4 as uuid } from 'uuid';
 import BN = require('bn.js');
 import { assert } from 'chai';
 
-describe('Validator count proposal network tests', () => {
+export function validatorCountProposal(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const validatorCountIncrement: BN = new BN(+process.env.VALIDATOR_COUNT_INCREMENT!);
   const defaultTimeout: number = 180000;
-
-  const m1KeyPairs: KeyringPair[] = new Array();
-  const m2KeyPairs: KeyringPair[] = new Array();
 
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
@@ -30,11 +27,7 @@ describe('Validator count proposal network tests', () => {
     apiWrapper = await ApiWrapper.create(provider);
   });
 
-  membershipTest(m1KeyPairs);
-  membershipTest(m2KeyPairs);
-  councilTest(m1KeyPairs, m2KeyPairs);
-
-  it('Validator count proposal test', async () => {
+  it('\n\tValidator count proposal test', async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8);
@@ -75,4 +68,14 @@ describe('Validator count proposal network tests', () => {
   after(() => {
     apiWrapper.close();
   });
+}
+
+describe('Validator count proposal network tests', () => {
+  const m1KeyPairs: KeyringPair[] = new Array();
+  const m2KeyPairs: KeyringPair[] = new Array();
+
+  membershipTest(m1KeyPairs);
+  membershipTest(m2KeyPairs);
+  councilTest(m1KeyPairs, m2KeyPairs);
+  validatorCountProposal(m1KeyPairs, m2KeyPairs);
 });

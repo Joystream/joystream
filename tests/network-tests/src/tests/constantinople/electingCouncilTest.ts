@@ -28,7 +28,7 @@ export function councilTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]
     apiWrapper = await ApiWrapper.create(provider);
   });
 
-  it('Electing a council test', async () => {
+  it('\n\tElecting a council test', async () => {
     // Setup goes here because M keypairs are generated after before() function
     sudo = keyring.addFromUri(sudoUri);
     let now = await apiWrapper.getBestBlock();

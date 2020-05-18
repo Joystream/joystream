@@ -10,15 +10,12 @@ import BN = require('bn.js');
 import { assert } from 'chai';
 import { Utils } from '../../../utils/utils';
 
-describe('Evict storage provider proposal network tests', () => {
+export function evictStorageProviderTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const defaultTimeout: number = 180000;
-
-  const m1KeyPairs: KeyringPair[] = new Array();
-  const m2KeyPairs: KeyringPair[] = new Array();
 
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
@@ -30,11 +27,7 @@ describe('Evict storage provider proposal network tests', () => {
     apiWrapper = await ApiWrapper.create(provider);
   });
 
-  membershipTest(m1KeyPairs);
-  membershipTest(m2KeyPairs);
-  councilTest(m1KeyPairs, m2KeyPairs);
-
-  it('Evict storage provider proposal test', async () => {
+  it('\n\tEvict storage provider proposal test', async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8);
@@ -81,4 +74,14 @@ describe('Evict storage provider proposal network tests', () => {
   after(() => {
     apiWrapper.close();
   });
+}
+
+describe('Evict storage provider proposal network tests', () => {
+  const m1KeyPairs: KeyringPair[] = new Array();
+  const m2KeyPairs: KeyringPair[] = new Array();
+
+  membershipTest(m1KeyPairs);
+  membershipTest(m2KeyPairs);
+  councilTest(m1KeyPairs, m2KeyPairs);
+  evictStorageProviderTest(m1KeyPairs, m2KeyPairs);
 });

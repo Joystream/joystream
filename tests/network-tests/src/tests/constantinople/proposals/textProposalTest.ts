@@ -8,15 +8,12 @@ import { ApiWrapper } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN = require('bn.js');
 
-describe('Text proposal network tests', () => {
+export function textProposalTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const defaultTimeout: number = 180000;
-
-  const m1KeyPairs: KeyringPair[] = new Array();
-  const m2KeyPairs: KeyringPair[] = new Array();
 
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
@@ -28,11 +25,7 @@ describe('Text proposal network tests', () => {
     apiWrapper = await ApiWrapper.create(provider);
   });
 
-  membershipTest(m1KeyPairs);
-  membershipTest(m2KeyPairs);
-  councilTest(m1KeyPairs, m2KeyPairs);
-
-  it('Text proposal test', async () => {
+  it('\n\tText proposal test', async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8);
@@ -65,4 +58,14 @@ describe('Text proposal network tests', () => {
   after(() => {
     apiWrapper.close();
   });
+}
+
+describe('Text proposal network tests', () => {
+  const m1KeyPairs: KeyringPair[] = new Array();
+  const m2KeyPairs: KeyringPair[] = new Array();
+
+  membershipTest(m1KeyPairs);
+  membershipTest(m2KeyPairs);
+  councilTest(m1KeyPairs, m2KeyPairs);
+  textProposalTest(m1KeyPairs, m2KeyPairs);
 });

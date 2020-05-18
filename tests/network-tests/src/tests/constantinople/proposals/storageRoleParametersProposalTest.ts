@@ -10,15 +10,12 @@ import BN = require('bn.js');
 import { assert } from 'chai';
 import { RoleParameters } from '@joystream/types/lib/roles';
 
-describe('Storage role parameters proposal network tests', () => {
+export function storageRoleParametersProposalTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const defaultTimeout: number = 180000;
-
-  const m1KeyPairs: KeyringPair[] = new Array();
-  const m2KeyPairs: KeyringPair[] = new Array();
 
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
@@ -30,11 +27,7 @@ describe('Storage role parameters proposal network tests', () => {
     apiWrapper = await ApiWrapper.create(provider);
   });
 
-  membershipTest(m1KeyPairs);
-  membershipTest(m2KeyPairs);
-  councilTest(m1KeyPairs, m2KeyPairs);
-
-  it('Storage role parameters proposal test', async () => {
+  it('\n\tStorage role parameters proposal test', async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8);
@@ -146,4 +139,14 @@ describe('Storage role parameters proposal network tests', () => {
   after(() => {
     apiWrapper.close();
   });
+}
+
+describe('Storage role parameters proposal network tests', () => {
+  const m1KeyPairs: KeyringPair[] = new Array();
+  const m2KeyPairs: KeyringPair[] = new Array();
+
+  membershipTest(m1KeyPairs);
+  membershipTest(m2KeyPairs);
+  councilTest(m1KeyPairs, m2KeyPairs);
+  storageRoleParametersProposalTest(m1KeyPairs, m2KeyPairs);
 });

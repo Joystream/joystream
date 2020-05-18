@@ -42,7 +42,7 @@ export function membershipTest(nKeyPairs: KeyringPair[]) {
     await apiWrapper.transferBalance(sudo, aKeyPair.address, membershipTransactionFee);
   });
 
-  it('Buy membeship is accepted with sufficient funds', async () => {
+  it('\n\tBuy membeship is accepted with sufficient funds', async () => {
     await Promise.all(
       nKeyPairs.map(async (keyPair, index) => {
         await apiWrapper.buyMembership(keyPair, paidTerms, `new_member_${index}${keyPair.address.substring(0, 8)}`);
@@ -55,7 +55,7 @@ export function membershipTest(nKeyPairs: KeyringPair[]) {
     );
   }).timeout(defaultTimeout);
 
-  it('Account A can not buy the membership with insufficient funds', async () => {
+  it('\n\tAccount A can not buy the membership with insufficient funds', async () => {
     await apiWrapper
       .getBalance(aKeyPair.address)
       .then(balance =>
@@ -70,7 +70,7 @@ export function membershipTest(nKeyPairs: KeyringPair[]) {
       .then(membership => assert(membership.length === 0, 'Account A is a member'));
   }).timeout(defaultTimeout);
 
-  it('Account A was able to buy the membership with sufficient funds', async () => {
+  it('\n\tAccount A was able to buy the membership with sufficient funds', async () => {
     await apiWrapper.transferBalance(sudo, aKeyPair.address, membershipFee.add(membershipTransactionFee));
     apiWrapper
       .getBalance(aKeyPair.address)

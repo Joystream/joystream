@@ -9,15 +9,12 @@ import { ApiWrapper } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN = require('bn.js');
 
-describe('Runtime upgrade networt tests', () => {
+export function updateRuntimeTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const defaultTimeout: number = 120000;
-
-  const m1KeyPairs: KeyringPair[] = new Array();
-  const m2KeyPairs: KeyringPair[] = new Array();
 
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
@@ -29,11 +26,7 @@ describe('Runtime upgrade networt tests', () => {
     apiWrapper = await ApiWrapper.create(provider);
   });
 
-  membershipTest(m1KeyPairs);
-  membershipTest(m2KeyPairs);
-  councilTest(m1KeyPairs, m2KeyPairs);
-
-  it('Upgrading the runtime test', async () => {
+  it('\n\tUpgrading the runtime test', async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
     const runtime: Bytes = await apiWrapper.getRuntime();
@@ -73,4 +66,14 @@ describe('Runtime upgrade networt tests', () => {
   after(() => {
     apiWrapper.close();
   });
+}
+
+describe('Runtime upgrade networt tests', () => {
+  const m1KeyPairs: KeyringPair[] = new Array();
+  const m2KeyPairs: KeyringPair[] = new Array();
+
+  membershipTest(m1KeyPairs);
+  membershipTest(m2KeyPairs);
+  councilTest(m1KeyPairs, m2KeyPairs);
+  updateRuntimeTest(m1KeyPairs, m2KeyPairs);
 });

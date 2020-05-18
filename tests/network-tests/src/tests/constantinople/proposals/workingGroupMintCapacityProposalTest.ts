@@ -9,16 +9,13 @@ import { v4 as uuid } from 'uuid';
 import BN = require('bn.js');
 import { assert } from 'chai';
 
-describe('Working group mint capacity proposal network tests', () => {
+export function workingGroupMintCapacityProposalTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const mintingCapacityIncrement: BN = new BN(+process.env.MINTING_CAPACITY_INCREMENT!);
   const defaultTimeout: number = 120000;
-
-  const m1KeyPairs: KeyringPair[] = new Array();
-  const m2KeyPairs: KeyringPair[] = new Array();
 
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
@@ -30,12 +27,7 @@ describe('Working group mint capacity proposal network tests', () => {
     apiWrapper = await ApiWrapper.create(provider);
   });
 
-  membershipTest(m1KeyPairs);
-  membershipTest(m2KeyPairs);
-  councilTest(m1KeyPairs, m2KeyPairs);
-
-  // TODO implement the test
-  it('Mint capacity proposal test', async () => {
+  it('\n\tMint capacity proposal test', async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
     const description: string = 'spending proposal which is used for API network testing';
@@ -80,4 +72,14 @@ describe('Working group mint capacity proposal network tests', () => {
   after(() => {
     apiWrapper.close();
   });
+}
+
+describe('Working group mint capacity proposal network tests', () => {
+  const m1KeyPairs: KeyringPair[] = new Array();
+  const m2KeyPairs: KeyringPair[] = new Array();
+
+  membershipTest(m1KeyPairs);
+  membershipTest(m2KeyPairs);
+  councilTest(m1KeyPairs, m2KeyPairs);
+  workingGroupMintCapacityProposalTest(m1KeyPairs, m2KeyPairs);
 });

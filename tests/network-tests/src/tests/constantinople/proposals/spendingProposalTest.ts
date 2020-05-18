@@ -9,7 +9,7 @@ import { v4 as uuid } from 'uuid';
 import BN = require('bn.js');
 import { assert } from 'chai';
 
-describe('Spending proposal network tests', () => {
+export function spendingProposalTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
@@ -17,9 +17,6 @@ describe('Spending proposal network tests', () => {
   const spendingBalance: BN = new BN(+process.env.SPENDING_BALANCE!);
   const mintCapacity: BN = new BN(+process.env.COUNCIL_MINTING_CAPACITY!);
   const defaultTimeout: number = 120000;
-
-  const m1KeyPairs: KeyringPair[] = new Array();
-  const m2KeyPairs: KeyringPair[] = new Array();
 
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
@@ -31,11 +28,7 @@ describe('Spending proposal network tests', () => {
     apiWrapper = await ApiWrapper.create(provider);
   });
 
-  membershipTest(m1KeyPairs);
-  membershipTest(m2KeyPairs);
-  councilTest(m1KeyPairs, m2KeyPairs);
-
-  it('Spending proposal test', async () => {
+  it('\n\tSpending proposal test', async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
     const description: string = 'spending proposal which is used for API network testing with some mock data';
@@ -83,4 +76,14 @@ describe('Spending proposal network tests', () => {
   after(() => {
     apiWrapper.close();
   });
+}
+
+describe('Spending proposal network tests', () => {
+  const m1KeyPairs: KeyringPair[] = new Array();
+  const m2KeyPairs: KeyringPair[] = new Array();
+
+  membershipTest(m1KeyPairs);
+  membershipTest(m2KeyPairs);
+  councilTest(m1KeyPairs, m2KeyPairs);
+  spendingProposalTest(m1KeyPairs, m2KeyPairs);
 });
