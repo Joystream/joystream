@@ -63,9 +63,11 @@ function checkVisible(
   { api, isApiReady, isApiConnected }: ApiProps,
   hasAccounts: boolean,
   hasSudo: boolean,
-  { isHidden, needsApi, needsSudo }: Route['display']
+  { isHidden, needsAccounts, needsApi, needsSudo }: Route['display']
 ): boolean {
   if (isHidden) {
+    return false;
+  } else if (needsAccounts && !hasAccounts) {
     return false;
   } else if (!needsApi) {
     return true;
