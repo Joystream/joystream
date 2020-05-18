@@ -17,6 +17,7 @@ use srml_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure};
 use system::{ensure_root, ensure_signed, RawOrigin};
 
+use crate::types::{WorkerExitInitiationOrigin, WorkerExitSummary, WorkingGroupUnstaker};
 use constraints::InputValidationLengthConstraint;
 use errors::bureaucracy_errors::*;
 use errors::WrappedError;
@@ -30,18 +31,23 @@ use types::{
 //TODO: initialize a mint!
 
 /// Alias for the _Lead_ type
-pub type LeadOf<T> =
-    Lead<<T as membership::members::Trait>::MemberId, <T as system::Trait>::AccountId>;
+pub type LeadOf<T> = Lead<MemberId<T>, <T as system::Trait>::AccountId>;
 
 /*
 + update_curator_role_account
-- update_curator_reward_account
++ update_curator_reward_account
 - leave_curator_role
 - terminate_curator_role
 + set_lead
 + unset_lead
 - unstaking
 */
+
+/// Stake identifier in staking module
+pub type StakeId<T> = <T as stake::Trait>::StakeId;
+
+/// Member identifier in membership::member module
+pub type MemberId<T> = <T as membership::members::Trait>::MemberId;
 
 /// Workaround for BTreeSet type
 pub type WorkerApplicationIdSet<T> = BTreeSet<WorkerApplicationId<T>>;
@@ -89,7 +95,7 @@ type WorkerApplicationInfo<T> = (
     WorkerApplication<
         <T as system::Trait>::AccountId,
         WorkerOpeningId<T>,
-        <T as membership::members::Trait>::MemberId,
+        MemberId<T>,
         <T as hiring::Trait>::ApplicationId,
     >,
     WorkerApplicationId<T>,
@@ -126,7 +132,8 @@ decl_event!(
     /// Proposals engine events
     pub enum Event<T, I>
     where
-        <T as membership::members::Trait>::MemberId,
+        MemberId = MemberId<T>,
+        WorkerId = WorkerId<T>,
         <T as membership::members::Trait>::ActorId,
         <T as system::Trait>::AccountId,
         WorkerOpeningId = WorkerOpeningId<T>,
@@ -143,6 +150,18 @@ decl_event!(
         /// - Member id of the leader.
         /// - Role account id of the leader.
         LeaderUnset(MemberId, AccountId),
+        /// Emits on terminating the worker.
+        /// Params:
+        /// - worker id.
+        TerminatedWorker(WorkerId),
+        /// Emits on exiting the worker.
+        /// Params:
+        /// - worker id.
+        WorkerExited(WorkerId),
+        /// Emits on unstaking the worker.
+        /// Params:
+        /// - worker id.
+        WorkerUnstaking(WorkerId),
         /// Emits on updating the role account of the worker.
         /// Params:
         /// - Member id of the worker.
@@ -217,6 +236,9 @@ decl_storage! {
 
         /// Next identifier for new worker.
         pub NextWorkerId get(next_worker_id) : WorkerId<T>;
+
+        /// Recover worker by the role stake which is currently unstaking.
+        pub UnstakerByStakeId get(unstaker_by_stake_id) : linked_map StakeId<T> => WorkingGroupUnstaker<MemberId<T>, WorkerId<T>>;
     }
 }
 
@@ -320,6 +342,25 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::WorkerRewardAccountUpdated(worker_id, new_reward_account_id));
+        }
+
+        /// An active worker leaves role
+        pub fn leave_worker_role(
+            origin,
+            worker_id: WorkerId<T>,
+            rationale_text: Vec<u8>
+        ) {
+            // Ensure there is a signer which matches role account of worker corresponding to provided id.
+            let active_worker = Self::ensure_active_worker_signed(origin, &worker_id)?;
+
+            // mutation
+
+            Self::deactivate_worker(
+                &worker_id,
+                &active_worker,
+                &WorkerExitInitiationOrigin::Worker,
+                &rationale_text
+            );
         }
 
         // ****************** Hiring flow **********************
@@ -934,5 +975,80 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         } else {
             Err(crate::errors::MSG_WORKER_HAS_NO_REWARD)
         }
+    }
+
+    fn deactivate_worker(
+        worker_id: &WorkerId<T>,
+        worker: &WorkerOf<T>,
+        exit_initiation_origin: &WorkerExitInitiationOrigin,
+        rationale_text: &[u8],
+    ) {
+        // Stop any possible recurring rewards
+        let _did_deactivate_recurring_reward = if let Some(ref reward_relationship_id) =
+            worker.reward_relationship
+        {
+            // Attempt to deactivate
+            recurringrewards::Module::<T>::try_to_deactivate_relationship(*reward_relationship_id)
+                .expect("Relationship must exist")
+        } else {
+            // Did not deactivate, there was no reward relationship!
+            false
+        };
+
+        // When the worker is staked, unstaking must first be initiated,
+        // otherwise they can be terminated right away.
+
+        // Create exit summary for this termination
+        let current_block = <system::Module<T>>::block_number();
+
+        let worker_exit_summary =
+            WorkerExitSummary::new(exit_initiation_origin, &current_block, rationale_text);
+
+        // Determine new worker stage and event to emit
+        let (new_worker_stage, unstake_directions, event) =
+            if let Some(ref stake_profile) = worker.role_stake_profile {
+                // Determine unstaknig period based on who initiated deactivation
+                let unstaking_period = match worker_exit_summary.origin {
+                    WorkerExitInitiationOrigin::Lead => stake_profile.termination_unstaking_period,
+                    WorkerExitInitiationOrigin::Worker => stake_profile.exit_unstaking_period,
+                };
+
+                (
+                    WorkerRoleStage::Unstaking(worker_exit_summary),
+                    Some((stake_profile.stake_id, unstaking_period)),
+                    RawEvent::WorkerUnstaking(*worker_id),
+                )
+            } else {
+                (
+                    WorkerRoleStage::Exited(worker_exit_summary.clone()),
+                    None,
+                    match worker_exit_summary.origin {
+                        WorkerExitInitiationOrigin::Lead => RawEvent::TerminatedWorker(*worker_id),
+                        WorkerExitInitiationOrigin::Worker => RawEvent::WorkerExited(*worker_id),
+                    },
+                )
+            };
+
+        // Update worker
+        let new_worker = Worker {
+            stage: new_worker_stage,
+            ..worker.clone()
+        };
+
+        WorkerById::<T, I>::insert(worker_id, new_worker);
+
+        // Unstake if directions provided
+        if let Some(directions) = unstake_directions {
+            // Keep track of worker unstaking
+            let unstaker = WorkingGroupUnstaker::Worker(*worker_id);
+            UnstakerByStakeId::<T, I>::insert(directions.0, unstaker);
+
+            // Unstake
+            stake::Module::<T>::initiate_unstaking(&directions.0, directions.1)
+                .expect("Unstaking must be possible at this time");
+        }
+
+        // Trigger event
+        Self::deposit_event(event);
     }
 }

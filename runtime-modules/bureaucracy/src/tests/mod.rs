@@ -3,8 +3,9 @@ mod mock;
 use crate::constraints::InputValidationLengthConstraint;
 use crate::tests::mock::Test;
 use crate::types::{
-    CuratorExitInitiationOrigin, CuratorExitSummary, Lead, OpeningPolicyCommitment, RewardPolicy,
-    Worker, WorkerApplication, WorkerOpening, WorkerRoleStage, WorkerRoleStakeProfile,
+    Lead, OpeningPolicyCommitment, RewardPolicy, Worker, WorkerApplication,
+    WorkerExitInitiationOrigin, WorkerExitSummary, WorkerOpening, WorkerRoleStage,
+    WorkerRoleStakeProfile,
 };
 use crate::{Instance1, RawEvent};
 use mock::{build_test_externalities, Balances, Bureaucracy1, Membership, System, TestEvent};
@@ -494,6 +495,7 @@ impl EventFixture {
                 u64,
                 u64,
                 u64,
+                u64,
                 std::collections::BTreeMap<u64, u64>,
                 crate::Instance1,
             >,
@@ -521,6 +523,7 @@ impl EventFixture {
 
     fn assert_last_crate_event(
         expected_raw_event: RawEvent<
+            u64,
             u64,
             u64,
             u64,
@@ -1660,8 +1663,8 @@ fn update_worker_reward_account_fails_with_inactive_worker() {
         let worker_id = fill_default_worker_position();
 
         let mut worker = Bureaucracy1::worker_by_id(worker_id);
-        worker.stage = WorkerRoleStage::Exited(CuratorExitSummary {
-            origin: CuratorExitInitiationOrigin::Lead,
+        worker.stage = WorkerRoleStage::Exited(WorkerExitSummary {
+            origin: WorkerExitInitiationOrigin::Lead,
             initiated_at_block_number: 333,
             rationale_text: Vec::new(),
         });

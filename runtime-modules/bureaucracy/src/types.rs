@@ -51,10 +51,7 @@ pub struct OpeningPolicyCommitment<BlockNumber, Balance> {
     /// Staking policy for role itself
     pub role_staking_policy: Option<hiring::StakingPolicy<Balance, BlockNumber>>,
 
-    // Slashing terms during application
-    // pub application_slashing_terms: SlashingTerms,
-
-    // Slashing terms during role, NOT application itself!
+    /// Slashing terms during role, NOT application itself!
     pub role_slashing_terms: SlashingTerms,
 
     /// When filling an opening: Unstaking period for application stake of successful applicants
@@ -208,10 +205,10 @@ pub enum WorkerRoleStage<BlockNumber> {
     Active,
 
     /// Currently unstaking
-    Unstaking(CuratorExitSummary<BlockNumber>),
+    Unstaking(WorkerExitSummary<BlockNumber>),
 
     /// No longer active and unstaked
-    Exited(CuratorExitSummary<BlockNumber>),
+    Exited(WorkerExitSummary<BlockNumber>),
 }
 
 /// Must be default constructible because it indirectly is a value in a storage map.
@@ -225,9 +222,9 @@ impl<BlockNumber> Default for WorkerRoleStage<BlockNumber> {
 /// The exit stage of a curators involvement in the working group.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq)]
-pub struct CuratorExitSummary<BlockNumber> {
+pub struct WorkerExitSummary<BlockNumber> {
     /// Origin for exit.
-    pub origin: CuratorExitInitiationOrigin,
+    pub origin: WorkerExitInitiationOrigin,
 
     /// When exit was initiated.
     pub initiated_at_block_number: BlockNumber,
@@ -236,13 +233,13 @@ pub struct CuratorExitSummary<BlockNumber> {
     pub rationale_text: Vec<u8>,
 }
 
-impl<BlockNumber: Clone> CuratorExitSummary<BlockNumber> {
+impl<BlockNumber: Clone> WorkerExitSummary<BlockNumber> {
     pub fn new(
-        origin: &CuratorExitInitiationOrigin,
+        origin: &WorkerExitInitiationOrigin,
         initiated_at_block_number: &BlockNumber,
         rationale_text: &[u8],
     ) -> Self {
-        CuratorExitSummary {
+        WorkerExitSummary {
             origin: (*origin).clone(),
             initiated_at_block_number: (*initiated_at_block_number).clone(),
             rationale_text: rationale_text.to_owned(),
@@ -253,12 +250,12 @@ impl<BlockNumber: Clone> CuratorExitSummary<BlockNumber> {
 /// Origin of exit initiation on behalf of a curator.'
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq)]
-pub enum CuratorExitInitiationOrigin {
+pub enum WorkerExitInitiationOrigin {
     /// Lead is origin.
     Lead,
 
     /// The curator exiting is the origin.
-    Curator,
+    Worker,
 }
 
 /// The recurring reward if any to be assigned to an actor when filling in the position.
@@ -267,4 +264,23 @@ pub struct RewardPolicy<Balance, BlockNumber> {
     pub amount_per_payout: Balance,
     pub next_payment_at_block: BlockNumber,
     pub payout_interval: Option<BlockNumber>,
+}
+
+/// Represents a possible unstaker in working group.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd)]
+pub enum WorkingGroupUnstaker<MemberId, WorkerId> {
+    /// Lead unstaker
+    Lead(MemberId),
+
+    /// Worker unstaker
+    Worker(WorkerId),
+}
+
+/// Must be default constructable because it indirectly is a value in a storage map.
+/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED TO DUE BAD STORAGE MODEL IN SUBSTRATE***
+impl<MemberId: Default, WorkerId> Default for WorkingGroupUnstaker<MemberId, WorkerId> {
+    fn default() -> Self {
+        Self::Lead(MemberId::default())
+    }
 }
