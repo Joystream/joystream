@@ -1,7 +1,7 @@
 import ISubstrateQueryService, { makeQueryService } from './ISubstrateQueryService';
 import QueryBlockProducer from './QueryBlockProducer';
 import QueryEventProcessingPack from './QueryEventProcessingPack';
-import QueryEvent, { JoyEvent } from './QueryEvent';
+import QueryEvent, { SubstrateEvent } from './QueryEvent';
 import QueryEventBlock from './QueryEventBlock';
 import IndexBuilder from './IndexBuilder';
 import QueryNode, { QueryNodeState } from './QueryNode';
@@ -15,7 +15,7 @@ export {
   QueryBlockProducer,
   QueryEventProcessingPack,
   QueryEvent,
-  JoyEvent,
+  SubstrateEvent,
   QueryEventBlock,
   IndexBuilder,
   QueryNode,

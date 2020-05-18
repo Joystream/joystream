@@ -1,4 +1,4 @@
-import { BootstrapPack, BootstrapFunc, JoyEvent } from '..';
+import { BootstrapPack, BootstrapFunc, SubstrateEvent } from '..';
 import { WsProvider, ApiPromise } from '@polkadot/api';
 import { createConnection, getConnection, EntityManager } from 'typeorm';
 import { DB, SavedEntityEvent } from '../db';
@@ -74,7 +74,7 @@ export default class Bootstrapper {
      * This creates a generic bootstrap event for compatibility with DB
      * and bookeeping of successfull bootstrap events
      */
-    private createBootEvent(boot: BootstrapFunc): JoyEvent {
+    private createBootEvent(boot: BootstrapFunc): SubstrateEvent {
         return {
             event_name: 'Bootstrap',
             event_method: boot.name,

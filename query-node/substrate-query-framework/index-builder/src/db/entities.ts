@@ -1,5 +1,5 @@
 import { Entity, Column, PrimaryColumn, EntityManager } from 'typeorm';
-import { JoyEvent } from '..';
+import { SubstrateEvent } from '..';
 
 /**
  * Represents the last processed event. Corresponding database table will hold only one record
@@ -34,7 +34,7 @@ export class SavedEntityEvent {
    * with the event parameter
    * @param event
    */
-  static async update(event: JoyEvent, manager: EntityManager): Promise<void> {
+  static async update(event: SubstrateEvent, manager: EntityManager): Promise<void> {
     let lastProcessedEvent = await manager.findOne(SavedEntityEvent);
 
     if (!lastProcessedEvent) {

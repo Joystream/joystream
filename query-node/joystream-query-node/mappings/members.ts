@@ -37,16 +37,11 @@ export async function handleMemberUpdatedAboutText(db: DB) {
   db.save<Membership>(member);
 }
 
-<<<<<<< HEAD
 
 export async function bootMembers(api: ApiPromise, db: DB) {
 
     let blkHeight: number = process.env.BLOCK_HEIGHT ? parseInt(process.env.BLOCK_HEIGHT) : 0;
     let blkHash: Hash = await api.rpc.chain.getBlockHash(blkHeight);
-=======
-export async function bootMembers(api: ApiPromise, queryRunner: QueryRunner) {
-    let blkHash: Hash = await api.rpc.chain.getBlockHash(0);
->>>>>>> upstream/query_node
     let ids = await api.query.members.membersCreated.at(blkHash);
     let num: number = parseInt(ids.toString())
       
