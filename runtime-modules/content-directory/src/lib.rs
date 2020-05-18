@@ -232,12 +232,10 @@ impl<T: Trait> Class<T> {
     fn set_property_lock_status_at_index(
         &mut self,
         in_class_schema_property_id: PropertyId,
-        is_locked: IsLocked,
+        is_locked: PropertyLockingPolicy,
     ) {
         // Such indexing is safe, when length bounds were previously checked
-        self.properties[in_class_schema_property_id as usize]
-            .prop_type
-            .set_locked_for(is_locked)
+        self.properties[in_class_schema_property_id as usize].set_locked_for(is_locked)
     }
 
     fn set_reference_property_same_controller_status(
@@ -398,10 +396,6 @@ impl<T: Trait> Entity<T> {
         Ok(())
     }
 }
-
-// Shortcuts for faster readability of match expression:
-use PropertyType as PT;
-use PropertyValue as PV;
 
 decl_storage! {
     trait Store for Module<T: Trait> as ContentDirectory {
@@ -766,10 +760,10 @@ decl_module! {
             );
 
             // Check validity of Reference Types for new_properties.
-            let has_unknown_reference = new_properties.iter().any(|prop| match prop.prop_type {
-                PropertyType::Reference(other_class_id, _, _) => !<ClassById<T>>::exists(other_class_id),
-                PropertyType::ReferenceVec(_, other_class_id, _, _) => !<ClassById<T>>::exists(other_class_id),
-                _ => false,
+            let has_unknown_reference = new_properties.iter().any(|prop| if let Type::Reference(other_class_id, _) = prop.prop_type.get_inner_type() {
+                !<ClassById<T>>::exists(other_class_id)
+            } else {
+                false
             });
 
             ensure!(
@@ -822,7 +816,7 @@ decl_module! {
             origin,
             class_id: T::ClassId,
             in_class_schema_property_id: PropertyId,
-            is_locked: IsLocked
+            is_locked: PropertyLockingPolicy
         ) -> dispatch::Result {
             let account_id = ensure_signed(origin)?;
             ensure_lead_auth_success::<T>(&account_id)?;
@@ -1057,7 +1051,7 @@ decl_module! {
             entity_id: T::EntityId,
             in_class_schema_property_id: PropertyId,
             index_in_property_vec: VecMaxLength,
-            property_value: PropertyValue<T>,
+            property_value: SinglePropertyValue<T>,
             nonce: T::Nonce
         ) -> dispatch::Result {
             let account_id = ensure_signed(origin)?;
@@ -1184,8 +1178,8 @@ impl<T: Trait> Module<T> {
                 // All required prop values should be are provided
                 ensure!(!class_prop.required, ERROR_MISSING_REQUIRED_PROP);
 
-                // Add all missing non required schema prop values as PropertyValue::Bool(false)
-                appended_entity_values.insert(*prop_id, PropertyValue::Bool(false));
+                // Add all missing non required schema prop values as PropertyValue::default()
+                appended_entity_values.insert(*prop_id, PropertyValue::default());
             }
         }
 
@@ -1248,9 +1242,7 @@ impl<T: Trait> Module<T> {
             if let Some(class_prop) = class.properties.get(id as usize) {
                 // Skip update if new value is equal to the current one or class property type
                 // is locked for update from current actor
-                if new_value == *current_prop_value
-                    || class_prop.prop_type.is_locked_from(access_level)
-                {
+                if new_value == *current_prop_value || class_prop.is_locked_from(access_level) {
                     continue;
                 }
 
@@ -1322,7 +1314,10 @@ impl<T: Trait> Module<T> {
             .get(&in_class_schema_property_id)
             // Throw an error if a property was not found on entity
             // by an in-class index of a property.
-            .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?;
+            .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?
+            .as_vec_property_value()
+            // Ensure prop value under given class schema property id is vector
+            .ok_or(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR)?;
 
         Self::ensure_class_property_type_unlocked_for(
             entity.class_id,
@@ -1330,13 +1325,7 @@ impl<T: Trait> Module<T> {
             access_level,
         )?;
 
-        // Ensure prop value under given class schema property id is vector
-        ensure!(
-            current_prop_value.is_vec(),
-            ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR
-        );
-
-        let entities_rc_to_decrement = current_prop_value.get_involved_entities();
+        let entities_rc_to_decrement = current_prop_value.get_vec_value().get_involved_entities();
 
         //
         // == MUTATION SAFE ==
@@ -1344,7 +1333,7 @@ impl<T: Trait> Module<T> {
 
         // Clear property value vector:
         <EntityById<T>>::mutate(entity_id, |entity| {
-            if let Some(current_property_value_vec) =
+            if let Some(PropertyValue::Vector(current_property_value_vec)) =
                 entity.values.get_mut(&in_class_schema_property_id)
             {
                 current_property_value_vec.vec_clear();
@@ -1370,7 +1359,11 @@ impl<T: Trait> Module<T> {
             .get(&in_class_schema_property_id)
             // Throw an error if a property was not found on entity
             // by an in-class index of a property.
-            .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?;
+            .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?
+            .as_vec_property_value()
+            // Ensure prop value under given class schema property id is vector
+            .ok_or(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR)?;
+
         Self::ensure_class_property_type_unlocked_for(
             entity.class_id,
             in_class_schema_property_id,
@@ -1382,6 +1375,7 @@ impl<T: Trait> Module<T> {
         current_prop_value.ensure_nonce_equality(nonce)?;
         current_prop_value.ensure_index_in_property_vector_is_valid(index_in_property_vec)?;
         let involved_entity_id = current_prop_value
+            .get_vec_value()
             .get_involved_entities()
             .map(|involved_entities| involved_entities[index_in_property_vec as usize]);
 
@@ -1391,7 +1385,9 @@ impl<T: Trait> Module<T> {
 
         // Remove property value vector
         <EntityById<T>>::mutate(entity_id, |entity| {
-            if let Some(current_prop_value) = entity.values.get_mut(&in_class_schema_property_id) {
+            if let Some(PropertyValue::Vector(current_prop_value)) =
+                entity.values.get_mut(&in_class_schema_property_id)
+            {
                 current_prop_value.vec_remove_at(index_in_property_vec)
             }
         });
@@ -1406,13 +1402,15 @@ impl<T: Trait> Module<T> {
         entity: Entity<T>,
         in_class_schema_property_id: PropertyId,
         index_in_property_vec: VecMaxLength,
-        property_value: PropertyValue<T>,
+        property_value: SinglePropertyValue<T>,
         nonce: T::Nonce,
         access_level: EntityAccessLevel,
     ) -> dispatch::Result {
         // Try to find a current property value in the entity
         // by matching its id to the id of a property with an updated value.
-        if let Some(entity_prop_value) = entity.values.get(&in_class_schema_property_id) {
+        if let Some(PropertyValue::Vector(entity_prop_value)) =
+            entity.values.get(&in_class_schema_property_id)
+        {
             let class_prop = Self::ensure_class_property_type_unlocked_for(
                 entity.class_id,
                 in_class_schema_property_id,
@@ -1440,11 +1438,14 @@ impl<T: Trait> Module<T> {
 
         // Insert property value into property value vector
         <EntityById<T>>::mutate(entity_id, |entity| {
-            if let Some(entities_rc_to_increment) = property_value.get_involved_entities() {
-                Self::increment_entities_rc(&entities_rc_to_increment);
+            let value = property_value.get_value();
+            if let Some(entities_rc_to_increment) = value.get_involved_entity() {
+                Self::increment_entities_rc(&vec![entities_rc_to_increment]);
             }
-            if let Some(current_prop_value) = entity.values.get_mut(&in_class_schema_property_id) {
-                current_prop_value.vec_insert_at(index_in_property_vec, property_value)
+            if let Some(PropertyValue::Vector(current_prop_value)) =
+                entity.values.get_mut(&in_class_schema_property_id)
+            {
+                current_prop_value.vec_insert_at(index_in_property_vec, value)
             }
         });
 
@@ -1513,7 +1514,7 @@ impl<T: Trait> Module<T> {
             // by an in-class index of a property.
             .ok_or(ERROR_CLASS_PROP_NOT_FOUND)?;
         ensure!(
-            !class_prop.prop_type.is_locked_from(entity_access_level),
+            !class_prop.is_locked_from(entity_access_level),
             ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR
         );
         Ok(class_prop.to_owned())

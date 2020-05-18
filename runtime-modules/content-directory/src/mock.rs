@@ -280,7 +280,7 @@
 
 // pub fn simple_test_schema() -> Vec<Property<Runtime>> {
 //     vec![Property {
-//         prop_type: PropertyType::Int64(IsLocked::default()),
+//         prop_type: PropertyType::Int64(PropertyLockingPolicy::default()),
 //         required: false,
 //         name: b"field1".to_vec(),
 //         description: b"Description field1".to_vec(),
@@ -372,7 +372,7 @@
 
 // pub fn good_prop_bool() -> Property<Runtime> {
 //     Property {
-//         prop_type: PropertyType::Bool(IsLocked::default()),
+//         prop_type: PropertyType::Bool(PropertyLockingPolicy::default()),
 //         required: false,
 //         name: b"Name of a bool property".to_vec(),
 //         description: b"Description of a bool property".to_vec(),
@@ -381,7 +381,7 @@
 
 // pub fn good_prop_u32() -> Property<Runtime> {
 //     Property {
-//         prop_type: PropertyType::Uint32(IsLocked::default()),
+//         prop_type: PropertyType::Uint32(PropertyLockingPolicy::default()),
 //         required: false,
 //         name: b"Name of a u32 property".to_vec(),
 //         description: b"Description of a u32 property".to_vec(),
@@ -390,7 +390,7 @@
 
 // pub fn good_prop_u32_vec() -> Property<Runtime> {
 //     Property {
-//         prop_type: PropertyType::Uint32Vec(PROP_ID_U32_VEC_MAX_LEN, IsLocked::default()),
+//         prop_type: PropertyType::Uint32Vec(PROP_ID_U32_VEC_MAX_LEN, PropertyLockingPolicy::default()),
 //         required: false,
 //         name: b"Name of a u32 vec property".to_vec(),
 //         description: b"Description of a u32 vec property".to_vec(),
@@ -399,7 +399,7 @@
 
 // pub fn good_prop_text() -> Property<Runtime> {
 //     Property {
-//         prop_type: PropertyType::Text(20, IsLocked::default()),
+//         prop_type: PropertyType::Text(20, PropertyLockingPolicy::default()),
 //         required: false,
 //         name: b"Name of a text property".to_vec(),
 //         description: b"Description of a text property".to_vec(),
@@ -408,7 +408,7 @@
 
 // pub fn new_reference_class_prop(class_id: <Runtime as Trait>::ClassId) -> Property<Runtime> {
 //     Property {
-//         prop_type: PropertyType::Reference(class_id, IsLocked::default(), false),
+//         prop_type: PropertyType::Reference(class_id, PropertyLockingPolicy::default(), false),
 //         required: false,
 //         name: b"Name of a internal property".to_vec(),
 //         description: b"Description of a internal property".to_vec(),
@@ -420,7 +420,7 @@
 //         prop_type: PropertyType::ReferenceVec(
 //             PROP_ID_U32_VEC_MAX_LEN,
 //             class_id,
-//             IsLocked::default(),
+//             PropertyLockingPolicy::default(),
 //             false,
 //         ),
 //         required: false,

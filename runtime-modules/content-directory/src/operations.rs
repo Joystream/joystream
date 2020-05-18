@@ -1,4 +1,7 @@
-use crate::{PropertyId, PropertyValue, SchemaId, Trait};
+use crate::{
+    PropertyId, PropertyValue, SchemaId, SinglePropertyValue, Trait, Value, VecPropertyValue,
+    VecValue,
+};
 use codec::{Decode, Encode};
 use rstd::collections::btree_map::BTreeMap;
 use rstd::prelude::*;
@@ -94,7 +97,7 @@ pub fn parametrized_property_values_to_property_values<T: Trait>(
                 let entity_id = created_entities
                     .get(&op_index)
                     .ok_or("EntityNotCreatedByOperation")?;
-                PropertyValue::Reference(*entity_id)
+                PropertyValue::Single(SinglePropertyValue::new(Value::Reference(*entity_id)))
             }
             ParametrizedPropertyValue::InternalEntityVec(parametrized_entities) => {
                 let mut entities: Vec<T::EntityId> = vec![];
@@ -113,8 +116,10 @@ pub fn parametrized_property_values_to_property_values<T: Trait>(
                         }
                     }
                 }
-
-                PropertyValue::ReferenceVec(entities, T::Nonce::default())
+                PropertyValue::Vector(VecPropertyValue::new(
+                    VecValue::Reference(entities),
+                    T::Nonce::default(),
+                ))
             }
         };
 
