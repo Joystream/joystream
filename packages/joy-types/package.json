@@ -1,6 +1,6 @@
 {
   "name": "@joystream/types",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "Types for Joystream Substrate Runtime 6.13.0 (Constantinople)",
   "main": "lib/index.js",
   "scripts": {
@@ -12,7 +12,8 @@
   "dependencies": {
     "@polkadot/types": "^0.96.1",
     "@types/vfile": "^4.0.0",
-    "ajv": "^6.11.0"
+    "ajv": "^6.11.0",
+    "lodash": "^4.17.15"
   },
   "directories": {
     "lib": "lib"
