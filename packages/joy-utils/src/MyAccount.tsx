@@ -320,8 +320,9 @@ export function AccountRequired<P extends {}>(Component: React.ComponentType<P>)
   };
 }
 
-// TODO: Remove "withMyAccount" after making sure it doesn't break anything (or change the name to "withOnlyAccount" for consistency)
-export const withAccountRequired = <P extends MyAccountProps>(Component: React.ComponentType<P>): React.ComponentType<P> =>
+// TODO: We could probably use withAccountRequired, which wouldn't pass any addiotional props, just like withMembershipRequired.
+// Just need to make sure those passed props are not used in the extended components (they probably aren't).
+export const withOnlyAccounts = <P extends MyAccountProps>(Component: React.ComponentType<P>): React.ComponentType<P> =>
   withMulti(Component, withMyAccount, AccountRequired);
 
 export const withMembershipRequired = <P extends {}> (Component: React.ComponentType<P>): React.ComponentType<P> =>
