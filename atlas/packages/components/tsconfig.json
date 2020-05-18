@@ -1,14 +1,15 @@
 {
-  "extends": "../../tsconfig.json",
+	"extends": "../../tsconfig.json",
 
-  "compilerOptions": {
-    "module": "esnext",
-    "rootDirs": ["src", "stories"],
-    "baseUrl": "src",
-    "jsx": "preserve",
-    "declaration": true,
-    "declarationDir": "dist/types"
-  },
+	"compilerOptions": {
+		"module": "esnext",
+		"rootDirs": ["src", "stories"],
+		"baseUrl": "src",
+		"jsx": "preserve",
+		"declaration": true,
+		"declarationDir": "dist/types",
+		"typeRoots": ["./@types", "node_modules/@types"]
+	},
 
-  "exclude": ["node_modules", "dist", "stories"]
+	"exclude": ["node_modules", "dist", "stories"]
 }
