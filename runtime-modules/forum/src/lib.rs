@@ -16,49 +16,10 @@ use runtime_primitives::traits::EnsureOrigin;
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure};
 use system::{ensure_signed, RawOrigin};
 
+pub use common::constraints::InputValidationLengthConstraint;
+
 mod mock;
 mod tests;
-
-/*
- * MOVE ALL OF THESE OUT TO COMMON LATER
- */
-
-/// Length constraint for input validation
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct InputValidationLengthConstraint {
-    /// Minimum length
-    pub min: u16,
-
-    /// Difference between minimum length and max length.
-    /// While having max would have been more direct, this
-    /// way makes max < min unrepresentable semantically,
-    /// which is safer.
-    pub max_min_diff: u16,
-}
-
-impl InputValidationLengthConstraint {
-    /// Helper for computing max
-    pub fn max(&self) -> u16 {
-        self.min + self.max_min_diff
-    }
-
-    pub fn ensure_valid(
-        &self,
-        len: usize,
-        too_short_msg: &'static str,
-        too_long_msg: &'static str,
-    ) -> Result<(), &'static str> {
-        let length = len as u16;
-        if length < self.min {
-            Err(too_short_msg)
-        } else if length > self.max() {
-            Err(too_long_msg)
-        } else {
-            Ok(())
-        }
-    }
-}
 
 /// Constants
 /////////////////////////////////////////////////////////////////

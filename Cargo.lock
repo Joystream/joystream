@@ -4604,6 +4604,8 @@ dependencies = [
 name = "substrate-common-module"
 version = "1.0.0"
 dependencies = [
+ "parity-scale-codec",
+ "serde",
  "sr-primitives",
  "srml-support",
  "srml-system",
