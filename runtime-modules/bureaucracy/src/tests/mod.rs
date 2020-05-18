@@ -1,12 +1,12 @@
 mod mock;
 
-use crate::constraints::InputValidationLengthConstraint;
 use crate::tests::mock::Test;
 use crate::types::{
     Lead, OpeningPolicyCommitment, RewardPolicy, Worker, WorkerApplication, WorkerOpening,
     WorkerRoleStage, WorkerRoleStakeProfile,
 };
 use crate::{Instance1, RawEvent};
+use common::constraints::InputValidationLengthConstraint;
 use mock::{build_test_externalities, Balances, Bureaucracy1, Membership, System, TestEvent};
 use srml_support::StorageValue;
 use std::collections::{BTreeMap, BTreeSet};
