@@ -10,7 +10,7 @@ import { Pagination, RepliesPerPage, CategoryCrumbs } from './utils';
 import { ViewReply } from './ViewReply';
 import { Moderate } from './Moderate';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
-import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
+import { JoyWarn } from '@polkadot/joy-utils/JoyStatus';
 import { withForumCalls } from './calls';
 import { withApi, withMulti } from '@polkadot/react-api';
 import { ApiProps } from '@polkadot/react-api/types';

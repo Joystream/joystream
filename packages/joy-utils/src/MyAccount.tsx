@@ -272,30 +272,30 @@ export const withMyAccount = <P extends MyAccountProps>(Component: React.Compone
     withCurationActor
   );
 
-function OnlyMembers<P extends MyAccountProps>(Component: React.ComponentType<P>) {
-  return function(props: P) {
-    const { myMemberIdChecked, iAmMember } = props;
+export function MembershipRequired<P extends {}>(Component: React.ComponentType<P>): React.ComponentType<P> {
+  return function (props: P) {
+    const { myMemberIdChecked, iAmMember } = useMyMembership()
 
     if (!myMemberIdChecked) {
       return <em>Loading...</em>;
     } else if (iAmMember) {
       return <Component {...props} />;
-    } else {
-      return (
-        <Message warning className="JoyMainStatus">
-          <Message.Header>Only members can access this functionality.</Message.Header>
-          <div style={{ marginTop: '1rem' }}>
-            <Link to={`/members/edit`} className="ui button orange">
-              Register here
-            </Link>
-            <span style={{ margin: '0 .5rem' }}> or </span>
-            <Link to={`/accounts`} className="ui button">
-              Change key
-            </Link>
-          </div>
-        </Message>
-      );
     }
+
+    return (
+      <Message warning className="JoyMainStatus">
+        <Message.Header>Only members can access this functionality.</Message.Header>
+        <div style={{ marginTop: '1rem' }}>
+          <Link to={`/members/edit`} className="ui button orange">
+            Register here
+          </Link>
+          <span style={{ margin: '0 .5rem' }}> or </span>
+          <Link to={`/accounts`} className="ui button">
+            Change key
+          </Link>
+        </div>
+      </Message>
+    );
   };
 }
 
@@ -320,8 +320,13 @@ export function AccountRequired<P extends {}>(Component: React.ComponentType<P>)
   };
 }
 
-export const withOnlyMembers = <P extends MyAccountProps>(Component: React.ComponentType<P>) =>
-  withMulti(Component, withMyAccount, AccountRequired, OnlyMembers);
-
-export const withAccountRequired = <P extends MyAccountProps>(Component: React.ComponentType<P>) =>
+// TODO: We could probably use withAccountRequired, which wouldn't pass any addiotional props, just like withMembershipRequired.
+// Just need to make sure those passed props are not used in the extended components (they probably aren't).
+export const withOnlyAccounts = <P extends MyAccountProps>(Component: React.ComponentType<P>): React.ComponentType<P> =>
   withMulti(Component, withMyAccount, AccountRequired);
+
+export const withMembershipRequired = <P extends {}> (Component: React.ComponentType<P>): React.ComponentType<P> =>
+  withMulti(Component, AccountRequired, MembershipRequired)
+
+export const withOnlyMembers = <P extends MyAccountProps>(Component: React.ComponentType<P>): React.ComponentType<P> =>
+  withMulti(Component, withMyAccount, withMembershipRequired);

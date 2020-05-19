@@ -266,6 +266,7 @@ $borderColor: #e4e4e4;
 
 .ChannelPreview {
   display: flex;
+  align-items: normal;
 
   .ListOfChannels & {
     margin-bottom: 1rem;
@@ -282,30 +283,40 @@ $borderColor: #e4e4e4;
   .ChannelTitle {
     font-size: 1.5rem;
     font-weight: 500;
+    margin: 0;
     margin-top: .75rem;
-    margin-bottom: .5rem;
 
     .ChannelHeader & {
       margin-top: 1rem;
     }
   }
-  &.big .ChannelTitle {
-    font-size: 2rem;
-  }
-  &.small .ChannelTitle {
-    font-size: 1rem;
-    a {
-      color: $blackFont;
+  
+  &.small {
+    align-items: center;
+
+    .ChannelTitle {
+      margin-top: 0;
+      font-size: 1rem;
+      a {
+        color: $blackFont;
+      }
+    }
+    .ChannelAvatar {
+      margin-right: .5rem;
     }
   }
-  &.small .ChannelAvatar {
-    margin-right: .5rem;
+
+  &.big {
+    .ChannelTitle {
+      font-size: 2rem;
+    }
   }
 
   .ChannelSubtitle {
     color: $grayFont;
     font-size: .9rem;
     text-transform: uppercase;
+    margin-top: .5rem;
 
     .icon {
       margin-right: .5rem;
@@ -375,7 +386,7 @@ $borderColor: #e4e4e4;
     }
   }
 
-  .JoyPlayAlbum_Featured {
+  .JoyPlayAlbum_RightSidePanel {
     max-width: 450px;
   }
 }

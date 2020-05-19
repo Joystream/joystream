@@ -12,7 +12,7 @@ import { ViewThread } from './ViewThread';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
 import { UrlHasIdProps, CategoryCrumbs, Pagination, ThreadsPerPage } from './utils';
 import Section from '@polkadot/joy-utils/Section';
-import { JoyWarn } from '@polkadot/joy-utils/JoyWarn';
+import { JoyWarn } from '@polkadot/joy-utils/JoyStatus';
 import { withForumCalls } from './calls';
 import { withMulti, withApi } from '@polkadot/react-api';
 import { ApiProps } from '@polkadot/react-api/types';
