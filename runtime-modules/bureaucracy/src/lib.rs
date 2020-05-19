@@ -33,16 +33,6 @@ use types::{
 /// Alias for the _Lead_ type
 pub type LeadOf<T> = Lead<MemberId<T>, <T as system::Trait>::AccountId>;
 
-/*
-+ update_curator_role_account
-+ update_curator_reward_account
-+ leave_curator_role
-+ terminate_curator_role
-+ set_lead
-+ unset_lead
-- unstaking
-*/
-
 /// Stake identifier in staking module
 pub type StakeId<T> = <T as stake::Trait>::StakeId;
 
@@ -250,7 +240,6 @@ decl_module! {
         /// Default deposit_event() handler
         fn deposit_event() = default;
 
-
         // ****************** Roles lifecycle **********************
 
         /// Introduce a lead when one is not currently set.
@@ -390,6 +379,58 @@ decl_module! {
                 &WorkerExitInitiationOrigin::Lead,
                 &rationale_text
             )?;
+        }
+
+        /// Unstake using provided stake_id. Has no side effects if stake_id is not relevant
+        /// to this module.
+        pub fn unstake(origin, stake_id: StakeId<T>) {
+            ensure_root(origin)?;
+
+            // Ignore if unstaked doesn't exist
+            if !<UnstakerByStakeId<T, I>>::exists(stake_id) {
+                return Ok(());
+            }
+
+            // Unstaker must be in this group
+            let unstaker = Self::ensure_unstaker_exists(&stake_id)?;
+
+            // Get worker doing the unstaking,
+            // currently the only possible unstaker in this module.
+            let worker_id = if let WorkingGroupUnstaker::Worker(worker_id) = unstaker {
+                worker_id
+            } else {
+                return Err(MSG_ONLY_WORKERS_CAN_UNSTAKE);
+            };
+
+            let unstaking_worker = Self::ensure_worker_exists(&worker_id)?;
+
+            // Update stage of worker
+            let worker_exit_summary =
+                if let WorkerRoleStage::Unstaking(summary) = unstaking_worker.stage {
+                    summary
+                } else {
+                    return Err(MSG_WORKER_IS_NOT_UNSTAKING);
+                };
+
+            let new_worker = Worker {
+                stage: WorkerRoleStage::Exited(worker_exit_summary.clone()),
+                ..unstaking_worker
+            };
+
+            // mutation
+
+            WorkerById::<T, I>::insert(worker_id, new_worker);
+
+            // Remove from unstaker
+            UnstakerByStakeId::<T, I>::remove(stake_id);
+
+            // Trigger event
+            let event = match worker_exit_summary.origin {
+                WorkerExitInitiationOrigin::Lead => RawEvent::TerminatedWorker(worker_id),
+                WorkerExitInitiationOrigin::Worker => RawEvent::WorkerExited(worker_id),
+            };
+
+            Self::deposit_event(event);
         }
 
         // ****************** Hiring flow **********************
@@ -1086,5 +1127,18 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             MSG_WORKER_EXIT_RATIONALE_TEXT_TOO_SHORT,
             MSG_WORKER_EXIT_RATIONALE_TEXT_TOO_LONG,
         )
+    }
+
+    fn ensure_unstaker_exists(
+        stake_id: &StakeId<T>,
+    ) -> Result<WorkingGroupUnstaker<MemberId<T>, WorkerId<T>>, &'static str> {
+        ensure!(
+            UnstakerByStakeId::<T, I>::exists(stake_id),
+            MSG_UNSTAKER_DOES_NOT_EXIST
+        );
+
+        let unstaker = UnstakerByStakeId::<T, I>::get(stake_id);
+
+        Ok(unstaker)
     }
 }

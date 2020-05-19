@@ -33,6 +33,9 @@ pub mod bureaucracy_errors {
         "Worker exit rationale text is too long";
     pub static MSG_WORKER_EXIT_RATIONALE_TEXT_TOO_SHORT: &str =
         "Worker exit rationale text is too short";
+    pub static MSG_UNSTAKER_DOES_NOT_EXIST: &str = "Unstaker does not exist";
+    pub static MSG_ONLY_WORKERS_CAN_UNSTAKE: &str = "Only workers can unstake";
+    pub static MSG_WORKER_IS_NOT_UNSTAKING: &str = "Worker must be in unstaking stage";
 }
 /*
  * The errors below, while in many cases encoding similar outcomes,
