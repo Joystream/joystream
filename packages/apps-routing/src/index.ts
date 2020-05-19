@@ -25,14 +25,14 @@ import addressbook from './addressbook';
 // import dashboard from './dashboard';
 // import democracy from './democracy';
 // import explorer from './explorer';
-// import extrinsics from './extrinsics';
+import extrinsics from './extrinsics';
 // import genericAsset from './generic-asset';
 // import js from './js';
 // import parachains from './parachains';
-// import settings from './settings';
+import settings from './settings';
 import staking from './staking';
-// import storage from './storage';
-// import sudo from './sudo';
+import storage from './storage';
+import sudo from './sudo';
 // import toolbox from './toolbox';
 import transfer from './transfer';
 // import treasury from './treasury';
@@ -50,7 +50,12 @@ const routes: Routes = ([] as Routes).concat(
   addressbook,
   null,
   election,
-  proposals
+  proposals,
+  null,
+  storage,
+  extrinsics,
+  sudo,
+  settings
 );
 const setup: Routing = {
   default: 'staking',
