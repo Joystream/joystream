@@ -30,6 +30,9 @@ pub use schema::*;
 
 type MaxNumber = u32;
 
+/// Type, representing vector of vectors of all referenced entitity id`s
+type EntitiesRcVec<T> = Vec<Vec<<T as Trait>::EntityId>>;
+
 pub trait Trait: system::Trait + ActorAuthenticator + Debug {
     /// Nonce type is used to avoid data race update conditions, when performing property value vector operations
     type Nonce: Parameter
@@ -1366,7 +1369,7 @@ impl<T: Trait> Module<T> {
             }
             appended_entity_values.insert(prop_id, new_value.to_owned());
         } else {
-            // All required prop values should be are provided
+            // All required prop values should be provided
             ensure!(!class_prop.required, ERROR_MISSING_REQUIRED_PROP);
 
             // Add all missing non required schema prop values as PropertyValue::default()
@@ -1382,7 +1385,7 @@ impl<T: Trait> Module<T> {
         access_level: EntityAccessLevel,
         new_value: PropertyValue<T>,
         current_prop_value: &mut PropertyValue<T>,
-    ) -> Result<(Vec<Vec<T::EntityId>>, Vec<Vec<T::EntityId>>), &'static str> {
+    ) -> Result<(EntitiesRcVec<T>, EntitiesRcVec<T>), &'static str> {
         let mut entities_rc_to_increment_vec = vec![];
         let mut entities_rc_to_decrement_vec = vec![];
         // Get class-level information about this property

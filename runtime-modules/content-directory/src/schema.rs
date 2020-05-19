@@ -4,14 +4,22 @@ use core::ops::{Deref, DerefMut};
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 
+/// Type representing max length of vector property type
 pub type VecMaxLength = u16;
+
+/// Type representing max length of text property type
 pub type TextMaxLength = u16;
+
+/// Type identificator for property id
 pub type PropertyId = u16;
+
+/// Type identificator for schema id
 pub type SchemaId = u16;
 
-// Used to force property values to only reference entities, owned by the same controller
+/// Used to force property values to only reference entities, owned by the same controller
 pub type SameController = bool;
 
+/// Locking policy, representing `Property` locking status for both controller and maintainer
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Default, Decode, Clone, Copy, PartialEq, Eq, Debug)]
 pub struct PropertyLockingPolicy {
@@ -19,6 +27,7 @@ pub struct PropertyLockingPolicy {
     is_locked_from_controller: bool,
 }
 
+/// Enum, used for `PropertyType` representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Type<T: Trait> {
@@ -41,10 +50,12 @@ impl<T: Trait> Default for Type<T> {
     }
 }
 
+/// Vector property type representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
 pub struct VecPropertyType<T: Trait> {
     vec_type: Type<T>,
+    /// Max length of vector, corresponding to a given type
     max_length: VecMaxLength,
 }
 
@@ -92,6 +103,7 @@ impl<T: Trait> VecPropertyType<T> {
     }
 }
 
+/// `Type` enum wrapper
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
 pub struct SingleValuePropertyType<T: Trait>(Type<T>);
@@ -128,6 +140,7 @@ impl<T: Trait> DerefMut for SingleValuePropertyType<T> {
     }
 }
 
+/// Enum, representing either `SingleValuePropertyType` or `VecPropertyType`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum PropertyType<T: Trait> {
@@ -187,6 +200,7 @@ impl<T: Trait> PropertyType<T> {
     }
 }
 
+/// Value enum representation, related to corresponding `SinglePropertyValue` structure
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum Value<T: Trait> {
@@ -217,6 +231,7 @@ impl<T: Trait> Value<T> {
     }
 }
 
+/// `Value` enum wrapper
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct SinglePropertyValue<T: Trait> {
@@ -245,6 +260,7 @@ impl<T: Trait> SinglePropertyValue<T> {
     }
 }
 
+/// Vector value enum representation, related to corresponding `VecPropertyValue` structure
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum VecValue<T: Trait> {
@@ -275,6 +291,7 @@ impl<T: Trait> VecValue<T> {
     }
 }
 
+/// Consists of `VecPropertyValue` enum representation and `nonce`, used to avoid vector data race update conditions
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct VecPropertyValue<T: Trait> {
@@ -411,6 +428,7 @@ impl<T: Trait> VecPropertyValue<T> {
     }
 }
 
+/// Enum, representing either `SinglePropertyValue` or `VecPropertyValue`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum PropertyValue<T: Trait> {
@@ -534,10 +552,12 @@ impl Schema {
     }
 }
 
+/// `Property` representation, related to a given `Class`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Property<T: Trait> {
     pub prop_type: PropertyType<T>,
+    /// Defines, is property value can be skipped, when adding entity schema support
     pub required: bool,
     pub name: Vec<u8>,
     pub description: Vec<u8>,
