@@ -12,24 +12,37 @@ import { printExplicit, printReleaseDate, printLanguage } from '../entities/Enti
 import { MediaObjectType } from '../schemas/general/MediaObject';
 import { MediaPlayerWithResolver } from '../common/MediaPlayerWithResolver';
 import { ContentId } from '@joystream/types/media';
+import { JoyError } from '@polkadot/joy-utils/JoyStatus';
 
 export type PlayVideoProps = {
+  channel?: ChannelEntity
   mediaObject?: MediaObjectType
   id: EntityId
   video?: VideoType
-  channel?: ChannelEntity
+  moreChannelVideos?: VideoType[]
   featuredVideos?: VideoType[]
-};
+}
+
+type ListOfVideoPreviewProps = {
+  videos?: VideoType[]
+}
+
+function VertialListOfVideoPreviews(props: ListOfVideoPreviewProps) {
+  const { videos = [] } = props
+  return <>{videos.map((video) =>
+    <VideoPreview key={`VideoPreview-${video.id}`} {...video} size='small' orientation='horizontal' withChannel />
+  )}</>
+}
 
 export function PlayVideo (props: PlayVideoProps) {
-  const { mediaObject, video, channel, featuredVideos = [] } = props;
+  const { channel, mediaObject, video, moreChannelVideos = [], featuredVideos = [] } = props;
 
   if (!mediaObject || !video) {
-    return <em>Video was not found</em>
+    return <JoyError title={`Video was not found`} />
   }
 
   if (!channel) {
-    return <em>Channel was not found</em>
+    return <JoyError title={`Channel was not found`} />
   }
 
   const metaField = (field: VideoGenericProp, value: React.ReactNode | string) => (
@@ -98,13 +111,19 @@ export function PlayVideo (props: PlayVideoProps) {
       </div>
     </div>
 
-    {featuredVideos.length > 0 &&
-      <div className='JoyPlayAlbum_Featured'>
-        <h3 style={{ marginBottom: '1rem' }}>Featured videos</h3>
-        {featuredVideos.map((x) =>
-          <VideoPreview key={`VideoPreview-${x.id}`} {...x} size='small' orientation='horizontal' withChannel />
-        )}
-      </div>
-    }
+    <div className='JoyPlayAlbum_RightSidePanel'>
+      {featuredVideos.length > 0 &&
+        <div>
+          <h3 style={{ marginBottom: '1rem' }}>Featured videos</h3>
+          <VertialListOfVideoPreviews videos={featuredVideos} />
+        </div>
+      }
+      {moreChannelVideos.length > 0 &&
+        <div style={{ marginTop: '1rem' }}>
+          <h3 style={{ marginBottom: '1rem' }}>More from this channel</h3>
+          <VertialListOfVideoPreviews videos={moreChannelVideos} />
+        </div>
+      }
+    </div>
   </div>;
 }

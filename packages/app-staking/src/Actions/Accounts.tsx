@@ -8,7 +8,7 @@ import { I18nProps } from '@polkadot/react-components/types';
 import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import { KeyringSectionOption } from '@polkadot/ui-keyring/options/types';
 import { withCalls, withMulti } from '@polkadot/react-api/with';
-import { withAccountRequired } from '@polkadot/joy-utils/MyAccount';
+import { withOnlyAccounts } from '@polkadot/joy-utils/MyAccount';
 
 import React, { useState } from 'react';
 import styled from 'styled-components';
@@ -83,7 +83,7 @@ function Accounts({
 }
 
 export default withMulti(
-  withAccountRequired(
+  withOnlyAccounts(
     styled(Accounts)`
       .ui--CardGrid-buttons {
         text-align: right;

@@ -9,25 +9,26 @@ import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
 import { SubmittableResult } from '@polkadot/api';
 import { Option } from '@polkadot/types/codec';
-import { withMulti } from '@polkadot/react-api';
+import { withMulti, withApi } from '@polkadot/react-api';
 import { formatNumber } from '@polkadot/util';
 import { AccountId } from '@polkadot/types/interfaces';
 
 import translate from './translate';
 import { fileNameWoExt } from './utils';
 import { ContentId, DataObject } from '@joystream/types/media';
-import { MyAccountProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
+import { withMembershipRequired } from '@polkadot/joy-utils/MyAccount';
 import { DiscoveryProviderProps, withDiscoveryProvider } from './DiscoveryProvider';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import IpfsHash from 'ipfs-only-hash';
 import { ChannelId } from '@joystream/types/content-working-group';
 import { EditVideoView } from './upload/EditVideo.view';
+import { JoyInfo } from '@polkadot/joy-utils/JoyStatus';
 import { IterableFile } from './IterableFile';
 
 const MAX_FILE_SIZE_MB = 500;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
-type Props = ApiProps & I18nProps & MyAccountProps & DiscoveryProviderProps & {
+type Props = ApiProps & I18nProps & DiscoveryProviderProps & {
   channelId: ChannelId
   history?: History
   match: {
@@ -114,7 +115,7 @@ class Component extends React.PureComponent<Props, State> {
 
   private renderUploading () {
     const { file, newContentId, progress, error } = this.state;
-    if (!file || !file.name) return <em>Loading...</em>;
+    if (!file || !file.name) return <JoyInfo title='Loading...' />;
 
     const success = !error && progress >= 100;
     const { history, match: { params: { channelId } } } = this.props
@@ -133,7 +134,7 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   private renderDiscovering () {
-    return <em>Contacting Storage Provider...</em>;
+    return <JoyInfo title={`Please wait...`}>Contacting storage provider.</JoyInfo>;
   }
 
   private renderProgress () {
@@ -238,7 +239,7 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   private renderComputingHash() {
-    return <em>Processing your file. Please wait...</em>
+    return <JoyInfo title='Processing your file. Please wait...' />
   }
 
   private buildTxParams = () => {
@@ -349,6 +350,7 @@ class Component extends React.PureComponent<Props, State> {
 export const UploadWithRouter = withMulti(
   Component,
   translate,
-  withOnlyMembers,
+  withApi,
+  withMembershipRequired,
   withDiscoveryProvider
 )
