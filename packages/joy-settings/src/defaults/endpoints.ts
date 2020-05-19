@@ -5,7 +5,7 @@
 import { Option } from '../types';
 
 // type ChainName = 'alexander' | 'edgeware' | 'edgewareTest' | 'flamingFir' | 'kusama';
-type ChainName = 'rome';
+type ChainName = 'testnet';
 
 interface ChainData {
   chainDisplay: string;
@@ -22,17 +22,17 @@ interface PoviderData {
 }
 
 // we use this to give an ordering to the chains available
-const ORDER_CHAINS: ChainName[] = ['rome'];
+const ORDER_CHAINS: ChainName[] = ['testnet'];
 
 // we use this to order the providers inside the chains
 const ORDER_PROVIDERS: ProviderName[] = ['joystream_org'];
 
 // some suplementary info on a per-chain basis
 const CHAIN_INFO: Record<ChainName, ChainData> = {
-  rome: {
+  testnet: {
     chainDisplay: 'Joystream',
     logo: 'joystream',
-    type: 'Rome Testnet'
+    type: 'Current Testnet'
   },
 };
 
@@ -41,12 +41,12 @@ const PROVIDERS: Record<ProviderName, PoviderData> = {
   'joystream_org': {
     providerDisplay: 'Joystream.org',
     nodes: {
-      'rome' : 'wss://rome-rpc-endpoint.joystream.org:9944/'
+      'testnet' : 'wss://rome-rpc-endpoint.joystream.org:9944/'
     }
   }
 };
 
-export const ENDPOINT_DEFAULT = PROVIDERS.joystream_org.nodes.rome;
+export const ENDPOINT_DEFAULT = PROVIDERS.joystream_org.nodes.testnet;
 
 export const ENDPOINTS: Option[] = ORDER_CHAINS.reduce((endpoints: Option[], chainName): Option[] => {
   const { chainDisplay, logo, type } = CHAIN_INFO[chainName];
