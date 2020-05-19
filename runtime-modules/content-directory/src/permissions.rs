@@ -415,6 +415,7 @@ impl<T: Trait> EntityPermissions<T> {
     ) -> dispatch::Result {
         match access_level {
             EntityAccessLevel::EntityController
+            | EntityAccessLevel::EntityMaintainer
             | EntityAccessLevel::EntityControllerAndMaintainer => Ok(()),
             _ => Err(ERROR_ENTITY_ADD_SCHEMA_SUPPORT_ACCESS_DENIED),
         }

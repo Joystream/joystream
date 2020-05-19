@@ -1077,7 +1077,7 @@ impl<T: Trait> Module<T> {
         // Ensure class schema is active
         class.ensure_schema_is_active(schema_id)?;
 
-        // Check that schema id is not yet added to this entity:
+        // Check that schema id is not yet added to this entity
         entity.ensure_schema_id_is_not_added(schema_id)?;
 
         let class_schema_opt = class.schemas.get(schema_id as usize);
