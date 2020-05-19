@@ -74,10 +74,6 @@ pub const ERROR_CURATOR_IS_NOT_A_MEMBER_OF_A_GIVEN_CURATOR_GROUP: &str =
     "Curator under provided curator id is not a member of curaror group under given id";
 pub const ERROR_CURATOR_GROUP_ALREADY_EXISTS: &str = "Given curator group already exist";
 pub const ERROR_CURATOR_GROUP_DOES_NOT_EXIST: &str = "Given curator group does not exist";
-pub const ERROR_ENTITY_CREATOR_CURATOR_GROUP_ALREADY_EXISTS: &str =
-    "Given curator group is not associated with an entity creator of given class";
-pub const ERROR_ENTITY_CREATOR_CURATOR_GROUP_DOES_NOT_EXIST: &str =
-    "Given curator group is already associated with an entity creator of given class";
 pub const ERROR_SAME_CONTROLLER_CONSTRAINT_VIOLATION: &str =
     "Entity should be referenced from the entity, owned by the same controller";
 pub const ERROR_MAINTAINER_DOES_NOT_EXIST: &str = "Given maintainer does not exist";
@@ -104,5 +100,3 @@ pub const ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR: &str =
     "Given class property type is locked for updating";
 pub const ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED: &str =
     "Class maintainers limit reached";
-pub const ERROR_NUMBER_OF_ENTITY_CREATORS_PER_CLASS_LIMIT_REACHED: &str =
-    "Entity creators per class limit reached";

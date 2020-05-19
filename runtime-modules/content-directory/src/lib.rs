@@ -104,9 +104,6 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug {
     /// Maximum number of maintainers per class constraint
     type NumberOfMaintainersConstraint: Get<MaxNumber>;
 
-    /// Maximum number of entity creators per class constraint
-    type NumberOfEntityCreatorsConstraint: Get<MaxNumber>;
-
     type NumberOfSchemasConstraint: Get<MaxNumber>;
 
     type NumberOfPropertiesConstraint: Get<MaxNumber>;
@@ -463,9 +460,7 @@ decl_module! {
             for class_id in class_ids {
                 <ClassById<T>>::mutate(class_id, |class| {
                     let class_permissions = class.get_permissions_mut();
-                    class_permissions.get_entity_creation_permissions_mut().get_curator_groups_mut().remove(&curator_group_id);
                     class_permissions.get_maintainers_mut().remove(&curator_group_id);
-                    // If group is an entity controller, it should be updated manually to the new one
                 })
             };
             Ok(())
@@ -518,76 +513,6 @@ decl_module! {
             <ClassById<T>>::mutate(class_id, |class|
                 class.get_permissions_mut().get_maintainers_mut().remove(&curator_group_id)
             );
-            Ok(())
-        }
-
-        pub fn add_entities_creator(
-            origin,
-            class_id: T::ClassId,
-            curator_group_id: T::CuratorGroupId,
-            limit: Option<CreationLimit>
-        ) -> dispatch::Result {
-            let account_id = ensure_signed(origin)?;
-
-            ensure_lead_auth_success::<T>(&account_id)?;
-            Self::ensure_known_class_id(class_id)?;
-
-            Self::ensure_curator_group_exists(&curator_group_id)?;
-
-            let class =  Self::class_by_id(class_id);
-            let entity_creation_permissions = class.get_permissions().get_entity_creation_permissions();
-
-            entity_creation_permissions.ensure_curator_groups_limit_not_reached()?;
-            entity_creation_permissions.ensure_curator_group_does_not_exist(&curator_group_id)?;
-
-            if let Some(limit) = limit {
-                Self::ensure_valid_number_of_class_entities_per_actor(limit)?;
-            }
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            <ClassById<T>>::mutate(class_id, |class|
-                class.get_permissions_mut().get_entity_creation_permissions_mut()
-                    .get_curator_groups_mut().insert(curator_group_id)
-            );
-
-
-            // Create entity creation voucher in case, if not exist yet and individual voucher limit specified.
-            if let Some(limit) = limit {
-                let entity_controller = EntityController::from_curator_group(curator_group_id);
-                if !<EntityCreationVouchers<T>>::exists(class_id, &entity_controller) {
-                    <EntityCreationVouchers<T>>::insert(class_id, entity_controller, EntityCreationVoucher::new(limit));
-                }
-            }
-
-            Ok(())
-        }
-
-        pub fn remove_entities_creator(
-            origin,
-            class_id: T::ClassId,
-            curator_group_id: T::CuratorGroupId,
-        ) -> dispatch::Result {
-            let account_id = ensure_signed(origin)?;
-
-            ensure_lead_auth_success::<T>(&account_id)?;
-            Self::ensure_known_class_id(class_id)?;
-
-            Self::class_by_id(class_id).get_permissions().get_entity_creation_permissions()
-                .ensure_curator_group_exists(&curator_group_id)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            <ClassById<T>>::mutate(class_id, |class|
-                class.get_permissions_mut().get_entity_creation_permissions_mut()
-                    .get_curator_groups_mut().remove(&curator_group_id)
-            );
-
-            // Should we remove entities creation voucher after creator removal?
             Ok(())
         }
 
@@ -662,10 +587,10 @@ decl_module! {
         pub fn update_class_permissions(
             origin,
             class_id: T::ClassId,
+            any_member: Option<bool>,
             entity_creation_blocked: Option<bool>,
             all_entity_property_values_locked: Option<bool>,
             maintainers: Option<BTreeSet<T::CuratorGroupId>>,
-            entity_creation_permissions: Option<EntityCreationPermissions<T>>,
         ) -> dispatch::Result {
             let account_id = ensure_signed(origin)?;
 
@@ -677,15 +602,15 @@ decl_module! {
                 ensure!(maintainers.len() <= T::NumberOfMaintainersConstraint::get() as usize, ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED);
             }
 
-            if let Some(ref entity_creation_permissions) = entity_creation_permissions {
-                let curator_groups = entity_creation_permissions.get_curator_groups();
-                ensure!(curator_groups.len() <= T::NumberOfEntityCreatorsConstraint::get() as usize, ERROR_NUMBER_OF_ENTITY_CREATORS_PER_CLASS_LIMIT_REACHED);
-                Self::ensure_curator_groups_exist(curator_groups)?;
-            }
-
             //
             // == MUTATION SAFE ==
             //
+
+            if let Some(any_member) = any_member {
+                <ClassById<T>>::mutate(class_id, |class|
+                    class.get_permissions_mut().set_any_member_status(any_member)
+                );
+            }
 
             if let Some(entity_creation_blocked) = entity_creation_blocked {
                 <ClassById<T>>::mutate(class_id, |class| class.get_permissions_mut().set_entity_creation_blocked(entity_creation_blocked));
@@ -694,12 +619,6 @@ decl_module! {
             if let Some(all_entity_property_values_locked) = all_entity_property_values_locked {
                 <ClassById<T>>::mutate(class_id, |class|
                     class.get_permissions_mut().set_all_entity_property_values_locked(all_entity_property_values_locked)
-                );
-            }
-
-            if let Some(entity_creation_permissions) = entity_creation_permissions {
-                <ClassById<T>>::mutate(class_id, |class|
-                    class.get_permissions_mut().set_entity_creation_permissions(entity_creation_permissions)
                 );
             }
 
@@ -917,7 +836,7 @@ decl_module! {
 
             let class_permissions = class.get_permissions();
             class_permissions.ensure_entity_creation_not_blocked()?;
-            class_permissions.get_entity_creation_permissions().ensure_can_create_entities(&account_id, &actor)?;
+            class_permissions.ensure_can_create_entities(&account_id, &actor)?;
 
             let entity_controller = EntityController::from_actor(&actor);
 
@@ -1440,7 +1359,7 @@ impl<T: Trait> Module<T> {
         <EntityById<T>>::mutate(entity_id, |entity| {
             let value = property_value.get_value();
             if let Some(entities_rc_to_increment) = value.get_involved_entity() {
-                Self::increment_entities_rc(&vec![entities_rc_to_increment]);
+                Self::increment_entities_rc(&[entities_rc_to_increment]);
             }
             if let Some(PropertyValue::Vector(current_prop_value)) =
                 entity.values.get_mut(&in_class_schema_property_id)
@@ -1573,15 +1492,7 @@ impl<T: Trait> Module<T> {
         class_permissions: &ClassPermissions<T>,
     ) -> dispatch::Result {
         class_permissions.ensure_maintainers_limit_not_reached()?;
-        class_permissions
-            .get_entity_creation_permissions()
-            .ensure_curator_groups_limit_not_reached()?;
         Self::ensure_curator_groups_exist(class_permissions.get_maintainers())?;
-        Self::ensure_curator_groups_exist(
-            class_permissions
-                .get_entity_creation_permissions()
-                .get_curator_groups(),
-        )?;
         Ok(())
     }
 

@@ -544,9 +544,6 @@ pub struct Property<T: Trait> {
 }
 
 impl<T: Trait> Property<T> {
-    // pub fn same_controller_status(&self) -> SameController {
-    //     self.prop_type.get_same_controller_status()
-    // }
 
     pub fn set_locked_for(&mut self, is_locked_for: PropertyLockingPolicy) {
         self.locking_policy = is_locked_for
@@ -556,7 +553,6 @@ impl<T: Trait> Property<T> {
         let is_locked_from_controller = self.locking_policy.is_locked_from_controller;
         let is_locked_from_maintainer = self.locking_policy.is_locked_from_maintainer;
         match access_level {
-            EntityAccessLevel::Lead => false,
             EntityAccessLevel::EntityControllerAndMaintainer => {
                 is_locked_from_controller && is_locked_from_maintainer
             }
@@ -603,6 +599,7 @@ impl<T: Trait> Property<T> {
             .ok_or(ERROR_PROP_VALUE_TYPE_DOESNT_MATCH_INTERNAL_ENTITY_VECTOR_TYPE)?;
 
         let max_vec_len = prop_type_vec.get_max_len();
+        
         match (
             single_value.get_value_ref(),
             vec_value.get_vec_value(),
