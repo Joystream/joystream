@@ -544,7 +544,6 @@ pub struct Property<T: Trait> {
 }
 
 impl<T: Trait> Property<T> {
-
     pub fn set_locked_for(&mut self, is_locked_for: PropertyLockingPolicy) {
         self.locking_policy = is_locked_for
     }
@@ -599,7 +598,7 @@ impl<T: Trait> Property<T> {
             .ok_or(ERROR_PROP_VALUE_TYPE_DOESNT_MATCH_INTERNAL_ENTITY_VECTOR_TYPE)?;
 
         let max_vec_len = prop_type_vec.get_max_len();
-        
+
         match (
             single_value.get_value_ref(),
             vec_value.get_vec_value(),

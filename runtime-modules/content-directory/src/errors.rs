@@ -16,12 +16,14 @@ pub const ERROR_CLASS_SCHEMAS_LIMIT_REACHED: &str =
     "Maximum number of given class schemas limit reached";
 pub const ERROR_CLASS_PROPERTIES_LIMIT_REACHED: &str =
     "Maximum number of properties in schema limit reached";
-pub const ERROR_PER_ACTOR_ENTITIES_CREATION_LIMIT_EXCEEDS_OVERALL_LIMIT: &str =
-    "Entities creation limit per individual actor should be less than overall entities creation limit";
+pub const ERROR_PER_CONTROLLER_ENTITIES_CREATION_LIMIT_EXCEEDS_OVERALL_LIMIT: &str =
+    "Entities creation limit per controller should be less than overall entities creation limit";
 pub const ERROR_ENTITIES_NUMBER_PER_CLASS_CONSTRAINT_VIOLATED: &str =
     "Number of entities per class is to big";
 pub const ERROR_NUMBER_OF_CLASS_ENTITIES_PER_ACTOR_CONSTRAINT_VIOLATED: &str =
-    "Number of class entities per actor is to big";
+    "Number of class entities per actor constraint violated";
+pub const ERROR_INDIVIDUAL_NUMBER_OF_CLASS_ENTITIES_PER_ACTOR_IS_TOO_BIG: &str =
+    "Individual number of class entities per actor is too big";
 pub const ERROR_NEW_ENTITIES_MAX_COUNT_IS_LESS_THAN_NUMBER_OF_ALREADY_CREATED: &str =
     "Cannot set voucher entities count to be less than number of already created entities";
 
@@ -78,8 +80,6 @@ pub const ERROR_SAME_CONTROLLER_CONSTRAINT_VIOLATION: &str =
     "Entity should be referenced from the entity, owned by the same controller";
 pub const ERROR_MAINTAINER_DOES_NOT_EXIST: &str = "Given maintainer does not exist";
 pub const ERROR_MAINTAINER_ALREADY_EXISTS: &str = "Given maintainer already exist";
-pub const ERROR_ENTITY_CREATION_VOUCHER_DOES_NOT_EXIST: &str =
-    "Given entity creation voucher does not exist";
 pub const ERROR_ACTOR_CAN_NOT_CREATE_ENTITIES: &str =
     "Provided actor can`t create entities of given class";
 pub const ERROR_MAX_NUMBER_OF_ENTITIES_PER_CLASS_LIMIT_REACHED: &str =

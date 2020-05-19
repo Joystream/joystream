@@ -123,16 +123,6 @@ impl<T: ActorAuthenticator> CuratorGroup<T> {
     }
 }
 
-/// Limit for how many entities of a given class may be created.
-#[derive(Encode, Decode, Clone, Debug, PartialEq)]
-pub enum EntityCreationLimit {
-    /// Look at per class global variable `ClassPermission::per_controller_entity_creation_limit`.
-    ClassLimit,
-
-    /// Individual specified limit.
-    Individual(CreationLimit),
-}
-
 /// A voucher for entity creation
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Default)]
 pub struct EntityCreationVoucher {
@@ -171,7 +161,7 @@ impl EntityCreationVoucher {
             maximum_entities_count >= self.entities_created,
             ERROR_NEW_ENTITIES_MAX_COUNT_IS_LESS_THAN_NUMBER_OF_ALREADY_CREATED
         );
-        Module::<T>::ensure_valid_number_of_class_entities_per_actor(maximum_entities_count)
+        Ok(())
     }
 }
 
@@ -240,10 +230,7 @@ impl<T: Trait> ClassPermissions<T> {
         self.all_entity_property_values_locked = all_entity_property_values_locked
     }
 
-    pub fn set_any_member_status(
-        &mut self,
-        any_member: bool
-    ) {
+    pub fn set_any_member_status(&mut self, any_member: bool) {
         self.any_member = any_member;
     }
 
@@ -360,9 +347,7 @@ impl<T: Trait> Default for EntityController<T> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct EntityPermissions<T: Trait> {
-    /// Current controller, which is initially set based on who created entity and
-    /// `ClassPermission::initial_controller_of_created_entities` for corresponding class permission instance, but it can later be updated.
-    /// In case, when entity was created from authority call, controller is set to None
+    /// Current controller, which is initially set based on who created entity
     pub controller: EntityController<T>,
 
     /// Forbid groups to mutate any property value.
@@ -460,7 +445,7 @@ impl EntityAccessLevel {
         match &actor {
             Actor::Lead if entity_permissions.controller_is_equal_to(&controller) => {
                 ensure_lead_auth_success::<T>(account_id).map(|_| Self::EntityController)
-            },
+            }
             Actor::Member(member_id) if entity_permissions.controller_is_equal_to(&controller) => {
                 ensure_member_auth_success::<T>(member_id, account_id)
                     .map(|_| Self::EntityController)
