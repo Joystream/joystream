@@ -102,3 +102,4 @@ pub const ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED: &str =
     "Class maintainers limit reached";
 pub const ERROR_NUMBER_OF_CURATORS_PER_GROUP_LIMIT_REACHED: &str =
     "Max number of curators per group limit reached";
+pub const ERROR_CURATOR_IS_NOT_ACTIVE: &str = "Curator group is not active";

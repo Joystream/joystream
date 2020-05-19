@@ -455,6 +455,26 @@ decl_module! {
             Ok(())
         }
 
+        pub fn set_curator_group_status(
+            origin,
+            curator_group_id: T::CuratorGroupId,
+            is_active: bool,
+        ) -> dispatch::Result {
+            perform_lead_auth::<T>(origin)?;
+
+            Self::ensure_curator_group_exists(&curator_group_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
+                curator_group.set_status(is_active)
+            });
+
+            Ok(())
+        }
+
         pub fn add_curator(
             origin,
             curator_group_id: T::CuratorGroupId,
