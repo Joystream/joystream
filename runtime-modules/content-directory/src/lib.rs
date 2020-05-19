@@ -429,9 +429,8 @@ decl_module! {
             curator_group_id: T::CuratorGroupId,
             curator_group: CuratorGroup<T>
         ) -> dispatch::Result {
-            let account_id = ensure_signed(origin)?;
+            perform_lead_auth::<T>(origin)?;
 
-            ensure_lead_auth_success::<T>(&account_id)?;
             Self::ensure_curator_group_does_not_exist(curator_group_id)?;
 
             //
@@ -446,9 +445,8 @@ decl_module! {
             origin,
             curator_group_id: T::CuratorGroupId,
         ) -> dispatch::Result {
-            let account_id = ensure_signed(origin)?;
+            perform_lead_auth::<T>(origin)?;
 
-            ensure_lead_auth_success::<T>(&account_id)?;
             Self::ensure_curator_group_exists(&curator_group_id)?;
 
             //
@@ -471,9 +469,8 @@ decl_module! {
             class_id: T::ClassId,
             curator_group_id: T::CuratorGroupId,
         ) -> dispatch::Result {
-            let account_id = ensure_signed(origin)?;
+            perform_lead_auth::<T>(origin)?;
 
-            ensure_lead_auth_success::<T>(&account_id)?;
             Self::ensure_known_class_id(class_id)?;
 
             Self::ensure_curator_group_exists(&curator_group_id)?;
@@ -499,9 +496,8 @@ decl_module! {
             class_id: T::ClassId,
             curator_group_id: T::CuratorGroupId,
         ) -> dispatch::Result {
-            let account_id = ensure_signed(origin)?;
+            perform_lead_auth::<T>(origin)?;
 
-            ensure_lead_auth_success::<T>(&account_id)?;
             Self::ensure_known_class_id(class_id)?;
 
             Self::class_by_id(class_id).get_permissions().ensure_maintainer_exists(&curator_group_id)?;
@@ -523,9 +519,8 @@ decl_module! {
             controller: EntityController<T>,
             maximum_entities_count: CreationLimit
         ) -> dispatch::Result {
-            let account_id = ensure_signed(origin)?;
+            perform_lead_auth::<T>(origin)?;
 
-            ensure_lead_auth_success::<T>(&account_id)?;
             Self::ensure_known_class_id(class_id)?;
 
             let per_controller_entity_creation_limit = Self::class_by_id(class_id).per_controller_entity_creation_limit;
@@ -564,8 +559,7 @@ decl_module! {
             maximum_entities_count: CreationLimit,
             per_controller_entity_creation_limit: CreationLimit
         ) -> dispatch::Result {
-            let account_id = ensure_signed(origin)?;
-            ensure_lead_auth_success::<T>(&account_id)?;
+            perform_lead_auth::<T>(origin)?;
 
             Self::ensure_entities_limits_are_valid(maximum_entities_count, per_controller_entity_creation_limit)?;
 
@@ -578,6 +572,10 @@ decl_module! {
             let class_id = Self::next_class_id();
 
             let class = Class::new(class_permissions, name, description, maximum_entities_count, per_controller_entity_creation_limit);
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             <ClassById<T>>::insert(&class_id, class);
 
@@ -605,9 +603,8 @@ decl_module! {
             all_entity_property_values_locked: Option<bool>,
             maintainers: Option<BTreeSet<T::CuratorGroupId>>,
         ) -> dispatch::Result {
-            let account_id = ensure_signed(origin)?;
+            perform_lead_auth::<T>(origin)?;
 
-            ensure_lead_auth_success::<T>(&account_id)?;
             Self::ensure_known_class_id(class_id)?;
 
             if let Some(ref maintainers) = maintainers {
@@ -650,8 +647,7 @@ decl_module! {
             existing_properties: Vec<PropertyId>,
             new_properties: Vec<Property<T>>
         ) -> dispatch::Result {
-            let account_id = ensure_signed(origin)?;
-            ensure_lead_auth_success::<T>(&account_id)?;
+            perform_lead_auth::<T>(origin)?;
 
             Self::ensure_known_class_id(class_id)?;
 
@@ -728,8 +724,8 @@ decl_module! {
             schema_id: SchemaId,
             schema_status: bool
         ) -> dispatch::Result {
-            let account_id = ensure_signed(origin)?;
-            ensure_lead_auth_success::<T>(&account_id)?;
+            perform_lead_auth::<T>(origin)?;
+
             Self::ensure_known_class_id(class_id)?;
 
             //
@@ -750,8 +746,8 @@ decl_module! {
             in_class_schema_property_id: PropertyId,
             is_locked: PropertyLockingPolicy
         ) -> dispatch::Result {
-            let account_id = ensure_signed(origin)?;
-            ensure_lead_auth_success::<T>(&account_id)?;
+            perform_lead_auth::<T>(origin)?;
+
             Self::ensure_known_class_id(class_id)?;
 
             // Ensure property_id is a valid index of class properties vector:
@@ -773,8 +769,8 @@ decl_module! {
             in_class_schema_property_id: PropertyId,
             same_controller: SameController
         ) -> dispatch::Result {
-            let account_id = ensure_signed(origin)?;
-            ensure_lead_auth_success::<T>(&account_id)?;
+            perform_lead_auth::<T>(origin)?;
+
             Self::ensure_known_class_id(class_id)?;
 
             // Ensure property_id is a valid index of class properties vector:
@@ -800,8 +796,8 @@ decl_module! {
             frozen_for_controller: Option<bool>,
             referenceable: Option<bool>
         ) -> dispatch::Result {
-            let account_id = ensure_signed(origin)?;
-            ensure_lead_auth_success::<T>(&account_id)?;
+            perform_lead_auth::<T>(origin)?;
+
             Self::ensure_known_entity_id(entity_id)?;
 
             //
@@ -918,8 +914,7 @@ decl_module! {
 
             Self::ensure_known_entity_id(entity_id)?;
 
-            let (entity, access_level) = Self::get_entity_and_access_level(account_id, entity_id, actor)?;
-            EntityPermissions::<T>::ensure_group_can_add_schema_support(access_level)?;
+            let (entity, _) = Self::get_entity_and_access_level(account_id, entity_id, actor)?;
 
             Self::add_entity_schema_support(entity_id, entity, schema_id, property_values)
         }
@@ -1174,9 +1169,15 @@ impl<T: Trait> Module<T> {
             if let Some(class_prop) = class.properties.get(id as usize) {
                 // Skip update if new value is equal to the current one or class property type
                 // is locked for update from current actor
-                if new_value == *current_prop_value || class_prop.is_locked_from(access_level) {
+                if new_value == *current_prop_value {
                     continue;
                 }
+
+                // Ensure class property is unlocked for given actor
+                ensure!(
+                    !class_prop.is_locked_from(access_level),
+                    ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR
+                );
 
                 // Validate a new property value against the type of this property
                 // and check any additional constraints like the length of a vector
@@ -1213,6 +1214,7 @@ impl<T: Trait> Module<T> {
 
         // If property values should be updated:
         if updated {
+            
             //
             // == MUTATION SAFE ==
             //
@@ -1241,15 +1243,8 @@ impl<T: Trait> Module<T> {
         in_class_schema_property_id: PropertyId,
         access_level: EntityAccessLevel,
     ) -> dispatch::Result {
-        let current_prop_value = entity
-            .values
-            .get(&in_class_schema_property_id)
-            // Throw an error if a property was not found on entity
-            // by an in-class index of a property.
-            .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?
-            .as_vec_property_value()
-            // Ensure prop value under given class schema property id is vector
-            .ok_or(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR)?;
+        let current_property_value_vec =
+            Self::get_property_value_vec(&entity, in_class_schema_property_id)?;
 
         Self::ensure_class_property_type_unlocked_for(
             entity.class_id,
@@ -1257,7 +1252,9 @@ impl<T: Trait> Module<T> {
             access_level,
         )?;
 
-        let entities_rc_to_decrement = current_prop_value.get_vec_value().get_involved_entities();
+        let entities_rc_to_decrement = current_property_value_vec
+            .get_vec_value()
+            .get_involved_entities();
 
         //
         // == MUTATION SAFE ==
@@ -1286,15 +1283,8 @@ impl<T: Trait> Module<T> {
         nonce: T::Nonce,
         access_level: EntityAccessLevel,
     ) -> dispatch::Result {
-        let current_prop_value = entity
-            .values
-            .get(&in_class_schema_property_id)
-            // Throw an error if a property was not found on entity
-            // by an in-class index of a property.
-            .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?
-            .as_vec_property_value()
-            // Ensure prop value under given class schema property id is vector
-            .ok_or(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR)?;
+        let current_property_value_vec =
+            Self::get_property_value_vec(&entity, in_class_schema_property_id)?;
 
         Self::ensure_class_property_type_unlocked_for(
             entity.class_id,
@@ -1304,9 +1294,10 @@ impl<T: Trait> Module<T> {
 
         // Ensure property value vector nonces equality to avoid possible data races,
         // when performing vector specific operations
-        current_prop_value.ensure_nonce_equality(nonce)?;
-        current_prop_value.ensure_index_in_property_vector_is_valid(index_in_property_vec)?;
-        let involved_entity_id = current_prop_value
+        current_property_value_vec.ensure_nonce_equality(nonce)?;
+        current_property_value_vec
+            .ensure_index_in_property_vector_is_valid(index_in_property_vec)?;
+        let involved_entity_id = current_property_value_vec
             .get_vec_value()
             .get_involved_entities()
             .map(|involved_entities| involved_entities[index_in_property_vec as usize]);
@@ -1400,6 +1391,21 @@ impl<T: Trait> Module<T> {
     fn ensure_class_exists(class_id: T::ClassId) -> Result<Class<T>, &'static str> {
         ensure!(<ClassById<T>>::exists(class_id), ERROR_CLASS_NOT_FOUND);
         Ok(Self::class_by_id(class_id))
+    }
+
+    fn get_property_value_vec(
+        entity: &Entity<T>,
+        in_class_schema_property_id: PropertyId,
+    ) -> Result<&VecPropertyValue<T>, &'static str> {
+        entity
+            .values
+            .get(&in_class_schema_property_id)
+            // Throw an error if a property was not found on entity
+            // by an in-class index of a property.
+            .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?
+            .as_vec_property_value()
+            // Ensure prop value under given class schema property id is vector
+            .ok_or(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR)
     }
 
     fn get_entity_and_access_level(

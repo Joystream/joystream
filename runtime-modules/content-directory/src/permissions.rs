@@ -85,11 +85,15 @@ pub fn ensure_lead_auth_success<T: ActorAuthenticator>(
     Ok(())
 }
 
+pub fn perform_lead_auth<T: ActorAuthenticator>(origin: T::Origin) -> dispatch::Result {
+    let account_id = ensure_signed(origin)?;
+    ensure_lead_auth_success::<T>(&account_id)
+}
+
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct CuratorGroup<T: ActorAuthenticator> {
-    // Arsen comment: its ok to use an inline set here, because it shuold never really get that large,
-    // so there must be some upper limit to the size of this set, can come as paramter in T::
+
     curators: BTreeSet<T::CuratorId>,
 
     active: bool,
@@ -407,17 +411,6 @@ impl<T: Trait> EntityPermissions<T> {
             EntityAccessLevel::EntityController => Ok(()),
             EntityAccessLevel::EntityControllerAndMaintainer => Ok(()),
             _ => Err(ERROR_ENTITY_REMOVAL_ACCESS_DENIED),
-        }
-    }
-
-    pub fn ensure_group_can_add_schema_support(
-        access_level: EntityAccessLevel,
-    ) -> dispatch::Result {
-        match access_level {
-            EntityAccessLevel::EntityController
-            | EntityAccessLevel::EntityMaintainer
-            | EntityAccessLevel::EntityControllerAndMaintainer => Ok(()),
-            _ => Err(ERROR_ENTITY_ADD_SCHEMA_SUPPORT_ACCESS_DENIED),
         }
     }
 }
