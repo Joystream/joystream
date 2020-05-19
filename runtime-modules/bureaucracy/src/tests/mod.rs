@@ -13,6 +13,83 @@ use srml_support::{StorageLinkedMap, StorageValue};
 use std::collections::{BTreeMap, BTreeSet};
 use system::{EventRecord, Phase, RawOrigin};
 
+struct TerminateWorkerRoleFixture {
+    worker_id: u64,
+    origin: RawOrigin<u64>,
+    text: Vec<u8>,
+    constraint: InputValidationLengthConstraint,
+}
+
+impl TerminateWorkerRoleFixture {
+    fn default_for_worker_id(worker_id: u64) -> Self {
+        TerminateWorkerRoleFixture {
+            worker_id,
+            origin: RawOrigin::Signed(1),
+            text: b"rationale_text".to_vec(),
+            constraint: InputValidationLengthConstraint {
+                min: 1,
+                max_min_diff: 20,
+            },
+        }
+    }
+    fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        TerminateWorkerRoleFixture { origin, ..self }
+    }
+
+    fn with_text(self, text: Vec<u8>) -> Self {
+        TerminateWorkerRoleFixture { text, ..self }
+    }
+
+    fn call_and_assert(&self, expected_result: Result<(), &str>) {
+        self.call_and_assert_impl(expected_result, false);
+    }
+
+    fn call_and_assert_with_unstaking(&self, expected_result: Result<(), &str>) {
+        self.call_and_assert_impl(expected_result, true);
+    }
+
+    fn call_and_assert_impl(&self, expected_result: Result<(), &str>, expect_unstaking: bool) {
+        <crate::WorkerExitRationaleText<Instance1>>::put(self.constraint.clone());
+
+        let rationale_text = b"rationale_text".to_vec();
+        let actual_result = Bureaucracy1::terminate_worker_role(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.text.clone(),
+        );
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            let worker = Bureaucracy1::worker_by_id(self.worker_id);
+
+            let worker_exit_summary = WorkerExitSummary {
+                origin: WorkerExitInitiationOrigin::Lead,
+                initiated_at_block_number: 1,
+                rationale_text,
+            };
+
+            let expected_worker_stage = if expect_unstaking {
+                WorkerRoleStage::Unstaking(worker_exit_summary)
+            } else {
+                WorkerRoleStage::Exited(worker_exit_summary)
+            };
+
+            assert_eq!(worker.stage, expected_worker_stage);
+
+            let stake_id = 0;
+            if expect_unstaking {
+                assert!(<crate::UnstakerByStakeId<Test, crate::Instance1>>::exists(
+                    stake_id
+                ));
+            } else {
+                assert!(!<crate::UnstakerByStakeId<Test, crate::Instance1>>::exists(
+                    stake_id
+                ));
+            }
+        }
+    }
+}
+
 struct LeaveWorkerRoleFixture {
     worker_id: u64,
     origin: RawOrigin<u64>,
@@ -1904,5 +1981,75 @@ fn leave_worker_role_succeeds_with_stakes() {
         leave_worker_role_fixture.call_and_assert_with_unstaking(Ok(()));
 
         EventFixture::assert_last_crate_event(RawEvent::WorkerUnstaking(worker_id));
+    });
+}
+
+#[test]
+fn terminate_worker_role_succeeds_with_stakes() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_worker_position_with_stake(100);
+
+        let terminate_worker_role_fixture =
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id);
+
+        terminate_worker_role_fixture.call_and_assert_with_unstaking(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkerUnstaking(worker_id));
+    });
+}
+
+#[test]
+fn terminate_worker_role_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_default_worker_position();
+
+        let terminate_worker_role_fixture =
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id);
+
+        terminate_worker_role_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::TerminatedWorker(worker_id));
+    });
+}
+
+#[test]
+fn terminate_worker_role_fails_with_invalid_text() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_default_worker_position();
+
+        let terminate_worker_role_fixture =
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id).with_text(Vec::new());
+        terminate_worker_role_fixture
+            .call_and_assert(Err(crate::MSG_WORKER_EXIT_RATIONALE_TEXT_TOO_SHORT));
+
+        let terminate_worker_role_fixture =
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id)
+                .with_text(b"MSG_WORKER_EXIT_RATIONALE_TEXT_TOO_LONG".to_vec());
+        terminate_worker_role_fixture
+            .call_and_assert(Err(crate::MSG_WORKER_EXIT_RATIONALE_TEXT_TOO_LONG));
+    });
+}
+
+#[test]
+fn terminate_worker_role_fails_with_unset_lead() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_default_worker_position();
+
+        UnsetLeadFixture::unset_lead();
+
+        let terminate_worker_role_fixture =
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id);
+
+        terminate_worker_role_fixture.call_and_assert(Err(crate::MSG_CURRENT_LEAD_NOT_SET));
+    });
+}
+
+#[test]
+fn terminate_worker_role_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let terminate_worker_role_fixture =
+            TerminateWorkerRoleFixture::default_for_worker_id(1).with_origin(RawOrigin::None);
+
+        terminate_worker_role_fixture.call_and_assert(Err("RequireSignedOrigin"));
     });
 }

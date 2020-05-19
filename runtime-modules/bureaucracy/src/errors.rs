@@ -29,6 +29,10 @@ pub mod bureaucracy_errors {
     pub static MSG_FILL_WORKER_OPENING_MINT_DOES_NOT_EXIST: &str =
         "Working group mint does not exist";
     pub static MSG_RELATIONSHIP_MUST_EXIST: &str = "Relationship must exist";
+    pub static MSG_WORKER_EXIT_RATIONALE_TEXT_TOO_LONG: &str =
+        "Worker exit rationale text is too long";
+    pub static MSG_WORKER_EXIT_RATIONALE_TEXT_TOO_SHORT: &str =
+        "Worker exit rationale text is too short";
 }
 /*
  * The errors below, while in many cases encoding similar outcomes,

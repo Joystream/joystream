@@ -36,8 +36,8 @@ pub type LeadOf<T> = Lead<MemberId<T>, <T as system::Trait>::AccountId>;
 /*
 + update_curator_role_account
 + update_curator_reward_account
-- leave_curator_role
-- terminate_curator_role
++ leave_curator_role
++ terminate_curator_role
 + set_lead
 + unset_lead
 - unstaking
@@ -239,6 +239,9 @@ decl_storage! {
 
         /// Recover worker by the role stake which is currently unstaking.
         pub UnstakerByStakeId get(unstaker_by_stake_id) : linked_map StakeId<T> => WorkingGroupUnstaker<MemberId<T>, WorkerId<T>>;
+
+        /// Worker exit rationale text length limits
+        pub WorkerExitRationaleText get(worker_exit_rationale_text) : InputValidationLengthConstraint;
     }
 }
 
@@ -359,6 +362,32 @@ decl_module! {
                 &worker_id,
                 &active_worker,
                 &WorkerExitInitiationOrigin::Worker,
+                &rationale_text
+            )?;
+        }
+
+        /// Lead can terminate and active worker
+        pub fn terminate_worker_role(
+            origin,
+            worker_id: WorkerId<T>,
+            rationale_text: Vec<u8>
+        ) {
+
+            // Ensure lead is set and is origin signer
+            Self::ensure_origin_is_set_lead(origin)?;
+
+            // Ensuring worker actually exists and is active
+            let worker = Self::ensure_active_worker_exists(&worker_id)?;
+
+            // Ensure rationale text is valid
+            Self::ensure_worker_exit_rationale_text_is_valid(&rationale_text)?;
+
+            // mutation
+
+            Self::deactivate_worker(
+                &worker_id,
+                &worker,
+                &WorkerExitInitiationOrigin::Lead,
                 &rationale_text
             )?;
         }
@@ -1049,5 +1078,13 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Self::deposit_event(event);
 
         Ok(())
+    }
+
+    fn ensure_worker_exit_rationale_text_is_valid(text: &[u8]) -> dispatch::Result {
+        Self::worker_exit_rationale_text().ensure_valid(
+            text.len(),
+            MSG_WORKER_EXIT_RATIONALE_TEXT_TOO_SHORT,
+            MSG_WORKER_EXIT_RATIONALE_TEXT_TOO_LONG,
+        )
     }
 }
