@@ -5,10 +5,11 @@ import { membershipTest } from './membershipCreationTest';
 import { councilTest } from './electingCouncilTest';
 import { registerJoystreamTypes } from '@rome/types';
 import { ApiWrapper } from './utils/apiWrapper';
-import BN = require('bn.js');
+import BN from 'bn.js';
 import { Utils } from './utils/utils';
+import tap from 'tap';
 
-describe('Runtime upgrade integration tests', () => {
+export function romeRuntimeUpgradeTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
@@ -17,25 +18,19 @@ describe('Runtime upgrade integration tests', () => {
   const runtimePath: string = process.env.RUNTIME_WASM_PATH!;
   const defaultTimeout: number = 180000;
 
-  const m1KeyPairs: KeyringPair[] = new Array();
-  const m2KeyPairs: KeyringPair[] = new Array();
-
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
   let provider: WsProvider;
 
-  before(async function () {
-    this.timeout(defaultTimeout);
+  tap.setTimeout(defaultTimeout);
+
+  tap.test('Rome runtime upgrade test setup', { bail: true }, async () => {
     registerJoystreamTypes();
     provider = new WsProvider(nodeUrl);
     apiWrapper = await ApiWrapper.create(provider);
   });
 
-  membershipTest(m1KeyPairs);
-  membershipTest(m2KeyPairs);
-  councilTest(m1KeyPairs, m2KeyPairs);
-
-  it('Upgrading the runtime test', async () => {
+  tap.test('Upgrading the runtime test', { bail: true }, async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
     const runtime: string = Utils.readRuntimeFromFile(runtimePath);
@@ -67,9 +62,17 @@ describe('Runtime upgrade integration tests', () => {
     const runtimePromise = apiWrapper.expectRuntimeUpgraded();
     await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber);
     await runtimePromise;
-  }).timeout(defaultTimeout);
+  });
 
-  after(() => {
+  tap.teardown(() => {
     apiWrapper.close();
   });
-});
+}
+
+const m1KeyPairs: KeyringPair[] = new Array();
+const m2KeyPairs: KeyringPair[] = new Array();
+
+membershipTest(m1KeyPairs);
+membershipTest(m2KeyPairs);
+councilTest(m1KeyPairs, m2KeyPairs);
+romeRuntimeUpgradeTest(m1KeyPairs, m2KeyPairs);

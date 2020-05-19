@@ -28,3 +28,6 @@ yarn*
 
 # Chain specificaiton
 chainspec.json
+
+# Istanbul report output
+**.nyc_output/

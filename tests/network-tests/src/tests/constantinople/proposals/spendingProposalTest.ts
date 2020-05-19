@@ -6,8 +6,9 @@ import { councilTest } from '../electingCouncilTest';
 import { registerJoystreamTypes } from '@joystream/types';
 import { ApiWrapper } from '../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
-import BN = require('bn.js');
+import BN from 'bn.js';
 import { assert } from 'chai';
+import tap from 'tap';
 
 export function spendingProposalTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {
   initConfig();
@@ -21,14 +22,15 @@ export function spendingProposalTest(m1KeyPairs: KeyringPair[], m2KeyPairs: Keyr
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
 
-  before(async function () {
-    this.timeout(defaultTimeout);
+  tap.setTimeout(defaultTimeout);
+
+  tap.test('Spending proposal test setup', { bail: true }, async () => {
     registerJoystreamTypes();
     const provider = new WsProvider(nodeUrl);
     apiWrapper = await ApiWrapper.create(provider);
   });
 
-  it('\n\tSpending proposal test', async () => {
+  tap.test('Spending proposal test', { bail: true }, async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
     const description: string = 'spending proposal which is used for API network testing with some mock data';
@@ -71,19 +73,17 @@ export function spendingProposalTest(m1KeyPairs: KeyringPair[], m2KeyPairs: Keyr
         m1KeyPairs[0].address
       } has unexpected balance ${balanceAfterMinting}, expected ${balanceBeforeMinting.add(spendingBalance)}`
     );
-  }).timeout(defaultTimeout);
+  });
 
-  after(() => {
+  tap.teardown(() => {
     apiWrapper.close();
   });
 }
 
-describe('Spending proposal network tests', () => {
-  const m1KeyPairs: KeyringPair[] = new Array();
-  const m2KeyPairs: KeyringPair[] = new Array();
+const m1KeyPairs: KeyringPair[] = new Array();
+const m2KeyPairs: KeyringPair[] = new Array();
 
-  membershipTest(m1KeyPairs);
-  membershipTest(m2KeyPairs);
-  councilTest(m1KeyPairs, m2KeyPairs);
-  spendingProposalTest(m1KeyPairs, m2KeyPairs);
-});
+membershipTest(m1KeyPairs);
+membershipTest(m2KeyPairs);
+councilTest(m1KeyPairs, m2KeyPairs);
+spendingProposalTest(m1KeyPairs, m2KeyPairs);

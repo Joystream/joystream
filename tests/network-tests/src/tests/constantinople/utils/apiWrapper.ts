@@ -8,7 +8,7 @@ import { Lead, LeadId } from '@joystream/types/lib/content-working-group';
 import { RoleParameters } from '@joystream/types/lib/roles';
 import { Seat } from '@joystream/types';
 import { Balance, EventRecord, AccountId, BlockNumber, BalanceOf } from '@polkadot/types/interfaces';
-import BN = require('bn.js');
+import BN from 'bn.js';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { Sender } from './sender';
 import { Utils } from './utils';

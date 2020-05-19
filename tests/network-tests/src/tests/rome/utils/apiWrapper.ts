@@ -5,7 +5,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { UserInfo, PaidMembershipTerms, MemberId } from '@rome/types/lib/members';
 import { Seat, VoteKind } from '@rome/types';
 import { Balance, EventRecord } from '@polkadot/types/interfaces';
-import BN = require('bn.js');
+import BN from 'bn.js';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { Sender } from './sender';
 import { Utils } from './utils';

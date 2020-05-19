@@ -6,8 +6,9 @@ import { councilTest } from '../electingCouncilTest';
 import { registerJoystreamTypes } from '@joystream/types';
 import { ApiWrapper } from '../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
-import BN = require('bn.js');
+import BN from 'bn.js';
 import { assert } from 'chai';
+import tap from 'tap';
 
 export function setLeadProposalTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {
   initConfig();
@@ -19,14 +20,15 @@ export function setLeadProposalTest(m1KeyPairs: KeyringPair[], m2KeyPairs: Keyri
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
 
-  before(async function () {
-    this.timeout(defaultTimeout);
+  tap.setTimeout(defaultTimeout);
+
+  tap.test('Set lead proposal test', { bail: true }, async () => {
     registerJoystreamTypes();
     const provider = new WsProvider(nodeUrl);
     apiWrapper = await ApiWrapper.create(provider);
   });
 
-  it('\n\tLead proposal test', async () => {
+  tap.test('Lead proposal test', { bail: true }, async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8);
@@ -53,19 +55,17 @@ export function setLeadProposalTest(m1KeyPairs: KeyringPair[], m2KeyPairs: Keyri
       newLead === m1KeyPairs[1].address,
       `New lead has unexpected value ${newLead}, expected ${m1KeyPairs[1].address}`
     );
-  }).timeout(defaultTimeout);
+  });
 
-  after(() => {
+  tap.teardown(() => {
     apiWrapper.close();
   });
 }
 
-describe('Lead proposal network tests', () => {
-  const m1KeyPairs: KeyringPair[] = new Array();
-  const m2KeyPairs: KeyringPair[] = new Array();
+const m1KeyPairs: KeyringPair[] = new Array();
+const m2KeyPairs: KeyringPair[] = new Array();
 
-  membershipTest(m1KeyPairs);
-  membershipTest(m2KeyPairs);
-  councilTest(m1KeyPairs, m2KeyPairs);
-  setLeadProposalTest(m1KeyPairs, m2KeyPairs);
-});
+membershipTest(m1KeyPairs);
+membershipTest(m2KeyPairs);
+councilTest(m1KeyPairs, m2KeyPairs);
+setLeadProposalTest(m1KeyPairs, m2KeyPairs);
