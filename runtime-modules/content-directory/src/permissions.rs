@@ -8,6 +8,7 @@ use runtime_primitives::traits::{MaybeSerializeDeserialize, Member, SimpleArithm
 pub use serde::{Deserialize, Serialize};
 use srml_support::{dispatch, ensure, Parameter};
 
+// Type, representing creation limit for entities in different scenarios
 pub type CreationLimit = u32;
 
 /// Model of authentication manager.
@@ -51,8 +52,13 @@ pub trait ActorAuthenticator: system::Trait + Debug {
         + PartialEq
         + Ord;
 
+    /// Authorize actor as lead
     fn is_lead(account_id: &Self::AccountId) -> bool;
+
+    /// Authorize actor as curator
     fn is_curator(curator_id: &Self::CuratorId, account_id: &Self::AccountId) -> bool;
+
+    /// Authorize actor as member
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool;
 }
 
@@ -90,6 +96,7 @@ pub fn perform_lead_auth<T: ActorAuthenticator>(origin: T::Origin) -> dispatch::
     ensure_lead_auth_success::<T>(&account_id)
 }
 
+/// Authorize curator, performing all checks to ensure curator can act
 pub fn perform_curator_in_group_auth<T: Trait>(
     curator_id: &T::CuratorId,
     curator_group_id: &T::CuratorGroupId,
@@ -97,7 +104,9 @@ pub fn perform_curator_in_group_auth<T: Trait>(
 ) -> dispatch::Result {
     ensure_curator_auth_success::<T>(curator_id, account_id)?;
     Module::<T>::ensure_curator_group_exists(curator_group_id)?;
+
     let curator_group = Module::<T>::curator_group_by_id(curator_group_id);
+
     ensure!(curator_group.is_active(), ERROR_CURATOR_IS_NOT_ACTIVE);
     ensure!(
         curator_group.is_curator(curator_id),
@@ -106,11 +115,14 @@ pub fn perform_curator_in_group_auth<T: Trait>(
     Ok(())
 }
 
+/// A group, that consists of curators set
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct CuratorGroup<T: ActorAuthenticator> {
+    /// Curators set, associated with a iven curator group
     curators: BTreeSet<T::CuratorId>,
 
+    /// When `false`, curator in a given group is forbidden to act
     active: bool,
 }
 
@@ -208,6 +220,7 @@ impl<T: Trait> Default for Actor<T> {
 pub struct ClassPermissions<T: Trait> {
     /// For this permission, the individual member is allowed to create the entity and become controller.
     any_member: bool,
+
     /// Whether to prevent everyone from creating an entity.
     ///
     /// This could be useful in order to quickly, and possibly temporarily, block new entity creation, without
@@ -217,11 +230,10 @@ pub struct ClassPermissions<T: Trait> {
     /// Whether to prevent everyone from updating entity properties.
     ///
     /// This could be useful in order to quickly, and probably temporarily, block any editing of entities,
-    /// rather than for example having to set, and later clear, `EntityPermissions::frozen_for_controller`
-    /// for a large number of entities.
+    /// rather than for example having to set, and later clear.
     all_entity_property_values_locked: bool,
-    // its ok to use an inline set here, because it shuold never really get that large,
-    // so there must be some upper limit to the size of this set, can come as paramter in T::
+
+    /// Current class maintainer curator groups
     maintainers: BTreeSet<T::CuratorGroupId>,
 }
 
@@ -308,6 +320,7 @@ impl<T: Trait> ClassPermissions<T> {
         self.maintainers.contains(curator_group_id)
     }
 
+    /// Ensure provided actor can create entities of current class
     pub fn ensure_can_create_entities(
         &self,
         account_id: &T::AccountId,
@@ -433,15 +446,17 @@ impl<T: Trait> EntityPermissions<T> {
 pub enum EntityAccessLevel {
     /// Caller identified as the entity maintainer
     EntityMaintainer,
+
     /// Caller identified as the entity controller
     EntityController,
+
     /// Caller, that can act as controller and maintainer simultaneously
     /// (can be useful, when controller and maintainer have features, that do not intersect)
     EntityControllerAndMaintainer,
 }
 
 impl EntityAccessLevel {
-    /// Derives the EntityAccessLevel for the caller, attempting to act.
+    /// Derives the EntityAccessLevel for the actor, attempting to act.
     pub fn derive<T: Trait>(
         account_id: &T::AccountId,
         entity_permissions: &EntityPermissions<T>,

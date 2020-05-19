@@ -494,6 +494,7 @@ impl<T: Trait> Default for PropertyValue<T> {
 pub struct Schema {
     /// Indices into properties vector for the corresponding class.
     properties: Vec<PropertyId>,
+    /// If schema can be added to an entity
     is_active: bool,
 }
 
@@ -635,7 +636,6 @@ impl<T: Trait> Property<T> {
                 VecValue::Reference(vec),
                 Type::Reference(class_id, same_controller_status),
             ) => {
-                // TODO ensure same as controller status match
                 Self::ensure_referancable(
                     *class_id,
                     *entity_id,

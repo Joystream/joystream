@@ -31,6 +31,7 @@ pub use schema::*;
 type MaxNumber = u32;
 
 pub trait Trait: system::Trait + ActorAuthenticator + Debug {
+    /// Nonce type is used to avoid data race update conditions, when performing property value vector operations
     type Nonce: Parameter
         + Member
         + SimpleArithmetic
@@ -46,6 +47,7 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug {
         + Ord
         + From<u32>;
 
+    /// Type of identifier for classes
     type ClassId: Parameter
         + Member
         + SimpleArithmetic
@@ -60,6 +62,7 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug {
         + PartialEq
         + Ord;
 
+    /// Type of identifier for entities
     type EntityId: Parameter
         + Member
         + SimpleArithmetic
@@ -76,28 +79,37 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug {
 
     /// Security/configuration constraints
 
+    /// The maximum length of property name
     type PropertyNameConstraint: Get<InputValidationLengthConstraint>;
 
+    /// The maximum length of property description
     type PropertyDescriptionConstraint: Get<InputValidationLengthConstraint>;
 
+    /// Type, representing min & max class name length constraints
     type ClassNameConstraint: Get<InputValidationLengthConstraint>;
 
+    /// Type, representing min & max class description length constraints
     type ClassDescriptionConstraint: Get<InputValidationLengthConstraint>;
 
+    /// The maximum number of classes
     type NumberOfClassesConstraint: Get<MaxNumber>;
 
-    /// Maximum number of maintainers per class constraint
+    /// The maximum number of maintainers per class constraint
     type NumberOfMaintainersConstraint: Get<MaxNumber>;
 
-    /// Maximum number of curators per group constraint
+    /// The maximum number of curators per group constraint
     type NumberOfCuratorsConstraint: Get<MaxNumber>;
 
+    /// The maximum number of schemas per class constraint
     type NumberOfSchemasConstraint: Get<MaxNumber>;
 
+    /// The maximum number of properties per class constraint
     type NumberOfPropertiesConstraint: Get<MaxNumber>;
 
+    /// The maximum length of vector property value constarint
     type VecMaxLengthConstraint: Get<VecMaxLength>;
 
+    /// The maximum length of text property value constarint
     type TextMaxLengthConstraint: Get<TextMaxLength>;
 
     /// Entities creation constraint per class
@@ -336,6 +348,8 @@ pub struct Entity<T: Trait> {
     /// Values for properties on class that are used by some schema used by this entity!
     /// Length is no more than Class.properties.
     pub values: BTreeMap<PropertyId, PropertyValue<T>>,
+
+    /// Number of property values referencing current entity
     pub reference_count: u32,
 }
 
@@ -384,8 +398,10 @@ impl<T: Trait> Entity<T> {
 
 decl_storage! {
     trait Store for Module<T: Trait> as ContentDirectory {
+        /// Map, representing ClassId -> Class relation
         pub ClassById get(class_by_id) config(): linked_map T::ClassId => Class<T>;
 
+        /// Map, representing EntityId -> Entity relation
         pub EntityById get(entity_by_id) config(): map T::EntityId => Entity<T>;
 
         /// Curator groups
@@ -472,6 +488,7 @@ decl_module! {
             Ok(())
         }
 
+        /// Add curator to a given curator group
         pub fn add_curator(
             origin,
             curator_group_id: T::CuratorGroupId,
@@ -493,6 +510,7 @@ decl_module! {
             Ok(())
         }
 
+        /// Remove curator from a given curator group
         pub fn remove_curator(
             origin,
             curator_group_id: T::CuratorGroupId,
@@ -513,6 +531,7 @@ decl_module! {
             Ok(())
         }
 
+        /// Add curator group as specific class maintainer
         pub fn add_maintainer(
             origin,
             class_id: T::ClassId,
@@ -540,6 +559,7 @@ decl_module! {
             Ok(())
         }
 
+        /// Remove curator group from class maintainers set
         pub fn remove_maintainer(
             origin,
             class_id: T::ClassId,
@@ -882,7 +902,6 @@ decl_module! {
         /// Create an entity.
         /// If someone is making an entity of this class for first time, then a voucher is also added with the class limit as the default limit value.
         /// class limit default value.
-        /// The `as` parameter must match `can_create_entities_of_class`, and the controller is set based on `initial_controller_of_created_entities` in the class permission.
         pub fn create_entity(
             origin,
             class_id: T::ClassId,
@@ -949,6 +968,7 @@ decl_module! {
             //
 
             Self::complete_entity_removal(entity_id);
+
             Ok(())
         }
 
@@ -965,14 +985,60 @@ decl_module! {
 
             let (entity, _) = Self::get_entity_and_access_level(account_id, entity_id, actor)?;
 
-            Self::add_entity_schema_support(entity_id, entity, schema_id, property_values)
+            let class = Self::class_by_id(entity.class_id);
+
+            // Check that schema_id is a valid index of class schemas vector:
+            class.ensure_schema_id_exists(schema_id)?;
+
+            // Ensure class schema is active
+            class.ensure_schema_is_active(schema_id)?;
+
+            // Check that schema id is not yet added to this entity
+            entity.ensure_schema_id_is_not_added(schema_id)?;
+
+            let class_schema_opt = class.schemas.get(schema_id as usize);
+            let schema_prop_ids = class_schema_opt.unwrap().get_properties();
+
+            let current_entity_values = entity.values.clone();
+            let mut appended_entity_values = entity.values.clone();
+            let mut entities_rc_to_increment_vec = vec![];
+
+            for prop_id in schema_prop_ids.iter() {
+                if current_entity_values.contains_key(prop_id) {
+                    // A property is already added to the entity and cannot be updated
+                    // while adding a schema support to this entity.
+                    continue;
+                }
+                Self::add_new_property_value(&class, &entity, *prop_id, &property_values, &mut entities_rc_to_increment_vec, &mut appended_entity_values)?;
+            }
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <EntityById<T>>::mutate(entity_id, |entity| {
+                // Add a new schema to the list of schemas supported by this entity.
+                entity.supported_schemas.insert(schema_id);
+
+                // Update entity values only if new properties have been added.
+                if appended_entity_values.len() > entity.values.len() {
+                    entity.values = appended_entity_values;
+                }
+            });
+            entities_rc_to_increment_vec
+                .iter()
+                .for_each(|entities_rc_to_increment| {
+                    Self::increment_entities_rc(entities_rc_to_increment);
+                });
+
+            Ok(())
         }
 
         pub fn update_entity_property_values(
             origin,
             actor: Actor<T>,
             entity_id: T::EntityId,
-            property_values: BTreeMap<PropertyId, PropertyValue<T>>
+            new_property_values: BTreeMap<PropertyId, PropertyValue<T>>
         ) -> dispatch::Result {
             let account_id = ensure_signed(origin)?;
 
@@ -980,7 +1046,68 @@ decl_module! {
 
             let (entity, access_level) = Self::get_entity_and_access_level(account_id, entity_id, actor)?;
 
-            Self::complete_entity_property_values_update(entity_id, entity, property_values, access_level)
+            let class = Self::class_by_id(entity.class_id);
+
+            // Ensure property values were not locked on class level
+            ensure!(
+                !class.get_permissions().all_entity_property_values_locked(),
+                ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL
+            );
+
+            // Get current property values of an entity as a mutable vector,
+            // so we can update them if new values provided present in new_property_values.
+            let mut updated_values = entity.values.clone();
+            let mut updated = false;
+
+            let mut entities_rc_to_increment_vec = vec![];
+            let mut entities_rc_to_decrement_vec = vec![];
+
+            // Iterate over a vector of new values and update corresponding properties
+            // of this entity if new values are valid.
+            for (id, new_value) in new_property_values.into_iter() {
+                // Try to find a current property value in the entity
+                // by matching its id to the id of a property with an updated value.
+                let current_prop_value = updated_values
+                    .get_mut(&id)
+                    // Throw an error if a property was not found on entity
+                    // by an in-class index of a property update.
+                    .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?;
+
+                // Skip update if new value is equal to the current one or class property type
+                // is locked for update from current actor
+                if new_value == *current_prop_value {
+                    continue;
+                } else {
+                    let (mut temp_entities_rc_to_increment_vec, mut temp_entities_rc_to_decrement_vec) = Self::perform_entity_property_value_update(&class, &entity, id, access_level, new_value, current_prop_value)?;
+                    entities_rc_to_increment_vec.append(&mut temp_entities_rc_to_increment_vec);
+                    entities_rc_to_decrement_vec.append(&mut temp_entities_rc_to_decrement_vec);
+                    updated = true;
+                }
+            }
+
+            // If property values should be updated:
+            if updated {
+
+                //
+                // == MUTATION SAFE ==
+                //
+
+                <EntityById<T>>::mutate(entity_id, |entity| {
+                    entity.values = updated_values;
+                });
+                entities_rc_to_increment_vec
+                    .iter()
+                    .for_each(|entities_rc_to_increment| {
+                        Self::increment_entities_rc(entities_rc_to_increment);
+                    });
+                entities_rc_to_decrement_vec
+                    .iter()
+                    .for_each(|entities_rc_to_decrement| {
+                        Self::decrement_entities_rc(entities_rc_to_decrement);
+                    });
+            }
+
+            Ok(())
         }
 
         pub fn clear_entity_property_vector(
@@ -996,12 +1123,36 @@ decl_module! {
             let (entity, access_level) = Self::get_entity_and_access_level(account_id, entity_id, actor)?;
 
 
-            Self::complete_entity_property_vector_cleaning(
-                entity_id,
-                entity,
+            let current_property_value_vec =
+            Self::get_property_value_vec(&entity, in_class_schema_property_id)?;
+
+            Self::ensure_class_property_type_unlocked_for(
+                entity.class_id,
                 in_class_schema_property_id,
-                access_level
-            )
+                access_level,
+            )?;
+
+            let entities_rc_to_decrement = current_property_value_vec
+                .get_vec_value()
+                .get_involved_entities();
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Clear property value vector:
+            <EntityById<T>>::mutate(entity_id, |entity| {
+                if let Some(PropertyValue::Vector(current_property_value_vec)) =
+                    entity.values.get_mut(&in_class_schema_property_id)
+                {
+                    current_property_value_vec.vec_clear();
+                }
+                if let Some(entities_rc_to_decrement) = entities_rc_to_decrement {
+                    Self::decrement_entities_rc(&entities_rc_to_decrement);
+                }
+            });
+
+            Ok(())
         }
 
         pub fn remove_at_entity_property_vector(
@@ -1018,7 +1169,41 @@ decl_module! {
 
             let (entity, access_level) = Self::get_entity_and_access_level(account_id, entity_id, actor)?;
 
-            Self::complete_remove_at_entity_property_vector(entity_id, entity, in_class_schema_property_id, index_in_property_vec, nonce, access_level)
+            let current_property_value_vec =
+            Self::get_property_value_vec(&entity, in_class_schema_property_id)?;
+
+            Self::ensure_class_property_type_unlocked_for(
+                entity.class_id,
+                in_class_schema_property_id,
+                access_level,
+            )?;
+
+            // Ensure property value vector nonces equality to avoid possible data races,
+            // when performing vector specific operations
+            current_property_value_vec.ensure_nonce_equality(nonce)?;
+            current_property_value_vec
+                .ensure_index_in_property_vector_is_valid(index_in_property_vec)?;
+            let involved_entity_id = current_property_value_vec
+                .get_vec_value()
+                .get_involved_entities()
+                .map(|involved_entities| involved_entities[index_in_property_vec as usize]);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Remove property value vector
+            <EntityById<T>>::mutate(entity_id, |entity| {
+                if let Some(PropertyValue::Vector(current_prop_value)) =
+                    entity.values.get_mut(&in_class_schema_property_id)
+                {
+                    current_prop_value.vec_remove_at(index_in_property_vec)
+                }
+            });
+            if let Some(involved_entity_id) = involved_entity_id {
+                <EntityById<T>>::mutate(involved_entity_id, |entity| entity.reference_count -= 1)
+            }
+            Ok(())
         }
 
         pub fn insert_at_entity_property_vector(
@@ -1036,15 +1221,50 @@ decl_module! {
 
             let (entity, access_level) = Self::get_entity_and_access_level(account_id, entity_id, actor)?;
 
-            Self::complete_insert_at_entity_property_vector(
-                entity_id,
-                entity,
-                in_class_schema_property_id,
-                index_in_property_vec,
-                property_value,
-                nonce,
-                access_level
-            )
+            // Try to find a current property value in the entity
+            // by matching its id to the id of a property with an updated value.
+            if let Some(PropertyValue::Vector(entity_prop_value)) =
+                entity.values.get(&in_class_schema_property_id)
+            {
+                let class_prop = Self::ensure_class_property_type_unlocked_for(
+                    entity.class_id,
+                    in_class_schema_property_id,
+                    access_level,
+                )?;
+
+                // Ensure property value vector nonces equality to avoid possible data races,
+                // when performing vector specific operations
+                entity_prop_value.ensure_nonce_equality(nonce)?;
+
+                // Validate a new property value against the type of this property
+                // and check any additional constraints like the length of a vector
+                // if it's a vector property or the length of a text if it's a text property.
+                class_prop.ensure_prop_value_can_be_inserted_at_prop_vec(
+                    &property_value,
+                    entity_prop_value,
+                    index_in_property_vec,
+                    entity.get_permissions().get_controller(),
+                )?;
+            };
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Insert property value into property value vector
+            <EntityById<T>>::mutate(entity_id, |entity| {
+                let value = property_value.get_value();
+                if let Some(entities_rc_to_increment) = value.get_involved_entity() {
+                    Self::increment_entities_rc(&[entities_rc_to_increment]);
+                }
+                if let Some(PropertyValue::Vector(current_prop_value)) =
+                    entity.values.get_mut(&in_class_schema_property_id)
+                {
+                    current_prop_value.vec_insert_at(index_in_property_vec, value)
+                }
+            });
+
+            Ok(())
         }
 
         // pub fn transaction(origin, operations: Vec<Operation<T::Credential, T>>) -> dispatch::Result {
@@ -1107,322 +1327,6 @@ impl<T: Trait> Module<T> {
         <ClassById<T>>::mutate(class_id, |class| class.decrement_entities_count());
     }
 
-    pub fn add_entity_schema_support(
-        entity_id: T::EntityId,
-        entity: Entity<T>,
-        schema_id: SchemaId,
-        property_values: BTreeMap<PropertyId, PropertyValue<T>>,
-    ) -> dispatch::Result {
-        let class = Self::class_by_id(entity.class_id);
-
-        // Check that schema_id is a valid index of class schemas vector:
-        class.ensure_schema_id_exists(schema_id)?;
-
-        // Ensure class schema is active
-        class.ensure_schema_is_active(schema_id)?;
-
-        // Check that schema id is not yet added to this entity
-        entity.ensure_schema_id_is_not_added(schema_id)?;
-
-        let class_schema_opt = class.schemas.get(schema_id as usize);
-        let schema_prop_ids = class_schema_opt.unwrap().get_properties();
-
-        let current_entity_values = entity.values.clone();
-        let mut appended_entity_values = entity.values.clone();
-        let mut entities_rc_to_increment_vec = vec![];
-
-        for prop_id in schema_prop_ids.iter() {
-            if current_entity_values.contains_key(prop_id) {
-                // A property is already added to the entity and cannot be updated
-                // while adding a schema support to this entity.
-                continue;
-            }
-
-            let class_prop = &class.properties[*prop_id as usize];
-
-            // If a value was not povided for the property of this schema:
-            if let Some(new_value) = property_values.get(prop_id) {
-                class_prop.ensure_property_value_to_update_is_valid(
-                    new_value,
-                    entity.get_permissions().get_controller(),
-                )?;
-                if let Some(entities_rc_to_increment) = new_value.get_involved_entities() {
-                    entities_rc_to_increment_vec.push(entities_rc_to_increment);
-                }
-                appended_entity_values.insert(*prop_id, new_value.to_owned());
-            } else {
-                // All required prop values should be are provided
-                ensure!(!class_prop.required, ERROR_MISSING_REQUIRED_PROP);
-
-                // Add all missing non required schema prop values as PropertyValue::default()
-                appended_entity_values.insert(*prop_id, PropertyValue::default());
-            }
-        }
-
-        //
-        // == MUTATION SAFE ==
-        //
-
-        <EntityById<T>>::mutate(entity_id, |entity| {
-            // Add a new schema to the list of schemas supported by this entity.
-            entity.supported_schemas.insert(schema_id);
-
-            // Update entity values only if new properties have been added.
-            if appended_entity_values.len() > entity.values.len() {
-                entity.values = appended_entity_values;
-            }
-        });
-        entities_rc_to_increment_vec
-            .iter()
-            .for_each(|entities_rc_to_increment| {
-                Self::increment_entities_rc(entities_rc_to_increment);
-            });
-
-        Ok(())
-    }
-
-    pub fn complete_entity_property_values_update(
-        entity_id: T::EntityId,
-        entity: Entity<T>,
-        new_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
-        access_level: EntityAccessLevel,
-    ) -> dispatch::Result {
-        let class = Self::class_by_id(entity.class_id);
-
-        // Ensure property values were not locked on class level
-        ensure!(
-            !class.get_permissions().all_entity_property_values_locked(),
-            ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL
-        );
-
-        // Get current property values of an entity as a mutable vector,
-        // so we can update them if new values provided present in new_property_values.
-        let mut updated_values = entity.values.clone();
-        let mut updated = false;
-
-        let mut entities_rc_to_decrement_vec = vec![];
-        let mut entities_rc_to_increment_vec = vec![];
-
-        // Iterate over a vector of new values and update corresponding properties
-        // of this entity if new values are valid.
-        for (id, new_value) in new_property_values.into_iter() {
-            // Try to find a current property value in the entity
-            // by matching its id to the id of a property with an updated value.
-            let current_prop_value = updated_values
-                .get_mut(&id)
-                // Throw an error if a property was not found on entity
-                // by an in-class index of a property update.
-                .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?;
-
-            // Get class-level information about this property
-            if let Some(class_prop) = class.properties.get(id as usize) {
-                // Skip update if new value is equal to the current one or class property type
-                // is locked for update from current actor
-                if new_value == *current_prop_value {
-                    continue;
-                }
-
-                // Ensure class property is unlocked for given actor
-                ensure!(
-                    !class_prop.is_locked_from(access_level),
-                    ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR
-                );
-
-                // Validate a new property value against the type of this property
-                // and check any additional constraints like the length of a vector
-                // if it's a vector property or the length of a text if it's a text property.
-                class_prop.ensure_property_value_to_update_is_valid(
-                    &new_value,
-                    entity.get_permissions().get_controller(),
-                )?;
-
-                // Get unique entity ids to update rc
-                if let (Some(entities_rc_to_increment), Some(entities_rc_to_decrement)) = (
-                    new_value.get_involved_entities(),
-                    current_prop_value.get_involved_entities(),
-                ) {
-                    let (entities_rc_to_decrement, entities_rc_to_increment): (
-                        Vec<T::EntityId>,
-                        Vec<T::EntityId>,
-                    ) = entities_rc_to_decrement
-                        .into_iter()
-                        .zip(entities_rc_to_increment.into_iter())
-                        .filter(|(entity_rc_to_decrement, entity_rc_to_increment)| {
-                            entity_rc_to_decrement != entity_rc_to_increment
-                        })
-                        .unzip();
-                    entities_rc_to_increment_vec.push(entities_rc_to_increment);
-                    entities_rc_to_decrement_vec.push(entities_rc_to_decrement);
-                }
-
-                // Update a current prop value in a mutable vector, if a new value is valid.
-                current_prop_value.update(new_value);
-                updated = true;
-            }
-        }
-
-        // If property values should be updated:
-        if updated {
-            //
-            // == MUTATION SAFE ==
-            //
-
-            <EntityById<T>>::mutate(entity_id, |entity| {
-                entity.values = updated_values;
-            });
-            entities_rc_to_increment_vec
-                .iter()
-                .for_each(|entities_rc_to_increment| {
-                    Self::increment_entities_rc(entities_rc_to_increment);
-                });
-            entities_rc_to_decrement_vec
-                .iter()
-                .for_each(|entities_rc_to_decrement| {
-                    Self::decrement_entities_rc(entities_rc_to_decrement);
-                });
-        }
-
-        Ok(())
-    }
-
-    fn complete_entity_property_vector_cleaning(
-        entity_id: T::EntityId,
-        entity: Entity<T>,
-        in_class_schema_property_id: PropertyId,
-        access_level: EntityAccessLevel,
-    ) -> dispatch::Result {
-        let current_property_value_vec =
-            Self::get_property_value_vec(&entity, in_class_schema_property_id)?;
-
-        Self::ensure_class_property_type_unlocked_for(
-            entity.class_id,
-            in_class_schema_property_id,
-            access_level,
-        )?;
-
-        let entities_rc_to_decrement = current_property_value_vec
-            .get_vec_value()
-            .get_involved_entities();
-
-        //
-        // == MUTATION SAFE ==
-        //
-
-        // Clear property value vector:
-        <EntityById<T>>::mutate(entity_id, |entity| {
-            if let Some(PropertyValue::Vector(current_property_value_vec)) =
-                entity.values.get_mut(&in_class_schema_property_id)
-            {
-                current_property_value_vec.vec_clear();
-            }
-            if let Some(entities_rc_to_decrement) = entities_rc_to_decrement {
-                Self::decrement_entities_rc(&entities_rc_to_decrement);
-            }
-        });
-
-        Ok(())
-    }
-
-    fn complete_remove_at_entity_property_vector(
-        entity_id: T::EntityId,
-        entity: Entity<T>,
-        in_class_schema_property_id: PropertyId,
-        index_in_property_vec: VecMaxLength,
-        nonce: T::Nonce,
-        access_level: EntityAccessLevel,
-    ) -> dispatch::Result {
-        let current_property_value_vec =
-            Self::get_property_value_vec(&entity, in_class_schema_property_id)?;
-
-        Self::ensure_class_property_type_unlocked_for(
-            entity.class_id,
-            in_class_schema_property_id,
-            access_level,
-        )?;
-
-        // Ensure property value vector nonces equality to avoid possible data races,
-        // when performing vector specific operations
-        current_property_value_vec.ensure_nonce_equality(nonce)?;
-        current_property_value_vec
-            .ensure_index_in_property_vector_is_valid(index_in_property_vec)?;
-        let involved_entity_id = current_property_value_vec
-            .get_vec_value()
-            .get_involved_entities()
-            .map(|involved_entities| involved_entities[index_in_property_vec as usize]);
-
-        //
-        // == MUTATION SAFE ==
-        //
-
-        // Remove property value vector
-        <EntityById<T>>::mutate(entity_id, |entity| {
-            if let Some(PropertyValue::Vector(current_prop_value)) =
-                entity.values.get_mut(&in_class_schema_property_id)
-            {
-                current_prop_value.vec_remove_at(index_in_property_vec)
-            }
-        });
-        if let Some(involved_entity_id) = involved_entity_id {
-            <EntityById<T>>::mutate(involved_entity_id, |entity| entity.reference_count -= 1)
-        }
-        Ok(())
-    }
-
-    fn complete_insert_at_entity_property_vector(
-        entity_id: T::EntityId,
-        entity: Entity<T>,
-        in_class_schema_property_id: PropertyId,
-        index_in_property_vec: VecMaxLength,
-        property_value: SinglePropertyValue<T>,
-        nonce: T::Nonce,
-        access_level: EntityAccessLevel,
-    ) -> dispatch::Result {
-        // Try to find a current property value in the entity
-        // by matching its id to the id of a property with an updated value.
-        if let Some(PropertyValue::Vector(entity_prop_value)) =
-            entity.values.get(&in_class_schema_property_id)
-        {
-            let class_prop = Self::ensure_class_property_type_unlocked_for(
-                entity.class_id,
-                in_class_schema_property_id,
-                access_level,
-            )?;
-
-            // Ensure property value vector nonces equality to avoid possible data races,
-            // when performing vector specific operations
-            entity_prop_value.ensure_nonce_equality(nonce)?;
-
-            // Validate a new property value against the type of this property
-            // and check any additional constraints like the length of a vector
-            // if it's a vector property or the length of a text if it's a text property.
-            class_prop.ensure_prop_value_can_be_inserted_at_prop_vec(
-                &property_value,
-                entity_prop_value,
-                index_in_property_vec,
-                entity.get_permissions().get_controller(),
-            )?;
-        };
-
-        //
-        // == MUTATION SAFE ==
-        //
-
-        // Insert property value into property value vector
-        <EntityById<T>>::mutate(entity_id, |entity| {
-            let value = property_value.get_value();
-            if let Some(entities_rc_to_increment) = value.get_involved_entity() {
-                Self::increment_entities_rc(&[entities_rc_to_increment]);
-            }
-            if let Some(PropertyValue::Vector(current_prop_value)) =
-                entity.values.get_mut(&in_class_schema_property_id)
-            {
-                current_prop_value.vec_insert_at(index_in_property_vec, value)
-            }
-        });
-
-        Ok(())
-    }
-
     fn increment_entities_rc(entity_ids: &[T::EntityId]) {
         entity_ids.iter().for_each(|entity_id| {
             <EntityById<T>>::mutate(entity_id, |entity| entity.reference_count += 1)
@@ -1439,6 +1343,87 @@ impl<T: Trait> Module<T> {
     fn ensure_class_exists(class_id: T::ClassId) -> Result<Class<T>, &'static str> {
         ensure!(<ClassById<T>>::exists(class_id), ERROR_CLASS_NOT_FOUND);
         Ok(Self::class_by_id(class_id))
+    }
+
+    /// Add property value, if was not already povided for the property of this schema
+    fn add_new_property_value(
+        class: &Class<T>,
+        entity: &Entity<T>,
+        prop_id: PropertyId,
+        property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+        entities_rc_to_increment_vec: &mut Vec<Vec<T::EntityId>>,
+        appended_entity_values: &mut BTreeMap<PropertyId, PropertyValue<T>>,
+    ) -> Result<(), &'static str> {
+        let class_prop = &class.properties[prop_id as usize];
+
+        if let Some(new_value) = property_values.get(&prop_id) {
+            class_prop.ensure_property_value_to_update_is_valid(
+                new_value,
+                entity.get_permissions().get_controller(),
+            )?;
+            if let Some(entities_rc_to_increment) = new_value.get_involved_entities() {
+                entities_rc_to_increment_vec.push(entities_rc_to_increment);
+            }
+            appended_entity_values.insert(prop_id, new_value.to_owned());
+        } else {
+            // All required prop values should be are provided
+            ensure!(!class_prop.required, ERROR_MISSING_REQUIRED_PROP);
+
+            // Add all missing non required schema prop values as PropertyValue::default()
+            appended_entity_values.insert(prop_id, PropertyValue::default());
+        }
+        Ok(())
+    }
+
+    pub fn perform_entity_property_value_update(
+        class: &Class<T>,
+        entity: &Entity<T>,
+        id: PropertyId,
+        access_level: EntityAccessLevel,
+        new_value: PropertyValue<T>,
+        current_prop_value: &mut PropertyValue<T>,
+    ) -> Result<(Vec<Vec<T::EntityId>>, Vec<Vec<T::EntityId>>), &'static str> {
+        let mut entities_rc_to_increment_vec = vec![];
+        let mut entities_rc_to_decrement_vec = vec![];
+        // Get class-level information about this property
+        if let Some(class_prop) = class.properties.get(id as usize) {
+            // Ensure class property is unlocked for given actor
+            ensure!(
+                !class_prop.is_locked_from(access_level),
+                ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR
+            );
+
+            // Validate a new property value against the type of this property
+            // and check any additional constraints like the length of a vector
+            // if it's a vector property or the length of a text if it's a text property.
+            class_prop.ensure_property_value_to_update_is_valid(
+                &new_value,
+                entity.get_permissions().get_controller(),
+            )?;
+
+            // Get unique entity ids to update rc
+            if let (Some(entities_rc_to_increment), Some(entities_rc_to_decrement)) = (
+                new_value.get_involved_entities(),
+                current_prop_value.get_involved_entities(),
+            ) {
+                let (entities_rc_to_decrement, entities_rc_to_increment): (
+                    Vec<T::EntityId>,
+                    Vec<T::EntityId>,
+                ) = entities_rc_to_decrement
+                    .into_iter()
+                    .zip(entities_rc_to_increment.into_iter())
+                    .filter(|(entity_rc_to_decrement, entity_rc_to_increment)| {
+                        entity_rc_to_decrement != entity_rc_to_increment
+                    })
+                    .unzip();
+                entities_rc_to_increment_vec.push(entities_rc_to_increment);
+                entities_rc_to_decrement_vec.push(entities_rc_to_decrement);
+            }
+
+            // Update a current prop value in a mutable vector, if a new value is valid.
+            current_prop_value.update(new_value);
+        }
+        Ok((entities_rc_to_increment_vec, entities_rc_to_decrement_vec))
     }
 
     fn get_property_value_vec(
