@@ -5,9 +5,7 @@
 use codec::{Codec, Decode, Encode};
 use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use rstd::prelude::*;
-use runtime_primitives::traits::{
-    MaybeSerializeDeserialize, Member, One, SimpleArithmetic, Zero,
-};
+use runtime_primitives::traits::{MaybeSerializeDeserialize, Member, One, SimpleArithmetic, Zero};
 use srml_support::{
     decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter, StorageDoubleMap,
 };
@@ -33,7 +31,6 @@ pub use schema::*;
 type MaxNumber = u32;
 
 pub trait Trait: system::Trait + ActorAuthenticator + Debug {
-
     type Nonce: Parameter
         + Member
         + SimpleArithmetic

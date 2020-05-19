@@ -90,14 +90,15 @@ pub fn perform_lead_auth<T: ActorAuthenticator>(origin: T::Origin) -> dispatch::
     ensure_lead_auth_success::<T>(&account_id)
 }
 
-pub fn perform_curator_in_group_auth<T: Trait>(curator_id: &T::CuratorId, curator_group_id: &T::CuratorGroupId, account_id: &T::AccountId) -> dispatch::Result {
+pub fn perform_curator_in_group_auth<T: Trait>(
+    curator_id: &T::CuratorId,
+    curator_group_id: &T::CuratorGroupId,
+    account_id: &T::AccountId,
+) -> dispatch::Result {
     ensure_curator_auth_success::<T>(curator_id, account_id)?;
     Module::<T>::ensure_curator_group_exists(curator_group_id)?;
     let curator_group = Module::<T>::curator_group_by_id(curator_group_id);
-    ensure!(
-        curator_group.is_active(),
-        ERROR_CURATOR_IS_NOT_ACTIVE
-    );
+    ensure!(curator_group.is_active(), ERROR_CURATOR_IS_NOT_ACTIVE);
     ensure!(
         curator_group.is_curator(curator_id),
         ERROR_CURATOR_IS_NOT_A_MEMBER_OF_A_GIVEN_CURATOR_GROUP
