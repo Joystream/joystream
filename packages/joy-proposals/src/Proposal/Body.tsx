@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Header, Item, Button, Icon, Message } from "semantic-ui-react";
+import { Card, Header, Button, Icon, Message } from "semantic-ui-react";
 import { ProposalType } from "../runtime/transport";
 import { blake2AsHex } from '@polkadot/util-crypto';
 import styled from 'styled-components';
@@ -12,6 +12,7 @@ import { useTransport } from "../runtime";
 import { usePromise } from "../utils";
 import { Profile } from "@joystream/types/members";
 import { Option } from "@polkadot/types/";
+import { formatBalance } from "@polkadot/util";
 import PromiseComponent from "./PromiseComponent";
 
 type BodyProps = {
@@ -84,11 +85,11 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
       "Council size": params.council_size + " members",
       "Candidacy limit": params.candidacy_limit + " members",
       "New term duration": params.new_term_duration + " blocks",
-      "Min. council stake": params.min_council_stake + " tJOY",
-      "Min. voting stake": params.min_voting_stake + " tJOY"
+      "Min. council stake": formatBalance(params.min_council_stake),
+      "Min. voting stake": formatBalance(params.min_voting_stake)
   }),
   Spending: ([amount, account]) => ({
-    Amount: amount + " tJOY",
+    Amount: formatBalance(amount),
     Account: <ProposedAddress address={account} />
   }),
   SetLead: ([memberId, accountId]) => ({
@@ -96,7 +97,7 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
     "Account id": <ProposedAddress address={accountId} />
   }),
   SetContentWorkingGroupMintCapacity: ([capacity]) => ({
-    "Mint capacity": capacity + " tJOY"
+    "Mint capacity": formatBalance(capacity)
   }),
   EvictStorageProvider: ([accountId]) => ({
     "Storage provider account": <ProposedAddress address={accountId} />
@@ -105,37 +106,39 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
     "Validator count": count
   }),
   SetStorageRoleParameters: ([params]) => ({
-    "Min. stake": params.min_stake + " tJOY",
+    "Min. stake": formatBalance(params.min_stake),
     // "Min. actors": params.min_actors,
     "Max. actors": params.max_actors,
-    Reward: params.reward + " tJOY",
+    Reward: formatBalance(params.reward),
     "Reward period": params.reward_period + " blocks",
     // "Bonding period": params.bonding_period + " blocks",
     "Unbonding period": params.unbonding_period + " blocks",
     // "Min. service period": params.min_service_period + " blocks",
     // "Startup grace period": params.startup_grace_period + " blocks",
-    "Entry request fee": params.entry_request_fee + " tJOY"
+    "Entry request fee": formatBalance(params.entry_request_fee)
   })
 };
 
-const ProposalParam = styled.div`
-  display: flex;
+const ProposalParams = styled.div`
+  display: grid;
   font-weight: bold;
-  margin-bottom: 0.5em;
-  @media only screen and (max-width: 767px) {
-    flex-direction: column;
+  grid-template-columns: min-content 1fr;
+  grid-row-gap: 0.5rem;
+  @media screen and (max-width: 767px) {
+    grid-template-columns: 1fr;
   }
 `;
 const ProposalParamName = styled.div`
-  min-width: ${(p: { longestParamName: number }) =>
-    p.longestParamName > 20 ? "240px" : p.longestParamName > 15 ? "200px" : ""};
+  margin-right: 1rem;
+  white-space: nowrap;
 `;
 const ProposalParamValue = styled.div`
   color: black;
-  font-weight: bold;
-  padding-left: 1rem;
   word-wrap: break-word;
   word-break: break-all;
+  @media screen and (max-width: 767px) {
+    margin-top: -0.25rem;
+  }
 `;
 
 export default function Body({
@@ -151,7 +154,6 @@ export default function Body({
 }: BodyProps) {
   const parseParams = paramParsers[type];
   const parsedParams = parseParams(params);
-  const longestParamName: number = Object.keys(parsedParams).reduce((a, b) => (b.length > a ? b.length : a), 0);
   return (
     <Card fluid>
       <Card.Content>
@@ -160,16 +162,14 @@ export default function Body({
         </Card.Header>
         <Card.Description>{description}</Card.Description>
         <Header as="h4">Parameters:</Header>
-        <Item.Group style={{ textAlign: "left" }} relaxed>
-
-          { Object.entries(parseParams(params)).map(([paramName, paramValue]) => (
-
-            <ProposalParam key={paramName}>
-              <ProposalParamName longestParamName={longestParamName}>{paramName}:</ProposalParamName>
+        <ProposalParams>
+          { Object.entries(parsedParams).map(([paramName, paramValue]) => (
+            <React.Fragment key={paramName}>
+              <ProposalParamName>{paramName}:</ProposalParamName>
               <ProposalParamValue>{paramValue}</ProposalParamValue>
-            </ProposalParam>
+            </React.Fragment>
           ))}
-        </Item.Group>
+        </ProposalParams>
         { iAmProposer && isCancellable && (<>
           <Message warning active>
             <Message.Content>
@@ -179,7 +179,7 @@ export default function Body({
               </p>
               <p style={{ margin: '0.5em 0', padding: '0' }}>
                 The cancellation fee for this type of proposal is:&nbsp;
-                <b>{ cancellationFee ? `${ cancellationFee } tJOY` : 'NONE' }</b>
+                <b>{ cancellationFee ? formatBalance(cancellationFee) : 'NONE' }</b>
               </p>
               <Button.Group color="red">
                 <TxButton

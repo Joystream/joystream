@@ -4,6 +4,16 @@ import { Category } from "./Proposal/ChooseProposalType";
 import { useTransport, ParsedProposal, ProposalVote } from "./runtime";
 import { ProposalId } from "@joystream/types/proposals";
 
+type ProposalMeta = {
+  description: string;
+  category: Category;
+  image: string;
+  approvalQuorum: number;
+  approvalThreshold: number;
+  slashingQuorum: number;
+  slashingThreshold: number;
+}
+
 export function includeKeys<T extends { [k: string]: any }>(obj: T, ...allowedKeys: string[]) {
   return Object.keys(obj).filter(objKey => {
     return allowedKeys.reduce(
@@ -154,59 +164,110 @@ export function calculateStake(type: ProposalType, issuance: number) {
   return stake;
 }
 
-export function calculateMetaFromType(type: ProposalType) {
-  let description = "";
+export function calculateMetaFromType(type: ProposalType): ProposalMeta {
   const image = "";
-  let category: Category = "Other";
   switch (type) {
     case "EvictStorageProvider": {
-      description = "Evicting Storage Provider Proposal";
-      category = "Storage";
-      break;
+      return {
+        description: "Evicting Storage Provider Proposal",
+        category: "Storage",
+        image,
+        approvalQuorum: 50,
+        approvalThreshold: 75,
+        slashingQuorum: 60,
+        slashingThreshold: 80,
+      }
     }
     case "Text": {
-      description = "Signal Proposal";
-      category = "Other";
-      break;
+      return {
+        description: "Signal Proposal",
+        category: "Other",
+        image,
+        approvalQuorum: 60,
+        approvalThreshold: 80,
+        slashingQuorum: 60,
+        slashingThreshold: 80,
+      }
     }
     case "SetStorageRoleParameters": {
-      description = "Set Storage Role Params Proposal";
-      category = "Storage";
-      break;
+      return {
+        description: "Set Storage Role Params Proposal",
+        category: "Storage",
+        image,
+        approvalQuorum: 66,
+        approvalThreshold: 80,
+        slashingQuorum: 60,
+        slashingThreshold: 80,
+      }
     }
     case "SetValidatorCount": {
-      description = "Set Max Validator Count Proposal";
-      category = "Validators";
-      break;
+      return {
+        description: "Set Max Validator Count Proposal",
+        category: "Validators",
+        image,
+        approvalQuorum: 66,
+        approvalThreshold: 80,
+        slashingQuorum: 60,
+        slashingThreshold: 80,
+      }
     }
     case "SetLead": {
-      description = "Set Lead Proposal";
-      category = "Content Working Group";
-      break;
+      return {
+        description: "Set Lead Proposal",
+        category: "Content Working Group",
+        image,
+        approvalQuorum: 60,
+        approvalThreshold: 75,
+        slashingQuorum: 60,
+        slashingThreshold: 80,
+      }
     }
     case "SetContentWorkingGroupMintCapacity": {
-      description = "Set WG Mint Capacity Proposal";
-      category = "Content Working Group";
-      break;
+      return {
+        description: "Set WG Mint Capacity Proposal",
+        category: "Content Working Group",
+        image,
+        approvalQuorum: 60,
+        approvalThreshold: 75,
+        slashingQuorum: 60,
+        slashingThreshold: 80,
+      }
     }
     case "Spending": {
-      description = "Spending Proposal";
-      category = "Other";
-      break;
+      return {
+        description: "Spending Proposal",
+        category: "Other",
+        image,
+        approvalQuorum: 60,
+        approvalThreshold: 80,
+        slashingQuorum: 60,
+        slashingThreshold: 80,
+      }
     }
     case "SetElectionParameters": {
-      description = "Set Election Parameters Proposal";
-      category = "Council";
-      break;
+      return {
+        description: "Set Election Parameters Proposal",
+        category: "Council",
+        image,
+        approvalQuorum: 66,
+        approvalThreshold: 80,
+        slashingQuorum: 60,
+        slashingThreshold: 80,
+      }
     }
     case "RuntimeUpgrade": {
-      description = "Runtime Upgrade Proposal";
-      category = "Other";
-      break;
+      return {
+        description: "Runtime Upgrade Proposal",
+        category: "Other",
+        image,
+        approvalQuorum: 80,
+        approvalThreshold: 100,
+        slashingQuorum: 60,
+        slashingThreshold: 80,
+      }
     }
     default: {
       throw new Error("'Proposal Type is invalid. Can't calculate metadata.");
     }
   }
-  return { description, image, category };
 }

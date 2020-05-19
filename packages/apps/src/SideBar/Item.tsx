@@ -23,7 +23,6 @@ import { queryToProp } from '@polkadot/joy-utils/index';
 import { ElectionStage } from '@joystream/types/';
 import { councilSidebarName } from '@polkadot/apps-routing/joy-election';
 
-
 interface Props extends I18nProps {
   isCollapsed: boolean;
   onClick: () => void;
@@ -34,15 +33,14 @@ interface Props extends I18nProps {
 }
 
 type Subtitle = {
-  text: string,
-  classes: string[]
+  text: string;
+  classes: string[];
 };
-
 
 const disabledLog: Map<string, string> = new Map();
 const TOOLTIP_OFFSET = { right: -4 };
 
-function logDisabled (route: string, message: string): void {
+function logDisabled(route: string, message: string): void {
   if (!disabledLog.get(route)) {
     disabledLog.set(route, message);
 
@@ -50,7 +48,7 @@ function logDisabled (route: string, message: string): void {
   }
 }
 
-function hasEndpoint (api: ApiPromise, endpoint: string): boolean {
+function hasEndpoint(api: ApiPromise, endpoint: string): boolean {
   const [area, section, method] = endpoint.split('.');
 
   try {
@@ -60,7 +58,13 @@ function hasEndpoint (api: ApiPromise, endpoint: string): boolean {
   }
 }
 
-function checkVisible (name: string, { api, isApiReady, isApiConnected }: ApiProps, hasAccounts: boolean, hasSudo: boolean, { isHidden, needsAccounts, needsApi, needsSudo }: Route['display']): boolean {
+function checkVisible(
+  name: string,
+  { api, isApiReady, isApiConnected }: ApiProps,
+  hasAccounts: boolean,
+  hasSudo: boolean,
+  { isHidden, needsAccounts, needsApi, needsSudo }: Route['display']
+): boolean {
   if (isHidden) {
     return false;
   } else if (needsAccounts && !hasAccounts) {
@@ -89,7 +93,15 @@ function checkVisible (name: string, { api, isApiReady, isApiConnected }: ApiPro
   return notFound.length === 0;
 }
 
-function Item ({ allAccounts, route: { Modal, display, i18n, icon, name }, t, isCollapsed, onClick, sudoKey, electionStage }: Props): React.ReactElement<Props> | null {
+function Item({
+  allAccounts,
+  route: { Modal, display, i18n, icon, name },
+  t,
+  isCollapsed,
+  onClick,
+  sudoKey,
+  electionStage
+}: Props): React.ReactElement<Props> | null {
   const apiProps = useContext(ApiContext);
   const [hasAccounts, setHasAccounts] = useState(false);
   const [hasSudo, setHasSudo] = useState(false);
@@ -126,54 +138,46 @@ function Item ({ allAccounts, route: { Modal, display, i18n, icon, name }, t, is
       }
     }
     return undefined;
-  }
+  };
 
   const subtitle = _getSubtitle(name);
 
   const body = (
     <>
       <Icon name={icon} />
-      <span className='text SidebarItem'>
-            <div>{t(`sidebar.${name}`, i18n)}</div>
-            {subtitle && <div className={`SidebarSubtitle ${subtitle.classes.join(' ')}`}>{subtitle.text}</div>}
+      <span className="text SidebarItem">
+        <div>{t(`sidebar.${name}`, i18n)}</div>
+        {subtitle && <div className={`SidebarSubtitle ${subtitle.classes.join(' ')}`}>{subtitle.text}</div>}
       </span>
-      <Tooltip
-        offset={TOOLTIP_OFFSET}
-        place='right'
-        text={t(`sidebar.${name}`, i18n)}
-        trigger={`nav-${name}`}
-      />
+      <Tooltip offset={TOOLTIP_OFFSET} place="right" text={t(`sidebar.${name}`, i18n)} trigger={`nav-${name}`} />
     </>
   );
 
   return (
-    <Menu.Item className='apps--SideBar-Item'>
-      {Modal
-        ? (
-          <a
-            className='apps--SideBar-Item-NavLink'
-            data-for={`nav-${name}`}
-            data-tip
-            data-tip-disable={!isCollapsed}
-            onClick={onClick}
-          >
-            {body}
-          </a>
-        )
-        : (
-          <NavLink
-            activeClassName='apps--SideBar-Item-NavLink-active'
-            className='apps--SideBar-Item-NavLink'
-            data-for={`nav-${name}`}
-            data-tip
-            data-tip-disable={!isCollapsed}
-            onClick={onClick}
-            to={`/${name}`}
-          >
-            {body}
-          </NavLink>
-        )
-      }
+    <Menu.Item className="apps--SideBar-Item">
+      {Modal ? (
+        <a
+          className="apps--SideBar-Item-NavLink"
+          data-for={`nav-${name}`}
+          data-tip
+          data-tip-disable={!isCollapsed}
+          onClick={onClick}
+        >
+          {body}
+        </a>
+      ) : (
+        <NavLink
+          activeClassName="apps--SideBar-Item-NavLink-active"
+          className="apps--SideBar-Item-NavLink"
+          data-for={`nav-${name}`}
+          data-tip
+          data-tip-disable={!isCollapsed}
+          onClick={onClick}
+          to={`/${name}`}
+        >
+          {body}
+        </NavLink>
+      )}
     </Menu.Item>
   );
 }
@@ -182,8 +186,6 @@ export default withMulti(
   Item,
   translate,
   withCalls(queryToProp('query.councilElection.stage', { propName: 'electionStage' })),
-  withCalls<Props>(
-    ['query.sudo.key', { propName: 'sudoKey' }]
-  ),
+  withCalls<Props>(['query.sudo.key', { propName: 'sudoKey' }]),
   withObservable(accountObservable.subject, { propName: 'allAccounts' })
 );

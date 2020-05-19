@@ -90,7 +90,7 @@ export class CategoryId extends u64 {}
 export class OptionCategoryId extends Option.with(CategoryId) {}
 export class VecCategoryId extends Vector.with(CategoryId) {}
 
-export class ThreadId extends u32 {}
+export class ThreadId extends u64 {}
 export class VecThreadId extends Vector.with(ThreadId) {}
 
 export class PostId extends u64 {}

@@ -168,6 +168,10 @@ export class ExecutionFailedStatus extends Struct {
       value
     );
   }
+
+  get error() {
+    return this.get('error') as Vec<u8>;
+  }
 }
 
 class ExecutionFailed extends ExecutionFailedStatus {}
@@ -236,6 +240,13 @@ export class ProposalStatus extends Enum {
     );
   }
 }
+
+export const VoteKinds = [
+  "Approve",
+  "Reject",
+  "Slash",
+  "Abstain"
+] as const;
 
 export class VoteKind extends Enum {
   constructor(value?: any, index?: number) {
@@ -440,6 +451,26 @@ export class Seat extends Struct {
 
 export class Seats extends Vec.with(Seat) {}
 
+export class ThreadCounter extends Struct {
+  constructor(value?: any) {
+    super(
+      {
+        author_id: MemberId,
+        counter: "u32"
+      },
+      value
+    );
+  }
+
+  get author_id(): MemberId {
+    return this.get("author_id") as MemberId;
+  }
+
+  get counter(): u32 {
+    return this.get("counter") as u32;
+  }
+}
+
 // export default proposalTypes;
 export function registerProposalTypes() {
   try {
@@ -454,7 +485,8 @@ export function registerProposalTypes() {
       Seat,
       Seats,
       Backer,
-      Backers
+      Backers,
+      ThreadCounter
     });
   } catch (err) {
     console.error("Failed to register custom types of proposals module", err);

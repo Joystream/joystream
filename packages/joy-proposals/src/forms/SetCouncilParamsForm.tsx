@@ -93,7 +93,7 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
   }, [councilParams]);
 
   // This logic may be moved somewhere else in the future, but it's quite easy to enforce it here:
-  if (!errors.candidacyLimit && !errors.councilSize && values.candidacyLimit < values.councilSize) {
+  if (!errors.candidacyLimit && !errors.councilSize && parseInt(values.candidacyLimit) < parseInt(values.councilSize)) {
     setFieldError('candidacyLimit', `Candidacy limit must be >= council size (${ values.councilSize })`);
   }
 
@@ -182,7 +182,7 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
           />
           <InputFormField
             label="Candidacy Limit"
-            help="How many members can candidate"
+            help="How many candidates that will be allowed in to the voting stage"
             fluid
             onChange={handleChange}
             name="candidacyLimit"

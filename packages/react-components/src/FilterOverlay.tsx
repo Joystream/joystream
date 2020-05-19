@@ -13,9 +13,9 @@ interface Props extends BareProps {
   children: React.ReactNode;
 }
 
-function FilterOverlay ({ children, className }: Props): React.ReactElement<Props> {
+function FilterOverlay({ children, className, style }: Props): React.ReactElement<Props> {
   return (
-    <div className={className}>
+    <div className={className} style={style}>
       {children}
     </div>
   );
@@ -33,7 +33,6 @@ export default styled(FilterOverlay)`
     justify-content: flex-end;
     position: absolute;
     right: 5rem;
-    top: 5.5rem;
 
     > div {
       max-width: 35rem !important;

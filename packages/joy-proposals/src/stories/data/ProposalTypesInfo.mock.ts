@@ -14,6 +14,10 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     cancellationFee: 0,
     gracePeriod: 0,
     votingPeriod: 10000,
+    approvalQuorum: 80,
+    approvalThreshold: 80,
+    slashingQuorum: 80,
+    slashingThreshold: 80,
   },
   {
     type: "Spending",
@@ -27,6 +31,10 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     cancellationFee: 5,
     gracePeriod: 3,
     votingPeriod: 10000,
+    approvalQuorum: 80,
+    approvalThreshold: 80,
+    slashingQuorum: 80,
+    slashingThreshold: 80,
   },
   {
     type: "RuntimeUpgrade",
@@ -40,6 +48,10 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     cancellationFee: 10,
     gracePeriod: 14,
     votingPeriod: 10000,
+    approvalQuorum: 80,
+    approvalThreshold: 80,
+    slashingQuorum: 80,
+    slashingThreshold: 80,
   },
   {
     type: "EvictStorageProvider",
@@ -53,6 +65,10 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     cancellationFee: 10,
     gracePeriod: 1,
     votingPeriod: 10000,
+    approvalQuorum: 80,
+    approvalThreshold: 80,
+    slashingQuorum: 80,
+    slashingThreshold: 80,
   },
   {
     type: "SetStorageRoleParameters",
@@ -66,6 +82,10 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     cancellationFee: 60,
     gracePeriod: 14,
     votingPeriod: 10000,
+    approvalQuorum: 80,
+    approvalThreshold: 80,
+    slashingQuorum: 80,
+    slashingThreshold: 80,
   },
   {
     type: "SetValidatorCount",
@@ -79,6 +99,10 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     cancellationFee: 10,
     gracePeriod: 5,
     votingPeriod: 10000,
+    approvalQuorum: 80,
+    approvalThreshold: 80,
+    slashingQuorum: 80,
+    slashingThreshold: 80,
   },
   {
     type: "SetContentWorkingGroupMintCapacity",
@@ -92,6 +116,10 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     cancellationFee: 8,
     gracePeriod: 5,
     votingPeriod: 10000,
+    approvalQuorum: 80,
+    approvalThreshold: 80,
+    slashingQuorum: 80,
+    slashingThreshold: 80,
   },
   {
     type: "SetLead",
@@ -105,6 +133,10 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     cancellationFee: 50,
     gracePeriod: 7,
     votingPeriod: 10000,
+    approvalQuorum: 80,
+    approvalThreshold: 80,
+    slashingQuorum: 80,
+    slashingThreshold: 80,
   },
   {
     type: "SetElectionParameters",
@@ -118,6 +150,10 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     cancellationFee: 100,
     gracePeriod: 30,
     votingPeriod: 10000,
+    approvalQuorum: 80,
+    approvalThreshold: 80,
+    slashingQuorum: 80,
+    slashingThreshold: 80,
   },
 ];
 

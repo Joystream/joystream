@@ -11,7 +11,7 @@ import { withCalls } from '@polkadot/react-api';
 import { withMulti } from '@polkadot/react-api/with';
 
 import "./Proposal.css";
-import { ProposalId, ProposalDecisionStatuses, ApprovedProposalStatuses } from "@joystream/types/proposals";
+import { ProposalId, ProposalDecisionStatuses, ApprovedProposalStatuses, ExecutionFailedStatus } from "@joystream/types/proposals";
 import { BlockNumber } from '@polkadot/types/interfaces'
 import { MemberId } from "@joystream/types/members";
 import { Seat } from "@joystream/types/";
@@ -25,6 +25,9 @@ export type ExtendedProposalStatus = {
   displayStatus: ProposalDisplayStatus,
   periodStatus: ProposalPeriodStatus | null,
   expiresIn: number | null,
+  finalizedAtBlock: number | null,
+  executedAtBlock: number | null,
+  executionFailReason: string | null
 }
 
 export function getExtendedStatus(proposal: ParsedProposal, bestNumber: BlockNumber | undefined): ExtendedProposalStatus {
@@ -33,31 +36,40 @@ export function getExtendedStatus(proposal: ParsedProposal, bestNumber: BlockNum
 
   let displayStatus: ProposalDisplayStatus = basicStatus;
   let periodStatus: ProposalPeriodStatus | null = null;
+  let finalizedAtBlock: number | null = null;
+  let executedAtBlock: number | null = null;
+  let executionFailReason: string | null = null;
 
-  if (!bestNumber) return { displayStatus, periodStatus, expiresIn };
+  let best = bestNumber ? bestNumber.toNumber() : 0;
 
   const { votingPeriod, gracePeriod } = proposal.parameters;
-  const blockAge = bestNumber.toNumber() - proposal.createdAtBlock;
+  const blockAge = best - proposal.createdAtBlock;
 
   if (basicStatus === 'Active') {
+    periodStatus = 'Voting period';
     expiresIn = Math.max(votingPeriod - blockAge, 0) || null;
-    if (expiresIn) periodStatus = 'Voting period';
   }
 
   if (basicStatus === 'Finalized') {
     const { finalizedAt, proposalStatus } = proposal.status['Finalized'];
-
     const decisionStatus: ProposalDecisionStatuses = Object.keys(proposalStatus)[0] as ProposalDecisionStatuses;
     displayStatus = decisionStatus;
+    finalizedAtBlock = finalizedAt as number;
     if (decisionStatus === 'Approved') {
       const approvedStatus: ApprovedProposalStatuses = Object.keys(proposalStatus["Approved"])[0] as ApprovedProposalStatuses;
       if (approvedStatus === 'PendingExecution') {
-        const finalizedAge = bestNumber.toNumber() - finalizedAt;
+        const finalizedAge = best - finalizedAt;
+        periodStatus = 'Grace period';
         expiresIn = Math.max(gracePeriod - finalizedAge, 0) || null;
-        if (expiresIn) periodStatus = 'Grace period';
       }
       else {
-        displayStatus = approvedStatus; // Executed / ExecutionFailed
+        // Executed / ExecutionFailed
+        displayStatus = approvedStatus;
+        executedAtBlock = finalizedAtBlock + gracePeriod;
+        if (approvedStatus === 'ExecutionFailed') {
+          const executionFailedStatus = proposalStatus.Approved.ExecutionFailed as ExecutionFailedStatus;
+          executionFailReason = new Buffer(executionFailedStatus.error.toString().replace('0x', ''), 'hex').toString();
+        }
       }
     }
   }
@@ -65,7 +77,10 @@ export function getExtendedStatus(proposal: ParsedProposal, bestNumber: BlockNum
   return {
     displayStatus,
     periodStatus,
-    expiresIn
+    expiresIn: best ? expiresIn : null,
+    finalizedAtBlock,
+    executedAtBlock,
+    executionFailReason
   }
 }
 
