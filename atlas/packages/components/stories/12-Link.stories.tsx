@@ -8,7 +8,7 @@ export default {
 
 export const Default = () =>
   <div style={{ backgroundColor: "black", padding: "50px 20px" }}>
-    <Link to="www.google.com">Go to Google</Link>
+    <Link to="path">Go to path</Link>
   </div>
 
 export const Disabled = () =>
