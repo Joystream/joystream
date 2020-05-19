@@ -4,7 +4,7 @@
 
 A Portal into the Joystream network. Provides a view and interaction layer from a browser.
 
-This can be accessed as a hosted application via [https://testnet.joystream.org/acropolis/pioneer](https://testnet.joystream.org/acropolis/pioneer).
+This can be accessed as a hosted application via [https://testnet.joystream.org](https://testnet.joystream.org).
 
 ## overview
 

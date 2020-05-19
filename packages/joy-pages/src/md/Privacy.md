@@ -14,7 +14,7 @@ Relevant to the Privacy Policy and Cookie Policy are the following terms:
 
 
 # Privacy Policy
-**Last updated on the 17th of March 2020**
+**Last updated on the 19th of May 2020**
 
 ## 1. Agreement to the Policy
 By using any of Our Software, the User are accepting this Privacy Policy. If you are acting on behalf of another company or an employer, you must have the rights to act on their behalf. The Privacy Policy is not extended to any of our newsletters, where Users are bound by the [privacy policy](https://mailchimp.com/legal/privacy/) of [Mailchimp](https://mailchimp.com/).
@@ -27,8 +27,6 @@ This Privacy Policy may be changed at the sole discretion of Company. If any mat
 ## 3. Information Collected
 All data written to the Blockchain, is implicitly collected not only by Company, but also anyone else in the world that is running the Full Node locally, or accessed via the App or a third party.
 This includes, but is not limited to, Content hashes, Membership profile, Memo field, and any other way a User can record data on the Blockchain.
-
-When using the [faucet](https://faucet.joystream.org/) ("Faucet") subpage of the Website, Company will record the IP address behind every new request for tokens. This data will be deleted every 14 days.
 
 Company uses [Google Analytics](https://marketingplatform.google.com/about/analytics/), with IP anonymization, to collect statistics on Website and the version of App hosted by us. All customizable data sharing settings are turned off to improve the privacy of Users.
 

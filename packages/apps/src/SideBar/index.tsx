@@ -176,8 +176,8 @@ function SideBar ({ className, collapse, handleResize, isCollapsed, toggleMenu, 
                 )
             ))}
             <Menu.Divider hidden />
-            <OuterLink url='https://faucet.joystream.org/' title='Free Tokens' />
-            <OuterLink url='https://blog.joystream.org/acropolis-incentives/' title='Earn Monero' />
+            <OuterLink url='https://tjoy.joystream.org/' title='Tokenomics' />
+            <OuterLink url='https://blog.joystream.org/constantinople-incentives/' title='Earn Monero' />
             <Menu.Divider hidden />
             {
               isCollapsed
