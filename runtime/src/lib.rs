@@ -368,7 +368,7 @@ srml_staking_reward_curve::build! {
 
 parameter_types! {
     pub const SessionsPerEra: sr_staking_primitives::SessionIndex = 6;
-    pub const BondingDuration: staking::EraIndex = 24 * 28;
+    pub const BondingDuration: staking::EraIndex = 24;
     pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
 }
 
