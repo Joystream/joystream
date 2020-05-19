@@ -15,7 +15,6 @@ use system::ensure_signed;
 pub use serde::{Deserialize, Serialize};
 
 mod errors;
-mod example;
 mod mock;
 mod operations;
 mod permissions;
