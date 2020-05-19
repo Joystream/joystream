@@ -16,20 +16,20 @@ export function validatorCountProposal(m1KeyPairs: KeyringPair[], m2KeyPairs: Ke
   const nodeUrl: string = process.env.NODE_URL!;
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const validatorCountIncrement: BN = new BN(+process.env.VALIDATOR_COUNT_INCREMENT!);
-  const defaultTimeout: number = 180000;
+  const defaultTimeout: number = 600000;
 
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
 
   tap.setTimeout(defaultTimeout);
 
-  tap.test('Validator count proposal test setup', { bail: true }, async () => {
+  tap.test('Validator count proposal test setup', async () => {
     registerJoystreamTypes();
     const provider = new WsProvider(nodeUrl);
     apiWrapper = await ApiWrapper.create(provider);
   });
 
-  tap.test('Validator count proposal test', { bail: true }, async () => {
+  tap.test('Validator count proposal test', async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8);
@@ -72,10 +72,10 @@ export function validatorCountProposal(m1KeyPairs: KeyringPair[], m2KeyPairs: Ke
   });
 }
 
-const m1KeyPairs: KeyringPair[] = new Array();
-const m2KeyPairs: KeyringPair[] = new Array();
+const m1Keys: KeyringPair[] = new Array();
+const m2Keys: KeyringPair[] = new Array();
 
-membershipTest(m1KeyPairs);
-membershipTest(m2KeyPairs);
-councilTest(m1KeyPairs, m2KeyPairs);
-validatorCountProposal(m1KeyPairs, m2KeyPairs);
+membershipTest(m1Keys);
+membershipTest(m2Keys);
+councilTest(m1Keys, m2Keys);
+validatorCountProposal(m1Keys, m2Keys);

@@ -18,19 +18,19 @@ export function councilTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]
   const K: number = +process.env.COUNCIL_ELECTION_K!;
   const greaterStake: BN = new BN(+process.env.COUNCIL_STAKE_GREATER_AMOUNT!);
   const lesserStake: BN = new BN(+process.env.COUNCIL_STAKE_LESSER_AMOUNT!);
-  const defaultTimeout: number = 120000;
+  const defaultTimeout: number = 300000;
   let sudo: KeyringPair;
   let apiWrapper: ApiWrapper;
 
   tap.setTimeout(defaultTimeout);
 
-  tap.test('Electing council test setup', { bail: true }, async () => {
+  tap.test('Electing council test setup', async () => {
     registerJoystreamTypes();
     const provider = new WsProvider(nodeUrl);
     apiWrapper = await ApiWrapper.create(provider);
   });
 
-  tap.test('Electing a council test', { bail: true }, async () => {
+  tap.test('Electing a council test', async () => {
     // Setup goes here because M keypairs are generated after before() function
     sudo = keyring.addFromUri(sudoUri);
     let now = await apiWrapper.getBestBlock();
@@ -119,10 +119,3 @@ export function councilTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]
     apiWrapper.close();
   });
 }
-
-const m1KeyPairs: KeyringPair[] = new Array();
-const m2KeyPairs: KeyringPair[] = new Array();
-
-membershipTest(m1KeyPairs);
-membershipTest(m2KeyPairs);
-councilTest(m1KeyPairs, m2KeyPairs);

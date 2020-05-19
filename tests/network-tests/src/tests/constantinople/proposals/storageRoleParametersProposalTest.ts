@@ -16,20 +16,20 @@ export function storageRoleParametersProposalTest(m1KeyPairs: KeyringPair[], m2K
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
-  const defaultTimeout: number = 180000;
+  const defaultTimeout: number = 600000;
 
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
 
   tap.setTimeout(defaultTimeout);
 
-  tap.test('Storage role parameters proposal test setup', { bail: true }, async () => {
+  tap.test('Storage role parameters proposal test setup', async () => {
     registerJoystreamTypes();
     const provider = new WsProvider(nodeUrl);
     apiWrapper = await ApiWrapper.create(provider);
   });
 
-  tap.test('Storage role parameters proposal test', { bail: true }, async () => {
+  tap.test('Storage role parameters proposal test', async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8);
@@ -143,10 +143,10 @@ export function storageRoleParametersProposalTest(m1KeyPairs: KeyringPair[], m2K
   });
 }
 
-const m1KeyPairs: KeyringPair[] = new Array();
-const m2KeyPairs: KeyringPair[] = new Array();
+const m1Keys: KeyringPair[] = new Array();
+const m2Keys: KeyringPair[] = new Array();
 
-membershipTest(m1KeyPairs);
-membershipTest(m2KeyPairs);
-councilTest(m1KeyPairs, m2KeyPairs);
-storageRoleParametersProposalTest(m1KeyPairs, m2KeyPairs);
+membershipTest(m1Keys);
+membershipTest(m2Keys);
+councilTest(m1Keys, m2Keys);
+storageRoleParametersProposalTest(m1Keys, m2Keys);

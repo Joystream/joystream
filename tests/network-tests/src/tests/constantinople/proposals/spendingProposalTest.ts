@@ -17,20 +17,20 @@ export function spendingProposalTest(m1KeyPairs: KeyringPair[], m2KeyPairs: Keyr
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const spendingBalance: BN = new BN(+process.env.SPENDING_BALANCE!);
   const mintCapacity: BN = new BN(+process.env.COUNCIL_MINTING_CAPACITY!);
-  const defaultTimeout: number = 120000;
+  const defaultTimeout: number = 600000;
 
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
 
   tap.setTimeout(defaultTimeout);
 
-  tap.test('Spending proposal test setup', { bail: true }, async () => {
+  tap.test('Spending proposal test setup', async () => {
     registerJoystreamTypes();
     const provider = new WsProvider(nodeUrl);
     apiWrapper = await ApiWrapper.create(provider);
   });
 
-  tap.test('Spending proposal test', { bail: true }, async () => {
+  tap.test('Spending proposal test', async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
     const description: string = 'spending proposal which is used for API network testing with some mock data';
@@ -80,10 +80,10 @@ export function spendingProposalTest(m1KeyPairs: KeyringPair[], m2KeyPairs: Keyr
   });
 }
 
-const m1KeyPairs: KeyringPair[] = new Array();
-const m2KeyPairs: KeyringPair[] = new Array();
+const m1Keys: KeyringPair[] = new Array();
+const m2Keys: KeyringPair[] = new Array();
 
-membershipTest(m1KeyPairs);
-membershipTest(m2KeyPairs);
-councilTest(m1KeyPairs, m2KeyPairs);
-spendingProposalTest(m1KeyPairs, m2KeyPairs);
+membershipTest(m1Keys);
+membershipTest(m2Keys);
+councilTest(m1Keys, m2Keys);
+spendingProposalTest(m1Keys, m2Keys);

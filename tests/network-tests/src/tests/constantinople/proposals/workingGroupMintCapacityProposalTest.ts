@@ -16,20 +16,20 @@ export function workingGroupMintCapacityProposalTest(m1KeyPairs: KeyringPair[], 
   const nodeUrl: string = process.env.NODE_URL!;
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const mintingCapacityIncrement: BN = new BN(+process.env.MINTING_CAPACITY_INCREMENT!);
-  const defaultTimeout: number = 120000;
+  const defaultTimeout: number = 600000;
 
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
 
   tap.setTimeout(defaultTimeout);
 
-  tap.test('Working group mint capacity proposal test', { bail: true }, async () => {
+  tap.test('Working group mint capacity proposal test', async () => {
     registerJoystreamTypes();
     const provider = new WsProvider(nodeUrl);
     apiWrapper = await ApiWrapper.create(provider);
   });
 
-  tap.test('Mint capacity proposal test', { bail: true }, async () => {
+  tap.test('Mint capacity proposal test', async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
     const description: string = 'spending proposal which is used for API network testing';
@@ -76,10 +76,10 @@ export function workingGroupMintCapacityProposalTest(m1KeyPairs: KeyringPair[], 
   });
 }
 
-const m1KeyPairs: KeyringPair[] = new Array();
-const m2KeyPairs: KeyringPair[] = new Array();
+const m1Keys: KeyringPair[] = new Array();
+const m2Keys: KeyringPair[] = new Array();
 
-membershipTest(m1KeyPairs);
-membershipTest(m2KeyPairs);
-councilTest(m1KeyPairs, m2KeyPairs);
-workingGroupMintCapacityProposalTest(m1KeyPairs, m2KeyPairs);
+membershipTest(m1Keys);
+membershipTest(m2Keys);
+councilTest(m1Keys, m2Keys);
+workingGroupMintCapacityProposalTest(m1Keys, m2Keys);

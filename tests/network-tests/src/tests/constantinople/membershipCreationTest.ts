@@ -25,7 +25,7 @@ export function membershipTest(nKeyPairs: KeyringPair[]) {
 
   tap.setTimeout(defaultTimeout);
 
-  tap.test('Membership creation test setup', { bail: true }, async () => {
+  tap.test('Membership creation test setup', async () => {
     registerJoystreamTypes();
     const provider = new WsProvider(nodeUrl);
     apiWrapper = await ApiWrapper.create(provider);
@@ -44,7 +44,7 @@ export function membershipTest(nKeyPairs: KeyringPair[]) {
     await apiWrapper.transferBalance(sudo, aKeyPair.address, membershipTransactionFee);
   });
 
-  tap.test('Buy membeship is accepted with sufficient funds', { bail: true }, async () => {
+  tap.test('Buy membeship is accepted with sufficient funds', async () => {
     await Promise.all(
       nKeyPairs.map(async (keyPair, index) => {
         await apiWrapper.buyMembership(keyPair, paidTerms, `new_member_${index}${keyPair.address.substring(0, 8)}`);
@@ -57,7 +57,7 @@ export function membershipTest(nKeyPairs: KeyringPair[]) {
     );
   });
 
-  tap.test('Account A can not buy the membership with insufficient funds', { bail: true }, async () => {
+  tap.test('Account A can not buy the membership with insufficient funds', async () => {
     await apiWrapper
       .getBalance(aKeyPair.address)
       .then(balance =>
@@ -72,7 +72,7 @@ export function membershipTest(nKeyPairs: KeyringPair[]) {
       .then(membership => assert(membership.length === 0, 'Account A is a member'));
   });
 
-  tap.test('Account A was able to buy the membership with sufficient funds', { bail: true }, async () => {
+  tap.test('Account A was able to buy the membership with sufficient funds', async () => {
     await apiWrapper.transferBalance(sudo, aKeyPair.address, membershipFee.add(membershipTransactionFee));
     apiWrapper
       .getBalance(aKeyPair.address)
@@ -89,7 +89,3 @@ export function membershipTest(nKeyPairs: KeyringPair[]) {
     apiWrapper.close();
   });
 }
-
-const nKeyPairs: KeyringPair[] = new Array();
-
-membershipTest(nKeyPairs);
