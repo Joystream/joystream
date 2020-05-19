@@ -4,7 +4,7 @@ import { ApiWrapper } from './utils/apiWrapper';
 import { WsProvider, Keyring } from '@polkadot/api';
 import { initConfig } from './utils/config';
 import BN = require('bn.js');
-import { registerJoystreamTypes, Seat } from '@joystream/types';
+import { registerJoystreamTypes, Seat } from '@rome/types';
 import { assert } from 'chai';
 import { v4 as uuid } from 'uuid';
 import { Utils } from './utils/utils';
@@ -28,7 +28,7 @@ export function councilTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]
     apiWrapper = await ApiWrapper.create(provider);
   });
 
-  it('\n\tElecting a council test', async () => {
+  it('Electing a council test', async () => {
     // Setup goes here because M keypairs are generated after before() function
     sudo = keyring.addFromUri(sudoUri);
     let now = await apiWrapper.getBestBlock();
@@ -118,7 +118,7 @@ export function councilTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]
   });
 }
 
-describe('Council integration tests', () => {
+describe.skip('Council integration tests', () => {
   const m1KeyPairs: KeyringPair[] = new Array();
   const m2KeyPairs: KeyringPair[] = new Array();
   membershipTest(m1KeyPairs);

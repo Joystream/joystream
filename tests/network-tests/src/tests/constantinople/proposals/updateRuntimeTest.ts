@@ -1,11 +1,11 @@
-import { initConfig } from '../../../utils/config';
+import { initConfig } from '../utils/config';
 import { Keyring, WsProvider } from '@polkadot/api';
 import { Bytes } from '@polkadot/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { membershipTest } from '../membershipCreationTest';
 import { councilTest } from '../electingCouncilTest';
 import { registerJoystreamTypes } from '@joystream/types';
-import { ApiWrapper } from '../../../utils/apiWrapper';
+import { ApiWrapper } from '../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN = require('bn.js');
 

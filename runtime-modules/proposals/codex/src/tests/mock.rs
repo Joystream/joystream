@@ -141,8 +141,8 @@ parameter_types! {
 impl proposal_discussion::Trait for Test {
     type Event = ();
     type PostAuthorOriginValidator = ();
-    type ThreadId = u32;
-    type PostId = u32;
+    type ThreadId = u64;
+    type PostId = u64;
     type MaxPostEditionNumber = MaxPostEditionNumber;
     type ThreadTitleLengthLimit = ThreadTitleLengthLimit;
     type PostLengthLimit = PostLengthLimit;

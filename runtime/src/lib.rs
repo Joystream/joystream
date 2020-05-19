@@ -94,6 +94,22 @@ pub type Moment = u64;
 /// Credential type
 pub type Credential = u64;
 
+/// Represents a thread identifier for both Forum and Proposals Discussion
+///
+/// Note: Both modules expose type names ThreadId and PostId (which are defined on their Trait) and
+/// used in state storage and dispatchable method's argument types,
+/// and are therefore part of the public API/metadata of the runtime.
+/// In the currenlty version the polkadot-js/api that is used and is compatible with the runtime,
+/// the type registry has flat namespace and its not possible
+/// to register identically named types from different modules, separately. And so we MUST configure
+/// the underlying types to be identicaly to avoid issues with encoding/decoding these types on the client side.
+pub type ThreadId = u64;
+
+/// Represents a post identifier for both Forum and Proposals Discussion
+///
+/// See the Note about ThreadId
+pub type PostId = u64;
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -176,7 +192,7 @@ pub fn native_version() -> NativeVersion {
 
 parameter_types! {
     pub const BlockHashCount: BlockNumber = 250;
-    pub const MaximumBlockWeight: Weight = 1_000_000;
+    pub const MaximumBlockWeight: Weight = 1_000_000_000;
     pub const AvailableBlockRatio: Perbill = Perbill::from_percent(75);
     pub const MaximumBlockLength: u32 = 5 * 1024 * 1024;
     pub const Version: RuntimeVersion = VERSION;
@@ -784,6 +800,8 @@ impl forum::ForumUserRegistry<AccountId> for ShimMembershipRegistry {
 impl forum::Trait for Runtime {
     type Event = Event;
     type MembershipRegistry = ShimMembershipRegistry;
+    type ThreadId = ThreadId;
+    type PostId = PostId;
 }
 
 impl migration::Trait for Runtime {
@@ -845,8 +863,8 @@ parameter_types! {
 impl proposals_discussion::Trait for Runtime {
     type Event = Event;
     type PostAuthorOriginValidator = MembershipOriginValidator<Self>;
-    type ThreadId = u32;
-    type PostId = u32;
+    type ThreadId = ThreadId;
+    type PostId = PostId;
     type MaxPostEditionNumber = ProposalMaxPostEditionNumber;
     type ThreadTitleLengthLimit = ProposalThreadTitleLengthLimit;
     type PostLengthLimit = ProposalPostLengthLimit;

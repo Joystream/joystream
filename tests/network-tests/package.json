@@ -4,14 +4,18 @@
   "license": "GPL-3.0-only",
   "scripts": {
     "build": "tsc --build tsconfig.json",
+<<<<<<< HEAD
     "test": "mocha -r ts-node/register src/tests/constantinople/proposals/* --reporter tap",
     "test-mocha": "mocha -r ts-node/register src/tests/constantinople/proposals/spendingProposalTest.ts",
+=======
+    "test": "mocha -r ts-node/register src/tests/constantinople/*",
+>>>>>>> development
     "test-migration": "mocha -r ts-node/register src/tests/rome/* && mocha -r ts-node/register src/tests/constantinople/*",
     "lint": "tslint --project tsconfig.json",
     "prettier": "prettier --write ./src"
   },
   "dependencies": {
-    "@joystream/types": "../joystream-apps/packages/joy-types",
+    "@joystream/types": "",
     "@rome/types@npm:@joystream/types": "^0.7.0",
     "@polkadot/api": "^0.96.1",
     "@polkadot/keyring": "^1.7.0-beta.5",

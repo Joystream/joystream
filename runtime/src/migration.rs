@@ -2,7 +2,6 @@
 #![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
 
 use crate::VERSION;
-use common::currency::BalanceOf;
 use rstd::prelude::*;
 use sr_primitives::{print, traits::Zero};
 use srml_support::{debug, decl_event, decl_module, decl_storage};
@@ -32,42 +31,8 @@ impl<T: Trait> Module<T> {
             );
         }
 
-        // Reset working group mint capacity
-        if let Err(err) = content_working_group::Module::<T>::set_mint_capacity(
-            system::RawOrigin::Root.into(),
-            minting::BalanceOf::<T>::zero(),
-        ) {
-            debug::warn!(
-                "Failed to reset mint for working group during migration: {:?}",
-                err
-            );
-        }
-
-        // Set Storage Role reward to zero
-        if let Some(parameters) =
-            roles::actors::Parameters::<T>::get(roles::actors::Role::StorageProvider)
-        {
-            if let Err(err) = roles::actors::Module::<T>::set_role_parameters(
-                system::RawOrigin::Root.into(),
-                roles::actors::Role::StorageProvider,
-                roles::actors::RoleParameters {
-                    reward: BalanceOf::<T>::zero(),
-                    ..parameters
-                },
-            ) {
-                debug::warn!(
-                    "Failed to set zero reward for storage role during migration: {:?}",
-                    err
-                );
-            }
-        }
-
+        // Initialise the proposal system various periods
         proposals_codex::Module::<T>::set_default_config_values();
-
-        Self::deposit_event(RawEvent::Migrated(
-            <system::Module<T>>::block_number(),
-            VERSION.spec_version,
-        ));
     }
 }
 
