@@ -33,11 +33,6 @@ impl<T: Trait> Module<T> {
 
         // Initialise the proposal system various periods
         proposals_codex::Module::<T>::set_default_config_values();
-
-        Self::deposit_event(RawEvent::Migrated(
-            <system::Module<T>>::block_number(),
-            VERSION.spec_version,
-        ));
     }
 }
 
