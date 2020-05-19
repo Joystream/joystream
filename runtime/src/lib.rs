@@ -361,7 +361,7 @@ srml_staking_reward_curve::build! {
         max_inflation: 0_300_000,
         ideal_stake: 0_300_000,
         falloff: 0_050_000,
-        max_piece_count: 40,
+        max_piece_count: 100,
         test_precision: 0_005_000,
     );
 }
