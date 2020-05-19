@@ -93,7 +93,6 @@ pub fn perform_lead_auth<T: ActorAuthenticator>(origin: T::Origin) -> dispatch::
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct CuratorGroup<T: ActorAuthenticator> {
-
     curators: BTreeSet<T::CuratorId>,
 
     active: bool,
@@ -121,9 +120,12 @@ impl<T: ActorAuthenticator> CuratorGroup<T> {
         self.active = is_active
     }
 
-    pub fn add_curator(&mut self, curator_id: T::CuratorId) {
-        // TODO check security max len constraint
-        self.curators.insert(curator_id);
+    pub fn get_curators(&self) -> &BTreeSet<T::CuratorId> {
+        &self.curators
+    }
+
+    pub fn get_curators_mut(&mut self) -> &mut BTreeSet<T::CuratorId> {
+        &mut self.curators
     }
 }
 

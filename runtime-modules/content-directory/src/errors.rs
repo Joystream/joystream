@@ -100,3 +100,5 @@ pub const ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR: &str =
     "Given class property type is locked for updating";
 pub const ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED: &str =
     "Class maintainers limit reached";
+pub const ERROR_NUMBER_OF_CURATORS_PER_GROUP_LIMIT_REACHED: &str =
+    "Max number of curators per group limit reached";

@@ -104,6 +104,9 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug {
     /// Maximum number of maintainers per class constraint
     type NumberOfMaintainersConstraint: Get<MaxNumber>;
 
+    /// Maximum number of curators per group constraint
+    type NumberOfCuratorsConstraint: Get<MaxNumber>;
+
     type NumberOfSchemasConstraint: Get<MaxNumber>;
 
     type NumberOfPropertiesConstraint: Get<MaxNumber>;
@@ -461,6 +464,47 @@ decl_module! {
                     class_permissions.get_maintainers_mut().remove(&curator_group_id);
                 })
             };
+            Ok(())
+        }
+
+        pub fn add_curator(
+            origin,
+            curator_group_id: T::CuratorGroupId,
+            curator_id: T::CuratorId,
+        ) -> dispatch::Result {
+            perform_lead_auth::<T>(origin)?;
+
+            Self::ensure_curator_group_exists(&curator_group_id)?;
+            Self::ensure_max_number_of_curators_limit_not_reached(curator_group_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
+                curator_group.get_curators_mut().insert(curator_id);
+            });
+
+            Ok(())
+        }
+
+        pub fn remove_curator(
+            origin,
+            curator_group_id: T::CuratorGroupId,
+            curator_id: T::CuratorId,
+        ) -> dispatch::Result {
+            perform_lead_auth::<T>(origin)?;
+
+            Self::ensure_curator_group_exists(&curator_group_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
+                curator_group.get_curators_mut().remove(&curator_id);
+            });
+
             Ok(())
         }
 
@@ -1214,7 +1258,6 @@ impl<T: Trait> Module<T> {
 
         // If property values should be updated:
         if updated {
-            
             //
             // == MUTATION SAFE ==
             //
@@ -1504,6 +1547,17 @@ impl<T: Trait> Module<T> {
         for curator_group in curator_groups {
             Self::ensure_curator_group_exists(curator_group)?;
         }
+        Ok(())
+    }
+
+    pub fn ensure_max_number_of_curators_limit_not_reached(
+        group_id: T::CuratorGroupId,
+    ) -> dispatch::Result {
+        let curator_group = Self::curator_group_by_id(group_id);
+        ensure!(
+            curator_group.get_curators().len() < T::NumberOfCuratorsConstraint::get() as usize,
+            ERROR_NUMBER_OF_CURATORS_PER_GROUP_LIMIT_REACHED
+        );
         Ok(())
     }
 
