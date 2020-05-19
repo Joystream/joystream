@@ -42,7 +42,7 @@ script:
           joystream/rust-raspberry \
         build --release
       sudo chmod a+r ${TRAVIS_BUILD_DIR}/target/${TARGET}/release/joystream-node
-    else if [ "$TARGET" = "wasm-blob" ]
+    elif [ "$TARGET" = "wasm-blob" ]
     then
       docker build --tag joystream/node \
         --file ./devops/dockerfiles/node-and-runtime/Dockerfile \
