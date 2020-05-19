@@ -18,15 +18,20 @@ export let makeStyles = ({
       flex-basis: content;
       padding: ${spacing.m} ${spacing.l};
       cursor: pointer;
-      border: 1px solid white;
+      border-bottom: 3px solid ${colors.gray[900]};
+      min-width: 100px;
+      color: ${colors.gray[200]};
+      text-align: center;
     `,
     activeTab: css`
       flex-basis: content;
       padding: ${spacing.m} ${spacing.l};
       cursor: pointer;
-      border: 1px solid white;
-      color: black;
-      background-color: white;
+      color: ${colors.white};
+      background-color: transparent;
+      border-bottom: 3px solid ${colors.blue[500]};
+      min-width: 100px;
+      text-align: center;
     `
   }
 }
