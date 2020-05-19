@@ -28,6 +28,7 @@ pub mod bureaucracy_errors {
         "Reward policy has invalid next payment block number";
     pub static MSG_FILL_WORKER_OPENING_MINT_DOES_NOT_EXIST: &str =
         "Working group mint does not exist";
+    pub static MSG_RELATIONSHIP_MUST_EXIST: &str = "Relationship must exist";
 }
 /*
  * The errors below, while in many cases encoding similar outcomes,
@@ -118,10 +119,16 @@ pub static MSG_RECURRING_REWARDS_REWARD_SOURCE_NOT_FOUND: &str =
     "Recipient reward source not found";
 pub static MSG_RECURRING_REWARDS_REWARD_RELATIONSHIP_NOT_FOUND: &str =
     "Reward relationship not found";
+pub static MSG_STAKING_ERROR_STAKE_NOT_FOUND: &str = "Stake not found";
+pub static MSG_STAKING_ERROR_UNSTAKING_PERIOD_SHOULD_BE_GREATER_THAN_ZERO: &str =
+    "Unstaking period should be greater than zero";
+pub static MSG_STAKING_ERROR_ALREADY_UNSTAKING: &str = "Already unstaking";
+pub static MSG_STAKING_ERROR_NOT_STAKED: &str = "Not staked";
+pub static MSG_STAKING_ERROR_CANNOT_UNSTAKE_WHILE_SLASHES_ONGOING: &str =
+    "Cannot unstake while slashes ongoing";
 
 /// Error wrapper for external module error conversions
 pub struct WrappedError<E> {
-    // can this be made generic, or does that undermine the whole orhpan rule spirit?
     pub error: E,
 }
 
@@ -131,10 +138,6 @@ macro_rules! ensure_on_wrapped_error {
         { $call }.map_err(|err| crate::WrappedError { error: err })
     }};
 }
-
-// Add macro here to make this
-//derive_from_impl(hiring::BeginAcceptingApplicationsError)
-//derive_from_impl(hiring::BeginAcceptingApplicationsError)
 
 impl rstd::convert::From<WrappedError<hiring::BeginAcceptingApplicationsError>> for &str {
     fn from(wrapper: WrappedError<hiring::BeginAcceptingApplicationsError>) -> Self {
@@ -313,6 +316,34 @@ impl rstd::convert::From<WrappedError<recurringrewards::RewardsError>> for &str 
             }
             recurringrewards::RewardsError::RewardRelationshipNotFound => {
                 MSG_RECURRING_REWARDS_REWARD_RELATIONSHIP_NOT_FOUND
+            }
+        }
+    }
+}
+
+impl rstd::convert::From<WrappedError<stake::StakeActionError<stake::InitiateUnstakingError>>>
+    for &str
+{
+    fn from(wrapper: WrappedError<stake::StakeActionError<stake::InitiateUnstakingError>>) -> Self {
+        match wrapper.error {
+            stake::StakeActionError::StakeNotFound => MSG_STAKING_ERROR_STAKE_NOT_FOUND,
+            stake::StakeActionError::Error(initiate_unstaking_error) => {
+                match initiate_unstaking_error {
+                    stake::InitiateUnstakingError::UnstakingPeriodShouldBeGreaterThanZero => {
+                        MSG_STAKING_ERROR_UNSTAKING_PERIOD_SHOULD_BE_GREATER_THAN_ZERO
+                    }
+                    stake::InitiateUnstakingError::UnstakingError(unstaking_error) => {
+                        match unstaking_error {
+                            stake::UnstakingError::AlreadyUnstaking => {
+                                MSG_STAKING_ERROR_ALREADY_UNSTAKING
+                            }
+                            stake::UnstakingError::NotStaked => MSG_STAKING_ERROR_NOT_STAKED,
+                            stake::UnstakingError::CannotUnstakeWhileSlashesOngoing => {
+                                MSG_STAKING_ERROR_CANNOT_UNSTAKE_WHILE_SLASHES_ONGOING
+                            }
+                        }
+                    }
+                }
             }
         }
     }

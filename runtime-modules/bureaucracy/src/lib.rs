@@ -360,7 +360,7 @@ decl_module! {
                 &active_worker,
                 &WorkerExitInitiationOrigin::Worker,
                 &rationale_text
-            );
+            )?;
         }
 
         // ****************** Hiring flow **********************
@@ -982,25 +982,20 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         worker: &WorkerOf<T>,
         exit_initiation_origin: &WorkerExitInitiationOrigin,
         rationale_text: &[u8],
-    ) {
+    ) -> Result<(), &'static str> {
         // Stop any possible recurring rewards
-        let _did_deactivate_recurring_reward = if let Some(ref reward_relationship_id) =
-            worker.reward_relationship
-        {
+
+        if let Some(reward_relationship_id) = worker.reward_relationship {
             // Attempt to deactivate
-            recurringrewards::Module::<T>::try_to_deactivate_relationship(*reward_relationship_id)
-                .expect("Relationship must exist")
-        } else {
-            // Did not deactivate, there was no reward relationship!
-            false
-        };
+            recurringrewards::Module::<T>::try_to_deactivate_relationship(reward_relationship_id)
+                .map_err(|_| MSG_RELATIONSHIP_MUST_EXIST)?;
+        }; // else: Did not deactivate, there was no reward relationship!
 
         // When the worker is staked, unstaking must first be initiated,
         // otherwise they can be terminated right away.
 
         // Create exit summary for this termination
         let current_block = <system::Module<T>>::block_number();
-
         let worker_exit_summary =
             WorkerExitSummary::new(exit_initiation_origin, &current_block, rationale_text);
 
@@ -1044,11 +1039,15 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             UnstakerByStakeId::<T, I>::insert(directions.0, unstaker);
 
             // Unstake
-            stake::Module::<T>::initiate_unstaking(&directions.0, directions.1)
-                .expect("Unstaking must be possible at this time");
+            ensure_on_wrapped_error!(stake::Module::<T>::initiate_unstaking(
+                &directions.0,
+                directions.1
+            ))?;
         }
 
         // Trigger event
         Self::deposit_event(event);
+
+        Ok(())
     }
 }

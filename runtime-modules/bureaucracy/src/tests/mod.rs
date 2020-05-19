@@ -13,6 +13,70 @@ use srml_support::{StorageLinkedMap, StorageValue};
 use std::collections::{BTreeMap, BTreeSet};
 use system::{EventRecord, Phase, RawOrigin};
 
+struct LeaveWorkerRoleFixture {
+    worker_id: u64,
+    origin: RawOrigin<u64>,
+}
+
+impl LeaveWorkerRoleFixture {
+    fn default_for_worker_id(worker_id: u64) -> Self {
+        LeaveWorkerRoleFixture {
+            worker_id,
+            origin: RawOrigin::Signed(1),
+        }
+    }
+    fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        LeaveWorkerRoleFixture { origin, ..self }
+    }
+
+    fn call_and_assert(&self, expected_result: Result<(), &str>) {
+        self.call_and_assert_impl(expected_result, false);
+    }
+
+    fn call_and_assert_with_unstaking(&self, expected_result: Result<(), &str>) {
+        self.call_and_assert_impl(expected_result, true);
+    }
+
+    fn call_and_assert_impl(&self, expected_result: Result<(), &str>, expect_unstaking: bool) {
+        let rationale_text = b"rationale_text".to_vec();
+        let actual_result = Bureaucracy1::leave_worker_role(
+            self.origin.clone().into(),
+            self.worker_id,
+            rationale_text.clone(),
+        );
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            let worker = Bureaucracy1::worker_by_id(self.worker_id);
+
+            let worker_exit_summary = WorkerExitSummary {
+                origin: WorkerExitInitiationOrigin::Worker,
+                initiated_at_block_number: 1,
+                rationale_text,
+            };
+
+            let expected_worker_stage = if expect_unstaking {
+                WorkerRoleStage::Unstaking(worker_exit_summary)
+            } else {
+                WorkerRoleStage::Exited(worker_exit_summary)
+            };
+
+            assert_eq!(worker.stage, expected_worker_stage);
+
+            let stake_id = 0;
+            if expect_unstaking {
+                assert!(<crate::UnstakerByStakeId<Test, crate::Instance1>>::exists(
+                    stake_id
+                ));
+            } else {
+                assert!(!<crate::UnstakerByStakeId<Test, crate::Instance1>>::exists(
+                    stake_id
+                ));
+            }
+        }
+    }
+}
+
 struct UpdateWorkerRewardAccountFixture {
     worker_id: u64,
     new_role_account_id: u64,
@@ -1591,31 +1655,85 @@ fn update_worker_reward_account_fails_with_invalid_origin_signed_account() {
 }
 
 fn fill_default_worker_position() -> u64 {
-    fill_worker_position(Some(RewardPolicy {
-        amount_per_payout: 1000,
-        next_payment_at_block: 20,
-        payout_interval: None,
-    }))
+    fill_worker_position(
+        Some(RewardPolicy {
+            amount_per_payout: 1000,
+            next_payment_at_block: 20,
+            payout_interval: None,
+        }),
+        None,
+    )
 }
 
 fn fill_worker_position_with_no_reward() -> u64 {
-    fill_worker_position(None)
+    fill_worker_position(None, None)
 }
 
-fn fill_worker_position(reward_policy: Option<RewardPolicy<u64, u64>>) -> u64 {
+fn fill_worker_position_with_stake(stake: u64) -> u64 {
+    fill_worker_position(
+        Some(RewardPolicy {
+            amount_per_payout: 1000,
+            next_payment_at_block: 20,
+            payout_interval: None,
+        }),
+        Some(stake),
+    )
+}
+
+/*
+
+        let add_worker_opening_fixture =
+            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
+                role_staking_policy: Some(hiring::StakingPolicy {
+                    amount: 10,
+                    amount_mode: hiring::StakingAmountLimitMode::AtLeast,
+                    crowded_out_unstaking_period_length: None,
+                    review_period_expired_unstaking_period_length: None,
+                }),
+                ..OpeningPolicyCommitment::default()
+            });
+        add_worker_opening_fixture.call_and_assert(Ok(()));
+
+        let opening_id = 0; // newly created opening
+
+        let appy_on_worker_opening_fixture =
+            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id).with_role_stake(10);
+        appy_on_worker_opening_fixture.call_and_assert(Ok(()));
+*/
+
+fn fill_worker_position(
+    reward_policy: Option<RewardPolicy<u64, u64>>,
+    role_stake: Option<u64>,
+) -> u64 {
     let lead_account_id = 1;
 
     SetLeadFixture::set_lead(lead_account_id);
     increase_total_balance_issuance_using_account_id(1, 10000);
     setup_members(2);
 
-    let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
+    let mut add_worker_opening_fixture = AddWorkerOpeningFixture::default();
+    if let Some(stake) = role_stake.clone() {
+        add_worker_opening_fixture =
+            add_worker_opening_fixture.with_policy_commitment(OpeningPolicyCommitment {
+                role_staking_policy: Some(hiring::StakingPolicy {
+                    amount: stake,
+                    amount_mode: hiring::StakingAmountLimitMode::AtLeast,
+                    crowded_out_unstaking_period_length: None,
+                    review_period_expired_unstaking_period_length: None,
+                }),
+                ..OpeningPolicyCommitment::default()
+            });
+    }
+
     add_worker_opening_fixture.call_and_assert(Ok(()));
 
     let opening_id = 0; // newly created opening
 
-    let appy_on_worker_opening_fixture =
+    let mut appy_on_worker_opening_fixture =
         ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
+    if let Some(stake) = role_stake.clone() {
+        appy_on_worker_opening_fixture = appy_on_worker_opening_fixture.with_role_stake(stake);
+    }
     appy_on_worker_opening_fixture.call_and_assert(Ok(()));
 
     let application_id = 0; // newly created application
@@ -1688,5 +1806,103 @@ fn update_worker_reward_account_fails_with_no_recurring_reward() {
             UpdateWorkerRewardAccountFixture::default_with_ids(worker_id, lead_account_id);
 
         update_worker_account_fixture.call_and_assert(Err(crate::errors::MSG_WORKER_HAS_NO_REWARD));
+    });
+}
+
+#[test]
+fn leave_worker_role_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_default_worker_position();
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
+
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkerExited(worker_id));
+    });
+}
+
+#[test]
+fn leave_worker_role_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let leave_worker_role_fixture =
+            LeaveWorkerRoleFixture::default_for_worker_id(1).with_origin(RawOrigin::None);
+
+        leave_worker_role_fixture.call_and_assert(Err("RequireSignedOrigin"));
+    });
+}
+
+#[test]
+fn leave_worker_role_fails_with_invalid_origin_signed_account() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_default_worker_position();
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
+            .with_origin(RawOrigin::Signed(2));
+
+        leave_worker_role_fixture
+            .call_and_assert(Err(crate::errors::MSG_SIGNER_IS_NOT_WORKER_ROLE_ACCOUNT));
+    });
+}
+
+#[test]
+fn leave_worker_role_fails_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        let invalid_worker_id = 1;
+        fill_default_worker_position();
+
+        let leave_worker_role_fixture =
+            LeaveWorkerRoleFixture::default_for_worker_id(invalid_worker_id);
+
+        leave_worker_role_fixture.call_and_assert(Err(crate::errors::MSG_WORKER_DOES_NOT_EXIST));
+    });
+}
+
+#[test]
+fn leave_worker_role_fails_with_inactive_worker() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_default_worker_position();
+
+        let mut worker = Bureaucracy1::worker_by_id(worker_id);
+        worker.stage = WorkerRoleStage::Exited(WorkerExitSummary {
+            origin: WorkerExitInitiationOrigin::Lead,
+            initiated_at_block_number: 333,
+            rationale_text: Vec::new(),
+        });
+
+        <crate::WorkerById<Test, crate::Instance1>>::insert(worker_id, worker);
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
+
+        leave_worker_role_fixture.call_and_assert(Err(crate::errors::MSG_WORKER_IS_NOT_ACTIVE));
+    });
+}
+
+#[test]
+fn leave_worker_role_fails_with_invalid_recurring_reward_relationships() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_default_worker_position();
+
+        let mut worker = Bureaucracy1::worker_by_id(worker_id);
+        worker.reward_relationship = Some(2);
+
+        <crate::WorkerById<Test, crate::Instance1>>::insert(worker_id, worker);
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
+
+        leave_worker_role_fixture.call_and_assert(Err(crate::MSG_RELATIONSHIP_MUST_EXIST));
+    });
+}
+
+#[test]
+fn leave_worker_role_succeeds_with_stakes() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_worker_position_with_stake(100);
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
+
+        leave_worker_role_fixture.call_and_assert_with_unstaking(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkerUnstaking(worker_id));
     });
 }
