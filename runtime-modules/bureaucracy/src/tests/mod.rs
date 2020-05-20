@@ -1,6 +1,5 @@
 mod mock;
 
-use crate::constraints::InputValidationLengthConstraint;
 use crate::errors::bureaucracy_errors::MSG_ONLY_WORKERS_CAN_UNSTAKE;
 use crate::tests::mock::Test;
 use crate::types::{
@@ -9,6 +8,7 @@ use crate::types::{
     WorkerRoleStakeProfile, WorkingGroupUnstaker,
 };
 use crate::{Instance1, RawEvent};
+use common::constraints::InputValidationLengthConstraint;
 use mock::{build_test_externalities, Balances, Bureaucracy1, Membership, System, TestEvent};
 use srml_support::{StorageLinkedMap, StorageValue};
 use std::collections::{BTreeMap, BTreeSet};

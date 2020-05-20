@@ -1,7 +1,6 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-mod constraints;
 #[cfg(test)]
 mod tests;
 mod types;
@@ -18,7 +17,7 @@ use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure};
 use system::{ensure_root, ensure_signed, RawOrigin};
 
 use crate::types::{WorkerExitInitiationOrigin, WorkerExitSummary, WorkingGroupUnstaker};
-use constraints::InputValidationLengthConstraint;
+use common::constraints::InputValidationLengthConstraint;
 use errors::bureaucracy_errors::*;
 use errors::WrappedError;
 use types::{

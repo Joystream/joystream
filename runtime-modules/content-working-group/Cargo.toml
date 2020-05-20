@@ -22,6 +22,7 @@ std = [
     'versioned_store/std',
     'versioned_store_permissions/std',
     'recurringrewards/std',
+    'common/std',
 ]
 
 
@@ -106,6 +107,11 @@ default_features = false
 package = 'substrate-membership-module'
 path = '../membership'
 
+[dependencies.common]
+default_features = false
+package = 'substrate-common-module'
+path = '../common'
+
 [dev-dependencies.runtime-io]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
@@ -123,8 +129,3 @@ default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-timestamp'
 rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dev-dependencies.common]
-default_features = false
-package = 'substrate-common-module'
-path = '../common'
