@@ -85,11 +85,7 @@ function CurrentList(props: Props): React.ReactElement<Props> {
 
   return (
     <div>
-      <FilterOverlay
-        style={{
-          top: myAccounts.length ? '5.5rem' : '5px'
-        }}
-      >
+      <FilterOverlay>
         <Dropdown
           onChange={setFilter}
           options={[

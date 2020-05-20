@@ -33,7 +33,7 @@ type OuterLinkProps = {
   icon?: SemanticICONS;
 };
 
-function OuterLink({ url, title, icon = 'external alternate' }: OuterLinkProps) {
+export function OuterLink({ url, title, icon = 'external alternate' }: OuterLinkProps) {
   return (
     <Menu.Item className="apps--SideBar-Item">
       <a className="apps--SideBar-Item-NavLink" href={url} target="_blank">
@@ -44,68 +44,6 @@ function OuterLink({ url, title, icon = 'external alternate' }: OuterLinkProps) 
   );
 }
 
-/*
-interface State {
-  modals: Record<string, boolean>;
-}
-
-class SideBar extends React.PureComponent<Props, State> {
-  public state: State;
-
-  public constructor (props: Props) {
-    super(props);
-
-    // setup modals for each of the actual modal routes
-    this.state = {
-      modals: routing.routes.reduce((result, route): Record<string, boolean> => {
-        if (route && route.Modal) {
-          result[route.name] = false;
-        }
-
-        return result;
-      }, { network: false } as unknown as Record<string, boolean>)
-    };
-  }
-
-  public render (): React.ReactNode {
-    const { className, handleResize, isCollapsed, toggleMenu, menuOpen } = this.props;
-
-    return (
-      <Responsive
-        onUpdate={handleResize}
-        className={classes(className, 'apps-SideBar-Wrapper', isCollapsed ? 'collapsed' : 'expanded')}
-      >
-        <ChainImg
-          className={`toggleImg ${menuOpen ? 'closed' : 'open delayed'}`}
-          onClick={toggleMenu}
-        />
-        {this.renderModals()}
-        {this.state.modals.network && (
-          <NetworkModal onClose={this.toggleNetworkModal}/>
-        )}
-        <div className='apps--SideBar'>
-          <Menu
-            secondary
-            vertical
-          >
-            <div className='apps-SideBar-Scroll'>
-              {this.renderJoystreamLogo()}
-              {this.renderRoutes()}
-              <Menu.Divider hidden />
-
-              <OuterLink url='https://testnet.joystream.org/faucet' title='Free Tokens' />
-              <OuterLink url='https://blog.joystream.org/acropolis-incentives/' title='Earn Monero' />
-              <Menu.Divider hidden />
-              {
-                isCollapsed
-                  ? undefined
-                  : <NodeInfo />
-              }
-            </div>
-            {this.renderCollapse()}
-          </Menu>
-          <Responsive minWidth={SIDEBAR_MENU_THRESHOLD}>
-*/
 function SideBar({
   className,
   collapse,
@@ -163,10 +101,10 @@ function SideBar({
                   <Menu.Divider hidden key={index} />
                 )
             )}
-            <Menu.Divider hidden />
+            {/* <Menu.Divider hidden />
             <OuterLink url='https://joystream.org/testnet' title='Tokenomics' />
             <OuterLink url='https://blog.joystream.org/constantinople-incentives/' title='Earn Monero' />
-            <Menu.Divider hidden />
+            <Menu.Divider hidden /> */}
           </div>
           <Responsive
             minWidth={SIDEBAR_MENU_THRESHOLD}

@@ -4,7 +4,7 @@
 
 import { Routing, Routes } from './types';
 
-// import appSettings from '@polkadot/joy-settings/';
+import appSettings from '@polkadot/joy-settings/';
 
 import election from './joy-election';
 import forum from './joy-forum';
@@ -14,7 +14,7 @@ import members from './joy-members';
 import proposals from './joy-proposals';
 import roles from './joy-roles';
 import storageRoles from './joy-storage';
-import pages from './joy-pages';
+// import pages from './joy-pages';
 
 // import template from './123code';
 import accounts from './accounts';
@@ -24,20 +24,27 @@ import addressbook from './addressbook';
 // import council from './council';
 // import dashboard from './dashboard';
 // import democracy from './democracy';
-// import explorer from './explorer';
+import explorer from './explorer';
 import extrinsics from './extrinsics';
 // import genericAsset from './generic-asset';
-// import js from './js';
+import js from './js';
 // import parachains from './parachains';
 import settings from './settings';
 import staking from './staking';
 import storage from './storage';
 import sudo from './sudo';
-// import toolbox from './toolbox';
+import toolbox from './toolbox';
 import transfer from './transfer';
 // import treasury from './treasury';
 
-const routes: Routes = ([] as Routes).concat(
+let routes: Routes = ([] as Routes);
+
+if (appSettings.isFullMode) {
+  routes = routes.concat(explorer);
+}
+
+// Basic routes
+routes = routes.concat(
   staking,
   roles,
   storageRoles,
@@ -51,14 +58,24 @@ const routes: Routes = ([] as Routes).concat(
   null,
   election,
   proposals,
-  null,
-  storage,
-  extrinsics,
-  sudo,
-  settings,
-  null,
-  pages
+  null
 );
+
+if (appSettings.isFullMode) {
+  routes = routes.concat(
+    storage,
+    extrinsics,
+    sudo,
+    js,
+    toolbox,
+    null
+  )
+}
+
+routes = routes.concat(
+  settings
+);
+
 const setup: Routing = {
   default: 'staking',
   routes

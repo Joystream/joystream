@@ -6,6 +6,7 @@ import { BareProps } from './types';
 
 import React from 'react';
 import styled from 'styled-components';
+import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
 
 import media from './media';
 
@@ -13,7 +14,10 @@ interface Props extends BareProps {
   children: React.ReactNode;
 }
 
-function FilterOverlay({ children, className, style }: Props): React.ReactElement<Props> {
+function FilterOverlay({ children, className }: Props): React.ReactElement<Props> {
+  const { allAccounts } = useMyMembership();
+  const hasAccount = allAccounts && Object.keys(allAccounts).length;
+  const style = { top: hasAccount ? '5.5rem' : '5px' };
   return (
     <div className={className} style={style}>
       {children}
