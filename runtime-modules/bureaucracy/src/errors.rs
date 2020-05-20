@@ -1,6 +1,96 @@
 use membership::members;
 
-//TODO: convert messages to the decl_error! entries
+use srml_support::{decl_error};
+
+decl_error! {
+    /// Discussion module predefined errors
+    pub enum Error {
+        /// Current lead is not set.
+        CurrentLeadNotSet,
+
+        /// Not a lead account.
+        IsNotLeadAccount,
+
+        /// Opening text too short.
+        OpeningTextTooShort,
+
+        /// Opening text too long.
+        OpeningTextTooLong,
+
+        /// Worker opening does not exist.
+        WorkerOpeningDoesNotExist,
+
+        /// Insufficient balance to apply.
+        InsufficientBalanceToApply,
+
+        /// Unsigned origin.
+        MembershipUnsignedOrigin,
+
+        /// Member id is invalid.
+        MembershipInvalidMemberId,
+
+        /// Signer does not match controller account.
+        ApplyOnWorkerOpeningSignerNotControllerAccount,
+
+        /// Origin must be controller or root account of member.
+        OriginIsNeitherMemberControllerOrRoot,
+
+        /// Member already has an active application on the opening.
+        MemberHasActiveApplicationOnOpening,
+
+        /// Worker application text too long.
+        WorkerApplicationTextTooLong,
+
+        /// Worker application text too short.
+        WorkerApplicationTextTooShort,
+
+        /// Insufficient balance to cover stake.
+        InsufficientBalanceToCoverStake,
+
+        /// Origin is not applicant.
+        OriginIsNotApplicant,
+
+        /// Worker application does not exist.
+        WorkerApplicationDoesNotExist,
+
+        /// Successful worker application does not exist.
+        SuccessfulWorkerApplicationDoesNotExist,
+
+        /// Reward policy has invalid next payment block number.
+        FillWorkerOpeningInvalidNextPaymentBlock,
+
+        /// Working group mint does not exist.
+        FillWorkerOpeningMintDoesNotExist,
+
+        ///Relationship must exist.
+        RelationshipMustExist,
+
+        /// Worker exit rationale text is too long.
+        WorkerExitRationaleTextTooLong,
+
+        /// Worker exit rationale text is too short.
+        WorkerExitRationaleTextTooShort,
+
+        /// Unstaker does not exist.
+        UnstakerDoesNotExist,
+
+        /// Only workers can unstake.
+        OnlyWorkersCanUnstake,
+
+        /// Worker must be in unstaking stage.
+        WorkerIsNotUnstaking,
+    }
+}
+
+impl From<system::Error> for Error {
+    fn from(error: system::Error) -> Self {
+        match error {
+            system::Error::Other(msg) => Error::Other(msg),
+            _ => Error::Other(error.into()),
+        }
+    }
+}
+
 pub mod bureaucracy_errors {
     pub static MSG_CURRENT_LEAD_NOT_SET: &str = "Current lead is not set";
     pub static MSG_IS_NOT_LEAD_ACCOUNT: &str = "Not a lead account";
@@ -12,30 +102,19 @@ pub mod bureaucracy_errors {
     pub static MSG_MEMBERSHIP_INVALID_MEMBER_ID: &str = "Member id is invalid";
     pub static MSG_APPLY_ON_WORKER_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT: &str =
         "Signer does not match controller account";
-    pub static MSG_ORIGIN_IS_NEITHER_MEMBER_CONTROLLER_OR_ROOT: &str =
-        "Origin must be controller or root account of member";
     pub static MSG_MEMBER_HAS_ACTIVE_APPLICATION_ON_OPENING: &str =
         "Member already has an active application on the opening";
     pub static MSG_WORKER_APPLICATION_TEXT_TOO_LONG: &str = "Worker application text too long";
     pub static MSG_WORKER_APPLICATION_TEXT_TOO_SHORT: &str = "Worker application text too short";
     pub static MSG_INSUFFICIENT_BALANCE_TO_COVER_STAKE: &str =
         "Insuffieicnt balance to cover stake";
-    pub static MSG_ORIGIN_IS_NOT_APPLICANT: &str = "Origin is not applicant";
     pub static MSG_WORKER_APPLICATION_DOES_NOT_EXIST: &str = "Worker application does not exist";
-    pub static MSG_SUCCESSFUL_WORKER_APPLICATION_DOES_NOT_EXIST: &str =
-        "Successful worker application does not exist";
-    pub static MSG_FILL_WORKER_OPENING_INVALID_NEXT_PAYMENT_BLOCK: &str =
-        "Reward policy has invalid next payment block number";
-    pub static MSG_FILL_WORKER_OPENING_MINT_DOES_NOT_EXIST: &str =
-        "Working group mint does not exist";
     pub static MSG_RELATIONSHIP_MUST_EXIST: &str = "Relationship must exist";
     pub static MSG_WORKER_EXIT_RATIONALE_TEXT_TOO_LONG: &str =
         "Worker exit rationale text is too long";
     pub static MSG_WORKER_EXIT_RATIONALE_TEXT_TOO_SHORT: &str =
         "Worker exit rationale text is too short";
     pub static MSG_UNSTAKER_DOES_NOT_EXIST: &str = "Unstaker does not exist";
-    pub static MSG_ONLY_WORKERS_CAN_UNSTAKE: &str = "Only workers can unstake";
-    pub static MSG_WORKER_IS_NOT_UNSTAKING: &str = "Worker must be in unstaking stage";
 }
 /*
  * The errors below, while in many cases encoding similar outcomes,
@@ -144,7 +223,7 @@ pub struct WrappedError<E> {
 #[macro_export]
 macro_rules! ensure_on_wrapped_error {
     ($call:expr) => {{
-        { $call }.map_err(|err| crate::WrappedError { error: err })
+        { $call }.map_err(|err| crate::WrappedError { error: err }).map_err(|err| Error::Other(err.into()))
     }};
 }
 

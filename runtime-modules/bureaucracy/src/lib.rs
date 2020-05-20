@@ -55,12 +55,13 @@ use crate::types::{WorkerExitInitiationOrigin, WorkerExitSummary, WorkingGroupUn
 use common::constraints::InputValidationLengthConstraint;
 use errors::bureaucracy_errors::*;
 use errors::WrappedError;
+use errors::Error;
+
 pub use types::{
     Lead, OpeningPolicyCommitment, RewardPolicy, Worker, WorkerApplication, WorkerOpening,
     WorkerRoleStage, WorkerRoleStakeProfile,
 };
 
-//TODO: migrate to decl_error
 //TODO: initialize a mint!
 
 /// Alias for the _Lead_ type
@@ -287,6 +288,9 @@ decl_module! {
         /// Default deposit_event() handler
         fn deposit_event() = default;
 
+        /// Predefined errors
+        type Error = Error;
+
         // ****************** Roles lifecycle **********************
 
         /// Introduce a lead when one is not currently set.
@@ -316,7 +320,7 @@ decl_module! {
             let lead = <CurrentLead<T, I>>::get();
 
             if lead.is_none() {
-                return Err(MSG_CURRENT_LEAD_NOT_SET);
+                return Err(Error::CurrentLeadNotSet);
             }
 
             // mutation
@@ -338,6 +342,7 @@ decl_module! {
             worker_id: WorkerId<T>,
             new_role_account_id: T::AccountId
         ) {
+
             // Ensure that origin is signed by member with given id.
             ensure_on_wrapped_error!(
                 membership::members::Module::<T>::ensure_member_controller_account_signed(origin, &member_id)
@@ -445,7 +450,7 @@ decl_module! {
             let worker_id = if let WorkingGroupUnstaker::Worker(worker_id) = unstaker {
                 worker_id
             } else {
-                return Err(MSG_ONLY_WORKERS_CAN_UNSTAKE);
+                return Err(Error::OnlyWorkersCanUnstake);
             };
 
             let unstaking_worker = Self::ensure_worker_exists(&worker_id)?;
@@ -455,7 +460,7 @@ decl_module! {
                 if let WorkerRoleStage::Unstaking(summary) = unstaking_worker.stage {
                     summary
                 } else {
-                    return Err(MSG_WORKER_IS_NOT_UNSTAKING);
+                    return Err(Error::WorkerIsNotUnstaking);
                 };
 
             let new_worker = Worker {
@@ -516,9 +521,9 @@ decl_module! {
 
             // Create and add worker opening.
             let new_opening_by_id = WorkerOpening::<WorkerOpeningId<T>, T::BlockNumber, BalanceOf<T>, WorkerApplicationId<T>> {
-                opening_id : opening_id,
+                opening_id,
                 worker_applications: BTreeSet::new(),
-                policy_commitment: policy_commitment
+                policy_commitment
             };
 
             WorkerOpeningById::<T, I>::insert(new_worker_opening_id, new_opening_by_id);
@@ -576,7 +581,7 @@ decl_module! {
             ensure!(
                 membership::members::Module::<T>::ensure_member_controller_account(&source_account, &member_id).is_ok() ||
                 membership::members::Module::<T>::ensure_member_root_account(&source_account, &member_id).is_ok(),
-                MSG_ORIGIN_IS_NEITHER_MEMBER_CONTROLLER_OR_ROOT
+                Error::OriginIsNeitherMemberControllerOrRoot
             );
 
             // Ensure worker opening exists
@@ -590,11 +595,11 @@ decl_module! {
 
             // Ensure application text is valid
             Self::ensure_worker_application_text_is_valid(&human_readable_text)?;
-
+//TODO
             // Ensure application can actually be added
-            ensure_on_wrapped_error!(
-                hiring::Module::<T>::ensure_can_add_application(worker_opening.opening_id, opt_role_stake_balance, opt_application_stake_balance)
-            )?;
+            // ensure_on_wrapped_error!(
+            //     hiring::Module::<T>::ensure_can_add_application(worker_opening.opening_id, opt_role_stake_balance, opt_application_stake_balance)
+            // )?;
 
             // Ensure member does not have an active application to this opening
             Self::ensure_member_has_no_active_application_on_opening(
@@ -656,7 +661,7 @@ decl_module! {
             // Ensure that signer is applicant role account
             ensure!(
                 signer_account == worker_application.role_account,
-                MSG_ORIGIN_IS_NOT_APPLICANT
+                Error::OriginIsNotApplicant
             );
 
             // Attempt to deactivate application
@@ -758,7 +763,7 @@ decl_module! {
 
             ensure!(
                 number_of_successful_applications == num_provided_successful_worker_application_ids,
-                MSG_SUCCESSFUL_WORKER_APPLICATION_DOES_NOT_EXIST
+                Error::SuccessfulWorkerApplicationDoesNotExist
             );
 
             // Attempt to fill opening
@@ -782,10 +787,11 @@ decl_module! {
                 // A reward will need to be created so ensure our configured mint exists
                 let mint_id = Self::mint();
 
-                ensure!(<minting::Mints<T>>::exists(mint_id), MSG_FILL_WORKER_OPENING_MINT_DOES_NOT_EXIST);
+                ensure!(<minting::Mints<T>>::exists(mint_id), Error::FillWorkerOpeningMintDoesNotExist);
 
                 // Make sure valid parameters are selected for next payment at block number
-                ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(), MSG_FILL_WORKER_OPENING_INVALID_NEXT_PAYMENT_BLOCK);
+                ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(),
+                    Error::FillWorkerOpeningInvalidNextPaymentBlock);
 
                 // The verified reward settings to use
                 Some((mint_id, policy))
@@ -1155,12 +1161,12 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             // Keep track of worker unstaking
             let unstaker = WorkingGroupUnstaker::Worker(*worker_id);
             UnstakerByStakeId::<T, I>::insert(directions.0, unstaker);
-
+//TODO
             // Unstake
-            ensure_on_wrapped_error!(stake::Module::<T>::initiate_unstaking(
-                &directions.0,
-                directions.1
-            ))?;
+            // ensure_on_wrapped_error!(stake::Module::<T>::initiate_unstaking(
+            //     &directions.0,
+            //     directions.1
+            // ))?;
         }
 
         // Trigger event
