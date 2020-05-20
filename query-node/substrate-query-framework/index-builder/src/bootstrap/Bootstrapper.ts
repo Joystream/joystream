@@ -42,14 +42,14 @@ export default class Bootstrapper {
             // perform all the bootstrap logic in one large
             // atomic transaction 
             for (const boot of this._bootstrapPack.pack) {
-                let shouldBootstrap = await this.shouldBootstrap(queryRunner.manager, boot);
+                let bootEvent = this.createBootEvent(boot);
+                
+                let shouldBootstrap = await this.shouldBootstrap(queryRunner.manager, bootEvent);
                 if (!shouldBootstrap) {
                     debug(`${boot.name} already bootstrapped, skipping`);
                     continue;
                 }
 
-                let bootEvent = this.createBootEvent(boot);
-                
                 let db = new DatabaseManager(bootEvent, queryRunner.manager);
                 await boot(api, db);
 
@@ -88,13 +88,13 @@ export default class Bootstrapper {
      * bootstrapped the data
      * 
      * @param em  `EntityManager` by `typeorm`
-     * @param boot boothandler
+     * @param bootEvent SubstrateEvent
      */
-    private async shouldBootstrap(em: EntityManager, boot: BootstrapFunc):Promise<boolean> {
+    private async shouldBootstrap(em: EntityManager, bootEvent: SubstrateEvent):Promise<boolean> {
         const event = await em.findOne(SavedEntityEvent, { 
             where: { 
-                eventName: 'Bootstrap', 
-                index: boot.name
+                eventName: bootEvent.event_name, 
+                index: bootEvent.index
             }
         })
         return event ? false : true;
