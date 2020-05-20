@@ -1290,8 +1290,7 @@ impl<T: Trait> Module<T> {
                 entity.get_permissions().get_controller(),
             )?;
             // Ensure all values are unique except of null non required values
-            if class_prop.unique
-                && !(!class_prop.required && *new_value == PropertyValue::default())
+            if (*new_value != PropertyValue::default() || class_prop.required) && class_prop.unique
             {
                 ensure!(
                     appended_entity_values
