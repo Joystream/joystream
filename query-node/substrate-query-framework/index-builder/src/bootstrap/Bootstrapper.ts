@@ -1,7 +1,6 @@
-import { BootstrapPack, BootstrapFunc, SubstrateEvent } from '..';
+import { BootstrapPack, BootstrapFunc, SubstrateEvent, DatabaseManager, SavedEntityEvent } from '..';
 import { WsProvider, ApiPromise } from '@polkadot/api';
-import { createConnection, getConnection, EntityManager } from 'typeorm';
-import { DB, SavedEntityEvent } from '../db';
+import {  getConnection, EntityManager } from 'typeorm';
 
 const debug = require('debug')('index-builder:bootstrapper');
 
@@ -51,7 +50,7 @@ export default class Bootstrapper {
 
                 let bootEvent = this.createBootEvent(boot);
                 
-                let db = new DB(bootEvent, queryRunner.manager);
+                let db = new DatabaseManager(bootEvent, queryRunner.manager);
                 await boot(api, db);
 
                 // Save the bootstrap events so 

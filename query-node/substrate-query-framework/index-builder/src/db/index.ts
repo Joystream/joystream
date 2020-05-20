@@ -1,4 +1,5 @@
-import DB from './db';
+import DB from './DB';
 import { SavedEntityEvent } from './entities';
+import DatabaseManager from './DatabaseManager';
 
-export { DB, SavedEntityEvent };
+export { DB, DatabaseManager, SavedEntityEvent };
