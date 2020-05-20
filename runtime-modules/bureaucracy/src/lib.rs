@@ -53,8 +53,9 @@ use system::{ensure_root, ensure_signed, RawOrigin};
 
 use crate::types::{WorkerExitInitiationOrigin, WorkerExitSummary, WorkingGroupUnstaker};
 use common::constraints::InputValidationLengthConstraint;
-use errors::{Error, WrappedError};
+use errors::WrappedError;
 
+pub use errors::Error;
 pub use types::{
     Lead, OpeningPolicyCommitment, RewardPolicy, Worker, WorkerApplication, WorkerOpening,
     WorkerRoleStage, WorkerRoleStakeProfile,
@@ -593,11 +594,11 @@ decl_module! {
 
             // Ensure application text is valid
             Self::ensure_worker_application_text_is_valid(&human_readable_text)?;
-//TODO
+
             // Ensure application can actually be added
-            // ensure_on_wrapped_error!(
-            //     hiring::Module::<T>::ensure_can_add_application(worker_opening.opening_id, opt_role_stake_balance, opt_application_stake_balance)
-            // )?;
+            ensure_on_wrapped_error!(
+                hiring::Module::<T>::ensure_can_add_application(worker_opening.opening_id, opt_role_stake_balance, opt_application_stake_balance)
+            )?;
 
             // Ensure member does not have an active application to this opening
             Self::ensure_member_has_no_active_application_on_opening(

@@ -91,130 +91,130 @@ decl_error! {
 
         /// Worker does not exist.
         WorkerDoesNotExist,
-        
+
         /// Opening does not exist.
-        AcceptWorkerApplicationsOpeningDoesNotExist, 
-        
+        AcceptWorkerApplicationsOpeningDoesNotExist,
+
         /// Opening Is Not in Waiting to begin.
         AcceptWorkerApplicationsOpeningIsNotWaitingToBegin,
-        
+
         /// Opening does not exist.
         BeginWorkerApplicantReviewOpeningDoesNotExist,
-        
+
         /// Opening Is Not in Waiting.
         BeginWorkerApplicantReviewOpeningOpeningIsNotWaitingToBegin,
-        
+
         /// OpeningDoesNotExist.
-        FullWorkerOpeningOpeningDoesNotExist, 
-        
+        FullWorkerOpeningOpeningDoesNotExist,
+
         /// Opening not in review period stage.
         FullWorkerOpeningOpeningNotInReviewPeriodStage,
-        
+
         /// Application stake unstaking period for successful applicants too short.
         FullWorkerOpeningUnsuccessfulApplicationStakeUnstakingPeriodTooShort,
-        
+
         /// Application stake unstaking period for failed applicants too short.
         FullWorkerOpeningSuccessfulApplicationStakeUnstakingPeriodTooShort,
-        
+
         /// Role stake unstaking period for successful applicants too short.
         FullWorkerOpeningSuccessfulRoleStakeUnstakingPeriodTooShort,
-        
+
         /// Role stake unstaking period for failed applicants too short.
         FullWorkerOpeningUnsuccessfulRoleStakeUnstakingPeriodTooShort,
-        
+
         /// Application stake unstaking period for successful applicants redundant.
         FullWorkerOpeningSuccessfulApplicationStakeUnstakingPeriodRedundant,
-        
+
         /// Application stake unstaking period for failed applicants redundant.
         FullWorkerOpeningUnsuccessfulApplicationStakeUnstakingPeriodRedundant,
-        
+
         /// Role stake unstaking period for successful applicants redundant.
         FullWorkerOpeningSuccessfulRoleStakeUnstakingPeriodRedundant,
-        
+
         /// Role stake unstaking period for failed applicants redundant.
         FullWorkerOpeningUnsuccessfulRoleStakeUnstakingPeriodRedundant,
-        
+
         /// Application does not exist.
         FullWorkerOpeningApplicationDoesNotExist,
-        
+
         /// Application not in active stage.
         FullWorkerOpeningApplicationNotActive,
-        
+
         /// Applications not for opening.
         FillWorkerOpeningApplicationForWrongOpening,
-        
+
         /// Application does not exist.
         WithdrawWorkerApplicationApplicationDoesNotExist,
-        
+
         /// Application is not active.
-        WithdrawWorkerApplicationApplicationNotActive, 
-        
+        WithdrawWorkerApplicationApplicationNotActive,
+
         /// Opening not accepting applications.
         WithdrawWorkerApplicationOpeningNotAcceptingApplications,
-        
+
         /// UnstakingPeriodTooShort .... // <== SHOULD REALLY BE TWO SEPARATE, ONE FOR EACH STAKING PURPOSE
         WithdrawWorkerApplicationUnstakingPeriodTooShort,
-        
-        /// Redundant unstaking period provided 
+
+        /// Redundant unstaking period provided
         WithdrawWorkerApplicationRedundantUnstakingPeriod,
-        
+
         /// Opening does not activate in the future.
         AddWorkerOpeningActivatesInThePast,
-        
+
         /// Role stake amount less than minimum currency balance.
         AddWorkerOpeningRoleStakeLessThanMinimum,
-        
+
         /// Application stake amount less than minimum currency balance.
         AddWorkerOpeningAppliicationStakeLessThanMinimum,
-        
+
         /// Opening does not exist.
-        AddWorkerOpeningOpeningDoesNotExist, 
-        
+        AddWorkerOpeningOpeningDoesNotExist,
+
         // <== SHOULD REALLY BE TWO SEPARATE, ONE FOR EACH STAKING PURPOSE
-        /// Stake provided when redundant. 
+        /// Stake provided when redundant.
         AddWorkerOpeningStakeProvidedWhenRedundant,
-        
+
         // <== SHOULD REALLY BE TWO SEPARATE, ONE FOR EACH STAKING PURPOSE
         /// Stake missing when required.
         AddWorkerOpeningStakeMissingWhenRequired,
-        
+
         // <== SHOULD REALLY BE TWO SEPARATE, ONE FOR EACH STAKING PURPOSE
         /// Stake amount too low.
-        AddWorkerOpeningStakeAmountTooLow, 
-        
+        AddWorkerOpeningStakeAmountTooLow,
+
         /// Opening is not in accepting applications stage.
         AddWorkerOpeningOpeningNotInAcceptingApplicationStage,
-        
+
         /// New application was crowded out.
         AddWorkerOpeningNewApplicationWasCrowdedOut,
-        
+
         /// Application rationing has zero max active applicants.
         AddWorkerOpeningZeroMaxApplicantCount,
-        
+
         /// Next payment is not in the future.
         RecurringRewardsNextPaymentNotInFuture,
-        
+
         /// Recipient not found.
-        RecurringRewardsRecipientNotFound, 
-        
+        RecurringRewardsRecipientNotFound,
+
         /// Recipient reward source not found.
         RecurringRewardsRewardSourceNotFound,
-        
+
         /// Reward relationship not found.
         RecurringRewardsRewardRelationshipNotFound,
-        
+
         /// Stake not found.
-        StakingErrorStakeNotFound, 
-        
+        StakingErrorStakeNotFound,
+
         /// Unstaking period should be greater than zero.
         StakingErrorUnstakingPeriodShouldBeGreaterThanZero,
-        
+
         /// Already unstaking.
-        StakingErrorAlreadyUnstaking, 
-        
+        StakingErrorAlreadyUnstaking,
+
         /// Not staked.
         StakingErrorNotStaked,
-        
+
         /// Cannot unstake while slashes ongoing.
         StakingErrorCannotUnstakeWhileSlashesOngoing,
     }
@@ -239,8 +239,7 @@ pub struct WrappedError<E> {
 #[macro_export]
 macro_rules! ensure_on_wrapped_error {
     ($call:expr) => {{
-        { $call }
-            .map_err(|err| crate::WrappedError { error: err })
+        { $call }.map_err(|err| crate::WrappedError { error: err })
     }};
 }
 
@@ -265,9 +264,7 @@ impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for Error {
             }
             hiring::AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(purpose) => {
                 match purpose {
-                    hiring::StakePurpose::Role => {
-                        Error::AddWorkerOpeningRoleStakeLessThanMinimum
-                    }
+                    hiring::StakePurpose::Role => Error::AddWorkerOpeningRoleStakeLessThanMinimum,
                     hiring::StakePurpose::Application => {
                         Error::AddWorkerOpeningAppliicationStakeLessThanMinimum
                     }
@@ -296,38 +293,64 @@ impl rstd::convert::From<WrappedError<hiring::BeginReviewError>> for Error {
 impl<T: hiring::Trait> rstd::convert::From<WrappedError<hiring::FillOpeningError<T>>> for Error {
     fn from(wrapper: WrappedError<hiring::FillOpeningError<T>>) -> Self {
         match wrapper.error {
-			hiring::FillOpeningError::<T>::OpeningDoesNotExist => Error::FullWorkerOpeningOpeningDoesNotExist,
-			hiring::FillOpeningError::<T>::OpeningNotInReviewPeriodStage => Error::FullWorkerOpeningOpeningNotInReviewPeriodStage,
-			hiring::FillOpeningError::<T>::UnstakingPeriodTooShort(
-				stake_purpose,
-				outcome_in_filled_opening,
-			) => match stake_purpose {
-				hiring::StakePurpose::Application => match outcome_in_filled_opening {
-					hiring::ApplicationOutcomeInFilledOpening::Success => Error::FullWorkerOpeningUnsuccessfulApplicationStakeUnstakingPeriodTooShort,
-					hiring::ApplicationOutcomeInFilledOpening::Failure => Error::FullWorkerOpeningSuccessfulApplicationStakeUnstakingPeriodTooShort
-				},
-				hiring::StakePurpose::Role => match outcome_in_filled_opening {
-					hiring::ApplicationOutcomeInFilledOpening::Success => Error::FullWorkerOpeningSuccessfulRoleStakeUnstakingPeriodTooShort,
-					hiring::ApplicationOutcomeInFilledOpening::Failure => Error::FullWorkerOpeningUnsuccessfulRoleStakeUnstakingPeriodTooShort
-				},
-			},
-			hiring::FillOpeningError::<T>::RedundantUnstakingPeriodProvided(
-				stake_purpose,
-				outcome_in_filled_opening,
-			) => match stake_purpose {
-				hiring::StakePurpose::Application => match outcome_in_filled_opening {
-					hiring::ApplicationOutcomeInFilledOpening::Success => Error::FullWorkerOpeningSuccessfulApplicationStakeUnstakingPeriodRedundant,
-					hiring::ApplicationOutcomeInFilledOpening::Failure => Error::FullWorkerOpeningUnsuccessfulApplicationStakeUnstakingPeriodRedundant
-				},
-				hiring::StakePurpose::Role => match outcome_in_filled_opening {
-					hiring::ApplicationOutcomeInFilledOpening::Success => Error::FullWorkerOpeningSuccessfulRoleStakeUnstakingPeriodRedundant,
-					hiring::ApplicationOutcomeInFilledOpening::Failure => Error::FullWorkerOpeningUnsuccessfulRoleStakeUnstakingPeriodRedundant
-				},
-			},
-			hiring::FillOpeningError::<T>::ApplicationDoesNotExist(_application_id) => Error::FullWorkerOpeningApplicationDoesNotExist,
-			hiring::FillOpeningError::<T>::ApplicationNotInActiveStage(_application_id) => Error::FullWorkerOpeningApplicationNotActive,
-			hiring::FillOpeningError::<T>::ApplicationForWrongOpening(_application_id) => Error::FillWorkerOpeningApplicationForWrongOpening,
-		}
+            hiring::FillOpeningError::<T>::OpeningDoesNotExist => {
+                Error::FullWorkerOpeningOpeningDoesNotExist
+            }
+            hiring::FillOpeningError::<T>::OpeningNotInReviewPeriodStage => {
+                Error::FullWorkerOpeningOpeningNotInReviewPeriodStage
+            }
+            hiring::FillOpeningError::<T>::UnstakingPeriodTooShort(
+                stake_purpose,
+                outcome_in_filled_opening,
+            ) => match stake_purpose {
+                hiring::StakePurpose::Application => match outcome_in_filled_opening {
+                    hiring::ApplicationOutcomeInFilledOpening::Success => {
+                        Error::FullWorkerOpeningUnsuccessfulApplicationStakeUnstakingPeriodTooShort
+                    }
+                    hiring::ApplicationOutcomeInFilledOpening::Failure => {
+                        Error::FullWorkerOpeningSuccessfulApplicationStakeUnstakingPeriodTooShort
+                    }
+                },
+                hiring::StakePurpose::Role => match outcome_in_filled_opening {
+                    hiring::ApplicationOutcomeInFilledOpening::Success => {
+                        Error::FullWorkerOpeningSuccessfulRoleStakeUnstakingPeriodTooShort
+                    }
+                    hiring::ApplicationOutcomeInFilledOpening::Failure => {
+                        Error::FullWorkerOpeningUnsuccessfulRoleStakeUnstakingPeriodTooShort
+                    }
+                },
+            },
+            hiring::FillOpeningError::<T>::RedundantUnstakingPeriodProvided(
+                stake_purpose,
+                outcome_in_filled_opening,
+            ) => match stake_purpose {
+                hiring::StakePurpose::Application => match outcome_in_filled_opening {
+                    hiring::ApplicationOutcomeInFilledOpening::Success => {
+                        Error::FullWorkerOpeningSuccessfulApplicationStakeUnstakingPeriodRedundant
+                    }
+                    hiring::ApplicationOutcomeInFilledOpening::Failure => {
+                        Error::FullWorkerOpeningUnsuccessfulApplicationStakeUnstakingPeriodRedundant
+                    }
+                },
+                hiring::StakePurpose::Role => match outcome_in_filled_opening {
+                    hiring::ApplicationOutcomeInFilledOpening::Success => {
+                        Error::FullWorkerOpeningSuccessfulRoleStakeUnstakingPeriodRedundant
+                    }
+                    hiring::ApplicationOutcomeInFilledOpening::Failure => {
+                        Error::FullWorkerOpeningUnsuccessfulRoleStakeUnstakingPeriodRedundant
+                    }
+                },
+            },
+            hiring::FillOpeningError::<T>::ApplicationDoesNotExist(_application_id) => {
+                Error::FullWorkerOpeningApplicationDoesNotExist
+            }
+            hiring::FillOpeningError::<T>::ApplicationNotInActiveStage(_application_id) => {
+                Error::FullWorkerOpeningApplicationNotActive
+            }
+            hiring::FillOpeningError::<T>::ApplicationForWrongOpening(_application_id) => {
+                Error::FillWorkerOpeningApplicationForWrongOpening
+            }
+        }
     }
 }
 

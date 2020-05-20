@@ -1,12 +1,12 @@
 mod mock;
 
-use crate::errors::bureaucracy_errors::MSG_ONLY_WORKERS_CAN_UNSTAKE;
 use crate::tests::mock::Test;
 use crate::types::{
     Lead, OpeningPolicyCommitment, RewardPolicy, Worker, WorkerApplication,
     WorkerExitInitiationOrigin, WorkerExitSummary, WorkerOpening, WorkerRoleStage,
     WorkerRoleStakeProfile, WorkingGroupUnstaker,
 };
+use crate::Error;
 use crate::{Instance1, RawEvent};
 use common::constraints::InputValidationLengthConstraint;
 use mock::{build_test_externalities, Balances, Bureaucracy1, Membership, System, TestEvent};
@@ -35,7 +35,7 @@ impl UnstakeFixture {
         UnstakeFixture { origin, ..self }
     }
 
-    fn call_and_assert(&self, expected_result: Result<(), &str>) {
+    fn call_and_assert(&self, expected_result: Result<(), Error>) {
         let stake_existed =
             <crate::UnstakerByStakeId<Test, crate::Instance1>>::exists(self.stake_id);
 
@@ -86,15 +86,15 @@ impl TerminateWorkerRoleFixture {
         TerminateWorkerRoleFixture { text, ..self }
     }
 
-    fn call_and_assert(&self, expected_result: Result<(), &str>) {
+    fn call_and_assert(&self, expected_result: Result<(), Error>) {
         self.call_and_assert_impl(expected_result, false);
     }
 
-    fn call_and_assert_with_unstaking(&self, expected_result: Result<(), &str>) {
+    fn call_and_assert_with_unstaking(&self, expected_result: Result<(), Error>) {
         self.call_and_assert_impl(expected_result, true);
     }
 
-    fn call_and_assert_impl(&self, expected_result: Result<(), &str>, expect_unstaking: bool) {
+    fn call_and_assert_impl(&self, expected_result: Result<(), Error>, expect_unstaking: bool) {
         <crate::WorkerExitRationaleText<Instance1>>::put(self.constraint.clone());
 
         let rationale_text = b"rationale_text".to_vec();
@@ -152,15 +152,15 @@ impl LeaveWorkerRoleFixture {
         LeaveWorkerRoleFixture { origin, ..self }
     }
 
-    fn call_and_assert(&self, expected_result: Result<(), &str>) {
+    fn call_and_assert(&self, expected_result: Result<(), Error>) {
         self.call_and_assert_impl(expected_result, false);
     }
 
-    fn call_and_assert_with_unstaking(&self, expected_result: Result<(), &str>) {
+    fn call_and_assert_with_unstaking(&self, expected_result: Result<(), Error>) {
         self.call_and_assert_impl(expected_result, true);
     }
 
-    fn call_and_assert_impl(&self, expected_result: Result<(), &str>, expect_unstaking: bool) {
+    fn call_and_assert_impl(&self, expected_result: Result<(), Error>, expect_unstaking: bool) {
         let rationale_text = b"rationale_text".to_vec();
         let actual_result = Bureaucracy1::leave_worker_role(
             self.origin.clone().into(),
@@ -218,7 +218,7 @@ impl UpdateWorkerRewardAccountFixture {
         UpdateWorkerRewardAccountFixture { origin, ..self }
     }
 
-    fn call_and_assert(&self, expected_result: Result<(), &str>) {
+    fn call_and_assert(&self, expected_result: Result<(), Error>) {
         assert_eq!(
             Bureaucracy1::update_worker_reward_account(
                 self.origin.clone().into(),
@@ -250,7 +250,7 @@ impl UpdateWorkerRoleAccountFixture {
         UpdateWorkerRoleAccountFixture { origin, ..self }
     }
 
-    fn call_and_assert(&self, expected_result: Result<(), &str>) {
+    fn call_and_assert(&self, expected_result: Result<(), Error>) {
         let actual_result = Bureaucracy1::update_worker_role_account(
             self.origin.clone().into(),
             self.member_id,
@@ -273,7 +273,7 @@ impl UnsetLeadFixture {
         assert_eq!(Bureaucracy1::unset_lead(RawOrigin::Root.into()), Ok(()));
     }
 
-    fn call_and_assert(origin: RawOrigin<u64>, expected_result: Result<(), &str>) {
+    fn call_and_assert(origin: RawOrigin<u64>, expected_result: Result<(), Error>) {
         assert_eq!(Bureaucracy1::unset_lead(origin.into()), expected_result);
     }
 }
@@ -318,7 +318,7 @@ impl FillWorkerOpeningFixture {
         }
     }
 
-    pub fn call_and_assert(&self, expected_result: Result<(), &str>) {
+    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
         let saved_worker_next_id = Bureaucracy1::next_worker_id();
         let actual_result = Bureaucracy1::fill_worker_opening(
             self.origin.clone().into(),
@@ -384,7 +384,7 @@ impl BeginReviewWorkerApplicationsFixture {
     fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         BeginReviewWorkerApplicationsFixture { origin, ..self }
     }
-    pub fn call_and_assert(&self, expected_result: Result<(), &str>) {
+    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
         let actual_result = Bureaucracy1::begin_worker_applicant_review(
             self.origin.clone().into(),
             self.opening_id,
@@ -414,7 +414,7 @@ impl TerminateApplicationFixture {
             worker_application_id: application_id,
         }
     }
-    pub fn call_and_assert(&self, expected_result: Result<(), &str>) {
+    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
         let actual_result = Bureaucracy1::terminate_worker_application(
             self.origin.clone().into(),
             self.worker_application_id,
@@ -443,7 +443,7 @@ impl WithdrawApplicationFixture {
             worker_application_id: application_id,
         }
     }
-    pub fn call_and_assert(&self, expected_result: Result<(), &str>) {
+    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
         let actual_result = Bureaucracy1::withdraw_worker_application(
             self.origin.clone().into(),
             self.worker_application_id,
@@ -521,7 +521,7 @@ impl ApplyOnWorkerOpeningFixture {
         }
     }
 
-    pub fn call_and_assert(&self, expected_result: Result<(), &str>) {
+    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
         let saved_application_next_id = Bureaucracy1::next_worker_application_id();
         let actual_result = Bureaucracy1::apply_on_worker_opening(
             self.origin.clone().into(),
@@ -573,7 +573,7 @@ impl AcceptWorkerApplicationsFixture {
         }
     }
 
-    pub fn call_and_assert(&self, expected_result: Result<(), &str>) {
+    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
         let actual_result =
             Bureaucracy1::accept_worker_applications(self.origin.clone().into(), self.opening_id);
         assert_eq!(actual_result, expected_result);
@@ -593,7 +593,7 @@ impl SetLeadFixture {
         origin: RawOrigin<u64>,
         member_id: u64,
         account_id: u64,
-        expected_result: Result<(), &str>,
+        expected_result: Result<(), Error>,
     ) {
         assert_eq!(
             Bureaucracy1::set_lead(origin.into(), member_id, account_id),
@@ -628,7 +628,7 @@ impl AddWorkerOpeningFixture {
         }
     }
 
-    pub fn call_and_assert(&self, expected_result: Result<(), &str>) {
+    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
         let saved_opening_next_id = Bureaucracy1::next_worker_opening_id();
         let actual_result = Bureaucracy1::add_worker_opening(
             self.origin.clone().into(),
@@ -786,7 +786,7 @@ fn add_worker_opening_fails_with_lead_is_not_set() {
     build_test_externalities().execute_with(|| {
         let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
 
-        add_worker_opening_fixture.call_and_assert(Err(crate::MSG_CURRENT_LEAD_NOT_SET));
+        add_worker_opening_fixture.call_and_assert(Err(Error::CurrentLeadNotSet));
     });
 }
 
@@ -802,12 +802,12 @@ fn add_worker_opening_fails_with_invalid_human_readable_text() {
 
         let add_worker_opening_fixture = AddWorkerOpeningFixture::default().with_text(Vec::new());
 
-        add_worker_opening_fixture.call_and_assert(Err(crate::MSG_OPENING_TEXT_TOO_SHORT));
+        add_worker_opening_fixture.call_and_assert(Err(Error::Other("OpeningTextTooShort")));
 
         let add_worker_opening_fixture =
             AddWorkerOpeningFixture::default().with_text(b"Long text".to_vec());
 
-        add_worker_opening_fixture.call_and_assert(Err(crate::MSG_OPENING_TEXT_TOO_LONG));
+        add_worker_opening_fixture.call_and_assert(Err(Error::Other("OpeningTextTooLong")));
     });
 }
 
@@ -819,9 +819,7 @@ fn add_worker_opening_fails_with_hiring_error() {
         let add_worker_opening_fixture = AddWorkerOpeningFixture::default()
             .with_activate_at(hiring::ActivateOpeningAt::ExactBlock(0));
 
-        add_worker_opening_fixture.call_and_assert(Err(
-            crate::errors::MSG_ADD_WORKER_OPENING_ACTIVATES_IN_THE_PAST,
-        ));
+        add_worker_opening_fixture.call_and_assert(Err(Error::AddWorkerOpeningActivatesInThePast));
     });
 }
 
@@ -862,7 +860,7 @@ fn accept_worker_applications_fails_with_hiring_error() {
         let accept_worker_applications_fixture =
             AcceptWorkerApplicationsFixture::default_for_opening_id(opening_id);
         accept_worker_applications_fixture.call_and_assert(Err(
-            crate::errors::MSG_ACCEPT_WORKER_APPLICATIONS_OPENING_IS_NOT_WAITING_TO_BEGIN,
+            Error::AcceptWorkerApplicationsOpeningIsNotWaitingToBegin,
         ));
     });
 }
@@ -881,7 +879,7 @@ fn accept_worker_applications_fails_with_not_lead() {
 
         let accept_worker_applications_fixture =
             AcceptWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        accept_worker_applications_fixture.call_and_assert(Err(crate::MSG_IS_NOT_LEAD_ACCOUNT));
+        accept_worker_applications_fixture.call_and_assert(Err(Error::IsNotLeadAccount));
     });
 }
 
@@ -894,8 +892,7 @@ fn accept_worker_applications_fails_with_no_opening() {
 
         let accept_worker_applications_fixture =
             AcceptWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        accept_worker_applications_fixture
-            .call_and_assert(Err(crate::MSG_WORKER_OPENING_DOES_NOT_EXIST));
+        accept_worker_applications_fixture.call_and_assert(Err(Error::WorkerOpeningDoesNotExist));
     });
 }
 
@@ -938,8 +935,7 @@ fn apply_on_worker_opening_fails_with_no_opening() {
 
         let appy_on_worker_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        appy_on_worker_opening_fixture
-            .call_and_assert(Err(crate::MSG_WORKER_OPENING_DOES_NOT_EXIST));
+        appy_on_worker_opening_fixture.call_and_assert(Err(Error::WorkerOpeningDoesNotExist));
     });
 }
 
@@ -957,7 +953,7 @@ fn apply_on_worker_opening_fails_with_not_set_members() {
         let appy_on_worker_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
         appy_on_worker_opening_fixture
-            .call_and_assert(Err(crate::MSG_ORIGIN_IS_NEITHER_MEMBER_CONTROLLER_OR_ROOT));
+            .call_and_assert(Err(Error::OriginIsNeitherMemberControllerOrRoot));
     });
 }
 
@@ -979,9 +975,8 @@ fn apply_on_worker_opening_fails_with_hiring_error() {
         let appy_on_worker_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
                 .with_application_stake(100);
-        appy_on_worker_opening_fixture.call_and_assert(Err(
-            crate::errors::MSG_ADD_WORKER_OPENING_STAKE_PROVIDED_WHEN_REDUNDANT,
-        ));
+        appy_on_worker_opening_fixture
+            .call_and_assert(Err(Error::AddWorkerOpeningStakeProvidedWhenRedundant));
     });
 }
 
@@ -1001,8 +996,7 @@ fn apply_on_worker_opening_fails_with_invalid_application_stake() {
         let appy_on_worker_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
                 .with_application_stake(100);
-        appy_on_worker_opening_fixture
-            .call_and_assert(Err(crate::MSG_INSUFFICIENT_BALANCE_TO_APPLY));
+        appy_on_worker_opening_fixture.call_and_assert(Err(Error::InsufficientBalanceToApply));
     });
 }
 
@@ -1021,8 +1015,7 @@ fn apply_on_worker_opening_fails_with_invalid_role_stake() {
 
         let appy_on_worker_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id).with_role_stake(100);
-        appy_on_worker_opening_fixture
-            .call_and_assert(Err(crate::MSG_INSUFFICIENT_BALANCE_TO_APPLY));
+        appy_on_worker_opening_fixture.call_and_assert(Err(Error::InsufficientBalanceToApply));
     });
 }
 
@@ -1049,13 +1042,13 @@ fn apply_on_worker_opening_fails_with_invalid_text() {
         let appy_on_worker_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id).with_text(Vec::new());
         appy_on_worker_opening_fixture
-            .call_and_assert(Err(crate::MSG_WORKER_APPLICATION_TEXT_TOO_SHORT));
+            .call_and_assert(Err(Error::Other("WorkerApplicationTextTooShort")));
 
         let appy_on_worker_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
                 .with_text(b"Long text".to_vec());
         appy_on_worker_opening_fixture
-            .call_and_assert(Err(crate::MSG_WORKER_APPLICATION_TEXT_TOO_LONG));
+            .call_and_assert(Err(Error::Other("WorkerApplicationTextTooLong")));
     });
 }
 
@@ -1077,7 +1070,7 @@ fn apply_on_worker_opening_fails_with_already_active_application() {
         appy_on_worker_opening_fixture.call_and_assert(Ok(()));
 
         appy_on_worker_opening_fixture
-            .call_and_assert(Err(crate::MSG_MEMBER_HAS_ACTIVE_APPLICATION_ON_OPENING));
+            .call_and_assert(Err(Error::MemberHasActiveApplicationOnOpening));
     });
 }
 
@@ -1125,8 +1118,7 @@ fn withdraw_worker_application_fails_invalid_application_id() {
 
         let withdraw_application_fixture =
             WithdrawApplicationFixture::default_for_application_id(invalid_application_id);
-        withdraw_application_fixture
-            .call_and_assert(Err(crate::MSG_WORKER_APPLICATION_DOES_NOT_EXIST));
+        withdraw_application_fixture.call_and_assert(Err(Error::WorkerApplicationDoesNotExist));
     });
 }
 
@@ -1152,7 +1144,7 @@ fn withdraw_worker_application_fails_invalid_origin() {
         let withdraw_application_fixture =
             WithdrawApplicationFixture::default_for_application_id(application_id)
                 .with_origin(RawOrigin::None);
-        withdraw_application_fixture.call_and_assert(Err("RequireSignedOrigin"));
+        withdraw_application_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
     });
 }
 
@@ -1178,7 +1170,7 @@ fn withdraw_worker_application_fails_with_invalid_application_author() {
         let withdraw_application_fixture =
             WithdrawApplicationFixture::default_for_application_id(application_id)
                 .with_signer(invalid_author_account_id);
-        withdraw_application_fixture.call_and_assert(Err(crate::MSG_ORIGIN_IS_NOT_APPLICANT));
+        withdraw_application_fixture.call_and_assert(Err(Error::OriginIsNotApplicant));
     });
 }
 
@@ -1204,9 +1196,8 @@ fn withdraw_worker_application_fails_with_hiring_error() {
         let withdraw_application_fixture =
             WithdrawApplicationFixture::default_for_application_id(application_id);
         withdraw_application_fixture.call_and_assert(Ok(()));
-        withdraw_application_fixture.call_and_assert(Err(
-            crate::errors::MSG_WITHDRAW_WORKER_APPLICATION_APPLICATION_NOT_ACTIVE,
-        ));
+        withdraw_application_fixture
+            .call_and_assert(Err(Error::WithdrawWorkerApplicationApplicationNotActive));
     });
 }
 
@@ -1269,7 +1260,7 @@ fn terminate_worker_application_fails_with_invalid_application_author() {
         let terminate_application_fixture =
             TerminateApplicationFixture::default_for_application_id(application_id)
                 .with_signer(invalid_author_account_id);
-        terminate_application_fixture.call_and_assert(Err(crate::MSG_IS_NOT_LEAD_ACCOUNT));
+        terminate_application_fixture.call_and_assert(Err(Error::IsNotLeadAccount));
     });
 }
 
@@ -1295,7 +1286,7 @@ fn terminate_worker_application_fails_invalid_origin() {
         let terminate_application_fixture =
             TerminateApplicationFixture::default_for_application_id(application_id)
                 .with_origin(RawOrigin::None);
-        terminate_application_fixture.call_and_assert(Err("RequireSignedOrigin"));
+        terminate_application_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
     });
 }
 
@@ -1309,8 +1300,7 @@ fn terminate_worker_application_fails_invalid_application_id() {
 
         let terminate_application_fixture =
             TerminateApplicationFixture::default_for_application_id(invalid_application_id);
-        terminate_application_fixture
-            .call_and_assert(Err(crate::MSG_WORKER_APPLICATION_DOES_NOT_EXIST));
+        terminate_application_fixture.call_and_assert(Err(Error::WorkerApplicationDoesNotExist));
     });
 }
 
@@ -1336,9 +1326,8 @@ fn terminate_worker_application_fails_with_hiring_error() {
         let terminate_application_fixture =
             TerminateApplicationFixture::default_for_application_id(application_id);
         terminate_application_fixture.call_and_assert(Ok(()));
-        terminate_application_fixture.call_and_assert(Err(
-            crate::errors::MSG_WITHDRAW_WORKER_APPLICATION_APPLICATION_NOT_ACTIVE,
-        ));
+        terminate_application_fixture
+            .call_and_assert(Err(Error::WithdrawWorkerApplicationApplicationNotActive));
     });
 }
 
@@ -1381,8 +1370,7 @@ fn begin_review_worker_applications_fails_with_not_a_lead() {
 
         let begin_review_worker_applications_fixture =
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        begin_review_worker_applications_fixture
-            .call_and_assert(Err(crate::MSG_IS_NOT_LEAD_ACCOUNT));
+        begin_review_worker_applications_fixture.call_and_assert(Err(Error::IsNotLeadAccount));
     });
 }
 
@@ -1397,7 +1385,7 @@ fn begin_review_worker_applications_fails_with_invalid_opening() {
         let begin_review_worker_applications_fixture =
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(invalid_opening_id);
         begin_review_worker_applications_fixture
-            .call_and_assert(Err(crate::MSG_WORKER_OPENING_DOES_NOT_EXIST));
+            .call_and_assert(Err(Error::WorkerOpeningDoesNotExist));
     });
 }
 
@@ -1416,7 +1404,7 @@ fn begin_review_worker_applications_with_hiring_error() {
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
         begin_review_worker_applications_fixture.call_and_assert(Ok(()));
         begin_review_worker_applications_fixture.call_and_assert(Err(
-            crate::errors::MSG_BEGIN_WORKER_APPLICANT_REVIEW_OPENING_OPENING_IS_NOT_WAITING_TO_BEGIN,
+            Error::BeginWorkerApplicantReviewOpeningOpeningIsNotWaitingToBegin,
         ));
     });
 }
@@ -1435,7 +1423,8 @@ fn begin_review_worker_applications_fails_with_invalid_origin() {
         let begin_review_worker_applications_fixture =
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id)
                 .with_origin(RawOrigin::None);
-        begin_review_worker_applications_fixture.call_and_assert(Err("RequireSignedOrigin"));
+        begin_review_worker_applications_fixture
+            .call_and_assert(Err(Error::Other("RequireSignedOrigin")));
     });
 }
 
@@ -1508,7 +1497,7 @@ fn fill_worker_opening_fails_with_invalid_origin() {
         let fill_worker_opening_fixture =
             FillWorkerOpeningFixture::default_for_ids(opening_id, Vec::new())
                 .with_origin(RawOrigin::None);
-        fill_worker_opening_fixture.call_and_assert(Err("RequireSignedOrigin"));
+        fill_worker_opening_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
     });
 }
 
@@ -1528,7 +1517,7 @@ fn fill_worker_opening_fails_with_not_a_lead() {
 
         let fill_worker_opening_fixture =
             FillWorkerOpeningFixture::default_for_ids(opening_id, Vec::new());
-        fill_worker_opening_fixture.call_and_assert(Err(crate::MSG_IS_NOT_LEAD_ACCOUNT));
+        fill_worker_opening_fixture.call_and_assert(Err(Error::IsNotLeadAccount));
     });
 }
 
@@ -1542,7 +1531,7 @@ fn fill_worker_opening_fails_with_invalid_opening() {
 
         let fill_worker_opening_fixture =
             FillWorkerOpeningFixture::default_for_ids(invalid_opening_id, Vec::new());
-        fill_worker_opening_fixture.call_and_assert(Err(crate::MSG_WORKER_OPENING_DOES_NOT_EXIST));
+        fill_worker_opening_fixture.call_and_assert(Err(Error::WorkerOpeningDoesNotExist));
     });
 }
 
@@ -1575,7 +1564,7 @@ fn fill_worker_opening_fails_with_invalid_application_list() {
             vec![application_id, invalid_application_id],
         );
         fill_worker_opening_fixture
-            .call_and_assert(Err(crate::MSG_SUCCESSFUL_WORKER_APPLICATION_DOES_NOT_EXIST));
+            .call_and_assert(Err(Error::SuccessfulWorkerApplicationDoesNotExist));
     });
 }
 
@@ -1594,9 +1583,8 @@ fn fill_worker_opening_fails_with_invalid_application_with_hiring_error() {
 
         let fill_worker_opening_fixture =
             FillWorkerOpeningFixture::default_for_ids(opening_id, Vec::new());
-        fill_worker_opening_fixture.call_and_assert(Err(
-            crate::errors::MSG_FULL_WORKER_OPENING_OPENING_NOT_IN_REVIEW_PERIOD_STAGE,
-        ));
+        fill_worker_opening_fixture
+            .call_and_assert(Err(Error::FullWorkerOpeningOpeningNotInReviewPeriodStage));
     });
 }
 
@@ -1631,8 +1619,7 @@ fn fill_worker_opening_fails_with_invalid_reward_policy() {
                     payout_interval: None,
                 });
 
-        fill_worker_opening_fixture
-            .call_and_assert(Err(crate::MSG_FILL_WORKER_OPENING_MINT_DOES_NOT_EXIST));
+        fill_worker_opening_fixture.call_and_assert(Err(Error::FillWorkerOpeningMintDoesNotExist));
 
         set_mint_id(22);
 
@@ -1643,9 +1630,8 @@ fn fill_worker_opening_fails_with_invalid_reward_policy() {
                     next_payment_at_block: 0,
                     payout_interval: None,
                 });
-        fill_worker_opening_fixture.call_and_assert(Err(
-            crate::errors::MSG_FULL_WORKER_OPENING_OPENING_NOT_IN_REVIEW_PERIOD_STAGE,
-        ));
+        fill_worker_opening_fixture
+            .call_and_assert(Err(Error::FullWorkerOpeningOpeningNotInReviewPeriodStage));
     });
 }
 
@@ -1677,21 +1663,26 @@ fn unset_lead_succeeds() {
 #[test]
 fn unset_lead_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
-        UnsetLeadFixture::call_and_assert(RawOrigin::None, Err("RequireRootOrigin"));
+        UnsetLeadFixture::call_and_assert(RawOrigin::None, Err(Error::Other("RequireRootOrigin")));
     });
 }
 
 #[test]
 fn unset_lead_fails_with_no_lead() {
     build_test_externalities().execute_with(|| {
-        UnsetLeadFixture::call_and_assert(RawOrigin::Root, Err(crate::MSG_CURRENT_LEAD_NOT_SET));
+        UnsetLeadFixture::call_and_assert(RawOrigin::Root, Err(Error::CurrentLeadNotSet));
     });
 }
 
 #[test]
 fn set_lead_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
-        SetLeadFixture::call_and_assert(RawOrigin::None, 1, 1, Err("RequireRootOrigin"));
+        SetLeadFixture::call_and_assert(
+            RawOrigin::None,
+            1,
+            1,
+            Err(Error::Other("RequireRootOrigin")),
+        );
     });
 }
 
@@ -1720,7 +1711,7 @@ fn update_worker_role_account_fails_with_membership_error() {
         let update_worker_account_fixture =
             UpdateWorkerRoleAccountFixture::default_with_ids(1, 1, 1);
 
-        update_worker_account_fixture.call_and_assert(Err(crate::MSG_MEMBERSHIP_INVALID_MEMBER_ID));
+        update_worker_account_fixture.call_and_assert(Err(Error::MembershipInvalidMemberId));
     });
 }
 
@@ -1730,7 +1721,7 @@ fn update_worker_role_account_fails_with_invalid_origin() {
         let update_worker_account_fixture =
             UpdateWorkerRoleAccountFixture::default_with_ids(1, 1, 1).with_origin(RawOrigin::None);
 
-        update_worker_account_fixture.call_and_assert(Err(crate::MSG_MEMBERSHIP_UNSIGNED_ORIGIN));
+        update_worker_account_fixture.call_and_assert(Err(Error::MembershipUnsignedOrigin));
     });
 }
 
@@ -1758,7 +1749,7 @@ fn update_worker_reward_account_fails_with_invalid_origin() {
         let update_worker_account_fixture =
             UpdateWorkerRewardAccountFixture::default_with_ids(1, 1).with_origin(RawOrigin::None);
 
-        update_worker_account_fixture.call_and_assert(Err("RequireSignedOrigin"));
+        update_worker_account_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
     });
 }
 
@@ -1772,8 +1763,7 @@ fn update_worker_reward_account_fails_with_invalid_origin_signed_account() {
             UpdateWorkerRewardAccountFixture::default_with_ids(worker_id, lead_account_id)
                 .with_origin(RawOrigin::Signed(2));
 
-        update_worker_account_fixture
-            .call_and_assert(Err(crate::errors::MSG_SIGNER_IS_NOT_WORKER_ROLE_ACCOUNT));
+        update_worker_account_fixture.call_and_assert(Err(Error::SignerIsNotWorkerRoleAccount));
     });
 }
 
@@ -1802,27 +1792,6 @@ fn fill_worker_position_with_stake(stake: u64) -> u64 {
         Some(stake),
     )
 }
-
-/*
-
-        let add_worker_opening_fixture =
-            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
-                role_staking_policy: Some(hiring::StakingPolicy {
-                    amount: 10,
-                    amount_mode: hiring::StakingAmountLimitMode::AtLeast,
-                    crowded_out_unstaking_period_length: None,
-                    review_period_expired_unstaking_period_length: None,
-                }),
-                ..OpeningPolicyCommitment::default()
-            });
-        add_worker_opening_fixture.call_and_assert(Ok(()));
-
-        let opening_id = 0; // newly created opening
-
-        let appy_on_worker_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id).with_role_stake(10);
-        appy_on_worker_opening_fixture.call_and_assert(Ok(()));
-*/
 
 fn fill_worker_position(
     reward_policy: Option<RewardPolicy<u64, u64>>,
@@ -1892,8 +1861,7 @@ fn update_worker_reward_account_fails_with_invalid_worker_id() {
         let update_worker_account_fixture =
             UpdateWorkerRewardAccountFixture::default_with_ids(invalid_worker_id, lead_account_id);
 
-        update_worker_account_fixture
-            .call_and_assert(Err(crate::errors::MSG_WORKER_DOES_NOT_EXIST));
+        update_worker_account_fixture.call_and_assert(Err(Error::WorkerDoesNotExist));
     });
 }
 
@@ -1915,7 +1883,7 @@ fn update_worker_reward_account_fails_with_inactive_worker() {
         let update_worker_account_fixture =
             UpdateWorkerRewardAccountFixture::default_with_ids(worker_id, lead_account_id);
 
-        update_worker_account_fixture.call_and_assert(Err(crate::errors::MSG_WORKER_IS_NOT_ACTIVE));
+        update_worker_account_fixture.call_and_assert(Err(Error::WorkerIsNotActive));
     });
 }
 
@@ -1928,7 +1896,7 @@ fn update_worker_reward_account_fails_with_no_recurring_reward() {
         let update_worker_account_fixture =
             UpdateWorkerRewardAccountFixture::default_with_ids(worker_id, lead_account_id);
 
-        update_worker_account_fixture.call_and_assert(Err(crate::errors::MSG_WORKER_HAS_NO_REWARD));
+        update_worker_account_fixture.call_and_assert(Err(Error::WorkerHasNoReward));
     });
 }
 
@@ -1951,7 +1919,7 @@ fn leave_worker_role_fails_with_invalid_origin() {
         let leave_worker_role_fixture =
             LeaveWorkerRoleFixture::default_for_worker_id(1).with_origin(RawOrigin::None);
 
-        leave_worker_role_fixture.call_and_assert(Err("RequireSignedOrigin"));
+        leave_worker_role_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
     });
 }
 
@@ -1963,8 +1931,7 @@ fn leave_worker_role_fails_with_invalid_origin_signed_account() {
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
             .with_origin(RawOrigin::Signed(2));
 
-        leave_worker_role_fixture
-            .call_and_assert(Err(crate::errors::MSG_SIGNER_IS_NOT_WORKER_ROLE_ACCOUNT));
+        leave_worker_role_fixture.call_and_assert(Err(Error::SignerIsNotWorkerRoleAccount));
     });
 }
 
@@ -1977,7 +1944,7 @@ fn leave_worker_role_fails_with_invalid_worker_id() {
         let leave_worker_role_fixture =
             LeaveWorkerRoleFixture::default_for_worker_id(invalid_worker_id);
 
-        leave_worker_role_fixture.call_and_assert(Err(crate::errors::MSG_WORKER_DOES_NOT_EXIST));
+        leave_worker_role_fixture.call_and_assert(Err(Error::WorkerDoesNotExist));
     });
 }
 
@@ -1997,7 +1964,7 @@ fn leave_worker_role_fails_with_inactive_worker() {
 
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
 
-        leave_worker_role_fixture.call_and_assert(Err(crate::errors::MSG_WORKER_IS_NOT_ACTIVE));
+        leave_worker_role_fixture.call_and_assert(Err(Error::WorkerIsNotActive));
     });
 }
 
@@ -2013,7 +1980,7 @@ fn leave_worker_role_fails_with_invalid_recurring_reward_relationships() {
 
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
 
-        leave_worker_role_fixture.call_and_assert(Err(crate::MSG_RELATIONSHIP_MUST_EXIST));
+        leave_worker_role_fixture.call_and_assert(Err(Error::RelationshipMustExist));
     });
 }
 
@@ -2066,13 +2033,13 @@ fn terminate_worker_role_fails_with_invalid_text() {
         let terminate_worker_role_fixture =
             TerminateWorkerRoleFixture::default_for_worker_id(worker_id).with_text(Vec::new());
         terminate_worker_role_fixture
-            .call_and_assert(Err(crate::MSG_WORKER_EXIT_RATIONALE_TEXT_TOO_SHORT));
+            .call_and_assert(Err(Error::Other("WorkerExitRationaleTextTooShort")));
 
         let terminate_worker_role_fixture =
             TerminateWorkerRoleFixture::default_for_worker_id(worker_id)
                 .with_text(b"MSG_WORKER_EXIT_RATIONALE_TEXT_TOO_LONG".to_vec());
         terminate_worker_role_fixture
-            .call_and_assert(Err(crate::MSG_WORKER_EXIT_RATIONALE_TEXT_TOO_LONG));
+            .call_and_assert(Err(Error::Other("WorkerExitRationaleTextTooLong")));
     });
 }
 
@@ -2086,7 +2053,7 @@ fn terminate_worker_role_fails_with_unset_lead() {
         let terminate_worker_role_fixture =
             TerminateWorkerRoleFixture::default_for_worker_id(worker_id);
 
-        terminate_worker_role_fixture.call_and_assert(Err(crate::MSG_CURRENT_LEAD_NOT_SET));
+        terminate_worker_role_fixture.call_and_assert(Err(Error::CurrentLeadNotSet));
     });
 }
 
@@ -2096,7 +2063,7 @@ fn terminate_worker_role_fails_with_invalid_origin() {
         let terminate_worker_role_fixture =
             TerminateWorkerRoleFixture::default_for_worker_id(1).with_origin(RawOrigin::None);
 
-        terminate_worker_role_fixture.call_and_assert(Err("RequireSignedOrigin"));
+        terminate_worker_role_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
     });
 }
 
@@ -2105,7 +2072,7 @@ fn unstake_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
         let unstake_fixture = UnstakeFixture::default().with_origin(RawOrigin::None);
 
-        unstake_fixture.call_and_assert(Err("RequireRootOrigin"));
+        unstake_fixture.call_and_assert(Err(Error::Other("RequireRootOrigin")));
     });
 }
 
@@ -2148,7 +2115,7 @@ fn unstake_fails_with_invalid_unstaker() {
         );
 
         let unstake_fixture = UnstakeFixture::default();
-        unstake_fixture.call_and_assert(Err(MSG_ONLY_WORKERS_CAN_UNSTAKE));
+        unstake_fixture.call_and_assert(Err(Error::OnlyWorkersCanUnstake));
     });
 }
 
@@ -2165,6 +2132,6 @@ fn unstake_fails_with_non_unstaking_worker() {
         <crate::WorkerById<Test, crate::Instance1>>::insert(worker_id, worker);
 
         let unstake_fixture = UnstakeFixture::default();
-        unstake_fixture.call_and_assert(Err(crate::MSG_WORKER_IS_NOT_UNSTAKING));
+        unstake_fixture.call_and_assert(Err(Error::WorkerIsNotUnstaking));
     });
 }
