@@ -9,7 +9,7 @@ import './SideBar.css';
 
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { Responsive } from 'semantic-ui-react';
+import { Responsive, Icon, SemanticICONS } from 'semantic-ui-react';
 import routing from '@polkadot/apps-routing';
 import { Button, ChainImg, Menu, media } from '@polkadot/react-components';
 import { classes } from '@polkadot/react-components/util';
@@ -17,8 +17,6 @@ import { classes } from '@polkadot/react-components/util';
 import translate from '../translate';
 import Item from './Item';
 import NetworkModal from '../modals/Network';
-
-// import { SemanticICONS } from 'semantic-ui-react';
 
 interface Props extends I18nProps /*ApiProps,*/ {
   className?: string;
@@ -29,22 +27,22 @@ interface Props extends I18nProps /*ApiProps,*/ {
   toggleMenu: () => void;
 }
 
-// type OuterLinkProps = {
-//   url: string;
-//   title: string;
-//   icon?: SemanticICONS;
-// };
+type OuterLinkProps = {
+  url: string;
+  title: string;
+  icon?: SemanticICONS;
+};
 
-// function OuterLink({ url, title, icon = 'external alternate' }: OuterLinkProps) {
-//   return (
-//     <Menu.Item className="apps--SideBar-Item">
-//       <a className="apps--SideBar-Item-NavLink" href={url} target="_blank">
-//         <Icon name={icon} />
-//         <span className="text">{title}</span>
-//       </a>
-//     </Menu.Item>
-//   );
-// }
+function OuterLink({ url, title, icon = 'external alternate' }: OuterLinkProps) {
+  return (
+    <Menu.Item className="apps--SideBar-Item">
+      <a className="apps--SideBar-Item-NavLink" href={url} target="_blank">
+        <Icon name={icon} />
+        <span className="text">{title}</span>
+      </a>
+    </Menu.Item>
+  );
+}
 
 /*
 interface State {
@@ -165,6 +163,10 @@ function SideBar({
                   <Menu.Divider hidden key={index} />
                 )
             )}
+            <Menu.Divider hidden />
+            <OuterLink url='https://joystream.org/testnet' title='Tokenomics' />
+            <OuterLink url='https://blog.joystream.org/constantinople-incentives/' title='Earn Monero' />
+            <Menu.Divider hidden />
           </div>
           <Responsive
             minWidth={SIDEBAR_MENU_THRESHOLD}

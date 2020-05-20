@@ -14,7 +14,7 @@ import members from './joy-members';
 import proposals from './joy-proposals';
 import roles from './joy-roles';
 import storageRoles from './joy-storage';
-// import pages from './joy-pages';
+import pages from './joy-pages';
 
 // import template from './123code';
 import accounts from './accounts';
@@ -55,7 +55,9 @@ const routes: Routes = ([] as Routes).concat(
   storage,
   extrinsics,
   sudo,
-  settings
+  settings,
+  null,
+  pages
 );
 const setup: Routing = {
   default: 'staking',
