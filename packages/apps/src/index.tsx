@@ -34,6 +34,13 @@ const rootElement = document.getElementById(rootId);
     });
 
     window.location.reload();
+  },
+  setAdvancedUI: (flag: boolean) => {
+    settings.set({
+      uiMode: flag ? 'full' : 'light'
+    });
+
+    window.location.reload();
   }
 };
 
