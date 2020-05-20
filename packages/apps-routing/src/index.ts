@@ -27,13 +27,13 @@ import addressbook from './addressbook';
 import explorer from './explorer';
 import extrinsics from './extrinsics';
 // import genericAsset from './generic-asset';
-// import js from './js';
+import js from './js';
 // import parachains from './parachains';
 import settings from './settings';
 import staking from './staking';
 import storage from './storage';
 import sudo from './sudo';
-// import toolbox from './toolbox';
+import toolbox from './toolbox';
 import transfer from './transfer';
 // import treasury from './treasury';
 
@@ -65,7 +65,9 @@ if (appSettings.isFullMode) {
   routes = routes.concat(
     storage,
     extrinsics,
-    sudo
+    sudo,
+    js,
+    toolbox
   )
 }
 
