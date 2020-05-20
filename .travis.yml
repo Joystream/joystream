@@ -12,6 +12,9 @@ matrix:
       services: docker
     - os: osx
       env: TARGET=x86_64-apple-darwin
+    - os: linux
+      env: TARGET=wasm-blob
+      services: docker
 
 before_install:
   - rustup component add rustfmt
@@ -39,27 +42,41 @@ script:
           joystream/rust-raspberry \
         build --release
       sudo chmod a+r ${TRAVIS_BUILD_DIR}/target/${TARGET}/release/joystream-node
+    elif [ "$TARGET" = "wasm-blob" ]
+    then
+      docker build --tag joystream/node \
+        --file ./devops/dockerfiles/node-and-runtime/Dockerfile \
+        .
+      docker create --name temp-container-joystream-node joystream/node
+      docker cp temp-container-joystream-node:/joystream/runtime.compact.wasm joystream_runtime.wasm
+      docker rm temp-container-joystream-node
     else
       cargo build --release --target=${TARGET}
     fi
 
 before_deploy:
-  - cp ./target/${TARGET}/release/joystream-node .
   - |
-    if [ "$TARGET" = "arm-unknown-linux-gnueabihf" ]
+    if [ "$TARGET" = "wasm-blob" ]
     then
-      export FILENAME="joystream-node-armv7-linux-gnueabihf"
+      export ASSET="joystream_runtime.wasm"
     else
-      export FILENAME=`./joystream-node --version | sed -e "s/ /-/g"`
+      cp ./target/${TARGET}/release/joystream-node .
+      if [ "$TARGET" = "arm-unknown-linux-gnueabihf" ]
+      then
+        export FILENAME="joystream-node-armv7-linux-gnueabihf"
+      else
+        export FILENAME=`./joystream-node --version | sed -e "s/ /-/g"`
+      fi
+      tar -cf ${FILENAME}.tar ./joystream-node
+      gzip ${FILENAME}.tar
+      export ASSET=${FILENAME}.tar.gz
     fi
-  - tar -cf ${FILENAME}.tar ./joystream-node
-  - gzip ${FILENAME}.tar
 
 deploy:
   - provider: releases
     api_key:
       secure: FfxZGQexxAGT0Skbctl1FuqmEvNHejPDPtNG8Du1ACSGjS7Y+M6o/aPqE6HL158AmddOgndsIPR+HM7VfMDAUMkLTbOhv3nMpDBZu1h25vwk+jHOM65tm5LWUu/ROWBpaAQiG7NKrvtfkNfbNBSETsEbWBt/DPrhlIfSbgsXBFDiid7uRrCiwvDUJ097/EUOJ9OVUrk+O4ebSzfIfKPGPtRU2rQQ0eNX7yX3TCm3jbQm/kplkQNRL9mnAJNxtKuvuko4LqZ6jN4XLoLTHUMjO7E0r6wXVB4GVjA4HA214eLlQD6BhgTbWMDxKgWyuKzPG+2GLKyluSSn0RurSl8tYryXKxKxuN3H1FX9r23a8AzGtpRACJtIePC2YmPuQRSnz2Bw8jlSP2WPLJtXGD036J/wVMj6W9TROm7IBigiC7QlqAqCYNByOnoKyhRCgYyAJZb0Jpa3qWaFhA6b6gCGhyH85QCcrc0q6JAB3oqH8Wfm/K2HVzBobmKaSFu5DpwInNnUXnLWGVzhSt3oCq6ld773izReGdLJtLC2vaJ9rZVaVw29s9M662EEuAGgaVLO/sinZJFeIIaCF4i4zUXwXSLIdfKXGOR0ZibkyT2FS6qPGvl/lLN5IREzD7v/rV8htGMLmw4jpPLNskvRjCHX42ewRRYdMvZzQQOAvSlWcsw=
-    file: ${FILENAME}.tar.gz
+    file: ${ASSET}
     on:
       tags: true
       repo: Joystream/joystream
@@ -69,7 +86,7 @@ deploy:
   - provider: releases
     api_key:
       secure: FfxZGQexxAGT0Skbctl1FuqmEvNHejPDPtNG8Du1ACSGjS7Y+M6o/aPqE6HL158AmddOgndsIPR+HM7VfMDAUMkLTbOhv3nMpDBZu1h25vwk+jHOM65tm5LWUu/ROWBpaAQiG7NKrvtfkNfbNBSETsEbWBt/DPrhlIfSbgsXBFDiid7uRrCiwvDUJ097/EUOJ9OVUrk+O4ebSzfIfKPGPtRU2rQQ0eNX7yX3TCm3jbQm/kplkQNRL9mnAJNxtKuvuko4LqZ6jN4XLoLTHUMjO7E0r6wXVB4GVjA4HA214eLlQD6BhgTbWMDxKgWyuKzPG+2GLKyluSSn0RurSl8tYryXKxKxuN3H1FX9r23a8AzGtpRACJtIePC2YmPuQRSnz2Bw8jlSP2WPLJtXGD036J/wVMj6W9TROm7IBigiC7QlqAqCYNByOnoKyhRCgYyAJZb0Jpa3qWaFhA6b6gCGhyH85QCcrc0q6JAB3oqH8Wfm/K2HVzBobmKaSFu5DpwInNnUXnLWGVzhSt3oCq6ld773izReGdLJtLC2vaJ9rZVaVw29s9M662EEuAGgaVLO/sinZJFeIIaCF4i4zUXwXSLIdfKXGOR0ZibkyT2FS6qPGvl/lLN5IREzD7v/rV8htGMLmw4jpPLNskvRjCHX42ewRRYdMvZzQQOAvSlWcsw=
-    file: ${FILENAME}.tar.gz
+    file: ${ASSET}
     on:
       branch: development
       repo: Joystream/joystream
