@@ -4479,6 +4479,7 @@ dependencies = [
  "substrate-hiring-module",
  "substrate-membership-module",
  "substrate-primitives",
+ "substrate-recurring-reward-module",
  "substrate-stake-module",
  "substrate-token-mint-module",
 ]
@@ -4603,6 +4604,8 @@ dependencies = [
 name = "substrate-common-module"
 version = "1.0.0"
 dependencies = [
+ "parity-scale-codec",
+ "serde",
  "sr-primitives",
  "srml-support",
  "srml-system",
@@ -4842,9 +4845,11 @@ dependencies = [
  "srml-timestamp",
  "substrate-bureaucracy-module",
  "substrate-common-module",
+ "substrate-hiring-module",
  "substrate-membership-module",
  "substrate-primitives",
  "substrate-recurring-reward-module",
+ "substrate-stake-module",
  "substrate-token-mint-module",
 ]
 
