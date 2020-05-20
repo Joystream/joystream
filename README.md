@@ -26,7 +26,7 @@ To setup a full node and validator review the [advanced guide from the helpdesk]
 
 ###  Pre-built Binaries
 
-The latest pre-built binaries can be downloads from the [releases](https://github.com/Joystream/joystream/releases) page.
+The latest pre-built binaries can be downloaded from the [releases](https://github.com/Joystream/joystream/releases) page.
 
 
 ### Building from source
