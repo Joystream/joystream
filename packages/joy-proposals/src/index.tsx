@@ -1,88 +1,73 @@
+import React from "react";
+import { Route, Switch } from "react-router";
 
-import BN from 'bn.js';
-import React from 'react';
-import { Route, Switch } from 'react-router';
+import { AppProps, I18nProps } from "@polkadot/react-components/types";
+import Tabs, { TabItem } from "@polkadot/react-components/Tabs";
+import { SubstrateProvider } from "./runtime";
+import { ProposalPreviewList, ProposalFromId, ChooseProposalType } from "./Proposal";
 
-import { AppProps, I18nProps } from '@polkadot/react-components/types';
-import { ApiProps } from '@polkadot/react-api/types';
-import { withCalls } from '@polkadot/react-api/with';
-import Tabs, { TabItem } from '@polkadot/react-components/Tabs';
+import "./index.css";
 
-// our app-specific styles
-import './index.css';
+import translate from "./translate";
+import NotDone from "./NotDone";
+import {
+  SignalForm,
+  EvictStorageProviderForm,
+  SpendingProposalForm,
+  SetContentWorkingGroupLeadForm,
+  SetContentWorkingGroupMintCapForm,
+  SetCouncilParamsForm,
+  SetStorageRoleParamsForm,
+  SetMaxValidatorCountForm,
+  RuntimeUpgradeForm
+} from "./forms";
 
-// local imports and components
-import translate from './translate';
-import Dashboard from './Dashboard';
-import Proposals from './Proposals';
-import ProposalById from './ProposalById';
-import NewForm from './NewForm';
-import { queryToProp, ZERO } from '@polkadot/joy-utils/index';
+interface Props extends AppProps, I18nProps {}
 
-// define out internal types
-type Props = AppProps & ApiProps & I18nProps & {
-  proposalCount?: BN,
-  activeProposalIds?: BN[]
-};
+function App(props: Props): React.ReactElement<Props> {
+  const { t, basePath } = props;
 
-class App extends React.PureComponent<Props> {
+  const tabs: TabItem[] = [
+    {
+      isRoot: true,
+      name: "proposals",
+      text: t("Proposals")
+    },
+    {
+      name: "new",
+      text: t("New Proposal")
+    }
+  ];
 
-  private buildTabs (): TabItem[] {
-    const { t, proposalCount = ZERO, activeProposalIds = [] } = this.props;
-    const activeCount = activeProposalIds.length;
-    const finalizedCount = proposalCount.sub(new BN(activeCount)).toNumber();
-    return [
-      {
-        isRoot: true,
-        name: 'proposals',
-        text: t('Dashboard')
-      },
-      {
-        name: 'active',
-        text: t('Active') + ` (${activeCount})`
-      },
-      {
-        name: 'finalized',
-        text: t('Finalized') + ` (${finalizedCount})`
-      },
-      {
-        name: 'new',
-        text: t('Create new')
-      }
-    ];
-  }
-
-  ActiveProposals = () => {
-    return <Proposals {...this.props} title='Active proposals' showActiveOnly={true} />;
-  }
-
-  FinalizedProposals = () => {
-    return <Proposals {...this.props} title='Finalized proposals' showFinalizedOnly={true} />;
-  }
-
-  render () {
-    const { basePath } = this.props;
-    const tabs = this.buildTabs();
-    return (
-      <main className='proposals--App'>
+  return (
+    <SubstrateProvider>
+      <main className="proposal--App">
         <header>
           <Tabs basePath={basePath} items={tabs} />
         </header>
         <Switch>
-          <Route path={`${basePath}/active`} component={this.ActiveProposals} />
-          <Route path={`${basePath}/finalized`} component={this.FinalizedProposals} />
-          <Route path={`${basePath}/new`} component={NewForm} />
-          <Route path={`${basePath}/:id`} component={ProposalById} />
-          <Route component={Dashboard} />
+          <Route exact path={`${basePath}/new`} component={ChooseProposalType} />
+          <Route exact path={`${basePath}/new/text`} component={SignalForm} />
+          <Route exact path={`${basePath}/new/runtime-upgrade`} component={RuntimeUpgradeForm} />
+          <Route exact path={`${basePath}/new/set-election-parameters`} component={SetCouncilParamsForm} />
+          <Route exact path={`${basePath}/new/spending`} component={SpendingProposalForm} />
+          <Route exact path={`${basePath}/new/set-lead`} component={SetContentWorkingGroupLeadForm} />
+          <Route
+            exact
+            path={`${basePath}/new/set-content-working-group-mint-capacity`}
+            component={SetContentWorkingGroupMintCapForm}
+          />
+          <Route exact path={`${basePath}/new/evict-storage-provider`} component={EvictStorageProviderForm} />
+          <Route exact path={`${basePath}/new/set-validator-count`} component={SetMaxValidatorCountForm} />
+          <Route exact path={`${basePath}/new/set-storage-role-parameters`} component={SetStorageRoleParamsForm} />
+          <Route exact path={`${basePath}/active`} component={NotDone} />
+          <Route exact path={`${basePath}/finalized`} component={NotDone} />
+          <Route exact path={`${basePath}/:id`} component={ProposalFromId} />
+          <Route component={ProposalPreviewList} />
         </Switch>
       </main>
-    );
-  }
+    </SubstrateProvider>
+  );
 }
 
-export default translate(
-  withCalls<Props>(
-    queryToProp('query.proposals.proposalCount'),
-    queryToProp('query.proposals.activeProposalIds')
-  )(App)
-);
+export default translate(App);

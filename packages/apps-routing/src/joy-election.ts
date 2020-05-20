@@ -4,15 +4,11 @@ import Election from '@polkadot/joy-election/index';
 
 export const councilSidebarName = 'council';
 
-export default ([
+export default [
   {
     Component: Election,
     display: {
-      needsAccounts: true,
-      needsApi: [
-        'query.council.activeCouncil',
-        'query.councilElection.stage',
-      ]
+      needsApi: ['query.council.activeCouncil', 'query.councilElection.stage']
     },
     i18n: {
       defaultValue: 'Council'
@@ -20,4 +16,4 @@ export default ([
     icon: 'university',
     name: councilSidebarName
   }
-] as Routes);
+] as Routes;

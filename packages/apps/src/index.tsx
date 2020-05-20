@@ -27,6 +27,23 @@ import Apps from './Apps';
 const rootId = 'root';
 const rootElement = document.getElementById(rootId);
 
+(window as any).Joystream = {
+  setRemoteEndpoint: (apiUrl: string) => {
+    settings.set({
+      apiUrl
+    });
+
+    window.location.reload();
+  },
+  setAdvancedUI: (flag: boolean) => {
+    settings.set({
+      uiMode: flag ? 'full' : 'light'
+    });
+
+    window.location.reload();
+  }
+};
+
 // we split here so that both these forms are allowed
 //  - http://localhost:3000/?rpc=wss://substrate-rpc.parity.io/#/explorer
 //  - http://localhost:3000/#/explorer?rpc=wss://substrate-rpc.parity.io
@@ -66,16 +83,12 @@ if (!rootElement) {
 }
 
 ReactDOM.render(
-  <Suspense fallback='...'>
+  <Suspense fallback="...">
     <MyAccountProvider>
       <Queue>
         <QueueConsumer>
           {({ queuePayload, queueSetTxStatus }): React.ReactNode => (
-            <Api
-              queuePayload={queuePayload}
-              queueSetTxStatus={queueSetTxStatus}
-              url={wsEndpoint}
-            >
+            <Api queuePayload={queuePayload} queueSetTxStatus={queueSetTxStatus} url={wsEndpoint}>
               <MyMembershipProvider>
                 <BlockAuthors>
                   <Events>

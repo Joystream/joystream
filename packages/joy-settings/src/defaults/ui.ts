@@ -8,9 +8,7 @@ import { isPolkadot } from './type';
 
 const LANGUAGE_DEFAULT = 'default';
 
-const UIMODE_DEFAULT = !isPolkadot && typeof window !== 'undefined' && window.location.host.includes('ui-light')
-  ? 'light'
-  : 'full';
+const UIMODE_DEFAULT = 'light';
 
 const UIMODES: Option[] = [
   {

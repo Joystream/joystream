@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Table } from 'semantic-ui-react';
+import { Table, Loader } from 'semantic-ui-react';
 import ReactMarkdown from 'react-markdown';
 import { IdentityIcon } from '@polkadot/react-components';
 import { ApiProps } from '@polkadot/react-api/types';
@@ -21,17 +21,23 @@ import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
 type Props = ApiProps & I18nProps & MyAccountProps & {
   preview?: boolean,
   memberId: MemberId,
-  memberProfile?: Option<any>, // TODO refactor to Option<Profile>
+  // This cannot be named just "memberProfile", since it will conflict with "withAccount's" memberProfile
+  // (which holds  member profile associated with currently selected account)
+  detailsMemberProfile?: Option<any>, // TODO refactor to Option<Profile>
   activeCouncil?: Seat[]
 };
 
 class Component extends React.PureComponent<Props> {
 
   render () {
-    const { memberProfile } = this.props;
-    return memberProfile
-      ? this.renderProfile(memberProfile.unwrap() as Profile)
-      : null;
+    const { detailsMemberProfile } = this.props;
+    return detailsMemberProfile
+      ? this.renderProfile(detailsMemberProfile.unwrap() as Profile)
+      : (
+        <div className={`item ProfileDetails`}>
+          <Loader active inline/>
+        </div>
+      );
   }
 
   private renderProfile (memberProfile: Profile) {
@@ -167,6 +173,9 @@ class Component extends React.PureComponent<Props> {
 export default translate(withMyAccount(
   withCalls<Props>(
     queryToProp('query.council.activeCouncil'),
-    queryMembershipToProp('memberProfile', 'memberId'),
+    queryMembershipToProp(
+      'memberProfile',
+      { paramName: 'memberId', propName: 'detailsMemberProfile' }
+    ),
   )(Component)
 ));

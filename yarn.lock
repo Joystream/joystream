@@ -3516,6 +3516,15 @@
     "@types/react" "*"
     "@types/react-router" "*"
 
+"@types/react-router-dom@^5.1.4":
+  version "5.1.4"
+  resolved "https://registry.yarnpkg.com/@types/react-router-dom/-/react-router-dom-5.1.4.tgz#8d3e0306df74af301cc896309e7d4758f1a4bf71"
+  integrity sha512-LO0z5qqSfWdYtCNsRm8/OMnnkv52hwADJKrAfpKIyfHclORllcgAMGypEA7ajHm38+jOonKLx8nPygNAAZGxtg==
+  dependencies:
+    "@types/history" "*"
+    "@types/react" "*"
+    "@types/react-router" "*"
+
 "@types/react-router@*":
   version "5.1.3"
   resolved "https://registry.yarnpkg.com/@types/react-router/-/react-router-5.1.3.tgz#7c7ca717399af64d8733d8cb338dd43641b96f2d"
@@ -3650,6 +3659,11 @@
   version "0.26.26"
   resolved "https://registry.yarnpkg.com/@types/yup/-/yup-0.26.26.tgz#2e7065384ac2b7711271d8790f26ac7d73f6a33d"
   integrity sha512-5cLJLd8NIT7OfJLi7ScquRn/NWfmewBqJ92nT/FYfdpgKzyUNcR4n2BKEOQ7mOG8WuJXgomIvNl5P3sn9Akd4A==
+
+"@types/yup@^0.26.36":
+  version "0.26.36"
+  resolved "https://registry.yarnpkg.com/@types/yup/-/yup-0.26.36.tgz#369d6ef8beb27c80dac73e77d495af9d3f004ef2"
+  integrity sha512-xOlotjSwyrnkIm7ZzpVu5r1TuFWb65atetUvpLVjNATHIhv/f1oGqBeFSdxrhX7tVbUaf2E5pkBb8e+lFpwHPg==
 
 "@typescript-eslint/eslint-plugin@2.9.0":
   version "2.9.0"
@@ -16401,6 +16415,15 @@ react-dropzone@^10.1.10:
   version "10.2.1"
   resolved "https://registry.yarnpkg.com/react-dropzone/-/react-dropzone-10.2.1.tgz#b7520124c4a3b66f96d49f7879027c7a475eaa20"
   integrity sha512-Me5nOu8hK9/Xyg5easpdfJ6SajwUquqYR/2YTdMotsCUgJ1pHIIwNsv0n+qcIno0tWR2V2rVQtj2r/hXYs2TnQ==
+  dependencies:
+    attr-accept "^2.0.0"
+    file-selector "^0.1.12"
+    prop-types "^15.7.2"
+
+react-dropzone@^10.2.2:
+  version "10.2.2"
+  resolved "https://registry.yarnpkg.com/react-dropzone/-/react-dropzone-10.2.2.tgz#67b4db7459589a42c3b891a82eaf9ade7650b815"
+  integrity sha512-U5EKckXVt6IrEyhMMsgmHQiWTGLudhajPPG77KFSvgsMqNEHSyGpqWvOMc5+DhEah/vH4E1n+J5weBNLd5VtyA==
   dependencies:
     attr-accept "^2.0.0"
     file-selector "^0.1.12"

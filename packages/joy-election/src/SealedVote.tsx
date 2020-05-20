@@ -12,6 +12,7 @@ import translate from './translate';
 import { calcTotalStake } from '@polkadot/joy-utils/index';
 import { SealedVote } from '@joystream/types/';
 import AddressMini from '@polkadot/react-components/AddressMiniJoy';
+import CandidatePreview from "./CandidatePreview";
 import { findVoteByHash } from './myVotesStore';
 
 type Props = ApiProps & I18nProps & {
@@ -29,7 +30,7 @@ class Comp extends React.PureComponent<Props> {
 
     if (sealedVote.vote.isSome) {
       const candidateId = sealedVote.vote.unwrap();
-      return <AddressMini value={candidateId} isShort={false} isPadded={false} withBalance={true} />;
+      return <CandidatePreview accountId={candidateId} />;
     } else {
       const revealUrl = `/council/reveals?hashedVote=${hash.toHex()}`;
       return <Link to={revealUrl} className='ui button primary inverted'>Reveal this vote</Link>;

@@ -8,15 +8,15 @@ import appSettings from '@polkadot/joy-settings/';
 
 import election from './joy-election';
 import forum from './joy-forum';
-import help from './joy-help';
+// import help from './joy-help';
 import media from './joy-media';
 import members from './joy-members';
 import proposals from './joy-proposals';
 import roles from './joy-roles';
 import storageRoles from './joy-storage';
-import pages from './joy-pages';
+// import pages from './joy-pages';
 
-import template from './123code';
+// import template from './123code';
 import accounts from './accounts';
 import addressbook from './addressbook';
 // import claims from './claims';
@@ -37,61 +37,47 @@ import toolbox from './toolbox';
 import transfer from './transfer';
 // import treasury from './treasury';
 
-const routes: Routes = appSettings.isBasicMode
-  ? ([] as Routes).concat(
-    explorer,
-    staking,
-    roles,
-    storageRoles,
-    transfer,
-    null,
-    media,
-    forum,
-    members,
-    accounts,
-    addressbook,
-    null,
-    election,
-    proposals,
-    null,
-    help,
-    settings,
-    template,
-    null,
-    pages
-  )
-  : ([] as Routes).concat(
-    // dashboard,
-    explorer,
-    staking,
-    roles,
-    storageRoles,
-    transfer,
-    null,
-    media,
-    forum,
-    members,
-    accounts,
-    addressbook,
-    null,
-    election,
-    proposals,
-    null,
+let routes: Routes = ([] as Routes);
+
+if (appSettings.isFullMode) {
+  routes = routes.concat(explorer);
+}
+
+// Basic routes
+routes = routes.concat(
+  staking,
+  roles,
+  storageRoles,
+  transfer,
+  null,
+  media,
+  forum,
+  members,
+  accounts,
+  addressbook,
+  null,
+  election,
+  proposals,
+  null
+);
+
+if (appSettings.isFullMode) {
+  routes = routes.concat(
     storage,
     extrinsics,
     sudo,
-    null,
-    help,
-    settings,
-    toolbox,
     js,
-    template,
-    null,
-    pages
-  );
+    toolbox,
+    null
+  )
+}
+
+routes = routes.concat(
+  settings
+);
 
 const setup: Routing = {
-  default: 'explorer',
+  default: 'staking',
   routes
 };
 

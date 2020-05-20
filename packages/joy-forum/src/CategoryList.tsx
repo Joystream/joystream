@@ -16,7 +16,7 @@ import { JoyWarn } from '@polkadot/joy-utils/JoyStatus';
 import { withForumCalls } from './calls';
 import { withMulti, withApi } from '@polkadot/react-api';
 import { ApiProps } from '@polkadot/react-api/types';
-import { bnToStr, isEmptyArr } from '@polkadot/joy-utils/';
+import { bnToStr, isEmptyArr } from '@polkadot/joy-utils/index';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { IfIAmForumSudo } from './ForumSudo';
 import { MemberPreview } from '@polkadot/joy-members/MemberPreview';

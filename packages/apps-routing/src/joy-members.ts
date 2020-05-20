@@ -2,14 +2,11 @@ import { Routes } from './types';
 
 import Members from '@polkadot/joy-members/index';
 
-export default ([
+export default [
   {
     Component: Members,
     display: {
-      needsAccounts: true,
-      needsApi: [
-        'query.members.membersCreated'
-      ]
+      needsApi: ['query.members.membersCreated']
     },
     i18n: {
       defaultValue: 'Membership'
@@ -17,4 +14,4 @@ export default ([
     icon: 'users',
     name: 'members'
   }
-] as Routes);
+] as Routes;

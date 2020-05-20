@@ -5,12 +5,12 @@ import { History } from 'history';
 
 import { Text, Option } from '@polkadot/types';
 import TxButton from '@polkadot/joy-utils/TxButton';
-import { onImageError } from '../utils';
+import { onImageError } from '@polkadot/joy-utils/images';
 import { withMediaForm, MediaFormProps } from '../common/MediaForms';
 import { ChannelType, ChannelClass as Fields, buildChannelValidationSchema, ChannelFormValues, ChannelToFormValues, ChannelGenericProp } from '../schemas/channel/Channel';
 import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
 import { ChannelId, ChannelContentType, ChannelPublicationStatus, OptionalText } from '@joystream/types/content-working-group';
-import { newOptionalText, findFirstParamOfSubstrateEvent } from '@polkadot/joy-utils/';
+import { newOptionalText, findFirstParamOfSubstrateEvent } from '@polkadot/joy-utils/index';
 import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
 import { ChannelPublicationStatusDropdownOptions, isAccountAChannelOwner } from './ChannelHelpers';
 import { TxCallback } from '@polkadot/react-components/Status/types';
