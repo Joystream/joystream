@@ -1,0 +1,21 @@
+{
+	"private": true,
+	"name": "joystream",
+	"license": "GPL-3.0-only",
+	"scripts": {
+		"test": "yarn && yarn workspaces run test",
+		"test-migration": "yarn && yarn workspaces run test-migration"
+	},
+	"workspaces": [
+		"tests/network-tests"
+	],
+	"devDependencies": {
+		"husky": "^4.2.5"
+	},
+	"husky": {
+	  "hooks": {
+		"pre-commit": "devops/git-hooks/pre-commit",
+		"pre-push": "devops/git-hooks/pre-push"
+	  }
+	}
+}

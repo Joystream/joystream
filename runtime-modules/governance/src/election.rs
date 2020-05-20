@@ -1,3 +1,34 @@
+//! Council Elections Manager
+//!
+//! # Election Parameters:
+//! We don't currently handle zero periods, zero council term, zero council size and candidacy
+//! limit in any special way. The behaviour in such cases:
+//!
+//! - Setting any period to 0 will mean the election getting stuck in that stage, until force changing
+//! the state.
+//!
+//! - Council Size of 0 - no limit to size of council, all applicants that move beyond
+//! announcing stage would become council members, so effectively the candidacy limit will
+//! be the size of the council, voting and revealing have no impact on final results.
+//!
+//! - If candidacy limit is zero and council size > 0, council_size number of applicants will reach the voting stage.
+//! and become council members, voting will have no impact on final results.
+//!
+//! - If both candidacy limit and council size are zero then all applicant become council members
+//! since no filtering occurs at end of announcing stage.
+//!
+//! We only guard against these edge cases in the [`set_election_parameters`] call.
+//!
+//! [`set_election_parameters`]: struct.Module.html#method.set_election_parameters
+
+// Clippy linter warning
+#![allow(clippy::type_complexity)]
+// disable it because of possible frontend API break
+// TODO: remove post-Constaninople
+
+// Clippy linter warning
+#![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
+
 use rstd::prelude::*;
 use srml_support::traits::{Currency, ReservableCurrency};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch::Result, ensure};
@@ -14,6 +45,7 @@ use super::sealed_vote::SealedVote;
 use super::stake::Stake;
 
 use super::council;
+use crate::election_params::ElectionParameters;
 pub use common::currency::{BalanceOf, GovernanceCurrency};
 
 pub trait Trait:
@@ -23,6 +55,8 @@ pub trait Trait:
 
     type CouncilElected: CouncilElected<Seats<Self::AccountId, BalanceOf<Self>>, Self::BlockNumber>;
 }
+
+pub static MSG_CANNOT_CHANGE_PARAMS_DURING_ELECTION: &str = "CannotChangeParamsDuringElection";
 
 #[derive(Clone, Copy, Encode, Decode)]
 pub enum ElectionStage<BlockNumber> {
@@ -73,6 +107,19 @@ impl<Elected, Term, X: CouncilElected<Elected, Term>> CouncilElected<Elected, Te
         X::council_elected(new_council, term);
     }
 }
+// Chain of handlers.
+impl<
+        Elected: Clone,
+        Term: Clone,
+        X: CouncilElected<Elected, Term>,
+        Y: CouncilElected<Elected, Term>,
+    > CouncilElected<Elected, Term> for (X, Y)
+{
+    fn council_elected(new_council: Elected, term: Term) {
+        X::council_elected(new_council.clone(), term.clone());
+        Y::council_elected(new_council, term);
+    }
+}
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Clone, Copy, Encode, Decode, Default)]
@@ -106,16 +153,25 @@ decl_storage! {
         // TODO value type of this map looks scary, is there any way to simplify the notation?
         Votes get(votes): map T::Hash => SealedVote<T::AccountId, ElectionStake<T>, T::Hash, T::AccountId>;
 
-        // Current Election Parameters - default "zero" values are not meaningful. Running an election without
-        // settings reasonable values is a bad idea. Parameters can be set in the TriggerElection hook.
-        AnnouncingPeriod get(announcing_period) config(): T::BlockNumber = T::BlockNumber::from(100);
-        VotingPeriod get(voting_period) config(): T::BlockNumber = T::BlockNumber::from(100);
-        RevealingPeriod get(revealing_period) config(): T::BlockNumber = T::BlockNumber::from(100);
-        CouncilSize get(council_size) config(): u32 = 10;
-        CandidacyLimit get (candidacy_limit) config(): u32 = 20;
-        MinCouncilStake get(min_council_stake) config(): BalanceOf<T> = BalanceOf::<T>::from(100);
-        NewTermDuration get(new_term_duration) config(): T::BlockNumber = T::BlockNumber::from(1000);
-        MinVotingStake get(min_voting_stake) config(): BalanceOf<T> = BalanceOf::<T>::from(10);
+        // Current Election Parameters.
+        // Should we replace all the individual values with a single ElectionParameters type?
+        // Having them individually makes it more flexible to add and remove new parameters in future
+        // without dealing with migration issues.
+        AnnouncingPeriod get(announcing_period): T::BlockNumber;
+        VotingPeriod get(voting_period): T::BlockNumber;
+        RevealingPeriod get(revealing_period): T::BlockNumber;
+        CouncilSize get(council_size): u32;
+        CandidacyLimit get (candidacy_limit): u32;
+        MinCouncilStake get(min_council_stake): BalanceOf<T>;
+        NewTermDuration get(new_term_duration): T::BlockNumber;
+        MinVotingStake get(min_voting_stake): BalanceOf<T>;
+    }
+    add_extra_genesis {
+        config(election_parameters): ElectionParameters<BalanceOf<T>, T::BlockNumber>;
+        build(|config: &GenesisConfig<T>| {
+            config.election_parameters.ensure_valid().expect("Invalid Election Parameters");
+            Module::<T>::set_verified_election_parameters(config.election_parameters);
+        });
     }
 }
 
@@ -156,7 +212,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn can_participate(sender: &T::AccountId) -> bool {
-        !T::Currency::free_balance(sender).is_zero()
+        !<T as GovernanceCurrency>::Currency::free_balance(sender).is_zero()
             && <membership::members::Module<T>>::is_member_account(sender)
     }
 
@@ -187,15 +243,15 @@ impl<T: Trait> Module<T> {
     fn start_election(current_council: Seats<T::AccountId, BalanceOf<T>>) -> Result {
         ensure!(!Self::is_election_running(), "election already in progress");
         ensure!(
-            Self::existing_stake_holders().len() == 0,
+            Self::existing_stake_holders().is_empty(),
             "stake holders must be empty"
         );
-        ensure!(Self::applicants().len() == 0, "applicants must be empty");
-        ensure!(Self::commitments().len() == 0, "commitments must be empty");
+        ensure!(Self::applicants().is_empty(), "applicants must be empty");
+        ensure!(Self::commitments().is_empty(), "commitments must be empty");
 
         // Take snapshot of seat and backing stakes of an existing council
         // Its important to note that the election system takes ownership of these stakes, and is responsible
-        // to return any unused stake to original owners and the end of the election.
+        // to return any unused stake to original owners at the end of the election.
         Self::initialize_transferable_stakes(current_council);
 
         Self::deposit_event(RawEvent::ElectionStarted());
@@ -249,6 +305,7 @@ impl<T: Trait> Module<T> {
         if len >= applicants.len() {
             &[]
         } else {
+            #[allow(clippy::redundant_closure)] // disable incorrect Clippy linter warning
             applicants.sort_by_key(|applicant| Self::applicant_stakes(applicant));
             &applicants[0..applicants.len() - len]
         }
@@ -303,17 +360,21 @@ impl<T: Trait> Module<T> {
             }
         }
 
-        if new_council.len() == Self::council_size_usize() {
-            // all applicants in the tally will form the new council
-        } else if new_council.len() > Self::council_size_usize() {
-            // we have more than enough applicants to form the new council.
-            // select top staked
-            Self::filter_top_staked(&mut new_council, Self::council_size_usize());
-        } else {
-            // Not enough applicants with votes to form a council.
-            // This may happen if we didn't add applicants with zero votes to the tally,
-            // or in future if we allow applicants to withdraw candidacy during voting or revealing stages.
-            // or council size was increased during voting, revealing stages.
+        match new_council.len() {
+            ncl if ncl == Self::council_size_usize() => {
+                // all applicants in the tally will form the new council
+            }
+            ncl if ncl > Self::council_size_usize() => {
+                // we have more than enough applicants to form the new council.
+                // select top staked
+                Self::filter_top_staked(&mut new_council, Self::council_size_usize());
+            }
+            _ => {
+                // Not enough applicants with votes to form a council.
+                // This may happen if we didn't add applicants with zero votes to the tally,
+                // or in future if we allow applicants to withdraw candidacy during voting or revealing stages.
+                // or council size was increased during voting, revealing stages.
+            }
         }
 
         // unless we want to add more filtering criteria to what is considered a successful election
@@ -332,7 +393,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn teardown_election(
-        votes: &Vec<SealedVote<T::AccountId, Stake<BalanceOf<T>>, T::Hash, T::AccountId>>,
+        votes: &[SealedVote<T::AccountId, Stake<BalanceOf<T>>, T::Hash, T::AccountId>],
         new_council: &BTreeMap<T::AccountId, Seat<T::AccountId, BalanceOf<T>>>,
         unlock_ts: bool,
     ) {
@@ -356,7 +417,10 @@ impl<T: Trait> Module<T> {
         for stakeholder in Self::existing_stake_holders().iter() {
             let stake = Self::transferable_stakes(stakeholder);
             if !stake.seat.is_zero() || !stake.backing.is_zero() {
-                T::Currency::unreserve(stakeholder, stake.seat + stake.backing);
+                <T as GovernanceCurrency>::Currency::unreserve(
+                    stakeholder,
+                    stake.seat + stake.backing,
+                );
             }
         }
     }
@@ -381,7 +445,7 @@ impl<T: Trait> Module<T> {
 
         // return new stake to account's free balance
         if !stake.new.is_zero() {
-            T::Currency::unreserve(applicant, stake.new);
+            <T as GovernanceCurrency>::Currency::unreserve(applicant, stake.new);
         }
 
         // return unused transferable stake
@@ -418,7 +482,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn refund_voting_stakes(
-        sealed_votes: &Vec<SealedVote<T::AccountId, Stake<BalanceOf<T>>, T::Hash, T::AccountId>>,
+        sealed_votes: &[SealedVote<T::AccountId, Stake<BalanceOf<T>>, T::Hash, T::AccountId>],
         new_council: &BTreeMap<T::AccountId, Seat<T::AccountId, BalanceOf<T>>>,
     ) {
         for sealed_vote in sealed_votes.iter() {
@@ -435,7 +499,7 @@ impl<T: Trait> Module<T> {
                 // return new stake to account's free balance
                 let SealedVote { voter, stake, .. } = sealed_vote;
                 if !stake.new.is_zero() {
-                    T::Currency::unreserve(voter, stake.new);
+                    <T as GovernanceCurrency>::Currency::unreserve(voter, stake.new);
                 }
 
                 // return unused transferable stake
@@ -456,7 +520,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn tally_votes(
-        sealed_votes: &Vec<SealedVote<T::AccountId, Stake<BalanceOf<T>>, T::Hash, T::AccountId>>,
+        sealed_votes: &[SealedVote<T::AccountId, Stake<BalanceOf<T>>, T::Hash, T::AccountId>],
     ) -> BTreeMap<T::AccountId, Seat<T::AccountId, BalanceOf<T>>> {
         let mut tally: BTreeMap<T::AccountId, Seat<T::AccountId, BalanceOf<T>>> = BTreeMap::new();
 
@@ -612,7 +676,7 @@ impl<T: Trait> Module<T> {
             *transferable
         };
 
-        *transferable = *transferable - transferred;
+        *transferable -= transferred;
 
         Stake {
             new: new_stake - transferred,
@@ -626,12 +690,12 @@ impl<T: Trait> Module<T> {
         let new_stake = Self::new_stake_reusing_transferable(&mut transferable_stake.seat, stake);
 
         ensure!(
-            T::Currency::can_reserve(&applicant, new_stake.new),
+            <T as GovernanceCurrency>::Currency::can_reserve(&applicant, new_stake.new),
             "not enough free balance to reserve"
         );
 
         ensure!(
-            T::Currency::reserve(&applicant, new_stake.new).is_ok(),
+            <T as GovernanceCurrency>::Currency::reserve(&applicant, new_stake.new).is_ok(),
             "failed to reserve applicant stake!"
         );
 
@@ -648,7 +712,7 @@ impl<T: Trait> Module<T> {
             <Applicants<T>>::mutate(|applicants| applicants.insert(0, applicant.clone()));
         }
 
-        <ApplicantStakes<T>>::insert(applicant.clone(), total_stake);
+        <ApplicantStakes<T>>::insert(applicant, total_stake);
 
         Ok(())
     }
@@ -662,12 +726,12 @@ impl<T: Trait> Module<T> {
             Self::new_stake_reusing_transferable(&mut transferable_stake.backing, stake);
 
         ensure!(
-            T::Currency::can_reserve(&voter, vote_stake.new),
+            <T as GovernanceCurrency>::Currency::can_reserve(&voter, vote_stake.new),
             "not enough free balance to reserve"
         );
 
         ensure!(
-            T::Currency::reserve(&voter, vote_stake.new).is_ok(),
+            <T as GovernanceCurrency>::Currency::reserve(&voter, vote_stake.new).is_ok(),
             "failed to reserve voting stake!"
         );
 
@@ -703,7 +767,7 @@ impl<T: Trait> Module<T> {
             "vote for non-applicant not allowed"
         );
 
-        let mut salt = salt.clone();
+        let mut salt = salt;
 
         // Tries to unseal, if salt is invalid will return error
         sealed_vote.unseal(vote_for, &mut salt, <T as system::Trait>::Hashing::hash)?;
@@ -712,6 +776,17 @@ impl<T: Trait> Module<T> {
         <Votes<T>>::insert(commitment, sealed_vote);
 
         Ok(())
+    }
+
+    fn set_verified_election_parameters(params: ElectionParameters<BalanceOf<T>, T::BlockNumber>) {
+        <AnnouncingPeriod<T>>::put(params.announcing_period);
+        <VotingPeriod<T>>::put(params.voting_period);
+        <RevealingPeriod<T>>::put(params.revealing_period);
+        <MinCouncilStake<T>>::put(params.min_council_stake);
+        <NewTermDuration<T>>::put(params.new_term_duration);
+        CouncilSize::put(params.council_size);
+        CandidacyLimit::put(params.candidacy_limit);
+        <MinVotingStake<T>>::put(params.min_voting_stake);
     }
 }
 
@@ -803,52 +878,16 @@ decl_module! {
             <Stage<T>>::put(ElectionStage::Voting(ends_at));
         }
 
-        fn set_param_announcing_period(origin, period: T::BlockNumber) {
+        /// Sets new election parameters. Some combination of parameters that are not desirable, so
+        /// the parameters are checked for validity.
+        /// The call will fail if an election is in progress. If a council is not being elected for some
+        /// reaon after multiple rounds, force_stop_election() can be called to stop elections and followed by
+        /// set_election_parameters().
+        pub fn set_election_parameters(origin, params: ElectionParameters<BalanceOf<T>, T::BlockNumber>) {
             ensure_root(origin)?;
-            ensure!(!Self::is_election_running(), "cannot change params during election");
-            ensure!(!period.is_zero(), "period cannot be zero");
-            <AnnouncingPeriod<T>>::put(period);
-        }
-        fn set_param_voting_period(origin,  period: T::BlockNumber) {
-            ensure_root(origin)?;
-            ensure!(!Self::is_election_running(), "cannot change params during election");
-            ensure!(!period.is_zero(), "period cannot be zero");
-            <VotingPeriod<T>>::put(period);
-        }
-        fn set_param_revealing_period(origin, period: T::BlockNumber) {
-            ensure_root(origin)?;
-            ensure!(!Self::is_election_running(), "cannot change params during election");
-            ensure!(!period.is_zero(), "period cannot be zero");
-            <RevealingPeriod<T>>::put(period);
-        }
-        fn set_param_min_council_stake(origin, amount: BalanceOf<T>) {
-            ensure_root(origin)?;
-            ensure!(!Self::is_election_running(), "cannot change params during election");
-            <MinCouncilStake<T>>::put(amount);
-        }
-        fn set_param_new_term_duration(origin, duration: T::BlockNumber) {
-            ensure_root(origin)?;
-            ensure!(!Self::is_election_running(), "cannot change params during election");
-            ensure!(!duration.is_zero(), "new term duration cannot be zero");
-            <NewTermDuration<T>>::put(duration);
-        }
-        fn set_param_council_size(origin, council_size: u32) {
-            ensure_root(origin)?;
-            ensure!(!Self::is_election_running(), "cannot change params during election");
-            ensure!(council_size > 0, "council size cannot be zero");
-            ensure!(council_size <= Self::candidacy_limit(), "council size cannot greater than candidacy limit");
-            CouncilSize::put(council_size);
-        }
-        fn set_param_candidacy_limit(origin, limit: u32) {
-            ensure_root(origin)?;
-            ensure!(!Self::is_election_running(), "cannot change params during election");
-            ensure!(limit >= Self::council_size(), "candidacy limit cannot be less than council size");
-            CandidacyLimit::put(limit);
-        }
-        fn set_param_min_voting_stake(origin, amount: BalanceOf<T>) {
-            ensure_root(origin)?;
-            ensure!(!Self::is_election_running(), "cannot change params during election");
-            <MinVotingStake<T>>::put(amount);
+            ensure!(!Self::is_election_running(), MSG_CANNOT_CHANGE_PARAMS_DURING_ELECTION);
+            params.ensure_valid()?;
+            Self::set_verified_election_parameters(params);
         }
 
         fn force_stop_election(origin) {
@@ -886,11 +925,7 @@ decl_module! {
 impl<T: Trait> council::CouncilTermEnded for Module<T> {
     fn council_term_ended() {
         if Self::auto_start() {
-            if Self::start_election(<council::Module<T>>::active_council()).is_ok() {
-                // emit ElectionStarted
-            } else {
-                // emit ElectionFailedStart
-            }
+            let _ = Self::start_election(<council::Module<T>>::active_council());
         }
     }
 }
@@ -2040,6 +2075,55 @@ mod tests {
 
             // When council term ends.. start a new election.
             assert_ok!(Election::start_election(vec![]));
+        });
+    }
+
+    #[test]
+    fn setting_election_parameters() {
+        initial_test_ext().execute_with(|| {
+            let default_parameters: ElectionParameters<u64, u64> = ElectionParameters::default();
+            // default all zeros is invalid
+            assert!(default_parameters.ensure_valid().is_err());
+
+            let new_parameters = ElectionParameters {
+                announcing_period: 1,
+                voting_period: 2,
+                revealing_period: 3,
+                council_size: 4,
+                candidacy_limit: 5,
+                min_voting_stake: 6,
+                min_council_stake: 7,
+                new_term_duration: 8,
+            };
+
+            assert_ok!(Election::set_election_parameters(
+                Origin::ROOT,
+                new_parameters
+            ));
+
+            assert_eq!(
+                <AnnouncingPeriod<Test>>::get(),
+                new_parameters.announcing_period
+            );
+            assert_eq!(<VotingPeriod<Test>>::get(), new_parameters.voting_period);
+            assert_eq!(
+                <RevealingPeriod<Test>>::get(),
+                new_parameters.revealing_period
+            );
+            assert_eq!(
+                <MinCouncilStake<Test>>::get(),
+                new_parameters.min_council_stake
+            );
+            assert_eq!(
+                <NewTermDuration<Test>>::get(),
+                new_parameters.new_term_duration
+            );
+            assert_eq!(CouncilSize::get(), new_parameters.council_size);
+            assert_eq!(CandidacyLimit::get(), new_parameters.candidacy_limit);
+            assert_eq!(
+                <MinVotingStake<Test>>::get(),
+                new_parameters.min_voting_stake
+            );
         });
     }
 }

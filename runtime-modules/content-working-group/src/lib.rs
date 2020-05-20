@@ -1,3 +1,10 @@
+// Clippy linter warning. TODO: remove after the Constaninople release
+#![allow(clippy::type_complexity)]
+// disable it because of possible frontend API break
+
+// Clippy linter warning. TODO: refactor "this function has too many argument"
+#![allow(clippy::too_many_arguments)] // disable it because of possible API break
+
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -15,6 +22,7 @@ use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode}; // Codec
                              //use rstd::collections::btree_map::BTreeMap;
 use membership::{members, role_types};
+use rstd::borrow::ToOwned;
 use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::convert::From;
@@ -310,12 +318,12 @@ impl<BlockNumber: Clone> CuratorExitSummary<BlockNumber> {
     pub fn new(
         origin: &CuratorExitInitiationOrigin,
         initiated_at_block_number: &BlockNumber,
-        rationale_text: &Vec<u8>,
+        rationale_text: &[u8],
     ) -> Self {
         CuratorExitSummary {
             origin: (*origin).clone(),
             initiated_at_block_number: (*initiated_at_block_number).clone(),
-            rationale_text: (*rationale_text).clone(),
+            rationale_text: rationale_text.to_owned(),
         }
     }
 }
@@ -1080,7 +1088,9 @@ decl_event! {
         CuratorApplicationId = CuratorApplicationId<T>,
         CuratorId = CuratorId<T>,
         CuratorApplicationIdToCuratorIdMap = CuratorApplicationIdToCuratorIdMap<T>,
+        MintBalanceOf = minting::BalanceOf<T>,
         <T as system::Trait>::AccountId,
+        <T as minting::Trait>::MintId,
     {
         ChannelCreated(ChannelId),
         ChannelOwnershipTransferred(ChannelId),
@@ -1100,6 +1110,8 @@ decl_event! {
         CuratorRewardAccountUpdated(CuratorId, AccountId),
         ChannelUpdatedByCurationActor(ChannelId),
         ChannelCreationEnabledUpdated(bool),
+        MintCapacityIncreased(MintId, MintBalanceOf, MintBalanceOf),
+        MintCapacityDecreased(MintId, MintBalanceOf, MintBalanceOf),
     }
 }
 
@@ -1186,12 +1198,12 @@ decl_module! {
             ChannelById::<T>::insert(next_channel_id, new_channel);
 
             // Add id to ChannelIdByHandle under handle
-            ChannelIdByHandle::<T>::insert(handle.clone(), next_channel_id);
+            ChannelIdByHandle::<T>::insert(handle, next_channel_id);
 
             // Increment NextChannelId
             NextChannelId::<T>::mutate(|id| *id += <ChannelId<T> as One>::one());
 
-            /// CREDENTIAL STUFF ///
+            // CREDENTIAL STUFF //
 
             // Dial out to membership module and inform about new role as channe owner.
             let registered_role = <members::Module<T>>::register_role_on_member(owner, &member_in_role).is_ok();
@@ -1227,7 +1239,7 @@ decl_module! {
             // Construct new channel with altered properties
             let new_channel = Channel {
                 owner: new_owner,
-                role_account: new_role_account.clone(),
+                role_account: new_role_account,
                 ..channel
             };
 
@@ -1304,14 +1316,14 @@ decl_module! {
 
             Self::update_channel(
                 &channel_id,
-                &None, // verified
+                None, // verified
                 &new_handle,
                 &new_title,
                 &new_description,
                 &new_avatar,
                 &new_banner,
-                &new_publication_status,
-                &None // curation_status
+                new_publication_status,
+                None // curation_status
             );
         }
 
@@ -1333,14 +1345,14 @@ decl_module! {
 
             Self::update_channel(
                 &channel_id,
-                &new_verified,
+                new_verified,
                 &None, // handle
                 &None, // title
                 &None, // description,
                 &None, // avatar
                 &None, // banner
-                &None, // publication_status
-                &new_curation_status
+                None, // publication_status
+                new_curation_status
             );
         }
 
@@ -1460,7 +1472,7 @@ decl_module! {
             let successful_iter = successful_curator_application_ids
                                     .iter()
                                     // recover curator application from id
-                                    .map(|curator_application_id| { Self::ensure_curator_application_exists(curator_application_id) })
+                                    .map(|curator_application_id| { Self::ensure_curator_application_exists(curator_application_id)})
                                     // remove Err cases, i.e. non-existing applications
                                     .filter_map(|result| result.ok());
 
@@ -1470,8 +1482,7 @@ decl_module! {
             // Ensure all curator applications exist
             let number_of_successful_applications = successful_iter
                                                     .clone()
-                                                    .collect::<Vec<_>>()
-                                                    .len();
+                                                    .count();
 
             ensure!(
                 number_of_successful_applications == num_provided_successful_curator_application_ids,
@@ -1489,7 +1500,7 @@ decl_module! {
                                                                         .clone()
                                                                         .map(|(successful_curator_application, _, _)| successful_curator_application.member_id)
                                                                         .filter_map(|successful_member_id| Self::ensure_can_register_curator_role_on_member(&successful_member_id).ok() )
-                                                                        .collect::<Vec<_>>().len();
+                                                                        .count();
 
             ensure!(
                 num_successful_applications_that_can_register_as_curator == num_provided_successful_curator_application_ids,
@@ -1883,7 +1894,7 @@ decl_module! {
             origin,
             curator_id: CuratorId<T>,
             rationale_text: Vec<u8>
-            ) {
+        ) {
 
             // Ensure lead is set and is origin signer
             Self::ensure_origin_is_set_lead(origin)?;
@@ -1906,103 +1917,23 @@ decl_module! {
             );
         }
 
-        /*
-         * Root origin routines for managing lead.
-         */
-
-
-        /// Introduce a lead when one is not currently set.
-        pub fn set_lead(origin, member: T::MemberId, role_account: T::AccountId) {
-
+        /// Replace the current lead. First unsets the active lead if there is one.
+        /// If a value is provided for new_lead it will then set that new lead.
+        /// It is responsibility of the caller to ensure the new lead can be set
+        /// to avoid the lead role being vacant at the end of the call.
+        pub fn replace_lead(origin, new_lead: Option<(T::MemberId, T::AccountId)>) {
             // Ensure root is origin
             ensure_root(origin)?;
 
-            // Ensure there is no current lead
-            ensure!(
-                <CurrentLeadId<T>>::get().is_none(),
-                MSG_CURRENT_LEAD_ALREADY_SET
-            );
+            // Unset current lead first
+            if Self::ensure_lead_is_set().is_ok() {
+                Self::unset_lead()?;
+            }
 
-            // Ensure that member can actually become lead
-            let new_lead_id = <NextLeadId<T>>::get();
-
-            let new_lead_role =
-                role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id);
-
-            let _profile = <members::Module<T>>::can_register_role_on_member(
-                &member,
-                &role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id),
-            )?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Construct lead
-            let new_lead = Lead {
-                role_account: role_account.clone(),
-                reward_relationship: None,
-                inducted: <system::Module<T>>::block_number(),
-                stage: LeadRoleState::Active,
-            };
-
-            // Store lead
-            <LeadById<T>>::insert(new_lead_id, new_lead);
-
-            // Update current lead
-            <CurrentLeadId<T>>::put(new_lead_id); // Some(new_lead_id)
-
-            // Update next lead counter
-            <NextLeadId<T>>::mutate(|id| *id += <LeadId<T> as One>::one());
-
-            // Register in role
-            let registered_role =
-                <members::Module<T>>::register_role_on_member(member, &new_lead_role).is_ok();
-
-            assert!(registered_role);
-
-            // Trigger event
-            Self::deposit_event(RawEvent::LeadSet(new_lead_id));
-        }
-
-        /// Evict the currently unset lead
-        pub fn unset_lead(origin) {
-
-            // Ensure root is origin
-            ensure_root(origin)?;
-
-            // Ensure there is a lead set
-            let (lead_id,lead) = Self::ensure_lead_is_set()?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Unregister from role in membership model
-            let current_lead_role = role_types::ActorInRole{
-                role: role_types::Role::CuratorLead,
-                actor_id: lead_id
-            };
-
-            let unregistered_role = <members::Module<T>>::unregister_role(current_lead_role).is_ok();
-
-            assert!(unregistered_role);
-
-            // Update lead stage as exited
-            let current_block = <system::Module<T>>::block_number();
-
-            let new_lead = Lead{
-                stage: LeadRoleState::Exited(ExitedLeadRole { initiated_at_block_number: current_block}),
-                ..lead
-            };
-
-            <LeadById<T>>::insert(lead_id, new_lead);
-
-            // Update current lead
-            <CurrentLeadId<T>>::take(); // None
-
-            // Trigger event
-            Self::deposit_event(RawEvent::LeadUnset(lead_id));
+            // Try to set new lead
+            if let Some((member_id, role_account)) = new_lead {
+                Self::set_lead(member_id, role_account)?;
+            }
         }
 
         /// Add an opening for a curator role.
@@ -2022,7 +1953,11 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelCreationEnabledUpdated(enabled));
         }
 
-        /// Add to capacity of current acive mint
+        /// Add to capacity of current acive mint.
+        /// This may be deprecated in the future, since set_mint_capacity is sufficient to
+        /// both increase and decrease capacity. Although when considering that it may be executed
+        /// by a proposal, given the temporal delay in approving a proposal, it might be more suitable
+        /// than set_mint_capacity?
         pub fn increase_mint_capacity(
             origin,
             additional_capacity: minting::BalanceOf<T>
@@ -2032,7 +1967,42 @@ decl_module! {
             let mint_id = Self::mint();
             let mint = <minting::Module<T>>::mints(mint_id); // must exist
             let new_capacity = mint.capacity() + additional_capacity;
-            let _ = <minting::Module<T>>::set_mint_capacity(mint_id, new_capacity);
+            <minting::Module<T>>::set_mint_capacity(mint_id, new_capacity)?;
+
+            Self::deposit_event(RawEvent::MintCapacityIncreased(
+                mint_id, additional_capacity, new_capacity
+            ));
+        }
+
+        /// Sets the capacity of the current active mint
+        pub fn set_mint_capacity(
+            origin,
+            new_capacity: minting::BalanceOf<T>
+        ) {
+            ensure_root(origin)?;
+
+            let mint_id = Self::mint();
+
+            // Mint must exist - it is set at genesis
+            let mint = <minting::Module<T>>::mints(mint_id);
+
+            let current_capacity = mint.capacity();
+
+            if new_capacity != current_capacity {
+                // Cannot fail if mint exists
+                <minting::Module<T>>::set_mint_capacity(mint_id, new_capacity)?;
+
+                if new_capacity > current_capacity {
+                    Self::deposit_event(RawEvent::MintCapacityIncreased(
+                        mint_id, new_capacity - current_capacity, new_capacity
+                    ));
+                } else {
+                    Self::deposit_event(RawEvent::MintCapacityDecreased(
+                        mint_id, current_capacity - new_capacity, new_capacity
+                    ));
+                }
+            }
+
         }
     }
 }
@@ -2079,6 +2049,87 @@ impl<T: Trait> versioned_store_permissions::CredentialChecker<T> for Module<T> {
 }
 
 impl<T: Trait> Module<T> {
+    /// Introduce a lead when one is not currently set.
+    fn set_lead(member: T::MemberId, role_account: T::AccountId) -> dispatch::Result {
+        // Ensure there is no current lead
+        ensure!(
+            <CurrentLeadId<T>>::get().is_none(),
+            MSG_CURRENT_LEAD_ALREADY_SET
+        );
+
+        let new_lead_id = <NextLeadId<T>>::get();
+
+        let new_lead_role =
+            role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id);
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        // Register in role - will fail if member cannot become lead
+        members::Module::<T>::register_role_on_member(member, &new_lead_role)?;
+
+        // Construct lead
+        let new_lead = Lead {
+            role_account,
+            reward_relationship: None,
+            inducted: <system::Module<T>>::block_number(),
+            stage: LeadRoleState::Active,
+        };
+
+        // Store lead
+        <LeadById<T>>::insert(new_lead_id, new_lead);
+
+        // Update current lead
+        <CurrentLeadId<T>>::put(new_lead_id); // Some(new_lead_id)
+
+        // Update next lead counter
+        <NextLeadId<T>>::mutate(|id| *id += <LeadId<T> as One>::one());
+
+        // Trigger event
+        Self::deposit_event(RawEvent::LeadSet(new_lead_id));
+
+        Ok(())
+    }
+
+    /// Evict the currently set lead
+    fn unset_lead() -> dispatch::Result {
+        // Ensure there is a lead set
+        let (lead_id, lead) = Self::ensure_lead_is_set()?;
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        // Unregister from role in membership model
+        let current_lead_role = role_types::ActorInRole {
+            role: role_types::Role::CuratorLead,
+            actor_id: lead_id,
+        };
+
+        <members::Module<T>>::unregister_role(current_lead_role)?;
+
+        // Update lead stage as exited
+        let current_block = <system::Module<T>>::block_number();
+
+        let new_lead = Lead {
+            stage: LeadRoleState::Exited(ExitedLeadRole {
+                initiated_at_block_number: current_block,
+            }),
+            ..lead
+        };
+
+        <LeadById<T>>::insert(lead_id, new_lead);
+
+        // Update current lead
+        <CurrentLeadId<T>>::take(); // None
+
+        // Trigger event
+        Self::deposit_event(RawEvent::LeadUnset(lead_id));
+
+        Ok(())
+    }
+
     fn ensure_member_has_no_active_application_on_opening(
         curator_applications: CuratorApplicationIdSet<T>,
         member_id: T::MemberId,
@@ -2136,7 +2187,7 @@ impl<T: Trait> Module<T> {
         ),
         &'static str,
     > {
-        let next_channel_id = opt_channel_id.unwrap_or(NextChannelId::<T>::get());
+        let next_channel_id = opt_channel_id.unwrap_or_else(NextChannelId::<T>::get);
 
         Self::ensure_can_register_role_on_member(
             member_id,
@@ -2148,7 +2199,7 @@ impl<T: Trait> Module<T> {
 
     // TODO: convert InputConstraint ensurer routines into macroes
 
-    fn ensure_channel_handle_is_valid(handle: &Vec<u8>) -> dispatch::Result {
+    fn ensure_channel_handle_is_valid(handle: &[u8]) -> dispatch::Result {
         ChannelHandleConstraint::get().ensure_valid(
             handle.len(),
             MSG_CHANNEL_HANDLE_TOO_SHORT,
@@ -2212,7 +2263,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_curator_application_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    fn ensure_curator_application_text_is_valid(text: &[u8]) -> dispatch::Result {
         CuratorApplicationHumanReadableText::get().ensure_valid(
             text.len(),
             MSG_CURATOR_APPLICATION_TEXT_TOO_SHORT,
@@ -2220,7 +2271,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_curator_exit_rationale_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    fn ensure_curator_exit_rationale_text_is_valid(text: &[u8]) -> dispatch::Result {
         CuratorExitRationaleText::get().ensure_valid(
             text.len(),
             MSG_CURATOR_EXIT_RATIONALE_TEXT_TOO_SHORT,
@@ -2228,7 +2279,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_opening_human_readable_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    fn ensure_opening_human_readable_text_is_valid(text: &[u8]) -> dispatch::Result {
         OpeningHumanReadableText::get().ensure_valid(
             text.len(),
             MSG_CHANNEL_DESCRIPTION_TOO_SHORT,
@@ -2496,7 +2547,7 @@ impl<T: Trait> Module<T> {
 
         Ok((
             curator_application,
-            curator_application_id.clone(),
+            *curator_application_id,
             curator_opening,
         ))
     }
@@ -2595,7 +2646,7 @@ impl<T: Trait> Module<T> {
             PrincipalId<T>,
         >,
         exit_initiation_origin: &CuratorExitInitiationOrigin,
-        rationale_text: &Vec<u8>,
+        rationale_text: &[u8],
     ) {
         // Stop any possible recurring rewards
         let _did_deactivate_recurring_reward = if let Some(ref reward_relationship_id) =
@@ -2603,14 +2654,14 @@ impl<T: Trait> Module<T> {
         {
             // Attempt to deactivate
             recurringrewards::Module::<T>::try_to_deactivate_relationship(*reward_relationship_id)
-                .expect("Relatioship must exist")
+                .expect("Relationship must exist")
         } else {
             // Did not deactivate, there was no reward relationship!
             false
         };
 
-        // When the curator is staked, unstaking must first be initated,
-        // otherwise they can be terminted right away.
+        // When the curator is staked, unstaking must first be initiated,
+        // otherwise they can be terminated right away.
 
         // Create exit summary for this termination
         let current_block = <system::Module<T>>::block_number();
@@ -2619,33 +2670,30 @@ impl<T: Trait> Module<T> {
             CuratorExitSummary::new(exit_initiation_origin, &current_block, rationale_text);
 
         // Determine new curator stage and event to emit
-        let (new_curator_stage, unstake_directions, event) =
-            if let Some(ref stake_profile) = curator.role_stake_profile {
-                // Determine unstaknig period based on who initiated deactivation
-                let unstaking_period = match curator_exit_summary.origin {
-                    CuratorExitInitiationOrigin::Lead => stake_profile.termination_unstaking_period,
-                    CuratorExitInitiationOrigin::Curator => stake_profile.exit_unstaking_period,
-                };
-
-                (
-                    CuratorRoleStage::Unstaking(curator_exit_summary),
-                    Some((stake_profile.stake_id.clone(), unstaking_period)),
-                    RawEvent::CuratorUnstaking(curator_id.clone()),
-                )
-            } else {
-                (
-                    CuratorRoleStage::Exited(curator_exit_summary.clone()),
-                    None,
-                    match curator_exit_summary.origin {
-                        CuratorExitInitiationOrigin::Lead => {
-                            RawEvent::TerminatedCurator(curator_id.clone())
-                        }
-                        CuratorExitInitiationOrigin::Curator => {
-                            RawEvent::CuratorExited(curator_id.clone())
-                        }
-                    },
-                )
+        let (new_curator_stage, unstake_directions, event) = if let Some(ref stake_profile) =
+            curator.role_stake_profile
+        {
+            // Determine unstaknig period based on who initiated deactivation
+            let unstaking_period = match curator_exit_summary.origin {
+                CuratorExitInitiationOrigin::Lead => stake_profile.termination_unstaking_period,
+                CuratorExitInitiationOrigin::Curator => stake_profile.exit_unstaking_period,
             };
+
+            (
+                CuratorRoleStage::Unstaking(curator_exit_summary),
+                Some((stake_profile.stake_id, unstaking_period)),
+                RawEvent::CuratorUnstaking(*curator_id),
+            )
+        } else {
+            (
+                CuratorRoleStage::Exited(curator_exit_summary.clone()),
+                None,
+                match curator_exit_summary.origin {
+                    CuratorExitInitiationOrigin::Lead => RawEvent::TerminatedCurator(*curator_id),
+                    CuratorExitInitiationOrigin::Curator => RawEvent::CuratorExited(*curator_id),
+                },
+            )
+        };
 
         // Update curator
         let new_curator = Curator {
@@ -2658,7 +2706,7 @@ impl<T: Trait> Module<T> {
         // Unstake if directions provided
         if let Some(directions) = unstake_directions {
             // Keep track of curator unstaking
-            let unstaker = WorkingGroupUnstaker::Curator(curator_id.clone());
+            let unstaker = WorkingGroupUnstaker::Curator(*curator_id);
             UnstakerByStakeId::<T>::insert(directions.0, unstaker);
 
             // Unstake
@@ -2687,14 +2735,14 @@ impl<T: Trait> Module<T> {
 
     fn update_channel(
         channel_id: &ChannelId<T>,
-        new_verified: &Option<bool>,
+        new_verified: Option<bool>,
         new_handle: &Option<Vec<u8>>,
         new_title: &Option<OptionalText>,
         new_description: &Option<OptionalText>,
         new_avatar: &Option<OptionalText>,
         new_banner: &Option<OptionalText>,
-        new_publication_status: &Option<ChannelPublicationStatus>,
-        new_curation_status: &Option<ChannelCurationStatus>,
+        new_publication_status: Option<ChannelPublicationStatus>,
+        new_curation_status: Option<ChannelCurationStatus>,
     ) {
         // Update channel id to handle mapping, if there is a new handle.
         if let Some(ref handle) = new_handle {

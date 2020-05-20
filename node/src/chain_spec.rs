@@ -14,13 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with Joystream node.  If not, see <http://www.gnu.org/licenses/>.
 
+// Clippy linter warning.
+#![allow(clippy::identity_op)] // disable it because we use such syntax for a code readability
+                               // Example:  voting_period: 1 * DAY
+
 use node_runtime::{
     versioned_store::InputValidationLengthConstraint as VsInputValidation, ActorsConfig,
     AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
     CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
-    DataObjectTypeRegistryConfig, GrandpaConfig, ImOnlineConfig, IndicesConfig, MembersConfig,
-    Perbill, ProposalsConfig, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
-    SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
+    DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, IndicesConfig,
+    MembersConfig, MigrationConfig, Perbill, ProposalsCodexConfig, SessionConfig, SessionKeys,
+    Signature, StakerStatus, StakingConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS,
+    WASM_BINARY,
 };
 pub use node_runtime::{AccountId, GenesisConfig};
 use primitives::{sr25519, Pair, Public};
@@ -30,7 +35,6 @@ use babe_primitives::AuthorityId as BabeId;
 use grandpa_primitives::AuthorityId as GrandpaId;
 use im_online::sr25519::AuthorityId as ImOnlineId;
 use serde_json as json;
-use substrate_service;
 
 type AccountPublic = <Signature as Verify>::Signer;
 
@@ -154,7 +158,7 @@ impl Alternative {
 }
 
 fn new_vs_validation(min: u16, max_min_diff: u16) -> VsInputValidation {
-    return VsInputValidation { min, max_min_diff };
+    VsInputValidation { min, max_min_diff }
 }
 
 pub fn chain_spec_properties() -> json::map::Map<String, json::Value> {
@@ -179,6 +183,9 @@ pub fn testnet_genesis(
     const DOLLARS: Balance = 100 * CENTS;
     const STASH: Balance = 20 * DOLLARS;
     const ENDOWMENT: Balance = 100_000 * DOLLARS;
+
+    // default codex proposals config parameters
+    let cpcp = node_runtime::ProposalsConfigParameters::default();
 
     GenesisConfig {
         system: Some(SystemConfig {
@@ -218,9 +225,7 @@ pub fn testnet_genesis(
             slash_reward_fraction: Perbill::from_percent(10),
             ..Default::default()
         }),
-        sudo: Some(SudoConfig {
-            key: root_key.clone(),
-        }),
+        sudo: Some(SudoConfig { key: root_key }),
         babe: Some(BabeConfig {
             authorities: vec![],
         }),
@@ -235,24 +240,16 @@ pub fn testnet_genesis(
         }),
         election: Some(CouncilElectionConfig {
             auto_start: true,
-            announcing_period: 3 * DAYS,
-            voting_period: 1 * DAYS,
-            revealing_period: 1 * DAYS,
-            council_size: 12,
-            candidacy_limit: 25,
-            min_council_stake: 10 * DOLLARS,
-            new_term_duration: 14 * DAYS,
-            min_voting_stake: 1 * DOLLARS,
-        }),
-        proposals: Some(ProposalsConfig {
-            approval_quorum: 66,
-            min_stake: 2 * DOLLARS,
-            cancellation_fee: 10 * CENTS,
-            rejection_fee: 1 * DOLLARS,
-            voting_period: 2 * DAYS,
-            name_max_len: 512,
-            description_max_len: 10_000,
-            wasm_code_max_len: 2_000_000,
+            election_parameters: ElectionParameters {
+                announcing_period: 3 * DAYS,
+                voting_period: 1 * DAYS,
+                revealing_period: 1 * DAYS,
+                council_size: 12,
+                candidacy_limit: 25,
+                min_council_stake: 10 * DOLLARS,
+                new_term_duration: 14 * DAYS,
+                min_voting_stake: 1 * DOLLARS,
+            },
         }),
         members: Some(MembersConfig {
             default_paid_membership_fee: 100u128,
@@ -282,7 +279,7 @@ pub fn testnet_genesis(
             class_description_constraint: new_vs_validation(1, 999),
         }),
         content_wg: Some(ContentWorkingGroupConfig {
-            mint_capacity: 100000,
+            mint_capacity: 100_000,
             curator_opening_by_id: vec![],
             next_curator_opening_id: 0,
             curator_application_by_id: vec![],
@@ -304,6 +301,37 @@ pub fn testnet_genesis(
             channel_avatar_constraint: crate::forum_config::new_validation(5, 1024),
             channel_banner_constraint: crate::forum_config::new_validation(5, 1024),
             channel_title_constraint: crate::forum_config::new_validation(5, 1024),
+        }),
+        migration: Some(MigrationConfig {}),
+        proposals_codex: Some(ProposalsCodexConfig {
+            set_validator_count_proposal_voting_period: cpcp
+                .set_validator_count_proposal_voting_period,
+            set_validator_count_proposal_grace_period: cpcp
+                .set_validator_count_proposal_grace_period,
+            runtime_upgrade_proposal_voting_period: cpcp.runtime_upgrade_proposal_voting_period,
+            runtime_upgrade_proposal_grace_period: cpcp.runtime_upgrade_proposal_grace_period,
+            text_proposal_voting_period: cpcp.text_proposal_voting_period,
+            text_proposal_grace_period: cpcp.text_proposal_grace_period,
+            set_election_parameters_proposal_voting_period: cpcp
+                .set_election_parameters_proposal_voting_period,
+            set_election_parameters_proposal_grace_period: cpcp
+                .set_election_parameters_proposal_grace_period,
+            set_content_working_group_mint_capacity_proposal_voting_period: cpcp
+                .set_content_working_group_mint_capacity_proposal_voting_period,
+            set_content_working_group_mint_capacity_proposal_grace_period: cpcp
+                .set_content_working_group_mint_capacity_proposal_grace_period,
+            set_lead_proposal_voting_period: cpcp.set_lead_proposal_voting_period,
+            set_lead_proposal_grace_period: cpcp.set_lead_proposal_voting_period,
+            spending_proposal_voting_period: cpcp.spending_proposal_voting_period,
+            spending_proposal_grace_period: cpcp.spending_proposal_grace_period,
+            evict_storage_provider_proposal_voting_period: cpcp
+                .evict_storage_provider_proposal_voting_period,
+            evict_storage_provider_proposal_grace_period: cpcp
+                .evict_storage_provider_proposal_grace_period,
+            set_storage_role_parameters_proposal_voting_period: cpcp
+                .set_storage_role_parameters_proposal_voting_period,
+            set_storage_role_parameters_proposal_grace_period: cpcp
+                .set_storage_role_parameters_proposal_grace_period,
         }),
     }
 }

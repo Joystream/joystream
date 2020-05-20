@@ -1,5 +1,6 @@
-### Version 6.9.1
-...
+### Version 6.13.0 - (Constantinople) runtime upgrade - May 20th 2020
+- New proposal system that strengthens the governance structure of the platform
+- Adjusted inflation curve to better reflect a new realistic economic system for the platform
 
 ### Version 6.8.0 (Rome release) - March 9th 2020
 - New versioned and permissioned content mangement system that powers a new media experience.
@@ -35,5 +36,3 @@
   - Council Runtime upgrade proposal
   - Simple PoS validator staking
   - Memo (account status message)
-
-Used in genesis block for first testnet (Sparta)
