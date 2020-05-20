@@ -1,5 +1,40 @@
+//! # Bureaucracy module
+//! Bureaucracy module for the Joystream platform. Version 1.
+//! Contains abstract working group workflow.
+//!
+//! ## Overview
+//!
+//! The bureaucracy module provides working group workflow to use in different modules.
+//! Exact working group (eg.: forum working group) should create an instance of the Bureaucracy module.
+//! Bureacracy module contains extrinsics for the hiring workflow and the roles lifecycle.
+//!
+//! ## Supported extrinsics
+//! ### Hiring flow
+//!
+//! - [add_worker_opening](./struct.Module.html#method.add_worker_opening) - Add an opening for a worker role.
+//! - [accept_worker_applications](./struct.Module.html#method.accept_worker_applications)- Begin accepting worker applications.
+//! - [begin_worker_applicant_review](./struct.Module.html#method.begin_worker_applicant_review) - Begin reviewing worker applications.
+//! - [fill_worker_opening](./struct.Module.html#method.fill_worker_opening) - Fill opening for worker.
+//! - [withdraw_worker_application](./struct.Module.html#method.withdraw_worker_application) - Withdraw the worker application.
+//! - [terminate_worker_application](./struct.Module.html#method.terminate_worker_application) - Terminate the worker application.
+//! - [apply_on_worker_opening](./struct.Module.html#method.apply_on_worker_opening) - Apply on a worker opening.
+//!
+//! ### Roles lifecycle
+//!
+//! - [update_worker_role_account](./struct.Module.html#method.update_worker_role_account) -  Update the role account of the worker.
+//! - [update_worker_reward_account](./struct.Module.html#method.update_worker_reward_account) -  Update the reward account of the worker.
+//! - [leave_worker_role](./struct.Module.html#method.leave_worker_role) - Leave the role by the active worker.
+//! - [terminate_worker_role](./struct.Module.html#method.terminate_worker_role) - Terminate the worker role by the lead.
+//! - [set_lead](./struct.Module.html#method.set_lead) - Set lead.
+//! - [unset_lead](./struct.Module.html#method.unset_lead) - Unset lead.
+//! - [unstake](./struct.Module.html#method.unstake) - Unstake.
+//!
+
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+
+// Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
+//#![warn(missing_docs)]
 
 #[cfg(test)]
 mod tests;
@@ -20,12 +55,11 @@ use crate::types::{WorkerExitInitiationOrigin, WorkerExitSummary, WorkingGroupUn
 use common::constraints::InputValidationLengthConstraint;
 use errors::bureaucracy_errors::*;
 use errors::WrappedError;
-use types::{
+pub use types::{
     Lead, OpeningPolicyCommitment, RewardPolicy, Worker, WorkerApplication, WorkerOpening,
     WorkerRoleStage, WorkerRoleStakeProfile,
 };
 
-//TODO: docs
 //TODO: migrate to decl_error
 //TODO: initialize a mint!
 
@@ -104,7 +138,7 @@ type WorkerOf<T> = Worker<
     <T as system::Trait>::BlockNumber,
 >;
 
-/// The bureaucracy main _Trait_
+/// The _Bureaucracy_ main _Trait_
 pub trait Trait<I: Instance>:
     system::Trait
     + membership::members::Trait
@@ -113,12 +147,12 @@ pub trait Trait<I: Instance>:
     + stake::Trait
     + recurringrewards::Trait
 {
-    /// Engine event type.
+    /// _Bureaucracy_ event type.
     type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
 }
 
 decl_event!(
-    /// Proposals engine events
+    /// _Bureaucracy_ events
     pub enum Event<T, I>
     where
         MemberId = MemberId<T>,
@@ -134,58 +168,71 @@ decl_event!(
         /// - Member id of the leader.
         /// - Role account id of the leader.
         LeaderSet(MemberId, AccountId),
+
         /// Emits on un-setting the leader.
         /// Params:
         /// - Member id of the leader.
         /// - Role account id of the leader.
         LeaderUnset(MemberId, AccountId),
+
         /// Emits on terminating the worker.
         /// Params:
         /// - worker id.
         TerminatedWorker(WorkerId),
+
         /// Emits on exiting the worker.
         /// Params:
         /// - worker id.
         WorkerExited(WorkerId),
+
         /// Emits on unstaking the worker.
         /// Params:
         /// - worker id.
         WorkerUnstaking(WorkerId),
+
         /// Emits on updating the role account of the worker.
         /// Params:
         /// - Member id of the worker.
         /// - Role account id of the worker.
         WorkerRoleAccountUpdated(ActorId, AccountId),
+
         /// Emits on updating the reward account of the worker.
         /// Params:
         /// - Member id of the worker.
         /// - Reward account id of the worker.
         WorkerRewardAccountUpdated(ActorId, AccountId),
+
         /// Emits on adding new worker opening.
         /// Params:
         /// - Worker opening id
         WorkerOpeningAdded(WorkerOpeningId),
+
         /// Emits on accepting application for the worker opening.
         /// Params:
         /// - Worker opening id
         AcceptedWorkerApplications(WorkerOpeningId),
+
         /// Emits on adding the application for the worker opening.
         /// Params:
         /// - Worker opening id
         /// - Worker application id
         AppliedOnWorkerOpening(WorkerOpeningId, WorkerApplicationId),
+
         /// Emits on withdrawing the application for the worker opening.
         /// Params:
         /// - Worker application id
         WorkerApplicationWithdrawn(WorkerApplicationId),
+
         /// Emits on terminating the application for the worker opening.
         /// Params:
         /// - Worker application id
         WorkerApplicationTerminated(WorkerApplicationId),
+
         /// Emits on beginning the application review for the worker opening.
         /// Params:
         /// - Worker opening id
         BeganWorkerApplicationReview(WorkerOpeningId),
+
         /// Emits on filling the worker opening.
         /// Params:
         /// - Worker opening id
@@ -229,12 +276,13 @@ decl_storage! {
         /// Recover worker by the role stake which is currently unstaking.
         pub UnstakerByStakeId get(unstaker_by_stake_id) : linked_map StakeId<T> => WorkingGroupUnstaker<MemberId<T>, WorkerId<T>>;
 
-        /// Worker exit rationale text length limits
+        /// Worker exit rationale text length limits.
         pub WorkerExitRationaleText get(worker_exit_rationale_text) : InputValidationLengthConstraint;
     }
 }
 
 decl_module! {
+    /// _Bureaucracy_ substrate module.
     pub struct Module<T: Trait<I>, I: Instance> for enum Call where origin: T::Origin {
         /// Default deposit_event() handler
         fn deposit_event() = default;
@@ -283,7 +331,7 @@ decl_module! {
             }
         }
 
-        /// An active worker can update the associated role account.
+        /// Update the associated role account of the active worker.
         pub fn update_worker_role_account(
             origin,
             member_id: T::MemberId,
@@ -306,8 +354,7 @@ decl_module! {
             Self::deposit_event(RawEvent::WorkerRoleAccountUpdated(worker_id, new_role_account_id));
         }
 
-        /// An active worker can update the reward account associated
-        /// with a set reward relationship.
+        /// Update the reward account associated with a set reward relationship for the active worker.
         pub fn update_worker_reward_account(
             origin,
             worker_id: WorkerId<T>,
@@ -335,7 +382,7 @@ decl_module! {
             Self::deposit_event(RawEvent::WorkerRewardAccountUpdated(worker_id, new_reward_account_id));
         }
 
-        /// An active worker leaves role
+        /// Leave the role by the active worker.
         pub fn leave_worker_role(
             origin,
             worker_id: WorkerId<T>,
@@ -354,7 +401,7 @@ decl_module! {
             )?;
         }
 
-        /// Lead can terminate and active worker
+        /// Terminate the active worker by the lead.
         pub fn terminate_worker_role(
             origin,
             worker_id: WorkerId<T>,
@@ -483,7 +530,7 @@ decl_module! {
             Self::deposit_event(RawEvent::WorkerOpeningAdded(new_worker_opening_id));
         }
 
-            /// Begin accepting worker applications to an opening that is active.
+        /// Begin accepting worker applications to an opening that is active.
         pub fn accept_worker_applications(origin, worker_opening_id: WorkerOpeningId<T>)  {
 
             // Ensure lead is set and is origin signer
@@ -595,6 +642,7 @@ decl_module! {
             Self::deposit_event(RawEvent::AppliedOnWorkerOpening(worker_opening_id, new_worker_application_id));
         }
 
+        /// Withdraw the worker application. Can be done by the worker itself only.
         pub fn withdraw_worker_application(
             origin,
             worker_application_id: WorkerApplicationId<T>
@@ -627,6 +675,7 @@ decl_module! {
             Self::deposit_event(RawEvent::WorkerApplicationWithdrawn(worker_application_id));
         }
 
+        /// Terminate the worker application. Can be done by the lead only.
         pub fn terminate_worker_application(
             origin,
             worker_application_id: WorkerApplicationId<T>
@@ -678,7 +727,7 @@ decl_module! {
             Self::deposit_event(RawEvent::BeganWorkerApplicationReview(worker_opening_id));
         }
 
-        /// Fill opening for worker
+        /// Fill opening for worker.
         pub fn fill_worker_opening(
             origin,
             worker_opening_id: WorkerOpeningId<T>,

@@ -134,11 +134,13 @@ pub static MSG_STAKING_ERROR_NOT_STAKED: &str = "Not staked";
 pub static MSG_STAKING_ERROR_CANNOT_UNSTAKE_WHILE_SLASHES_ONGOING: &str =
     "Cannot unstake while slashes ongoing";
 
-/// Error wrapper for external module error conversions
+/// Error wrapper for external module error conversions.
 pub struct WrappedError<E> {
+    /// Generic error.
     pub error: E,
 }
 
+/// Helps with conversion of other modules errors.
 #[macro_export]
 macro_rules! ensure_on_wrapped_error {
     ($call:expr) => {{
