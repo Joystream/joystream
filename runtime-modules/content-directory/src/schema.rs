@@ -547,8 +547,10 @@ impl Schema {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Property<T: Trait> {
     pub prop_type: PropertyType<T>,
-    /// Defines, is property value can be skipped, when adding entity schema support
+    /// If property value can be skipped, when adding entity schema support
     pub required: bool,
+    /// Used to enforce uniquness of a property across all entities that have this property
+    pub unique: bool,
     pub name: Vec<u8>,
     pub description: Vec<u8>,
     pub locking_policy: PropertyLockingPolicy,

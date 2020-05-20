@@ -1289,6 +1289,15 @@ impl<T: Trait> Module<T> {
                 new_value,
                 entity.get_permissions().get_controller(),
             )?;
+            // Ensure all provided values uniquness satisfied
+            if class_prop.unique {
+                ensure!(
+                    appended_entity_values
+                        .iter()
+                        .all(|(_, prop_value)| *prop_value != *new_value),
+                    ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE
+                );
+            }
             if let Some(entities_rc_to_increment) = new_value.get_involved_entities() {
                 entities_rc_to_increment_vec.push(entities_rc_to_increment);
             }
