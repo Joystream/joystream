@@ -1,5 +1,7 @@
-import { ObjectTypeDefinitionNode, FieldDefinitionNode, ListTypeNode, NamedTypeNode } from 'graphql';
+import { ObjectTypeDefinitionNode, FieldDefinitionNode, ListTypeNode, NamedTypeNode, DirectiveNode, ArgumentNode, StringValueNode } from 'graphql';
 import { GraphQLSchemaParser } from './SchemaParser';
+
+const debug = require('debug')('qnode-cli:model-generator');
 
 // Available types for model code generation
 export const availableTypes: { [key: string]: string } = {
@@ -9,6 +11,8 @@ export const availableTypes: { [key: string]: string } = {
   Date: 'date',
   Float: 'float'
 };
+
+export const FULL_TEXT_SEARCHABLE_DIRECTIVE = 'fullTextSearchable';
 
 /**
  * Reperesent GraphQL object type
@@ -33,13 +37,22 @@ class Field {
   nullable: boolean;
   // Is field a list. eg: post: [Post]
   isList: boolean;
+  // an array of fulltext query names 
+  // to which this field should be included
+  fullTextSearch: string[] = [];
 
-  constructor(name: string, type: string, nullable: boolean = true, isBuildinType: boolean = true, isList = false) {
+  constructor(name: string, 
+    type: string, 
+    nullable: boolean = true, 
+    isBuildinType: boolean = true, 
+    isList = false,
+    fullTextSearch: string[] = []) {
     this.name = name;
     this.type = type;
     this.nullable = nullable;
     this.isBuildinType = isBuildinType;
     this.isList = isList;
+    this.fullTextSearch = fullTextSearch;
   }
 
   /**
@@ -106,11 +119,39 @@ export class DatabaseModelCodeGenerator {
    * @param name string
    * @param namedTypeNode NamedTypeNode
    */
-  private _namedType(name: string, namedTypeNode: NamedTypeNode): Field {
+  private _namedType(name: string, namedTypeNode: NamedTypeNode, directives?: ReadonlyArray<DirectiveNode>): Field {
     const field = new Field(name, namedTypeNode.name.value);
     field.isBuildinType = this._isBuildinType(field.type);
+    if (directives) {
+        directives.map((d:DirectiveNode) => {
+            if (d.name.value.includes(FULL_TEXT_SEARCHABLE_DIRECTIVE)) {
+                let query = this._checkFullTextSearchDirective(d);
+                field.fullTextSearch.push(query);
+            }
+        })
+    }
+    
     return field;
   }
+
+  /**
+   * Does the checks and returns full text query names to be used;
+   * 
+   * @param d Directive Node
+   * @returns Fulltext query names 
+   */
+  private _checkFullTextSearchDirective(d: DirectiveNode): string {
+      if (!d.arguments) {
+          throw new Error(`@${FULL_TEXT_SEARCHABLE_DIRECTIVE} should have a query argument`)
+      }
+
+      let qarg: ArgumentNode[] = d.arguments.filter((arg) => (arg.name.value === `query`) && (arg.value.kind === `StringValue`))
+      
+      if (qarg.length !== 1) {
+          throw new Error(`@${FULL_TEXT_SEARCHABLE_DIRECTIVE} should have a single query argument with a sting value`);
+      }
+      return (qarg[0].value as StringValueNode).value;
+    }
 
   /**
    * Generate a new ObjectType from ObjectTypeDefinitionNode
@@ -120,13 +161,14 @@ export class DatabaseModelCodeGenerator {
     const fields = this._schemaParser.getFields(o).map((fieldNode: FieldDefinitionNode) => {
       const typeNode = fieldNode.type;
       const fieldName = fieldNode.name.value;
+      const directives = fieldNode.directives;
 
       if (typeNode.kind === 'NamedType') {
-        return this._namedType(fieldName, typeNode);
+        return this._namedType(fieldName, typeNode, directives);
       } else if (typeNode.kind === 'NonNullType') {
         if (typeNode.type.kind === 'NamedType') {
           // It is named type. and nullable will be set false
-          const field = this._namedType(fieldName, typeNode.type);
+          const field = this._namedType(fieldName, typeNode.type, directives);
           field.nullable = false;
           return field;
         } else {
@@ -138,6 +180,8 @@ export class DatabaseModelCodeGenerator {
         throw new Error(`Unrecognized type. ${typeNode}`);
       }
     });
+
+    debug(`Read and parsed fields: ${JSON.stringify(fields, null, 2)}`)
 
     return { name: o.name.value, fields: fields } as ObjectType;
   }

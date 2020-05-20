@@ -1,5 +1,6 @@
 import {
   parse,
+  visit,
   buildASTSchema,
   GraphQLSchema,
   validateSchema,
@@ -30,8 +31,10 @@ export class GraphQLSchemaParser {
     if (!fs.existsSync(schemaPath)) {
       throw new Error('Schema not found');
     }
-    const docNode = parse(fs.readFileSync(schemaPath, 'utf8'));
-    const schema = buildASTSchema(docNode);
+    const ast = parse(fs.readFileSync(schemaPath, 'utf8'));
+    // in order to build AST with undeclared directive, we need to 
+    // switch off SDL validation
+    const schema = buildASTSchema(ast, { assumeValidSDL : true });
 
     const errors = validateSchema(schema);
 
