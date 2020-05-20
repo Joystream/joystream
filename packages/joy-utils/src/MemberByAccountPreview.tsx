@@ -18,7 +18,11 @@ const MemberByAccountPreview: React.FunctionComponent<Props> = ({ accountId }) =
   const { api } = useContext(ApiContext);
   const [ member, setMember ] = useState(null as MemberFromAccount | null);
   useEffect(
-    () => { memberFromAccount(api, accountId).then(member => setMember(member)); },
+    () => {
+      let isSubscribed = true;
+      memberFromAccount(api, accountId).then(member => isSubscribed && setMember(member));
+      return () => { isSubscribed = false; };
+    },
     [accountId]
   );
 

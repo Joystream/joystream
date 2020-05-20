@@ -39,12 +39,16 @@ const MembersDropdown: React.FunctionComponent<Props> = ({ accounts, ...passedPr
   const [ membersOptions, setMembersOptions ] = useState([] as DropdownItemProps[]);
   // Generate members options array on load
   useEffect(() => {
+    let isSubscribed = true;
     Promise
       .all(accounts.map(acc => memberFromAccount(api, acc)))
       .then(members => {
-        setMembersOptions(membersToOptions(members));
-        setLoading(false);
+        if (isSubscribed) {
+          setMembersOptions(membersToOptions(members));
+          setLoading(false);
+        }
       });
+    return () => { isSubscribed = false; };
   }, [accounts]);
 
   return (
