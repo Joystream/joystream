@@ -1,6 +1,6 @@
-use membership::members;
+use srml_support::decl_error;
 
-use srml_support::{decl_error};
+use membership::members;
 
 decl_error! {
     /// Discussion module predefined errors
@@ -79,6 +79,18 @@ decl_error! {
 
         /// Worker must be in unstaking stage.
         WorkerIsNotUnstaking,
+
+        /// Signer is not worker role account.
+        SignerIsNotWorkerRoleAccount,
+
+        /// Worker has no recurring reward.
+        WorkerHasNoReward,
+
+        /// Worker is not active.
+        WorkerIsNotActive,
+
+        /// Worker does not exist.
+        WorkerDoesNotExist,
     }
 }
 
@@ -91,31 +103,6 @@ impl From<system::Error> for Error {
     }
 }
 
-pub mod bureaucracy_errors {
-    pub static MSG_CURRENT_LEAD_NOT_SET: &str = "Current lead is not set";
-    pub static MSG_IS_NOT_LEAD_ACCOUNT: &str = "Not a lead account";
-    pub static MSG_OPENING_TEXT_TOO_SHORT: &str = "Opening text too short";
-    pub static MSG_OPENING_TEXT_TOO_LONG: &str = "Opening text too long";
-    pub static MSG_WORKER_OPENING_DOES_NOT_EXIST: &str = "Worker opening does not exist";
-    pub static MSG_INSUFFICIENT_BALANCE_TO_APPLY: &str = "Insufficient balance to apply";
-    pub static MSG_MEMBERSHIP_UNSIGNED_ORIGIN: &str = "Unsigned origin";
-    pub static MSG_MEMBERSHIP_INVALID_MEMBER_ID: &str = "Member id is invalid";
-    pub static MSG_APPLY_ON_WORKER_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT: &str =
-        "Signer does not match controller account";
-    pub static MSG_MEMBER_HAS_ACTIVE_APPLICATION_ON_OPENING: &str =
-        "Member already has an active application on the opening";
-    pub static MSG_WORKER_APPLICATION_TEXT_TOO_LONG: &str = "Worker application text too long";
-    pub static MSG_WORKER_APPLICATION_TEXT_TOO_SHORT: &str = "Worker application text too short";
-    pub static MSG_INSUFFICIENT_BALANCE_TO_COVER_STAKE: &str =
-        "Insuffieicnt balance to cover stake";
-    pub static MSG_WORKER_APPLICATION_DOES_NOT_EXIST: &str = "Worker application does not exist";
-    pub static MSG_RELATIONSHIP_MUST_EXIST: &str = "Relationship must exist";
-    pub static MSG_WORKER_EXIT_RATIONALE_TEXT_TOO_LONG: &str =
-        "Worker exit rationale text is too long";
-    pub static MSG_WORKER_EXIT_RATIONALE_TEXT_TOO_SHORT: &str =
-        "Worker exit rationale text is too short";
-    pub static MSG_UNSTAKER_DOES_NOT_EXIST: &str = "Unstaker does not exist";
-}
 /*
  * The errors below, while in many cases encoding similar outcomes,
  * are scoped to the specific extrinsic for which they are used.
@@ -194,10 +181,6 @@ pub static MSG_ADD_WORKER_OPENING_NEW_APPLICATION_WAS_CROWDED_OUT: &str =
     "NewApplicationWasCrowdedOut";
 pub static MSG_ADD_WORKER_OPENING_ZERO_MAX_APPLICANT_COUNT: &str =
     "Application rationing has zero max active applicants";
-pub static MSG_WORKER_DOES_NOT_EXIST: &str = "Worker does not exist";
-pub static MSG_WORKER_IS_NOT_ACTIVE: &str = "Worker is not active";
-pub static MSG_SIGNER_IS_NOT_WORKER_ROLE_ACCOUNT: &str = "Signer is not worker role account";
-pub static MSG_WORKER_HAS_NO_REWARD: &str = "Worker has no recurring reward";
 pub static MSG_RECURRING_REWARDS_NEXT_PAYMENT_NOT_IN_FUTURE: &str =
     "Next payment is not in the future";
 pub static MSG_RECURRING_REWARDS_RECIPIENT_NOT_FOUND: &str = "Recipient not found";
@@ -212,6 +195,10 @@ pub static MSG_STAKING_ERROR_ALREADY_UNSTAKING: &str = "Already unstaking";
 pub static MSG_STAKING_ERROR_NOT_STAKED: &str = "Not staked";
 pub static MSG_STAKING_ERROR_CANNOT_UNSTAKE_WHILE_SLASHES_ONGOING: &str =
     "Cannot unstake while slashes ongoing";
+pub static MSG_MEMBERSHIP_UNSIGNED_ORIGIN: &str = "Unsigned origin";
+pub static MSG_MEMBERSHIP_INVALID_MEMBER_ID: &str = "Member id is invalid";
+pub static MSG_APPLY_ON_WORKER_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT: &str =
+    "Signer does not match controller account";
 
 /// Error wrapper for external module error conversions.
 pub struct WrappedError<E> {
@@ -223,7 +210,9 @@ pub struct WrappedError<E> {
 #[macro_export]
 macro_rules! ensure_on_wrapped_error {
     ($call:expr) => {{
-        { $call }.map_err(|err| crate::WrappedError { error: err }).map_err(|err| Error::Other(err.into()))
+        { $call }
+            .map_err(|err| crate::WrappedError { error: err })
+            .map_err(|err| Error::Other(err.into()))
     }};
 }
 
@@ -378,13 +367,13 @@ impl rstd::convert::From<WrappedError<members::MemberControllerAccountDidNotSign
     fn from(wrapper: WrappedError<members::MemberControllerAccountDidNotSign>) -> Self {
         match wrapper.error {
             members::MemberControllerAccountDidNotSign::UnsignedOrigin => {
-                bureaucracy_errors::MSG_MEMBERSHIP_UNSIGNED_ORIGIN
+                MSG_MEMBERSHIP_UNSIGNED_ORIGIN
             }
             members::MemberControllerAccountDidNotSign::MemberIdInvalid => {
-                bureaucracy_errors::MSG_MEMBERSHIP_INVALID_MEMBER_ID
+                MSG_MEMBERSHIP_INVALID_MEMBER_ID
             }
             members::MemberControllerAccountDidNotSign::SignerControllerAccountMismatch => {
-                bureaucracy_errors::MSG_APPLY_ON_WORKER_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT
+                MSG_APPLY_ON_WORKER_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT
             }
         }
     }

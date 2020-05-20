@@ -48,14 +48,12 @@ use rstd::prelude::*;
 use rstd::vec::Vec;
 use sr_primitives::traits::{EnsureOrigin, One, Zero};
 use srml_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
-use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure};
+use srml_support::{decl_event, decl_module, decl_storage, ensure};
 use system::{ensure_root, ensure_signed, RawOrigin};
 
 use crate::types::{WorkerExitInitiationOrigin, WorkerExitSummary, WorkingGroupUnstaker};
 use common::constraints::InputValidationLengthConstraint;
-use errors::bureaucracy_errors::*;
-use errors::WrappedError;
-use errors::Error;
+use errors::{Error, WrappedError};
 
 pub use types::{
     Lead, OpeningPolicyCommitment, RewardPolicy, Worker, WorkerApplication, WorkerOpening,
@@ -591,7 +589,7 @@ decl_module! {
             Self::ensure_can_make_stake_imbalance(
                 vec![&opt_role_stake_balance, &opt_application_stake_balance],
                 &source_account)
-                .map_err(|_err| MSG_INSUFFICIENT_BALANCE_TO_APPLY)?;
+                .map_err(|_| Error::InsufficientBalanceToApply)?;
 
             // Ensure application text is valid
             Self::ensure_worker_application_text_is_valid(&human_readable_text)?;
@@ -896,29 +894,31 @@ where
 
 impl<T: Trait<I>, I: Instance> Module<T, I> {
     /// Checks that provided lead account id belongs to the current bureaucracy leader
-    pub fn ensure_is_lead_account(lead_account_id: T::AccountId) -> Result<(), &'static str> {
+    pub fn ensure_is_lead_account(lead_account_id: T::AccountId) -> Result<(), Error> {
         let lead = <CurrentLead<T, I>>::get();
 
         if let Some(lead) = lead {
             if lead.role_account_id != lead_account_id {
-                return Err(MSG_IS_NOT_LEAD_ACCOUNT);
+                return Err(Error::IsNotLeadAccount);
             }
         } else {
-            return Err(MSG_CURRENT_LEAD_NOT_SET);
+            return Err(Error::CurrentLeadNotSet);
         }
 
         Ok(())
     }
 
-    fn ensure_opening_human_readable_text_is_valid(text: &[u8]) -> dispatch::Result {
-        <OpeningHumanReadableText<I>>::get().ensure_valid(
-            text.len(),
-            MSG_OPENING_TEXT_TOO_SHORT,
-            MSG_OPENING_TEXT_TOO_LONG,
-        )
+    fn ensure_opening_human_readable_text_is_valid(text: &[u8]) -> Result<(), Error> {
+        <OpeningHumanReadableText<I>>::get()
+            .ensure_valid(
+                text.len(),
+                Error::OpeningTextTooShort.into(),
+                Error::OpeningTextTooLong.into(),
+            )
+            .map_err(|e| e.into())
     }
 
-    fn ensure_origin_is_set_lead(origin: T::Origin) -> Result<(), &'static str> {
+    fn ensure_origin_is_set_lead(origin: T::Origin) -> Result<(), Error> {
         // Ensure is signed
         let signer = ensure_signed(origin)?;
 
@@ -927,10 +927,10 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     fn ensure_worker_opening_exists(
         worker_opening_id: &WorkerOpeningId<T>,
-    ) -> Result<WorkerOpeningInfo<T>, &'static str> {
+    ) -> Result<WorkerOpeningInfo<T>, Error> {
         ensure!(
             WorkerOpeningById::<T, I>::exists(worker_opening_id),
-            MSG_WORKER_OPENING_DOES_NOT_EXIST
+            Error::WorkerOpeningDoesNotExist
         );
 
         let worker_opening = WorkerOpeningById::<T, I>::get(worker_opening_id);
@@ -963,7 +963,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     fn ensure_member_has_no_active_application_on_opening(
         worker_applications: WorkerApplicationIdSet<T>,
         member_id: T::MemberId,
-    ) -> Result<(), &'static str> {
+    ) -> Result<(), Error> {
         for worker_application_id in worker_applications {
             let worker_application = WorkerApplicationById::<T, I>::get(worker_application_id);
             // Look for application by the member for the opening
@@ -974,19 +974,21 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             let application = <hiring::ApplicationById<T>>::get(worker_application.application_id);
             // Return error if application is in active stage
             if application.stage == hiring::ApplicationStage::Active {
-                return Err(MSG_MEMBER_HAS_ACTIVE_APPLICATION_ON_OPENING);
+                return Err(Error::MemberHasActiveApplicationOnOpening);
             }
         }
         // Member does not have any active applications to the opening
         Ok(())
     }
 
-    fn ensure_worker_application_text_is_valid(text: &[u8]) -> dispatch::Result {
-        <WorkerApplicationHumanReadableText<I>>::get().ensure_valid(
-            text.len(),
-            MSG_WORKER_APPLICATION_TEXT_TOO_SHORT,
-            MSG_WORKER_APPLICATION_TEXT_TOO_LONG,
-        )
+    fn ensure_worker_application_text_is_valid(text: &[u8]) -> Result<(), Error> {
+        <WorkerApplicationHumanReadableText<I>>::get()
+            .ensure_valid(
+                text.len(),
+                Error::WorkerApplicationTextTooShort.into(),
+                Error::WorkerApplicationTextTooLong.into(),
+            )
+            .map_err(|e| e.into())
     }
 
     // CRITICAL:
@@ -999,7 +1001,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     fn ensure_can_make_stake_imbalance(
         opt_balances: Vec<&Option<BalanceOf<T>>>,
         source_account: &T::AccountId,
-    ) -> Result<(), &'static str> {
+    ) -> Result<(), Error> {
         let zero_balance = <BalanceOf<T> as Zero>::zero();
 
         // Total amount to be staked
@@ -1014,7 +1016,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         if total_amount > zero_balance {
             // Ensure that
             if CurrencyOf::<T>::free_balance(source_account) < total_amount {
-                Err(MSG_INSUFFICIENT_BALANCE_TO_COVER_STAKE)
+                Err(Error::InsufficientBalanceToCoverStake)
             } else {
                 let new_balance = CurrencyOf::<T>::free_balance(source_account) - total_amount;
 
@@ -1024,6 +1026,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                     WithdrawReasons::all(),
                     new_balance,
                 )
+                .map_err(|e| Error::Other(e))
             }
         } else {
             Ok(())
@@ -1032,10 +1035,10 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     fn ensure_worker_application_exists(
         worker_application_id: &WorkerApplicationId<T>,
-    ) -> Result<WorkerApplicationInfo<T>, &'static str> {
+    ) -> Result<WorkerApplicationInfo<T>, Error> {
         ensure!(
             WorkerApplicationById::<T, I>::exists(worker_application_id),
-            MSG_WORKER_APPLICATION_DOES_NOT_EXIST
+            Error::WorkerApplicationDoesNotExist
         );
 
         let worker_application = WorkerApplicationById::<T, I>::get(worker_application_id);
@@ -1048,7 +1051,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     fn ensure_active_worker_signed(
         origin: T::Origin,
         worker_id: &WorkerId<T>,
-    ) -> Result<WorkerOf<T>, &'static str> {
+    ) -> Result<WorkerOf<T>, Error> {
         // Ensure that it is signed
         let signer_account = ensure_signed(origin)?;
 
@@ -1058,13 +1061,13 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         // Ensure that signer is actually role account of worker
         ensure!(
             signer_account == worker.role_account,
-            crate::errors::MSG_SIGNER_IS_NOT_WORKER_ROLE_ACCOUNT
+            Error::SignerIsNotWorkerRoleAccount
         );
 
         Ok(worker)
     }
 
-    fn ensure_active_worker_exists(worker_id: &WorkerId<T>) -> Result<WorkerOf<T>, &'static str> {
+    fn ensure_active_worker_exists(worker_id: &WorkerId<T>) -> Result<WorkerOf<T>, Error> {
         // Ensuring worker actually exists
         let worker = Self::ensure_worker_exists(worker_id)?;
 
@@ -1074,16 +1077,16 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                 WorkerRoleStage::Active => true,
                 _ => false,
             },
-            crate::errors::MSG_WORKER_IS_NOT_ACTIVE
+            Error::WorkerIsNotActive
         );
 
         Ok(worker)
     }
 
-    fn ensure_worker_exists(worker_id: &WorkerId<T>) -> Result<WorkerOf<T>, &'static str> {
+    fn ensure_worker_exists(worker_id: &WorkerId<T>) -> Result<WorkerOf<T>, Error> {
         ensure!(
             WorkerById::<T, I>::exists(worker_id),
-            crate::errors::MSG_WORKER_DOES_NOT_EXIST
+            Error::WorkerDoesNotExist
         );
 
         let worker = WorkerById::<T, I>::get(worker_id);
@@ -1093,11 +1096,11 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     fn ensure_worker_has_recurring_reward(
         worker: &WorkerOf<T>,
-    ) -> Result<T::RewardRelationshipId, &'static str> {
+    ) -> Result<T::RewardRelationshipId, Error> {
         if let Some(relationship_id) = worker.reward_relationship {
             Ok(relationship_id)
         } else {
-            Err(crate::errors::MSG_WORKER_HAS_NO_REWARD)
+            Err(Error::WorkerHasNoReward)
         }
     }
 
@@ -1106,13 +1109,13 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         worker: &WorkerOf<T>,
         exit_initiation_origin: &WorkerExitInitiationOrigin,
         rationale_text: &[u8],
-    ) -> Result<(), &'static str> {
+    ) -> Result<(), Error> {
         // Stop any possible recurring rewards
 
         if let Some(reward_relationship_id) = worker.reward_relationship {
             // Attempt to deactivate
             recurringrewards::Module::<T>::try_to_deactivate_relationship(reward_relationship_id)
-                .map_err(|_| MSG_RELATIONSHIP_MUST_EXIST)?;
+                .map_err(|_| Error::RelationshipMustExist)?;
         }; // else: Did not deactivate, there was no reward relationship!
 
         // When the worker is staked, unstaking must first be initiated,
@@ -1161,12 +1164,12 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             // Keep track of worker unstaking
             let unstaker = WorkingGroupUnstaker::Worker(*worker_id);
             UnstakerByStakeId::<T, I>::insert(directions.0, unstaker);
-//TODO
+
             // Unstake
-            // ensure_on_wrapped_error!(stake::Module::<T>::initiate_unstaking(
-            //     &directions.0,
-            //     directions.1
-            // ))?;
+            ensure_on_wrapped_error!(stake::Module::<T>::initiate_unstaking(
+                &directions.0,
+                directions.1
+            ))?;
         }
 
         // Trigger event
@@ -1175,20 +1178,22 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Ok(())
     }
 
-    fn ensure_worker_exit_rationale_text_is_valid(text: &[u8]) -> dispatch::Result {
-        Self::worker_exit_rationale_text().ensure_valid(
-            text.len(),
-            MSG_WORKER_EXIT_RATIONALE_TEXT_TOO_SHORT,
-            MSG_WORKER_EXIT_RATIONALE_TEXT_TOO_LONG,
-        )
+    fn ensure_worker_exit_rationale_text_is_valid(text: &[u8]) -> Result<(), Error> {
+        Self::worker_exit_rationale_text()
+            .ensure_valid(
+                text.len(),
+                Error::WorkerExitRationaleTextTooShort.into(),
+                Error::WorkerExitRationaleTextTooLong.into(),
+            )
+            .map_err(|e| e.into())
     }
 
     fn ensure_unstaker_exists(
         stake_id: &StakeId<T>,
-    ) -> Result<WorkingGroupUnstaker<MemberId<T>, WorkerId<T>>, &'static str> {
+    ) -> Result<WorkingGroupUnstaker<MemberId<T>, WorkerId<T>>, Error> {
         ensure!(
             UnstakerByStakeId::<T, I>::exists(stake_id),
-            MSG_UNSTAKER_DOES_NOT_EXIST
+            Error::UnstakerDoesNotExist
         );
 
         let unstaker = UnstakerByStakeId::<T, I>::get(stake_id);
