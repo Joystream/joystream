@@ -185,12 +185,6 @@ impl<T: Trait> PropertyType<T> {
         }
     }
 
-    pub fn set_same_controller_status(&mut self, same_controller_new: SameController) {
-        if let Type::Reference(_, same_controller) = self.get_inner_type_mut() {
-            *same_controller = same_controller_new
-        }
-    }
-
     pub fn get_same_controller_status(&self) -> SameController {
         if let Type::Reference(_, same_controller) = self.get_inner_type() {
             *same_controller
@@ -565,10 +559,6 @@ pub struct Property<T: Trait> {
 }
 
 impl<T: Trait> Property<T> {
-    pub fn set_locked_for(&mut self, is_locked_for: PropertyLockingPolicy) {
-        self.locking_policy = is_locked_for
-    }
-
     pub fn is_locked_from(&self, access_level: EntityAccessLevel) -> bool {
         let is_locked_from_controller = self.locking_policy.is_locked_from_controller;
         let is_locked_from_maintainer = self.locking_policy.is_locked_from_maintainer;

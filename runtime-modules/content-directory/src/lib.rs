@@ -228,26 +228,6 @@ impl<T: Trait> Class<T> {
         self.schemas[schema_index as usize].set_status(schema_status);
     }
 
-    fn set_property_lock_status_at_index(
-        &mut self,
-        in_class_schema_property_id: PropertyId,
-        is_locked: PropertyLockingPolicy,
-    ) {
-        // Such indexing is safe, when length bounds were previously checked
-        self.properties[in_class_schema_property_id as usize].set_locked_for(is_locked)
-    }
-
-    fn set_reference_property_same_controller_status(
-        &mut self,
-        in_class_schema_property_id: PropertyId,
-        same_controller: SameController,
-    ) {
-        // Such indexing is safe, when length bounds were previously checked
-        self.properties[in_class_schema_property_id as usize]
-            .prop_type
-            .set_same_controller_status(same_controller)
-    }
-
     fn increment_entities_count(&mut self) {
         self.current_number_of_entities += 1;
     }
@@ -281,17 +261,6 @@ impl<T: Trait> Class<T> {
         ensure!(
             schema_id < self.schemas.len() as SchemaId,
             ERROR_UNKNOWN_CLASS_SCHEMA_ID
-        );
-        Ok(())
-    }
-
-    pub fn ensure_property_id_exists(
-        &self,
-        in_class_schema_property_id: PropertyId,
-    ) -> dispatch::Result {
-        ensure!(
-            in_class_schema_property_id < self.properties.len() as PropertyId,
-            ERROR_CLASS_PROP_NOT_FOUND
         );
         Ok(())
     }
@@ -807,52 +776,6 @@ decl_module! {
             Self::class_by_id(class_id).ensure_schema_id_exists(schema_id)?;
             <ClassById<T>>::mutate(class_id, |class| {
                 class.update_schema_status(schema_id, schema_status)
-            });
-            Ok(())
-        }
-
-        pub fn set_class_property_lock_status_at_index(
-            origin,
-            class_id: T::ClassId,
-            in_class_schema_property_id: PropertyId,
-            is_locked: PropertyLockingPolicy
-        ) -> dispatch::Result {
-            perform_lead_auth::<T>(origin)?;
-
-            Self::ensure_known_class_id(class_id)?;
-
-            // Ensure property_id is a valid index of class properties vector:
-            Self::class_by_id(class_id).ensure_property_id_exists(in_class_schema_property_id)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            <ClassById<T>>::mutate(class_id, |class| {
-                class.set_property_lock_status_at_index(in_class_schema_property_id, is_locked)
-            });
-            Ok(())
-        }
-
-        pub fn set_reference_property_same_controller_status(
-            origin,
-            class_id: T::ClassId,
-            in_class_schema_property_id: PropertyId,
-            same_controller: SameController
-        ) -> dispatch::Result {
-            perform_lead_auth::<T>(origin)?;
-
-            Self::ensure_known_class_id(class_id)?;
-
-            // Ensure property_id is a valid index of class properties vector:
-            Self::class_by_id(class_id).ensure_property_id_exists(in_class_schema_property_id)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            <ClassById<T>>::mutate(class_id, |class| {
-                class.set_reference_property_same_controller_status(in_class_schema_property_id, same_controller)
             });
             Ok(())
         }
