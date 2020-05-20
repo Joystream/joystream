@@ -473,10 +473,6 @@ impl<T: Trait> PropertyValue<T> {
         *self = new_value;
     }
 
-    pub fn is_vec(&self) -> bool {
-        self.as_vec_property_value().is_some()
-    }
-
     pub fn get_involved_entities(&self) -> Option<Vec<T::EntityId>> {
         match self {
             PropertyValue::Single(single_property_value) => {
