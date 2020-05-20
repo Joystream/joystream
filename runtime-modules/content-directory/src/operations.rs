@@ -58,13 +58,6 @@ pub enum OperationType<T: Trait> {
     AddSchemaSupportToEntity(AddSchemaSupportToEntityOperation<T>),
 }
 
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
-pub struct Operation<Credential, T: Trait> {
-    pub with_credential: Option<Credential>,
-    pub as_entity_maintainer: bool,
-    pub operation_type: OperationType<T>,
-}
-
 pub fn parametrized_entity_to_entity_id<T: Trait>(
     created_entities: &BTreeMap<usize, T::EntityId>,
     entity: ParameterizedEntity<T>,

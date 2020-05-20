@@ -103,3 +103,5 @@ pub const ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED: &str =
 pub const ERROR_NUMBER_OF_CURATORS_PER_GROUP_LIMIT_REACHED: &str =
     "Max number of curators per group limit reached";
 pub const ERROR_CURATOR_IS_NOT_ACTIVE: &str = "Curator group is not active";
+pub const ERROR_ORIGIN_CANNOT_BE_MADE_INTO_RAW_ORIGIN: &str =
+    "Origin cannot be made into raw origin";
