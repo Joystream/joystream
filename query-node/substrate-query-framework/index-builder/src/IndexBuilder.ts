@@ -56,15 +56,15 @@ export default class IndexBuilder {
   async stop() {}
 
   _onQueryEventBlock(query_event_block: QueryEventBlock): void {
-    console.log(`Yay, block producer at height: #${query_event_block.block_number}`);
+    debug(`Yay, block producer at height: #${query_event_block.block_number}`);
 
     query_event_block.query_events.forEach(async (query_event, index) => {
       if (!this._processing_pack[query_event.event_method]) {
-        console.log(`Unrecognized: ` + query_event.event_name);
+        debug(`Unrecognized: ` + query_event.event_name);
 
         query_event.log(0, debug);
       } else {
-        console.log(`Recognized: ` + query_event.event_name);
+        debug(`Recognized: ` + query_event.event_name);
 
         const queryRunner = getConnection().createQueryRunner();
         try {
@@ -82,10 +82,11 @@ export default class IndexBuilder {
 
           await queryRunner.commitTransaction();
         } catch (error) {
-          console.log(`There are errors. Rolling back the transaction. Reason: ${error.message}`);
+          debug(`There are errors. Rolling back the transaction. Reason: ${error.message}`);
 
           // Since we have errors lets rollback changes we made
           await queryRunner.rollbackTransaction();
+          throw new Error(error);
         } finally {
           // Query runner needs to be released manually.
           await queryRunner.release();

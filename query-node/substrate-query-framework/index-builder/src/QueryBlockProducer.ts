@@ -5,7 +5,7 @@ import { Header, Extrinsic, EventRecord } from '@polkadot/types/interfaces';
 import { EventEmitter } from 'events';
 import * as assert from 'assert';
 
-const DEBUG_TOPIC = 'producer';
+const DEBUG_TOPIC = 'index-builder:producer';
 
 var debug = require('debug')(DEBUG_TOPIC);
 

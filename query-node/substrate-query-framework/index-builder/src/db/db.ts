@@ -1,6 +1,6 @@
 import { FindOneOptions, DeepPartial, EntityManager } from 'typeorm';
 
-import { QueryEvent } from '..';
+import { SubstrateEvent } from '..';
 import * as helper from './helper';
 
 /**
@@ -15,14 +15,14 @@ export default class DB {
   private readonly _manager: EntityManager;
 
   // Runtime event
-  private readonly _event: QueryEvent;
+  private readonly _event: SubstrateEvent;
 
-  constructor(event: QueryEvent, manager: EntityManager) {
+  constructor(event: SubstrateEvent, manager: EntityManager) {
     this._manager = manager;
     this._event = event;
   }
 
-  get event(): QueryEvent {
+  get event(): SubstrateEvent {
     return this._event;
   }
 

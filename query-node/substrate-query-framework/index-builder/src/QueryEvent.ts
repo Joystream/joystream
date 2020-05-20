@@ -5,7 +5,16 @@ interface EventParameters {
   [key: string]: Codec;
 }
 
-export default class QueryEvent {
+export interface SubstrateEvent {
+    event_name: string,
+    event_method: string,
+    event_params: EventParameters,
+    index: number,
+    block_number: number,
+    extrinsic?: Extrinsic
+} 
+
+export default class QueryEvent implements SubstrateEvent {
   readonly event_record: EventRecord;
 
   readonly block_number: number;
