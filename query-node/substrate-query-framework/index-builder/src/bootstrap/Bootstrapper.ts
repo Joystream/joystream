@@ -94,8 +94,8 @@ export default class Bootstrapper {
     private async shouldBootstrap(em: EntityManager, boot: BootstrapFunc):Promise<boolean> {
         const event = await em.findOne(SavedEntityEvent, { 
             where: { 
-                event_name: 'Bootstrap', 
-                event_method: boot.name
+                eventName: 'Bootstrap', 
+                index: boot.name
             }
         })
         return event ? false : true;
