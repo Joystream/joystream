@@ -1,12 +1,18 @@
-# Joystream
+# Joystream [![Build Status](https://travis-ci.org/Joystream/joystream.svg?branch=master)](https://travis-ci.org/Joystream/joystream)
 
 This is the main code reposity for all joystream software. It will  house the substrate chain project, the full node and runtime and all reusable substrate runtime modules that make up the joystream runtime. In addition to all front-end apps and infrastructure servers necessary for operating the network.
 
 The repository is currently just a cargo workspace, but eventually will also contain yarn workspaces, and possibly other project type workspaces.
 
+## Build Status
+
+Development [![Development Branch Build Status](https://travis-ci.org/Joystream/joystream.svg?branch=development)](https://travis-ci.org/Joystream/joystream)
+
+More detailed build history on [Travis CI](https://travis-ci.org/github/Joystream/joystream/builds)
+
 ## Overview
 
-The joystream network builds on a pre-release version of [substrate v2.0](https://substrate.dev/) and adds additional
+The Joystream network builds on a pre-release version of [substrate v2.0](https://substrate.dev/) and adds additional
 functionality to support the [various roles](https://www.joystream.org/roles) that can be entered into on the platform.
 
 
@@ -20,7 +26,7 @@ To setup a full node and validator review the [advanced guide from the helpdesk]
 
 ###  Pre-built Binaries
 
-The latest pre-built binaries can be downloads from the [releases](https://github.com/Joystream/substrate-runtime-joystream/releases) page.
+The latest pre-built binaries can be downloads from the [releases](https://github.com/Joystream/joystream/releases) page.
 
 
 ### Building from source
@@ -28,9 +34,9 @@ The latest pre-built binaries can be downloads from the [releases](https://githu
 Clone the repository and install build tools:
 
 ```bash
-git clone https://github.com/Joystream/substrate-runtime-joystream.git
+git clone https://github.com/Joystream/joystream.git
 
-cd substrate-runtime-joystream/
+cd joystream/
 
 ./setup.sh
 ```
@@ -49,7 +55,7 @@ Run the node and connect to the public testnet.
 cargo run --release -- --chain ./rome-tesnet.json
 ```
 
-The `rome-testnet.json` chain file can be ontained from the [release page](https://github.com/Joystream/substrate-runtime-joystream/releases/tag/v6.8.0)
+The `rome-testnet.json` chain file can be ontained from the [release page](https://github.com/Joystream/joystream/releases/tag/v6.8.0)
 
 
 ### Installing a release build
@@ -113,7 +119,7 @@ Deploying the compiled runtime on a live system can be done in one of two ways:
 ### Versioning the runtime
 
 Versioning of the runtime is set in `runtime/src/lib.rs`
-For detailed information about how to set correct version numbers when developing a new runtime, [see this](https://github.com/Joystream/substrate-runtime-joystream/issues/1)
+For detailed information about how to set correct version numbers when developing a new runtime, [see this](https://github.com/Joystream/joystream/issues/1)
 
 
 ## Coding style
