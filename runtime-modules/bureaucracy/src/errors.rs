@@ -91,6 +91,132 @@ decl_error! {
 
         /// Worker does not exist.
         WorkerDoesNotExist,
+        
+        /// Opening does not exist.
+        AcceptWorkerApplicationsOpeningDoesNotExist, 
+        
+        /// Opening Is Not in Waiting to begin.
+        AcceptWorkerApplicationsOpeningIsNotWaitingToBegin,
+        
+        /// Opening does not exist.
+        BeginWorkerApplicantReviewOpeningDoesNotExist,
+        
+        /// Opening Is Not in Waiting.
+        BeginWorkerApplicantReviewOpeningOpeningIsNotWaitingToBegin,
+        
+        /// OpeningDoesNotExist.
+        FullWorkerOpeningOpeningDoesNotExist, 
+        
+        /// Opening not in review period stage.
+        FullWorkerOpeningOpeningNotInReviewPeriodStage,
+        
+        /// Application stake unstaking period for successful applicants too short.
+        FullWorkerOpeningUnsuccessfulApplicationStakeUnstakingPeriodTooShort,
+        
+        /// Application stake unstaking period for failed applicants too short.
+        FullWorkerOpeningSuccessfulApplicationStakeUnstakingPeriodTooShort,
+        
+        /// Role stake unstaking period for successful applicants too short.
+        FullWorkerOpeningSuccessfulRoleStakeUnstakingPeriodTooShort,
+        
+        /// Role stake unstaking period for failed applicants too short.
+        FullWorkerOpeningUnsuccessfulRoleStakeUnstakingPeriodTooShort,
+        
+        /// Application stake unstaking period for successful applicants redundant.
+        FullWorkerOpeningSuccessfulApplicationStakeUnstakingPeriodRedundant,
+        
+        /// Application stake unstaking period for failed applicants redundant.
+        FullWorkerOpeningUnsuccessfulApplicationStakeUnstakingPeriodRedundant,
+        
+        /// Role stake unstaking period for successful applicants redundant.
+        FullWorkerOpeningSuccessfulRoleStakeUnstakingPeriodRedundant,
+        
+        /// Role stake unstaking period for failed applicants redundant.
+        FullWorkerOpeningUnsuccessfulRoleStakeUnstakingPeriodRedundant,
+        
+        /// Application does not exist.
+        FullWorkerOpeningApplicationDoesNotExist,
+        
+        /// Application not in active stage.
+        FullWorkerOpeningApplicationNotActive,
+        
+        /// Applications not for opening.
+        FillWorkerOpeningApplicationForWrongOpening,
+        
+        /// Application does not exist.
+        WithdrawWorkerApplicationApplicationDoesNotExist,
+        
+        /// Application is not active.
+        WithdrawWorkerApplicationApplicationNotActive, 
+        
+        /// Opening not accepting applications.
+        WithdrawWorkerApplicationOpeningNotAcceptingApplications,
+        
+        /// UnstakingPeriodTooShort .... // <== SHOULD REALLY BE TWO SEPARATE, ONE FOR EACH STAKING PURPOSE
+        WithdrawWorkerApplicationUnstakingPeriodTooShort,
+        
+        /// Redundant unstaking period provided 
+        WithdrawWorkerApplicationRedundantUnstakingPeriod,
+        
+        /// Opening does not activate in the future.
+        AddWorkerOpeningActivatesInThePast,
+        
+        /// Role stake amount less than minimum currency balance.
+        AddWorkerOpeningRoleStakeLessThanMinimum,
+        
+        /// Application stake amount less than minimum currency balance.
+        AddWorkerOpeningAppliicationStakeLessThanMinimum,
+        
+        /// Opening does not exist.
+        AddWorkerOpeningOpeningDoesNotExist, 
+        
+        // <== SHOULD REALLY BE TWO SEPARATE, ONE FOR EACH STAKING PURPOSE
+        /// Stake provided when redundant. 
+        AddWorkerOpeningStakeProvidedWhenRedundant,
+        
+        // <== SHOULD REALLY BE TWO SEPARATE, ONE FOR EACH STAKING PURPOSE
+        /// Stake missing when required.
+        AddWorkerOpeningStakeMissingWhenRequired,
+        
+        // <== SHOULD REALLY BE TWO SEPARATE, ONE FOR EACH STAKING PURPOSE
+        /// Stake amount too low.
+        AddWorkerOpeningStakeAmountTooLow, 
+        
+        /// Opening is not in accepting applications stage.
+        AddWorkerOpeningOpeningNotInAcceptingApplicationStage,
+        
+        /// New application was crowded out.
+        AddWorkerOpeningNewApplicationWasCrowdedOut,
+        
+        /// Application rationing has zero max active applicants.
+        AddWorkerOpeningZeroMaxApplicantCount,
+        
+        /// Next payment is not in the future.
+        RecurringRewardsNextPaymentNotInFuture,
+        
+        /// Recipient not found.
+        RecurringRewardsRecipientNotFound, 
+        
+        /// Recipient reward source not found.
+        RecurringRewardsRewardSourceNotFound,
+        
+        /// Reward relationship not found.
+        RecurringRewardsRewardRelationshipNotFound,
+        
+        /// Stake not found.
+        StakingErrorStakeNotFound, 
+        
+        /// Unstaking period should be greater than zero.
+        StakingErrorUnstakingPeriodShouldBeGreaterThanZero,
+        
+        /// Already unstaking.
+        StakingErrorAlreadyUnstaking, 
+        
+        /// Not staked.
+        StakingErrorNotStaked,
+        
+        /// Cannot unstake while slashes ongoing.
+        StakingErrorCannotUnstakeWhileSlashesOngoing,
     }
 }
 
@@ -102,103 +228,6 @@ impl From<system::Error> for Error {
         }
     }
 }
-
-/*
- * The errors below, while in many cases encoding similar outcomes,
- * are scoped to the specific extrinsic for which they are used.
- * The reason for this is that it will later to easier to convert this
- * representation into into the type safe error encoding coming in
- * later versions of Substrate.
- */
-
-// Errors for `accept_worker_applications`
-pub static MSG_ACCEPT_WORKER_APPLICATIONS_OPENING_DOES_NOT_EXIST: &str = "Opening does not exist";
-pub static MSG_ACCEPT_WORKER_APPLICATIONS_OPENING_IS_NOT_WAITING_TO_BEGIN: &str =
-    "Opening Is Not in Waiting to begin";
-
-// Errors for `begin_worker_applicant_review`
-pub static MSG_BEGIN_WORKER_APPLICANT_REVIEW_OPENING_DOES_NOT_EXIST: &str =
-    "Opening does not exist";
-pub static MSG_BEGIN_WORKER_APPLICANT_REVIEW_OPENING_OPENING_IS_NOT_WAITING_TO_BEGIN: &str =
-    "Opening Is Not in Waiting";
-
-// Errors for `fill_worker_opening`
-pub static MSG_FULL_WORKER_OPENING_OPENING_DOES_NOT_EXIST: &str = "OpeningDoesNotExist";
-pub static MSG_FULL_WORKER_OPENING_OPENING_NOT_IN_REVIEW_PERIOD_STAGE: &str =
-    "OpeningNotInReviewPeriodStage";
-pub static MSG_FULL_WORKER_OPENING_UNSUCCESSFUL_APPLICATION_STAKE_UNSTAKING_PERIOD_TOO_SHORT: &str =
-    "Application stake unstaking period for successful applicants too short";
-pub static MSG_FULL_WORKER_OPENING_SUCCESSFUL_APPLICATION_STAKE_UNSTAKING_PERIOD_TOO_SHORT: &str =
-    "Application stake unstaking period for failed applicants too short";
-pub static MSG_FULL_WORKER_OPENING_SUCCESSFUL_ROLE_STAKE_UNSTAKING_PERIOD_TOO_SHORT: &str =
-    "Role stake unstaking period for successful applicants too short";
-pub static MSG_FULL_WORKER_OPENING_UNSUCCESSFUL_ROLE_STAKE_UNSTAKING_PERIOD_TOO_SHORT: &str =
-    "Role stake unstaking period for failed applicants too short";
-pub static MSG_FULL_WORKER_OPENING_SUCCESSFUL_APPLICATION_STAKE_UNSTAKING_PERIOD_REDUNDANT: &str =
-    "Application stake unstaking period for successful applicants redundant";
-pub static MSG_FULL_WORKER_OPENING_UNSUCCESSFUL_APPLICATION_STAKE_UNSTAKING_PERIOD_REDUNDANT: &str =
-    "Application stake unstaking period for failed applicants redundant";
-pub static MSG_FULL_WORKER_OPENING_SUCCESSFUL_ROLE_STAKE_UNSTAKING_PERIOD_REDUNDANT: &str =
-    "Role stake unstaking period for successful applicants redundant";
-pub static MSG_FULL_WORKER_OPENING_UNSUCCESSFUL_ROLE_STAKE_UNSTAKING_PERIOD_REDUNDANT: &str =
-    "Role stake unstaking period for failed applicants redundant";
-pub static MSG_FULL_WORKER_OPENING_APPLICATION_DOES_NOT_EXIST: &str = "ApplicationDoesNotExist";
-pub static MSG_FULL_WORKER_OPENING_APPLICATION_NOT_ACTIVE: &str = "ApplicationNotInActiveStage";
-pub static MSG_FILL_WORKER_OPENING_APPLICATION_FOR_WRONG_OPENING: &str =
-    "Applications not for opening";
-// Errors for `withdraw_worker_application`
-pub static MSG_WITHDRAW_WORKER_APPLICATION_APPLICATION_DOES_NOT_EXIST: &str =
-    "ApplicationDoesNotExist";
-pub static MSG_WITHDRAW_WORKER_APPLICATION_APPLICATION_NOT_ACTIVE: &str = "ApplicationNotActive";
-pub static MSG_WITHDRAW_WORKER_APPLICATION_OPENING_NOT_ACCEPTING_APPLICATIONS: &str =
-    "OpeningNotAcceptingApplications";
-pub static MSG_WITHDRAW_WORKER_APPLICATION_UNSTAKING_PERIOD_TOO_SHORT: &str =
-    "UnstakingPeriodTooShort ..."; // <== SHOULD REALLY BE TWO SEPARATE, ONE FOR EACH STAKING PURPOSE
-pub static MSG_WITHDRAW_WORKER_APPLICATION_REDUNDANT_UNSTAKING_PERIOD: &str =
-    "RedundantUnstakingPeriodProvided ...";
-
-// Errors for `create_channel`
-pub static MSG_CREATE_CHANNEL_IS_NOT_MEMBER: &str = "Is not a member";
-pub static MSG_CREATE_CHANNEL_NOT_CONTROLLER_ACCOUNT: &str =
-    "Account is not controller account of member";
-
-// Errors for `add_worker_opening`
-pub static MSG_ADD_WORKER_OPENING_ACTIVATES_IN_THE_PAST: &str =
-    "Opening does not activate in the future";
-pub static MSG_ADD_WORKER_OPENING_ROLE_STAKE_LESS_THAN_MINIMUM: &str =
-    "Role stake amount less than minimum currency balance";
-pub static MSG_ADD_WORKER_OPENING_APPLIICATION_STAKE_LESS_THAN_MINIMUM: &str =
-    "Application stake amount less than minimum currency balance";
-pub static MSG_ADD_WORKER_OPENING_OPENING_DOES_NOT_EXIST: &str = "OpeningDoesNotExist";
-pub static MSG_ADD_WORKER_OPENING_STAKE_PROVIDED_WHEN_REDUNDANT: &str =
-    "StakeProvidedWhenRedundant ..."; // <== SHOULD REALLY BE TWO SEPARATE, ONE FOR EACH STAKING PURPOSE
-pub static MSG_ADD_WORKER_OPENING_STAKE_MISSING_WHEN_REQUIRED: &str =
-    "StakeMissingWhenRequired ..."; // <== SHOULD REALLY BE TWO SEPARATE, ONE FOR EACH STAKING PURPOSE
-pub static MSG_ADD_WORKER_OPENING_STAKE_AMOUNT_TOO_LOW: &str = "StakeAmountTooLow ..."; // <== SHOULD REALLY BE TWO SEPARATE, ONE FOR EACH STAKING PURPOSE
-pub static MSG_ADD_WORKER_OPENING_OPENING_NOT_IN_ACCEPTING_APPLICATION_STAGE: &str =
-    "OpeningNotInAcceptingApplicationsStage";
-pub static MSG_ADD_WORKER_OPENING_NEW_APPLICATION_WAS_CROWDED_OUT: &str =
-    "NewApplicationWasCrowdedOut";
-pub static MSG_ADD_WORKER_OPENING_ZERO_MAX_APPLICANT_COUNT: &str =
-    "Application rationing has zero max active applicants";
-pub static MSG_RECURRING_REWARDS_NEXT_PAYMENT_NOT_IN_FUTURE: &str =
-    "Next payment is not in the future";
-pub static MSG_RECURRING_REWARDS_RECIPIENT_NOT_FOUND: &str = "Recipient not found";
-pub static MSG_RECURRING_REWARDS_REWARD_SOURCE_NOT_FOUND: &str =
-    "Recipient reward source not found";
-pub static MSG_RECURRING_REWARDS_REWARD_RELATIONSHIP_NOT_FOUND: &str =
-    "Reward relationship not found";
-pub static MSG_STAKING_ERROR_STAKE_NOT_FOUND: &str = "Stake not found";
-pub static MSG_STAKING_ERROR_UNSTAKING_PERIOD_SHOULD_BE_GREATER_THAN_ZERO: &str =
-    "Unstaking period should be greater than zero";
-pub static MSG_STAKING_ERROR_ALREADY_UNSTAKING: &str = "Already unstaking";
-pub static MSG_STAKING_ERROR_NOT_STAKED: &str = "Not staked";
-pub static MSG_STAKING_ERROR_CANNOT_UNSTAKE_WHILE_SLASHES_ONGOING: &str =
-    "Cannot unstake while slashes ongoing";
-pub static MSG_MEMBERSHIP_UNSIGNED_ORIGIN: &str = "Unsigned origin";
-pub static MSG_MEMBERSHIP_INVALID_MEMBER_ID: &str = "Member id is invalid";
-pub static MSG_APPLY_ON_WORKER_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT: &str =
-    "Signer does not match controller account";
 
 /// Error wrapper for external module error conversions.
 pub struct WrappedError<E> {
@@ -212,75 +241,74 @@ macro_rules! ensure_on_wrapped_error {
     ($call:expr) => {{
         { $call }
             .map_err(|err| crate::WrappedError { error: err })
-            .map_err(|err| Error::Other(err.into()))
     }};
 }
 
-impl rstd::convert::From<WrappedError<hiring::BeginAcceptingApplicationsError>> for &str {
+impl rstd::convert::From<WrappedError<hiring::BeginAcceptingApplicationsError>> for Error {
     fn from(wrapper: WrappedError<hiring::BeginAcceptingApplicationsError>) -> Self {
         match wrapper.error {
             hiring::BeginAcceptingApplicationsError::OpeningDoesNotExist => {
-                MSG_ACCEPT_WORKER_APPLICATIONS_OPENING_DOES_NOT_EXIST
+                Error::AcceptWorkerApplicationsOpeningDoesNotExist
             }
             hiring::BeginAcceptingApplicationsError::OpeningIsNotInWaitingToBeginStage => {
-                MSG_ACCEPT_WORKER_APPLICATIONS_OPENING_IS_NOT_WAITING_TO_BEGIN
+                Error::AcceptWorkerApplicationsOpeningIsNotWaitingToBegin
             }
         }
     }
 }
 
-impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for &str {
+impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for Error {
     fn from(wrapper: WrappedError<hiring::AddOpeningError>) -> Self {
         match wrapper.error {
             hiring::AddOpeningError::OpeningMustActivateInTheFuture => {
-                MSG_ADD_WORKER_OPENING_ACTIVATES_IN_THE_PAST
+                Error::AddWorkerOpeningActivatesInThePast
             }
             hiring::AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(purpose) => {
                 match purpose {
                     hiring::StakePurpose::Role => {
-                        MSG_ADD_WORKER_OPENING_ROLE_STAKE_LESS_THAN_MINIMUM
+                        Error::AddWorkerOpeningRoleStakeLessThanMinimum
                     }
                     hiring::StakePurpose::Application => {
-                        MSG_ADD_WORKER_OPENING_APPLIICATION_STAKE_LESS_THAN_MINIMUM
+                        Error::AddWorkerOpeningAppliicationStakeLessThanMinimum
                     }
                 }
             }
             hiring::AddOpeningError::ApplicationRationingZeroMaxApplicants => {
-                MSG_ADD_WORKER_OPENING_ZERO_MAX_APPLICANT_COUNT
+                Error::AddWorkerOpeningZeroMaxApplicantCount
             }
         }
     }
 }
 
-impl rstd::convert::From<WrappedError<hiring::BeginReviewError>> for &str {
+impl rstd::convert::From<WrappedError<hiring::BeginReviewError>> for Error {
     fn from(wrapper: WrappedError<hiring::BeginReviewError>) -> Self {
         match wrapper.error {
             hiring::BeginReviewError::OpeningDoesNotExist => {
-                MSG_BEGIN_WORKER_APPLICANT_REVIEW_OPENING_DOES_NOT_EXIST
+                Error::BeginWorkerApplicantReviewOpeningDoesNotExist
             }
             hiring::BeginReviewError::OpeningNotInAcceptingApplicationsStage => {
-                MSG_BEGIN_WORKER_APPLICANT_REVIEW_OPENING_OPENING_IS_NOT_WAITING_TO_BEGIN
+                Error::BeginWorkerApplicantReviewOpeningOpeningIsNotWaitingToBegin
             }
         }
     }
 }
 
-impl<T: hiring::Trait> rstd::convert::From<WrappedError<hiring::FillOpeningError<T>>> for &str {
+impl<T: hiring::Trait> rstd::convert::From<WrappedError<hiring::FillOpeningError<T>>> for Error {
     fn from(wrapper: WrappedError<hiring::FillOpeningError<T>>) -> Self {
         match wrapper.error {
-			hiring::FillOpeningError::<T>::OpeningDoesNotExist => MSG_FULL_WORKER_OPENING_OPENING_DOES_NOT_EXIST,
-			hiring::FillOpeningError::<T>::OpeningNotInReviewPeriodStage => MSG_FULL_WORKER_OPENING_OPENING_NOT_IN_REVIEW_PERIOD_STAGE,
+			hiring::FillOpeningError::<T>::OpeningDoesNotExist => Error::FullWorkerOpeningOpeningDoesNotExist,
+			hiring::FillOpeningError::<T>::OpeningNotInReviewPeriodStage => Error::FullWorkerOpeningOpeningNotInReviewPeriodStage,
 			hiring::FillOpeningError::<T>::UnstakingPeriodTooShort(
 				stake_purpose,
 				outcome_in_filled_opening,
 			) => match stake_purpose {
 				hiring::StakePurpose::Application => match outcome_in_filled_opening {
-					hiring::ApplicationOutcomeInFilledOpening::Success => MSG_FULL_WORKER_OPENING_UNSUCCESSFUL_APPLICATION_STAKE_UNSTAKING_PERIOD_TOO_SHORT,
-					hiring::ApplicationOutcomeInFilledOpening::Failure => MSG_FULL_WORKER_OPENING_SUCCESSFUL_APPLICATION_STAKE_UNSTAKING_PERIOD_TOO_SHORT
+					hiring::ApplicationOutcomeInFilledOpening::Success => Error::FullWorkerOpeningUnsuccessfulApplicationStakeUnstakingPeriodTooShort,
+					hiring::ApplicationOutcomeInFilledOpening::Failure => Error::FullWorkerOpeningSuccessfulApplicationStakeUnstakingPeriodTooShort
 				},
 				hiring::StakePurpose::Role => match outcome_in_filled_opening {
-					hiring::ApplicationOutcomeInFilledOpening::Success => MSG_FULL_WORKER_OPENING_SUCCESSFUL_ROLE_STAKE_UNSTAKING_PERIOD_TOO_SHORT,
-					hiring::ApplicationOutcomeInFilledOpening::Failure => MSG_FULL_WORKER_OPENING_UNSUCCESSFUL_ROLE_STAKE_UNSTAKING_PERIOD_TOO_SHORT
+					hiring::ApplicationOutcomeInFilledOpening::Success => Error::FullWorkerOpeningSuccessfulRoleStakeUnstakingPeriodTooShort,
+					hiring::ApplicationOutcomeInFilledOpening::Failure => Error::FullWorkerOpeningUnsuccessfulRoleStakeUnstakingPeriodTooShort
 				},
 			},
 			hiring::FillOpeningError::<T>::RedundantUnstakingPeriodProvided(
@@ -288,135 +316,122 @@ impl<T: hiring::Trait> rstd::convert::From<WrappedError<hiring::FillOpeningError
 				outcome_in_filled_opening,
 			) => match stake_purpose {
 				hiring::StakePurpose::Application => match outcome_in_filled_opening {
-					hiring::ApplicationOutcomeInFilledOpening::Success => MSG_FULL_WORKER_OPENING_SUCCESSFUL_APPLICATION_STAKE_UNSTAKING_PERIOD_REDUNDANT,
-					hiring::ApplicationOutcomeInFilledOpening::Failure => MSG_FULL_WORKER_OPENING_UNSUCCESSFUL_APPLICATION_STAKE_UNSTAKING_PERIOD_REDUNDANT
+					hiring::ApplicationOutcomeInFilledOpening::Success => Error::FullWorkerOpeningSuccessfulApplicationStakeUnstakingPeriodRedundant,
+					hiring::ApplicationOutcomeInFilledOpening::Failure => Error::FullWorkerOpeningUnsuccessfulApplicationStakeUnstakingPeriodRedundant
 				},
 				hiring::StakePurpose::Role => match outcome_in_filled_opening {
-					hiring::ApplicationOutcomeInFilledOpening::Success => MSG_FULL_WORKER_OPENING_SUCCESSFUL_ROLE_STAKE_UNSTAKING_PERIOD_REDUNDANT,
-					hiring::ApplicationOutcomeInFilledOpening::Failure => MSG_FULL_WORKER_OPENING_UNSUCCESSFUL_ROLE_STAKE_UNSTAKING_PERIOD_REDUNDANT
+					hiring::ApplicationOutcomeInFilledOpening::Success => Error::FullWorkerOpeningSuccessfulRoleStakeUnstakingPeriodRedundant,
+					hiring::ApplicationOutcomeInFilledOpening::Failure => Error::FullWorkerOpeningUnsuccessfulRoleStakeUnstakingPeriodRedundant
 				},
 			},
-			hiring::FillOpeningError::<T>::ApplicationDoesNotExist(_application_id) => MSG_FULL_WORKER_OPENING_APPLICATION_DOES_NOT_EXIST,
-			hiring::FillOpeningError::<T>::ApplicationNotInActiveStage(_application_id) => MSG_FULL_WORKER_OPENING_APPLICATION_NOT_ACTIVE,
-			hiring::FillOpeningError::<T>::ApplicationForWrongOpening(_application_id) => MSG_FILL_WORKER_OPENING_APPLICATION_FOR_WRONG_OPENING,
+			hiring::FillOpeningError::<T>::ApplicationDoesNotExist(_application_id) => Error::FullWorkerOpeningApplicationDoesNotExist,
+			hiring::FillOpeningError::<T>::ApplicationNotInActiveStage(_application_id) => Error::FullWorkerOpeningApplicationNotActive,
+			hiring::FillOpeningError::<T>::ApplicationForWrongOpening(_application_id) => Error::FillWorkerOpeningApplicationForWrongOpening,
 		}
     }
 }
 
-impl rstd::convert::From<WrappedError<hiring::DeactivateApplicationError>> for &str {
+impl rstd::convert::From<WrappedError<hiring::DeactivateApplicationError>> for Error {
     fn from(wrapper: WrappedError<hiring::DeactivateApplicationError>) -> Self {
         match wrapper.error {
             hiring::DeactivateApplicationError::ApplicationDoesNotExist => {
-                MSG_WITHDRAW_WORKER_APPLICATION_APPLICATION_DOES_NOT_EXIST
+                Error::WithdrawWorkerApplicationApplicationDoesNotExist
             }
             hiring::DeactivateApplicationError::ApplicationNotActive => {
-                MSG_WITHDRAW_WORKER_APPLICATION_APPLICATION_NOT_ACTIVE
+                Error::WithdrawWorkerApplicationApplicationNotActive
             }
             hiring::DeactivateApplicationError::OpeningNotAcceptingApplications => {
-                MSG_WITHDRAW_WORKER_APPLICATION_OPENING_NOT_ACCEPTING_APPLICATIONS
+                Error::WithdrawWorkerApplicationOpeningNotAcceptingApplications
             }
             hiring::DeactivateApplicationError::UnstakingPeriodTooShort(_stake_purpose) => {
-                MSG_WITHDRAW_WORKER_APPLICATION_UNSTAKING_PERIOD_TOO_SHORT
+                Error::WithdrawWorkerApplicationUnstakingPeriodTooShort
             }
             hiring::DeactivateApplicationError::RedundantUnstakingPeriodProvided(
                 _stake_purpose,
-            ) => MSG_WITHDRAW_WORKER_APPLICATION_REDUNDANT_UNSTAKING_PERIOD,
+            ) => Error::WithdrawWorkerApplicationRedundantUnstakingPeriod,
         }
     }
 }
 
-impl rstd::convert::From<WrappedError<members::ControllerAccountForMemberCheckFailed>> for &str {
-    fn from(wrapper: WrappedError<members::ControllerAccountForMemberCheckFailed>) -> Self {
-        match wrapper.error {
-            members::ControllerAccountForMemberCheckFailed::NotMember => {
-                MSG_CREATE_CHANNEL_IS_NOT_MEMBER
-            }
-            members::ControllerAccountForMemberCheckFailed::NotControllerAccount => {
-                MSG_CREATE_CHANNEL_NOT_CONTROLLER_ACCOUNT
-            }
-        }
-    }
-}
-
-impl rstd::convert::From<WrappedError<hiring::AddApplicationError>> for &str {
+impl rstd::convert::From<WrappedError<hiring::AddApplicationError>> for Error {
     fn from(wrapper: WrappedError<hiring::AddApplicationError>) -> Self {
         match wrapper.error {
             hiring::AddApplicationError::OpeningDoesNotExist => {
-                MSG_ADD_WORKER_OPENING_OPENING_DOES_NOT_EXIST
+                Error::AddWorkerOpeningOpeningDoesNotExist
             }
             hiring::AddApplicationError::StakeProvidedWhenRedundant(_stake_purpose) => {
-                MSG_ADD_WORKER_OPENING_STAKE_PROVIDED_WHEN_REDUNDANT
+                Error::AddWorkerOpeningStakeProvidedWhenRedundant
             }
             hiring::AddApplicationError::StakeMissingWhenRequired(_stake_purpose) => {
-                MSG_ADD_WORKER_OPENING_STAKE_MISSING_WHEN_REQUIRED
+                Error::AddWorkerOpeningStakeMissingWhenRequired
             }
             hiring::AddApplicationError::StakeAmountTooLow(_stake_purpose) => {
-                MSG_ADD_WORKER_OPENING_STAKE_AMOUNT_TOO_LOW
+                Error::AddWorkerOpeningStakeAmountTooLow
             }
             hiring::AddApplicationError::OpeningNotInAcceptingApplicationsStage => {
-                MSG_ADD_WORKER_OPENING_OPENING_NOT_IN_ACCEPTING_APPLICATION_STAGE
+                Error::AddWorkerOpeningOpeningNotInAcceptingApplicationStage
             }
             hiring::AddApplicationError::NewApplicationWasCrowdedOut => {
-                MSG_ADD_WORKER_OPENING_NEW_APPLICATION_WAS_CROWDED_OUT
+                Error::AddWorkerOpeningNewApplicationWasCrowdedOut
             }
         }
     }
 }
 
-impl rstd::convert::From<WrappedError<members::MemberControllerAccountDidNotSign>> for &str {
+impl rstd::convert::From<WrappedError<members::MemberControllerAccountDidNotSign>> for Error {
     fn from(wrapper: WrappedError<members::MemberControllerAccountDidNotSign>) -> Self {
         match wrapper.error {
             members::MemberControllerAccountDidNotSign::UnsignedOrigin => {
-                MSG_MEMBERSHIP_UNSIGNED_ORIGIN
+                Error::MembershipUnsignedOrigin
             }
             members::MemberControllerAccountDidNotSign::MemberIdInvalid => {
-                MSG_MEMBERSHIP_INVALID_MEMBER_ID
+                Error::MembershipInvalidMemberId
             }
             members::MemberControllerAccountDidNotSign::SignerControllerAccountMismatch => {
-                MSG_APPLY_ON_WORKER_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT
+                Error::ApplyOnWorkerOpeningSignerNotControllerAccount
             }
         }
     }
 }
 
-impl rstd::convert::From<WrappedError<recurringrewards::RewardsError>> for &str {
+impl rstd::convert::From<WrappedError<recurringrewards::RewardsError>> for Error {
     fn from(wrapper: WrappedError<recurringrewards::RewardsError>) -> Self {
         match wrapper.error {
             recurringrewards::RewardsError::NextPaymentNotInFuture => {
-                MSG_RECURRING_REWARDS_NEXT_PAYMENT_NOT_IN_FUTURE
+                Error::RecurringRewardsNextPaymentNotInFuture
             }
             recurringrewards::RewardsError::RecipientNotFound => {
-                MSG_RECURRING_REWARDS_RECIPIENT_NOT_FOUND
+                Error::RecurringRewardsRecipientNotFound
             }
             recurringrewards::RewardsError::RewardSourceNotFound => {
-                MSG_RECURRING_REWARDS_REWARD_SOURCE_NOT_FOUND
+                Error::RecurringRewardsRewardSourceNotFound
             }
             recurringrewards::RewardsError::RewardRelationshipNotFound => {
-                MSG_RECURRING_REWARDS_REWARD_RELATIONSHIP_NOT_FOUND
+                Error::RecurringRewardsRewardRelationshipNotFound
             }
         }
     }
 }
 
 impl rstd::convert::From<WrappedError<stake::StakeActionError<stake::InitiateUnstakingError>>>
-    for &str
+    for Error
 {
     fn from(wrapper: WrappedError<stake::StakeActionError<stake::InitiateUnstakingError>>) -> Self {
         match wrapper.error {
-            stake::StakeActionError::StakeNotFound => MSG_STAKING_ERROR_STAKE_NOT_FOUND,
+            stake::StakeActionError::StakeNotFound => Error::StakingErrorStakeNotFound,
             stake::StakeActionError::Error(initiate_unstaking_error) => {
                 match initiate_unstaking_error {
                     stake::InitiateUnstakingError::UnstakingPeriodShouldBeGreaterThanZero => {
-                        MSG_STAKING_ERROR_UNSTAKING_PERIOD_SHOULD_BE_GREATER_THAN_ZERO
+                        Error::StakingErrorUnstakingPeriodShouldBeGreaterThanZero
                     }
                     stake::InitiateUnstakingError::UnstakingError(unstaking_error) => {
                         match unstaking_error {
                             stake::UnstakingError::AlreadyUnstaking => {
-                                MSG_STAKING_ERROR_ALREADY_UNSTAKING
+                                Error::StakingErrorAlreadyUnstaking
                             }
-                            stake::UnstakingError::NotStaked => MSG_STAKING_ERROR_NOT_STAKED,
+                            stake::UnstakingError::NotStaked => Error::StakingErrorNotStaked,
                             stake::UnstakingError::CannotUnstakeWhileSlashesOngoing => {
-                                MSG_STAKING_ERROR_CANNOT_UNSTAKE_WHILE_SLASHES_ONGOING
+                                Error::StakingErrorCannotUnstakeWhileSlashesOngoing
                             }
                         }
                     }
