@@ -4,7 +4,7 @@ import { ParsedProposal } from "../runtime/transport";
 import { ExtendedProposalStatus } from "./ProposalDetails";
 import styled from 'styled-components';
 
-import ProfilePreview from "./ProfilePreview";
+import ProfilePreview from "@polkadot/joy-utils/MemberProfilePreview";
 
 const BlockInfo = styled.div`
   font-size: 0.9em;

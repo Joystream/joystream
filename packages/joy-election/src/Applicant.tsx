@@ -7,7 +7,7 @@ import { ApiProps } from '@polkadot/react-api/types';
 import { withCalls } from '@polkadot/react-api/with';
 import { AccountId } from '@polkadot/types/interfaces';
 import { formatBalance } from '@polkadot/util';
-import AddressMini from '@polkadot/react-components/AddressMiniJoy';
+import CandidatePreview from "./CandidatePreview";
 
 import translate from './translate';
 import { calcTotalStake } from '@polkadot/joy-utils/index';
@@ -29,7 +29,7 @@ class Applicant extends React.PureComponent<Props> {
       <Table.Row>
         <Table.Cell>{index + 1}</Table.Cell>
         <Table.Cell>
-          <AddressMini value={accountId} isShort={false} isPadded={false} withBalance={true} />
+          <CandidatePreview accountId={accountId}/>
         </Table.Cell>
         <Table.Cell style={{ textAlign: 'right' }}>
           {formatBalance(calcTotalStake(stake))}
