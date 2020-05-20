@@ -21,6 +21,15 @@ async function bootstrap() {
   await loadConfig();
 
   const server = getServer({}, { namingStrategy: new CustomNamingStrategy() });
+
+  // Create database tables. Warthog migrate command does not support CustomNamingStrategy thats why
+  // we have this code
+  const syncDatabase: string | undefined = process.env.SYNC;
+  if (syncDatabase) {
+    await server.establishDBConnection();
+    process.exit(0);
+  }
+
   await server.start();
 }
 
