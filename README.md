@@ -55,7 +55,7 @@ Run the node and connect to the public testnet.
 cargo run --release -- --chain ./rome-tesnet.json
 ```
 
-The `rome-testnet.json` chain file can be ontained from the [release page](https://github.com/Joystream/joystream/releases/tag/v6.8.0)
+The `rome-testnet.json` chain file can be obtained from the [releases page](https://github.com/Joystream/joystream/releases/tag/v6.8.0)
 
 
 ### Installing a release build
