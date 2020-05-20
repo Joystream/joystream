@@ -1,13 +1,15 @@
 import * as assert from 'assert';
 
-import { Membership } from '../generated/indexer/entities/Membership';
-import { DB, getLogger } from '../generated/indexer';
+import { Membership } from '../generated/graphql-server/src/modules/membership/membership.model';
+import { DB } from '../generated/indexer';
 
 export async function handleMemberRegistered(db: DB) {
   // Get event data
   const { AccountId, MemberId } = db.event.event_params;
 
-  let member = new Membership({ accountId: AccountId.toString(), memberId: +MemberId });
+  let member = new Membership();
+  member.accountId = AccountId.toString()
+  member.memberId = +MemberId
 
   // Save to database.
   db.save<Membership>(member);
