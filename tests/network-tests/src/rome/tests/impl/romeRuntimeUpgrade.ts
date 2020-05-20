@@ -1,12 +1,10 @@
-import { initConfig } from './utils/config';
+import { initConfig } from '../../utils/config';
 import { Keyring, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { membershipTest } from './membershipCreationTest';
-import { councilTest } from './electingCouncilTest';
 import { registerJoystreamTypes } from '@rome/types';
-import { ApiWrapper } from './utils/apiWrapper';
+import { ApiWrapper } from '../../utils/apiWrapper';
 import BN from 'bn.js';
-import { Utils } from './utils/utils';
+import { Utils } from '../../utils/utils';
 import tap from 'tap';
 
 export function romeRuntimeUpgradeTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {
@@ -68,11 +66,3 @@ export function romeRuntimeUpgradeTest(m1KeyPairs: KeyringPair[], m2KeyPairs: Ke
     apiWrapper.close();
   });
 }
-
-const m1Keys: KeyringPair[] = new Array();
-const m2Keys: KeyringPair[] = new Array();
-
-membershipTest(m1Keys);
-membershipTest(m2Keys);
-councilTest(m1Keys, m2Keys);
-romeRuntimeUpgradeTest(m1Keys, m2Keys);

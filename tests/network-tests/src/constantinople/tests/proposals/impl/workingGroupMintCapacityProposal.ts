@@ -1,10 +1,8 @@
-import { initConfig } from '../utils/config';
+import { initConfig } from '../../../utils/config';
 import { Keyring, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { membershipTest } from '../membershipCreationTest';
-import { councilTest } from '../electingCouncilTest';
-import { registerJoystreamTypes } from '@joystream/types';
-import { ApiWrapper } from '../utils/apiWrapper';
+import { registerJoystreamTypes } from '@constantinople/types';
+import { ApiWrapper } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN from 'bn.js';
 import { assert } from 'chai';
@@ -75,11 +73,3 @@ export function workingGroupMintCapacityProposalTest(m1KeyPairs: KeyringPair[], 
     apiWrapper.close();
   });
 }
-
-const m1Keys: KeyringPair[] = new Array();
-const m2Keys: KeyringPair[] = new Array();
-
-membershipTest(m1Keys);
-membershipTest(m2Keys);
-councilTest(m1Keys, m2Keys);
-workingGroupMintCapacityProposalTest(m1Keys, m2Keys);

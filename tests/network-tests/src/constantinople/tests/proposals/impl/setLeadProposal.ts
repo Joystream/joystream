@@ -1,17 +1,14 @@
-import { initConfig } from '../utils/config';
+import { initConfig } from '../../../utils/config';
 import { Keyring, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { membershipTest } from '../membershipCreationTest';
-import { councilTest } from '../electingCouncilTest';
-import { registerJoystreamTypes } from '@joystream/types';
-import { ApiWrapper } from '../utils/apiWrapper';
+import { registerJoystreamTypes } from '@constantinople/types';
+import { ApiWrapper } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN from 'bn.js';
 import { assert } from 'chai';
-import { Utils } from '../utils/utils';
 import tap from 'tap';
 
-export function evictStorageProviderTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {
+export function setLeadProposalTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
@@ -23,53 +20,38 @@ export function evictStorageProviderTest(m1KeyPairs: KeyringPair[], m2KeyPairs: 
 
   tap.setTimeout(defaultTimeout);
 
-  tap.test('Evict storage provider proposal test setup', async () => {
+  tap.test('Set lead proposal test', async () => {
     registerJoystreamTypes();
     const provider = new WsProvider(nodeUrl);
     apiWrapper = await ApiWrapper.create(provider);
   });
 
-  tap.test('Evict storage provider proposal test', async () => {
+  tap.test('Lead proposal test', async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8);
     const description: string = 'Testing validator count proposal ' + uuid().substring(0, 8);
     const runtimeVoteFee: BN = apiWrapper.estimateVoteForProposalFee();
     await apiWrapper.transferBalanceToAccounts(sudo, m2KeyPairs, runtimeVoteFee);
-    if (!(await apiWrapper.isStorageProvider(sudo.address))) {
-      await apiWrapper.createStorageProvider(sudo);
-    }
-    assert(await apiWrapper.isStorageProvider(sudo.address), `Account ${sudo.address} is not storage provider`);
 
     // Proposal stake calculation
-    const proposalStake: BN = new BN(25000);
-    const proposalFee: BN = apiWrapper.estimateProposeEvictStorageProviderFee(
-      description,
-      description,
-      proposalStake,
-      sudo.address
-    );
+    const proposalStake: BN = new BN(50000);
+    const proposalFee: BN = apiWrapper.estimateProposeLeadFee(description, description, proposalStake, sudo.address);
     await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake));
 
     // Proposal creation
     const proposalPromise = apiWrapper.expectProposalCreated();
-    await apiWrapper.proposeEvictStorageProvider(
-      m1KeyPairs[0],
-      proposalTitle,
-      description,
-      proposalStake,
-      sudo.address
-    );
+    await apiWrapper.proposeLead(m1KeyPairs[0], proposalTitle, description, proposalStake, m1KeyPairs[1]);
     const proposalNumber = await proposalPromise;
 
     // Approving the proposal
     const proposalExecutionPromise = apiWrapper.expectProposalFinalized();
     await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber);
     await proposalExecutionPromise;
-    await Utils.wait(apiWrapper.getBlockDuration().toNumber());
+    const newLead: string = await apiWrapper.getCurrentLeadAddress();
     assert(
-      !(await apiWrapper.isStorageProvider(sudo.address)),
-      `Account ${sudo.address} is storage provider after eviction`
+      newLead === m1KeyPairs[1].address,
+      `New lead has unexpected value ${newLead}, expected ${m1KeyPairs[1].address}`
     );
   });
 
@@ -77,11 +59,3 @@ export function evictStorageProviderTest(m1KeyPairs: KeyringPair[], m2KeyPairs: 
     apiWrapper.close();
   });
 }
-
-const m1Keys: KeyringPair[] = new Array();
-const m2Keys: KeyringPair[] = new Array();
-
-membershipTest(m1Keys);
-membershipTest(m2Keys);
-councilTest(m1Keys, m2Keys);
-evictStorageProviderTest(m1Keys, m2Keys);

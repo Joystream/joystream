@@ -1,13 +1,12 @@
-import { membershipTest } from './membershipCreationTest';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { ApiWrapper } from './utils/apiWrapper';
+import { ApiWrapper } from '../../utils/apiWrapper';
 import { WsProvider, Keyring } from '@polkadot/api';
-import { initConfig } from './utils/config';
+import { initConfig } from '../../utils/config';
 import BN from 'bn.js';
-import { registerJoystreamTypes, Seat } from '@joystream/types';
+import { registerJoystreamTypes, Seat } from '@constantinople/types';
 import { assert } from 'chai';
 import { v4 as uuid } from 'uuid';
-import { Utils } from './utils/utils';
+import { Utils } from '../../utils/utils';
 import tap from 'tap';
 
 export function councilTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {

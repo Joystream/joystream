@@ -4,13 +4,13 @@
   "license": "GPL-3.0-only",
   "scripts": {
     "build": "tsc --build tsconfig.json",
-    "test": "tap --files ts-node/register src/tests/constantinople/proposals/*",
-    "test-migration": "tap --files src/tests/rome/romeRuntimeUpgradeTest.ts --files src/tests/constantinople/electingCouncilTest.ts",
+    "test": "tap --files ts-node/register src/constantinople/tests/proposals/*Test.ts",
+    "test-migration": "tap --files src/rome/tests/romeRuntimeUpgradeTest.ts --files src/constantinople/tests/electingCouncilTest.ts",
     "lint": "tslint --project tsconfig.json",
     "prettier": "prettier --write ./src"
   },
   "dependencies": {
-    "@joystream/types": "^0.8.0",
+    "@constantinople/types@npm:@joystream/types": "^0.9.1",
     "@polkadot/api": "^0.96.1",
     "@polkadot/keyring": "^1.7.0-beta.5",
     "@rome/types@npm:@joystream/types": "^0.7.0",

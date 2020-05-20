@@ -4,8 +4,8 @@ import { Keyring } from '@polkadot/keyring';
 import { assert } from 'chai';
 import { KeyringPair } from '@polkadot/keyring/types';
 import BN from 'bn.js';
-import { ApiWrapper } from './utils/apiWrapper';
-import { initConfig } from './utils/config';
+import { ApiWrapper } from '../../utils/apiWrapper';
+import { initConfig } from '../../utils/config';
 import { v4 as uuid } from 'uuid';
 import tap from 'tap';
 
@@ -89,7 +89,3 @@ export function membershipTest(nKeyPairs: KeyringPair[]) {
     apiWrapper.close();
   });
 }
-
-const nKeys: KeyringPair[] = new Array();
-
-membershipTest(nKeys);

@@ -1,21 +1,19 @@
-import { initConfig } from '../utils/config';
+import { initConfig } from '../../../utils/config';
 import { Keyring, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { membershipTest } from '../membershipCreationTest';
-import { councilTest } from '../electingCouncilTest';
-import { registerJoystreamTypes } from '@joystream/types';
-import { ApiWrapper } from '../utils/apiWrapper';
+import { registerJoystreamTypes } from '@constantinople/types';
+import { ApiWrapper } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN from 'bn.js';
 import { assert } from 'chai';
+import { Utils } from '../../../utils/utils';
 import tap from 'tap';
 
-export function validatorCountProposal(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {
+export function evictStorageProviderTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {
   initConfig();
   const keyring = new Keyring({ type: 'sr25519' });
   const nodeUrl: string = process.env.NODE_URL!;
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
-  const validatorCountIncrement: BN = new BN(+process.env.VALIDATOR_COUNT_INCREMENT!);
   const defaultTimeout: number = 600000;
 
   let apiWrapper: ApiWrapper;
@@ -23,34 +21,42 @@ export function validatorCountProposal(m1KeyPairs: KeyringPair[], m2KeyPairs: Ke
 
   tap.setTimeout(defaultTimeout);
 
-  tap.test('Validator count proposal test setup', async () => {
+  tap.test('Evict storage provider proposal test setup', async () => {
     registerJoystreamTypes();
     const provider = new WsProvider(nodeUrl);
     apiWrapper = await ApiWrapper.create(provider);
   });
 
-  tap.test('Validator count proposal test', async () => {
+  tap.test('Evict storage provider proposal test', async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8);
     const description: string = 'Testing validator count proposal ' + uuid().substring(0, 8);
     const runtimeVoteFee: BN = apiWrapper.estimateVoteForProposalFee();
     await apiWrapper.transferBalanceToAccounts(sudo, m2KeyPairs, runtimeVoteFee);
+    if (!(await apiWrapper.isStorageProvider(sudo.address))) {
+      await apiWrapper.createStorageProvider(sudo);
+    }
+    assert(await apiWrapper.isStorageProvider(sudo.address), `Account ${sudo.address} is not storage provider`);
 
     // Proposal stake calculation
-    const proposalStake: BN = new BN(100000);
-    const proposalFee: BN = apiWrapper.estimateProposeValidatorCountFee(description, description, proposalStake);
+    const proposalStake: BN = new BN(25000);
+    const proposalFee: BN = apiWrapper.estimateProposeEvictStorageProviderFee(
+      description,
+      description,
+      proposalStake,
+      sudo.address
+    );
     await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake));
-    const validatorCount: BN = await apiWrapper.getValidatorCount();
 
     // Proposal creation
     const proposalPromise = apiWrapper.expectProposalCreated();
-    await apiWrapper.proposeValidatorCount(
+    await apiWrapper.proposeEvictStorageProvider(
       m1KeyPairs[0],
       proposalTitle,
       description,
       proposalStake,
-      validatorCount.add(validatorCountIncrement)
+      sudo.address
     );
     const proposalNumber = await proposalPromise;
 
@@ -58,12 +64,10 @@ export function validatorCountProposal(m1KeyPairs: KeyringPair[], m2KeyPairs: Ke
     const proposalExecutionPromise = apiWrapper.expectProposalFinalized();
     await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber);
     await proposalExecutionPromise;
-    const newValidatorCount: BN = await apiWrapper.getValidatorCount();
+    await Utils.wait(apiWrapper.getBlockDuration().toNumber());
     assert(
-      newValidatorCount.sub(validatorCount).eq(validatorCountIncrement),
-      `Validator count has unexpeccted value ${newValidatorCount}, expected ${validatorCount.add(
-        validatorCountIncrement
-      )}`
+      !(await apiWrapper.isStorageProvider(sudo.address)),
+      `Account ${sudo.address} is storage provider after eviction`
     );
   });
 
@@ -71,11 +75,3 @@ export function validatorCountProposal(m1KeyPairs: KeyringPair[], m2KeyPairs: Ke
     apiWrapper.close();
   });
 }
-
-const m1Keys: KeyringPair[] = new Array();
-const m2Keys: KeyringPair[] = new Array();
-
-membershipTest(m1Keys);
-membershipTest(m2Keys);
-councilTest(m1Keys, m2Keys);
-validatorCountProposal(m1Keys, m2Keys);
