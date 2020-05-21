@@ -42,14 +42,14 @@ export default class Bootstrapper {
             // perform all the bootstrap logic in one large
             // atomic transaction 
             for (const boot of this._bootstrapPack.pack) {
-                let bootEvent = this.createBootEvent(boot);
-                
-                let shouldBootstrap = await this.shouldBootstrap(queryRunner.manager, bootEvent);
+                let shouldBootstrap = await this.shouldBootstrap(queryRunner.manager, boot);
                 if (!shouldBootstrap) {
                     debug(`${boot.name} already bootstrapped, skipping`);
                     continue;
                 }
 
+                let bootEvent = this.createBootEvent(boot);
+                
                 let db = new DatabaseManager(bootEvent, queryRunner.manager);
                 await boot(api, db);
 
@@ -76,7 +76,7 @@ export default class Bootstrapper {
     private createBootEvent(boot: BootstrapFunc): SubstrateEvent {
         return {
             event_name: 'Bootstrap',
-            event_method: boot.name,
+            event_method: `Bootstrap.${boot.name}`,
             event_params: {},
             index: Date.now() / 1000 | 0, // simply put the timestamp here
             block_number: process.env.BLOCK_HEIGHT ? parseInt(process.env.BLOCK_HEIGHT) : 0, 
@@ -88,13 +88,12 @@ export default class Bootstrapper {
      * bootstrapped the data
      * 
      * @param em  `EntityManager` by `typeorm`
-     * @param bootEvent SubstrateEvent
+     * @param boot boothandler
      */
-    private async shouldBootstrap(em: EntityManager, bootEvent: SubstrateEvent):Promise<boolean> {
+    private async shouldBootstrap(em: EntityManager, boot: BootstrapFunc):Promise<boolean> {
         const event = await em.findOne(SavedEntityEvent, { 
             where: { 
-                eventName: bootEvent.event_name, 
-                index: bootEvent.index
+                eventName: `Bootstrap.${boot.name}`,
             }
         })
         return event ? false : true;
