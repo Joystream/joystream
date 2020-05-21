@@ -37,6 +37,8 @@ impl IncreaseWorkerStakeFixture {
     }
 
     fn call_and_assert(&self, expected_result: Result<(), Error>) {
+        let stake_id = 0;
+        let old_stake = <stake::Module<Test>>::stakes(stake_id);
         let actual_result = Bureaucracy1::increase_worker_stake(
             self.origin.clone().into(),
             self.worker_id,
@@ -45,20 +47,22 @@ impl IncreaseWorkerStakeFixture {
 
         assert_eq!(actual_result, expected_result);
 
-        // if stake_existed && actual_result.is_ok() {
-        //     assert!(!<crate::UnstakerByStakeId<Test, crate::Instance1>>::exists(
-        //         self.stake_id
-        //     ));
-        //
-        //     let worker = Bureaucracy1::worker_by_id(self.worker_id);
-        //     let expected_worker_stage = WorkerRoleStage::Exited(WorkerExitSummary {
-        //         origin: WorkerExitInitiationOrigin::Worker,
-        //         initiated_at_block_number: 1,
-        //         rationale_text: b"rationale_text".to_vec(),
-        //     });
-        //
-        //     assert_eq!(worker.stage, expected_worker_stage);
-        // }
+        if actual_result.is_ok() {
+            let new_stake = <stake::Module<Test>>::stakes(stake_id);
+
+            assert_eq!(
+                Self::get_stake_balance(new_stake),
+                Self::get_stake_balance(old_stake) + self.balance
+            );
+        }
+    }
+
+    fn get_stake_balance(stake: stake::Stake<u64, u64, u64>) -> u64 {
+        if let stake::StakingStatus::Staked(stake) = stake.staking_status {
+            return stake.staked_amount;
+        }
+
+        panic!("Not staked.");
     }
 }
 
@@ -2192,6 +2196,8 @@ fn increase_worker_stake_succeeds() {
         let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id);
 
         increase_stake_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkerStakeIncreased(worker_id));
     });
 }
 

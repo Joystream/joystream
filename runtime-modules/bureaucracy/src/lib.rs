@@ -244,6 +244,11 @@ decl_event!(
         /// - Worker opening id
         /// - Worker application id to the worker id dictionary
         WorkerOpeningFilled(WorkerOpeningId, WorkerApplicationIdToWorkerIdMap),
+
+        /// Emits on increasing worker stake.
+        /// Params:
+        /// - worker id.
+        WorkerStakeIncreased(WorkerId),
     }
 );
 
@@ -896,24 +901,23 @@ decl_module! {
 
             ensure!(balance != <BalanceOf<T>>::zero(), Error::StakeBalanceCannotBeZero);
 
-            //TODO to map
-            if let Some(stake_profile) = worker.role_stake_profile {
-                ensure_on_wrapped_error!(
-                    <stake::Module<T>>::ensure_can_increase_stake(&stake_profile.stake_id, balance)
-                )?;
+            let stake_profile = worker.role_stake_profile.ok_or(Error::NoWorkerStakeProfile)?;
+
+            ensure_on_wrapped_error!(
+                <stake::Module<T>>::ensure_can_increase_stake(&stake_profile.stake_id, balance)
+            )?;
 
             // mutation
 
-                ensure_on_wrapped_error!(
-                    <stake::Module<T>>::increase_stake_from_account(
-                        &stake_profile.stake_id,
-                        &worker.role_account,
-                        balance
-                    )
-                )?;
-            } else {
-                return Err(Error::NoWorkerStakeProfile);
-            }
+            ensure_on_wrapped_error!(
+                <stake::Module<T>>::increase_stake_from_account(
+                    &stake_profile.stake_id,
+                    &worker.role_account,
+                    balance
+                )
+            )?;
+
+            Self::deposit_event(RawEvent::WorkerStakeIncreased(worker_id));
         }
     }
 }
