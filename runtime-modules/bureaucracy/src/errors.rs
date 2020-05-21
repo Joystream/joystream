@@ -232,6 +232,12 @@ decl_error! {
 
         /// Cannot increase stake while unstaking.
         StakingErrorCannotIncreaseStakeWhileUnstaking,
+
+        /// Cannot decrease stake while slashes ongoing.
+        StakingErrorCannotDecreaseWhileSlashesOngoing,
+
+        /// Insufficient stake to decrease,
+        StakingErrorInsufficientStake,
     }
 }
 
@@ -525,6 +531,33 @@ impl rstd::convert::From<WrappedError<stake::StakeActionError<stake::IncreasingS
                     }
                     stake::IncreasingStakeError::CannotIncreaseStakeWhileUnstaking => {
                         Error::StakingErrorCannotIncreaseStakeWhileUnstaking
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl rstd::convert::From<WrappedError<stake::StakeActionError<stake::DecreasingStakeError>>>
+    for Error
+{
+    fn from(wrapper: WrappedError<stake::StakeActionError<stake::DecreasingStakeError>>) -> Self {
+        match wrapper.error {
+            stake::StakeActionError::StakeNotFound => Error::StakingErrorStakeNotFound,
+            stake::StakeActionError::Error(decreasing_stake_error) => {
+                match decreasing_stake_error {
+                    stake::DecreasingStakeError::NotStaked => Error::StakingErrorNotStaked,
+                    stake::DecreasingStakeError::CannotChangeStakeByZero => {
+                        Error::StakingErrorCannotChangeStakeByZero
+                    }
+                    stake::DecreasingStakeError::CannotDecreaseStakeWhileUnstaking => {
+                        Error::StakingErrorCannotIncreaseStakeWhileUnstaking
+                    }
+                    stake::DecreasingStakeError::CannotDecreaseStakeWhileOngoingSlahes => {
+                        Error::StakingErrorCannotDecreaseWhileSlashesOngoing
+                    }
+                    stake::DecreasingStakeError::InsufficientStake => {
+                        Error::StakingErrorInsufficientStake
                     }
                 }
             }

@@ -245,10 +245,20 @@ decl_event!(
         /// - Worker application id to the worker id dictionary
         WorkerOpeningFilled(WorkerOpeningId, WorkerApplicationIdToWorkerIdMap),
 
-        /// Emits on increasing worker stake.
+        /// Emits on increasing the worker stake.
         /// Params:
         /// - worker id.
         WorkerStakeIncreased(WorkerId),
+
+        /// Emits on decreasing the worker stake.
+        /// Params:
+        /// - worker id.
+        WorkerStakeDecreased(WorkerId),
+
+        /// Emits on slashing the worker stake.
+        /// Params:
+        /// - worker id.
+        WorkerStakeSlashed(WorkerId),
     }
 );
 
@@ -889,9 +899,34 @@ decl_module! {
         // /// Slashes the worker stake, demands a leader origin. No limits, no actions on zero stake.
         // pub fn slash_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {}
 
-        // /// Decreases the worker stake and returns the remainder to the worker role_account,
-        // /// demands a leader origin. Can be decreased to zero, no actions on zero stake.
-        // pub fn decrease_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {}
+        /// Decreases the worker stake and returns the remainder to the worker role_account,
+        /// demands a leader origin. Can be decreased to zero, no actions on zero stake.
+        pub fn decrease_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
+            Self::ensure_origin_is_set_lead(origin)?;
+
+            // Checks worker existence, worker active state
+            let worker = Self::ensure_active_worker_exists(&worker_id)?;
+
+            ensure!(balance != <BalanceOf<T>>::zero(), Error::StakeBalanceCannotBeZero);
+
+            let stake_profile = worker.role_stake_profile.ok_or(Error::NoWorkerStakeProfile)?;
+
+            ensure_on_wrapped_error!(
+                <stake::Module<T>>::ensure_can_decrease_stake(&stake_profile.stake_id, balance)
+            )?;
+
+            // mutation
+
+            ensure_on_wrapped_error!(
+                <stake::Module<T>>::decrease_stake_to_account(
+                    &stake_profile.stake_id,
+                    &worker.role_account,
+                    balance
+                )
+            )?;
+
+            Self::deposit_event(RawEvent::WorkerStakeDecreased(worker_id));
+        }
 
         /// Increases the worker stake, demands a worker origin. Transfers tokens from the worker
         /// role_account to the stake. No limits on the stake.
