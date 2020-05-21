@@ -29,6 +29,12 @@
 //! - [unset_lead](./struct.Module.html#method.unset_lead) - Unset lead.
 //! - [unstake](./struct.Module.html#method.unstake) - Unstake.
 //!
+//! ### Worker stakes
+//!
+//! - [slash_worker_stake](./struct.Module.html#method.slash_worker_stake) - Slashes the worker stake.
+//! - [decrease_worker_stake](./struct.Module.html#method.decrease_worker_stake) - Decreases the worker stake and returns the remainder to the worker _role_account_.
+//! - [increase_worker_stake](./struct.Module.html#method.increase_worker_stake) - Increases the worker stake, demands a worker origin.
+//!
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -875,16 +881,40 @@ decl_module! {
 
         // ****************** Worker stakes **********************
 
-        /// Slashes the worker stake, demands a leader origin. No limits, no actions on zero stake.
-        fn slash_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {}
+        // /// Slashes the worker stake, demands a leader origin. No limits, no actions on zero stake.
+        // pub fn slash_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {}
 
-        /// Decreases the worker stake and returns the remainder to the worker role_account,
-        /// demands a leader origin. Can be decreased to zero, no actions on zero stake.
-        fn decrease_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {}
+        // /// Decreases the worker stake and returns the remainder to the worker role_account,
+        // /// demands a leader origin. Can be decreased to zero, no actions on zero stake.
+        // pub fn decrease_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {}
 
         /// Increases the worker stake, demands a worker origin. Transfers tokens from the worker
         /// role_account to the stake. No limits on the stake.
-        fn increase_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {}
+        pub fn increase_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
+            // Checks worker origin, worker existence, worker active state
+            let worker = Self::ensure_active_worker_signed(origin, &worker_id)?;
+
+            ensure!(balance != <BalanceOf<T>>::zero(), Error::StakeBalanceCannotBeZero);
+
+            //TODO to map
+            if let Some(stake_profile) = worker.role_stake_profile {
+                ensure_on_wrapped_error!(
+                    <stake::Module<T>>::ensure_can_increase_stake(&stake_profile.stake_id, balance)
+                )?;
+
+            // mutation
+
+                ensure_on_wrapped_error!(
+                    <stake::Module<T>>::increase_stake_from_account(
+                        &stake_profile.stake_id,
+                        &worker.role_account,
+                        balance
+                    )
+                )?;
+            } else {
+                return Err(Error::NoWorkerStakeProfile);
+            }
+        }
     }
 }
 

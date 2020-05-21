@@ -14,6 +14,54 @@ use srml_support::{StorageLinkedMap, StorageValue};
 use std::collections::{BTreeMap, BTreeSet};
 use system::{EventRecord, Phase, RawOrigin};
 
+struct IncreaseWorkerStakeFixture {
+    origin: RawOrigin<u64>,
+    worker_id: u64,
+    balance: u64,
+}
+
+impl IncreaseWorkerStakeFixture {
+    fn default_for_worker_id(worker_id: u64) -> Self {
+        IncreaseWorkerStakeFixture {
+            origin: RawOrigin::Signed(1),
+            worker_id,
+            balance: 10,
+        }
+    }
+    fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        IncreaseWorkerStakeFixture { origin, ..self }
+    }
+
+    fn with_balance(self, balance: u64) -> Self {
+        IncreaseWorkerStakeFixture { balance, ..self }
+    }
+
+    fn call_and_assert(&self, expected_result: Result<(), Error>) {
+        let actual_result = Bureaucracy1::increase_worker_stake(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.balance,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        // if stake_existed && actual_result.is_ok() {
+        //     assert!(!<crate::UnstakerByStakeId<Test, crate::Instance1>>::exists(
+        //         self.stake_id
+        //     ));
+        //
+        //     let worker = Bureaucracy1::worker_by_id(self.worker_id);
+        //     let expected_worker_stage = WorkerRoleStage::Exited(WorkerExitSummary {
+        //         origin: WorkerExitInitiationOrigin::Worker,
+        //         initiated_at_block_number: 1,
+        //         rationale_text: b"rationale_text".to_vec(),
+        //     });
+        //
+        //     assert_eq!(worker.stage, expected_worker_stage);
+        // }
+    }
+}
+
 struct UnstakeFixture {
     origin: RawOrigin<u64>,
     worker_id: u64,
@@ -2133,5 +2181,83 @@ fn unstake_fails_with_non_unstaking_worker() {
 
         let unstake_fixture = UnstakeFixture::default();
         unstake_fixture.call_and_assert(Err(Error::WorkerIsNotUnstaking));
+    });
+}
+
+#[test]
+fn increase_worker_stake_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_worker_position_with_stake(100);
+
+        let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id);
+
+        increase_stake_fixture.call_and_assert(Ok(()));
+    });
+}
+
+#[test]
+fn increase_worker_stake_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = 0;
+        let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_origin(RawOrigin::None);
+
+        increase_stake_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
+    });
+}
+
+#[test]
+fn increase_worker_stake_fails_with_zero_balance() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_worker_position_with_stake(100);
+
+        let increase_stake_fixture =
+            IncreaseWorkerStakeFixture::default_for_worker_id(worker_id).with_balance(0);
+
+        increase_stake_fixture.call_and_assert(Err(Error::StakeBalanceCannotBeZero));
+    });
+}
+
+#[test]
+fn increase_worker_stake_fails_with_inactive_worker() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_worker_position_with_stake(100);
+
+        let mut worker = Bureaucracy1::worker_by_id(worker_id);
+        worker.stage = WorkerRoleStage::Exited(WorkerExitSummary {
+            origin: WorkerExitInitiationOrigin::Lead,
+            initiated_at_block_number: 333,
+            rationale_text: Vec::new(),
+        });
+        <crate::WorkerById<Test, crate::Instance1>>::insert(worker_id, worker);
+
+        let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id);
+
+        increase_stake_fixture.call_and_assert(Err(Error::WorkerIsNotActive));
+    });
+}
+
+#[test]
+fn increase_worker_stake_fails_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        let invalid_worker_id = 11;
+
+        let increase_stake_fixture =
+            IncreaseWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
+
+        increase_stake_fixture.call_and_assert(Err(Error::WorkerDoesNotExist));
+    });
+}
+
+#[test]
+fn increase_worker_stake_fails_with_invalid_balance() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_worker_position_with_stake(100);
+        let invalid_balance = 100000000;
+        let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_balance(invalid_balance);
+
+        increase_stake_fixture
+            .call_and_assert(Err(Error::StakingErrorInsufficientBalanceInSourceAccount));
     });
 }
