@@ -7,7 +7,8 @@ use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use rstd::prelude::*;
 use runtime_primitives::traits::{MaybeSerializeDeserialize, Member, One, SimpleArithmetic, Zero};
 use srml_support::{
-    decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter, StorageDoubleMap,
+    decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter,
+    StorageDoubleMap,
 };
 use system::ensure_signed;
 
@@ -33,6 +34,9 @@ type MaxNumber = u32;
 type EntitiesRcVec<T> = Vec<Vec<<T as Trait>::EntityId>>;
 
 pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
+    /// The overarching event type.
+    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+
     /// Nonce type is used to avoid data race update conditions, when performing property value vector operations
     type Nonce: Parameter
         + Member
@@ -399,6 +403,9 @@ decl_module! {
         // Next set of extrinsics can only be invoked by lead.
         // ======
 
+        // Initializing events
+        fn deposit_event() = default;
+
         pub fn add_curator_group(
             origin,
             curator_group_id: T::CuratorGroupId,
@@ -413,6 +420,9 @@ decl_module! {
             //
 
             <CuratorGroupById<T>>::insert(curator_group_id, curator_group);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::CuratorGroupAdded(curator_group_id));
             Ok(())
         }
 
@@ -436,6 +446,9 @@ decl_module! {
                     class_permissions.get_maintainers_mut().remove(&curator_group_id);
                 })
             };
+
+            // Trigger event
+            Self::deposit_event(RawEvent::CuratorGroupRemoved(curator_group_id));
             Ok(())
         }
 
@@ -456,6 +469,8 @@ decl_module! {
                 curator_group.set_status(is_active)
             });
 
+            // Trigger event
+            Self::deposit_event(RawEvent::CuratorGroupStatusSet(is_active));
             Ok(())
         }
 
@@ -478,6 +493,8 @@ decl_module! {
                 curator_group.get_curators_mut().insert(curator_id);
             });
 
+            // Trigger event
+            Self::deposit_event(RawEvent::CuratorAdded(curator_group_id, curator_id));
             Ok(())
         }
 
@@ -499,6 +516,8 @@ decl_module! {
                 curator_group.get_curators_mut().remove(&curator_id);
             });
 
+            // Trigger event
+            Self::deposit_event(RawEvent::CuratorRemoved(curator_group_id, curator_id));
             Ok(())
         }
 
@@ -527,6 +546,9 @@ decl_module! {
             <ClassById<T>>::mutate(class_id, |class|
                 class.get_permissions_mut().get_maintainers_mut().insert(curator_group_id)
             );
+
+            // Trigger event
+            Self::deposit_event(RawEvent::MaintainerAdded(class_id, curator_group_id));
             Ok(())
         }
 
@@ -549,6 +571,9 @@ decl_module! {
             <ClassById<T>>::mutate(class_id, |class|
                 class.get_permissions_mut().get_maintainers_mut().remove(&curator_group_id)
             );
+
+            // Trigger event
+            Self::deposit_event(RawEvent::MaintainerRemoved(class_id, curator_group_id));
             Ok(())
         }
 
@@ -581,11 +606,18 @@ decl_module! {
             //
 
             if voucher_exists {
-                <EntityCreationVouchers<T>>::mutate(class_id, &controller, |entity_creation_voucher|
-                    entity_creation_voucher.set_maximum_entities_count(maximum_entities_count)
-                );
+                <EntityCreationVouchers<T>>::mutate(class_id, &controller, |entity_creation_voucher| {
+                    entity_creation_voucher.set_maximum_entities_count(maximum_entities_count);
+
+                    // Trigger event
+                    Self::deposit_event(RawEvent::EntityCreationVoucherUpdated(controller.clone(), entity_creation_voucher.to_owned()))
+                });
             } else {
-                <EntityCreationVouchers<T>>::insert(class_id, controller, EntityCreationVoucher::new(maximum_entities_count));
+                let entity_creation_voucher = EntityCreationVoucher::new(maximum_entities_count);
+                <EntityCreationVouchers<T>>::insert(class_id, controller.clone(), entity_creation_voucher);
+
+                // Trigger event
+                Self::deposit_event(RawEvent::EntityCreationVoucherCreated(controller, entity_creation_voucher));
             }
 
             Ok(())
@@ -622,6 +654,8 @@ decl_module! {
             // Increment the next class id:
             <NextClassId<T>>::mutate(|n| *n += T::ClassId::one());
 
+            // Trigger event
+            Self::deposit_event(RawEvent::ClassCreated(class_id));
             Ok(())
         }
 
@@ -632,7 +666,10 @@ decl_module! {
             maximum_entities_count: CreationLimit,
             per_controller_entity_creation_limit: CreationLimit
         ) -> dispatch::Result {
-            Self::create_class(origin, name, description, ClassPermissions::default(), maximum_entities_count, per_controller_entity_creation_limit)
+            Self::create_class(
+                origin, name, description, ClassPermissions::default(),
+                maximum_entities_count, per_controller_entity_creation_limit
+            )
         }
 
         pub fn update_class_permissions(
@@ -649,33 +686,47 @@ decl_module! {
 
             if let Some(ref maintainers) = maintainers {
                 Self::ensure_curator_groups_exist(maintainers)?;
-                ensure!(maintainers.len() <= T::NumberOfMaintainersConstraint::get() as usize, ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED);
+                ensure!(maintainers.len() <= T::NumberOfMaintainersConstraint::get() as usize,
+                    ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED);
             }
 
             //
             // == MUTATION SAFE ==
             //
 
+            // If no update performed, there is no purpose to emit event
+            let mut updated = false;
+
             if let Some(any_member) = any_member {
                 <ClassById<T>>::mutate(class_id, |class|
                     class.get_permissions_mut().set_any_member_status(any_member)
                 );
+                updated = true;
             }
 
             if let Some(entity_creation_blocked) = entity_creation_blocked {
-                <ClassById<T>>::mutate(class_id, |class| class.get_permissions_mut().set_entity_creation_blocked(entity_creation_blocked));
+                <ClassById<T>>::mutate(class_id, |class| class.get_permissions_mut()
+                    .set_entity_creation_blocked(entity_creation_blocked));
+                updated = true;
             }
 
             if let Some(all_entity_property_values_locked) = all_entity_property_values_locked {
                 <ClassById<T>>::mutate(class_id, |class|
                     class.get_permissions_mut().set_all_entity_property_values_locked(all_entity_property_values_locked)
                 );
+                updated = true;
             }
 
             if let Some(maintainers) = maintainers {
                 <ClassById<T>>::mutate(class_id, |class|
                     class.get_permissions_mut().set_maintainers(maintainers)
                 );
+                updated = true;
+            }
+
+            if updated  {
+                // Trigger event
+                Self::deposit_event(RawEvent::ClassPermissionsUpdated(class_id));
             }
 
             Ok(())
@@ -728,11 +779,13 @@ decl_module! {
             );
 
             // Check validity of Reference Types for new_properties.
-            let has_unknown_reference = new_properties.iter().any(|prop| if let Type::Reference(other_class_id, _) = prop.prop_type.get_inner_type() {
-                !<ClassById<T>>::exists(other_class_id)
-            } else {
-                false
-            });
+            let has_unknown_reference = new_properties.iter().any(|prop|
+                if let Type::Reference(other_class_id, _) = prop.prop_type.get_inner_type() {
+                    !<ClassById<T>>::exists(other_class_id)
+                } else {
+                    false
+                }
+            );
 
             ensure!(
                 !has_unknown_reference,
@@ -753,6 +806,11 @@ decl_module! {
             <ClassById<T>>::mutate(class_id, |class| {
                 class.properties = updated_class_props;
                 class.schemas.push(schema);
+
+                let schema_id = class.schemas.len() - 1;
+
+                // Trigger event
+                Self::deposit_event(RawEvent::ClassSchemaAdded(class_id, schema_id as SchemaId));
             });
 
             Ok(())
@@ -777,6 +835,9 @@ decl_module! {
             <ClassById<T>>::mutate(class_id, |class| {
                 class.update_schema_status(schema_id, schema_status)
             });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::ClassSchemaStatusUpdated(class_id, schema_id, schema_status));
             Ok(())
         }
 
@@ -798,25 +859,35 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            // If no update performed, there is no purpose to emit event
+            let mut updated = false;
+
             if let Some(controller) = controller {
                 // Ensure if class permissions satisfied and controller curator group exist
                 <EntityById<T>>::mutate(entity_id, |inner_entity|
                     inner_entity.get_permissions_mut().set_conroller(controller)
                 );
+                updated = true;
             }
 
             if let Some(frozen_for_controller) = frozen_for_controller {
                 <EntityById<T>>::mutate(entity_id, |inner_entity|
                     inner_entity.get_permissions_mut().set_frozen(frozen_for_controller)
                 );
+                updated = true;
             }
 
             if let Some(referenceable) = referenceable {
                 <EntityById<T>>::mutate(entity_id, |inner_entity|
                     inner_entity.get_permissions_mut().set_referencable(referenceable)
                 );
+                updated = true;
             }
 
+            if updated {
+                // Trigger event
+                Self::deposit_event(RawEvent::EntityPermissionsUpdated(entity_id));
+            }
             Ok(())
         }
 
@@ -825,7 +896,8 @@ decl_module! {
         // ======
 
         /// Create an entity.
-        /// If someone is making an entity of this class for first time, then a voucher is also added with the class limit as the default limit value.
+        /// If someone is making an entity of this class for first time,
+        /// then a voucher is also added with the class limit as the default limit value.
         /// class limit default value.
         pub fn create_entity(
             origin,
@@ -869,7 +941,10 @@ decl_module! {
                 <EntityCreationVouchers<T>>::insert(class_id, entity_controller.clone(), entity_creation_voucher);
             }
 
-            Self::complete_entity_creation(class_id, entity_controller);
+            let entity_id = Self::complete_entity_creation(class_id, entity_controller);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::EntityCreated(actor, entity_id));
             Ok(())
         }
 
@@ -882,7 +957,7 @@ decl_module! {
 
             Self::ensure_known_entity_id(entity_id)?;
 
-            let (_, access_level) = Self::get_entity_and_access_level(account_id, entity_id, actor)?;
+            let (_, access_level) = Self::get_entity_and_access_level(account_id, entity_id, &actor)?;
             EntityPermissions::<T>::ensure_group_can_remove_entity(access_level)?;
 
             // Ensure there is no property values pointing to the given entity
@@ -894,6 +969,8 @@ decl_module! {
 
             Self::complete_entity_removal(entity_id);
 
+            // Trigger event
+            Self::deposit_event(RawEvent::EntityRemoved(actor, entity_id));
             Ok(())
         }
 
@@ -908,7 +985,7 @@ decl_module! {
 
             Self::ensure_known_entity_id(entity_id)?;
 
-            let (entity, _) = Self::get_entity_and_access_level(account_id, entity_id, actor)?;
+            let (entity, _) = Self::get_entity_and_access_level(account_id, entity_id, &actor)?;
 
             let class = Self::class_by_id(entity.class_id);
 
@@ -934,7 +1011,9 @@ decl_module! {
                     // while adding a schema support to this entity.
                     continue;
                 }
-                Self::add_new_property_value(&class, &entity, *prop_id, &property_values, &mut entities_rc_to_increment_vec, &mut appended_entity_values)?;
+                Self::add_new_property_value(
+                    &class, &entity, *prop_id, &property_values, &mut entities_rc_to_increment_vec, &mut appended_entity_values
+                )?;
             }
 
             //
@@ -956,6 +1035,8 @@ decl_module! {
                     Self::increment_entities_rc(entities_rc_to_increment);
                 });
 
+            // Trigger event
+            Self::deposit_event(RawEvent::EntitySchemaSupportAdded(actor, entity_id, schema_id));
             Ok(())
         }
 
@@ -969,7 +1050,7 @@ decl_module! {
 
             Self::ensure_known_entity_id(entity_id)?;
 
-            let (entity, access_level) = Self::get_entity_and_access_level(account_id, entity_id, actor)?;
+            let (entity, access_level) = Self::get_entity_and_access_level(account_id, entity_id, &actor)?;
 
             let class = Self::class_by_id(entity.class_id);
 
@@ -1003,7 +1084,9 @@ decl_module! {
                 if new_value == *current_prop_value {
                     continue;
                 } else {
-                    let (mut temp_entities_rc_to_increment_vec, mut temp_entities_rc_to_decrement_vec) = Self::perform_entity_property_value_update(&class, &entity, id, access_level, new_value, current_prop_value)?;
+                    let (mut temp_entities_rc_to_increment_vec, mut temp_entities_rc_to_decrement_vec) =
+                        Self::perform_entity_property_value_update(&class, &entity, id, access_level, new_value, current_prop_value)?;
+
                     entities_rc_to_increment_vec.append(&mut temp_entities_rc_to_increment_vec);
                     entities_rc_to_decrement_vec.append(&mut temp_entities_rc_to_decrement_vec);
                     updated = true;
@@ -1030,6 +1113,9 @@ decl_module! {
                     .for_each(|entities_rc_to_decrement| {
                         Self::decrement_entities_rc(entities_rc_to_decrement);
                     });
+
+                // Trigger event
+                Self::deposit_event(RawEvent::EntityPropertyValuesUpdated(actor, entity_id));
             }
 
             Ok(())
@@ -1045,7 +1131,7 @@ decl_module! {
 
             Self::ensure_known_entity_id(entity_id)?;
 
-            let (entity, access_level) = Self::get_entity_and_access_level(account_id, entity_id, actor)?;
+            let (entity, access_level) = Self::get_entity_and_access_level(account_id, entity_id, &actor)?;
 
 
             let current_property_value_vec =
@@ -1077,6 +1163,9 @@ decl_module! {
                 }
             });
 
+            // Trigger event
+            Self::deposit_event(RawEvent::EntityPropertyValueVectorCleared(actor, entity_id, in_class_schema_property_id));
+
             Ok(())
         }
 
@@ -1092,7 +1181,7 @@ decl_module! {
 
             Self::ensure_known_entity_id(entity_id)?;
 
-            let (entity, access_level) = Self::get_entity_and_access_level(account_id, entity_id, actor)?;
+            let (entity, access_level) = Self::get_entity_and_access_level(account_id, entity_id, &actor)?;
 
             let current_property_value_vec =
             Self::get_property_value_vec(&entity, in_class_schema_property_id)?;
@@ -1122,12 +1211,22 @@ decl_module! {
                 if let Some(PropertyValue::Vector(current_prop_value)) =
                     entity.values.get_mut(&in_class_schema_property_id)
                 {
-                    current_prop_value.vec_remove_at(index_in_property_vec)
+                    current_prop_value.vec_remove_at(index_in_property_vec);
+
+                    // Trigger event
+                    Self::deposit_event(
+                        RawEvent::RemovedAtEntityPropertyValueVectorIndex(
+                            actor, entity_id, in_class_schema_property_id, index_in_property_vec, nonce
+                        )
+                    )
                 }
             });
+
+            // Decrement reference counter, related to involved entity, as we removed value referencing this entity
             if let Some(involved_entity_id) = involved_entity_id {
                 <EntityById<T>>::mutate(involved_entity_id, |entity| entity.reference_count -= 1)
             }
+
             Ok(())
         }
 
@@ -1144,7 +1243,7 @@ decl_module! {
 
             Self::ensure_known_entity_id(entity_id)?;
 
-            let (entity, access_level) = Self::get_entity_and_access_level(account_id, entity_id, actor)?;
+            let (entity, access_level) = Self::get_entity_and_access_level(account_id, entity_id, &actor)?;
 
             // Try to find a current property value in the entity
             // by matching its id to the id of a property with an updated value.
@@ -1185,7 +1284,14 @@ decl_module! {
                 if let Some(PropertyValue::Vector(current_prop_value)) =
                     entity.values.get_mut(&in_class_schema_property_id)
                 {
-                    current_prop_value.vec_insert_at(index_in_property_vec, value)
+                    current_prop_value.vec_insert_at(index_in_property_vec, value);
+
+                    // Trigger event
+                    Self::deposit_event(
+                        RawEvent::InsertedAtEntityPropertyValueVectorIndex(
+                            actor, entity_id, in_class_schema_property_id, index_in_property_vec, nonce
+                        )
+                    )
                 }
             });
 
@@ -1209,18 +1315,29 @@ decl_module! {
                         entity_created_in_operation.insert(op_index, entity_id);
                     },
                     OperationType::UpdatePropertyValues(update_property_values_operation) => {
-                        let entity_id = operations::parametrized_entity_to_entity_id(&entity_created_in_operation, update_property_values_operation.entity_id)?;
-                        let property_values = operations::parametrized_property_values_to_property_values(&entity_created_in_operation, update_property_values_operation.new_parametrized_property_values)?;
+                        let entity_id = operations::parametrized_entity_to_entity_id(
+                            &entity_created_in_operation, update_property_values_operation.entity_id
+                        )?;
+                        let property_values = operations::parametrized_property_values_to_property_values(
+                            &entity_created_in_operation, update_property_values_operation.new_parametrized_property_values
+                        )?;
                         Self::update_entity_property_values(origin, actor, entity_id, property_values)?;
                     },
                     OperationType::AddSchemaSupportToEntity(add_schema_support_to_entity_operation) => {
-                        let entity_id = operations::parametrized_entity_to_entity_id(&entity_created_in_operation, add_schema_support_to_entity_operation.entity_id)?;
+                        let entity_id = operations::parametrized_entity_to_entity_id(
+                            &entity_created_in_operation, add_schema_support_to_entity_operation.entity_id
+                        )?;
                         let schema_id = add_schema_support_to_entity_operation.schema_id;
-                        let property_values = operations::parametrized_property_values_to_property_values(&entity_created_in_operation, add_schema_support_to_entity_operation.parametrized_property_values)?;
+                        let property_values = operations::parametrized_property_values_to_property_values(
+                            &entity_created_in_operation, add_schema_support_to_entity_operation.parametrized_property_values
+                        )?;
                         Self::add_schema_support_to_entity(origin, actor, entity_id, schema_id, property_values)?;
                     }
                 }
             }
+
+            // Trigger event
+            Self::deposit_event(RawEvent::TransactionCompleted(actor));
 
             Ok(())
         }
@@ -1228,7 +1345,10 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    fn complete_entity_creation(class_id: T::ClassId, entity_controller: EntityController<T>) {
+    fn complete_entity_creation(
+        class_id: T::ClassId,
+        entity_controller: EntityController<T>,
+    ) -> T::EntityId {
         let entity_id = Self::next_entity_id();
 
         let new_entity = Entity::<T>::new(
@@ -1247,6 +1367,8 @@ impl<T: Trait> Module<T> {
         <ClassById<T>>::mutate(class_id, |class| {
             class.increment_entities_count();
         });
+
+        entity_id
     }
 
     fn complete_entity_removal(entity_id: T::EntityId) {
@@ -1382,7 +1504,7 @@ impl<T: Trait> Module<T> {
     fn get_entity_and_access_level(
         account_id: T::AccountId,
         entity_id: T::EntityId,
-        actor: Actor<T>,
+        actor: &Actor<T>,
     ) -> Result<(Entity<T>, EntityAccessLevel), &'static str> {
         let (entity, class) = Self::get_entity_and_class(entity_id);
         let access_level = EntityAccessLevel::derive(
@@ -1576,3 +1698,40 @@ impl<T: Trait> Module<T> {
         )
     }
 }
+
+decl_event!(
+    pub enum Event<T>
+    where
+        CuratorGroupId = <T as ActorAuthenticator>::CuratorGroupId,
+        CuratorId = <T as ActorAuthenticator>::CuratorId,
+        ClassId = <T as Trait>::ClassId,
+        EntityId = <T as Trait>::EntityId,
+        EntityController = EntityController<T>,
+        Status = bool,
+        Actor = Actor<T>,
+        Nonce = <T as Trait>::Nonce,
+    {
+        CuratorGroupAdded(CuratorGroupId),
+        CuratorGroupRemoved(CuratorGroupId),
+        CuratorGroupStatusSet(Status),
+        CuratorAdded(CuratorGroupId, CuratorId),
+        CuratorRemoved(CuratorGroupId, CuratorId),
+        MaintainerAdded(ClassId, CuratorGroupId),
+        MaintainerRemoved(ClassId, CuratorGroupId),
+        EntityCreationVoucherUpdated(EntityController, EntityCreationVoucher),
+        EntityCreationVoucherCreated(EntityController, EntityCreationVoucher),
+        ClassCreated(ClassId),
+        ClassPermissionsUpdated(ClassId),
+        ClassSchemaAdded(ClassId, SchemaId),
+        ClassSchemaStatusUpdated(ClassId, SchemaId, Status),
+        EntityPermissionsUpdated(EntityId),
+        EntityCreated(Actor, EntityId),
+        EntityRemoved(Actor, EntityId),
+        EntitySchemaSupportAdded(Actor, EntityId, SchemaId),
+        EntityPropertyValuesUpdated(Actor, EntityId),
+        EntityPropertyValueVectorCleared(Actor, EntityId, PropertyId),
+        RemovedAtEntityPropertyValueVectorIndex(Actor, EntityId, PropertyId, VecMaxLength, Nonce),
+        InsertedAtEntityPropertyValueVectorIndex(Actor, EntityId, PropertyId, VecMaxLength, Nonce),
+        TransactionCompleted(Actor),
+    }
+);

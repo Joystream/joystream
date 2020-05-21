@@ -107,7 +107,7 @@ pub fn perform_curator_in_group_auth<T: Trait>(
 
     let curator_group = Module::<T>::curator_group_by_id(curator_group_id);
 
-    ensure!(curator_group.is_active(), ERROR_CURATOR_IS_NOT_ACTIVE);
+    ensure!(curator_group.is_active(), ERROR_CURATOR_GROUP_IS_NOT_ACTIVE);
     ensure!(
         curator_group.is_curator(curator_id),
         ERROR_CURATOR_IS_NOT_A_MEMBER_OF_A_GIVEN_CURATOR_GROUP
@@ -158,7 +158,7 @@ impl<T: ActorAuthenticator> CuratorGroup<T> {
 }
 
 /// A voucher for entity creation
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Default)]
+#[derive(Encode, Decode, Clone, Copy, Default, Debug, PartialEq, Eq)]
 pub struct EntityCreationVoucher {
     /// How many are allowed in total
     pub maximum_entities_count: CreationLimit,
@@ -461,10 +461,10 @@ impl EntityAccessLevel {
         account_id: &T::AccountId,
         entity_permissions: &EntityPermissions<T>,
         class_permissions: &ClassPermissions<T>,
-        actor: Actor<T>,
+        actor: &Actor<T>,
     ) -> Result<Self, &'static str> {
-        let controller = EntityController::<T>::from_actor(&actor);
-        match &actor {
+        let controller = EntityController::<T>::from_actor(actor);
+        match actor {
             Actor::Lead if entity_permissions.controller_is_equal_to(&controller) => {
                 ensure_lead_auth_success::<T>(account_id).map(|_| Self::EntityController)
             }
