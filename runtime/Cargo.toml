@@ -272,7 +272,7 @@ rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
 [build-dependencies.wasm-builder-runner]
 package = 'substrate-wasm-builder-runner'
-version = '1.0.4'
+version = '1.0.6'
 
 [dependencies.forum]
 default_features = false
