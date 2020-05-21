@@ -872,6 +872,19 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::WorkerOpeningFilled(worker_opening_id, worker_application_id_to_worker_id));
         }
+
+        // ****************** Worker stakes **********************
+
+        /// Slashes the worker stake, demands a leader origin. No limits, no actions on zero stake.
+        fn slash_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {}
+
+        /// Decreases the worker stake and returns the remainder to the worker role_account,
+        /// demands a leader origin. Can be decreased to zero, no actions on zero stake.
+        fn decrease_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {}
+
+        /// Increases the worker stake, demands a worker origin. Transfers tokens from the worker
+        /// role_account to the stake. No limits on the stake.
+        fn increase_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {}
     }
 }
 
