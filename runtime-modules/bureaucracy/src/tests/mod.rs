@@ -1505,3 +1505,106 @@ fn increase_worker_stake_fails_with_no_stake_profile() {
         increase_stake_fixture.call_and_assert(Err(Error::NoWorkerStakeProfile));
     });
 }
+
+#[test]
+fn decrease_worker_stake_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_worker_position_with_stake(100);
+
+        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id);
+
+        decrease_stake_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkerStakeDecreased(worker_id));
+    });
+}
+
+#[test]
+fn decrease_worker_stake_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = 0;
+        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_origin(RawOrigin::None);
+
+        decrease_stake_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
+    });
+}
+
+#[test]
+fn decrease_worker_stake_fails_with_zero_balance() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_worker_position_with_stake(100);
+
+        let decrease_stake_fixture =
+            DecreaseWorkerStakeFixture::default_for_worker_id(worker_id).with_balance(0);
+
+        decrease_stake_fixture.call_and_assert(Err(Error::StakeBalanceCannotBeZero));
+    });
+}
+
+#[test]
+fn decrease_worker_stake_fails_with_inactive_worker() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_worker_position_with_stake(100);
+
+        let mut worker = Bureaucracy1::worker_by_id(worker_id);
+        worker.stage = WorkerRoleStage::Exited(WorkerExitSummary {
+            origin: WorkerExitInitiationOrigin::Lead,
+            initiated_at_block_number: 333,
+            rationale_text: Vec::new(),
+        });
+        <crate::WorkerById<Test, crate::Instance1>>::insert(worker_id, worker);
+
+        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id);
+
+        decrease_stake_fixture.call_and_assert(Err(Error::WorkerIsNotActive));
+    });
+}
+
+#[test]
+fn decrease_worker_stake_fails_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        SetLeadFixture::set_lead(1);
+        let invalid_worker_id = 11;
+
+        let decrease_stake_fixture =
+            DecreaseWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
+
+        decrease_stake_fixture.call_and_assert(Err(Error::WorkerDoesNotExist));
+    });
+}
+
+#[test]
+fn decrease_worker_stake_fails_with_invalid_balance() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_worker_position_with_stake(100);
+        let invalid_balance = 100000000;
+        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_balance(invalid_balance);
+
+        decrease_stake_fixture.call_and_assert(Err(Error::StakingErrorInsufficientStake));
+    });
+}
+
+#[test]
+fn decrease_worker_stake_fails_with_no_stake_profile() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_default_worker_position();
+
+        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id);
+
+        decrease_stake_fixture.call_and_assert(Err(Error::NoWorkerStakeProfile));
+    });
+}
+
+#[test]
+fn decrease_worker_stake_fails_with_not_set_lead() {
+    build_test_externalities().execute_with(|| {
+        let invalid_worker_id = 11;
+
+        let decrease_stake_fixture =
+            DecreaseWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
+
+        decrease_stake_fixture.call_and_assert(Err(Error::CurrentLeadNotSet));
+    });
+}
