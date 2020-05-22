@@ -847,7 +847,6 @@ decl_module! {
         pub fn update_entity_permissions(
             origin,
             entity_id: T::EntityId,
-            controller: Option<EntityController<T>>,
             frozen_for_controller: Option<bool>,
             referenceable: Option<bool>
         ) -> dispatch::Result {
@@ -861,14 +860,6 @@ decl_module! {
 
             // If no update performed, there is no purpose to emit event
             let mut updated = false;
-
-            if let Some(controller) = controller {
-                // Ensure if class permissions satisfied and controller curator group exist
-                <EntityById<T>>::mutate(entity_id, |inner_entity|
-                    inner_entity.get_permissions_mut().set_conroller(controller)
-                );
-                updated = true;
-            }
 
             if let Some(frozen_for_controller) = frozen_for_controller {
                 <EntityById<T>>::mutate(entity_id, |inner_entity|
