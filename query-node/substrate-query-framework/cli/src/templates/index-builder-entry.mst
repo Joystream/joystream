@@ -70,7 +70,9 @@ function banner():Command {
         .option('-b, --bootstrap', 'Load initial data using the boot* mappings')
         .option('-l, --logging <file>', 'Path to log4js config', null)
         .option('-h, --height <height>', 'Block height to start from', 0)
-        .option('-e, --env <file>', '.env file location', '../../.env');
+        .option('-e, --env <file>', '.env file location', '../../.env')
+        .option('-n, --no-start', "Do not run the indexer");
+
     
     program.parse(process.argv);
     
@@ -127,6 +129,11 @@ async function main() {
   const bootstrap = process.env.QUERY_NODE_BOOTSTRAP_DB;
   if (bootstrap) {
     await doBootstrap(node) 
+  }
+
+  if (!command.start) {
+      logger.info("The --no-start flag was set to true, the indexer will not start");
+      process.exit(0);
   }
 
   node.start(providerUri, getProcessingPack(), {{typeRegistrator}});
