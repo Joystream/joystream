@@ -49,7 +49,7 @@ export default class WarthogWrapper {
     // Temporary tslib fix
     let pkgFile = JSON.parse(fs.readFileSync('package.json', 'utf8'));
     pkgFile.resolutions['tslib'] = '1.11.2';
-    pkgFile.scripts['sync'] = 'SYNC=true ts-node-dev --type-check src/index.ts';
+    pkgFile.scripts['sync'] = 'SYNC=true WARTHOG_DB_SYNCHRONIZE=true ts-node-dev --type-check src/index.ts';
     fs.writeFileSync('package.json', JSON.stringify(pkgFile, null, 2));
 
     this.command.log('Installing graphql-server dependencies...');
