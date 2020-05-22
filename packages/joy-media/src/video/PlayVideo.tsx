@@ -71,7 +71,7 @@ export function PlayVideo (props: PlayVideoProps) {
         {metaField(Fields.category, video.category?.value)}
         {metaField(Fields.license, video.license?.value)}
         {metaField(Fields.attribution, video.attribution)}
-        {metaField(Fields.link, printLinks(video.link))}
+        {metaField(Fields.links, printLinks(video.links))}
         {metaField(Fields.curationStatus, video.curationStatus?.value)}
       </Table.Body>
     </Table>

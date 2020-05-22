@@ -69,7 +69,7 @@ export const FeaturedContentClass: FeaturedContentClassType = {
     "name": "Featured Videos",
     "description": "Videos featured in the Video tab.",
     "type": "InternalVec",
-    "maxItems": 6,
+    "maxItems": 12,
     "classId": "Video"
   },
   featuredAlbums: {
@@ -77,7 +77,7 @@ export const FeaturedContentClass: FeaturedContentClassType = {
     "name": "Featured Albums",
     "description": "Music albums featured in the Music tab.",
     "type": "InternalVec",
-    "maxItems": 6,
+    "maxItems": 12,
     "classId": "Music Album"
   }
 };

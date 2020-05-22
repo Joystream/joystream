@@ -49,7 +49,7 @@ export type MusicTrackFormValues = {
   genre: number
   mood: number
   theme: number
-  link: string[]
+  links: string[]
   composerOrSongwriter: string
   lyrics: string
   object: number
@@ -74,7 +74,7 @@ export type MusicTrackType = {
   genre?: MusicGenreType
   mood?: MusicMoodType
   theme?: MusicThemeType
-  link?: string[]
+  links?: string[]
   composerOrSongwriter?: string
   lyrics?: string
   object?: MediaObjectType
@@ -100,7 +100,7 @@ export function MusicTrackToFormValues(entity?: MusicTrackType): MusicTrackFormV
     genre: entity && entity.genre?.id || 0,
     mood: entity && entity.mood?.id || 0,
     theme: entity && entity.theme?.id || 0,
-    link: entity && entity.link || [],
+    links: entity && entity.links || [],
     composerOrSongwriter: entity && entity.composerOrSongwriter || '',
     lyrics: entity && entity.lyrics || '',
     object: entity && entity.object?.id || 0,
@@ -123,7 +123,7 @@ export type MusicTrackPropId =
   'genre' |
   'mood' |
   'theme' |
-  'link' |
+  'links' |
   'composerOrSongwriter' |
   'lyrics' |
   'object' |
@@ -217,10 +217,10 @@ export const MusicTrackClass: MusicTrackClassType = {
     "type": "Internal",
     "classId": "Music Theme"
   },
-  link: {
-    "id": "link",
-    "name": "Link",
-    "description": "A link to the artist page.",
+  links: {
+    "id": "links",
+    "name": "Links",
+    "description": "Links to the artist site or social media pages.",
     "type": "TextVec",
     "maxItems": 5,
     "maxTextLength": 255
@@ -286,7 +286,7 @@ export const MusicTrackClass: MusicTrackClassType = {
   channelId: {
     "id": "channelId",
     "name": "Channel Id",
-    "description": "Id of the channel this music track is published to.",
+    "description": "Id of the channel this track is published under.",
     "type": "Uint64"
   }
 };

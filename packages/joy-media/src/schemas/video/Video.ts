@@ -38,7 +38,7 @@ export type VideoFormValues = {
   language: number
   firstReleased: string
   category: number
-  link: string[]
+  links: string[]
   object: number
   publicationStatus: number
   curationStatus: number
@@ -58,7 +58,7 @@ export type VideoType = {
   language: LanguageType
   firstReleased: number
   category?: VideoCategoryType
-  link?: string[]
+  links?: string[]
   object?: MediaObjectType
   publicationStatus: PublicationStatusType
   curationStatus?: CurationStatusType
@@ -79,7 +79,7 @@ export function VideoToFormValues(entity?: VideoType): VideoFormValues {
     language: entity && entity.language?.id || 0,
     firstReleased: entity && moment(entity.firstReleased * 1000).format('YYYY-MM-DD') || '',
     category: entity && entity.category?.id || 0,
-    link: entity && entity.link || [],
+    links: entity && entity.links || [],
     object: entity && entity.object?.id || 0,
     publicationStatus: entity && entity.publicationStatus?.id || 0,
     curationStatus: entity && entity.curationStatus?.id || 0,
@@ -97,7 +97,7 @@ export type VideoPropId =
   'language' |
   'firstReleased' |
   'category' |
-  'link' |
+  'links' |
   'object' |
   'publicationStatus' |
   'curationStatus' |
@@ -169,8 +169,8 @@ export const VideoClass: VideoClassType = {
     "type": "Internal",
     "classId": "Video Category"
   },
-  link: {
-    "id": "link",
+  links: {
+    "id": "links",
     "name": "Link",
     "description": "A link to the creators page.",
     "type": "TextVec",
@@ -224,7 +224,7 @@ export const VideoClass: VideoClassType = {
   channelId: {
     "id": "channelId",
     "name": "Channel Id",
-    "description": "Id of the channel this video is published to.",
+    "description": "Id of the channel this video is published under.",
     "type": "Uint64"
   }
 };
