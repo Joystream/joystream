@@ -148,11 +148,11 @@ pub struct EntitiesRc<T: Trait> {
     pub inbound_same_owner_entity_rcs: BTreeMap<T::EntityId, ReferenceCounter>,
 }
 
-impl <T: Trait> Default for EntitiesRc<T> {
+impl<T: Trait> Default for EntitiesRc<T> {
     fn default() -> Self {
         Self {
             inbound_entity_rcs: BTreeMap::default(),
-            inbound_same_owner_entity_rcs: BTreeMap::default()
+            inbound_same_owner_entity_rcs: BTreeMap::default(),
         }
     }
 }
@@ -346,7 +346,7 @@ pub struct Entity<T: Trait> {
     pub reference_count: ReferenceCounter,
 
     /// Number of inbound references from another entities with `SameOwner`flag set
-    pub inbound_same_owner_references_from_other_entities_count: ReferenceCounter
+    pub inbound_same_owner_references_from_other_entities_count: ReferenceCounter,
 }
 
 impl<T: Trait> Default for Entity<T> {
@@ -1018,7 +1018,7 @@ decl_module! {
             let current_entity_values = entity.values.clone();
             let mut appended_entity_values = entity.values.clone();
 
-            // Entities, which rc should be incremented 
+            // Entities, which rc should be incremented
             let mut entities_rc_to_increment = EntitiesRc::<T>::default();
 
             for prop_id in schema_prop_ids.iter() {
@@ -1087,10 +1087,10 @@ decl_module! {
             let mut updated_values = entity.values.clone();
             let mut updated = false;
 
-            // Entities, which rc should be incremented 
+            // Entities, which rc should be incremented
             let mut entities_rc_to_increment = EntitiesRc::<T>::default();
 
-            // Entities, which rc should be decremented 
+            // Entities, which rc should be decremented
             let mut entities_rc_to_decrement = EntitiesRc::<T>::default();
 
             // Iterate over a vector of new values and update corresponding properties
@@ -1422,21 +1422,25 @@ impl<T: Trait> Module<T> {
     }
 
     fn increment_entity_rcs(entity_id: &T::EntityId, rc: u32, same_owner: bool) {
-        <EntityById<T>>::mutate(entity_id, |entity| if same_owner {
-            entity.inbound_same_owner_references_from_other_entities_count += rc;
-            entity.reference_count += rc
-        } else {
-            entity.reference_count += rc
+        <EntityById<T>>::mutate(entity_id, |entity| {
+            if same_owner {
+                entity.inbound_same_owner_references_from_other_entities_count += rc;
+                entity.reference_count += rc
+            } else {
+                entity.reference_count += rc
+            }
         })
     }
 
     fn decrement_entity_rcs(entity_id: &T::EntityId, rc: u32, same_owner: bool) {
-        <EntityById<T>>::mutate(entity_id, |entity| if same_owner {
-            entity.inbound_same_owner_references_from_other_entities_count -= rc;
-            entity.reference_count -= rc
-        } else {
-            entity.reference_count -= rc
-        })    
+        <EntityById<T>>::mutate(entity_id, |entity| {
+            if same_owner {
+                entity.inbound_same_owner_references_from_other_entities_count -= rc;
+                entity.reference_count -= rc
+            } else {
+                entity.reference_count -= rc
+            }
+        })
     }
 
     /// Returns the stored class if exist, error otherwise.
@@ -1472,11 +1476,19 @@ impl<T: Trait> Module<T> {
                 );
             }
             match new_value.get_involved_entities() {
-                Some(entity_rcs_to_increment) if class_prop.prop_type.get_same_controller_status() => {
-                    Self::fill_in_entity_rcs_map(entity_rcs_to_increment, &mut entities_rc_to_increment.inbound_same_owner_entity_rcs)
+                Some(entity_rcs_to_increment)
+                    if class_prop.prop_type.get_same_controller_status() =>
+                {
+                    Self::fill_in_entity_rcs_map(
+                        entity_rcs_to_increment,
+                        &mut entities_rc_to_increment.inbound_same_owner_entity_rcs,
+                    )
                 }
-                Some(entity_rcs_to_increment) => Self::fill_in_entity_rcs_map(entity_rcs_to_increment, &mut entities_rc_to_increment.inbound_entity_rcs),
-                _ => ()
+                Some(entity_rcs_to_increment) => Self::fill_in_entity_rcs_map(
+                    entity_rcs_to_increment,
+                    &mut entities_rc_to_increment.inbound_entity_rcs,
+                ),
+                _ => (),
             };
 
             appended_entity_values.insert(prop_id, new_value.to_owned());
@@ -1490,10 +1502,13 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn fill_in_entity_rcs_map(entity_rcs: Vec<T::EntityId>,  entity_rcs_map: &mut BTreeMap<T::EntityId, ReferenceCounter>) {
+    fn fill_in_entity_rcs_map(
+        entity_rcs: Vec<T::EntityId>,
+        entity_rcs_map: &mut BTreeMap<T::EntityId, ReferenceCounter>,
+    ) {
         for entity_rc in entity_rcs {
             if let Some(rc) = entity_rcs_map.get_mut(&entity_rc) {
-                *rc +=1;
+                *rc += 1;
             } else {
                 entity_rcs_map.insert(entity_rc, 1);
             }
@@ -1543,11 +1558,23 @@ impl<T: Trait> Module<T> {
                     .unzip();
 
                 if class_prop.prop_type.get_same_controller_status() {
-                    Self::fill_in_entity_rcs_map(entities_rc_to_increment_vec, &mut entities_rc_to_increment.inbound_same_owner_entity_rcs);
-                    Self::fill_in_entity_rcs_map(entities_rc_to_decrement_vec, &mut entities_rc_to_decrement.inbound_same_owner_entity_rcs);
+                    Self::fill_in_entity_rcs_map(
+                        entities_rc_to_increment_vec,
+                        &mut entities_rc_to_increment.inbound_same_owner_entity_rcs,
+                    );
+                    Self::fill_in_entity_rcs_map(
+                        entities_rc_to_decrement_vec,
+                        &mut entities_rc_to_decrement.inbound_same_owner_entity_rcs,
+                    );
                 } else {
-                    Self::fill_in_entity_rcs_map(entities_rc_to_increment_vec, &mut entities_rc_to_increment.inbound_entity_rcs);
-                    Self::fill_in_entity_rcs_map(entities_rc_to_decrement_vec, &mut entities_rc_to_decrement.inbound_entity_rcs);
+                    Self::fill_in_entity_rcs_map(
+                        entities_rc_to_increment_vec,
+                        &mut entities_rc_to_increment.inbound_entity_rcs,
+                    );
+                    Self::fill_in_entity_rcs_map(
+                        entities_rc_to_decrement_vec,
+                        &mut entities_rc_to_decrement.inbound_entity_rcs,
+                    );
                 }
             }
 
