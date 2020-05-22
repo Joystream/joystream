@@ -1,4 +1,4 @@
-import { Membership } from '../generated/indexer/entities/Membership';
+import { Membership } from '../generated/graphql-server/src/modules/membership/membership.model';
 import { DB, getLogger } from '../generated/indexer';
 
 import { ApiPromise } from '@polkadot/api';
@@ -24,13 +24,13 @@ export async function bootMembers(api: ApiPromise, db: DB) {
             continue
         }
 
-        let member = new Membership({ 
-            accountId: profile.root_account.toString(), 
-            handle: profile.handle.toString(),
-            avatarUri: profile.avatar_uri.toString(),
-            about: profile.about.toString(),
-            memberId: i 
-        });
+        let member = new Membership()
+        member.accountId= profile.root_account.toString(), 
+        member.handle= profile.handle.toString(),
+        member.avatarUri= profile.avatar_uri.toString(),
+        member.about= profile.about.toString(),
+        member.memberId= i 
+        
         
         logger.trace(`Saving member: ${JSON.stringify(member, null, 2)}`);
         await db.save<Membership>(member);

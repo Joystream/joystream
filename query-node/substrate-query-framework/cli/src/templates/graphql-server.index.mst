@@ -15,12 +15,24 @@ class CustomNamingStrategy extends SnakeNamingStrategy {
   tableName(className: string, customName?: string): string {
     return customName ? customName : `${snakeCase(className)}`;
   }
+  columnName(propertyName: string, customName?: string, embeddedPrefixes?: string[]): string {
+    return propertyName;
+  }
 }
 
 async function bootstrap() {
   await loadConfig();
 
   const server = getServer({}, { namingStrategy: new CustomNamingStrategy() });
+
+  // Create database tables. Warthog migrate command does not support CustomNamingStrategy thats why
+  // we have this code
+  const syncDatabase: string | undefined = process.env.SYNC;
+  if (syncDatabase) {
+    await server.establishDBConnection();
+    process.exit(0);
+  }
+
   await server.start();
 }
 

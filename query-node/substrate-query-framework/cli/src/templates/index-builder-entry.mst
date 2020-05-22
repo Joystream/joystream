@@ -10,13 +10,12 @@ import { {{typeRegistrator}} } from '{{{packageName}}}';
 import {
   QueryNodeManager,
   BootstrapPack,
+  BootstrapFunc,
   DB
 } from "index-builder/lib";
 
 // Mappings use!
-export { 
-    DB 
-};
+export { DB, getLogger };
 
 const logger = getLogger();
 
@@ -101,11 +100,10 @@ function setUp(opts: any) {
 }
 
 async function doBootstrap(node: QueryNodeManager) {
-    await node.start(
+    await node.bootstrap(
         process.env.WS_PROVIDER_ENDPOINT_URI as string,
-        {},
-        {{typeRegistrator}},
-        getBootstrapPack()
+        getBootstrapPack(),
+        {{typeRegistrator}}
     );
     logger.info("Bootstrap done");
 }
