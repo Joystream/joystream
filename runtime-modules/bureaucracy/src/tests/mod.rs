@@ -1608,3 +1608,94 @@ fn decrease_worker_stake_fails_with_not_set_lead() {
         decrease_stake_fixture.call_and_assert(Err(Error::CurrentLeadNotSet));
     });
 }
+
+#[test]
+fn slash_worker_stake_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_worker_position_with_stake(100);
+
+        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(worker_id);
+
+        slash_stake_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkerStakeSlashed(worker_id));
+    });
+}
+
+#[test]
+fn slash_worker_stake_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = 0;
+        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_origin(RawOrigin::None);
+
+        slash_stake_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
+    });
+}
+
+#[test]
+fn slash_worker_stake_fails_with_zero_balance() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_worker_position_with_stake(100);
+
+        let slash_stake_fixture =
+            SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_balance(0);
+
+        slash_stake_fixture.call_and_assert(Err(Error::StakeBalanceCannotBeZero));
+    });
+}
+
+#[test]
+fn slash_worker_stake_fails_with_inactive_worker() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_worker_position_with_stake(100);
+
+        let mut worker = Bureaucracy1::worker_by_id(worker_id);
+        worker.stage = WorkerRoleStage::Exited(WorkerExitSummary {
+            origin: WorkerExitInitiationOrigin::Lead,
+            initiated_at_block_number: 333,
+            rationale_text: Vec::new(),
+        });
+        <crate::WorkerById<Test, crate::Instance1>>::insert(worker_id, worker);
+
+        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(worker_id);
+
+        slash_stake_fixture.call_and_assert(Err(Error::WorkerIsNotActive));
+    });
+}
+
+#[test]
+fn slash_worker_stake_fails_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        SetLeadFixture::set_lead(1);
+        let invalid_worker_id = 11;
+
+        let slash_stake_fixture =
+            SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
+
+        slash_stake_fixture.call_and_assert(Err(Error::WorkerDoesNotExist));
+    });
+}
+
+#[test]
+fn slash_worker_stake_fails_with_no_stake_profile() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_default_worker_position();
+
+        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(worker_id);
+
+        slash_stake_fixture.call_and_assert(Err(Error::NoWorkerStakeProfile));
+    });
+}
+
+#[test]
+fn slash_worker_stake_fails_with_not_set_lead() {
+    build_test_externalities().execute_with(|| {
+        let invalid_worker_id = 11;
+
+        let slash_stake_fixture =
+            SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
+
+        slash_stake_fixture.call_and_assert(Err(Error::CurrentLeadNotSet));
+    });
+}

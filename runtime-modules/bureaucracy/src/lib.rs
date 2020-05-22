@@ -897,6 +897,7 @@ decl_module! {
         // ****************** Worker stakes **********************
 
         /// Slashes the worker stake, demands a leader origin. No limits, no actions on zero stake.
+        /// If slashing balance greater than the existing stake - stake is slashed to zero.
         pub fn slash_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
             Self::ensure_origin_is_set_lead(origin)?;
 
