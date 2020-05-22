@@ -238,6 +238,9 @@ decl_error! {
 
         /// Insufficient stake to decrease,
         StakingErrorInsufficientStake,
+
+        /// Slash amount should be greater than zero,
+        StakingErrorSlashAmountShouldBeGreaterThanZero,
     }
 }
 
@@ -561,6 +564,22 @@ impl rstd::convert::From<WrappedError<stake::StakeActionError<stake::DecreasingS
                     }
                 }
             }
+        }
+    }
+}
+
+impl rstd::convert::From<WrappedError<stake::StakeActionError<stake::ImmediateSlashingError>>>
+    for Error
+{
+    fn from(wrapper: WrappedError<stake::StakeActionError<stake::ImmediateSlashingError>>) -> Self {
+        match wrapper.error {
+            stake::StakeActionError::StakeNotFound => Error::StakingErrorStakeNotFound,
+            stake::StakeActionError::Error(slashing_error) => match slashing_error {
+                stake::ImmediateSlashingError::NotStaked => Error::StakingErrorNotStaked,
+                stake::ImmediateSlashingError::SlashAmountShouldBeGreaterThanZero => {
+                    Error::StakingErrorSlashAmountShouldBeGreaterThanZero
+                }
+            },
         }
     }
 }

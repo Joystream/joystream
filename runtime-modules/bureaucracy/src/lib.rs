@@ -896,8 +896,29 @@ decl_module! {
 
         // ****************** Worker stakes **********************
 
-        // /// Slashes the worker stake, demands a leader origin. No limits, no actions on zero stake.
-        // pub fn slash_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {}
+        /// Slashes the worker stake, demands a leader origin. No limits, no actions on zero stake.
+        pub fn slash_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
+            Self::ensure_origin_is_set_lead(origin)?;
+
+            // Checks worker existence, worker active state
+            let worker = Self::ensure_active_worker_exists(&worker_id)?;
+
+            ensure!(balance != <BalanceOf<T>>::zero(), Error::StakeBalanceCannotBeZero);
+
+            let stake_profile = worker.role_stake_profile.ok_or(Error::NoWorkerStakeProfile)?;
+
+            // mutation
+
+            ensure_on_wrapped_error!(
+                <stake::Module<T>>::slash_immediate(
+                    &stake_profile.stake_id,
+                    balance,
+                    false
+                )
+            )?;
+
+            Self::deposit_event(RawEvent::WorkerStakeSlashed(worker_id));
+        }
 
         /// Decreases the worker stake and returns the remainder to the worker role_account,
         /// demands a leader origin. Can be decreased to zero, no actions on zero stake.
