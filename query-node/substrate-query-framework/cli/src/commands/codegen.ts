@@ -11,12 +11,18 @@ import { formatWithPrettier } from '../helpers/formatter';
 import WarthogWrapper from '../helpers/WarthogWrapper';
 import { getTypeormConfig, getTypeormModelGeneratorConnectionConfig, createSavedEntityEventTable } from '../helpers/db';
 
+const debug = require('debug')('qnode-cli:codegen')
+
 export default class Codegen extends Command {
   static description = 'Code generator';
   static generatedFolderName = 'generated';
 
   static flags = {
-    schema: flags.string({ char: 's', description: 'Schema path', default: '../../schema.graphql' })
+    schema: flags.string({ char: 's', description: 'Schema path', default: '../../schema.graphql' }),
+    // pass --no-indexer to skip indexer generation
+    indexer: flags.boolean({ char: 'i', allowNo: true, description: 'Generate indexer', default: true }),
+    // pass --no-graphql to skip graphql generation
+    graphql: flags.boolean({ char: 'g', allowNo: true, description: 'Generate GraphQL server', default: true})
   };
 
   async run() {
@@ -31,10 +37,17 @@ export default class Codegen extends Command {
     process.chdir(generatedFolderPath);
 
     // Create warthog graphql server
-    await this.createGraphQLServer(flags.schema);
-
+    if (flags.graphql) {
+        debug("Generating GraphQL server");
+        await this.createGraphQLServer(flags.schema);
+    }
+    
     // Create block indexer
-    await this.createBlockIndexer();
+    if (flags.indexer) {
+        debug("Generating indexer");
+        await this.createBlockIndexer();
+    }
+    
   }
 
   async createGraphQLServer(schemaPath: string) {
@@ -44,8 +57,12 @@ export default class Codegen extends Command {
     const warthogProjectPath = path.resolve(goBackDir, warthogProjectName);
 
     createDir(warthogProjectPath);
-    process.chdir(warthogProjectPath);
+    // copy dotnenvi env.yml file 
+    debug("Creating graphql-server/env.yml")
+    copyFileSync(getTemplatePath('warthog.env.yml'), path.resolve(warthogProjectPath, 'env.yml'));
 
+    process.chdir(warthogProjectPath);
+    
     const warthogWrapper = new WarthogWrapper(this, schemaPath);
     await warthogWrapper.run();
 
