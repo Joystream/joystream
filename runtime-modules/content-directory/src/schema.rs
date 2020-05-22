@@ -1,6 +1,6 @@
 use crate::{permissions::EntityAccessLevel, *};
 use codec::{Decode, Encode};
-use core::ops::{Deref, DerefMut};
+use core::ops::Deref;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 
@@ -94,10 +94,6 @@ impl<T: Trait> VecPropertyType<T> {
         &self.vec_type
     }
 
-    pub fn get_vec_type_mut(&mut self) -> &mut Type<T> {
-        &mut self.vec_type
-    }
-
     pub fn get_max_len(&self) -> VecMaxLength {
         self.max_length
     }
@@ -134,12 +130,6 @@ impl<T: Trait> Deref for SingleValuePropertyType<T> {
     }
 }
 
-impl<T: Trait> DerefMut for SingleValuePropertyType<T> {
-    fn deref_mut(&mut self) -> &mut Type<T> {
-        &mut self.0
-    }
-}
-
 /// Enum, representing either `SingleValuePropertyType` or `VecPropertyType`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
@@ -168,13 +158,6 @@ impl<T: Trait> PropertyType<T> {
             Some(single_value_property_type)
         } else {
             None
-        }
-    }
-
-    pub fn get_inner_type_mut(&mut self) -> &mut Type<T> {
-        match self {
-            PropertyType::Single(single_property_type) => single_property_type,
-            PropertyType::Vector(vec_property_type) => vec_property_type.get_vec_type_mut(),
         }
     }
 
@@ -432,14 +415,6 @@ pub enum PropertyValue<T: Trait> {
 
 impl<T: Trait> PropertyValue<T> {
     pub fn as_single_property_value(&self) -> Option<&SinglePropertyValue<T>> {
-        if let PropertyValue::Single(single_property_value) = self {
-            Some(single_property_value)
-        } else {
-            None
-        }
-    }
-
-    pub fn as_single_property_value_mut(&mut self) -> Option<&mut SinglePropertyValue<T>> {
         if let PropertyValue::Single(single_property_value) = self {
             Some(single_property_value)
         } else {

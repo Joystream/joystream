@@ -326,6 +326,9 @@ pub struct Entity<T: Trait> {
 
     /// Number of property values referencing current entity
     pub reference_count: u32,
+
+    /// Number of inbound references from another entities with `SameOwner`flag set
+    pub inbound_same_owner_references_from_other_entities_count: u32
 }
 
 impl<T: Trait> Default for Entity<T> {
@@ -336,6 +339,7 @@ impl<T: Trait> Default for Entity<T> {
             supported_schemas: BTreeSet::new(),
             values: BTreeMap::new(),
             reference_count: 0,
+            inbound_same_owner_references_from_other_entities_count: 0,
         }
     }
 }
@@ -353,6 +357,7 @@ impl<T: Trait> Entity<T> {
             supported_schemas,
             values,
             reference_count: 0,
+            inbound_same_owner_references_from_other_entities_count: 0,
         }
     }
 
