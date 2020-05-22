@@ -32,12 +32,12 @@ function substrateToPlain<T> (x: Codec): T | undefined {
 }
 
 /**
- * Convert a plain JavaScript value of such type as string, number, boolean 
+ * Convert a plain JavaScript value of such type as string, number, boolean
  * to Substrate equivalent in Versioned Store module.
- * 
+ *
  * Based on code of transformPropertyValue from another Joystream repo:
  * /versioned-store-js/src/transformPropertyValue.ts
- * 
+ *
  * @throws Error
  */
 function plainToSubstrate(propType: string, value: any): PropertyValue {
@@ -60,8 +60,20 @@ function plainToSubstrate(propType: string, value: any): PropertyValue {
     }
   }
 
+  const valueAsArr = (): any[] => {
+    if (Array.isArray(value)) {
+      return value as any[]
+    }
+
+    return typeof value === undefined ? [] : [ value ]
+  }
+
   const valueAsBoolArr = (): boolean[] => {
-    return (value as []).map(valueAsBool)
+    return valueAsArr().map(valueAsBool)
+  }
+
+  const valueAsStrArr = (): string[] => {
+    return valueAsArr() as string[]
   }
 
   switch (propType) {
@@ -82,14 +94,14 @@ function plainToSubstrate(propType: string, value: any): PropertyValue {
     // Vectors:
 
     case 'BoolVec':     return ok(new PV.BoolVec(valueAsBoolArr()))
-    case 'Uint16Vec':   return ok(new PV.Uint16Vec(value as string[]))
-    case 'Uint32Vec':   return ok(new PV.Uint32Vec(value as string[]))
-    case 'Uint64Vec':   return ok(new PV.Uint64Vec(value as string[]))
-    case 'Int16Vec':    return ok(new PV.Int16Vec(value as string[]))
-    case 'Int32Vec':    return ok(new PV.Int32Vec(value as string[]))
-    case 'Int64Vec':    return ok(new PV.Int64Vec(value as string[]))
-    case 'TextVec':     return ok(new PV.TextVec(value as string[]))
-    case 'InternalVec': return ok(new PV.InternalVec(value as string[]))
+    case 'Uint16Vec':   return ok(new PV.Uint16Vec(valueAsStrArr()))
+    case 'Uint32Vec':   return ok(new PV.Uint32Vec(valueAsStrArr()))
+    case 'Uint64Vec':   return ok(new PV.Uint64Vec(valueAsStrArr()))
+    case 'Int16Vec':    return ok(new PV.Int16Vec(valueAsStrArr()))
+    case 'Int32Vec':    return ok(new PV.Int32Vec(valueAsStrArr()))
+    case 'Int64Vec':    return ok(new PV.Int64Vec(valueAsStrArr()))
+    case 'TextVec':     return ok(new PV.TextVec(valueAsStrArr()))
+    case 'InternalVec': return ok(new PV.InternalVec(valueAsArr()))
 
     default: {
       throw new Error(`Unknown property type name: ${propType}`)
@@ -154,10 +166,10 @@ export interface ToPlainObjectProps {
 }
 
 export abstract class EntityCodec<T extends PlainEntity> {
-  
+
   private propNameToMetaMap: Map<string, PropMeta> = new Map()
   private propIndexToNameMap: Map<number, string> = new Map()
-  
+
   public constructor (entityClass: Class) {
     entityClass.properties.map((p, index) => {
       const propName = unifyPropName(p.name.toString());
@@ -199,7 +211,7 @@ export abstract class EntityCodec<T extends PlainEntity> {
         // Load a referred internal entity:
         if (loadInternals) {
           if (
-            propValue instanceof PV.Internal && 
+            propValue instanceof PV.Internal &&
             typeof loadEntityById === 'function'
           ) {
             convertedValue = await loadEntityById(propValue as EntityId)
@@ -241,7 +253,7 @@ export abstract class EntityCodec<T extends PlainEntity> {
       if (meta) {
         const propType = meta.type as PropertyTypeName;
         const plainValue = (updatedProps as any)[propName];
-  
+
         let codecValue: PropertyValue | undefined
         try {
           codecValue = plainToSubstrate(propType, plainValue)
