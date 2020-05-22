@@ -14,14 +14,17 @@ pub struct IncreaseWorkerStakeFixture {
     origin: RawOrigin<u64>,
     worker_id: u64,
     balance: u64,
+    account_id: u64,
 }
 
 impl IncreaseWorkerStakeFixture {
     pub fn default_for_worker_id(worker_id: u64) -> Self {
+        let account_id = 1;
         IncreaseWorkerStakeFixture {
             origin: RawOrigin::Signed(1),
             worker_id,
             balance: 10,
+            account_id
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
@@ -35,6 +38,7 @@ impl IncreaseWorkerStakeFixture {
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
         let stake_id = 0;
         let old_stake = <stake::Module<Test>>::stakes(stake_id);
+        let old_balance =  Balances::free_balance(&self.account_id);
         let actual_result = Bureaucracy1::increase_worker_stake(
             self.origin.clone().into(),
             self.worker_id,
@@ -46,9 +50,18 @@ impl IncreaseWorkerStakeFixture {
         if actual_result.is_ok() {
             let new_stake = <stake::Module<Test>>::stakes(stake_id);
 
+            // stake changes increased
             assert_eq!(
                 get_stake_balance(new_stake),
                 get_stake_balance(old_stake) + self.balance
+            );
+
+            let new_balance =  Balances::free_balance(&self.account_id);
+
+            // worker balance decreased
+            assert_eq!(
+                new_balance,
+                old_balance - self.balance,
             );
         }
     }
@@ -783,14 +796,17 @@ pub struct DecreaseWorkerStakeFixture {
     origin: RawOrigin<u64>,
     worker_id: u64,
     balance: u64,
+    account_id: u64,
 }
 
 impl DecreaseWorkerStakeFixture {
     pub fn default_for_worker_id(worker_id: u64) -> Self {
+        let account_id = 1;
         DecreaseWorkerStakeFixture {
-            origin: RawOrigin::Signed(1),
+            origin: RawOrigin::Signed(account_id),
             worker_id,
             balance: 10,
+            account_id
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
@@ -803,6 +819,7 @@ impl DecreaseWorkerStakeFixture {
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
         let stake_id = 0;
+        let old_balance =  Balances::free_balance(&self.account_id);
         let old_stake = <stake::Module<Test>>::stakes(stake_id);
         let actual_result = Bureaucracy1::decrease_worker_stake(
             self.origin.clone().into(),
@@ -813,12 +830,21 @@ impl DecreaseWorkerStakeFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-        	let new_stake = <stake::Module<Test>>::stakes(stake_id);
+            let new_stake = <stake::Module<Test>>::stakes(stake_id);
 
-        	assert_eq!(
-        		get_stake_balance(new_stake),
-        		get_stake_balance(old_stake) - self.balance
-        	);
+            // stake changes decreased
+            assert_eq!(
+                get_stake_balance(new_stake),
+                get_stake_balance(old_stake) - self.balance
+            );
+
+            let new_balance =  Balances::free_balance(&self.account_id);
+
+            // worker balance increased
+            assert_eq!(
+                new_balance,
+                old_balance + self.balance,
+            );
         }
     }
 }
