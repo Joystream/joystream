@@ -171,8 +171,8 @@ export const VideoClass: VideoClassType = {
   },
   links: {
     "id": "links",
-    "name": "Links",
-    "description": "Links to the creators pages.",
+    "name": "Link",
+    "description": "A link to the creators page.",
     "type": "TextVec",
     "maxItems": 5,
     "maxTextLength": 255
