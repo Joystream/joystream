@@ -10,6 +10,7 @@ use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter,
     StorageDoubleMap,
 };
+use std::hash::Hash;
 use system::ensure_signed;
 
 #[cfg(feature = "std")]
@@ -30,8 +31,7 @@ pub use schema::*;
 
 type MaxNumber = u32;
 
-/// Type, representing vector of vectors of all referenced entitity id`s
-type EntitiesRcVec<T> = Vec<Vec<<T as Trait>::EntityId>>;
+type ReferenceCounter = u32;
 
 pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
     /// The overarching event type.
@@ -76,6 +76,7 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
         + Default
         + Copy
         + Clone
+        + Hash
         + One
         + Zero
         + MaybeSerializeDeserialize
@@ -137,6 +138,23 @@ pub struct InputValidationLengthConstraint {
     /// way makes max < min unrepresentable semantically,
     /// which is safer.
     pub max_min_diff: u16,
+}
+
+/// Structure, representing Map`s of each referenced entity id count
+pub struct EntitiesRc<T: Trait> {
+    // Entities, which inbound same owner rc should be changed
+    pub inbound_entity_rcs: BTreeMap<T::EntityId, ReferenceCounter>,
+    // Entities, which rc should be changed (only includes entity ids, which are not in inbound_same_owner_entity_rcs_to_increment_map already)
+    pub inbound_same_owner_entity_rcs: BTreeMap<T::EntityId, ReferenceCounter>,
+}
+
+impl <T: Trait> Default for EntitiesRc<T> {
+    fn default() -> Self {
+        Self {
+            inbound_entity_rcs: BTreeMap::default(),
+            inbound_same_owner_entity_rcs: BTreeMap::default()
+        }
+    }
 }
 
 impl InputValidationLengthConstraint {
@@ -325,10 +343,10 @@ pub struct Entity<T: Trait> {
     pub values: BTreeMap<PropertyId, PropertyValue<T>>,
 
     /// Number of property values referencing current entity
-    pub reference_count: u32,
+    pub reference_count: ReferenceCounter,
 
     /// Number of inbound references from another entities with `SameOwner`flag set
-    pub inbound_same_owner_references_from_other_entities_count: u32
+    pub inbound_same_owner_references_from_other_entities_count: ReferenceCounter
 }
 
 impl<T: Trait> Default for Entity<T> {
@@ -999,7 +1017,9 @@ decl_module! {
 
             let current_entity_values = entity.values.clone();
             let mut appended_entity_values = entity.values.clone();
-            let mut entities_rc_to_increment_vec = vec![];
+
+            // Entities, which rc should be incremented 
+            let mut entities_rc_to_increment = EntitiesRc::<T>::default();
 
             for prop_id in schema_prop_ids.iter() {
                 if current_entity_values.contains_key(prop_id) {
@@ -1008,7 +1028,7 @@ decl_module! {
                     continue;
                 }
                 Self::add_new_property_value(
-                    &class, &entity, *prop_id, &property_values, &mut entities_rc_to_increment_vec, &mut appended_entity_values
+                    &class, &entity, *prop_id, &property_values, &mut entities_rc_to_increment, &mut appended_entity_values
                 )?;
             }
 
@@ -1025,10 +1045,16 @@ decl_module! {
                     entity.values = appended_entity_values;
                 }
             });
-            entities_rc_to_increment_vec
+
+            entities_rc_to_increment.inbound_same_owner_entity_rcs
                 .iter()
-                .for_each(|entities_rc_to_increment| {
-                    Self::increment_entities_rc(entities_rc_to_increment);
+                .for_each(|(entity_id, rc)| {
+                    Self::increment_entity_rcs(entity_id, *rc, true);
+                });
+            entities_rc_to_increment.inbound_entity_rcs
+                .iter()
+                .for_each(|(entity_id, rc)| {
+                    Self::increment_entity_rcs(entity_id, *rc, false);
                 });
 
             // Trigger event
@@ -1061,8 +1087,11 @@ decl_module! {
             let mut updated_values = entity.values.clone();
             let mut updated = false;
 
-            let mut entities_rc_to_increment_vec = vec![];
-            let mut entities_rc_to_decrement_vec = vec![];
+            // Entities, which rc should be incremented 
+            let mut entities_rc_to_increment = EntitiesRc::<T>::default();
+
+            // Entities, which rc should be decremented 
+            let mut entities_rc_to_decrement = EntitiesRc::<T>::default();
 
             // Iterate over a vector of new values and update corresponding properties
             // of this entity if new values are valid.
@@ -1080,11 +1109,8 @@ decl_module! {
                 if new_value == *current_prop_value {
                     continue;
                 } else {
-                    let (mut temp_entities_rc_to_increment_vec, mut temp_entities_rc_to_decrement_vec) =
-                        Self::perform_entity_property_value_update(&class, &entity, id, access_level, new_value, current_prop_value)?;
+                    Self::perform_entity_property_value_update(&class, &entity, id, access_level, new_value, current_prop_value, &mut entities_rc_to_increment, &mut entities_rc_to_decrement)?;
 
-                    entities_rc_to_increment_vec.append(&mut temp_entities_rc_to_increment_vec);
-                    entities_rc_to_decrement_vec.append(&mut temp_entities_rc_to_decrement_vec);
                     updated = true;
                 }
             }
@@ -1099,17 +1125,28 @@ decl_module! {
                 <EntityById<T>>::mutate(entity_id, |entity| {
                     entity.values = updated_values;
                 });
-                entities_rc_to_increment_vec
+
+                entities_rc_to_increment.inbound_same_owner_entity_rcs
                     .iter()
-                    .for_each(|entities_rc_to_increment| {
-                        Self::increment_entities_rc(entities_rc_to_increment);
+                    .for_each(|(entity_id, rc)| {
+                        Self::increment_entity_rcs(entity_id, *rc, true);
                     });
-                entities_rc_to_decrement_vec
+                entities_rc_to_increment.inbound_entity_rcs
                     .iter()
-                    .for_each(|entities_rc_to_decrement| {
-                        Self::decrement_entities_rc(entities_rc_to_decrement);
+                    .for_each(|(entity_id, rc)| {
+                        Self::increment_entity_rcs(entity_id, *rc, false);
                     });
 
+                entities_rc_to_decrement.inbound_same_owner_entity_rcs
+                    .iter()
+                    .for_each(|(entity_id, rc)| {
+                        Self::decrement_entity_rcs(entity_id, *rc, true);
+                    });
+                entities_rc_to_decrement.inbound_entity_rcs
+                    .iter()
+                    .for_each(|(entity_id, rc)| {
+                        Self::decrement_entity_rcs(entity_id, *rc, false);
+                    });
                 // Trigger event
                 Self::deposit_event(RawEvent::EntityPropertyValuesUpdated(actor, entity_id));
             }
@@ -1133,7 +1170,7 @@ decl_module! {
             let current_property_value_vec =
             Self::get_property_value_vec(&entity, in_class_schema_property_id)?;
 
-            Self::ensure_class_property_type_unlocked_for(
+            let property = Self::ensure_class_property_type_unlocked_for(
                 entity.class_id,
                 in_class_schema_property_id,
                 access_level,
@@ -1154,8 +1191,12 @@ decl_module! {
                 {
                     current_property_value_vec.vec_clear();
                 }
-                if let Some(entities_rc_to_decrement) = entities_rc_to_decrement {
-                    Self::decrement_entities_rc(&entities_rc_to_decrement);
+                match entities_rc_to_decrement {
+                    Some(entities_rc_to_decrement) if property.prop_type.get_same_controller_status() => {
+                        Self::count_element_function(entities_rc_to_decrement).iter().for_each(|(entity_id, rc)| Self::decrement_entity_rcs(entity_id, *rc, true));
+                    }
+                    Some(entities_rc_to_decrement) => Self::count_element_function(entities_rc_to_decrement).iter().for_each(|(entity_id, rc)| Self::decrement_entity_rcs(entity_id, *rc, false)),
+                    _ => ()
                 }
             });
 
@@ -1241,6 +1282,8 @@ decl_module! {
 
             let (entity, access_level) = Self::get_entity_and_access_level(account_id, entity_id, &actor)?;
 
+            let mut same_owner = false;
+
             // Try to find a current property value in the entity
             // by matching its id to the id of a property with an updated value.
             if let Some(PropertyValue::Vector(entity_prop_value)) =
@@ -1265,6 +1308,7 @@ decl_module! {
                     index_in_property_vec,
                     entity.get_permissions().get_controller(),
                 )?;
+                same_owner = class_prop.prop_type.get_same_controller_status();
             };
 
             //
@@ -1274,8 +1318,12 @@ decl_module! {
             // Insert property value into property value vector
             <EntityById<T>>::mutate(entity_id, |entity| {
                 let value = property_value.get_value();
-                if let Some(entities_rc_to_increment) = value.get_involved_entity() {
-                    Self::increment_entities_rc(&[entities_rc_to_increment]);
+                if let Some(entity_rc_to_increment) = value.get_involved_entity() {
+                    if same_owner {
+                        Self::increment_entity_rcs(&entity_rc_to_increment, 1, true);
+                    } else {
+                        Self::increment_entity_rcs(&entity_rc_to_increment, 1, false);
+                    }
                 }
                 if let Some(PropertyValue::Vector(current_prop_value)) =
                     entity.values.get_mut(&in_class_schema_property_id)
@@ -1373,16 +1421,22 @@ impl<T: Trait> Module<T> {
         <ClassById<T>>::mutate(class_id, |class| class.decrement_entities_count());
     }
 
-    fn increment_entities_rc(entity_ids: &[T::EntityId]) {
-        entity_ids.iter().for_each(|entity_id| {
-            <EntityById<T>>::mutate(entity_id, |entity| entity.reference_count += 1)
-        });
+    fn increment_entity_rcs(entity_id: &T::EntityId, rc: u32, same_owner: bool) {
+        <EntityById<T>>::mutate(entity_id, |entity| if same_owner {
+            entity.inbound_same_owner_references_from_other_entities_count += rc;
+            entity.reference_count += rc
+        } else {
+            entity.reference_count += rc
+        })
     }
 
-    fn decrement_entities_rc(entity_ids: &[T::EntityId]) {
-        entity_ids.iter().for_each(|entity_id| {
-            <EntityById<T>>::mutate(entity_id, |entity| entity.reference_count -= 1)
-        });
+    fn decrement_entity_rcs(entity_id: &T::EntityId, rc: u32, same_owner: bool) {
+        <EntityById<T>>::mutate(entity_id, |entity| if same_owner {
+            entity.inbound_same_owner_references_from_other_entities_count -= rc;
+            entity.reference_count -= rc
+        } else {
+            entity.reference_count -= rc
+        })    
     }
 
     /// Returns the stored class if exist, error otherwise.
@@ -1397,7 +1451,7 @@ impl<T: Trait> Module<T> {
         entity: &Entity<T>,
         prop_id: PropertyId,
         property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
-        entities_rc_to_increment_vec: &mut Vec<Vec<T::EntityId>>,
+        entities_rc_to_increment: &mut EntitiesRc<T>,
         appended_entity_values: &mut BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> Result<(), &'static str> {
         let class_prop = &class.properties[prop_id as usize];
@@ -1417,9 +1471,14 @@ impl<T: Trait> Module<T> {
                     ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE
                 );
             }
-            if let Some(entities_rc_to_increment) = new_value.get_involved_entities() {
-                entities_rc_to_increment_vec.push(entities_rc_to_increment);
-            }
+            match new_value.get_involved_entities() {
+                Some(entity_rcs_to_increment) if class_prop.prop_type.get_same_controller_status() => {
+                    Self::fill_in_entity_rcs_map(entity_rcs_to_increment, &mut entities_rc_to_increment.inbound_same_owner_entity_rcs)
+                }
+                Some(entity_rcs_to_increment) => Self::fill_in_entity_rcs_map(entity_rcs_to_increment, &mut entities_rc_to_increment.inbound_entity_rcs),
+                _ => ()
+            };
+
             appended_entity_values.insert(prop_id, new_value.to_owned());
         } else {
             // All required prop values should be provided
@@ -1431,6 +1490,16 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    fn fill_in_entity_rcs_map(entity_rcs: Vec<T::EntityId>,  entity_rcs_map: &mut BTreeMap<T::EntityId, ReferenceCounter>) {
+        for entity_rc in entity_rcs {
+            if let Some(rc) = entity_rcs_map.get_mut(&entity_rc) {
+                *rc +=1;
+            } else {
+                entity_rcs_map.insert(entity_rc, 1);
+            }
+        }
+    }
+
     pub fn perform_entity_property_value_update(
         class: &Class<T>,
         entity: &Entity<T>,
@@ -1438,9 +1507,9 @@ impl<T: Trait> Module<T> {
         access_level: EntityAccessLevel,
         new_value: PropertyValue<T>,
         current_prop_value: &mut PropertyValue<T>,
-    ) -> Result<(EntitiesRcVec<T>, EntitiesRcVec<T>), &'static str> {
-        let mut entities_rc_to_increment_vec = vec![];
-        let mut entities_rc_to_decrement_vec = vec![];
+        entities_rc_to_increment: &mut EntitiesRc<T>,
+        entities_rc_to_decrement: &mut EntitiesRc<T>,
+    ) -> Result<(), &'static str> {
         // Get class-level information about this property
         if let Some(class_prop) = class.properties.get(id as usize) {
             // Ensure class property is unlocked for given actor
@@ -1458,28 +1527,34 @@ impl<T: Trait> Module<T> {
             )?;
 
             // Get unique entity ids to update rc
-            if let (Some(entities_rc_to_increment), Some(entities_rc_to_decrement)) = (
+            if let (Some(entities_rc_to_increment_vec), Some(entities_rc_to_decrement_vec)) = (
                 new_value.get_involved_entities(),
                 current_prop_value.get_involved_entities(),
             ) {
-                let (entities_rc_to_decrement, entities_rc_to_increment): (
+                let (entities_rc_to_decrement_vec, entities_rc_to_increment_vec): (
                     Vec<T::EntityId>,
                     Vec<T::EntityId>,
-                ) = entities_rc_to_decrement
+                ) = entities_rc_to_decrement_vec
                     .into_iter()
-                    .zip(entities_rc_to_increment.into_iter())
+                    .zip(entities_rc_to_increment_vec.into_iter())
                     .filter(|(entity_rc_to_decrement, entity_rc_to_increment)| {
                         entity_rc_to_decrement != entity_rc_to_increment
                     })
                     .unzip();
-                entities_rc_to_increment_vec.push(entities_rc_to_increment);
-                entities_rc_to_decrement_vec.push(entities_rc_to_decrement);
+
+                if class_prop.prop_type.get_same_controller_status() {
+                    Self::fill_in_entity_rcs_map(entities_rc_to_increment_vec, &mut entities_rc_to_increment.inbound_same_owner_entity_rcs);
+                    Self::fill_in_entity_rcs_map(entities_rc_to_decrement_vec, &mut entities_rc_to_decrement.inbound_same_owner_entity_rcs);
+                } else {
+                    Self::fill_in_entity_rcs_map(entities_rc_to_increment_vec, &mut entities_rc_to_increment.inbound_entity_rcs);
+                    Self::fill_in_entity_rcs_map(entities_rc_to_decrement_vec, &mut entities_rc_to_decrement.inbound_entity_rcs);
+                }
             }
 
             // Update a current prop value in a mutable vector, if a new value is valid.
             current_prop_value.update(new_value);
         }
-        Ok((entities_rc_to_increment_vec, entities_rc_to_decrement_vec))
+        Ok(())
     }
 
     fn get_property_value_vec(
@@ -1692,6 +1767,20 @@ impl<T: Trait> Module<T> {
         Self::ensure_valid_number_of_class_entities_per_actor_constraint(
             per_controller_entities_creation_limit,
         )
+    }
+
+    pub fn count_element_function<I>(it: I) -> BTreeMap<I::Item, ReferenceCounter>
+    where
+        I: IntoIterator,
+        I::Item: Eq + core::hash::Hash + std::cmp::Ord,
+    {
+        let mut result = BTreeMap::new();
+
+        for item in it {
+            *result.entry(item).or_insert(0) += 1;
+        }
+
+        result
     }
 }
 
