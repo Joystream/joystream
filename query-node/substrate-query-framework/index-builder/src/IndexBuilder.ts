@@ -7,8 +7,8 @@ import {
   QueryEventProcessingPack,
   QueryEventBlock,
   ISubstrateQueryService,
-  DB,
   SavedEntityEvent,
+  makeDatabaseManager,
 } from '.';
 
 const debug = require('debug')('index-builder:indexer');
@@ -72,10 +72,8 @@ export default class IndexBuilder {
           await queryRunner.connect();
           await queryRunner.startTransaction();
 
-          const db = new DB(query_event, queryRunner.manager);
-
           // Call event handler
-          await this._processing_pack[query_event.event_method](db);
+          await this._processing_pack[query_event.event_method](makeDatabaseManager(queryRunner.manager), query_event);
 
           // Update last processed event
           await SavedEntityEvent.update(query_event, queryRunner.manager);

@@ -24,7 +24,6 @@ export default class WarthogWrapper {
     this.installDependencies();
 
     await this.createDB();
-    this.command.log('createDB');
 
     await this.createModels();
 
@@ -36,9 +35,8 @@ export default class WarthogWrapper {
   async newProject(projectName: string = 'query_node') {
     await warthogCli.run(`new ${projectName}`);
 
-    // Override warthog's files for model naming strategy
+    // Override warthog's index.ts file for custom naming strategy
     fs.copyFileSync(getTemplatePath('graphql-server.index.mst'), path.resolve(process.cwd(), 'src/index.ts'));
-    fs.copyFileSync(getTemplatePath('sync.mst'), path.resolve(process.cwd(), 'src/sync.ts'));
 
     this.updateDotenv();
   }
@@ -50,7 +48,8 @@ export default class WarthogWrapper {
 
     // Temporary tslib fix
     let pkgFile = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-    pkgFile.resolutions["tslib"] = "1.11.2"
+    pkgFile.resolutions['tslib'] = '1.11.2';
+    pkgFile.scripts['sync'] = 'SYNC=true ts-node-dev --type-check src/index.ts';
     fs.writeFileSync('package.json', JSON.stringify(pkgFile, null, 2));
 
     this.command.log('Installing graphql-server dependencies...');
@@ -88,7 +87,7 @@ export default class WarthogWrapper {
   }
 
   async createMigrations() {
-    execSync('yarn ts-node src/sync.ts');
+    execSync('yarn sync');
   }
 
   async codegen() {

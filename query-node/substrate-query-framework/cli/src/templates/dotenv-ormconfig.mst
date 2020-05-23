@@ -6,4 +6,4 @@ TYPEORM_DATABASE=postgres
 TYPEORM_PORT=5432
 TYPEORM_SYNCHRONIZE=false
 TYPEORM_LOGGING=true
-TYPEORM_ENTITIES=entities/*.ts,node_modules/index-builder/lib/db/entities.js
+TYPEORM_ENTITIES=entities/*.ts,node_modules/index-builder/lib/db/entities.js,../graphql-server/src/modules/**/*.model.ts

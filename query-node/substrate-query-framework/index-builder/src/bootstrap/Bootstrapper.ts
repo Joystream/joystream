@@ -1,7 +1,7 @@
-import { BootstrapPack, BootstrapFunc, SubstrateEvent } from '..';
+import { BootstrapPack, BootstrapFunc, SubstrateEvent, DatabaseManager, SavedEntityEvent } from '..';
 import { WsProvider, ApiPromise } from '@polkadot/api';
-import { createConnection, getConnection, EntityManager } from 'typeorm';
-import { DB, SavedEntityEvent } from '../db';
+import {  getConnection, EntityManager } from 'typeorm';
+import { makeDatabaseManager } from '..';
 
 const debug = require('debug')('index-builder:bootstrapper');
 
@@ -50,9 +50,7 @@ export default class Bootstrapper {
                 }
 
                 let bootEvent = this.createBootEvent(boot);
-                
-                let db = new DB(bootEvent, queryRunner.manager);
-                await boot(api, db);
+                await boot(api, makeDatabaseManager(queryRunner.manager));
 
                 // Save the bootstrap events so 
                 await SavedEntityEvent.update(bootEvent, queryRunner.manager);
@@ -77,7 +75,7 @@ export default class Bootstrapper {
     private createBootEvent(boot: BootstrapFunc): SubstrateEvent {
         return {
             event_name: 'Bootstrap',
-            event_method: boot.name,
+            event_method: `Bootstrap.${boot.name}`,
             event_params: {},
             index: Date.now() / 1000 | 0, // simply put the timestamp here
             block_number: process.env.BLOCK_HEIGHT ? parseInt(process.env.BLOCK_HEIGHT) : 0, 
@@ -94,8 +92,7 @@ export default class Bootstrapper {
     private async shouldBootstrap(em: EntityManager, boot: BootstrapFunc):Promise<boolean> {
         const event = await em.findOne(SavedEntityEvent, { 
             where: { 
-                event_name: 'Bootstrap', 
-                event_method: boot.name
+                eventName: `Bootstrap.${boot.name}`,
             }
         })
         return event ? false : true;
