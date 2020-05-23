@@ -17,14 +17,12 @@ matrix:
       services: docker
 
 before_install:
-  - rustup component add rustfmt
-  - cargo fmt --all -- --check
-  - rustup component add clippy
-  - BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release -- -D warnings
   - rustup default stable
   - rustup update nightly
   - rustup target add wasm32-unknown-unknown --toolchain nightly
-  - cargo test --release --verbose --all
+  - rustup component add rustfmt
+  - rustup component add clippy
+  - cargo fmt --all -- --check
 
 install:
   - |
@@ -40,6 +38,10 @@ script:
       docker run -u root \
         --volume ${TRAVIS_BUILD_DIR}:/home/cross/project \
           joystream/rust-raspberry \
+        test --release
+      docker run -u root \
+        --volume ${TRAVIS_BUILD_DIR}:/home/cross/project \
+          joystream/rust-raspberry \
         build --release
       sudo chmod a+r ${TRAVIS_BUILD_DIR}/target/${TARGET}/release/joystream-node
     elif [ "$TARGET" = "wasm-blob" ]
@@ -51,6 +53,8 @@ script:
       docker cp temp-container-joystream-node:/joystream/runtime.compact.wasm joystream_runtime.wasm
       docker rm temp-container-joystream-node
     else
+      cargo test --release --verbose --all --target=${TARGET}
+      BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --target=${TARGET} -- -D warnings
       cargo build --release --target=${TARGET}
     fi
 

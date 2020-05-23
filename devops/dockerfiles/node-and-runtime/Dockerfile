@@ -4,6 +4,7 @@ WORKDIR /joystream
 COPY . /joystream
 
 # Make sure tests pass before continuing
+RUN BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release -- -D warnings
 RUN cargo test --release
 
 # Build joystream-node and its dependencies - runtime
