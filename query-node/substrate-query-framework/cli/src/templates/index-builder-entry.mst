@@ -11,11 +11,12 @@ import {
   QueryNodeManager,
   BootstrapPack,
   BootstrapFunc,
-  DB
+  DatabaseManager,
+  SubstrateEvent
 } from "index-builder/lib";
 
 // Mappings use!
-export { DB, getLogger };
+export { DatabaseManager as DB, getLogger, SubstrateEvent };
 
 const logger = getLogger();
 
