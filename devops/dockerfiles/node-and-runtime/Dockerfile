@@ -3,7 +3,11 @@ LABEL description="Compiles all workspace artifacts"
 WORKDIR /joystream
 COPY . /joystream
 
-RUN cargo build --release
+# Make sure tests pass before continuing
+RUN cargo test --release
+
+# Build joystream-node and its dependencies - runtime
+RUN cargo build --release -p joystream-node
 
 FROM debian:stretch
 LABEL description="Joystream node"

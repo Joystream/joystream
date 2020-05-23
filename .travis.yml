@@ -20,11 +20,11 @@ before_install:
   - rustup component add rustfmt
   - cargo fmt --all -- --check
   - rustup component add clippy
-  - BUILD_DUMMY_WASM_BINARY=1 cargo clippy -- -D warnings
+  - BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release -- -D warnings
   - rustup default stable
   - rustup update nightly
   - rustup target add wasm32-unknown-unknown --toolchain nightly
-  - cargo test --verbose --all
+  - cargo test --release --verbose --all
 
 install:
   - |
