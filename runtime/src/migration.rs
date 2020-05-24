@@ -3,7 +3,7 @@
 
 use crate::VERSION;
 use rstd::prelude::*;
-use sr_primitives::{print, traits::Zero};
+// use sr_primitives::{print, traits::Zero};
 use srml_support::{debug, decl_event, decl_module, decl_storage};
 
 impl<T: Trait> Module<T> {
@@ -12,37 +12,16 @@ impl<T: Trait> Module<T> {
     /// Important to note this method should be carefully maintained, because it runs on every runtime
     /// upgrade.
     fn runtime_upgraded() {
-        print("Running runtime upgraded handler");
+        debug::print!("Running runtime upgraded handler");
 
         // Add initialization of modules introduced in new runtime release. Typically this
         // would be any new storage values that need an initial value which would not
         // have been initialized with config() or build() chainspec construction mechanism.
         // Other tasks like resetting values, migrating values etc.
-
-        // Runtime Upgrade Code for going from Rome to Constantinople
-
-        // Create the Council mint. If it fails, we can't do anything about it here.
-        if let Err(err) = governance::council::Module::<T>::create_new_council_mint(
-            minting::BalanceOf::<T>::zero(),
-        ) {
-            debug::warn!(
-                "Failed to create a mint for council during migration: {:?}",
-                err
-            );
-        }
-
-        // Initialise the proposal system various periods
-        proposals_codex::Module::<T>::set_default_config_values();
     }
 }
 
-pub trait Trait:
-    system::Trait
-    + governance::election::Trait
-    + content_working_group::Trait
-    + roles::actors::Trait
-    + proposals_codex::Trait
-{
+pub trait Trait: system::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
 
