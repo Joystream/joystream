@@ -58,7 +58,7 @@ script:
       docker run -u root \
         --volume ${TRAVIS_BUILD_DIR}:/home/cross/project \
           joystream/rust-raspberry \
-        test --release
+        test --release && \
       docker run -u root \
         --volume ${TRAVIS_BUILD_DIR}:/home/cross/project \
           joystream/rust-raspberry \
@@ -73,8 +73,8 @@ script:
       docker cp temp-container-joystream-node:/joystream/runtime.compact.wasm joystream_runtime.wasm
       docker rm temp-container-joystream-node
     else
-      cargo test --release --verbose --all --target=${TARGET}
-      BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --target=${TARGET} -- -D warnings
+      cargo test --release --verbose --all --target=${TARGET} && \
+      BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --target=${TARGET} -- -D warnings && \
       cargo build --release --target=${TARGET}
     fi
 
