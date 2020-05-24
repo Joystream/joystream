@@ -1,5 +1,7 @@
 language: rust
 
+# Caching of the runtime .wasm blob poses a problem.
+# See: https://github.com/Joystream/joystream/issues/466
 cache: cargo
 
 rust:
@@ -19,9 +21,25 @@ matrix:
       services: docker
 
 before_install:
-  - rustup default stable
-  - rustup update nightly
-  - rustup target add wasm32-unknown-unknown --toolchain nightly
+  # This is not needed since travis will install rust stable as the default, and just specifying
+  # stable might be newer that version defined in the .travis.yml file and available
+  # as an env var: TRAVIS_RUST_VERSION
+  # - rustup default stable
+  # ensure main version is the default
+  - rustup default $TRAVIS_RUST_VERSION
+  # We need nightly for WASM build, we choose a specific version so the built and cached artifacts
+  # do not get invalidated every time a new nightly is released.
+  # Nightly isn't always released for all platforms on the same date, so we pick based on target
+  - |
+    if [ "$TARGET" = "x86_64-apple-darwin" ]
+    then
+      export NIGHTLY_RELEASE_DATE=2020-05-14
+    else
+      export NIGHTLY_RELEASE_DATE=2020-05-23
+    fi
+  - rustup update nightly-${NIGHTLY_RELEASE_DATE}
+  - rustup target add wasm32-unknown-unknown --toolchain nightly-${NIGHTLY_RELEASE_DATE}
+  # travis installs rust using rustup with the "minimal" profile so these tools are not installed by default
   - rustup component add rustfmt
   - rustup component add clippy
   - cargo fmt --all -- --check
