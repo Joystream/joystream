@@ -38,7 +38,7 @@ mod engine {
 }
 
 mod membership_mod {
-    pub use membership::members::Event;
+    pub use membership::Event;
 }
 
 impl_outer_event! {
@@ -94,7 +94,7 @@ parameter_types! {
     pub const MaxActiveProposalLimit: u32 = 100;
 }
 
-impl membership::members::Trait for Test {
+impl membership::Trait for Test {
     type Event = TestEvent;
     type MemberId = u64;
     type PaidTermId = u64;

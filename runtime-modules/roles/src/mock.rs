@@ -91,7 +91,7 @@ impl timestamp::Trait for Test {
     type MinimumPeriod = MinimumPeriod;
 }
 
-impl membership::members::Trait for Test {
+impl membership::Trait for Test {
     type Event = ();
     type MemberId = u32;
     type SubscriptionId = u32;
@@ -114,7 +114,7 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities {
         .build_storage::<Test>()
         .unwrap();
 
-    membership::members::GenesisConfig::<Test> {
+    membership::GenesisConfig::<Test> {
         default_paid_membership_fee: 0,
         members: vec![(alice_account(), "alice".into(), "".into(), "".into())],
     }
@@ -127,4 +127,4 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities {
 pub type System = system::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type Actors = actors::Module<Test>;
-pub type Members = membership::members::Module<Test>;
+pub type Members = membership::Module<Test>;

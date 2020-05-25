@@ -13,7 +13,7 @@ pub struct CouncilManager<T> {
     marker: PhantomData<T>,
 }
 
-impl<T: governance::council::Trait + membership::members::Trait>
+impl<T: governance::council::Trait + membership::Trait>
     ActorOriginValidator<<T as system::Trait>::Origin, MemberId<T>, <T as system::Trait>::AccountId>
     for CouncilManager<T>
 {
@@ -45,7 +45,7 @@ mod tests {
     use super::CouncilManager;
     use crate::Runtime;
     use common::origin_validator::ActorOriginValidator;
-    use membership::members::UserInfo;
+    use membership::UserInfo;
     use proposals_engine::VotersParameters;
     use sr_primitives::AccountId32;
     use system::RawOrigin;
@@ -60,7 +60,7 @@ mod tests {
         t.into()
     }
 
-    type Membership = membership::members::Module<Runtime>;
+    type Membership = membership::Module<Runtime>;
 
     #[test]
     fn council_origin_validator_fails_with_unregistered_member() {

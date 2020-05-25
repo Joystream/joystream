@@ -5,7 +5,7 @@
 use crate::{BlockNumber, ElectionParameters, ProposalCancellationFee, Runtime};
 use codec::Encode;
 use governance::election::CouncilElected;
-use membership::members;
+use membership;
 use membership::role_types::Role;
 use proposals_engine::{
     ActiveStake, ApprovedProposalStatus, BalanceOf, Error, FinalizationData, Proposal,
@@ -32,7 +32,7 @@ fn initial_test_ext() -> runtime_io::TestExternalities {
 
 type Balances = balances::Module<Runtime>;
 type System = system::Module<Runtime>;
-type Membership = membership::members::Module<Runtime>;
+type Membership = membership::Module<Runtime>;
 type ProposalsEngine = proposals_engine::Module<Runtime>;
 type Council = governance::council::Module<Runtime>;
 type Election = governance::election::Module<Runtime>;
@@ -49,7 +49,7 @@ fn setup_members(count: u8) {
         Membership::add_screened_member(
             RawOrigin::Signed(authority_account_id.clone().into()).into(),
             account_id.clone().into(),
-            members::UserInfo {
+            membership::UserInfo {
                 handle: Some(account_id.to_vec()),
                 avatar_uri: None,
                 about: None,

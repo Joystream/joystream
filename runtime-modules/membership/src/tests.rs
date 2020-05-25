@@ -24,8 +24,8 @@ fn assert_dispatch_error_message(result: Result<(), &'static str>, expected_mess
     assert_eq!(message, expected_message);
 }
 
-fn get_alice_info() -> members::UserInfo {
-    members::UserInfo {
+fn get_alice_info() -> crate::UserInfo {
+    crate::UserInfo {
         handle: Some(String::from("alice").as_bytes().to_vec()),
         avatar_uri: Some(
             String::from("http://avatar-url.com/alice")
@@ -36,8 +36,8 @@ fn get_alice_info() -> members::UserInfo {
     }
 }
 
-fn get_bob_info() -> members::UserInfo {
-    members::UserInfo {
+fn get_bob_info() -> crate::UserInfo {
+    crate::UserInfo {
         handle: Some(String::from("bobby").as_bytes().to_vec()),
         avatar_uri: Some(
             String::from("http://avatar-url.com/bob")
@@ -86,7 +86,7 @@ fn initial_state() {
             // initial balance
             assert_eq!(
                 Balances::free_balance(initial_members[0]),
-                <Test as members::Trait>::InitialMembersBalance::get()
+                <Test as crate::Trait>::InitialMembersBalance::get()
             );
         });
 }
@@ -171,7 +171,7 @@ fn new_memberships_allowed_flag() {
             let initial_balance = DEFAULT_FEE + 1;
             set_alice_free_balance(initial_balance);
 
-            members::NewMembershipsAllowed::put(false);
+            crate::NewMembershipsAllowed::put(false);
 
             assert_dispatch_error_message(
                 buy_default_membership_as_alice(),
@@ -197,7 +197,7 @@ fn unique_handles() {
             set_alice_free_balance(initial_balance);
 
             // alice's handle already taken
-            <members::Handles<Test>>::insert(get_alice_info().handle.unwrap(), 1);
+            <crate::Handles<Test>>::insert(get_alice_info().handle.unwrap(), 1);
 
             // should not be allowed to buy membership with that handle
             assert_dispatch_error_message(
@@ -251,7 +251,7 @@ fn add_screened_member() {
         .build()
         .execute_with(|| {
             let screening_authority = 5;
-            <members::ScreeningAuthority<Test>>::put(&screening_authority);
+            <crate::ScreeningAuthority<Test>>::put(&screening_authority);
 
             let next_member_id = Members::members_created();
 
@@ -270,7 +270,7 @@ fn add_screened_member() {
             assert_eq!(Some(profile.avatar_uri), get_alice_info().avatar_uri);
             assert_eq!(Some(profile.about), get_alice_info().about);
             assert_eq!(
-                members::EntryMethod::Screening(screening_authority),
+                crate::EntryMethod::Screening(screening_authority),
                 profile.entry
             );
         });
@@ -359,7 +359,7 @@ fn registering_and_unregistering_roles_on_member() {
             // no initial roles for member
             assert!(!Members::member_is_in_role(
                 member_id_1,
-                members::Role::ChannelOwner
+                crate::Role::ChannelOwner
             ));
 
             // REGISTERING
@@ -367,11 +367,11 @@ fn registering_and_unregistering_roles_on_member() {
             // successful registration
             assert_ok!(Members::register_role_on_member(
                 member_id_1,
-                &members::ActorInRole::new(members::Role::ChannelOwner, DUMMY_ACTOR_ID)
+                &crate::ActorInRole::new(crate::Role::ChannelOwner, DUMMY_ACTOR_ID)
             ));
             assert!(Members::member_is_in_role(
                 member_id_1,
-                members::Role::ChannelOwner
+                crate::Role::ChannelOwner
             ));
 
             /*
@@ -381,7 +381,7 @@ fn registering_and_unregistering_roles_on_member() {
             assert_dispatch_error_message(
                 Members::register_role_on_member(
                     member_id_1,
-                    &members::ActorInRole::new(members::Role::ChannelOwner, DUMMY_ACTOR_ID + 1),
+                    &crate::ActorInRole::new(crate::Role::ChannelOwner, DUMMY_ACTOR_ID + 1),
                 ),
                 "MemberAlreadyInRole",
             );
@@ -391,7 +391,7 @@ fn registering_and_unregistering_roles_on_member() {
             assert_dispatch_error_message(
                 Members::register_role_on_member(
                     member_id_2,
-                    &members::ActorInRole::new(members::Role::ChannelOwner, DUMMY_ACTOR_ID),
+                    &crate::ActorInRole::new(crate::Role::ChannelOwner, DUMMY_ACTOR_ID),
                 ),
                 "ActorInRoleAlreadyExists",
             );
@@ -400,18 +400,18 @@ fn registering_and_unregistering_roles_on_member() {
 
             // trying to unregister non existant actor role should fail
             assert_dispatch_error_message(
-                Members::unregister_role(members::ActorInRole::new(members::Role::Curator, 222)),
+                Members::unregister_role(crate::ActorInRole::new(crate::Role::Curator, 222)),
                 "ActorInRoleNotFound",
             );
 
             // successfully unregister role
-            assert_ok!(Members::unregister_role(members::ActorInRole::new(
-                members::Role::ChannelOwner,
+            assert_ok!(Members::unregister_role(crate::ActorInRole::new(
+                crate::Role::ChannelOwner,
                 DUMMY_ACTOR_ID
             )));
             assert!(!Members::member_is_in_role(
                 member_id_1,
-                members::Role::ChannelOwner
+                crate::Role::ChannelOwner
             ));
         });
 }

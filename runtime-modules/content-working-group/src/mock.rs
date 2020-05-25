@@ -16,7 +16,7 @@ use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
 
 pub use common::currency::GovernanceCurrency;
 pub use hiring;
-pub use membership::members;
+pub use membership;
 pub use minting;
 pub use recurringrewards;
 pub use stake;
@@ -55,7 +55,7 @@ mod lib {
 impl_outer_event! {
     pub enum TestEvent for Test {
         versioned_store<T>,
-        members<T>,
+        membership<T>,
         balances<T>,
         lib<T>,
     }
@@ -183,7 +183,7 @@ impl versioned_store_permissions::Trait for Test {
 }
 
 type TestMemberId = u64;
-impl members::Trait for Test {
+impl membership::Trait for Test {
     type Event = TestEvent;
     type MemberId = TestMemberId;
     type PaidTermId = u64;
@@ -198,7 +198,7 @@ impl Trait for Test {
 
 pub struct TestExternalitiesBuilder<T: Trait> {
     system_config: Option<system::GenesisConfig>,
-    membership_config: Option<members::GenesisConfig<T>>,
+    membership_config: Option<membership::GenesisConfig<T>>,
     content_wg_config: Option<GenesisConfig<T>>,
 }
 
@@ -218,7 +218,7 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
         self.system_config = Some(system_config);
         self
     }
-    pub fn set_membership_config(mut self, membership_config: members::GenesisConfig<T>) -> Self {
+    pub fn set_membership_config(mut self, membership_config: membership::GenesisConfig<T>) -> Self {
         self.membership_config = Some(membership_config);
         self
     }
@@ -239,7 +239,7 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
 
         // Add membership
         self.membership_config
-            .unwrap_or(members::GenesisConfig::default())
+            .unwrap_or(membership::GenesisConfig::default())
             .assimilate_storage(&mut t)
             .unwrap();
 

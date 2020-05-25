@@ -3,7 +3,7 @@
 pub use super::{data_directory, data_object_storage_registry, data_object_type_registry};
 use crate::traits;
 pub use common::currency::GovernanceCurrency;
-use membership::members;
+use membership;
 use roles::actors;
 pub use system;
 
@@ -28,7 +28,7 @@ impl_outer_event! {
         data_object_storage_registry<T>,
         actors<T>,
         balances<T>,
-        members<T>,
+        membership<T>,
     }
 }
 
@@ -182,7 +182,7 @@ impl data_object_storage_registry::Trait for Test {
     type ContentIdExists = MockContent;
 }
 
-impl members::Trait for Test {
+impl membership::Trait for Test {
     type Event = MetaEvent;
     type MemberId = u32;
     type SubscriptionId = u32;
@@ -252,7 +252,7 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
-        membership::members::GenesisConfig::<Test> {
+        membership::GenesisConfig::<Test> {
             default_paid_membership_fee: 0,
             members: vec![(1, "alice".into(), "".into(), "".into())],
         }

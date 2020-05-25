@@ -19,9 +19,8 @@ pub mod genesis;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-use codec::{Decode, Encode}; // Codec
-                             //use rstd::collections::btree_map::BTreeMap;
-use membership::{members, role_types};
+use codec::{Decode, Encode};
+use membership::role_types;
 use rstd::borrow::ToOwned;
 use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
@@ -50,7 +49,7 @@ pub trait Trait:
     + stake::Trait
     + hiring::Trait
     + versioned_store_permissions::Trait
-    + members::Trait
+    + membership::Trait
 {
     // + Sized
 
@@ -59,7 +58,7 @@ pub trait Trait:
 }
 
 /// Type constraint for identifer used for actors in members module in this runtime.
-pub type ActorIdInMembersModule<T> = <T as members::Trait>::ActorId;
+pub type ActorIdInMembersModule<T> = <T as membership::Trait>::ActorId;
 
 /// Type for identifier for channels.
 /// The ChannelId must be capable of behaving like an actor id for membership module,
@@ -928,13 +927,13 @@ impl rstd::convert::From<WrappedError<hiring::DeactivateApplicationError>> for &
     }
 }
 
-impl rstd::convert::From<WrappedError<members::ControllerAccountForMemberCheckFailed>> for &str {
-    fn from(wrapper: WrappedError<members::ControllerAccountForMemberCheckFailed>) -> Self {
+impl rstd::convert::From<WrappedError<membership::ControllerAccountForMemberCheckFailed>> for &str {
+    fn from(wrapper: WrappedError<membership::ControllerAccountForMemberCheckFailed>) -> Self {
         match wrapper.error {
-            members::ControllerAccountForMemberCheckFailed::NotMember => {
+            membership::ControllerAccountForMemberCheckFailed::NotMember => {
                 MSG_CREATE_CHANNEL_IS_NOT_MEMBER
             }
-            members::ControllerAccountForMemberCheckFailed::NotControllerAccount => {
+            membership::ControllerAccountForMemberCheckFailed::NotControllerAccount => {
                 MSG_CREATE_CHANNEL_NOT_CONTROLLER_ACCOUNT
             }
         }
@@ -966,16 +965,16 @@ impl rstd::convert::From<WrappedError<hiring::AddApplicationError>> for &str {
     }
 }
 
-impl rstd::convert::From<WrappedError<members::MemberControllerAccountDidNotSign>> for &str {
-    fn from(wrapper: WrappedError<members::MemberControllerAccountDidNotSign>) -> Self {
+impl rstd::convert::From<WrappedError<membership::MemberControllerAccountDidNotSign>> for &str {
+    fn from(wrapper: WrappedError<membership::MemberControllerAccountDidNotSign>) -> Self {
         match wrapper.error {
-            members::MemberControllerAccountDidNotSign::UnsignedOrigin => {
+            membership::MemberControllerAccountDidNotSign::UnsignedOrigin => {
                 MSG_APPLY_ON_CURATOR_OPENING_UNSIGNED_ORIGIN
             }
-            members::MemberControllerAccountDidNotSign::MemberIdInvalid => {
+            membership::MemberControllerAccountDidNotSign::MemberIdInvalid => {
                 MSG_APPLY_ON_CURATOR_OPENING_MEMBER_ID_INVALID
             }
-            members::MemberControllerAccountDidNotSign::SignerControllerAccountMismatch => {
+            membership::MemberControllerAccountDidNotSign::SignerControllerAccountMismatch => {
                 MSG_APPLY_ON_CURATOR_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT
             }
         }
@@ -1143,7 +1142,7 @@ decl_module! {
 
             // Ensure that owner member can authenticate with signer account
             ensure_on_wrapped_error!(
-                members::Module::<T>::ensure_is_controller_account_for_member(&owner, &signer_account)
+                membership::Module::<T>::ensure_is_controller_account_for_member(&owner, &signer_account)
             )?;
 
             // Ensure it is currently possible to create channels (ChannelCreationEnabled).
@@ -1206,7 +1205,7 @@ decl_module! {
             // CREDENTIAL STUFF //
 
             // Dial out to membership module and inform about new role as channe owner.
-            let registered_role = <members::Module<T>>::register_role_on_member(owner, &member_in_role).is_ok();
+            let registered_role = <membership::Module<T>>::register_role_on_member(owner, &member_in_role).is_ok();
 
             assert!(registered_role);
 
@@ -1252,14 +1251,14 @@ decl_module! {
             );
 
             // Remove
-            let unregistered_role = <members::Module<T>>::unregister_role(
+            let unregistered_role = <membership::Module<T>>::unregister_role(
                 role
             ).is_ok();
 
             assert!(unregistered_role);
 
             // Dial out to membership module and inform about new role as channel owner.
-            let registered_role = <members::Module<T>>::register_role_on_member(
+            let registered_role = <membership::Module<T>>::register_role_on_member(
                 new_owner,
                 &role
             ).is_ok();
@@ -1556,7 +1555,7 @@ decl_module! {
                     let recipient = <recurringrewards::Module<T>>::add_recipient();
 
                     // member must exist, since it was checked that it can enter the role
-                    let member_profile = <members::Module<T>>::member_profile(successful_curator_application.member_id).unwrap();
+                    let member_profile = <membership::Module<T>>::member_profile(successful_curator_application.member_id).unwrap();
 
                     // rewards are deposited in the member's root account
                     let reward_destination_account = member_profile.root_account;
@@ -1615,7 +1614,7 @@ decl_module! {
                 CuratorById::<T>::insert(new_curator_id, curator);
 
                 // Register role on member
-                let registered_role = members::Module::<T>::register_role_on_member(
+                let registered_role = membership::Module::<T>::register_role_on_member(
                     successful_curator_application.member_id,
                     &role_types::ActorInRole::new(role_types::Role::Curator, new_curator_id)
                 ).is_ok();
@@ -1730,8 +1729,8 @@ decl_module! {
             // and cannot specify another arbitrary account as the source account.
             // Ensure the source_account is either the controller or root account of member with given id
             ensure!(
-                members::Module::<T>::ensure_member_controller_account(&source_account, &member_id).is_ok() ||
-                members::Module::<T>::ensure_member_root_account(&source_account, &member_id).is_ok(),
+                membership::Module::<T>::ensure_member_controller_account(&source_account, &member_id).is_ok() ||
+                membership::Module::<T>::ensure_member_root_account(&source_account, &member_id).is_ok(),
                 MSG_ORIGIN_IS_NIETHER_MEMBER_CONTROLLER_OR_ROOT
             );
 
@@ -1812,14 +1811,14 @@ decl_module! {
         ) {
             // Ensure that origin is signed by member with given id.
             ensure_on_wrapped_error!(
-                members::Module::<T>::ensure_member_controller_account_signed(origin, &member_id)
+                membership::Module::<T>::ensure_member_controller_account_signed(origin, &member_id)
             )?;
 
             // Ensure that member is this curator
             let actor_in_role = role_types::ActorInRole::new(role_types::Role::Curator, curator_id);
 
             ensure!(
-                members::MembershipIdByActorInRole::<T>::get(actor_in_role) == member_id,
+                membership::MembershipIdByActorInRole::<T>::get(actor_in_role) == member_id,
                 MSG_CURATOR_NOT_CONTROLLED_BY_MEMBER
             );
 
@@ -2067,7 +2066,7 @@ impl<T: Trait> Module<T> {
         //
 
         // Register in role - will fail if member cannot become lead
-        members::Module::<T>::register_role_on_member(member, &new_lead_role)?;
+        membership::Module::<T>::register_role_on_member(member, &new_lead_role)?;
 
         // Construct lead
         let new_lead = Lead {
@@ -2107,7 +2106,7 @@ impl<T: Trait> Module<T> {
             actor_id: lead_id,
         };
 
-        <members::Module<T>>::unregister_role(current_lead_role)?;
+        <membership::Module<T>>::unregister_role(current_lead_role)?;
 
         // Update lead stage as exited
         let current_block = <system::Module<T>>::block_number();
@@ -2155,10 +2154,10 @@ impl<T: Trait> Module<T> {
         member_id: &T::MemberId,
         role: role_types::Role,
         actor_id: &ActorIdInMembersModule<T>,
-    ) -> Result<members::ActorInRole<ActorIdInMembersModule<T>>, &'static str> {
+    ) -> Result<membership::ActorInRole<ActorIdInMembersModule<T>>, &'static str> {
         let new_actor_in_role = role_types::ActorInRole::new(role, *actor_id);
 
-        <members::Module<T>>::can_register_role_on_member(member_id, &new_actor_in_role)
+        <membership::Module<T>>::can_register_role_on_member(member_id, &new_actor_in_role)
             .map(|_| new_actor_in_role)
     }
 
@@ -2166,7 +2165,7 @@ impl<T: Trait> Module<T> {
         member_id: &T::MemberId,
     ) -> Result<
         (
-            members::ActorInRole<ActorIdInMembersModule<T>>,
+            membership::ActorInRole<ActorIdInMembersModule<T>>,
             CuratorId<T>,
         ),
         &'static str,
@@ -2182,7 +2181,7 @@ impl<T: Trait> Module<T> {
         opt_channel_id: Option<ChannelId<T>>,
     ) -> Result<
         (
-            members::ActorInRole<ActorIdInMembersModule<T>>,
+            membership::ActorInRole<ActorIdInMembersModule<T>>,
             ChannelId<T>,
         ),
         &'static str,

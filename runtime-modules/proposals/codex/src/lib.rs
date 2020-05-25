@@ -155,7 +155,7 @@ pub trait Trait:
     system::Trait
     + proposal_engine::Trait
     + proposal_discussion::Trait
-    + membership::members::Trait
+    + membership::Trait
     + governance::election::Trait
     + content_working_group::Trait
     + roles::actors::Trait
@@ -199,7 +199,7 @@ pub type BalanceOfMint<T> =
 pub type NegativeImbalance<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
 
-type MemberId<T> = <T as membership::members::Trait>::MemberId;
+type MemberId<T> = <T as membership::Trait>::MemberId;
 
 decl_error! {
     /// Codex module predefined errors
