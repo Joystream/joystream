@@ -2,9 +2,8 @@ mod mock;
 
 use crate::tests::mock::Test;
 use crate::types::{
-    Lead, OpeningPolicyCommitment, RewardPolicy, Worker, WorkerApplication,
-    WorkerExitInitiationOrigin, WorkerExitSummary, WorkerOpening, WorkerRoleStage,
-    WorkerRoleStakeProfile, WorkingGroupUnstaker,
+    Lead, OpeningPolicyCommitment, RewardPolicy, Worker, WorkerApplication, WorkerOpening,
+    WorkerRoleStakeProfile,
 };
 use crate::Error;
 use crate::{Instance1, RawEvent};
@@ -13,51 +12,6 @@ use mock::{build_test_externalities, Balances, Bureaucracy1, Membership, System,
 use srml_support::{StorageLinkedMap, StorageValue};
 use std::collections::{BTreeMap, BTreeSet};
 use system::{EventRecord, Phase, RawOrigin};
-
-struct UnstakeFixture {
-    origin: RawOrigin<u64>,
-    worker_id: u64,
-    stake_id: u64,
-}
-
-impl UnstakeFixture {
-    fn default() -> Self {
-        Self::default_for_worker_id(0)
-    }
-    fn default_for_worker_id(worker_id: u64) -> Self {
-        UnstakeFixture {
-            origin: RawOrigin::Root,
-            worker_id,
-            stake_id: 0,
-        }
-    }
-    fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        UnstakeFixture { origin, ..self }
-    }
-
-    fn call_and_assert(&self, expected_result: Result<(), Error>) {
-        let stake_existed =
-            <crate::UnstakerByStakeId<Test, crate::Instance1>>::exists(self.stake_id);
-
-        let actual_result = Bureaucracy1::unstake(self.origin.clone().into(), self.stake_id);
-        assert_eq!(actual_result, expected_result);
-
-        if stake_existed && actual_result.is_ok() {
-            assert!(!<crate::UnstakerByStakeId<Test, crate::Instance1>>::exists(
-                self.stake_id
-            ));
-
-            let worker = Bureaucracy1::worker_by_id(self.worker_id);
-            let expected_worker_stage = WorkerRoleStage::Exited(WorkerExitSummary {
-                origin: WorkerExitInitiationOrigin::Worker,
-                initiated_at_block_number: 1,
-                rationale_text: b"rationale_text".to_vec(),
-            });
-
-            assert_eq!(worker.stage, expected_worker_stage);
-        }
-    }
-}
 
 struct TerminateWorkerRoleFixture {
     worker_id: u64,
@@ -87,17 +41,8 @@ impl TerminateWorkerRoleFixture {
     }
 
     fn call_and_assert(&self, expected_result: Result<(), Error>) {
-        self.call_and_assert_impl(expected_result, false);
-    }
-
-    fn call_and_assert_with_unstaking(&self, expected_result: Result<(), Error>) {
-        self.call_and_assert_impl(expected_result, true);
-    }
-
-    fn call_and_assert_impl(&self, expected_result: Result<(), Error>, expect_unstaking: bool) {
         <crate::WorkerExitRationaleText<Instance1>>::put(self.constraint.clone());
 
-        let rationale_text = b"rationale_text".to_vec();
         let actual_result = Bureaucracy1::terminate_worker_role(
             self.origin.clone().into(),
             self.worker_id,
@@ -106,30 +51,9 @@ impl TerminateWorkerRoleFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            let worker = Bureaucracy1::worker_by_id(self.worker_id);
-
-            let worker_exit_summary = WorkerExitSummary {
-                origin: WorkerExitInitiationOrigin::Lead,
-                initiated_at_block_number: 1,
-                rationale_text,
-            };
-
-            let expected_worker_stage = if expect_unstaking {
-                WorkerRoleStage::Unstaking(worker_exit_summary)
-            } else {
-                WorkerRoleStage::Exited(worker_exit_summary)
-            };
-
-            assert_eq!(worker.stage, expected_worker_stage);
-
-            let stake_id = 0;
-            if expect_unstaking {
-                assert!(<crate::UnstakerByStakeId<Test, crate::Instance1>>::exists(
-                    stake_id
-                ));
-            } else {
-                assert!(!<crate::UnstakerByStakeId<Test, crate::Instance1>>::exists(
-                    stake_id
+            if actual_result.is_ok() {
+                assert!(!<crate::WorkerById<Test, crate::Instance1>>::exists(
+                    self.worker_id
                 ));
             }
         }
@@ -153,14 +77,6 @@ impl LeaveWorkerRoleFixture {
     }
 
     fn call_and_assert(&self, expected_result: Result<(), Error>) {
-        self.call_and_assert_impl(expected_result, false);
-    }
-
-    fn call_and_assert_with_unstaking(&self, expected_result: Result<(), Error>) {
-        self.call_and_assert_impl(expected_result, true);
-    }
-
-    fn call_and_assert_impl(&self, expected_result: Result<(), Error>, expect_unstaking: bool) {
         let rationale_text = b"rationale_text".to_vec();
         let actual_result = Bureaucracy1::leave_worker_role(
             self.origin.clone().into(),
@@ -170,32 +86,9 @@ impl LeaveWorkerRoleFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            let worker = Bureaucracy1::worker_by_id(self.worker_id);
-
-            let worker_exit_summary = WorkerExitSummary {
-                origin: WorkerExitInitiationOrigin::Worker,
-                initiated_at_block_number: 1,
-                rationale_text,
-            };
-
-            let expected_worker_stage = if expect_unstaking {
-                WorkerRoleStage::Unstaking(worker_exit_summary)
-            } else {
-                WorkerRoleStage::Exited(worker_exit_summary)
-            };
-
-            assert_eq!(worker.stage, expected_worker_stage);
-
-            let stake_id = 0;
-            if expect_unstaking {
-                assert!(<crate::UnstakerByStakeId<Test, crate::Instance1>>::exists(
-                    stake_id
-                ));
-            } else {
-                assert!(!<crate::UnstakerByStakeId<Test, crate::Instance1>>::exists(
-                    stake_id
-                ));
-            }
+            assert!(!<crate::WorkerById<Test, crate::Instance1>>::exists(
+                self.worker_id
+            ));
         }
     }
 }
@@ -231,16 +124,14 @@ impl UpdateWorkerRewardAccountFixture {
 }
 
 struct UpdateWorkerRoleAccountFixture {
-    member_id: u64,
     worker_id: u64,
     new_role_account_id: u64,
     origin: RawOrigin<u64>,
 }
 
 impl UpdateWorkerRoleAccountFixture {
-    fn default_with_ids(member_id: u64, worker_id: u64, new_role_account_id: u64) -> Self {
+    fn default_with_ids(worker_id: u64, new_role_account_id: u64) -> Self {
         UpdateWorkerRoleAccountFixture {
-            member_id,
             worker_id,
             new_role_account_id,
             origin: RawOrigin::Signed(1),
@@ -253,7 +144,6 @@ impl UpdateWorkerRoleAccountFixture {
     fn call_and_assert(&self, expected_result: Result<(), Error>) {
         let actual_result = Bureaucracy1::update_worker_role_account(
             self.origin.clone().into(),
-            self.member_id,
             self.worker_id,
             self.new_role_account_id,
         );
@@ -292,6 +182,7 @@ struct FillWorkerOpeningFixture {
     successful_worker_application_ids: BTreeSet<u64>,
     role_account: u64,
     reward_policy: Option<RewardPolicy<u64, u64>>,
+    member_id: u64,
 }
 
 impl FillWorkerOpeningFixture {
@@ -304,6 +195,7 @@ impl FillWorkerOpeningFixture {
             successful_worker_application_ids: application_ids,
             role_account: 1,
             reward_policy: None,
+            member_id: 1,
         }
     }
 
@@ -359,7 +251,7 @@ impl FillWorkerOpeningFixture {
                 role_account: self.role_account,
                 reward_relationship,
                 role_stake_profile,
-                stage: WorkerRoleStage::Active,
+                member_id: self.member_id,
             };
 
             let actual_worker = Bureaucracy1::worker_by_id(worker_id);
@@ -684,6 +576,7 @@ impl EventFixture {
                 u64,
                 u64,
                 std::collections::BTreeMap<u64, u64>,
+                Vec<u8>,
                 crate::Instance1,
             >,
         >,
@@ -717,6 +610,7 @@ impl EventFixture {
             u64,
             u64,
             std::collections::BTreeMap<u64, u64>,
+            Vec<u8>,
             crate::Instance1,
         >,
     ) {
@@ -1690,11 +1584,10 @@ fn set_lead_fails_with_invalid_origin() {
 fn update_worker_role_account_succeeds() {
     build_test_externalities().execute_with(|| {
         let new_account_id = 10;
-        let member_id = 1;
         let worker_id = fill_default_worker_position();
 
         let update_worker_account_fixture =
-            UpdateWorkerRoleAccountFixture::default_with_ids(member_id, worker_id, new_account_id);
+            UpdateWorkerRoleAccountFixture::default_with_ids(worker_id, new_account_id);
 
         update_worker_account_fixture.call_and_assert(Ok(()));
 
@@ -1706,20 +1599,12 @@ fn update_worker_role_account_succeeds() {
 }
 
 #[test]
-fn update_worker_role_account_fails_with_membership_error() {
-    build_test_externalities().execute_with(|| {
-        let update_worker_account_fixture =
-            UpdateWorkerRoleAccountFixture::default_with_ids(1, 1, 1);
-
-        update_worker_account_fixture.call_and_assert(Err(Error::MembershipInvalidMemberId));
-    });
-}
-
-#[test]
 fn update_worker_role_account_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
+        let worker_id = fill_default_worker_position();
         let update_worker_account_fixture =
-            UpdateWorkerRoleAccountFixture::default_with_ids(1, 1, 1).with_origin(RawOrigin::None);
+            UpdateWorkerRoleAccountFixture::default_with_ids(worker_id, 1)
+                .with_origin(RawOrigin::None);
 
         update_worker_account_fixture.call_and_assert(Err(Error::MembershipUnsignedOrigin));
     });
@@ -1866,28 +1751,6 @@ fn update_worker_reward_account_fails_with_invalid_worker_id() {
 }
 
 #[test]
-fn update_worker_reward_account_fails_with_inactive_worker() {
-    build_test_externalities().execute_with(|| {
-        let lead_account_id = 1;
-        let worker_id = fill_default_worker_position();
-
-        let mut worker = Bureaucracy1::worker_by_id(worker_id);
-        worker.stage = WorkerRoleStage::Exited(WorkerExitSummary {
-            origin: WorkerExitInitiationOrigin::Lead,
-            initiated_at_block_number: 333,
-            rationale_text: Vec::new(),
-        });
-
-        <crate::WorkerById<Test, crate::Instance1>>::insert(worker_id, worker);
-
-        let update_worker_account_fixture =
-            UpdateWorkerRewardAccountFixture::default_with_ids(worker_id, lead_account_id);
-
-        update_worker_account_fixture.call_and_assert(Err(Error::WorkerIsNotActive));
-    });
-}
-
-#[test]
 fn update_worker_reward_account_fails_with_no_recurring_reward() {
     build_test_externalities().execute_with(|| {
         let lead_account_id = 1;
@@ -1909,7 +1772,10 @@ fn leave_worker_role_succeeds() {
 
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::WorkerExited(worker_id));
+        EventFixture::assert_last_crate_event(RawEvent::WorkerExited(
+            worker_id,
+            b"rationale_text".to_vec(),
+        ));
     });
 }
 
@@ -1949,26 +1815,6 @@ fn leave_worker_role_fails_with_invalid_worker_id() {
 }
 
 #[test]
-fn leave_worker_role_fails_with_inactive_worker() {
-    build_test_externalities().execute_with(|| {
-        let worker_id = fill_default_worker_position();
-
-        let mut worker = Bureaucracy1::worker_by_id(worker_id);
-        worker.stage = WorkerRoleStage::Exited(WorkerExitSummary {
-            origin: WorkerExitInitiationOrigin::Lead,
-            initiated_at_block_number: 333,
-            rationale_text: Vec::new(),
-        });
-
-        <crate::WorkerById<Test, crate::Instance1>>::insert(worker_id, worker);
-
-        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
-
-        leave_worker_role_fixture.call_and_assert(Err(Error::WorkerIsNotActive));
-    });
-}
-
-#[test]
 fn leave_worker_role_fails_with_invalid_recurring_reward_relationships() {
     build_test_externalities().execute_with(|| {
         let worker_id = fill_default_worker_position();
@@ -1991,9 +1837,12 @@ fn leave_worker_role_succeeds_with_stakes() {
 
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
 
-        leave_worker_role_fixture.call_and_assert_with_unstaking(Ok(()));
+        leave_worker_role_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::WorkerUnstaking(worker_id));
+        EventFixture::assert_last_crate_event(RawEvent::WorkerExited(
+            worker_id,
+            b"rationale_text".to_vec(),
+        ));
     });
 }
 
@@ -2005,9 +1854,12 @@ fn terminate_worker_role_succeeds_with_stakes() {
         let terminate_worker_role_fixture =
             TerminateWorkerRoleFixture::default_for_worker_id(worker_id);
 
-        terminate_worker_role_fixture.call_and_assert_with_unstaking(Ok(()));
+        terminate_worker_role_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::WorkerUnstaking(worker_id));
+        EventFixture::assert_last_crate_event(RawEvent::TerminatedWorker(
+            worker_id,
+            b"rationale_text".to_vec(),
+        ));
     });
 }
 
@@ -2021,7 +1873,10 @@ fn terminate_worker_role_succeeds() {
 
         terminate_worker_role_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::TerminatedWorker(worker_id));
+        EventFixture::assert_last_crate_event(RawEvent::TerminatedWorker(
+            worker_id,
+            b"rationale_text".to_vec(),
+        ));
     });
 }
 
@@ -2064,74 +1919,5 @@ fn terminate_worker_role_fails_with_invalid_origin() {
             TerminateWorkerRoleFixture::default_for_worker_id(1).with_origin(RawOrigin::None);
 
         terminate_worker_role_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
-    });
-}
-
-#[test]
-fn unstake_fails_with_invalid_origin() {
-    build_test_externalities().execute_with(|| {
-        let unstake_fixture = UnstakeFixture::default().with_origin(RawOrigin::None);
-
-        unstake_fixture.call_and_assert(Err(Error::Other("RequireRootOrigin")));
-    });
-}
-
-#[test]
-fn unstake_succeeds_with_invalid_stake_id() {
-    build_test_externalities().execute_with(|| {
-        let unstake_fixture = UnstakeFixture::default();
-
-        unstake_fixture.call_and_assert(Ok(()));
-    });
-}
-
-#[test]
-fn unstake_succeeds() {
-    build_test_externalities().execute_with(|| {
-        let worker_id = fill_worker_position_with_stake(100);
-
-        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
-        leave_worker_role_fixture.call_and_assert_with_unstaking(Ok(()));
-
-        let unstake_fixture = UnstakeFixture::default();
-        unstake_fixture.call_and_assert(Ok(()));
-
-        EventFixture::assert_last_crate_event(RawEvent::WorkerExited(worker_id));
-    });
-}
-
-#[test]
-fn unstake_fails_with_invalid_unstaker() {
-    build_test_externalities().execute_with(|| {
-        let worker_id = fill_worker_position_with_stake(100);
-
-        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
-        leave_worker_role_fixture.call_and_assert_with_unstaking(Ok(()));
-
-        let stake_id = 0;
-        <crate::UnstakerByStakeId<Test, crate::Instance1>>::insert(
-            stake_id,
-            WorkingGroupUnstaker::Lead(1),
-        );
-
-        let unstake_fixture = UnstakeFixture::default();
-        unstake_fixture.call_and_assert(Err(Error::OnlyWorkersCanUnstake));
-    });
-}
-
-#[test]
-fn unstake_fails_with_non_unstaking_worker() {
-    build_test_externalities().execute_with(|| {
-        let worker_id = fill_worker_position_with_stake(100);
-
-        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
-        leave_worker_role_fixture.call_and_assert_with_unstaking(Ok(()));
-
-        let mut worker = Bureaucracy1::worker_by_id(worker_id);
-        worker.stage = WorkerRoleStage::Active;
-        <crate::WorkerById<Test, crate::Instance1>>::insert(worker_id, worker);
-
-        let unstake_fixture = UnstakeFixture::default();
-        unstake_fixture.call_and_assert(Err(Error::WorkerIsNotUnstaking));
     });
 }

@@ -1,9 +1,7 @@
 #![warn(missing_docs)]
 
 use codec::{Decode, Encode};
-use rstd::borrow::ToOwned;
 use rstd::collections::btree_set::BTreeSet;
-use rstd::vec::Vec;
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -134,10 +132,10 @@ impl<AccountId: Clone, WorkerOpeningId: Clone, MemberId: Clone, ApplicationId: C
         application_id: &ApplicationId,
     ) -> Self {
         WorkerApplication {
-            role_account: (*role_account).clone(),
-            worker_opening_id: (*worker_opening_id).clone(),
-            member_id: (*member_id).clone(),
-            application_id: (*application_id).clone(),
+            role_account: role_account.clone(),
+            worker_opening_id: worker_opening_id.clone(),
+            member_id: member_id.clone(),
+            application_id: application_id.clone(),
         }
     }
 }
@@ -164,9 +162,9 @@ impl<StakeId: Clone, BlockNumber: Clone> WorkerRoleStakeProfile<StakeId, BlockNu
         exit_unstaking_period: &Option<BlockNumber>,
     ) -> Self {
         Self {
-            stake_id: (*stake_id).clone(),
-            termination_unstaking_period: (*termination_unstaking_period).clone(),
-            exit_unstaking_period: (*exit_unstaking_period).clone(),
+            stake_id: stake_id.clone(),
+            termination_unstaking_period: termination_unstaking_period.clone(),
+            exit_unstaking_period: exit_unstaking_period.clone(),
         }
     }
 }
@@ -175,82 +173,37 @@ impl<StakeId: Clone, BlockNumber: Clone> WorkerRoleStakeProfile<StakeId, BlockNu
 /// This role can be staked, have reward and be inducted through the hiring module.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
-pub struct Worker<AccountId, RewardRelationshipId, StakeId, BlockNumber> {
+pub struct Worker<AccountId, RewardRelationshipId, StakeId, BlockNumber, MemberId> {
+    /// Member id related to the worker
+    pub member_id: MemberId,
     /// Account used to authenticate in this role.
     pub role_account: AccountId,
     /// Whether the role has recurring reward, and if so an identifier for this.
     pub reward_relationship: Option<RewardRelationshipId>,
     /// When set, describes role stake of worker.
     pub role_stake_profile: Option<WorkerRoleStakeProfile<StakeId, BlockNumber>>,
-    /// The stage of this worker in the working group.
-    pub stage: WorkerRoleStage<BlockNumber>,
 }
 
-impl<AccountId: Clone, RewardRelationshipId: Clone, StakeId: Clone, BlockNumber: Clone>
-    Worker<AccountId, RewardRelationshipId, StakeId, BlockNumber>
+impl<
+        AccountId: Clone,
+        RewardRelationshipId: Clone,
+        StakeId: Clone,
+        BlockNumber: Clone,
+        MemberId: Clone,
+    > Worker<AccountId, RewardRelationshipId, StakeId, BlockNumber, MemberId>
 {
     /// Creates a new _Worker_ using parameters.
     pub fn new(
+        member_id: &MemberId,
         role_account: &AccountId,
         reward_relationship: &Option<RewardRelationshipId>,
         role_stake_profile: &Option<WorkerRoleStakeProfile<StakeId, BlockNumber>>,
-        stage: &WorkerRoleStage<BlockNumber>,
     ) -> Self {
         Worker {
-            role_account: (*role_account).clone(),
-            reward_relationship: (*reward_relationship).clone(),
-            role_stake_profile: (*role_stake_profile).clone(),
-            stage: (*stage).clone(),
-        }
-    }
-}
-
-/// The stage of the involvement of a curator in the working group.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Clone, PartialEq)]
-pub enum WorkerRoleStage<BlockNumber> {
-    /// Currently active.
-    Active,
-
-    /// Currently unstaking.
-    Unstaking(WorkerExitSummary<BlockNumber>),
-
-    /// No longer active and unstaked.
-    Exited(WorkerExitSummary<BlockNumber>),
-}
-
-/// Must be default constructible because it indirectly is a value in a storage map.
-/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED TO DUE BAD STORAGE MODEL IN SUBSTRATE***
-impl<BlockNumber> Default for WorkerRoleStage<BlockNumber> {
-    fn default() -> Self {
-        WorkerRoleStage::Active
-    }
-}
-
-/// The exit stage of a curators involvement in the working group.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Clone, PartialEq)]
-pub struct WorkerExitSummary<BlockNumber> {
-    /// Origin for exit.
-    pub origin: WorkerExitInitiationOrigin,
-
-    /// When exit was initiated.
-    pub initiated_at_block_number: BlockNumber,
-
-    /// Explainer for why exit was initiated.
-    pub rationale_text: Vec<u8>,
-}
-
-impl<BlockNumber: Clone> WorkerExitSummary<BlockNumber> {
-    pub fn new(
-        origin: &WorkerExitInitiationOrigin,
-        initiated_at_block_number: &BlockNumber,
-        rationale_text: &[u8],
-    ) -> Self {
-        WorkerExitSummary {
-            origin: (*origin).clone(),
-            initiated_at_block_number: (*initiated_at_block_number).clone(),
-            rationale_text: rationale_text.to_owned(),
+            member_id: member_id.clone(),
+            role_account: role_account.clone(),
+            reward_relationship: reward_relationship.clone(),
+            role_stake_profile: role_stake_profile.clone(),
         }
     }
 }
@@ -277,23 +230,4 @@ pub struct RewardPolicy<Balance, BlockNumber> {
 
     /// Optional payout interval.
     pub payout_interval: Option<BlockNumber>,
-}
-
-/// Represents a possible unstaker in working group.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd)]
-pub enum WorkingGroupUnstaker<MemberId, WorkerId> {
-    /// Lead unstaker.
-    Lead(MemberId),
-
-    /// Worker unstaker.
-    Worker(WorkerId),
-}
-
-/// Must be default constructable because it indirectly is a value in a storage map.
-/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED TO DUE BAD STORAGE MODEL IN SUBSTRATE***
-impl<MemberId: Default, WorkerId> Default for WorkingGroupUnstaker<MemberId, WorkerId> {
-    fn default() -> Self {
-        Self::Lead(MemberId::default())
-    }
 }

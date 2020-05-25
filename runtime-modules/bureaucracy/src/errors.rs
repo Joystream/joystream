@@ -71,23 +71,11 @@ decl_error! {
         /// Worker exit rationale text is too short.
         WorkerExitRationaleTextTooShort,
 
-        /// Unstaker does not exist.
-        UnstakerDoesNotExist,
-
-        /// Only workers can unstake.
-        OnlyWorkersCanUnstake,
-
-        /// Worker must be in unstaking stage.
-        WorkerIsNotUnstaking,
-
         /// Signer is not worker role account.
         SignerIsNotWorkerRoleAccount,
 
         /// Worker has no recurring reward.
         WorkerHasNoReward,
-
-        /// Worker is not active.
-        WorkerIsNotActive,
 
         /// Worker does not exist.
         WorkerDoesNotExist,
