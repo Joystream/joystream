@@ -73,9 +73,9 @@ script:
       docker cp temp-container-joystream-node:/joystream/runtime.compact.wasm joystream_runtime.wasm
       docker rm temp-container-joystream-node
     else
-      BUILD_DUMMY_WASM_BINARY=0 cargo test --release --verbose --all --target=${TARGET} && \
       BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --target=${TARGET} -- -D warnings && \
-      BUILD_DUMMY_WASM_BINARY=0 WASM_BUILD_TOOLCHAIN=nightly-${NIGHTLY_RELEASE_DATE} cargo build --release --target=${TARGET}
+      BUILD_DUMMY_WASM_BINARY=0 cargo test --release --verbose --all --target=${TARGET} && \
+      WASM_BUILD_TOOLCHAIN=nightly-${NIGHTLY_RELEASE_DATE} cargo build --release --target=${TARGET}
     fi
 
 before_deploy:
