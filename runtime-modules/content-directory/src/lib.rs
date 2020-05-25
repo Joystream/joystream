@@ -682,19 +682,6 @@ decl_module! {
             Ok(())
         }
 
-        pub fn create_class_with_default_permissions(
-            origin,
-            name: Vec<u8>,
-            description: Vec<u8>,
-            maximum_entities_count: T::EntityId,
-            per_controller_entity_creation_limit: T::EntityId
-        ) -> dispatch::Result {
-            Self::create_class(
-                origin, name, description, ClassPermissions::default(),
-                maximum_entities_count, per_controller_entity_creation_limit
-            )
-        }
-
         pub fn update_class_permissions(
             origin,
             class_id: T::ClassId,
