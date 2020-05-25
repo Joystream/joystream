@@ -434,7 +434,7 @@ decl_module! {
             curator_group_id: T::CuratorGroupId,
             curator_group: CuratorGroup<T>
         ) -> dispatch::Result {
-            perform_lead_auth::<T>(origin)?;
+            ensure_is_lead::<T>(origin)?;
 
             Self::ensure_curator_group_does_not_exist(curator_group_id)?;
 
@@ -453,7 +453,7 @@ decl_module! {
             origin,
             curator_group_id: T::CuratorGroupId,
         ) -> dispatch::Result {
-            perform_lead_auth::<T>(origin)?;
+            ensure_is_lead::<T>(origin)?;
 
             Self::ensure_curator_group_exists(&curator_group_id)?;
 
@@ -480,7 +480,7 @@ decl_module! {
             curator_group_id: T::CuratorGroupId,
             is_active: bool,
         ) -> dispatch::Result {
-            perform_lead_auth::<T>(origin)?;
+            ensure_is_lead::<T>(origin)?;
 
             Self::ensure_curator_group_exists(&curator_group_id)?;
 
@@ -503,7 +503,7 @@ decl_module! {
             curator_group_id: T::CuratorGroupId,
             curator_id: T::CuratorId,
         ) -> dispatch::Result {
-            perform_lead_auth::<T>(origin)?;
+            ensure_is_lead::<T>(origin)?;
 
             Self::ensure_curator_group_exists(&curator_group_id)?;
             Self::ensure_max_number_of_curators_limit_not_reached(curator_group_id)?;
@@ -527,7 +527,7 @@ decl_module! {
             curator_group_id: T::CuratorGroupId,
             curator_id: T::CuratorId,
         ) -> dispatch::Result {
-            perform_lead_auth::<T>(origin)?;
+            ensure_is_lead::<T>(origin)?;
 
             Self::ensure_curator_group_exists(&curator_group_id)?;
 
@@ -550,7 +550,7 @@ decl_module! {
             class_id: T::ClassId,
             curator_group_id: T::CuratorGroupId,
         ) -> dispatch::Result {
-            perform_lead_auth::<T>(origin)?;
+            ensure_is_lead::<T>(origin)?;
 
             Self::ensure_known_class_id(class_id)?;
 
@@ -581,7 +581,7 @@ decl_module! {
             class_id: T::ClassId,
             curator_group_id: T::CuratorGroupId,
         ) -> dispatch::Result {
-            perform_lead_auth::<T>(origin)?;
+            ensure_is_lead::<T>(origin)?;
 
             Self::ensure_known_class_id(class_id)?;
 
@@ -607,7 +607,7 @@ decl_module! {
             controller: EntityController<T>,
             maximum_entities_count: CreationLimit
         ) -> dispatch::Result {
-            perform_lead_auth::<T>(origin)?;
+            ensure_is_lead::<T>(origin)?;
 
             Self::ensure_known_class_id(class_id)?;
 
@@ -654,7 +654,7 @@ decl_module! {
             maximum_entities_count: CreationLimit,
             per_controller_entity_creation_limit: CreationLimit
         ) -> dispatch::Result {
-            perform_lead_auth::<T>(origin)?;
+            ensure_is_lead::<T>(origin)?;
 
             Self::ensure_entities_limits_are_valid(maximum_entities_count, per_controller_entity_creation_limit)?;
 
@@ -703,7 +703,7 @@ decl_module! {
             all_entity_property_values_locked: Option<bool>,
             maintainers: Option<BTreeSet<T::CuratorGroupId>>,
         ) -> dispatch::Result {
-            perform_lead_auth::<T>(origin)?;
+            ensure_is_lead::<T>(origin)?;
 
             Self::ensure_known_class_id(class_id)?;
 
@@ -761,7 +761,7 @@ decl_module! {
             existing_properties: Vec<PropertyId>,
             new_properties: Vec<Property<T>>
         ) -> dispatch::Result {
-            perform_lead_auth::<T>(origin)?;
+            ensure_is_lead::<T>(origin)?;
 
             Self::ensure_known_class_id(class_id)?;
 
@@ -845,7 +845,7 @@ decl_module! {
             schema_id: SchemaId,
             schema_status: bool
         ) -> dispatch::Result {
-            perform_lead_auth::<T>(origin)?;
+            ensure_is_lead::<T>(origin)?;
 
             Self::ensure_known_class_id(class_id)?;
 
@@ -873,7 +873,7 @@ decl_module! {
             frozen_for_controller: Option<bool>,
             referenceable: Option<bool>
         ) -> dispatch::Result {
-            perform_lead_auth::<T>(origin)?;
+            ensure_is_lead::<T>(origin)?;
 
             Self::ensure_known_entity_id(entity_id)?;
 
@@ -910,7 +910,7 @@ decl_module! {
             entity_id: T::EntityId,
             new_controller: EntityController<T>,
         ) -> dispatch::Result {
-            perform_lead_auth::<T>(origin)?;
+            ensure_is_lead::<T>(origin)?;
 
             Self::ensure_known_entity_id(entity_id)?;
 

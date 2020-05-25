@@ -91,7 +91,7 @@ pub fn ensure_lead_auth_success<T: ActorAuthenticator>(
     Ok(())
 }
 
-pub fn perform_lead_auth<T: ActorAuthenticator>(origin: T::Origin) -> dispatch::Result {
+pub fn ensure_is_lead<T: ActorAuthenticator>(origin: T::Origin) -> dispatch::Result {
     let account_id = ensure_signed(origin)?;
     ensure_lead_auth_success::<T>(&account_id)
 }
