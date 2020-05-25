@@ -26,6 +26,8 @@ pub const ERROR_INDIVIDUAL_NUMBER_OF_CLASS_ENTITIES_PER_ACTOR_IS_TOO_BIG: &str =
     "Individual number of class entities per actor is too big";
 pub const ERROR_NEW_ENTITIES_MAX_COUNT_IS_LESS_THAN_NUMBER_OF_ALREADY_CREATED: &str =
     "Cannot set voucher entities count to be less than number of already created entities";
+pub const ERROR_MAX_NUMBER_OF_OPERATIONS_DURING_ATOMIC_BATCHING_LIMIT_REACHED: &str =
+    "Number of operations during atomic batching limit reached";
 
 // Main logic errors
 // --------------------------------------

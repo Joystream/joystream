@@ -113,6 +113,9 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
     /// The maximum number of properties per class constraint
     type NumberOfPropertiesConstraint: Get<MaxNumber>;
 
+    /// The maximum number of operations during single invocation of `transaction`
+    type NumberOfOperationsDuringAtomicBatching: Get<MaxNumber>;
+
     /// The maximum length of vector property value constarint
     type VecMaxLengthConstraint: Get<VecMaxLength>;
 
@@ -413,9 +416,6 @@ decl_storage! {
         // Is updated whenever an entity is created in a given class by a given controller.
         // Constraint is updated by Root, an initial value comes from `ClassPermissions::per_controller_entity_creation_limit`.
         pub EntityCreationVouchers get(entity_creation_vouchers): double_map hasher(blake2_128) T::ClassId, blake2_128(EntityController<T>) => EntityCreationVoucher<T>;
-
-        /// Upper limit for how many operations can be included in a single invocation of `atomic_batched_operations`.
-        pub MaximumNumberOfOperationsDuringAtomicBatching: u64;
     }
 }
 
@@ -1392,7 +1392,8 @@ decl_module! {
         }
 
         pub fn transaction(origin, actor: Actor<T>, operations: Vec<OperationType<T>>) -> dispatch::Result {
-            // This map holds the T::EntityId of the entity created as a result of executing a CreateEntity Operation
+            Self::ensure_number_of_operations_during_atomic_batching_limit_not_reached(&operations)?;
+            // This map holds the T::EntityId of the entity created as a result of executing a `CreateEntity` `Operation`
             // keyed by the indexed of the operation, in the operations vector.
             let mut entity_created_in_operation: BTreeMap<usize, T::EntityId> = BTreeMap::new();
             let raw_origin = origin.into().map_err(|_| ERROR_ORIGIN_CANNOT_BE_MADE_INTO_RAW_ORIGIN)?;
@@ -1890,6 +1891,16 @@ impl<T: Trait> Module<T> {
         Self::ensure_valid_number_of_class_entities_per_actor_constraint(
             per_controller_entities_creation_limit,
         )
+    }
+
+    pub fn ensure_number_of_operations_during_atomic_batching_limit_not_reached(
+        operations: &[OperationType<T>],
+    ) {
+        ensure!(
+            operations.len() <= T::NumberOfOperationsDuringAtomicBatching::get(),
+            ERROR_MAX_NUMBER_OF_OPERATIONS_DURING_ATOMIC_BATCHING_LIMIT_REACHED
+        );
+        Ok(())
     }
 
     pub fn count_element_function<I>(it: I) -> BTreeMap<I::Item, ReferenceCounter>
