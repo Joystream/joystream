@@ -399,14 +399,17 @@ impl<T: Trait> Entity<T> {
 
 decl_storage! {
     trait Store for Module<T: Trait> as ContentDirectory {
+
+        /// Curator groups
+        pub CuratorGroupById get(curator_group_by_id): map T::CuratorGroupId => CuratorGroup<T>;
+
         /// Map, representing ClassId -> Class relation
         pub ClassById get(class_by_id) config(): linked_map T::ClassId => Class<T>;
 
         /// Map, representing EntityId -> Entity relation
         pub EntityById get(entity_by_id) config(): map T::EntityId => Entity<T>;
 
-        /// Curator groups
-        pub CuratorGroupById get(curator_group_by_id): map T::CuratorGroupId => CuratorGroup<T>;
+        pub NextCuratorGroupId get(next_curator_group_id) config(): T::CuratorGroupId;
 
         pub NextClassId get(next_class_id) config(): T::ClassId;
 
@@ -431,18 +434,20 @@ decl_module! {
 
         pub fn add_curator_group(
             origin,
-            curator_group_id: T::CuratorGroupId,
-            curator_group: CuratorGroup<T>
         ) -> dispatch::Result {
             ensure_is_lead::<T>(origin)?;
-
-            Self::ensure_curator_group_does_not_exist(curator_group_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            <CuratorGroupById<T>>::insert(curator_group_id, curator_group);
+            let curator_group_id = Self::next_curator_group_id();
+
+            // Insert empty curator group with `active` parameter set to false
+            <CuratorGroupById<T>>::insert(curator_group_id, CuratorGroup::<T>::default());
+
+            // Increment the next curator group_id:
+            <NextCuratorGroupId<T>>::mutate(|n| *n += T::CuratorGroupId::one());
 
             // Trigger event
             Self::deposit_event(RawEvent::CuratorGroupAdded(curator_group_id));
@@ -1762,14 +1767,6 @@ impl<T: Trait> Module<T> {
 
     pub fn ensure_voucher_limit_not_reached(voucher: EntityCreationVoucher<T>) -> dispatch::Result {
         ensure!(voucher.limit_not_reached(), ERROR_VOUCHER_LIMIT_REACHED);
-        Ok(())
-    }
-
-    pub fn ensure_curator_group_does_not_exist(group_id: T::CuratorGroupId) -> dispatch::Result {
-        ensure!(
-            !<CuratorGroupById<T>>::exists(group_id),
-            ERROR_CURATOR_GROUP_ALREADY_EXISTS
-        );
         Ok(())
     }
 

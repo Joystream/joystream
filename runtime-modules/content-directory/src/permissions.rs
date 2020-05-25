@@ -41,6 +41,7 @@ pub trait ActorAuthenticator: system::Trait + Debug {
         + Member
         + SimpleArithmetic
         + Codec
+        + One
         + Default
         + Copy
         + Clone
@@ -127,7 +128,7 @@ impl<T: ActorAuthenticator> Default for CuratorGroup<T> {
     fn default() -> Self {
         Self {
             curators: BTreeSet::new(),
-            active: true,
+            active: false,
         }
     }
 }
@@ -297,7 +298,7 @@ impl<T: Trait> ClassPermissions<T> {
 
     pub fn ensure_maintainers_limit_not_reached(&self) -> Result<(), &'static str> {
         ensure!(
-            self.maintainers.len() < T::NumberOfMaintainersConstraint::get() as usize,
+            self.maintainers.len() < T::MaxNumberOfMaintainersPerClass::get() as usize,
             ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED
         );
         Ok(())

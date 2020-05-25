@@ -78,7 +78,6 @@ pub const ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL: &str =
     "All property values, related to a given entity were locked on class level";
 pub const ERROR_CURATOR_IS_NOT_A_MEMBER_OF_A_GIVEN_CURATOR_GROUP: &str =
     "Curator under provided curator id is not a member of curaror group under given id";
-pub const ERROR_CURATOR_GROUP_ALREADY_EXISTS: &str = "Given curator group already exist";
 pub const ERROR_CURATOR_GROUP_DOES_NOT_EXIST: &str = "Given curator group does not exist";
 pub const ERROR_SAME_CONTROLLER_CONSTRAINT_VIOLATION: &str =
     "Entity should be referenced from the entity, owned by the same controller";

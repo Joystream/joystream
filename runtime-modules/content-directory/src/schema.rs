@@ -834,7 +834,7 @@ impl<T: Trait> Property<T> {
     }
 
     pub fn ensure_name_is_valid(&self) -> dispatch::Result {
-        T::PropertyNameConstraint::get().ensure_valid(
+        T::PropertyNameLengthConstraint::get().ensure_valid(
             self.name.len(),
             ERROR_PROPERTY_NAME_TOO_SHORT,
             ERROR_PROPERTY_NAME_TOO_LONG,
@@ -842,7 +842,7 @@ impl<T: Trait> Property<T> {
     }
 
     pub fn ensure_description_is_valid(&self) -> dispatch::Result {
-        T::PropertyDescriptionConstraint::get().ensure_valid(
+        T::PropertyDescriptionLengthConstraint::get().ensure_valid(
             self.description.len(),
             ERROR_PROPERTY_DESCRIPTION_TOO_SHORT,
             ERROR_PROPERTY_DESCRIPTION_TOO_LONG,
