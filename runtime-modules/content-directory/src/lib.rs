@@ -928,7 +928,6 @@ decl_module! {
             // Insert current root entity_id
             entities.insert(entity_id);
 
-            // Retrieve all entity ids, depending on current entity (the tree of referenced entities with `SameOwner` flag set)
             Self::retrieve_all_entities_to_perform_ownership_transfer(&class, entity, &mut entities);
 
             // Perform ownership transfer of all involved entities
@@ -937,6 +936,9 @@ decl_module! {
                     inner_entity.get_permissions_mut().set_conroller(new_controller.clone())
                 );
             });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::EntityOwnershipTransfered(entity_id, new_controller));
 
             Ok(())
         }
@@ -1668,6 +1670,7 @@ impl<T: Trait> Module<T> {
         <EntityById<T>>::get(entity_id).class_id
     }
 
+    /// Retrieve all entity ids, depending on current entity (the tree of referenced entities with `SameOwner` flag set)
     pub fn retrieve_all_entities_to_perform_ownership_transfer(
         class: &Class<T>,
         entity: Entity<T>,
@@ -1938,5 +1941,6 @@ decl_event!(
         RemovedAtEntityPropertyValueVectorIndex(Actor, EntityId, PropertyId, VecMaxLength, Nonce),
         InsertedAtEntityPropertyValueVectorIndex(Actor, EntityId, PropertyId, VecMaxLength, Nonce),
         TransactionCompleted(Actor),
+        EntityOwnershipTransfered(EntityId, EntityController),
     }
 );
