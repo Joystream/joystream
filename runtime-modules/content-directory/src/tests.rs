@@ -1647,7 +1647,7 @@
 //         let (_, entity_by_id_2) = create_entity_with_prop_value_referencing_another_entity();
 //         assert_err!(
 //             TestModule::remove_entity(Origin::ROOT, None, entity_by_id_2),
-//             ERROR_ENTITY_REFERENCE_COUNTER_DOES_NOT_EQUAL_TO_ZERO
+//             ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO
 //         );
 //     })
 // }

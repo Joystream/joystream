@@ -905,6 +905,42 @@ decl_module! {
             Ok(())
         }
 
+        pub fn transfer_entity_ownership(
+            origin,
+            entity_id: T::EntityId,
+            new_controller: EntityController<T>,
+        ) -> dispatch::Result {
+            perform_lead_auth::<T>(origin)?;
+
+            Self::ensure_known_entity_id(entity_id)?;
+
+            let (entity, class) = Self::get_entity_and_class(entity_id);
+
+            // Ensure there is no property values pointing to the given entity
+            Self::ensure_inbound_same_owner_rc_is_zero(&entity)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let mut entities = BTreeSet::new();
+
+            // Insert current root entity_id
+            entities.insert(entity_id);
+
+            // Retrieve all entity ids, depending on current entity (the tree of referenced entities with `SameOwner` flag set)
+            Self::retrieve_all_entities_to_perform_ownership_transfer(&class, entity, &mut entities);
+
+            // Perform ownership transfer of all involved entities
+            entities.into_iter().for_each(|involved_entity_id| {
+                <EntityById<T>>::mutate(involved_entity_id, |inner_entity|
+                    inner_entity.get_permissions_mut().set_conroller(new_controller.clone())
+                );
+            });
+
+            Ok(())
+        }
+
         // ======
         // The next set of extrinsics can be invoked by anyone who can properly sign for provided value of `Actor<T>`.
         // ======
@@ -1147,6 +1183,7 @@ decl_module! {
                     .for_each(|(entity_id, rc)| {
                         Self::decrement_entity_rcs(entity_id, *rc, false);
                     });
+
                 // Trigger event
                 Self::deposit_event(RawEvent::EntityPropertyValuesUpdated(actor, entity_id));
             }
@@ -1192,7 +1229,7 @@ decl_module! {
                     current_property_value_vec.vec_clear();
                 }
                 match entities_rc_to_decrement {
-                    Some(entities_rc_to_decrement) if property.prop_type.get_same_controller_status() => {
+                    Some(entities_rc_to_decrement) if property.prop_type.same_controller_status() => {
                         Self::count_element_function(entities_rc_to_decrement).iter().for_each(|(entity_id, rc)| Self::decrement_entity_rcs(entity_id, *rc, true));
                     }
                     Some(entities_rc_to_decrement) => Self::count_element_function(entities_rc_to_decrement).iter().for_each(|(entity_id, rc)| Self::decrement_entity_rcs(entity_id, *rc, false)),
@@ -1223,7 +1260,7 @@ decl_module! {
             let current_property_value_vec =
             Self::get_property_value_vec(&entity, in_class_schema_property_id)?;
 
-            Self::ensure_class_property_type_unlocked_for(
+            let property = Self::ensure_class_property_type_unlocked_for(
                 entity.class_id,
                 in_class_schema_property_id,
                 access_level,
@@ -1259,11 +1296,21 @@ decl_module! {
                 }
             });
 
-            // Decrement reference counter, related to involved entity, as we removed value referencing this entity
             if let Some(involved_entity_id) = involved_entity_id {
-                <EntityById<T>>::mutate(involved_entity_id, |entity| entity.reference_count -= 1)
+                if property.prop_type.same_controller_status() {
+                    // Decrement reference counter and inbound same owner rc, related to involved entity,
+                    // as we removed value referencing this entity and `SameOwner` flag set
+                    <EntityById<T>>::mutate(involved_entity_id, |entity| {
+                        entity.reference_count -= 1;
+                        entity.inbound_same_owner_references_from_other_entities_count -=1;
+                    })
+                } else {
+                    // Decrement reference counter, related to involved entity, as we removed value referencing this entity
+                    <EntityById<T>>::mutate(involved_entity_id, |entity| {
+                        entity.reference_count -= 1;
+                    })
+                }
             }
-
             Ok(())
         }
 
@@ -1308,7 +1355,7 @@ decl_module! {
                     index_in_property_vec,
                     entity.get_permissions().get_controller(),
                 )?;
-                same_owner = class_prop.prop_type.get_same_controller_status();
+                same_owner = class_prop.prop_type.same_controller_status();
             };
 
             //
@@ -1476,9 +1523,7 @@ impl<T: Trait> Module<T> {
                 );
             }
             match new_value.get_involved_entities() {
-                Some(entity_rcs_to_increment)
-                    if class_prop.prop_type.get_same_controller_status() =>
-                {
+                Some(entity_rcs_to_increment) if class_prop.prop_type.same_controller_status() => {
                     Self::fill_in_entity_rcs_map(
                         entity_rcs_to_increment,
                         &mut entities_rc_to_increment.inbound_same_owner_entity_rcs,
@@ -1534,8 +1579,7 @@ impl<T: Trait> Module<T> {
             );
 
             // Validate a new property value against the type of this property
-            // and check any additional constraints like the length of a vector
-            // if it's a vector property or the length of a text if it's a text property.
+            // and check any additional constraints
             class_prop.ensure_property_value_to_update_is_valid(
                 &new_value,
                 entity.get_permissions().get_controller(),
@@ -1557,7 +1601,7 @@ impl<T: Trait> Module<T> {
                     })
                     .unzip();
 
-                if class_prop.prop_type.get_same_controller_status() {
+                if class_prop.prop_type.same_controller_status() {
                     Self::fill_in_entity_rcs_map(
                         entities_rc_to_increment_vec,
                         &mut entities_rc_to_increment.inbound_same_owner_entity_rcs,
@@ -1624,6 +1668,47 @@ impl<T: Trait> Module<T> {
         <EntityById<T>>::get(entity_id).class_id
     }
 
+    pub fn retrieve_all_entities_to_perform_ownership_transfer(
+        class: &Class<T>,
+        entity: Entity<T>,
+        entities: &mut BTreeSet<T::EntityId>,
+    ) {
+        for (id, value) in entity.values.iter() {
+            match class.properties.get(*id as usize) {
+                Some(class_prop) if class_prop.prop_type.same_controller_status() => {
+                    // Always safe
+                    let class_id = class_prop.prop_type.get_referenced_class_id().unwrap();
+                    if class_id != entity.class_id {
+                        let new_class = Self::class_by_id(class_id);
+                        Self::get_all_same_owner_entities(&new_class, value, entities)
+                    } else {
+                        Self::get_all_same_owner_entities(&class, value, entities)
+                    }
+                }
+                _ => (),
+            }
+        }
+    }
+
+    pub fn get_all_same_owner_entities(
+        class: &Class<T>,
+        value: &PropertyValue<T>,
+        entities: &mut BTreeSet<T::EntityId>,
+    ) {
+        value.get_involved_entities().map(|entity_ids| {
+            entity_ids.into_iter().for_each(|entity_id| {
+                // If new entity with `SameOwner` flag set found
+                if !entities.contains(&entity_id) {
+                    entities.insert(entity_id);
+                    let new_entity = Self::entity_by_id(entity_id);
+                    Self::retrieve_all_entities_to_perform_ownership_transfer(
+                        &class, new_entity, entities,
+                    );
+                }
+            })
+        });
+    }
+
     pub fn ensure_class_property_type_unlocked_for(
         class_id: T::ClassId,
         in_class_schema_property_id: PropertyId,
@@ -1663,7 +1748,15 @@ impl<T: Trait> Module<T> {
         let entity = Self::entity_by_id(entity_id);
         ensure!(
             entity.reference_count == 0,
-            ERROR_ENTITY_REFERENCE_COUNTER_DOES_NOT_EQUAL_TO_ZERO
+            ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO
+        );
+        Ok(())
+    }
+
+    pub fn ensure_inbound_same_owner_rc_is_zero(entity: &Entity<T>) -> dispatch::Result {
+        ensure!(
+            entity.inbound_same_owner_references_from_other_entities_count == 0,
+            ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO
         );
         Ok(())
     }

@@ -168,11 +168,19 @@ impl<T: Trait> PropertyType<T> {
         }
     }
 
-    pub fn get_same_controller_status(&self) -> SameController {
+    pub fn same_controller_status(&self) -> SameController {
         if let Type::Reference(_, same_controller) = self.get_inner_type() {
             *same_controller
         } else {
             false
+        }
+    }
+
+    pub fn get_referenced_class_id(&self) -> Option<T::ClassId> {
+        if let Type::Reference(class_id, _) = self.get_inner_type() {
+            Some(*class_id)
+        } else {
+            None
         }
     }
 }

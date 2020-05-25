@@ -64,8 +64,10 @@ pub const ERROR_ENTITY_PROP_VALUE_VECTOR_INDEX_IS_OUT_OF_RANGE: &str =
 pub const ERROR_PROP_VALUE_TYPE_DOESNT_MATCH_INTERNAL_ENTITY_VECTOR_TYPE: &str =
     "Propery value type does not match internal entity vector type";
 pub const ERROR_PROP_DOES_NOT_MATCH_ITS_CLASS: &str = "Internal property does not match its class";
-pub const ERROR_ENTITY_REFERENCE_COUNTER_DOES_NOT_EQUAL_TO_ZERO: &str =
+pub const ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO: &str =
     "Entity removal can`t be completed, as there are some property values pointing to given entity";
+pub const ERROR_ENTITY_INBOUND_SAME_OWNER_RC_DOES_NOT_EQUAL_TO_ZERO: &str =
+    "Entity ownership transfer can`t be completed, as there are some property values pointing to given entity with same owner flag set";
 pub const ERROR_CLASS_PROP_NOT_FOUND: &str = "Class property under given index not found";
 
 // Permission errors
