@@ -8,9 +8,6 @@ use runtime_primitives::traits::{MaybeSerializeDeserialize, Member, SimpleArithm
 pub use serde::{Deserialize, Serialize};
 use srml_support::{dispatch, ensure, Parameter};
 
-// Type, representing creation limit for entities in different scenarios
-pub type CreationLimit = u32;
-
 /// Model of authentication manager.
 pub trait ActorAuthenticator: system::Trait + Debug {
     /// Curator identifier
@@ -158,38 +155,47 @@ impl<T: ActorAuthenticator> CuratorGroup<T> {
 }
 
 /// A voucher for entity creation
-#[derive(Encode, Decode, Clone, Copy, Default, Debug, PartialEq, Eq)]
-pub struct EntityCreationVoucher {
+#[derive(Encode, Decode, Clone, Copy, Debug, PartialEq, Eq)]
+pub struct EntityCreationVoucher<T: Trait> {
     /// How many are allowed in total
-    pub maximum_entities_count: CreationLimit,
+    pub maximum_entities_count: T::EntityId,
 
     /// How many have currently been created
-    pub entities_created: CreationLimit,
+    pub entities_created: T::EntityId,
 }
 
-impl EntityCreationVoucher {
-    pub fn new(maximum_entities_count: CreationLimit) -> Self {
+impl<T: Trait> Default for EntityCreationVoucher<T> {
+    fn default() -> Self {
+        Self {
+            maximum_entities_count: T::EntityId::zero(),
+            entities_created: T::EntityId::zero(),
+        }
+    }
+}
+
+impl<T: Trait> EntityCreationVoucher<T> {
+    pub fn new(maximum_entities_count: T::EntityId) -> Self {
         Self {
             maximum_entities_count,
-            entities_created: 0,
+            entities_created: T::EntityId::zero(),
         }
     }
 
-    pub fn set_maximum_entities_count(&mut self, maximum_entities_count: CreationLimit) {
+    pub fn set_maximum_entities_count(&mut self, maximum_entities_count: T::EntityId) {
         self.maximum_entities_count = maximum_entities_count
     }
 
     pub fn increment_created_entities_count(&mut self) {
-        self.entities_created += 1;
+        self.entities_created += T::EntityId::one();
     }
 
     pub fn limit_not_reached(self) -> bool {
         self.entities_created < self.maximum_entities_count
     }
 
-    pub fn ensure_new_max_entities_count_is_valid<T: Trait>(
+    pub fn ensure_new_max_entities_count_is_valid(
         self,
-        maximum_entities_count: CreationLimit,
+        maximum_entities_count: T::EntityId,
     ) -> dispatch::Result {
         ensure!(
             maximum_entities_count >= self.entities_created,

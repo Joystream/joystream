@@ -120,10 +120,10 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
     type TextMaxLengthConstraint: Get<TextMaxLength>;
 
     /// Entities creation constraint per class
-    type EntitiesCreationConstraint: Get<CreationLimit>;
+    type EntitiesCreationConstraint: Get<Self::EntityId>;
 
     /// Entities creation constraint per individual
-    type IndividualEntitiesCreationConstraint: Get<CreationLimit>;
+    type IndividualEntitiesCreationConstraint: Get<Self::EntityId>;
 }
 
 /// Length constraint for input validation
@@ -201,13 +201,13 @@ pub struct Class<T: Trait> {
     pub description: Vec<u8>,
 
     /// The maximum number of entities which can be created.
-    maximum_entities_count: CreationLimit,
+    maximum_entities_count: T::EntityId,
 
     /// The current number of entities which exist.
-    current_number_of_entities: CreationLimit,
+    current_number_of_entities: T::EntityId,
 
     /// How many entities a given controller may create at most.
-    per_controller_entity_creation_limit: CreationLimit,
+    per_controller_entity_creation_limit: T::EntityId,
 }
 
 impl<T: Trait> Default for Class<T> {
@@ -218,9 +218,9 @@ impl<T: Trait> Default for Class<T> {
             schemas: vec![],
             name: vec![],
             description: vec![],
-            maximum_entities_count: CreationLimit::default(),
-            current_number_of_entities: CreationLimit::default(),
-            per_controller_entity_creation_limit: CreationLimit::default(),
+            maximum_entities_count: T::EntityId::default(),
+            current_number_of_entities: T::EntityId::default(),
+            per_controller_entity_creation_limit: T::EntityId::default(),
         }
     }
 }
@@ -230,8 +230,8 @@ impl<T: Trait> Class<T> {
         class_permissions: ClassPermissions<T>,
         name: Vec<u8>,
         description: Vec<u8>,
-        maximum_entities_count: CreationLimit,
-        per_controller_entity_creation_limit: CreationLimit,
+        maximum_entities_count: T::EntityId,
+        per_controller_entity_creation_limit: T::EntityId,
     ) -> Self {
         Self {
             class_permissions,
@@ -240,7 +240,7 @@ impl<T: Trait> Class<T> {
             name,
             description,
             maximum_entities_count,
-            current_number_of_entities: 0,
+            current_number_of_entities: T::EntityId::zero(),
             per_controller_entity_creation_limit,
         }
     }
@@ -251,11 +251,11 @@ impl<T: Trait> Class<T> {
     }
 
     fn increment_entities_count(&mut self) {
-        self.current_number_of_entities += 1;
+        self.current_number_of_entities += T::EntityId::one();
     }
 
     fn decrement_entities_count(&mut self) {
-        self.current_number_of_entities -= 1;
+        self.current_number_of_entities -= T::EntityId::one();
     }
 
     fn get_permissions_mut(&mut self) -> &mut ClassPermissions<T> {
@@ -266,11 +266,11 @@ impl<T: Trait> Class<T> {
         &self.class_permissions
     }
 
-    pub fn get_controller_entity_creation_limit(&self) -> CreationLimit {
+    pub fn get_controller_entity_creation_limit(&self) -> T::EntityId {
         self.per_controller_entity_creation_limit
     }
 
-    pub fn get_maximum_entities_count(&self) -> CreationLimit {
+    pub fn get_maximum_entities_count(&self) -> T::EntityId {
         self.maximum_entities_count
     }
 
@@ -412,7 +412,7 @@ decl_storage! {
         // The voucher associated with entity creation for a given class and controller.
         // Is updated whenever an entity is created in a given class by a given controller.
         // Constraint is updated by Root, an initial value comes from `ClassPermissions::per_controller_entity_creation_limit`.
-        pub EntityCreationVouchers get(entity_creation_vouchers): double_map hasher(blake2_128) T::ClassId, blake2_128(EntityController<T>) => EntityCreationVoucher;
+        pub EntityCreationVouchers get(entity_creation_vouchers): double_map hasher(blake2_128) T::ClassId, blake2_128(EntityController<T>) => EntityCreationVoucher<T>;
 
         /// Upper limit for how many operations can be included in a single invocation of `atomic_batched_operations`.
         pub MaximumNumberOfOperationsDuringAtomicBatching: u64;
@@ -605,7 +605,7 @@ decl_module! {
             origin,
             class_id: T::ClassId,
             controller: EntityController<T>,
-            maximum_entities_count: CreationLimit
+            maximum_entities_count: T::EntityId
         ) -> dispatch::Result {
             ensure_is_lead::<T>(origin)?;
 
@@ -619,7 +619,7 @@ decl_module! {
                 // Ensure new  voucher`s max entities count is less than number of already created entities in given voucher
                 // and runtime entities creation constraint per actor satisfied
                 Self::entity_creation_vouchers(class_id, &controller)
-                    .ensure_new_max_entities_count_is_valid::<T>(maximum_entities_count)?;
+                    .ensure_new_max_entities_count_is_valid(maximum_entities_count)?;
             }
 
             Self::ensure_valid_number_of_class_entities_per_actor(per_controller_entity_creation_limit, maximum_entities_count)?;
@@ -637,7 +637,7 @@ decl_module! {
                 });
             } else {
                 let entity_creation_voucher = EntityCreationVoucher::new(maximum_entities_count);
-                <EntityCreationVouchers<T>>::insert(class_id, controller.clone(), entity_creation_voucher);
+                <EntityCreationVouchers<T>>::insert(class_id, controller.clone(), entity_creation_voucher.clone());
 
                 // Trigger event
                 Self::deposit_event(RawEvent::EntityCreationVoucherCreated(controller, entity_creation_voucher));
@@ -651,8 +651,8 @@ decl_module! {
             name: Vec<u8>,
             description: Vec<u8>,
             class_permissions: ClassPermissions<T>,
-            maximum_entities_count: CreationLimit,
-            per_controller_entity_creation_limit: CreationLimit
+            maximum_entities_count: T::EntityId,
+            per_controller_entity_creation_limit: T::EntityId
         ) -> dispatch::Result {
             ensure_is_lead::<T>(origin)?;
 
@@ -686,8 +686,8 @@ decl_module! {
             origin,
             name: Vec<u8>,
             description: Vec<u8>,
-            maximum_entities_count: CreationLimit,
-            per_controller_entity_creation_limit: CreationLimit
+            maximum_entities_count: T::EntityId,
+            per_controller_entity_creation_limit: T::EntityId
         ) -> dispatch::Result {
             Self::create_class(
                 origin, name, description, ClassPermissions::default(),
@@ -1772,7 +1772,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn ensure_voucher_limit_not_reached(voucher: EntityCreationVoucher) -> dispatch::Result {
+    pub fn ensure_voucher_limit_not_reached(voucher: EntityCreationVoucher<T>) -> dispatch::Result {
         ensure!(voucher.limit_not_reached(), ERROR_VOUCHER_LIMIT_REACHED);
         Ok(())
     }
@@ -1847,7 +1847,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn ensure_valid_number_of_entities_per_class(
-        maximum_entities_count: CreationLimit,
+        maximum_entities_count: T::EntityId,
     ) -> dispatch::Result {
         ensure!(
             maximum_entities_count < T::EntitiesCreationConstraint::get(),
@@ -1857,7 +1857,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn ensure_valid_number_of_class_entities_per_actor_constraint(
-        per_controller_entity_creation_limit: CreationLimit,
+        per_controller_entity_creation_limit: T::EntityId,
     ) -> dispatch::Result {
         ensure!(
             per_controller_entity_creation_limit < T::IndividualEntitiesCreationConstraint::get(),
@@ -1868,8 +1868,8 @@ impl<T: Trait> Module<T> {
 
     pub fn ensure_valid_number_of_class_entities_per_actor(
         // per class individual controller entity creation limit
-        per_controller_entity_creation_limit: CreationLimit,
-        maximum_entities_count: CreationLimit,
+        per_controller_entity_creation_limit: T::EntityId,
+        maximum_entities_count: T::EntityId,
     ) -> dispatch::Result {
         ensure!(
             per_controller_entity_creation_limit >= maximum_entities_count,
@@ -1879,8 +1879,8 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn ensure_entities_limits_are_valid(
-        maximum_entities_count: CreationLimit,
-        per_controller_entities_creation_limit: CreationLimit,
+        maximum_entities_count: T::EntityId,
+        per_controller_entities_creation_limit: T::EntityId,
     ) -> dispatch::Result {
         ensure!(
             per_controller_entities_creation_limit < maximum_entities_count,
@@ -1915,6 +1915,7 @@ decl_event!(
         ClassId = <T as Trait>::ClassId,
         EntityId = <T as Trait>::EntityId,
         EntityController = EntityController<T>,
+        EntityCreationVoucher = EntityCreationVoucher<T>,
         Status = bool,
         Actor = Actor<T>,
         Nonce = <T as Trait>::Nonce,
