@@ -41,7 +41,7 @@ before_install:
   - rustup target add wasm32-unknown-unknown --toolchain nightly-${NIGHTLY_RELEASE_DATE}
   # travis installs rust using rustup with the "minimal" profile so these tools are not installed by default
   - rustup component add rustfmt
-  - rustup component add clippy
+  - rustup component add clippy --toolchain nightly-${NIGHTLY_RELEASE_DATE}
   - cargo fmt --all -- --check
 
 install:
@@ -75,7 +75,7 @@ script:
     else
       cargo +nightly clippy --release --target=${TARGET} -- -D warnings && \
       cargo +nightly test --release --verbose --all --target=${TARGET} && \
-      cargo +nightly build --release --target=${TARGET}
+      WASM_BUILD_TOOLCHAIN=nightly-${NIGHTLY_RELEASE_DATE} cargo +nightly build --release --target=${TARGET}
     fi
 
 before_deploy:
