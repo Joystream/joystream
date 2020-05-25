@@ -1,0 +1,13 @@
+- hosts: 127.0.0.1
+  user: root
+  become: yes
+  become_method: sudo
+  tasks:
+    - name: install pip
+      apt: name=python-pip state=present
+    - name: install docker-py
+      pip: name=docker-py
+    - name: create node docker image
+      shell: ./scripts/build-joystream-node-docker-image.sh
+      args:
+        chdir: ../../../
