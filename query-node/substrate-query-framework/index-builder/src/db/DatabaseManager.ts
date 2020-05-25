@@ -1,37 +1,46 @@
 import { FindOneOptions, DeepPartial, EntityManager } from 'typeorm';
 
-import { DB } from '.';
-import { SubstrateEvent } from '..';
 import * as helper from './helper';
 
 /**
- * Database access object based on typeorm. Use typeorm transactional entity manager to perform get/save/remove
- * database operations.
- *
- * @constructor(event: QueryEvent, manager: EntityManager)
- *
+ * Database access interface. Use typeorm transactional entity manager to perform get/save/remove operations.
  */
-export default class DatabaseManager implements DB {
-  // Transactional entity manager
-  private readonly _manager: EntityManager;
+export default interface DatabaseManager {
+  /**
+   * Save given entity instance, if entity is exists then just update
+   * @param entity
+   */
+  save<T>(entity: DeepPartial<T>): Promise<void>;
 
-  readonly event: SubstrateEvent;
+  /**
+   * Removes a given entity from the database.
+   * @param entity: DeepPartial<T>
+   */
+  remove<T>(entity: DeepPartial<T>): Promise<void>;
 
-  constructor(event: SubstrateEvent, manager: EntityManager) {
-    this._manager = manager;
-    this.event = event;
-  }
+  /**
+   * Finds first entity that matches given options.
+   * @param entity: T
+   * @param options: FindOneOptions<T>
+   */
+  get<T>(entity: { new (...args: any[]): T }, options: FindOneOptions<T>): Promise<T | undefined>;
+}
 
-  async save<T>(entity: DeepPartial<T>): Promise<void> {
-    entity = helper.fillRequiredWarthogFields(entity);
-    await this._manager.save(entity);
-  }
-
-  async remove<T>(entity: DeepPartial<T>): Promise<void> {
-    await this._manager.remove(entity);
-  }
-
-  async get<T>(entity: { new (...args: any[]): T }, options: FindOneOptions<T>): Promise<T | undefined> {
-    return await this._manager.findOne(entity, options);
-  }
+/**
+ * Create database manager.
+ * @param entityManager EntityManager
+ */
+export function makeDatabaseManager(entityManager: EntityManager): DatabaseManager {
+  return {
+    save: async <T>(entity: DeepPartial<T>): Promise<void> => {
+      entity = helper.fillRequiredWarthogFields(entity);
+      await entityManager.save(entity);
+    },
+    remove: async <T>(entity: DeepPartial<T>): Promise<void> => {
+      await entityManager.remove(entity);
+    },
+    get: async <T>(entity: { new (...args: any[]): T }, options: FindOneOptions<T>): Promise<T | undefined> => {
+      return await entityManager.findOne(entity, options);
+    },
+  } as DatabaseManager;
 }

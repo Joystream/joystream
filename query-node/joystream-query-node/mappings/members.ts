@@ -1,11 +1,11 @@
 import * as assert from 'assert';
 
 import { Membership } from '../generated/graphql-server/src/modules/membership/membership.model';
-import { DB } from '../generated/indexer';
+import { DB, SubstrateEvent } from '../generated/indexer';
 
-export async function handleMemberRegistered(db: DB) {
+export async function handleMemberRegistered(db: DB, event: SubstrateEvent) {
   // Get event data
-  const { AccountId, MemberId } = db.event.event_params;
+  const { AccountId, MemberId } = event.event_params;
 
   let member = new Membership();
   member.accountId = AccountId.toString()
@@ -15,9 +15,9 @@ export async function handleMemberRegistered(db: DB) {
   db.save<Membership>(member);
 }
 
-export async function handleMemberUpdatedAboutText(db: DB) {
+export async function handleMemberUpdatedAboutText(db: DB, event: SubstrateEvent) {
   // Get event data
-  const { MemberId } = db.event.event_params;
+  const { MemberId } = event.event_params;
 
   // Query from database since it is an existsing user
   const member = await db.get(Membership, { where: { memberId: MemberId } });

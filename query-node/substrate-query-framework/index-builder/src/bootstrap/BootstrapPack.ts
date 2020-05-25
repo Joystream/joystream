@@ -1,10 +1,10 @@
 import { ApiPromise } from '@polkadot/api';
-import { DB } from '../db'
+import { DatabaseManager } from '..';
 
 export type BootstrapResult = void | Promise<void>;
 
-export type BootstrapFunc = (api: ApiPromise, db: DB) => BootstrapResult; 
+export type BootstrapFunc = (api: ApiPromise, db: DatabaseManager) => BootstrapResult;
 
 export default interface BootstrapPack {
-    pack: BootstrapFunc[];
+  pack: BootstrapFunc[];
 }
