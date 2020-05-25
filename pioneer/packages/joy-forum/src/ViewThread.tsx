@@ -5,7 +5,7 @@ import { Table, Button, Label } from 'semantic-ui-react';
 import { History } from 'history';
 import BN from 'bn.js';
 
-import { Category, Thread, ThreadId, Post, PostId } from '@joystream/types/forum';
+import { Category, Thread, ThreadId, Post, PostId } from '@joystream/types/lib/forum';
 import { Pagination, RepliesPerPage, CategoryCrumbs } from './utils';
 import { ViewReply } from './ViewReply';
 import { Moderate } from './Moderate';

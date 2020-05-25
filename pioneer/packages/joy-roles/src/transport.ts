@@ -1,7 +1,7 @@
 import { Subscribable } from '@polkadot/joy-utils/index'
 import { Balance } from '@polkadot/types/interfaces';
 
-import { Role } from '@joystream/types/roles';
+import { Role } from '@joystream/types/lib/roles';
 
 import { WorkingGroupMembership, StorageAndDistributionMembership, GroupLeadStatus } from "./tabs/WorkingGroup"
 import { WorkingGroupOpening, } from "./tabs/Opportunities"

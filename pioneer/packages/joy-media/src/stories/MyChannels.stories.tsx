@@ -7,7 +7,7 @@ import { AllMockChannels } from './data/ChannelSamples';
 import { withMockTransport } from './withMockTransport';
 import EditForm from '../channels/EditChannel';
 import { EditChannelView } from '../channels/EditChannel.view';
-import { ChannelId } from '@joystream/types/content-working-group';
+import { ChannelId } from '@joystream/types/lib/content-working-group';
 import { AccountIdSamples } from './data/AccountIdSamples';
 
 export default { 

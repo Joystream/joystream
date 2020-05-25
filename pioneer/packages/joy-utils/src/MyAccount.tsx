@@ -8,8 +8,8 @@ import accountObservable from '@polkadot/ui-keyring/observable/accounts';
 import { withCalls, withMulti, withObservable } from '@polkadot/react-api/index';
 import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
-import { MemberId, Profile } from '@joystream/types/members';
-import { CuratorId, LeadId, Lead, CurationActor, Curator } from '@joystream/types/content-working-group';
+import { MemberId, Profile } from '@joystream/types/lib/members';
+import { CuratorId, LeadId, Lead, CurationActor, Curator } from '@joystream/types/lib/content-working-group';
 
 import { queryMembershipToProp } from '@polkadot/joy-members/utils';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';

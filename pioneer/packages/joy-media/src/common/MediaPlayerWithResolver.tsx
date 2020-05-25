@@ -10,7 +10,7 @@ import { AccountId } from '@polkadot/types/interfaces';
 
 import translate from '../translate';
 import { DiscoveryProviderProps, withDiscoveryProvider } from '../DiscoveryProvider';
-import { DataObjectStorageRelationshipId, DataObjectStorageRelationship } from '@joystream/types/media';
+import { DataObjectStorageRelationshipId, DataObjectStorageRelationship } from '@joystream/types/lib/media';
 import { Message } from 'semantic-ui-react';
 import { MediaPlayerView, RequiredMediaPlayerProps } from './MediaPlayerView';
 import { JoyInfo } from '@polkadot/joy-utils/JoyStatus';

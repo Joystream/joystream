@@ -1,5 +1,5 @@
-import { ProposalId, VoteKind } from "@joystream/types/proposals";
-import { MemberId } from "@joystream/types/members";
+import { ProposalId, VoteKind } from "@joystream/types/lib/proposals";
+import { MemberId } from "@joystream/types/lib/members";
 export const ProposalTypes = [
   "Text",
   "RuntimeUpgrade",

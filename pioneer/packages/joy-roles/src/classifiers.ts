@@ -17,7 +17,7 @@ import {
   ApplicationDeactivationCause, ApplicationDeactivationCauseKeys,
   UnstakingApplicationStage,
   InactiveApplicationStage,
-} from "@joystream/types/hiring"
+} from "@joystream/types/lib/hiring"
 
 import {
   StakeRequirement,

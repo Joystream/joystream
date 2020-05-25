@@ -34,7 +34,7 @@ import { Slider } from "react-semantic-ui-range";
 import Identicon from '@polkadot/react-identicon';
 import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
-import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema.typings'
+import { GenericJoyStreamRoleSchema } from '@joystream/types/lib/hiring/schemas/role.schema.typings'
 
 import {
   OpeningBodyApplicationsStatus, OpeningStakeAndApplicationStatus,
@@ -46,7 +46,7 @@ import {
   ApplicationDetails,
   QuestionField,
   QuestionSection,
-} from '@joystream/types/hiring/schemas/role.schema.typings'
+} from '@joystream/types/lib/hiring/schemas/role.schema.typings'
 
 import { Loadable } from '@polkadot/joy-utils/index'
 import { Add } from '../balances'

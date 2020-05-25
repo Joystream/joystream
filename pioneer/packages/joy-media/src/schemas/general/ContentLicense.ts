@@ -2,7 +2,7 @@
 /** This file is generated based on JSON schema. Do not modify. */
 
 import * as Yup from 'yup';
-import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
+import { EntityCodec } from '@joystream/types/lib/versioned-store/EntityCodec';
 
 export const ContentLicenseValidationSchema = Yup.object().shape({
   value: Yup.string()

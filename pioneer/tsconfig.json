@@ -1,5 +1,5 @@
 {
-  "extends": "./node_modules/@polkadot/dev/config/tsconfig",
+  "extends": "../node_modules/@polkadot/dev/config/tsconfig",
   "exclude": [
     "build/**/*",
     "**/build/**/*"
@@ -90,8 +90,8 @@
     },
     "skipLibCheck": true,
     "typeRoots": [
-      "./node_modules/@polkadot/ts",
-      "./node_modules/@types",
+      "../node_modules/@polkadot/ts",
+      "../node_modules/@types",
       "src/@types"
     ]
   }

@@ -40,23 +40,23 @@ import {
   OpeningStage,
   StakingPolicy,
   StakingAmountLimitModeKeys,
-} from '@joystream/types/hiring'
+} from '@joystream/types/lib/hiring'
 
 import {
   Profile,
   MemberId,
-} from '@joystream/types/members'
+} from '@joystream/types/lib/members'
 
-import { Stake, StakeId } from '@joystream/types/stake'
+import { Stake, StakeId } from '@joystream/types/lib/stake'
 
 import {
   GenericJoyStreamRoleSchema,
-} from '@joystream/types/hiring/schemas/role.schema.typings'
+} from '@joystream/types/lib/hiring/schemas/role.schema.typings'
 import {
   CuratorApplication, CuratorApplicationId,
   CuratorOpening,
   OpeningPolicyCommitment, IOpeningPolicyCommitment,
-} from '@joystream/types/content-working-group'
+} from '@joystream/types/lib/content-working-group'
 
 import {
   classifyOpeningStage,

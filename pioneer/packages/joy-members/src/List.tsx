@@ -7,7 +7,7 @@ import { I18nProps } from '@polkadot/react-components/types';
 import Section from '@polkadot/joy-utils/Section';
 import translate from './translate';
 import Details from './Details';
-import { MemberId } from '@joystream/types/members';
+import { MemberId } from '@joystream/types/lib/members';
 import { RouteComponentProps, Redirect } from 'react-router-dom';
 import { Pagination, Icon, PaginationProps } from 'semantic-ui-react';
 import styled from 'styled-components';

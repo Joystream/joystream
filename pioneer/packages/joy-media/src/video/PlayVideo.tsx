@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { Table } from 'semantic-ui-react';
 import { ApiProps } from '@polkadot/react-api/types';
 import { ApiConsumer } from '@polkadot/react-api/ApiContext';
-import EntityId from '@joystream/types/versioned-store/EntityId';
+import EntityId from '@joystream/types/lib/versioned-store/EntityId';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { ChannelPreview } from '../channels/ChannelPreview';
 import { VideoPreview } from './VideoPreview';
@@ -11,7 +11,7 @@ import { VideoType, VideoClass as Fields, VideoGenericProp } from '../schemas/vi
 import { printExplicit, printReleaseDate, printLanguage } from '../entities/EntityHelpers';
 import { MediaObjectType } from '../schemas/general/MediaObject';
 import { MediaPlayerWithResolver } from '../common/MediaPlayerWithResolver';
-import { ContentId } from '@joystream/types/media';
+import { ContentId } from '@joystream/types/lib/media';
 import { JoyError } from '@polkadot/joy-utils/JoyStatus';
 
 export type PlayVideoProps = {

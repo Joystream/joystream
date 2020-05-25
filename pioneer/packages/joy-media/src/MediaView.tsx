@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MediaTransport } from './transport';
-import { MemberId } from '@joystream/types/members';
+import { MemberId } from '@joystream/types/lib/members';
 import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
 import { useTransportContext } from './TransportContext';
 import { withMembershipRequired } from '@polkadot/joy-utils/MyAccount';

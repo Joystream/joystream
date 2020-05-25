@@ -5,7 +5,7 @@ import { parse as parseUrl } from 'url';
 
 import { AccountId } from '@polkadot/types/interfaces';
 import { Vec } from '@polkadot/types';
-import { Url } from '@joystream/types/discovery'
+import { Url } from '@joystream/types/lib/discovery'
 import ApiContext from '@polkadot/react-api/ApiContext';
 import { ApiProps } from '@polkadot/react-api/types';
 import { JoyInfo } from '@polkadot/joy-utils/JoyStatus';

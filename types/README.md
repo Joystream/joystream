@@ -20,7 +20,7 @@ npm install --save @joystream/types
 Call `registerJoystreamTypes()` before creating a Polkadot API client.
 
 ```javascript
-import { registerJoystreamTypes } from '@joystream/types';
+import { registerJoystreamTypes } from '@joystream/types/lib';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 
 async function main () {

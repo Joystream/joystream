@@ -6,10 +6,10 @@ import { Link } from 'react-router-dom';
 import { Balance } from '@polkadot/types/interfaces';
 import { formatBalance } from '@polkadot/util';
 import Identicon from '@polkadot/react-identicon';
-import { Actor } from '@joystream/types/roles';
-import { IProfile, MemberId } from '@joystream/types/members';
+import { Actor } from '@joystream/types/lib/roles';
+import { IProfile, MemberId } from '@joystream/types/lib/members';
 import { Text, GenericAccountId } from '@polkadot/types';
-import { LeadRoleState } from '@joystream/types/content-working-group';
+import { LeadRoleState } from '@joystream/types/lib/content-working-group';
 
 type ActorProps = {
   actor: Actor

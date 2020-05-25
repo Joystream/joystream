@@ -1,6 +1,6 @@
 import React from 'react';
 import { withMulti } from '@polkadot/react-api/with';
-import { InputValidationLengthConstraint } from '@joystream/types/forum';
+import { InputValidationLengthConstraint } from '@joystream/types/lib/forum';
 import { withForumCalls } from './calls';
 
 export type ValidationProps = {

@@ -2,7 +2,7 @@
 /** This file is generated based on JSON schema. Do not modify. */
 
 import * as Yup from 'yup';
-import { EntityCodec } from '@joystream/types/versioned-store/EntityCodec';
+import { EntityCodec } from '@joystream/types/lib/versioned-store/EntityCodec';
 import moment from 'moment';
 import { MusicGenreType } from './MusicGenre';
 import { MusicMoodType } from './MusicMood';

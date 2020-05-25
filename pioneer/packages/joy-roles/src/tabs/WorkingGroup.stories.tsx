@@ -4,8 +4,8 @@ import { boolean, number, text, withKnobs } from '@storybook/addon-knobs'
 import { Balance } from '@polkadot/types/interfaces'
 import { Text, u128, GenericAccountId } from '@polkadot/types'
 
-import { Actor } from '@joystream/types/roles'
-import { IProfile, MemberId } from '@joystream/types/members';
+import { Actor } from '@joystream/types/lib/roles'
+import { IProfile, MemberId } from '@joystream/types/lib/members';
 
 import { ContentCurators, StorageAndDistribution } from "@polkadot/joy-roles/tabs/WorkingGroup"
 import { GroupMember } from "../elements"

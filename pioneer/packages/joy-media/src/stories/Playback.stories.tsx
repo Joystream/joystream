@@ -8,7 +8,7 @@ import { Album1TrackSamples } from './data/MusicTrackSamples';
 import { MockMusicChannel, MockVideoChannel } from './data/ChannelSamples';
 import { withMockTransport } from './withMockTransport';
 import { Video } from '../mocks';
-import { EntityId } from '@joystream/types/versioned-store';
+import { EntityId } from '@joystream/types/lib/versioned-store';
 
 export default { 
 	title: 'Media | Playback',

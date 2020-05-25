@@ -7,8 +7,8 @@ import {
   ProposalVote,
   IStorageRoleParameters
 } from "./transport";
-import { Proposal, ProposalId, Seats, VoteKind, ElectionParameters } from "@joystream/types/proposals";
-import { MemberId, Profile, ActorInRole, RoleKeys, Role } from "@joystream/types/members";
+import { Proposal, ProposalId, Seats, VoteKind, ElectionParameters } from "@joystream/types/lib/proposals";
+import { MemberId, Profile, ActorInRole, RoleKeys, Role } from "@joystream/types/lib/members";
 import { ApiProps } from "@polkadot/react-api/types";
 import { u32, u128, Vec, Option } from "@polkadot/types/";
 import { Balance, Moment, AccountId, BlockNumber, BalanceOf } from "@polkadot/types/interfaces";
@@ -17,8 +17,8 @@ import { ApiPromise } from "@polkadot/api";
 import { FIRST_MEMBER_ID } from "@polkadot/joy-members/constants";
 
 import { includeKeys, calculateStake, calculateMetaFromType, splitOnUpperCase } from "../utils";
-import { MintId, Mint } from "@joystream/types/mint";
-import { LeadId } from "@joystream/types/content-working-group";
+import { MintId, Mint } from "@joystream/types/lib/mint";
+import { LeadId } from "@joystream/types/lib/content-working-group";
 
 export class SubstrateTransport extends Transport {
   protected api: ApiPromise;

@@ -8,7 +8,7 @@ import { onImageError } from '@polkadot/joy-utils/images';
 import { ReorderableTracks } from './ReorderableTracks';
 import { MusicAlbumValidationSchema, MusicAlbumType, MusicAlbumClass as Fields, MusicAlbumFormValues, MusicAlbumToFormValues } from '../schemas/music/MusicAlbum';
 import { withMediaForm, MediaFormProps, datePlaceholder } from '../common/MediaForms';
-import EntityId from '@joystream/types/versioned-store/EntityId';
+import EntityId from '@joystream/types/lib/versioned-store/EntityId';
 import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
 import { MusicTrackReaderPreviewProps } from './MusicTrackReaderPreview';
 import { FormTabs } from '../common/FormTabs';

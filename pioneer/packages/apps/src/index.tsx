@@ -61,7 +61,7 @@ const wsEndpoint = _wsEndpoint.split('#')[0];
 console.log('WS endpoint=', wsEndpoint);
 
 try {
-  require('@joystream/types/').registerJoystreamTypes();
+  require('@joystream/types/lib/').registerJoystreamTypes();
 
   const types = store.get('types') || {};
   const names = Object.keys(types);

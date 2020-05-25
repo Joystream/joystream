@@ -8,7 +8,7 @@ import { Balance } from '@polkadot/types/interfaces';
 
 import {
   ApplicationDetails
-} from '@joystream/types/schemas/role.schema'
+} from '@joystream/types/lib/schemas/role.schema'
 import {
   ConfirmStakesStage, ConfirmStakesStageProps,
   ProgressStepsView, ProgressStepsProps, ProgressSteps,

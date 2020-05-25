@@ -5,7 +5,7 @@ import { Table } from 'semantic-ui-react';
 
 import { u128, Text } from '@polkadot/types'
 
-import { Actor } from '@joystream/types/roles'
+import { Actor } from '@joystream/types/lib/roles'
 
 import { BalanceView, GroupMemberView, HandleView, MemberView, MemoView } from './elements'
 

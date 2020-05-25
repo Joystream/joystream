@@ -19,7 +19,7 @@ import { createType } from "@polkadot/types";
 import "./forms.css";
 import { useTransport } from "../runtime";
 import { usePromise, snakeCaseToCamelCase } from "../utils";
-import { ElectionParameters } from "@joystream/types/proposals";
+import { ElectionParameters } from "@joystream/types/lib/proposals";
 import PromiseComponent from "../Proposal/PromiseComponent";
 
 type FormValues = GenericFormValues & {

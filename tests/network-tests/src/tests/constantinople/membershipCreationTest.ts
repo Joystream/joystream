@@ -1,5 +1,5 @@
 import { WsProvider } from '@polkadot/api';
-import { registerJoystreamTypes } from '@joystream/types';
+import { registerJoystreamTypes } from '@joystream/types/lib';
 import { Keyring } from '@polkadot/keyring';
 import { assert } from 'chai';
 import { KeyringPair } from '@polkadot/keyring/types';

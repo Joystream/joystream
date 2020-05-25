@@ -1,6 +1,6 @@
 import { Transport } from '@polkadot/joy-utils/index'
 import { AccountId } from '@polkadot/types/interfaces';
-import { EntityId, Class, ClassName, unifyClassName, ClassIdByNameMap } from '@joystream/types/versioned-store';
+import { EntityId, Class, ClassName, unifyClassName, ClassIdByNameMap } from '@joystream/types/lib/versioned-store';
 import { MusicTrackType, MusicTrackCodec } from './schemas/music/MusicTrack';
 import { MusicAlbumType, MusicAlbumCodec } from './schemas/music/MusicAlbum';
 import { VideoType, VideoCodec } from './schemas/video/Video';
@@ -16,7 +16,7 @@ import { PublicationStatusType, PublicationStatusCodec } from './schemas/general
 import { VideoCategoryType, VideoCategoryCodec } from './schemas/video/VideoCategory';
 import { MediaDropdownOptions } from './common/MediaDropdownOptions';
 import { ChannelEntity } from './entities/ChannelEntity';
-import { ChannelId } from '@joystream/types/content-working-group';
+import { ChannelId } from '@joystream/types/lib/content-working-group';
 import { isVideoChannel, isPublicChannel } from './channels/ChannelHelpers';
 import { ValidationConstraint } from '@polkadot/joy-utils/ValidationConstraint';
 

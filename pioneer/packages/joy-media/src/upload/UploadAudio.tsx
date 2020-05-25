@@ -4,11 +4,11 @@ import { Form, withFormik } from 'formik';
 import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
-import { ContentId } from '@joystream/types/media';
+import { ContentId } from '@joystream/types/lib/media';
 import { onImageError } from '@polkadot/joy-utils/images';
 import { MusicTrackValidationSchema, MusicTrackType, MusicTrackClass as Fields, MusicTrackFormValues, MusicTrackToFormValues } from '../schemas/music/MusicTrack';
 import { withMediaForm, MediaFormProps, datePlaceholder } from '../common/MediaForms';
-import EntityId from '@joystream/types/versioned-store/EntityId';
+import EntityId from '@joystream/types/lib/versioned-store/EntityId';
 import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
 import { FormTabs } from '../common/FormTabs';
 

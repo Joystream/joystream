@@ -1,7 +1,7 @@
 import React from 'react'
 import { BareProps } from '@polkadot/react-components/types';
 import { ComponentProps } from '../props';
-import { Role, RoleParameters } from '@joystream/types/roles';
+import { Role, RoleParameters } from '@joystream/types/lib/roles';
 import { Option } from '@polkadot/types';
 import { AccountId } from '@polkadot/types/interfaces';
 import { withCalls } from '@polkadot/react-api/index';

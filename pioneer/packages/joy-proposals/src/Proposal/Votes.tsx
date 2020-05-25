@@ -2,7 +2,7 @@ import React from "react";
 import { Header, Divider, Table, Icon } from "semantic-ui-react";
 import useVoteStyles from "./useVoteStyles";
 import { ProposalVote } from "../runtime";
-import { VoteKind } from "@joystream/types/proposals";
+import { VoteKind } from "@joystream/types/lib/proposals";
 import { VoteKindStr } from "./VotingSection";
 import ProfilePreview from "@polkadot/joy-utils/MemberProfilePreview";
 

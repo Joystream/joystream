@@ -11,7 +11,7 @@ import {
   ActiveOpeningStage,
   ApplicationRationingPolicy,
   StakingPolicy,
-} from "@joystream/types/hiring"
+} from "@joystream/types/lib/hiring"
 import {
   OpeningView,
   OpeningStakeAndApplicationStatus,

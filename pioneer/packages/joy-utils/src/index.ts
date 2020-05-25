@@ -1,6 +1,6 @@
 import BN from 'bn.js';
 import { Text, Option } from '@polkadot/types';
-import { OptionalText } from '@joystream/types/content-working-group';
+import { OptionalText } from '@joystream/types/lib/content-working-group';
 
 export const ZERO = new BN(0);
 
@@ -77,7 +77,7 @@ export function newOptionalText(str?: string): OptionalText {
 // Joystream Stake utils
 // --------------------------------------
 
-import { Stake, Backer } from '@joystream/types/';
+import { Stake, Backer } from '@joystream/types/lib/';
 
 export function calcTotalStake(stakes: Stake | Stake[] | undefined): BN {
   if (typeof stakes === 'undefined') {

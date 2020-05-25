@@ -2,8 +2,8 @@ import React from 'react';
 import { RouteComponentProps } from 'react-router';
 import { MediaView } from '../MediaView';
 import { OuterProps, EditForm } from './UploadVideo';
-import EntityId from '@joystream/types/versioned-store/EntityId';
-import { ChannelId } from '@joystream/types/content-working-group';
+import EntityId from '@joystream/types/lib/versioned-store/EntityId';
+import { ChannelId } from '@joystream/types/lib/content-working-group';
 import { JoyError } from '@polkadot/joy-utils/JoyStatus';
 
 type Props = OuterProps;

@@ -11,7 +11,7 @@ config.module.rules.push({
     {
       loader: require.resolve('postcss-loader'),
       options: {
-        // Set postcss.config.js config path && ctx 
+        // Set postcss.config.js config path && ctx
         config: {
           path: '../postcss.config.js',
         },
@@ -32,7 +32,7 @@ config.module.rules.push({
 
 // TypeScript loader (via Babel to match polkadot/apps)
 config.module.rules.push({
-  test: /\.(ts|tsx)$/,
+  test: /\.(js|ts|tsx)$/,
   exclude: /(node_modules)/,
   use: [
     {
@@ -41,7 +41,7 @@ config.module.rules.push({
     },
   ],
 });
-config.resolve.extensions.push('.ts', '.tsx');
+config.resolve.extensions.push('.js', '.ts', '.tsx');
 
 // TSConfig, uses the same file as packages
 config.resolve.plugins = config.resolve.plugins || [];
@@ -71,9 +71,9 @@ config.module.rules.push(
             'sass-loader',
         ],
     },
-    { 
-        test: /\.less$/, 
-        loaders: [ 'style-loader', 'css-loader', 'less-loader' ] 
+    {
+        test: /\.less$/,
+        loaders: [ 'style-loader', 'css-loader', 'less-loader' ]
     }
 );
 

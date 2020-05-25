@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChannelEntity } from '../entities/ChannelEntity';
-import { ChannelId } from '@joystream/types/content-working-group';
+import { ChannelId } from '@joystream/types/lib/content-working-group';
 import { VideoType } from '../schemas/video/Video';
 import { MusicAlbumPreviewProps } from '../music/MusicAlbumPreview';
 import { MusicTrackReaderPreviewProps } from '../music/MusicTrackReaderPreview';

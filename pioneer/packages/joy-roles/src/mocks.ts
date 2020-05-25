@@ -1,7 +1,7 @@
 import { bool, Option, Text, u32, u64, Vec } from '@polkadot/types'
 import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
-import { ActorInRole, IProfile, EntryMethod } from '@joystream/types/members';
+import { ActorInRole, IProfile, EntryMethod } from '@joystream/types/lib/members';
 
 export function mockProfile(name: string, avatar_uri: string = ""): IProfile {
   return {

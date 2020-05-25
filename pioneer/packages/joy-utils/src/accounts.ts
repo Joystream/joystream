@@ -10,7 +10,7 @@ import { isHex, u8aToHex } from '@polkadot/util';
 import { keyExtractSuri, mnemonicGenerate, mnemonicValidate, randomAsU8a } from '@polkadot/util-crypto';
 
 import { ApiPromise } from "@polkadot/api";
-import { MemberId, Profile } from "@joystream/types/members";
+import { MemberId, Profile } from "@joystream/types/lib/members";
 import { Option } from "@polkadot/types";
 import { AccountId } from "@polkadot/types/interfaces";
 import { Vec } from "@polkadot/types/codec";
