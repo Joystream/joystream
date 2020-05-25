@@ -2,8 +2,7 @@ language: rust
 
 # Caching of the runtime .wasm blob poses a problem.
 # See: https://github.com/Joystream/joystream/issues/466
-# Testing removing caching again on build time..
-# cache: cargo
+cache: cargo
 
 rust:
   - 1.43.0
