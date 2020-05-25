@@ -148,7 +148,7 @@ decl_storage! {
     trait Store for Module<T: Trait> as Membership {
         /// MemberId to assign to next member that is added to the registry, and is also the
         /// total number of members created. MemberIds start at Zero.
-        pub MembersCreated get(members_created) : T::MemberId;
+        pub NextMemberId get(members_created) : T::MemberId;
 
         /// Mapping of member's id to their membership profile
         pub MemberProfile get(member_profile) : map T::MemberId => Option<Profile<T>>;
@@ -533,7 +533,7 @@ impl<T: Trait> Module<T> {
 
         <MemberProfile<T>>::insert(new_member_id, profile);
         <Handles<T>>::insert(user_info.handle.clone(), new_member_id);
-        <MembersCreated<T>>::put(new_member_id + One::one());
+        <NextMemberId<T>>::put(new_member_id + One::one());
 
         new_member_id
     }

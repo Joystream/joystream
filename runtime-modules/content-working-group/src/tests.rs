@@ -2094,7 +2094,7 @@ pub fn add_member(
     root_and_controller_account: <Test as system::Trait>::AccountId,
     handle: Vec<u8>,
 ) -> <Test as members::Trait>::MemberId {
-    let next_member_id = members::MembersCreated::<Test>::get();
+    let next_member_id = members::NextMemberId::<Test>::get();
 
     assert_eq!(
         members::Module::<Test>::buy_membership(
