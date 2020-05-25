@@ -86,35 +86,35 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
 
     /// Security/configuration constraints
 
-    /// The maximum length of property name
-    type PropertyNameConstraint: Get<InputValidationLengthConstraint>;
+    /// Type, representing min & max property name length constraints
+    type PropertyNameLengthConstraint: Get<InputValidationLengthConstraint>;
 
-    /// The maximum length of property description
-    type PropertyDescriptionConstraint: Get<InputValidationLengthConstraint>;
+    /// Type, representing min & max property description length constraints
+    type PropertyDescriptionLengthConstraint: Get<InputValidationLengthConstraint>;
 
     /// Type, representing min & max class name length constraints
-    type ClassNameConstraint: Get<InputValidationLengthConstraint>;
+    type ClassNameLengthConstraint: Get<InputValidationLengthConstraint>;
 
     /// Type, representing min & max class description length constraints
-    type ClassDescriptionConstraint: Get<InputValidationLengthConstraint>;
+    type ClassDescriptionLengthConstraint: Get<InputValidationLengthConstraint>;
 
     /// The maximum number of classes
-    type NumberOfClassesConstraint: Get<MaxNumber>;
+    type MaxNumberOfClasses: Get<MaxNumber>;
 
     /// The maximum number of maintainers per class constraint
-    type NumberOfMaintainersConstraint: Get<MaxNumber>;
+    type MaxNumberOfMaintainersPerClass: Get<MaxNumber>;
 
     /// The maximum number of curators per group constraint
-    type NumberOfCuratorsConstraint: Get<MaxNumber>;
+    type MaxNumberOfCuratorsPerGroup: Get<MaxNumber>;
 
     /// The maximum number of schemas per class constraint
-    type NumberOfSchemasConstraint: Get<MaxNumber>;
+    type NumberOfSchemasPerClass: Get<MaxNumber>;
 
     /// The maximum number of properties per class constraint
-    type NumberOfPropertiesConstraint: Get<MaxNumber>;
+    type MaxNumberOfPropertiesPerClass: Get<MaxNumber>;
 
     /// The maximum number of operations during single invocation of `transaction`
-    type NumberOfOperationsDuringAtomicBatching: Get<MaxNumber>;
+    type MaxNumberOfOperationsDuringAtomicBatching: Get<MaxNumber>;
 
     /// The maximum length of vector property value constarint
     type VecMaxLengthConstraint: Get<VecMaxLength>;
@@ -123,10 +123,10 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
     type TextMaxLengthConstraint: Get<TextMaxLength>;
 
     /// Entities creation constraint per class
-    type EntitiesCreationConstraint: Get<Self::EntityId>;
+    type MaxNumberOfEntitiesPerClass: Get<Self::EntityId>;
 
     /// Entities creation constraint per individual
-    type IndividualEntitiesCreationConstraint: Get<Self::EntityId>;
+    type IndividualEntitiesCreationLimit: Get<Self::EntityId>;
 }
 
 /// Length constraint for input validation
@@ -300,7 +300,7 @@ impl<T: Trait> Class<T> {
 
     pub fn ensure_schemas_limit_not_reached(&self) -> dispatch::Result {
         ensure!(
-            T::NumberOfSchemasConstraint::get() < self.schemas.len() as MaxNumber,
+            T::NumberOfSchemasPerClass::get() < self.schemas.len() as MaxNumber,
             ERROR_CLASS_SCHEMAS_LIMIT_REACHED
         );
         Ok(())
@@ -311,7 +311,7 @@ impl<T: Trait> Class<T> {
         new_properties: &[Property<T>],
     ) -> dispatch::Result {
         ensure!(
-            T::NumberOfPropertiesConstraint::get()
+            T::MaxNumberOfPropertiesPerClass::get()
                 <= (self.properties.len() + new_properties.len()) as MaxNumber,
             ERROR_CLASS_PROPERTIES_LIMIT_REACHED
         );
@@ -696,7 +696,7 @@ decl_module! {
 
             if let Some(ref maintainers) = maintainers {
                 Self::ensure_curator_groups_exist(maintainers)?;
-                ensure!(maintainers.len() <= T::NumberOfMaintainersConstraint::get() as usize,
+                ensure!(maintainers.len() <= T::MaxNumberOfMaintainersPerClass::get() as usize,
                     ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED);
             }
 
@@ -1787,7 +1787,7 @@ impl<T: Trait> Module<T> {
     ) -> dispatch::Result {
         let curator_group = Self::curator_group_by_id(group_id);
         ensure!(
-            curator_group.get_curators().len() < T::NumberOfCuratorsConstraint::get() as usize,
+            curator_group.get_curators().len() < T::MaxNumberOfCuratorsPerGroup::get() as usize,
             ERROR_NUMBER_OF_CURATORS_PER_GROUP_LIMIT_REACHED
         );
         Ok(())
@@ -1811,7 +1811,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn ensure_class_name_is_valid(text: &[u8]) -> dispatch::Result {
-        T::ClassNameConstraint::get().ensure_valid(
+        T::ClassNameLengthConstraint::get().ensure_valid(
             text.len(),
             ERROR_CLASS_NAME_TOO_SHORT,
             ERROR_CLASS_NAME_TOO_LONG,
@@ -1819,7 +1819,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn ensure_class_description_is_valid(text: &[u8]) -> dispatch::Result {
-        T::ClassDescriptionConstraint::get().ensure_valid(
+        T::ClassDescriptionLengthConstraint::get().ensure_valid(
             text.len(),
             ERROR_CLASS_DESCRIPTION_TOO_SHORT,
             ERROR_CLASS_DESCRIPTION_TOO_LONG,
@@ -1828,7 +1828,7 @@ impl<T: Trait> Module<T> {
 
     pub fn ensure_class_limit_not_reached() -> dispatch::Result {
         ensure!(
-            T::NumberOfClassesConstraint::get() < <ClassById<T>>::enumerate().count() as MaxNumber,
+            T::MaxNumberOfClasses::get() < <ClassById<T>>::enumerate().count() as MaxNumber,
             ERROR_CLASS_LIMIT_REACHED
         );
         Ok(())
@@ -1838,7 +1838,7 @@ impl<T: Trait> Module<T> {
         maximum_entities_count: T::EntityId,
     ) -> dispatch::Result {
         ensure!(
-            maximum_entities_count < T::EntitiesCreationConstraint::get(),
+            maximum_entities_count < T::MaxNumberOfEntitiesPerClass::get(),
             ERROR_ENTITIES_NUMBER_PER_CLASS_CONSTRAINT_VIOLATED
         );
         Ok(())
@@ -1848,7 +1848,7 @@ impl<T: Trait> Module<T> {
         per_controller_entity_creation_limit: T::EntityId,
     ) -> dispatch::Result {
         ensure!(
-            per_controller_entity_creation_limit < T::IndividualEntitiesCreationConstraint::get(),
+            per_controller_entity_creation_limit < T::IndividualEntitiesCreationLimit::get(),
             ERROR_NUMBER_OF_CLASS_ENTITIES_PER_ACTOR_CONSTRAINT_VIOLATED
         );
         Ok(())
@@ -1884,7 +1884,7 @@ impl<T: Trait> Module<T> {
         operations: &[OperationType<T>],
     ) -> dispatch::Result {
         ensure!(
-            operations.len() <= T::NumberOfOperationsDuringAtomicBatching::get() as usize,
+            operations.len() <= T::MaxNumberOfOperationsDuringAtomicBatching::get() as usize,
             ERROR_MAX_NUMBER_OF_OPERATIONS_DURING_ATOMIC_BATCHING_LIMIT_REACHED
         );
         Ok(())
