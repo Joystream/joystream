@@ -70,9 +70,9 @@ export default class WarthogWrapper {
     const schemaPath = path.resolve(process.cwd(), this.schemaPath);
 
     const modelGenerator = new DatabaseModelCodeGenerator(schemaPath);
-    const commands = modelGenerator
-      .generateModelDefinationsForWarthog()
-      .map(model => ['yarn warthog generate', model].join(' '));
+    const model = modelGenerator.generateWarthogModel();
+    const commands = model.toWarthogStringDefinitions()
+      .map(modelString => ['yarn warthog generate', modelString].join(' '));
 
     // Execute commands
     commands.forEach(async command => {

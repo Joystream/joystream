@@ -1,77 +1,8 @@
 import { ObjectTypeDefinitionNode, FieldDefinitionNode, ListTypeNode, NamedTypeNode, DirectiveNode, ArgumentNode, StringValueNode } from 'graphql';
 import { GraphQLSchemaParser } from './SchemaParser';
+import { availableTypes, WarthogModel, Field, ObjectType, FULL_TEXT_SEARCHABLE_DIRECTIVE } from './WarthhogModel';
 
 const debug = require('debug')('qnode-cli:model-generator');
-
-// Available types for model code generation
-export const availableTypes: { [key: string]: string } = {
-  String: '',
-  Int: 'int',
-  Boolean: 'bool',
-  Date: 'date',
-  Float: 'float'
-};
-
-export const FULL_TEXT_SEARCHABLE_DIRECTIVE = 'fullTextSearchable';
-
-/**
- * Reperesent GraphQL object type
- */
-interface ObjectType {
-  name: string;
-  fields: Field[];
-}
-
-/**
- * Reperenst GraphQL object type field
- * @constructor(name: string, type: string, nullable: boolean = true, isBuildinType: boolean = true, isList = false)
- */
-class Field {
-  // GraphQL field name
-  name: string;
-  // GraphQL field type
-  type: string;
-  // Is field type built-in or not
-  isBuildinType: boolean;
-  // Is field nullable or not
-  nullable: boolean;
-  // Is field a list. eg: post: [Post]
-  isList: boolean;
-  // an array of fulltext query names 
-  // to which this field should be included
-  fullTextSearch: string[] = [];
-
-  constructor(name: string, 
-    type: string, 
-    nullable: boolean = true, 
-    isBuildinType: boolean = true, 
-    isList = false,
-    fullTextSearch: string[] = []) {
-    this.name = name;
-    this.type = type;
-    this.nullable = nullable;
-    this.isBuildinType = isBuildinType;
-    this.isList = isList;
-    this.fullTextSearch = fullTextSearch;
-  }
-
-  /**
-   * Create a string from name, type properties in the 'name:type' format. If field is not nullable
-   * it adds exclamation mark (!) at then end of string
-   */
-  format(): string {
-    let column: string;
-    const columnType = this.isBuildinType ? availableTypes[this.type] : this.type;
-
-    if (columnType === '') {
-      // String type is provided implicitly
-      column = this.name;
-    } else {
-      column = this.name + ':' + columnType;
-    }
-    return this.nullable ? column : column + '!';
-  }
-}
 
 /**
  * Parse a graphql schema and generate model defination strings for Warthog. It use GraphQLSchemaParser for parsing
@@ -79,9 +10,11 @@ class Field {
  */
 export class DatabaseModelCodeGenerator {
   private _schemaParser: GraphQLSchemaParser;
+  private _model: WarthogModel;
 
   constructor(schemaPath: string) {
     this._schemaParser = new GraphQLSchemaParser(schemaPath);
+    this._model = new WarthogModel();
   }
 
   /**
@@ -125,8 +58,8 @@ export class DatabaseModelCodeGenerator {
     if (directives) {
         directives.map((d:DirectiveNode) => {
             if (d.name.value.includes(FULL_TEXT_SEARCHABLE_DIRECTIVE)) {
-                let query = this._checkFullTextSearchDirective(d);
-                field.fullTextSearch.push(query);
+                let queryName = this._checkFullTextSearchDirective(d);
+                this._model.addQueryField(queryName, field);
             }
         })
     }
@@ -157,7 +90,7 @@ export class DatabaseModelCodeGenerator {
    * Generate a new ObjectType from ObjectTypeDefinitionNode
    * @param o ObjectTypeDefinitionNode
    */
-  generateTypeDefination(o: ObjectTypeDefinitionNode): ObjectType {
+  private generateTypeDefination(o: ObjectTypeDefinitionNode): ObjectType {
     const fields = this._schemaParser.getFields(o).map((fieldNode: FieldDefinitionNode) => {
       const typeNode = fieldNode.type;
       const fieldName = fieldNode.name.value;
@@ -186,17 +119,28 @@ export class DatabaseModelCodeGenerator {
     return { name: o.name.value, fields: fields } as ObjectType;
   }
 
+  generateWarthogModel(): WarthogModel {
+    this._model = new WarthogModel();
+
+    this._schemaParser.getObjectDefinations().map(o => {
+        const objType = this.generateTypeDefination(o);
+        this._model.addObjectType(objType)
+    });
+
+    return this._model;
+  }
+
   /**
    * Generate model defination as one-line string literal
    * Example: User username! age:int! isActive:bool!
    */
-  generateModelDefinationsForWarthog(): string[] {
-    const objectTypes = this._schemaParser.getObjectDefinations().map(o => this.generateTypeDefination(o));
-
-    const models = objectTypes.map(input => {
-      const fields = input.fields.map(field => field.format()).join(' ');
-      return [input.name, fields].join(' ');
-    });
-    return models;
-  }
+  //generateModelDefinationsForWarthog(): string[] {
+  //  const objectTypes = this._schemaParser.getObjectDefinations().map(o => this.generateTypeDefination(o));
+  //
+  //  const models = objectTypes.map(input => {
+  //    const fields = input.fields.map(field => field.format()).join(' ');
+  //    return [input.name, fields].join(' ');
+  //  });
+  //  return models;
+  //}
 }
