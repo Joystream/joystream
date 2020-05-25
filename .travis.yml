@@ -12,14 +12,14 @@ matrix:
   include:
     - os: linux
       env: TARGET=x86_64-unknown-linux-gnu
-    - os: linux
-      env: TARGET=arm-unknown-linux-gnueabihf
-      services: docker
-    - os: osx
-      env: TARGET=x86_64-apple-darwin
-    - os: linux
-      env: TARGET=wasm-blob
-      services: docker
+    # - os: linux
+    #   env: TARGET=arm-unknown-linux-gnueabihf
+    #   services: docker
+    # - os: osx
+    #   env: TARGET=x86_64-apple-darwin
+    # - os: linux
+    #   env: TARGET=wasm-blob
+    #   services: docker
 
 before_install:
   # This is not needed since travis will install rust stable as the default, and just specifying
