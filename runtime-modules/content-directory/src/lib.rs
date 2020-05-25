@@ -498,7 +498,7 @@ decl_module! {
         }
 
         /// Add curator to a given curator group
-        pub fn add_curator(
+        pub fn add_curator_to_group(
             origin,
             curator_group_id: T::CuratorGroupId,
             curator_id: T::CuratorId,
@@ -522,7 +522,7 @@ decl_module! {
         }
 
         /// Remove curator from a given curator group
-        pub fn remove_curator(
+        pub fn remove_curator_from_group(
             origin,
             curator_group_id: T::CuratorGroupId,
             curator_id: T::CuratorId,
@@ -545,7 +545,7 @@ decl_module! {
         }
 
         /// Add curator group as specific class maintainer
-        pub fn add_maintainer(
+        pub fn add_maintainer_to_class(
             origin,
             class_id: T::ClassId,
             curator_group_id: T::CuratorGroupId,
@@ -576,7 +576,7 @@ decl_module! {
         }
 
         /// Remove curator group from class maintainers set
-        pub fn remove_maintainer(
+        pub fn remove_maintainer_from_class(
             origin,
             class_id: T::ClassId,
             curator_group_id: T::CuratorGroupId,
@@ -1895,9 +1895,9 @@ impl<T: Trait> Module<T> {
 
     pub fn ensure_number_of_operations_during_atomic_batching_limit_not_reached(
         operations: &[OperationType<T>],
-    ) {
+    ) -> dispatch::Result {
         ensure!(
-            operations.len() <= T::NumberOfOperationsDuringAtomicBatching::get(),
+            operations.len() <= T::NumberOfOperationsDuringAtomicBatching::get() as usize,
             ERROR_MAX_NUMBER_OF_OPERATIONS_DURING_ATOMIC_BATCHING_LIMIT_REACHED
         );
         Ok(())
