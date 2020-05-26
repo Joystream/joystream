@@ -904,14 +904,14 @@ decl_module! {
         pub fn update_entity_permissions(
             origin,
             entity_id: T::EntityId,
-            frozen_for_controller: Option<bool>,
-            referenceable: Option<bool>
+            updated_frozen_for_controller: Option<bool>,
+            updated_referenceable: Option<bool>
         ) -> dispatch::Result {
 
             // Ensure given origin is lead
             ensure_is_lead::<T>(origin)?;
 
-            Self::ensure_known_entity_id(entity_id)?;
+            let mut entity = Self::ensure_known_entity_id(entity_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -920,21 +920,21 @@ decl_module! {
             // If no update performed, there is no purpose to emit event
             let mut updated = false;
 
-            if let Some(frozen_for_controller) = frozen_for_controller {
-                <EntityById<T>>::mutate(entity_id, |inner_entity|
-                    inner_entity.get_permissions_mut().set_frozen(frozen_for_controller)
-                );
+            if let Some(updated_frozen_for_controller) = updated_frozen_for_controller {
+                entity.get_permissions_mut().set_frozen(updated_frozen_for_controller);
                 updated = true;
             }
 
-            if let Some(referenceable) = referenceable {
-                <EntityById<T>>::mutate(entity_id, |inner_entity|
-                    inner_entity.get_permissions_mut().set_referencable(referenceable)
-                );
+            if let Some(updated_referenceable) = updated_referenceable {
+                entity.get_permissions_mut().set_referencable(updated_referenceable);
                 updated = true;
             }
 
             if updated {
+
+                // Update entity under given entity id
+                <EntityById<T>>::insert(entity_id, entity);
+
                 // Trigger event
                 Self::deposit_event(RawEvent::EntityPermissionsUpdated(entity_id));
             }
@@ -952,7 +952,6 @@ decl_module! {
 
             let (entity, class) = Self::get_entity_and_class(entity_id)?;
 
-            // Ensure there is no property values pointing to the given entity
             Self::ensure_inbound_same_owner_rc_is_zero(&entity)?;
 
             //
@@ -1775,6 +1774,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    // Ensure there is no property values pointing to the given entity
     pub fn ensure_inbound_same_owner_rc_is_zero(entity: &Entity<T>) -> dispatch::Result {
         ensure!(
             entity.inbound_same_owner_references_from_other_entities_count == 0,
