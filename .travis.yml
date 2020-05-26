@@ -10,8 +10,7 @@ language: rust
 cache: cargo
 
 rust:
-  # living on the edge..
-  - nightly
+  - stable
 
 matrix:
   include:
@@ -23,6 +22,7 @@ matrix:
   # building all platform binanires and wasm blob to a different system.
 
 install:
+  - rustup update nightly
   - rustup target add wasm32-unknown-unknown --toolchain nightly
   # travis installs rust using rustup with the "minimal" profile so these tools are not installed by default
   - rustup component add rustfmt
