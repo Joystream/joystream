@@ -201,6 +201,7 @@ pub struct Class<T: Trait> {
     pub schemas: Vec<Schema>,
 
     pub name: Vec<u8>,
+
     pub description: Vec<u8>,
 
     /// The maximum number of entities which can be created.
@@ -229,6 +230,7 @@ impl<T: Trait> Default for Class<T> {
 }
 
 impl<T: Trait> Class<T> {
+    /// Create new `Class` with provided parameters
     fn new(
         class_permissions: ClassPermissions<T>,
         name: Vec<u8>,
@@ -248,40 +250,54 @@ impl<T: Trait> Class<T> {
         }
     }
 
+    /// Used to update `Schema` status under given `schema_index`
     fn update_schema_status(&mut self, schema_index: SchemaId, schema_status: bool) {
         // Such indexing is safe, when length bounds were previously checked
         self.schemas[schema_index as usize].set_status(schema_status);
     }
 
+    /// Increment number of entities, associated with this class
     fn increment_entities_count(&mut self) {
         self.current_number_of_entities += T::EntityId::one();
     }
 
+    /// Decrement number of entities, associated with this class
     fn decrement_entities_count(&mut self) {
         self.current_number_of_entities -= T::EntityId::one();
     }
 
+    /// Retrieve `ClassPermissions` by mutable reference
     fn get_permissions_mut(&mut self) -> &mut ClassPermissions<T> {
         &mut self.class_permissions
     }
 
+    /// Retrieve `ClassPermissions` by reference
     fn get_permissions(&self) -> &ClassPermissions<T> {
         &self.class_permissions
     }
 
+    /// Get per controller `Class`- specific limit
     pub fn get_controller_entity_creation_limit(&self) -> T::EntityId {
         self.per_controller_entity_creation_limit
     }
 
+    /// Retrive the maximum entities count, which can be created for given `Class`
     pub fn get_maximum_entities_count(&self) -> T::EntityId {
         self.maximum_entities_count
     }
 
-    fn is_active_schema(&self, schema_index: SchemaId) -> bool {
-        // Such indexing is safe, when length bounds were previously checked
-        self.schemas[schema_index as usize].is_active()
+    /// Ensure `Class` `Schema` under given index exist and active
+    fn ensure_schema_is_active(&self, schema_index: SchemaId) -> Result<(), &'static str> {
+        let is_active = self
+            .schemas
+            .get(schema_index as usize)
+            .map(|schema| schema.is_active())
+            .ok_or(ERROR_UNKNOWN_CLASS_SCHEMA_ID)?;
+        ensure!(is_active, ERROR_CLASS_SCHEMA_NOT_ACTIVE);
+        Ok(())
     }
 
+    /// Ensure schema_id is a valid index of `Class` schemas vector
     pub fn ensure_schema_id_exists(&self, schema_id: SchemaId) -> dispatch::Result {
         ensure!(
             schema_id < self.schemas.len() as SchemaId,
@@ -290,14 +306,7 @@ impl<T: Trait> Class<T> {
         Ok(())
     }
 
-    pub fn ensure_schema_is_active(&self, schema_id: SchemaId) -> dispatch::Result {
-        ensure!(
-            self.is_active_schema(schema_id),
-            ERROR_CLASS_SCHEMA_NOT_ACTIVE
-        );
-        Ok(())
-    }
-
+    /// Ensure `Schema`s limit per `Class` not reached
     pub fn ensure_schemas_limit_not_reached(&self) -> dispatch::Result {
         ensure!(
             T::NumberOfSchemasPerClass::get() < self.schemas.len() as MaxNumber,
@@ -306,6 +315,7 @@ impl<T: Trait> Class<T> {
         Ok(())
     }
 
+    /// Ensure properties limit per `Class` not reached
     pub fn ensure_properties_limit_not_reached(
         &self,
         new_properties: &[Property<T>],
@@ -318,6 +328,7 @@ impl<T: Trait> Class<T> {
         Ok(())
     }
 
+    /// Ensure `Class` specific entities limit not reached
     pub fn ensure_maximum_entities_count_limit_not_reached(&self) -> dispatch::Result {
         ensure!(
             self.current_number_of_entities < self.maximum_entities_count,
@@ -366,6 +377,7 @@ impl<T: Trait> Default for Entity<T> {
 }
 
 impl<T: Trait> Entity<T> {
+    /// Create new `Entity` instance with provided parameters, related to a given `Class`  
     fn new(
         controller: EntityController<T>,
         class_id: T::ClassId,
@@ -382,14 +394,17 @@ impl<T: Trait> Entity<T> {
         }
     }
 
+    /// Get mutable `EntityPermissions` reference, related to given `Entity`
     fn get_permissions_mut(&mut self) -> &mut EntityPermissions<T> {
         &mut self.entity_permission
     }
 
+    /// Get `EntityPermissions` reference, related to given `Entity`
     fn get_permissions(&self) -> &EntityPermissions<T> {
         &self.entity_permission
     }
 
+    /// Ensure `Schema` under given id is not yet added to given `Entity`
     pub fn ensure_schema_id_is_not_added(&self, schema_id: SchemaId) -> dispatch::Result {
         let schema_not_added = !self.supported_schemas.contains(&schema_id);
         ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY);
@@ -434,9 +449,11 @@ decl_module! {
         // Initializing events
         fn deposit_event() = default;
 
+        /// Add new curator group to runtime storage
         pub fn add_curator_group(
             origin,
         ) -> dispatch::Result {
+
             ensure_is_lead::<T>(origin)?;
 
             //
@@ -448,7 +465,7 @@ decl_module! {
             // Insert empty curator group with `active` parameter set to false
             <CuratorGroupById<T>>::insert(curator_group_id, CuratorGroup::<T>::default());
 
-            // Increment the next curator group_id:
+            // Increment the next curator curator_group_id:
             <NextCuratorGroupId<T>>::mutate(|n| *n += T::CuratorGroupId::one());
 
             // Trigger event
@@ -456,15 +473,16 @@ decl_module! {
             Ok(())
         }
 
+        /// Remove curator group under given `curator_group_id` from runtime storage
         pub fn remove_curator_group(
             origin,
             curator_group_id: T::CuratorGroupId,
         ) -> dispatch::Result {
+
             ensure_is_lead::<T>(origin)?;
 
             let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
 
-            // Ensure curator group does not maintain any class
             curator_group.ensure_curator_is_not_a_maintainer()?;
 
             //
@@ -480,19 +498,22 @@ decl_module! {
             Ok(())
         }
 
+        /// Set `is_active` status for curator group under given `curator_group_id`
         pub fn set_curator_group_status(
             origin,
             curator_group_id: T::CuratorGroupId,
             is_active: bool,
         ) -> dispatch::Result {
+
             ensure_is_lead::<T>(origin)?;
 
-            Self::ensure_curator_group_exists(&curator_group_id)?;
+            Self::ensure_curator_group_under_given_id_exists(&curator_group_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
+            // Mutate curator group status
             <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
                 curator_group.set_status(is_active)
             });
@@ -502,21 +523,24 @@ decl_module! {
             Ok(())
         }
 
-        /// Add curator to a given curator group
+        /// Add curator to curator group under given `curator_group_id`
         pub fn add_curator_to_group(
             origin,
             curator_group_id: T::CuratorGroupId,
             curator_id: T::CuratorId,
         ) -> dispatch::Result {
+
             ensure_is_lead::<T>(origin)?;
 
-            Self::ensure_curator_group_exists(&curator_group_id)?;
-            Self::ensure_max_number_of_curators_limit_not_reached(curator_group_id)?;
+            let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
+
+            curator_group.ensure_max_number_of_curators_limit_not_reached()?;
 
             //
             // == MUTATION SAFE ==
             //
 
+            // Insert curator_id into curator_group under given curator_group_id
             <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
                 curator_group.get_curators_mut().insert(curator_id);
             });
@@ -532,14 +556,16 @@ decl_module! {
             curator_group_id: T::CuratorGroupId,
             curator_id: T::CuratorId,
         ) -> dispatch::Result {
+
             ensure_is_lead::<T>(origin)?;
 
-            Self::ensure_curator_group_exists(&curator_group_id)?;
+            Self::ensure_curator_group_under_given_id_exists(&curator_group_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
+            // Remove curator_id from curator_group under given curator_group_id
             <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
                 curator_group.get_curators_mut().remove(&curator_id);
             });
@@ -549,33 +575,35 @@ decl_module! {
             Ok(())
         }
 
-        /// Add curator group as specific class maintainer
+        /// Add curator group under given `curator_group_id` as `Class` maintainer
         pub fn add_maintainer_to_class(
             origin,
             class_id: T::ClassId,
             curator_group_id: T::CuratorGroupId,
         ) -> dispatch::Result {
+
             ensure_is_lead::<T>(origin)?;
 
-            Self::ensure_known_class_id(class_id)?;
+            let class = Self::ensure_known_class_id(class_id)?;
 
-            Self::ensure_curator_group_exists(&curator_group_id)?;
+            Self::ensure_curator_group_under_given_id_exists(&curator_group_id)?;
 
-            let class =  Self::class_by_id(class_id);
             let class_permissions = class.get_permissions();
 
-            class_permissions.ensure_maintainers_limit_not_reached()?;
+            Self::ensure_maintainers_limit_not_reached(class_permissions.get_maintainers())?;
+
             class_permissions.ensure_maintainer_does_not_exist(&curator_group_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
+            // Insert `curator_group_id` into `maintainers` set, associated with given `Class`
             <ClassById<T>>::mutate(class_id, |class|
                 class.get_permissions_mut().get_maintainers_mut().insert(curator_group_id)
             );
 
-            // Increment the number of classes given curator group maintains
+            // Increment the number of classes, curator group under given `curator_group_id` maintains
             <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
                 curator_group.increment_classes_under_maintenance_count();
             });
@@ -585,27 +613,29 @@ decl_module! {
             Ok(())
         }
 
-        /// Remove curator group from class maintainers set
+        /// Remove curator group under given `curator_group_id` from `Class` maintainers set
         pub fn remove_maintainer_from_class(
             origin,
             class_id: T::ClassId,
             curator_group_id: T::CuratorGroupId,
         ) -> dispatch::Result {
+
             ensure_is_lead::<T>(origin)?;
 
-            Self::ensure_known_class_id(class_id)?;
+            let class = Self::ensure_known_class_id(class_id)?;
 
-            Self::class_by_id(class_id).get_permissions().ensure_maintainer_exists(&curator_group_id)?;
+            class.get_permissions().ensure_maintainer_exists(&curator_group_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
+            // Remove `curator_group_id` from `maintainers` set, associated with given `Class`
             <ClassById<T>>::mutate(class_id, |class|
                 class.get_permissions_mut().get_maintainers_mut().remove(&curator_group_id)
             );
 
-            // Decrement the number of classes given curator group maintains
+            // Decrement the number of classes, curator group under given `curator_group_id` maintains
             <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
                 curator_group.decrement_classes_under_maintenance_count();
             });
@@ -615,29 +645,26 @@ decl_module! {
             Ok(())
         }
 
-        /// Updates or creates new entity creation voucher for given controller with individual limit
+        /// Updates or creates new `EntityCreationVoucher` for given `EntityController` with individual limit
         pub fn update_entity_creation_voucher(
             origin,
             class_id: T::ClassId,
             controller: EntityController<T>,
             maximum_entities_count: T::EntityId
         ) -> dispatch::Result {
+
             ensure_is_lead::<T>(origin)?;
 
-            Self::ensure_known_class_id(class_id)?;
-
-            let per_controller_entity_creation_limit = Self::class_by_id(class_id).per_controller_entity_creation_limit;
+            let class = Self::ensure_known_class_id(class_id)?;
 
             let voucher_exists = <EntityCreationVouchers<T>>::exists(class_id, &controller);
 
             if voucher_exists {
-                // Ensure new  voucher`s max entities count is less than number of already created entities in given voucher
-                // and runtime entities creation constraint per actor satisfied
                 Self::entity_creation_vouchers(class_id, &controller)
                     .ensure_new_max_entities_count_is_valid(maximum_entities_count)?;
             }
 
-            Self::ensure_valid_number_of_class_entities_per_actor(per_controller_entity_creation_limit, maximum_entities_count)?;
+            Self::ensure_valid_number_of_class_entities_per_actor(class.per_controller_entity_creation_limit, maximum_entities_count)?;
 
             //
             // == MUTATION SAFE ==
@@ -652,6 +679,8 @@ decl_module! {
                 });
             } else {
                 let entity_creation_voucher = EntityCreationVoucher::new(maximum_entities_count);
+
+                // Add newly created `EntityCreationVoucher` into `EntityCreationVouchers` runtime storage under given `class_id`, `controller` key
                 <EntityCreationVouchers<T>>::insert(class_id, controller.clone(), entity_creation_voucher.clone());
 
                 // Trigger event
@@ -669,9 +698,10 @@ decl_module! {
             maximum_entities_count: T::EntityId,
             per_controller_entity_creation_limit: T::EntityId
         ) -> dispatch::Result {
+
             ensure_is_lead::<T>(origin)?;
 
-            Self::ensure_entities_limits_are_valid(maximum_entities_count, per_controller_entity_creation_limit)?;
+            Self::ensure_entities_creation_limits_are_valid(maximum_entities_count, per_controller_entity_creation_limit)?;
 
             Self::ensure_class_limit_not_reached()?;
 
@@ -705,14 +735,14 @@ decl_module! {
             all_entity_property_values_locked: Option<bool>,
             maintainers: Option<BTreeSet<T::CuratorGroupId>>,
         ) -> dispatch::Result {
+
             ensure_is_lead::<T>(origin)?;
 
             Self::ensure_known_class_id(class_id)?;
 
             if let Some(ref maintainers) = maintainers {
                 Self::ensure_curator_groups_exist(maintainers)?;
-                ensure!(maintainers.len() <= T::MaxNumberOfMaintainersPerClass::get() as usize,
-                    ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED);
+                Self::ensure_maintainers_limit_not_reached(maintainers)?;
             }
 
             //
@@ -763,15 +793,15 @@ decl_module! {
             existing_properties: Vec<PropertyId>,
             new_properties: Vec<Property<T>>
         ) -> dispatch::Result {
+
             ensure_is_lead::<T>(origin)?;
 
-            Self::ensure_known_class_id(class_id)?;
+            let class = Self::ensure_known_class_id(class_id)?;
 
             Self::ensure_non_empty_schema(&existing_properties, &new_properties)?;
 
-            let class = <ClassById<T>>::get(class_id);
-
             class.ensure_schemas_limit_not_reached()?;
+
             class.ensure_properties_limit_not_reached(&new_properties)?;
 
             let mut schema = Schema::new(existing_properties);
@@ -847,16 +877,18 @@ decl_module! {
             schema_id: SchemaId,
             schema_status: bool
         ) -> dispatch::Result {
+
             ensure_is_lead::<T>(origin)?;
 
-            Self::ensure_known_class_id(class_id)?;
+            let class = Self::ensure_known_class_id(class_id)?;
+
+            class.ensure_schema_id_exists(schema_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            // Check that schema_id is a valid index of class schemas vector:
-            Self::class_by_id(class_id).ensure_schema_id_exists(schema_id)?;
+            // Update class schema status
             <ClassById<T>>::mutate(class_id, |class| {
                 class.update_schema_status(schema_id, schema_status)
             });
@@ -875,6 +907,8 @@ decl_module! {
             frozen_for_controller: Option<bool>,
             referenceable: Option<bool>
         ) -> dispatch::Result {
+
+            // Ensure given origin is lead
             ensure_is_lead::<T>(origin)?;
 
             Self::ensure_known_entity_id(entity_id)?;
@@ -912,11 +946,11 @@ decl_module! {
             entity_id: T::EntityId,
             new_controller: EntityController<T>,
         ) -> dispatch::Result {
+
+            // Ensure given origin is lead
             ensure_is_lead::<T>(origin)?;
 
-            Self::ensure_known_entity_id(entity_id)?;
-
-            let (entity, class) = Self::get_entity_and_class(entity_id);
+            let (entity, class) = Self::get_entity_and_class(entity_id)?;
 
             // Ensure there is no property values pointing to the given entity
             Self::ensure_inbound_same_owner_rc_is_zero(&entity)?;
@@ -958,11 +992,17 @@ decl_module! {
             class_id: T::ClassId,
             actor: Actor<T>,
         ) -> dispatch::Result {
+
             let account_id = ensure_signed(origin)?;
+
             let class = Self::ensure_class_exists(class_id)?;
+
+            // Ensure maximum entities limit per class not reached
             class.ensure_maximum_entities_count_limit_not_reached()?;
 
             let class_permissions = class.get_permissions();
+
+            // Ensure actror can create entities
             class_permissions.ensure_entity_creation_not_blocked()?;
             class_permissions.ensure_can_create_entities(&account_id, &actor)?;
 
@@ -983,6 +1023,8 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            // Create voucher, update if exists
+
             if voucher_exists {
                 // Increment number of created entities count, if voucher already exist
                 <EntityCreationVouchers<T>>::mutate(class_id, &entity_controller, |entity_creation_voucher| {
@@ -995,7 +1037,26 @@ decl_module! {
                 <EntityCreationVouchers<T>>::insert(class_id, entity_controller.clone(), entity_creation_voucher);
             }
 
-            let entity_id = Self::complete_entity_creation(class_id, entity_controller);
+            // Create new entity
+
+            let entity_id = Self::next_entity_id();
+
+            let new_entity = Entity::<T>::new(
+                entity_controller,
+                class_id,
+                BTreeSet::new(),
+                BTreeMap::new(),
+            );
+
+            // Save newly created entity:
+            EntityById::insert(entity_id, new_entity);
+
+            // Increment the next entity id:
+            <NextEntityId<T>>::mutate(|n| *n += T::EntityId::one());
+
+            <ClassById<T>>::mutate(class_id, |class| {
+                class.increment_entities_count();
+            });
 
             // Trigger event
             Self::deposit_event(RawEvent::EntityCreated(actor, entity_id));
@@ -1007,21 +1068,22 @@ decl_module! {
             actor: Actor<T>,
             entity_id: T::EntityId,
         ) -> dispatch::Result {
-            let account_id = ensure_signed(origin)?;
 
-            Self::ensure_known_entity_id(entity_id)?;
+            let (_, entity, access_level) = Self::get_class_entity_and_access_level(origin, entity_id, &actor)?;
 
-            let (_, access_level) = Self::get_entity_and_access_level(account_id, entity_id, &actor)?;
             EntityPermissions::<T>::ensure_group_can_remove_entity(access_level)?;
 
-            // Ensure there is no property values pointing to the given entity
             Self::ensure_rc_is_zero(entity_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            Self::complete_entity_removal(entity_id);
+            // Remove entity
+            <EntityById<T>>::remove(entity_id);
+
+            // Decrement class entities counter
+            <ClassById<T>>::mutate(entity.class_id, |class| class.decrement_entities_count());
 
             // Trigger event
             Self::deposit_event(RawEvent::EntityRemoved(actor, entity_id));
@@ -1035,18 +1097,9 @@ decl_module! {
             schema_id: SchemaId,
             property_values: BTreeMap<PropertyId, PropertyValue<T>>
         ) -> dispatch::Result {
-            let account_id = ensure_signed(origin)?;
 
-            Self::ensure_known_entity_id(entity_id)?;
+            let (class, entity, _) = Self::get_class_entity_and_access_level(origin, entity_id, &actor)?;
 
-            let (entity, _) = Self::get_entity_and_access_level(account_id, entity_id, &actor)?;
-
-            let class = Self::class_by_id(entity.class_id);
-
-            // Check that schema_id is a valid index of class schemas vector:
-            class.ensure_schema_id_exists(schema_id)?;
-
-            // Ensure class schema is active
             class.ensure_schema_is_active(schema_id)?;
 
             // Check that schema id is not yet added to this entity
@@ -1061,6 +1114,10 @@ decl_module! {
             // Entities, which rc should be incremented
             let mut entities_rc_to_increment = EntitiesRc::<T>::default();
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             for prop_id in schema_prop_ids.iter() {
                 if current_entity_values.contains_key(prop_id) {
                     // A property is already added to the entity and cannot be updated
@@ -1071,10 +1128,6 @@ decl_module! {
                     &class, &entity, *prop_id, &property_values, &mut entities_rc_to_increment, &mut appended_entity_values
                 )?;
             }
-
-            //
-            // == MUTATION SAFE ==
-            //
 
             <EntityById<T>>::mutate(entity_id, |entity| {
                 // Add a new schema to the list of schemas supported by this entity.
@@ -1108,13 +1161,8 @@ decl_module! {
             entity_id: T::EntityId,
             new_property_values: BTreeMap<PropertyId, PropertyValue<T>>
         ) -> dispatch::Result {
-            let account_id = ensure_signed(origin)?;
 
-            Self::ensure_known_entity_id(entity_id)?;
-
-            let (entity, access_level) = Self::get_entity_and_access_level(account_id, entity_id, &actor)?;
-
-            let class = Self::class_by_id(entity.class_id);
+            let (class, entity, access_level) = Self::get_class_entity_and_access_level(origin, entity_id, &actor)?;
 
             // Ensure property values were not locked on class level
             ensure!(
@@ -1201,18 +1249,15 @@ decl_module! {
             entity_id: T::EntityId,
             in_class_schema_property_id: PropertyId
         ) -> dispatch::Result {
-            let account_id = ensure_signed(origin)?;
 
-            Self::ensure_known_entity_id(entity_id)?;
-
-            let (entity, access_level) = Self::get_entity_and_access_level(account_id, entity_id, &actor)?;
+            let (class, entity, access_level) = Self::get_class_entity_and_access_level(origin, entity_id, &actor)?;
 
 
             let current_property_value_vec =
             Self::get_property_value_vec(&entity, in_class_schema_property_id)?;
 
             let property = Self::ensure_class_property_type_unlocked_for(
-                entity.class_id,
+                &class,
                 in_class_schema_property_id,
                 access_level,
             )?;
@@ -1225,7 +1270,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Clear property value vector:
+            // Clear property value vector
             <EntityById<T>>::mutate(entity_id, |entity| {
                 if let Some(PropertyValue::Vector(current_property_value_vec)) =
                     entity.values.get_mut(&in_class_schema_property_id)
@@ -1255,17 +1300,14 @@ decl_module! {
             index_in_property_vec: VecMaxLength,
             nonce: T::Nonce
         ) -> dispatch::Result {
-            let account_id = ensure_signed(origin)?;
 
-            Self::ensure_known_entity_id(entity_id)?;
-
-            let (entity, access_level) = Self::get_entity_and_access_level(account_id, entity_id, &actor)?;
+            let (class, entity, access_level) = Self::get_class_entity_and_access_level(origin, entity_id, &actor)?;
 
             let current_property_value_vec =
             Self::get_property_value_vec(&entity, in_class_schema_property_id)?;
 
             let property = Self::ensure_class_property_type_unlocked_for(
-                entity.class_id,
+                &class,
                 in_class_schema_property_id,
                 access_level,
             )?;
@@ -1327,11 +1369,8 @@ decl_module! {
             property_value: SinglePropertyValue<T>,
             nonce: T::Nonce
         ) -> dispatch::Result {
-            let account_id = ensure_signed(origin)?;
 
-            Self::ensure_known_entity_id(entity_id)?;
-
-            let (entity, access_level) = Self::get_entity_and_access_level(account_id, entity_id, &actor)?;
+            let (class, entity, access_level) = Self::get_class_entity_and_access_level(origin, entity_id, &actor)?;
 
             let mut same_owner = false;
 
@@ -1341,7 +1380,7 @@ decl_module! {
                 entity.values.get(&in_class_schema_property_id)
             {
                 let class_prop = Self::ensure_class_property_type_unlocked_for(
-                    entity.class_id,
+                    &class,
                     in_class_schema_property_id,
                     access_level,
                 )?;
@@ -1441,38 +1480,6 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    fn complete_entity_creation(
-        class_id: T::ClassId,
-        entity_controller: EntityController<T>,
-    ) -> T::EntityId {
-        let entity_id = Self::next_entity_id();
-
-        let new_entity = Entity::<T>::new(
-            entity_controller,
-            class_id,
-            BTreeSet::new(),
-            BTreeMap::new(),
-        );
-
-        // Save newly created entity:
-        EntityById::insert(entity_id, new_entity);
-
-        // Increment the next entity id:
-        <NextEntityId<T>>::mutate(|n| *n += T::EntityId::one());
-
-        <ClassById<T>>::mutate(class_id, |class| {
-            class.increment_entities_count();
-        });
-
-        entity_id
-    }
-
-    fn complete_entity_removal(entity_id: T::EntityId) {
-        let class_id = Self::get_class_id_by_entity_id(entity_id);
-        <EntityById<T>>::remove(entity_id);
-        <ClassById<T>>::mutate(class_id, |class| class.decrement_entities_count());
-    }
-
     fn increment_entity_rcs(entity_id: &T::EntityId, rc: u32, same_owner: bool) {
         <EntityById<T>>::mutate(entity_id, |entity| {
             if same_owner {
@@ -1501,7 +1508,7 @@ impl<T: Trait> Module<T> {
         Ok(Self::class_by_id(class_id))
     }
 
-    /// Add property value, if was not already povided for the property of this schema
+    /// Add new `PropertyValue`, if it was not already provided under `PropertyId` of this `Schema`
     fn add_new_property_value(
         class: &Class<T>,
         entity: &Entity<T>,
@@ -1648,29 +1655,33 @@ impl<T: Trait> Module<T> {
             .ok_or(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR)
     }
 
-    fn get_entity_and_access_level(
-        account_id: T::AccountId,
+    /// Returns class and entity under given id, if exists, and correspnding `origin` `EntityAccessLevel`, if permitted
+    fn get_class_entity_and_access_level(
+        origin: T::Origin,
         entity_id: T::EntityId,
         actor: &Actor<T>,
-    ) -> Result<(Entity<T>, EntityAccessLevel), &'static str> {
-        let (entity, class) = Self::get_entity_and_class(entity_id);
+    ) -> Result<(Class<T>, Entity<T>, EntityAccessLevel), &'static str> {
+        let account_id = ensure_signed(origin)?;
+
+        let entity = Self::ensure_known_entity_id(entity_id)?;
+
+        let class = Self::class_by_id(entity.class_id);
+
         let access_level = EntityAccessLevel::derive(
             &account_id,
             entity.get_permissions(),
             class.get_permissions(),
             actor,
         )?;
-        Ok((entity, access_level))
+        Ok((class, entity, access_level))
     }
 
-    pub fn get_entity_and_class(entity_id: T::EntityId) -> (Entity<T>, Class<T>) {
-        let entity = <EntityById<T>>::get(entity_id);
+    pub fn get_entity_and_class(
+        entity_id: T::EntityId,
+    ) -> Result<(Entity<T>, Class<T>), &'static str> {
+        let entity = Self::ensure_known_entity_id(entity_id)?;
         let class = ClassById::get(entity.class_id);
-        (entity, class)
-    }
-
-    pub fn get_class_id_by_entity_id(entity_id: T::EntityId) -> T::ClassId {
-        <EntityById<T>>::get(entity_id).class_id
+        Ok((entity, class))
     }
 
     /// Retrieve all entity ids, depending on current entity (the tree of referenced entities with `SameOwner` flag set)
@@ -1696,6 +1707,8 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    /// Get all referenced entities from corresponding property with `SameOwner` flag set,
+    /// call `retrieve_all_entities_to_perform_ownership_transfer` recursively to complete tree traversal
     pub fn get_all_same_owner_entities(
         class: &Class<T>,
         value: &PropertyValue<T>,
@@ -1716,17 +1729,17 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn ensure_class_property_type_unlocked_for(
-        class_id: T::ClassId,
+        class: &Class<T>,
         in_class_schema_property_id: PropertyId,
         entity_access_level: EntityAccessLevel,
     ) -> Result<Property<T>, &'static str> {
-        let class = Self::class_by_id(class_id);
         // Ensure property values were not locked on class level
         ensure!(
             !class.get_permissions().all_entity_property_values_locked(),
             ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL
         );
-        // Get class-level information about this property
+
+        // Get class-level information about this `Property`
         let class_prop = class
             .properties
             .get(in_class_schema_property_id as usize)
@@ -1740,16 +1753,19 @@ impl<T: Trait> Module<T> {
         Ok(class_prop.to_owned())
     }
 
-    pub fn ensure_known_class_id(class_id: T::ClassId) -> dispatch::Result {
+    /// Ensure `Class` under given id exists, return corresponding one
+    pub fn ensure_known_class_id(class_id: T::ClassId) -> Result<Class<T>, &'static str> {
         ensure!(<ClassById<T>>::exists(class_id), ERROR_CLASS_NOT_FOUND);
-        Ok(())
+        Ok(Self::class_by_id(class_id))
     }
 
-    pub fn ensure_known_entity_id(entity_id: T::EntityId) -> dispatch::Result {
+    /// Ensure `Entity` under given id exists, return corresponding one
+    pub fn ensure_known_entity_id(entity_id: T::EntityId) -> Result<Entity<T>, &'static str> {
         ensure!(<EntityById<T>>::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
-        Ok(())
+        Ok(Self::entity_by_id(entity_id))
     }
 
+    // Ensure any property value from external entity does not point to the given entity
     pub fn ensure_rc_is_zero(entity_id: T::EntityId) -> dispatch::Result {
         let entity = Self::entity_by_id(entity_id);
         ensure!(
@@ -1767,14 +1783,23 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn ensure_curator_group_exists(
-        group_id: &T::CuratorGroupId,
-    ) -> Result<CuratorGroup<T>, &'static str> {
+    /// Ensure `CuratorGroup` under given id exists
+    pub fn ensure_curator_group_under_given_id_exists(
+        curator_group_id: &T::CuratorGroupId,
+    ) -> dispatch::Result {
         ensure!(
-            <CuratorGroupById<T>>::exists(group_id),
+            <CuratorGroupById<T>>::exists(curator_group_id),
             ERROR_CURATOR_GROUP_DOES_NOT_EXIST
         );
-        Ok(Self::curator_group_by_id(group_id))
+        Ok(())
+    }
+
+    /// Ensure `CuratorGroup` under given id exists, return corresponding one
+    pub fn ensure_curator_group_exists(
+        curator_group_id: &T::CuratorGroupId,
+    ) -> Result<CuratorGroup<T>, &'static str> {
+        Self::ensure_curator_group_under_given_id_exists(curator_group_id)?;
+        Ok(Self::curator_group_by_id(curator_group_id))
     }
 
     pub fn ensure_voucher_limit_not_reached(voucher: EntityCreationVoucher<T>) -> dispatch::Result {
@@ -1782,6 +1807,18 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    /// Ensure `MaxNumberOfMaintainersPerClass` constraint satisfied
+    pub fn ensure_maintainers_limit_not_reached(
+        curator_groups: &BTreeSet<T::CuratorGroupId>,
+    ) -> Result<(), &'static str> {
+        ensure!(
+            curator_groups.len() < T::MaxNumberOfMaintainersPerClass::get() as usize,
+            ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED
+        );
+        Ok(())
+    }
+
+    /// Ensure all curator groups under given id exist
     pub fn ensure_curator_groups_exist(
         curator_groups: &BTreeSet<T::CuratorGroupId>,
     ) -> dispatch::Result {
@@ -1791,25 +1828,15 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn ensure_max_number_of_curators_limit_not_reached(
-        group_id: T::CuratorGroupId,
-    ) -> dispatch::Result {
-        let curator_group = Self::curator_group_by_id(group_id);
-        ensure!(
-            curator_group.get_curators().len() < T::MaxNumberOfCuratorsPerGroup::get() as usize,
-            ERROR_NUMBER_OF_CURATORS_PER_GROUP_LIMIT_REACHED
-        );
-        Ok(())
-    }
-
     pub fn ensure_class_permissions_are_valid(
         class_permissions: &ClassPermissions<T>,
     ) -> dispatch::Result {
-        class_permissions.ensure_maintainers_limit_not_reached()?;
+        Self::ensure_maintainers_limit_not_reached(class_permissions.get_maintainers())?;
         Self::ensure_curator_groups_exist(class_permissions.get_maintainers())?;
         Ok(())
     }
 
+    /// Ensure new schema is not empty
     pub fn ensure_non_empty_schema(
         existing_properties: &[PropertyId],
         new_properties: &[Property<T>],
@@ -1843,6 +1870,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    /// Ensure `MaxNumberOfEntitiesPerClass` constraint satisfied
     pub fn ensure_valid_number_of_entities_per_class(
         maximum_entities_count: T::EntityId,
     ) -> dispatch::Result {
@@ -1853,6 +1881,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    /// Ensure `IndividualEntitiesCreationLimit` constraint satisfied
     pub fn ensure_valid_number_of_class_entities_per_actor_constraint(
         per_controller_entity_creation_limit: T::EntityId,
     ) -> dispatch::Result {
@@ -1863,6 +1892,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    // Ensure `per_controller_entity_creation_limit` is greater or equal to `maximum_entities_count`
     pub fn ensure_valid_number_of_class_entities_per_actor(
         // per class individual controller entity creation limit
         per_controller_entity_creation_limit: T::EntityId,
@@ -1875,10 +1905,12 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn ensure_entities_limits_are_valid(
+    /// Ensures all entities creation limits, defined for a given `Class`, are valid
+    pub fn ensure_entities_creation_limits_are_valid(
         maximum_entities_count: T::EntityId,
         per_controller_entities_creation_limit: T::EntityId,
     ) -> dispatch::Result {
+        // Ensure `per_controller_entities_creation_limit` does not exceed
         ensure!(
             per_controller_entities_creation_limit < maximum_entities_count,
             ERROR_PER_CONTROLLER_ENTITIES_CREATION_LIMIT_EXCEEDS_OVERALL_LIMIT
@@ -1889,6 +1921,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
+    /// Ensure maximum number of operations during atomic batching constraint satisfied
     pub fn ensure_number_of_operations_during_atomic_batching_limit_not_reached(
         operations: &[OperationType<T>],
     ) -> dispatch::Result {
@@ -1899,6 +1932,8 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    /// Counts the number of repetetive elements and returns `BTreeMap<I::Item, ReferenceCounter>`,
+    /// where I::Item - unique element, ReferenceCounter - related counter
     pub fn count_element_function<I>(it: I) -> BTreeMap<I::Item, ReferenceCounter>
     where
         I: IntoIterator,

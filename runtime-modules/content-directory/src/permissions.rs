@@ -89,6 +89,7 @@ pub fn ensure_lead_auth_success<T: ActorAuthenticator>(
     Ok(())
 }
 
+/// Ensure given origin is lead
 pub fn ensure_is_lead<T: ActorAuthenticator>(origin: T::Origin) -> dispatch::Result {
     let account_id = ensure_signed(origin)?;
     ensure_lead_auth_success::<T>(&account_id)
@@ -116,7 +117,7 @@ pub fn perform_curator_in_group_auth<T: Trait>(
 /// A group, that consists of curators set
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
-pub struct CuratorGroup<T: ActorAuthenticator> {
+pub struct CuratorGroup<T: Trait> {
     /// Curators set, associated with a iven curator group
     curators: BTreeSet<T::CuratorId>,
 
@@ -127,7 +128,7 @@ pub struct CuratorGroup<T: ActorAuthenticator> {
     classes_under_maintenance: ReferenceCounter,
 }
 
-impl<T: ActorAuthenticator> Default for CuratorGroup<T> {
+impl<T: Trait> Default for CuratorGroup<T> {
     fn default() -> Self {
         Self {
             curators: BTreeSet::new(),
@@ -137,7 +138,7 @@ impl<T: ActorAuthenticator> Default for CuratorGroup<T> {
     }
 }
 
-impl<T: ActorAuthenticator> CuratorGroup<T> {
+impl<T: Trait> CuratorGroup<T> {
     pub fn is_curator(&self, curator_id: &T::CuratorId) -> bool {
         self.curators.contains(curator_id)
     }
@@ -166,10 +167,20 @@ impl<T: ActorAuthenticator> CuratorGroup<T> {
         self.classes_under_maintenance -= 1;
     }
 
+    /// Ensure curator group does not maintain any class
     pub fn ensure_curator_is_not_a_maintainer(&self) -> dispatch::Result {
         ensure!(
             self.classes_under_maintenance == 0,
             ERROR_CURATOR_GROUP_REMOVAL_FORBIDDEN
+        );
+        Ok(())
+    }
+
+    /// Ensure max number of curators per group constraint satisfied
+    pub fn ensure_max_number_of_curators_limit_not_reached(&self) -> dispatch::Result {
+        ensure!(
+            self.curators.len() < T::MaxNumberOfCuratorsPerGroup::get() as usize,
+            ERROR_NUMBER_OF_CURATORS_PER_GROUP_LIMIT_REACHED
         );
         Ok(())
     }
@@ -195,6 +206,7 @@ impl<T: Trait> Default for EntityCreationVoucher<T> {
 }
 
 impl<T: Trait> EntityCreationVoucher<T> {
+    /// Create a new instance of `EntityCreationVoucher` with specified limit
     pub fn new(maximum_entities_count: T::EntityId) -> Self {
         Self {
             maximum_entities_count,
@@ -202,6 +214,7 @@ impl<T: Trait> EntityCreationVoucher<T> {
         }
     }
 
+    /// Set new `maximum_entities_count` limit
     pub fn set_maximum_entities_count(&mut self, maximum_entities_count: T::EntityId) {
         self.maximum_entities_count = maximum_entities_count
     }
@@ -214,6 +227,7 @@ impl<T: Trait> EntityCreationVoucher<T> {
         self.entities_created < self.maximum_entities_count
     }
 
+    /// Ensure new  voucher`s max entities count is less than number of already created entities in given voucher
     pub fn ensure_new_max_entities_count_is_valid(
         self,
         maximum_entities_count: T::EntityId,
@@ -316,14 +330,7 @@ impl<T: Trait> ClassPermissions<T> {
         Ok(())
     }
 
-    pub fn ensure_maintainers_limit_not_reached(&self) -> Result<(), &'static str> {
-        ensure!(
-            self.maintainers.len() < T::MaxNumberOfMaintainersPerClass::get() as usize,
-            ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED
-        );
-        Ok(())
-    }
-
+    /// Ensure maintainer, associated with given `group_id` is already added to `maintainers` set
     pub fn ensure_maintainer_exists(&self, group_id: &T::CuratorGroupId) -> dispatch::Result {
         ensure!(
             self.maintainers.contains(group_id),
@@ -332,6 +339,7 @@ impl<T: Trait> ClassPermissions<T> {
         Ok(())
     }
 
+    /// Ensure maintainer, associated with given `group_id` is not yet added to `maintainers` set
     pub fn ensure_maintainer_does_not_exist(
         &self,
         group_id: &T::CuratorGroupId,
