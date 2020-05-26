@@ -1069,7 +1069,7 @@ decl_module! {
             entity_id: T::EntityId,
         ) -> dispatch::Result {
 
-            let (_, entity, access_level) = Self::get_class_entity_and_access_level(origin, entity_id, &actor)?;
+            let (_, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
             EntityPermissions::<T>::ensure_group_can_remove_entity(access_level)?;
 
@@ -1098,7 +1098,7 @@ decl_module! {
             property_values: BTreeMap<PropertyId, PropertyValue<T>>
         ) -> dispatch::Result {
 
-            let (class, entity, _) = Self::get_class_entity_and_access_level(origin, entity_id, &actor)?;
+            let (class, entity, _) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
             class.ensure_schema_is_active(schema_id)?;
 
@@ -1162,7 +1162,7 @@ decl_module! {
             new_property_values: BTreeMap<PropertyId, PropertyValue<T>>
         ) -> dispatch::Result {
 
-            let (class, entity, access_level) = Self::get_class_entity_and_access_level(origin, entity_id, &actor)?;
+            let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
             // Ensure property values were not locked on class level
             ensure!(
@@ -1250,7 +1250,7 @@ decl_module! {
             in_class_schema_property_id: PropertyId
         ) -> dispatch::Result {
 
-            let (class, entity, access_level) = Self::get_class_entity_and_access_level(origin, entity_id, &actor)?;
+            let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
 
             let current_property_value_vec =
@@ -1301,7 +1301,7 @@ decl_module! {
             nonce: T::Nonce
         ) -> dispatch::Result {
 
-            let (class, entity, access_level) = Self::get_class_entity_and_access_level(origin, entity_id, &actor)?;
+            let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
             let current_property_value_vec =
             Self::get_property_value_vec(&entity, in_class_schema_property_id)?;
@@ -1370,7 +1370,7 @@ decl_module! {
             nonce: T::Nonce
         ) -> dispatch::Result {
 
-            let (class, entity, access_level) = Self::get_class_entity_and_access_level(origin, entity_id, &actor)?;
+            let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
             let mut same_owner = false;
 
@@ -1656,7 +1656,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Returns class and entity under given id, if exists, and correspnding `origin` `EntityAccessLevel`, if permitted
-    fn get_class_entity_and_access_level(
+    fn ensure_class_entity_and_access_level(
         origin: T::Origin,
         entity_id: T::EntityId,
         actor: &Actor<T>,
