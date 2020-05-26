@@ -95,6 +95,9 @@ export default class WarthogWrapper {
   }
 
   updateDotenv() {
+    // copy dotnenvi env.yml file 
+    debug("Creating graphql-server/env.yml")
+    copyFileSync(getTemplatePath('warthog.env.yml'), path.resolve(process.cwd(), 'env.yml'));
     const envConfig = dotenv.parse(fs.readFileSync('.env'));
 
     // Override DB_NAME, PORT, ...
