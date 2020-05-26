@@ -57,9 +57,6 @@ export default class Codegen extends Command {
     const warthogProjectPath = path.resolve(goBackDir, warthogProjectName);
 
     createDir(warthogProjectPath);
-    // copy dotnenvi env.yml file 
-    debug("Creating graphql-server/env.yml")
-    copyFileSync(getTemplatePath('warthog.env.yml'), path.resolve(warthogProjectPath, 'env.yml'));
 
     process.chdir(warthogProjectPath);
     
