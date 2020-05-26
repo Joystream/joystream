@@ -1254,7 +1254,7 @@ decl_module! {
 
 
             let current_property_value_vec =
-            Self::get_property_value_vec(&entity, in_class_schema_property_id)?;
+            Self::ensure_property_value_vec(&entity, in_class_schema_property_id)?;
 
             let property = Self::ensure_class_property_type_unlocked_for(
                 &class,
@@ -1304,7 +1304,7 @@ decl_module! {
             let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
             let current_property_value_vec =
-            Self::get_property_value_vec(&entity, in_class_schema_property_id)?;
+            Self::ensure_property_value_vec(&entity, in_class_schema_property_id)?;
 
             let property = Self::ensure_class_property_type_unlocked_for(
                 &class,
@@ -1640,7 +1640,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn get_property_value_vec(
+    fn ensure_property_value_vec(
         entity: &Entity<T>,
         in_class_schema_property_id: PropertyId,
     ) -> Result<&VecPropertyValue<T>, &'static str> {
