@@ -12,6 +12,9 @@ matrix:
       services: docker
     - os: osx
       env: TARGET=x86_64-apple-darwin
+    - os: linux
+      env: TARGET=wasm-blob
+      services: docker
 
 before_install:
   - rustup component add rustfmt
@@ -39,52 +42,55 @@ script:
           joystream/rust-raspberry \
         build --release
       sudo chmod a+r ${TRAVIS_BUILD_DIR}/target/${TARGET}/release/joystream-node
+    elif [ "$TARGET" = "wasm-blob" ]
+    then
+      docker build --tag joystream/node \
+        --file ./devops/dockerfiles/node-and-runtime/Dockerfile \
+        .
+      docker create --name temp-container-joystream-node joystream/node
+      docker cp temp-container-joystream-node:/joystream/runtime.compact.wasm joystream_runtime.wasm
+      docker rm temp-container-joystream-node
     else
       cargo build --release --target=${TARGET}
     fi
 
 before_deploy:
-  - cp ./target/${TARGET}/release/joystream-node .
   - |
-    if [ "$TARGET" = "arm-unknown-linux-gnueabihf" ]
+    if [ "$TARGET" = "wasm-blob" ]
     then
-      export FILENAME="joystream-node-armv7-linux-gnueabihf"
+      export ASSET="joystream_runtime.wasm"
     else
-      export FILENAME=`./joystream-node --version | sed -e "s/ /-/g"`
+      cp ./target/${TARGET}/release/joystream-node .
+      if [ "$TARGET" = "arm-unknown-linux-gnueabihf" ]
+      then
+        export FILENAME="joystream-node-armv7-linux-gnueabihf"
+      else
+        export FILENAME=`./joystream-node --version | sed -e "s/ /-/g"`
+      fi
+      tar -cf ${FILENAME}.tar ./joystream-node
+      gzip ${FILENAME}.tar
+      export ASSET=${FILENAME}.tar.gz
     fi
-  - tar -cf ${FILENAME}.tar ./joystream-node
-  - gzip ${FILENAME}.tar
 
 deploy:
   - provider: releases
     api_key:
-      secure: QTna4XzKmPrXNA5KnYfLsH8cAKxESLdFbQ5HJ6nvB9reE10SVtg8lZ+ShL+no7TACNBUNt09Qv9HNgs6JcNRJ9QMHEJHKIbMyjplhBtZ+W3l0k+6TL0yeKHZ/OvddDF+vDbpN+y4xBfOf0xqZcNH3lZJTms/NPBn/KT5DpQ3JZ8bibdMP2HSCazfvHLwj38OuLX6VWbFcmN2RAmUR9AXYvk5wWYVw8g1VDzTCxjH1G+dGWH1L9+ZDgFfv7BNSNhPc6V9GghgLVZ+37r/STzTTAQ/gPv+yruglEWUhSAngFfVYUegvTmIeQLi/V+g0tKUS+l7eNX08xz6eZcn0+/32V7P+oEN/dhU84E0kgmiOsiUEGI/KFM+qw9TyX3GtD67UmG5TZrD7OUMIu1qCuPSetsTOK2kvpwlYAn+j5iFB30Uz4hXhOH5dib2zz2I7cYHi1kvzeNQqQOPNDCmaO48bcbRIaeqMAHdsb6scGzh/+CD2V2HOmHlhd+4o1PpX6hAMwmOXAu3bMDi4zlB9Hb1cSZnsYNBHawkD6y45QGepFKpGW/6u5VRPeMK62Gm9wu815C36B4mVg6CVqtZMbk0WYPIk6zfoTft3i04YthKbRO96a5VD9LssVbiSYnudXuZJjSllSZVCi9AKS8JVIS2jC2z+tWkquAesSrwztriRcs=
-    file: ${FILENAME}.tar.gz
+      secure: FfxZGQexxAGT0Skbctl1FuqmEvNHejPDPtNG8Du1ACSGjS7Y+M6o/aPqE6HL158AmddOgndsIPR+HM7VfMDAUMkLTbOhv3nMpDBZu1h25vwk+jHOM65tm5LWUu/ROWBpaAQiG7NKrvtfkNfbNBSETsEbWBt/DPrhlIfSbgsXBFDiid7uRrCiwvDUJ097/EUOJ9OVUrk+O4ebSzfIfKPGPtRU2rQQ0eNX7yX3TCm3jbQm/kplkQNRL9mnAJNxtKuvuko4LqZ6jN4XLoLTHUMjO7E0r6wXVB4GVjA4HA214eLlQD6BhgTbWMDxKgWyuKzPG+2GLKyluSSn0RurSl8tYryXKxKxuN3H1FX9r23a8AzGtpRACJtIePC2YmPuQRSnz2Bw8jlSP2WPLJtXGD036J/wVMj6W9TROm7IBigiC7QlqAqCYNByOnoKyhRCgYyAJZb0Jpa3qWaFhA6b6gCGhyH85QCcrc0q6JAB3oqH8Wfm/K2HVzBobmKaSFu5DpwInNnUXnLWGVzhSt3oCq6ld773izReGdLJtLC2vaJ9rZVaVw29s9M662EEuAGgaVLO/sinZJFeIIaCF4i4zUXwXSLIdfKXGOR0ZibkyT2FS6qPGvl/lLN5IREzD7v/rV8htGMLmw4jpPLNskvRjCHX42ewRRYdMvZzQQOAvSlWcsw=
+    file: ${ASSET}
     on:
       tags: true
-      repo: Joystream/substrate-node-joystream
+      repo: Joystream/joystream
     draft: true
     overwrite: true
     skip_cleanup: true
   - provider: releases
     api_key:
-      secure: QTna4XzKmPrXNA5KnYfLsH8cAKxESLdFbQ5HJ6nvB9reE10SVtg8lZ+ShL+no7TACNBUNt09Qv9HNgs6JcNRJ9QMHEJHKIbMyjplhBtZ+W3l0k+6TL0yeKHZ/OvddDF+vDbpN+y4xBfOf0xqZcNH3lZJTms/NPBn/KT5DpQ3JZ8bibdMP2HSCazfvHLwj38OuLX6VWbFcmN2RAmUR9AXYvk5wWYVw8g1VDzTCxjH1G+dGWH1L9+ZDgFfv7BNSNhPc6V9GghgLVZ+37r/STzTTAQ/gPv+yruglEWUhSAngFfVYUegvTmIeQLi/V+g0tKUS+l7eNX08xz6eZcn0+/32V7P+oEN/dhU84E0kgmiOsiUEGI/KFM+qw9TyX3GtD67UmG5TZrD7OUMIu1qCuPSetsTOK2kvpwlYAn+j5iFB30Uz4hXhOH5dib2zz2I7cYHi1kvzeNQqQOPNDCmaO48bcbRIaeqMAHdsb6scGzh/+CD2V2HOmHlhd+4o1PpX6hAMwmOXAu3bMDi4zlB9Hb1cSZnsYNBHawkD6y45QGepFKpGW/6u5VRPeMK62Gm9wu815C36B4mVg6CVqtZMbk0WYPIk6zfoTft3i04YthKbRO96a5VD9LssVbiSYnudXuZJjSllSZVCi9AKS8JVIS2jC2z+tWkquAesSrwztriRcs=
-    file: ${FILENAME}.tar.gz
+      secure: FfxZGQexxAGT0Skbctl1FuqmEvNHejPDPtNG8Du1ACSGjS7Y+M6o/aPqE6HL158AmddOgndsIPR+HM7VfMDAUMkLTbOhv3nMpDBZu1h25vwk+jHOM65tm5LWUu/ROWBpaAQiG7NKrvtfkNfbNBSETsEbWBt/DPrhlIfSbgsXBFDiid7uRrCiwvDUJ097/EUOJ9OVUrk+O4ebSzfIfKPGPtRU2rQQ0eNX7yX3TCm3jbQm/kplkQNRL9mnAJNxtKuvuko4LqZ6jN4XLoLTHUMjO7E0r6wXVB4GVjA4HA214eLlQD6BhgTbWMDxKgWyuKzPG+2GLKyluSSn0RurSl8tYryXKxKxuN3H1FX9r23a8AzGtpRACJtIePC2YmPuQRSnz2Bw8jlSP2WPLJtXGD036J/wVMj6W9TROm7IBigiC7QlqAqCYNByOnoKyhRCgYyAJZb0Jpa3qWaFhA6b6gCGhyH85QCcrc0q6JAB3oqH8Wfm/K2HVzBobmKaSFu5DpwInNnUXnLWGVzhSt3oCq6ld773izReGdLJtLC2vaJ9rZVaVw29s9M662EEuAGgaVLO/sinZJFeIIaCF4i4zUXwXSLIdfKXGOR0ZibkyT2FS6qPGvl/lLN5IREzD7v/rV8htGMLmw4jpPLNskvRjCHX42ewRRYdMvZzQQOAvSlWcsw=
+    file: ${ASSET}
     on:
       branch: development
-      repo: Joystream/substrate-node-joystream
+      repo: Joystream/joystream
     draft: true
     prerelease: true
     overwrite: true
     skip_cleanup: true
-  - provider: releases
-    api_key:
-      secure: ZoEXp8g+yZOEG8JZ1Fg6tWnW3aYDfupFbZflEejYaAdXhj1nw7G9N10ZX5VDdb/O1iFx8BhfFymQxk0ynxNC8c52LzOjKIhXEporxgvEPdnoPS/N1JhfsOUV0ragwZDLv2tFVi2AT0K4w8WJFJDzrK4qHOMMQgVbVQZtFmDL1whHdfBD5FyFyKmMdZdWBtTGy4s7X0LnmxjNB4/3AMa540T3LowZ5H66MYZkQmAbtg8ib93WomVanhS23vbjNaH9x1Kmzxd2B3pCSgI8uaxBrpmzINvAeSusYVJQt0EF/cAPXmq0+JmGoocvcS1ecg/SNZoKUNmeElB4ns/obg/QAyE+fyQtyl+iDYBilhFLm5xRMUnqkpyeUUD3u824i/Z+/tfLvtm5Egg1QAiXtIIJMeAj1nN8OIeSlHR4phnSTA3jl2PZw9QYidtV9WCqHC0qxtpkYSKkC8ItaefScPB1AuvOvVx8xvnIxfR/tXvL8Y3Y2BvhiLgpky9JkbdMln1b0m0E5c4vyGCEVqHqpbxM63VJkpct8sVx0atGvipWEelVjz5XpkxW2PYbgg4EKUzl3FiYcXwf5Y/ykxaZNZt7I4gv9nz2KkVwUCCPqdwWF7ww1shFWW5tCoCmJuUESOdPFx0jQ7LVWz7SDLDsqvvaW2c2OPxG6DIx9BiTeAE4qIQ=
-    file: "${FILENAME}.tar.gz"
-    skip_cleanup: true
-    draft: true
-    prerelease: true
-    overwrite: true
-    on:
-      repo: mnaamani/substrate-node-joystream
-      branch: deploy

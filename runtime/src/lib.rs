@@ -142,8 +142,8 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 6,
-    spec_version: 12,
-    impl_version: 1,
+    spec_version: 13,
+    impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
 };
 
@@ -358,17 +358,17 @@ impl session::historical::Trait for Runtime {
 srml_staking_reward_curve::build! {
     const REWARD_CURVE: PiecewiseLinear<'static> = curve!(
         min_inflation: 0_025_000,
-        max_inflation: 0_100_000,
-        ideal_stake: 0_500_000,
+        max_inflation: 0_300_000,
+        ideal_stake: 0_300_000,
         falloff: 0_050_000,
-        max_piece_count: 40,
+        max_piece_count: 100,
         test_precision: 0_005_000,
     );
 }
 
 parameter_types! {
     pub const SessionsPerEra: sr_staking_primitives::SessionIndex = 6;
-    pub const BondingDuration: staking::EraIndex = 24 * 28;
+    pub const BondingDuration: staking::EraIndex = 24;
     pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
 }
 
