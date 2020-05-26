@@ -209,7 +209,7 @@
 //         let class_id = create_simple_class(class_minimal());
 //         let class = TestModule::class_by_id(class_id);
 
-//         assert!(class.get_permissions().admins.is_empty());
+//         assert!(class.get_permissions_ref().admins.is_empty());
 
 //         let credential_set = CredentialSet::from(vec![1]);
 
@@ -235,7 +235,7 @@
 //         ));
 
 //         let class = TestModule::class_by_id(class_id);
-//         assert_eq!(class.get_permissions().admins, credential_set);
+//         assert_eq!(class.get_permissions_ref().admins, credential_set);
 //     })
 // }
 
@@ -247,7 +247,7 @@
 //         let class_id = create_simple_class(class_minimal_with_admins(vec![0]));
 //         let class = TestModule::class_by_id(class_id);
 
-//         assert!(class.get_permissions().add_schemas.is_empty());
+//         assert!(class.get_permissions_ref().add_schemas.is_empty());
 
 //         let credential_set1 = CredentialSet::from(vec![1, 2]);
 //         let credential_set2 = CredentialSet::from(vec![3, 4]);
@@ -260,7 +260,7 @@
 //             credential_set1.clone()
 //         ));
 //         let class = TestModule::class_by_id(class_id);
-//         assert_eq!(class.get_permissions().add_schemas, credential_set1);
+//         assert_eq!(class.get_permissions_ref().add_schemas, credential_set1);
 
 //         // admins
 //         assert_ok!(TestModule::set_class_add_schemas_set(
@@ -270,7 +270,7 @@
 //             credential_set2.clone()
 //         ));
 //         let class = TestModule::class_by_id(class_id);
-//         assert_eq!(class.get_permissions().add_schemas, credential_set2);
+//         assert_eq!(class.get_permissions_ref().add_schemas, credential_set2);
 
 //         // non-admins
 //         assert_err!(
@@ -293,7 +293,7 @@
 //         let class_id = create_simple_class(class_minimal_with_admins(vec![0]));
 //         let class = TestModule::class_by_id(class_id);
 
-//         assert!(class.get_permissions().create_entities.is_empty());
+//         assert!(class.get_permissions_ref().create_entities.is_empty());
 
 //         let credential_set1 = CredentialSet::from(vec![1, 2]);
 //         let credential_set2 = CredentialSet::from(vec![3, 4]);
@@ -306,7 +306,7 @@
 //             credential_set1.clone()
 //         ));
 //         let class = TestModule::class_by_id(class_id);
-//         assert_eq!(class.get_permissions().create_entities, credential_set1);
+//         assert_eq!(class.get_permissions_ref().create_entities, credential_set1);
 
 //         // admins
 //         assert_ok!(TestModule::set_class_create_entities_set(
@@ -316,7 +316,7 @@
 //             credential_set2.clone()
 //         ));
 //         let class = TestModule::class_by_id(class_id);
-//         assert_eq!(class.get_permissions().create_entities, credential_set2);
+//         assert_eq!(class.get_permissions_ref().create_entities, credential_set2);
 
 //         // non-admins
 //         assert_err!(
@@ -339,7 +339,7 @@
 //         let class_id = create_simple_class(class_minimal_with_admins(vec![0]));
 //         let class = TestModule::class_by_id(class_id);
 
-//         assert_eq!(class.get_permissions().entity_creation_blocked, false);
+//         assert_eq!(class.get_permissions_ref().entity_creation_blocked, false);
 
 //         // root
 //         assert_ok!(TestModule::set_class_entities_can_be_created(
@@ -349,7 +349,7 @@
 //             true
 //         ));
 //         let class = TestModule::class_by_id(class_id);
-//         assert_eq!(class.get_permissions().entity_creation_blocked, true);
+//         assert_eq!(class.get_permissions_ref().entity_creation_blocked, true);
 
 //         // admins
 //         assert_ok!(TestModule::set_class_entities_can_be_created(
@@ -359,7 +359,7 @@
 //             false
 //         ));
 //         let class = TestModule::class_by_id(class_id);
-//         assert_eq!(class.get_permissions().entity_creation_blocked, false);
+//         assert_eq!(class.get_permissions_ref().entity_creation_blocked, false);
 
 //         // non-admins
 //         assert_err!(
@@ -382,7 +382,7 @@
 //         let class_id = create_simple_class(class_minimal_with_admins(vec![0]));
 //         let class = TestModule::class_by_id(class_id);
 
-//         assert!(class.get_permissions().entity_permissions.update.is_empty());
+//         assert!(class.get_permissions_ref().entity_permissions.update.is_empty());
 
 //         let entity_permissions1 = EntityPermissionss {
 //             update: CredentialSet::from(vec![1]),
@@ -398,7 +398,7 @@
 //         ));
 //         let class = TestModule::class_by_id(class_id);
 //         assert_eq!(
-//             class.get_permissions().entity_permissions,
+//             class.get_permissions_ref().entity_permissions,
 //             entity_permissions1
 //         );
 
@@ -415,7 +415,7 @@
 //         ));
 //         let class = TestModule::class_by_id(class_id);
 //         assert_eq!(
-//             class.get_permissions().entity_permissions,
+//             class.get_permissions_ref().entity_permissions,
 //             entity_permissions2
 //         );
 
@@ -441,7 +441,7 @@
 //         let class = TestModule::class_by_id(class_id);
 
 //         assert_eq!(
-//             class.get_permissions().reference_constraint,
+//             class.get_permissions_ref().reference_constraint,
 //             Default::default()
 //         );
 
@@ -461,7 +461,7 @@
 //         ));
 //         let class = TestModule::class_by_id(class_id);
 //         assert_eq!(
-//             class.get_permissions().reference_constraint,
+//             class.get_permissions_ref().reference_constraint,
 //             reference_constraint1
 //         );
 
@@ -481,7 +481,7 @@
 //         ));
 //         let class = TestModule::class_by_id(class_id);
 //         assert_eq!(
-//             class.get_permissions().reference_constraint,
+//             class.get_permissions_ref().reference_constraint,
 //             reference_constraint2
 //         );
 

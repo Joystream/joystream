@@ -813,7 +813,7 @@ impl<T: Trait> Property<T> {
         Module::<T>::ensure_known_entity_id(entity_id)?;
         let entity = Module::<T>::entity_by_id(entity_id);
 
-        let entity_permissions = entity.get_permissions();
+        let entity_permissions = entity.get_permissions_ref();
 
         ensure!(
             entity_permissions.is_referancable(),

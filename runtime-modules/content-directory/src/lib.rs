@@ -256,6 +256,11 @@ impl<T: Trait> Class<T> {
         self.schemas[schema_index as usize].set_status(schema_status);
     }
 
+    /// Used to update `Class` permissions
+    fn update_permissions(&mut self, permissions: ClassPermissions<T>) {
+        self.class_permissions = permissions
+    }
+
     /// Increment number of entities, associated with this class
     fn increment_entities_count(&mut self) {
         self.current_number_of_entities += T::EntityId::one();
@@ -272,8 +277,13 @@ impl<T: Trait> Class<T> {
     }
 
     /// Retrieve `ClassPermissions` by reference
-    fn get_permissions(&self) -> &ClassPermissions<T> {
+    fn get_permissions_ref(&self) -> &ClassPermissions<T> {
         &self.class_permissions
+    }
+
+    /// Retrieve `ClassPermissions` by value
+    fn get_permissions(self) -> ClassPermissions<T> {
+        self.class_permissions
     }
 
     /// Get per controller `Class`- specific limit
@@ -342,7 +352,7 @@ impl<T: Trait> Class<T> {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct Entity<T: Trait> {
     /// Permissions for an instance of an Entity.
-    pub entity_permission: EntityPermissions<T>,
+    pub entity_permissions: EntityPermissions<T>,
 
     /// The class id of this entity.
     pub class_id: T::ClassId,
@@ -366,7 +376,7 @@ pub struct Entity<T: Trait> {
 impl<T: Trait> Default for Entity<T> {
     fn default() -> Self {
         Self {
-            entity_permission: EntityPermissions::<T>::default(),
+            entity_permissions: EntityPermissions::<T>::default(),
             class_id: T::ClassId::default(),
             supported_schemas: BTreeSet::new(),
             values: BTreeMap::new(),
@@ -385,7 +395,7 @@ impl<T: Trait> Entity<T> {
         values: BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> Self {
         Self {
-            entity_permission: EntityPermissions::<T>::default_with_controller(controller),
+            entity_permissions: EntityPermissions::<T>::default_with_controller(controller),
             class_id,
             supported_schemas,
             values,
@@ -396,12 +406,21 @@ impl<T: Trait> Entity<T> {
 
     /// Get mutable `EntityPermissions` reference, related to given `Entity`
     fn get_permissions_mut(&mut self) -> &mut EntityPermissions<T> {
-        &mut self.entity_permission
+        &mut self.entity_permissions
     }
 
     /// Get `EntityPermissions` reference, related to given `Entity`
-    fn get_permissions(&self) -> &EntityPermissions<T> {
-        &self.entity_permission
+    fn get_permissions_ref(&self) -> &EntityPermissions<T> {
+        &self.entity_permissions
+    }
+
+    /// Get `EntityPermissions`, related to given `Entity` by value
+    fn get_permissions(self) -> EntityPermissions<T> {
+        self.entity_permissions
+    }
+
+    pub fn update_permissions(&mut self, permissions: EntityPermissions<T>) {
+        self.entity_permissions = permissions
     }
 
     /// Ensure `Schema` under given id is not yet added to given `Entity`
@@ -588,7 +607,7 @@ decl_module! {
 
             Self::ensure_curator_group_under_given_id_exists(&curator_group_id)?;
 
-            let class_permissions = class.get_permissions();
+            let class_permissions = class.get_permissions_ref();
 
             Self::ensure_maintainers_limit_not_reached(class_permissions.get_maintainers())?;
 
@@ -624,7 +643,7 @@ decl_module! {
 
             let class = Self::ensure_known_class_id(class_id)?;
 
-            class.get_permissions().ensure_maintainer_exists(&curator_group_id)?;
+            class.get_permissions_ref().ensure_maintainer_exists(&curator_group_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -738,9 +757,9 @@ decl_module! {
 
             ensure_is_lead::<T>(origin)?;
 
-            let mut class = Self::ensure_known_class_id(class_id)?;
+            let class = Self::ensure_known_class_id(class_id)?;
 
-            let class_permissions = class.get_permissions_mut();
+            let mut class_permissions = class.get_permissions();
 
             if let Some(ref updated_maintainers) = updated_maintainers {
                 Self::ensure_curator_groups_exist(updated_maintainers)?;
@@ -776,8 +795,10 @@ decl_module! {
 
             if updated  {
 
-                // Update class under given class id
-                <ClassById<T>>::insert(class_id, class);
+                // Update `class_permissions` under given class id
+                <ClassById<T>>::mutate(class_id, |class| {
+                    class.update_permissions(class_permissions)
+                });
 
                 // Trigger event
                 Self::deposit_event(RawEvent::ClassPermissionsUpdated(class_id));
@@ -910,9 +931,9 @@ decl_module! {
             // Ensure given origin is lead
             ensure_is_lead::<T>(origin)?;
 
-            let mut entity = Self::ensure_known_entity_id(entity_id)?;
+            let entity = Self::ensure_known_entity_id(entity_id)?;
 
-            let entity_permissions = entity.get_permissions_mut();
+            let mut entity_permissions = entity.get_permissions();
 
             //
             // == MUTATION SAFE ==
@@ -933,8 +954,10 @@ decl_module! {
 
             if updated {
 
-                // Update entity under given entity id
-                <EntityById<T>>::insert(entity_id, entity);
+                // Update entity permissions under given entity id
+                <EntityById<T>>::mutate(entity_id, |entity| {
+                    entity.update_permissions(entity_permissions)
+                });
 
                 // Trigger event
                 Self::deposit_event(RawEvent::EntityPermissionsUpdated(entity_id));
@@ -1000,7 +1023,7 @@ decl_module! {
             // Ensure maximum entities limit per class not reached
             class.ensure_maximum_entities_count_limit_not_reached()?;
 
-            let class_permissions = class.get_permissions();
+            let class_permissions = class.get_permissions_ref();
 
             // Ensure actror can create entities
             class_permissions.ensure_entity_creation_not_blocked()?;
@@ -1166,7 +1189,7 @@ decl_module! {
 
             // Ensure property values were not locked on class level
             ensure!(
-                !class.get_permissions().all_entity_property_values_locked(),
+                !class.get_permissions_ref().all_entity_property_values_locked(),
                 ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL
             );
 
@@ -1396,7 +1419,7 @@ decl_module! {
                     &property_value,
                     entity_prop_value,
                     index_in_property_vec,
-                    entity.get_permissions().get_controller(),
+                    entity.get_permissions_ref().get_controller(),
                 )?;
                 same_owner = class_prop.prop_type.same_controller_status();
             };
@@ -1522,7 +1545,7 @@ impl<T: Trait> Module<T> {
         if let Some(new_value) = property_values.get(&prop_id) {
             class_prop.ensure_property_value_to_update_is_valid(
                 new_value,
-                entity.get_permissions().get_controller(),
+                entity.get_permissions_ref().get_controller(),
             )?;
             // Ensure all values are unique except of null non required values
             if (*new_value != PropertyValue::default() || class_prop.required) && class_prop.unique
@@ -1594,7 +1617,7 @@ impl<T: Trait> Module<T> {
             // and check any additional constraints
             class_prop.ensure_property_value_to_update_is_valid(
                 &new_value,
-                entity.get_permissions().get_controller(),
+                entity.get_permissions_ref().get_controller(),
             )?;
 
             // Get unique entity ids to update rc
@@ -1669,8 +1692,8 @@ impl<T: Trait> Module<T> {
 
         let access_level = EntityAccessLevel::derive(
             &account_id,
-            entity.get_permissions(),
-            class.get_permissions(),
+            entity.get_permissions_ref(),
+            class.get_permissions_ref(),
             actor,
         )?;
         Ok((class, entity, access_level))
@@ -1735,7 +1758,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<Property<T>, &'static str> {
         // Ensure property values were not locked on class level
         ensure!(
-            !class.get_permissions().all_entity_property_values_locked(),
+            !class.get_permissions_ref().all_entity_property_values_locked(),
             ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL
         );
 
