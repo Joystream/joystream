@@ -1,3 +1,5 @@
+import { isObjectType } from 'graphql';
+
 // Available types for model code generation
 export const availableTypes: { [key: string]: string } = {
     String: '',
@@ -62,6 +64,7 @@ export class WarthogModel {
         });
         return models;
     }
+
 }
 
 
@@ -73,6 +76,10 @@ export interface ObjectType {
     fields: Field[];
 }
 
+/**
+ * Represnts Fulltext search query as defined by
+ *  fields in GraphGL  decorated with FULL_TEXT_SEARCHABLE_DIRECTIVE directive
+ */
 export interface FTSQuery {
     name: string;
     fields: Field[];

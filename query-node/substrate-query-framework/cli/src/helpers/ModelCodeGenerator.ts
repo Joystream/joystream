@@ -51,23 +51,34 @@ export class DatabaseModelCodeGenerator {
    * Create a new Field type from NamedTypeNode
    * @param name string
    * @param namedTypeNode NamedTypeNode
+   * @param directives: additional directives of FieldDefinitionNode
    */
   private _namedType(name: string, namedTypeNode: NamedTypeNode, directives?: ReadonlyArray<DirectiveNode>): Field {
     const field = new Field(name, namedTypeNode.name.value);
     field.isBuildinType = this._isBuildinType(field.type);
+    // TODO: we should really handle levels at the type definition level?
     if (directives) {
-        directives.map((d:DirectiveNode) => {
-            if (d.name.value.includes(FULL_TEXT_SEARCHABLE_DIRECTIVE)) {
-                let queryName = this._checkFullTextSearchDirective(d);
-                this._model.addQueryField(queryName, field);
-            }
-        })
+        directives.map((d:DirectiveNode) => this._processFieldDirective(d, field));
     }
     
     return field;
   }
 
   /**
+   * 
+   * @param d Directive provided to the FieldDefinitionNode
+   * @param f WarthogModel field
+   */
+  private _processFieldDirective(d: DirectiveNode, f: Field) {
+    if (d.name.value.includes(FULL_TEXT_SEARCHABLE_DIRECTIVE)) {
+        let queryName = this._checkFullTextSearchDirective(d);
+        this._model.addQueryField(queryName, f);
+    }
+  }
+
+  /**
+   * TODO: this piece should be refactored and does not seem to belong to this class
+   * 
    * Does the checks and returns full text query names to be used;
    * 
    * @param d Directive Node
@@ -130,17 +141,4 @@ export class DatabaseModelCodeGenerator {
     return this._model;
   }
 
-  /**
-   * Generate model defination as one-line string literal
-   * Example: User username! age:int! isActive:bool!
-   */
-  //generateModelDefinationsForWarthog(): string[] {
-  //  const objectTypes = this._schemaParser.getObjectDefinations().map(o => this.generateTypeDefination(o));
-  //
-  //  const models = objectTypes.map(input => {
-  //    const fields = input.fields.map(field => field.format()).join(' ');
-  //    return [input.name, fields].join(' ');
-  //  });
-  //  return models;
-  //}
 }
