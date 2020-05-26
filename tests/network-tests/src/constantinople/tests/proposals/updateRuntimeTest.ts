@@ -2,16 +2,29 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { membershipTest } from '../impl/membershipCreation';
 import { councilTest } from '../impl/electingCouncil';
 import { updateRuntimeTest } from './impl/updateRuntime';
-import tap = require('tap');
+import { initConfig } from '../../utils/config';
+import { Keyring } from '@polkadot/api';
+import BN from 'bn.js';
+import tap from 'tap';
 
-const m1Keys: KeyringPair[] = new Array();
-const m2Keys: KeyringPair[] = new Array();
+initConfig();
 
-membershipTest(m1Keys);
-membershipTest(m2Keys);
-councilTest(m1Keys, m2Keys);
-updateRuntimeTest(m1Keys, m2Keys);
-membershipTest(new Array<KeyringPair>());
+const m1KeyPairs: KeyringPair[] = new Array();
+const m2KeyPairs: KeyringPair[] = new Array();
 
-const defaultTimeout: number = 900000;
+const keyring = new Keyring({ type: 'sr25519' });
+const N: number = +process.env.MEMBERSHIP_CREATION_N!;
+const paidTerms: number = +process.env.MEMBERSHIP_PAID_TERMS!;
+const nodeUrl: string = process.env.NODE_URL!;
+const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
+const defaultTimeout: number = 600000;
+const K: number = +process.env.COUNCIL_ELECTION_K!;
+const greaterStake: BN = new BN(+process.env.COUNCIL_STAKE_GREATER_AMOUNT!);
+const lesserStake: BN = new BN(+process.env.COUNCIL_STAKE_LESSER_AMOUNT!);
+
+membershipTest(m1KeyPairs, keyring, N, paidTerms, nodeUrl, sudoUri);
+membershipTest(m2KeyPairs, keyring, N, paidTerms, nodeUrl, sudoUri);
+councilTest(m1KeyPairs, m2KeyPairs, keyring, K, nodeUrl, sudoUri, greaterStake, lesserStake);
+updateRuntimeTest(m1KeyPairs, m2KeyPairs, keyring, nodeUrl, sudoUri);
+membershipTest(new Array<KeyringPair>(), keyring, N, paidTerms, nodeUrl, sudoUri);
 tap.setTimeout(defaultTimeout);

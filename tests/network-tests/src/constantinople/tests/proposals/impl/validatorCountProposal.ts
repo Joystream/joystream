@@ -1,4 +1,3 @@
-import { initConfig } from '../../../utils/config';
 import { Keyring, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { registerJoystreamTypes } from '@constantinople/types';
@@ -8,18 +7,16 @@ import BN from 'bn.js';
 import { assert } from 'chai';
 import tap from 'tap';
 
-export function validatorCountProposal(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {
-  initConfig();
-  const keyring = new Keyring({ type: 'sr25519' });
-  const nodeUrl: string = process.env.NODE_URL!;
-  const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
-  const validatorCountIncrement: BN = new BN(+process.env.VALIDATOR_COUNT_INCREMENT!);
-  const defaultTimeout: number = 600000;
-
+export function validatorCountProposal(
+  m1KeyPairs: KeyringPair[],
+  m2KeyPairs: KeyringPair[],
+  keyring: Keyring,
+  nodeUrl: string,
+  sudoUri: string,
+  validatorCountIncrement: BN
+) {
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
-
-  tap.setTimeout(defaultTimeout);
 
   tap.test('Validator count proposal test setup', async () => {
     registerJoystreamTypes();

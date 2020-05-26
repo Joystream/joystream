@@ -1,4 +1,3 @@
-import { initConfig } from '../../../utils/config';
 import { Keyring, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { registerJoystreamTypes } from '@constantinople/types';
@@ -8,18 +7,16 @@ import BN from 'bn.js';
 import { assert } from 'chai';
 import tap from 'tap';
 
-export function workingGroupMintCapacityProposalTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {
-  initConfig();
-  const keyring = new Keyring({ type: 'sr25519' });
-  const nodeUrl: string = process.env.NODE_URL!;
-  const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
-  const mintingCapacityIncrement: BN = new BN(+process.env.MINTING_CAPACITY_INCREMENT!);
-  const defaultTimeout: number = 600000;
-
+export function workingGroupMintCapacityProposalTest(
+  m1KeyPairs: KeyringPair[],
+  m2KeyPairs: KeyringPair[],
+  keyring: Keyring,
+  nodeUrl: string,
+  sudoUri: string,
+  mintingCapacityIncrement: BN
+) {
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
-
-  tap.setTimeout(defaultTimeout);
 
   tap.test('Working group mint capacity proposal test', async () => {
     registerJoystreamTypes();
