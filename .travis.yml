@@ -25,7 +25,7 @@ matrix:
 install:
   - rustup target add wasm32-unknown-unknown --toolchain nightly
   # travis installs rust using rustup with the "minimal" profile so these tools are not installed by default
-  - rustup component add rustfmt --toolchain nightly
+  - rustup component add rustfmt
   # choosing to add clippy for the nightly toolchain only
   # becuase we want to run it with nighly to avoid having to set BUILD_DUMMY_WASM_BINARY=0
   # setting that variable requires changing it in a later run of cargo bulid to ensure runtime/build.rs
@@ -33,7 +33,7 @@ install:
   - rustup component add clippy --toolchain nightly
 
 before_script:
-  - cargo +nightly fmt --all -- --check
+  - cargo fmt --all -- --check
 
 script:
   # we set release as build type for all steps to benefit from already compiled packages in prior steps
