@@ -730,19 +730,21 @@ decl_module! {
         pub fn update_class_permissions(
             origin,
             class_id: T::ClassId,
-            any_member: Option<bool>,
-            entity_creation_blocked: Option<bool>,
-            all_entity_property_values_locked: Option<bool>,
-            maintainers: Option<BTreeSet<T::CuratorGroupId>>,
+            updated_any_member: Option<bool>,
+            updated_entity_creation_blocked: Option<bool>,
+            updated_all_entity_property_values_locked: Option<bool>,
+            updated_maintainers: Option<BTreeSet<T::CuratorGroupId>>,
         ) -> dispatch::Result {
 
             ensure_is_lead::<T>(origin)?;
 
-            Self::ensure_known_class_id(class_id)?;
+            let mut class = Self::ensure_known_class_id(class_id)?;
 
-            if let Some(ref maintainers) = maintainers {
-                Self::ensure_curator_groups_exist(maintainers)?;
-                Self::ensure_maintainers_limit_not_reached(maintainers)?;
+            let class_permissions = class.get_permissions_mut();
+
+            if let Some(ref updated_maintainers) = updated_maintainers {
+                Self::ensure_curator_groups_exist(updated_maintainers)?;
+                Self::ensure_maintainers_limit_not_reached(updated_maintainers)?;
             }
 
             //
@@ -752,34 +754,31 @@ decl_module! {
             // If no update performed, there is no purpose to emit event
             let mut updated = false;
 
-            if let Some(any_member) = any_member {
-                <ClassById<T>>::mutate(class_id, |class|
-                    class.get_permissions_mut().set_any_member_status(any_member)
-                );
+            if let Some(updated_any_member) = updated_any_member {
+                class_permissions.set_any_member_status(updated_any_member);
                 updated = true;
             }
 
-            if let Some(entity_creation_blocked) = entity_creation_blocked {
-                <ClassById<T>>::mutate(class_id, |class| class.get_permissions_mut()
-                    .set_entity_creation_blocked(entity_creation_blocked));
+            if let Some(updated_entity_creation_blocked) = updated_entity_creation_blocked {
+                class_permissions.set_entity_creation_blocked(updated_entity_creation_blocked);
                 updated = true;
             }
 
-            if let Some(all_entity_property_values_locked) = all_entity_property_values_locked {
-                <ClassById<T>>::mutate(class_id, |class|
-                    class.get_permissions_mut().set_all_entity_property_values_locked(all_entity_property_values_locked)
-                );
+            if let Some(updated_all_entity_property_values_locked) = updated_all_entity_property_values_locked {
+                class_permissions.set_all_entity_property_values_locked(updated_all_entity_property_values_locked);
                 updated = true;
             }
 
-            if let Some(maintainers) = maintainers {
-                <ClassById<T>>::mutate(class_id, |class|
-                    class.get_permissions_mut().set_maintainers(maintainers)
-                );
+            if let Some(updated_maintainers) = updated_maintainers {
+                class_permissions.set_maintainers(updated_maintainers);
                 updated = true;
             }
 
             if updated  {
+
+                // Update class under given class id
+                <ClassById<T>>::insert(class_id, class);
+
                 // Trigger event
                 Self::deposit_event(RawEvent::ClassPermissionsUpdated(class_id));
             }
@@ -913,6 +912,8 @@ decl_module! {
 
             let mut entity = Self::ensure_known_entity_id(entity_id)?;
 
+            let entity_permissions = entity.get_permissions_mut();
+
             //
             // == MUTATION SAFE ==
             //
@@ -921,12 +922,12 @@ decl_module! {
             let mut updated = false;
 
             if let Some(updated_frozen_for_controller) = updated_frozen_for_controller {
-                entity.get_permissions_mut().set_frozen(updated_frozen_for_controller);
+                entity_permissions.set_frozen(updated_frozen_for_controller);
                 updated = true;
             }
 
             if let Some(updated_referenceable) = updated_referenceable {
-                entity.get_permissions_mut().set_referencable(updated_referenceable);
+                entity_permissions.set_referencable(updated_referenceable);
                 updated = true;
             }
 
