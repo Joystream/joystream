@@ -2,99 +2,48 @@ language: rust
 
 # Caching of the runtime .wasm blob poses a problem.
 # See: https://github.com/Joystream/joystream/issues/466
-cache: cargo
+# Always starting with a clean slate is probably better, it allows us to ensure
+# the WASM runtime is always rebuilt. It also allows us to detect when certain upstream dependencies
+# sometimes break the build.
+# cache: cargo
 
 rust:
-  - 1.43.0
+  - nightly
 
 matrix:
   include:
     - os: linux
       env: TARGET=x86_64-unknown-linux-gnu
-    # - os: linux
-    #   env: TARGET=arm-unknown-linux-gnueabihf
-    #   services: docker
-    # - os: osx
-    #   env: TARGET=x86_64-apple-darwin
-    # - os: linux
-    #   env: TARGET=wasm-blob
-    #   services: docker
-
-before_install:
-  # This is not needed since travis will install rust stable as the default, and just specifying
-  # stable might be newer that version defined in the .travis.yml file and available
-  # as an env var: TRAVIS_RUST_VERSION
-  # - rustup default stable
-  # ensure main version is the default
-  - rustup default $TRAVIS_RUST_VERSION
-  # We need nightly for WASM build, we choose a specific version so the built and cached artifacts
-  # do not get invalidated every time a new nightly is released.
-  # Nightly isn't always released for all platforms on the same date, so we pick based on target
-  - |
-    if [ "$TARGET" = "x86_64-apple-darwin" ]
-    then
-      export NIGHTLY_RELEASE_DATE=2020-05-14
-    else
-      export NIGHTLY_RELEASE_DATE=2020-05-23
-    fi
-  - rustup update nightly-${NIGHTLY_RELEASE_DATE}
-  - rustup target add wasm32-unknown-unknown --toolchain nightly-${NIGHTLY_RELEASE_DATE}
-  # travis installs rust using rustup with the "minimal" profile so these tools are not installed by default
-  - rustup component add rustfmt
-  - rustup component add clippy --toolchain nightly-${NIGHTLY_RELEASE_DATE}
-  - cargo fmt --all -- --check
+  # Removed all other plaftorm builds sice the repo as growing in terms of activitly
+  # and CI checks are taking long to start due to concurrent no. of jobs
+  # one job should be sufficient for doing all manners of checks and unit nets, will defer
+  # building all platform binanires and wasm blob to a different system
 
 install:
-  - |
-    if [ "$TARGET" = "arm-unknown-linux-gnueabihf" ]
-    then
-      docker pull joystream/rust-raspberry
-    fi
+  - rustup target add wasm32-unknown-unknown --toolchain nightly
+  # travis installs rust using rustup with the "minimal" profile so these tools are not installed by default
+  - rustup component add rustfmt --tolchain nightly
+  # choosing to add clippy for the nightly toolchain only
+  # becuase we want to run it with nighly to avoid having to set BUILD_DUMMY_WASM_BINARY=0
+  # setting that variable requires changing it in a later run of cargo bulid to ensure runtime/build.rs
+  # actually builds the runtime .. the behaviour is a bit odd so choosing to avoid messing with it.
+  - rustup component add clippy --toolchain nightly
+
+before_script:
+  - cargo +nightly fmt --all -- --check
 
 script:
-  - |
-    if [ "$TARGET" = "arm-unknown-linux-gnueabihf" ]
-    then
-      docker run -u root \
-        --volume ${TRAVIS_BUILD_DIR}:/home/cross/project \
-          joystream/rust-raspberry \
-        test --release && \
-      docker run -u root \
-        --volume ${TRAVIS_BUILD_DIR}:/home/cross/project \
-          joystream/rust-raspberry \
-        build --release
-      sudo chmod a+r ${TRAVIS_BUILD_DIR}/target/${TARGET}/release/joystream-node
-    elif [ "$TARGET" = "wasm-blob" ]
-    then
-      docker build --tag joystream/node \
-        --file ./devops/dockerfiles/node-and-runtime/Dockerfile \
-        .
-      docker create --name temp-container-joystream-node joystream/node
-      docker cp temp-container-joystream-node:/joystream/runtime.compact.wasm joystream_runtime.wasm
-      docker rm temp-container-joystream-node
-    else
-      cargo +nightly clippy --release --target=${TARGET} -- -D warnings && \
-      cargo +nightly test --release --verbose --all --target=${TARGET} && \
-      WASM_BUILD_TOOLCHAIN=nightly-${NIGHTLY_RELEASE_DATE} cargo +nightly build --release --target=${TARGET}
-    fi
+  # we set release as build type for all steps to benefit from already compiled packages in prior steps
+  - cargo +nightly clippy --release --target=${TARGET} -- -D warnings
+  - cargo +nightly test --release --verbose --all --target=${TARGET}
+  - WASM_BUILD_TOOLCHAIN=nightly cargo +nightly build --release --target=${TARGET}
 
 before_deploy:
-  - |
-    if [ "$TARGET" = "wasm-blob" ]
-    then
-      export ASSET="joystream_runtime.wasm"
-    else
-      cp ./target/${TARGET}/release/joystream-node .
-      if [ "$TARGET" = "arm-unknown-linux-gnueabihf" ]
-      then
-        export FILENAME="joystream-node-armv7-linux-gnueabihf"
-      else
-        export FILENAME=`./joystream-node --version | sed -e "s/ /-/g"`
-      fi
-      tar -cf ${FILENAME}.tar ./joystream-node
-      gzip ${FILENAME}.tar
-      export ASSET=${FILENAME}.tar.gz
-    fi
+  - cp ./target/${TARGET}/release/joystream-node .
+  - FILENAME=`./joystream-node --version | sed -e "s/ /-/g"`
+  - tar -cf ${FILENAME}.tar ./joystream-node
+  - gzip ${FILENAME}.tar
+  - export ASSET=${FILENAME}.tar.gz
 
 deploy:
   - provider: releases
