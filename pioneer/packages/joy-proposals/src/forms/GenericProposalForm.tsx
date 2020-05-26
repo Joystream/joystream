@@ -13,8 +13,8 @@ import { withCalls } from "@polkadot/react-api";
 import { CallProps } from "@polkadot/react-api/types";
 import { Balance, Event } from "@polkadot/types/interfaces";
 import { RouteComponentProps } from "react-router";
-import { ProposalType } from "../runtime";
-import { calculateStake } from "../utils";
+import { ProposalType } from "@polkadot/joy-utils/types/proposals";
+import { calculateStake } from "@polkadot/joy-utils/functions/proposals";
 import { formatBalance } from "@polkadot/util"
 import "./forms.css";
 import { ProposalId } from "@joystream/types/proposals";
@@ -125,7 +125,7 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
   const requiredStake: number | undefined =
     balances_totalIssuance &&
     proposalType &&
-    calculateStake(proposalType, balances_totalIssuance.toNumber());
+    calculateStake(proposalType);
 
   return (
     <div className="Forms">

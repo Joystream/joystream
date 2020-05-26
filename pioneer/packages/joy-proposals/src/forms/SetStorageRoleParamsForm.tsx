@@ -18,8 +18,8 @@ import { withFormContainer } from "./FormContainer";
 import { BlockNumber, Balance } from "@polkadot/types/interfaces";
 import { u32 } from "@polkadot/types/primitive";
 import { createType } from "@polkadot/types";
-import { useTransport, StorageRoleParameters, IStorageRoleParameters } from "../runtime";
-import { usePromise } from "../utils";
+import { useTransport, usePromise } from "@polkadot/joy-utils/react/hooks";
+import { StorageRoleParameters, IStorageRoleParameters } from "@polkadot/joy-utils/types/storageProviders";
 import { formatBalance } from "@polkadot/util";
 import "./forms.css";
 
@@ -79,7 +79,7 @@ function createRoleParameters(values: FormValues): RoleParameters {
 
 const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props => {
   const transport = useTransport();
-  const [params] = usePromise<IStorageRoleParameters | null>(() => transport.storageRoleParameters(), null);
+  const [params] = usePromise<IStorageRoleParameters | null>(() => transport.storageProviders.roleParameters(), null);
   const { handleChange, errors, touched, values, setFieldValue } = props;
   const [placeholders, setPlaceholders] = useState<{ [k in keyof FormValues]: string }>(defaultValues);
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);

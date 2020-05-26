@@ -1,4 +1,4 @@
-import { ParsedProposal } from "../../runtime";
+import { ParsedProposal } from "@polkadot/joy-utils/types/proposals";
 import { ProposalId } from "@joystream/types/proposals"
 
 const mockedProposal: ParsedProposal = {

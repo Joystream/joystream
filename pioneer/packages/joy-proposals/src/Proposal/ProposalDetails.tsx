@@ -6,7 +6,7 @@ import Body from "./Body";
 import VotingSection from "./VotingSection";
 import Votes from "./Votes";
 import { MyAccountProps, withMyAccount } from "@polkadot/joy-utils/MyAccount"
-import { ParsedProposal, ProposalVote } from "../runtime";
+import { ParsedProposal, ProposalVote } from "@polkadot/joy-utils/types/proposals";
 import { withCalls } from '@polkadot/react-api';
 import { withMulti } from '@polkadot/react-api/with';
 
@@ -15,7 +15,7 @@ import { ProposalId, ProposalDecisionStatuses, ApprovedProposalStatuses, Executi
 import { BlockNumber } from '@polkadot/types/interfaces'
 import { MemberId } from "@joystream/types/members";
 import { Seat } from "@joystream/types/";
-import PromiseComponent from './PromiseComponent';
+import { PromiseComponent } from "@polkadot/joy-utils/react/components";
 
 type BasicProposalStatus = 'Active' | 'Finalized';
 type ProposalPeriodStatus = 'Voting period' | 'Grace period';

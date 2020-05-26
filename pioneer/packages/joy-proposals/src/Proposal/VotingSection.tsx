@@ -5,9 +5,8 @@ import useVoteStyles from "./useVoteStyles";
 import TxButton from "@polkadot/joy-utils/TxButton";
 import { MemberId } from "@joystream/types/members";
 import { ProposalId } from "@joystream/types/proposals";
-import { useTransport } from "../runtime";
+import { useTransport, usePromise } from "@polkadot/joy-utils/react/hooks";
 import { VoteKind } from '@joystream/types/proposals';
-import { usePromise } from "../utils";
 import { VoteKinds } from "@joystream/types/proposals";
 
 export type VoteKindStr = typeof VoteKinds[number];
@@ -56,7 +55,7 @@ export default function VotingSection({
   const transport = useTransport();
   const [voted, setVoted] = useState<VoteKindStr | null >(null);
   const [vote] = usePromise<VoteKind | null | undefined>(
-    () => transport.voteByProposalAndMember(proposalId, memberId),
+    () => transport.proposals.voteByProposalAndMember(proposalId, memberId),
     undefined
   );
 

@@ -3,7 +3,7 @@ import { Route, Switch } from "react-router";
 
 import { AppProps, I18nProps } from "@polkadot/react-components/types";
 import Tabs, { TabItem } from "@polkadot/react-components/Tabs";
-import { SubstrateProvider } from "./runtime";
+import { TransportProvider } from "@polkadot/joy-utils/react/context";
 import { ProposalPreviewList, ProposalFromId, ChooseProposalType } from "./Proposal";
 
 import "./index.css";
@@ -40,7 +40,7 @@ function App(props: Props): React.ReactElement<Props> {
   ];
 
   return (
-    <SubstrateProvider>
+    <TransportProvider>
       <main className="proposal--App">
         <header>
           <Tabs basePath={basePath} items={tabs} />
@@ -66,7 +66,7 @@ function App(props: Props): React.ReactElement<Props> {
           <Route component={ProposalPreviewList} />
         </Switch>
       </main>
-    </SubstrateProvider>
+    </TransportProvider>
   );
 }
 
