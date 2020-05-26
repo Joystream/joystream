@@ -86,6 +86,10 @@ export default class WarthogWrapper {
     });
   }
 
+  async codegen() {
+    execSync('yarn warthog codegen && yarn dotenv:generate');
+  }
+
   async createMigrations() {
     execSync('yarn sync');
   }
