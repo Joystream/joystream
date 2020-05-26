@@ -38,8 +38,8 @@ before_script:
 script:
   # we set release as build type for all steps to benefit from already compiled packages in prior steps
   - cargo +nightly clippy --release --target=${TARGET} -- -D warnings
-  - cargo +nightly test --release --verbose --all --target=${TARGET}
-  - WASM_BUILD_TOOLCHAIN=nightly cargo +nightly build --release --target=${TARGET}
+  - cargo test --release --verbose --all --target=${TARGET}
+  - cargo build --release --target=${TARGET}
 
 before_deploy:
 
