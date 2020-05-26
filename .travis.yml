@@ -4,20 +4,23 @@ language: rust
 # See: https://github.com/Joystream/joystream/issues/466
 # Always starting with a clean slate is probably better, it allows us to ensure
 # the WASM runtime is always rebuilt. It also allows us to detect when certain upstream dependencies
-# sometimes break the build.
-# cache: cargo
+# sometimes break the build. When cache is enabled do not use the produced WASM build.
+# This also means the binary should not be used to produce the final chainspec file (because the same
+# one is embedded in the binary)
+cache: cargo
 
 rust:
+  # living on the edge..
   - nightly
 
 matrix:
   include:
     - os: linux
       env: TARGET=x86_64-unknown-linux-gnu
-  # Removed all other plaftorm builds sice the repo as growing in terms of activitly
-  # and CI checks are taking long to start due to concurrent no. of jobs
-  # one job should be sufficient for doing all manners of checks and unit nets, will defer
-  # building all platform binanires and wasm blob to a different system
+  # Removed all other plaftorm builds sice the repo is growing in terms of activitly
+  # and CI checks are taking long to start due to concurrent number of jobs
+  # one job should be sufficient for doing all manners of checks and unit nets. Will defer
+  # building all platform binanires and wasm blob to a different system.
 
 install:
   - rustup target add wasm32-unknown-unknown --toolchain nightly
@@ -39,7 +42,7 @@ script:
   - WASM_BUILD_TOOLCHAIN=nightly cargo +nightly build --release --target=${TARGET}
 
 before_deploy:
-  - cp ./target/${TARGET}/release/joystream-node .
+
   - FILENAME=`./joystream-node --version | sed -e "s/ /-/g"`
   - tar -cf ${FILENAME}.tar ./joystream-node
   - gzip ${FILENAME}.tar
