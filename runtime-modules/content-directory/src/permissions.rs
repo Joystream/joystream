@@ -122,6 +122,9 @@ pub struct CuratorGroup<T: ActorAuthenticator> {
 
     /// When `false`, curator in a given group is forbidden to act
     active: bool,
+
+    /// Used to count the number of `Class`(es), given curator group maintains
+    classes_under_maintenance: ReferenceCounter,
 }
 
 impl<T: ActorAuthenticator> Default for CuratorGroup<T> {
@@ -129,6 +132,7 @@ impl<T: ActorAuthenticator> Default for CuratorGroup<T> {
         Self {
             curators: BTreeSet::new(),
             active: false,
+            classes_under_maintenance: 0,
         }
     }
 }
@@ -152,6 +156,22 @@ impl<T: ActorAuthenticator> CuratorGroup<T> {
 
     pub fn get_curators_mut(&mut self) -> &mut BTreeSet<T::CuratorId> {
         &mut self.curators
+    }
+
+    pub fn increment_classes_under_maintenance_count(&mut self) {
+        self.classes_under_maintenance += 1;
+    }
+
+    pub fn decrement_classes_under_maintenance_count(&mut self) {
+        self.classes_under_maintenance -= 1;
+    }
+
+    pub fn ensure_curator_is_not_a_maintainer(&self) -> dispatch::Result {
+        ensure!(
+            self.classes_under_maintenance == 0,
+            ERROR_CURATOR_GROUP_REMOVAL_FORBIDDEN
+        );
+        Ok(())
     }
 }
 

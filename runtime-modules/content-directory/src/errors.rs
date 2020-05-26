@@ -28,6 +28,12 @@ pub const ERROR_NEW_ENTITIES_MAX_COUNT_IS_LESS_THAN_NUMBER_OF_ALREADY_CREATED: &
     "Cannot set voucher entities count to be less than number of already created entities";
 pub const ERROR_MAX_NUMBER_OF_OPERATIONS_DURING_ATOMIC_BATCHING_LIMIT_REACHED: &str =
     "Number of operations during atomic batching limit reached";
+pub const ERROR_TEXT_PROP_IS_TOO_LONG: &str = "Text property is too long";
+pub const ERROR_VEC_PROP_IS_TOO_LONG: &str = "Vector property is too long";
+pub const ERROR_ENTITY_PROP_VALUE_VECTOR_IS_TOO_LONG: &str =
+    "Propery value vector can`t contain more values";
+pub const ERROR_ENTITY_PROP_VALUE_VECTOR_INDEX_IS_OUT_OF_RANGE: &str =
+    "Given property value vector index is out of range";
 
 // Main logic errors
 // --------------------------------------
@@ -57,12 +63,6 @@ pub const ERROR_PROP_NAME_NOT_UNIQUE_IN_A_CLASS: &str =
 pub const ERROR_MISSING_REQUIRED_PROP: &str =
     "Some required property was not found when adding schema support to entity";
 pub const ERROR_UNKNOWN_ENTITY_PROP_ID: &str = "Some of the provided property ids cannot be found on the current list of propery values of this entity";
-pub const ERROR_TEXT_PROP_IS_TOO_LONG: &str = "Text property is too long";
-pub const ERROR_VEC_PROP_IS_TOO_LONG: &str = "Vector property is too long";
-pub const ERROR_ENTITY_PROP_VALUE_VECTOR_IS_TOO_LONG: &str =
-    "Propery value vector can`t contain more values";
-pub const ERROR_ENTITY_PROP_VALUE_VECTOR_INDEX_IS_OUT_OF_RANGE: &str =
-    "Given property value vector index is out of range";
 pub const ERROR_PROP_VALUE_TYPE_DOESNT_MATCH_INTERNAL_ENTITY_VECTOR_TYPE: &str =
     "Propery value type does not match internal entity vector type";
 pub const ERROR_PROP_DOES_NOT_MATCH_ITS_CLASS: &str = "Internal property does not match its class";
@@ -71,6 +71,8 @@ pub const ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO: &str =
 pub const ERROR_ENTITY_INBOUND_SAME_OWNER_RC_DOES_NOT_EQUAL_TO_ZERO: &str =
     "Entity ownership transfer can`t be completed, as there are some property values pointing to given entity with same owner flag set";
 pub const ERROR_CLASS_PROP_NOT_FOUND: &str = "Class property under given index not found";
+pub const ERROR_CURATOR_GROUP_REMOVAL_FORBIDDEN: &str =
+    "Curator group can`t be removed, as it currently maintains at least one class";
 
 // Permission errors
 

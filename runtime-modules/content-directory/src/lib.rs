@@ -400,7 +400,7 @@ impl<T: Trait> Entity<T> {
 decl_storage! {
     trait Store for Module<T: Trait> as ContentDirectory {
 
-        /// Curator groups
+        /// Map, representing  CuratorGroupId -> CuratorGroup relation
         pub CuratorGroupById get(curator_group_by_id): map T::CuratorGroupId => CuratorGroup<T>;
 
         /// Map, representing ClassId -> Class relation
@@ -408,6 +408,8 @@ decl_storage! {
 
         /// Map, representing EntityId -> Entity relation
         pub EntityById get(entity_by_id) config(): map T::EntityId => Entity<T>;
+
+        /// Next runtime storage values used to maintain next id value, used on creation of respective curator groups, classes and entities
 
         pub NextCuratorGroupId get(next_curator_group_id) config(): T::CuratorGroupId;
 
@@ -460,20 +462,18 @@ decl_module! {
         ) -> dispatch::Result {
             ensure_is_lead::<T>(origin)?;
 
-            Self::ensure_curator_group_exists(&curator_group_id)?;
+            let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
+
+            // Ensure curator group does not maintain any class
+            curator_group.ensure_curator_is_not_a_maintainer()?;
 
             //
             // == MUTATION SAFE ==
             //
 
+
+            // Remove curator group under given curator group id from runtime storage
             <CuratorGroupById<T>>::remove(curator_group_id);
-            let class_ids: Vec<T::ClassId> = <ClassById<T>>::enumerate().map(|(class_id, _)| class_id).collect();
-            for class_id in class_ids {
-                <ClassById<T>>::mutate(class_id, |class| {
-                    let class_permissions = class.get_permissions_mut();
-                    class_permissions.get_maintainers_mut().remove(&curator_group_id);
-                })
-            };
 
             // Trigger event
             Self::deposit_event(RawEvent::CuratorGroupRemoved(curator_group_id));
@@ -575,6 +575,11 @@ decl_module! {
                 class.get_permissions_mut().get_maintainers_mut().insert(curator_group_id)
             );
 
+            // Increment the number of classes given curator group maintains
+            <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
+                curator_group.increment_classes_under_maintenance_count();
+            });
+
             // Trigger event
             Self::deposit_event(RawEvent::MaintainerAdded(class_id, curator_group_id));
             Ok(())
@@ -599,6 +604,11 @@ decl_module! {
             <ClassById<T>>::mutate(class_id, |class|
                 class.get_permissions_mut().get_maintainers_mut().remove(&curator_group_id)
             );
+
+            // Decrement the number of classes given curator group maintains
+            <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
+                curator_group.decrement_classes_under_maintenance_count();
+            });
 
             // Trigger event
             Self::deposit_event(RawEvent::MaintainerRemoved(class_id, curator_group_id));
@@ -1691,7 +1701,7 @@ impl<T: Trait> Module<T> {
         value: &PropertyValue<T>,
         entities: &mut BTreeSet<T::EntityId>,
     ) {
-        value.get_involved_entities().map(|entity_ids| {
+        if let Some(entity_ids) = value.get_involved_entities() {
             entity_ids.into_iter().for_each(|entity_id| {
                 // If new entity with `SameOwner` flag set found
                 if !entities.contains(&entity_id) {
@@ -1702,7 +1712,7 @@ impl<T: Trait> Module<T> {
                     );
                 }
             })
-        });
+        }
     }
 
     pub fn ensure_class_property_type_unlocked_for(
@@ -1757,12 +1767,14 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn ensure_curator_group_exists(group_id: &T::CuratorGroupId) -> dispatch::Result {
+    pub fn ensure_curator_group_exists(
+        group_id: &T::CuratorGroupId,
+    ) -> Result<CuratorGroup<T>, &'static str> {
         ensure!(
             <CuratorGroupById<T>>::exists(group_id),
             ERROR_CURATOR_GROUP_DOES_NOT_EXIST
         );
-        Ok(())
+        Ok(Self::curator_group_by_id(group_id))
     }
 
     pub fn ensure_voucher_limit_not_reached(voucher: EntityCreationVoucher<T>) -> dispatch::Result {
