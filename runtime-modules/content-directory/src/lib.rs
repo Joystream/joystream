@@ -578,7 +578,9 @@ decl_module! {
 
             ensure_is_lead::<T>(origin)?;
 
-            Self::ensure_curator_group_under_given_id_exists(&curator_group_id)?;
+            let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
+
+            Self::ensure_curator_in_group_exists(&curator_group, &curator_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1758,7 +1760,9 @@ impl<T: Trait> Module<T> {
     ) -> Result<Property<T>, &'static str> {
         // Ensure property values were not locked on class level
         ensure!(
-            !class.get_permissions_ref().all_entity_property_values_locked(),
+            !class
+                .get_permissions_ref()
+                .all_entity_property_values_locked(),
             ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL
         );
 
@@ -1824,6 +1828,18 @@ impl<T: Trait> Module<T> {
     ) -> Result<CuratorGroup<T>, &'static str> {
         Self::ensure_curator_group_under_given_id_exists(curator_group_id)?;
         Ok(Self::curator_group_by_id(curator_group_id))
+    }
+
+    /// Ensure curator under given `curator_id` exists in `CuratorGroup`
+    pub fn ensure_curator_in_group_exists(
+        curator_group: &CuratorGroup<T>,
+        curator_id: &T::CuratorId,
+    ) -> dispatch::Result {
+        ensure!(
+            curator_group.get_curators().contains(curator_id),
+            ERROR_CURATOR_IS_NOT_A_MEMBER_OF_A_GIVEN_CURATOR_GROUP
+        );
+        Ok(())
     }
 
     pub fn ensure_voucher_limit_not_reached(voucher: EntityCreationVoucher<T>) -> dispatch::Result {

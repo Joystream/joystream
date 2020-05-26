@@ -102,15 +102,11 @@ pub fn perform_curator_in_group_auth<T: Trait>(
     account_id: &T::AccountId,
 ) -> dispatch::Result {
     ensure_curator_auth_success::<T>(curator_id, account_id)?;
-    Module::<T>::ensure_curator_group_exists(curator_group_id)?;
 
-    let curator_group = Module::<T>::curator_group_by_id(curator_group_id);
+    let curator_group = Module::<T>::ensure_curator_group_exists(curator_group_id)?;
 
     ensure!(curator_group.is_active(), ERROR_CURATOR_GROUP_IS_NOT_ACTIVE);
-    ensure!(
-        curator_group.is_curator(curator_id),
-        ERROR_CURATOR_IS_NOT_A_MEMBER_OF_A_GIVEN_CURATOR_GROUP
-    );
+    Module::<T>::ensure_curator_in_group_exists(&curator_group, curator_id)?;
     Ok(())
 }
 
