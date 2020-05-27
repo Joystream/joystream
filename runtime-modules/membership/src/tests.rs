@@ -197,7 +197,7 @@ fn unique_handles() {
             set_alice_free_balance(initial_balance);
 
             // alice's handle already taken
-            <crate::Handles<Test>>::insert(get_alice_info().handle.unwrap(), 1);
+            <crate::MemberIdByHandle<Test>>::insert(get_alice_info().handle.unwrap(), 1);
 
             // should not be allowed to buy membership with that handle
             assert_dispatch_error_message(

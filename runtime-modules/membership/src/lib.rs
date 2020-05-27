@@ -166,7 +166,7 @@ decl_storage! {
         pub MemberIdsByControllerAccountId get(member_ids_by_controller_account_id) : map T::AccountId => Vec<T::MemberId>;
 
         /// Registered unique handles and their mapping to their owner
-        pub Handles get(handles) : map Vec<u8> => T::MemberId;
+        pub MemberIdByHandle get(handles) : map Vec<u8> => T::MemberId;
 
         /// Next paid membership terms id
         pub NextPaidMembershipTermsId get(next_paid_membership_terms_id) : T::PaidTermId = T::PaidTermId::from(FIRST_PAID_TERMS_ID);
@@ -460,7 +460,10 @@ impl<T: Trait> Module<T> {
 
     #[allow(clippy::ptr_arg)] // cannot change to the "&[u8]" suggested by clippy
     fn ensure_unique_handle(handle: &Vec<u8>) -> dispatch::Result {
-        ensure!(!<Handles<T>>::exists(handle), "handle already registered");
+        ensure!(
+            !<MemberIdByHandle<T>>::exists(handle),
+            "handle already registered"
+        );
         Ok(())
     }
 
@@ -538,7 +541,7 @@ impl<T: Trait> Module<T> {
         });
 
         <MemberProfile<T>>::insert(new_member_id, profile);
-        <Handles<T>>::insert(user_info.handle.clone(), new_member_id);
+        <MemberIdByHandle<T>>::insert(user_info.handle.clone(), new_member_id);
         <NextMemberId<T>>::put(new_member_id + One::one());
 
         new_member_id
@@ -566,8 +569,8 @@ impl<T: Trait> Module<T> {
         let mut profile = Self::ensure_profile(id)?;
         Self::validate_handle(&handle)?;
         Self::ensure_unique_handle(&handle)?;
-        <Handles<T>>::remove(&profile.handle);
-        <Handles<T>>::insert(handle.clone(), id);
+        <MemberIdByHandle<T>>::remove(&profile.handle);
+        <MemberIdByHandle<T>>::insert(handle.clone(), id);
         profile.handle = handle;
         Self::deposit_event(RawEvent::MemberUpdatedHandle(id));
         <MemberProfile<T>>::insert(id, profile);

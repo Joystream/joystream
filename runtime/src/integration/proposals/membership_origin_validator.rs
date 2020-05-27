@@ -51,7 +51,7 @@ mod tests {
     use sr_primitives::AccountId32;
     use system::RawOrigin;
 
-    type Membership = crate::membership::Module<Runtime>;
+    type Membership = membership::Module<Runtime>;
 
     fn initial_test_ext() -> runtime_io::TestExternalities {
         let t = system::GenesisConfig::default()
