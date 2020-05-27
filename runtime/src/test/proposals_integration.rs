@@ -49,11 +49,9 @@ fn setup_members(count: u8) {
         Membership::add_screened_member(
             RawOrigin::Signed(authority_account_id.clone().into()).into(),
             account_id.clone().into(),
-            membership::UserInfo {
-                handle: Some(account_id.to_vec()),
-                avatar_uri: None,
-                about: None,
-            },
+            Some(account_id.to_vec()),
+            None,
+            None,
         )
         .unwrap();
     }

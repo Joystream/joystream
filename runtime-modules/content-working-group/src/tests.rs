@@ -2099,11 +2099,9 @@ pub fn add_member(
         membership::Module::<Test>::buy_membership(
             Origin::signed(root_and_controller_account),
             0,
-            membership::UserInfo {
-                handle: Some(handle),
-                avatar_uri: None,
-                about: None,
-            }
+            Some(handle),
+            None,
+            None
         )
         .unwrap(),
         ()

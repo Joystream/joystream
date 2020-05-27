@@ -1,8 +1,10 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
-// Clippy linter requirement
-#![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
-                                          // example:  pub PaidMembershipTermsById get(paid_membership_terms_by_id) build(|config: &GenesisConfig<T>| {}
+// Clippy linter requirement.
+// Disable it because of the substrate lib design
+// Example:  pub PaidMembershipTermsById get(paid_membership_terms_by_id) build(|config: &GenesisConfig<T>| {}
+#![allow(clippy::redundant_closure_call)]
+
 
 pub mod genesis;
 pub(crate) mod mock;
@@ -119,15 +121,8 @@ pub struct Membership<T: Trait> {
     pub roles: ActorInRoleSet<T::ActorId>,
 }
 
-#[derive(Clone, Debug, Encode, Decode, PartialEq)]
-/// A "Partial" struct used to batch user configurable membership information when registering or updating info
-pub struct UserInfo {
-    pub handle: Option<Vec<u8>>,
-    pub avatar_uri: Option<Vec<u8>>,
-    pub about: Option<Vec<u8>>,
-}
-
-struct CheckedUserInfo {
+// Contains valid or default user details
+struct ValidatedUserInfo {
     handle: Vec<u8>,
     avatar_uri: Vec<u8>,
     about: Vec<u8>,
@@ -208,8 +203,10 @@ decl_storage! {
         config(members) : Vec<(T::AccountId, String, String, String)>;
         build(|config: &GenesisConfig<T>| {
             for (who, handle, avatar_uri, about) in &config.members {
-                let user_info = CheckedUserInfo {
-                    handle: handle.clone().into_bytes(), avatar_uri: avatar_uri.clone().into_bytes(), about: about.clone().into_bytes()
+                let user_info = ValidatedUserInfo {
+                    handle: handle.clone().into_bytes(),
+                    avatar_uri: avatar_uri.clone().into_bytes(),
+                    about: about.clone().into_bytes()
                 };
 
                 <Module<T>>::insert_member(&who, &user_info, EntryMethod::Genesis);
@@ -242,7 +239,13 @@ decl_module! {
         fn deposit_event() = default;
 
         /// Non-members can buy membership
-        pub fn buy_membership(origin, paid_terms_id: T::PaidTermId, user_info: UserInfo) {
+        pub fn buy_membership(
+            origin,
+            paid_terms_id: T::PaidTermId,
+            handle: Option<Vec<u8>>,
+            avatar_uri: Option<Vec<u8>>,
+            about: Option<Vec<u8>>
+        ) {
             let who = ensure_signed(origin)?;
 
             // make sure we are accepting new memberships
@@ -254,7 +257,7 @@ decl_module! {
             // ensure enough free balance to cover terms fees
             ensure!(T::Currency::can_slash(&who, terms.fee), "not enough balance to buy membership");
 
-            let user_info = Self::check_user_registration_info(user_info)?;
+            let user_info = Self::check_user_registration_info(handle, avatar_uri, about)?;
 
             // ensure handle is not already registered
             Self::ensure_unique_handle(&user_info.handle)?;
@@ -300,20 +303,26 @@ decl_module! {
         }
 
         /// Update member's all or some of handle, avatar and about text.
-        pub fn update_membership(origin, member_id: T::MemberId, user_info: UserInfo) {
+        pub fn update_membership(
+            origin,
+            member_id: T::MemberId,
+            handle: Option<Vec<u8>>,
+            avatar_uri: Option<Vec<u8>>,
+            about: Option<Vec<u8>>
+        ) {
             let sender = ensure_signed(origin)?;
 
             let membership = Self::ensure_membership(member_id)?;
 
             ensure!(membership.controller_account == sender, "only controller account can update member info");
 
-            if let Some(uri) = user_info.avatar_uri {
+            if let Some(uri) = avatar_uri {
                 Self::_change_member_avatar(member_id, &uri)?;
             }
-            if let Some(about) = user_info.about {
+            if let Some(about) = about {
                 Self::_change_member_about_text(member_id, &about)?;
             }
-            if let Some(handle) = user_info.handle {
+            if let Some(handle) = handle {
                 Self::_change_member_handle(member_id, handle)?;
             }
         }
@@ -363,7 +372,13 @@ decl_module! {
             }
         }
 
-        pub fn add_screened_member(origin, new_member_account: T::AccountId, user_info: UserInfo) {
+        pub fn add_screened_member(
+            origin,
+            new_member_account: T::AccountId,
+            handle: Option<Vec<u8>>,
+            avatar_uri: Option<Vec<u8>>,
+            about: Option<Vec<u8>>
+        ) {
             // ensure sender is screening authority
             let sender = ensure_signed(origin)?;
 
@@ -377,7 +392,7 @@ decl_module! {
             // make sure we are accepting new memberships
             ensure!(Self::new_memberships_allowed(), "new members not allowed");
 
-            let user_info = Self::check_user_registration_info(user_info)?;
+            let user_info = Self::check_user_registration_info(handle, avatar_uri, about)?;
 
             // ensure handle is not already registered
             Self::ensure_unique_handle(&user_info.handle)?;
@@ -494,18 +509,20 @@ impl<T: Trait> Module<T> {
     }
 
     /// Basic user input validation
-    fn check_user_registration_info(user_info: UserInfo) -> Result<CheckedUserInfo, &'static str> {
+    fn check_user_registration_info(
+        handle: Option<Vec<u8>>,
+        avatar_uri: Option<Vec<u8>>,
+        about: Option<Vec<u8>>,
+    ) -> Result<ValidatedUserInfo, &'static str> {
         // Handle is required during registration
-        let handle = user_info
-            .handle
-            .ok_or("handle must be provided during registration")?;
+        let handle = handle.ok_or("handle must be provided during registration")?;
         Self::validate_handle(&handle)?;
 
-        let about = Self::validate_text(&user_info.about.unwrap_or_default());
-        let avatar_uri = user_info.avatar_uri.unwrap_or_default();
+        let about = Self::validate_text(&about.unwrap_or_default());
+        let avatar_uri = avatar_uri.unwrap_or_default();
         Self::validate_avatar(&avatar_uri)?;
 
-        Ok(CheckedUserInfo {
+        Ok(ValidatedUserInfo {
             handle,
             avatar_uri,
             about,
@@ -514,7 +531,7 @@ impl<T: Trait> Module<T> {
 
     fn insert_member(
         who: &T::AccountId,
-        user_info: &CheckedUserInfo,
+        user_info: &ValidatedUserInfo,
         entry_method: EntryMethod<T>,
     ) -> T::MemberId {
         let new_member_id = Self::members_created();

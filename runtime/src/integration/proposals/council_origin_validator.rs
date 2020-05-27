@@ -45,7 +45,6 @@ mod tests {
     use super::CouncilManager;
     use crate::Runtime;
     use common::origin_validator::ActorOriginValidator;
-    use membership::UserInfo;
     use proposals_engine::VotersParameters;
     use sr_primitives::AccountId32;
     use system::RawOrigin;
@@ -101,11 +100,9 @@ mod tests {
             Membership::add_screened_member(
                 RawOrigin::Signed(authority_account_id).into(),
                 account_id.clone(),
-                UserInfo {
-                    handle: Some(b"handle".to_vec()),
-                    avatar_uri: None,
-                    about: None,
-                },
+                Some(b"handle".to_vec()),
+                None,
+                None,
             )
             .unwrap();
             let member_id = 0; // newly created member_id
@@ -133,11 +130,9 @@ mod tests {
             Membership::add_screened_member(
                 RawOrigin::Signed(authority_account_id).into(),
                 account_id.clone(),
-                UserInfo {
-                    handle: Some(b"handle".to_vec()),
-                    avatar_uri: None,
-                    about: None,
-                },
+                Some(b"handle".to_vec()),
+                None,
+                None,
             )
             .unwrap();
             let member_id = 0; // newly created member_id
@@ -168,11 +163,9 @@ mod tests {
             Membership::add_screened_member(
                 RawOrigin::Signed(authority_account_id).into(),
                 account_id,
-                UserInfo {
-                    handle: Some(b"handle".to_vec()),
-                    avatar_uri: None,
-                    about: None,
-                },
+                Some(b"handle".to_vec()),
+                None,
+                None,
             )
             .unwrap();
             let member_id = 0; // newly created member_id

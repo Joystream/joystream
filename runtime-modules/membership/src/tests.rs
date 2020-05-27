@@ -24,8 +24,15 @@ fn assert_dispatch_error_message(result: Result<(), &'static str>, expected_mess
     assert_eq!(message, expected_message);
 }
 
-fn get_alice_info() -> crate::UserInfo {
-    crate::UserInfo {
+#[derive(Clone, Debug, PartialEq)]
+pub struct TestUserInfo {
+    pub handle: Option<Vec<u8>>,
+    pub avatar_uri: Option<Vec<u8>>,
+    pub about: Option<Vec<u8>>,
+}
+
+fn get_alice_info() -> TestUserInfo {
+    TestUserInfo {
         handle: Some(String::from("alice").as_bytes().to_vec()),
         avatar_uri: Some(
             String::from("http://avatar-url.com/alice")
@@ -36,8 +43,8 @@ fn get_alice_info() -> crate::UserInfo {
     }
 }
 
-fn get_bob_info() -> crate::UserInfo {
-    crate::UserInfo {
+fn get_bob_info() -> TestUserInfo {
+    TestUserInfo {
         handle: Some(String::from("bobby").as_bytes().to_vec()),
         avatar_uri: Some(
             String::from("http://avatar-url.com/bob")
@@ -51,10 +58,13 @@ fn get_bob_info() -> crate::UserInfo {
 const ALICE_ACCOUNT_ID: u64 = 1;
 
 fn buy_default_membership_as_alice() -> dispatch::Result {
+    let info = get_alice_info();
     Members::buy_membership(
         Origin::signed(ALICE_ACCOUNT_ID),
         DEFAULT_PAID_TERM_ID,
-        get_alice_info(),
+        info.handle,
+        info.avatar_uri,
+        info.about,
     )
 }
 
@@ -226,11 +236,13 @@ fn update_profile() {
             let next_member_id = Members::members_created();
 
             assert_ok!(buy_default_membership_as_alice());
-
+            let info = get_bob_info();
             assert_ok!(Members::update_membership(
                 Origin::signed(ALICE_ACCOUNT_ID),
                 next_member_id,
-                get_bob_info()
+                info.handle,
+                info.avatar_uri,
+                info.about,
             ));
 
             let profile = assert_ok_unwrap(
@@ -255,10 +267,13 @@ fn add_screened_member() {
 
             let next_member_id = Members::members_created();
 
+            let info = get_alice_info();
             assert_ok!(Members::add_screened_member(
                 Origin::signed(screening_authority),
                 ALICE_ACCOUNT_ID,
-                get_alice_info()
+                info.handle,
+                info.avatar_uri,
+                info.about
             ));
 
             let profile = assert_ok_unwrap(
