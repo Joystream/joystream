@@ -641,7 +641,7 @@ impl stake::StakingEventsHandler<Runtime> for ContentWorkingGroupStakingEventHan
         let member_id = curator_application.member_id;
 
         // get member's profile
-        let membership = membership::MembershipById::<Runtime>::get(member_id).unwrap();
+        let membership = membership::MembershipById::<Runtime>::get(member_id);
 
         // deposit funds to member's root_account
         // The application doesn't recorded the original source_account from which staked funds were

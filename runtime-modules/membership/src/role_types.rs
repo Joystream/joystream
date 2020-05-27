@@ -16,7 +16,15 @@ pub enum Role {
     Curator,
 }
 
-#[derive(Encode, Decode, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
+/// Must be default constructible because it indirectly is a value in a storage map.
+/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED TO DUE BAD STORAGE MODEL IN SUBSTRATE***
+impl Default for Role {
+    fn default() -> Self {
+        Self::Curator
+    }
+}
+
+#[derive(Encode, Decode, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default)]
 pub struct ActorInRole<ActorId> {
     pub role: Role,
     pub actor_id: ActorId,
@@ -28,7 +36,7 @@ impl<ActorId> ActorInRole<ActorId> {
     }
 }
 
-#[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Default)]
 pub struct ActorInRoleSet<ActorId: Ord + Copy>(BTreeSet<ActorInRole<ActorId>>);
 
 impl<ActorId: Ord + Copy> ActorInRoleSet<ActorId> {

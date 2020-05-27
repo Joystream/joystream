@@ -77,10 +77,25 @@ const DEFAULT_MAX_HANDLE_LENGTH: u32 = 40;
 const DEFAULT_MAX_AVATAR_URI_LENGTH: u32 = 1024;
 const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 2048;
 
-//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode)]
+pub type MembershipOf<T> = Membership<
+    <T as system::Trait>::BlockNumber,
+    <T as timestamp::Trait>::Moment,
+    <T as Trait>::PaidTermId,
+    <T as Trait>::SubscriptionId,
+    <T as system::Trait>::AccountId,
+    <T as Trait>::ActorId,
+>;
+
+#[derive(Encode, Decode, Default)]
 /// Stored information about a registered user
-pub struct Membership<T: Trait> {
+pub struct Membership<
+    BlockNumber,
+    Moment,
+    PaidTermId,
+    SubscriptionId,
+    AccountId,
+    ActorId: Ord + Copy,
+> {
     /// The unique handle chosen by member
     pub handle: Vec<u8>,
 
@@ -91,33 +106,33 @@ pub struct Membership<T: Trait> {
     pub about: Vec<u8>,
 
     /// Blocknumber when member was registered
-    pub registered_at_block: T::BlockNumber,
+    pub registered_at_block: BlockNumber,
 
     /// Timestamp when member was registered
-    pub registered_at_time: T::Moment,
+    pub registered_at_time: Moment,
 
     /// How the member was registered
-    pub entry: EntryMethod<T>,
+    pub entry: EntryMethod<PaidTermId, AccountId>,
 
     /// Wether the member is suspended or not.
     pub suspended: bool,
 
     /// The type of subsction the member has purchased if any.
-    pub subscription: Option<T::SubscriptionId>,
+    pub subscription: Option<SubscriptionId>,
 
     /// Member's root account id. Only the root account is permitted to set a new root account
     /// and update the controller account. Other modules may only allow certain actions if
     /// signed with root account. It is intended to be an account that can remain offline and
     /// potentially hold a member's funds, and be a source for staking roles.
-    pub root_account: T::AccountId,
+    pub root_account: AccountId,
 
     /// Member's controller account id. This account is intended to be used by
     /// a member to act under their identity in other modules. It will usually be used more
     /// online and will have less funds in its balance.
-    pub controller_account: T::AccountId,
+    pub controller_account: AccountId,
 
     /// The set of registered roles the member has enrolled in.
-    pub roles: ActorInRoleSet<T::ActorId>,
+    pub roles: ActorInRoleSet<ActorId>,
 }
 
 // Contains valid or default user details
@@ -127,12 +142,19 @@ struct ValidatedUserInfo {
     about: Vec<u8>,
 }
 
-//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Debug, PartialEq)]
-pub enum EntryMethod<T: Trait> {
-    Paid(T::PaidTermId),
-    Screening(T::AccountId),
+pub enum EntryMethod<PaidTermId, AccountId> {
+    Paid(PaidTermId),
+    Screening(AccountId),
     Genesis,
+}
+
+/// Must be default constructible because it indirectly is a value in a storage map.
+/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED TO DUE BAD STORAGE MODEL IN SUBSTRATE***
+impl<PaidTermId, AccountId> Default for EntryMethod<PaidTermId, AccountId> {
+    fn default() -> Self {
+        Self::Genesis
+    }
 }
 
 //#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
@@ -151,7 +173,7 @@ decl_storage! {
         pub NextMemberId get(members_created) : T::MemberId;
 
         /// Mapping of member's id to their membership profile
-        pub MembershipById get(membership) : map T::MemberId => Option<Membership<T>>;
+        pub MembershipById get(membership) : map T::MemberId => MembershipOf<T>;
 
         /// Mapping of a root account id to vector of member ids it controls.
         pub(crate) MemberIdsByRootAccountId : map T::AccountId => Vec<T::MemberId>;
@@ -431,17 +453,21 @@ pub enum MemberRootAccountMismatch {
 
 impl<T: Trait> Module<T> {
     /// Provided that the member_id exists return its membership. Returns error otherwise.
-    pub fn ensure_membership(id: T::MemberId) -> Result<Membership<T>, &'static str> {
-        Self::membership(&id).ok_or("member profile not found")
+    pub fn ensure_membership(id: T::MemberId) -> Result<MembershipOf<T>, &'static str> {
+        if <MembershipById<T>>::exists(&id) {
+            Ok(Self::membership(&id))
+        } else {
+            Err("member profile not found")
+        }
     }
 
     /// Ensure that given member has given account as the controller account
     pub fn ensure_is_controller_account_for_member(
         member_id: &T::MemberId,
         account: &T::AccountId,
-    ) -> Result<Membership<T>, ControllerAccountForMemberCheckFailed> {
+    ) -> Result<MembershipOf<T>, ControllerAccountForMemberCheckFailed> {
         if MembershipById::<T>::exists(member_id) {
-            let membership = MembershipById::<T>::get(member_id).unwrap();
+            let membership = MembershipById::<T>::get(member_id);
 
             if membership.controller_account == *account {
                 Ok(membership)
@@ -531,11 +557,11 @@ impl<T: Trait> Module<T> {
     fn insert_member(
         who: &T::AccountId,
         user_info: &ValidatedUserInfo,
-        entry_method: EntryMethod<T>,
+        entry_method: EntryMethod<T::PaidTermId, T::AccountId>,
     ) -> T::MemberId {
         let new_member_id = Self::members_created();
 
-        let membership: Membership<T> = Membership {
+        let membership: MembershipOf<T> = Membership {
             handle: user_info.handle.clone(),
             avatar_uri: user_info.avatar_uri.clone(),
             about: user_info.about.clone(),
@@ -602,7 +628,7 @@ impl<T: Trait> Module<T> {
         <MemberIdsByControllerAccountId<T>>::get(signing_account)
             .iter()
             .any(|member_id| {
-                let membership = Self::membership(member_id).unwrap(); // must exist
+                let membership = Self::membership(member_id);
                 membership.roles.has_registered_role(&actor_in_role)
             })
     }
@@ -675,7 +701,7 @@ impl<T: Trait> Module<T> {
     pub fn can_register_role_on_member(
         member_id: &T::MemberId,
         actor_in_role: &ActorInRole<T::ActorId>,
-    ) -> Result<Membership<T>, &'static str> {
+    ) -> Result<MembershipOf<T>, &'static str> {
         // Ensure member exists
         let membership = Self::ensure_membership(*member_id)?;
 

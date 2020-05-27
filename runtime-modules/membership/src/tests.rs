@@ -18,6 +18,14 @@ fn assert_ok_unwrap<T>(value: Option<T>, err: &'static str) -> T {
     }
 }
 
+fn get_membership_by_id(member_id: u32) -> crate::MembershipOf<Test> {
+    if <crate::MembershipById<Test>>::exists(member_id) {
+        Members::membership(member_id)
+    } else {
+        panic!("member profile not created");
+    }
+}
+
 fn assert_dispatch_error_message(result: Result<(), &'static str>, expected_message: &'static str) {
     assert!(result.is_err());
     let message = result.err().unwrap();
@@ -124,10 +132,7 @@ fn buy_membership() {
             let member_ids = vec![0];
             assert_eq!(member_ids, vec![next_member_id]);
 
-            let profile = assert_ok_unwrap(
-                Members::membership(&next_member_id),
-                "member profile not created",
-            );
+            let profile = get_membership_by_id(next_member_id);
 
             assert_eq!(Some(profile.handle), get_alice_info().handle);
             assert_eq!(Some(profile.avatar_uri), get_alice_info().avatar_uri);
@@ -245,10 +250,7 @@ fn update_profile() {
                 info.about,
             ));
 
-            let profile = assert_ok_unwrap(
-                Members::membership(&next_member_id),
-                "member profile not created",
-            );
+            let profile = get_membership_by_id(next_member_id);
 
             assert_eq!(Some(profile.handle), get_bob_info().handle);
             assert_eq!(Some(profile.avatar_uri), get_bob_info().avatar_uri);
@@ -276,10 +278,7 @@ fn add_screened_member() {
                 info.about
             ));
 
-            let profile = assert_ok_unwrap(
-                Members::membership(&next_member_id),
-                "member profile not created",
-            );
+            let profile = get_membership_by_id(next_member_id);
 
             assert_eq!(Some(profile.handle), get_alice_info().handle);
             assert_eq!(Some(profile.avatar_uri), get_alice_info().avatar_uri);
@@ -312,10 +311,7 @@ fn set_controller_key() {
                 ALICE_CONTROLLER_ID
             ));
 
-            let profile = assert_ok_unwrap(
-                Members::membership(&member_id),
-                "member profile not created",
-            );
+            let profile = get_membership_by_id(member_id);
 
             assert_eq!(profile.controller_account, ALICE_CONTROLLER_ID);
             assert_eq!(
@@ -349,7 +345,7 @@ fn set_root_account() {
                 ALICE_NEW_ROOT_ACCOUNT
             ));
 
-            let membership = Members::membership(member_id).unwrap();
+            let membership = Members::membership(member_id);
 
             assert_eq!(ALICE_ACCOUNT_ID, membership.root_account);
 
@@ -391,19 +387,6 @@ fn registering_and_unregistering_roles_on_member() {
                 crate::Role::ChannelOwner
             ));
 
-            /*
-            Disabling this temporarily for Rome, later we will drop all this
-            integration with Membership module anyway:
-            https://github.com/Joystream/substrate-runtime-joystream/issues/115
-            assert_dispatch_error_message(
-                Members::register_role_on_member(
-                    member_id_1,
-                    &crate::ActorInRole::new(crate::Role::ChannelOwner, DUMMY_ACTOR_ID + 1),
-                ),
-                "MemberAlreadyInRole",
-            );
-            */
-
             // registering another member in same role and actorid combination should fail
             assert_dispatch_error_message(
                 Members::register_role_on_member(
@@ -415,7 +398,7 @@ fn registering_and_unregistering_roles_on_member() {
 
             // UNREGISTERING
 
-            // trying to unregister non existant actor role should fail
+            // trying to unregister non existent actor role should fail
             assert_dispatch_error_message(
                 Members::unregister_role(crate::ActorInRole::new(crate::Role::Curator, 222)),
                 "ActorInRoleNotFound",

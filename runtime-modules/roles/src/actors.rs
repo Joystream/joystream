@@ -277,7 +277,8 @@ decl_module! {
                                     let _ = T::Currency::deposit_into_existing(&actor.account, params.reward);
                                 } else {
                                     // otherwise it should go the the member's root account
-                                    if let Some(profile) = <membership::Module<T>>::membership(&actor.member_id) {
+                                    if <membership::MembershipById<T>>::exists(actor.member_id) {
+                                        let profile = <membership::Module<T>>::membership(&actor.member_id);
                                         let _ = T::Currency::deposit_into_existing(&profile.root_account, params.reward);
                                     }
                                 }
