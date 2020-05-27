@@ -1460,11 +1460,11 @@ decl_module! {
         pub fn transaction(origin, actor: Actor<T>, operations: Vec<OperationType<T>>) -> dispatch::Result {
             Self::ensure_number_of_operations_during_atomic_batching_limit_not_reached(&operations)?;
             // This map holds the T::EntityId of the entity created as a result of executing a `CreateEntity` `Operation`
-            // keyed by the indexed of the operation, in the operations vector.
-            let mut entity_created_in_operation: BTreeMap<usize, T::EntityId> = BTreeMap::new();
+            // keyed by the index of the operation, in the operations vector.
+            let mut entity_created_in_operation = vec![];
             let raw_origin = origin.into().map_err(|_| ERROR_ORIGIN_CANNOT_BE_MADE_INTO_RAW_ORIGIN)?;
 
-            for (op_index, operation_type) in operations.into_iter().enumerate() {
+            for operation_type in operations.into_iter() {
                 let origin = T::Origin::from(raw_origin.clone());
                 let actor = actor.clone();
                 match operation_type {
@@ -1472,7 +1472,7 @@ decl_module! {
                         Self::create_entity(origin, create_entity_operation.class_id, actor)?;
                         // entity id of newly created entity
                         let entity_id = Self::next_entity_id() - T::EntityId::one();
-                        entity_created_in_operation.insert(op_index, entity_id);
+                        entity_created_in_operation.push(entity_id);
                     },
                     OperationType::UpdatePropertyValues(update_property_values_operation) => {
                         let entity_id = operations::parametrized_entity_to_entity_id(

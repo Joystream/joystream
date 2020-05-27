@@ -59,7 +59,7 @@ pub enum OperationType<T: Trait> {
 }
 
 pub fn parametrized_entity_to_entity_id<T: Trait>(
-    created_entities: &BTreeMap<usize, T::EntityId>,
+    created_entities: &Vec<T::EntityId>,
     entity: ParameterizedEntity<T>,
 ) -> Result<T::EntityId, &'static str> {
     match entity {
@@ -67,14 +67,14 @@ pub fn parametrized_entity_to_entity_id<T: Trait>(
         ParameterizedEntity::InternalEntityJustAdded(op_index_u32) => {
             let op_index = op_index_u32 as usize;
             Ok(*created_entities
-                .get(&op_index)
+                .get(op_index)
                 .ok_or("EntityNotCreatedByOperation")?)
         }
     }
 }
 
 pub fn parametrized_property_values_to_property_values<T: Trait>(
-    created_entities: &BTreeMap<usize, T::EntityId>,
+    created_entities: &Vec<T::EntityId>,
     parametrized_property_values: Vec<ParametrizedClassPropertyValue<T>>,
 ) -> Result<BTreeMap<PropertyId, PropertyValue<T>>, &'static str> {
     let mut class_property_values = BTreeMap::new();
@@ -88,7 +88,7 @@ pub fn parametrized_property_values_to_property_values<T: Trait>(
                 // Verify that referenced entity was indeed created created
                 let op_index = entity_created_in_operation_index as usize;
                 let entity_id = created_entities
-                    .get(&op_index)
+                    .get(op_index)
                     .ok_or("EntityNotCreatedByOperation")?;
                 PropertyValue::Single(SinglePropertyValue::new(Value::Reference(*entity_id)))
             }
@@ -103,7 +103,7 @@ pub fn parametrized_property_values_to_property_values<T: Trait>(
                         ) => {
                             let op_index = entity_created_in_operation_index as usize;
                             let entity_id = created_entities
-                                .get(&op_index)
+                                .get(op_index)
                                 .ok_or("EntityNotCreatedByOperation")?;
                             entities.push(*entity_id);
                         }

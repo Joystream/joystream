@@ -324,6 +324,7 @@ impl<T: Trait> VecPropertyValue<T> {
             VecValue::Text(vec) => *vec = vec![],
             VecValue::Reference(vec) => *vec = vec![],
         }
+
         self.increment_nonce();
     }
 
