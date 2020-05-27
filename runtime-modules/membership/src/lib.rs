@@ -151,7 +151,7 @@ decl_storage! {
         pub NextMemberId get(members_created) : T::MemberId;
 
         /// Mapping of member's id to their membership profile
-        pub Memberships get(membership) : map T::MemberId => Option<Membership<T>>;
+        pub MembershipById get(membership) : map T::MemberId => Option<Membership<T>>;
 
         /// Mapping of a root account id to vector of member ids it controls.
         pub(crate) MemberIdsByRootAccountId : map T::AccountId => Vec<T::MemberId>;
@@ -344,7 +344,7 @@ decl_module! {
                 });
 
                 membership.controller_account = new_controller_account.clone();
-                <Memberships<T>>::insert(member_id, membership);
+                <MembershipById<T>>::insert(member_id, membership);
                 Self::deposit_event(RawEvent::MemberSetControllerAccount(member_id, new_controller_account));
             }
         }
@@ -440,8 +440,8 @@ impl<T: Trait> Module<T> {
         member_id: &T::MemberId,
         account: &T::AccountId,
     ) -> Result<Membership<T>, ControllerAccountForMemberCheckFailed> {
-        if Memberships::<T>::exists(member_id) {
-            let membership = Memberships::<T>::get(member_id).unwrap();
+        if MembershipById::<T>::exists(member_id) {
+            let membership = MembershipById::<T>::get(member_id).unwrap();
 
             if membership.controller_account == *account {
                 Ok(membership)
@@ -556,7 +556,7 @@ impl<T: Trait> Module<T> {
             ids.push(new_member_id);
         });
 
-        <Memberships<T>>::insert(new_member_id, membership);
+        <MembershipById<T>>::insert(new_member_id, membership);
         <MemberIdByHandle<T>>::insert(user_info.handle.clone(), new_member_id);
         <NextMemberId<T>>::put(new_member_id + One::one());
 
@@ -568,7 +568,7 @@ impl<T: Trait> Module<T> {
         let text = Self::validate_text(text);
         membership.about = text;
         Self::deposit_event(RawEvent::MemberUpdatedAboutText(id));
-        <Memberships<T>>::insert(id, membership);
+        <MembershipById<T>>::insert(id, membership);
         Ok(())
     }
 
@@ -577,7 +577,7 @@ impl<T: Trait> Module<T> {
         Self::validate_avatar(uri)?;
         membership.avatar_uri = uri.to_owned();
         Self::deposit_event(RawEvent::MemberUpdatedAvatar(id));
-        <Memberships<T>>::insert(id, membership);
+        <MembershipById<T>>::insert(id, membership);
         Ok(())
     }
 
@@ -589,7 +589,7 @@ impl<T: Trait> Module<T> {
         <MemberIdByHandle<T>>::insert(handle.clone(), id);
         membership.handle = handle;
         Self::deposit_event(RawEvent::MemberUpdatedHandle(id));
-        <Memberships<T>>::insert(id, membership);
+        <MembershipById<T>>::insert(id, membership);
         Ok(())
     }
 
@@ -705,7 +705,7 @@ impl<T: Trait> Module<T> {
 
         assert!(membership.roles.register_role(actor_in_role));
 
-        <Memberships<T>>::insert(member_id, membership);
+        <MembershipById<T>>::insert(member_id, membership);
         <MembershipIdByActorInRole<T>>::insert(actor_in_role, member_id);
         Self::deposit_event(RawEvent::MemberRegisteredRole(member_id, *actor_in_role));
         Ok(())
@@ -731,7 +731,7 @@ impl<T: Trait> Module<T> {
 
         <MembershipIdByActorInRole<T>>::remove(actor_in_role);
 
-        <Memberships<T>>::insert(member_id, membership);
+        <MembershipById<T>>::insert(member_id, membership);
 
         Self::deposit_event(RawEvent::MemberUnregisteredRole(member_id, actor_in_role));
 
