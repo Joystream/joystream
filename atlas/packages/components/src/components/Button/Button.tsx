@@ -1,10 +1,10 @@
 import React from "react";
 import { ButtonStyleProps, useCSS } from "./Button.style";
-import { IconProp } from "@fortawesome/fontawesome-svg-core";
+import BlockIcon from "../../../assets/block.svg";
 
 type ButtonProps = {
 	children?: React.ReactNode;
-	icon?: IconProp;
+	icon?: boolean;
 	disabled?: boolean;
 	onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
 } & ButtonStyleProps;
@@ -17,9 +17,10 @@ export default function Button({
 	onClick,
 	...styleProps
 }: ButtonProps) {
-	let styles = useCSS({ disabled, type, ...styleProps });
+	let styles = useCSS({ disabled, type, children, ...styleProps });
 	return (
 		<button css={styles.container} onClick={disabled ? null : onClick}>
+			{icon && <BlockIcon css={styles.icon} />}
 			{children}
 		</button>
 	);

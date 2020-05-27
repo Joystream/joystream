@@ -8,7 +8,8 @@
 		"baseUrl": "src",
 		"jsx": "preserve",
 		"declaration": true,
-		"declarationDir": "dist/types"
+		"declarationDir": "dist/types",
+		"typeRoots": ["./@types", "node_modules/@types"]
 	},
 
 	"exclude": ["node_modules", "dist", "stories"]

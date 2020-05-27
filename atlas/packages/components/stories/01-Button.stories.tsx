@@ -41,11 +41,11 @@ export const SecondaryFullSize = () => (
 
 export const PrimaryWithIcon = () => (
 	<>
-		<Button icon={faBan}>Regular</Button>
-		<Button icon={faBan} size="small">
+		<Button icon>Regular</Button>
+		<Button icon size="small">
 			Small
 		</Button>
-		<Button icon={faBan} size="smaller">
+		<Button icon size="smaller">
 			Smaller
 		</Button>
 	</>
@@ -53,13 +53,13 @@ export const PrimaryWithIcon = () => (
 
 export const SecondaryWithIcon = () => (
 	<>
-		<Button type="secondary" icon={faBan}>
+		<Button type="secondary" icon>
 			Regular
 		</Button>
-		<Button type="secondary" icon={faBan} size="small">
+		<Button type="secondary" icon size="small">
 			Small
 		</Button>
-		<Button type="secondary" icon={faBan} size="smaller">
+		<Button type="secondary" icon size="smaller">
 			Smaller
 		</Button>
 	</>
@@ -67,26 +67,26 @@ export const SecondaryWithIcon = () => (
 
 export const PrimaryWithoutText = () => (
 	<>
-		<Button icon={faBan} />
-		<Button icon={faBan} size="small" />
-		<Button icon={faBan} size="smaller" />
+		<Button icon />
+		<Button icon size="small" />
+		<Button icon size="smaller" />
 	</>
 );
 
 export const SecondaryWithoutText = () => (
 	<>
-		<Button type="secondary" icon={faBan} />
-		<Button type="secondary" icon={faBan} size="small" />
-		<Button type="secondary" icon={faBan} size="smaller" />
+		<Button type="secondary" icon />
+		<Button type="secondary" icon size="small" />
+		<Button type="secondary" icon size="smaller" />
 	</>
 );
 
 export const Disabled = () => (
 	<>
 		<Button disabled={true}>Disabled</Button>
-		<Button disabled={true} icon={faBan}>
+		<Button disabled={true} icon={true}>
 			Disabled with icon
 		</Button>
-		<Button disabled={true} icon={faBan} />
+		<Button disabled={true} icon />
 	</>
 );

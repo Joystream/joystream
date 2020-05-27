@@ -7,6 +7,7 @@ export type ButtonStyleProps = {
 	type?: "primary" | "secondary";
 	full?: boolean;
 	size?: "regular" | "small" | "smaller";
+	children?: React.ReactNode;
 	disabled?: boolean;
 };
 
@@ -46,6 +47,7 @@ const colorFromType: StyleFn = (styles, { type }: ButtonStyleProps) => {
 		case "secondary":
 			return {
 				...styles,
+				color: colors.blue[500],
 				backgroundColor: colors.black,
 				borderColor: colors.blue[500],
 
@@ -94,7 +96,7 @@ const paddingFromType: StyleFn = (
 const iconStyles: StyleFn = (styles, { children, size }) => {
 	return {
 		...styles,
-		marginRight: !!children ? "10px" : "0",
+		marginRight: children != null ? "10px" : "0",
 		fontSize:
 			size === "regular"
 				? typography.sizes.icon.large
@@ -102,9 +104,9 @@ const iconStyles: StyleFn = (styles, { children, size }) => {
 				? typography.sizes.icon.medium
 				: typography.sizes.icon.small,
 
-		"& > path:nth-of-type(1)": {
-			color: "inherit",
-			flexShrink: 0,
+		flexShrink: 0,
+		"& > *": {
+			stroke: "currentColor",
 		},
 	};
 };
