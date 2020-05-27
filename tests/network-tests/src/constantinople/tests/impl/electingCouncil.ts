@@ -1,7 +1,6 @@
 import { KeyringPair } from '@polkadot/keyring/types';
 import { ApiWrapper } from '../../utils/apiWrapper';
 import { WsProvider, Keyring } from '@polkadot/api';
-import { initConfig } from '../../utils/config';
 import BN from 'bn.js';
 import { registerJoystreamTypes, Seat } from '@constantinople/types';
 import { assert } from 'chai';

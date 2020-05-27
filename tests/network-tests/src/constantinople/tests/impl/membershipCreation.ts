@@ -21,9 +21,9 @@ export function membershipTest(
   let aKeyPair: KeyringPair;
   let membershipFee: BN;
   let membershipTransactionFee: BN;
+  registerJoystreamTypes();
 
   tap.test('Membership creation test setup', async () => {
-    registerJoystreamTypes();
     const provider = new WsProvider(nodeUrl);
     apiWrapper = await ApiWrapper.create(provider);
     sudo = keyring.addFromUri(sudoUri);
