@@ -854,6 +854,7 @@ decl_module! {
             Ok(())
         }
 
+        /// Create new class schema from existing property ids and new properties 
         pub fn add_class_schema(
             origin,
             class_id: T::ClassId,
@@ -896,6 +897,7 @@ decl_module! {
                 unique_prop_names.insert(new_property.name.to_owned());
             }
 
+            // Create new Schema with existing properies provided
             let mut schema = Schema::new(existing_properties);
             
             schema.ensure_schema_properties_are_valid_indices(class_properties)?;
@@ -905,12 +907,12 @@ decl_module! {
 
             new_properties.into_iter().for_each(|prop| {
 
-                // Update existing class properties
+                // Add new property ids to `Schema`
                 let prop_id = updated_class_props.len() as PropertyId;
 
                 schema.get_properties_mut().insert(prop_id);
 
-                // Add new property ids to `Schema`
+                // Update existing class properties
                 updated_class_props.push(prop);
             });
 
