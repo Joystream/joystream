@@ -207,7 +207,7 @@ decl_storage! {
         /// Is the platform is accepting new members or not
         pub NewMembershipsAllowed get(new_memberships_allowed) : bool = true;
 
-        pub ScreeningAuthority get(screening_authority) : Option<T::AccountId>;
+        pub ScreeningAuthority get(screening_authority) : T::AccountId;
 
         // User Input Validation parameters - do these really need to be state variables
         // I don't see a need to adjust these in future?
@@ -402,8 +402,8 @@ decl_module! {
             // ensure sender is screening authority
             let sender = ensure_signed(origin)?;
 
-            if let Some(screening_authority) = Self::screening_authority() {
-                ensure!(sender == screening_authority, "not screener");
+            if <ScreeningAuthority<T>>::exists() {
+                ensure!(sender == Self::screening_authority(), "not screener");
             } else {
                 // no screening authority defined. Cannot accept this request
                 return Err("no screening authority defined");
