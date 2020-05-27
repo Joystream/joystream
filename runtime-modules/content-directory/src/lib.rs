@@ -1342,14 +1342,15 @@ decl_module! {
             current_property_value_vec.ensure_nonce_equality(nonce)?;
             current_property_value_vec
                 .ensure_index_in_property_vector_is_valid(index_in_property_vec)?;
-            let involved_entity_id = current_property_value_vec
-                .get_vec_value()
-                .get_involved_entities()
-                .map(|involved_entities| involved_entities[index_in_property_vec as usize]);
 
             //
             // == MUTATION SAFE ==
             //
+
+            let involved_entity_id = current_property_value_vec
+                .get_vec_value()
+                .get_involved_entities()
+                .map(|involved_entities| involved_entities[index_in_property_vec as usize]);
 
             // Remove property value vector
             <EntityById<T>>::mutate(entity_id, |entity| {
