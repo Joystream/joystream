@@ -576,15 +576,13 @@ impl<T: Trait> Property<T> {
         new_value: &PropertyValue<T>,
         entity_values_updated: &BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
-        if self.unique {
-            if *new_value != PropertyValue::default() || self.required {
-                ensure!(
-                    entity_values_updated
-                        .iter()
-                        .all(|(_, prop_value)| *prop_value != *new_value),
-                    ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE
-                );
-            }
+        if self.unique && (*new_value != PropertyValue::default() || self.required) {
+            ensure!(
+                entity_values_updated
+                    .iter()
+                    .all(|(_, prop_value)| *prop_value != *new_value),
+                ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE
+            );
         }
         Ok(())
     }
