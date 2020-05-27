@@ -2,7 +2,9 @@
 set -e
 
 echo '+cargo test --release --all'
-cargo +nightly test --release --all
+BUILD_DUMMY_WASM_BINARY=1 cargo test --release --all
 
 echo '+cargo clippy --release --all -- -D warnings'
-cargo +nightly clippy --release --all -- -D warnings
+BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --all -- -D warnings
+
+
