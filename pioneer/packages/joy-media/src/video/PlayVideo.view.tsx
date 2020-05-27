@@ -2,8 +2,8 @@ import React from 'react';
 import { RouteComponentProps } from 'react-router';
 import { MediaView } from '../MediaView';
 import { PlayVideoProps, PlayVideo } from './PlayVideo';
-import { ChannelId } from '@joystream/types/lib/content-working-group';
-import { EntityId } from '@joystream/types/lib/versioned-store';
+import { ChannelId } from '@joystream/types/content-working-group';
+import { EntityId } from '@joystream/types/versioned-store';
 import { JoyError } from '@polkadot/joy-utils/JoyStatus';
 
 type Props = PlayVideoProps;

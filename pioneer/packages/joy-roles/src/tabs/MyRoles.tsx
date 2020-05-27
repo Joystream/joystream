@@ -22,8 +22,8 @@ import { Balance } from '@polkadot/types/interfaces';
 
 import { Loadable } from '@polkadot/joy-utils/index'
 
-import { GenericJoyStreamRoleSchema } from '@joystream/types/lib/hiring/schemas/role.schema.typings'
-import { Opening } from "@joystream/types/lib/hiring"
+import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema.typings'
+import { Opening } from "@joystream/types/hiring"
 
 import {
   OpeningBodyReviewInProgress,
@@ -34,7 +34,7 @@ import {
 } from '../openingStateMarkup'
 import { CancelledReason, OpeningStageClassification, OpeningState } from "../classifiers"
 import { OpeningMetadata } from "../OpeningMetadata"
-import { CuratorId } from '@joystream/types/lib/content-working-group';
+import { CuratorId } from '@joystream/types/content-working-group';
 
 type CTACallback = (rationale: string) => void
 

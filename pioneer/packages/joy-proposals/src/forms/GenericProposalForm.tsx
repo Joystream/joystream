@@ -17,7 +17,7 @@ import { ProposalType } from "../runtime";
 import { calculateStake } from "../utils";
 import { formatBalance } from "@polkadot/util"
 import "./forms.css";
-import { ProposalId } from "@joystream/types/lib/proposals";
+import { ProposalId } from "@joystream/types/proposals";
 
 
 // Generic form values

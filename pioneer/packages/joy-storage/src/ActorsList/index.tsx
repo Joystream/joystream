@@ -6,7 +6,7 @@ import { Table } from 'semantic-ui-react';
 import { Option } from '@polkadot/types';
 import { AccountId } from '@polkadot/types/interfaces';
 import AddressMini from '@polkadot/react-components/AddressMiniJoy';
-import { Actor } from '@joystream/types/lib/roles';
+import { Actor } from '@joystream/types/roles';
 import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
 import TxButton from '@polkadot/joy-utils/TxButton';
 

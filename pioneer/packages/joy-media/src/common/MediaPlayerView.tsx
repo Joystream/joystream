@@ -10,7 +10,7 @@ import { Option } from '@polkadot/types/codec';
 
 import translate from '../translate';
 import { DiscoveryProviderProps } from '../DiscoveryProvider';
-import { DataObject, ContentId } from '@joystream/types/lib/media';
+import { DataObject, ContentId } from '@joystream/types/media';
 import { VideoType } from '../schemas/video/Video';
 import { isAccountAChannelOwner } from '../channels/ChannelHelpers';
 import { ChannelEntity } from '../entities/ChannelEntity';
@@ -99,7 +99,7 @@ function Player(props: PlayerProps) {
 
 function InnerComponent(props: MediaPlayerViewProps) {
   const { video, resolvedAssetUrl: url } = props
-  
+
   const { dataObjectOpt, channel } = props;
   if (!dataObjectOpt || dataObjectOpt.isNone ) {
     return null;
@@ -113,7 +113,7 @@ function InnerComponent(props: MediaPlayerViewProps) {
 
   return (
     <div className='PlayBox'>
-      
+
       {/* Note that here we use a 'key' prop to force Player component to rerender */}
       <Player {...props} key={url} />
 

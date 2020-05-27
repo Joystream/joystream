@@ -24,9 +24,9 @@ import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext'
 
 import { Countdown } from '../elements'
 import { ApplicationStakeRequirement, RoleStakeRequirement } from '../StakeRequirement'
-import { GenericJoyStreamRoleSchema } from '@joystream/types/lib/hiring/schemas/role.schema.typings'
-import { Opening } from "@joystream/types/lib/hiring"
-import { MemberId } from '@joystream/types/lib/members';
+import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema.typings'
+import { Opening } from "@joystream/types/hiring"
+import { MemberId } from '@joystream/types/members';
 
 import { OpeningStageClassification, OpeningState } from "../classifiers"
 import { OpeningMetadataProps } from "../OpeningMetadata"

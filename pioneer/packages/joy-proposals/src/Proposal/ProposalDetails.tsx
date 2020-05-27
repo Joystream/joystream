@@ -11,10 +11,10 @@ import { withCalls } from '@polkadot/react-api';
 import { withMulti } from '@polkadot/react-api/with';
 
 import "./Proposal.css";
-import { ProposalId, ProposalDecisionStatuses, ApprovedProposalStatuses, ExecutionFailedStatus } from "@joystream/types/lib/proposals";
+import { ProposalId, ProposalDecisionStatuses, ApprovedProposalStatuses, ExecutionFailedStatus } from "@joystream/types/proposals";
 import { BlockNumber } from '@polkadot/types/interfaces'
-import { MemberId } from "@joystream/types/lib/members";
-import { Seat } from "@joystream/types/lib/";
+import { MemberId } from "@joystream/types/members";
+import { Seat } from "@joystream/types/";
 import PromiseComponent from './PromiseComponent';
 
 type BasicProposalStatus = 'Active' | 'Finalized';

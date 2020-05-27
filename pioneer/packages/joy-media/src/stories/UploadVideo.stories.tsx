@@ -2,12 +2,12 @@ import React from 'react';
 import { EditForm } from '../upload/UploadVideo'
 import '../index.css';
 
-import { ContentId } from '@joystream/types/lib/media';
+import { ContentId } from '@joystream/types/media';
 import { withMockTransport } from './withMockTransport';
 import EditVideoView from '../upload/EditVideo.view';
-import EntityId from '@joystream/types/lib/versioned-store/EntityId';
+import EntityId from '@joystream/types/versioned-store/EntityId';
 
-export default { 
+export default {
 	title: 'Media | Upload video',
 	decorators: [ withMockTransport ],
 };
@@ -16,7 +16,7 @@ const contentId = ContentId.generate();
 
 export const DefaultState = () =>
 	<EditForm
-		contentId={contentId} 
+		contentId={contentId}
 	/>;
 
 export const MockEditFormView = () =>

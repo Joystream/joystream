@@ -224,9 +224,15 @@ function createWebpack ({ alias = {}, context, name = 'index' }) {
 
 module.exports = createWebpack({
   context: __dirname,
-  alias: findPackages().reduce((alias, { dir, name }) => {
-    alias[name] = path.resolve(__dirname, `../${dir}/src`);
+  alias: {
+    ...(
+      findPackages().reduce((alias, { dir, name }) => {
+        alias[name] = path.resolve(__dirname, `../${dir}/src`);
 
-    return alias;
-  }, {})
+        return alias;
+      }, {})
+    ),
+    // TODO: Me might try to add it to "findPackages", but this will be a little more tricky
+    "@joystream/types": path.resolve(__dirname, '../../../types/src')
+  }
 });

@@ -8,7 +8,7 @@ import { onImageError } from '@polkadot/joy-utils/images';
 import { ReorderableTracks } from './ReorderableTracks';
 import { MusicAlbumValidationSchema, MusicAlbumType, MusicAlbumClass as Fields, MusicAlbumFormValues, MusicAlbumToFormValues } from '../schemas/music/MusicAlbum';
 import { withMediaForm, MediaFormProps, datePlaceholder } from '../common/MediaForms';
-import EntityId from '@joystream/types/lib/versioned-store/EntityId';
+import EntityId from '@joystream/types/versioned-store/EntityId';
 import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
 import { MusicTrackReaderPreviewProps } from './MusicTrackReaderPreview';
 import { FormTabs } from '../common/FormTabs';
@@ -80,7 +80,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   </Tab.Pane>
 
   const tracksTab = () => <Tab.Pane as='div'>
-    <ReorderableTracks 
+    <ReorderableTracks
       tracks={tracks}
       noTracksView={<em style={{ padding: '1rem 0', display: 'block' }}>This album has no tracks yet.</em>}
     />
@@ -145,7 +145,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     </div>
 
     <Form className='ui form JoyForm EditMetaForm'>
-      
+
       {tabs}
 
       <LabelledField style={{ marginTop: '1rem' }} {...props}>

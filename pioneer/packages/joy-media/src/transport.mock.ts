@@ -1,5 +1,5 @@
 import { MediaTransport, ChannelValidationConstraints } from './transport';
-import { Entity, Class } from '@joystream/types/lib/versioned-store';
+import { Entity, Class } from '@joystream/types/versioned-store';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';
 import { VideoType } from './schemas/video/Video';

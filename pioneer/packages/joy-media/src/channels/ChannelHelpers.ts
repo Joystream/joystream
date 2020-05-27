@@ -1,6 +1,6 @@
 import { AccountId } from '@polkadot/types/interfaces';
 import { ChannelType } from "../schemas/channel/Channel";
-import { ChannelPublicationStatusAllValues } from "@joystream/types/lib/content-working-group";
+import { ChannelPublicationStatusAllValues } from "@joystream/types/content-working-group";
 
 export const ChannelPublicationStatusDropdownOptions =
   ChannelPublicationStatusAllValues

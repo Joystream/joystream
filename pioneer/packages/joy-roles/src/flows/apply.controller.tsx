@@ -7,7 +7,7 @@ import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
 import { Controller, View } from '@polkadot/joy-utils/index'
 
-import { GenericJoyStreamRoleSchema } from '@joystream/types/lib/hiring/schemas/role.schema.typings'
+import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema.typings'
 
 import { Container } from 'semantic-ui-react'
 

@@ -3,7 +3,7 @@ import { Option, Vec, Bytes, u32 } from '@polkadot/types';
 import { Codec } from '@polkadot/types/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { UserInfo, PaidMembershipTerms, MemberId } from '@joystream/types/lib/members';
-import { Seat, VoteKind } from '@joystream/types/lib';
+import { Seat, VoteKind } from '@joystream/types/';
 import { Balance, EventRecord } from '@polkadot/types/interfaces';
 import BN = require('bn.js');
 import { SubmittableExtrinsic } from '@polkadot/api/types';

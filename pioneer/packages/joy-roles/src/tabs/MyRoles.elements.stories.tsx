@@ -30,7 +30,7 @@ import {
 } from './Opportunities.stories'
 import { OpeningState } from "../classifiers"
 
-import { CuratorId } from '@joystream/types/lib/content-working-group';
+import { CuratorId } from '@joystream/types/content-working-group';
 
 export default {
   title: 'Roles / Components / My roles tab / Elements',

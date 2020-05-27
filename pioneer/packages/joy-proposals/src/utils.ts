@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { ProposalType } from "./runtime";
 import { Category } from "./Proposal/ChooseProposalType";
 import { useTransport, ParsedProposal, ProposalVote } from "./runtime";
-import { ProposalId } from "@joystream/types/lib/proposals";
+import { ProposalId } from "@joystream/types/proposals";
 
 type ProposalMeta = {
   description: string;

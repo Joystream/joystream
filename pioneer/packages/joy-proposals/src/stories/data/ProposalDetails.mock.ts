@@ -1,5 +1,5 @@
 import { ParsedProposal } from "../../runtime";
-import { ProposalId } from "@joystream/types/lib/proposals"
+import { ProposalId } from "@joystream/types/proposals"
 
 const mockedProposal: ParsedProposal = {
   id: new ProposalId(100),

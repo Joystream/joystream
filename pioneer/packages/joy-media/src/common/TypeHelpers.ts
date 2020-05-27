@@ -1,6 +1,6 @@
 import BN from 'bn.js'
-import { ChannelId } from "@joystream/types/lib/content-working-group"
-import { EntityId, ClassId } from "@joystream/types/lib/versioned-store"
+import { ChannelId } from "@joystream/types/content-working-group"
+import { EntityId, ClassId } from "@joystream/types/versioned-store"
 
 export type AnyChannelId = ChannelId | BN | number | string
 

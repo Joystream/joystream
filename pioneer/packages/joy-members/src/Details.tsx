@@ -12,9 +12,9 @@ import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import { formatNumber } from '@polkadot/util';
 
 import translate from './translate';
-import { MemberId, Profile, EntryMethod, Paid, Screening, Genesis, SubscriptionId } from '@joystream/types/lib/members';
+import { MemberId, Profile, EntryMethod, Paid, Screening, Genesis, SubscriptionId } from '@joystream/types/members';
 import { queryMembershipToProp } from './utils';
-import { Seat } from '@joystream/types/lib/';
+import { Seat } from '@joystream/types/';
 import { nonEmptyStr, queryToProp } from '@polkadot/joy-utils/index';
 import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
 

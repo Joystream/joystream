@@ -17,7 +17,7 @@ import { FormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
 import { useTransport } from "../runtime";
 import { usePromise } from "../utils";
-import { Profile } from "@joystream/types/lib/members";
+import { Profile } from "@joystream/types/members";
 import PromiseComponent from "../Proposal/PromiseComponent";
 import _ from 'lodash';
 import "./forms.css";

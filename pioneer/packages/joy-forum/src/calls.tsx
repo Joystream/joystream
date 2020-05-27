@@ -7,7 +7,7 @@ import { Option } from '@polkadot/types/codec';
 import { AccountId } from '@polkadot/types/interfaces';
 import { u64 } from '@polkadot/types';
 import { Constructor } from '@polkadot/types/types';
-import { Category, Thread, Reply } from '@joystream/types/lib/forum';
+import { Category, Thread, Reply } from '@joystream/types/forum';
 import { useForum, ForumState } from './Context';
 
 type Call = string | [string, Options];

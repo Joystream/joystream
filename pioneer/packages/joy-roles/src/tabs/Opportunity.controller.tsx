@@ -4,7 +4,7 @@ import { Controller, memoize, View } from '@polkadot/joy-utils/index'
 
 import { ITransport } from '../transport'
 
-import { MemberId } from '@joystream/types/lib/members';
+import { MemberId } from '@joystream/types/members';
 
 import {
   WorkingGroupOpening,

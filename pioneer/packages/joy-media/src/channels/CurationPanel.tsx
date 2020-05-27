@@ -3,7 +3,7 @@ import { ChannelEntity } from '../entities/ChannelEntity';
 import { isVerifiedChannel, isCensoredChannel } from './ChannelHelpers';
 import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
 import TxButton from '@polkadot/joy-utils/TxButton';
-import { ChannelCurationStatus } from '@joystream/types/lib/content-working-group';
+import { ChannelCurationStatus } from '@joystream/types/content-working-group';
 import { AccountId } from '@polkadot/types/interfaces';
 
 type ChannelCurationPanelProps = {

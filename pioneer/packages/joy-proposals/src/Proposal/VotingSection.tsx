@@ -3,12 +3,12 @@ import React, { useState } from "react";
 import { Icon, Button, Message, Divider, Header } from "semantic-ui-react";
 import useVoteStyles from "./useVoteStyles";
 import TxButton from "@polkadot/joy-utils/TxButton";
-import { MemberId } from "@joystream/types/lib/members";
-import { ProposalId } from "@joystream/types/lib/proposals";
+import { MemberId } from "@joystream/types/members";
+import { ProposalId } from "@joystream/types/proposals";
 import { useTransport } from "../runtime";
-import { VoteKind } from '@joystream/types/lib/proposals';
+import { VoteKind } from '@joystream/types/proposals';
 import { usePromise } from "../utils";
-import { VoteKinds } from "@joystream/types/lib/proposals";
+import { VoteKinds } from "@joystream/types/proposals";
 
 export type VoteKindStr = typeof VoteKinds[number];
 

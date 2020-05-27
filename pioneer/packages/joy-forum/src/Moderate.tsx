@@ -9,7 +9,7 @@ import { withMulti } from '@polkadot/react-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { Text } from '@polkadot/types';
-import { ReplyId, ThreadId } from '@joystream/types/lib/forum';
+import { ReplyId, ThreadId } from '@joystream/types/forum';
 import Section from '@polkadot/joy-utils/Section';
 import { withOnlyForumSudo } from './ForumSudo';
 import { ValidationProps, withPostModerationValidation } from './validation';

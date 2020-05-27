@@ -2,7 +2,7 @@
 // NOTE: The purpose of this context is to immitate a Substrate storage for the forum until it's implemented as a substrate runtime module.
 
 import React, { useReducer, createContext, useContext } from 'react';
-import { Category, Thread, Reply, ModerationAction, BlockchainTimestamp } from '@joystream/types/lib/forum';
+import { Category, Thread, Reply, ModerationAction, BlockchainTimestamp } from '@joystream/types/forum';
 import { Option, Text } from '@polkadot/types';
 import { GenericAccountId } from '@polkadot/types';
 

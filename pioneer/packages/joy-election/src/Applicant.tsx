@@ -11,7 +11,7 @@ import CandidatePreview from "./CandidatePreview";
 
 import translate from './translate';
 import { calcTotalStake } from '@polkadot/joy-utils/index';
-import { Stake } from '@joystream/types/lib/';
+import { Stake } from '@joystream/types/';
 
 type Props = ApiProps & I18nProps & {
   index: number,

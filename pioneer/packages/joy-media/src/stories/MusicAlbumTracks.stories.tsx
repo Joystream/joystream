@@ -7,9 +7,9 @@ import { MusicAlbumSamples } from './data/MusicAlbumSamples';
 import { albumTracks, AllMusicTrackSamples } from './data/MusicTrackSamples';
 import { withMockTransport } from './withMockTransport';
 import { EditMusicAlbumView } from '../music/EditMusicAlbum.view';
-import EntityId from '@joystream/types/lib/versioned-store/EntityId';
+import EntityId from '@joystream/types/versioned-store/EntityId';
 
-export default { 
+export default {
 	title: 'Media | My music tracks',
 	decorators: [ withMockTransport ],
 };

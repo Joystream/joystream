@@ -1,8 +1,8 @@
 
 import * as Yup from 'yup';
 import { BlockNumber, AccountId } from '@polkadot/types/interfaces';
-import { ChannelContentTypeValue, PrincipalId, Channel, ChannelId, ChannelPublicationStatusValue, ChannelCurationStatusValue } from '@joystream/types/lib/content-working-group';
-import { MemberId } from '@joystream/types/lib/members';
+import { ChannelContentTypeValue, PrincipalId, Channel, ChannelId, ChannelPublicationStatusValue, ChannelCurationStatusValue } from '@joystream/types/content-working-group';
+import { MemberId } from '@joystream/types/members';
 import { ChannelValidationConstraints } from '@polkadot/joy-media/transport';
 import { ValidationConstraint } from '@polkadot/joy-utils/ValidationConstraint';
 
@@ -10,7 +10,7 @@ function textValidation (constraint?: ValidationConstraint) {
   if (!constraint) {
     return Yup.string()
   }
-  
+
   const { min, max } = constraint
   return Yup.string()
     .min(min, `Text is too short. Minimum length is ${min} chars.`)

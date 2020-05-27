@@ -2,8 +2,8 @@ import BN from 'bn.js';
 import { ChannelEntity } from '@polkadot/joy-media/entities/ChannelEntity';
 import { u32 } from '@polkadot/types';
 import { AccountIdSamples } from './AccountIdSamples';
-import { MemberId } from '@joystream/types/lib/members';
-import { PrincipalId } from '@joystream/types/lib/content-working-group';
+import { MemberId } from '@joystream/types/members';
+import { PrincipalId } from '@joystream/types/content-working-group';
 
 let id = 0;
 const nextId = () => ++id;
@@ -26,7 +26,7 @@ export const MockMusicChannel: ChannelEntity =
   roleAccount: AccountIdSamples.Alice,
   principalId: new PrincipalId(1),
   created: new u32(123456),
-	
+
 	rewardEarned: new BN('4587'),
 	contentItemsCount: 57,
 };
@@ -49,7 +49,7 @@ export const MockVideoChannel: ChannelEntity =
   roleAccount: AccountIdSamples.Alice,
   principalId: new PrincipalId(1),
   created: new u32(123456),
-	
+
 	rewardEarned: new BN('1820021'),
 	contentItemsCount: 1529,
 };

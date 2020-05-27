@@ -1,7 +1,7 @@
 import ISO6391 from 'iso-639-1';
 import { DropdownItemProps } from 'semantic-ui-react';
 import { LanguageType } from '../schemas/general/Language';
-import { TextValueEntity } from '@joystream/types/lib/versioned-store/EntityCodec';
+import { TextValueEntity } from '@joystream/types/versioned-store/EntityCodec';
 import { InternalEntities } from '../transport';
 
 const buildOptions = (entities: TextValueEntity[]): DropdownItemProps[] =>

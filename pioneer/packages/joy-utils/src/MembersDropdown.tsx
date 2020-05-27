@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from "react";
 import { Dropdown, DropdownItemProps, DropdownProps } from "semantic-ui-react";
-import { Profile } from "@joystream/types/lib/members";
+import { Profile } from "@joystream/types/members";
 import { memberFromAccount, MemberFromAccount } from "./accounts";
 import { AccountId } from "@polkadot/types/interfaces";
 import { ApiContext } from "@polkadot/react-api";

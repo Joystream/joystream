@@ -7,18 +7,18 @@ import { Subscribable } from '@polkadot/joy-utils/index'
 import { ITransport } from './transport'
 import { Transport as TransportBase } from '@polkadot/joy-utils/index'
 
-import { Actor, Role } from '@joystream/types/lib/roles'
+import { Actor, Role } from '@joystream/types/roles'
 import {
   Opening,
   AcceptingApplications,
   ActiveOpeningStage,
   ApplicationRationingPolicy,
   StakingPolicy,
-} from "@joystream/types/lib/hiring"
-import { IProfile, MemberId } from '@joystream/types/lib/members';
+} from "@joystream/types/hiring"
+import { IProfile, MemberId } from '@joystream/types/members';
 
 import { WorkingGroupMembership, StorageAndDistributionMembership, GroupLeadStatus } from "./tabs/WorkingGroup"
-import { CuratorId } from '@joystream/types/lib/content-working-group';
+import { CuratorId } from '@joystream/types/content-working-group';
 import { WorkingGroupOpening } from "./tabs/Opportunities"
 import { ActiveRole, OpeningApplication } from "./tabs/MyRoles"
 import { ApplicationStakeRequirement, RoleStakeRequirement, StakeType } from './StakeRequirement'

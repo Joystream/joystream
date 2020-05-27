@@ -8,9 +8,9 @@ import { Album1TrackSamples } from './data/MusicTrackSamples';
 import { MockMusicChannel, MockVideoChannel } from './data/ChannelSamples';
 import { withMockTransport } from './withMockTransport';
 import { Video } from '../mocks';
-import { EntityId } from '@joystream/types/lib/versioned-store';
+import { EntityId } from '@joystream/types/versioned-store';
 
-export default { 
+export default {
 	title: 'Media | Playback',
 	decorators: [ withMockTransport ],
 };
@@ -23,7 +23,7 @@ export const PlayVideoStory = () =>
 	/>;
 
 export const PlayAlbumStory = () =>
-	<PlayContent 
+	<PlayContent
 		channel={MockMusicChannel}
 		featuredAlbums={FeaturedAlbums}
 		tracks={Album1TrackSamples}

@@ -3,8 +3,8 @@ import { Button, Card, Icon, Message, SemanticICONS, Table } from 'semantic-ui-r
 import { Link } from 'react-router-dom';
 
 import { Balance } from '@polkadot/types/interfaces';
-import { Actor } from '@joystream/types/lib/roles';
-import { IProfile } from '@joystream/types/lib/members';
+import { Actor } from '@joystream/types/roles';
+import { IProfile } from '@joystream/types/members';
 import { Text } from '@polkadot/types';
 
 import { ActorDetailsView, MemberView, GroupMemberView, GroupLeadView } from "../elements"

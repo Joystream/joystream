@@ -15,7 +15,7 @@ import { ITransport } from './transport'
 import { GroupMember } from "./elements";
 import { Subscribable, Transport as TransportBase } from '@polkadot/joy-utils/index'
 
-import { Role } from '@joystream/types/lib/roles';
+import { Role } from '@joystream/types/roles';
 import {
   Curator, CuratorId,
   CuratorApplication, CuratorApplicationId,
@@ -23,12 +23,12 @@ import {
   CuratorRoleStakeProfile,
   CuratorOpening, CuratorOpeningId,
   Lead, LeadId
-} from '@joystream/types/lib/content-working-group';
+} from '@joystream/types/content-working-group';
 
-import { Application, Opening, OpeningId } from '@joystream/types/lib/hiring';
-import { Stake, StakeId } from '@joystream/types/lib/stake';
-import { Recipient, RewardRelationship, RewardRelationshipId } from '@joystream/types/lib/recurring-rewards';
-import { ActorInRole, Profile, MemberId, Role as MemberRole, RoleKeys, ActorId } from '@joystream/types/lib/members';
+import { Application, Opening, OpeningId } from '@joystream/types/hiring';
+import { Stake, StakeId } from '@joystream/types/stake';
+import { Recipient, RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
+import { ActorInRole, Profile, MemberId, Role as MemberRole, RoleKeys, ActorId } from '@joystream/types/members';
 import { createAccount, generateSeed } from '@polkadot/joy-utils/accounts'
 
 import { WorkingGroupMembership, StorageAndDistributionMembership, GroupLeadStatus } from "./tabs/WorkingGroup"

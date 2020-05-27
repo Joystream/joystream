@@ -20,7 +20,7 @@ import { Option } from '@polkadot/types';
 import translate from '../translate';
 
 import { queryToProp } from '@polkadot/joy-utils/index';
-import { ElectionStage } from '@joystream/types/lib/';
+import { ElectionStage } from '@joystream/types/';
 import { councilSidebarName } from '@polkadot/apps-routing/joy-election';
 
 interface Props extends I18nProps {

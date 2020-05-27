@@ -6,7 +6,7 @@ import {
   StakingPolicy,
   Opening, OpeningStage,
   ReviewPeriod,
-} from "@joystream/types/lib/hiring"
+} from "@joystream/types/hiring"
 
 import {
   OpeningState,

@@ -5,7 +5,7 @@ import { blake2AsHex } from '@polkadot/util-crypto';
 import BN = require('bn.js');
 import fs = require('fs');
 import { decodeAddress } from '@polkadot/keyring';
-import { Seat } from '@joystream/types/lib';
+import { Seat } from '@joystream/types/';
 
 export class Utils {
   private static LENGTH_ADDRESS = 32 + 1; // publicKey + prefix

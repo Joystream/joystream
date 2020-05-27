@@ -4,7 +4,7 @@ import { Segment, Tab } from 'semantic-ui-react';
 import { AccountId } from '@polkadot/types/interfaces';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { YouHaveNoChannels } from './YouHaveNoChannels';
-import { ChannelContentTypeValue } from '@joystream/types/lib/content-working-group';
+import { ChannelContentTypeValue } from '@joystream/types/content-working-group';
 import { ChannelPreview } from './ChannelPreview';
 
 export type ChannelsByOwnerProps = {
