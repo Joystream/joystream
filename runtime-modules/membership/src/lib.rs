@@ -157,11 +157,10 @@ impl<PaidTermId, AccountId> Default for EntryMethod<PaidTermId, AccountId> {
     }
 }
 
-//#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Eq, PartialEq)]
-pub struct PaidMembershipTerms<T: Trait> {
+#[derive(Encode, Decode, Eq, PartialEq, Default)]
+pub struct PaidMembershipTerms<Balance> {
     /// Quantity of native tokens which must be provably burned
-    pub fee: BalanceOf<T>,
+    pub fee: Balance,
     /// String of capped length describing human readable conditions which are being agreed upon
     pub text: Vec<u8>,
 }
@@ -200,7 +199,7 @@ decl_storage! {
                 text: Vec::default(),
             };
             vec![(T::PaidTermId::from(DEFAULT_PAID_TERM_ID), terms)]
-        }) : map T::PaidTermId => Option<PaidMembershipTerms<T>>;
+        }) : map T::PaidTermId => PaidMembershipTerms<BalanceOf<T>>;
 
         /// Active Paid membership terms
         pub ActivePaidMembershipTerms get(active_paid_membership_terms) : Vec<T::PaidTermId> = vec![T::PaidTermId::from(DEFAULT_PAID_TERM_ID)];
@@ -487,15 +486,18 @@ impl<T: Trait> Module<T> {
 
     fn ensure_active_terms_id(
         terms_id: T::PaidTermId,
-    ) -> Result<PaidMembershipTerms<T>, &'static str> {
+    ) -> Result<PaidMembershipTerms<BalanceOf<T>>, &'static str> {
         let active_terms = Self::active_paid_membership_terms();
         ensure!(
             active_terms.iter().any(|&id| id == terms_id),
             "paid terms id not active"
         );
-        let terms = Self::paid_membership_terms_by_id(terms_id)
-            .ok_or("paid membership term id does not exist")?;
-        Ok(terms)
+
+        if <PaidMembershipTermsById<T>>::exists(terms_id) {
+            Ok(Self::paid_membership_terms_by_id(terms_id))
+        } else {
+            Err("paid membership term id does not exist")
+        }
     }
 
     #[allow(clippy::ptr_arg)] // cannot change to the "&[u8]" suggested by clippy

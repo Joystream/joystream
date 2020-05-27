@@ -5,19 +5,6 @@ use super::mock::*;
 
 use srml_support::*;
 
-fn assert_ok_unwrap<T>(value: Option<T>, err: &'static str) -> T {
-    match value {
-        None => {
-            assert!(false, err);
-            // although this code path is not reached, we need to return correct type
-            // in match arm. Using panic! would remove this need, but assert! gives us better error in
-            // console output
-            value.unwrap()
-        }
-        Some(v) => v,
-    }
-}
-
 fn get_membership_by_id(member_id: u32) -> crate::MembershipOf<Test> {
     if <crate::MembershipById<Test>>::exists(member_id) {
         Members::membership(member_id)
@@ -94,10 +81,12 @@ fn initial_state() {
         )
         .build()
         .execute_with(|| {
-            let default_terms = assert_ok_unwrap(
-                Members::paid_membership_terms_by_id(DEFAULT_PAID_TERM_ID),
-                "default terms not initialized",
-            );
+            let default_terms =
+                if <crate::PaidMembershipTermsById<Test>>::exists(DEFAULT_PAID_TERM_ID) {
+                    Members::paid_membership_terms_by_id(DEFAULT_PAID_TERM_ID)
+                } else {
+                    panic!("default terms not initialized");
+                };
 
             assert_eq!(default_terms.fee, DEFAULT_FEE);
 
