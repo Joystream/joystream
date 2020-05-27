@@ -324,6 +324,11 @@ impl<T: Trait> Class<T> {
         self.class_permissions
     }
 
+    /// Retrieve class properties by reference  
+    fn get_properties_ref(&self) -> &[Property<T>] {
+        &self.properties
+    }
+
     /// Get per controller `Class`- specific limit
     pub fn get_controller_entity_creation_limit(&self) -> T::EntityId {
         self.per_controller_entity_creation_limit
@@ -852,7 +857,7 @@ decl_module! {
         pub fn add_class_schema(
             origin,
             class_id: T::ClassId,
-            existing_properties: Vec<PropertyId>,
+            existing_properties: BTreeSet<PropertyId>,
             new_properties: Vec<Property<T>>
         ) -> dispatch::Result {
 
@@ -866,60 +871,54 @@ decl_module! {
 
             class.ensure_properties_limit_not_reached(&new_properties)?;
 
-            let mut schema = Schema::new(existing_properties);
+            let class_properties = class.get_properties_ref();
 
+            // Used to ensure all property names are unique within class
             let mut unique_prop_names = BTreeSet::new();
-            for prop in class.properties.iter() {
-                unique_prop_names.insert(prop.name.clone());
+
+            for prop in class_properties.iter() {
+                unique_prop_names.insert(prop.name.to_owned());
             }
 
-            for prop in new_properties.iter() {
-                prop.ensure_name_is_valid()?;
-                prop.ensure_description_is_valid()?;
-                prop.ensure_prop_type_size_is_valid()?;
+            // Complete all checks to ensure each property is valid
+            for new_property in new_properties.iter() {
+                new_property.ensure_name_is_valid()?;
+                new_property.ensure_description_is_valid()?;
+                new_property.ensure_prop_type_size_is_valid()?;
+                new_property.ensure_prop_type_reference_is_valid()?;
 
-                // Check that the name of a new property is unique within its class.
+                // Ensure name of a new property is unique within its class.
                 ensure!(
-                    !unique_prop_names.contains(&prop.name),
+                    !unique_prop_names.contains(&new_property.name),
                     ERROR_PROP_NAME_NOT_UNIQUE_IN_A_CLASS
                 );
-                unique_prop_names.insert(prop.name.clone());
+
+                unique_prop_names.insert(new_property.name.to_owned());
             }
 
-            // Check that existing props are valid indices of class properties vector:
-            let has_unknown_props = schema.get_properties()
-                .iter()
-                .any(|&prop_id| prop_id >= class.properties.len() as PropertyId);
-            ensure!(
-                !has_unknown_props,
-                ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
-            );
+            let mut schema = Schema::new(existing_properties);
+            
+            schema.ensure_schema_properties_are_valid_indices(class_properties)?;
 
-            // Check validity of Reference Types for new_properties.
-            let has_unknown_reference = new_properties.iter().any(|prop|
-                if let Type::Reference(other_class_id, _) = prop.prop_type.get_inner_type() {
-                    !<ClassById<T>>::exists(other_class_id)
-                } else {
-                    false
-                }
-            );
+            // Represents class properties after new `Schema` added 
+            let mut updated_class_props = class.properties;  
 
-            ensure!(
-                !has_unknown_reference,
-                ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_CLASS
-            );
-
-            let mut updated_class_props = class.properties;
             new_properties.into_iter().for_each(|prop| {
+
+                // Update existing class properties
                 let prop_id = updated_class_props.len() as PropertyId;
+
+                schema.get_properties_mut().insert(prop_id);
+
+                // Add new property ids to `Schema`
                 updated_class_props.push(prop);
-                schema.get_properties_mut().push(prop_id);
             });
 
             //
             // == MUTATION SAFE ==
             //
 
+            // Update class properties and schemas 
             <ClassById<T>>::mutate(class_id, |class| {
                 class.properties = updated_class_props;
                 class.schemas.push(schema);
@@ -1820,7 +1819,7 @@ impl<T: Trait> Module<T> {
 
     /// Ensure new schema is not empty
     pub fn ensure_non_empty_schema(
-        existing_properties: &[PropertyId],
+        existing_properties: &BTreeSet<PropertyId>,
         new_properties: &[Property<T>],
     ) -> dispatch::Result {
         let non_empty_schema = !existing_properties.is_empty() || !new_properties.is_empty();

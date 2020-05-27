@@ -487,7 +487,7 @@ impl<T: Trait> Default for PropertyValue<T> {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct Schema {
     /// Indices into properties vector for the corresponding class.
-    properties: Vec<PropertyId>,
+    properties: BTreeSet<PropertyId>,
     /// If schema can be added to an entity
     is_active: bool,
 }
@@ -495,7 +495,7 @@ pub struct Schema {
 impl Default for Schema {
     fn default() -> Self {
         Self {
-            properties: vec![],
+            properties: BTreeSet::new(),
             // Default schema status
             is_active: true,
         }
@@ -503,7 +503,9 @@ impl Default for Schema {
 }
 
 impl Schema {
-    pub fn new(properties: Vec<PropertyId>) -> Self {
+
+    /// Create new schema with provided properties
+    pub fn new(properties: BTreeSet<PropertyId>) -> Self {
         Self {
             properties,
             // Default schema status
@@ -521,11 +523,23 @@ impl Schema {
         Ok(())
     }
 
-    pub fn get_properties(&self) -> &[PropertyId] {
+    /// Ensure schema properties are valid indices of `Class` properties
+    pub fn ensure_schema_properties_are_valid_indices<T: Trait>(&self, class_properties: &[Property<T>]) -> dispatch::Result {
+        let has_unknown_properties = self.get_properties()
+            .iter()
+            .any(|&prop_id| prop_id >= class_properties.len() as PropertyId);
+        ensure!(
+            !has_unknown_properties,
+            ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
+        );
+        Ok(())
+    }
+
+    pub fn get_properties(&self) -> &BTreeSet<PropertyId> {
         &self.properties
     }
 
-    pub fn get_properties_mut(&mut self) -> &mut Vec<PropertyId> {
+    pub fn get_properties_mut(&mut self) -> &mut BTreeSet<PropertyId> {
         &mut self.properties
     }
 
@@ -897,5 +911,21 @@ impl<T: Trait> Property<T> {
                 vec_property_type.ensure_prop_type_size_is_valid()
             }
         }
+    }
+
+    pub fn ensure_prop_type_reference_is_valid(&self) -> dispatch::Result{
+        let has_unknown_reference = 
+            if let Type::Reference(other_class_id, _) = self.prop_type.get_inner_type() {
+                !<ClassById<T>>::exists(other_class_id)
+            } else {
+                false
+            };
+
+        ensure!(
+            !has_unknown_reference,
+            ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_CLASS
+        );
+
+        Ok(())
     }
 }
