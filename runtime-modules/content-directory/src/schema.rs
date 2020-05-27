@@ -515,6 +515,12 @@ impl Schema {
         self.is_active
     }
 
+    /// Ensure schema in `active` status
+    pub fn ensure_is_active(&self) -> dispatch::Result {
+        ensure!(self.is_active, ERROR_CLASS_SCHEMA_NOT_ACTIVE);
+        Ok(())
+    }
+
     pub fn get_properties(&self) -> &[PropertyId] {
         &self.properties
     }
@@ -564,6 +570,27 @@ impl<T: Trait> Property<T> {
         Ok(())
     }
 
+    /// Ensure all values are unique except of null non required values
+    pub fn ensure_unique_option_satisfied(
+        &self,
+        new_value: &PropertyValue<T>,
+        entity_values_updated: &BTreeMap<PropertyId, PropertyValue<T>>,
+    ) -> dispatch::Result {
+        if self.unique {
+            if *new_value != PropertyValue::default() || self.required {
+                ensure!(
+                    entity_values_updated
+                        .iter()
+                        .all(|(_, prop_value)| *prop_value != *new_value),
+                    ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE
+                );
+            }
+        }
+        Ok(())
+    }
+
+    /// Validate a new property value against the type of this property
+    /// and check any additional constraints
     pub fn ensure_property_value_to_update_is_valid(
         &self,
         value: &PropertyValue<T>,
@@ -576,9 +603,8 @@ impl<T: Trait> Property<T> {
         Ok(())
     }
 
-    // Validate a new property value against the type of this property
-    // and check any additional constraints like the length of a vector
-    // if it's a vector property or the length of a text if it's a text property.
+    /// Ensure `SinglePropertyValue` type is equal to the `VecPropertyValue` type
+    /// and check all constraints
     pub fn ensure_prop_value_can_be_inserted_at_prop_vec(
         &self,
         single_value: &SinglePropertyValue<T>,

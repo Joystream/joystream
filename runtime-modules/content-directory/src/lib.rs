@@ -334,15 +334,12 @@ impl<T: Trait> Class<T> {
         self.maximum_entities_count
     }
 
-    /// Ensure `Class` `Schema` under given index exist and active
-    fn ensure_schema_is_active(&self, schema_index: SchemaId) -> Result<(), &'static str> {
-        let is_active = self
-            .schemas
+    /// Ensure `Class` `Schema` under given index exist, return corresponding `Schema`
+    fn ensure_schema_exists(&self, schema_index: SchemaId) -> Result<&Schema, &'static str> {
+        self.schemas
             .get(schema_index as usize)
-            .map(|schema| schema.is_active())
-            .ok_or(ERROR_UNKNOWN_CLASS_SCHEMA_ID)?;
-        ensure!(is_active, ERROR_CLASS_SCHEMA_NOT_ACTIVE);
-        Ok(())
+            .map(|schema| schema)
+            .ok_or(ERROR_UNKNOWN_CLASS_SCHEMA_ID)
     }
 
     /// Ensure schema_id is a valid index of `Class` schemas vector
@@ -440,6 +437,11 @@ impl<T: Trait> Entity<T> {
             reference_count: 0,
             inbound_same_owner_references_from_other_entities_count: 0,
         }
+    }
+
+    /// Get `values` by reference
+    fn get_values_ref(&self) -> &BTreeMap<PropertyId, PropertyValue<T>> {
+        &self.values
     }
 
     /// Get mutable `EntityPermissions` reference, related to given `Entity`
@@ -1163,16 +1165,16 @@ decl_module! {
 
             let (class, entity, _) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
-            class.ensure_schema_is_active(schema_id)?;
-
-            // Check that schema id is not yet added to this entity
             entity.ensure_schema_id_is_not_added(schema_id)?;
 
-            let class_schema_opt = class.schemas.get(schema_id as usize);
-            let schema_prop_ids = class_schema_opt.unwrap().get_properties();
+            let schema = class.ensure_schema_exists(schema_id)?;
 
-            let current_entity_values = entity.values.clone();
-            let mut appended_entity_values = entity.values.clone();
+            schema.ensure_is_active()?;
+
+            let entity_values = entity.get_values_ref();
+
+            // Updated entity values, after new schema support added
+            let mut entity_values_updated = entity.values.clone();
 
             // Entities, which rc should be incremented
             let mut entity_ids_to_increase_rcs = EntitiesRc::<T>::default();
@@ -1181,24 +1183,30 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            for prop_id in schema_prop_ids.iter() {
-                if current_entity_values.contains_key(prop_id) {
+            for prop_id in schema.get_properties().iter() {
+                if entity_values.contains_key(prop_id) {
                     // A property is already added to the entity and cannot be updated
                     // while adding a schema support to this entity.
                     continue;
                 }
+
+                // Indexing is safe, class shoud always maintain such constistency
+                let class_property = &class.properties[*prop_id as usize];
+
                 Self::add_new_property_value(
-                    &class, &entity, *prop_id, &property_values, &mut entity_ids_to_increase_rcs, &mut appended_entity_values
+                    class_property, &entity, *prop_id,
+                    &property_values, &mut entity_ids_to_increase_rcs, &mut entity_values_updated
                 )?;
             }
 
+            // Add schema support to `Entity` under given `entity_id`
             <EntityById<T>>::mutate(entity_id, |entity| {
                 // Add a new schema to the list of schemas supported by this entity.
                 entity.supported_schemas.insert(schema_id);
 
                 // Update entity values only if new properties have been added.
-                if appended_entity_values.len() > entity.values.len() {
-                    entity.values = appended_entity_values;
+                if entity_values_updated.len() > entity.values.len() {
+                    entity.values = entity_values_updated;
                 }
             });
 
@@ -1248,19 +1256,19 @@ decl_module! {
                 if new_value != *current_prop_value {
 
                     // Get class-level information about this property
-                    if let Some(class_prop) = class.properties.get(id as usize) {
+                    if let Some(class_property) = class.properties.get(id as usize) {
 
-                        class_prop.ensure_unlocked_from(access_level)?;
+                        class_property.ensure_unlocked_from(access_level)?;
 
                         // Validate a new property value against the type of this property
                         // and check any additional constraints
-                        class_prop.ensure_property_value_to_update_is_valid(
+                        class_property.ensure_property_value_to_update_is_valid(
                             &new_value,
                             entity.get_permissions_ref().get_controller(),
                         )?;
 
                         Self::update_involved_entities(
-                            &new_value, current_prop_value, class_prop.prop_type.same_controller_status(), &mut entity_ids_to_increase_rcs, &mut entity_ids_to_decrease_rcs
+                            &new_value, current_prop_value, class_property.prop_type.same_controller_status(), &mut entity_ids_to_increase_rcs, &mut entity_ids_to_decrease_rcs
                         );
 
                         // Update a current prop value
@@ -1411,7 +1419,7 @@ decl_module! {
 
             let current_property_value_vec = Self::ensure_property_value_vec(&entity, in_class_schema_property_id)?;
 
-            let class_prop = Self::ensure_class_property_type_unlocked_from(
+            let class_property = Self::ensure_class_property_type_unlocked_from(
                 &class,
                 in_class_schema_property_id,
                 access_level,
@@ -1419,7 +1427,7 @@ decl_module! {
 
             current_property_value_vec.ensure_nonce_equality(nonce)?;
 
-            class_prop.ensure_prop_value_can_be_inserted_at_prop_vec(
+            class_property.ensure_prop_value_can_be_inserted_at_prop_vec(
                 &property_value,
                 current_property_value_vec,
                 index_in_property_vec,
@@ -1434,7 +1442,7 @@ decl_module! {
             <EntityById<T>>::mutate(entity_id, |entity| {
                 let value = property_value.get_value();
                 if let Some(entity_rc_to_increment) = value.get_involved_entity() {
-                    Self::increase_entity_rcs(&entity_rc_to_increment, 1, class_prop.prop_type.same_controller_status());
+                    Self::increase_entity_rcs(&entity_rc_to_increment, 1, class_property.prop_type.same_controller_status());
                 }
                 if let Some(PropertyValue::Vector(current_prop_value)) =
                     entity.values.get_mut(&in_class_schema_property_id)
@@ -1531,45 +1539,35 @@ impl<T: Trait> Module<T> {
 
     /// Add new `PropertyValue`, if it was not already provided under `PropertyId` of this `Schema`
     fn add_new_property_value(
-        class: &Class<T>,
+        class_property: &Property<T>,
         entity: &Entity<T>,
         prop_id: PropertyId,
         property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
         entity_ids_to_increase_rcs: &mut EntitiesRc<T>,
-        appended_entity_values: &mut BTreeMap<PropertyId, PropertyValue<T>>,
+        entity_values_updated: &mut BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> Result<(), &'static str> {
-        let class_prop = &class.properties[prop_id as usize];
-
         if let Some(new_value) = property_values.get(&prop_id) {
-            class_prop.ensure_property_value_to_update_is_valid(
+            class_property.ensure_property_value_to_update_is_valid(
                 new_value,
                 entity.get_permissions_ref().get_controller(),
             )?;
-            // Ensure all values are unique except of null non required values
-            if (*new_value != PropertyValue::default() || class_prop.required) && class_prop.unique
-            {
-                ensure!(
-                    appended_entity_values
-                        .iter()
-                        .all(|(_, prop_value)| *prop_value != *new_value),
-                    ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE
-                );
-            }
+
+            class_property.ensure_unique_option_satisfied(new_value, entity_values_updated)?;
 
             if let Some(entity_rcs_to_increment) = new_value.get_involved_entities() {
                 entity_ids_to_increase_rcs.fill_in_entity_rcs(
                     entity_rcs_to_increment,
-                    class_prop.prop_type.same_controller_status(),
+                    class_property.prop_type.same_controller_status(),
                 );
             }
 
-            appended_entity_values.insert(prop_id, new_value.to_owned());
+            entity_values_updated.insert(prop_id, new_value.to_owned());
         } else {
             // All required prop values should be provided
-            ensure!(!class_prop.required, ERROR_MISSING_REQUIRED_PROP);
+            ensure!(!class_property.required, ERROR_MISSING_REQUIRED_PROP);
 
             // Add all missing non required schema prop values as PropertyValue::default()
-            appended_entity_values.insert(prop_id, PropertyValue::default());
+            entity_values_updated.insert(prop_id, PropertyValue::default());
         }
         Ok(())
     }
@@ -1657,9 +1655,9 @@ impl<T: Trait> Module<T> {
     ) {
         for (id, value) in entity.values.iter() {
             match class.properties.get(*id as usize) {
-                Some(class_prop) if class_prop.prop_type.same_controller_status() => {
+                Some(class_property) if class_property.prop_type.same_controller_status() => {
                     // Always safe
-                    let class_id = class_prop.prop_type.get_referenced_class_id().unwrap();
+                    let class_id = class_property.prop_type.get_referenced_class_id().unwrap();
                     if class_id != entity.class_id {
                         let new_class = Self::class_by_id(class_id);
                         Self::get_all_same_owner_entities(&new_class, value, entities)
@@ -1698,20 +1696,19 @@ impl<T: Trait> Module<T> {
         in_class_schema_property_id: PropertyId,
         entity_access_level: EntityAccessLevel,
     ) -> Result<Property<T>, &'static str> {
-
         Self::ensure_property_values_unlocked(class)?;
 
         // Get class-level information about this `Property`
-        let class_prop = class
+        let class_property = class
             .properties
             .get(in_class_schema_property_id as usize)
             // Throw an error if a property was not found on class
             // by an in-class index of a property.
             .ok_or(ERROR_CLASS_PROP_NOT_FOUND)?;
 
-        class_prop.ensure_unlocked_from(entity_access_level)?;
+        class_property.ensure_unlocked_from(entity_access_level)?;
 
-        Ok(class_prop.to_owned())
+        Ok(class_property.to_owned())
     }
 
     /// Ensure `Class` under given id exists, return corresponding one
@@ -1736,8 +1733,8 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-     // Ensure property values were not locked on class level
-     pub fn ensure_property_values_unlocked(class: &Class<T>) -> dispatch::Result {
+    // Ensure property values were not locked on class level
+    pub fn ensure_property_values_unlocked(class: &Class<T>) -> dispatch::Result {
         ensure!(
             !class
                 .get_permissions_ref()
