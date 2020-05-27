@@ -143,11 +143,12 @@ pub struct InputValidationLengthConstraint {
     pub max_min_diff: u16,
 }
 
-/// Structure, representing Map`s of each referenced entity id count
+/// Structure, representing `inbound_entity_rcs` & `inbound_same_owner_entity_rcs` mappings to their respective count for each referenced entity id
 pub struct EntitiesRc<T: Trait> {
     // Entities, which inbound same owner rc should be changed
     pub inbound_entity_rcs: BTreeMap<T::EntityId, ReferenceCounter>,
-    // Entities, which rc should be changed (only includes entity ids, which are not in inbound_same_owner_entity_rcs_to_increment_map already)
+
+    // Entities, which rc should be changed (only includes entity ids, which are not in inbound_entity_rcs already)
     pub inbound_same_owner_entity_rcs: BTreeMap<T::EntityId, ReferenceCounter>,
 }
 
@@ -157,6 +158,43 @@ impl<T: Trait> Default for EntitiesRc<T> {
             inbound_entity_rcs: BTreeMap::default(),
             inbound_same_owner_entity_rcs: BTreeMap::default(),
         }
+    }
+}
+
+impl<T: Trait> EntitiesRc<T> {
+    /// Fill in one of inbound entity rcs mappings, based on `same_owner` flag provided
+    fn fill_in_entity_rcs(&mut self, entity_ids: Vec<T::EntityId>, same_owner: bool) {
+        let inbound_entity_rcs = if same_owner {
+            &mut self.inbound_same_owner_entity_rcs
+        } else {
+            &mut self.inbound_entity_rcs
+        };
+
+        for entity_id in entity_ids {
+            *inbound_entity_rcs.entry(entity_id).or_insert(0) += 1;
+        }
+    }
+
+    fn increase_entity_rcs(self) {
+        self.inbound_same_owner_entity_rcs
+            .iter()
+            .for_each(|(entity_id, rc)| {
+                Module::<T>::increase_entity_rcs(entity_id, *rc, true);
+            });
+        self.inbound_entity_rcs.iter().for_each(|(entity_id, rc)| {
+            Module::<T>::increase_entity_rcs(entity_id, *rc, false);
+        });
+    }
+
+    fn decrease_entity_rcs(self) {
+        self.inbound_same_owner_entity_rcs
+            .iter()
+            .for_each(|(entity_id, rc)| {
+                Module::<T>::decrease_entity_rcs(entity_id, *rc, true);
+            });
+        self.inbound_entity_rcs.iter().for_each(|(entity_id, rc)| {
+            Module::<T>::decrease_entity_rcs(entity_id, *rc, false);
+        });
     }
 }
 
@@ -1137,7 +1175,7 @@ decl_module! {
             let mut appended_entity_values = entity.values.clone();
 
             // Entities, which rc should be incremented
-            let mut entities_rc_to_increment = EntitiesRc::<T>::default();
+            let mut entity_ids_to_increase_rcs = EntitiesRc::<T>::default();
 
             //
             // == MUTATION SAFE ==
@@ -1150,7 +1188,7 @@ decl_module! {
                     continue;
                 }
                 Self::add_new_property_value(
-                    &class, &entity, *prop_id, &property_values, &mut entities_rc_to_increment, &mut appended_entity_values
+                    &class, &entity, *prop_id, &property_values, &mut entity_ids_to_increase_rcs, &mut appended_entity_values
                 )?;
             }
 
@@ -1164,16 +1202,7 @@ decl_module! {
                 }
             });
 
-            entities_rc_to_increment.inbound_same_owner_entity_rcs
-                .iter()
-                .for_each(|(entity_id, rc)| {
-                    Self::increment_entity_rcs(entity_id, *rc, true);
-                });
-            entities_rc_to_increment.inbound_entity_rcs
-                .iter()
-                .for_each(|(entity_id, rc)| {
-                    Self::increment_entity_rcs(entity_id, *rc, false);
-                });
+            entity_ids_to_increase_rcs.increase_entity_rcs();
 
             // Trigger event
             Self::deposit_event(RawEvent::EntitySchemaSupportAdded(actor, entity_id, schema_id));
@@ -1189,11 +1218,7 @@ decl_module! {
 
             let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
-            // Ensure property values were not locked on class level
-            ensure!(
-                !class.get_permissions_ref().all_entity_property_values_locked(),
-                ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL
-            );
+            Self::ensure_property_values_unlocked(&class)?;
 
             // Get current property values of an entity as a mutable vector,
             // so we can update them if new values provided present in new_property_values.
@@ -1201,14 +1226,15 @@ decl_module! {
             let mut updated = false;
 
             // Entities, which rc should be incremented
-            let mut entities_rc_to_increment = EntitiesRc::<T>::default();
+            let mut entity_ids_to_increase_rcs = EntitiesRc::<T>::default();
 
             // Entities, which rc should be decremented
-            let mut entities_rc_to_decrement = EntitiesRc::<T>::default();
+            let mut entity_ids_to_decrease_rcs = EntitiesRc::<T>::default();
 
             // Iterate over a vector of new values and update corresponding properties
             // of this entity if new values are valid.
             for (id, new_value) in new_property_values.into_iter() {
+
                 // Try to find a current property value in the entity
                 // by matching its id to the id of a property with an updated value.
                 let current_prop_value = updated_values
@@ -1219,16 +1245,33 @@ decl_module! {
 
                 // Skip update if new value is equal to the current one or class property type
                 // is locked for update from current actor
-                if new_value == *current_prop_value {
-                    continue;
-                } else {
-                    Self::perform_entity_property_value_update(&class, &entity, id, access_level, new_value, current_prop_value, &mut entities_rc_to_increment, &mut entities_rc_to_decrement)?;
+                if new_value != *current_prop_value {
 
-                    updated = true;
+                    // Get class-level information about this property
+                    if let Some(class_prop) = class.properties.get(id as usize) {
+
+                        class_prop.ensure_unlocked_from(access_level)?;
+
+                        // Validate a new property value against the type of this property
+                        // and check any additional constraints
+                        class_prop.ensure_property_value_to_update_is_valid(
+                            &new_value,
+                            entity.get_permissions_ref().get_controller(),
+                        )?;
+
+                        Self::update_involved_entities(
+                            &new_value, current_prop_value, class_prop.prop_type.same_controller_status(), &mut entity_ids_to_increase_rcs, &mut entity_ids_to_decrease_rcs
+                        );
+
+                        // Update a current prop value
+                        current_prop_value.update(new_value);
+
+                        updated = true;
+                    }
                 }
             }
 
-            // If property values should be updated:
+            // If property values should be updated
             if updated {
 
                 //
@@ -1239,27 +1282,9 @@ decl_module! {
                     entity.values = updated_values;
                 });
 
-                entities_rc_to_increment.inbound_same_owner_entity_rcs
-                    .iter()
-                    .for_each(|(entity_id, rc)| {
-                        Self::increment_entity_rcs(entity_id, *rc, true);
-                    });
-                entities_rc_to_increment.inbound_entity_rcs
-                    .iter()
-                    .for_each(|(entity_id, rc)| {
-                        Self::increment_entity_rcs(entity_id, *rc, false);
-                    });
+                entity_ids_to_increase_rcs.increase_entity_rcs();
 
-                entities_rc_to_decrement.inbound_same_owner_entity_rcs
-                    .iter()
-                    .for_each(|(entity_id, rc)| {
-                        Self::decrement_entity_rcs(entity_id, *rc, true);
-                    });
-                entities_rc_to_decrement.inbound_entity_rcs
-                    .iter()
-                    .for_each(|(entity_id, rc)| {
-                        Self::decrement_entity_rcs(entity_id, *rc, false);
-                    });
+                entity_ids_to_decrease_rcs.decrease_entity_rcs();
 
                 // Trigger event
                 Self::deposit_event(RawEvent::EntityPropertyValuesUpdated(actor, entity_id));
@@ -1281,13 +1306,13 @@ decl_module! {
             let current_property_value_vec =
             Self::ensure_property_value_vec(&entity, in_class_schema_property_id)?;
 
-            let property = Self::ensure_class_property_type_unlocked_for(
+            let property = Self::ensure_class_property_type_unlocked_from(
                 &class,
                 in_class_schema_property_id,
                 access_level,
             )?;
 
-            let entities_rc_to_decrement = current_property_value_vec
+            let entity_ids_to_decrease_rcs = current_property_value_vec
                 .get_vec_value()
                 .get_involved_entities();
 
@@ -1302,12 +1327,10 @@ decl_module! {
                 {
                     current_property_value_vec.vec_clear();
                 }
-                match entities_rc_to_decrement {
-                    Some(entities_rc_to_decrement) if property.prop_type.same_controller_status() => {
-                        Self::count_element_function(entities_rc_to_decrement).iter().for_each(|(entity_id, rc)| Self::decrement_entity_rcs(entity_id, *rc, true));
-                    }
-                    Some(entities_rc_to_decrement) => Self::count_element_function(entities_rc_to_decrement).iter().for_each(|(entity_id, rc)| Self::decrement_entity_rcs(entity_id, *rc, false)),
-                    _ => ()
+
+                if let Some(entity_ids_to_decrease_rcs) = entity_ids_to_decrease_rcs {
+                    Self::count_entities(entity_ids_to_decrease_rcs).iter()
+                        .for_each(|(entity_id, rc)| Self::decrease_entity_rcs(entity_id, *rc, property.prop_type.same_controller_status()));
                 }
             });
 
@@ -1331,15 +1354,14 @@ decl_module! {
             let current_property_value_vec =
             Self::ensure_property_value_vec(&entity, in_class_schema_property_id)?;
 
-            let property = Self::ensure_class_property_type_unlocked_for(
+            let property = Self::ensure_class_property_type_unlocked_from(
                 &class,
                 in_class_schema_property_id,
                 access_level,
             )?;
 
-            // Ensure property value vector nonces equality to avoid possible data races,
-            // when performing vector specific operations
             current_property_value_vec.ensure_nonce_equality(nonce)?;
+
             current_property_value_vec
                 .ensure_index_in_property_vector_is_valid(index_in_property_vec)?;
 
@@ -1369,20 +1391,9 @@ decl_module! {
             });
 
             if let Some(involved_entity_id) = involved_entity_id {
-                if property.prop_type.same_controller_status() {
-                    // Decrement reference counter and inbound same owner rc, related to involved entity,
-                    // as we removed value referencing this entity and `SameOwner` flag set
-                    <EntityById<T>>::mutate(involved_entity_id, |entity| {
-                        entity.reference_count -= 1;
-                        entity.inbound_same_owner_references_from_other_entities_count -=1;
-                    })
-                } else {
-                    // Decrement reference counter, related to involved entity, as we removed value referencing this entity
-                    <EntityById<T>>::mutate(involved_entity_id, |entity| {
-                        entity.reference_count -= 1;
-                    })
-                }
+                Self::decrease_entity_rcs(&involved_entity_id, 1, property.prop_type.same_controller_status());
             }
+
             Ok(())
         }
 
@@ -1399,20 +1410,15 @@ decl_module! {
             let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
             let current_property_value_vec = Self::ensure_property_value_vec(&entity, in_class_schema_property_id)?;
-           
-            let class_prop = Self::ensure_class_property_type_unlocked_for(
+
+            let class_prop = Self::ensure_class_property_type_unlocked_from(
                 &class,
                 in_class_schema_property_id,
                 access_level,
             )?;
 
-            // Ensure property value vector nonces equality to avoid possible data races,
-            // when performing vector specific operations
             current_property_value_vec.ensure_nonce_equality(nonce)?;
 
-            // Validate a new property value against the type of this property
-            // and check any additional constraints like the length of a vector
-            // if it's a vector property or the length of a text if it's a text property.
             class_prop.ensure_prop_value_can_be_inserted_at_prop_vec(
                 &property_value,
                 current_property_value_vec,
@@ -1428,11 +1434,7 @@ decl_module! {
             <EntityById<T>>::mutate(entity_id, |entity| {
                 let value = property_value.get_value();
                 if let Some(entity_rc_to_increment) = value.get_involved_entity() {
-                    if class_prop.prop_type.same_controller_status() {
-                        Self::increment_entity_rcs(&entity_rc_to_increment, 1, true);
-                    } else {
-                        Self::increment_entity_rcs(&entity_rc_to_increment, 1, false);
-                    }
+                    Self::increase_entity_rcs(&entity_rc_to_increment, 1, class_prop.prop_type.same_controller_status());
                 }
                 if let Some(PropertyValue::Vector(current_prop_value)) =
                     entity.values.get_mut(&in_class_schema_property_id)
@@ -1499,7 +1501,7 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    fn increment_entity_rcs(entity_id: &T::EntityId, rc: u32, same_owner: bool) {
+    fn increase_entity_rcs(entity_id: &T::EntityId, rc: u32, same_owner: bool) {
         <EntityById<T>>::mutate(entity_id, |entity| {
             if same_owner {
                 entity.inbound_same_owner_references_from_other_entities_count += rc;
@@ -1510,7 +1512,7 @@ impl<T: Trait> Module<T> {
         })
     }
 
-    fn decrement_entity_rcs(entity_id: &T::EntityId, rc: u32, same_owner: bool) {
+    fn decrease_entity_rcs(entity_id: &T::EntityId, rc: u32, same_owner: bool) {
         <EntityById<T>>::mutate(entity_id, |entity| {
             if same_owner {
                 entity.inbound_same_owner_references_from_other_entities_count -= rc;
@@ -1533,7 +1535,7 @@ impl<T: Trait> Module<T> {
         entity: &Entity<T>,
         prop_id: PropertyId,
         property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
-        entities_rc_to_increment: &mut EntitiesRc<T>,
+        entity_ids_to_increase_rcs: &mut EntitiesRc<T>,
         appended_entity_values: &mut BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> Result<(), &'static str> {
         let class_prop = &class.properties[prop_id as usize];
@@ -1553,19 +1555,13 @@ impl<T: Trait> Module<T> {
                     ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE
                 );
             }
-            match new_value.get_involved_entities() {
-                Some(entity_rcs_to_increment) if class_prop.prop_type.same_controller_status() => {
-                    Self::fill_in_entity_rcs_map(
-                        entity_rcs_to_increment,
-                        &mut entities_rc_to_increment.inbound_same_owner_entity_rcs,
-                    )
-                }
-                Some(entity_rcs_to_increment) => Self::fill_in_entity_rcs_map(
+
+            if let Some(entity_rcs_to_increment) = new_value.get_involved_entities() {
+                entity_ids_to_increase_rcs.fill_in_entity_rcs(
                     entity_rcs_to_increment,
-                    &mut entities_rc_to_increment.inbound_entity_rcs,
-                ),
-                _ => (),
-            };
+                    class_prop.prop_type.same_controller_status(),
+                );
+            }
 
             appended_entity_values.insert(prop_id, new_value.to_owned());
         } else {
@@ -1578,85 +1574,35 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn fill_in_entity_rcs_map(
-        entity_rcs: Vec<T::EntityId>,
-        entity_rcs_map: &mut BTreeMap<T::EntityId, ReferenceCounter>,
-    ) {
-        for entity_rc in entity_rcs {
-            if let Some(rc) = entity_rcs_map.get_mut(&entity_rc) {
-                *rc += 1;
-            } else {
-                entity_rcs_map.insert(entity_rc, 1);
-            }
-        }
-    }
-
-    pub fn perform_entity_property_value_update(
-        class: &Class<T>,
-        entity: &Entity<T>,
-        id: PropertyId,
-        access_level: EntityAccessLevel,
-        new_value: PropertyValue<T>,
+    pub fn update_involved_entities(
+        new_value: &PropertyValue<T>,
         current_prop_value: &mut PropertyValue<T>,
-        entities_rc_to_increment: &mut EntitiesRc<T>,
-        entities_rc_to_decrement: &mut EntitiesRc<T>,
-    ) -> Result<(), &'static str> {
-        // Get class-level information about this property
-        if let Some(class_prop) = class.properties.get(id as usize) {
-            // Ensure class property is unlocked for given actor
-            ensure!(
-                !class_prop.is_locked_from(access_level),
-                ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR
-            );
+        same_controller: bool,
+        entity_ids_to_increase_rcs: &mut EntitiesRc<T>,
+        entity_ids_to_decrease_rcs: &mut EntitiesRc<T>,
+    ) {
+        // Get unique entity ids to update rc
+        if let (Some(entities_rc_to_increment_vec), Some(entities_rc_to_decrement_vec)) = (
+            new_value.get_involved_entities(),
+            current_prop_value.get_involved_entities(),
+        ) {
+            let (entities_rc_to_decrement_vec, entities_rc_to_increment_vec): (
+                Vec<T::EntityId>,
+                Vec<T::EntityId>,
+            ) = entities_rc_to_decrement_vec
+                .into_iter()
+                .zip(entities_rc_to_increment_vec.into_iter())
+                .filter(|(entity_rc_to_decrement, entity_rc_to_increment)| {
+                    entity_rc_to_decrement != entity_rc_to_increment
+                })
+                .unzip();
 
-            // Validate a new property value against the type of this property
-            // and check any additional constraints
-            class_prop.ensure_property_value_to_update_is_valid(
-                &new_value,
-                entity.get_permissions_ref().get_controller(),
-            )?;
+            entity_ids_to_increase_rcs
+                .fill_in_entity_rcs(entities_rc_to_increment_vec, same_controller);
 
-            // Get unique entity ids to update rc
-            if let (Some(entities_rc_to_increment_vec), Some(entities_rc_to_decrement_vec)) = (
-                new_value.get_involved_entities(),
-                current_prop_value.get_involved_entities(),
-            ) {
-                let (entities_rc_to_decrement_vec, entities_rc_to_increment_vec): (
-                    Vec<T::EntityId>,
-                    Vec<T::EntityId>,
-                ) = entities_rc_to_decrement_vec
-                    .into_iter()
-                    .zip(entities_rc_to_increment_vec.into_iter())
-                    .filter(|(entity_rc_to_decrement, entity_rc_to_increment)| {
-                        entity_rc_to_decrement != entity_rc_to_increment
-                    })
-                    .unzip();
-
-                if class_prop.prop_type.same_controller_status() {
-                    Self::fill_in_entity_rcs_map(
-                        entities_rc_to_increment_vec,
-                        &mut entities_rc_to_increment.inbound_same_owner_entity_rcs,
-                    );
-                    Self::fill_in_entity_rcs_map(
-                        entities_rc_to_decrement_vec,
-                        &mut entities_rc_to_decrement.inbound_same_owner_entity_rcs,
-                    );
-                } else {
-                    Self::fill_in_entity_rcs_map(
-                        entities_rc_to_increment_vec,
-                        &mut entities_rc_to_increment.inbound_entity_rcs,
-                    );
-                    Self::fill_in_entity_rcs_map(
-                        entities_rc_to_decrement_vec,
-                        &mut entities_rc_to_decrement.inbound_entity_rcs,
-                    );
-                }
-            }
-
-            // Update a current prop value in a mutable vector, if a new value is valid.
-            current_prop_value.update(new_value);
+            entity_ids_to_decrease_rcs
+                .fill_in_entity_rcs(entities_rc_to_decrement_vec, same_controller);
         }
-        Ok(())
     }
 
     fn ensure_property_value_vec(
@@ -1747,18 +1693,13 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    pub fn ensure_class_property_type_unlocked_for(
+    pub fn ensure_class_property_type_unlocked_from(
         class: &Class<T>,
         in_class_schema_property_id: PropertyId,
         entity_access_level: EntityAccessLevel,
     ) -> Result<Property<T>, &'static str> {
-        // Ensure property values were not locked on class level
-        ensure!(
-            !class
-                .get_permissions_ref()
-                .all_entity_property_values_locked(),
-            ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL
-        );
+
+        Self::ensure_property_values_unlocked(class)?;
 
         // Get class-level information about this `Property`
         let class_prop = class
@@ -1767,10 +1708,9 @@ impl<T: Trait> Module<T> {
             // Throw an error if a property was not found on class
             // by an in-class index of a property.
             .ok_or(ERROR_CLASS_PROP_NOT_FOUND)?;
-        ensure!(
-            !class_prop.is_locked_from(entity_access_level),
-            ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR
-        );
+
+        class_prop.ensure_unlocked_from(entity_access_level)?;
+
         Ok(class_prop.to_owned())
     }
 
@@ -1792,6 +1732,17 @@ impl<T: Trait> Module<T> {
         ensure!(
             entity.reference_count == 0,
             ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO
+        );
+        Ok(())
+    }
+
+     // Ensure property values were not locked on class level
+     pub fn ensure_property_values_unlocked(class: &Class<T>) -> dispatch::Result {
+        ensure!(
+            !class
+                .get_permissions_ref()
+                .all_entity_property_values_locked(),
+            ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL
         );
         Ok(())
     }
@@ -1966,17 +1917,13 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Counts the number of repetetive elements and returns `BTreeMap<I::Item, ReferenceCounter>`,
-    /// where I::Item - unique element, ReferenceCounter - related counter
-    pub fn count_element_function<I>(it: I) -> BTreeMap<I::Item, ReferenceCounter>
-    where
-        I: IntoIterator,
-        I::Item: Eq + core::hash::Hash + std::cmp::Ord,
-    {
+    /// Counts the number of repetetive entities and returns `BTreeMap<T::EntityId, ReferenceCounter>`,
+    /// where T::EntityId - unique entity_id, ReferenceCounter - related counter
+    pub fn count_entities(entity_ids: Vec<T::EntityId>) -> BTreeMap<T::EntityId, ReferenceCounter> {
         let mut result = BTreeMap::new();
 
-        for item in it {
-            *result.entry(item).or_insert(0) += 1;
+        for entity_id in entity_ids {
+            *result.entry(entity_id).or_insert(0) += 1;
         }
 
         result

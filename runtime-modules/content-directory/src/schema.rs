@@ -393,6 +393,8 @@ impl<T: Trait> VecPropertyValue<T> {
         self.increment_nonce();
     }
 
+    // Ensure property value vector nonces equality to avoid possible data races,
+    // when performing vector specific operations
     pub fn ensure_nonce_equality(&self, new_nonce: T::Nonce) -> dispatch::Result {
         ensure!(
             self.nonce == new_nonce,
@@ -553,6 +555,15 @@ impl<T: Trait> Property<T> {
         }
     }
 
+    /// Ensure `Property` is unlocked from `Actor` with given `EntityAccessLevel`
+    pub fn ensure_unlocked_from(&self, access_level: EntityAccessLevel) -> dispatch::Result {
+        ensure!(
+            self.is_locked_from(access_level),
+            ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR
+        );
+        Ok(())
+    }
+
     pub fn ensure_property_value_to_update_is_valid(
         &self,
         value: &PropertyValue<T>,
@@ -565,6 +576,9 @@ impl<T: Trait> Property<T> {
         Ok(())
     }
 
+    // Validate a new property value against the type of this property
+    // and check any additional constraints like the length of a vector
+    // if it's a vector property or the length of a text if it's a text property.
     pub fn ensure_prop_value_can_be_inserted_at_prop_vec(
         &self,
         single_value: &SinglePropertyValue<T>,
