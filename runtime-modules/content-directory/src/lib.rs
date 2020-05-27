@@ -1397,34 +1397,27 @@ decl_module! {
 
             let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
-            let mut same_owner = false;
+            let current_property_value_vec = Self::ensure_property_value_vec(&entity, in_class_schema_property_id)?;
+           
+            let class_prop = Self::ensure_class_property_type_unlocked_for(
+                &class,
+                in_class_schema_property_id,
+                access_level,
+            )?;
 
-            // Try to find a current property value in the entity
-            // by matching its id to the id of a property with an updated value.
-            if let Some(PropertyValue::Vector(entity_prop_value)) =
-                entity.values.get(&in_class_schema_property_id)
-            {
-                let class_prop = Self::ensure_class_property_type_unlocked_for(
-                    &class,
-                    in_class_schema_property_id,
-                    access_level,
-                )?;
+            // Ensure property value vector nonces equality to avoid possible data races,
+            // when performing vector specific operations
+            current_property_value_vec.ensure_nonce_equality(nonce)?;
 
-                // Ensure property value vector nonces equality to avoid possible data races,
-                // when performing vector specific operations
-                entity_prop_value.ensure_nonce_equality(nonce)?;
-
-                // Validate a new property value against the type of this property
-                // and check any additional constraints like the length of a vector
-                // if it's a vector property or the length of a text if it's a text property.
-                class_prop.ensure_prop_value_can_be_inserted_at_prop_vec(
-                    &property_value,
-                    entity_prop_value,
-                    index_in_property_vec,
-                    entity.get_permissions_ref().get_controller(),
-                )?;
-                same_owner = class_prop.prop_type.same_controller_status();
-            };
+            // Validate a new property value against the type of this property
+            // and check any additional constraints like the length of a vector
+            // if it's a vector property or the length of a text if it's a text property.
+            class_prop.ensure_prop_value_can_be_inserted_at_prop_vec(
+                &property_value,
+                current_property_value_vec,
+                index_in_property_vec,
+                entity.get_permissions_ref().get_controller(),
+            )?;
 
             //
             // == MUTATION SAFE ==
@@ -1434,7 +1427,7 @@ decl_module! {
             <EntityById<T>>::mutate(entity_id, |entity| {
                 let value = property_value.get_value();
                 if let Some(entity_rc_to_increment) = value.get_involved_entity() {
-                    if same_owner {
+                    if class_prop.prop_type.same_controller_status() {
                         Self::increment_entity_rcs(&entity_rc_to_increment, 1, true);
                     } else {
                         Self::increment_entity_rcs(&entity_rc_to_increment, 1, false);
