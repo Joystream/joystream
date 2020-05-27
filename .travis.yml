@@ -22,15 +22,15 @@ matrix:
   # building all platform binanires and wasm blob to a different system.
 
 install:
-  - rustup install nightly-2020-05-22
-  - rustup target add wasm32-unknown-unknown --toolchain nightly-2020-05-22
+  - rustup install nightly-2020-05-23
+  - rustup target add wasm32-unknown-unknown --toolchain nightly-2020-05-23
   # travis installs rust using rustup with the "minimal" profile so these tools are not installed by default
   - rustup component add rustfmt
   # choosing to add clippy for the nightly toolchain only
   # becuase we want to run it with nighly to avoid having to set BUILD_DUMMY_WASM_BINARY=0
   # setting that variable requires changing it in a later run of cargo bulid to ensure runtime/build.rs
   # actually builds the runtime .. the behaviour is a bit odd so choosing to avoid messing with it.
-  - rustup component add clippy --toolchain nightly-2020-05-22
+  - rustup component add clippy --toolchain nightly-2020-05-23
 
 before_script:
   - cargo fmt --all -- --check
@@ -38,9 +38,9 @@ before_script:
 script:
   # we set release as build type for all steps to benefit from already compiled packages in prior steps
   # skipping clippy ...
-  - cargo +nightly-2020-05-22 clippy --release --target=${TARGET} -- -D warnings
-  - cargo +nightly-2020-05-22 test --release --verbose --all --target=${TARGET}
-  - WASM_BUILD_TOOLCHAIN=nightly-2020-05-22 cargo +nightly build --release --target=${TARGET}
+  - cargo +nightly-2020-05-23 clippy --release --target=${TARGET} -- -D warnings
+  - cargo +nightly-2020-05-23 test --release --verbose --all --target=${TARGET}
+  - WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo +nightly build --release --target=${TARGET}
 
 before_deploy:
 
