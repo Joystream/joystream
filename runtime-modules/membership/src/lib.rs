@@ -79,7 +79,7 @@ const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 2048;
 //#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode)]
 /// Stored information about a registered user
-pub struct Profile<T: Trait> {
+pub struct Membership<T: Trait> {
     /// The unique handle chosen by member
     pub handle: Vec<u8>,
 
@@ -120,7 +120,7 @@ pub struct Profile<T: Trait> {
 }
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
-/// A "Partial" struct used to batch user configurable profile information when registering or updating info
+/// A "Partial" struct used to batch user configurable membership information when registering or updating info
 pub struct UserInfo {
     pub handle: Option<Vec<u8>>,
     pub avatar_uri: Option<Vec<u8>>,
@@ -157,7 +157,7 @@ decl_storage! {
         pub NextMemberId get(members_created) : T::MemberId;
 
         /// Mapping of member's id to their membership profile
-        pub MemberProfile get(member_profile) : map T::MemberId => Option<Profile<T>>;
+        pub Memberships get(membership) : map T::MemberId => Option<Membership<T>>;
 
         /// Mapping of a root account id to vector of member ids it controls
         pub MemberIdsByRootAccountId get(member_ids_by_root_account_id) : map T::AccountId => Vec<T::MemberId>;
@@ -269,9 +269,9 @@ decl_module! {
         pub fn change_member_about_text(origin, member_id: T::MemberId, text: Vec<u8>) {
             let sender = ensure_signed(origin)?;
 
-            let profile = Self::ensure_profile(member_id)?;
+            let membership = Self::ensure_membership(member_id)?;
 
-            ensure!(profile.controller_account == sender, "only controller account can update member about text");
+            ensure!(membership.controller_account == sender, "only controller account can update member about text");
 
             Self::_change_member_about_text(member_id, &text)?;
         }
@@ -280,9 +280,9 @@ decl_module! {
         pub fn change_member_avatar(origin, member_id: T::MemberId, uri: Vec<u8>) {
             let sender = ensure_signed(origin)?;
 
-            let profile = Self::ensure_profile(member_id)?;
+            let membership = Self::ensure_membership(member_id)?;
 
-            ensure!(profile.controller_account == sender, "only controller account can update member avatar");
+            ensure!(membership.controller_account == sender, "only controller account can update member avatar");
 
             Self::_change_member_avatar(member_id, &uri)?;
         }
@@ -292,20 +292,20 @@ decl_module! {
         pub fn change_member_handle(origin, member_id: T::MemberId, handle: Vec<u8>) {
             let sender = ensure_signed(origin)?;
 
-            let profile = Self::ensure_profile(member_id)?;
+            let membership = Self::ensure_membership(member_id)?;
 
-            ensure!(profile.controller_account == sender, "only controller account can update member handle");
+            ensure!(membership.controller_account == sender, "only controller account can update member handle");
 
             Self::_change_member_handle(member_id, handle)?;
         }
 
         /// Update member's all or some of handle, avatar and about text.
-        pub fn update_profile(origin, member_id: T::MemberId, user_info: UserInfo) {
+        pub fn update_membership(origin, member_id: T::MemberId, user_info: UserInfo) {
             let sender = ensure_signed(origin)?;
 
-            let profile = Self::ensure_profile(member_id)?;
+            let membership = Self::ensure_membership(member_id)?;
 
-            ensure!(profile.controller_account == sender, "only controller account can update member info");
+            ensure!(membership.controller_account == sender, "only controller account can update member info");
 
             if let Some(uri) = user_info.avatar_uri {
                 Self::_change_member_avatar(member_id, &uri)?;
@@ -321,13 +321,13 @@ decl_module! {
         pub fn set_controller_account(origin, member_id: T::MemberId, new_controller_account: T::AccountId) {
             let sender = ensure_signed(origin)?;
 
-            let mut profile = Self::ensure_profile(member_id)?;
+            let mut membership = Self::ensure_membership(member_id)?;
 
-            ensure!(profile.root_account == sender, "only root account can set new controller account");
+            ensure!(membership.root_account == sender, "only root account can set new controller account");
 
             // only update if new_controller_account is different than current one
-            if profile.controller_account != new_controller_account {
-                <MemberIdsByControllerAccountId<T>>::mutate(&profile.controller_account, |ids| {
+            if membership.controller_account != new_controller_account {
+                <MemberIdsByControllerAccountId<T>>::mutate(&membership.controller_account, |ids| {
                     ids.retain(|id| *id != member_id);
                 });
 
@@ -335,8 +335,8 @@ decl_module! {
                     ids.push(member_id);
                 });
 
-                profile.controller_account = new_controller_account.clone();
-                <MemberProfile<T>>::insert(member_id, profile);
+                membership.controller_account = new_controller_account.clone();
+                <Memberships<T>>::insert(member_id, membership);
                 Self::deposit_event(RawEvent::MemberSetControllerAccount(member_id, new_controller_account));
             }
         }
@@ -344,13 +344,13 @@ decl_module! {
         pub fn set_root_account(origin, member_id: T::MemberId, new_root_account: T::AccountId) {
             let sender = ensure_signed(origin)?;
 
-            let mut profile = Self::ensure_profile(member_id)?;
+            let mut membership = Self::ensure_membership(member_id)?;
 
-            ensure!(profile.root_account == sender, "only root account can set new root account");
+            ensure!(membership.root_account == sender, "only root account can set new root account");
 
             // only update if new root account is different than current one
-            if profile.root_account != new_root_account {
-                <MemberIdsByRootAccountId<T>>::mutate(&profile.root_account, |ids| {
+            if membership.root_account != new_root_account {
+                <MemberIdsByRootAccountId<T>>::mutate(&membership.root_account, |ids| {
                     ids.retain(|id| *id != member_id);
                 });
 
@@ -358,7 +358,7 @@ decl_module! {
                     ids.push(member_id);
                 });
 
-                profile.root_account = new_root_account.clone();
+                membership.root_account = new_root_account.clone();
                 Self::deposit_event(RawEvent::MemberSetRootAccount(member_id, new_root_account));
             }
         }
@@ -416,21 +416,21 @@ pub enum MemberRootAccountMismatch {
 }
 
 impl<T: Trait> Module<T> {
-    /// Provided that the memberid exists return its profile. Returns error otherwise.
-    pub fn ensure_profile(id: T::MemberId) -> Result<Profile<T>, &'static str> {
-        Self::member_profile(&id).ok_or("member profile not found")
+    /// Provided that the member_id exists return its membership. Returns error otherwise.
+    pub fn ensure_membership(id: T::MemberId) -> Result<Membership<T>, &'static str> {
+        Self::membership(&id).ok_or("member profile not found")
     }
 
     /// Ensure that given member has given account as the controller account
     pub fn ensure_is_controller_account_for_member(
         member_id: &T::MemberId,
         account: &T::AccountId,
-    ) -> Result<Profile<T>, ControllerAccountForMemberCheckFailed> {
-        if MemberProfile::<T>::exists(member_id) {
-            let profile = MemberProfile::<T>::get(member_id).unwrap();
+    ) -> Result<Membership<T>, ControllerAccountForMemberCheckFailed> {
+        if Memberships::<T>::exists(member_id) {
+            let membership = Memberships::<T>::get(member_id).unwrap();
 
-            if profile.controller_account == *account {
-                Ok(profile)
+            if membership.controller_account == *account {
+                Ok(membership)
             } else {
                 Err(ControllerAccountForMemberCheckFailed::NotControllerAccount)
             }
@@ -519,7 +519,7 @@ impl<T: Trait> Module<T> {
     ) -> T::MemberId {
         let new_member_id = Self::members_created();
 
-        let profile: Profile<T> = Profile {
+        let membership: Membership<T> = Membership {
             handle: user_info.handle.clone(),
             avatar_uri: user_info.avatar_uri.clone(),
             about: user_info.about.clone(),
@@ -540,7 +540,7 @@ impl<T: Trait> Module<T> {
             ids.push(new_member_id);
         });
 
-        <MemberProfile<T>>::insert(new_member_id, profile);
+        <Memberships<T>>::insert(new_member_id, membership);
         <MemberIdByHandle<T>>::insert(user_info.handle.clone(), new_member_id);
         <NextMemberId<T>>::put(new_member_id + One::one());
 
@@ -548,32 +548,32 @@ impl<T: Trait> Module<T> {
     }
 
     fn _change_member_about_text(id: T::MemberId, text: &[u8]) -> dispatch::Result {
-        let mut profile = Self::ensure_profile(id)?;
+        let mut membership = Self::ensure_membership(id)?;
         let text = Self::validate_text(text);
-        profile.about = text;
+        membership.about = text;
         Self::deposit_event(RawEvent::MemberUpdatedAboutText(id));
-        <MemberProfile<T>>::insert(id, profile);
+        <Memberships<T>>::insert(id, membership);
         Ok(())
     }
 
     fn _change_member_avatar(id: T::MemberId, uri: &[u8]) -> dispatch::Result {
-        let mut profile = Self::ensure_profile(id)?;
+        let mut membership = Self::ensure_membership(id)?;
         Self::validate_avatar(uri)?;
-        profile.avatar_uri = uri.to_owned();
+        membership.avatar_uri = uri.to_owned();
         Self::deposit_event(RawEvent::MemberUpdatedAvatar(id));
-        <MemberProfile<T>>::insert(id, profile);
+        <Memberships<T>>::insert(id, membership);
         Ok(())
     }
 
     fn _change_member_handle(id: T::MemberId, handle: Vec<u8>) -> dispatch::Result {
-        let mut profile = Self::ensure_profile(id)?;
+        let mut membership = Self::ensure_membership(id)?;
         Self::validate_handle(&handle)?;
         Self::ensure_unique_handle(&handle)?;
-        <MemberIdByHandle<T>>::remove(&profile.handle);
+        <MemberIdByHandle<T>>::remove(&membership.handle);
         <MemberIdByHandle<T>>::insert(handle.clone(), id);
-        profile.handle = handle;
+        membership.handle = handle;
         Self::deposit_event(RawEvent::MemberUpdatedHandle(id));
-        <MemberProfile<T>>::insert(id, profile);
+        <Memberships<T>>::insert(id, membership);
         Ok(())
     }
 
@@ -586,16 +586,16 @@ impl<T: Trait> Module<T> {
         Self::member_ids_by_controller_account_id(signing_account)
             .iter()
             .any(|member_id| {
-                let profile = Self::member_profile(member_id).unwrap(); // must exist
-                profile.roles.has_registered_role(&actor_in_role)
+                let membership = Self::membership(member_id).unwrap(); // must exist
+                membership.roles.has_registered_role(&actor_in_role)
             })
     }
 
     /// Returns true if member identified by their member id occupies a Role at least once
     pub fn member_is_in_role(member_id: T::MemberId, role: Role) -> bool {
-        Self::ensure_profile(member_id)
+        Self::ensure_membership(member_id)
             .ok()
-            .map_or(false, |profile| profile.roles.occupies_role(role))
+            .map_or(false, |membership| membership.roles.occupies_role(role))
     }
 
     pub fn ensure_member_controller_account_signed(
@@ -607,11 +607,11 @@ impl<T: Trait> Module<T> {
             ensure_signed(origin).map_err(|_| MemberControllerAccountDidNotSign::UnsignedOrigin)?;
 
         // Ensure member exists
-        let profile = Self::ensure_profile(*member_id)
+        let membership = Self::ensure_membership(*member_id)
             .map_err(|_| MemberControllerAccountDidNotSign::MemberIdInvalid)?;
 
         ensure!(
-            profile.controller_account == signer_account,
+            membership.controller_account == signer_account,
             MemberControllerAccountDidNotSign::SignerControllerAccountMismatch
         );
 
@@ -623,11 +623,11 @@ impl<T: Trait> Module<T> {
         member_id: &T::MemberId,
     ) -> Result<(), MemberControllerAccountMismatch> {
         // Ensure member exists
-        let profile = Self::ensure_profile(*member_id)
+        let membership = Self::ensure_membership(*member_id)
             .map_err(|_| MemberControllerAccountMismatch::MemberIdInvalid)?;
 
         ensure!(
-            profile.controller_account == *signer_account,
+            membership.controller_account == *signer_account,
             MemberControllerAccountMismatch::SignerControllerAccountMismatch
         );
 
@@ -639,11 +639,11 @@ impl<T: Trait> Module<T> {
         member_id: &T::MemberId,
     ) -> Result<(), MemberRootAccountMismatch> {
         // Ensure member exists
-        let profile = Self::ensure_profile(*member_id)
+        let membership = Self::ensure_membership(*member_id)
             .map_err(|_| MemberRootAccountMismatch::MemberIdInvalid)?;
 
         ensure!(
-            profile.root_account == *signer_account,
+            membership.root_account == *signer_account,
             MemberRootAccountMismatch::SignerRootAccountMismatch
         );
 
@@ -659,12 +659,12 @@ impl<T: Trait> Module<T> {
     pub fn can_register_role_on_member(
         member_id: &T::MemberId,
         actor_in_role: &ActorInRole<T::ActorId>,
-    ) -> Result<Profile<T>, &'static str> {
+    ) -> Result<Membership<T>, &'static str> {
         // Ensure member exists
-        let profile = Self::ensure_profile(*member_id)?;
+        let membership = Self::ensure_membership(*member_id)?;
 
         // ensure is active member
-        ensure!(!profile.suspended, "SuspendedMemberCannotEnterRole");
+        ensure!(!membership.suspended, "SuspendedMemberCannotEnterRole");
 
         // guard against duplicate ActorInRole
         ensure!(
@@ -677,7 +677,7 @@ impl<T: Trait> Module<T> {
         integration with Membership module anyway:
         https://github.com/Joystream/substrate-runtime-joystream/issues/115
         ensure!(
-            !profile.roles.occupies_role(actor_in_role.role),
+            !membership.roles.occupies_role(actor_in_role.role),
             "MemberAlreadyInRole"
         );
         */
@@ -687,7 +687,7 @@ impl<T: Trait> Module<T> {
         // Minimum balance
         // EntryMethod
 
-        Ok(profile)
+        Ok(membership)
     }
 
     pub fn register_role_on_member(
@@ -695,11 +695,11 @@ impl<T: Trait> Module<T> {
         actor_in_role: &ActorInRole<T::ActorId>,
     ) -> Result<(), &'static str> {
         // Policy check
-        let mut profile = Self::can_register_role_on_member(&member_id, actor_in_role)?;
+        let mut membership = Self::can_register_role_on_member(&member_id, actor_in_role)?;
 
-        assert!(profile.roles.register_role(actor_in_role));
+        assert!(membership.roles.register_role(actor_in_role));
 
-        <MemberProfile<T>>::insert(member_id, profile);
+        <Memberships<T>>::insert(member_id, membership);
         <MembershipIdByActorInRole<T>>::insert(actor_in_role, member_id);
         Self::deposit_event(RawEvent::MemberRegisteredRole(member_id, *actor_in_role));
         Ok(())
@@ -719,13 +719,13 @@ impl<T: Trait> Module<T> {
 
         let member_id = <MembershipIdByActorInRole<T>>::get(actor_in_role);
 
-        let mut profile = Self::ensure_profile(member_id)?; // .expect().. ?
+        let mut membership = Self::ensure_membership(member_id)?; // .expect().. ?
 
-        assert!(profile.roles.unregister_role(&actor_in_role));
+        assert!(membership.roles.unregister_role(&actor_in_role));
 
         <MembershipIdByActorInRole<T>>::remove(actor_in_role);
 
-        <MemberProfile<T>>::insert(member_id, profile);
+        <Memberships<T>>::insert(member_id, membership);
 
         Self::deposit_event(RawEvent::MemberUnregisteredRole(member_id, actor_in_role));
 

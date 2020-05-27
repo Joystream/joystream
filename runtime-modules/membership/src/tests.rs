@@ -115,7 +115,7 @@ fn buy_membership() {
             assert_eq!(member_ids, vec![next_member_id]);
 
             let profile = assert_ok_unwrap(
-                Members::member_profile(&next_member_id),
+                Members::membership(&next_member_id),
                 "member profile not created",
             );
 
@@ -227,14 +227,14 @@ fn update_profile() {
 
             assert_ok!(buy_default_membership_as_alice());
 
-            assert_ok!(Members::update_profile(
+            assert_ok!(Members::update_membership(
                 Origin::signed(ALICE_ACCOUNT_ID),
                 next_member_id,
                 get_bob_info()
             ));
 
             let profile = assert_ok_unwrap(
-                Members::member_profile(&next_member_id),
+                Members::membership(&next_member_id),
                 "member profile not created",
             );
 
@@ -262,7 +262,7 @@ fn add_screened_member() {
             ));
 
             let profile = assert_ok_unwrap(
-                Members::member_profile(&next_member_id),
+                Members::membership(&next_member_id),
                 "member profile not created",
             );
 
@@ -298,7 +298,7 @@ fn set_controller_key() {
             ));
 
             let profile = assert_ok_unwrap(
-                Members::member_profile(&member_id),
+                Members::membership(&member_id),
                 "member profile not created",
             );
 

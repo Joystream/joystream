@@ -1945,7 +1945,7 @@ impl CreateChannelFixture {
         let controller_account = if let Some(account) = override_controller_account {
             account
         } else {
-            membership::Module::<Test>::ensure_profile(channel_creator_member_id)
+            membership::Module::<Test>::ensure_membership(channel_creator_member_id)
                 .unwrap()
                 .controller_account
         };
@@ -2117,7 +2117,7 @@ pub fn set_lead(
     new_role_account: <Test as system::Trait>::AccountId,
 ) -> LeadId<Test> {
     // Get controller account
-    //let lead_member_controller_account = membership::Module::<Test>::ensure_profile(member_id).unwrap().controller_account;
+    //let lead_member_controller_account = membership::Module::<Test>::ensure_membership(member_id).unwrap().controller_account;
 
     let expected_lead_id = NextLeadId::<Test>::get();
 

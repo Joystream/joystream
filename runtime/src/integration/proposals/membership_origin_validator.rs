@@ -27,7 +27,7 @@ impl<T: membership::Trait>
         let account_id = ensure_signed(origin)?;
 
         // check whether actor_id belongs to the registered member
-        let profile_result = <membership::Module<T>>::ensure_profile(actor_id);
+        let profile_result = <membership::Module<T>>::ensure_membership(actor_id);
 
         if let Ok(profile) = profile_result {
             // whether the account_id belongs to the actor

@@ -277,7 +277,7 @@ decl_module! {
                                     let _ = T::Currency::deposit_into_existing(&actor.account, params.reward);
                                 } else {
                                     // otherwise it should go the the member's root account
-                                    if let Some(profile) = <membership::Module<T>>::member_profile(&actor.member_id) {
+                                    if let Some(profile) = <membership::Module<T>>::membership(&actor.member_id) {
                                         let _ = T::Currency::deposit_into_existing(&profile.root_account, params.reward);
                                     }
                                 }
@@ -297,7 +297,7 @@ decl_module! {
 
             let role_parameters = Self::ensure_role_parameters(role)?;
 
-            <membership::Module<T>>::ensure_profile(member_id)?;
+            <membership::Module<T>>::ensure_membership(member_id)?;
 
             // pay (burn) entry fee - spam filter
             let fee = role_parameters.entry_request_fee;
@@ -322,7 +322,7 @@ decl_module! {
                 .filter(|request| request.0 == actor_account && request.2 == role)
                 .map(|request| request.1)
                 .filter(|member_id|
-                    <membership::Module<T>>::ensure_profile(*member_id)
+                    <membership::Module<T>>::ensure_membership(*member_id)
                         .ok()
                         .map_or(false, |profile| profile.root_account == sender || profile.controller_account == sender)
                 )
@@ -373,7 +373,7 @@ decl_module! {
             let sender = ensure_signed(origin)?;
             let actor = Self::ensure_actor(&actor_account)?;
 
-            let profile = <membership::Module<T>>::ensure_profile(actor.member_id)?;
+            let profile = <membership::Module<T>>::ensure_membership(actor.member_id)?;
             ensure!(profile.root_account == sender || profile.controller_account == sender, "only member can unstake storage provider");
 
             let role_parameters = Self::ensure_role_parameters(actor.role)?;

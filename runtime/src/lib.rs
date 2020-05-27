@@ -641,13 +641,13 @@ impl stake::StakingEventsHandler<Runtime> for ContentWorkingGroupStakingEventHan
         let member_id = curator_application.member_id;
 
         // get member's profile
-        let member_profile = membership::MemberProfile::<Runtime>::get(member_id).unwrap();
+        let membership = membership::Memberships::<Runtime>::get(member_id).unwrap();
 
         // deposit funds to member's root_account
         // The application doesn't recorded the original source_account from which staked funds were
         // provided, so we don't really have another option at the moment.
         <Runtime as stake::Trait>::Currency::resolve_creating(
-            &member_profile.root_account,
+            &membership.root_account,
             remaining_imbalance,
         );
 

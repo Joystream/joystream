@@ -1555,10 +1555,10 @@ decl_module! {
                     let recipient = <recurringrewards::Module<T>>::add_recipient();
 
                     // member must exist, since it was checked that it can enter the role
-                    let member_profile = <membership::Module<T>>::member_profile(successful_curator_application.member_id).unwrap();
+                    let membership = <membership::Module<T>>::membership(successful_curator_application.member_id).unwrap();
 
                     // rewards are deposited in the member's root account
-                    let reward_destination_account = member_profile.root_account;
+                    let reward_destination_account = membership.root_account;
 
                     // values have been checked so this should not fail!
                     let relationship_id = <recurringrewards::Module<T>>::add_reward_relationship(
