@@ -1179,10 +1179,6 @@ decl_module! {
             // Entities, which rc should be incremented
             let mut entity_ids_to_increase_rcs = EntitiesRc::<T>::default();
 
-            //
-            // == MUTATION SAFE ==
-            //
-
             for prop_id in schema.get_properties().iter() {
                 if entity_values.contains_key(prop_id) {
                     // A property is already added to the entity and cannot be updated
@@ -1198,6 +1194,10 @@ decl_module! {
                     &property_values, &mut entity_ids_to_increase_rcs, &mut entity_values_updated
                 )?;
             }
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             // Add schema support to `Entity` under given `entity_id`
             <EntityById<T>>::mutate(entity_id, |entity| {
