@@ -33,14 +33,15 @@ export class GraphQLSchemaParser {
         throw new Error('Schema not found');
     }
     let contents = fs.readFileSync(schemaPath, 'utf8');
-    this.schema = GraphQLSchemaParser.buildSchema(SCHEMA_DEFINITIONS_PREAMBLE.concat(contents));
+    this.schema = GraphQLSchemaParser.buildSchema(contents);
     this._objectTypeDefinations = GraphQLSchemaParser.createObjectTypeDefinations(this.schema);
   }
 
   /**
    * Read GrapqhQL schema and build a schema from it
    */
-  static buildSchema(schema: string): GraphQLSchema {
+  static buildSchema(contents: string): GraphQLSchema {
+    let schema = SCHEMA_DEFINITIONS_PREAMBLE.concat(contents);
     const ast = parse(schema);
     // in order to build AST with undeclared directive, we need to 
     // switch off SDL validation
