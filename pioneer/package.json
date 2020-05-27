@@ -7,16 +7,6 @@
   },
   "homepage": ".",
   "name": "pioneer",
-  "resolutions": {
-    "@polkadot/api": "^0.96.1",
-    "@polkadot/api-contract": "^0.96.1",
-    "@polkadot/keyring": "^1.7.0-beta.5",
-    "@polkadot/types": "^0.96.1",
-    "@polkadot/util": "^1.7.0-beta.5",
-    "@polkadot/util-crypto": "^1.7.0-beta.5",
-    "babel-core": "^7.0.0-bridge.0",
-    "typescript": "^3.7.2"
-  },
   "scripts": {
     "analyze": "yarn run build && cd packages/apps && yarn run source-map-explorer build/main.*.js",
     "build": "yarn run build:code && yarn run build:i18n",
@@ -46,7 +36,6 @@
     "@types/jest": "^24.0.22",
     "@types/react-router-dom": "^5.1.4",
     "@types/yup": "^0.26.36",
-    "@joystream/types": "*",
     "autoprefixer": "^9.7.1",
     "empty": "^0.10.1",
     "html-loader": "^0.5.5",
@@ -90,6 +79,7 @@
     "lodash": "^4.17.15",
     "node-sass": "^4.13.0",
     "sass-loader": "^8.0.0",
-    "style-loader": "^1.0.0"
+    "style-loader": "^1.0.0",
+    "@joystream/types": "^0.9.1"
   }
 }
