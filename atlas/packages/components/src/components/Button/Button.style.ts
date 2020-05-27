@@ -1,11 +1,11 @@
-import { css } from "@emotion/core";
 import { typography, colors } from "../../theme";
-import { Reducer, StyleFn, stripInline } from "../../utils";
+import { makeStyles, StyleFn, StyleObj } from "../../utils";
+import { disabled, dimensionsFromProps, log } from "../../theme/fragments";
 
 export type ButtonStyleProps = {
 	text?: string;
 	type?: "primary" | "secondary";
-	width?: "normal" | "full";
+	full?: boolean;
 	size?: "regular" | "small" | "smaller";
 	disabled?: boolean;
 };
@@ -13,6 +13,8 @@ export type ButtonStyleProps = {
 const baseStyles: StyleFn = () => ({
 	borderWidth: "1px",
 	borderStyle: "solid",
+	fontFamily: typography.fonts.base,
+	fontWeight: typography.weights.medium,
 	display: "inline-flex",
 	justifyContent: "center",
 	alignItems: "center",
@@ -21,7 +23,6 @@ const baseStyles: StyleFn = () => ({
 		background: "transparent",
 	},
 });
-
 const colorFromType: StyleFn = (styles, { type }: ButtonStyleProps) => {
 	switch (type) {
 		case "primary":
@@ -45,56 +46,81 @@ const colorFromType: StyleFn = (styles, { type }: ButtonStyleProps) => {
 		case "secondary":
 			return {
 				...styles,
-				backgroundColor: colors.blue[500],
+				backgroundColor: colors.black,
 				borderColor: colors.blue[500],
 
 				"&:hover": {
-					backgroundColor: colors.black,
 					borderColor: colors.blue[700],
 					color: colors.blue[300],
 				},
 
 				"&:active": {
-					backgroundColor: colors.black,
 					borderColor: colors.blue[700],
 					color: colors.blue[700],
 				},
 			};
 	}
 };
-const widthFromSize: StyleFn = (styles, { width }) => ({
-	...styles,
-	display:
-		width === "full" && styles.display.includes("inline") ? stripInline(styles.display as string) : styles.display,
-	width: width === "full" ? "100%" : styles.width,
+const paddingFromType: StyleFn = (
+	styles,
+	{ size, children, full }: { size: "regular" | "small" | "smaller"; children?: React.ReactNode; full: boolean }
+) => {
+	const buttonHeight = size === "regular" ? "20px" : size === "small" ? "15px" : "10px";
+	return {
+		...styles,
+		margin: `0 ${full ? "0" : "15px"} 0 0`,
+		padding:
+			size === "regular"
+				? !!children
+					? "14px 17px"
+					: "14px"
+				: size === "small"
+				? !!children
+					? "12px 14px"
+					: "12px"
+				: "10px",
+		fontSize:
+			size === "regular"
+				? typography.sizes.button.large
+				: size === "small"
+				? typography.sizes.button.medium
+				: typography.sizes.button.small,
+
+		height: buttonHeight,
+		maxHeight: buttonHeight,
+	};
+};
+
+const iconStyles: StyleFn = (styles, { children, size }) => {
+	return {
+		...styles,
+		marginRight: !!children ? "10px" : "0",
+		fontSize:
+			size === "regular"
+				? typography.sizes.icon.large
+				: size === "small"
+				? typography.sizes.icon.medium
+				: typography.sizes.icon.small,
+
+		"& > path:nth-of-type(1)": {
+			color: "inherit",
+			flexShrink: 0,
+		},
+	};
+};
+
+export const useCSS = (props: ButtonStyleProps) => ({
+	container: makeStyles([baseStyles, colorFromType, dimensionsFromProps, paddingFromType, disabled])(props),
+	icon: makeStyles([iconStyles])(props),
 });
 
-export let makeStyles = ({
-	text,
-	type = "primary",
-	width = "normal",
-	size = "regular",
-	disabled = false,
-}: ButtonStyleProps) => {
-	const colorReducer = Reducer(colorFromType);
-	const widthReducer = Reducer(widthFromSize);
-	const baseReducer = Reducer(baseStyles);
-
-	let finalStyles = baseReducer
-		.concat(colorReducer)
-		.concat(widthReducer)
-		.run({}, { text, type, width, size, disabled });
-
-	return css(finalStyles);
-};
-// export let makeStyles = ({
 // 	text,
 // 	type = "primary",
 // 	width = "normal",
 // 	size = "regular",
 // 	disabled = false,
 // }: ButtonStyleProps) => {
-// 	const buttonHeight = size === "regular" ? "20px" : size === "small" ? "15px" : "10px";
+//
 
 // 	const primaryButton = {
 // 		container: css`
@@ -116,9 +142,8 @@ export let makeStyles = ({
 // 				: size === "small"
 // 				? typography.sizes.button.medium
 // 				: typography.sizes.button.small};
-// 			margin: 0 ${width === "normal" ? "15px" : "0"} 0 0;
-// 			height: ${buttonHeight};
-// 			max-height: ${buttonHeight};
+//
+//
 // 		`,
 // 	};
 

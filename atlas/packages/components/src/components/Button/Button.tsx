@@ -1,21 +1,26 @@
 import React from "react";
-import { makeStyles, ButtonStyleProps } from "./Button.style";
+import { ButtonStyleProps, useCSS } from "./Button.style";
 import { IconProp } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 type ButtonProps = {
-	text?: string;
+	children?: React.ReactNode;
 	icon?: IconProp;
 	disabled?: boolean;
 	onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
 } & ButtonStyleProps;
 
-export default function Button({ text = "", icon, disabled = false, onClick, ...styleProps }: ButtonProps) {
-	let styles = makeStyles({ text, disabled, ...styleProps });
-	console.log("styles", styles);
+export default function Button({
+	children,
+	icon,
+	type = "primary",
+	disabled = false,
+	onClick,
+	...styleProps
+}: ButtonProps) {
+	let styles = useCSS({ disabled, type, ...styleProps });
 	return (
-		<div css={styles} onClick={disabled ? null : onClick}>
-			{text}
-		</div>
+		<button css={styles.container} onClick={disabled ? null : onClick}>
+			{children}
+		</button>
 	);
 }
