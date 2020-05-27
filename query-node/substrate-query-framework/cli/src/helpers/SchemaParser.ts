@@ -42,6 +42,7 @@ export class GraphQLSchemaParser {
    */
   static buildSchema(contents: string): GraphQLSchema {
     let schema = SCHEMA_DEFINITIONS_PREAMBLE.concat(contents);
+    let schema = SCHEMA_DEFINITIONS_PREAMBLE.concat(contents);
     const ast = parse(schema);
     // in order to build AST with undeclared directive, we need to 
     // switch off SDL validation
