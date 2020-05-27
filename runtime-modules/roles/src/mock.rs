@@ -20,7 +20,7 @@ impl_outer_origin! {
 }
 
 pub fn alice_id() -> u32 {
-    Members::member_ids_by_root_account_id(alice_account())[0]
+    0
 }
 pub fn alice_account() -> u64 {
     1
@@ -127,4 +127,3 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities {
 pub type System = system::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type Actors = actors::Module<Test>;
-pub type Members = membership::Module<Test>;

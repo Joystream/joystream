@@ -5,7 +5,6 @@
 // Example:  pub PaidMembershipTermsById get(paid_membership_terms_by_id) build(|config: &GenesisConfig<T>| {}
 #![allow(clippy::redundant_closure_call)]
 
-
 pub mod genesis;
 pub(crate) mod mock;
 pub mod role_types;
@@ -154,11 +153,11 @@ decl_storage! {
         /// Mapping of member's id to their membership profile
         pub Memberships get(membership) : map T::MemberId => Option<Membership<T>>;
 
-        /// Mapping of a root account id to vector of member ids it controls
-        pub MemberIdsByRootAccountId get(member_ids_by_root_account_id) : map T::AccountId => Vec<T::MemberId>;
+        /// Mapping of a root account id to vector of member ids it controls.
+        pub(crate) MemberIdsByRootAccountId : map T::AccountId => Vec<T::MemberId>;
 
         /// Mapping of a controller account id to vector of member ids it controls
-        pub MemberIdsByControllerAccountId get(member_ids_by_controller_account_id) : map T::AccountId => Vec<T::MemberId>;
+        pub(crate) MemberIdsByControllerAccountId : map T::AccountId => Vec<T::MemberId>;
 
         /// Registered unique handles and their mapping to their owner
         pub MemberIdByHandle get(handles) : map Vec<u8> => T::MemberId;
@@ -600,7 +599,7 @@ impl<T: Trait> Module<T> {
         signing_account: &T::AccountId,
         actor_in_role: ActorInRole<T::ActorId>,
     ) -> bool {
-        Self::member_ids_by_controller_account_id(signing_account)
+        <MemberIdsByControllerAccountId<T>>::get(signing_account)
             .iter()
             .any(|member_id| {
                 let membership = Self::membership(member_id).unwrap(); // must exist
@@ -688,16 +687,6 @@ impl<T: Trait> Module<T> {
             !<MembershipIdByActorInRole<T>>::exists(actor_in_role),
             "ActorInRoleAlreadyExists"
         );
-
-        /*
-        Disabling this temporarily for Rome, later we will drop all this
-        integration with Membership module anyway:
-        https://github.com/Joystream/substrate-runtime-joystream/issues/115
-        ensure!(
-            !membership.roles.occupies_role(actor_in_role.role),
-            "MemberAlreadyInRole"
-        );
-        */
 
         // Other possible checks:
         // How long the member has been registered

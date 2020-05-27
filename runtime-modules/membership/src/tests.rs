@@ -121,7 +121,7 @@ fn buy_membership() {
 
             assert_ok!(buy_default_membership_as_alice());
 
-            let member_ids = Members::member_ids_by_root_account_id(&ALICE_ACCOUNT_ID);
+            let member_ids = vec![0];
             assert_eq!(member_ids, vec![next_member_id]);
 
             let profile = assert_ok_unwrap(
@@ -138,7 +138,7 @@ fn buy_membership() {
             // controller account initially set to primary account
             assert_eq!(profile.controller_account, ALICE_ACCOUNT_ID);
             assert_eq!(
-                Members::member_ids_by_controller_account_id(ALICE_ACCOUNT_ID),
+                <crate::MemberIdsByControllerAccountId<Test>>::get(ALICE_ACCOUNT_ID),
                 vec![next_member_id]
             );
         });
@@ -304,7 +304,7 @@ fn set_controller_key() {
         )
         .build()
         .execute_with(|| {
-            let member_id = Members::member_ids_by_root_account_id(&ALICE_ACCOUNT_ID)[0];
+            let member_id = 0;
 
             assert_ok!(Members::set_controller_account(
                 Origin::signed(ALICE_ACCOUNT_ID),
@@ -319,10 +319,12 @@ fn set_controller_key() {
 
             assert_eq!(profile.controller_account, ALICE_CONTROLLER_ID);
             assert_eq!(
-                Members::member_ids_by_controller_account_id(&ALICE_CONTROLLER_ID),
+                <crate::MemberIdsByControllerAccountId<Test>>::get(&ALICE_CONTROLLER_ID),
                 vec![member_id]
             );
-            assert!(Members::member_ids_by_controller_account_id(&ALICE_ACCOUNT_ID).is_empty());
+            assert!(
+                <crate::MemberIdsByControllerAccountId<Test>>::get(&ALICE_ACCOUNT_ID).is_empty()
+            );
         });
 }
 
@@ -339,19 +341,19 @@ fn set_root_account() {
         )
         .build()
         .execute_with(|| {
-            let member_id_1 = Members::member_ids_by_root_account_id(&ALICE_ACCOUNT_ID)[0];
+            let member_id = 0;
 
             assert_ok!(Members::set_root_account(
                 Origin::signed(ALICE_ACCOUNT_ID),
-                member_id_1,
+                member_id,
                 ALICE_NEW_ROOT_ACCOUNT
             ));
 
-            let member_id_2 = Members::member_ids_by_root_account_id(&ALICE_NEW_ROOT_ACCOUNT)[0];
+            let membership = Members::membership(member_id).unwrap();
 
-            assert_eq!(member_id_1, member_id_2);
+            assert_eq!(ALICE_ACCOUNT_ID, membership.root_account);
 
-            assert!(Members::member_ids_by_root_account_id(&ALICE_ACCOUNT_ID).is_empty());
+            assert!(<crate::MemberIdsByRootAccountId<Test>>::get(&ALICE_ACCOUNT_ID).is_empty());
         });
 }
 
@@ -368,8 +370,8 @@ fn registering_and_unregistering_roles_on_member() {
         .build()
         .execute_with(|| {
             const DUMMY_ACTOR_ID: u32 = 100;
-            let member_id_1 = Members::member_ids_by_root_account_id(&1)[0];
-            let member_id_2 = Members::member_ids_by_root_account_id(&2)[0];
+            let member_id_1 = 0;
+            let member_id_2 = 0;
 
             // no initial roles for member
             assert!(!Members::member_is_in_role(
