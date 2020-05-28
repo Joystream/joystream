@@ -91,25 +91,25 @@ export class MusicTrackCodec extends EntityCodec<MusicTrackType> { }
 
 export function MusicTrackToFormValues (entity?: MusicTrackType): MusicTrackFormValues {
   return {
-    title: entity && entity.title || '',
-    artist: entity && entity.artist || '',
-    thumbnail: entity && entity.thumbnail || '',
-    description: entity && entity.description || '',
-    language: entity && entity.language?.id || 0,
-    firstReleased: entity && moment(entity.firstReleased * 1000).format('YYYY-MM-DD') || '',
-    genre: entity && entity.genre?.id || 0,
-    mood: entity && entity.mood?.id || 0,
-    theme: entity && entity.theme?.id || 0,
-    links: entity && entity.links || [],
-    composerOrSongwriter: entity && entity.composerOrSongwriter || '',
-    lyrics: entity && entity.lyrics || '',
-    object: entity && entity.object?.id || 0,
-    publicationStatus: entity && entity.publicationStatus?.id || 0,
-    curationStatus: entity && entity.curationStatus?.id || 0,
-    explicit: entity && entity.explicit || false,
-    license: entity && entity.license?.id || 0,
-    attribution: entity && entity.attribution || '',
-    channelId: entity && entity.channelId || 0
+    title: (entity && entity.title) || '',
+    artist: (entity && entity.artist) || '',
+    thumbnail: (entity && entity.thumbnail) || '',
+    description: (entity && entity.description) || '',
+    language: (entity && entity.language?.id) || 0,
+    firstReleased: (entity && moment(entity.firstReleased * 1000).format('YYYY-MM-DD')) || '',
+    genre: (entity && entity.genre?.id) || 0,
+    mood: (entity && entity.mood?.id) || 0,
+    theme: (entity && entity.theme?.id) || 0,
+    links: (entity && entity.links) || [],
+    composerOrSongwriter: (entity && entity.composerOrSongwriter) || '',
+    lyrics: (entity && entity.lyrics) || '',
+    object: (entity && entity.object?.id) || 0,
+    publicationStatus: (entity && entity.publicationStatus?.id) || 0,
+    curationStatus: (entity && entity.curationStatus?.id) || 0,
+    explicit: (entity && entity.explicit) || false,
+    license: (entity && entity.license?.id) || 0,
+    attribution: (entity && entity.attribution) || '',
+    channelId: (entity && entity.channelId) || 0
   };
 }
 

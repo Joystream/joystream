@@ -8,7 +8,7 @@ export type MyMusicAlbumsProps = {
 
 export function MyMusicAlbums (props: MyMusicAlbumsProps) {
   const { albums = [] } = props;
-  const albumCount = albums && albums.length || 0;
+  const albumCount = (albums && albums.length) || 0;
 
   return <>
     <h2>{`My music albums (${albumCount})`}</h2>

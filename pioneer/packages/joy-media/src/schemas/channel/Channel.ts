@@ -75,13 +75,13 @@ export class ChannelCodec {
 
 export function ChannelToFormValues (entity?: ChannelType): ChannelFormValues {
   return {
-    content: entity && entity.content || 'Video',
-    handle: entity && entity.handle || '',
-    title: entity && entity.title || '',
-    description: entity && entity.description || '',
-    avatar: entity && entity.avatar || '',
-    banner: entity && entity.banner || '',
-    publicationStatus: entity && entity.publicationStatus || 'Public'
+    content: (entity && entity.content) || 'Video',
+    handle: (entity && entity.handle) || '',
+    title: (entity && entity.title) || '',
+    description: (entity && entity.description) || '',
+    avatar: (entity && entity.avatar) || '',
+    banner: (entity && entity.banner) || '',
+    publicationStatus: (entity && entity.publicationStatus) || 'Public'
   };
 }
 

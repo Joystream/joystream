@@ -161,7 +161,7 @@ const EditForm = withFormik<OuterProps, FormValues>({
   mapPropsToValues: props => {
     const { struct } = props;
     return {
-      text: struct && struct.current_text || ''
+      text: (struct && struct.current_text) || ''
     };
   },
 

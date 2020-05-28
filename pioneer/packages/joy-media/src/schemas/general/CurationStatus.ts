@@ -25,7 +25,7 @@ export class CurationStatusCodec extends EntityCodec<CurationStatusType> { }
 
 export function CurationStatusToFormValues (entity?: CurationStatusType): CurationStatusFormValues {
   return {
-    value: entity && entity.value || ''
+    value: (entity && entity.value) || ''
   };
 }
 

@@ -25,7 +25,7 @@ export class MediaObjectCodec extends EntityCodec<MediaObjectType> { }
 
 export function MediaObjectToFormValues (entity?: MediaObjectType): MediaObjectFormValues {
   return {
-    value: entity && entity.value || ''
+    value: (entity && entity.value) || ''
   };
 }
 

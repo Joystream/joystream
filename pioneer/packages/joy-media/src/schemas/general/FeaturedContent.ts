@@ -29,9 +29,9 @@ export class FeaturedContentCodec extends EntityCodec<FeaturedContentType> { }
 
 export function FeaturedContentToFormValues (entity?: FeaturedContentType): FeaturedContentFormValues {
   return {
-    topVideo: entity && entity.topVideo?.id || 0,
-    featuredVideos: entity && entity.featuredVideos?.map(x => x.id) || [],
-    featuredAlbums: entity && entity.featuredAlbums?.map(x => x.id) || []
+    topVideo: (entity && entity.topVideo?.id) || 0,
+    featuredVideos: (entity && entity.featuredVideos?.map(x => x.id)) || [],
+    featuredAlbums: (entity && entity.featuredAlbums?.map(x => x.id)) || []
   };
 }
 

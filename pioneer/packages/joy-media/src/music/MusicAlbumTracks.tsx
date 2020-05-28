@@ -13,7 +13,7 @@ export function TracksOfMyMusicAlbum (props: TracksOfMyMusicAlbumProps) {
   const [idxsOfSelectedTracks, setIdxsOfSelectedTracks] = useState(new Set<number>());
 
   const { album, tracks = [] } = props;
-  const tracksCount = tracks && tracks.length || 0;
+  const tracksCount = (tracks && tracks.length) || 0;
 
   const onTrackSelect = (
     trackIdx: number,

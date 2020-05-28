@@ -94,26 +94,26 @@ export class MusicAlbumCodec extends EntityCodec<MusicAlbumType> { }
 
 export function MusicAlbumToFormValues (entity?: MusicAlbumType): MusicAlbumFormValues {
   return {
-    title: entity && entity.title || '',
-    artist: entity && entity.artist || '',
-    thumbnail: entity && entity.thumbnail || '',
-    description: entity && entity.description || '',
-    firstReleased: entity && moment(entity.firstReleased * 1000).format('YYYY-MM-DD') || '',
-    genre: entity && entity.genre?.id || 0,
-    mood: entity && entity.mood?.id || 0,
-    theme: entity && entity.theme?.id || 0,
-    tracks: entity && entity.tracks?.map(x => x.id) || [],
-    language: entity && entity.language?.id || 0,
-    links: entity && entity.links || [],
-    lyrics: entity && entity.lyrics || '',
-    composerOrSongwriter: entity && entity.composerOrSongwriter || '',
-    reviews: entity && entity.reviews || [],
-    publicationStatus: entity && entity.publicationStatus.id || 0,
-    curationStatus: entity && entity.curationStatus?.id || 0,
-    explicit: entity && entity.explicit || false,
-    license: entity && entity.license?.id || 0,
-    attribution: entity && entity.attribution || '',
-    channelId: entity && entity.channelId || 0
+    title: (entity && entity.title) || '',
+    artist: (entity && entity.artist) || '',
+    thumbnail: (entity && entity.thumbnail) || '',
+    description: (entity && entity.description) || '',
+    firstReleased: (entity && moment(entity.firstReleased * 1000).format('YYYY-MM-DD')) || '',
+    genre: (entity && entity.genre?.id) || 0,
+    mood: (entity && entity.mood?.id) || 0,
+    theme: (entity && entity.theme?.id) || 0,
+    tracks: (entity && entity.tracks?.map(x => x.id)) || [],
+    language: (entity && entity.language?.id) || 0,
+    links: (entity && entity.links) || [],
+    lyrics: (entity && entity.lyrics) || '',
+    composerOrSongwriter: (entity && entity.composerOrSongwriter) || '',
+    reviews: (entity && entity.reviews) || [],
+    publicationStatus: (entity && entity.publicationStatus.id) || 0,
+    curationStatus: (entity && entity.curationStatus?.id) || 0,
+    explicit: (entity && entity.explicit) || false,
+    license: (entity && entity.license?.id) || 0,
+    attribution: (entity && entity.attribution) || '',
+    channelId: (entity && entity.channelId) || 0
   };
 }
 

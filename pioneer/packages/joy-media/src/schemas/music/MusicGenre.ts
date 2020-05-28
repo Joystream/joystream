@@ -25,7 +25,7 @@ export class MusicGenreCodec extends EntityCodec<MusicGenreType> { }
 
 export function MusicGenreToFormValues (entity?: MusicGenreType): MusicGenreFormValues {
   return {
-    value: entity && entity.value || ''
+    value: (entity && entity.value) || ''
   };
 }
 

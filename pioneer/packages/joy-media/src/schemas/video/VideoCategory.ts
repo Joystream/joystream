@@ -25,7 +25,7 @@ export class VideoCategoryCodec extends EntityCodec<VideoCategoryType> { }
 
 export function VideoCategoryToFormValues (entity?: VideoCategoryType): VideoCategoryFormValues {
   return {
-    value: entity && entity.value || ''
+    value: (entity && entity.value) || ''
   };
 }
 
