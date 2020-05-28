@@ -19,22 +19,15 @@ pub mod genesis;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-use codec::{Decode, Encode};
-use membership::role_types;
+use codec::{Codec, Decode, Encode};
 use rstd::borrow::ToOwned;
 use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::convert::From;
 use rstd::prelude::*;
-use sr_primitives::traits::{One, Zero}; // Member, SimpleArithmetic, MaybeSerialize
+use sr_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic, Zero};
 use srml_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
-use srml_support::{
-    decl_event,
-    decl_module,
-    decl_storage,
-    dispatch, // , StorageMap, , Parameter
-    ensure,
-};
+use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
 use system::{self, ensure_root, ensure_signed};
 
 /// DIRTY IMPORT BECAUSE
@@ -55,21 +48,31 @@ pub trait Trait:
 
     /// The event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+
+    type ActorId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq
+        + Ord;
 }
 
-/// Type constraint for identifer used for actors in members module in this runtime.
-pub type ActorIdInMembersModule<T> = <T as membership::Trait>::ActorId;
+/// Type constraint for identifer used for actors.
+pub type ActorId<T> = <T as Trait>::ActorId;
 
 /// Type for identifier for channels.
 /// The ChannelId must be capable of behaving like an actor id for membership module,
 /// since publishers are identified by their channel id.
-pub type ChannelId<T> = ActorIdInMembersModule<T>;
+pub type ChannelId<T> = ActorId<T>;
 
 /// Type identifier for lead role, which must be same as membership actor identifeir
-pub type LeadId<T> = ActorIdInMembersModule<T>;
+pub type LeadId<T> = ActorId<T>;
 
 /// Type identifier for curator role, which must be same as membership actor identifeir
-pub type CuratorId<T> = ActorIdInMembersModule<T>;
+pub type CuratorId<T> = ActorId<T>;
 
 /// Type for the identifer for an opening for a curator.
 pub type CuratorOpeningId<T> = <T as hiring::Trait>::OpeningId;
@@ -273,7 +276,10 @@ impl<BlockNumber> Default for LeadRoleState<BlockNumber> {
 /// hence information about this is missing. Recurring rewards is included, somewhat arbitrarily!
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
-pub struct Lead<AccountId, RewardRelationshipId, BlockNumber> {
+pub struct Lead<AccountId, RewardRelationshipId, BlockNumber, MemberId> {
+    /// Leader member id,
+    pub member_id: MemberId,
+
     /// Account used to authenticate in this role,
     pub role_account: AccountId,
 
@@ -434,9 +440,6 @@ pub struct Curator<
 
     /// How the curator was inducted into the working group.
     pub induction: CuratorInduction<LeadId, CuratorApplicationId, BlockNumber>,
-
-    /// Whether this curator can unilaterally alter the curation status of a channel.
-    //pub can_update_channel_curation_status: bool,
 
     /// Permissions module principal id
     pub principal_id: PrincipalId,
@@ -771,27 +774,6 @@ impl<LeadId: Default, CuratorId> Default for WorkingGroupUnstaker<LeadId, Curato
     }
 }
 
-/*
-/// ...
-#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, PartialOrd, Ord)]
-pub struct OpeningHire<CuratorApplicationId, CuratorId, PrincipalId> {
-    curator_application_id: CuratorApplicationId,
-    curator_id: CuratorId,
-    principal_id: PrincipalId
-}
-*/
-
-/*
-pub enum ChannelActor<T: Trait> {
-
-    ///
-    WorkingGroupActor(WorkingGroupActor<T>),
-
-    ///
-    Owner
-}
-*/
-
 // ======================================================================== //
 // Move section below, this out in its own file later                       //
 // ======================================================================== //
@@ -1003,7 +985,7 @@ decl_storage! {
         pub CurrentLeadId get(current_lead_id) : Option<LeadId<T>>;
 
         /// Maps identifier to corresponding lead.
-        pub LeadById get(lead_by_id): linked_map LeadId<T> => Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>;
+        pub LeadById get(lead_by_id): linked_map LeadId<T> => Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber, T::MemberId>;
 
         /// Next identifier for new current lead.
         pub NextLeadId get(next_lead_id): LeadId<T>;
@@ -1151,9 +1133,6 @@ decl_module! {
                 MSG_CHANNEL_CREATION_DISABLED
             );
 
-            // Ensure prospective owner member is currently allowed to become channel owner
-            let (member_in_role, next_channel_id) = Self::ensure_can_register_channel_owner_role_on_member(&owner, None)?;
-
             // Ensure channel handle is acceptable length
             Self::ensure_channel_handle_is_valid(&handle)?;
 
@@ -1174,6 +1153,7 @@ decl_module! {
             //
 
             // Make and add new principal
+            let next_channel_id = NextChannelId::<T>::get();
             let principal_id = Self::add_new_principal(&Principal::ChannelOwner(next_channel_id));
 
             // Construct channel
@@ -1204,14 +1184,8 @@ decl_module! {
 
             // CREDENTIAL STUFF //
 
-            // Dial out to membership module and inform about new role as channe owner.
-            let registered_role = <membership::Module<T>>::register_role_on_member(owner, &member_in_role).is_ok();
-
-            assert!(registered_role);
-
             // Trigger event
             Self::deposit_event(RawEvent::ChannelCreated(next_channel_id));
-
         }
 
         /// An owner transfers channel ownership to a new owner.
@@ -1223,13 +1197,6 @@ decl_module! {
 
             // Ensure channel owner has signed
             let channel = Self::ensure_channel_owner_signed(origin, &channel_id)?;
-
-            // Ensure prospective new owner can actually become a channel owner (with a new channel id)
-            // We do not pass the existing channel id because it is already owned and the call would
-            // return with Err, since the membership system doesn't allow the same ActorInRole to be assigned
-            // to more than one member, and we don't use the returned actor_in_role because its not
-            // for the channel being transferred.
-            Self::ensure_can_register_channel_owner_role_on_member(&new_owner, None)?;
 
             //
             // == MUTATION SAFE ==
@@ -1244,26 +1211,6 @@ decl_module! {
 
             // Overwrite entry in ChannelById
             ChannelById::<T>::insert(channel_id, new_channel);
-
-            let role = role_types::ActorInRole::new(
-                role_types::Role::ChannelOwner,
-                channel_id
-            );
-
-            // Remove
-            let unregistered_role = <membership::Module<T>>::unregister_role(
-                role
-            ).is_ok();
-
-            assert!(unregistered_role);
-
-            // Dial out to membership module and inform about new role as channel owner.
-            let registered_role = <membership::Module<T>>::register_role_on_member(
-                new_owner,
-                &role
-            ).is_ok();
-
-            assert!(registered_role);
 
             // Trigger event
             Self::deposit_event(RawEvent::ChannelOwnershipTransferred(channel_id));
@@ -1494,18 +1441,6 @@ decl_module! {
                                             .map(|(successful_curator_application, _, _)| successful_curator_application.application_id)
                                             .collect::<BTreeSet<_>>();
 
-            // Ensure all applications are from members that _still_ can step into the given role
-            let num_successful_applications_that_can_register_as_curator = successful_iter
-                                                                        .clone()
-                                                                        .map(|(successful_curator_application, _, _)| successful_curator_application.member_id)
-                                                                        .filter_map(|successful_member_id| Self::ensure_can_register_curator_role_on_member(&successful_member_id).ok() )
-                                                                        .count();
-
-            ensure!(
-                num_successful_applications_that_can_register_as_curator == num_provided_successful_curator_application_ids,
-                MSG_MEMBER_NO_LONGER_REGISTRABLE_AS_CURATOR
-            );
-
             // NB: Combined ensure check and mutation in hiring module
             ensure_on_wrapped_error!(
                 hiring::Module::<T>::fill_opening(
@@ -1613,14 +1548,6 @@ decl_module! {
                 // Store curator
                 CuratorById::<T>::insert(new_curator_id, curator);
 
-                // Register role on member
-                let registered_role = membership::Module::<T>::register_role_on_member(
-                    successful_curator_application.member_id,
-                    &role_types::ActorInRole::new(role_types::Role::Curator, new_curator_id)
-                ).is_ok();
-
-                assert!(registered_role);
-
                 // Update next curator id
                 NextCuratorId::<T>::mutate(|id| *id += <CuratorId<T> as One>::one());
 
@@ -1631,20 +1558,6 @@ decl_module! {
             Self::deposit_event(RawEvent::CuratorOpeningFilled(curator_opening_id, curator_application_id_to_curator_id));
 
         }
-
-        /*
-        /// ...
-        pub fn update_curator_reward(_origin) {
-
-        }
-        */
-
-        /*
-        /// ...
-        pub fn slash_curator(_origin) {
-
-        }
-        */
 
         pub fn withdraw_curator_application(
             origin,
@@ -1737,9 +1650,6 @@ decl_module! {
             // Ensure curator opening exists
             let (curator_opening, _opening) = Self::ensure_curator_opening_exists(&curator_opening_id)?;
 
-            // Ensure new owner can actually become a curator
-            let (_member_as_curator, _new_curator_id) = Self::ensure_can_register_curator_role_on_member(&member_id)?;
-
             // Ensure that there is sufficient balance to cover stake proposed
             Self::ensure_can_make_stake_imbalance(
                 vec![&opt_role_stake_balance, &opt_application_stake_balance],
@@ -1814,13 +1724,6 @@ decl_module! {
                 membership::Module::<T>::ensure_member_controller_account_signed(origin, &member_id)
             )?;
 
-            // Ensure that member is this curator
-            let actor_in_role = role_types::ActorInRole::new(role_types::Role::Curator, curator_id);
-
-            ensure!(
-                membership::MembershipIdByActorInRole::<T>::get(actor_in_role) == member_id,
-                MSG_CURATOR_NOT_CONTROLLED_BY_MEMBER
-            );
 
             //
             // == MUTATION SAFE ==
@@ -2058,18 +1961,13 @@ impl<T: Trait> Module<T> {
 
         let new_lead_id = <NextLeadId<T>>::get();
 
-        let new_lead_role =
-            role_types::ActorInRole::new(role_types::Role::CuratorLead, new_lead_id);
-
         //
         // == MUTATION SAFE ==
         //
 
-        // Register in role - will fail if member cannot become lead
-        membership::Module::<T>::register_role_on_member(member, &new_lead_role)?;
-
         // Construct lead
         let new_lead = Lead {
+            member_id: member,
             role_account,
             reward_relationship: None,
             inducted: <system::Module<T>>::block_number(),
@@ -2080,7 +1978,7 @@ impl<T: Trait> Module<T> {
         <LeadById<T>>::insert(new_lead_id, new_lead);
 
         // Update current lead
-        <CurrentLeadId<T>>::put(new_lead_id); // Some(new_lead_id)
+        <CurrentLeadId<T>>::put(new_lead_id);
 
         // Update next lead counter
         <NextLeadId<T>>::mutate(|id| *id += <LeadId<T> as One>::one());
@@ -2100,14 +1998,6 @@ impl<T: Trait> Module<T> {
         // == MUTATION SAFE ==
         //
 
-        // Unregister from role in membership model
-        let current_lead_role = role_types::ActorInRole {
-            role: role_types::Role::CuratorLead,
-            actor_id: lead_id,
-        };
-
-        <membership::Module<T>>::unregister_role(current_lead_role)?;
-
         // Update lead stage as exited
         let current_block = <system::Module<T>>::block_number();
 
@@ -2121,7 +2011,7 @@ impl<T: Trait> Module<T> {
         <LeadById<T>>::insert(lead_id, new_lead);
 
         // Update current lead
-        <CurrentLeadId<T>>::take(); // None
+        <CurrentLeadId<T>>::take();
 
         // Trigger event
         Self::deposit_event(RawEvent::LeadUnset(lead_id));
@@ -2150,54 +2040,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn ensure_can_register_role_on_member(
-        member_id: &T::MemberId,
-        role: role_types::Role,
-        actor_id: &ActorIdInMembersModule<T>,
-    ) -> Result<membership::ActorInRole<ActorIdInMembersModule<T>>, &'static str> {
-        let new_actor_in_role = role_types::ActorInRole::new(role, *actor_id);
-
-        <membership::Module<T>>::can_register_role_on_member(member_id, &new_actor_in_role)
-            .map(|_| new_actor_in_role)
-    }
-
-    fn ensure_can_register_curator_role_on_member(
-        member_id: &T::MemberId,
-    ) -> Result<
-        (
-            membership::ActorInRole<ActorIdInMembersModule<T>>,
-            CuratorId<T>,
-        ),
-        &'static str,
-    > {
-        let next_id = <NextCuratorId<T>>::get();
-
-        Self::ensure_can_register_role_on_member(member_id, role_types::Role::Curator, &next_id)
-            .map(|curator_in_role| (curator_in_role, next_id))
-    }
-
-    fn ensure_can_register_channel_owner_role_on_member(
-        member_id: &T::MemberId,
-        opt_channel_id: Option<ChannelId<T>>,
-    ) -> Result<
-        (
-            membership::ActorInRole<ActorIdInMembersModule<T>>,
-            ChannelId<T>,
-        ),
-        &'static str,
-    > {
-        let next_channel_id = opt_channel_id.unwrap_or_else(NextChannelId::<T>::get);
-
-        Self::ensure_can_register_role_on_member(
-            member_id,
-            role_types::Role::ChannelOwner,
-            &next_channel_id,
-        )
-        .map(|member_in_role| (member_in_role, next_channel_id))
-    }
-
     // TODO: convert InputConstraint ensurer routines into macroes
-
     fn ensure_channel_handle_is_valid(handle: &[u8]) -> dispatch::Result {
         ChannelHandleConstraint::get().ensure_valid(
             handle.len(),
@@ -2302,7 +2145,7 @@ impl<T: Trait> Module<T> {
     pub fn ensure_lead_is_set() -> Result<
         (
             LeadId<T>,
-            Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>,
+            Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber, T::MemberId>,
         ),
         &'static str,
     > {
@@ -2331,7 +2174,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<
         (
             LeadId<T>,
-            Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber>,
+            Lead<T::AccountId, T::RewardRelationshipId, T::BlockNumber, T::MemberId>,
         ),
         &'static str,
     > {
@@ -2346,25 +2189,7 @@ impl<T: Trait> Module<T> {
 
         Ok((lead_id, lead))
     }
-    /*
-        fn ensure_activate_opening_at_valid(activate_at: &hiring::ActivateOpeningAt<T::BlockNumber>) -> Result<T::BlockNumber, &'static str>{
 
-            let current_block = <system::Module<T>>::block_number();
-
-            let starting_block =
-                match activate_at {
-                    hiring::ActivateOpeningAt::CurrentBlock => current_block,
-                    hiring::ActivateOpeningAt::ExactBlock(block_number) => block_number.clone()
-            };
-
-            ensure!(
-                starting_block >= current_block,
-                MSG_OPENING_CANNOT_ACTIVATE_IN_THE_PAST
-            );
-
-            Ok(starting_block)
-        }
-    */
     fn ensure_curator_opening_exists(
         curator_opening_id: &CuratorOpeningId<T>,
     ) -> Result<
@@ -2529,8 +2354,6 @@ impl<T: Trait> Module<T> {
         ),
         &'static str,
     > {
-        //Result<(hiring::Application<<T as hiring::Trait>::OpeningId, T::BlockNumber, <T as stake::Trait>::StakeId>, CuratorOpening<T::OpeningId, T::BlockNumber, BalanceOf<T>, CuratorApplicationId<T>> ,hiring::Opening<BalanceOf<T>, T::BlockNumber, <T as hiring::Trait>::ApplicationId>), &'static str> {
-
         ensure!(
             CuratorApplicationById::<T>::exists(curator_application_id),
             MSG_CURATOR_APPLICATION_DOES_NOT_EXIST
@@ -2538,11 +2361,7 @@ impl<T: Trait> Module<T> {
 
         let curator_application = CuratorApplicationById::<T>::get(curator_application_id);
 
-        //let application = hiring::ApplicationById::<T>::get(curator_application.application_id);
-
         let curator_opening = CuratorOpeningById::<T>::get(curator_application.curator_opening_id);
-
-        //let opening = hiring::OpeningById::<T>::get(curator_opening.opening_id);
 
         Ok((
             curator_application,

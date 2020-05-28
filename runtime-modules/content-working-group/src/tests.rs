@@ -1185,6 +1185,7 @@ impl SetLeadFixture {
         let new_lead = LeadById::<Test>::get(new_lead_id);
 
         let expected_new_lead = Lead {
+            member_id: 0,
             role_account: self.new_role_account,
             reward_relationship: None,
             inducted: 1, // make dynamic later

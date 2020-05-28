@@ -676,6 +676,7 @@ impl stake::StakingEventsHandler<Runtime> for ContentWorkingGroupStakingEventHan
 
 impl content_wg::Trait for Runtime {
     type Event = Event;
+    type ActorId = u64;
 }
 
 impl common::currency::GovernanceCurrency for Runtime {
@@ -762,7 +763,6 @@ impl membership::Trait for Runtime {
     type MemberId = u64;
     type PaidTermId = u64;
     type SubscriptionId = u64;
-    type ActorId = u64;
     type InitialMembersBalance = InitialMembersBalance;
 }
 

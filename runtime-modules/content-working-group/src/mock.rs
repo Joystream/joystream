@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-pub use crate::*; // {self, Module, Trait, GenesisConfig};
+pub use crate::*;
 pub use srml_support::traits::Currency;
 pub use system;
 
@@ -124,16 +124,6 @@ impl balances::Trait for Test {
     type CreationFee = CreationFee;
 }
 
-/*
-pub trait PrincipalIdChecker<T: Trait> {
-    fn account_can_act_as_principal(account: &T::AccountId, group: T::PrincipalId) -> bool;
-}
-
-pub trait CreateClassPermissionsChecker<T: Trait> {
-    fn account_can_create_class_permissions(account: &T::AccountId) -> bool;
-}
-*/
-
 impl GovernanceCurrency for Test {
     type Currency = Balances;
 }
@@ -188,12 +178,12 @@ impl membership::Trait for Test {
     type MemberId = TestMemberId;
     type PaidTermId = u64;
     type SubscriptionId = u64;
-    type ActorId = u64;
     type InitialMembersBalance = InitialMembersBalance;
 }
 
 impl Trait for Test {
     type Event = TestEvent;
+    type ActorId = u64;
 }
 
 pub struct TestExternalitiesBuilder<T: Trait> {
@@ -213,17 +203,6 @@ impl<T: Trait> Default for TestExternalitiesBuilder<T> {
 }
 
 impl<T: Trait> TestExternalitiesBuilder<T> {
-    /*
-    pub fn set_system_config(mut self, system_config: system::GenesisConfig) -> Self {
-        self.system_config = Some(system_config);
-        self
-    }
-    pub fn set_membership_config(mut self, membership_config: membership::GenesisConfig<T>) -> Self {
-        self.membership_config = Some(membership_config);
-        self
-    }
-    */
-
     pub fn with_content_wg_config(mut self, conteng_wg_config: GenesisConfig<T>) -> Self {
         self.content_wg_config = Some(conteng_wg_config);
         self
@@ -244,7 +223,6 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
             .unwrap();
 
         // Add content wg
-
         if self.content_wg_config.is_none() {
             genesis::GenesisConfigBuilder::<Test>::default()
                 .build()

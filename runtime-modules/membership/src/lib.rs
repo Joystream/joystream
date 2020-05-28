@@ -52,16 +52,6 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
         + MaybeSerialize
         + PartialEq;
 
-    type ActorId: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq
-        + Ord;
-
     /// Initial balance of members created at genesis
     type InitialMembersBalance: Get<BalanceOf<Self>>;
 }
@@ -83,19 +73,11 @@ pub type MembershipOf<T> = Membership<
     <T as Trait>::PaidTermId,
     <T as Trait>::SubscriptionId,
     <T as system::Trait>::AccountId,
-    <T as Trait>::ActorId,
 >;
 
 #[derive(Encode, Decode, Default)]
 /// Stored information about a registered user
-pub struct Membership<
-    BlockNumber,
-    Moment,
-    PaidTermId,
-    SubscriptionId,
-    AccountId,
-    ActorId: Ord + Copy,
-> {
+pub struct Membership<BlockNumber, Moment, PaidTermId, SubscriptionId, AccountId> {
     /// The unique handle chosen by member
     pub handle: Vec<u8>,
 
@@ -130,9 +112,6 @@ pub struct Membership<
     /// a member to act under their identity in other modules. It will usually be used more
     /// online and will have less funds in its balance.
     pub controller_account: AccountId,
-
-    /// The set of registered roles the member has enrolled in.
-    pub roles: ActorInRoleSet<ActorId>,
 }
 
 // Contains valid or default user details
@@ -216,7 +195,6 @@ decl_storage! {
         pub MaxAvatarUriLength get(max_avatar_uri_length) : u32 = DEFAULT_MAX_AVATAR_URI_LENGTH;
         pub MaxAboutTextLength get(max_about_text_length) : u32 = DEFAULT_MAX_ABOUT_TEXT_LENGTH;
 
-        pub MembershipIdByActorInRole get(membership_id_by_actor_in_role): map ActorInRole<T::ActorId> => T::MemberId;
     }
     add_extra_genesis {
         config(default_paid_membership_fee): BalanceOf<T>;
@@ -242,15 +220,13 @@ decl_event! {
     pub enum Event<T> where
       <T as system::Trait>::AccountId,
       <T as Trait>::MemberId,
-      <T as Trait>::ActorId, {
+    {
         MemberRegistered(MemberId, AccountId),
         MemberUpdatedAboutText(MemberId),
         MemberUpdatedAvatar(MemberId),
         MemberUpdatedHandle(MemberId),
         MemberSetRootAccount(MemberId, AccountId),
         MemberSetControllerAccount(MemberId, AccountId),
-        MemberRegisteredRole(MemberId, ActorInRole<ActorId>),
-        MemberUnregisteredRole(MemberId, ActorInRole<ActorId>),
     }
 }
 
@@ -574,7 +550,6 @@ impl<T: Trait> Module<T> {
             subscription: None,
             root_account: who.clone(),
             controller_account: who.clone(),
-            roles: ActorInRoleSet::new(),
         };
 
         <MemberIdsByRootAccountId<T>>::mutate(who, |ids| {
@@ -619,27 +594,6 @@ impl<T: Trait> Module<T> {
         Self::deposit_event(RawEvent::MemberUpdatedHandle(id));
         <MembershipById<T>>::insert(id, membership);
         Ok(())
-    }
-
-    /// Determines if the signing account is a controller account of a member that has the registered
-    /// actor_in_role.
-    pub fn key_can_sign_for_role(
-        signing_account: &T::AccountId,
-        actor_in_role: ActorInRole<T::ActorId>,
-    ) -> bool {
-        <MemberIdsByControllerAccountId<T>>::get(signing_account)
-            .iter()
-            .any(|member_id| {
-                let membership = Self::membership(member_id);
-                membership.roles.has_registered_role(&actor_in_role)
-            })
-    }
-
-    /// Returns true if member identified by their member id occupies a Role at least once
-    pub fn member_is_in_role(member_id: T::MemberId, role: Role) -> bool {
-        Self::ensure_membership(member_id)
-            .ok()
-            .map_or(false, |membership| membership.roles.occupies_role(role))
     }
 
     pub fn ensure_member_controller_account_signed(
@@ -690,78 +644,6 @@ impl<T: Trait> Module<T> {
             membership.root_account == *signer_account,
             MemberRootAccountMismatch::SignerRootAccountMismatch
         );
-
-        Ok(())
-    }
-
-    // policy across all roles is:
-    // members can only occupy a role at most once at a time
-    // members can enter any role
-    // no limit on total number of roles a member can enter
-    // ** Note ** Role specific policies should be enforced by the client modules
-    // this method should handle higher level policies
-    pub fn can_register_role_on_member(
-        member_id: &T::MemberId,
-        actor_in_role: &ActorInRole<T::ActorId>,
-    ) -> Result<MembershipOf<T>, &'static str> {
-        // Ensure member exists
-        let membership = Self::ensure_membership(*member_id)?;
-
-        // ensure is active member
-        ensure!(!membership.suspended, "SuspendedMemberCannotEnterRole");
-
-        // guard against duplicate ActorInRole
-        ensure!(
-            !<MembershipIdByActorInRole<T>>::exists(actor_in_role),
-            "ActorInRoleAlreadyExists"
-        );
-
-        // Other possible checks:
-        // How long the member has been registered
-        // Minimum balance
-        // EntryMethod
-
-        Ok(membership)
-    }
-
-    pub fn register_role_on_member(
-        member_id: T::MemberId,
-        actor_in_role: &ActorInRole<T::ActorId>,
-    ) -> Result<(), &'static str> {
-        // Policy check
-        let mut membership = Self::can_register_role_on_member(&member_id, actor_in_role)?;
-
-        assert!(membership.roles.register_role(actor_in_role));
-
-        <MembershipById<T>>::insert(member_id, membership);
-        <MembershipIdByActorInRole<T>>::insert(actor_in_role, member_id);
-        Self::deposit_event(RawEvent::MemberRegisteredRole(member_id, *actor_in_role));
-        Ok(())
-    }
-
-    pub fn can_unregister_role(actor_in_role: ActorInRole<T::ActorId>) -> Result<(), &'static str> {
-        ensure!(
-            <MembershipIdByActorInRole<T>>::exists(&actor_in_role),
-            "ActorInRoleNotFound"
-        );
-
-        Ok(())
-    }
-
-    pub fn unregister_role(actor_in_role: ActorInRole<T::ActorId>) -> Result<(), &'static str> {
-        Self::can_unregister_role(actor_in_role)?;
-
-        let member_id = <MembershipIdByActorInRole<T>>::get(actor_in_role);
-
-        let mut membership = Self::ensure_membership(member_id)?; // .expect().. ?
-
-        assert!(membership.roles.unregister_role(&actor_in_role));
-
-        <MembershipIdByActorInRole<T>>::remove(actor_in_role);
-
-        <MembershipById<T>>::insert(member_id, membership);
-
-        Self::deposit_event(RawEvent::MemberUnregisteredRole(member_id, actor_in_role));
 
         Ok(())
     }
