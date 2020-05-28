@@ -41,7 +41,7 @@ script:
   - BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --target=${TARGET} -- -D warnings
   - BUILD_DUMMY_WASM_BINARY=1 cargo test --release --verbose --all --target=${TARGET}
   - BUILD_DUMMY_WASM_BINARY=0 WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo build --release --target=${TARGET} -p joystream-node
-  - ls -l ./target/${TARGET}/release/wbuild/joystream-node-runtime/
+  - ls -l ./target/${TARGET}/release/wbuild/target/wasm32-unknown-unknown/release/
 
 before_deploy:
   - cp ./target/${TARGET}/release/joystream-node .
