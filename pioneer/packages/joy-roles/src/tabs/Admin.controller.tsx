@@ -760,6 +760,7 @@ export const AdminView = View<AdminController, State>(
                     stockOpenings.map((value, key) => {
                       return (
                         <Dropdown.Item
+                          key={value.title}
                           text={value.title}
                           onClick={() => controller.showNewOpeningModal(value)}
                         />

@@ -60,7 +60,7 @@ export function PlayContent (props: Props) {
             const className = 'TrackRow ' + (isCurrent ? 'Current' : '');
 
             return (
-              <Table.Row className={className} onClick={() => setCurrentTrack(x)}>
+              <Table.Row key={x.id} className={className} onClick={() => setCurrentTrack(x)}>
                 <Table.Cell className='TrackNumber' width={1}>{i + 1}</Table.Cell>
                 <Table.Cell className='TrackTitle'>{x.title}</Table.Cell>
               </Table.Row>
@@ -85,7 +85,7 @@ export function PlayContent (props: Props) {
     {featuredAlbums.length > 0 &&
       <div className='JoyPlayAlbum_RightSidePanel'>
         <h3>Featured albums</h3>
-        {featuredAlbums.map(x => <MusicAlbumPreview {...x} size={170} />)}
+        {featuredAlbums.map(x => <MusicAlbumPreview key={x.id} {...x} size={170} />)}
       </div>
     }
   </div>;

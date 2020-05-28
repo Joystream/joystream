@@ -436,7 +436,7 @@ export function StageAConfirmStakes () {
   return (
     <Container className="apply-flow">
       {renders.map((render, key) => (
-        <div>{render}</div>
+        <div key={key}>{render}</div>
       ))}
     </Container>
   );

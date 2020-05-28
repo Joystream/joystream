@@ -27,7 +27,7 @@ export function ViewMusicChannel (props: Props) {
     !albums.length
       ? <NoAlbums />
       : <Section title={'Music albums'}>
-        {albums.map(x => <MusicAlbumPreview {...x} />)}
+        {albums.map(x => <MusicAlbumPreview key={x.id} {...x} />)}
       </Section>
   );
 
@@ -35,7 +35,7 @@ export function ViewMusicChannel (props: Props) {
     !tracks.length
       ? <NoTracks />
       : <Section title={'Music tracks'}>
-        {tracks.map(x => <MusicTrackReaderPreview {...x} />)}
+        {tracks.map(x => <MusicTrackReaderPreview key={x.id} {...x} />)}
       </Section>
   );
 

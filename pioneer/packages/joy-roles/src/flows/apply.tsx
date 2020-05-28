@@ -1144,23 +1144,23 @@ export const FlowModal = Loadable<FlowModalProps>(
       setSelectedRoleStake: setRoleStake
     };
 
-    const stages = new Map<ProgressSteps, any>([
-      [ProgressSteps.ConfirmStakes, <ConfirmStakesStage
+    const stages: { [k in ProgressSteps]: JSX.Element } = {
+      [ProgressSteps.ConfirmStakes]: (<ConfirmStakesStage
         {...props}
         nextTransition={enterApplicationDetailsState}
         prevTransition={cancel}
         {...setStakeProps}
-      />],
+      />),
 
-      [ProgressSteps.ApplicationDetails, <ApplicationDetailsStage
+      [ProgressSteps.ApplicationDetails]: (<ApplicationDetailsStage
         setData={setAppDetails}
         data={appDetails}
         applicationDetails={props.role.application}
         nextTransition={enterSubmitApplicationState}
         prevTransition={() => { props.hasConfirmStep ? enterConfirmStakeState() : cancel(); }}
-      />],
+      />),
 
-      [ProgressSteps.SubmitApplication, <SubmitApplicationStage
+      [ProgressSteps.SubmitApplication]: (<SubmitApplicationStage
         {...props}
         nextTransition={enterDoneState}
         prevTransition={enterApplicationDetailsState}
@@ -1168,10 +1168,10 @@ export const FlowModal = Loadable<FlowModalProps>(
         setKeyAddress={setTxKeyAddress}
         transactionDetails={props.transactionDetails}
         totalStake={Add(applicationStake, roleStake)}
-      />],
+      />),
 
-      [ProgressSteps.Done, <DoneStage {...props} roleKeyName={props.roleKeyName} />]
-    ]);
+      [ProgressSteps.Done]: (<DoneStage {...props} roleKeyName={props.roleKeyName} />)
+    };
 
     const cancelText = complete ? 'Close' : 'Cancel application';
 
@@ -1196,7 +1196,7 @@ export const FlowModal = Loadable<FlowModalProps>(
           <Grid columns="equal">
             <Grid.Column width={11} className="main">
               <ProgressStepsView activeStep={activeStep} hasConfirmStep={props.hasConfirmStep} />
-              {stages.get(activeStep)}
+              {stages[activeStep]}
             </Grid.Column>
             <Grid.Column width={5} className="summary">
               <Header as='h3'>{props.role.headline}</Header>
