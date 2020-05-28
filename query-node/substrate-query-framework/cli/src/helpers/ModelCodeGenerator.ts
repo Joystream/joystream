@@ -1,8 +1,9 @@
 import { ObjectTypeDefinitionNode, FieldDefinitionNode, ListTypeNode, NamedTypeNode, DirectiveNode, ArgumentNode, StringValueNode } from 'graphql';
 import { GraphQLSchemaParser } from './SchemaParser';
-import { availableTypes, WarthogModel, Field, ObjectType, FULL_TEXT_SEARCHABLE_DIRECTIVE } from './WarthhogModel';
+import { WarthogModel, Field, ObjectType, FULL_TEXT_SEARCHABLE_DIRECTIVE } from './WarthhogModel';
+import Debug from 'debug';
 
-const debug = require('debug')('qnode-cli:model-generator');
+const debug = Debug('qnode-cli:model-generator');
 
 /**
  * Parse a graphql schema and generate model defination strings for Warthog. It use GraphQLSchemaParser for parsing
@@ -29,7 +30,7 @@ export class DatabaseModelCodeGenerator {
   private _listType(fieldNode: FieldDefinitionNode): Field {
     const typeNode = fieldNode.type as ListTypeNode;
 
-    let field = new Field(fieldNode.name.value, '');
+    const field = new Field(fieldNode.name.value, '');
 
     if (typeNode.type.kind === 'NamedType') {
       field.type = typeNode.type.name.value;
@@ -71,7 +72,7 @@ export class DatabaseModelCodeGenerator {
    */
   private _processFieldDirective(d: DirectiveNode, f: Field) {
     if (d.name.value.includes(FULL_TEXT_SEARCHABLE_DIRECTIVE)) {
-        let queryName = this._checkFullTextSearchDirective(d);
+        const queryName = this._checkFullTextSearchDirective(d);
         this._model.addQueryField(queryName, f);
     }
   }
@@ -89,7 +90,7 @@ export class DatabaseModelCodeGenerator {
           throw new Error(`@${FULL_TEXT_SEARCHABLE_DIRECTIVE} should have a query argument`)
       }
 
-      let qarg: ArgumentNode[] = d.arguments.filter((arg) => (arg.name.value === `query`) && (arg.value.kind === `StringValue`))
+      const qarg: ArgumentNode[] = d.arguments.filter((arg) => (arg.name.value === `query`) && (arg.value.kind === `StringValue`))
       
       if (qarg.length !== 1) {
           throw new Error(`@${FULL_TEXT_SEARCHABLE_DIRECTIVE} should have a single query argument with a sting value`);
@@ -121,7 +122,7 @@ export class DatabaseModelCodeGenerator {
       } else if (typeNode.kind === 'ListType') {
         throw new Error('ListType is not supported yet.');
       } else {
-        throw new Error(`Unrecognized type. ${typeNode}`);
+        throw new Error(`Unrecognized type. ${JSON.stringify(typeNode, null, 2)}`);
       }
     });
 
