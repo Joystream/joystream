@@ -42,6 +42,7 @@ script:
   - BUILD_DUMMY_WASM_BINARY=1 cargo test --release --verbose --all --target=${TARGET}
   - TRIGGER_WASM_BUILD=1 WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo build --release --target=${TARGET} -p joystream-node
   - ls -l ./target/${TARGET}/release/wbuild/target/wasm32-unknown-unknown/release/
+  - ls -l ./target/${TARGET}/release/wbuild/joystream-node-runtime/
 
 before_deploy:
   - cp ./target/${TARGET}/release/joystream-node .
