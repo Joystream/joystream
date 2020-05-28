@@ -31,7 +31,7 @@ export abstract class StakeRequirement {
   }
 
   qualifier (): string | null {
-    if (this.type == StakeType.AtLeast) {
+    if (this.type === StakeType.AtLeast) {
       return 'at least';
     }
     return null;

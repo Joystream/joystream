@@ -59,7 +59,7 @@ class Component extends React.PureComponent<Props, State> {
     }
     this.setState({ memo });
 
-    if (storedMemo && memo == storedMemo.toString()) {
+    if (storedMemo && memo === storedMemo.toString()) {
       if (onReset) {
         onReset(memo);
       }

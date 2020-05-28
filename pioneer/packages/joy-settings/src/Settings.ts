@@ -40,7 +40,7 @@ export class Settings implements SettingsStruct {
 
     // Transition from acropolis - since visitors are coming to the same domain they most likely
     // have the endpoint url saved in local storage. Replace it with new rome default endpoint.
-    if (settings.apiUrl == 'wss://testnet.joystream.org/acropolis/rpc/') {
+    if (settings.apiUrl === 'wss://testnet.joystream.org/acropolis/rpc/') {
       this._apiUrl = process.env.WS_URL || ENDPOINT_DEFAULT || 'wss://rome-rpc-endpoint.joystream.org:9944/';
     } else {
       this._apiUrl = settings.apiUrl || process.env.WS_URL || ENDPOINT_DEFAULT;

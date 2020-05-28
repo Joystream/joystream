@@ -570,7 +570,7 @@ export class AdminController extends Controller<State, ITransport> {
 
   async applyAsACurator (creatorAddress: string, openingId: number) {
     const membershipIds = (await this.api.query.members.memberIdsByControllerAccountId(creatorAddress)) as Vec<MemberId>;
-    if (membershipIds.length == 0) {
+    if (membershipIds.length === 0) {
       console.error('No membship ID associated with this address');
       return;
     }
@@ -867,7 +867,7 @@ const NewOpening = (props: NewOpeningProps) => {
       StakingPolicy,
       new StakingPolicy({
         amount: new u128(stakeValue),
-        amount_mode: mode == '' && policy[fieldName].isSome ? policy[fieldName].type : mode
+        amount_mode: mode === '' && policy[fieldName].isSome ? policy[fieldName].type : mode
       })
     );
     onChangePolicyField(fieldName, value);
@@ -903,7 +903,7 @@ const NewOpening = (props: NewOpeningProps) => {
           options={openingAtOptions}
           value={start.type}
         />
-        {showExactBlock == true &&
+        {showExactBlock === true &&
           <Input
             type="number"
             value={exactBlock}
@@ -990,7 +990,7 @@ const OpeningView = (props: OpeningViewProps) => {
 
   const toggleApplication = (id: number) => {
     if (selected.includes(id)) {
-      setSelected(selected.filter(v => v != id));
+      setSelected(selected.filter(v => v !== id));
     } else {
       setSelected([...selected, id]);
     }

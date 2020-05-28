@@ -277,10 +277,10 @@ export function classifyApplicationCancellation (a: Application): CancelledReaso
 export function isApplicationHired (a: Application): boolean {
   switch (a.stage.type) {
     case ApplicationStageKeys.Unstaking:
-      return (a.stage.value as UnstakingApplicationStage).cause.type == ApplicationDeactivationCauseKeys.Hired;
+      return (a.stage.value as UnstakingApplicationStage).cause.type === ApplicationDeactivationCauseKeys.Hired;
 
     case ApplicationStageKeys.Inactive:
-      return (a.stage.value as InactiveApplicationStage).cause.type == ApplicationDeactivationCauseKeys.Hired;
+      return (a.stage.value as InactiveApplicationStage).cause.type === ApplicationDeactivationCauseKeys.Hired;
   }
 
   return false;

@@ -26,7 +26,7 @@ export function isPublicChannel (channel: ChannelType): boolean {
 }
 
 export function isCensoredChannel (channel: ChannelType): boolean {
-  return channel.curationStatus == 'Censored';
+  return channel.curationStatus === 'Censored';
 }
 
 export function isVerifiedChannel (channel: ChannelType): boolean {

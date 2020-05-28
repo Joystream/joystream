@@ -367,7 +367,7 @@ function stakeCount (props: StakeRequirementProps): number {
 
 function zeroOrTwoStakes (props: StakeRequirementProps): boolean {
   const count = stakeCount(props);
-  return (count == 0 || count == 2);
+  return (count === 0 || count === 2);
 }
 
 function bothStakesVariable (props: StakeRequirementProps): boolean {
@@ -498,7 +498,7 @@ export function ConfirmStakes2Up (props: ConfirmStakes2UpProps) {
   const [combined, setCombined] = useState(new u128(0));
 
   const findRankValue = (newStake: Balance): number => {
-    if (slotCount == 0) {
+    if (slotCount === 0) {
       return 0;
     }
 

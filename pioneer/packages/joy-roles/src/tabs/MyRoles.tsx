@@ -153,7 +153,7 @@ export const CurrentRoles = Loadable<CurrentRolesProps>(
             </Table.Body>
           </Table>
         }
-        {props.currentRoles.length == 0 &&
+        {props.currentRoles.length === 0 &&
           <p>You are not currently in any working group roles.</p>
         }
       </Container>
@@ -381,7 +381,7 @@ function CancelButton (props: ApplicationProps) {
 
 export function Application (props: ApplicationProps) {
   let countdown = null;
-  if (props.stage.state == OpeningState.InReview) {
+  if (props.stage.state === OpeningState.InReview) {
     countdown = <OpeningBodyReviewInProgress {...props.stage} />;
   }
 
@@ -389,7 +389,7 @@ export function Application (props: ApplicationProps) {
   const appState = applicationState(props);
 
   let CTA = null;
-  if (appState == ApplicationState.Positive && props.stage.state != OpeningState.Complete) {
+  if (appState === ApplicationState.Positive && props.stage.state !== OpeningState.Complete) {
     CTA = <CancelButton {...props} />;
   }
 
@@ -483,7 +483,7 @@ export const Applications = Loadable<ApplicationsProps>(
       {props.applications.map((app, key) => (
         <Application key={key} cancelCallback={props.cancelCallback} {...app} />
       ))}
-      {props.applications.length == 0 &&
+      {props.applications.length === 0 &&
         <p>You have no active applications.</p>
       }
     </Container>

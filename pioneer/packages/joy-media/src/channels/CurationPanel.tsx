@@ -23,7 +23,7 @@ export const CurationPanel = (props: ChannelCurationPanelProps) => {
       return account.eq(allAccounts[key].json.address);
     });
 
-    return ix != -1;
+    return ix !== -1;
   };
 
   const renderToggleCensorshipButton = () => {

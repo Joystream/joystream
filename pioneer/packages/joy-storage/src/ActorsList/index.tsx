@@ -48,7 +48,7 @@ class ActorInner extends React.PureComponent<ActorProps> {
 
     const actor = actorOpt.unwrap();
     const memberIsActor = iAmMember && myMemberId &&
-                            (myMemberId.toString() == actor.member_id.toString());
+                            (myMemberId.toString() === actor.member_id.toString());
 
     return (
       <Table.Row>

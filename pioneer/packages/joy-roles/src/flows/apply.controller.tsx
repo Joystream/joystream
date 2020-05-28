@@ -79,7 +79,7 @@ export class ApplyController extends Controller<State, ITransport> {
     }
     const id = parseInt(rawId);
 
-    if (this.currentOpeningId == id) {
+    if (this.currentOpeningId === id) {
       return;
     }
 

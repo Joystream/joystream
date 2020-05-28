@@ -139,7 +139,7 @@ export function createAccount (suri: string, pairType: KeypairType, name: string
 }
 
 export function isPasswordValid (password: string): boolean {
-  return password.length == 0 || keyring.isPassValid(password);
+  return password.length === 0 || keyring.isPassValid(password);
 }
 
 export type MemberFromAccount = { account: string; id: number; profile?: Profile };

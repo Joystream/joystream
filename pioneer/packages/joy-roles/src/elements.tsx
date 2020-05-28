@@ -62,7 +62,7 @@ type MemberProps = ActorProps & BalanceProps & ProfileProps
 
 export function MemberView (props: MemberProps) {
   let avatar = <Identicon value={props.actor.account.toString()} size={50} />;
-  if (typeof props.profile.avatar_uri !== 'undefined' && props.profile.avatar_uri.toString() != '') {
+  if (typeof props.profile.avatar_uri !== 'undefined' && props.profile.avatar_uri.toString() !== '') {
     avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />;
   }
 
@@ -116,7 +116,7 @@ export function GroupLeadView (props: GroupLead & inset) {
   }
 
   let avatar = <Identicon value={props.roleAccount.toString()} size={50} />;
-  if (typeof props.profile.avatar_uri !== 'undefined' && props.profile.avatar_uri.toString() != '') {
+  if (typeof props.profile.avatar_uri !== 'undefined' && props.profile.avatar_uri.toString() !== '') {
     avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />;
   }
 
@@ -161,7 +161,7 @@ export function GroupMemberView (props: GroupMember & inset) {
   }
 
   let avatar = <Identicon value={props.roleAccount.toString()} size={50} />;
-  if (typeof props.profile.avatar_uri !== 'undefined' && props.profile.avatar_uri.toString() != '') {
+  if (typeof props.profile.avatar_uri !== 'undefined' && props.profile.avatar_uri.toString() !== '') {
     avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />;
   }
 

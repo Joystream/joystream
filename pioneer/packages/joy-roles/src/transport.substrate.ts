@@ -589,7 +589,7 @@ export class Transport extends TransportBase implements ITransport {
       const membershipIds = (
         await this.cachedApi.query.members.memberIdsByControllerAccountId(sourceAccount)
       ) as Vec<MemberId>;
-      if (membershipIds.length == 0) {
+      if (membershipIds.length === 0) {
         reject('No membship ID associated with this address');
       }
 

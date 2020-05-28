@@ -215,7 +215,7 @@ export function ApplicationCount (props: ApplicationCountProps) {
 type OpeningBodyCTAProps = OpeningStakeAndApplicationStatus & OpeningStage & OpeningBodyProps & MemberIdProps
 
 function OpeningBodyCTAView (props: OpeningBodyCTAProps) {
-  if (props.stage.state != OpeningState.AcceptingApplications || applicationImpossible(props.applications)) {
+  if (props.stage.state !== OpeningState.AcceptingApplications || applicationImpossible(props.applications)) {
     return null;
   }
 

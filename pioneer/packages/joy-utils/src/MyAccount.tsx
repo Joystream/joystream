@@ -159,7 +159,7 @@ const canUseAccount = (account: AccountId, allAccounts: SubjectInfo | undefined)
     return account.eq(allAccounts[key].json.address);
   });
 
-  return ix != -1;
+  return ix !== -1;
 };
 
 function withCurationActor<P extends MyAccountProps> (Component: React.ComponentType<P>) {
