@@ -1,4 +1,5 @@
 export { default as Button } from "./components/Button"
+export { default as Carousel } from "./components/Carousel"
 export { default as Dropdown } from "./components/Dropdown"
 export { default as Grid } from "./components/Grid"
 export { default as Header } from "./components/Header"
