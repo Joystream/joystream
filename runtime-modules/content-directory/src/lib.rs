@@ -945,36 +945,17 @@ decl_module! {
 
             let class = Self::ensure_known_class_id(class_id)?;
 
-            Self::ensure_non_empty_schema(&existing_properties, &new_properties)?;
-
             class.ensure_schemas_limit_not_reached()?;
+
+            Self::ensure_non_empty_schema(&existing_properties, &new_properties)?;
 
             class.ensure_properties_limit_not_reached(&new_properties)?;
 
+            Self::ensure_all_properties_are_valid(&new_properties)?;
+
             let class_properties = class.get_properties_ref();
 
-            // Used to ensure all property names are unique within class
-            let mut unique_prop_names = BTreeSet::new();
-
-            for property in class_properties.iter() {
-                unique_prop_names.insert(property.name.to_owned());
-            }
-
-            // Complete all checks to ensure each property is valid
-            for new_property in new_properties.iter() {
-                new_property.ensure_name_is_valid()?;
-                new_property.ensure_description_is_valid()?;
-                new_property.ensure_property_type_size_is_valid()?;
-                new_property.ensure_property_type_reference_is_valid()?;
-
-                // Ensure name of a new property is unique within its class.
-                ensure!(
-                    !unique_prop_names.contains(&new_property.name),
-                    ERROR_PROP_NAME_NOT_UNIQUE_IN_A_CLASS
-                );
-
-                unique_prop_names.insert(new_property.name.to_owned());
-            }
+            Self::ensure_all_property_names_are_unique(class_properties, &new_properties)?;
 
             // Create new Schema with existing properies provided
             let mut schema = Schema::new(existing_properties);
@@ -1943,6 +1924,42 @@ impl<T: Trait> Module<T> {
             operations.len() <= T::MaxNumberOfOperationsDuringAtomicBatching::get() as usize,
             ERROR_MAX_NUMBER_OF_OPERATIONS_DURING_ATOMIC_BATCHING_LIMIT_REACHED
         );
+        Ok(())
+    }
+
+    /// Complete all checks to ensure each `Property` is valid
+    pub fn ensure_all_properties_are_valid(new_properties: &[Property<T>]) -> dispatch::Result {
+        for new_property in new_properties.iter() {
+            new_property.ensure_name_is_valid()?;
+            new_property.ensure_description_is_valid()?;
+            new_property.ensure_property_type_size_is_valid()?;
+            new_property.ensure_property_type_reference_is_valid()?;
+        }
+        Ok(())
+    }
+
+    /// Ensure all `Property` names are  unique within `Class`
+    pub fn ensure_all_property_names_are_unique(
+        class_properties: &[Property<T>],
+        new_properties: &[Property<T>],
+    ) -> dispatch::Result {
+        // Used to ensure all property names are unique within class
+        let mut unique_prop_names = BTreeSet::new();
+
+        for property in class_properties.iter() {
+            unique_prop_names.insert(property.name.to_owned());
+        }
+
+        for new_property in new_properties {
+            // Ensure name of a new property is unique within its class.
+            ensure!(
+                !unique_prop_names.contains(&new_property.name),
+                ERROR_PROP_NAME_NOT_UNIQUE_IN_A_CLASS
+            );
+
+            unique_prop_names.insert(new_property.name.to_owned());
+        }
+
         Ok(())
     }
 
