@@ -105,72 +105,6 @@ type MemberIdProps = {
   member_id?: MemberId;
 }
 
-type OpeningBodyCTAProps = OpeningStakeAndApplicationStatus & OpeningStage & OpeningBodyProps & MemberIdProps
-
-function OpeningBodyCTAView (props: OpeningBodyCTAProps) {
-  if (props.stage.state != OpeningState.AcceptingApplications || applicationImpossible(props.applications)) {
-    return null;
-  }
-
-  let message = (
-    <Message positive>
-      <Icon name="check circle" /> No stake required
-    </Message>
-  );
-
-  if (hasAnyStake(props)) {
-    const balance = !props.defactoMinimumStake.isZero() ? props.defactoMinimumStake : props.requiredApplicationStake.hard.add(props.requiredRoleStake.hard);
-    const plural = (props.requiredApplicationStake.anyRequirement() && props.requiredRoleStake.anyRequirement()) ? 's totalling' : ' of';
-    message = (
-      <Message warning icon>
-        <Icon name="warning sign" />
-        <Message.Content>
-          Stake{plural} at least <strong>{formatBalance(balance)}</strong> required!
-        </Message.Content>
-      </Message>
-    );
-  }
-
-  let applyButton = (
-    <Link to={'/working-groups/opportunities/' + props.meta.group + '/' + props.meta.id + '/apply'}>
-      <Button icon fluid positive size="huge">
-        APPLY NOW
-        <Icon name="angle right" />
-      </Button>
-    </Link>
-  );
-
-  const accountCtx = useMyAccount();
-  if (!accountCtx.state.address) {
-    applyButton = (
-      <Message error icon>
-        <Icon name="info circle" />
-        <Message.Content>
-          You will need an account to apply for this role. You can generate one in the <Link to="/accounts">Accounts</Link> section.
-        </Message.Content>
-      </Message>
-    );
-    message = <p></p>;
-  } else if (!props.member_id) {
-    applyButton = (
-      <Message error icon>
-        <Icon name="info circle" />
-        <Message.Content>
-          You will need a membership to apply for this role. You can sign up in the <Link to="/members">Membership</Link> section.
-        </Message.Content>
-      </Message>
-    );
-    message = <p></p>;
-  }
-
-  return (
-    <Container>
-      {applyButton}
-      {message}
-    </Container>
-  );
-}
-
 export type StakeRequirementProps = DefactoMinimumStake & {
   requiredApplicationStake: ApplicationStakeRequirement;
   requiredRoleStake: RoleStakeRequirement;
@@ -275,6 +209,72 @@ export function ApplicationCount (props: ApplicationCountProps) {
       />
       {max_applications}
     </span>
+  );
+}
+
+type OpeningBodyCTAProps = OpeningStakeAndApplicationStatus & OpeningStage & OpeningBodyProps & MemberIdProps
+
+function OpeningBodyCTAView (props: OpeningBodyCTAProps) {
+  if (props.stage.state != OpeningState.AcceptingApplications || applicationImpossible(props.applications)) {
+    return null;
+  }
+
+  let message = (
+    <Message positive>
+      <Icon name="check circle" /> No stake required
+    </Message>
+  );
+
+  if (hasAnyStake(props)) {
+    const balance = !props.defactoMinimumStake.isZero() ? props.defactoMinimumStake : props.requiredApplicationStake.hard.add(props.requiredRoleStake.hard);
+    const plural = (props.requiredApplicationStake.anyRequirement() && props.requiredRoleStake.anyRequirement()) ? 's totalling' : ' of';
+    message = (
+      <Message warning icon>
+        <Icon name="warning sign" />
+        <Message.Content>
+          Stake{plural} at least <strong>{formatBalance(balance)}</strong> required!
+        </Message.Content>
+      </Message>
+    );
+  }
+
+  let applyButton = (
+    <Link to={'/working-groups/opportunities/' + props.meta.group + '/' + props.meta.id + '/apply'}>
+      <Button icon fluid positive size="huge">
+        APPLY NOW
+        <Icon name="angle right" />
+      </Button>
+    </Link>
+  );
+
+  const accountCtx = useMyAccount();
+  if (!accountCtx.state.address) {
+    applyButton = (
+      <Message error icon>
+        <Icon name="info circle" />
+        <Message.Content>
+          You will need an account to apply for this role. You can generate one in the <Link to="/accounts">Accounts</Link> section.
+        </Message.Content>
+      </Message>
+    );
+    message = <p></p>;
+  } else if (!props.member_id) {
+    applyButton = (
+      <Message error icon>
+        <Icon name="info circle" />
+        <Message.Content>
+          You will need a membership to apply for this role. You can sign up in the <Link to="/members">Membership</Link> section.
+        </Message.Content>
+      </Message>
+    );
+    message = <p></p>;
+  }
+
+  return (
+    <Container>
+      {applyButton}
+      {message}
+    </Container>
   );
 }
 

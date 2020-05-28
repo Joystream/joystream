@@ -29,14 +29,6 @@ function InnerComponent (props: Props) {
   const [contentType, setContentType] = useState<string>();
   const [cancelSource, setCancelSource] = useState<CancelTokenSource>(newCancelSource());
 
-  useEffect(() => {
-    resolveAsset();
-
-    return () => {
-      cancelSource.cancel();
-    };
-  }, [contentId.encode()]);
-
   const resolveAsset = async () => {
     setError(undefined);
     setCancelSource(newCancelSource());
@@ -110,6 +102,14 @@ function InnerComponent (props: Props) {
 
     setError(new Error('Unable to reach any provider serving this content'));
   };
+
+  useEffect(() => {
+    resolveAsset();
+
+    return () => {
+      cancelSource.cancel();
+    };
+  }, [contentId.encode()]);
 
   console.log('Content id:', contentId.encode());
   console.log('Resolved asset URL:', resolvedAssetUrl);

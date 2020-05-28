@@ -72,6 +72,12 @@ const InnerForm = (props: FormProps) => {
     text
   } = values;
 
+  const goToThreadView = () => {
+    if (history) {
+      history.push('/forum/threads/' + threadId.toString());
+    }
+  };
+
   const onSubmit = (sendTx: () => void) => {
     if (isValid) sendTx();
   };
@@ -99,12 +105,6 @@ const InnerForm = (props: FormProps) => {
       return [threadId, textParam];
     } else {
       return [id, textParam];
-    }
-  };
-
-  const goToThreadView = () => {
-    if (history) {
-      history.push('/forum/threads/' + threadId.toString());
     }
   };
 

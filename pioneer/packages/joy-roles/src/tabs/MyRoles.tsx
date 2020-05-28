@@ -209,12 +209,6 @@ function ApplicationCancelledStatus (props: ApplicationStatusProps) {
 }
 type statusRenderer = (p: ApplicationStatusProps) => any
 
-const applicationStatusRenderers = new Map<OpeningState, statusRenderer>([
-  [OpeningState.AcceptingApplications, ApplicationStatusAcceptingApplications],
-  [OpeningState.InReview, ApplicationStatusInReview],
-  [OpeningState.Complete, ApplicationStatusComplete]
-]);
-
 function ApplicationStatusAcceptingApplications (props: ApplicationStatusProps): any {
   let positive = true;
   let message = (
@@ -282,6 +276,12 @@ function ApplicationStatusHired (props: ApplicationStatusProps) {
     </Message>
   );
 }
+
+const applicationStatusRenderers = new Map<OpeningState, statusRenderer>([
+  [OpeningState.AcceptingApplications, ApplicationStatusAcceptingApplications],
+  [OpeningState.InReview, ApplicationStatusInReview],
+  [OpeningState.Complete, ApplicationStatusComplete]
+]);
 
 export function ApplicationStatus (props: ApplicationStatusProps) {
   if (typeof props.hired !== 'undefined' && props.hired) {

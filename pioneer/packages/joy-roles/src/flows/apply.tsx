@@ -360,6 +360,21 @@ function CTA (props: CTAProps) {
   );
 }
 
+function stakeCount (props: StakeRequirementProps): number {
+  return (props.requiredApplicationStake.anyRequirement() ? 1 : 0) +
+    (props.requiredRoleStake.anyRequirement() ? 1 : 0);
+}
+
+function zeroOrTwoStakes (props: StakeRequirementProps): boolean {
+  const count = stakeCount(props);
+  return (count == 0 || count == 2);
+}
+
+function bothStakesVariable (props: StakeRequirementProps): boolean {
+  return props.requiredApplicationStake.anyRequirement() && props.requiredRoleStake.anyRequirement() &&
+    props.requiredApplicationStake.atLeast() && props.requiredRoleStake.atLeast();
+}
+
 export type StageTransitionProps = {
   nextTransition: () => void;
   prevTransition: () => void;
@@ -412,21 +427,6 @@ export function ConfirmStakesStage (props: ConfirmStakesStageProps & StageTransi
       />
     </Container>
   );
-}
-
-function stakeCount (props: StakeRequirementProps): number {
-  return (props.requiredApplicationStake.anyRequirement() ? 1 : 0) +
-    (props.requiredRoleStake.anyRequirement() ? 1 : 0);
-}
-
-function zeroOrTwoStakes (props: StakeRequirementProps): boolean {
-  const count = stakeCount(props);
-  return (count == 0 || count == 2);
-}
-
-function bothStakesVariable (props: StakeRequirementProps): boolean {
-  return props.requiredApplicationStake.anyRequirement() && props.requiredRoleStake.anyRequirement() &&
-    props.requiredApplicationStake.atLeast() && props.requiredRoleStake.atLeast();
 }
 
 type StakeSelectorProps = ConfirmStakesStageProps & ApplicationStatusProps
@@ -497,23 +497,6 @@ export function ConfirmStakes2Up (props: ConfirmStakes2UpProps) {
   const minStake = props.slots[0];
   const [combined, setCombined] = useState(new u128(0));
 
-  // Watch stake values
-  useEffect(() => {
-    const newCombined = Add(props.selectedApplicationStake, props.selectedRoleStake);
-    setCombined(newCombined);
-  },
-  [props.selectedApplicationStake, props.selectedRoleStake]
-  );
-
-  useEffect(() => {
-    setRank(findRankValue(combined));
-    if (slotCount > 0) {
-      setValid(combined.gte(minStake));
-    }
-  },
-  [combined]
-  );
-
   const findRankValue = (newStake: Balance): number => {
     if (slotCount == 0) {
       return 0;
@@ -531,6 +514,23 @@ export function ConfirmStakes2Up (props: ConfirmStakes2UpProps) {
 
     return 0;
   };
+
+  // Watch stake values
+  useEffect(() => {
+    const newCombined = Add(props.selectedApplicationStake, props.selectedRoleStake);
+    setCombined(newCombined);
+  },
+  [props.selectedApplicationStake, props.selectedRoleStake]
+  );
+
+  useEffect(() => {
+    setRank(findRankValue(combined));
+    if (slotCount > 0) {
+      setValid(combined.gte(minStake));
+    }
+  },
+  [combined]
+  );
 
   const ticks = [];
   for (let i = 0; i < slotCount; i++) {

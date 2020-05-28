@@ -56,69 +56,6 @@ export interface IBlockQueryer {
   expectedBlockTime: () => Promise<number>;
 }
 
-export async function classifyOpeningStage (queryer: IBlockQueryer, opening: Opening): Promise<OpeningStageClassification> {
-  switch (opening.stage.type) {
-    case OpeningStageKeys.WaitingToBegin:
-      return classifyWaitingToBeginStage(
-        opening,
-        queryer,
-        opening.stage.value as WaitingToBeingOpeningStageVariant
-      );
-
-    case OpeningStageKeys.Active:
-      return classifyActiveOpeningStage(
-        opening,
-        queryer,
-        opening.stage.value as ActiveOpeningStageVariant
-      );
-  }
-
-  throw new Error('Unknown stage type: ' + opening.stage.type);
-}
-
-async function classifyActiveOpeningStage (
-  opening: Opening,
-  queryer: IBlockQueryer,
-  stage: ActiveOpeningStageVariant
-): Promise<OpeningStageClassification> {
-  switch (stage.stage.type) {
-    case ActiveOpeningStageKeys.AcceptingApplications:
-      return classifyActiveOpeningStageAcceptingApplications(
-        queryer,
-        stage.stage.value as AcceptingApplications
-      );
-
-    case ActiveOpeningStageKeys.ReviewPeriod:
-      return classifyActiveOpeningStageReviewPeriod(
-        opening,
-        queryer,
-        stage.stage.value as ReviewPeriod
-      );
-
-    case ActiveOpeningStageKeys.Deactivated:
-      return classifyActiveOpeningStageDeactivated(
-        queryer,
-        stage.stage.value as Deactivated
-      );
-  }
-
-  throw new Error('Unknown active opening stage: ' + stage.stage.type);
-}
-
-async function classifyWaitingToBeginStage (
-  opening: Opening,
-  queryer: IBlockQueryer,
-  stage: WaitingToBeingOpeningStageVariant
-): Promise<OpeningStageClassification> {
-  const blockNumber = opening.created.toNumber();
-  return {
-    state: OpeningState.WaitingToBegin,
-    starting_block: blockNumber,
-    starting_block_hash: await queryer.blockHash(blockNumber),
-    starting_time: await queryer.blockTimestamp(blockNumber)
-  };
-}
-
 async function classifyActiveOpeningStageAcceptingApplications (
   queryer: IBlockQueryer,
   stage: AcceptingApplications
@@ -191,6 +128,69 @@ async function classifyActiveOpeningStageDeactivated (
   };
 }
 
+async function classifyActiveOpeningStage (
+  opening: Opening,
+  queryer: IBlockQueryer,
+  stage: ActiveOpeningStageVariant
+): Promise<OpeningStageClassification> {
+  switch (stage.stage.type) {
+    case ActiveOpeningStageKeys.AcceptingApplications:
+      return classifyActiveOpeningStageAcceptingApplications(
+        queryer,
+        stage.stage.value as AcceptingApplications
+      );
+
+    case ActiveOpeningStageKeys.ReviewPeriod:
+      return classifyActiveOpeningStageReviewPeriod(
+        opening,
+        queryer,
+        stage.stage.value as ReviewPeriod
+      );
+
+    case ActiveOpeningStageKeys.Deactivated:
+      return classifyActiveOpeningStageDeactivated(
+        queryer,
+        stage.stage.value as Deactivated
+      );
+  }
+
+  throw new Error('Unknown active opening stage: ' + stage.stage.type);
+}
+
+async function classifyWaitingToBeginStage (
+  opening: Opening,
+  queryer: IBlockQueryer,
+  stage: WaitingToBeingOpeningStageVariant
+): Promise<OpeningStageClassification> {
+  const blockNumber = opening.created.toNumber();
+  return {
+    state: OpeningState.WaitingToBegin,
+    starting_block: blockNumber,
+    starting_block_hash: await queryer.blockHash(blockNumber),
+    starting_time: await queryer.blockTimestamp(blockNumber)
+  };
+}
+
+export async function classifyOpeningStage (queryer: IBlockQueryer, opening: Opening): Promise<OpeningStageClassification> {
+  switch (opening.stage.type) {
+    case OpeningStageKeys.WaitingToBegin:
+      return classifyWaitingToBeginStage(
+        opening,
+        queryer,
+        opening.stage.value as WaitingToBeingOpeningStageVariant
+      );
+
+    case OpeningStageKeys.Active:
+      return classifyActiveOpeningStage(
+        opening,
+        queryer,
+        opening.stage.value as ActiveOpeningStageVariant
+      );
+  }
+
+  throw new Error('Unknown stage type: ' + opening.stage.type);
+}
+
 export type StakeRequirementSetClassification = {
   application: ApplicationStakeRequirement;
   role: RoleStakeRequirement;
@@ -200,17 +200,16 @@ interface StakeRequirementConstructor<T extends StakeRequirement> {
   new(hard: Balance, stakeType?: StakeType): T;
 }
 
-export function classifyOpeningStakes (opening: Opening): StakeRequirementSetClassification {
-  return {
-    application: classifyStakeRequirement<ApplicationStakeRequirement>(
-      ApplicationStakeRequirement,
-      opening.application_staking_policy
-    ),
-    role: classifyStakeRequirement<RoleStakeRequirement>(
-      RoleStakeRequirement,
-      opening.role_staking_policy
-    )
-  };
+function classifyStakeType (mode: StakingAmountLimitMode): StakeType {
+  switch (mode.type) {
+    case StakingAmountLimitModeKeys.AtLeast:
+      return StakeType.AtLeast;
+
+    case StakingAmountLimitModeKeys.Exact:
+      return StakeType.Fixed;
+  }
+
+  throw new Error('Unknown stake type: ' + mode.type);
 }
 
 function classifyStakeRequirement<T extends StakeRequirement> (
@@ -229,32 +228,17 @@ function classifyStakeRequirement<T extends StakeRequirement> (
   );
 }
 
-function classifyStakeType (mode: StakingAmountLimitMode): StakeType {
-  switch (mode.type) {
-    case StakingAmountLimitModeKeys.AtLeast:
-      return StakeType.AtLeast;
-
-    case StakingAmountLimitModeKeys.Exact:
-      return StakeType.Fixed;
-  }
-
-  throw new Error('Unknown stake type: ' + mode.type);
-}
-
-export function classifyApplicationCancellation (a: Application): CancelledReason | undefined {
-  switch (a.stage.type) {
-    case ApplicationStageKeys.Unstaking:
-      return classifyApplicationCancellationFromCause(
-        (a.stage.value as UnstakingApplicationStage).cause
-      );
-
-    case ApplicationStageKeys.Inactive:
-      return classifyApplicationCancellationFromCause(
-        (a.stage.value as InactiveApplicationStage).cause
-      );
-  }
-
-  return undefined;
+export function classifyOpeningStakes (opening: Opening): StakeRequirementSetClassification {
+  return {
+    application: classifyStakeRequirement<ApplicationStakeRequirement>(
+      ApplicationStakeRequirement,
+      opening.application_staking_policy
+    ),
+    role: classifyStakeRequirement<RoleStakeRequirement>(
+      RoleStakeRequirement,
+      opening.role_staking_policy
+    )
+  };
 }
 
 function classifyApplicationCancellationFromCause (cause: ApplicationDeactivationCause): CancelledReason | undefined {
@@ -269,6 +253,22 @@ function classifyApplicationCancellationFromCause (cause: ApplicationDeactivatio
 
     case ApplicationDeactivationCauseKeys.ReviewPeriodExpired:
       return CancelledReason.NoOneHired;
+  }
+
+  return undefined;
+}
+
+export function classifyApplicationCancellation (a: Application): CancelledReason | undefined {
+  switch (a.stage.type) {
+    case ApplicationStageKeys.Unstaking:
+      return classifyApplicationCancellationFromCause(
+        (a.stage.value as UnstakingApplicationStage).cause
+      );
+
+    case ApplicationStageKeys.Inactive:
+      return classifyApplicationCancellationFromCause(
+        (a.stage.value as InactiveApplicationStage).cause
+      );
   }
 
   return undefined;

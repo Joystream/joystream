@@ -108,10 +108,6 @@ type ViewCategoryProps = InnerViewCategoryProps & {
   id: CategoryId;
 };
 
-const ViewCategory = withForumCalls<ViewCategoryProps>(
-  ['categoryById', { propName: 'category', paramName: 'id' }]
-)(InnerViewCategory);
-
 function InnerViewCategory (props: InnerViewCategoryProps) {
   const { history, category, page = 1, preview = false } = props;
 
@@ -201,6 +197,10 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
   </>);
 }
 
+const ViewCategory = withForumCalls<ViewCategoryProps>(
+  ['categoryById', { propName: 'category', paramName: 'id' }]
+)(InnerViewCategory);
+
 type InnerCategoryThreadsProps = {
   category: Category;
   page: number;
@@ -210,14 +210,6 @@ type InnerCategoryThreadsProps = {
 type CategoryThreadsProps = ApiProps & InnerCategoryThreadsProps & {
   nextThreadId?: ThreadId;
 };
-
-export const CategoryThreads = withMulti(
-  InnerCategoryThreads,
-  withApi,
-  withForumCalls<CategoryThreadsProps>(
-    ['nextThreadId', { propName: 'nextThreadId' }]
-  )
-);
 
 function InnerCategoryThreads (props: CategoryThreadsProps) {
   const { api, category, nextThreadId, page, history } = props;
@@ -317,6 +309,14 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
   </>;
 }
 
+export const CategoryThreads = withMulti(
+  InnerCategoryThreads,
+  withApi,
+  withForumCalls<CategoryThreadsProps>(
+    ['nextThreadId', { propName: 'nextThreadId' }]
+  )
+);
+
 type ViewCategoryByIdProps = UrlHasIdProps & {
   history: History;
   match: {
@@ -342,14 +342,6 @@ type CategoryListProps = ApiProps & {
   nextCategoryId?: CategoryId;
   parentId?: CategoryId;
 };
-
-export const CategoryList = withMulti(
-  InnerCategoryList,
-  withApi,
-  withForumCalls<CategoryListProps>(
-    ['nextCategoryId', { propName: 'nextCategoryId' }]
-  )
-);
 
 function InnerCategoryList (props: CategoryListProps) {
   const { api, parentId, nextCategoryId } = props;
@@ -409,3 +401,11 @@ function InnerCategoryList (props: CategoryListProps) {
     </Table>
   );
 }
+
+export const CategoryList = withMulti(
+  InnerCategoryList,
+  withApi,
+  withForumCalls<CategoryListProps>(
+    ['nextCategoryId', { propName: 'nextCategoryId' }]
+  )
+);

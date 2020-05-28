@@ -44,6 +44,11 @@ export function OuterLink ({ url, title, icon = 'external alternate' }: OuterLin
   );
 }
 
+function JoystreamLogo (isCollapsed: boolean) {
+  const logo = isCollapsed ? 'images/logo-j.svg' : 'images/logo-joytream.svg';
+  return <img alt="Joystream" className="apps--SideBar-logo" src={logo} />;
+}
+
 function SideBar ({
   className,
   collapse,
@@ -149,8 +154,3 @@ export default translate(
     }
   `
 );
-
-function JoystreamLogo (isCollapsed: boolean) {
-  const logo = isCollapsed ? 'images/logo-j.svg' : 'images/logo-joytream.svg';
-  return <img alt="Joystream" className="apps--SideBar-logo" src={logo} />;
-}

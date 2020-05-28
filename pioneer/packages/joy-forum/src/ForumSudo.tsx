@@ -189,14 +189,6 @@ export const EditForumSudo = withMulti(
   withLoadForumSudo
 );
 
-export function withOnlyForumSudo<P extends {}> (Component: React.ComponentType<P>) {
-  return withMulti(
-    Component,
-    withLoadForumSudo,
-    innerWithOnlyForumSudo
-  );
-}
-
 function innerWithOnlyForumSudo<P extends LoadStructProps> (Component: React.ComponentType<P>) {
   return function (props: P) {
     const { structOpt } = props;
@@ -221,16 +213,19 @@ function innerWithOnlyForumSudo<P extends LoadStructProps> (Component: React.Com
   };
 }
 
+export function withOnlyForumSudo<P extends {}> (Component: React.ComponentType<P>) {
+  return withMulti(
+    Component,
+    withLoadForumSudo,
+    innerWithOnlyForumSudo
+  );
+}
+
 type ForumSudoContextProps = {
   forumSudo?: AccountId;
 };
 
 export const ForumSudoContext = createContext<ForumSudoContextProps>({});
-
-export const ForumSudoProvider = withMulti(
-  InnerForumSudoProvider,
-  withLoadForumSudo
-);
 
 export function InnerForumSudoProvider (props: React.PropsWithChildren<LoadStructProps>) {
   const { structOpt } = props;
@@ -241,6 +236,11 @@ export function InnerForumSudoProvider (props: React.PropsWithChildren<LoadStruc
     </ForumSudoContext.Provider>
   );
 }
+
+export const ForumSudoProvider = withMulti(
+  InnerForumSudoProvider,
+  withLoadForumSudo
+);
 
 export function useForumSudo () {
   return useContext(ForumSudoContext);

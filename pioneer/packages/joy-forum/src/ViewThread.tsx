@@ -48,14 +48,6 @@ type ViewThreadProps = ApiProps & InnerViewThreadProps & {
   nextPostId?: ThreadId;
 };
 
-export const ViewThread = withMulti(
-  InnerViewThread,
-  withApi,
-  withForumCalls<ViewThreadProps>(
-    ['nextPostId', { propName: 'nextPostId' }]
-  )
-);
-
 function InnerViewThread (props: ViewThreadProps) {
   const [showModerateForm, setShowModerateForm] = useState(false);
   const { history, category, thread, page = 1, preview = false } = props;
@@ -238,6 +230,14 @@ function InnerViewThread (props: ViewThreadProps) {
   </div>;
 }
 
+export const ViewThread = withMulti(
+  InnerViewThread,
+  withApi,
+  withForumCalls<ViewThreadProps>(
+    ['nextPostId', { propName: 'nextPostId' }]
+  )
+);
+
 type ViewThreadByIdProps = ApiProps & {
   history: History;
   match: {
@@ -247,8 +247,6 @@ type ViewThreadByIdProps = ApiProps & {
     };
   };
 };
-
-export const ViewThreadById = withApi(InnerViewThreadById);
 
 function InnerViewThreadById (props: ViewThreadByIdProps) {
   const { api, history, match: { params: { id, page: pageStr } } } = props;
@@ -306,3 +304,5 @@ function InnerViewThreadById (props: ViewThreadByIdProps) {
 
   return <ViewThread id={threadId} category={category} thread={thread} page={page} history={history} />;
 }
+
+export const ViewThreadById = withApi(InnerViewThreadById);

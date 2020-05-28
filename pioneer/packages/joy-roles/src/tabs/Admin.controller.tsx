@@ -98,22 +98,6 @@ type State = {
   modalOpen: boolean;
 }
 
-const newEmptyState = (): State => {
-  return {
-    openings: new Map<number, opening>(),
-    openingDescriptor: stockOpenings[0],
-    modalOpen: false
-  };
-};
-
-// TODO: Make a list of stock openings
-type openingDescriptor = {
-  title: string;
-  start: ActivateOpeningAt;
-  policy: IOpeningPolicyCommitment;
-  text: Text;
-}
-
 function newHRT (title: string): Text {
   return new Text(JSON.stringify({
     version: 1,
@@ -522,6 +506,22 @@ const stockOpenings: openingDescriptor[] = [
   }
 ];
 
+const newEmptyState = (): State => {
+  return {
+    openings: new Map<number, opening>(),
+    openingDescriptor: stockOpenings[0],
+    modalOpen: false
+  };
+};
+
+// TODO: Make a list of stock openings
+type openingDescriptor = {
+  title: string;
+  start: ActivateOpeningAt;
+  policy: IOpeningPolicyCommitment;
+  text: Text;
+}
+
 export class AdminController extends Controller<State, ITransport> {
   api: ApiPromise
   constructor (transport: ITransport, api: ApiPromise, initialState: State = newEmptyState()) {
@@ -862,16 +862,6 @@ const NewOpening = (props: NewOpeningProps) => {
     }
   ];
 
-  const onStakeModeCheckboxChange = (fn: (v: boolean) => void, fieldName: string, checked: boolean, stakeValue: number) => {
-    fn(checked);
-
-    if (checked) {
-      changeStakingMode(fieldName, StakingAmountLimitModeKeys.AtLeast, stakeValue);
-    } else {
-      onChangePolicyField(fieldName, null);
-    }
-  };
-
   const changeStakingMode = (fieldName: string, mode: string, stakeValue: number) => {
     const value = new Option<StakingPolic>(
       StakingPolicy,
@@ -881,6 +871,16 @@ const NewOpening = (props: NewOpeningProps) => {
       })
     );
     onChangePolicyField(fieldName, value);
+  };
+
+  const onStakeModeCheckboxChange = (fn: (v: boolean) => void, fieldName: string, checked: boolean, stakeValue: number) => {
+    fn(checked);
+
+    if (checked) {
+      changeStakingMode(fieldName, StakingAmountLimitModeKeys.AtLeast, stakeValue);
+    } else {
+      onChangePolicyField(fieldName, null);
+    }
   };
 
   const [text, setText] = useState(JSON.stringify(JSON.parse(props.desc.text.toString()), null, 2));

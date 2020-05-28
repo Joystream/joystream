@@ -1,10 +1,5 @@
-export function memoize () {
-  return (target: Record<string, any>, propertyKey: string, descriptor: TypedPropertyDescriptor<any>) => {
-    descriptor.value = getNewFunction(descriptor.value);
-  };
-}
-
 let counter = 0;
+
 function getNewFunction (originalMethod: () => void) {
   const identifier = ++counter;
 
@@ -47,5 +42,12 @@ function getNewFunction (originalMethod: () => void) {
     }
 
     return returnedValue;
+  };
+}
+
+
+export function memoize () {
+  return (target: Record<string, any>, propertyKey: string, descriptor: TypedPropertyDescriptor<any>) => {
+    descriptor.value = getNewFunction(descriptor.value);
   };
 }

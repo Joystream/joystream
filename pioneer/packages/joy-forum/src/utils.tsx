@@ -38,13 +38,6 @@ type CategoryCrumbsProps = {
   thread?: Thread;
 };
 
-const CategoryCrumb = withMulti(
-  InnerCategoryCrumb,
-  withForumCalls<CategoryCrumbsProps>(
-    ['categoryById', { propName: 'category', paramName: 'categoryId' }]
-  )
-);
-
 function InnerCategoryCrumb (p: CategoryCrumbsProps) {
   const { category } = p;
 
@@ -64,10 +57,10 @@ function InnerCategoryCrumb (p: CategoryCrumbsProps) {
   return null;
 }
 
-const ThreadCrumb = withMulti(
-  InnerThreadCrumb,
+const CategoryCrumb = withMulti(
+  InnerCategoryCrumb,
   withForumCalls<CategoryCrumbsProps>(
-    ['threadById', { propName: 'thread', paramName: 'threadId' }]
+    ['categoryById', { propName: 'category', paramName: 'categoryId' }]
   )
 );
 
@@ -89,6 +82,13 @@ function InnerThreadCrumb (p: CategoryCrumbsProps) {
 
   return null;
 }
+
+const ThreadCrumb = withMulti(
+  InnerThreadCrumb,
+  withForumCalls<CategoryCrumbsProps>(
+    ['threadById', { propName: 'thread', paramName: 'threadId' }]
+  )
+);
 
 export const CategoryCrumbs = (p: CategoryCrumbsProps) => {
   return (

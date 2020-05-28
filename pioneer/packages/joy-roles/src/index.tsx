@@ -25,6 +25,15 @@ import './index.sass';
 
 import translate from './translate';
 
+const renderViewComponent = (Component: ViewComponent<any>, props?: RouteComponentProps) => {
+  let params = new Map<string, string>();
+  if (props && props.match.params) {
+    params = new Map<string, string>(Object.entries(props.match.params));
+  }
+
+  return <Component params={params} />;
+};
+
 type Props = AppProps & ApiProps & I18nProps & MyAccountProps
 
 export const App: React.FC<Props> = (props: Props) => {
@@ -86,15 +95,6 @@ export const App: React.FC<Props> = (props: Props) => {
       </Switch>
     </main>
   );
-};
-
-const renderViewComponent = (Component: ViewComponent<any>, props?: RouteComponentProps) => {
-  let params = new Map<string, string>();
-  if (props && props.match.params) {
-    params = new Map<string, string>(Object.entries(props.match.params));
-  }
-
-  return <Component params={params} />;
 };
 
 export default withMulti(
