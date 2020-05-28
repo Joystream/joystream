@@ -18,7 +18,7 @@ const SCHEMA_DEFINITIONS_PREAMBLE = `
 type Query {
     _dummy: String # empty queries are not allowed
 }
-directive @fullTextSearchable(query: String) on FIELD_DEFINITION
+directive @fullTextSearchable(query: String!) on FIELD_DEFINITION
 `
 
 /**
