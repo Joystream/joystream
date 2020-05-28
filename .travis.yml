@@ -1,76 +1,54 @@
 language: rust
 
+# Caching of the runtime .wasm blob poses a problem.
+# See: https://github.com/Joystream/joystream/issues/466
+# Always starting with a clean slate is probably better, it allows us to ensure
+# the WASM runtime is always rebuilt. It also allows us to detect when certain upstream dependencies
+# sometimes break the build. When cache is enabled do not use the produced WASM build.
+# This also means the binary should not be used to produce the final chainspec file (because the same
+# one is embedded in the binary)
+cache: cargo
+
 rust:
-  - 1.43.0
+  - stable
 
 matrix:
   include:
     - os: linux
       env: TARGET=x86_64-unknown-linux-gnu
-    - os: linux
-      env: TARGET=arm-unknown-linux-gnueabihf
-      services: docker
-    - os: osx
-      env: TARGET=x86_64-apple-darwin
-    - os: linux
-      env: TARGET=wasm-blob
-      services: docker
-
-before_install:
-  - rustup component add rustfmt
-  - cargo fmt --all -- --check
-  - rustup component add clippy
-  - BUILD_DUMMY_WASM_BINARY=1 cargo clippy -- -D warnings
-  - rustup default stable
-  - rustup update nightly
-  - rustup target add wasm32-unknown-unknown --toolchain nightly
-  - cargo test --verbose --all
+  # Removed all other plaftorm builds sice the repo is growing in terms of activitly
+  # and CI checks are taking long to start due to concurrent number of jobs
+  # one job should be sufficient for doing all manners of checks and unit nets. Will defer
+  # building all platform binanires and wasm blob to a different system.
 
 install:
-  - |
-    if [ "$TARGET" = "arm-unknown-linux-gnueabihf" ]
-    then
-      docker pull joystream/rust-raspberry
-    fi
+  - rustup install nightly-2020-05-23
+  - rustup target add wasm32-unknown-unknown --toolchain nightly-2020-05-23
+  # travis installs rust using rustup with the "minimal" profile so these tools are not installed by default
+  - rustup component add rustfmt
+  # choosing to add clippy for the nightly toolchain only
+  # becuase we want to run it with nighly to avoid having to set BUILD_DUMMY_WASM_BINARY=0
+  # setting that variable requires changing it in a later run of cargo bulid to ensure runtime/build.rs
+  # actually builds the runtime .. the behaviour is a bit odd so choosing to avoid messing with it.
+  - rustup component add clippy
+
+before_script:
+  - cargo fmt --all -- --check
 
 script:
-  - |
-    if [ "$TARGET" = "arm-unknown-linux-gnueabihf" ]
-    then
-      docker run -u root \
-        --volume ${TRAVIS_BUILD_DIR}:/home/cross/project \
-          joystream/rust-raspberry \
-        build --release
-      sudo chmod a+r ${TRAVIS_BUILD_DIR}/target/${TARGET}/release/joystream-node
-    elif [ "$TARGET" = "wasm-blob" ]
-    then
-      docker build --tag joystream/node \
-        --file ./devops/dockerfiles/node-and-runtime/Dockerfile \
-        .
-      docker create --name temp-container-joystream-node joystream/node
-      docker cp temp-container-joystream-node:/joystream/runtime.compact.wasm joystream_runtime.wasm
-      docker rm temp-container-joystream-node
-    else
-      cargo build --release --target=${TARGET}
-    fi
+  # we set release as build type for all steps to benefit from already compiled packages in prior steps
+  # skipping clippy ...
+  - BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --target=${TARGET} -- -D warnings
+  - BUILD_DUMMY_WASM_BINARY=1 cargo test --release --verbose --all --target=${TARGET}
+  - BUILD_DUMMY_WASM_BINARY=0 WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo build --release --target=${TARGET} -p joystream-node
+  - ls -l ./target/${TARGET}/release/wbuild/joystream-node-runtime/
 
 before_deploy:
-  - |
-    if [ "$TARGET" = "wasm-blob" ]
-    then
-      export ASSET="joystream_runtime.wasm"
-    else
-      cp ./target/${TARGET}/release/joystream-node .
-      if [ "$TARGET" = "arm-unknown-linux-gnueabihf" ]
-      then
-        export FILENAME="joystream-node-armv7-linux-gnueabihf"
-      else
-        export FILENAME=`./joystream-node --version | sed -e "s/ /-/g"`
-      fi
-      tar -cf ${FILENAME}.tar ./joystream-node
-      gzip ${FILENAME}.tar
-      export ASSET=${FILENAME}.tar.gz
-    fi
+  - cp ./target/${TARGET}/release/joystream-node .
+  - FILENAME=`./joystream-node --version | sed -e "s/ /-/g"`
+  - tar -cf ${FILENAME}.tar ./joystream-node
+  - gzip ${FILENAME}.tar
+  - export ASSET=${FILENAME}.tar.gz
 
 deploy:
   - provider: releases
