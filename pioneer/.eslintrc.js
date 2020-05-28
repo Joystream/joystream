@@ -13,5 +13,6 @@ module.exports = {
     ...base.rules,
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/camelcase': 'off',
+    "react/prop-types": "off"
   }
 };
