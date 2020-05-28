@@ -1,4 +1,3 @@
-import { initConfig } from '../../utils/config';
 import { Keyring, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { registerJoystreamTypes } from '@rome/types';
@@ -16,10 +15,6 @@ export function romeRuntimeUpgradeTest(
   proposalStake: BN,
   runtimePath: string
 ) {
-  const proposalStake: BN = new BN(+process.env.RUNTIME_UPGRADE_PROPOSAL_STAKE!);
-  const runtimePath: string = process.env.RUNTIME_WASM_PATH!;
-  const defaultTimeout: number = 1200000;
-
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
 
