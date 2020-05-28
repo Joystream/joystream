@@ -39,13 +39,14 @@ export function validatorCountProposal(
     const validatorCount: BN = await apiWrapper.getValidatorCount();
 
     // Proposal creation
+    const proposedValidatorCount: BN = validatorCount.add(validatorCountIncrement);
     const proposalPromise = apiWrapper.expectProposalCreated();
     await apiWrapper.proposeValidatorCount(
       m1KeyPairs[0],
       proposalTitle,
       description,
       proposalStake,
-      validatorCount.add(validatorCountIncrement)
+      proposedValidatorCount
     );
     const proposalNumber = await proposalPromise;
 
@@ -55,10 +56,8 @@ export function validatorCountProposal(
     await proposalExecutionPromise;
     const newValidatorCount: BN = await apiWrapper.getValidatorCount();
     assert(
-      newValidatorCount.sub(validatorCount).eq(validatorCountIncrement),
-      `Validator count has unexpeccted value ${newValidatorCount}, expected ${validatorCount.add(
-        validatorCountIncrement
-      )}`
+      proposedValidatorCount.eq(newValidatorCount),
+      `Validator count has unexpeccted value ${newValidatorCount}, expected ${proposedValidatorCount}`
     );
   });
 

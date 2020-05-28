@@ -43,13 +43,14 @@ export function workingGroupMintCapacityProposalTest(
     await apiWrapper.transferBalanceToAccounts(sudo, m2KeyPairs, runtimeVoteFee);
 
     // Proposal creation
+    const proposedMintingCapacity: BN = initialMintingCapacity.add(mintingCapacityIncrement);
     const proposalPromise = apiWrapper.expectProposalCreated();
     await apiWrapper.proposeWorkingGroupMintCapacity(
       m1KeyPairs[0],
       'testing mint capacity' + uuid().substring(0, 8),
       'mint capacity to test proposal functionality' + uuid().substring(0, 8),
       proposalStake,
-      initialMintingCapacity.add(mintingCapacityIncrement)
+      proposedMintingCapacity
     );
     const proposalNumber = await proposalPromise;
 
@@ -57,12 +58,10 @@ export function workingGroupMintCapacityProposalTest(
     const mintCapacityPromise = apiWrapper.expectProposalFinalized();
     await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber);
     await mintCapacityPromise;
-    const updatedMintingCapacity: BN = await apiWrapper.getWorkingGroupMintCapacity();
+    const newMintingCapacity: BN = await apiWrapper.getWorkingGroupMintCapacity();
     assert(
-      updatedMintingCapacity.sub(initialMintingCapacity).eq(mintingCapacityIncrement),
-      `Content working group has unexpected minting capacity ${updatedMintingCapacity}, expected ${initialMintingCapacity.add(
-        mintingCapacityIncrement
-      )}`
+      proposedMintingCapacity.eq(newMintingCapacity),
+      `Content working group has unexpected minting capacity ${newMintingCapacity}, expected ${proposedMintingCapacity}`
     );
   });
 
