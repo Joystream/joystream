@@ -67,7 +67,7 @@ export abstract class MediaTransport extends Transport {
 
   protected abstract notImplementedYet<T> (): T
 
-  clearSessionCache (): void {}
+  clearSessionCache (): void { /* not implemented */ }
 
   openSession (): void {
     this.sessionId++;

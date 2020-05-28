@@ -23,8 +23,8 @@ export function MusicTrackPreview (props: EditableMusicTrackPreviewProps) {
   const {
     withActionLabels = false,
     selected = false,
-    onEdit = () => {},
-    onRemove = () => {}
+    onEdit = () => { /* do nothing */ },
+    onRemove = () => { /* do nothing */ }
   } = props;
 
   const [checked, setChecked] = useState(selected);

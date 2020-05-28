@@ -478,7 +478,7 @@ export function StageBApplicationDetails () {
     }, 'Application questions'),
     data: data,
     setData: setData,
-    nextTransition: () => { }
+    nextTransition: () => { /* do nothing */ }
   };
 
   return (
@@ -497,7 +497,7 @@ export function StageBApplicationDetails () {
 
 export function StageCSubmitApplication () {
   const props: SubmitApplicationStageProps = {
-    nextTransition: () => { },
+    nextTransition: () => { /* do nothing */ },
     applications: applications,
     transactionFee: new u128(number('Transaction fee', 500, moneySliderOptions, 'Application Tx')),
     transactionDetails: new Map<string, string>([

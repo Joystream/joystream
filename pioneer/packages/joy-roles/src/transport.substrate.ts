@@ -561,9 +561,7 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   myStorageGroupRoles (): Subscribable<ActiveRole[]> {
-    return new Observable<ActiveRole[]>(observer => {
-    }
-    );
+    return new Observable<ActiveRole[]>(observer => { /* do nothing */ });
   }
 
   protected generateRoleAccount (name: string, password = ''): string | null {

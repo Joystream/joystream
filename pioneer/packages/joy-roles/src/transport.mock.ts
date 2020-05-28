@@ -435,7 +435,7 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   myStorageGroupRoles (): Subscribable<ActiveRole[]> {
-    return new Observable<ActiveRole[]>(observer => { });
+    return new Observable<ActiveRole[]>(observer => { /* do nothing */ });
   }
 
   async applyToCuratorOpening (
@@ -449,8 +449,10 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   leaveCurationRole (sourceAccount: string, id: number, rationale: string) {
+    /* do nothing */
   }
 
   withdrawCuratorApplication (sourceAccount: string, id: number) {
+    /* do nothing */
   }
 }

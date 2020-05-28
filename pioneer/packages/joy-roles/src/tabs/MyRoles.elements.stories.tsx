@@ -175,7 +175,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     opening: opening,
     applicationStake: new u128(5),
     roleStake: new u128(15),
-    cancelCallback: () => { },
+    cancelCallback: () => { /* do nothing */ },
     rank: 15,
     capacity: 20
   },
@@ -195,7 +195,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     opening: opening,
     applicationStake: new u128(5),
     roleStake: new u128(15),
-    cancelCallback: () => { },
+    cancelCallback: () => { /* do nothing */ },
     rank: 21,
     capacity: 20
   },
@@ -217,7 +217,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     opening: opening,
     applicationStake: new u128(5),
     roleStake: new u128(15),
-    cancelCallback: () => { },
+    cancelCallback: () => { /* do nothing */ },
     rank: 15,
     capacity: 20
   },
@@ -239,7 +239,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     opening: opening,
     applicationStake: new u128(5),
     roleStake: new u128(15),
-    cancelCallback: () => { },
+    cancelCallback: () => { /* do nothing */ },
     rank: 21,
     capacity: 20
   },
@@ -259,7 +259,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     opening: opening,
     applicationStake: new u128(5),
     roleStake: new u128(15),
-    cancelCallback: () => { },
+    cancelCallback: () => { /* do nothing */ },
     rank: 21,
     capacity: 20
   },
@@ -279,7 +279,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     opening: opening,
     applicationStake: new u128(5),
     roleStake: new u128(15),
-    cancelCallback: () => { },
+    cancelCallback: () => { /* do nothing */ },
     rank: 21,
     capacity: 20,
     cancelledReason: CancelledReason.HirerCancelledOpening
@@ -300,7 +300,7 @@ export function ApplicationFragment () {
 }
 
 export function ApplicationsFragment () {
-  const cancelCallback = () => { };
+  const cancelCallback = () => { /* do nothing */ };
   return (
     <Container className="outer my-roles">
       <Applications applications={permutations} cancelCallback={cancelCallback} />

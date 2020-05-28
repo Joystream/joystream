@@ -45,7 +45,6 @@ function getNewFunction (originalMethod: () => void) {
   };
 }
 
-
 export function memoize () {
   return (target: Record<string, any>, propertyKey: string, descriptor: TypedPropertyDescriptor<any>) => {
     descriptor.value = getNewFunction(descriptor.value);

@@ -16,7 +16,7 @@ type cacheQueryRuntime = {
 export class APIQueryCache {
   protected api: ApiPromise
   protected cache: Map<string, Codec>
-  protected unsubscribeFn: () => void = () => { }
+  protected unsubscribeFn: () => void = () => { /* do nothing */ }
   protected cacheHits = 0
   public query: cacheQueryRuntime = {}
 

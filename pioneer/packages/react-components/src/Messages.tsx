@@ -26,7 +26,7 @@ export interface Props extends I18nProps {
   withConstructors?: boolean;
 }
 
-const NOOP = (): void => {};
+const NOOP = (): void => { /* do nothing */ };
 
 function onSelect (props: Props, messageIndex: number): () => void {
   return function (): void {

@@ -20,7 +20,7 @@ type Props = {
 type OrderableItem = EditableMusicTrackPreviewProps;
 
 export const ReorderableTracks = (props: Props) => {
-  const { tracks = [], onRemove = () => {}, noTracksView = null } = props;
+  const { tracks = [], onRemove = () => { /* do nothing */ }, noTracksView = null } = props;
 
   const [items, setItems] = useState(tracks);
 
