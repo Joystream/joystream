@@ -9,11 +9,12 @@
 #[cfg(feature = "std")]
 use serde_derive::{Deserialize, Serialize};
 
-use codec::{Decode, Encode};
+use codec::{Codec, Decode, Encode};
 use rstd::borrow::ToOwned;
 use rstd::prelude::*;
 use runtime_primitives::traits::EnsureOrigin;
-use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure};
+use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
+use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
 use system::{ensure_signed, RawOrigin};
 
 pub use common::constraints::InputValidationLengthConstraint;
@@ -104,13 +105,10 @@ pub struct PostTextChange<BlockNumber, Moment> {
     text: Vec<u8>,
 }
 
-/// Represents a post identifier
-pub type PostId = u64;
-
 /// Represents a thread post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Post<BlockNumber, Moment, AccountId> {
+pub struct Post<BlockNumber, Moment, AccountId, ThreadId, PostId> {
     /// Post identifier
     id: PostId,
 
@@ -140,13 +138,10 @@ pub struct Post<BlockNumber, Moment, AccountId> {
     author_id: AccountId,
 }
 
-/// Represents a thread identifier
-pub type ThreadId = u64;
-
 /// Represents a thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Thread<BlockNumber, Moment, AccountId> {
+pub struct Thread<BlockNumber, Moment, AccountId, ThreadId> {
     /// Thread identifier
     id: ThreadId,
 
@@ -186,7 +181,7 @@ pub struct Thread<BlockNumber, Moment, AccountId> {
     author_id: AccountId,
 }
 
-impl<BlockNumber, Moment, AccountId> Thread<BlockNumber, Moment, AccountId> {
+impl<BlockNumber, Moment, AccountId, ThreadId> Thread<BlockNumber, Moment, AccountId, ThreadId> {
     fn num_posts_ever_created(&self) -> u32 {
         self.num_unmoderated_posts + self.num_moderated_posts
     }
@@ -272,6 +267,26 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
 
     /// Checks that provided signed account belongs to the leader
     type EnsureForumLeader: EnsureOrigin<Self::Origin>;
+
+    /// Thread Id type
+    type ThreadId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
+
+    /// Post Id type
+    type PostId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
 }
 
 decl_storage! {
@@ -284,16 +299,16 @@ decl_storage! {
         pub NextCategoryId get(next_category_id) config(): CategoryId;
 
         /// Map thread identifier to corresponding thread.
-        pub ThreadById get(thread_by_id) config(): map ThreadId => Thread<T::BlockNumber, T::Moment, T::AccountId>;
+        pub ThreadById get(thread_by_id) config(): map T::ThreadId => Thread<T::BlockNumber, T::Moment, T::AccountId, T::ThreadId>;
 
         /// Thread identifier value to be used for next Thread in threadById.
-        pub NextThreadId get(next_thread_id) config(): ThreadId;
+        pub NextThreadId get(next_thread_id) config(): T::ThreadId;
 
         /// Map post identifier to corresponding post.
-        pub PostById get(post_by_id) config(): map PostId => Post<T::BlockNumber, T::Moment, T::AccountId>;
+        pub PostById get(post_by_id) config(): map T::PostId => Post<T::BlockNumber, T::Moment, T::AccountId, T::ThreadId, T::PostId>;
 
         /// Post identifier value to be used for for next post created.
-        pub NextPostId get(next_post_id) config(): PostId;
+        pub NextPostId get(next_post_id) config(): T::PostId;
 
         /// Input constraints
         /// These are all forward looking, that is they are enforced on all
@@ -334,6 +349,8 @@ decl_event!(
     pub enum Event<T>
     where
         <T as system::Trait>::AccountId,
+        <T as Trait>::ThreadId,
+        <T as Trait>::PostId,
     {
         /// A category was introduced
         CategoryCreated(CategoryId),
@@ -555,7 +572,7 @@ decl_module! {
         }
 
         /// Moderate thread
-        fn moderate_thread(origin, thread_id: ThreadId, rationale: Vec<u8>) -> dispatch::Result {
+        fn moderate_thread(origin, thread_id: T::ThreadId, rationale: Vec<u8>) -> dispatch::Result {
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -606,7 +623,7 @@ decl_module! {
         }
 
         /// Edit post text
-        fn add_post(origin, thread_id: ThreadId, text: Vec<u8>) -> dispatch::Result {
+        fn add_post(origin, thread_id: T::ThreadId, text: Vec<u8>) -> dispatch::Result {
 
             /*
              * Update SPEC with new errors,
@@ -643,7 +660,7 @@ decl_module! {
         }
 
         /// Edit post text
-        fn edit_post_text(origin, post_id: PostId, new_text: Vec<u8>) -> dispatch::Result {
+        fn edit_post_text(origin, post_id: T::PostId, new_text: Vec<u8>) -> dispatch::Result {
 
             /* Edit spec.
               - forum member guard missing
@@ -690,7 +707,7 @@ decl_module! {
         }
 
         /// Moderate post
-        fn moderate_post(origin, post_id: PostId, rationale: Vec<u8>) -> dispatch::Result {
+        fn moderate_post(origin, post_id: T::PostId, rationale: Vec<u8>) -> dispatch::Result {
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -790,8 +807,9 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_post_is_mutable(
-        post_id: PostId,
-    ) -> Result<Post<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
+        post_id: T::PostId,
+    ) -> Result<Post<T::BlockNumber, T::Moment, T::AccountId, T::ThreadId, T::PostId>, &'static str>
+    {
         // Make sure post exists
         let post = Self::ensure_post_exists(post_id)?;
 
@@ -805,8 +823,9 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_post_exists(
-        post_id: PostId,
-    ) -> Result<Post<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
+        post_id: T::PostId,
+    ) -> Result<Post<T::BlockNumber, T::Moment, T::AccountId, T::ThreadId, T::PostId>, &'static str>
+    {
         if <PostById<T>>::exists(post_id) {
             Ok(<PostById<T>>::get(post_id))
         } else {
@@ -815,8 +834,8 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_thread_is_mutable(
-        thread_id: ThreadId,
-    ) -> Result<Thread<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
+        thread_id: T::ThreadId,
+    ) -> Result<Thread<T::BlockNumber, T::Moment, T::AccountId, T::ThreadId>, &'static str> {
         // Make sure thread exists
         let thread = Self::ensure_thread_exists(thread_id)?;
 
@@ -830,8 +849,8 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_thread_exists(
-        thread_id: ThreadId,
-    ) -> Result<Thread<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
+        thread_id: T::ThreadId,
+    ) -> Result<Thread<T::BlockNumber, T::Moment, T::AccountId, T::ThreadId>, &'static str> {
         if <ThreadById<T>>::exists(thread_id) {
             Ok(<ThreadById<T>>::get(thread_id))
         } else {
@@ -957,12 +976,12 @@ impl<T: Trait> Module<T> {
         category_id: CategoryId,
         title: &[u8],
         author_id: &T::AccountId,
-    ) -> Thread<T::BlockNumber, T::Moment, T::AccountId> {
+    ) -> Thread<T::BlockNumber, T::Moment, T::AccountId, T::ThreadId> {
         // Get category
         let category = <CategoryById<T>>::get(category_id);
 
         // Create and add new thread
-        let new_thread_id = NextThreadId::get();
+        let new_thread_id = NextThreadId::<T>::get();
 
         let new_thread = Thread {
             id: new_thread_id,
@@ -980,8 +999,8 @@ impl<T: Trait> Module<T> {
         <ThreadById<T>>::insert(new_thread_id, new_thread.clone());
 
         // Update next thread id
-        NextThreadId::mutate(|n| {
-            *n += 1;
+        NextThreadId::<T>::mutate(|n| {
+            *n += One::one();
         });
 
         // Update unmoderated thread count in corresponding category
@@ -995,15 +1014,15 @@ impl<T: Trait> Module<T> {
     /// Creates and ads a new post ot the given thread, and makes all required state updates
     /// `thread_id` must be valid
     fn add_new_post(
-        thread_id: ThreadId,
+        thread_id: T::ThreadId,
         text: &[u8],
         author_id: &T::AccountId,
-    ) -> Post<T::BlockNumber, T::Moment, T::AccountId> {
+    ) -> Post<T::BlockNumber, T::Moment, T::AccountId, T::ThreadId, T::PostId> {
         // Get thread
         let thread = <ThreadById<T>>::get(thread_id);
 
         // Make and add initial post
-        let new_post_id = NextPostId::get();
+        let new_post_id = NextPostId::<T>::get();
 
         let new_post = Post {
             id: new_post_id,
@@ -1020,8 +1039,8 @@ impl<T: Trait> Module<T> {
         <PostById<T>>::insert(new_post_id, new_post.clone());
 
         // Update next post id
-        NextPostId::mutate(|n| {
-            *n += 1;
+        NextPostId::<T>::mutate(|n| {
+            *n += One::one();
         });
 
         // Update unmoderated post count of thread

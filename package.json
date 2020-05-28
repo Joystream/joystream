@@ -3,9 +3,21 @@
 	"name": "joystream",
 	"license": "GPL-3.0-only",
 	"scripts": {
-		"test": "yarn && yarn workspaces run test"
+		"test": "yarn && yarn workspaces run test",
+		"test-migration": "yarn && yarn workspaces run test-migration",
+		"cargo-checks": "devops/git-hooks/pre-commit && devops/git-hooks/pre-push",
+		"cargo-build": "scripts/cargo-build.sh"
 	},
 	"workspaces": [
 		"tests/network-tests"
-	]
+	],
+	"devDependencies": {
+		"husky": "^4.2.5"
+	},
+	"husky": {
+	  "hooks": {
+		"pre-commit": "devops/git-hooks/pre-commit",
+		"pre-push": "devops/git-hooks/pre-push"
+	  }
+	}
 }

@@ -1892,7 +1892,7 @@ decl_module! {
             origin,
             curator_id: CuratorId<T>,
             rationale_text: Vec<u8>
-            ) {
+        ) {
 
             // Ensure lead is set and is origin signer
             Self::ensure_origin_is_set_lead(origin)?;

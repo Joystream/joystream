@@ -4,8 +4,8 @@ import { Keyring } from '@polkadot/keyring';
 import { assert } from 'chai';
 import { KeyringPair } from '@polkadot/keyring/types';
 import BN = require('bn.js');
-import { ApiWrapper } from '../utils/apiWrapper';
-import { initConfig } from '../utils/config';
+import { ApiWrapper } from './utils/apiWrapper';
+import { initConfig } from './utils/config';
 import { v4 as uuid } from 'uuid';
 
 export function membershipTest(nKeyPairs: KeyringPair[]) {
@@ -50,8 +50,8 @@ export function membershipTest(nKeyPairs: KeyringPair[]) {
     );
     nKeyPairs.forEach((keyPair, index) =>
       apiWrapper
-        .getMembership(keyPair.address)
-        .then(membership => assert(!membership.isEmpty, `Account ${keyPair.address} is not a member`))
+        .getMemberIds(keyPair.address)
+        .then(membership => assert(membership.length > 0, `Account ${keyPair.address} is not a member`))
     );
   }).timeout(defaultTimeout);
 
@@ -65,7 +65,9 @@ export function membershipTest(nKeyPairs: KeyringPair[]) {
         )
       );
     await apiWrapper.buyMembership(aKeyPair, paidTerms, `late_member_${aKeyPair.address.substring(0, 8)}`, true);
-    apiWrapper.getMembership(aKeyPair.address).then(membership => assert(membership.isEmpty, 'Account A is a member'));
+    apiWrapper
+      .getMemberIds(aKeyPair.address)
+      .then(membership => assert(membership.length === 0, 'Account A is a member'));
   }).timeout(defaultTimeout);
 
   it('Account A was able to buy the membership with sufficient funds', async () => {
@@ -77,8 +79,8 @@ export function membershipTest(nKeyPairs: KeyringPair[]) {
       );
     await apiWrapper.buyMembership(aKeyPair, paidTerms, `late_member_${aKeyPair.address.substring(0, 8)}`);
     apiWrapper
-      .getMembership(aKeyPair.address)
-      .then(membership => assert(!membership.isEmpty, 'Account A is a not member'));
+      .getMemberIds(aKeyPair.address)
+      .then(membership => assert(membership.length > 0, 'Account A is a not member'));
   }).timeout(defaultTimeout);
 
   after(() => {

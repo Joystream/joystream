@@ -1,12 +1,12 @@
-import { initConfig } from '../utils/config';
+import { initConfig } from './utils/config';
 import { Keyring, WsProvider } from '@polkadot/api';
-import { Bytes } from '@polkadot/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { membershipTest } from './membershipCreationTest';
 import { councilTest } from './electingCouncilTest';
-import { registerJoystreamTypes } from '@joystream/types';
-import { ApiWrapper } from '../utils/apiWrapper';
+import { registerJoystreamTypes } from '@rome/types';
+import { ApiWrapper } from './utils/apiWrapper';
 import BN = require('bn.js');
+import { Utils } from './utils/utils';
 
 describe('Runtime upgrade integration tests', () => {
   initConfig();
@@ -14,18 +14,20 @@ describe('Runtime upgrade integration tests', () => {
   const nodeUrl: string = process.env.NODE_URL!;
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const proposalStake: BN = new BN(+process.env.RUNTIME_UPGRADE_PROPOSAL_STAKE!);
-  const defaultTimeout: number = 120000;
+  const runtimePath: string = process.env.RUNTIME_WASM_PATH!;
+  const defaultTimeout: number = 180000;
 
   const m1KeyPairs: KeyringPair[] = new Array();
   const m2KeyPairs: KeyringPair[] = new Array();
 
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
+  let provider: WsProvider;
 
   before(async function () {
     this.timeout(defaultTimeout);
     registerJoystreamTypes();
-    const provider = new WsProvider(nodeUrl);
+    provider = new WsProvider(nodeUrl);
     apiWrapper = await ApiWrapper.create(provider);
   });
 
@@ -36,7 +38,7 @@ describe('Runtime upgrade integration tests', () => {
   it('Upgrading the runtime test', async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
-    const runtime: Bytes = await apiWrapper.getRuntime();
+    const runtime: string = Utils.readRuntimeFromFile(runtimePath);
     const description: string = 'runtime upgrade proposal which is used for API integration testing';
     const runtimeProposalFee: BN = apiWrapper.estimateProposeRuntimeUpgradeFee(
       proposalStake,
@@ -44,7 +46,7 @@ describe('Runtime upgrade integration tests', () => {
       description,
       runtime
     );
-    const runtimeVoteFee: BN = apiWrapper.estimateVoteForProposalFee();
+    const runtimeVoteFee: BN = apiWrapper.estimateVoteForRuntimeProposalFee();
 
     // Topping the balances
     await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, runtimeProposalFee.add(proposalStake));
@@ -66,8 +68,6 @@ describe('Runtime upgrade integration tests', () => {
     await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber);
     await runtimePromise;
   }).timeout(defaultTimeout);
-
-  membershipTest(new Array<KeyringPair>());
 
   after(() => {
     apiWrapper.close();
