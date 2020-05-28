@@ -110,7 +110,7 @@ pub fn perform_curator_in_group_auth<T: Trait>(
     Ok(())
 }
 
-/// A group, that consists of curators set
+/// A group, that consists of `curators` set
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct CuratorGroup<T: Trait> {
@@ -182,7 +182,7 @@ impl<T: Trait> CuratorGroup<T> {
     }
 }
 
-/// A voucher for entity creation
+/// A voucher for `Entity` creation
 #[derive(Encode, Decode, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct EntityCreationVoucher<T: Trait> {
     /// How many are allowed in total
@@ -219,11 +219,15 @@ impl<T: Trait> EntityCreationVoucher<T> {
         self.entities_created += T::EntityId::one();
     }
 
+    pub fn decrement_created_entities_count(&mut self) {
+        self.entities_created -= T::EntityId::one();
+    }
+
     pub fn limit_not_reached(&self) -> bool {
         self.entities_created < self.maximum_entities_count
     }
 
-    /// Ensure new  voucher`s max entities count is less than number of already created entities in given voucher
+    /// Ensure new voucher`s max entities count is less than number of already created entities in given voucher
     pub fn ensure_new_max_entities_count_is_valid(
         self,
         maximum_entities_count: T::EntityId,
@@ -236,7 +240,7 @@ impl<T: Trait> EntityCreationVoucher<T> {
     }
 }
 
-/// Enum, representing all possible actors
+/// Enum, representing all possible `Actor`s
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Copy, Debug)]
 pub enum Actor<T: Trait> {
@@ -251,7 +255,7 @@ impl<T: Trait> Default for Actor<T> {
     }
 }
 
-/// Permissions for an instance of a Class in the versioned store.
+/// Permissions for an instance of a `Class` in the versioned store.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct ClassPermissions<T: Trait> {
@@ -351,7 +355,7 @@ impl<T: Trait> ClassPermissions<T> {
         self.maintainers.contains(curator_group_id)
     }
 
-    /// Ensure provided actor can create entities of current class
+    /// Ensure provided actor can create entities of current `Class`
     pub fn ensure_can_create_entities(
         &self,
         account_id: &T::AccountId,
@@ -379,7 +383,7 @@ impl<T: Trait> ClassPermissions<T> {
     }
 }
 
-/// Owner of an entity.
+/// Owner of an `Entity`.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum EntityController<T: Trait> {
@@ -487,7 +491,7 @@ pub enum EntityAccessLevel {
 }
 
 impl EntityAccessLevel {
-    /// Derives the EntityAccessLevel for the actor, attempting to act.
+    /// Derives the `EntityAccessLevel` for the actor, attempting to act.
     pub fn derive<T: Trait>(
         account_id: &T::AccountId,
         entity_permissions: &EntityPermissions<T>,

@@ -1140,7 +1140,7 @@ decl_module! {
 
             EntityPermissions::<T>::ensure_group_can_remove_entity(access_level)?;
 
-            Self::ensure_rc_is_zero(entity_id)?;
+            Self::ensure_rc_is_zero(&entity)?;
 
             //
             // == MUTATION SAFE ==
@@ -1151,6 +1151,15 @@ decl_module! {
 
             // Decrement class entities counter
             <ClassById<T>>::mutate(entity.class_id, |class| class.decrement_entities_count());
+
+            let entity_controller =  EntityController::<T>::from_actor(&actor);
+
+            // Decrement entity_creation_voucher after entity removal perfomed
+            <EntityCreationVouchers<T>>::mutate(entity.class_id, entity_controller, |entity_creation_voucher| {
+                if let Some(entity_creation_voucher) = entity_creation_voucher {
+                    entity_creation_voucher.decrement_created_entities_count();
+                }
+            });
 
             // Trigger event
             Self::deposit_event(RawEvent::EntityRemoved(actor, entity_id));
@@ -1725,17 +1734,7 @@ impl<T: Trait> Module<T> {
         Ok(Self::entity_by_id(entity_id))
     }
 
-    // Ensure any property value from external entity does not point to the given entity
-    pub fn ensure_rc_is_zero(entity_id: T::EntityId) -> dispatch::Result {
-        let entity = Self::entity_by_id(entity_id);
-        ensure!(
-            entity.reference_count == 0,
-            ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO
-        );
-        Ok(())
-    }
-
-    // Ensure property values were not locked on class level
+    /// Ensure property values were not locked on `Class` level
     pub fn ensure_property_values_unlocked(class: &Class<T>) -> dispatch::Result {
         ensure!(
             !class
@@ -1746,7 +1745,16 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Ensure there is no property values pointing to the given entity
+    /// Ensure any property value from external entity does not point to the given `Entity`
+    pub fn ensure_rc_is_zero(entity: &Entity<T>) -> dispatch::Result {
+        ensure!(
+            entity.reference_count == 0,
+            ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO
+        );
+        Ok(())
+    }
+
+    /// Ensure there is no property values pointing to the given `Entity`
     pub fn ensure_inbound_same_owner_rc_is_zero(entity: &Entity<T>) -> dispatch::Result {
         ensure!(
             entity.inbound_same_owner_references_from_other_entities_count == 0,
