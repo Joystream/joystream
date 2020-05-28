@@ -48,14 +48,11 @@ export class GraphQLSchemaParser {
 
     const errors = validateSchema(schemaAST);
 
-    // Ignore Query type if not defined in the schema
     if (errors.length > 0) {
       // There are errors
-      console.error(`Schema is not valid. Please fix following errors: \n`);
-      // Ignore first element which is Query type error
-      errors.forEach(e => console.log(`\t ${e.name}: ${e.message}`));
-      console.log();
-      process.exit(1);
+      let errorMsg = `Schema is not valid. Please fix the following errors: \n`;
+      errors.forEach(e => errorMsg += `\t ${e.name}: ${e.message}\n`);
+      throw new Error(errorMsg);
     }
 
     return schemaAST;
