@@ -219,7 +219,7 @@ impl<T: Trait> EntityCreationVoucher<T> {
         self.entities_created += T::EntityId::one();
     }
 
-    pub fn limit_not_reached(self) -> bool {
+    pub fn limit_not_reached(&self) -> bool {
         self.entities_created < self.maximum_entities_count
     }
 

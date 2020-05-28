@@ -503,7 +503,6 @@ impl Default for Schema {
 }
 
 impl Schema {
-
     /// Create new schema with provided properties
     pub fn new(properties: BTreeSet<PropertyId>) -> Self {
         Self {
@@ -524,8 +523,12 @@ impl Schema {
     }
 
     /// Ensure schema properties are valid indices of `Class` properties
-    pub fn ensure_schema_properties_are_valid_indices<T: Trait>(&self, class_properties: &[Property<T>]) -> dispatch::Result {
-        let has_unknown_properties = self.get_properties()
+    pub fn ensure_schema_properties_are_valid_indices<T: Trait>(
+        &self,
+        class_properties: &[Property<T>],
+    ) -> dispatch::Result {
+        let has_unknown_properties = self
+            .get_properties()
             .iter()
             .any(|&prop_id| prop_id >= class_properties.len() as PropertyId);
         ensure!(
@@ -913,8 +916,8 @@ impl<T: Trait> Property<T> {
         }
     }
 
-    pub fn ensure_prop_type_reference_is_valid(&self) -> dispatch::Result{
-        let has_unknown_reference = 
+    pub fn ensure_prop_type_reference_is_valid(&self) -> dispatch::Result {
+        let has_unknown_reference =
             if let Type::Reference(other_class_id, _) = self.prop_type.get_inner_type() {
                 !<ClassById<T>>::exists(other_class_id)
             } else {
