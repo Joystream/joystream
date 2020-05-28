@@ -87,7 +87,7 @@ const InnerForm = (props: FormProps) => {
     setSubmitting(false);
     if (txResult == null) {
       // Tx cancelled.
-      return;
+
     }
   };
 
@@ -131,7 +131,7 @@ const InnerForm = (props: FormProps) => {
         <LabelledText
           name="handle"
           label="Handle/nickname"
-          placeholder={`You can use a-z, 0-9 and underscores.`}
+          placeholder={'You can use a-z, 0-9 and underscores.'}
           style={{ maxWidth: '30rem' }}
           {...props}
         />
@@ -158,9 +158,9 @@ const InnerForm = (props: FormProps) => {
             </p>
             <p>
               <span>By clicking the "Register" button you agree to our </span>
-              <Link to={`/pages/tos`}>Terms of Service</Link>
+              <Link to={'/pages/tos'}>Terms of Service</Link>
               <span> and </span>
-              <Link to={`/pages/privacy`}>Privacy Policy</Link>.
+              <Link to={'/pages/privacy'}>Privacy Policy</Link>.
             </p>
           </Message>
         )}
@@ -218,7 +218,7 @@ type WithMyProfileProps = {
   maxAboutTextLength?: BN;
 };
 
-function WithMyProfileInner(p: WithMyProfileProps) {
+function WithMyProfileInner (p: WithMyProfileProps) {
   const triedToFindProfile = !p.memberId || p.memberProfile;
   if (
     triedToFindProfile &&
@@ -264,13 +264,13 @@ type WithMyMemberIdProps = MyAccountProps & {
   paidTermsIds?: Vec<PaidTermId>;
 };
 
-function WithMyMemberIdInner(p: WithMyMemberIdProps) {
+function WithMyMemberIdInner (p: WithMyMemberIdProps) {
   if (p.allAccounts && !Object.keys(p.allAccounts).length) {
     return (
       <Message warning className="JoyMainStatus">
         <Message.Header>Please create a key to get started.</Message.Header>
         <div style={{ marginTop: '1rem' }}>
-          <Link to={`/accounts`} className="ui button orange">
+          <Link to={'/accounts'} className="ui button orange">
             Create key
           </Link>
         </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Button,
@@ -13,46 +13,46 @@ import {
   Segment,
   Statistic,
   Table,
-  SemanticICONS,
-} from 'semantic-ui-react'
+  SemanticICONS
+} from 'semantic-ui-react';
 
 import { formatBalance } from '@polkadot/util';
 import { u128 } from '@polkadot/types';
 import { Balance } from '@polkadot/types/interfaces';
 
-import { Loadable } from '@polkadot/joy-utils/index'
+import { Loadable } from '@polkadot/joy-utils/index';
 
-import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema.typings'
-import { Opening } from "@joystream/types/hiring"
+import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema.typings';
+import { Opening } from '@joystream/types/hiring';
 
 import {
-  OpeningBodyReviewInProgress,
-} from './Opportunities'
+  OpeningBodyReviewInProgress
+} from './Opportunities';
 import {
   openingIcon,
-  openingDescription,
-} from '../openingStateMarkup'
-import { CancelledReason, OpeningStageClassification, OpeningState } from "../classifiers"
-import { OpeningMetadata } from "../OpeningMetadata"
+  openingDescription
+} from '../openingStateMarkup';
+import { CancelledReason, OpeningStageClassification, OpeningState } from '../classifiers';
+import { OpeningMetadata } from '../OpeningMetadata';
 import { CuratorId } from '@joystream/types/content-working-group';
 
 type CTACallback = (rationale: string) => void
 
 type CTA = {
-  title: string
-  callback: CTACallback
+  title: string;
+  callback: CTACallback;
 }
 
-function CTAButton(props: CTA) {
-  const [open, setOpen] = useState<boolean>(false)
-  const [rationale, setRationale] = useState<string>("")
-  const handleOpen = () => setOpen(true)
-  const handleClose = () => setOpen(false)
+function CTAButton (props: CTA) {
+  const [open, setOpen] = useState<boolean>(false);
+  const [rationale, setRationale] = useState<string>('');
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
   const leaveRole = () => {
-    props.callback(rationale)
-    handleClose()
-  }
-  const handleChange = (e: any, value: any) => setRationale(value.value)
+    props.callback(rationale);
+    handleClose();
+  };
+  const handleChange = (e: any, value: any) => setRationale(value.value);
 
   return (
     <Modal trigger={
@@ -61,8 +61,8 @@ function CTAButton(props: CTA) {
         {props.title}
       </Button>
     }
-      open={open}
-      onClose={handleClose}
+    open={open}
+    onClose={handleClose}
     >
       <Modal.Header>Are you sure you want to leave this role?</Modal.Header>
       <Modal.Content>
@@ -80,39 +80,39 @@ function CTAButton(props: CTA) {
       <Modal.Actions>
         <Button onClick={handleClose}>
           Cancel
-          </Button>
+        </Button>
         <Button color='yellow' onClick={leaveRole} negative>
           Leave role
-          </Button>
+        </Button>
       </Modal.Actions>
     </Modal>
-  )
+  );
 }
 
 interface nameAndURL {
-  name: string
-  url?: string
+  name: string;
+  url?: string;
 }
 
-function RoleName(props: nameAndURL) {
+function RoleName (props: nameAndURL) {
   if (typeof props.url !== 'undefined') {
-    return <Link to={props.url}>{props.name}</Link>
+    return <Link to={props.url}>{props.name}</Link>;
   }
-  return <span>{props.name}</span>
+  return <span>{props.name}</span>;
 }
 
 export interface ActiveRole extends nameAndURL {
-  curatorId: CuratorId
-  reward: Balance
-  stake: Balance
+  curatorId: CuratorId;
+  reward: Balance;
+  stake: Balance;
 }
 
 export interface ActiveRoleWithCTAs extends ActiveRole {
-  CTAs: CTA[]
+  CTAs: CTA[];
 }
 
 export type CurrentRolesProps = {
-  currentRoles: ActiveRoleWithCTAs[]
+  currentRoles: ActiveRoleWithCTAs[];
 }
 
 export const CurrentRoles = Loadable<CurrentRolesProps>(
@@ -157,46 +157,46 @@ export const CurrentRoles = Loadable<CurrentRolesProps>(
           <p>You are not currently in any working group roles.</p>
         }
       </Container>
-    )
-  })
+    );
+  });
 
 type RankAndCapacityProps = {
-  rank: number
-  capacity: number
+  rank: number;
+  capacity: number;
 }
 
-function RankAndCapacity(props: RankAndCapacityProps) {
-  let capacity = null
+function RankAndCapacity (props: RankAndCapacityProps) {
+  let capacity = null;
   if (props.capacity > 0) {
-    capacity = "/ " + props.capacity
+    capacity = '/ ' + props.capacity;
   }
 
-  let iconName: SemanticICONS = 'check circle'
+  let iconName: SemanticICONS = 'check circle';
   if (props.capacity > 0 && props.rank > props.capacity) {
-    iconName = 'times circle'
+    iconName = 'times circle';
   }
   return (
     <span>
       <Icon name={iconName} />
       Your rank: {props.rank} {capacity}
     </span>
-  )
+  );
 }
 
 export type ApplicationStatusProps = RankAndCapacityProps & {
-  openingStatus: OpeningState
-  cancelledReason?: CancelledReason
-  hired?: boolean
+  openingStatus: OpeningState;
+  cancelledReason?: CancelledReason;
+  hired?: boolean;
 }
 
 const cancelledReasons = new Map<CancelledReason, string>([
   [CancelledReason.ApplicantCancelled, 'You withdrew from this this application'],
   [CancelledReason.HirerCancelledApplication, 'Your application was cancelled by the group lead'],
   [CancelledReason.HirerCancelledOpening, 'The role was cancelled by the group lead'],
-  [CancelledReason.NoOneHired, 'The group lead didn\'t hire anyone during the maximum review period'],
-])
+  [CancelledReason.NoOneHired, 'The group lead didn\'t hire anyone during the maximum review period']
+]);
 
-function ApplicationCancelledStatus(props: ApplicationStatusProps) {
+function ApplicationCancelledStatus (props: ApplicationStatusProps) {
   return (
     <Message>
       <Message.Header>
@@ -205,27 +205,27 @@ function ApplicationCancelledStatus(props: ApplicationStatusProps) {
       </Message.Header>
       <p>{cancelledReasons.get(props.cancelledReason as CancelledReason)}.</p>
     </Message>
-  )
+  );
 }
 type statusRenderer = (p: ApplicationStatusProps) => any
 
 const applicationStatusRenderers = new Map<OpeningState, statusRenderer>([
   [OpeningState.AcceptingApplications, ApplicationStatusAcceptingApplications],
   [OpeningState.InReview, ApplicationStatusInReview],
-  [OpeningState.Complete, ApplicationStatusComplete],
-])
+  [OpeningState.Complete, ApplicationStatusComplete]
+]);
 
-function ApplicationStatusAcceptingApplications(props: ApplicationStatusProps): any {
-  let positive = true
+function ApplicationStatusAcceptingApplications (props: ApplicationStatusProps): any {
+  let positive = true;
   let message = (
     <p>When the review period begins, you will be considered for this role. </p>
-  )
+  );
 
   if (props.capacity > 0 && props.rank > props.capacity) {
-    positive = false
+    positive = false;
     message = (
       <p>You have been crowded out of this role, and will not be considered.</p>
-    )
+    );
   }
   return (
     <Message positive={positive} negative={!positive}>
@@ -234,20 +234,20 @@ function ApplicationStatusAcceptingApplications(props: ApplicationStatusProps): 
       </Message.Header>
       {message}
     </Message>
-  )
+  );
 }
 
-function ApplicationStatusInReview(props: ApplicationStatusProps): any {
-  let positive = true
+function ApplicationStatusInReview (props: ApplicationStatusProps): any {
+  let positive = true;
   let message = (
     <p>You are being considered for this role. </p>
-  )
+  );
 
   if (props.capacity > 0 && props.rank > props.capacity) {
-    positive = false
+    positive = false;
     message = (
       <p>You have been crowded out of this role, and will not be considered.</p>
-    )
+    );
   }
   return (
     <Message positive={positive} negative={!positive}>
@@ -256,10 +256,10 @@ function ApplicationStatusInReview(props: ApplicationStatusProps): any {
       </Message.Header>
       {message}
     </Message>
-  )
+  );
 }
 
-function ApplicationStatusComplete(props: ApplicationStatusProps): any {
+function ApplicationStatusComplete (props: ApplicationStatusProps): any {
   return (
     <Message negative>
       <Message.Header>
@@ -268,10 +268,10 @@ function ApplicationStatusComplete(props: ApplicationStatusProps): any {
       </Message.Header>
       <p>You were not hired for this role.</p>
     </Message>
-  )
+  );
 }
 
-function ApplicationStatusHired(props: ApplicationStatusProps) {
+function ApplicationStatusHired (props: ApplicationStatusProps) {
   return (
     <Message positive>
       <Message.Header>
@@ -280,17 +280,17 @@ function ApplicationStatusHired(props: ApplicationStatusProps) {
       </Message.Header>
       <p>You were hired for this role.</p>
     </Message>
-  )
+  );
 }
 
-export function ApplicationStatus(props: ApplicationStatusProps) {
-  if (typeof props.hired !== "undefined" && props.hired) {
-    return ApplicationStatusHired(props)
-  } else if (typeof props.cancelledReason !== "undefined") {
-    return ApplicationCancelledStatus(props)
+export function ApplicationStatus (props: ApplicationStatusProps) {
+  if (typeof props.hired !== 'undefined' && props.hired) {
+    return ApplicationStatusHired(props);
+  } else if (typeof props.cancelledReason !== 'undefined') {
+    return ApplicationCancelledStatus(props);
   }
 
-  return (applicationStatusRenderers.get(props.openingStatus) as statusRenderer)(props)
+  return (applicationStatusRenderers.get(props.openingStatus) as statusRenderer)(props);
 }
 
 enum ApplicationState {
@@ -302,47 +302,47 @@ enum ApplicationState {
 const applicationClass = new Map<ApplicationState, string>([
   [ApplicationState.Positive, 'positive'],
   [ApplicationState.Negative, 'negative'],
-  [ApplicationState.Cancelled, 'cancelled'],
-])
+  [ApplicationState.Cancelled, 'cancelled']
+]);
 
-function applicationState(props: OpeningApplication): ApplicationState {
+function applicationState (props: OpeningApplication): ApplicationState {
   if (typeof props.cancelledReason !== 'undefined') {
-    return ApplicationState.Cancelled
+    return ApplicationState.Cancelled;
   } else if (props.capacity > 0 && props.rank > props.capacity) {
-    return ApplicationState.Negative
+    return ApplicationState.Negative;
   }
-  return ApplicationState.Positive
+  return ApplicationState.Positive;
 }
 
 export type OpeningApplication = {
-  id: number
-  rank: number
-  capacity: number
-  cancelledReason?: CancelledReason
-  hired?: boolean
-  stage: OpeningStageClassification
-  opening: Opening
-  meta: OpeningMetadata
-  applicationStake: Balance
-  roleStake: Balance
-  review_end_time?: Date
-  review_end_block?: number
+  id: number;
+  rank: number;
+  capacity: number;
+  cancelledReason?: CancelledReason;
+  hired?: boolean;
+  stage: OpeningStageClassification;
+  opening: Opening;
+  meta: OpeningMetadata;
+  applicationStake: Balance;
+  roleStake: Balance;
+  review_end_time?: Date;
+  review_end_block?: number;
 }
 
 export type CancelCallback = {
-  cancelCallback: (app: OpeningApplication) => void
+  cancelCallback: (app: OpeningApplication) => void;
 }
 
 export type ApplicationProps = OpeningApplication & CancelCallback
 
-function CancelButton(props: ApplicationProps) {
-  const [open, setOpen] = useState<boolean>(false)
-  const handleOpen = () => setOpen(true)
-  const handleClose = () => setOpen(false)
+function CancelButton (props: ApplicationProps) {
+  const [open, setOpen] = useState<boolean>(false);
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
   const cancelApplication = () => {
-    props.cancelCallback(props)
-    handleClose()
-  }
+    props.cancelCallback(props);
+    handleClose();
+  };
 
   return (
     <Modal trigger={
@@ -355,10 +355,10 @@ function CancelButton(props: ApplicationProps) {
       >
         <Icon name='warning sign' />
         Cancel and withdraw stake
- </Button>
+      </Button>
     }
-      open={open}
-      onClose={handleClose}
+    open={open}
+    onClose={handleClose}
     >
       <Modal.Header>Are you sure you want to cancel this application?</Modal.Header>
       <Modal.Content>
@@ -369,28 +369,28 @@ function CancelButton(props: ApplicationProps) {
       <Modal.Actions>
         <Button onClick={handleClose}>
           Cancel
-          </Button>
+        </Button>
         <Button color='yellow' onClick={cancelApplication} negative>
           Cancel application
-          </Button>
+        </Button>
       </Modal.Actions>
 
     </Modal>
-  )
+  );
 }
 
-export function Application(props: ApplicationProps) {
-  let countdown = null
+export function Application (props: ApplicationProps) {
+  let countdown = null;
   if (props.stage.state == OpeningState.InReview) {
-    countdown = <OpeningBodyReviewInProgress {...props.stage} />
+    countdown = <OpeningBodyReviewInProgress {...props.stage} />;
   }
 
-  const application = props.opening.parse_human_readable_text() as GenericJoyStreamRoleSchema
-  const appState = applicationState(props)
+  const application = props.opening.parse_human_readable_text() as GenericJoyStreamRoleSchema;
+  const appState = applicationState(props);
 
-  let CTA = null
+  let CTA = null;
   if (appState == ApplicationState.Positive && props.stage.state != OpeningState.Complete) {
-    CTA = <CancelButton {...props} />
+    CTA = <CancelButton {...props} />;
   }
 
   return (
@@ -420,7 +420,7 @@ export function Application(props: ApplicationProps) {
               <Table.Row>
                 <Table.Cell>
                   Application stake
-              </Table.Cell>
+                </Table.Cell>
                 <Table.Cell>
                   {formatBalance(props.applicationStake)}
                 </Table.Cell>
@@ -428,7 +428,7 @@ export function Application(props: ApplicationProps) {
               <Table.Row>
                 <Table.Cell>
                   Role stake
-              </Table.Cell>
+                </Table.Cell>
                 <Table.Cell>
                   {formatBalance(props.roleStake)}
                 </Table.Cell>
@@ -436,7 +436,7 @@ export function Application(props: ApplicationProps) {
               <Table.Row className="sum">
                 <Table.Cell>
                   Total stake
-              </Table.Cell>
+                </Table.Cell>
                 <Table.Cell>
                   {formatBalance(new u128(props.roleStake.add(props.applicationStake)))}
                 </Table.Cell>
@@ -468,11 +468,11 @@ export function Application(props: ApplicationProps) {
         </Grid.Column>
       </Grid>
     </Segment>
-  )
+  );
 }
 
 export type ApplicationsProps = CancelCallback & {
-  applications: OpeningApplication[]
+  applications: OpeningApplication[];
 }
 
 export const Applications = Loadable<ApplicationsProps>(
@@ -488,4 +488,4 @@ export const Applications = Loadable<ApplicationsProps>(
       }
     </Container>
   )
-)
+);

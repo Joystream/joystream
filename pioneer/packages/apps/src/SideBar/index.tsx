@@ -18,7 +18,7 @@ import translate from '../translate';
 import Item from './Item';
 import NetworkModal from '../modals/Network';
 
-interface Props extends I18nProps /*ApiProps,*/ {
+interface Props extends I18nProps /* ApiProps, */ {
   className?: string;
   collapse: () => void;
   handleResize: () => void;
@@ -33,7 +33,7 @@ type OuterLinkProps = {
   icon?: SemanticICONS;
 };
 
-export function OuterLink({ url, title, icon = 'external alternate' }: OuterLinkProps) {
+export function OuterLink ({ url, title, icon = 'external alternate' }: OuterLinkProps) {
   return (
     <Menu.Item className="apps--SideBar-Item">
       <a className="apps--SideBar-Item-NavLink" href={url} target="_blank">
@@ -44,7 +44,7 @@ export function OuterLink({ url, title, icon = 'external alternate' }: OuterLink
   );
 }
 
-function SideBar({
+function SideBar ({
   className,
   collapse,
   handleResize,
@@ -150,7 +150,7 @@ export default translate(
   `
 );
 
-function JoystreamLogo(isCollapsed: boolean) {
+function JoystreamLogo (isCollapsed: boolean) {
   const logo = isCollapsed ? 'images/logo-j.svg' : 'images/logo-joytream.svg';
   return <img alt="Joystream" className="apps--SideBar-logo" src={logo} />;
 }

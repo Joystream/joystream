@@ -40,14 +40,14 @@ const buildSchema = (props: ValidationProps) => {
 };
 
 type OuterProps = ValidationProps & {
-  history?: History,
-  id?: PostId
-  struct?: Post
-  threadId: ThreadId
+  history?: History;
+  id?: PostId;
+  struct?: Post;
+  threadId: ThreadId;
 };
 
 type FormValues = {
-  text: string
+  text: string;
 };
 
 type FormProps = OuterProps & FormikProps<FormValues>;
@@ -80,7 +80,7 @@ const InnerForm = (props: FormProps) => {
     setSubmitting(false);
     if (txResult == null) {
       // Tx cancelled.
-      return;
+
     }
   };
 
@@ -96,9 +96,9 @@ const InnerForm = (props: FormProps) => {
 
     const textParam = new Text(text);
     if (!id) {
-      return [ threadId, textParam ];
+      return [threadId, textParam];
     } else {
-      return [ id, textParam ];
+      return [id, textParam];
     }
   };
 
@@ -204,7 +204,7 @@ function withThreadIdFromUrl (Component: React.ComponentType<OuterProps>) {
 }
 
 type HasPostIdProps = {
-  id: PostId
+  id: PostId;
 };
 
 function withIdFromUrl (Component: React.ComponentType<HasPostIdProps>) {

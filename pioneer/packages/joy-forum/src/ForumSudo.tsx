@@ -22,11 +22,11 @@ import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/
 const buildSchema = () => Yup.object().shape({});
 
 type OuterProps = {
-  currentSudo?: string
+  currentSudo?: string;
 };
 
 type FormValues = {
-  sudo?: string
+  sudo?: string;
 };
 
 type FormProps = OuterProps & FormikProps<FormValues>;
@@ -47,7 +47,7 @@ const InnerForm = (props: FormProps) => {
     sudo
   } = values;
 
-  const [ showSelector, setShowSelector ] = useState(false);
+  const [showSelector, setShowSelector] = useState(false);
 
   const resetForm = () => {
     setShowSelector(false);
@@ -62,7 +62,7 @@ const InnerForm = (props: FormProps) => {
     setSubmitting(false);
     if (txResult == null) {
       // Tx cancelled.
-      return;
+
     }
   };
 
@@ -75,10 +75,10 @@ const InnerForm = (props: FormProps) => {
 
   const buildTxParams = () => {
     if (!isValid) return [];
-    return [ new Option('AccountId', sudo) ];
+    return [new Option('AccountId', sudo)];
   };
 
-  type SudoInputAddressProps = FieldProps<FormValues>; /* & InputAddressProps*/;
+  type SudoInputAddressProps = FieldProps<FormValues>; /* & InputAddressProps */
 
   const SudoInputAddress = ({ field, form, ...props }: SudoInputAddressProps) => {
     const { name, value } = field;
@@ -115,7 +115,7 @@ const InnerForm = (props: FormProps) => {
           }
           isDisabled={!dirty || isSubmitting}
           params={buildTxParams()}
-          tx={`forum.setForumSudo`}
+          tx={'forum.setForumSudo'}
           onClick={onSubmit}
           txFailedCb={onTxFailed}
           txSuccessCb={onTxSuccess}
@@ -166,7 +166,7 @@ const EditForm = withFormik<OuterProps, FormValues>({
 })(InnerForm);
 
 type LoadStructProps = {
-  structOpt: Option<AccountId>
+  structOpt: Option<AccountId>;
 };
 
 const withLoadForumSudo = withForumCalls<LoadStructProps>(
@@ -212,7 +212,7 @@ function innerWithOnlyForumSudo<P extends LoadStructProps> (Component: React.Com
       return <Component {...props} />;
     } else {
       return (
-        <JoyError title={`Only forum sudo can access this functionality.`}>
+        <JoyError title={'Only forum sudo can access this functionality.'}>
           <div>Current forum sudo:</div>
           <div>{sudo ? <AddressMini value={sudo} /> : 'UNDEFINED'}</div>
         </JoyError>
@@ -222,7 +222,7 @@ function innerWithOnlyForumSudo<P extends LoadStructProps> (Component: React.Com
 }
 
 type ForumSudoContextProps = {
-  forumSudo?: AccountId
+  forumSudo?: AccountId;
 };
 
 export const ForumSudoContext = createContext<ForumSudoContextProps>({});

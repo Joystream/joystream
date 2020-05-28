@@ -7,20 +7,19 @@ import { nonEmptyStr } from '../index';
 import TextArea from '../TextArea';
 
 type Props = {
-  accountId: string,
-  onChange: (memo: string) => void,
-  onReset: (memo: string) => void,
-  maxLen?: BN,
-  storedMemo?: Text,
+  accountId: string;
+  onChange: (memo: string) => void;
+  onReset: (memo: string) => void;
+  maxLen?: BN;
+  storedMemo?: Text;
 };
 
 type State = {
-  memo: string,
-  loadedMemo: boolean,
+  memo: string;
+  loadedMemo: boolean;
 };
 
 class Component extends React.PureComponent<Props, State> {
-
   static getDerivedStateFromProps (props: Props, currentState: State) {
     const { storedMemo } = props;
     const { memo, loadedMemo } = currentState;
@@ -28,7 +27,7 @@ class Component extends React.PureComponent<Props, State> {
       // only set loaded memo once
       return {
         memo: storedMemo.toString(),
-        loadedMemo: true,
+        loadedMemo: true
       };
     }
     return null;
@@ -36,7 +35,7 @@ class Component extends React.PureComponent<Props, State> {
 
   state: State = {
     memo: '',
-    loadedMemo: false,
+    loadedMemo: false
   };
 
   render () {
@@ -62,7 +61,7 @@ class Component extends React.PureComponent<Props, State> {
 
     if (storedMemo && memo == storedMemo.toString()) {
       if (onReset) {
-        onReset(memo)
+        onReset(memo);
       }
     } else {
       if (onChange) {

@@ -5,18 +5,18 @@ import { ChannelEntity } from '../entities/ChannelEntity';
 import { formatNumber } from '@polkadot/util';
 
 type Props = {
-  channel: ChannelEntity
+  channel: ChannelEntity;
 };
 
 export const ChannelPreviewStats = (props: Props) => {
   const { channel } = props;
   const statSize = 'tiny';
 
-  let itemsPublishedLabel = ''
+  let itemsPublishedLabel = '';
   if (channel.content === 'Video') {
-    itemsPublishedLabel = 'Videos'
+    itemsPublishedLabel = 'Videos';
   } else if (channel.content === 'Music') {
-    itemsPublishedLabel = 'Music tracks'
+    itemsPublishedLabel = 'Music tracks';
   }
 
   return (
@@ -38,5 +38,5 @@ export const ChannelPreviewStats = (props: Props) => {
         </Statistic>
       </div>
     </div>
-  )
-}
+  );
+};

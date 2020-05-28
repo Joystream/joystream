@@ -13,16 +13,15 @@ const strip = require('strip-markdown');
 const mdStripper = remark().use(strip);
 
 type Props = {
-  accountId: string,
-  memo?: Text,
-  preview?: boolean,
-  showEmpty?: boolean,
-  className?: string,
-  style?: any
+  accountId: string;
+  memo?: Text;
+  preview?: boolean;
+  showEmpty?: boolean;
+  className?: string;
+  style?: any;
 };
 
 class Component extends React.PureComponent<Props> {
-
   private mdToPlainText = (md: string): string => {
     if (nonEmptyStr(md)) {
       try {

@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
-import { ParsedProposal, ProposalVote } from "../../../types/proposals";
-import { useTransport, usePromise } from "../";
-import { ProposalId } from "@joystream/types/proposals";
+import { useState, useEffect } from 'react';
+import { ParsedProposal, ProposalVote } from '../../../types/proposals';
+import { useTransport, usePromise } from '../';
+import { ProposalId } from '@joystream/types/proposals';
 
 // Take advantage of polkadot api subscriptions to re-fetch proposal data and votes
 // each time there is some runtime change in the proposal
@@ -24,7 +24,7 @@ const useProposalSubscription = (id: ProposalId) => {
   const refreshProposalData = () => {
     refreshProposal();
     refreshVotes();
-  }
+  };
 
   useEffect(() => {
     // onMount...
@@ -34,8 +34,7 @@ const useProposalSubscription = (id: ProposalId) => {
       .then(unsubscribe => {
         if (!unmounted) {
           setUnsubscribeProposal(() => unsubscribe);
-        }
-        else {
+        } else {
           unsubscribe(); // If already unmounted - unsubscribe immedietally!
         }
       });
@@ -44,13 +43,13 @@ const useProposalSubscription = (id: ProposalId) => {
       // Clean the subscription
       unmounted = true;
       if (unsubscribeProposal !== null) unsubscribeProposal();
-    }
+    };
   }, []);
 
   return {
     proposal: { data: proposal, error: proposalError, loading: proposalLoading },
     votes: { data: votes, error: votesError, loading: votesLoading }
-  }
+  };
 };
 
 export default useProposalSubscription;

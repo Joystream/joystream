@@ -1,22 +1,22 @@
-import { ParsedMember } from "../types/members";
+import { ParsedMember } from '../types/members';
 import BaseTransport from './base';
-import { Seats, ElectionParameters } from "@joystream/types/proposals";
-import { MemberId, Profile } from "@joystream/types/members";
-import { u32, Vec } from "@polkadot/types/";
-import { Balance, BlockNumber } from "@polkadot/types/interfaces";
-import { FIRST_MEMBER_ID } from "../consts/members";
-import { ApiPromise } from "@polkadot/api";
-import MembersTransport from "./members";
+import { Seats, ElectionParameters } from '@joystream/types/proposals';
+import { MemberId, Profile } from '@joystream/types/members';
+import { u32, Vec } from '@polkadot/types/';
+import { Balance, BlockNumber } from '@polkadot/types/interfaces';
+import { FIRST_MEMBER_ID } from '../consts/members';
+import { ApiPromise } from '@polkadot/api';
+import MembersTransport from './members';
 
 export default class CouncilTransport extends BaseTransport {
   private membersT: MembersTransport;
 
-  constructor(api: ApiPromise, membersTransport: MembersTransport) {
+  constructor (api: ApiPromise, membersTransport: MembersTransport) {
     super(api);
     this.membersT = membersTransport;
   }
 
-  async councilMembers(): Promise<(ParsedMember & { memberId: MemberId })[]> {
+  async councilMembers (): Promise<(ParsedMember & { memberId: MemberId })[]> {
     const council = (await this.council.activeCouncil()) as Seats;
     return Promise.all(
       council.map(async seat => {
@@ -30,7 +30,7 @@ export default class CouncilTransport extends BaseTransport {
     );
   }
 
-  async membersExceptCouncil(): Promise<{ id: number; profile: Profile }[]> {
+  async membersExceptCouncil (): Promise<{ id: number; profile: Profile }[]> {
     // Council members to filter out
     const activeCouncil = (await this.council.activeCouncil()) as Seats;
     const membersCount = ((await this.members.membersCreated()) as MemberId).toNumber();
@@ -54,7 +54,7 @@ export default class CouncilTransport extends BaseTransport {
     return profiles;
   }
 
-  async electionParameters(): Promise<ElectionParameters> {
+  async electionParameters (): Promise<ElectionParameters> {
     const announcing_period = (await this.councilElection.announcingPeriod()) as BlockNumber;
     const voting_period = (await this.councilElection.votingPeriod()) as BlockNumber;
     const revealing_period = (await this.councilElection.revealingPeriod()) as BlockNumber;

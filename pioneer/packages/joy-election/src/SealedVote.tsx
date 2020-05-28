@@ -12,16 +12,15 @@ import translate from './translate';
 import { calcTotalStake } from '@polkadot/joy-utils/index';
 import { SealedVote } from '@joystream/types/';
 import AddressMini from '@polkadot/react-components/AddressMiniJoy';
-import CandidatePreview from "./CandidatePreview";
+import CandidatePreview from './CandidatePreview';
 import { findVoteByHash } from './myVotesStore';
 
 type Props = ApiProps & I18nProps & {
-  hash: Hash,
-  sealedVote?: SealedVote
+  hash: Hash;
+  sealedVote?: SealedVote;
 };
 
 class Comp extends React.PureComponent<Props> {
-
   renderCandidateOrAction () {
     const { hash, sealedVote } = this.props;
     if (!sealedVote) {
@@ -43,32 +42,32 @@ class Comp extends React.PureComponent<Props> {
 
     return !sealedVote ? null : (
       <Table celled selectable compact definition className='SealedVoteTable'>
-      <Table.Body>
-      <Table.Row>
-        <Table.Cell>Hash</Table.Cell>
-        <Table.Cell><code>{hash.toHex()}</code></Table.Cell>
-      </Table.Row>
-      {myVote && <Table.Row>
-        <Table.Cell>Salt</Table.Cell>
-        <Table.Cell><code>{myVote.salt}</code></Table.Cell>
-      </Table.Row>}
-      <Table.Row>
-        <Table.Cell>Stake</Table.Cell>
-        <Table.Cell>{formatBalance(calcTotalStake(sealedVote.stake))}</Table.Cell>
-      </Table.Row>
-      {myVote && <Table.Row>
-        <Table.Cell>Voted on</Table.Cell>
-        <Table.Cell>{new Date(myVote.votedOnTime).toLocaleString()}</Table.Cell>
-      </Table.Row>}
-      <Table.Row>
-        <Table.Cell>Voter</Table.Cell>
-        <Table.Cell><AddressMini value={sealedVote.voter} isShort={false} isPadded={false} withBalance={true} /></Table.Cell>
-      </Table.Row>
-      <Table.Row>
-        <Table.Cell>Candidate</Table.Cell>
-        <Table.Cell>{this.renderCandidateOrAction()}</Table.Cell>
-      </Table.Row>
-      </Table.Body>
+        <Table.Body>
+          <Table.Row>
+            <Table.Cell>Hash</Table.Cell>
+            <Table.Cell><code>{hash.toHex()}</code></Table.Cell>
+          </Table.Row>
+          {myVote && <Table.Row>
+            <Table.Cell>Salt</Table.Cell>
+            <Table.Cell><code>{myVote.salt}</code></Table.Cell>
+          </Table.Row>}
+          <Table.Row>
+            <Table.Cell>Stake</Table.Cell>
+            <Table.Cell>{formatBalance(calcTotalStake(sealedVote.stake))}</Table.Cell>
+          </Table.Row>
+          {myVote && <Table.Row>
+            <Table.Cell>Voted on</Table.Cell>
+            <Table.Cell>{new Date(myVote.votedOnTime).toLocaleString()}</Table.Cell>
+          </Table.Row>}
+          <Table.Row>
+            <Table.Cell>Voter</Table.Cell>
+            <Table.Cell><AddressMini value={sealedVote.voter} isShort={false} isPadded={false} withBalance={true} /></Table.Cell>
+          </Table.Row>
+          <Table.Row>
+            <Table.Cell>Candidate</Table.Cell>
+            <Table.Cell>{this.renderCandidateOrAction()}</Table.Cell>
+          </Table.Row>
+        </Table.Body>
       </Table>
     );
   }

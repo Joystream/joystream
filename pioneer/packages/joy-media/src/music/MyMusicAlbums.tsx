@@ -3,7 +3,7 @@ import { Button } from 'semantic-ui-react';
 import { MusicAlbumPreviewProps, MusicAlbumPreview } from './MusicAlbumPreview';
 
 export type MyMusicAlbumsProps = {
-  albums?: MusicAlbumPreviewProps[]
+  albums?: MusicAlbumPreviewProps[];
 };
 
 export function MyMusicAlbums (props: MyMusicAlbumsProps) {

@@ -51,16 +51,16 @@ const buildSchema = (props: ValidationProps) => {
 };
 
 type OuterProps = ValidationProps & {
-  history?: History,
-  id?: ThreadId
-  struct?: Thread
-  categoryId?: CategoryId
+  history?: History;
+  id?: ThreadId;
+  struct?: Thread;
+  categoryId?: CategoryId;
 };
 
 type FormValues = {
   // pinned: boolean,
-  title: string,
-  text: string
+  title: string;
+  text: string;
 };
 
 type FormProps = OuterProps & FormikProps<FormValues>;
@@ -97,7 +97,7 @@ const InnerForm = (props: FormProps) => {
     setSubmitting(false);
     if (txResult == null) {
       // Tx cancelled.
-      return;
+
     }
   };
 
@@ -132,7 +132,7 @@ const InnerForm = (props: FormProps) => {
   }
 
   const isNew = struct === undefined;
-  const resolvedCategoryId = categoryId ? categoryId : (struct as Thread).category_id;
+  const resolvedCategoryId = categoryId || (struct as Thread).category_id;
 
   const buildTxParams = () => {
     if (!isValid) return [];
@@ -145,7 +145,7 @@ const InnerForm = (props: FormProps) => {
       ];
     } else {
       // NOTE: currently forum SRML doesn't support thread update.
-      return [ /* TODO add all required params */ ];
+      return [];
     }
   };
 
@@ -172,7 +172,7 @@ const InnerForm = (props: FormProps) => {
         <Field component={Checkbox} id='pinned' name='pinned' disabled={isSubmitting} label={`This thread is ${!pinned ? 'not' : '' } pinned`} />
       </LabelledField> */}
 
-      <LabelledText name='title' placeholder={`Title`} {...props} />
+      <LabelledText name='title' placeholder={'Title'} {...props} />
 
       <LabelledField name='text' {...props}>
         <Field component='textarea' id='text' name='text' disabled={isSubmitting} rows={5} placeholder='Type here. You can use Markdown.' />

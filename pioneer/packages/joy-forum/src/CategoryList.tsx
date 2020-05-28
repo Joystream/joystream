@@ -22,8 +22,8 @@ import { IfIAmForumSudo } from './ForumSudo';
 import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
 
 type CategoryActionsProps = {
-  id: CategoryId
-  category: Category
+  id: CategoryId;
+  category: Category;
 };
 
 function CategoryActions (props: CategoryActionsProps) {
@@ -31,10 +31,10 @@ function CategoryActions (props: CategoryActionsProps) {
   const className = 'ui button ActionButton';
 
   type BtnProps = {
-    label: string,
-    icon?: string,
-    archive?: boolean,
-    delete?: boolean
+    label: string;
+    icon?: string;
+    archive?: boolean;
+    delete?: boolean;
   };
 
   const UpdateCategoryButton = (btnProps: BtnProps) => {
@@ -98,14 +98,14 @@ function CategoryActions (props: CategoryActionsProps) {
 }
 
 type InnerViewCategoryProps = {
-  category?: Category,
-  page?: number,
-  preview?: boolean,
-  history?: History
+  category?: Category;
+  page?: number;
+  preview?: boolean;
+  history?: History;
 };
 
 type ViewCategoryProps = InnerViewCategoryProps & {
-  id: CategoryId
+  id: CategoryId;
 };
 
 const ViewCategory = withForumCalls<ViewCategoryProps>(
@@ -162,7 +162,7 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
 
   const renderSubCategoriesAndThreads = () => <>
     {category.archived &&
-      <JoyWarn title={`This category is archived.`}>
+      <JoyWarn title={'This category is archived.'}>
         No new subcategories, threads and posts can be added to it.
       </JoyWarn>
     }
@@ -195,20 +195,20 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
     </h1>
 
     {category.deleted
-      ? <JoyWarn title={`This category is deleted`} />
+      ? <JoyWarn title={'This category is deleted'} />
       : renderSubCategoriesAndThreads()
     }
   </>);
 }
 
 type InnerCategoryThreadsProps = {
-  category: Category,
-  page: number,
-  history: History
+  category: Category;
+  page: number;
+  history: History;
 };
 
 type CategoryThreadsProps = ApiProps & InnerCategoryThreadsProps & {
-  nextThreadId?: ThreadId
+  nextThreadId?: ThreadId;
 };
 
 export const CategoryThreads = withMulti(
@@ -267,7 +267,7 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
     };
 
     loadThreads();
-  }, [ bnToStr(category.id), bnToStr(nextThreadId) ]);
+  }, [bnToStr(category.id), bnToStr(nextThreadId)]);
 
   // console.log({ nextThreadId: bnToStr(nextThreadId), loaded, threads });
 
@@ -318,13 +318,13 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
 }
 
 type ViewCategoryByIdProps = UrlHasIdProps & {
-  history: History,
+  history: History;
   match: {
     params: {
-      id: string
-      page?: string
-    }
-  }
+      id: string;
+      page?: string;
+    };
+  };
 };
 
 export function ViewCategoryById (props: ViewCategoryByIdProps) {
@@ -339,8 +339,8 @@ export function ViewCategoryById (props: ViewCategoryByIdProps) {
 }
 
 type CategoryListProps = ApiProps & {
-  nextCategoryId?: CategoryId,
-  parentId?: CategoryId
+  nextCategoryId?: CategoryId;
+  parentId?: CategoryId;
 };
 
 export const CategoryList = withMulti(
@@ -380,7 +380,7 @@ function InnerCategoryList (props: CategoryListProps) {
     };
 
     loadCategories();
-  }, [ bnToStr(parentId), bnToStr(nextCategoryId) ]);
+  }, [bnToStr(parentId), bnToStr(nextCategoryId)]);
 
   // console.log({ nextCategoryId: bnToStr(nextCategoryId), loaded, categories });
 
@@ -394,18 +394,18 @@ function InnerCategoryList (props: CategoryListProps) {
 
   return (
     <Table celled selectable compact>
-    <Table.Header>
-      <Table.Row>
-        <Table.HeaderCell>Category</Table.HeaderCell>
-        <Table.HeaderCell>Threads</Table.HeaderCell>
-        <Table.HeaderCell>Subcategories</Table.HeaderCell>
-        <Table.HeaderCell>Actions</Table.HeaderCell>
-        <Table.HeaderCell>Creator</Table.HeaderCell>
-      </Table.Row>
-    </Table.Header>
-    <Table.Body>{categories.map((category, i) => (
-      <InnerViewCategory key={i} preview category={category} />
-    ))}</Table.Body>
+      <Table.Header>
+        <Table.Row>
+          <Table.HeaderCell>Category</Table.HeaderCell>
+          <Table.HeaderCell>Threads</Table.HeaderCell>
+          <Table.HeaderCell>Subcategories</Table.HeaderCell>
+          <Table.HeaderCell>Actions</Table.HeaderCell>
+          <Table.HeaderCell>Creator</Table.HeaderCell>
+        </Table.Row>
+      </Table.Header>
+      <Table.Body>{categories.map((category, i) => (
+        <InnerViewCategory key={i} preview category={category} />
+      ))}</Table.Body>
     </Table>
   );
 }

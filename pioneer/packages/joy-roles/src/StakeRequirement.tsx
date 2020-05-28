@@ -1,4 +1,4 @@
-import React from 'react'
+import React from 'react';
 
 import { Balance } from '@polkadot/types/interfaces';
 import { formatBalance } from '@polkadot/util';
@@ -9,73 +9,71 @@ export enum StakeType {
 }
 
 export interface IStakeRequirement {
-  anyRequirement(): boolean
-  qualifier(): string | null
-  value: Balance
-  fixed(): boolean
-  atLeast(): boolean
-  describe(): any
+  anyRequirement(): boolean;
+  qualifier(): string | null;
+  value: Balance;
+  fixed(): boolean;
+  atLeast(): boolean;
+  describe(): any;
 }
 
 export abstract class StakeRequirement {
   hard: Balance
   type: StakeType
 
-  constructor(hard: Balance, stakeType: StakeType = StakeType.Fixed) {
-    this.hard = hard
-    this.type = stakeType
+  constructor (hard: Balance, stakeType: StakeType = StakeType.Fixed) {
+    this.hard = hard;
+    this.type = stakeType;
   }
 
-  anyRequirement(): boolean {
-    return !this.hard.isZero()
+  anyRequirement (): boolean {
+    return !this.hard.isZero();
   }
 
-  qualifier(): string | null {
+  qualifier (): string | null {
     if (this.type == StakeType.AtLeast) {
-      return "at least"
+      return 'at least';
     }
-    return null
+    return null;
   }
 
-  get value(): Balance {
-    return this.hard
+  get value (): Balance {
+    return this.hard;
   }
 
-  fixed(): boolean {
-    return this.type === StakeType.Fixed
+  fixed (): boolean {
+    return this.type === StakeType.Fixed;
   }
 
-  atLeast(): boolean {
-    return this.type === StakeType.AtLeast
+  atLeast (): boolean {
+    return this.type === StakeType.AtLeast;
   }
 }
 
 export class ApplicationStakeRequirement extends StakeRequirement implements IStakeRequirement {
-  describe(): any {
+  describe (): any {
     if (!this.anyRequirement()) {
-      return null
+      return null;
     }
 
     return (
       <p>
         You must stake {this.qualifier()} <strong>{formatBalance(this.hard)}</strong> to apply for this role. This stake will be returned to you when the hiring process is complete, whether or not you are hired, and will also be used to rank applications.
-            </p>
-    )
+      </p>
+    );
   }
 }
 
 export class RoleStakeRequirement extends StakeRequirement implements IStakeRequirement {
-  describe(): any {
+  describe (): any {
     if (!this.anyRequirement()) {
-      return null
+      return null;
     }
 
     return (
       <p>
         You must stake {this.qualifier()} <strong>{formatBalance(this.hard)}</strong> to be eligible for this role. You may lose this stake if you're hired and then dismised from this role. This stake will be returned if your application is unsuccessful, and will also be used to rank applications.
-            </p>
-    )
+      </p>
+    );
   }
 }
-
-

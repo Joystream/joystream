@@ -1,14 +1,14 @@
-import React, { useState } from "react";
-import { FormikProps } from "formik";
-import { Icon, Loader } from "semantic-ui-react";
-import Dropzone from "react-dropzone";
+import React, { useState } from 'react';
+import { FormikProps } from 'formik';
+import { Icon, Loader } from 'semantic-ui-react';
+import Dropzone from 'react-dropzone';
 
 enum Status {
-  Accepted = "accepted",
-  Rejected = "rejected",
-  Active = "active",
-  Parsing = "parsing",
-  Default = "default"
+  Accepted = 'accepted',
+  Rejected = 'rejected',
+  Active = 'active',
+  Parsing = 'parsing',
+  Default = 'default'
 }
 
 const determineStatus = (
@@ -30,14 +30,14 @@ const determineStatus = (
 const getStatusColor = (status: Status): string => {
   switch (status) {
     case Status.Accepted:
-      return "#00DBB0";
+      return '#00DBB0';
     case Status.Rejected:
-      return "#FF3861";
+      return '#FF3861';
     case Status.Active:
     case Status.Parsing:
-      return "#000000";
+      return '#000000';
     default:
-      return "#333333";
+      return '#333333';
   }
 };
 
@@ -45,27 +45,27 @@ const dropdownDivStyle = (status: Status): React.CSSProperties => {
   const mainColor = getStatusColor(status);
 
   return {
-    cursor: "pointer",
-    border: `1px solid ${mainColor + "30"}`,
-    borderRadius: "3px",
-    padding: "1.5em",
+    cursor: 'pointer',
+    border: `1px solid ${mainColor + '30'}`,
+    borderRadius: '3px',
+    padding: '1.5em',
     color: mainColor,
-    fontWeight: "bold",
-    transition: "color 0.5s, border-color 0.5s"
+    fontWeight: 'bold',
+    transition: 'color 0.5s, border-color 0.5s'
   };
 };
 
 const dropdownIconStyle = (): React.CSSProperties => {
   return {
-    marginRight: "0.5em",
+    marginRight: '0.5em',
     opacity: 0.5
   };
 };
 
 const innerSpanStyle = (): React.CSSProperties => {
   return {
-    display: "flex",
-    alignItems: "center"
+    display: 'flex',
+    alignItems: 'center'
   };
 };
 
@@ -79,12 +79,12 @@ const parseFile = async (file: any): Promise<string> => {
 type FileDropdownProps<FormValuesT> = {
   error: string | undefined;
   name: keyof FormValuesT & string;
-  setFieldValue: FormikProps<FormValuesT>["setFieldValue"];
+  setFieldValue: FormikProps<FormValuesT>['setFieldValue'];
   acceptedFormats: string | string[];
   defaultText: string;
 };
 
-export default function FileDropdown<ValuesT = {}>(props: FileDropdownProps<ValuesT>) {
+export default function FileDropdown<ValuesT = {}> (props: FileDropdownProps<ValuesT>) {
   const [parsing, setParsing] = useState(false);
   const { error, name, setFieldValue, acceptedFormats, defaultText } = props;
   return (
@@ -110,12 +110,12 @@ export default function FileDropdown<ValuesT = {}>(props: FileDropdownProps<Valu
                   <p>
                     {status === Status.Parsing && (
                       <>
-                        <Loader style={{ marginRight: "0.5em" }} size="small" inline active /> Uploading...
+                        <Loader style={{ marginRight: '0.5em' }} size="small" inline active /> Uploading...
                       </>
                     )}
                     {status === Status.Rejected && (
                       <>
-                        {error || "This is not a correct file!"}
+                        {error || 'This is not a correct file!'}
                         <br />
                       </>
                     )}

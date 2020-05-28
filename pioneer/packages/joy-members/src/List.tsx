@@ -17,9 +17,9 @@ const StyledPagination = styled(Pagination)`
 `;
 
 type Props = ApiProps & I18nProps & RouteComponentProps & {
-  firstMemberId: BN,
-  membersCreated: BN,
-  match: { params: { page?: string } }
+  firstMemberId: BN;
+  membersCreated: BN;
+  match: { params: { page?: string } };
 };
 
 type State = {};
@@ -27,15 +27,14 @@ type State = {};
 const MEMBERS_PER_PAGE = 20;
 
 class Component extends React.PureComponent<Props, State> {
-
   state: State = {};
 
   onPageChange = (e: React.MouseEvent, data: PaginationProps) => {
     const { history } = this.props;
-    history.push(`/members/list/${ data.activePage }`);
+    history.push(`/members/list/${data.activePage}`);
   }
 
-  renderPagination(currentPage:number, pagesCount: number) {
+  renderPagination (currentPage: number, pagesCount: number) {
     return (
       <StyledPagination
         pointing
@@ -49,7 +48,7 @@ class Component extends React.PureComponent<Props, State> {
         totalPages={ pagesCount }
         onPageChange={ this.onPageChange }
       />
-    )
+    );
   }
 
   render () {
@@ -64,7 +63,7 @@ class Component extends React.PureComponent<Props, State> {
     const currentPage = Math.min(parseInt(page || '1'), pagesCount);
 
     if (currentPage.toString() !== page) {
-      return <Redirect to={ `/members/list/${ currentPage }` } />;
+      return <Redirect to={ `/members/list/${currentPage}` } />;
     }
 
     const ids: MemberId[] = [];

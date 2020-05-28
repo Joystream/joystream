@@ -7,41 +7,41 @@ import { MusicTrackReaderPreview, MusicTrackReaderPreviewProps } from '../music/
 import NoContentYet from '../common/NoContentYet';
 
 type Props = {
-  channel: ChannelEntity,
-  albums?: MusicAlbumPreviewProps[],
-  tracks?: MusicTrackReaderPreviewProps[]
+  channel: ChannelEntity;
+  albums?: MusicAlbumPreviewProps[];
+  tracks?: MusicTrackReaderPreviewProps[];
 };
 
 function NoAlbums () {
-  return <NoContentYet>Channel has no music albums yet.</NoContentYet>
+  return <NoContentYet>Channel has no music albums yet.</NoContentYet>;
 }
 
 function NoTracks () {
-  return <NoContentYet>Channel has no music tracks yet.</NoContentYet>
+  return <NoContentYet>Channel has no music tracks yet.</NoContentYet>;
 }
 
 export function ViewMusicChannel (props: Props) {
   const { channel, albums = [], tracks = [] } = props;
-  
+
   const renderAlbumsSection = () => (
     !albums.length
       ? <NoAlbums />
-      : <Section title={`Music albums`}>
-          {albums.map(x => <MusicAlbumPreview {...x} />)}
-        </Section>
+      : <Section title={'Music albums'}>
+        {albums.map(x => <MusicAlbumPreview {...x} />)}
+      </Section>
   );
 
   const renderTracksSection = () => (
     !tracks.length
       ? <NoTracks />
-      : <Section title={`Music tracks`}>
-          {tracks.map(x => <MusicTrackReaderPreview {...x} />)}
-        </Section>
+      : <Section title={'Music tracks'}>
+        {tracks.map(x => <MusicTrackReaderPreview {...x} />)}
+      </Section>
   );
-  
+
   return <div className='JoyViewChannel'>
     <ChannelHeader channel={channel} />
     {renderAlbumsSection()}
     {renderTracksSection()}
-  </div>
+  </div>;
 }

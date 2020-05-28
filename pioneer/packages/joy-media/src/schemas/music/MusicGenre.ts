@@ -11,22 +11,22 @@ export const MusicGenreValidationSchema = Yup.object().shape({
 });
 
 export type MusicGenreFormValues = {
-  value: string
+  value: string;
 };
 
 export type MusicGenreType = {
-  classId: number
-  inClassSchemaIndexes: number[]
-  id: number
-  value: string
+  classId: number;
+  inClassSchemaIndexes: number[];
+  id: number;
+  value: string;
 };
 
 export class MusicGenreCodec extends EntityCodec<MusicGenreType> { }
 
-export function MusicGenreToFormValues(entity?: MusicGenreType): MusicGenreFormValues {
+export function MusicGenreToFormValues (entity?: MusicGenreType): MusicGenreFormValues {
   return {
     value: entity && entity.value || ''
-  }
+  };
 }
 
 export type MusicGenrePropId =
@@ -34,14 +34,14 @@ export type MusicGenrePropId =
   ;
 
 export type MusicGenreGenericProp = {
-  id: MusicGenrePropId,
-  type: string,
-  name: string,
-  description?: string,
-  required?: boolean,
-  maxItems?: number,
-  maxTextLength?: number,
-  classId?: any
+  id: MusicGenrePropId;
+  type: string;
+  name: string;
+  description?: string;
+  required?: boolean;
+  maxItems?: number;
+  maxTextLength?: number;
+  classId?: any;
 };
 
 type MusicGenreClassType = {
@@ -50,11 +50,11 @@ type MusicGenreClassType = {
 
 export const MusicGenreClass: MusicGenreClassType = {
   value: {
-    "id": "value",
-    "name": "Value",
-    "description": "Genres for music.",
-    "required": true,
-    "type": "Text",
-    "maxTextLength": 100
+    id: 'value',
+    name: 'Value',
+    description: 'Genres for music.',
+    required: true,
+    type: 'Text',
+    maxTextLength: 100
   }
 };

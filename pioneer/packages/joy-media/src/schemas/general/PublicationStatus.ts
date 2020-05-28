@@ -11,22 +11,22 @@ export const PublicationStatusValidationSchema = Yup.object().shape({
 });
 
 export type PublicationStatusFormValues = {
-  value: string
+  value: string;
 };
 
 export type PublicationStatusType = {
-  classId: number
-  inClassSchemaIndexes: number[]
-  id: number
-  value: string
+  classId: number;
+  inClassSchemaIndexes: number[];
+  id: number;
+  value: string;
 };
 
 export class PublicationStatusCodec extends EntityCodec<PublicationStatusType> { }
 
-export function PublicationStatusToFormValues(entity?: PublicationStatusType): PublicationStatusFormValues {
+export function PublicationStatusToFormValues (entity?: PublicationStatusType): PublicationStatusFormValues {
   return {
     value: entity && entity.value || ''
-  }
+  };
 }
 
 export type PublicationStatusPropId =
@@ -34,14 +34,14 @@ export type PublicationStatusPropId =
   ;
 
 export type PublicationStatusGenericProp = {
-  id: PublicationStatusPropId,
-  type: string,
-  name: string,
-  description?: string,
-  required?: boolean,
-  maxItems?: number,
-  maxTextLength?: number,
-  classId?: any
+  id: PublicationStatusPropId;
+  type: string;
+  name: string;
+  description?: string;
+  required?: boolean;
+  maxItems?: number;
+  maxTextLength?: number;
+  classId?: any;
 };
 
 type PublicationStatusClassType = {
@@ -50,11 +50,11 @@ type PublicationStatusClassType = {
 
 export const PublicationStatusClass: PublicationStatusClassType = {
   value: {
-    "id": "value",
-    "name": "Value",
-    "description": "The publication status of the content in the content directory.",
-    "required": true,
-    "type": "Text",
-    "maxTextLength": 50
+    id: 'value',
+    name: 'Value',
+    description: 'The publication status of the content in the content directory.',
+    required: true,
+    type: 'Text',
+    maxTextLength: 50
   }
 };

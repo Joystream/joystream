@@ -17,44 +17,43 @@ import { JoyInfo } from '@polkadot/joy-utils/JoyStatus';
 
 type Props = ApiProps & I18nProps & DiscoveryProviderProps & RequiredMediaPlayerProps;
 
-function newCancelSource(): CancelTokenSource {
-  return axios.CancelToken.source()
+function newCancelSource (): CancelTokenSource {
+  return axios.CancelToken.source();
 }
 
-function InnerComponent(props: Props) {
-  const { contentId, api, discoveryProvider } = props
+function InnerComponent (props: Props) {
+  const { contentId, api, discoveryProvider } = props;
 
-  const [ error, setError ] = useState<Error>()
-  const [ resolvedAssetUrl, setResolvedAssetUrl ] = useState<string>()
-  const [ contentType, setContentType ] = useState<string>()
-  const [ cancelSource, setCancelSource ] = useState<CancelTokenSource>(newCancelSource())
+  const [error, setError] = useState<Error>();
+  const [resolvedAssetUrl, setResolvedAssetUrl] = useState<string>();
+  const [contentType, setContentType] = useState<string>();
+  const [cancelSource, setCancelSource] = useState<CancelTokenSource>(newCancelSource());
 
   useEffect(() => {
-
-    resolveAsset()
+    resolveAsset();
 
     return () => {
-      cancelSource.cancel()
-    }
-  }, [ contentId.encode() ])
+      cancelSource.cancel();
+    };
+  }, [contentId.encode()]);
 
   const resolveAsset = async () => {
-    setError(undefined)
-    setCancelSource(newCancelSource())
+    setError(undefined);
+    setCancelSource(newCancelSource());
 
     const rids: DataObjectStorageRelationshipId[] = await api.query.dataObjectStorageRegistry.relationshipsByContentId(contentId) as any;
 
     const allRelationships: Option<DataObjectStorageRelationship>[] = await Promise.all(rids.map((id) => api.query.dataObjectStorageRegistry.relationships(id))) as any;
 
     let readyProviders = allRelationships.filter(r => r.isSome).map(r => r.unwrap())
-        .filter(r => r.ready)
-        .map(r => r.storage_provider);
+      .filter(r => r.ready)
+      .map(r => r.storage_provider);
 
     // runtime doesn't currently guarantee unique set
     readyProviders = _.uniqBy(readyProviders, provider => provider.toString());
 
     if (!readyProviders.length) {
-      setError(new Error('No Storage Providers found storing this content'))
+      setError(new Error('No Storage Providers found storing this content'));
       return;
     }
 
@@ -75,7 +74,7 @@ function InnerComponent(props: Props) {
       const provider = readyProviders.shift();
       if (!provider) continue;
 
-      let assetUrl: string | undefined
+      let assetUrl: string | undefined;
       try {
         assetUrl = await discoveryProvider.resolveAssetEndpoint(provider, contentId.encode(), cancelSource.token);
       } catch (err) {
@@ -90,8 +89,8 @@ function InnerComponent(props: Props) {
         console.log('Check URL of resolved asset:', assetUrl);
         const response = await axios.head(assetUrl, { cancelToken: cancelSource.token });
 
-        setContentType(response.headers['content-type'] || 'video/video')
-        setResolvedAssetUrl(assetUrl)
+        setContentType(response.headers['content-type'] || 'video/video');
+        setResolvedAssetUrl(assetUrl);
 
         return;
       } catch (err) {
@@ -109,11 +108,11 @@ function InnerComponent(props: Props) {
       }
     }
 
-    setError(new Error('Unable to reach any provider serving this content'))
-  }
+    setError(new Error('Unable to reach any provider serving this content'));
+  };
 
-  console.log('Content id:', contentId.encode())
-  console.log('Resolved asset URL:', resolvedAssetUrl)
+  console.log('Content id:', contentId.encode());
+  console.log('Resolved asset URL:', resolvedAssetUrl);
 
   if (error) {
     return (
@@ -126,15 +125,15 @@ function InnerComponent(props: Props) {
   }
 
   if (!resolvedAssetUrl) {
-    return <JoyInfo title={`Please wait...`}>Resolving media content.</JoyInfo>
+    return <JoyInfo title={'Please wait...'}>Resolving media content.</JoyInfo>;
   }
 
-  const playerProps = { ...props, contentType, resolvedAssetUrl }
-  return <MediaPlayerView {...playerProps} />
+  const playerProps = { ...props, contentType, resolvedAssetUrl };
+  return <MediaPlayerView {...playerProps} />;
 }
 
 export const MediaPlayerWithResolver = withMulti(
   InnerComponent,
   translate,
   withDiscoveryProvider
-)
+);

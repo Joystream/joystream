@@ -11,22 +11,22 @@ export const MusicThemeValidationSchema = Yup.object().shape({
 });
 
 export type MusicThemeFormValues = {
-  value: string
+  value: string;
 };
 
 export type MusicThemeType = {
-  classId: number
-  inClassSchemaIndexes: number[]
-  id: number
-  value: string
+  classId: number;
+  inClassSchemaIndexes: number[];
+  id: number;
+  value: string;
 };
 
 export class MusicThemeCodec extends EntityCodec<MusicThemeType> { }
 
-export function MusicThemeToFormValues(entity?: MusicThemeType): MusicThemeFormValues {
+export function MusicThemeToFormValues (entity?: MusicThemeType): MusicThemeFormValues {
   return {
     value: entity && entity.value || ''
-  }
+  };
 }
 
 export type MusicThemePropId =
@@ -34,14 +34,14 @@ export type MusicThemePropId =
   ;
 
 export type MusicThemeGenericProp = {
-  id: MusicThemePropId,
-  type: string,
-  name: string,
-  description?: string,
-  required?: boolean,
-  maxItems?: number,
-  maxTextLength?: number,
-  classId?: any
+  id: MusicThemePropId;
+  type: string;
+  name: string;
+  description?: string;
+  required?: boolean;
+  maxItems?: number;
+  maxTextLength?: number;
+  classId?: any;
 };
 
 type MusicThemeClassType = {
@@ -50,11 +50,11 @@ type MusicThemeClassType = {
 
 export const MusicThemeClass: MusicThemeClassType = {
   value: {
-    "id": "value",
-    "name": "Value",
-    "description": "Themes for music.",
-    "required": true,
-    "type": "Text",
-    "maxTextLength": 100
+    id: 'value',
+    name: 'Value',
+    description: 'Themes for music.',
+    required: true,
+    type: 'Text',
+    maxTextLength: 100
   }
 };

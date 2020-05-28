@@ -160,7 +160,7 @@ class Import extends TxComponent<Props, State> {
       status.message = t('account restored');
 
       InputAddress.setLastValue('account', address);
-      this.context.set(address)
+      this.context.set(address);
     } catch (error) {
       this.setState({ isPassValid: true });
 

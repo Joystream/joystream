@@ -14,7 +14,7 @@ import Summary from './Summary';
 
 interface Props extends BareProps, ComponentProps {}
 
-export default function Overview({
+export default function Overview ({
   allControllers,
   allStashes,
   recentlyOnline,
@@ -30,9 +30,9 @@ export default function Overview({
       setNext(
         isSubstrateV2
           ? // this is a V2 node currentValidators is a list of stashes
-            allStashes.filter((address): boolean => !validators.includes(address as any))
+          allStashes.filter((address): boolean => !validators.includes(address as any))
           : // this is a V1 node currentValidators is a list of controllers
-            allControllers.filter((address): boolean => !validators.includes(address as any))
+          allControllers.filter((address): boolean => !validators.includes(address as any))
       );
   }, [allControllers, allStashes, validators]);
 

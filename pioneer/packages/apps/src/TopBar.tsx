@@ -9,7 +9,7 @@ import './TopBar.css';
 
 type Props = I18nProps & {};
 
-function renderAddress(address: string) {
+function renderAddress (address: string) {
   const balance = <span className="label">Balance: </span>;
 
   return (
@@ -37,7 +37,7 @@ function renderAddress(address: string) {
 //   );
 // }
 
-function Component(_props: Props) {
+function Component (_props: Props) {
   const {
     state: { address }
   } = useMyAccount();

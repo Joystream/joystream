@@ -5,8 +5,8 @@ import { EditableMusicTrackPreviewProps, MusicTrackPreview } from './MusicTrackP
 import { MusicAlbumPreviewProps, MusicAlbumPreview } from './MusicAlbumPreview';
 
 export type TracksOfMyMusicAlbumProps = {
-  album: MusicAlbumPreviewProps,
-  tracks?: EditableMusicTrackPreviewProps[]
+  album: MusicAlbumPreviewProps;
+  tracks?: EditableMusicTrackPreviewProps[];
 };
 
 export function TracksOfMyMusicAlbum (props: TracksOfMyMusicAlbumProps) {
@@ -26,11 +26,11 @@ export function TracksOfMyMusicAlbum (props: TracksOfMyMusicAlbumProps) {
       : set.delete(trackIdx)
     ;
     setIdxsOfSelectedTracks(set);
-  }
+  };
 
   const selectedCount = idxsOfSelectedTracks.size;
 
-  const removeButtonText = <span>Remove <Pluralize count={selectedCount} singularText='track' /> from album</span>
+  const removeButtonText = <span>Remove <Pluralize count={selectedCount} singularText='track' /> from album</span>;
 
   return <>
     <MusicAlbumPreview {...album} tracksCount={tracksCount} />

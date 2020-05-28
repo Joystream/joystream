@@ -4,17 +4,17 @@ import { nonEmptyArr } from '@polkadot/joy-utils/index';
 const MY_VOTES = 'joy.myVotes';
 
 export type NewVote = {
-  voterId: string,
-  applicantId: string,
-  stake: string, // Actually this is a BN serialized to string.
-  salt: string,
-  hash: string
+  voterId: string;
+  applicantId: string;
+  stake: string; // Actually this is a BN serialized to string.
+  salt: string;
+  hash: string;
 };
 
 export type SavedVote = NewVote & {
-  isRevealed: boolean,
-  votedOnTime: number,
-  revealedOnTime?: number
+  isRevealed: boolean;
+  votedOnTime: number;
+  revealedOnTime?: number;
 };
 
 /** Get all votes that are stored in a local sotrage.  */

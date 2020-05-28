@@ -20,8 +20,8 @@ import { IfIAmForumSudo } from './ForumSudo';
 import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
 
 type ThreadTitleProps = {
-  thread: Thread,
-  className?: string
+  thread: Thread;
+  className?: string;
 };
 
 function ThreadTitle (props: ThreadTitleProps) {
@@ -37,15 +37,15 @@ function ThreadTitle (props: ThreadTitleProps) {
 }
 
 type InnerViewThreadProps = {
-  category: Category,
-  thread: Thread,
-  page?: number,
-  preview?: boolean,
-  history?: History
+  category: Category;
+  thread: Thread;
+  page?: number;
+  preview?: boolean;
+  history?: History;
 };
 
 type ViewThreadProps = ApiProps & InnerViewThreadProps & {
-  nextPostId?: ThreadId
+  nextPostId?: ThreadId;
 };
 
 export const ViewThread = withMulti(
@@ -129,8 +129,8 @@ function InnerViewThread (props: ViewThreadProps) {
       );
       const sortedPosts = orderBy(
         postsInThisThread,
-        [ x => x.nr_in_thread.toNumber() ],
-        [ 'asc' ]
+        [x => x.nr_in_thread.toNumber()],
+        ['asc']
       );
 
       setPosts(sortedPosts);
@@ -138,7 +138,7 @@ function InnerViewThread (props: ViewThreadProps) {
     };
 
     loadPosts();
-  }, [ bnToStr(thread.id), bnToStr(nextPostId) ]);
+  }, [bnToStr(thread.id), bnToStr(nextPostId)]);
 
   // console.log({ nextPostId: bnToStr(nextPostId), loaded, posts });
 
@@ -211,7 +211,7 @@ function InnerViewThread (props: ViewThreadProps) {
     if (!thread.moderation) return null;
 
     return <>
-      <JoyWarn title={`This thread is moderated. Rationale:`}>
+      <JoyWarn title={'This thread is moderated. Rationale:'}>
         <ReactMarkdown className='JoyMemo--full' source={thread.moderation.rationale} linkTarget='_blank' />
       </JoyWarn>
     </>;
@@ -224,7 +224,7 @@ function InnerViewThread (props: ViewThreadProps) {
       {renderActions()}
     </h1>
     {category.archived &&
-      <JoyWarn title={`This thread is in archived category.`}>
+      <JoyWarn title={'This thread is in archived category.'}>
         No new replies can be posted.
       </JoyWarn>
     }
@@ -239,13 +239,13 @@ function InnerViewThread (props: ViewThreadProps) {
 }
 
 type ViewThreadByIdProps = ApiProps & {
-  history: History,
+  history: History;
   match: {
     params: {
-      id: string
-      page?: string
-    }
-  }
+      id: string;
+      page?: string;
+    };
+  };
 };
 
 export const ViewThreadById = withApi(InnerViewThreadById);
@@ -288,7 +288,7 @@ function InnerViewThreadById (props: ViewThreadByIdProps) {
     };
 
     loadThreadAndCategory();
-  }, [ id, page ]);
+  }, [id, page]);
 
   // console.log({ threadId: id, page });
 

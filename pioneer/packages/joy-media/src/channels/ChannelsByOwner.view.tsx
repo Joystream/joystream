@@ -18,7 +18,7 @@ export const ChannelsByOwnerView = MediaView<Props>({
 });
 
 export const ChannelsByOwnerWithRouter = (props: Props & RouteComponentProps<any>) => {
-  const { match: { params: { account }}} = props;
+  const { match: { params: { account } } } = props;
 
   if (account) {
     try {
@@ -28,5 +28,5 @@ export const ChannelsByOwnerWithRouter = (props: Props & RouteComponentProps<any
     }
   }
 
-  return <JoyError title={`Invalid account address in URL`}>{account}</JoyError>
-}
+  return <JoyError title={'Invalid account address in URL'}>{account}</JoyError>;
+};

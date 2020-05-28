@@ -11,22 +11,22 @@ export const VideoCategoryValidationSchema = Yup.object().shape({
 });
 
 export type VideoCategoryFormValues = {
-  value: string
+  value: string;
 };
 
 export type VideoCategoryType = {
-  classId: number
-  inClassSchemaIndexes: number[]
-  id: number
-  value: string
+  classId: number;
+  inClassSchemaIndexes: number[];
+  id: number;
+  value: string;
 };
 
 export class VideoCategoryCodec extends EntityCodec<VideoCategoryType> { }
 
-export function VideoCategoryToFormValues(entity?: VideoCategoryType): VideoCategoryFormValues {
+export function VideoCategoryToFormValues (entity?: VideoCategoryType): VideoCategoryFormValues {
   return {
     value: entity && entity.value || ''
-  }
+  };
 }
 
 export type VideoCategoryPropId =
@@ -34,14 +34,14 @@ export type VideoCategoryPropId =
   ;
 
 export type VideoCategoryGenericProp = {
-  id: VideoCategoryPropId,
-  type: string,
-  name: string,
-  description?: string,
-  required?: boolean,
-  maxItems?: number,
-  maxTextLength?: number,
-  classId?: any
+  id: VideoCategoryPropId;
+  type: string;
+  name: string;
+  description?: string;
+  required?: boolean;
+  maxItems?: number;
+  maxTextLength?: number;
+  classId?: any;
 };
 
 type VideoCategoryClassType = {
@@ -50,11 +50,11 @@ type VideoCategoryClassType = {
 
 export const VideoCategoryClass: VideoCategoryClassType = {
   value: {
-    "id": "value",
-    "name": "Value",
-    "description": "Categories for videos.",
-    "type": "Text",
-    "required": true,
-    "maxTextLength": 255
+    id: 'value',
+    name: 'Value',
+    description: 'Categories for videos.',
+    type: 'Text',
+    required: true,
+    maxTextLength: 255
   }
 };

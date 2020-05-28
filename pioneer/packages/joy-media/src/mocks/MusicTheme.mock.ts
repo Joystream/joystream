@@ -187,6 +187,6 @@ const values = [
 ];
 
 export const AllMusicThemes: MusicThemeType[] =
-  values.map(value => ({ id: newEntityId(), value })) as unknown as MusicThemeType[] // A hack to fix TS compilation.
+  values.map(value => ({ id: newEntityId(), value })) as unknown as MusicThemeType[]; // A hack to fix TS compilation.
 
 export const MusicTheme = AllMusicThemes[0];

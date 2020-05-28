@@ -15,14 +15,14 @@ import Bare from './Bare';
 function onChange ({ onChange }: Props): (_: string) => void {
   return function (value: string): void {
     onChange && onChange({
-      isValid: value ? true : false,
+      isValid: !!value,
       value: new BN(value || 0)
     });
   };
 }
 
 export default function Amount (props: Props): React.ReactElement<Props> {
-  const { className, defaultValue: {value}, isDisabled, isError, label, onEnter, style, withLabel } = props;
+  const { className, defaultValue: { value }, isDisabled, isError, label, onEnter, style, withLabel } = props;
 
   const defaultValue = value ? value.toString() : '0';
 

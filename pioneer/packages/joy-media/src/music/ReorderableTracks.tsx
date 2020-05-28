@@ -12,9 +12,9 @@ const reorder = (list: OrderableItem[], startIndex: number, endIndex: number) =>
 };
 
 type Props = {
-  tracks: EditableMusicTrackPreviewProps[],
-  onRemove?: (track: EditableMusicTrackPreviewProps) => void,
-  noTracksView?: React.ReactElement
+  tracks: EditableMusicTrackPreviewProps[];
+  onRemove?: (track: EditableMusicTrackPreviewProps) => void;
+  noTracksView?: React.ReactElement;
 }
 
 type OrderableItem = EditableMusicTrackPreviewProps;
@@ -29,7 +29,6 @@ export const ReorderableTracks = (props: Props) => {
   }
 
   const onDragEnd = (result: DropResult) => {
-
     // Dropped outside the list
     if (!result.destination) {
       return;
@@ -42,7 +41,7 @@ export const ReorderableTracks = (props: Props) => {
     );
 
     setItems(reorderedItems);
-  }
+  };
 
   // Normally you would want to split things out into separate components.
   // But in this example everything is just done in one place for simplicity
@@ -64,7 +63,7 @@ export const ReorderableTracks = (props: Props) => {
                     {...provided.dragHandleProps}
                   >
                     <MusicTrackPreview
-                      key={index} 
+                      key={index}
                       {...item}
                       position={index + 1}
                       isDraggable={snapshot.isDragging}
@@ -85,4 +84,4 @@ export const ReorderableTracks = (props: Props) => {
       </Droppable>
     </DragDropContext>
   );
-}
+};

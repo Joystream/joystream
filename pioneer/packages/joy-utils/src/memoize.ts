@@ -1,21 +1,20 @@
-export function memoize() {
-  return (target: Object, propertyKey: string, descriptor: TypedPropertyDescriptor<any>) => {
-    descriptor.value = getNewFunction(descriptor.value)
-  }
+export function memoize () {
+  return (target: Record<string, any>, propertyKey: string, descriptor: TypedPropertyDescriptor<any>) => {
+    descriptor.value = getNewFunction(descriptor.value);
+  };
 }
 
 let counter = 0;
-function getNewFunction(originalMethod: () => void) {
+function getNewFunction (originalMethod: () => void) {
   const identifier = ++counter;
 
-  return function(this: any, ...args: any[]) {
+  return function (this: any, ...args: any[]) {
     const propValName = `__memoized_value_${identifier}`;
     const propMapName = `__memoized_map_${identifier}`;
 
     let returnedValue: any;
 
     if (args.length > 0) {
-
       if (!this.hasOwnProperty(propMapName)) {
         Object.defineProperty(this, propMapName, {
           configurable: false,
@@ -25,7 +24,7 @@ function getNewFunction(originalMethod: () => void) {
         });
       }
       const myMap: Map<any, any> = this[propMapName];
-      const hashKey = args[0]
+      const hashKey = args[0];
 
       if (myMap.has(hashKey)) {
         returnedValue = myMap.get(hashKey);
@@ -33,9 +32,7 @@ function getNewFunction(originalMethod: () => void) {
         returnedValue = originalMethod.apply(this, args as []);
         myMap.set(hashKey, returnedValue);
       }
-
     } else {
-
       if (this.hasOwnProperty(propValName)) {
         returnedValue = this[propValName];
       } else {

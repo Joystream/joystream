@@ -10,10 +10,10 @@ export const ThreadsPerPage = 10;
 export const RepliesPerPage = 10;
 
 type PaginationProps = {
-  currentPage?: number,
-  totalItems: number,
-  itemsPerPage?: number,
-  onPageChange: (activePage?: string | number) => void
+  currentPage?: number;
+  totalItems: number;
+  itemsPerPage?: number;
+  onPageChange: (activePage?: string | number) => void;
 };
 
 export const Pagination = (p: PaginationProps) => {
@@ -32,10 +32,10 @@ export const Pagination = (p: PaginationProps) => {
 };
 
 type CategoryCrumbsProps = {
-  categoryId?: CategoryId
-  category?: Category
-  threadId?: ThreadId
-  thread?: Thread
+  categoryId?: CategoryId;
+  category?: Category;
+  threadId?: ThreadId;
+  thread?: Thread;
 };
 
 const CategoryCrumb = withMulti(
@@ -108,7 +108,7 @@ export const CategoryCrumbs = (p: CategoryCrumbsProps) => {
 export type UrlHasIdProps = {
   match: {
     params: {
-      id: string
-    }
-  }
+      id: string;
+    };
+  };
 };

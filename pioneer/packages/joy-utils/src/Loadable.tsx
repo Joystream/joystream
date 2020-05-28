@@ -1,20 +1,18 @@
-import React from 'react'
+import React from 'react';
 
-export function Loadable<P extends {[index:string]: any}>(required: string[], f: (props: P) => React.ReactNode | void): (props: P) => any {
-	const loading = <div className="spinner"></div>
-  
+export function Loadable<P extends {[index: string]: any}> (required: string[], f: (props: P) => React.ReactNode | void): (props: P) => any {
+  const loading = <div className="spinner"></div>;
+
   return (props: P) => {
     if (!props) {
-      return loading
+      return loading;
     }
 
-    for (let requirement of required) {
+    for (const requirement of required) {
       if (!props.hasOwnProperty(requirement) || typeof props[requirement] === 'undefined') {
-        return loading
+        return loading;
       }
     }
-    return f(props)
-  }
+    return f(props);
+  };
 }
-
-

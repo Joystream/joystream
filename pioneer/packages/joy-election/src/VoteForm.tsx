@@ -17,9 +17,9 @@ import { hashVote } from './utils';
 import { queryToProp, ZERO, getUrlParam, nonEmptyStr } from '@polkadot/joy-utils/index';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import InputStake from '@polkadot/joy-utils/InputStake';
-import CandidatePreview from "./CandidatePreview";
+import CandidatePreview from './CandidatePreview';
 import { MyAccountProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
-import MembersDropdown from "@polkadot/joy-utils/MembersDropdown";
+import MembersDropdown from '@polkadot/joy-utils/MembersDropdown';
 import { saveVote, NewVote } from './myVotesStore';
 import { TxFailedCallback } from '@polkadot/react-components/Status/types';
 
@@ -30,27 +30,26 @@ function randomSalt () {
 
 // AppsProps is needed to get a location from the route.
 type Props = AppProps & ApiProps & I18nProps & MyAccountProps & {
-  applicantId?: string | null,
-  minVotingStake?: Balance,
-  applicants?: AccountId[],
-  location?: any,
+  applicantId?: string | null;
+  minVotingStake?: Balance;
+  applicants?: AccountId[];
+  location?: any;
 };
 
 type State = {
-  applicantId?: string | null,
-  stake?: BN,
-  salt?: string,
-  isStakeValid?: boolean,
-  isFormSubmitted: boolean
+  applicantId?: string | null;
+  stake?: BN;
+  salt?: string;
+  isStakeValid?: boolean;
+  isFormSubmitted: boolean;
 };
 
 class Component extends React.PureComponent<Props, State> {
-
   constructor (props: Props) {
     super(props);
 
     let { applicantId, location } = this.props;
-    applicantId = applicantId ? applicantId : getUrlParam(location, 'applicantId');
+    applicantId = applicantId || getUrlParam(location, 'applicantId');
 
     this.state = {
       applicantId,
@@ -78,90 +77,90 @@ class Component extends React.PureComponent<Props, State> {
       <>{isFormSubmitted
 
       // Summary of submitted vote:
-      ? <div>
-        <Message info>
+        ? <div>
+          <Message info>
           Your vote has been sent
-        </Message>
-        <Table celled selectable compact definition className='SealedVoteTable'>
-        <Table.Body>
-          <Table.Row>
-            <Table.Cell>Applicant</Table.Cell>
-            <Table.Cell>
-              { applicantId && <CandidatePreview accountId={applicantId}/> }
-            </Table.Cell>
-          </Table.Row>
-          <Table.Row>
-            <Table.Cell>Stake</Table.Cell>
-            <Table.Cell>{formatBalance(stake)}</Table.Cell>
-          </Table.Row>
-          <Table.Row>
-            <Table.Cell>Salt</Table.Cell>
-            <Table.Cell><code>{salt}</code></Table.Cell>
-          </Table.Row>
-          <Table.Row>
-            <Table.Cell>Hashed vote</Table.Cell>
-            <Table.Cell><code>{hashedVote}</code></Table.Cell>
-          </Table.Row>
-        </Table.Body>
-        </Table>
-        <Labelled style={{ marginTop: '.5rem' }}>
-          <Button
-            size='large'
-            label='Submit another vote'
-            onClick={this.resetForm}
-            icon=''
-          />
-        </Labelled>
-      </div>
+          </Message>
+          <Table celled selectable compact definition className='SealedVoteTable'>
+            <Table.Body>
+              <Table.Row>
+                <Table.Cell>Applicant</Table.Cell>
+                <Table.Cell>
+                  { applicantId && <CandidatePreview accountId={applicantId}/> }
+                </Table.Cell>
+              </Table.Row>
+              <Table.Row>
+                <Table.Cell>Stake</Table.Cell>
+                <Table.Cell>{formatBalance(stake)}</Table.Cell>
+              </Table.Row>
+              <Table.Row>
+                <Table.Cell>Salt</Table.Cell>
+                <Table.Cell><code>{salt}</code></Table.Cell>
+              </Table.Row>
+              <Table.Row>
+                <Table.Cell>Hashed vote</Table.Cell>
+                <Table.Cell><code>{hashedVote}</code></Table.Cell>
+              </Table.Row>
+            </Table.Body>
+          </Table>
+          <Labelled style={{ marginTop: '.5rem' }}>
+            <Button
+              size='large'
+              label='Submit another vote'
+              onClick={this.resetForm}
+              icon=''
+            />
+          </Labelled>
+        </div>
 
       // New vote form:
-      : <div>
-        <div className='ui--row'>
-          <MembersDropdown
-            onChange={ (event, data) => this.onChangeApplicant(data.value as string) }
-            accounts={this.props.applicants || []}
-            value={applicantId || ''}
-            placeholder="Select an applicant you support"
-          />
-        </div>
-        <InputStake
-          min={this.minStake()}
-          isValid={isStakeValid}
-          onChange={this.onChangeStake}
-        />
-        <div className='ui--row'>
-          <Input
-            className='large'
-            isDisabled={true}
-            label='Random salt:'
-            value={salt}
-            onChange={this.onChangeSalt}
-          />
-          <div className='medium' style={{ margin: '.5rem' }}>
-            <Button onClick={this.newRandomSalt} icon=''>Generate</Button>
-            <Message compact warning size='tiny' content='You need to remember this salt!' />
+        : <div>
+          <div className='ui--row'>
+            <MembersDropdown
+              onChange={ (event, data) => this.onChangeApplicant(data.value as string) }
+              accounts={this.props.applicants || []}
+              value={applicantId || ''}
+              placeholder="Select an applicant you support"
+            />
           </div>
-        </div>
-        <div className='ui--row'>
-          <Input
-            isDisabled={true}
-            label='Hashed vote:'
-            value={hashedVote}
+          <InputStake
+            min={this.minStake()}
+            isValid={isStakeValid}
+            onChange={this.onChangeStake}
           />
-        </div>
-        <Labelled style={{ marginTop: '.5rem' }}>
-          <TxButton
-            size='large'
-            isDisabled={!isFormValid}
-            label='Submit my vote'
-            params={[hashedVote, stake]}
-            tx='councilElection.vote'
-            txStartCb={this.onFormSubmitted}
-            txFailedCb={this.onTxFailed}
-            txSuccessCb={(txResult: SubmittableResult) => this.onTxSuccess(buildNewVote() as NewVote, txResult)}
-          />
-        </Labelled>
-      </div>}
+          <div className='ui--row'>
+            <Input
+              className='large'
+              isDisabled={true}
+              label='Random salt:'
+              value={salt}
+              onChange={this.onChangeSalt}
+            />
+            <div className='medium' style={{ margin: '.5rem' }}>
+              <Button onClick={this.newRandomSalt} icon=''>Generate</Button>
+              <Message compact warning size='tiny' content='You need to remember this salt!' />
+            </div>
+          </div>
+          <div className='ui--row'>
+            <Input
+              isDisabled={true}
+              label='Hashed vote:'
+              value={hashedVote}
+            />
+          </div>
+          <Labelled style={{ marginTop: '.5rem' }}>
+            <TxButton
+              size='large'
+              isDisabled={!isFormValid}
+              label='Submit my vote'
+              params={[hashedVote, stake]}
+              tx='councilElection.vote'
+              txStartCb={this.onFormSubmitted}
+              txFailedCb={this.onTxFailed}
+              txSuccessCb={(txResult: SubmittableResult) => this.onTxSuccess(buildNewVote() as NewVote, txResult)}
+            />
+          </Labelled>
+        </div>}
       </>
     );
   }

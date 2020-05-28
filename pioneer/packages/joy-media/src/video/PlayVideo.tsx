@@ -15,34 +15,34 @@ import { ContentId } from '@joystream/types/media';
 import { JoyError } from '@polkadot/joy-utils/JoyStatus';
 
 export type PlayVideoProps = {
-  channel?: ChannelEntity
-  mediaObject?: MediaObjectType
-  id: EntityId
-  video?: VideoType
-  moreChannelVideos?: VideoType[]
-  featuredVideos?: VideoType[]
+  channel?: ChannelEntity;
+  mediaObject?: MediaObjectType;
+  id: EntityId;
+  video?: VideoType;
+  moreChannelVideos?: VideoType[];
+  featuredVideos?: VideoType[];
 }
 
 type ListOfVideoPreviewProps = {
-  videos?: VideoType[]
+  videos?: VideoType[];
 }
 
-function VertialListOfVideoPreviews(props: ListOfVideoPreviewProps) {
-  const { videos = [] } = props
+function VertialListOfVideoPreviews (props: ListOfVideoPreviewProps) {
+  const { videos = [] } = props;
   return <>{videos.map((video) =>
     <VideoPreview key={`VideoPreview-${video.id}`} {...video} size='small' orientation='horizontal' withChannel />
-  )}</>
+  )}</>;
 }
 
 export function PlayVideo (props: PlayVideoProps) {
   const { channel, mediaObject, video, moreChannelVideos = [], featuredVideos = [] } = props;
 
   if (!mediaObject || !video) {
-    return <JoyError title={`Video was not found`} />
+    return <JoyError title={'Video was not found'} />;
   }
 
   if (!channel) {
-    return <JoyError title={`Channel was not found`} />
+    return <JoyError title={'Channel was not found'} />;
   }
 
   const metaField = (field: VideoGenericProp, value: React.ReactNode | string) => (
@@ -51,15 +51,15 @@ export function PlayVideo (props: PlayVideoProps) {
         <Table.Cell width={4}>{field.name}</Table.Cell>
         <Table.Cell>{value}</Table.Cell>
       </Table.Row>
-  )
+  );
 
   const printLinks = (links?: string[]) => {
     return (links || []).map((x, i) =>
       <div key={`EntityLink-${i}`}>
         <a href={encodeURI(x)} target='_blank' rel='nofollow'>{x}</a>
       </div>
-    )
-  }
+    );
+  };
 
   const metaTable = <>
     <h3>Video details</h3>
@@ -75,12 +75,12 @@ export function PlayVideo (props: PlayVideoProps) {
         {metaField(Fields.curationStatus, video.curationStatus?.value)}
       </Table.Body>
     </Table>
-  </>
+  </>;
 
   // TODO show video only to its owner, if the video is not public.
   // see isPublicVideo() function.
 
-  const contentId = ContentId.decode(mediaObject.value)
+  const contentId = ContentId.decode(mediaObject.value);
 
   // console.log('PlayVideo: props', props)
 

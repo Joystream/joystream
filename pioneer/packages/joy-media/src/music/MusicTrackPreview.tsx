@@ -4,19 +4,19 @@ import { Button, Checkbox, CheckboxProps } from 'semantic-ui-react';
 type OnCheckboxChange = (event: React.FormEvent<HTMLInputElement>, data: CheckboxProps) => void;
 
 export type EditableMusicTrackPreviewProps = {
-  id: string,
-  title: string,
-  artist: string,
-  thumbnail: string,
-  position?: number,
-  selected?: boolean,
-  onSelect?: OnCheckboxChange,
-  onEdit?: () => void,
-  onRemove?: () => void,
-  withEditButton?: boolean,
-  withRemoveButton?: boolean,
-  withActionLabels?: boolean
-  isDraggable?: boolean,
+  id: string;
+  title: string;
+  artist: string;
+  thumbnail: string;
+  position?: number;
+  selected?: boolean;
+  onSelect?: OnCheckboxChange;
+  onEdit?: () => void;
+  onRemove?: () => void;
+  withEditButton?: boolean;
+  withRemoveButton?: boolean;
+  withActionLabels?: boolean;
+  isDraggable?: boolean;
 };
 
 export function MusicTrackPreview (props: EditableMusicTrackPreviewProps) {
@@ -36,9 +36,9 @@ export function MusicTrackPreview (props: EditableMusicTrackPreviewProps) {
       console.log('Error during checkbox change:', err);
     }
     setChecked(d.checked || false);
-  }
+  };
 
-  return <div className={`JoyMusicTrackPreview ${checked && `SelectedItem`} ${props.isDraggable && `DraggableItem`}`}>
+  return <div className={`JoyMusicTrackPreview ${checked && 'SelectedItem'} ${props.isDraggable && 'DraggableItem'}`}>
     {props.onSelect && <div className='CheckboxCell'>
       <Checkbox checked={checked} onChange={onChange} />
     </div>}

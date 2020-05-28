@@ -132,7 +132,7 @@ export class Settings implements SettingsStruct {
     return UITHEMES;
   }
 
-  public get camera () :string {
+  public get camera (): string {
     return this._camera;
   }
 
@@ -150,7 +150,7 @@ export class Settings implements SettingsStruct {
       prefix: this._prefix,
       uiMode: this._uiMode,
       uiTheme: this._uiTheme,
-      camera: this._camera,
+      camera: this._camera
     };
   }
 

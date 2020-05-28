@@ -6,21 +6,20 @@ import MemoView from '@polkadot/joy-utils/memo/MemoView';
 import { RouteComponentProps } from 'react-router';
 
 type Props = RouteComponentProps & {
-  history: History,
+  history: History;
   match: {
     params: {
-      accountId?: string
-    }
-  }
+      accountId?: string;
+    };
+  };
 };
 
 type State = {
-  loaded: boolean,
-  accountInput?: string
+  loaded: boolean;
+  accountInput?: string;
 };
 
 export default class Component extends React.PureComponent<Props, State> {
-
   static getDerivedStateFromProps (props: Props, currentState: State): State | null {
     const { match: { params: { accountId } } } = props;
     const { loaded } = currentState;

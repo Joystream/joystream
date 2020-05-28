@@ -2,9 +2,53 @@ import BN from 'bn.js';
 import { Text, Option } from '@polkadot/types';
 import { OptionalText } from '@joystream/types/content-working-group';
 
+import keyring from '@polkadot/ui-keyring';
+
+// Joystream Stake utils
+// --------------------------------------
+
+import { Stake, Backer } from '@joystream/types/';
+
+// Substrate/Polkadot API utils
+// --------------------------------------
+
+import { Options as QueryOptions } from '@polkadot/react-api/with/types';
+
+import { APIQueryCache } from './APIQueryCache';
+
+// Parse URLs
+// --------------------------------------
+
+import queryString from 'query-string';
+
+// Business logic middleware
+// --------------------------------------
+import { MultipleLinkedMapEntry, SingleLinkedMapEntry } from './LinkedMapEntry';
+
+// Business logic middleware
+// --------------------------------------
+
+import { Controller } from './Controller';
+import { Loadable } from './Loadable';
+import { Observable } from './Observable';
+import { Observer, Subscribable, Subscription } from './Subscribable';
+import { Transport } from './Transport';
+import { View, ViewComponent, Params } from './View';
+
+// Memoization
+// --------------------------------------
+
+import { memoize } from './memoize';
+
+// Substrate events
+// --------------------------------------
+
+import { SubmittableResult } from '@polkadot/api';
+import { Codec } from '@polkadot/types/types';
+
 export const ZERO = new BN(0);
 
-export function bnToStr(bn?: BN, dflt: string = ''): string {
+export function bnToStr (bn?: BN, dflt = ''): string {
   return bn ? bn.toString() : dflt;
 }
 
@@ -50,9 +94,7 @@ export const nonEmptyArr = (x: any): boolean =>
 export const isEmptyArr = (x: any): boolean =>
   !nonEmptyArr(x);
 
-import keyring from '@polkadot/ui-keyring';
-
-export function findNameByAddress(address: string): string | undefined {
+export function findNameByAddress (address: string): string | undefined {
   let keyring_address;
   try {
     keyring_address = keyring.getAccount(address);
@@ -65,21 +107,16 @@ export function findNameByAddress(address: string): string | undefined {
   return keyring_address ? keyring_address.meta.name : undefined;
 }
 
-export function isKnownAddress(address: string): boolean {
+export function isKnownAddress (address: string): boolean {
   return isDefined(findNameByAddress(address));
 }
 
-export function newOptionalText(str?: string): OptionalText {
+export function newOptionalText (str?: string): OptionalText {
   const text = isEmptyStr(str) ? null : str;
   return new Option(Text, text);
 }
 
-// Joystream Stake utils
-// --------------------------------------
-
-import { Stake, Backer } from '@joystream/types/';
-
-export function calcTotalStake(stakes: Stake | Stake[] | undefined): BN {
+export function calcTotalStake (stakes: Stake | Stake[] | undefined): BN {
   if (typeof stakes === 'undefined') {
     return ZERO;
   }
@@ -98,23 +135,17 @@ export function calcTotalStake(stakes: Stake | Stake[] | undefined): BN {
   }
 }
 
-export function calcBackersStake(backers: Backer[]): BN {
+export function calcBackersStake (backers: Backer[]): BN {
   return backers.map(b => b.stake).reduce((accum, stake) => {
     return accum.add(stake);
   }, ZERO);
 }
 
-// Substrate/Polkadot API utils
-// --------------------------------------
-
-import { Options as QueryOptions } from '@polkadot/react-api/with/types';
-
 /** Example of apiQuery: 'query.councilElection.round' */
-export function queryToProp(
+export function queryToProp (
   apiQuery: string,
   paramNameOrOpts?: string | QueryOptions
 ): [string, QueryOptions] {
-
   let paramName: string | undefined;
   let propName: string | undefined;
 
@@ -132,34 +163,13 @@ export function queryToProp(
 
   return [apiQuery, { paramName, propName }];
 }
+export { APIQueryCache };
 
-import { APIQueryCache } from './APIQueryCache' 
-export { APIQueryCache }
-
-// Parse URLs
-// --------------------------------------
-
-import queryString from 'query-string';
-
-export function getUrlParam(location: Location, paramName: string, deflt: string | null = null): string | null {
+export function getUrlParam (location: Location, paramName: string, deflt: string | null = null): string | null {
   const params = queryString.parse(location.search);
   return params[paramName] ? params[paramName] as string : deflt;
 }
-
-// Business logic middleware
-// --------------------------------------
-import { MultipleLinkedMapEntry, SingleLinkedMapEntry } from './LinkedMapEntry'
-export { MultipleLinkedMapEntry, SingleLinkedMapEntry }
-
-// Business logic middleware
-// --------------------------------------
-
-import { Controller } from './Controller';
-import { Loadable } from './Loadable';
-import { Observable } from './Observable'
-import { Observer, Subscribable, Subscription } from './Subscribable'
-import { Transport } from './Transport';
-import { View, ViewComponent, Params } from './View';
+export { MultipleLinkedMapEntry, SingleLinkedMapEntry };
 
 export {
   Controller,
@@ -167,36 +177,25 @@ export {
   Observer, Observable,
   Subscribable, Subscription,
   Transport,
-  View, ViewComponent, Params,
+  View, ViewComponent, Params
 };
+export { memoize };
 
-// Memoization
-// --------------------------------------
-
-import { memoize } from "./memoize"
-export { memoize }
-
-// Substrate events
-// --------------------------------------
-
-import { SubmittableResult } from '@polkadot/api';
-import { Codec } from '@polkadot/types/types';
-
-export function filterSubstrateEventsAndExtractData(txResult: SubmittableResult, eventName: string): Codec[][] {
-  let res: Codec[][] = []
+export function filterSubstrateEventsAndExtractData (txResult: SubmittableResult, eventName: string): Codec[][] {
+  const res: Codec[][] = [];
   txResult.events.forEach((event) => {
-    const { event: { method, data } } = event
+    const { event: { method, data } } = event;
     if (method === eventName) {
-      res.push(data.toArray())
+      res.push(data.toArray());
     }
-  })
-  return res
+  });
+  return res;
 }
 
-export function findFirstParamOfSubstrateEvent<T extends Codec>(txResult: SubmittableResult, eventName: string): T | undefined {
-  const data = filterSubstrateEventsAndExtractData(txResult, eventName)
+export function findFirstParamOfSubstrateEvent<T extends Codec> (txResult: SubmittableResult, eventName: string): T | undefined {
+  const data = filterSubstrateEventsAndExtractData(txResult, eventName);
   if (data && data.length) {
-    return data[0][0] as T
+    return data[0][0] as T;
   }
-  return undefined
+  return undefined;
 }

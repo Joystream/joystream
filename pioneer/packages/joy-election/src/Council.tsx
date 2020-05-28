@@ -1,28 +1,28 @@
-import React from "react";
+import React from 'react';
 
-import { ApiProps } from "@polkadot/react-api/types";
-import { I18nProps } from "@polkadot/react-components/types";
-import { withCalls } from "@polkadot/react-api/with";
-import { Table } from "semantic-ui-react";
-import { formatBalance } from "@polkadot/util";
+import { ApiProps } from '@polkadot/react-api/types';
+import { I18nProps } from '@polkadot/react-components/types';
+import { withCalls } from '@polkadot/react-api/with';
+import { Table } from 'semantic-ui-react';
+import { formatBalance } from '@polkadot/util';
 import CouncilCandidate from './CandidatePreview';
 
-import { calcBackersStake } from "@polkadot/joy-utils/index";
-import { Seat } from "@joystream/types/";
-import translate from "./translate";
-import Section from "@polkadot/joy-utils/Section";
+import { calcBackersStake } from '@polkadot/joy-utils/index';
+import { Seat } from '@joystream/types/';
+import translate from './translate';
+import Section from '@polkadot/joy-utils/Section';
 
 type Props = ApiProps &
-  I18nProps & {
-    council?: Seat[];
-  };
+I18nProps & {
+  council?: Seat[];
+};
 
 type State = {};
 
 class Council extends React.PureComponent<Props, State> {
   state: State = {};
 
-  private renderTable(council: Seat[]) {
+  private renderTable (council: Seat[]) {
     return (
       <Table celled selectable compact>
         <Table.Header>
@@ -51,7 +51,7 @@ class Council extends React.PureComponent<Props, State> {
     );
   }
 
-  render() {
+  render () {
     const { council = [] } = this.props;
     // console.log({ council });
     return (
@@ -64,5 +64,5 @@ class Council extends React.PureComponent<Props, State> {
 
 // inject the actual API calls automatically into props
 export default translate(
-  withCalls<Props>(["query.council.activeCouncil", { propName: "council" }])(Council)
+  withCalls<Props>(['query.council.activeCouncil', { propName: 'council' }])(Council)
 );

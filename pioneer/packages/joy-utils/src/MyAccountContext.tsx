@@ -10,17 +10,16 @@ function readMyAddress (): string | undefined {
 }
 
 type MyAccountState = {
-  inited: boolean,
-  address?: string // TODO rename to 'myAddress'
+  inited: boolean;
+  address?: string; // TODO rename to 'myAddress'
 };
 
 type MyAccountAction = {
-  type: 'reload' | 'set' | 'forget' | 'forgetExact',
-  address?: string
+  type: 'reload' | 'set' | 'forget' | 'forgetExact';
+  address?: string;
 };
 
 function reducer (state: MyAccountState, action: MyAccountAction): MyAccountState {
-
   function forget () {
     console.log('Forget my address');
     store.remove(MY_ADDRESS);
@@ -30,7 +29,6 @@ function reducer (state: MyAccountState, action: MyAccountAction): MyAccountStat
   let address: string | undefined;
 
   switch (action.type) {
-
     case 'reload':
       address = readMyAddress();
       console.log('Reload my address:', address);
@@ -72,10 +70,10 @@ const initialState = {
 };
 
 export type MyAccountContextProps = {
-  state: MyAccountState,
-  dispatch: React.Dispatch<MyAccountAction>,
-  set: (address: string) => void,
-  forget: (address: string) => void
+  state: MyAccountState;
+  dispatch: React.Dispatch<MyAccountAction>;
+  set: (address: string) => void;
+  forget: (address: string) => void;
 };
 
 const contextStub: MyAccountContextProps = {

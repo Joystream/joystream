@@ -11,22 +11,22 @@ export const MusicMoodValidationSchema = Yup.object().shape({
 });
 
 export type MusicMoodFormValues = {
-  value: string
+  value: string;
 };
 
 export type MusicMoodType = {
-  classId: number
-  inClassSchemaIndexes: number[]
-  id: number
-  value: string
+  classId: number;
+  inClassSchemaIndexes: number[];
+  id: number;
+  value: string;
 };
 
 export class MusicMoodCodec extends EntityCodec<MusicMoodType> { }
 
-export function MusicMoodToFormValues(entity?: MusicMoodType): MusicMoodFormValues {
+export function MusicMoodToFormValues (entity?: MusicMoodType): MusicMoodFormValues {
   return {
     value: entity && entity.value || ''
-  }
+  };
 }
 
 export type MusicMoodPropId =
@@ -34,14 +34,14 @@ export type MusicMoodPropId =
   ;
 
 export type MusicMoodGenericProp = {
-  id: MusicMoodPropId,
-  type: string,
-  name: string,
-  description?: string,
-  required?: boolean,
-  maxItems?: number,
-  maxTextLength?: number,
-  classId?: any
+  id: MusicMoodPropId;
+  type: string;
+  name: string;
+  description?: string;
+  required?: boolean;
+  maxItems?: number;
+  maxTextLength?: number;
+  classId?: any;
 };
 
 type MusicMoodClassType = {
@@ -50,11 +50,11 @@ type MusicMoodClassType = {
 
 export const MusicMoodClass: MusicMoodClassType = {
   value: {
-    "id": "value",
-    "name": "Value",
-    "description": "Moods for music.",
-    "required": true,
-    "type": "Text",
-    "maxTextLength": 100
+    id: 'value',
+    name: 'Value',
+    description: 'Moods for music.',
+    required: true,
+    type: 'Text',
+    maxTextLength: 100
   }
 };
