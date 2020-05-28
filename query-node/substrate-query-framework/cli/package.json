@@ -76,5 +76,13 @@
   "types": "lib/index.d.ts",
   "resolutions": {
     "tslib": "1.11.2"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.ts": "yarn lint --fix"
   }
 }
