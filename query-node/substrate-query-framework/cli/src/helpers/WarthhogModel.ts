@@ -1,4 +1,3 @@
-import { isObjectType } from 'graphql';
 
 // Available types for model code generation
 export const availableTypes: { [key: string]: string } = {
@@ -22,18 +21,18 @@ export class WarthogModel {
         this._ftsQueries = [];
     }
 
-    addObjectType(type: ObjectType) {
+    addObjectType(type: ObjectType):void {
         this._types.push(type);
     }
 
-    addFTSQuery(query: FTSQuery) {
+    addFTSQuery(query: FTSQuery):void {
         if (!this._name2query[query.name]) {
             this._name2query[query.name] = query;
         }
         this._ftsQueries.push(query);
     }
 
-    addQueryField(name:string, f: Field) {
+    addQueryField(name:string, f: Field):void {
         let q: FTSQuery = this._name2query[name];
         if (!q) {
             q = {
@@ -104,8 +103,8 @@ export class Field {
 
     constructor(name: string, 
         type: string, 
-        nullable: boolean = true, 
-        isBuildinType: boolean = true, 
+        nullable = true, 
+        isBuildinType = true, 
         isList = false) {
         this.name = name;
         this.type = type;

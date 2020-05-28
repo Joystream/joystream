@@ -10,8 +10,9 @@ import { DatabaseModelCodeGenerator } from './ModelCodeGenerator';
 import { getTemplatePath, createFile, createDir } from '../utils/utils';
 import { WarthogModel } from './WarthhogModel';
 import { FTSQueryGenerator } from './FTSQueryGenerator';
+import Debug from "debug";
 
-const debug = require('debug')('qnode-cli:warthog-wrapper');
+const debug = Debug('qnode-cli:warthog-wrapper');
 
 export default class WarthogWrapper {
   private readonly command: Command;

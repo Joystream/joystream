@@ -1,7 +1,8 @@
 import { WarthogModel, FTSQuery, ObjectType, Field } from './WarthhogModel';
 import Mustache = require('mustache');
+import Debug from 'debug';
 
-const debug = require('debug')('qnode-cli:fts-query-generator');
+const debug = Debug('qnode-cli:model-generator');
 
 interface MustacheQuery {
     entity: {
