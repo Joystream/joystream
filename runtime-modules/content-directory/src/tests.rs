@@ -511,7 +511,7 @@
 //         });
 
 //         let new_properties = vec![Property {
-//             prop_type: PropertyType::Reference(new_class_id),
+//             property_type: PropertyType::Reference(new_class_id),
 //             required: true,
 //             name: b"entity".to_vec(),
 //             description: b"another entity of same class".to_vec(),
@@ -595,7 +595,7 @@
 //         });
 
 //         let new_properties = vec![Property {
-//             prop_type: PropertyType::ReferenceVec(10, new_class_id),
+//             property_type: PropertyType::ReferenceVec(10, new_class_id),
 //             required: true,
 //             name: b"entities".to_vec(),
 //             description: b"vector of entities of same class".to_vec(),

@@ -89,7 +89,7 @@ pub fn ensure_lead_auth_success<T: ActorAuthenticator>(
     Ok(())
 }
 
-/// Ensure given origin is lead
+/// Ensure given `Origin` is lead
 pub fn ensure_is_lead<T: ActorAuthenticator>(origin: T::Origin) -> dispatch::Result {
     let account_id = ensure_signed(origin)?;
     ensure_lead_auth_success::<T>(&account_id)
@@ -106,7 +106,7 @@ pub fn perform_curator_in_group_auth<T: Trait>(
     let curator_group = Module::<T>::ensure_curator_group_exists(curator_group_id)?;
 
     ensure!(curator_group.is_active(), ERROR_CURATOR_GROUP_IS_NOT_ACTIVE);
-    Module::<T>::ensure_curator_in_group_exists(&curator_group, curator_id)?;
+    CuratorGroup::<T>::ensure_curator_in_group_exists(&curator_group, curator_id)?;
     Ok(())
 }
 
@@ -135,30 +135,37 @@ impl<T: Trait> Default for CuratorGroup<T> {
 }
 
 impl<T: Trait> CuratorGroup<T> {
+    /// Check if `CuratorGroup` contains curator under given `curator_id`
     pub fn is_curator(&self, curator_id: &T::CuratorId) -> bool {
         self.curators.contains(curator_id)
     }
 
+    /// Check if `CuratorGroup` is active
     pub fn is_active(&self) -> bool {
         self.active
     }
 
+    /// Set `CuratorGroup` status as provided
     pub fn set_status(&mut self, is_active: bool) {
         self.active = is_active
     }
 
+    /// Retrieve set of all curator_ids related to `CuratorGroup` by reference
     pub fn get_curators(&self) -> &BTreeSet<T::CuratorId> {
         &self.curators
     }
 
+    /// Retrieve set of all curator_ids related to `CuratorGroup` by mutable  reference
     pub fn get_curators_mut(&mut self) -> &mut BTreeSet<T::CuratorId> {
         &mut self.curators
     }
 
+    /// Increment number of classes `CuratorGroup` maintains
     pub fn increment_classes_under_maintenance_count(&mut self) {
         self.classes_under_maintenance += 1;
     }
 
+    /// Decrement number of classes `CuratorGroup` maintains
     pub fn decrement_classes_under_maintenance_count(&mut self) {
         self.classes_under_maintenance -= 1;
     }
@@ -172,11 +179,20 @@ impl<T: Trait> CuratorGroup<T> {
         Ok(())
     }
 
-    /// Ensure max number of curators per group constraint satisfied
+    /// Ensure `MaxNumberOfCuratorsPerGroup` constraint satisfied
     pub fn ensure_max_number_of_curators_limit_not_reached(&self) -> dispatch::Result {
         ensure!(
             self.curators.len() < T::MaxNumberOfCuratorsPerGroup::get() as usize,
             ERROR_NUMBER_OF_CURATORS_PER_GROUP_LIMIT_REACHED
+        );
+        Ok(())
+    }
+
+    /// Ensure curator under given `curator_id` exists in `CuratorGroup`
+    pub fn ensure_curator_in_group_exists(&self, curator_id: &T::CuratorId) -> dispatch::Result {
+        ensure!(
+            self.get_curators().contains(curator_id),
+            ERROR_CURATOR_IS_NOT_A_MEMBER_OF_A_GIVEN_CURATOR_GROUP
         );
         Ok(())
     }
@@ -215,19 +231,22 @@ impl<T: Trait> EntityCreationVoucher<T> {
         self.maximum_entities_count = maximum_entities_count
     }
 
+    /// Increase `entities_created` by 1
     pub fn increment_created_entities_count(&mut self) {
         self.entities_created += T::EntityId::one();
     }
 
+    /// Decrease `entities_created` by 1
     pub fn decrement_created_entities_count(&mut self) {
         self.entities_created -= T::EntityId::one();
     }
 
+    /// Check if `entities_created` is less than `maximum_entities_count` limit set to this `EntityCreationVoucher`
     pub fn limit_not_reached(&self) -> bool {
         self.entities_created < self.maximum_entities_count
     }
 
-    /// Ensure new voucher`s max entities count is less than number of already created entities in given voucher
+    /// Ensure new voucher`s max entities count is less than number of already created entities in this `EntityCreationVoucher`
     pub fn ensure_new_max_entities_count_is_valid(
         self,
         maximum_entities_count: T::EntityId,
@@ -236,6 +255,12 @@ impl<T: Trait> EntityCreationVoucher<T> {
             maximum_entities_count >= self.entities_created,
             ERROR_NEW_ENTITIES_MAX_COUNT_IS_LESS_THAN_NUMBER_OF_ALREADY_CREATED
         );
+        Ok(())
+    }
+
+    /// Ensure voucher limit not reached
+    pub fn ensure_voucher_limit_not_reached(&self) -> dispatch::Result {
+        ensure!(self.limit_not_reached(), ERROR_VOUCHER_LIMIT_REACHED);
         Ok(())
     }
 }
@@ -290,14 +315,37 @@ impl<T: Trait> Default for ClassPermissions<T> {
 }
 
 impl<T: Trait> ClassPermissions<T> {
+    /// Retieve `all_entity_property_values_locked` status
     pub fn all_entity_property_values_locked(&self) -> bool {
         self.all_entity_property_values_locked
     }
 
+    /// Retieve `any_member` status
+    pub fn any_member_status(&self) -> bool {
+        self.any_member
+    }
+
+    /// Check if given `curator_group_id` is maintainer of current `Class`
+    pub fn is_maintainer(&self, curator_group_id: &T::CuratorGroupId) -> bool {
+        self.maintainers.contains(curator_group_id)
+    }
+
+    /// Get `Class` maintainers by reference
+    pub fn get_maintainers(&self) -> &BTreeSet<T::CuratorGroupId> {
+        &self.maintainers
+    }
+
+    /// Get `Class` maintainers by mutable reference
+    pub fn get_maintainers_mut(&mut self) -> &mut BTreeSet<T::CuratorGroupId> {
+        &mut self.maintainers
+    }
+
+    /// Set `entity_creation_blocked` flag, as provided
     pub fn set_entity_creation_blocked(&mut self, entity_creation_blocked: bool) {
         self.entity_creation_blocked = entity_creation_blocked
     }
 
+    /// Set `all_entity_property_values_locked` flag, as provided
     pub fn set_all_entity_property_values_locked(
         &mut self,
         all_entity_property_values_locked: bool,
@@ -305,54 +353,14 @@ impl<T: Trait> ClassPermissions<T> {
         self.all_entity_property_values_locked = all_entity_property_values_locked
     }
 
+    /// Set `any_member` flag, as provided
     pub fn set_any_member_status(&mut self, any_member: bool) {
         self.any_member = any_member;
     }
 
+    /// Update `maintainers` set with provided one
     pub fn set_maintainers(&mut self, maintainers: BTreeSet<T::CuratorGroupId>) {
         self.maintainers = maintainers
-    }
-
-    pub fn get_maintainers(&self) -> &BTreeSet<T::CuratorGroupId> {
-        &self.maintainers
-    }
-
-    pub fn get_maintainers_mut(&mut self) -> &mut BTreeSet<T::CuratorGroupId> {
-        &mut self.maintainers
-    }
-
-    pub fn get_any_member_status(&self) -> bool {
-        self.any_member
-    }
-
-    pub fn ensure_entity_creation_not_blocked(&self) -> dispatch::Result {
-        ensure!(self.entity_creation_blocked, ERROR_ENTITY_CREATION_BLOCKED);
-        Ok(())
-    }
-
-    /// Ensure maintainer, associated with given `group_id` is already added to `maintainers` set
-    pub fn ensure_maintainer_exists(&self, group_id: &T::CuratorGroupId) -> dispatch::Result {
-        ensure!(
-            self.maintainers.contains(group_id),
-            ERROR_MAINTAINER_DOES_NOT_EXIST
-        );
-        Ok(())
-    }
-
-    /// Ensure maintainer, associated with given `group_id` is not yet added to `maintainers` set
-    pub fn ensure_maintainer_does_not_exist(
-        &self,
-        group_id: &T::CuratorGroupId,
-    ) -> dispatch::Result {
-        ensure!(
-            !self.maintainers.contains(group_id),
-            ERROR_MAINTAINER_ALREADY_EXISTS
-        );
-        Ok(())
-    }
-
-    pub fn is_maintainer(&self, curator_group_id: &T::CuratorGroupId) -> bool {
-        self.maintainers.contains(curator_group_id)
     }
 
     /// Ensure provided actor can create entities of current `Class`
@@ -381,6 +389,33 @@ impl<T: Trait> ClassPermissions<T> {
         ensure!(can_create, ERROR_ACTOR_CAN_NOT_CREATE_ENTITIES);
         Ok(())
     }
+
+    /// Ensure entities creation is not blocked on `Class` level
+    pub fn ensure_entity_creation_not_blocked(&self) -> dispatch::Result {
+        ensure!(self.entity_creation_blocked, ERROR_ENTITY_CREATION_BLOCKED);
+        Ok(())
+    }
+
+    /// Ensure maintainer, associated with given `group_id` is already added to `maintainers` set
+    pub fn ensure_maintainer_exists(&self, group_id: &T::CuratorGroupId) -> dispatch::Result {
+        ensure!(
+            self.maintainers.contains(group_id),
+            ERROR_MAINTAINER_DOES_NOT_EXIST
+        );
+        Ok(())
+    }
+
+    /// Ensure maintainer, associated with given `group_id` is not yet added to `maintainers` set
+    pub fn ensure_maintainer_does_not_exist(
+        &self,
+        group_id: &T::CuratorGroupId,
+    ) -> dispatch::Result {
+        ensure!(
+            !self.maintainers.contains(group_id),
+            ERROR_MAINTAINER_ALREADY_EXISTS
+        );
+        Ok(())
+    }
 }
 
 /// Owner of an `Entity`.
@@ -393,6 +428,7 @@ pub enum EntityController<T: Trait> {
 }
 
 impl<T: Trait> EntityController<T> {
+    /// Create `EntityController` enum representation, using provided `Actor`
     pub fn from_actor(actor: &Actor<T>) -> Self {
         match &actor {
             Actor::Lead => Self::Lead,
@@ -436,6 +472,7 @@ impl<T: Trait> Default for EntityPermissions<T> {
 }
 
 impl<T: Trait> EntityPermissions<T> {
+    /// Create an instance of `EntityPermissions` with `EntityController` equal to provided one
     pub fn default_with_controller(controller: EntityController<T>) -> Self {
         Self {
             controller,
@@ -443,30 +480,37 @@ impl<T: Trait> EntityPermissions<T> {
         }
     }
 
+    /// Set current `controller` as provided
     pub fn set_conroller(&mut self, controller: EntityController<T>) {
         self.controller = controller
     }
 
+    /// Check if inner `controller` is equal to provided one
     pub fn controller_is_equal_to(&self, entity_controller: &EntityController<T>) -> bool {
         self.controller == *entity_controller
     }
 
+    /// Set `frozen` flag as provided
     pub fn set_frozen(&mut self, frozen: bool) {
         self.frozen = frozen
     }
 
+    /// Set `referenceable` flag as provided
     pub fn set_referencable(&mut self, referenceable: bool) {
         self.referenceable = referenceable;
     }
 
+    /// Retrieve `referenceable` flag
     pub fn is_referancable(&self) -> bool {
         self.referenceable
     }
 
+    /// Get current `controller` by reference
     pub fn get_controller(&self) -> &EntityController<T> {
         &self.controller
     }
 
+    /// Ensure actor with given `EntityAccessLevel` can remove entity
     pub fn ensure_group_can_remove_entity(access_level: EntityAccessLevel) -> dispatch::Result {
         match access_level {
             EntityAccessLevel::EntityController => Ok(()),

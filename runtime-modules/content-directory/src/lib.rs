@@ -31,6 +31,7 @@ pub use schema::*;
 
 type MaxNumber = u32;
 
+/// Type, respresenting inbound entities rc for each entity
 type ReferenceCounter = u32;
 
 pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
@@ -145,10 +146,10 @@ pub struct InputValidationLengthConstraint {
 
 /// Structure, representing `inbound_entity_rcs` & `inbound_same_owner_entity_rcs` mappings to their respective count for each referenced entity id
 pub struct EntitiesRc<T: Trait> {
-    // Entities, which inbound same owner rc should be changed
+    /// Entities, which inbound same owner rc should be changed
     pub inbound_entity_rcs: BTreeMap<T::EntityId, ReferenceCounter>,
 
-    // Entities, which rc should be changed (only includes entity ids, which are not in inbound_entity_rcs already)
+    /// Entities, which rc should be changed (only includes entity ids, which are not in inbound_entity_rcs already)
     pub inbound_same_owner_entity_rcs: BTreeMap<T::EntityId, ReferenceCounter>,
 }
 
@@ -175,6 +176,8 @@ impl<T: Trait> EntitiesRc<T> {
         }
     }
 
+    /// Traverse `inbound_entity_rcs` & `inbound_same_owner_entity_rcs`,
+    /// increasing each `Entity` respective reference counters
     fn increase_entity_rcs(self) {
         self.inbound_same_owner_entity_rcs
             .iter()
@@ -186,6 +189,8 @@ impl<T: Trait> EntitiesRc<T> {
         });
     }
 
+    /// Traverse `inbound_entity_rcs` & `inbound_same_owner_entity_rcs`,
+    /// decreasing each `Entity` respective reference counters
     fn decrease_entity_rcs(self) {
         self.inbound_same_owner_entity_rcs
             .iter()
@@ -324,7 +329,7 @@ impl<T: Trait> Class<T> {
         self.class_permissions
     }
 
-    /// Retrieve class properties by reference  
+    /// Retrieve `Class` properties by reference  
     fn get_properties_ref(&self) -> &[Property<T>] {
         &self.properties
     }
@@ -347,7 +352,7 @@ impl<T: Trait> Class<T> {
             .ok_or(ERROR_UNKNOWN_CLASS_SCHEMA_ID)
     }
 
-    /// Ensure schema_id is a valid index of `Class` schemas vector
+    /// Ensure `schema_id` is a valid index of `Class` schemas vector
     pub fn ensure_schema_id_exists(&self, schema_id: SchemaId) -> dispatch::Result {
         ensure!(
             schema_id < self.schemas.len() as SchemaId,
@@ -386,8 +391,42 @@ impl<T: Trait> Class<T> {
         );
         Ok(())
     }
+
+    /// Ensure `Property` under given `PropertyId` is unlocked from actor with given `EntityAccessLevel`
+    /// return corresponding `Property` by value
+    pub fn ensure_class_property_type_unlocked_from(
+        &self,
+        in_class_schema_property_id: PropertyId,
+        entity_access_level: EntityAccessLevel,
+    ) -> Result<Property<T>, &'static str> {
+        self.ensure_property_values_unlocked()?;
+
+        // Get class-level information about this `Property`
+        let class_property = self
+            .properties
+            .get(in_class_schema_property_id as usize)
+            // Throw an error if a property was not found on class
+            // by an in-class index of a property.
+            .ok_or(ERROR_CLASS_PROP_NOT_FOUND)?;
+
+        class_property.ensure_unlocked_from(entity_access_level)?;
+
+        Ok(class_property.to_owned())
+    }
+
+    /// Ensure property values were not locked on `Class` level
+    pub fn ensure_property_values_unlocked(&self) -> dispatch::Result {
+        ensure!(
+            !self
+                .get_permissions_ref()
+                .all_entity_property_values_locked(),
+            ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL
+        );
+        Ok(())
+    }
 }
 
+/// Represents `Entity`, related to a specific `Class`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct Entity<T: Trait> {
@@ -427,7 +466,7 @@ impl<T: Trait> Default for Entity<T> {
 }
 
 impl<T: Trait> Entity<T> {
-    /// Create new `Entity` instance with provided parameters, related to a given `Class`  
+    /// Create new `Entity` instance, related to a given `class_id` with provided parameters,  
     fn new(
         controller: EntityController<T>,
         class_id: T::ClassId,
@@ -464,6 +503,7 @@ impl<T: Trait> Entity<T> {
         self.entity_permissions
     }
 
+    /// Update existing `EntityPermissions` with newly provided
     pub fn update_permissions(&mut self, permissions: EntityPermissions<T>) {
         self.entity_permissions = permissions
     }
@@ -472,6 +512,39 @@ impl<T: Trait> Entity<T> {
     pub fn ensure_schema_id_is_not_added(&self, schema_id: SchemaId) -> dispatch::Result {
         let schema_not_added = !self.supported_schemas.contains(&schema_id);
         ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY);
+        Ok(())
+    }
+
+    /// Ensure PropertyValue under given `in_class_schema_property_id` is Vector
+    fn ensure_property_value_is_vec(
+        &self,
+        in_class_schema_property_id: PropertyId,
+    ) -> Result<&VecPropertyValue<T>, &'static str> {
+        self.values
+            .get(&in_class_schema_property_id)
+            // Throw an error if a property was not found on entity
+            // by an in-class index of a property.
+            .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?
+            .as_vec_property_value()
+            // Ensure prop value under given class schema property id is vector
+            .ok_or(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR)
+    }
+
+    /// Ensure any `PropertyValue` from external entity does not point to the given `Entity`
+    pub fn ensure_rc_is_zero(&self) -> dispatch::Result {
+        ensure!(
+            self.reference_count == 0,
+            ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO
+        );
+        Ok(())
+    }
+
+    /// Ensure any inbound `PropertyValue` points to the given `Entity`
+    pub fn ensure_inbound_same_owner_rc_is_zero(&self) -> dispatch::Result {
+        ensure!(
+            self.inbound_same_owner_references_from_other_entities_count == 0,
+            ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO
+        );
         Ok(())
     }
 }
@@ -625,7 +698,7 @@ decl_module! {
 
             let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
 
-            Self::ensure_curator_in_group_exists(&curator_group, &curator_id)?;
+            curator_group.ensure_curator_in_group_exists(&curator_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -723,6 +796,7 @@ decl_module! {
 
             Self::ensure_known_class_id(class_id)?;
 
+            // Check voucher existance
             let voucher_exists = if let Some(creation_voucher) = Self::entity_creation_vouchers(class_id, &controller) {
                 creation_voucher.ensure_new_max_entities_count_is_valid(maximum_entities_count)?;
                 true
@@ -758,6 +832,7 @@ decl_module! {
             Ok(())
         }
 
+        /// Create new `Class` with provided parameters
         pub fn create_class(
             origin,
             name: Vec<u8>,
@@ -785,6 +860,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            // Add new `Class` to runtime storage
             <ClassById<T>>::insert(&class_id, class);
 
             // Increment the next class id:
@@ -795,6 +871,7 @@ decl_module! {
             Ok(())
         }
 
+        /// Update `ClassPermissions` under specific `class_id`
         pub fn update_class_permissions(
             origin,
             class_id: T::ClassId,
@@ -879,16 +956,16 @@ decl_module! {
             // Used to ensure all property names are unique within class
             let mut unique_prop_names = BTreeSet::new();
 
-            for prop in class_properties.iter() {
-                unique_prop_names.insert(prop.name.to_owned());
+            for property in class_properties.iter() {
+                unique_prop_names.insert(property.name.to_owned());
             }
 
             // Complete all checks to ensure each property is valid
             for new_property in new_properties.iter() {
                 new_property.ensure_name_is_valid()?;
                 new_property.ensure_description_is_valid()?;
-                new_property.ensure_prop_type_size_is_valid()?;
-                new_property.ensure_prop_type_reference_is_valid()?;
+                new_property.ensure_property_type_size_is_valid()?;
+                new_property.ensure_property_type_reference_is_valid()?;
 
                 // Ensure name of a new property is unique within its class.
                 ensure!(
@@ -936,6 +1013,7 @@ decl_module! {
             Ok(())
         }
 
+        /// Update `schema_status` under specific `schema_id` in `Class`
         pub fn update_class_schema_status(
             origin,
             class_id: T::ClassId,
@@ -964,8 +1042,6 @@ decl_module! {
         }
 
         /// Update entity permissions.
-        ///
-
         pub fn update_entity_permissions(
             origin,
             entity_id: T::EntityId,
@@ -1010,26 +1086,29 @@ decl_module! {
             Ok(())
         }
 
+        /// Transfer ownership to new `EntityController` for `Entity` under given `entity_id`
+        /// If `Entity` has `PropertyValue` references with `SameOwner` flag activated, each `Entity` ownership
+        /// will be transfered to `new_controller`
         pub fn transfer_entity_ownership(
             origin,
             entity_id: T::EntityId,
             new_controller: EntityController<T>,
         ) -> dispatch::Result {
 
-            // Ensure given origin is lead
             ensure_is_lead::<T>(origin)?;
 
-            let (entity, class) = Self::get_entity_and_class(entity_id)?;
+            let (entity, class) = Self::ensure_entity_and_class(entity_id)?;
 
-            Self::ensure_inbound_same_owner_rc_is_zero(&entity)?;
+            entity.ensure_inbound_same_owner_rc_is_zero()?;
 
             //
             // == MUTATION SAFE ==
             //
 
+            // Set of all entities, which controller should be updated after ownership transfer performed
             let mut entities = BTreeSet::new();
 
-            // Insert current root entity_id
+            // Insert root entity_id into entities set
             entities.insert(entity_id);
 
             Self::retrieve_all_entities_to_perform_ownership_transfer(&class, entity, &mut entities);
@@ -1070,7 +1149,8 @@ decl_module! {
 
             let class_permissions = class.get_permissions_ref();
 
-            // Ensure actror can create entities
+            // Ensure actor can create entities
+
             class_permissions.ensure_entity_creation_not_blocked()?;
             class_permissions.ensure_can_create_entities(&account_id, &actor)?;
 
@@ -1130,6 +1210,7 @@ decl_module! {
             Ok(())
         }
 
+        /// Remove `Entity` under provided `entity_id`
         pub fn remove_entity(
             origin,
             actor: Actor<T>,
@@ -1140,7 +1221,7 @@ decl_module! {
 
             EntityPermissions::<T>::ensure_group_can_remove_entity(access_level)?;
 
-            Self::ensure_rc_is_zero(&entity)?;
+           entity.ensure_rc_is_zero()?;
 
             //
             // == MUTATION SAFE ==
@@ -1166,6 +1247,7 @@ decl_module! {
             Ok(())
         }
 
+        /// Add schema support to entity under given shema_id and provided `property_values`
         pub fn add_schema_support_to_entity(
             origin,
             actor: Actor<T>,
@@ -1212,6 +1294,7 @@ decl_module! {
 
             // Add schema support to `Entity` under given `entity_id`
             <EntityById<T>>::mutate(entity_id, |entity| {
+
                 // Add a new schema to the list of schemas supported by this entity.
                 entity.supported_schemas.insert(schema_id);
 
@@ -1228,6 +1311,7 @@ decl_module! {
             Ok(())
         }
 
+        /// Update `Entity` `PropertyValue`'s with provided ones
         pub fn update_entity_property_values(
             origin,
             actor: Actor<T>,
@@ -1237,9 +1321,9 @@ decl_module! {
 
             let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
-            Self::ensure_property_values_unlocked(&class)?;
+            class.ensure_property_values_unlocked()?;
 
-            // Get current property values of an entity as a mutable vector,
+            // Get current property values of an entity,
             // so we can update them if new values provided present in new_property_values.
             let mut updated_values = entity.values.clone();
             let mut updated = false;
@@ -1258,6 +1342,7 @@ decl_module! {
                 // by matching its id to the id of a property with an updated value.
                 let current_prop_value = updated_values
                     .get_mut(&id)
+
                     // Throw an error if a property was not found on entity
                     // by an in-class index of a property update.
                     .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?;
@@ -1271,18 +1356,16 @@ decl_module! {
 
                         class_property.ensure_unlocked_from(access_level)?;
 
-                        // Validate a new property value against the type of this property
-                        // and check any additional constraints
                         class_property.ensure_property_value_to_update_is_valid(
                             &new_value,
                             entity.get_permissions_ref().get_controller(),
                         )?;
 
-                        Self::update_involved_entities(
-                            &new_value, current_prop_value, class_property.prop_type.same_controller_status(), &mut entity_ids_to_increase_rcs, &mut entity_ids_to_decrease_rcs
+                        Self::fill_in_involved_entity_ids_rcs(
+                            &new_value, current_prop_value, class_property.property_type.same_controller_status(),
+                            &mut entity_ids_to_increase_rcs, &mut entity_ids_to_decrease_rcs
                         );
 
-                        // Update a current prop value
                         current_prop_value.update(new_value);
 
                         updated = true;
@@ -1290,12 +1373,12 @@ decl_module! {
                 }
             }
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             // If property values should be updated
             if updated {
-
-                //
-                // == MUTATION SAFE ==
-                //
 
                 <EntityById<T>>::mutate(entity_id, |entity| {
                     entity.values = updated_values;
@@ -1312,6 +1395,7 @@ decl_module! {
             Ok(())
         }
 
+        /// Clear `PropertyValueVec` under given `entity_id` & `in_class_schema_property_id`
         pub fn clear_entity_property_vector(
             origin,
             actor: Actor<T>,
@@ -1321,12 +1405,10 @@ decl_module! {
 
             let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
-
             let current_property_value_vec =
-            Self::ensure_property_value_vec(&entity, in_class_schema_property_id)?;
+                entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
 
-            let property = Self::ensure_class_property_type_unlocked_from(
-                &class,
+            let property = class.ensure_class_property_type_unlocked_from(
                 in_class_schema_property_id,
                 access_level,
             )?;
@@ -1349,7 +1431,10 @@ decl_module! {
 
                 if let Some(entity_ids_to_decrease_rcs) = entity_ids_to_decrease_rcs {
                     Self::count_entities(entity_ids_to_decrease_rcs).iter()
-                        .for_each(|(entity_id, rc)| Self::decrease_entity_rcs(entity_id, *rc, property.prop_type.same_controller_status()));
+                        .for_each(|(entity_id, rc)| Self::decrease_entity_rcs(
+                            entity_id, *rc, property.property_type.same_controller_status()
+                        )
+                    );
                 }
             });
 
@@ -1359,6 +1444,8 @@ decl_module! {
             Ok(())
         }
 
+        /// Remove value at given `index_in_property_vec`
+        /// from `PropertyValueVec` under in_class_schema_property_id
         pub fn remove_at_entity_property_vector(
             origin,
             actor: Actor<T>,
@@ -1371,10 +1458,9 @@ decl_module! {
             let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
             let current_property_value_vec =
-            Self::ensure_property_value_vec(&entity, in_class_schema_property_id)?;
+                entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
 
-            let property = Self::ensure_class_property_type_unlocked_from(
-                &class,
+            let property = class.ensure_class_property_type_unlocked_from(
                 in_class_schema_property_id,
                 access_level,
             )?;
@@ -1393,7 +1479,7 @@ decl_module! {
                 .get_involved_entities()
                 .map(|involved_entities| involved_entities[index_in_property_vec as usize]);
 
-            // Remove property value vector
+            // Remove value at in_class_schema_property_id in property value vector
             <EntityById<T>>::mutate(entity_id, |entity| {
                 if let Some(PropertyValue::Vector(current_prop_value)) =
                     entity.values.get_mut(&in_class_schema_property_id)
@@ -1410,12 +1496,14 @@ decl_module! {
             });
 
             if let Some(involved_entity_id) = involved_entity_id {
-                Self::decrease_entity_rcs(&involved_entity_id, 1, property.prop_type.same_controller_status());
+                Self::decrease_entity_rcs(&involved_entity_id, 1, property.property_type.same_controller_status());
             }
 
             Ok(())
         }
 
+        /// Insert `SinglePropertyValue` at given `index_in_property_vec`
+        /// into `PropertyValueVec` under in_class_schema_property_id
         pub fn insert_at_entity_property_vector(
             origin,
             actor: Actor<T>,
@@ -1428,10 +1516,10 @@ decl_module! {
 
             let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
-            let current_property_value_vec = Self::ensure_property_value_vec(&entity, in_class_schema_property_id)?;
+            let current_property_value_vec =
+                entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
 
-            let class_property = Self::ensure_class_property_type_unlocked_from(
-                &class,
+            let class_property = class.ensure_class_property_type_unlocked_from(
                 in_class_schema_property_id,
                 access_level,
             )?;
@@ -1449,11 +1537,11 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Insert property value into property value vector
+            // Insert SinglePropertyValue at in_class_schema_property_id into property value vector
             <EntityById<T>>::mutate(entity_id, |entity| {
                 let value = property_value.get_value();
                 if let Some(entity_rc_to_increment) = value.get_involved_entity() {
-                    Self::increase_entity_rcs(&entity_rc_to_increment, 1, class_property.prop_type.same_controller_status());
+                    Self::increase_entity_rcs(&entity_rc_to_increment, 1, class_property.property_type.same_controller_status());
                 }
                 if let Some(PropertyValue::Vector(current_prop_value)) =
                     entity.values.get_mut(&in_class_schema_property_id)
@@ -1474,8 +1562,8 @@ decl_module! {
 
         pub fn transaction(origin, actor: Actor<T>, operations: Vec<OperationType<T>>) -> dispatch::Result {
             Self::ensure_number_of_operations_during_atomic_batching_limit_not_reached(&operations)?;
-            // This map holds the T::EntityId of the entity created as a result of executing a `CreateEntity` `Operation`
-            // keyed by the index of the operation, in the operations vector.
+
+            // This Vec holds the T::EntityId of the entity created as a result of executing a `CreateEntity` `Operation`
             let mut entity_created_in_operation = vec![];
             let raw_origin = origin.into().map_err(|_| ERROR_ORIGIN_CANNOT_BE_MADE_INTO_RAW_ORIGIN)?;
 
@@ -1520,6 +1608,8 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    /// Increases corresponding `Entity` references count by rc.
+    /// Depends on `same_owner` flag provided
     fn increase_entity_rcs(entity_id: &T::EntityId, rc: u32, same_owner: bool) {
         <EntityById<T>>::mutate(entity_id, |entity| {
             if same_owner {
@@ -1531,6 +1621,8 @@ impl<T: Trait> Module<T> {
         })
     }
 
+    /// Decreases corresponding `Entity` references count by rc.
+    /// Depends on `same_owner` flag provided
     fn decrease_entity_rcs(entity_id: &T::EntityId, rc: u32, same_owner: bool) {
         <EntityById<T>>::mutate(entity_id, |entity| {
             if same_owner {
@@ -1542,7 +1634,7 @@ impl<T: Trait> Module<T> {
         })
     }
 
-    /// Returns the stored class if exist, error otherwise.
+    /// Returns the stored `Class` if exist, error otherwise.
     fn ensure_class_exists(class_id: T::ClassId) -> Result<Class<T>, &'static str> {
         ensure!(<ClassById<T>>::exists(class_id), ERROR_CLASS_NOT_FOUND);
         Ok(Self::class_by_id(class_id))
@@ -1568,7 +1660,7 @@ impl<T: Trait> Module<T> {
             if let Some(entity_rcs_to_increment) = new_value.get_involved_entities() {
                 entity_ids_to_increase_rcs.fill_in_entity_rcs(
                     entity_rcs_to_increment,
-                    class_property.prop_type.same_controller_status(),
+                    class_property.property_type.same_controller_status(),
                 );
             }
 
@@ -1583,14 +1675,16 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn update_involved_entities(
+    /// Fill in `entity_ids_to_increase_rcs` & `entity_ids_to_decrease_rcs`,
+    /// based on entities involved into update process
+    pub fn fill_in_involved_entity_ids_rcs(
         new_value: &PropertyValue<T>,
-        current_prop_value: &mut PropertyValue<T>,
+        current_prop_value: &PropertyValue<T>,
         same_controller: bool,
         entity_ids_to_increase_rcs: &mut EntitiesRc<T>,
         entity_ids_to_decrease_rcs: &mut EntitiesRc<T>,
     ) {
-        // Get unique entity ids to update rc
+        // Retrieve unique entity ids to update rc
         if let (Some(entities_rc_to_increment_vec), Some(entities_rc_to_decrement_vec)) = (
             new_value.get_involved_entities(),
             current_prop_value.get_involved_entities(),
@@ -1601,6 +1695,7 @@ impl<T: Trait> Module<T> {
             ) = entities_rc_to_decrement_vec
                 .into_iter()
                 .zip(entities_rc_to_increment_vec.into_iter())
+                // Do not count entity_ids, that should be incremented and decremented simultaneously
                 .filter(|(entity_rc_to_decrement, entity_rc_to_increment)| {
                     entity_rc_to_decrement != entity_rc_to_increment
                 })
@@ -1612,21 +1707,6 @@ impl<T: Trait> Module<T> {
             entity_ids_to_decrease_rcs
                 .fill_in_entity_rcs(entities_rc_to_decrement_vec, same_controller);
         }
-    }
-
-    fn ensure_property_value_vec(
-        entity: &Entity<T>,
-        in_class_schema_property_id: PropertyId,
-    ) -> Result<&VecPropertyValue<T>, &'static str> {
-        entity
-            .values
-            .get(&in_class_schema_property_id)
-            // Throw an error if a property was not found on entity
-            // by an in-class index of a property.
-            .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?
-            .as_vec_property_value()
-            // Ensure prop value under given class schema property id is vector
-            .ok_or(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR)
     }
 
     /// Returns class and entity under given id, if exists, and correspnding `origin` `EntityAccessLevel`, if permitted
@@ -1650,27 +1730,36 @@ impl<T: Trait> Module<T> {
         Ok((class, entity, access_level))
     }
 
-    pub fn get_entity_and_class(
+    /// Ensure `Entity` under given `entity_id` exists, retrieve corresponding `Entity` & `Class`
+    pub fn ensure_entity_and_class(
         entity_id: T::EntityId,
     ) -> Result<(Entity<T>, Class<T>), &'static str> {
         let entity = Self::ensure_known_entity_id(entity_id)?;
+
         let class = ClassById::get(entity.class_id);
         Ok((entity, class))
     }
 
-    /// Retrieve all entity ids, depending on current entity (the tree of referenced entities with `SameOwner` flag set)
+    /// Retrieve all `entity_id`'s, depending on current `Entity` (the tree of referenced entities with `SameOwner` flag set)
     pub fn retrieve_all_entities_to_perform_ownership_transfer(
         class: &Class<T>,
         entity: Entity<T>,
         entities: &mut BTreeSet<T::EntityId>,
     ) {
         for (id, value) in entity.values.iter() {
+            // Check, that property_type of class_property under given index is reference with `SameOwner` flag set
             match class.properties.get(*id as usize) {
-                Some(class_property) if class_property.prop_type.same_controller_status() => {
+                Some(class_property) if class_property.property_type.same_controller_status() => {
                     // Always safe
-                    let class_id = class_property.prop_type.get_referenced_class_id().unwrap();
+                    let class_id = class_property
+                        .property_type
+                        .get_referenced_class_id()
+                        .unwrap();
+
+                    // If property class_id is not equal to current one, retrieve corresponding Class from runtime storage
                     if class_id != entity.class_id {
                         let new_class = Self::class_by_id(class_id);
+
                         Self::get_all_same_owner_entities(&new_class, value, entities)
                     } else {
                         Self::get_all_same_owner_entities(&class, value, entities)
@@ -1702,26 +1791,6 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    pub fn ensure_class_property_type_unlocked_from(
-        class: &Class<T>,
-        in_class_schema_property_id: PropertyId,
-        entity_access_level: EntityAccessLevel,
-    ) -> Result<Property<T>, &'static str> {
-        Self::ensure_property_values_unlocked(class)?;
-
-        // Get class-level information about this `Property`
-        let class_property = class
-            .properties
-            .get(in_class_schema_property_id as usize)
-            // Throw an error if a property was not found on class
-            // by an in-class index of a property.
-            .ok_or(ERROR_CLASS_PROP_NOT_FOUND)?;
-
-        class_property.ensure_unlocked_from(entity_access_level)?;
-
-        Ok(class_property.to_owned())
-    }
-
     /// Ensure `Class` under given id exists, return corresponding one
     pub fn ensure_known_class_id(class_id: T::ClassId) -> Result<Class<T>, &'static str> {
         ensure!(<ClassById<T>>::exists(class_id), ERROR_CLASS_NOT_FOUND);
@@ -1732,35 +1801,6 @@ impl<T: Trait> Module<T> {
     pub fn ensure_known_entity_id(entity_id: T::EntityId) -> Result<Entity<T>, &'static str> {
         ensure!(<EntityById<T>>::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
         Ok(Self::entity_by_id(entity_id))
-    }
-
-    /// Ensure property values were not locked on `Class` level
-    pub fn ensure_property_values_unlocked(class: &Class<T>) -> dispatch::Result {
-        ensure!(
-            !class
-                .get_permissions_ref()
-                .all_entity_property_values_locked(),
-            ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL
-        );
-        Ok(())
-    }
-
-    /// Ensure any property value from external entity does not point to the given `Entity`
-    pub fn ensure_rc_is_zero(entity: &Entity<T>) -> dispatch::Result {
-        ensure!(
-            entity.reference_count == 0,
-            ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO
-        );
-        Ok(())
-    }
-
-    /// Ensure there is no property values pointing to the given `Entity`
-    pub fn ensure_inbound_same_owner_rc_is_zero(entity: &Entity<T>) -> dispatch::Result {
-        ensure!(
-            entity.inbound_same_owner_references_from_other_entities_count == 0,
-            ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO
-        );
-        Ok(())
     }
 
     /// Ensure `CuratorGroup` under given id exists
@@ -1780,18 +1820,6 @@ impl<T: Trait> Module<T> {
     ) -> Result<CuratorGroup<T>, &'static str> {
         Self::ensure_curator_group_under_given_id_exists(curator_group_id)?;
         Ok(Self::curator_group_by_id(curator_group_id))
-    }
-
-    /// Ensure curator under given `curator_id` exists in `CuratorGroup`
-    pub fn ensure_curator_in_group_exists(
-        curator_group: &CuratorGroup<T>,
-        curator_id: &T::CuratorId,
-    ) -> dispatch::Result {
-        ensure!(
-            curator_group.get_curators().contains(curator_id),
-            ERROR_CURATOR_IS_NOT_A_MEMBER_OF_A_GIVEN_CURATOR_GROUP
-        );
-        Ok(())
     }
 
     /// Ensure voucher limit not reached
@@ -1823,6 +1851,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    /// Perform security checks to ensure provided `ClassPermissions` are valid
     pub fn ensure_class_permissions_are_valid(
         class_permissions: &ClassPermissions<T>,
     ) -> dispatch::Result {
@@ -1831,7 +1860,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Ensure new schema is not empty
+    /// Ensure new `Schema` is not empty
     pub fn ensure_non_empty_schema(
         existing_properties: &BTreeSet<PropertyId>,
         new_properties: &[Property<T>],
@@ -1841,6 +1870,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    /// Ensure `ClassNameLengthConstraint` conditions satisfied
     pub fn ensure_class_name_is_valid(text: &[u8]) -> dispatch::Result {
         T::ClassNameLengthConstraint::get().ensure_valid(
             text.len(),
@@ -1849,6 +1879,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
+    /// Ensure `ClassDescriptionLengthConstraint` conditions satisfied
     pub fn ensure_class_description_is_valid(text: &[u8]) -> dispatch::Result {
         T::ClassDescriptionLengthConstraint::get().ensure_valid(
             text.len(),
@@ -1857,6 +1888,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
+    /// Ensure `MaxNumberOfClasses` constraint satisfied
     pub fn ensure_class_limit_not_reached() -> dispatch::Result {
         ensure!(
             T::MaxNumberOfClasses::get() < <ClassById<T>>::enumerate().count() as MaxNumber,

@@ -76,7 +76,8 @@ impl<T: Trait> VecPropertyType<T> {
         }
     }
 
-    fn ensure_prop_type_size_is_valid(&self) -> dispatch::Result {
+    /// Ensure `Type` spcific `TextMaxLengthConstraint` & `VecMaxLengthConstraint` satisfied
+    fn ensure_property_type_size_is_valid(&self) -> dispatch::Result {
         if let Type::Text(text_max_len) = self.vec_type {
             ensure!(
                 text_max_len <= T::TextMaxLengthConstraint::get(),
@@ -111,7 +112,8 @@ impl<T: Trait> Default for SingleValuePropertyType<T> {
 }
 
 impl<T: Trait> SingleValuePropertyType<T> {
-    fn ensure_prop_type_size_is_valid(&self) -> dispatch::Result {
+    /// Ensure `Type` specific `TextMaxLengthConstraint` satisfied
+    fn ensure_property_type_size_is_valid(&self) -> dispatch::Result {
         if let Type::Text(text_max_len) = self.0 {
             ensure!(
                 text_max_len <= T::TextMaxLengthConstraint::get(),
@@ -168,6 +170,8 @@ impl<T: Trait> PropertyType<T> {
         }
     }
 
+    /// Retrives same_controller.
+    /// Always returns false if `Type` is not a reference,
     pub fn same_controller_status(&self) -> SameController {
         if let Type::Reference(_, same_controller) = self.get_inner_type() {
             *same_controller
@@ -207,6 +211,7 @@ impl<T: Trait> Default for Value<T> {
 }
 
 impl<T: Trait> Value<T> {
+    /// Retrieve involved `entity_id`, if current `Value` is reference
     pub fn get_involved_entity(&self) -> Option<T::EntityId> {
         if let Value::Reference(entity_id) = self {
             Some(*entity_id)
@@ -267,6 +272,7 @@ impl<T: Trait> Default for VecValue<T> {
 }
 
 impl<T: Trait> VecValue<T> {
+    /// Retrieve all involved `entity_id`'s, if current `VecValue` is reference
     pub fn get_involved_entities(&self) -> Option<Vec<T::EntityId>> {
         if let Self::Reference(entity_ids) = self {
             Some(entity_ids.to_owned())
@@ -294,6 +300,7 @@ impl<T: Trait> VecPropertyValue<T> {
         Self { vec_value, nonce }
     }
 
+    /// Retrieve `VecValue` by reference
     pub fn get_vec_value(&self) -> &VecValue<T> {
         &self.vec_value
     }
@@ -312,6 +319,7 @@ impl<T: Trait> VecPropertyValue<T> {
         }
     }
 
+    /// Clear current `vec_value`, increment `nonce`
     pub fn vec_clear(&mut self) {
         match &mut self.vec_value {
             VecValue::Bool(vec) => *vec = vec![],
@@ -328,6 +336,7 @@ impl<T: Trait> VecPropertyValue<T> {
         self.increment_nonce();
     }
 
+    /// Perform removal at given `index_in_property_vec`, increment `nonce`
     pub fn vec_remove_at(&mut self, index_in_property_vec: VecMaxLength) {
         fn remove_at_checked<T>(vec: &mut Vec<T>, index_in_property_vec: VecMaxLength) {
             if (index_in_property_vec as usize) < vec.len() {
@@ -350,6 +359,7 @@ impl<T: Trait> VecPropertyValue<T> {
         self.increment_nonce();
     }
 
+    /// Insert provided `Value` at given `index_in_property_vec`, increment `nonce`
     pub fn vec_insert_at(&mut self, index_in_property_vec: VecMaxLength, single_value: Value<T>) {
         fn insert_at<T>(vec: &mut Vec<T>, index_in_property_vec: VecMaxLength, value: T) {
             if (index_in_property_vec as usize) < vec.len() {
@@ -393,8 +403,8 @@ impl<T: Trait> VecPropertyValue<T> {
         self.increment_nonce();
     }
 
-    // Ensure property value vector nonces equality to avoid possible data races,
-    // when performing vector specific operations
+    /// Ensure `VecPropertyValue` nonce is equal to provided one.
+    /// Used to to avoid possible data races, when performing vector specific operations
     pub fn ensure_nonce_equality(&self, new_nonce: T::Nonce) -> dispatch::Result {
         ensure!(
             self.nonce == new_nonce,
@@ -403,6 +413,7 @@ impl<T: Trait> VecPropertyValue<T> {
         Ok(())
     }
 
+    /// Ensure, provided index is valid index of `VecValue`
     pub fn ensure_index_in_property_vector_is_valid(
         &self,
         index_in_property_vec: VecMaxLength,
@@ -449,6 +460,7 @@ impl<T: Trait> PropertyValue<T> {
         }
     }
 
+    /// Update `Self` with provided `PropertyValue`
     pub fn update(&mut self, mut new_value: Self) {
         if let (Some(vec_property_value), Some(new_vec_property_value)) = (
             self.as_vec_property_value_mut(),
@@ -459,6 +471,7 @@ impl<T: Trait> PropertyValue<T> {
         *self = new_value;
     }
 
+    /// Retrieve all involved `entity_id`'s, if current `PropertyValue` is reference
     pub fn get_involved_entities(&self) -> Option<Vec<T::EntityId>> {
         match self {
             PropertyValue::Single(single_property_value) => {
@@ -512,6 +525,7 @@ impl Schema {
         }
     }
 
+    /// If `Schema` can be added to an entity
     pub fn is_active(&self) -> bool {
         self.is_active
     }
@@ -522,7 +536,7 @@ impl Schema {
         Ok(())
     }
 
-    /// Ensure schema properties are valid indices of `Class` properties
+    /// Ensure `Schema` properties are valid indices of `Class` properties
     pub fn ensure_schema_properties_are_valid_indices<T: Trait>(
         &self,
         class_properties: &[Property<T>],
@@ -538,14 +552,17 @@ impl Schema {
         Ok(())
     }
 
+    /// Get `Schema` `properties` by reference
     pub fn get_properties(&self) -> &BTreeSet<PropertyId> {
         &self.properties
     }
 
+    /// Get `Schema` `properties` by mutable reference
     pub fn get_properties_mut(&mut self) -> &mut BTreeSet<PropertyId> {
         &mut self.properties
     }
 
+    /// Set `Schema`'s `is_active` flag as provided
     pub fn set_status(&mut self, is_active: bool) {
         self.is_active = is_active;
     }
@@ -555,7 +572,7 @@ impl Schema {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Property<T: Trait> {
-    pub prop_type: PropertyType<T>,
+    pub property_type: PropertyType<T>,
     /// If property value can be skipped, when adding entity schema support
     pub required: bool,
     /// Used to enforce uniquness of a property across all entities that have this property
@@ -604,7 +621,7 @@ impl<T: Trait> Property<T> {
         Ok(())
     }
 
-    /// Validate a new property value against the type of this property
+    /// Validate new `PropertyValue` against the type of this property
     /// and check any additional constraints
     pub fn ensure_property_value_to_update_is_valid(
         &self,
@@ -640,17 +657,17 @@ impl<T: Trait> Property<T> {
             Ok(())
         }
 
-        let prop_type_vec = self
-            .prop_type
+        let property_type_vec = self
+            .property_type
             .as_vec_type()
             .ok_or(ERROR_PROP_VALUE_TYPE_DOESNT_MATCH_INTERNAL_ENTITY_VECTOR_TYPE)?;
 
-        let max_vec_len = prop_type_vec.get_max_len();
+        let max_vec_len = property_type_vec.get_max_len();
 
         match (
             single_value.get_value_ref(),
             vec_value.get_vec_value(),
-            prop_type_vec.get_vec_type(),
+            property_type_vec.get_vec_type(),
         ) {
             // Single values
             (Value::Bool(_), VecValue::Bool(vec), Type::Bool) => {
@@ -699,7 +716,7 @@ impl<T: Trait> Property<T> {
         let single_value = value
             .as_single_property_value()
             .map(|single_prop_value| single_prop_value.get_value_ref());
-        match (single_value, &self.prop_type.as_single_value_type()) {
+        match (single_value, &self.property_type.as_single_value_type()) {
             (Some(Value::Text(text)), Some(Type::Text(max_len))) => {
                 Self::validate_max_len_of_text(text, *max_len)
             }
@@ -722,7 +739,7 @@ impl<T: Trait> Property<T> {
             value
                 .as_vec_property_value()
                 .map(|vec_property_value| vec_property_value.get_vec_value()),
-            self.prop_type.as_vec_type(),
+            self.property_type.as_vec_type(),
         ) {
             (vec_value, vec_property_type)
         } else {
@@ -763,7 +780,7 @@ impl<T: Trait> Property<T> {
         if !self.required && *value == PropertyValue::default() {
             return true;
         }
-        match (value, &self.prop_type) {
+        match (value, &self.property_type) {
             (
                 PropertyValue::Single(single_property_value),
                 PropertyType::Single(ref single_property_type),
@@ -813,7 +830,7 @@ impl<T: Trait> Property<T> {
         value: &PropertyValue<T>,
         current_entity_controller: &EntityController<T>,
     ) -> dispatch::Result {
-        match (value, &self.prop_type) {
+        match (value, &self.property_type) {
             (
                 PropertyValue::Single(single_property_value),
                 PropertyType::Single(single_property_type),
@@ -889,6 +906,7 @@ impl<T: Trait> Property<T> {
         Ok(())
     }
 
+    /// Ensure `PropertyNameLengthConstraint` satisfied
     pub fn ensure_name_is_valid(&self) -> dispatch::Result {
         T::PropertyNameLengthConstraint::get().ensure_valid(
             self.name.len(),
@@ -897,6 +915,7 @@ impl<T: Trait> Property<T> {
         )
     }
 
+    /// Ensure `PropertyDescriptionLengthConstraint` satisfied
     pub fn ensure_description_is_valid(&self) -> dispatch::Result {
         T::PropertyDescriptionLengthConstraint::get().ensure_valid(
             self.description.len(),
@@ -905,20 +924,22 @@ impl<T: Trait> Property<T> {
         )
     }
 
-    pub fn ensure_prop_type_size_is_valid(&self) -> dispatch::Result {
-        match &self.prop_type {
+    /// Ensure `Type` specific constraints satisfied
+    pub fn ensure_property_type_size_is_valid(&self) -> dispatch::Result {
+        match &self.property_type {
             PropertyType::Single(single_property_type) => {
-                single_property_type.ensure_prop_type_size_is_valid()
+                single_property_type.ensure_property_type_size_is_valid()
             }
             PropertyType::Vector(vec_property_type) => {
-                vec_property_type.ensure_prop_type_size_is_valid()
+                vec_property_type.ensure_property_type_size_is_valid()
             }
         }
     }
 
-    pub fn ensure_prop_type_reference_is_valid(&self) -> dispatch::Result {
+    /// If `Type::Reference`, ensure refers to existing `class_id`
+    pub fn ensure_property_type_reference_is_valid(&self) -> dispatch::Result {
         let has_unknown_reference =
-            if let Type::Reference(other_class_id, _) = self.prop_type.get_inner_type() {
+            if let Type::Reference(other_class_id, _) = self.property_type.get_inner_type() {
                 !<ClassById<T>>::exists(other_class_id)
             } else {
                 false
