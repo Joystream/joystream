@@ -1,0 +1,37 @@
+name: Pioneer-PR
+on: [pull_request]
+
+jobs:
+  pioneer_build_code:
+    name: Pioneer Build Code
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [12.x]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: build
+      run: |
+        yarn install --frozen-lockfile
+        yarn workspace pioneer run build:code
+
+  pioneer_build_i18n:
+    name: Pioneer Build i18n
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [12.x]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: build
+      run: |
+        yarn install --frozen-lockfile
+        yarn workspace pioneer run build:i18n
