@@ -26,8 +26,8 @@ yarn*
 # Compiled WASM code
 *.wasm
 
-# Chain specificaiton
-chainspec.json
+# Temporary files
+.tmp/
 
 # Istanbul report output
 **.nyc_output/
