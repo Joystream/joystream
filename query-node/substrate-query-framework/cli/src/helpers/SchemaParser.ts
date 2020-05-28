@@ -1,6 +1,5 @@
 import {
   parse,
-  visit,
   buildASTSchema,
   GraphQLSchema,
   validateSchema,
@@ -32,7 +31,7 @@ export class GraphQLSchemaParser {
     if (!fs.existsSync(schemaPath)) {
         throw new Error('Schema not found');
     }
-    let contents = fs.readFileSync(schemaPath, 'utf8');
+    const contents = fs.readFileSync(schemaPath, 'utf8');
     this.schema = GraphQLSchemaParser.buildSchema(contents);
     this._objectTypeDefinations = GraphQLSchemaParser.createObjectTypeDefinations(this.schema);
   }
@@ -41,8 +40,7 @@ export class GraphQLSchemaParser {
    * Read GrapqhQL schema and build a schema from it
    */
   static buildSchema(contents: string): GraphQLSchema {
-    let schema = SCHEMA_DEFINITIONS_PREAMBLE.concat(contents);
-    let schema = SCHEMA_DEFINITIONS_PREAMBLE.concat(contents);
+    const schema = SCHEMA_DEFINITIONS_PREAMBLE.concat(contents);
     const ast = parse(schema);
     // in order to build AST with undeclared directive, we need to 
     // switch off SDL validation
@@ -69,12 +67,13 @@ export class GraphQLSchemaParser {
   static createObjectTypeDefinations(schema: GraphQLSchema): ObjectTypeDefinitionNode[] {
     return [
       ...Object.values(schema.getTypeMap())
+        // eslint-disable-next-line @typescript-eslint/prefer-regexp-exec
         .filter(t => !t.name.match(/^__/) && !t.name.match(/Query/)) // skip the top-level Query type
         .sort((a, b) => (a.name > b.name ? 1 : -1))
         .map(t => t.astNode)
     ]
       .filter(Boolean) // Remove undefineds and nulls
-      .filter(typeDefinationNode => typeDefinationNode!.kind === 'ObjectTypeDefinition') as ObjectTypeDefinitionNode[];
+      .filter(typeDefinationNode => typeDefinationNode?.kind === 'ObjectTypeDefinition') as ObjectTypeDefinitionNode[];
   }
 
   /**
