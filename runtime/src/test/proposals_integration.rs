@@ -6,13 +6,13 @@ use crate::{BlockNumber, ElectionParameters, ProposalCancellationFee, Runtime};
 use codec::Encode;
 use governance::election::CouncilElected;
 use membership;
-use membership::role_types::Role;
 use proposals_engine::{
     ActiveStake, ApprovedProposalStatus, BalanceOf, Error, FinalizationData, Proposal,
     ProposalDecisionStatus, ProposalParameters, ProposalStatus, VoteKind, VotersParameters,
     VotingResults,
 };
 use roles::actors::RoleParameters;
+use roles::Role;
 
 use sr_primitives::traits::{DispatchResult, OnFinalize, OnInitialize};
 use sr_primitives::AccountId32;

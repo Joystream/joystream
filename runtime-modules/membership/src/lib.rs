@@ -7,7 +7,6 @@
 
 pub mod genesis;
 pub(crate) mod mock;
-pub mod role_types;
 mod tests;
 
 use codec::{Codec, Decode, Encode};
@@ -19,8 +18,6 @@ use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Para
 use system::{self, ensure_root, ensure_signed};
 
 use common::currency::{BalanceOf, GovernanceCurrency};
-
-pub use role_types::*;
 
 pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;

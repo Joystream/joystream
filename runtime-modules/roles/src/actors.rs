@@ -15,7 +15,7 @@ use system::{self, ensure_root, ensure_signed};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-pub use membership::Role;
+pub use crate::Role;
 
 const STAKING_ID: LockIdentifier = *b"role_stk";
 
