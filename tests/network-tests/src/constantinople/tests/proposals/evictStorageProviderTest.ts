@@ -20,7 +20,7 @@ const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
 const K: number = +process.env.COUNCIL_ELECTION_K!;
 const greaterStake: BN = new BN(+process.env.COUNCIL_STAKE_GREATER_AMOUNT!);
 const lesserStake: BN = new BN(+process.env.COUNCIL_STAKE_LESSER_AMOUNT!);
-const durationInBlocks: number = 29;
+const durationInBlocks: number = 32;
 
 setTimeout(nodeUrl, durationInBlocks);
 membershipTest(m1KeyPairs, keyring, N, paidTerms, nodeUrl, sudoUri);
