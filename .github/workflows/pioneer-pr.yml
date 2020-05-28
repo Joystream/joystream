@@ -1,5 +1,5 @@
 name: Pioneer-PR
-on: [pull_request]
+on: [pull_request, push]
 
 jobs:
   pioneer_build_code:
