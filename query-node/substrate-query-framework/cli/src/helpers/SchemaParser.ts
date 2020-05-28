@@ -7,6 +7,10 @@ import {
   FieldDefinitionNode
 } from 'graphql';
 import * as fs from 'fs-extra';
+import Debug from "debug";
+
+const debug = Debug('qnode-cli:schema-parser');
+
 
 // this preamble is added to the schema 
 // in order to pass the SDL validation
@@ -52,6 +56,7 @@ export class GraphQLSchemaParser {
       // There are errors
       let errorMsg = `Schema is not valid. Please fix the following errors: \n`;
       errors.forEach(e => errorMsg += `\t ${e.name}: ${e.message}\n`);
+      debug(errorMsg);
       throw new Error(errorMsg);
     }
 
