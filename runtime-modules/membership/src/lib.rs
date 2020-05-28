@@ -105,7 +105,7 @@ pub struct Membership<
     /// Short text chosen by member to share information about themselves
     pub about: Vec<u8>,
 
-    /// Blocknumber when member was registered
+    /// Block number when member was registered
     pub registered_at_block: BlockNumber,
 
     /// Timestamp when member was registered
@@ -114,10 +114,10 @@ pub struct Membership<
     /// How the member was registered
     pub entry: EntryMethod<PaidTermId, AccountId>,
 
-    /// Wether the member is suspended or not.
+    /// Whether the member is suspended or not.
     pub suspended: bool,
 
-    /// The type of subsction the member has purchased if any.
+    /// The type of subscription the member has purchased if any.
     pub subscription: Option<SubscriptionId>,
 
     /// Member's root account id. Only the root account is permitted to set a new root account
