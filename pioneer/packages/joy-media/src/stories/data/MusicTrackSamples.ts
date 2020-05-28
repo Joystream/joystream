@@ -55,8 +55,8 @@ export const Album2TrackSamples = trackNames
   }));
 
 export const AllMusicTrackSamples =
-	Album1TrackSamples
-	  .concat(Album2TrackSamples);
+  Album1TrackSamples
+    .concat(Album2TrackSamples);
 
 export const AlbumWithTracksProps: TracksOfMyMusicAlbumProps = {
   album: MusicAlbumSample,

@@ -36,7 +36,7 @@ export const ContentCurators = Loadable<WorkingGroupMembership>(
           <Link to="/working-groups/opportunities">
             <Button icon labelPosition="right" color="green" positive>
               Find out more
-			  <Icon name={'right arrow' as SemanticICONS} />
+              <Icon name={'right arrow' as SemanticICONS} />
             </Button>
           </Link>
         </Message>

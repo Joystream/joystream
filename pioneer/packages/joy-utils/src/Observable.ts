@@ -12,7 +12,7 @@ export abstract class Observable<S extends { [key: string ]: any }, T> implement
 
   public subscribe (observer: Observer<S>): IUnsubscribable<S> {
     this.observers.push(observer);
-	  return this;
+    return this;
   }
 
   public unsubscribe (observerToRemove: Observer<S>) {
