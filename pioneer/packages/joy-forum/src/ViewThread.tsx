@@ -76,7 +76,7 @@ function InnerViewThread (props: ViewThreadProps) {
   const totalPostsInThread = thread.num_posts_ever_created.toNumber();
 
   if (!category) {
-    return <em>Thread's category was not found.</em>;
+    return <em>{'Thread\'s category was not found.'}</em>;
   } else if (category.deleted) {
     return renderThreadNotFound();
   }
@@ -301,7 +301,7 @@ function InnerViewThreadById (props: ViewThreadByIdProps) {
   }
 
   if (category.isEmpty) {
-    return <em>Thread's category was not found</em>;
+    return <em>{ 'Thread\'s category was not found' }</em>;
   }
 
   return <ViewThread id={threadId} category={category} thread={thread} page={page} history={history} />;

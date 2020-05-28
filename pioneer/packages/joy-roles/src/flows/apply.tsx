@@ -601,7 +601,7 @@ export function ConfirmStakes2Up (props: ConfirmStakes2UpProps) {
                   This stake will be returned if your application is unsuccessful, and will also be used to rank applications.
                 </p>
                 <p>
-                  If you're hired and then withdraw from the role, your role stake will be returned.
+                  {'If you\'re hired and then withdraw from the role, your role stake will be returned.'}
                 </p>
               </Grid.Column>
             </Grid.Row>
@@ -996,26 +996,27 @@ export function DoneStage (props: DoneStageProps) {
       <p>
         Your application is <strong>#<ApplicationCount {...props.applications} applied={true} /></strong>.
         Once the group lead has started their review, your application will be considered.
-	  </p>
+	    </p>
       <p>
         You can track the progress of your
-		application in the <Link to="#working-group/my-roles">My roles</Link> section. Note that your application is attached
-		to your role key (see below).  If you have any issues, you can message the group lead in in the <Link to="#forum">Forum</Link> or contact them directly.
-	  </p>
+		    application in the <Link to="#working-group/my-roles">My roles</Link> section. Note that your application is attached
+		    to your role key (see below).  If you have any issues, you can message the group lead in in the <Link to="#forum">Forum</Link> or contact them directly.
+	    </p>
 
       <h4>Your new role key</h4>
       <p>
         This role requires a new account, called a <em>role key</em>, which will be used to carry out any duties associated with the role.
-	  </p>
+	    </p>
       <p>
-        We've generated a new role key, <strong>{props.roleKeyName}</strong>, automatically.
+        {`We've generated a new role key, ${<strong>{props.roleKeyName}</strong>}, automatically.
         A copy of the backup file should have been downloaded, or you can
-		get a backup from the <Link to="/accounts">My account</Link> section. 	  </p>
+        get a backup from the ${<Link to="/accounts">My account</Link>} section.`}
+      </p>
       <p>
-        You can also switch your role key using the Accounts selector in the top right of the screen. It works like
-		  any other account. The application you just completed is associated with your new role key, so you'll need to
-		select <strong>{props.roleKeyName}</strong> in the accounts selector in order to track its progress.
-	  </p>
+        {`You can also switch your role key using the Accounts selector in the top right of the screen. It works like
+		    any other account. The application you just completed is associated with your new role key, so you'll need to
+        select ${<strong>{props.roleKeyName}</strong>} in the accounts selector in order to track its progress.`}
+	    </p>
       <Message warning icon>
         <Icon name='warning sign' />
         <strong>Please make sure to save this file in a secure location as it is the only

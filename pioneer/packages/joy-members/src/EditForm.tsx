@@ -157,7 +157,7 @@ const InnerForm = (props: FormProps) => {
               Membership costs <b>{formatBalance(paidTerms.fee)}</b> tokens.
             </p>
             <p>
-              <span>By clicking the "Register" button you agree to our </span>
+              <span>{'By clicking the "Register" button you agree to our '}</span>
               <Link to={'/pages/tos'}>Terms of Service</Link>
               <span> and </span>
               <Link to={'/pages/privacy'}>Privacy Policy</Link>.

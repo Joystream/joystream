@@ -174,7 +174,7 @@ export default function Body ({
             <Message.Content>
               <Message.Header>Proposal cancellation</Message.Header>
               <p style={{ margin: '0.5em 0', padding: '0' }}>
-                You can only cancel your proposal while it's still in the Voting Period.
+                {'You can only cancel your proposal while it\'s still in the Voting Period.'}
               </p>
               <p style={{ margin: '0.5em 0', padding: '0' }}>
                 The cancellation fee for this type of proposal is:&nbsp;
