@@ -7,6 +7,7 @@ import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/
 import { MediaDropdownOptions } from './MediaDropdownOptions';
 import { OnTxButtonClick } from '@polkadot/joy-utils/TxButton';
 import isEqual from 'lodash/isEqual';
+import { componentName } from '@polkadot/joy-utils/react/helpers';
 
 export const datePlaceholder = 'Date in format yyyy-mm-dd';
 
@@ -122,67 +123,70 @@ export function withMediaForm<OuterProps, FormValues>
     }} />;
   };
 
-  return function (props: MediaFormProps<OuterProps, FormValues>) {
-    const {
-      initialValues,
-      values,
-      dirty,
-      touched,
-      errors,
-      isValid,
-      setSubmitting,
-      opts = MediaDropdownOptions.Empty
-    } = props;
+  const ResultComponent: React.FunctionComponent<MediaFormProps<OuterProps, FormValues>> =
+    (props: MediaFormProps<OuterProps, FormValues>) => {
+      const {
+        initialValues,
+        values,
+        dirty,
+        touched,
+        errors,
+        isValid,
+        setSubmitting,
+        opts = MediaDropdownOptions.Empty
+      } = props;
 
-    const isFieldChanged = (field: FieldName | FieldObject): boolean => {
-      const fieldName = typeof field === 'string' ? field : (field as FieldObject).id;
-      return (
-        dirty &&
-        touched[fieldName] === true &&
-        !isEqual(values[fieldName], initialValues[fieldName])
-      );
+      const isFieldChanged = (field: FieldName | FieldObject): boolean => {
+        const fieldName = typeof field === 'string' ? field : (field as FieldObject).id;
+        return (
+          dirty &&
+          touched[fieldName] === true &&
+          !isEqual(values[fieldName], initialValues[fieldName])
+        );
+      };
+
+      const onSubmit = (sendTx: () => void) => {
+        if (isValid) {
+          sendTx();
+        } else {
+          console.log('Form is invalid. Errors:', errors);
+        }
+      };
+
+      const onTxSuccess: TxCallback = (_txResult: SubmittableResult) => {
+        setSubmitting(false);
+      };
+
+      const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
+        setSubmitting(false);
+        if (txResult === null) {
+          // Tx cancelled
+
+        }
+      };
+
+      const allProps = {
+        ...props,
+
+        // Callbacks:
+        onSubmit,
+        onTxSuccess,
+        onTxFailed,
+
+        // Components:
+        LabelledText,
+        LabelledField,
+        MediaText,
+        MediaField,
+        MediaDropdown,
+
+        // Other
+        opts,
+        isFieldChanged
+      };
+
+      return <Component {...allProps} />;
     };
-
-    const onSubmit = (sendTx: () => void) => {
-      if (isValid) {
-        sendTx();
-      } else {
-        console.log('Form is invalid. Errors:', errors);
-      }
-    };
-
-    const onTxSuccess: TxCallback = (_txResult: SubmittableResult) => {
-      setSubmitting(false);
-    };
-
-    const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
-      setSubmitting(false);
-      if (txResult === null) {
-        // Tx cancelled
-
-      }
-    };
-
-    const allProps = {
-      ...props,
-
-      // Callbacks:
-      onSubmit,
-      onTxSuccess,
-      onTxFailed,
-
-      // Components:
-      LabelledText,
-      LabelledField,
-      MediaText,
-      MediaField,
-      MediaDropdown,
-
-      // Other
-      opts,
-      isFieldChanged
-    };
-
-    return <Component {...allProps} />;
-  };
+  ResultComponent.displayName = `withMediaForm(${componentName(Component)})`;
+  return ResultComponent;
 }

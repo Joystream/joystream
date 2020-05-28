@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Controller, memoize, View } from '@polkadot/joy-utils/index';
+import { Controller, memoize, View, Params } from '@polkadot/joy-utils/index';
 
 import { ITransport } from '../transport';
 
@@ -41,12 +41,14 @@ export class OpportunityController extends Controller<State, ITransport> {
   }
 }
 
+const renderOpeningView = (state: State, controller: OpportunityController, params: Params) => {
+  controller.getOpportunity(params.get('id'));
+  return (
+    <OpeningView {...state.opportunity!} block_time_in_seconds={state.blockTime!} member_id={state.memberId} />
+  );
+};
+
 export const OpportunityView = View<OpportunityController, State>({
   errorComponent: OpeningError,
-  render: (state, controller, params) => {
-    controller.getOpportunity(params.get('id'));
-    return (
-      <OpeningView {...state.opportunity!} block_time_in_seconds={state.blockTime!} member_id={state.memberId} />
-    );
-  }
+  render: renderOpeningView
 });

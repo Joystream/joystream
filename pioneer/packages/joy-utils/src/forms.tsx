@@ -21,41 +21,43 @@ export type LabelledProps<FormValues> = {
 };
 
 export function LabelledField<FormValues> () {
-  return (props: LabelledProps<FormValues>) => {
-    const { name, label, invisibleLabel = false, tooltip, required = false, touched, errors, children, style } = props;
+  const LabelledFieldInner: React.FunctionComponent<LabelledProps<FormValues>> =
+    (props: LabelledProps<FormValues>) => {
+      const { name, label, invisibleLabel = false, tooltip, required = false, touched, errors, children, style } = props;
 
-    const hasError = name && touched[name] && errors[name];
+      const hasError = name && touched[name] && errors[name];
 
-    const errorClass = hasError ? 'error' : '';
+      const errorClass = hasError ? 'error' : '';
 
-    const fieldWithError =
-      <>
-        <div>{children}</div>
-        {name && hasError && <div className='ui pointing red label'>{errors[name]}</div>}
-      </>;
+      const fieldWithError =
+        <>
+          <div>{children}</div>
+          {name && hasError && <div className='ui pointing red label'>{errors[name]}</div>}
+        </>;
 
-    const renderLabel = () =>
-      nonEmptyStr(label)
-        ? <>
-            {required && <b style={{ color: 'red' }} title='This field is required'>* </b>}
-            {label}
-          </>
-        : null;
+      const renderLabel = () =>
+        nonEmptyStr(label)
+          ? <>
+              {required && <b style={{ color: 'red' }} title='This field is required'>* </b>}
+              {label}
+            </>
+          : null;
 
-    return (label || invisibleLabel)
-      ? <div style={style} className={`ui--Labelled field ${errorClass}`}>
-        <label htmlFor={name as string}>
-          {renderLabel()}
-          {tooltip && <FieldTooltip>{tooltip}</FieldTooltip> }
-        </label>
-        <div className='ui--Labelled-content'>
-          {fieldWithError}
+      return (label || invisibleLabel)
+        ? <div style={style} className={`ui--Labelled field ${errorClass}`}>
+          <label htmlFor={name as string}>
+            {renderLabel()}
+            {tooltip && <FieldTooltip>{tooltip}</FieldTooltip> }
+          </label>
+          <div className='ui--Labelled-content'>
+            {fieldWithError}
+          </div>
         </div>
-      </div>
-      : <div style={style} className={`field ${errorClass}`}>
-        {fieldWithError}
-      </div>;
-  };
+        : <div style={style} className={`field ${errorClass}`}>
+          {fieldWithError}
+        </div>;
+    };
+  return LabelledFieldInner;
 }
 
 export function LabelledText<FormValues> () {

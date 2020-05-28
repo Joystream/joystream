@@ -23,10 +23,14 @@ export const RolesPage = () => {
     </Container>
   );
 
+  const renderWorkingGroups = () => tab;
+  const renderOpportunitySandbox = () => <OpportunitySandbox />;
+  const renderMyRolesSandbox = () => <MyRolesSandbox />;
+
   const panes = [
-    { menuItem: 'Working groups', render: () => tab },
-    { menuItem: 'Opportunities', render: () => <OpportunitySandbox /> },
-    { menuItem: 'My roles', render: () => <MyRolesSandbox /> }
+    { menuItem: 'Working groups', render: renderWorkingGroups },
+    { menuItem: 'Opportunities', render: renderOpportunitySandbox },
+    { menuItem: 'My roles', render: renderMyRolesSandbox }
   ];
 
   return (

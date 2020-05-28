@@ -6,6 +6,7 @@ import { SubmittableResult } from '@polkadot/api';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
 import { OnTxButtonClick } from '@polkadot/joy-utils/TxButton';
 import isEqual from 'lodash/isEqual';
+import { componentName } from '@polkadot/joy-utils/react/helpers';
 
 export type FormCallbacks = {
   onSubmit: OnTxButtonClick;
@@ -118,65 +119,68 @@ export function withEasyForm<OuterProps, FormValues>
     }} />;
   };
 
-  return function (props: EasyFormProps<OuterProps, FormValues>) {
-    const {
-      initialValues,
-      values,
-      dirty,
-      touched,
-      errors,
-      isValid,
-      setSubmitting
-    } = props;
+  const ResultComponent: React.FunctionComponent<EasyFormProps<OuterProps, FormValues>> =
+    (props: EasyFormProps<OuterProps, FormValues>) => {
+      const {
+        initialValues,
+        values,
+        dirty,
+        touched,
+        errors,
+        isValid,
+        setSubmitting
+      } = props;
 
-    const isFieldChanged = (field: FieldName | FieldObject): boolean => {
-      const fieldName = typeof field === 'string' ? field : (field as FieldObject).id;
-      return (
-        dirty &&
-        touched[fieldName] === true &&
-        !isEqual(values[fieldName], initialValues[fieldName])
-      );
+      const isFieldChanged = (field: FieldName | FieldObject): boolean => {
+        const fieldName = typeof field === 'string' ? field : (field as FieldObject).id;
+        return (
+          dirty &&
+          touched[fieldName] === true &&
+          !isEqual(values[fieldName], initialValues[fieldName])
+        );
+      };
+
+      const onSubmit = (sendTx: () => void) => {
+        if (isValid) {
+          sendTx();
+        } else {
+          console.log('Form is invalid. Errors:', errors);
+        }
+      };
+
+      const onTxSuccess: TxCallback = (_txResult: SubmittableResult) => {
+        setSubmitting(false);
+      };
+
+      const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
+        setSubmitting(false);
+        if (txResult === null) {
+          // Tx cancelled
+
+        }
+      };
+
+      const allProps = {
+        ...props,
+
+        // Callbacks:
+        onSubmit,
+        onTxSuccess,
+        onTxFailed,
+
+        // Components:
+        LabelledText,
+        LabelledField,
+        EasyText,
+        EasyField,
+        EasyDropdown,
+
+        // Other
+        isFieldChanged
+      };
+
+      return <Component {...allProps} />;
     };
-
-    const onSubmit = (sendTx: () => void) => {
-      if (isValid) {
-        sendTx();
-      } else {
-        console.log('Form is invalid. Errors:', errors);
-      }
-    };
-
-    const onTxSuccess: TxCallback = (_txResult: SubmittableResult) => {
-      setSubmitting(false);
-    };
-
-    const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
-      setSubmitting(false);
-      if (txResult === null) {
-        // Tx cancelled
-
-      }
-    };
-
-    const allProps = {
-      ...props,
-
-      // Callbacks:
-      onSubmit,
-      onTxSuccess,
-      onTxFailed,
-
-      // Components:
-      LabelledText,
-      LabelledField,
-      EasyText,
-      EasyField,
-      EasyDropdown,
-
-      // Other
-      isFieldChanged
-    };
-
-    return <Component {...allProps} />;
-  };
+  ResultComponent.displayName = `withEasyForm(${componentName(Component)})`;
+  return ResultComponent;
 }

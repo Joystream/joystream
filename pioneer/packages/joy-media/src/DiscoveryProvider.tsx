@@ -9,6 +9,7 @@ import { Url } from '@joystream/types/discovery';
 import ApiContext from '@polkadot/react-api/ApiContext';
 import { ApiProps } from '@polkadot/react-api/types';
 import { JoyInfo } from '@polkadot/joy-utils/JoyStatus';
+import { componentName } from '@polkadot/joy-utils/react/helpers';
 
 export type BootstrapNodes = {
   bootstrapNodes?: Url[];
@@ -153,7 +154,7 @@ export const useDiscoveryProvider = () =>
   useContext(DiscoveryProviderContext);
 
 export function withDiscoveryProvider (Component: React.ComponentType<DiscoveryProviderProps>) {
-  return (props: React.PropsWithChildren<{}>) => {
+  const ResultComponent: React.FunctionComponent<{}> = (props: React.PropsWithChildren<{}>) => {
     const discoveryProvider = useDiscoveryProvider();
     if (!discoveryProvider) {
       return <JoyInfo title={'Please wait...'}>Loading discovery provider.</JoyInfo>;
@@ -165,4 +166,6 @@ export function withDiscoveryProvider (Component: React.ComponentType<DiscoveryP
       </Component>
     );
   };
+  ResultComponent.displayName = `withDiscoveryProvider(${componentName(Component)})`;
+  return ResultComponent;
 }
