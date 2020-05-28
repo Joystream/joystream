@@ -1,0 +1,405 @@
+$blackFont: #222;
+$grayFont: #999;
+
+$bgHover: #f2f2f2;
+$bgSelected: #c7e7fa;
+
+$borderColor: #e4e4e4;
+
+.NoContentYet {
+  padding: 2rem 0;
+  color: $grayFont;
+}
+
+.JoyBgImg {
+  background-color: #ccc;
+  background-size: cover;
+  background-position: center;
+}
+
+.JoySection {
+  .ViewAllLink {
+    float: right;
+    font-size: 1rem;
+    font-weight: normal;
+    text-transform: uppercase;
+    margin-left: 1rem;
+  }
+}
+.Ellipsis {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.JoyTopActionBar {
+  margin: 1rem 0;
+
+  .button {
+    margin-right: .5rem;
+  }
+}
+
+.JoyListOfPreviews {
+  background-color: #ddd;
+
+  .CheckboxCell {
+    padding-left: 1rem;
+  }
+
+  .NoItems {
+    display: block;
+    background-color: #fafafa;
+    padding: 1rem 0;
+  }
+}
+
+.JoyMusicAlbumPreview,
+.JoyMusicTrackPreview {
+  display: flex;
+
+  &.vertical {
+    flex-direction: column;
+  }
+
+  &.horizontal {
+    flex-direction: row;
+
+    .AlbumCover {
+      margin-right: 1rem;
+    }
+  }
+
+  .JoyListOfPreviews & {
+    background-color: #fafafa;
+    margin-top: 1px;
+    padding: .5rem 0;
+
+    &:hover {
+      background-color: $bgHover;
+    }
+
+    &.DraggableItem,
+    &.SelectedItem {
+      background-color: $bgSelected;
+    }
+  }
+
+  .AlbumNumber {
+    color: $grayFont;
+    width: 3.5rem;
+    text-align: right;
+    padding-right: 1rem;
+  }
+
+  .AlbumCover {
+    text-align: right;
+    white-space: nowrap;
+
+    $size: 60px;
+    width: $size;
+
+    img {
+      max-width: $size;
+      max-height: $size;
+    }
+  }
+
+  .AlbumDescription {
+    padding: 0 1rem;
+    width: 100%;
+
+    .AlbumTitle {
+      font-size: 1rem;
+      font-weight: bold;
+      color: $blackFont;
+      margin-top: 0;
+      margin-bottom: 0.5rem;
+    }
+
+    .AlbumArtist,
+    .AlbumTracksCount {
+      color: $grayFont;
+      font-size: .9rem;
+    }
+  }
+
+  .AlbumActions {
+    white-space: nowrap;
+    opacity: 0;
+
+    .button {
+      margin-right: .5rem;
+    }
+  }
+  &:hover .AlbumActions {
+    opacity: 1;
+  }
+}
+
+/* Music Album */
+/* ------------------------------------------------------ */
+
+.JoyMusicAlbumPreview {
+  display: inline-flex;
+  flex-direction: column;
+  padding: 0 1rem 1rem 0;
+  $size: 200px;
+
+  .AlbumDescription {
+    text-align: left;
+    padding: 0;
+  }
+
+  .AlbumCover {
+    width: $size;
+    height: $size;
+    min-width: $size;
+    min-height: $size;
+  }
+
+  .AlbumTitle {
+    @extend .Ellipsis;
+
+    font-size: 1rem;
+    font-weight: bold;
+    color: $blackFont;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+  }
+  &.vertical {
+    .AlbumTitle {
+      margin-top: 0.5rem;
+    }
+  }
+
+  .AlbumArtist {
+    color: $grayFont;
+    font-size: 1rem;
+  }
+
+  .AlbumActions {
+    opacity: 1;
+  }
+}
+
+/* Channels */
+/* ------------------------------------------------------ */
+
+.ChannelTitle {
+  color: $blackFont;
+  display: flex;
+}
+
+.ChannelAvatar {
+  display: table;
+  border-radius: 50%;
+  margin-right: 1rem;
+
+  &.big {
+    margin-right: 2rem;
+  }
+}
+
+.JoyChannels {
+
+  .ui.message.JoyInlineMsg {
+    display: inline-flex;
+    width: auto;
+    margin-top: 0;
+
+    &.CreateBtn {
+      cursor: pointer;
+
+      /* Disable text selection by user: */
+      -webkit-touch-callout: none; /* iOS Safari */
+      -webkit-user-select: none; /* Safari */
+       -khtml-user-select: none; /* Konqueror HTML */
+         -moz-user-select: none; /* Old versions of Firefox */
+          -ms-user-select: none; /* Internet Explorer/Edge */
+              user-select: none; /* Non-prefixed version, currently
+                                    supported by Chrome, Opera and Firefox */
+
+      &:hover,
+      &:focus {
+        background-color: #f3fce0;
+      }
+      &:active {
+        background-color: #e0f4b7;
+      }
+    }
+  }
+
+  .ChannelPreview {
+    display: flex;
+
+    .ChannelStats {
+      margin-left: 3rem;
+      text-align: right;
+
+      .statistic {
+        .label,
+        .value {
+          text-align: right;
+          white-space: nowrap;
+        }
+        .label {
+          color: $grayFont;
+          font-weight: normal;
+          font-size: .9rem;
+        }
+      }
+    }
+  }
+}
+
+.JoyViewChannel {
+  .ChannelHeader {
+    margin-bottom: 1rem;
+  }
+  .ChannelCover {
+    background-size: cover;
+    margin-bottom: 2rem;
+    height: 200px;
+  }
+}
+
+.ChannelPreview {
+  display: flex;
+  align-items: normal;
+
+  .ListOfChannels & {
+    margin-bottom: 1rem;
+  }
+
+  .JoyPlayAlbum & {
+    margin: .5rem 0;
+  }
+
+  .ChannelDetails {
+    width: 100%;
+  }
+
+  .ChannelTitle {
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin: 0;
+    margin-top: .75rem;
+
+    .ChannelHeader & {
+      margin-top: 1rem;
+    }
+  }
+  
+  &.small {
+    align-items: center;
+
+    .ChannelTitle {
+      margin-top: 0;
+      font-size: 1rem;
+      a {
+        color: $blackFont;
+      }
+    }
+    .ChannelAvatar {
+      margin-right: .5rem;
+    }
+  }
+
+  &.big {
+    .ChannelTitle {
+      font-size: 2rem;
+    }
+  }
+
+  .ChannelSubtitle {
+    color: $grayFont;
+    font-size: .9rem;
+    text-transform: uppercase;
+    margin-top: .5rem;
+
+    .icon {
+      margin-right: .5rem;
+    }
+  }
+
+  .ChannelDesc {
+    margin-top: .75rem;
+  }
+}
+
+/* Play Album, Video */
+/* ------------------------------------------------------ */
+
+.JoyPlayAlbum {
+  display: flex;
+  flex-direction: row;
+
+  .JoyPlayAlbum_Main {
+    display: flex;
+    flex-direction: row;
+    margin-right: 1rem;
+
+    .JoyPlayAlbum_CurrentTrack {
+      margin-right: 1rem;
+
+      .AlbumTitle {
+        font-size: 1.5rem;
+        margin-top: 1rem;
+      }
+      .AlbumArtist {
+        font-size: 1.15rem;
+      }
+    }
+
+    .JoyPlayAlbum_AlbumTracks {
+      .TrackRow {
+        cursor: pointer;
+
+        &.Current {
+          background-color: $bgSelected;
+        }
+
+        .JoyMusicAlbumPreview {
+          padding: 0;
+        }
+        .TrackNumber {
+          color: $grayFont;
+          width: 2rem;
+          padding-left: .5rem !important;
+        }
+        .TrackTitle {
+          padding-right: .5rem !important;
+        }
+        .AlbumDescription {
+          max-width: 300px;
+        }
+      }
+    }
+
+    .JoyPlayAlbum_AlbumTracks,
+    .JoyPlayAlbum_MetaInfo {
+      td:first-child {
+        font-weight: bold;
+        color: $grayFont;
+      }
+    }
+  }
+
+  .JoyPlayAlbum_RightSidePanel {
+    max-width: 450px;
+  }
+}
+
+.ContentHeader {
+  border-bottom: 1px solid $borderColor;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+}
+
+.PlayVideoDetails {
+  border-top: 1px solid $borderColor;
+  padding-top: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+}

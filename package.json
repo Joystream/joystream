@@ -5,12 +5,27 @@
 	"scripts": {
 		"test": "yarn && yarn workspaces run test",
 		"test-migration": "yarn && yarn workspaces run test-migration",
-		"cargo-checks": "devops/git-hooks/pre-commit && devops/git-hooks/pre-push",
+		"postinstall": "yarn workspace @joystream/types build",
+    "cargo-checks": "devops/git-hooks/pre-commit && devops/git-hooks/pre-push",
 		"cargo-build": "scripts/cargo-build.sh"
 	},
 	"workspaces": [
-		"tests/network-tests"
+		"tests/network-tests",
+		"cli",
+		"types",
+		"pioneer",
+		"pioneer/packages/*"
 	],
+	"resolutions": {
+		"@polkadot/api": "^0.96.1",
+		"@polkadot/api-contract": "^0.96.1",
+		"@polkadot/keyring": "^1.7.0-beta.5",
+		"@polkadot/types": "^0.96.1",
+		"@polkadot/util": "^1.7.0-beta.5",
+		"@polkadot/util-crypto": "^1.7.0-beta.5",
+		"babel-core": "^7.0.0-bridge.0",
+		"typescript": "^3.7.2"
+	},
 	"devDependencies": {
 		"husky": "^4.2.5"
 	},

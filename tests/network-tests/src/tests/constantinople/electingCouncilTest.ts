@@ -4,7 +4,7 @@ import { ApiWrapper } from './utils/apiWrapper';
 import { WsProvider, Keyring } from '@polkadot/api';
 import { initConfig } from './utils/config';
 import BN = require('bn.js');
-import { registerJoystreamTypes, Seat } from '@joystream/types';
+import { registerJoystreamTypes, Seat } from '@joystream/types/';
 import { assert } from 'chai';
 import { v4 as uuid } from 'uuid';
 import { Utils } from './utils/utils';

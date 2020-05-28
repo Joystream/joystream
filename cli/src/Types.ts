@@ -1,5 +1,5 @@
 import BN from 'bn.js';
-import { ElectionStage, Seat } from '@joystream/types';
+import { ElectionStage, Seat } from '@joystream/types/';
 import { Option } from '@polkadot/types';
 import { BlockNumber, Balance } from '@polkadot/types/interfaces';
 import { DerivedBalances } from '@polkadot/api-derive/types';
