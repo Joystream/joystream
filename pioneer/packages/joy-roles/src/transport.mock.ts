@@ -350,6 +350,7 @@ export class Transport extends TransportBase implements ITransport {
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async openingApplications (): Promise<OpeningApplication[]> {
     return [{
       id: 1,
@@ -422,6 +423,7 @@ export class Transport extends TransportBase implements ITransport {
     }];
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async myCurationGroupRoles (): Promise<ActiveRole[]> {
     return [
       {
@@ -438,6 +440,7 @@ export class Transport extends TransportBase implements ITransport {
     return new Observable<ActiveRole[]>(observer => { /* do nothing */ });
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async applyToCuratorOpening (
     id: number,
     roleAccountName: string,

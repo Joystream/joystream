@@ -21,13 +21,10 @@ export const SubstrateTransportProvider = (props: React.PropsWithChildren<{}>) =
   const [loaded, setLoaded] = useState<boolean>();
 
   useEffect(() => {
-    const load = async () => {
-      if (!loaded && api && api.isApiReady) {
-        setTransport(new SubstrateTransport(api));
-        setLoaded(true);
-      }
-    };
-    load();
+    if (!loaded && api && api.isApiReady) {
+      setTransport(new SubstrateTransport(api));
+      setLoaded(true);
+    }
   }, [loaded]);
 
   if (!transport) {

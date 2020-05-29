@@ -31,5 +31,5 @@ export function getFormErrorLabelsProps<ValuesT> (
     errorStates[fieldName] = getErrorLabelProps<ValuesT>(errors, touched, fieldName);
   }
 
-  return <FormErrorLabelsProps<ValuesT>> errorStates;
+  return errorStates as FormErrorLabelsProps<ValuesT>;
 }

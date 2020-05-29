@@ -10,7 +10,7 @@ function getNewFunction (originalMethod: () => void) {
     let returnedValue: any;
 
     if (args.length > 0) {
-      if (!this.hasOwnProperty(propMapName)) {
+      if (!Object.prototype.hasOwnProperty.call(this, propMapName)) {
         Object.defineProperty(this, propMapName, {
           configurable: false,
           enumerable: false,
@@ -28,7 +28,7 @@ function getNewFunction (originalMethod: () => void) {
         myMap.set(hashKey, returnedValue);
       }
     } else {
-      if (this.hasOwnProperty(propValName)) {
+      if (Object.prototype.hasOwnProperty.call(this, propValName)) {
         returnedValue = this[propValName];
       } else {
         returnedValue = originalMethod.apply(this, args as []);

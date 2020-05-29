@@ -67,7 +67,7 @@ export function getExtendedStatus (proposal: ParsedProposal, bestNumber: BlockNu
         executedAtBlock = finalizedAtBlock + gracePeriod;
         if (approvedStatus === 'ExecutionFailed') {
           const executionFailedStatus = proposalStatus.Approved.ExecutionFailed as ExecutionFailedStatus;
-          executionFailReason = new Buffer(executionFailedStatus.error.toString().replace('0x', ''), 'hex').toString();
+          executionFailReason = Buffer.from(executionFailedStatus.error.toString().replace('0x', ''), 'hex').toString();
         }
       }
     }

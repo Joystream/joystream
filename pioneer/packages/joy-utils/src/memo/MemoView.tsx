@@ -8,7 +8,9 @@ import { nonEmptyStr } from '../index';
 import './Memo.css';
 import { Link } from 'react-router-dom';
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const remark = require('remark');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const strip = require('strip-markdown');
 const mdStripper = remark().use(strip);
 

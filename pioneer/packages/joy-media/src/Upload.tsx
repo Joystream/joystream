@@ -195,7 +195,7 @@ class Component extends React.PureComponent<Props, State> {
     </div>;
   }
 
-  private onFileSelected = async (file: File) => {
+  private onFileSelected = (file: File) => {
     if (!file.size) {
       this.setState({ error: 'You cannot upload an empty file.' });
     } else if (file.size > MAX_FILE_SIZE_BYTES) {
@@ -257,8 +257,9 @@ class Component extends React.PureComponent<Props, State> {
 
     const { api } = this.props;
     const { newContentId } = this.state;
+    let dataObject: Option<DataObject>;
     try {
-      var dataObject = await api.query.dataDirectory.dataObjectByContentId(newContentId) as Option<DataObject>;
+      dataObject = await api.query.dataDirectory.dataObjectByContentId(newContentId) as Option<DataObject>;
     } catch (err) {
       this.setState({
         error: err,
@@ -312,9 +313,9 @@ class Component extends React.PureComponent<Props, State> {
     };
 
     const { discoveryProvider } = this.props;
-
+    let url: string;
     try {
-      var url = await discoveryProvider.resolveAssetEndpoint(storageProvider, contentId, cancelSource.token);
+      url = await discoveryProvider.resolveAssetEndpoint(storageProvider, contentId, cancelSource.token);
     } catch (err) {
       return this.setState({
         error: new Error(`Failed to contact storage provider: ${err.message}`),

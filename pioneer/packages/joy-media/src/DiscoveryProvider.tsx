@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useContext, createContext } from 'react';
 import { Message } from 'semantic-ui-react';
 import axios, { CancelToken } from 'axios';
-import { parse as parseUrl } from 'url';
 
 import { AccountId } from '@polkadot/types/interfaces';
 import { Vec } from '@polkadot/types';
@@ -26,7 +25,7 @@ export type DiscoveryProviderProps = {
 
 // return string Url with last `/` removed
 function normalizeUrl (url: string | Url): string {
-  const st = new String(url);
+  const st: string = url.toString();
   if (st.endsWith('/')) {
     return st.substring(0, st.length - 1);
   }
@@ -47,12 +46,16 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
 
     let stat = stats.get(providerKey);
 
-    if (!stat || (stat && (Date.now() > (stat.resolvedAt + (10 * 60 * 1000))))) {
-      for (let n = 0; bootstrapNodes && n < bootstrapNodes.length; n++) {
+    if (
+      (!stat || (stat && (Date.now() > (stat.resolvedAt + (10 * 60 * 1000))))) &&
+      bootstrapNodes
+    ) {
+      for (let n = 0; n < bootstrapNodes.length; n++) {
         const discoveryUrl = normalizeUrl(bootstrapNodes[n]);
 
         try {
-          parseUrl(discoveryUrl);
+          // eslint-disable-next-line no-new
+          new URL(discoveryUrl);
         } catch (err) {
           continue;
         }

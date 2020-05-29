@@ -242,7 +242,7 @@ const Validation: ValidationType = {
       .required('You need to specify an amount of tokens.'),
     destinationAccount: Yup.string()
       .required('Select a destination account!')
-      .test('address-test', '${account} is not a valid address.', account => !!checkAddress(account, 5))
+      .test('address-test', 'Invalid account address.', account => checkAddress(account, 5)[0])
   },
   SetLead: {
     workingGroupLead: Yup.string().required('Select a proposed lead!')

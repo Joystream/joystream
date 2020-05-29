@@ -141,33 +141,31 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   protected async groupMember (id: CuratorId, curator: IRoleAccounter): Promise<GroupMember> {
-    return new Promise<GroupMember>(async (resolve, reject) => {
-      const roleAccount = curator.role_account;
-      const memberId = await this.memberIdFromCuratorId(id);
+    const roleAccount = curator.role_account;
+    const memberId = await this.memberIdFromCuratorId(id);
 
-      const profile = await this.cachedApi.query.members.memberProfile(memberId) as Option<Profile>;
-      if (profile.isNone) {
-        reject('no profile found');
-      }
+    const profile = await this.cachedApi.query.members.memberProfile(memberId) as Option<Profile>;
+    if (profile.isNone) {
+      throw new Error('no profile found');
+    }
 
-      let stakeValue: Balance = new u128(0);
-      if (curator.role_stake_profile && curator.role_stake_profile.isSome) {
-        stakeValue = await this.curatorStake(curator.role_stake_profile.unwrap());
-      }
+    let stakeValue: Balance = new u128(0);
+    if (curator.role_stake_profile && curator.role_stake_profile.isSome) {
+      stakeValue = await this.curatorStake(curator.role_stake_profile.unwrap());
+    }
 
-      let earnedValue: Balance = new u128(0);
-      if (curator.reward_relationship && curator.reward_relationship.isSome) {
-        earnedValue = await this.curatorTotalReward(curator.reward_relationship.unwrap());
-      }
+    let earnedValue: Balance = new u128(0);
+    if (curator.reward_relationship && curator.reward_relationship.isSome) {
+      earnedValue = await this.curatorTotalReward(curator.reward_relationship.unwrap());
+    }
 
-      resolve({
-        roleAccount,
-        memberId,
-        profile: profile.unwrap(),
-        title: 'Content curator',
-        stake: stakeValue,
-        earned: earnedValue
-      });
+    return ({
+      roleAccount,
+      memberId,
+      profile: profile.unwrap(),
+      title: 'Content curator',
+      stake: stakeValue,
+      earned: earnedValue
     });
   }
 
@@ -322,40 +320,38 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   async curationGroupOpening (id: number): Promise<WorkingGroupOpening> {
-    return new Promise<WorkingGroupOpening>(async (resolve, reject) => {
-      const nextId = (await this.cachedApi.query.contentWorkingGroup.nextCuratorOpeningId() as u32).toNumber();
-      if (id < 0 || id >= nextId) {
-        reject('invalid id');
-      }
+    const nextId = (await this.cachedApi.query.contentWorkingGroup.nextCuratorOpeningId() as u32).toNumber();
+    if (id < 0 || id >= nextId) {
+      throw new Error('invalid id');
+    }
 
-      const curatorOpening = new SingleLinkedMapEntry<CuratorOpening>(
-        CuratorOpening,
-        await this.cachedApi.query.contentWorkingGroup.curatorOpeningById(id)
-      );
+    const curatorOpening = new SingleLinkedMapEntry<CuratorOpening>(
+      CuratorOpening,
+      await this.cachedApi.query.contentWorkingGroup.curatorOpeningById(id)
+    );
 
-      const opening = await this.opening(
-        curatorOpening.value.getField<OpeningId>('opening_id').toNumber()
-      );
+    const opening = await this.opening(
+      curatorOpening.value.getField<OpeningId>('opening_id').toNumber()
+    );
 
-      const applications = await this.curatorOpeningApplications(id);
-      const stakes = classifyOpeningStakes(opening);
+    const applications = await this.curatorOpeningApplications(id);
+    const stakes = classifyOpeningStakes(opening);
 
-      resolve({
-        opening: opening,
-        meta: {
-          id: id.toString(),
-          group: WorkingGroups.ContentCurators
-        },
-        stage: await classifyOpeningStage(this, opening),
-        applications: {
-          numberOfApplications: applications.length,
-          maxNumberOfApplications: opening.max_applicants,
-          requiredApplicationStake: stakes.application,
-          requiredRoleStake: stakes.role,
-          defactoMinimumStake: new u128(0)
-        },
+    return ({
+      opening: opening,
+      meta: {
+        id: id.toString(),
+        group: WorkingGroups.ContentCurators
+      },
+      stage: await classifyOpeningStage(this, opening),
+      applications: {
+        numberOfApplications: applications.length,
+        maxNumberOfApplications: opening.max_applicants,
+        requiredApplicationStake: stakes.application,
+        requiredRoleStake: stakes.role,
         defactoMinimumStake: new u128(0)
-      });
+      },
+      defactoMinimumStake: new u128(0)
     });
   }
 
@@ -385,8 +381,7 @@ export class Transport extends TransportBase implements ITransport {
 
   expectedBlockTime (): Promise<number> {
     return this.promise<number>(
-      // @ts-ignore
-      this.api.consts.babe.expectedBlockTime.toNumber() / 1000
+      (this.api.consts.babe.expectedBlockTime as Moment).toNumber() / 1000
     );
   }
 
@@ -576,48 +571,48 @@ export class Transport extends TransportBase implements ITransport {
     return status.account as string;
   }
 
-  async applyToCuratorOpening (
+  applyToCuratorOpening (
     id: number,
     roleAccountName: string,
     sourceAccount: string,
     appStake: Balance,
     roleStake: Balance,
     applicationText: string): Promise<number> {
-    return new Promise<number>(async (resolve, reject) => {
-      const membershipIds = (
-        await this.cachedApi.query.members.memberIdsByControllerAccountId(sourceAccount)
-      ) as Vec<MemberId>;
-      if (membershipIds.length === 0) {
-        reject('No membship ID associated with this address');
-      }
+    return new Promise<number>((resolve, reject) => {
+      (this.cachedApi.query.members.memberIdsByControllerAccountId(sourceAccount) as Promise<Vec<MemberId>>)
+        .then(membershipIds => {
+          if (membershipIds.length === 0) {
+            reject(new Error('No membship ID associated with this address'));
+          }
 
-      const roleAccount = this.generateRoleAccount(roleAccountName);
-      if (!roleAccount) {
-        reject('failed to create role account');
-      }
-      const tx = this.api.tx.contentWorkingGroup.applyOnCuratorOpening(
-        membershipIds[0],
-        new u32(id),
-        new GenericAccountId(roleAccount as string),
-        roleStake.eq(Zero) ? null : roleStake,
-        appStake.eq(Zero) ? null : appStake,
-        applicationText
-      ) as unknown as SubmittableExtrinsic;
+          const roleAccount = this.generateRoleAccount(roleAccountName);
+          if (!roleAccount) {
+            reject(new Error('failed to create role account'));
+          }
+          const tx = this.api.tx.contentWorkingGroup.applyOnCuratorOpening(
+            membershipIds[0],
+            new u32(id),
+            new GenericAccountId(roleAccount as string),
+            roleStake.eq(Zero) ? null : roleStake,
+            appStake.eq(Zero) ? null : appStake,
+            applicationText
+          ) as unknown as SubmittableExtrinsic;
 
-      const txFailedCb = () => {
-        reject('transaction failed');
-      };
+          const txFailedCb = () => {
+            reject(new Error('transaction failed'));
+          };
 
-      const txSuccessCb = () => {
-        resolve(1);
-      };
+          const txSuccessCb = () => {
+            resolve(1);
+          };
 
-      this.queueExtrinsic({
-        accountId: sourceAccount,
-        extrinsic: tx,
-        txFailedCb,
-        txSuccessCb
-      });
+          this.queueExtrinsic({
+            accountId: sourceAccount,
+            extrinsic: tx,
+            txFailedCb,
+            txSuccessCb
+          });
+        });
     });
   }
 

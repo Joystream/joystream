@@ -115,7 +115,7 @@ function hasAnyStake (props: StakeRequirementProps): boolean {
   return props.requiredApplicationStake.anyRequirement() || props.requiredRoleStake.anyRequirement();
 }
 
-class messageState {
+class MessageState {
   positive = true
   warning = false
   negative = false
@@ -280,7 +280,7 @@ function OpeningBodyCTAView (props: OpeningBodyCTAProps) {
 
 export function OpeningBodyApplicationsStatus (props: OpeningStakeAndApplicationStatus) {
   const impossible = applicationImpossible(props);
-  const msg = new messageState();
+  const msg = new MessageState();
   if (impossible) {
     msg.setNegative();
   } else if (applicationPossibleWithIncresedStake(props)) {

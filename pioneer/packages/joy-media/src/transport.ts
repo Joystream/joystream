@@ -79,7 +79,7 @@ export abstract class MediaTransport extends Transport {
     console.info(`Close transport session no. ${this.sessionId}`);
   }
 
-  async session<R> (operation: () => R): Promise<R> {
+  async session<R> (operation: () => R | Promise<R>): Promise<R> {
     if (typeof operation !== 'function') {
       throw new Error('Operation is not a function');
     }

@@ -14,7 +14,7 @@ import {
   classifyOpeningStage, OpeningStageClassification
 } from './classifiers';
 
-class mockBlockQueryer {
+class MockBlockQueryer {
   hash: string
   timestamp: Date
 
@@ -26,14 +26,17 @@ class mockBlockQueryer {
     this.timestamp = timestamp;
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async blockHash (height: number): Promise<string> {
     return this.hash;
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async blockTimestamp (height: number): Promise<Date> {
     return this.timestamp;
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async expectedBlockTime (): Promise<number> {
     return 6;
   }
@@ -68,7 +71,7 @@ describe('hiring.Opening-> OpeningStageClassification', (): void => {
           role_staking_policy: new Option(StakingPolicy),
           human_readable_text: new Text()
         }),
-        queryer: new mockBlockQueryer('somehash', now)
+        queryer: new MockBlockQueryer('somehash', now)
       },
       output: {
         state: OpeningState.WaitingToBegin,
@@ -97,7 +100,7 @@ describe('hiring.Opening-> OpeningStageClassification', (): void => {
           role_staking_policy: new Option(StakingPolicy),
           human_readable_text: new Text()
         }),
-        queryer: new mockBlockQueryer('somehash', now)
+        queryer: new MockBlockQueryer('somehash', now)
       },
       output: {
         state: OpeningState.AcceptingApplications,
@@ -127,7 +130,7 @@ describe('hiring.Opening-> OpeningStageClassification', (): void => {
           role_staking_policy: new Option(StakingPolicy),
           human_readable_text: new Text()
         }),
-        queryer: new mockBlockQueryer('somehash', now)
+        queryer: new MockBlockQueryer('somehash', now)
       },
       output: {
         state: OpeningState.InReview,
@@ -165,7 +168,7 @@ describe('hiring.Opening-> OpeningStageClassification', (): void => {
           role_staking_policy: new Option(StakingPolicy),
           human_readable_text: new Text(),
         }),
-        queryer: new mockBlockQueryer("somehash", now),
+        queryer: new MockBlockQueryer("somehash", now),
       },
       output: {
         state: OpeningState.Cancelled,

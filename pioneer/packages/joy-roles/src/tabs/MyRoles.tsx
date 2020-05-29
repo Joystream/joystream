@@ -89,19 +89,19 @@ function CTAButton (props: CTA) {
   );
 }
 
-interface nameAndURL {
+interface NameAndURL {
   name: string;
   url?: string;
 }
 
-function RoleName (props: nameAndURL) {
+function RoleName (props: NameAndURL) {
   if (typeof props.url !== 'undefined') {
     return <Link to={props.url}>{props.name}</Link>;
   }
   return <span>{props.name}</span>;
 }
 
-export interface ActiveRole extends nameAndURL {
+export interface ActiveRole extends NameAndURL {
   curatorId: CuratorId;
   reward: Balance;
   stake: Balance;

@@ -26,7 +26,7 @@ export const ChannelPreview = (props: ChannelPreviewProps) => {
   let icon: 'music' | 'film' | undefined;
 
   if (isMusicChannel(channel)) {
-    subtitle = 'Music channel',
+    subtitle = 'Music channel';
     icon = 'music';
   } else if (isVideoChannel(channel)) {
     subtitle = 'Video channel';

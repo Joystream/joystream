@@ -51,6 +51,7 @@ export const ReorderableTracks = (props: Props) => {
         {(provided, _snapshot) => (
           <div
             {...provided.droppableProps}
+            // eslint-disable-next-line @typescript-eslint/unbound-method
             ref={provided.innerRef}
             className='JoyListOfPreviews'
           >
@@ -58,6 +59,7 @@ export const ReorderableTracks = (props: Props) => {
               <Draggable key={item.id} draggableId={item.id} index={index}>
                 {(provided, snapshot) => (
                   <div
+                    // eslint-disable-next-line @typescript-eslint/unbound-method
                     ref={provided.innerRef}
                     {...provided.draggableProps}
                     {...provided.dragHandleProps}

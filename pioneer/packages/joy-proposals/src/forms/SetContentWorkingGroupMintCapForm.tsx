@@ -1,5 +1,5 @@
 import React from 'react';
-import { default as MintCapacityForm } from './MintCapacityForm';
+import MintCapacityForm from './MintCapacityForm';
 import { RouteComponentProps } from 'react-router';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
 import { PromiseComponent } from '@polkadot/joy-utils/react/components';

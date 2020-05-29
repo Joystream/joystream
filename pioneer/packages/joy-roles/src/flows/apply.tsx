@@ -27,9 +27,6 @@ import {
   Table
 } from 'semantic-ui-react';
 
-// @ts-ignore
-import { Slider } from 'react-semantic-ui-range';
-
 import Identicon from '@polkadot/react-identicon';
 import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
@@ -750,11 +747,11 @@ function questionHash (section: QuestionSection, question: QuestionField): strin
   return section.title + '|' + question.title;
 }
 
-interface finalDataMap {
-  [k: string]: finalDataMap;
+interface FinalDataMap {
+  [k: string]: FinalDataMap;
 }
 
-function applicationDetailsToObject (input: ApplicationDetails, data: finalDataMap): any {
+function applicationDetailsToObject (input: ApplicationDetails, data: FinalDataMap): any {
   const output: any = {};
   if (!input.sections) {
     return {};
@@ -771,11 +768,11 @@ function applicationDetailsToObject (input: ApplicationDetails, data: finalDataM
   return output;
 }
 
-interface questionDataMap {
+interface QuestionDataMap {
   [k: string]: any;
 }
 
-function applicationDetailsToDataObject (input: ApplicationDetails, data: questionDataMap): any {
+function applicationDetailsToDataObject (input: ApplicationDetails, data: QuestionDataMap): any {
   const output: any = {};
   if (!input.sections) {
     return {};
@@ -811,7 +808,7 @@ export type ApplicationDetailsStageProps = {
 }
 
 export function ApplicationDetailsStage (props: ApplicationDetailsStageProps & StageTransitionProps) {
-  const initialForm = applicationDetailsToObject(props.applicationDetails, props.data as finalDataMap);
+  const initialForm = applicationDetailsToObject(props.applicationDetails, props.data as FinalDataMap);
 
   const [data, setData] = useReducer(questionReducer, initialForm);
   const [completed, setCompleted] = useState(false);

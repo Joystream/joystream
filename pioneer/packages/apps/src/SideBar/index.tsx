@@ -36,7 +36,7 @@ type OuterLinkProps = {
 export function OuterLink ({ url, title, icon = 'external alternate' }: OuterLinkProps) {
   return (
     <Menu.Item className="apps--SideBar-Item">
-      <a className="apps--SideBar-Item-NavLink" href={url} target="_blank">
+      <a className="apps--SideBar-Item-NavLink" href={url} target="_blank" rel="noopener noreferrer">
         <Icon name={icon} />
         <span className="text">{title}</span>
       </a>

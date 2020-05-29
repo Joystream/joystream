@@ -102,6 +102,7 @@ export function findNameByAddress (address: string): string | undefined {
     try {
       keyring_address = keyring.getAddress(address);
     } catch (error) {
+      // do nothing
     }
   }
   return keyring_address ? keyring_address.meta.name : undefined;

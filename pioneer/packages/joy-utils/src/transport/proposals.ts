@@ -50,8 +50,8 @@ export default class ProposalsTransport extends BaseTransport {
     return this.proposalsCodex.proposalDetailsByProposalId(id);
   }
 
-  async cancellationFee (): Promise<number> {
-    return ((await this.api.consts.proposalsEngine.cancellationFee) as BalanceOf).toNumber();
+  cancellationFee (): number {
+    return (this.api.consts.proposalsEngine.cancellationFee as BalanceOf).toNumber();
   }
 
   async proposalById (id: ProposalId): Promise<ParsedProposal> {
@@ -70,7 +70,7 @@ export default class ProposalsTransport extends BaseTransport {
     };
     const createdAtBlock = rawProposal.createdAt;
     const createdAt = await this.chainT.blockTimestamp(createdAtBlock.toNumber());
-    const cancellationFee = await this.cancellationFee();
+    const cancellationFee = this.cancellationFee();
 
     return {
       id,
@@ -158,7 +158,7 @@ export default class ProposalsTransport extends BaseTransport {
     const stake = calculateStake(type);
     const meta = calculateMetaFromType(type);
     // Currently it's same for all types, but this will change soon
-    const cancellationFee = await this.cancellationFee();
+    const cancellationFee = this.cancellationFee();
     return {
       type,
       votingPeriod,

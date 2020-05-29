@@ -9,7 +9,7 @@ export function Loadable<P extends {[index: string]: any}> (required: string[], 
     }
 
     for (const requirement of required) {
-      if (!props.hasOwnProperty(requirement) || typeof props[requirement] === 'undefined') {
+      if (typeof props[requirement] === 'undefined') {
         return loading;
       }
     }

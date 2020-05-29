@@ -56,7 +56,7 @@ export function PlayVideo (props: PlayVideoProps) {
   const printLinks = (links?: string[]) => {
     return (links || []).map((x, i) =>
       <div key={`EntityLink-${i}`}>
-        <a href={encodeURI(x)} target='_blank' rel='nofollow'>{x}</a>
+        <a href={encodeURI(x)} target='_blank' rel='nofollow noopener noreferrer'>{x}</a>
       </div>
     );
   };
