@@ -1,0 +1,26 @@
+{
+  "name": "@polkadot/joy-media",
+  "version": "0.1.1",
+  "description": "Media content module for Joystream node",
+  "main": "index.js",
+  "scripts": {},
+  "author": "Joystream contributors",
+  "maintainers": [],
+  "dependencies": {
+    "@babel/runtime": "^7.7.1",
+    "@polkadot/joy-utils": "^0.1.1",
+    "@polkadot/react-components": "0.37.0-beta.63",
+    "@polkadot/react-query": "0.37.0-beta.63",
+    "@types/mime-types": "^2.1.0",
+    "@types/react-beautiful-dnd": "^11.0.3",
+    "aplayer": "^1.10.1",
+    "dplayer": "^1.25.0",
+    "ipfs-only-hash": "^1.0.2",
+    "iso-639-1": "^2.1.0",
+    "lodash": "^4.17.11",
+    "mime-types": "^2.1.22",
+    "react-aplayer": "^1.0.0",
+    "react-beautiful-dnd": "^12.0.0",
+    "react-dplayer": "^0.2.3"
+  }
+}

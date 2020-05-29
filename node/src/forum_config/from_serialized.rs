@@ -1,7 +1,9 @@
+#![allow(clippy::type_complexity)]
+
 use super::new_validation;
 use node_runtime::{
-    forum::{Category, CategoryId, Post, PostId, Thread, ThreadId},
-    AccountId, BlockNumber, ForumConfig, Moment,
+    forum::{Category, CategoryId, Post, Thread},
+    AccountId, BlockNumber, ForumConfig, Moment, PostId, ThreadId,
 };
 use serde::Deserialize;
 use serde_json::Result;
@@ -9,8 +11,11 @@ use serde_json::Result;
 #[derive(Deserialize)]
 struct ForumData {
     categories: Vec<(CategoryId, Category<BlockNumber, Moment, AccountId>)>,
-    posts: Vec<(PostId, Post<BlockNumber, Moment, AccountId>)>,
-    threads: Vec<(ThreadId, Thread<BlockNumber, Moment, AccountId>)>,
+    posts: Vec<(
+        PostId,
+        Post<BlockNumber, Moment, AccountId, ThreadId, PostId>,
+    )>,
+    threads: Vec<(ThreadId, Thread<BlockNumber, Moment, AccountId, ThreadId>)>,
 }
 
 fn parse_forum_json() -> Result<ForumData> {

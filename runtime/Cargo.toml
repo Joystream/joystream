@@ -5,7 +5,7 @@ edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
-version = '6.12.2'
+version = '6.14.0'
 
 [features]
 default = ['std']
@@ -273,7 +273,7 @@ rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
 [build-dependencies.wasm-builder-runner]
 package = 'substrate-wasm-builder-runner'
-version = '1.0.4'
+version = '1.0.5'
 
 [dependencies.forum]
 default_features = false

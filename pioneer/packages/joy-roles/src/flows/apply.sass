@@ -1,0 +1,162 @@
+.apply-flow 
+  position: absolute
+  width: 100% !important
+  height: 100% !important
+  top: 0
+  left: 0
+  z-index: 999
+  padding: 1em
+
+  .dimmer
+    position: fixed
+    top: 0
+    left: 0
+    width: 100%
+    height: 100%
+    background: white
+
+  .loading
+    position: fixed
+    top: 0
+    left: 0
+    width: 100%
+    height: 100%
+    background: rgba(255,255,255,0.85)
+    z-index: 99999
+    display: flex
+
+    .spinner
+      margin: auto
+
+  .inner
+    min-height: 100%
+  
+  h5
+    font-weight: bold
+    color: #0e566c
+  
+  h4
+    color: inherit
+    font-weight: bold
+    margin-bottom: 0.5em
+
+  .statistic
+    .label, .value
+      text-align: left
+
+  .label 
+    &.fluid
+      width: calc(100% + 1rem + 1.2em);
+
+    &.standout
+      margin-bottom: 1.2em
+
+  .column
+    &.cancel
+      text-align: right
+      a
+        color: colour(grey, light)
+        transition: 0.3s;
+        &:hover
+          color: colour(blue)
+
+  .container
+    &.content
+      margin-top: 1em
+    &.cta
+      margin-top: 1.5em
+
+  .accordion
+    background-color: colour(grey, trans)
+    .content
+      padding: 0 1em !important
+
+  .stake
+    .header
+      margin-bottom: 0.75em
+      text-transform: capitalize
+
+  .ranks-and-stake
+    margin-top: 1em
+    margin-bottom: 2em
+
+.keypair
+  display: flex
+  flex-wrap: nowrap
+  justify-content: space-between
+  position: relative
+  white-space: nowrap
+
+  .address, .balance
+    display: inline-block
+    flex: 1
+    font-family: monospace
+    margin-left: 1rem
+    opacity: 0.5
+    overflow: hidden
+    text-overflow: ellipsis
+
+  .name
+    display: inline-block
+    flex: 1 0
+    overflow: hidden
+    text-overflow: ellipsis
+    margin-left: 0.5rem
+
+    &.uppercase
+      text-transform: uppercase
+ 
+.stake-rank-selector, .confirm-stakes-2up
+  margin-top: 1.5em
+
+  .controls
+    margin-bottom: 1em
+
+    p
+      padding-top: 1em
+
+    .input
+      width: 30%
+
+    .input, .button 
+      margin-right: 0.5em
+
+  .ticks
+    margin-left: 10px
+    margin-right: 10px
+
+    .label
+      position: relative
+      transform: translateX(-50%)
+
+    .tick
+      display: inline-block
+      text-align: center
+      border-right: 1px dotted #ccc
+
+      &:first-of-type
+        border-left: 1px dotted #ccc
+
+.confirm-stakes-2up
+  .header
+    margin-bottom: 1em !important
+  .two-up
+    margin-top: 1em
+  .ticks
+    margin-top: 1.5em
+  .center
+    text-align: center
+  .controls
+    margin-left: 0 !important
+    .input
+      width: 100%
+    .fluid
+      input
+        width: calc(100% - 4em) !important
+
+.application-questions
+  .section
+    margin-top: 2em
+
+    h4
+      padding-bottom: 0.5em

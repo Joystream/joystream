@@ -1,0 +1,6 @@
+.ChooseProposalType .filters {
+  text-align: right;
+}
+.ChooseProposalType .filters .dropdown {
+  width: 200px;
+}

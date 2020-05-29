@@ -1,12 +1,12 @@
+#![warn(missing_docs)]
+
 use codec::{Decode, Encode};
-use rstd::borrow::ToOwned;
 use rstd::collections::btree_set::BTreeSet;
-use rstd::vec::Vec;
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-/// Terms for slashings applied to a given role
+/// Terms for slashings applied to a given role.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq, Eq)]
 pub struct SlashableTerms {
@@ -17,11 +17,14 @@ pub struct SlashableTerms {
     pub max_percent_pts_per_time: u16,
 }
 
-/// Terms for what slashing can be applied in some context
+/// Terms for what slashing can be applied in some context.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq, Eq)]
 pub enum SlashingTerms {
+    /// Cannot be slashed.
     Unslashable,
+
+    /// Can be slashed.
     Slashable(SlashableTerms),
 }
 
@@ -39,43 +42,40 @@ impl Default for SlashingTerms {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, Default, PartialEq, Eq)]
 pub struct OpeningPolicyCommitment<BlockNumber, Balance> {
-    /// Rationing to be used
+    /// Rationing to be used.
     pub application_rationing_policy: Option<hiring::ApplicationRationingPolicy>,
 
-    /// Maximum length of review period of applications
+    /// Maximum length of review period of applications.
     pub max_review_period_length: BlockNumber,
 
-    /// Staking policy for application
+    /// Staking policy for application.
     pub application_staking_policy: Option<hiring::StakingPolicy<Balance, BlockNumber>>,
 
-    /// Staking policy for role itself
+    /// Staking policy for role itself.
     pub role_staking_policy: Option<hiring::StakingPolicy<Balance, BlockNumber>>,
 
-    // Slashing terms during application
-    // pub application_slashing_terms: SlashingTerms,
-
-    // Slashing terms during role, NOT application itself!
+    /// Slashing terms during role, NOT application itself!
     pub role_slashing_terms: SlashingTerms,
 
-    /// When filling an opening: Unstaking period for application stake of successful applicants
+    /// When filling an opening: unstaking period for application stake of successful applicants.
     pub fill_opening_successful_applicant_application_stake_unstaking_period: Option<BlockNumber>,
 
-    /// When filling an opening:
+    /// When filling an opening: unstaking period for the application stake of failed applicants.
     pub fill_opening_failed_applicant_application_stake_unstaking_period: Option<BlockNumber>,
 
-    /// When filling an opening:
+    /// When filling an opening: unstaking period for the role stake of failed applicants.
     pub fill_opening_failed_applicant_role_stake_unstaking_period: Option<BlockNumber>,
 
-    /// When terminating a worker:
+    /// When terminating a worker: unstaking period for application stake.
     pub terminate_worker_application_stake_unstaking_period: Option<BlockNumber>,
 
-    /// When terminating a worker:
+    /// When terminating a worker: unstaking period for role stake.
     pub terminate_worker_role_stake_unstaking_period: Option<BlockNumber>,
 
-    /// When a worker exists: ..
+    /// When a worker exists: unstaking period for application stake.
     pub exit_worker_role_application_stake_unstaking_period: Option<BlockNumber>,
 
-    /// When a worker exists: ..
+    /// When a worker exists: unstaking period for role stake.
     pub exit_worker_role_stake_unstaking_period: Option<BlockNumber>,
 }
 
@@ -86,21 +86,21 @@ pub struct WorkerOpening<OpeningId, BlockNumber, Balance, WorkerApplicationId: c
     /// Identifer for underlying opening in the hiring module.
     pub opening_id: OpeningId,
 
-    /// Set of identifiers for all worker applications ever added
+    /// Set of identifiers for all worker applications ever added.
     pub worker_applications: BTreeSet<WorkerApplicationId>,
 
     /// Commitment to policies in opening.
     pub policy_commitment: OpeningPolicyCommitment<BlockNumber, Balance>,
 }
 
-/// Working group lead: worker lead
+/// Working group lead: worker lead.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Lead<MemberId, AccountId> {
-    /// Member id of the leader
+    /// Member id of the leader.
     pub member_id: MemberId,
 
-    /// Account used to authenticate in this role,
+    /// Account used to authenticate in this role.
     pub role_account_id: AccountId,
 }
 
@@ -108,22 +108,23 @@ pub struct Lead<MemberId, AccountId> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct WorkerApplication<AccountId, WorkerOpeningId, MemberId, ApplicationId> {
-    /// Account used to authenticate in this role,
+    /// Account used to authenticate in this role.
     pub role_account: AccountId,
 
-    /// Opening on which this application applies
+    /// Opening on which this application applies.
     pub worker_opening_id: WorkerOpeningId,
 
-    /// Member applying
+    /// Member applying.
     pub member_id: MemberId,
 
-    /// Underlying application in hiring module
+    /// Underlying application in hiring module.
     pub application_id: ApplicationId,
 }
 
 impl<AccountId: Clone, WorkerOpeningId: Clone, MemberId: Clone, ApplicationId: Clone>
     WorkerApplication<AccountId, WorkerOpeningId, MemberId, ApplicationId>
 {
+    /// Creates a new worker application using parameters.
     pub fn new(
         role_account: &AccountId,
         worker_opening_id: &WorkerOpeningId,
@@ -131,10 +132,10 @@ impl<AccountId: Clone, WorkerOpeningId: Clone, MemberId: Clone, ApplicationId: C
         application_id: &ApplicationId,
     ) -> Self {
         WorkerApplication {
-            role_account: (*role_account).clone(),
-            worker_opening_id: (*worker_opening_id).clone(),
-            member_id: (*member_id).clone(),
-            application_id: (*application_id).clone(),
+            role_account: role_account.clone(),
+            worker_opening_id: worker_opening_id.clone(),
+            member_id: member_id.clone(),
+            application_id: application_id.clone(),
         }
     }
 }
@@ -154,98 +155,55 @@ pub struct WorkerRoleStakeProfile<StakeId, BlockNumber> {
 }
 
 impl<StakeId: Clone, BlockNumber: Clone> WorkerRoleStakeProfile<StakeId, BlockNumber> {
+    /// Creates a new worker role stake profile using stake parameters.
     pub fn new(
         stake_id: &StakeId,
         termination_unstaking_period: &Option<BlockNumber>,
         exit_unstaking_period: &Option<BlockNumber>,
     ) -> Self {
         Self {
-            stake_id: (*stake_id).clone(),
-            termination_unstaking_period: (*termination_unstaking_period).clone(),
-            exit_unstaking_period: (*exit_unstaking_period).clone(),
+            stake_id: stake_id.clone(),
+            termination_unstaking_period: termination_unstaking_period.clone(),
+            exit_unstaking_period: exit_unstaking_period.clone(),
         }
     }
 }
 
-/// Working group participant: worker
+/// Working group participant: worker.
 /// This role can be staked, have reward and be inducted through the hiring module.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
-pub struct Worker<AccountId, RewardRelationshipId, StakeId, BlockNumber> {
-    /// Account used to authenticate in this role,
+pub struct Worker<AccountId, RewardRelationshipId, StakeId, BlockNumber, MemberId> {
+    /// Member id related to the worker
+    pub member_id: MemberId,
+    /// Account used to authenticate in this role.
     pub role_account: AccountId,
     /// Whether the role has recurring reward, and if so an identifier for this.
     pub reward_relationship: Option<RewardRelationshipId>,
     /// When set, describes role stake of worker.
     pub role_stake_profile: Option<WorkerRoleStakeProfile<StakeId, BlockNumber>>,
-    /// The stage of this worker in the working group.
-    pub stage: WorkerRoleStage<BlockNumber>,
 }
 
-impl<AccountId: Clone, RewardRelationshipId: Clone, StakeId: Clone, BlockNumber: Clone>
-    Worker<AccountId, RewardRelationshipId, StakeId, BlockNumber>
+impl<
+        AccountId: Clone,
+        RewardRelationshipId: Clone,
+        StakeId: Clone,
+        BlockNumber: Clone,
+        MemberId: Clone,
+    > Worker<AccountId, RewardRelationshipId, StakeId, BlockNumber, MemberId>
 {
+    /// Creates a new _Worker_ using parameters.
     pub fn new(
+        member_id: &MemberId,
         role_account: &AccountId,
         reward_relationship: &Option<RewardRelationshipId>,
         role_stake_profile: &Option<WorkerRoleStakeProfile<StakeId, BlockNumber>>,
-        stage: &WorkerRoleStage<BlockNumber>,
     ) -> Self {
         Worker {
-            role_account: (*role_account).clone(),
-            reward_relationship: (*reward_relationship).clone(),
-            role_stake_profile: (*role_stake_profile).clone(),
-            stage: (*stage).clone(),
-        }
-    }
-}
-
-// The stage of the involvement of a curator in the working group.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Clone, PartialEq)]
-pub enum WorkerRoleStage<BlockNumber> {
-    /// Currently active.
-    Active,
-
-    /// Currently unstaking
-    Unstaking(CuratorExitSummary<BlockNumber>),
-
-    /// No longer active and unstaked
-    Exited(CuratorExitSummary<BlockNumber>),
-}
-
-/// Must be default constructible because it indirectly is a value in a storage map.
-/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED TO DUE BAD STORAGE MODEL IN SUBSTRATE***
-impl<BlockNumber> Default for WorkerRoleStage<BlockNumber> {
-    fn default() -> Self {
-        WorkerRoleStage::Active
-    }
-}
-
-/// The exit stage of a curators involvement in the working group.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Clone, PartialEq)]
-pub struct CuratorExitSummary<BlockNumber> {
-    /// Origin for exit.
-    pub origin: CuratorExitInitiationOrigin,
-
-    /// When exit was initiated.
-    pub initiated_at_block_number: BlockNumber,
-
-    /// Explainer for why exit was initited.
-    pub rationale_text: Vec<u8>,
-}
-
-impl<BlockNumber: Clone> CuratorExitSummary<BlockNumber> {
-    pub fn new(
-        origin: &CuratorExitInitiationOrigin,
-        initiated_at_block_number: &BlockNumber,
-        rationale_text: &[u8],
-    ) -> Self {
-        CuratorExitSummary {
-            origin: (*origin).clone(),
-            initiated_at_block_number: (*initiated_at_block_number).clone(),
-            rationale_text: rationale_text.to_owned(),
+            member_id: member_id.clone(),
+            role_account: role_account.clone(),
+            reward_relationship: reward_relationship.clone(),
+            role_stake_profile: role_stake_profile.clone(),
         }
     }
 }
@@ -253,18 +211,23 @@ impl<BlockNumber: Clone> CuratorExitSummary<BlockNumber> {
 /// Origin of exit initiation on behalf of a curator.'
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq)]
-pub enum CuratorExitInitiationOrigin {
+pub enum WorkerExitInitiationOrigin {
     /// Lead is origin.
     Lead,
 
     /// The curator exiting is the origin.
-    Curator,
+    Worker,
 }
 
 /// The recurring reward if any to be assigned to an actor when filling in the position.
 #[derive(Encode, Decode, Clone, Eq, PartialEq, Debug)]
 pub struct RewardPolicy<Balance, BlockNumber> {
+    /// Balance per payout.
     pub amount_per_payout: Balance,
+
+    /// Next payment time (in blocks).
     pub next_payment_at_block: BlockNumber,
+
+    /// Optional payout interval.
     pub payout_interval: Option<BlockNumber>,
 }
