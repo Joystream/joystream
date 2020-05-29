@@ -11,6 +11,7 @@ import {
 import * as fs from 'fs-extra';
 import Debug from "debug";
 import { cloneDeep } from 'lodash';
+import { DIRECTIVES } from './SchemaDirective'
 
 const debug = Debug('qnode-cli:schema-parser');
 
@@ -21,12 +22,11 @@ const SCHEMA_DEFINITIONS_PREAMBLE = `
 type Query {
     _dummy: String # empty queries are not allowed
 }
-directive @fullTextSearchable(query: String!) on FIELD_DEFINITION
 `
 
-export interface DirectiveVisitor {
-    // directive name to watch
-    directiveName: string,
+export type SchemaNode = ObjectTypeDefinitionNode | FieldDefinitionNode | DirectiveNode;
+
+export interface Visitor {
     /**
      * Generic visit function for the AST schema traversal. 
      * Only ObjectTypeDefinition and FieldDefinition nodes are included in the path during the 
@@ -34,9 +34,19 @@ export interface DirectiveVisitor {
      * 
      * May throw validation errors
      * 
-     * @param path: BFS path in the schema tree ending at the directive node of interest
+     * @param path: DFS path in the schema tree ending at the directive node of interest
      */
-    visit: (path: (ObjectTypeDefinitionNode | FieldDefinitionNode | DirectiveNode)[]) => void;
+    visit: (path: SchemaNode[]) => void
+}
+
+export interface Visitors {
+    /**
+     * A map from the node name to the Visitor
+     * 
+     * During a DFS traversal of the AST tree if a directive node
+     * name matches the key in the directives map, the corresponding visitor is called
+     */
+    directives: { [name: string]: Visitor };
 }
 
 /**
@@ -58,11 +68,16 @@ export class GraphQLSchemaParser {
     this._objectTypeDefinations = GraphQLSchemaParser.createObjectTypeDefinations(this.schema);
   }
 
+  private static buildPreamble(): string {
+      let preamble = SCHEMA_DEFINITIONS_PREAMBLE;
+      DIRECTIVES.map((d) => preamble += (d.preamble + '\n'));
+      return preamble;
+  }
   /**
    * Read GrapqhQL schema and build a schema from it
    */
   static buildSchema(contents: string): GraphQLSchema {
-    const schema = SCHEMA_DEFINITIONS_PREAMBLE.concat(contents);
+    const schema = GraphQLSchemaParser.buildPreamble().concat(contents);
     const ast = parse(schema);
     // in order to build AST with undeclared directive, we need to 
     // switch off SDL validation
@@ -122,10 +137,10 @@ export class GraphQLSchemaParser {
   /**
    * DFS traversal of the AST
    */
-  visitDirectives(visitor: DirectiveVisitor): void {
+  dfsTraversal(visitors: Visitors): void {
     // we traverse starting from each definition 
     this._objectTypeDefinations.map((objType) => {
-        const path: (FieldDefinitionNode | ObjectTypeDefinitionNode | DirectiveNode)[] = [];
+        const path: SchemaNode[] = [];
         visit(objType, {
             enter: (node) => {
                 if (node.kind !== 'Directive' && 
@@ -135,8 +150,10 @@ export class GraphQLSchemaParser {
                         return false;
                 }
                 path.push(node);
-                if (node.kind === 'Directive' && node.name.value === visitor.directiveName) {
-                    visitor.visit(cloneDeep(path));
+                if (node.kind === 'Directive') {
+                    if (node.name.value in visitors.directives) {
+                        (visitors.directives[node.name.value]).visit(cloneDeep(path))
+                    }
                 } 
                
             },
