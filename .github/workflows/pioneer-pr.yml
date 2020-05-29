@@ -1,9 +1,9 @@
-name: Pioneer-PR
+name: Pioneer-v1
 on: [pull_request, push]
 
 jobs:
-  pioneer_build_code:
-    name: Pioneer Build Code
+  pioneer_build:
+    name: Build
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -17,21 +17,5 @@ jobs:
     - name: build
       run: |
         yarn install --frozen-lockfile
-        yarn workspace pioneer run build:code
+        yarn workspace pioneer run build
 
-  pioneer_build_i18n:
-    name: Pioneer Build i18n
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [12.x]
-    steps:
-    - uses: actions/checkout@v1
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node-version }}
-    - name: build
-      run: |
-        yarn install --frozen-lockfile
-        yarn workspace pioneer run build:i18n
