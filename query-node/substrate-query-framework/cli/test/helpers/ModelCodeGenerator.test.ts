@@ -1,4 +1,4 @@
-import { GraphQLSchemaParser } from './../../src/helpers/SchemaParser';
+import { GraphQLSchemaParser, SchemaNode, Visitor } from './../../src/helpers/SchemaParser';
 import { expect } from 'chai';
 
 describe('SchemaParser', () => {
@@ -81,14 +81,17 @@ describe('SchemaParser', () => {
     it('should visit directives', () => {
         const parser = new GraphQLSchemaParser('test/fixtures/single-type.graphql');
         const names: string[] = [];
-        parser.visitDirectives({
-            directiveName: "fullTextSearchable",
+        const visitor: Visitor = {
             visit: (path) => {
-                path.map((n) => {
-                    names.push(n.name.value);
-                })
+                path.map((n: SchemaNode) => names.push(n.name.value));
             }
-        })
+        }    
+        parser.dfsTraversal({
+            directives: {
+                "fullTextSearchable": visitor
+            }
+        });
+
         expect(names).members(["Membership", "handle", "fullTextSearchable"], "Should detect full path");
     })
 
