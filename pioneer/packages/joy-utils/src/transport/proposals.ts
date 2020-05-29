@@ -13,8 +13,9 @@ import { MemberId } from '@joystream/types/members';
 import { u32 } from '@polkadot/types/';
 import { BalanceOf } from '@polkadot/types/interfaces';
 
-import { includeKeys, splitOnUpperCase } from '../functions/misc';
-import { calculateStake, calculateMetaFromType } from '../functions/proposals';
+import { includeKeys } from '../functions/misc';
+import _ from 'lodash';
+import proposalsConsts from '../consts/proposals';
 
 import { ApiPromise } from '@polkadot/api';
 import MembersTransport from './members';
@@ -135,7 +136,7 @@ export default class ProposalsTransport extends BaseTransport {
       const obj = await prevProm;
       const period = (await this.proposalsCodex[method]()) as u32;
       // setValidatorCountProposalVotingPeriod to SetValidatorCount
-      const key = splitOnUpperCase(method)
+      const key = _.words(_.startCase(method))
         .slice(0, -3)
         .map((w, i) => (i === 0 ? w.slice(0, 1).toUpperCase() + w.slice(1) : w))
         .join('') as ProposalType;
@@ -155,17 +156,14 @@ export default class ProposalsTransport extends BaseTransport {
   async parametersFromProposalType (type: ProposalType) {
     const votingPeriod = (await this.proposalTypesVotingPeriod())[type];
     const gracePeriod = (await this.proposalTypesGracePeriod())[type];
-    const stake = calculateStake(type);
-    const meta = calculateMetaFromType(type);
     // Currently it's same for all types, but this will change soon
     const cancellationFee = this.cancellationFee();
     return {
       type,
       votingPeriod,
       gracePeriod,
-      stake,
       cancellationFee,
-      ...meta
+      ...proposalsConsts[type]
     };
   }
 
