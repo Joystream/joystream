@@ -1,6 +1,6 @@
 import { ObjectTypeDefinitionNode, FieldDefinitionNode, ListTypeNode, NamedTypeNode, DirectiveNode, ArgumentNode, StringValueNode } from 'graphql';
-import { GraphQLSchemaParser } from './SchemaParser';
-import { WarthogModel, Field, ObjectType, FULL_TEXT_SEARCHABLE_DIRECTIVE } from './WarthhogModel';
+import { GraphQLSchemaParser, Visitors, SchemaNode } from './SchemaParser';
+import { WarthogModel, Field, ObjectType } from '../model';
 import Debug from 'debug';
 
 const debug = Debug('qnode-cli:model-generator');

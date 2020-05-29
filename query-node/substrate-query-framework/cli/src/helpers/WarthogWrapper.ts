@@ -8,7 +8,7 @@ const warthogCli = require('warthog/dist/cli/cli');
 
 import { DatabaseModelCodeGenerator } from './ModelCodeGenerator';
 import { getTemplatePath, createFile, createDir } from '../utils/utils';
-import { WarthogModel } from './WarthhogModel';
+import { WarthogModel } from '../model/WarthogModel';
 import { FTSQueryGenerator } from './FTSQueryGenerator';
 import Debug from "debug";
 

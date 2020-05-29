@@ -1,6 +1,7 @@
 import { WarthogModel, FTSQuery, ObjectType, Field } from './WarthhogModel';
 import Mustache = require('mustache');
 import Debug from 'debug';
+import { FTSQuery, WarthogModel, ObjectType, Field } from '../model';
 
 const debug = Debug('qnode-cli:model-generator');
 
