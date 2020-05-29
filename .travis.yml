@@ -16,20 +16,12 @@ matrix:
   include:
     - os: linux
       env: TARGET=x86_64-unknown-linux-gnu
-  # Removed all other plaftorm builds sice the repo is growing in terms of activitly
-  # and CI checks are taking long to start due to concurrent number of jobs
-  # one job should be sufficient for doing all manners of checks and unit nets. Will defer
-  # building all platform binanires and wasm blob to a different system.
 
 install:
   - rustup install nightly-2020-05-23
   - rustup target add wasm32-unknown-unknown --toolchain nightly-2020-05-23
   # travis installs rust using rustup with the "minimal" profile so these tools are not installed by default
   - rustup component add rustfmt
-  # choosing to add clippy for the nightly toolchain only
-  # becuase we want to run it with nighly to avoid having to set BUILD_DUMMY_WASM_BINARY=0
-  # setting that variable requires changing it in a later run of cargo bulid to ensure runtime/build.rs
-  # actually builds the runtime .. the behaviour is a bit odd so choosing to avoid messing with it.
   - rustup component add clippy
 
 before_script:
@@ -37,38 +29,7 @@ before_script:
 
 script:
   # we set release as build type for all steps to benefit from already compiled packages in prior steps
-  # skipping clippy ...
   - BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --target=${TARGET} -- -D warnings
   - BUILD_DUMMY_WASM_BINARY=1 cargo test --release --verbose --all --target=${TARGET}
-  - BUILD_DUMMY_WASM_BINARY=0 WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo build --release --target=${TARGET} -p joystream-node
+  - TRIGGER_WASM_BUILD=1 WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo build --release --target=${TARGET} -p joystream-node
   - ls -l ./target/${TARGET}/release/wbuild/joystream-node-runtime/
-
-before_deploy:
-  - cp ./target/${TARGET}/release/joystream-node .
-  - FILENAME=`./joystream-node --version | sed -e "s/ /-/g"`
-  - tar -cf ${FILENAME}.tar ./joystream-node
-  - gzip ${FILENAME}.tar
-  - export ASSET=${FILENAME}.tar.gz
-
-deploy:
-  - provider: releases
-    api_key:
-      secure: FfxZGQexxAGT0Skbctl1FuqmEvNHejPDPtNG8Du1ACSGjS7Y+M6o/aPqE6HL158AmddOgndsIPR+HM7VfMDAUMkLTbOhv3nMpDBZu1h25vwk+jHOM65tm5LWUu/ROWBpaAQiG7NKrvtfkNfbNBSETsEbWBt/DPrhlIfSbgsXBFDiid7uRrCiwvDUJ097/EUOJ9OVUrk+O4ebSzfIfKPGPtRU2rQQ0eNX7yX3TCm3jbQm/kplkQNRL9mnAJNxtKuvuko4LqZ6jN4XLoLTHUMjO7E0r6wXVB4GVjA4HA214eLlQD6BhgTbWMDxKgWyuKzPG+2GLKyluSSn0RurSl8tYryXKxKxuN3H1FX9r23a8AzGtpRACJtIePC2YmPuQRSnz2Bw8jlSP2WPLJtXGD036J/wVMj6W9TROm7IBigiC7QlqAqCYNByOnoKyhRCgYyAJZb0Jpa3qWaFhA6b6gCGhyH85QCcrc0q6JAB3oqH8Wfm/K2HVzBobmKaSFu5DpwInNnUXnLWGVzhSt3oCq6ld773izReGdLJtLC2vaJ9rZVaVw29s9M662EEuAGgaVLO/sinZJFeIIaCF4i4zUXwXSLIdfKXGOR0ZibkyT2FS6qPGvl/lLN5IREzD7v/rV8htGMLmw4jpPLNskvRjCHX42ewRRYdMvZzQQOAvSlWcsw=
-    file: ${ASSET}
-    on:
-      tags: true
-      repo: Joystream/joystream
-    draft: true
-    overwrite: true
-    skip_cleanup: true
-  - provider: releases
-    api_key:
-      secure: FfxZGQexxAGT0Skbctl1FuqmEvNHejPDPtNG8Du1ACSGjS7Y+M6o/aPqE6HL158AmddOgndsIPR+HM7VfMDAUMkLTbOhv3nMpDBZu1h25vwk+jHOM65tm5LWUu/ROWBpaAQiG7NKrvtfkNfbNBSETsEbWBt/DPrhlIfSbgsXBFDiid7uRrCiwvDUJ097/EUOJ9OVUrk+O4ebSzfIfKPGPtRU2rQQ0eNX7yX3TCm3jbQm/kplkQNRL9mnAJNxtKuvuko4LqZ6jN4XLoLTHUMjO7E0r6wXVB4GVjA4HA214eLlQD6BhgTbWMDxKgWyuKzPG+2GLKyluSSn0RurSl8tYryXKxKxuN3H1FX9r23a8AzGtpRACJtIePC2YmPuQRSnz2Bw8jlSP2WPLJtXGD036J/wVMj6W9TROm7IBigiC7QlqAqCYNByOnoKyhRCgYyAJZb0Jpa3qWaFhA6b6gCGhyH85QCcrc0q6JAB3oqH8Wfm/K2HVzBobmKaSFu5DpwInNnUXnLWGVzhSt3oCq6ld773izReGdLJtLC2vaJ9rZVaVw29s9M662EEuAGgaVLO/sinZJFeIIaCF4i4zUXwXSLIdfKXGOR0ZibkyT2FS6qPGvl/lLN5IREzD7v/rV8htGMLmw4jpPLNskvRjCHX42ewRRYdMvZzQQOAvSlWcsw=
-    file: ${ASSET}
-    on:
-      branch: development
-      repo: Joystream/joystream
-    draft: true
-    prerelease: true
-    overwrite: true
-    skip_cleanup: true
