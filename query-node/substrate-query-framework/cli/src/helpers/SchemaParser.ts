@@ -1,10 +1,12 @@
 import {
   parse,
+  visit,
   buildASTSchema,
   GraphQLSchema,
   validateSchema,
   ObjectTypeDefinitionNode,
-  FieldDefinitionNode
+  FieldDefinitionNode,
+  DirectiveNode
 } from 'graphql';
 import * as fs from 'fs-extra';
 import Debug from "debug";
@@ -20,6 +22,21 @@ type Query {
 }
 directive @fullTextSearchable(query: String!) on FIELD_DEFINITION
 `
+
+export interface DirectiveVisitor {
+    // directive name to watch
+    directiveName: string,
+    /**
+     * Generic visit function for the AST schema traversal. 
+     * Only ObjectTypeDefinition and FieldDefinition nodes are included in the path during the 
+     * traversal
+     * 
+     * May throw validation errors
+     * 
+     * @param path: BFS path in the schema tree ending at the directive node of interest
+     */
+    visit: (path: (ObjectTypeDefinitionNode | FieldDefinitionNode | DirectiveNode)[]) => void;
+}
 
 /**
  * Parse GraphQL schema
@@ -99,5 +116,31 @@ export class GraphQLSchemaParser {
    */
   getObjectDefinations(): ObjectTypeDefinitionNode[] {
     return this._objectTypeDefinations;
+  }
+
+  /**
+   * DFS traversal of the AST
+   */
+  visitDirectives(visitor: DirectiveVisitor): void {
+    // we traverse starting from each definition 
+    this._objectTypeDefinations.map((objType) => {
+        const path: (FieldDefinitionNode | ObjectTypeDefinitionNode | DirectiveNode)[] = [];
+        visit(objType, {
+            enter: (node) => {
+                if (node.kind !== 'Directive' && 
+                    node.kind !== 'ObjectTypeDefinition' && 
+                    node.kind !== 'FieldDefinition') {
+                        // skip non-definition fields;
+                        return false;
+                }
+                path.push(node);
+                if (node.kind === 'Directive' && node.name.value === visitor.directiveName) {
+                    visitor.visit(path);
+                } 
+               
+            },
+            leave: () => path.pop()
+        })
+    })
   }
 }
