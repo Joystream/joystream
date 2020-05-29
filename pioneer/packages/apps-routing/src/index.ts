@@ -14,7 +14,7 @@ import members from './joy-members';
 import proposals from './joy-proposals';
 import roles from './joy-roles';
 import storageRoles from './joy-storage';
-// import pages from './joy-pages';
+import pages from './joy-pages';
 
 // import template from './123code';
 import accounts from './accounts';
@@ -73,7 +73,8 @@ if (appSettings.isFullMode) {
 }
 
 routes = routes.concat(
-  settings
+  settings,
+  pages
 );
 
 const setup: Routing = {
