@@ -58,7 +58,7 @@ export type Category = typeof Categories[keyof typeof Categories];
 export type ProposalMeta = {
   description: string;
   category: Category;
-  image: string;
+  stake: number;
   approvalQuorum: number;
   approvalThreshold: number;
   slashingQuorum: number;

@@ -18,7 +18,7 @@ import { withFormContainer } from "./FormContainer";
 import { createType } from "@polkadot/types";
 import "./forms.css";
 import { useTransport, usePromise } from "@polkadot/joy-utils/react/hooks";
-import { snakeCaseToCamelCase } from "@polkadot/joy-utils/functions/misc";
+import _ from "lodash";
 import { ElectionParameters } from "@joystream/types/proposals";
 import { PromiseComponent } from "@polkadot/joy-utils/react/components";
 
@@ -84,7 +84,7 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
         "council_size"
       ] as const;
       fieldsToPopulate.forEach(field => {
-        const camelCaseField = snakeCaseToCamelCase(field) as keyof FormValues;
+        const camelCaseField = _.camelCase(field) as keyof FormValues;
         setFieldValue(camelCaseField, councilParams[field].toString());
         fetchedPlaceholders[camelCaseField] = councilParams[field].toString();
       });
