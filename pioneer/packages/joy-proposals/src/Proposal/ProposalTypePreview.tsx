@@ -4,8 +4,8 @@ import { History } from "history";
 import { Item, Icon, Button, Label } from "semantic-ui-react";
 
 import { Category } from "./ChooseProposalType";
-import { ProposalType } from "../runtime";
-import { slugify, splitOnUpperCase } from "../utils";
+import { ProposalType } from "@polkadot/joy-utils/types/proposals";
+import _ from 'lodash';
 import styled from 'styled-components';
 import useVoteStyles from './useVoteStyles';
 import { formatBalance } from "@polkadot/util";
@@ -46,7 +46,6 @@ const CreateButton = styled(Button)`
 export type ProposalTypeInfo = {
   type: ProposalType;
   category: Category;
-  image: string;
   description: string;
   stake: number;
   cancellationFee?: number;
@@ -88,7 +87,7 @@ export default function ProposalTypePreview(props: ProposalTypePreviewProps) {
 
   const handleClick = () => {
     if (!props.history) return;
-    props.history.push(`/proposals/new/${slugify(type)}`);
+    props.history.push(`/proposals/new/${_.kebabCase(type)}`);
   };
 
   return (
@@ -98,7 +97,7 @@ export default function ProposalTypePreview(props: ProposalTypePreviewProps) {
         <Item.Image size="tiny" src={image} />
       */}
       <Item.Content>
-        <Item.Header>{splitOnUpperCase(type).join(" ")}</Item.Header>
+        <Item.Header>{_.startCase(type)}</Item.Header>
         <Item.Description>{description}</Item.Description>
         <div className="proposal-details">
           <ProposalTypeDetail

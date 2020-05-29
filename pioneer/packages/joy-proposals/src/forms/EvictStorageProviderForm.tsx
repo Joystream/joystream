@@ -18,8 +18,7 @@ import { withFormContainer } from "./FormContainer";
 import { InputAddress } from "@polkadot/react-components/index";
 import { accountIdsToOptions } from "@polkadot/joy-election/utils";
 import { AccountId } from "@polkadot/types/interfaces";
-import { useTransport } from "../runtime";
-import { usePromise } from "../utils";
+import { useTransport, usePromise } from "@polkadot/joy-utils/react/hooks";
 import "./forms.css";
 
 type FormValues = GenericFormValues & {
@@ -40,7 +39,7 @@ const EvictStorageProviderForm: React.FunctionComponent<FormInnerProps> = props 
   const { errors, touched, values, setFieldValue } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const transport = useTransport();
-  const [storageProviders /* error */, , loading] = usePromise<AccountId[]>(() => transport.storageProviders(), []);
+  const [storageProviders /* error */, , loading] = usePromise<AccountId[]>(() => transport.storageProviders.providers(), []);
   const storageProvidersOptions = accountIdsToOptions(storageProviders);
   return (
     <GenericProposalForm

@@ -1,5 +1,7 @@
 import { ProposalId, VoteKind } from "@joystream/types/proposals";
 import { MemberId } from "@joystream/types/members";
+import { ParsedMember } from "./members";
+
 export const ProposalTypes = [
   "Text",
   "RuntimeUpgrade",
@@ -13,20 +15,6 @@ export const ProposalTypes = [
 ] as const;
 
 export type ProposalType = typeof ProposalTypes[number];
-
-export type ParsedMember = {
-  about: string;
-  avatar_uri: string;
-  handle: string;
-  registered_at_block: number;
-  registered_at_time: number;
-  roles: any[];
-  entry: { [k: string]: any };
-  root_account: string;
-  controller_account: string;
-  subscription: any;
-  suspended: boolean;
-};
 
 export type ParsedProposal = {
   id: ProposalId;
@@ -52,28 +40,27 @@ export type ParsedProposal = {
   cancellationFee: number;
 };
 
-export const StorageRoleParameters = [
-  "min_stake",
-  "min_actors",
-  "max_actors",
-  "reward",
-  "reward_period",
-  "bonding_period",
-  "unbonding_period",
-  "min_service_period",
-  "startup_grace_period",
-  "entry_request_fee"
-] as const;
-
-export type IStorageRoleParameters = {
-  [k in typeof StorageRoleParameters[number]]: number;
-};
-
 export type ProposalVote = {
   vote: VoteKind | null;
   member: ParsedMember & { memberId: MemberId };
 };
 
-export abstract class Transport {
-  abstract proposals(): Promise<ParsedProposal[]>;
+export const Categories = {
+  storage: "Storage",
+  council: "Council",
+  validators: "Validators",
+  cwg: "Content Working Group",
+  other: "Other"
+} as const;
+
+export type Category = typeof Categories[keyof typeof Categories];
+
+export type ProposalMeta = {
+  description: string;
+  category: Category;
+  stake: number;
+  approvalQuorum: number;
+  approvalThreshold: number;
+  slashingQuorum: number;
+  slashingThreshold: number;
 }

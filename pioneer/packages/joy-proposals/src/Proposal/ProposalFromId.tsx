@@ -1,9 +1,8 @@
 import React from "react";
 import { RouteComponentProps } from "react-router-dom";
 import ProposalDetails from "./ProposalDetails";
-import { useProposalSubscription } from "../utils";
-import Error from "./Error";
-import Loading from "./Loading";
+import { useProposalSubscription } from "@polkadot/joy-utils/react/hooks";
+import { PromiseComponent } from "@polkadot/joy-utils/react/components";
 
 
 export default function ProposalFromId(props: RouteComponentProps<any>) {
@@ -15,11 +14,12 @@ export default function ProposalFromId(props: RouteComponentProps<any>) {
 
   const { proposal: proposalState, votes: votesState } = useProposalSubscription(id);
 
-  if (proposalState.loading && !proposalState.error) {
-    return <Loading text="Fetching Proposal..." />;
-  } else if (proposalState.error) {
-    return <Error error={proposalState.error} />;
-  }
-
-  return <ProposalDetails proposal={ proposalState.data } proposalId={ id } votesListState={ votesState }/>;
+  return (
+    <PromiseComponent
+      error={proposalState.error}
+      loading={proposalState.loading}
+      message={"Fetching proposal..."}>
+      <ProposalDetails proposal={ proposalState.data } proposalId={ id } votesListState={ votesState }/>
+    </PromiseComponent>
+  )
 }

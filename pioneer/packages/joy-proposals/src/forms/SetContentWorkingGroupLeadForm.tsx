@@ -15,10 +15,9 @@ import {
 import Validation from "../validationSchema";
 import { FormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
-import { useTransport } from "../runtime";
-import { usePromise } from "../utils";
+import { useTransport, usePromise } from "@polkadot/joy-utils/react/hooks";
 import { Profile } from "@joystream/types/members";
-import PromiseComponent from "../Proposal/PromiseComponent";
+import { PromiseComponent } from "@polkadot/joy-utils/react/components";
 import _ from 'lodash';
 import "./forms.css";
 
@@ -79,11 +78,11 @@ const SetContentWorkingGroupsLeadForm: React.FunctionComponent<FormInnerProps> =
   // Transport
   const transport = useTransport();
   const [members, /* error */, loading] = usePromise<MemberWithId[]>(
-    () => transport.membersExceptCouncil(),
+    () => transport.council.membersExceptCouncil(),
     []
   );
   const [currentLead, clError, clLoading] = usePromise<MemberWithId | null>(
-    () => transport.WGLead(),
+    () => transport.contentWorkingGroup.currentLead(),
     null
   );
   // Generate members options array on load

@@ -17,10 +17,10 @@ import { InputFormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
 import { createType } from "@polkadot/types";
 import "./forms.css";
-import { useTransport } from "../runtime";
-import { usePromise, snakeCaseToCamelCase } from "../utils";
+import { useTransport, usePromise } from "@polkadot/joy-utils/react/hooks";
+import _ from "lodash";
 import { ElectionParameters } from "@joystream/types/proposals";
-import PromiseComponent from "../Proposal/PromiseComponent";
+import { PromiseComponent } from "@polkadot/joy-utils/react/components";
 
 type FormValues = GenericFormValues & {
   announcingPeriod: string;
@@ -69,7 +69,7 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
   const [ placeholders, setPlaceholders ] = useState<{ [k in keyof FormValues]: string }>(defaultValues);
 
   const transport = useTransport();
-  const [ councilParams, error, loading ] = usePromise<ElectionParameters | null>(() => transport.electionParameters(), null);
+  const [ councilParams, error, loading ] = usePromise<ElectionParameters | null>(() => transport.council.electionParameters(), null);
   useEffect(() => {
     if (councilParams) {
       let fetchedPlaceholders = {...placeholders};
@@ -84,7 +84,7 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
         "council_size"
       ] as const;
       fieldsToPopulate.forEach(field => {
-        const camelCaseField = snakeCaseToCamelCase(field) as keyof FormValues;
+        const camelCaseField = _.camelCase(field) as keyof FormValues;
         setFieldValue(camelCaseField, councilParams[field].toString());
         fetchedPlaceholders[camelCaseField] = councilParams[field].toString();
       });

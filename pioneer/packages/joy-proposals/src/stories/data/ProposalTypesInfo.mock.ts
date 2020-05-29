@@ -5,7 +5,6 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
   {
     type: "Text",
     category: Categories.other,
-    image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
         "Change the total reward across all validators in a given block."+
         "This is not the direct reward, but base reward for Pallet staking module."+
@@ -22,7 +21,6 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
   {
     type: "Spending",
     category: Categories.other,
-    image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
         "Change the total reward across all validators in a given block."+
         "This is not the direct reward, but base reward for Pallet staking module."+
@@ -39,7 +37,6 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
   {
     type: "RuntimeUpgrade",
     category: Categories.other,
-    image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
         "Change the total reward across all validators in a given block."+
         "This is not the direct reward, but base reward for Pallet staking module."+
@@ -56,7 +53,6 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
   {
     type: "EvictStorageProvider",
     category: Categories.storage,
-    image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
         "Change the total reward across all validators in a given block."+
         "This is not the direct reward, but base reward for Pallet staking module."+
@@ -73,7 +69,6 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
   {
     type: "SetStorageRoleParameters",
     category: Categories.storage,
-    image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
         "Change the total reward across all validators in a given block."+
         "This is not the direct reward, but base reward for Pallet staking module."+
@@ -90,7 +85,6 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
   {
     type: "SetValidatorCount",
     category: Categories.validators,
-    image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
         "Change the total reward across all validators in a given block."+
         "This is not the direct reward, but base reward for Pallet staking module."+
@@ -107,7 +101,6 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
   {
     type: "SetContentWorkingGroupMintCapacity",
     category: Categories.cwg,
-    image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
         "Change the total reward across all validators in a given block."+
         "This is not the direct reward, but base reward for Pallet staking module."+
@@ -124,7 +117,6 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
   {
     type: "SetLead",
     category: Categories.cwg,
-    image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
         "Change the total reward across all validators in a given block."+
         "This is not the direct reward, but base reward for Pallet staking module."+
@@ -141,7 +133,6 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
   {
     type: "SetElectionParameters",
     category: Categories.council,
-    image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
         "Change the total reward across all validators in a given block."+
         "This is not the direct reward, but base reward for Pallet staking module."+

@@ -1,6 +1,6 @@
 import React from "react";
 import { Item, Header } from "semantic-ui-react";
-import { ParsedProposal } from "../runtime/transport";
+import { ParsedProposal } from "@polkadot/joy-utils/types/proposals";
 import { ExtendedProposalStatus } from "./ProposalDetails";
 import styled from 'styled-components';
 

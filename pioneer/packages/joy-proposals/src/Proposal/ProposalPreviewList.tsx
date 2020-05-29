@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { Card, Container, Menu } from "semantic-ui-react";
 
 import ProposalPreview from "./ProposalPreview";
-import { useTransport, ParsedProposal } from "../runtime";
-import { usePromise } from "../utils";
-import PromiseComponent from './PromiseComponent';
+import { ParsedProposal } from "@polkadot/joy-utils/types/proposals";
+import { useTransport , usePromise } from "@polkadot/joy-utils/react/hooks";
+import { PromiseComponent } from "@polkadot/joy-utils/react/components";
 import { withCalls } from "@polkadot/react-api";
 import { BlockNumber } from "@polkadot/types/interfaces";
 
@@ -52,7 +52,7 @@ type ProposalPreviewListProps = {
 
 function ProposalPreviewList({ bestNumber }: ProposalPreviewListProps) {
   const transport = useTransport();
-  const [proposals, error, loading] = usePromise<ParsedProposal[]>(() => transport.proposals(), []);
+  const [proposals, error, loading] = usePromise<ParsedProposal[]>(() => transport.proposals.proposals(), []);
   const [activeFilter, setActiveFilter] = useState<ProposalFilter>("All");
 
   const proposalsMap = mapFromProposals(proposals);

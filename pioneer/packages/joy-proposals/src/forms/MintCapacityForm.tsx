@@ -14,7 +14,7 @@ import {
 import Validation from "../validationSchema";
 import { InputFormField } from "./FormFields";
 import { withFormContainer } from "./FormContainer";
-import { ProposalType } from "../runtime";
+import { ProposalType } from "@polkadot/joy-utils/types/proposals";
 import { formatBalance } from "@polkadot/util";
 import "./forms.css";
 
