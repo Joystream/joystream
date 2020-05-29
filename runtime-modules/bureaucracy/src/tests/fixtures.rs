@@ -1,7 +1,7 @@
 use super::mock::{Balances, Bureaucracy1, Membership, System, Test, TestEvent};
 use crate::types::{
-    OpeningPolicyCommitment, RewardPolicy, Worker, WorkerApplication, WorkerExitInitiationOrigin,
-    WorkerExitSummary, WorkerOpening, WorkerRoleStage, WorkerRoleStakeProfile,
+    OpeningPolicyCommitment, RewardPolicy, Worker, WorkerApplication, WorkerOpening,
+    WorkerRoleStakeProfile,
 };
 use crate::Error;
 use crate::{Instance1, RawEvent};
@@ -24,7 +24,7 @@ impl IncreaseWorkerStakeFixture {
             origin: RawOrigin::Signed(1),
             worker_id,
             balance: 10,
-            account_id
+            account_id,
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
@@ -38,7 +38,7 @@ impl IncreaseWorkerStakeFixture {
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
         let stake_id = 0;
         let old_stake = <stake::Module<Test>>::stakes(stake_id);
-        let old_balance =  Balances::free_balance(&self.account_id);
+        let old_balance = Balances::free_balance(&self.account_id);
         let actual_result = Bureaucracy1::increase_worker_stake(
             self.origin.clone().into(),
             self.worker_id,
@@ -56,58 +56,10 @@ impl IncreaseWorkerStakeFixture {
                 get_stake_balance(old_stake) + self.balance
             );
 
-            let new_balance =  Balances::free_balance(&self.account_id);
+            let new_balance = Balances::free_balance(&self.account_id);
 
             // worker balance decreased
-            assert_eq!(
-                new_balance,
-                old_balance - self.balance,
-            );
-        }
-    }
-}
-
-pub struct UnstakeFixture {
-    origin: RawOrigin<u64>,
-    worker_id: u64,
-    stake_id: u64,
-}
-
-impl UnstakeFixture {
-    pub fn default() -> Self {
-        Self::default_for_worker_id(0)
-    }
-    pub fn default_for_worker_id(worker_id: u64) -> Self {
-        UnstakeFixture {
-            origin: RawOrigin::Root,
-            worker_id,
-            stake_id: 0,
-        }
-    }
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        UnstakeFixture { origin, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
-        let stake_existed =
-            <crate::UnstakerByStakeId<Test, crate::Instance1>>::exists(self.stake_id);
-
-        let actual_result = Bureaucracy1::unstake(self.origin.clone().into(), self.stake_id);
-        assert_eq!(actual_result, expected_result);
-
-        if stake_existed && actual_result.is_ok() {
-            assert!(!<crate::UnstakerByStakeId<Test, crate::Instance1>>::exists(
-                self.stake_id
-            ));
-
-            let worker = Bureaucracy1::worker_by_id(self.worker_id);
-            let expected_worker_stage = WorkerRoleStage::Exited(WorkerExitSummary {
-                origin: WorkerExitInitiationOrigin::Worker,
-                initiated_at_block_number: 1,
-                rationale_text: b"rationale_text".to_vec(),
-            });
-
-            assert_eq!(worker.stage, expected_worker_stage);
+            assert_eq!(new_balance, old_balance - self.balance,);
         }
     }
 }
@@ -140,17 +92,8 @@ impl TerminateWorkerRoleFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
-        self.call_and_assert_impl(expected_result, false);
-    }
-
-    pub fn call_and_assert_with_unstaking(&self, expected_result: Result<(), Error>) {
-        self.call_and_assert_impl(expected_result, true);
-    }
-
-    pub fn call_and_assert_impl(&self, expected_result: Result<(), Error>, expect_unstaking: bool) {
         <crate::WorkerExitRationaleText<Instance1>>::put(self.constraint.clone());
 
-        let rationale_text = b"rationale_text".to_vec();
         let actual_result = Bureaucracy1::terminate_worker_role(
             self.origin.clone().into(),
             self.worker_id,
@@ -159,37 +102,16 @@ impl TerminateWorkerRoleFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            let worker = Bureaucracy1::worker_by_id(self.worker_id);
-
-            let worker_exit_summary = WorkerExitSummary {
-                origin: WorkerExitInitiationOrigin::Lead,
-                initiated_at_block_number: 1,
-                rationale_text,
-            };
-
-            let expected_worker_stage = if expect_unstaking {
-                WorkerRoleStage::Unstaking(worker_exit_summary)
-            } else {
-                WorkerRoleStage::Exited(worker_exit_summary)
-            };
-
-            assert_eq!(worker.stage, expected_worker_stage);
-
-            let stake_id = 0;
-            if expect_unstaking {
-                assert!(<crate::UnstakerByStakeId<Test, crate::Instance1>>::exists(
-                    stake_id
-                ));
-            } else {
-                assert!(!<crate::UnstakerByStakeId<Test, crate::Instance1>>::exists(
-                    stake_id
+            if actual_result.is_ok() {
+                assert!(!<crate::WorkerById<Test, crate::Instance1>>::exists(
+                    self.worker_id
                 ));
             }
         }
     }
 }
 
-pub struct LeaveWorkerRoleFixture {
+pub(crate) struct LeaveWorkerRoleFixture {
     worker_id: u64,
     origin: RawOrigin<u64>,
 }
@@ -206,14 +128,6 @@ impl LeaveWorkerRoleFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
-        self.call_and_assert_impl(expected_result, false);
-    }
-
-    pub fn call_and_assert_with_unstaking(&self, expected_result: Result<(), Error>) {
-        self.call_and_assert_impl(expected_result, true);
-    }
-
-    pub fn call_and_assert_impl(&self, expected_result: Result<(), Error>, expect_unstaking: bool) {
         let rationale_text = b"rationale_text".to_vec();
         let actual_result = Bureaucracy1::leave_worker_role(
             self.origin.clone().into(),
@@ -223,32 +137,9 @@ impl LeaveWorkerRoleFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            let worker = Bureaucracy1::worker_by_id(self.worker_id);
-
-            let worker_exit_summary = WorkerExitSummary {
-                origin: WorkerExitInitiationOrigin::Worker,
-                initiated_at_block_number: 1,
-                rationale_text,
-            };
-
-            let expected_worker_stage = if expect_unstaking {
-                WorkerRoleStage::Unstaking(worker_exit_summary)
-            } else {
-                WorkerRoleStage::Exited(worker_exit_summary)
-            };
-
-            assert_eq!(worker.stage, expected_worker_stage);
-
-            let stake_id = 0;
-            if expect_unstaking {
-                assert!(<crate::UnstakerByStakeId<Test, crate::Instance1>>::exists(
-                    stake_id
-                ));
-            } else {
-                assert!(!<crate::UnstakerByStakeId<Test, crate::Instance1>>::exists(
-                    stake_id
-                ));
-            }
+            assert!(!<crate::WorkerById<Test, crate::Instance1>>::exists(
+                self.worker_id
+            ));
         }
     }
 }
@@ -284,16 +175,14 @@ impl UpdateWorkerRewardAccountFixture {
 }
 
 pub struct UpdateWorkerRoleAccountFixture {
-    member_id: u64,
     worker_id: u64,
     new_role_account_id: u64,
     origin: RawOrigin<u64>,
 }
 
 impl UpdateWorkerRoleAccountFixture {
-    pub fn default_with_ids(member_id: u64, worker_id: u64, new_role_account_id: u64) -> Self {
+    pub fn default_with_ids(worker_id: u64, new_role_account_id: u64) -> Self {
         UpdateWorkerRoleAccountFixture {
-            member_id,
             worker_id,
             new_role_account_id,
             origin: RawOrigin::Signed(1),
@@ -306,7 +195,6 @@ impl UpdateWorkerRoleAccountFixture {
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
         let actual_result = Bureaucracy1::update_worker_role_account(
             self.origin.clone().into(),
-            self.member_id,
             self.worker_id,
             self.new_role_account_id,
         );
@@ -409,10 +297,10 @@ impl FillWorkerOpeningFixture {
             let reward_relationship = self.reward_policy.clone().map(|_| 0);
 
             let expected_worker = Worker {
+                member_id: 1,
                 role_account: self.role_account,
                 reward_relationship,
                 role_stake_profile,
-                stage: WorkerRoleStage::Active,
             };
 
             let actual_worker = Bureaucracy1::worker_by_id(worker_id);
@@ -740,6 +628,7 @@ impl EventFixture {
                 u64,
                 u64,
                 std::collections::BTreeMap<u64, u64>,
+                Vec<u8>,
                 crate::Instance1,
             >,
         >,
@@ -773,6 +662,7 @@ impl EventFixture {
             u64,
             u64,
             std::collections::BTreeMap<u64, u64>,
+            Vec<u8>,
             crate::Instance1,
         >,
     ) {
@@ -806,7 +696,7 @@ impl DecreaseWorkerStakeFixture {
             origin: RawOrigin::Signed(account_id),
             worker_id,
             balance: 10,
-            account_id
+            account_id,
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
@@ -819,7 +709,7 @@ impl DecreaseWorkerStakeFixture {
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
         let stake_id = 0;
-        let old_balance =  Balances::free_balance(&self.account_id);
+        let old_balance = Balances::free_balance(&self.account_id);
         let old_stake = <stake::Module<Test>>::stakes(stake_id);
         let actual_result = Bureaucracy1::decrease_worker_stake(
             self.origin.clone().into(),
@@ -838,13 +728,10 @@ impl DecreaseWorkerStakeFixture {
                 get_stake_balance(old_stake) - self.balance
             );
 
-            let new_balance =  Balances::free_balance(&self.account_id);
+            let new_balance = Balances::free_balance(&self.account_id);
 
             // worker balance increased
-            assert_eq!(
-                new_balance,
-                old_balance + self.balance,
-            );
+            assert_eq!(new_balance, old_balance + self.balance,);
         }
     }
 }
@@ -871,7 +758,7 @@ impl SlashWorkerStakeFixture {
             origin: RawOrigin::Signed(account_id),
             worker_id,
             balance: 10,
-            account_id
+            account_id,
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
@@ -884,7 +771,7 @@ impl SlashWorkerStakeFixture {
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
         let stake_id = 0;
-        let old_balance =  Balances::free_balance(&self.account_id);
+        let old_balance = Balances::free_balance(&self.account_id);
         let old_stake = <stake::Module<Test>>::stakes(stake_id);
         let actual_result = Bureaucracy1::slash_worker_stake(
             self.origin.clone().into(),
@@ -903,13 +790,10 @@ impl SlashWorkerStakeFixture {
                 get_stake_balance(old_stake) - self.balance
             );
 
-            let new_balance =  Balances::free_balance(&self.account_id);
+            let new_balance = Balances::free_balance(&self.account_id);
 
             // worker balance unchanged
-            assert_eq!(
-                new_balance,
-                old_balance,
-            );
+            assert_eq!(new_balance, old_balance,);
         }
     }
 }

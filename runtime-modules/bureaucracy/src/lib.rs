@@ -864,14 +864,15 @@ decl_module! {
         pub fn slash_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
             Self::ensure_origin_is_set_lead(origin)?;
 
-            // Checks worker existence, worker active state
-            let worker = Self::ensure_active_worker_exists(&worker_id)?;
+            let worker = Self::ensure_worker_exists(&worker_id)?;
 
             ensure!(balance != <BalanceOf<T>>::zero(), Error::StakeBalanceCannotBeZero);
 
             let stake_profile = worker.role_stake_profile.ok_or(Error::NoWorkerStakeProfile)?;
 
-            // mutation
+            //
+            // == MUTATION SAFE ==
+            //
 
             ensure_on_wrapped_error!(
                 <stake::Module<T>>::slash_immediate(
@@ -889,8 +890,7 @@ decl_module! {
         pub fn decrease_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
             Self::ensure_origin_is_set_lead(origin)?;
 
-            // Checks worker existence, worker active state
-            let worker = Self::ensure_active_worker_exists(&worker_id)?;
+            let worker = Self::ensure_worker_exists(&worker_id)?;
 
             ensure!(balance != <BalanceOf<T>>::zero(), Error::StakeBalanceCannotBeZero);
 
@@ -900,7 +900,9 @@ decl_module! {
                 <stake::Module<T>>::ensure_can_decrease_stake(&stake_profile.stake_id, balance)
             )?;
 
-            // mutation
+            //
+            // == MUTATION SAFE ==
+            //
 
             ensure_on_wrapped_error!(
                 <stake::Module<T>>::decrease_stake_to_account(
@@ -916,8 +918,8 @@ decl_module! {
         /// Increases the worker stake, demands a worker origin. Transfers tokens from the worker
         /// role_account to the stake. No limits on the stake.
         pub fn increase_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
-            // Checks worker origin, worker existence, worker active state
-            let worker = Self::ensure_active_worker_signed(origin, &worker_id)?;
+            // Checks worker origin, worker existence
+            let worker = Self::ensure_worker_signed(origin, &worker_id)?;
 
             ensure!(balance != <BalanceOf<T>>::zero(), Error::StakeBalanceCannotBeZero);
 
@@ -927,7 +929,9 @@ decl_module! {
                 <stake::Module<T>>::ensure_can_increase_stake(&stake_profile.stake_id, balance)
             )?;
 
-            // mutation
+            //
+            // == MUTATION SAFE ==
+            //
 
             ensure_on_wrapped_error!(
                 <stake::Module<T>>::increase_stake_from_account(

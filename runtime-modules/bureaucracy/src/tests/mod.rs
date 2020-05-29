@@ -2,10 +2,7 @@ mod fixtures;
 mod mock;
 
 use crate::tests::mock::Test;
-use crate::types::{
-    OpeningPolicyCommitment, RewardPolicy, WorkerExitInitiationOrigin,
-
-};
+use crate::types::{OpeningPolicyCommitment, RewardPolicy};
 use crate::{Error, Instance1, Lead, RawEvent};
 use common::constraints::InputValidationLengthConstraint;
 use mock::{build_test_externalities, Bureaucracy1, TestEvent};
@@ -972,7 +969,7 @@ fn update_worker_role_account_succeeds() {
         let worker_id = fill_default_worker_position();
 
         let update_worker_account_fixture =
-            UpdateWorkerRoleAccountFixture::default_with_ids(0, worker_id, new_account_id);
+            UpdateWorkerRoleAccountFixture::default_with_ids(worker_id, new_account_id);
 
         update_worker_account_fixture.call_and_assert(Ok(()));
 
@@ -1480,8 +1477,8 @@ fn slash_worker_stake_succeeds() {
 fn slash_worker_stake_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
         let worker_id = 0;
-        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(worker_id)
-            .with_origin(RawOrigin::None);
+        let slash_stake_fixture =
+            SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_origin(RawOrigin::None);
 
         slash_stake_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
     });
@@ -1505,8 +1502,7 @@ fn slash_worker_stake_fails_with_invalid_worker_id() {
         SetLeadFixture::set_lead(1);
         let invalid_worker_id = 11;
 
-        let slash_stake_fixture =
-            SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
+        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
 
         slash_stake_fixture.call_and_assert(Err(Error::WorkerDoesNotExist));
     });
@@ -1528,8 +1524,7 @@ fn slash_worker_stake_fails_with_not_set_lead() {
     build_test_externalities().execute_with(|| {
         let invalid_worker_id = 11;
 
-        let slash_stake_fixture =
-            SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
+        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
 
         slash_stake_fixture.call_and_assert(Err(Error::CurrentLeadNotSet));
     });
