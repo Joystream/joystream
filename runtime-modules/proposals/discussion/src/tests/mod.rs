@@ -8,7 +8,7 @@ use system::{EventRecord, Phase};
 
 struct EventFixture;
 impl EventFixture {
-    fn assert_events(expected_raw_events: Vec<RawEvent<u32, u64, u32>>) {
+    fn assert_events(expected_raw_events: Vec<RawEvent<u64, u64, u64>>) {
         let expected_events = expected_raw_events
             .iter()
             .map(|ev| EventRecord {
@@ -23,13 +23,13 @@ impl EventFixture {
 }
 
 struct TestPostEntry {
-    pub post_id: u32,
+    pub post_id: u64,
     pub text: Vec<u8>,
     pub edition_number: u32,
 }
 
 struct TestThreadEntry {
-    pub thread_id: u32,
+    pub thread_id: u64,
     pub title: Vec<u8>,
 }
 
@@ -81,7 +81,7 @@ impl DiscussionFixture {
         DiscussionFixture { title, ..self }
     }
 
-    fn create_discussion_and_assert(&self, result: Result<u32, Error>) -> Option<u32> {
+    fn create_discussion_and_assert(&self, result: Result<u64, Error>) -> Option<u64> {
         let create_discussion_result =
             Discussions::create_thread(self.author_id, self.title.clone());
 
@@ -94,13 +94,13 @@ impl DiscussionFixture {
 struct PostFixture {
     pub text: Vec<u8>,
     pub origin: RawOrigin<u64>,
-    pub thread_id: u32,
-    pub post_id: Option<u32>,
+    pub thread_id: u64,
+    pub post_id: Option<u64>,
     pub author_id: u64,
 }
 
 impl PostFixture {
-    fn default_for_thread(thread_id: u32) -> Self {
+    fn default_for_thread(thread_id: u64) -> Self {
         PostFixture {
             text: b"text".to_vec(),
             author_id: 1,
@@ -122,18 +122,18 @@ impl PostFixture {
         PostFixture { author_id, ..self }
     }
 
-    fn change_thread_id(self, thread_id: u32) -> Self {
+    fn change_thread_id(self, thread_id: u64) -> Self {
         PostFixture { thread_id, ..self }
     }
 
-    fn change_post_id(self, post_id: u32) -> Self {
+    fn change_post_id(self, post_id: u64) -> Self {
         PostFixture {
             post_id: Some(post_id),
             ..self
         }
     }
 
-    fn add_post_and_assert(&mut self, result: Result<(), Error>) -> Option<u32> {
+    fn add_post_and_assert(&mut self, result: Result<(), Error>) -> Option<u64> {
         let add_post_result = Discussions::add_post(
             self.origin.clone().into(),
             self.author_id,

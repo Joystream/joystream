@@ -94,6 +94,22 @@ pub type Moment = u64;
 /// Credential type
 pub type Credential = u64;
 
+/// Represents a thread identifier for both Forum and Proposals Discussion
+///
+/// Note: Both modules expose type names ThreadId and PostId (which are defined on their Trait) and
+/// used in state storage and dispatchable method's argument types,
+/// and are therefore part of the public API/metadata of the runtime.
+/// In the currenlty version the polkadot-js/api that is used and is compatible with the runtime,
+/// the type registry has flat namespace and its not possible
+/// to register identically named types from different modules, separately. And so we MUST configure
+/// the underlying types to be identicaly to avoid issues with encoding/decoding these types on the client side.
+pub type ThreadId = u64;
+
+/// Represents a post identifier for both Forum and Proposals Discussion
+///
+/// See the Note about ThreadId
+pub type PostId = u64;
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -126,8 +142,8 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 6,
-    spec_version: 12,
-    impl_version: 1,
+    spec_version: 14,
+    impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
 };
 
@@ -176,7 +192,7 @@ pub fn native_version() -> NativeVersion {
 
 parameter_types! {
     pub const BlockHashCount: BlockNumber = 250;
-    pub const MaximumBlockWeight: Weight = 1_000_000;
+    pub const MaximumBlockWeight: Weight = 1_000_000_000;
     pub const AvailableBlockRatio: Perbill = Perbill::from_percent(75);
     pub const MaximumBlockLength: u32 = 5 * 1024 * 1024;
     pub const Version: RuntimeVersion = VERSION;
@@ -342,17 +358,17 @@ impl session::historical::Trait for Runtime {
 srml_staking_reward_curve::build! {
     const REWARD_CURVE: PiecewiseLinear<'static> = curve!(
         min_inflation: 0_025_000,
-        max_inflation: 0_100_000,
-        ideal_stake: 0_500_000,
+        max_inflation: 0_300_000,
+        ideal_stake: 0_300_000,
         falloff: 0_050_000,
-        max_piece_count: 40,
+        max_piece_count: 100,
         test_precision: 0_005_000,
     );
 }
 
 parameter_types! {
     pub const SessionsPerEra: sr_staking_primitives::SessionIndex = 6;
-    pub const BondingDuration: staking::EraIndex = 24 * 28;
+    pub const BondingDuration: staking::EraIndex = 24;
     pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
 }
 
@@ -785,6 +801,8 @@ impl forum::Trait for Runtime {
     type Event = Event;
     type MembershipRegistry = ShimMembershipRegistry;
     type EnsureForumLeader = bureaucracy::Module<Runtime, bureaucracy::Instance1>;
+    type ThreadId = ThreadId;
+    type PostId = PostId;
 }
 
 impl migration::Trait for Runtime {
@@ -814,8 +832,8 @@ impl discovery::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const ProposalCancellationFee: u64 = 5;
-    pub const ProposalRejectionFee: u64 = 3;
+    pub const ProposalCancellationFee: u64 = 10000;
+    pub const ProposalRejectionFee: u64 = 5000;
     pub const ProposalTitleMaxLength: u32 = 40;
     pub const ProposalDescriptionMaxLength: u32 = 3000;
     pub const ProposalMaxActiveProposalLimit: u32 = 5;
@@ -851,8 +869,8 @@ parameter_types! {
 impl proposals_discussion::Trait for Runtime {
     type Event = Event;
     type PostAuthorOriginValidator = MembershipOriginValidator<Self>;
-    type ThreadId = u32;
-    type PostId = u32;
+    type ThreadId = ThreadId;
+    type PostId = PostId;
     type MaxPostEditionNumber = ProposalMaxPostEditionNumber;
     type ThreadTitleLengthLimit = ProposalThreadTitleLengthLimit;
     type PostLengthLimit = ProposalPostLengthLimit;
@@ -895,12 +913,12 @@ construct_runtime!(
         RandomnessCollectiveFlip: randomness_collective_flip::{Module, Call, Storage},
         Sudo: sudo,
         // Joystream
+        Migration: migration::{Module, Call, Storage, Event<T>, Config},
         CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
         Council: council::{Module, Call, Storage, Event<T>, Config<T>},
         Memo: memo::{Module, Call, Storage, Event<T>},
         Members: members::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
-        Migration: migration::{Module, Call, Storage, Event<T>},
         Actors: actors::{Module, Call, Storage, Event<T>, Config},
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
         DataDirectory: data_directory::{Module, Call, Storage, Event<T>},

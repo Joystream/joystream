@@ -67,7 +67,7 @@ impl<Balance: From<u32>, BlockNumber: From<u32>> Default for RoleParameters<Bala
             entry_request_fee: Balance::from(50),
 
             // not currently used
-            min_actors: 5,
+            min_actors: 1,
             bonding_period: BlockNumber::from(600),
             min_service_period: BlockNumber::from(600),
             startup_grace_period: BlockNumber::from(600),

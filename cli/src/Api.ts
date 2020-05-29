@@ -1,5 +1,5 @@
 import BN from 'bn.js';
-import { registerJoystreamTypes } from '@joystream/types';
+import { registerJoystreamTypes } from '@joystream/types/';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { QueryableStorageMultiArg } from '@polkadot/api/types';
 import { formatBalance } from '@polkadot/util';
