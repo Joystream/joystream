@@ -645,17 +645,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "11c0346158a19b3627234e15596f5e465c360fcdb97d817bcb255e0510f5a788"
 
 [[package]]
-name = "derivative"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1eae4d76b7cefedd1b4f8cc24378b2fbd1ac1b66e3bbebe8e2192d3be81cb355"
-dependencies = [
- "proc-macro2 1.0.10",
- "quote 1.0.3",
- "syn 1.0.17",
-]
-
-[[package]]
 name = "derive_more"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1614,7 +1603,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "6.12.2"
+version = "6.12.0"
 dependencies = [
  "parity-scale-codec",
  "safe-mix",
@@ -1656,9 +1645,6 @@ dependencies = [
  "substrate-memo-module",
  "substrate-offchain-primitives",
  "substrate-primitives",
- "substrate-proposals-codex-module",
- "substrate-proposals-discussion-module",
- "substrate-proposals-engine-module",
  "substrate-recurring-reward-module",
  "substrate-roles-module",
  "substrate-service-discovery-module",
@@ -2658,28 +2644,6 @@ checksum = "46203554f085ff89c235cd12f7075f3233af9b11ed7c9e16dfe2560d03313ce6"
 dependencies = [
  "hermit-abi",
  "libc",
-]
-
-[[package]]
-name = "num_enum"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca565a7df06f3d4b485494f25ba05da1435950f4dc263440eda7a6fa9b8e36e4"
-dependencies = [
- "derivative",
- "num_enum_derive",
-]
-
-[[package]]
-name = "num_enum_derive"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffa5a33ddddfee04c0283a7653987d634e880347e96b5b2ed64de07efb59db9d"
-dependencies = [
- "proc-macro-crate",
- "proc-macro2 1.0.10",
- "quote 1.0.3",
- "syn 1.0.17",
 ]
 
 [[package]]
@@ -4690,6 +4654,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-content-directory-module"
+version = "1.0.1"
+dependencies = [
+ "hex-literal 0.1.4",
+ "parity-scale-codec",
+ "quote 0.6.13",
+ "serde",
+ "sr-io",
+ "sr-primitives",
+ "sr-std",
+ "srml-support",
+ "srml-support-procedural",
+ "srml-system",
+ "srml-timestamp",
+ "substrate-primitives",
+]
+
+[[package]]
 name = "substrate-content-working-group-module"
 version = "1.0.0"
 dependencies = [
@@ -4912,7 +4894,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-membership-module"
-version = "1.0.1"
+version = "1.0.0"
 dependencies = [
  "parity-scale-codec",
  "serde",
@@ -5100,79 +5082,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "substrate-proposals-codex-module"
-version = "2.0.0"
-dependencies = [
- "num_enum",
- "parity-scale-codec",
- "serde",
- "sr-io",
- "sr-primitives",
- "sr-staking-primitives",
- "sr-std",
- "srml-balances",
- "srml-staking",
- "srml-staking-reward-curve",
- "srml-support",
- "srml-system",
- "srml-timestamp",
- "substrate-common-module",
- "substrate-content-working-group-module",
- "substrate-governance-module",
- "substrate-hiring-module",
- "substrate-membership-module",
- "substrate-primitives",
- "substrate-proposals-discussion-module",
- "substrate-proposals-engine-module",
- "substrate-recurring-reward-module",
- "substrate-roles-module",
- "substrate-stake-module",
- "substrate-token-mint-module",
- "substrate-versioned-store",
- "substrate-versioned-store-permissions-module",
-]
-
-[[package]]
-name = "substrate-proposals-discussion-module"
-version = "2.0.0"
-dependencies = [
- "num_enum",
- "parity-scale-codec",
- "serde",
- "sr-io",
- "sr-primitives",
- "sr-std",
- "srml-balances",
- "srml-support",
- "srml-system",
- "srml-timestamp",
- "substrate-common-module",
- "substrate-membership-module",
- "substrate-primitives",
-]
-
-[[package]]
-name = "substrate-proposals-engine-module"
-version = "2.0.0"
-dependencies = [
- "mockall",
- "num_enum",
- "parity-scale-codec",
- "serde",
- "sr-io",
- "sr-primitives",
- "sr-std",
- "srml-balances",
- "srml-support",
- "srml-system",
- "srml-timestamp",
- "substrate-common-module",
- "substrate-membership-module",
- "substrate-primitives",
- "substrate-stake-module",
-]
-
-[[package]]
 name = "substrate-recurring-reward-module"
 version = "1.0.1"
 dependencies = [
@@ -5195,7 +5104,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-roles-module"
-version = "1.0.1"
+version = "1.0.0"
 dependencies = [
  "parity-scale-codec",
  "serde",

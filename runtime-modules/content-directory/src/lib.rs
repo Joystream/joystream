@@ -109,7 +109,7 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
     type MaxNumberOfCuratorsPerGroup: Get<MaxNumber>;
 
     /// The maximum number of schemas per class constraint
-    type NumberOfSchemasPerClass: Get<MaxNumber>;
+    type MaxNumberOfSchemasPerClass: Get<MaxNumber>;
 
     /// The maximum number of properties per class constraint
     type MaxNumberOfPropertiesPerClass: Get<MaxNumber>;
@@ -364,7 +364,7 @@ impl<T: Trait> Class<T> {
     /// Ensure `Schema`s limit per `Class` not reached
     pub fn ensure_schemas_limit_not_reached(&self) -> dispatch::Result {
         ensure!(
-            T::NumberOfSchemasPerClass::get() < self.schemas.len() as MaxNumber,
+            T::MaxNumberOfSchemasPerClass::get() < self.schemas.len() as MaxNumber,
             ERROR_CLASS_SCHEMAS_LIMIT_REACHED
         );
         Ok(())
@@ -552,22 +552,22 @@ impl<T: Trait> Entity<T> {
 decl_storage! {
     trait Store for Module<T: Trait> as ContentDirectory {
 
-        /// Map, representing  CuratorGroupId -> CuratorGroup relation
-        pub CuratorGroupById get(curator_group_by_id): map T::CuratorGroupId => CuratorGroup<T>;
-
         /// Map, representing ClassId -> Class relation
         pub ClassById get(class_by_id) config(): linked_map T::ClassId => Class<T>;
 
         /// Map, representing EntityId -> Entity relation
         pub EntityById get(entity_by_id) config(): map T::EntityId => Entity<T>;
 
-        /// Next runtime storage values used to maintain next id value, used on creation of respective curator groups, classes and entities
+        /// Map, representing  CuratorGroupId -> CuratorGroup relation
+        pub CuratorGroupById get(curator_group_by_id) config(): map T::CuratorGroupId => CuratorGroup<T>;
 
-        pub NextCuratorGroupId get(next_curator_group_id) config(): T::CuratorGroupId;
+        /// Next runtime storage values used to maintain next id value, used on creation of respective curator groups, classes and entities
 
         pub NextClassId get(next_class_id) config(): T::ClassId;
 
         pub NextEntityId get(next_entity_id) config(): T::EntityId;
+
+        pub NextCuratorGroupId get(next_curator_group_id) config(): T::CuratorGroupId;
 
         // The voucher associated with entity creation for a given class and controller.
         // Is updated whenever an entity is created in a given class by a given controller.
@@ -629,6 +629,9 @@ decl_module! {
 
             // Remove curator group under given curator group id from runtime storage
             <CuratorGroupById<T>>::remove(curator_group_id);
+
+            // Decrement the next curator curator_group_id:
+            <NextCuratorGroupId<T>>::mutate(|n| *n -= T::CuratorGroupId::one());
 
             // Trigger event
             Self::deposit_event(RawEvent::CuratorGroupRemoved(curator_group_id));
