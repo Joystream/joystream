@@ -2,6 +2,7 @@ import { ObjectTypeDefinitionNode, FieldDefinitionNode, ListTypeNode, NamedTypeN
 import { GraphQLSchemaParser, Visitors, SchemaNode } from './SchemaParser';
 import { WarthogModel, Field, ObjectType } from '../model';
 import Debug from 'debug';
+import { DIRECTIVES } from './SchemaDirective';
 
 const debug = Debug('qnode-cli:model-generator');
 
@@ -54,49 +55,13 @@ export class DatabaseModelCodeGenerator {
    * @param namedTypeNode NamedTypeNode
    * @param directives: additional directives of FieldDefinitionNode
    */
-  private _namedType(name: string, namedTypeNode: NamedTypeNode, directives?: ReadonlyArray<DirectiveNode>): Field {
+  private _namedType(name: string, namedTypeNode: NamedTypeNode): Field {
     const field = new Field(name, namedTypeNode.name.value);
     field.isBuildinType = this._isBuildinType(field.type);
-    // TODO: we should really handle levels at the type definition level?
-    if (directives) {
-        directives.map((d:DirectiveNode) => this._processFieldDirective(d, field));
-    }
-    
+
     return field;
   }
 
-  /**
-   * 
-   * @param d Directive provided to the FieldDefinitionNode
-   * @param f WarthogModel field
-   */
-  private _processFieldDirective(d: DirectiveNode, f: Field) {
-    if (d.name.value.includes(FULL_TEXT_SEARCHABLE_DIRECTIVE)) {
-        const queryName = this._checkFullTextSearchDirective(d);
-        this._model.addQueryField(queryName, f);
-    }
-  }
-
-  /**
-   * TODO: this piece should be refactored and does not seem to belong to this class
-   * 
-   * Does the checks and returns full text query names to be used;
-   * 
-   * @param d Directive Node
-   * @returns Fulltext query names 
-   */
-  private _checkFullTextSearchDirective(d: DirectiveNode): string {
-      if (!d.arguments) {
-          throw new Error(`@${FULL_TEXT_SEARCHABLE_DIRECTIVE} should have a query argument`)
-      }
-
-      const qarg: ArgumentNode[] = d.arguments.filter((arg) => (arg.name.value === `query`) && (arg.value.kind === `StringValue`))
-      
-      if (qarg.length !== 1) {
-          throw new Error(`@${FULL_TEXT_SEARCHABLE_DIRECTIVE} should have a single query argument with a sting value`);
-      }
-      return (qarg[0].value as StringValueNode).value;
-    }
 
   /**
    * Generate a new ObjectType from ObjectTypeDefinitionNode
@@ -106,14 +71,13 @@ export class DatabaseModelCodeGenerator {
     const fields = this._schemaParser.getFields(o).map((fieldNode: FieldDefinitionNode) => {
       const typeNode = fieldNode.type;
       const fieldName = fieldNode.name.value;
-      const directives = fieldNode.directives;
-
+      
       if (typeNode.kind === 'NamedType') {
-        return this._namedType(fieldName, typeNode, directives);
+        return this._namedType(fieldName, typeNode);
       } else if (typeNode.kind === 'NonNullType') {
         if (typeNode.type.kind === 'NamedType') {
           // It is named type. and nullable will be set false
-          const field = this._namedType(fieldName, typeNode.type, directives);
+          const field = this._namedType(fieldName, typeNode.type);
           field.nullable = false;
           return field;
         } else {
@@ -139,6 +103,16 @@ export class DatabaseModelCodeGenerator {
         this._model.addObjectType(objType)
     });
 
+    const visitors: Visitors = {
+        directives: {}
+    };
+    DIRECTIVES.map((d) => {
+        visitors.directives[d.name] = {
+            visit: (path: SchemaNode[]) => d.generate(path, this._model)
+        }
+    })
+    this._schemaParser.dfsTraversal(visitors);
+    
     return this._model;
   }
 
