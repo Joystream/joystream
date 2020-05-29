@@ -10,6 +10,7 @@ import {
 } from 'graphql';
 import * as fs from 'fs-extra';
 import Debug from "debug";
+import { cloneDeep } from 'lodash';
 
 const debug = Debug('qnode-cli:schema-parser');
 
@@ -135,7 +136,7 @@ export class GraphQLSchemaParser {
                 }
                 path.push(node);
                 if (node.kind === 'Directive' && node.name.value === visitor.directiveName) {
-                    visitor.visit(path);
+                    visitor.visit(cloneDeep(path));
                 } 
                
             },

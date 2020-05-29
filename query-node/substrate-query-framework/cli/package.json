@@ -16,6 +16,7 @@
     "@types/mustache": "^4.0.1",
     "fs-extra": "^9.0.0",
     "graphql": "^15.0.0",
+    "lodash": "^4.17.15",
     "mustache": "^4.0.1",
     "tslib": "1.11.2",
     "typeorm-model-generator": "^0.4.2",
@@ -67,7 +68,6 @@
   "repository": "joystream/joystream/joystream-query-node/cli",
   "scripts": {
     "postpack": "rm -f oclif.manifest.json",
-    "posttest": "eslint . --ext .ts --config .eslintrc.js",
     "lint": "eslint . --cache --ext .ts --config .eslintrc.js",
     "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
