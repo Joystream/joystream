@@ -1,0 +1,134 @@
+$colour-red              : #DB2828;
+$colour-orange           : #F2711C;
+$colour-yellow           : #FBBD08;
+$colour-olive            : #B5CC18;
+$colour-green            : #21BA45;
+$colour-teal             : #00B5AD;
+$colour-blue             : #2185D0;
+$colour-violet           : #6435C9;
+$colour-purple           : #A333C8;
+$colour-pink             : #E03997;
+$colour-brown            : #A5673F;
+$colour-grey             : #767676;
+$colour-black            : #1B1C1D;
+
+$colour-shade-amount: 10%;
+
+$colours: (
+  red: (
+    base: $colour-red,
+    light: lighten($colour-red, $colour-shade-amount),
+    dark: darken($colour-red, $colour-shade-amount),
+    darker: darken($colour-red, $colour-shade-amount * 2),
+    darkest: darken($colour-red, $colour-shade-amount * 3),
+    trans: rgba($colour-red, 0.15),
+  ),
+  orange: (
+    base: $colour-orange,
+    light: lighten($colour-orange, $colour-shade-amount),
+    dark: darken($colour-orange, $colour-shade-amount),
+    darker: darken($colour-orange, $colour-shade-amount * 2),
+    darkest: darken($colour-orange, $colour-shade-amount * 3),
+    trans: rgba($colour-orange, 0.15),
+  ),
+  yellow: (
+    base: $colour-yellow,
+    light: lighten($colour-yellow, $colour-shade-amount),
+    dark: darken($colour-yellow, $colour-shade-amount),
+    darker: darken($colour-yellow, $colour-shade-amount * 2),
+    darkest: darken($colour-yellow, $colour-shade-amount * 3),
+    trans: rgba($colour-yellow, 0.15),
+  ),
+  olive: (
+    base: $colour-olive,
+    light: lighten($colour-olive, $colour-shade-amount),
+    dark: darken($colour-olive, $colour-shade-amount),
+    darker: darken($colour-olive, $colour-shade-amount * 2),
+    darkest: darken($colour-olive, $colour-shade-amount * 3),
+    trans: rgba($colour-olive, 0.15),
+  ),
+  green: (
+    base: $colour-green,
+    light: lighten($colour-green, $colour-shade-amount),
+    dark: darken($colour-green, $colour-shade-amount),
+    darker: darken($colour-green, $colour-shade-amount * 2),
+    darkest: darken($colour-green, $colour-shade-amount * 3),
+    trans: rgba($colour-green, 0.15),
+  ),
+  teal: (
+    base: $colour-teal,
+    light: lighten($colour-teal, $colour-shade-amount),
+    dark: darken($colour-teal, $colour-shade-amount),
+    darker: darken($colour-teal, $colour-shade-amount * 2),
+    darkest: darken($colour-teal, $colour-shade-amount * 3),
+    trans: rgba($colour-teal, 0.15),
+  ),
+  blue: (
+    base: $colour-blue,
+    light: lighten($colour-blue, $colour-shade-amount),
+    dark: darken($colour-blue, $colour-shade-amount),
+    darker: darken($colour-blue, $colour-shade-amount * 2),
+    darkest: darken($colour-blue, $colour-shade-amount * 3),
+    trans: rgba($colour-blue, 0.15),
+  ),
+  violet: (
+    base: $colour-violet,
+    light: lighten($colour-violet, $colour-shade-amount),
+    dark: darken($colour-violet, $colour-shade-amount),
+    darker: darken($colour-violet, $colour-shade-amount * 2),
+    darkest: darken($colour-violet, $colour-shade-amount * 3),
+    trans: rgba($colour-violet, 0.15),
+  ),
+  purple: (
+    base: $colour-purple,
+    light: lighten($colour-purple, $colour-shade-amount),
+    dark: darken($colour-purple, $colour-shade-amount),
+    darker: darken($colour-purple, $colour-shade-amount * 2),
+    darkest: darken($colour-purple, $colour-shade-amount * 3),
+    trans: rgba($colour-purple, 0.15),
+  ),
+  pink: (
+    base: $colour-pink,
+    light: lighten($colour-pink, $colour-shade-amount),
+    dark: darken($colour-pink, $colour-shade-amount),
+    darker: darken($colour-pink, $colour-shade-amount * 2),
+    darkest: darken($colour-pink, $colour-shade-amount * 3),
+    trans: rgba($colour-pink, 0.15),
+  ),
+  brown: (
+    base: $colour-brown,
+    light: lighten($colour-brown, $colour-shade-amount),
+    dark: darken($colour-brown, $colour-shade-amount),
+    darker: darken($colour-brown, $colour-shade-amount * 2),
+    darkest: darken($colour-brown, $colour-shade-amount * 3),
+    trans: rgba($colour-brown, 0.15),
+  ),
+  grey: (
+    base: $colour-grey,
+    light: lighten($colour-grey, $colour-shade-amount),
+    dark: darken($colour-grey, $colour-shade-amount),
+    darker: darken($colour-grey, $colour-shade-amount * 2),
+    darkest: darken($colour-grey, $colour-shade-amount * 3),
+    trans: rgba($colour-grey, 0.05),
+  ),
+  black: (
+    base: $colour-black,
+    light: lighten($colour-black, $colour-shade-amount),
+    dark: darken($colour-black, $colour-shade-amount),
+    darker: darken($colour-black, $colour-shade-amount * 2),
+    darkest: darken($colour-black, $colour-shade-amount * 3),
+    trans: rgba($colour-black, 0.15),
+  ),
+);
+
+@function colour($name, $tone: 'base') {
+    @return map-get(map-get($colours, $name), $tone);
+}
+
+@mixin text-colour($name, $tone: 'base') {
+	color: colour($name, $tone) !important
+}
+
+@mixin bg-colour($name, $tone: 'base') {
+	background-color: colour($name, $tone) !important
+}
