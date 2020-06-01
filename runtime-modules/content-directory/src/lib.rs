@@ -618,7 +618,7 @@ decl_module! {
 
             ensure_is_lead::<T>(origin)?;
 
-            let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
+            let curator_group = Self::ensure_curator_group_existss(&curator_group_id)?;
 
             curator_group.ensure_curator_is_not_a_maintainer()?;
 
@@ -669,7 +669,7 @@ decl_module! {
 
             ensure_is_lead::<T>(origin)?;
 
-            let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
+            let curator_group = Self::ensure_curator_group_existss(&curator_group_id)?;
 
             curator_group.ensure_max_number_of_curators_limit_not_reached()?;
 
@@ -696,7 +696,7 @@ decl_module! {
 
             ensure_is_lead::<T>(origin)?;
 
-            let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
+            let curator_group = Self::ensure_curator_group_existss(&curator_group_id)?;
 
             curator_group.ensure_curator_in_group_exists(&curator_id)?;
 
@@ -711,6 +711,45 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::CuratorRemoved(curator_group_id, curator_id));
+            Ok(())
+        }
+
+        /// Create new `Class` with provided parameters
+        pub fn create_class(
+            origin,
+            name: Vec<u8>,
+            description: Vec<u8>,
+            class_permissions: ClassPermissions<T>,
+            maximum_entities_count: T::EntityId,
+            default_entity_creation_voucher_upper_bound: T::EntityId
+        ) -> dispatch::Result {
+
+            ensure_is_lead::<T>(origin)?;
+
+            Self::ensure_entities_creation_limits_are_valid(maximum_entities_count, default_entity_creation_voucher_upper_bound)?;
+
+            Self::ensure_class_limit_not_reached()?;
+
+            Self::ensure_class_name_is_valid(&name)?;
+            Self::ensure_class_description_is_valid(&description)?;
+            Self::ensure_class_permissions_are_valid(&class_permissions)?;
+
+            let class_id = Self::next_class_id();
+
+            let class = Class::new(class_permissions, name, description, maximum_entities_count, default_entity_creation_voucher_upper_bound);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Add new `Class` to runtime storage
+            <ClassById<T>>::insert(&class_id, class);
+
+            // Increment the next class id:
+            <NextClassId<T>>::mutate(|n| *n += T::ClassId::one());
+
+            // Trigger event
+            Self::deposit_event(RawEvent::ClassCreated(class_id));
             Ok(())
         }
 
@@ -829,45 +868,6 @@ decl_module! {
                 Self::deposit_event(RawEvent::EntityCreationVoucherCreated(controller, entity_creation_voucher));
             }
 
-            Ok(())
-        }
-
-        /// Create new `Class` with provided parameters
-        pub fn create_class(
-            origin,
-            name: Vec<u8>,
-            description: Vec<u8>,
-            class_permissions: ClassPermissions<T>,
-            maximum_entities_count: T::EntityId,
-            default_entity_creation_voucher_upper_bound: T::EntityId
-        ) -> dispatch::Result {
-
-            ensure_is_lead::<T>(origin)?;
-
-            Self::ensure_entities_creation_limits_are_valid(maximum_entities_count, default_entity_creation_voucher_upper_bound)?;
-
-            Self::ensure_class_limit_not_reached()?;
-
-            Self::ensure_class_name_is_valid(&name)?;
-            Self::ensure_class_description_is_valid(&description)?;
-            Self::ensure_class_permissions_are_valid(&class_permissions)?;
-
-            let class_id = Self::next_class_id();
-
-            let class = Class::new(class_permissions, name, description, maximum_entities_count, default_entity_creation_voucher_upper_bound);
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Add new `Class` to runtime storage
-            <ClassById<T>>::insert(&class_id, class);
-
-            // Increment the next class id:
-            <NextClassId<T>>::mutate(|n| *n += T::ClassId::one());
-
-            // Trigger event
-            Self::deposit_event(RawEvent::ClassCreated(class_id));
             Ok(())
         }
 
@@ -1796,7 +1796,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure `CuratorGroup` under given id exists, return corresponding one
-    pub fn ensure_curator_group_exists(
+    pub fn ensure_curator_group_existss(
         curator_group_id: &T::CuratorGroupId,
     ) -> Result<CuratorGroup<T>, &'static str> {
         Self::ensure_curator_group_under_given_id_exists(curator_group_id)?;
@@ -1827,7 +1827,7 @@ impl<T: Trait> Module<T> {
         curator_groups: &BTreeSet<T::CuratorGroupId>,
     ) -> dispatch::Result {
         for curator_group in curator_groups {
-            Self::ensure_curator_group_exists(curator_group)?;
+            Self::ensure_curator_group_existss(curator_group)?;
         }
         Ok(())
     }
@@ -1872,7 +1872,7 @@ impl<T: Trait> Module<T> {
     /// Ensure `MaxNumberOfClasses` constraint satisfied
     pub fn ensure_class_limit_not_reached() -> dispatch::Result {
         ensure!(
-            T::MaxNumberOfClasses::get() < <ClassById<T>>::enumerate().count() as MaxNumber,
+            (<ClassById<T>>::enumerate().count() as MaxNumber) < T::MaxNumberOfClasses::get(),
             ERROR_CLASS_LIMIT_REACHED
         );
         Ok(())
@@ -1883,7 +1883,7 @@ impl<T: Trait> Module<T> {
         maximum_entities_count: T::EntityId,
     ) -> dispatch::Result {
         ensure!(
-            maximum_entities_count < T::MaxNumberOfEntitiesPerClass::get(),
+            maximum_entities_count <= T::MaxNumberOfEntitiesPerClass::get(),
             ERROR_ENTITIES_NUMBER_PER_CLASS_CONSTRAINT_VIOLATED
         );
         Ok(())
@@ -1894,7 +1894,7 @@ impl<T: Trait> Module<T> {
         number_of_class_entities_per_actor: T::EntityId,
     ) -> dispatch::Result {
         ensure!(
-            number_of_class_entities_per_actor < T::IndividualEntitiesCreationLimit::get(),
+            number_of_class_entities_per_actor <= T::IndividualEntitiesCreationLimit::get(),
             ERROR_NUMBER_OF_CLASS_ENTITIES_PER_ACTOR_CONSTRAINT_VIOLATED
         );
         Ok(())

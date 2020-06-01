@@ -16,18 +16,21 @@ fn add_curator_group_success() {
         let number_of_events_before_call = System::events().len();
 
         assert_eq!(next_curator_group_id(), FIRST_CURATOR_GROUP_ID);
-        assert!(!curator_group_exist(FIRST_CURATOR_GROUP_ID));
+        assert!(!curator_group_exists(FIRST_CURATOR_GROUP_ID));
 
         // Add curator group
         assert_ok!(add_curator_group(LEAD_ORIGIN));
 
         // Runtime tested state after call
 
+        // Ensure new curator group exists and equal to default one right after creation
+        let curator_group = CuratorGroup::default();
+        assert_eq!(curator_group_by_id(FIRST_CURATOR_GROUP_ID), curator_group);
+
         // Overall curator groups counter after curator group creation creation checked
         assert_eq!(next_curator_group_id(), SECOND_CURATOR_GROUP_ID);
 
-        // Ensure new curator group exists
-        assert!(curator_group_exist(FIRST_CURATOR_GROUP_ID));
+        assert!(curator_group_exists(FIRST_CURATOR_GROUP_ID));
 
         let curator_group_created_event =
             get_test_event(RawEvent::CuratorGroupAdded(FIRST_CURATOR_GROUP_ID));
@@ -51,11 +54,6 @@ fn remove_curator_group_success() {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        assert_eq!(next_curator_group_id(), SECOND_CURATOR_GROUP_ID);
-
-        // Ensure new curator group exists
-        assert!(curator_group_exist(FIRST_CURATOR_GROUP_ID));
-
         assert_ok!(remove_curator_group(LEAD_ORIGIN, FIRST_CURATOR_GROUP_ID));
 
         // Runtime tested state after call
@@ -63,7 +61,7 @@ fn remove_curator_group_success() {
         assert_eq!(next_curator_group_id(), SECOND_CURATOR_GROUP_ID);
 
         // Ensure curator group removed
-        assert!(!curator_group_exist(FIRST_CURATOR_GROUP_ID));
+        assert!(!curator_group_exists(FIRST_CURATOR_GROUP_ID));
 
         let curator_group_removed_event =
             get_test_event(RawEvent::CuratorGroupRemoved(FIRST_CURATOR_GROUP_ID));
@@ -82,12 +80,7 @@ fn set_curator_group_status_success() {
         // Add curator group
         assert_ok!(add_curator_group(LEAD_ORIGIN));
 
-        let mut curator_group = CuratorGroup::default();
-
         // Runtime tested state before call
-
-        // Curator group right after creation
-        assert_eq!(curator_group_by_id(FIRST_CURATOR_GROUP_ID), curator_group);
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
@@ -102,6 +95,7 @@ fn set_curator_group_status_success() {
         // Runtime tested state after call
 
         // Ensure curator group status changed
+        let mut curator_group = CuratorGroup::default();
         curator_group.set_status(true);
         assert_eq!(curator_group_by_id(FIRST_CURATOR_GROUP_ID), curator_group);
 
@@ -124,12 +118,7 @@ fn add_curator_to_group_success() {
         // Add curator group
         assert_ok!(add_curator_group(LEAD_ORIGIN));
 
-        let mut curator_group = CuratorGroup::default();
-
         // Runtime tested state before call
-
-        // Curator group right after creation
-        assert_eq!(curator_group_by_id(FIRST_CURATOR_GROUP_ID), curator_group);
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
@@ -144,6 +133,7 @@ fn add_curator_to_group_success() {
         // Runtime tested state after call
 
         // Ensure curator added to group
+        let mut curator_group = CuratorGroup::default();
         curator_group.get_curators_mut().insert(FIRST_CURATOR_ID);
         assert_eq!(curator_group_by_id(FIRST_CURATOR_GROUP_ID), curator_group);
 
@@ -166,13 +156,6 @@ fn remove_curator_from_group_success() {
         // Add curator group
         assert_ok!(add_curator_group(LEAD_ORIGIN));
 
-        let mut curator_group = CuratorGroup::default();
-
-        // Runtime tested state before call
-
-        // Curator group right after creation
-        assert_eq!(curator_group_by_id(FIRST_CURATOR_GROUP_ID), curator_group);
-
         // Add first curator to group
         assert_ok!(add_curator_to_group(
             LEAD_ORIGIN,
@@ -185,6 +168,8 @@ fn remove_curator_from_group_success() {
             FIRST_CURATOR_GROUP_ID,
             SECOND_CURATOR_ID
         ));
+
+        // Runtime tested state before call
 
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
@@ -199,6 +184,7 @@ fn remove_curator_from_group_success() {
         // Runtime tested state after call
 
         // Ensure group contains only second curator
+        let mut curator_group = CuratorGroup::default();
         curator_group.get_curators_mut().insert(SECOND_CURATOR_ID);
         assert_eq!(curator_group_by_id(FIRST_CURATOR_GROUP_ID), curator_group);
 
@@ -212,5 +198,32 @@ fn remove_curator_from_group_success() {
             curator_group_curator_removed_event,
             number_of_events_before_call + 1,
         );
+    })
+}
+
+#[test]
+fn create_class_success() {
+    with_test_externalities(|| {
+        // Runtime tested state before call
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        assert_eq!(next_class_id(), FIRST_CLASS_ID);
+        assert!(!class_exists(FIRST_CLASS_ID));
+
+        // Create simple class with default permissions
+        assert_ok!(create_simple_class_with_default_permissions(LEAD_ORIGIN));
+
+        // Runtime tested state after call
+
+        // Ensure class under given if is equal to default one
+        let default_class = create_class_with_default_permissions();
+        assert_eq!(class_by_id(FIRST_CLASS_ID), default_class);
+
+        let class_created_event = get_test_event(RawEvent::ClassCreated(FIRST_CLASS_ID));
+
+        // Event checked
+        assert_event_success(class_created_event, number_of_events_before_call + 1);
     })
 }

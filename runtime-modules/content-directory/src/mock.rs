@@ -38,11 +38,17 @@ pub const SECOND_MEMBER_ORIGIN: u64 = 5;
 pub const FIRST_CURATOR_ID: CuratorId = 1;
 pub const SECOND_CURATOR_ID: CuratorId = 2;
 
-pub const FIRST_CURATOR_GROUP_ID: u64 = 1;
-pub const SECOND_CURATOR_GROUP_ID: u64 = 2;
+pub const FIRST_CURATOR_GROUP_ID: CuratorGroupId = 1;
+pub const SECOND_CURATOR_GROUP_ID: CuratorGroupId = 2;
 
 pub const FIRST_MEMBER_ID: MemberId = 1;
 pub const SECOND_MEMBER_ID: MemberId = 2;
+
+pub const FIRST_CLASS_ID: ClassId = 1;
+pub const SECOND_CLASS_ID: ClassId = 2;
+
+pub const FIRST_ENTITY_ID: EntityId = 1;
+pub const SECOND_ENTITY_ID: EntityId = 2;
 
 pub const UNKNOWN_CLASS_ID: ClassId = 111;
 pub const UNKNOWN_ENTITY_ID: EntityId = 222;
@@ -398,6 +404,10 @@ pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
         .execute_with(f)
 }
 
+pub fn generate_text(len: usize) -> Vec<u8> {
+    vec![b'x'; len]
+}
+
 impl<T: Trait> Property<T> {
     pub fn required(mut self) -> Self {
         self.required = true;
@@ -454,18 +464,7 @@ pub fn assert_failure(
     assert_eq!(System::events().len(), number_of_events_before_call);
 }
 
-pub fn assert_class_props(class_id: ClassId, expected_props: Vec<Property<Runtime>>) {
-    let class = TestModule::class_by_id(class_id);
-    assert_eq!(class.properties, expected_props);
-}
-
-pub fn next_entity_id() -> EntityId {
-    TestModule::next_entity_id()
-}
-
-pub fn next_class_id() -> ClassId {
-    TestModule::next_class_id()
-}
+// Curator groups
 
 pub fn next_curator_group_id() -> CuratorGroupId {
     TestModule::next_curator_group_id()
@@ -510,8 +509,54 @@ pub fn curator_group_by_id(curator_group_id: CuratorGroupId) -> CuratorGroup<Run
     TestModule::curator_group_by_id(curator_group_id)
 }
 
-pub fn curator_group_exist(curator_group_id: CuratorGroupId) -> bool {
+pub fn curator_group_exists(curator_group_id: CuratorGroupId) -> bool {
     CuratorGroupById::<Runtime>::exists(curator_group_id)
+}
+
+// Classes
+
+pub fn create_class_with_default_permissions() -> Class<Runtime> {
+    Class::new(
+        ClassPermissions::default(),
+        generate_text(ClassNameLengthConstraint::get().max() as usize),
+        generate_text(ClassDescriptionLengthConstraint::get().max() as usize),
+        MaxNumberOfEntitiesPerClass::get(),
+        IndividualEntitiesCreationLimit::get(),
+    )
+}
+
+pub fn create_simple_class_with_default_permissions(lead_origin: u64) -> Result<(), &'static str> {
+    TestModule::create_class(
+        Origin::signed(lead_origin),
+        generate_text(ClassNameLengthConstraint::get().max() as usize),
+        generate_text(ClassDescriptionLengthConstraint::get().max() as usize),
+        ClassPermissions::default(),
+        MaxNumberOfEntitiesPerClass::get(),
+        IndividualEntitiesCreationLimit::get(),
+    )
+}
+
+pub fn assert_class_props(class_id: ClassId, expected_props: Vec<Property<Runtime>>) {
+    let class = TestModule::class_by_id(class_id);
+    assert_eq!(class.properties, expected_props);
+}
+
+pub fn next_class_id() -> ClassId {
+    TestModule::next_class_id()
+}
+
+pub fn class_by_id(class_id: ClassId) -> Class<Runtime> {
+    TestModule::class_by_id(class_id)
+}
+
+pub fn class_exists(class_id: ClassId) -> bool {
+    ClassById::<Runtime>::exists(class_id)
+}
+
+// Entities
+
+pub fn next_entity_id() -> EntityId {
+    TestModule::next_entity_id()
 }
 
 // Assign back to type variables so we can make dispatched calls of these modules later.

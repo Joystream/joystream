@@ -103,7 +103,7 @@ pub fn perform_curator_in_group_auth<T: Trait>(
 ) -> dispatch::Result {
     ensure_curator_auth_success::<T>(curator_id, account_id)?;
 
-    let curator_group = Module::<T>::ensure_curator_group_exists(curator_group_id)?;
+    let curator_group = Module::<T>::ensure_curator_group_existss(curator_group_id)?;
 
     ensure!(curator_group.is_active(), ERROR_CURATOR_GROUP_IS_NOT_ACTIVE);
     CuratorGroup::<T>::ensure_curator_in_group_exists(&curator_group, curator_id)?;
