@@ -5,11 +5,7 @@ import { FTSQuery, WarthogModel, ObjectType, Field } from '../model';
 const debug = Debug('qnode-cli:model-generator');
 
 interface MustacheQuery {
-    entity: {
-        type: string,
-        table: string, // SQL table the enitity is mapped to
-        name: string
-    }
+    entities: MustacheOrmEnitity[],
     query: {
         name: string,
         language: string, 
@@ -17,6 +13,12 @@ interface MustacheQuery {
         fields: MustacheQueryField[],
         ts: number // migration timestamp
     }
+}
+
+interface MustacheOrmEnitity {
+    type: string,
+    table: string, // SQL table the enitity is mapped to
+    name: string 
 }
 
 interface MustacheQueryField {
@@ -40,29 +42,29 @@ export class FTSQueryGenerator {
     }
 
     private transform(query: FTSQuery): MustacheQuery {
-        if (query.fields.length == 0) {
-            throw new Error("A query should contain at least one field");
+        if (query.clauses.length == 0) {
+            throw new Error("A query should contain at least one clause");
         }
 
-        const entityObjType = this.lookupType(query.fields[0]);
+        //const entityObjType = this.lookupType(query.fields[0]);
         const fields: MustacheQueryField[] = [];
-        query.fields.map((v, i) => {
-            const objType = this.lookupType(v);
-            if (objType !== entityObjType) {
-                throw new Error("Only single-table queries are supported");
-            } 
+        const entities: MustacheOrmEnitity[] = [];
+        
+        query.clauses.map((v, i) => {
             fields.push({
-               column: v.name,
-               table: objType.name.toLowerCase(),
-               last: i == query.fields.length - 1
+               column: v.field.name,
+               table: v.entity.name.toLowerCase(),
+               last: i == query.clauses.length - 1
+            })
+            entities.push({
+                name: v.entity.name.toLowerCase(),
+                table: v.entity.name,
+                type: v.entity.name
             })
         })
+        
         return {
-            entity: {
-                name: entityObjType.name.toLowerCase(),
-                table: entityObjType.name,
-                type: entityObjType.name
-            },
+            entities,
             query: {
                 name: query.name,
                 index_col: `${query.name}_index_col`,

@@ -33,17 +33,19 @@ export class WarthogModel {
         this._ftsQueries.push(query);
     }
 
-    addQueryField(name:string, f: Field, t?: ObjectType):void {
+    addQueryClause(name:string, f: Field, t: ObjectType):void {
         let q: FTSQuery = this._name2query[name];
         if (!q) {
             q = {
                 name,
-                type: t,
-                fields: []
+                clauses: []
             } as FTSQuery;
             this.addFTSQuery(q);
         }
-        q.fields.push(f);
+        q.clauses.push({
+            entity: t,
+            field: f
+        });
     }
 
 

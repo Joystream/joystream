@@ -73,7 +73,7 @@ export class FTSDirective implements SchemaDirective {
         const field: Field  = model.lookupField(objTypeNode.name.value, fieldNode.name.value);
         const objType: ObjectType = model.lookupType(objTypeNode.name.value);
 
-        model.addQueryField(qName, field, objType);
+        model.addQueryClause(qName, field, objType);
 
         return model 
     }
