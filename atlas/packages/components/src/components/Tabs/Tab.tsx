@@ -1,20 +1,13 @@
-import React, { ReactNode } from "react"
+import React, { ReactNode } from "react";
 
 type TabProps = {
-  label: string
-  children: ReactNode
-}
+	label: string;
+	children: ReactNode;
+};
 
-export default function Tab({
-  label,
-  children
-}: TabProps) {
+//FIXME: Actually add markup for the tab
+export default function Tab({ label, children }: TabProps) {
+	// let styles = makeStyles(styleProps)
 
-  // let styles = makeStyles(styleProps)
-
-  return (
-    <div>
-      {children}
-    </div>
-  )
+	return <div>{children}</div>;
 }
