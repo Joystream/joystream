@@ -236,8 +236,8 @@ pub static MSG_ADD_CURATOR_OPENING_ZERO_MAX_APPLICANT_COUNT: &str =
 
 // Errors for `apply_on_curator_opening`
 pub static MSG_APPLY_ON_CURATOR_OPENING_UNSIGNED_ORIGIN: &str = "Unsigned origin";
-pub static MSG_APPLY_ON_CURATOR_OPENING_MEMBER_ID_INVALID: &str = "Member id is invalid";
-pub static MSG_APPLY_ON_CURATOR_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT: &str =
+pub static MSG_MEMBER_ID_INVALID: &str = "Member id is invalid";
+pub static MSG_SIGNER_NOT_CONTROLLER_ACCOUNT: &str =
     "Signer does not match controller account";
 pub static MSG_ORIGIN_IS_NIETHER_MEMBER_CONTROLLER_OR_ROOT: &str =
     "Origin must be controller or root account of member";
@@ -954,10 +954,10 @@ impl rstd::convert::From<WrappedError<membership::MemberControllerAccountDidNotS
                 MSG_APPLY_ON_CURATOR_OPENING_UNSIGNED_ORIGIN
             }
             membership::MemberControllerAccountDidNotSign::MemberIdInvalid => {
-                MSG_APPLY_ON_CURATOR_OPENING_MEMBER_ID_INVALID
+                MSG_MEMBER_ID_INVALID
             }
             membership::MemberControllerAccountDidNotSign::SignerControllerAccountMismatch => {
-                MSG_APPLY_ON_CURATOR_OPENING_SIGNER_NOT_CONTROLLER_ACCOUNT
+                MSG_SIGNER_NOT_CONTROLLER_ACCOUNT
             }
         }
     }
@@ -1118,13 +1118,12 @@ decl_module! {
             banner: OptionalText,
             publication_status: ChannelPublicationStatus
         ) {
-
-            // Ensure that it is signed
-            let signer_account = ensure_signed(origin)?;
-
-            // Ensure that owner member can authenticate with signer account
+            // Ensure that owner member is signed and can authenticate with signer account
             ensure_on_wrapped_error!(
-                membership::Module::<T>::ensure_is_controller_account_for_member(&owner, &signer_account)
+                membership::Module::<T>::ensure_member_controller_account_signed(
+                    origin,
+                    &owner
+                )
             )?;
 
             // Ensure it is currently possible to create channels (ChannelCreationEnabled).

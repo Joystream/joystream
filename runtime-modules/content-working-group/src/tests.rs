@@ -50,7 +50,7 @@ fn create_channel_is_not_a_member() {
             fixture.channel_creator_member_id = fixture.channel_creator_member_id
                 + <<Test as membership::Trait>::MemberId as One>::one();
 
-            fixture.call_and_assert_error(MSG_CREATE_CHANNEL_IS_NOT_MEMBER);
+            fixture.call_and_assert_error(MSG_MEMBER_ID_INVALID);
         });
 }
 
@@ -86,7 +86,7 @@ fn create_channel_with_bad_member_role_account() {
                 Some(0),
             );
 
-            fixture.call_and_assert_error(MSG_CREATE_CHANNEL_NOT_CONTROLLER_ACCOUNT);
+            fixture.call_and_assert_error(MSG_SIGNER_NOT_CONTROLLER_ACCOUNT);
         });
 }
 
