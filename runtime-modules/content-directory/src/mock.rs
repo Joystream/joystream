@@ -556,6 +556,24 @@ pub fn remove_maintainer_from_class(
     )
 }
 
+pub fn update_class_permissions(
+    lead_origin: u64,
+    class_id: ClassId,
+    updated_any_member: Option<bool>,
+    updated_entity_creation_blocked: Option<bool>,
+    updated_all_entity_property_values_locked: Option<bool>,
+    updated_maintainers: Option<BTreeSet<CuratorGroupId>>,
+) -> Result<(), &'static str> {
+    TestModule::update_class_permissions(
+        Origin::signed(lead_origin),
+        class_id,
+        updated_any_member,
+        updated_entity_creation_blocked,
+        updated_all_entity_property_values_locked,
+        updated_maintainers,
+    )
+}
+
 pub fn assert_class_props(class_id: ClassId, expected_props: Vec<Property<Runtime>>) {
     let class = TestModule::class_by_id(class_id);
     assert_eq!(class.properties, expected_props);
