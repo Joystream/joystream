@@ -1,64 +1,8 @@
-import { ObjectTypeDefinitionNode, FieldDefinitionNode, ListTypeNode, NamedTypeNode } from 'graphql';
+import { ObjectTypeDefinitionNode, FieldDefinitionNode, ListTypeNode, NamedTypeNode, DirectiveNode, ArgumentNode, StringValueNode } from 'graphql';
 import { GraphQLSchemaParser } from './SchemaParser';
+import { availableTypes, WarthogModel, Field, ObjectType, FULL_TEXT_SEARCHABLE_DIRECTIVE } from './WarthhogModel';
 
-// Available types for model code generation
-export const availableTypes: { [key: string]: string } = {
-  String: '',
-  Int: 'int',
-  Boolean: 'bool',
-  Date: 'date',
-  Float: 'float'
-};
-
-/**
- * Reperesent GraphQL object type
- */
-interface ObjectType {
-  name: string;
-  fields: Field[];
-}
-
-/**
- * Reperenst GraphQL object type field
- * @constructor(name: string, type: string, nullable: boolean = true, isBuildinType: boolean = true, isList = false)
- */
-class Field {
-  // GraphQL field name
-  name: string;
-  // GraphQL field type
-  type: string;
-  // Is field type built-in or not
-  isBuildinType: boolean;
-  // Is field nullable or not
-  nullable: boolean;
-  // Is field a list. eg: post: [Post]
-  isList: boolean;
-
-  constructor(name: string, type: string, nullable: boolean = true, isBuildinType: boolean = true, isList = false) {
-    this.name = name;
-    this.type = type;
-    this.nullable = nullable;
-    this.isBuildinType = isBuildinType;
-    this.isList = isList;
-  }
-
-  /**
-   * Create a string from name, type properties in the 'name:type' format. If field is not nullable
-   * it adds exclamation mark (!) at then end of string
-   */
-  format(): string {
-    let column: string;
-    const columnType = this.isBuildinType ? availableTypes[this.type] : this.type;
-
-    if (columnType === '') {
-      // String type is provided implicitly
-      column = this.name;
-    } else {
-      column = this.name + ':' + columnType;
-    }
-    return this.nullable ? column : column + '!';
-  }
-}
+const debug = require('debug')('qnode-cli:model-generator');
 
 /**
  * Parse a graphql schema and generate model defination strings for Warthog. It use GraphQLSchemaParser for parsing
@@ -66,9 +10,11 @@ class Field {
  */
 export class DatabaseModelCodeGenerator {
   private _schemaParser: GraphQLSchemaParser;
+  private _model: WarthogModel;
 
   constructor(schemaPath: string) {
     this._schemaParser = new GraphQLSchemaParser(schemaPath);
+    this._model = new WarthogModel();
   }
 
   /**
@@ -105,28 +51,68 @@ export class DatabaseModelCodeGenerator {
    * Create a new Field type from NamedTypeNode
    * @param name string
    * @param namedTypeNode NamedTypeNode
+   * @param directives: additional directives of FieldDefinitionNode
    */
-  private _namedType(name: string, namedTypeNode: NamedTypeNode): Field {
+  private _namedType(name: string, namedTypeNode: NamedTypeNode, directives?: ReadonlyArray<DirectiveNode>): Field {
     const field = new Field(name, namedTypeNode.name.value);
     field.isBuildinType = this._isBuildinType(field.type);
+    // TODO: we should really handle levels at the type definition level?
+    if (directives) {
+        directives.map((d:DirectiveNode) => this._processFieldDirective(d, field));
+    }
+    
     return field;
   }
+
+  /**
+   * 
+   * @param d Directive provided to the FieldDefinitionNode
+   * @param f WarthogModel field
+   */
+  private _processFieldDirective(d: DirectiveNode, f: Field) {
+    if (d.name.value.includes(FULL_TEXT_SEARCHABLE_DIRECTIVE)) {
+        let queryName = this._checkFullTextSearchDirective(d);
+        this._model.addQueryField(queryName, f);
+    }
+  }
+
+  /**
+   * TODO: this piece should be refactored and does not seem to belong to this class
+   * 
+   * Does the checks and returns full text query names to be used;
+   * 
+   * @param d Directive Node
+   * @returns Fulltext query names 
+   */
+  private _checkFullTextSearchDirective(d: DirectiveNode): string {
+      if (!d.arguments) {
+          throw new Error(`@${FULL_TEXT_SEARCHABLE_DIRECTIVE} should have a query argument`)
+      }
+
+      let qarg: ArgumentNode[] = d.arguments.filter((arg) => (arg.name.value === `query`) && (arg.value.kind === `StringValue`))
+      
+      if (qarg.length !== 1) {
+          throw new Error(`@${FULL_TEXT_SEARCHABLE_DIRECTIVE} should have a single query argument with a sting value`);
+      }
+      return (qarg[0].value as StringValueNode).value;
+    }
 
   /**
    * Generate a new ObjectType from ObjectTypeDefinitionNode
    * @param o ObjectTypeDefinitionNode
    */
-  generateTypeDefination(o: ObjectTypeDefinitionNode): ObjectType {
+  private generateTypeDefination(o: ObjectTypeDefinitionNode): ObjectType {
     const fields = this._schemaParser.getFields(o).map((fieldNode: FieldDefinitionNode) => {
       const typeNode = fieldNode.type;
       const fieldName = fieldNode.name.value;
+      const directives = fieldNode.directives;
 
       if (typeNode.kind === 'NamedType') {
-        return this._namedType(fieldName, typeNode);
+        return this._namedType(fieldName, typeNode, directives);
       } else if (typeNode.kind === 'NonNullType') {
         if (typeNode.type.kind === 'NamedType') {
           // It is named type. and nullable will be set false
-          const field = this._namedType(fieldName, typeNode.type);
+          const field = this._namedType(fieldName, typeNode.type, directives);
           field.nullable = false;
           return field;
         } else {
@@ -139,20 +125,20 @@ export class DatabaseModelCodeGenerator {
       }
     });
 
+    debug(`Read and parsed fields: ${JSON.stringify(fields, null, 2)}`)
+
     return { name: o.name.value, fields: fields } as ObjectType;
   }
 
-  /**
-   * Generate model defination as one-line string literal
-   * Example: User username! age:int! isActive:bool!
-   */
-  generateModelDefinationsForWarthog(): string[] {
-    const objectTypes = this._schemaParser.getObjectDefinations().map(o => this.generateTypeDefination(o));
+  generateWarthogModel(): WarthogModel {
+    this._model = new WarthogModel();
 
-    const models = objectTypes.map(input => {
-      const fields = input.fields.map(field => field.format()).join(' ');
-      return [input.name, fields].join(' ');
+    this._schemaParser.getObjectDefinations().map(o => {
+        const objType = this.generateTypeDefination(o);
+        this._model.addObjectType(objType)
     });
-    return models;
+
+    return this._model;
   }
+
 }

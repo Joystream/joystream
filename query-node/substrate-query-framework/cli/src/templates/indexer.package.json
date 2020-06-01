@@ -5,7 +5,10 @@
     "license": "MIT",
     "scripts": {
       "start": "ts-node index.ts",
-      "postinstall": "rm -rf node_modules/index-builder/node_modules"
+        "start:dev": "DEBUG=index-builder:* ts-node index.ts --bootstrap",
+        "bootstrap": "ts-node index.ts --no-start --bootstrap",
+        "bootstrap:dev": "DEBUG=index-builder:* ts-node index.ts --no-start --bootstrap",
+        "postinstall": "rm -rf node_modules/index-builder/node_modules"
     },
     "dependencies": {
       "@joystream/types": "^0.8.0",
