@@ -482,6 +482,22 @@ pub fn remove_curator_group(
     TestModule::remove_curator_group(Origin::signed(lead_origin), curator_group_id)
 }
 
+pub fn add_curator_to_group(
+    lead_origin: u64,
+    curator_group_id: CuratorGroupId,
+    curator_id: CuratorId,
+) -> Result<(), &'static str> {
+    TestModule::add_curator_to_group(Origin::signed(lead_origin), curator_group_id, curator_id)
+}
+
+pub fn remove_curator_from_group(
+    lead_origin: u64,
+    curator_group_id: CuratorGroupId,
+    curator_id: CuratorId,
+) -> Result<(), &'static str> {
+    TestModule::remove_curator_from_group(Origin::signed(lead_origin), curator_group_id, curator_id)
+}
+
 pub fn set_curator_group_status(
     lead_origin: u64,
     curator_group_id: CuratorGroupId,
