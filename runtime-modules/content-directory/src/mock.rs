@@ -581,6 +581,15 @@ pub fn add_class_schema(
     )
 }
 
+pub fn update_class_schema_status(
+    lead_origin: u64,
+    class_id: ClassId,
+    schema_id: SchemaId,
+    status: bool,
+) -> Result<(), &'static str> {
+    TestModule::update_class_schema_status(Origin::signed(lead_origin), class_id, schema_id, status)
+}
+
 pub fn assert_class_props(class_id: ClassId, expected_props: Vec<Property<Runtime>>) {
     let class = TestModule::class_by_id(class_id);
     assert_eq!(class.properties, expected_props);
