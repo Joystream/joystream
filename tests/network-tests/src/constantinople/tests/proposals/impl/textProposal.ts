@@ -1,26 +1,18 @@
-import { Keyring, WsProvider } from '@polkadot/api';
+import { Keyring } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { registerJoystreamTypes } from '@constantinople/types';
 import { ApiWrapper } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN from 'bn.js';
 import tap from 'tap';
 
 export function textProposalTest(
+  apiWrapper: ApiWrapper,
   m1KeyPairs: KeyringPair[],
   m2KeyPairs: KeyringPair[],
   keyring: Keyring,
-  nodeUrl: string,
   sudoUri: string
 ) {
-  let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
-
-  tap.test('Text proposal test setup', async () => {
-    registerJoystreamTypes();
-    const provider = new WsProvider(nodeUrl);
-    apiWrapper = await ApiWrapper.create(provider);
-  });
 
   tap.test('Text proposal test', async () => {
     // Setup
@@ -50,9 +42,5 @@ export function textProposalTest(
     const textProposalPromise = apiWrapper.expectProposalFinalized();
     await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber);
     await textProposalPromise;
-  });
-
-  tap.teardown(() => {
-    apiWrapper.close();
   });
 }

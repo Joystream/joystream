@@ -1,6 +1,5 @@
-import { Keyring, WsProvider } from '@polkadot/api';
+import { Keyring } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { registerJoystreamTypes } from '@constantinople/types';
 import { ApiWrapper } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN from 'bn.js';
@@ -8,21 +7,14 @@ import { assert } from 'chai';
 import tap from 'tap';
 
 export function validatorCountProposal(
+  apiWrapper: ApiWrapper,
   m1KeyPairs: KeyringPair[],
   m2KeyPairs: KeyringPair[],
   keyring: Keyring,
-  nodeUrl: string,
   sudoUri: string,
   validatorCountIncrement: BN
 ) {
-  let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
-
-  tap.test('Validator count proposal test setup', async () => {
-    registerJoystreamTypes();
-    const provider = new WsProvider(nodeUrl);
-    apiWrapper = await ApiWrapper.create(provider);
-  });
 
   tap.test('Validator count proposal test', async () => {
     // Setup
@@ -59,9 +51,5 @@ export function validatorCountProposal(
       proposedValidatorCount.eq(newValidatorCount),
       `Validator count has unexpeccted value ${newValidatorCount}, expected ${proposedValidatorCount}`
     );
-  });
-
-  tap.teardown(() => {
-    apiWrapper.close();
   });
 }

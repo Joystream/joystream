@@ -1,6 +1,5 @@
-import { Keyring, WsProvider } from '@polkadot/api';
+import { Keyring } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { registerJoystreamTypes } from '@constantinople/types';
 import { ApiWrapper } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN from 'bn.js';
@@ -8,21 +7,14 @@ import { assert } from 'chai';
 import tap from 'tap';
 
 export function workingGroupMintCapacityProposalTest(
+  apiWrapper: ApiWrapper,
   m1KeyPairs: KeyringPair[],
   m2KeyPairs: KeyringPair[],
   keyring: Keyring,
-  nodeUrl: string,
   sudoUri: string,
   mintingCapacityIncrement: BN
 ) {
-  let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
-
-  tap.test('Working group mint capacity proposal test', async () => {
-    registerJoystreamTypes();
-    const provider = new WsProvider(nodeUrl);
-    apiWrapper = await ApiWrapper.create(provider);
-  });
 
   tap.test('Mint capacity proposal test', async () => {
     // Setup
@@ -63,9 +55,5 @@ export function workingGroupMintCapacityProposalTest(
       proposedMintingCapacity.eq(newMintingCapacity),
       `Content working group has unexpected minting capacity ${newMintingCapacity}, expected ${proposedMintingCapacity}`
     );
-  });
-
-  tap.teardown(() => {
-    apiWrapper.close();
   });
 }
