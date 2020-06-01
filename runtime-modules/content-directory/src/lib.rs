@@ -348,7 +348,6 @@ impl<T: Trait> Class<T> {
     fn ensure_schema_exists(&self, schema_index: SchemaId) -> Result<&Schema, &'static str> {
         self.schemas
             .get(schema_index as usize)
-            .map(|schema| schema)
             .ok_or(ERROR_UNKNOWN_CLASS_SCHEMA_ID)
     }
 
