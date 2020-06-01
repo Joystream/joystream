@@ -52,21 +52,14 @@ pub const SECOND_ENTITY_ID: EntityId = 2;
 
 pub const UNKNOWN_CLASS_ID: ClassId = 111;
 pub const UNKNOWN_ENTITY_ID: EntityId = 222;
-pub const UNKNOWN_PROP_ID: PropertyId = 333;
+pub const UNKNOWN_PROPERTY_ID: PropertyId = 333;
 pub const UNKNOWN_SCHEMA_ID: SchemaId = 444;
 
-pub const SCHEMA_ID_0: SchemaId = 0;
-pub const SCHEMA_ID_1: SchemaId = 1;
+pub const FIRST_SCHEMA_ID: SchemaId = 0;
+pub const SECOND_SCHEMA_ID: SchemaId = 1;
 
-pub const VALID_PROPERTY_VEC_INDEX: VecMaxLength = 0;
-pub const INVALID_PROPERTY_VEC_INDEX: VecMaxLength = 5;
-
-pub const PROP_ID_BOOL: PropertyId = 0;
-pub const PROP_ID_REFERENCE_VEC: PropertyId = 1;
-pub const PROP_ID_U32: PropertyId = 1;
-pub const PROP_ID_REFERENCE: PropertyId = 2;
-pub const PROP_ID_U32_VEC: PropertyId = 3;
-pub const PROP_ID_U32_VEC_MAX_LEN: PropertyId = 20;
+pub const FIRST_PROPERTY_ID: SchemaId = 0;
+pub const SECOND_PROPERTY_ID: SchemaId = 1;
 
 /// Nonces
 
@@ -571,6 +564,20 @@ pub fn update_class_permissions(
         updated_entity_creation_blocked,
         updated_all_entity_property_values_locked,
         updated_maintainers,
+    )
+}
+
+pub fn add_class_schema(
+    lead_origin: u64,
+    class_id: ClassId,
+    existing_properties: BTreeSet<PropertyId>,
+    new_properties: Vec<Property<Runtime>>,
+) -> Result<(), &'static str> {
+    TestModule::add_class_schema(
+        Origin::signed(lead_origin),
+        class_id,
+        existing_properties,
+        new_properties,
     )
 }
 

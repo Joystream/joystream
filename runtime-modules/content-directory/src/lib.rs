@@ -363,7 +363,7 @@ impl<T: Trait> Class<T> {
     /// Ensure `Schema`s limit per `Class` not reached
     pub fn ensure_schemas_limit_not_reached(&self) -> dispatch::Result {
         ensure!(
-            T::MaxNumberOfSchemasPerClass::get() < self.schemas.len() as MaxNumber,
+            (self.schemas.len() as MaxNumber) < T::MaxNumberOfSchemasPerClass::get(),
             ERROR_CLASS_SCHEMAS_LIMIT_REACHED
         );
         Ok(())
@@ -376,7 +376,7 @@ impl<T: Trait> Class<T> {
     ) -> dispatch::Result {
         ensure!(
             T::MaxNumberOfPropertiesPerClass::get()
-                <= (self.properties.len() + new_properties.len()) as MaxNumber,
+                >= (self.properties.len() + new_properties.len()) as MaxNumber,
             ERROR_CLASS_PROPERTIES_LIMIT_REACHED
         );
         Ok(())

@@ -570,7 +570,7 @@ impl Schema {
 
 /// `Property` representation, related to a given `Class`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct Property<T: Trait> {
     pub property_type: PropertyType<T>,
     /// If property value can be skipped, when adding entity schema support
@@ -582,7 +582,27 @@ pub struct Property<T: Trait> {
     pub locking_policy: PropertyLockingPolicy,
 }
 
+impl<T: Trait> Default for Property<T> {
+    fn default() -> Self {
+        Self {
+            property_type: PropertyType::<T>::default(),
+            required: false,
+            unique: false,
+            name: vec![],
+            description: vec![],
+            locking_policy: PropertyLockingPolicy::default(),
+        }
+    }
+}
+
 impl<T: Trait> Property<T> {
+    pub fn default_with_name(name: Vec<u8>) -> Self {
+        Self {
+            name,
+            ..Property::<T>::default()
+        }
+    }
+
     pub fn is_locked_from(&self, access_level: EntityAccessLevel) -> bool {
         let is_locked_from_controller = self.locking_policy.is_locked_from_controller;
         let is_locked_from_maintainer = self.locking_policy.is_locked_from_maintainer;
