@@ -1,5 +1,5 @@
 import { DatabaseModelCodeGenerator } from './../../src/helpers/ModelCodeGenerator';
-import { expect } from '@oclif/test';
+import { expect } from 'chai';
 
 describe('ModelCodeGenerator', () => {
     it('should add multi-field multi-entity FTSQuery to the model', () => {
