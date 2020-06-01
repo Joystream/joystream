@@ -1,4 +1,3 @@
-import { initConfig } from '../../../utils/config';
 import { Keyring, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { registerJoystreamTypes } from '@constantinople/types';
@@ -8,18 +7,16 @@ import BN from 'bn.js';
 import { assert } from 'chai';
 import tap from 'tap';
 
-export function workingGroupMintCapacityProposalTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {
-  initConfig();
-  const keyring = new Keyring({ type: 'sr25519' });
-  const nodeUrl: string = process.env.NODE_URL!;
-  const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
-  const mintingCapacityIncrement: BN = new BN(+process.env.MINTING_CAPACITY_INCREMENT!);
-  const defaultTimeout: number = 600000;
-
+export function workingGroupMintCapacityProposalTest(
+  m1KeyPairs: KeyringPair[],
+  m2KeyPairs: KeyringPair[],
+  keyring: Keyring,
+  nodeUrl: string,
+  sudoUri: string,
+  mintingCapacityIncrement: BN
+) {
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
-
-  tap.setTimeout(defaultTimeout);
 
   tap.test('Working group mint capacity proposal test', async () => {
     registerJoystreamTypes();
@@ -46,13 +43,14 @@ export function workingGroupMintCapacityProposalTest(m1KeyPairs: KeyringPair[], 
     await apiWrapper.transferBalanceToAccounts(sudo, m2KeyPairs, runtimeVoteFee);
 
     // Proposal creation
+    const proposedMintingCapacity: BN = initialMintingCapacity.add(mintingCapacityIncrement);
     const proposalPromise = apiWrapper.expectProposalCreated();
     await apiWrapper.proposeWorkingGroupMintCapacity(
       m1KeyPairs[0],
       'testing mint capacity' + uuid().substring(0, 8),
       'mint capacity to test proposal functionality' + uuid().substring(0, 8),
       proposalStake,
-      initialMintingCapacity.add(mintingCapacityIncrement)
+      proposedMintingCapacity
     );
     const proposalNumber = await proposalPromise;
 
@@ -60,12 +58,10 @@ export function workingGroupMintCapacityProposalTest(m1KeyPairs: KeyringPair[], 
     const mintCapacityPromise = apiWrapper.expectProposalFinalized();
     await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber);
     await mintCapacityPromise;
-    const updatedMintingCapacity: BN = await apiWrapper.getWorkingGroupMintCapacity();
+    const newMintingCapacity: BN = await apiWrapper.getWorkingGroupMintCapacity();
     assert(
-      updatedMintingCapacity.sub(initialMintingCapacity).eq(mintingCapacityIncrement),
-      `Content working group has unexpected minting capacity ${updatedMintingCapacity}, expected ${initialMintingCapacity.add(
-        mintingCapacityIncrement
-      )}`
+      proposedMintingCapacity.eq(newMintingCapacity),
+      `Content working group has unexpected minting capacity ${newMintingCapacity}, expected ${proposedMintingCapacity}`
     );
   });
 

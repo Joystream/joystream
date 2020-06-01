@@ -1,4 +1,3 @@
-import { initConfig } from '../../utils/config';
 import { Keyring, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { registerJoystreamTypes } from '@rome/types';
@@ -7,24 +6,21 @@ import BN from 'bn.js';
 import { Utils } from '../../utils/utils';
 import tap from 'tap';
 
-export function romeRuntimeUpgradeTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {
-  initConfig();
-  const keyring = new Keyring({ type: 'sr25519' });
-  const nodeUrl: string = process.env.NODE_URL!;
-  const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
-  const proposalStake: BN = new BN(+process.env.RUNTIME_UPGRADE_PROPOSAL_STAKE!);
-  const runtimePath: string = process.env.RUNTIME_WASM_PATH!;
-  const defaultTimeout: number = 1200000;
-
+export function romeRuntimeUpgradeTest(
+  m1KeyPairs: KeyringPair[],
+  m2KeyPairs: KeyringPair[],
+  keyring: Keyring,
+  nodeUrl: string,
+  sudoUri: string,
+  proposalStake: BN,
+  runtimePath: string
+) {
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
-  let provider: WsProvider;
-
-  tap.setTimeout(defaultTimeout);
 
   tap.test('Rome runtime upgrade test setup', async () => {
     registerJoystreamTypes();
-    provider = new WsProvider(nodeUrl);
+    const provider = new WsProvider(nodeUrl);
     apiWrapper = await ApiWrapper.create(provider);
   });
 

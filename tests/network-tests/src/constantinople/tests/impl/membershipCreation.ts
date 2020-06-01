@@ -5,28 +5,25 @@ import { assert } from 'chai';
 import { KeyringPair } from '@polkadot/keyring/types';
 import BN from 'bn.js';
 import { ApiWrapper } from '../../utils/apiWrapper';
-import { initConfig } from '../../utils/config';
 import { v4 as uuid } from 'uuid';
 import tap from 'tap';
 
-export function membershipTest(nKeyPairs: KeyringPair[]) {
-  initConfig();
-  const keyring = new Keyring({ type: 'sr25519' });
-  const N: number = +process.env.MEMBERSHIP_CREATION_N!;
-  const paidTerms: number = +process.env.MEMBERSHIP_PAID_TERMS!;
-  const nodeUrl: string = process.env.NODE_URL!;
-  const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
-  const defaultTimeout: number = 75000;
+export function membershipTest(
+  nKeyPairs: KeyringPair[],
+  keyring: Keyring,
+  N: number,
+  paidTerms: number,
+  nodeUrl: string,
+  sudoUri: string
+) {
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
   let aKeyPair: KeyringPair;
   let membershipFee: BN;
   let membershipTransactionFee: BN;
-
-  tap.setTimeout(defaultTimeout);
+  registerJoystreamTypes();
 
   tap.test('Membership creation test setup', async () => {
-    registerJoystreamTypes();
     const provider = new WsProvider(nodeUrl);
     apiWrapper = await ApiWrapper.create(provider);
     sudo = keyring.addFromUri(sudoUri);

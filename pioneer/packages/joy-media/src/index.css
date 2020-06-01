@@ -1,0 +1,131 @@
+.JoyPaperWidth {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.UploadBox {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+
+  .UploadSelectForm {
+    max-width: 500px;
+    width: 100%;
+  }
+
+  .UploadInputFile {
+    padding: 2rem 3rem;
+    margin-bottom: 1rem;
+    text-align: center;
+    height: auto;
+
+    &:hover,
+    &.FileSelected {
+      border: 1px solid #2185d0 !important;
+      .label {
+        color: #2185d0 !important;
+      }
+    }
+
+    i.cloud.icon {
+      font-size: 3rem;
+    }
+  }
+
+  .UploadButtonBox {
+    text-align: center;
+  }
+
+  .UploadProgress {
+    margin-left: calc(210px + 1rem) !important;
+    width: 100%;
+    max-width: 600px;
+  }
+}
+
+.PlayBox {
+  max-width: 700px;
+  margin-bottom: 1rem;
+  h1, h2 {
+    text-transform: none;
+    margin: 0;
+  }
+  .ContentHeader {
+    margin-top: 1.5rem;
+    margin-bottom: .5rem;
+  }
+  .DownloadBtn {
+    float: right;
+    margin-left: .5rem;
+  }
+  .ContentDesc {
+    margin-top: 1rem;
+  }
+}
+
+.MediaGrid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  width: 880px;
+
+  .MediaCell {
+    width: 25%;
+
+    &.MyContent {
+      /* background-color: #fff8e1; */
+    }
+    &:hover {
+      background-color: #deeffc;
+    }
+    .CellContent {
+      padding: 5px;
+      margin-bottom: 15px;
+      overflow: hidden;
+
+      h3 {
+        font-size: 1rem;
+        font-weight: bold;
+        margin: 1rem 0 .5rem 0;
+      }
+    }
+
+    .ThumbBox {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      margin-bottom: 5px;
+
+      .ThumbImg {
+        width: 210px;
+        max-height: 118px;
+        display: block;
+      }
+    }
+  }
+}
+
+.EditMetaBox {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  /* width: 880px; */
+
+  .EditMetaThumb {
+    width: 100%;
+    max-width: 210px;
+    max-height: 118px;
+    margin-right: 1rem;
+
+    img {
+      width: 100%;
+      max-width: 210px;
+      max-height: 118px;
+    }
+  }
+
+  .EditMetaForm {
+    width: 100%;
+    max-width: 600px;
+  }
+}
