@@ -1,4 +1,4 @@
-import { isObjectType } from 'graphql';
+import { FTSQuery } from './FTSQuery';
 
 // Available types for model code generation
 export const availableTypes: { [key: string]: string } = {
@@ -9,35 +9,36 @@ export const availableTypes: { [key: string]: string } = {
     Float: 'float'
   };
   
-export const FULL_TEXT_SEARCHABLE_DIRECTIVE = 'fullTextSearchable';
-  
 
 export class WarthogModel {
     _types: ObjectType[];
     _ftsQueries: FTSQuery[];
     _name2query: { [key: string]: FTSQuery } = {};
+    _name2type: { [key: string]: ObjectType } = {};
 
     constructor() {
         this._types = [];
         this._ftsQueries = [];
     }
 
-    addObjectType(type: ObjectType) {
+    addObjectType(type: ObjectType):void {
         this._types.push(type);
+        this._name2type[type.name] = type; 
     }
 
-    addFTSQuery(query: FTSQuery) {
+    addFTSQuery(query: FTSQuery):void {
         if (!this._name2query[query.name]) {
             this._name2query[query.name] = query;
         }
         this._ftsQueries.push(query);
     }
 
-    addQueryField(name:string, f: Field) {
+    addQueryField(name:string, f: Field, t?: ObjectType):void {
         let q: FTSQuery = this._name2query[name];
         if (!q) {
             q = {
                 name,
+                type: t,
                 fields: []
             } as FTSQuery;
             this.addFTSQuery(q);
@@ -45,12 +46,29 @@ export class WarthogModel {
         q.fields.push(f);
     }
 
+
     get types(): ObjectType[] {
         return this._types;
     }
 
     get ftsQueries(): FTSQuery[] {
         return this._ftsQueries;
+    }
+
+    lookupField(type: string, name: string): Field {
+        const objType = this.lookupType(type);
+        const field = objType.fields.find((f) => f.name === name);
+        if (!field) {
+            throw new Error(`No field ${name} is found for object type ${type}`);
+        }
+        return field;
+    }
+
+    lookupType(type: string): ObjectType {
+        if (!this._name2type[type]) {
+            throw new Error(`No ObjectType ${type} found`);
+        }
+        return this._name2type[type];
     }
 
     /**
@@ -76,14 +94,7 @@ export interface ObjectType {
     fields: Field[];
 }
 
-/**
- * Represnts Fulltext search query as defined by
- *  fields in GraphGL  decorated with FULL_TEXT_SEARCHABLE_DIRECTIVE directive
- */
-export interface FTSQuery {
-    name: string;
-    fields: Field[];
-}
+
   
 /**
  * Reperenst GraphQL object type field
@@ -104,8 +115,8 @@ export class Field {
 
     constructor(name: string, 
         type: string, 
-        nullable: boolean = true, 
-        isBuildinType: boolean = true, 
+        nullable = true, 
+        isBuildinType = true, 
         isList = false) {
         this.name = name;
         this.type = type;

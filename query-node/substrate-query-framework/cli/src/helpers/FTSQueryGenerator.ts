@@ -1,7 +1,8 @@
-import { WarthogModel, FTSQuery, ObjectType, Field } from './WarthhogModel';
 import Mustache = require('mustache');
+import Debug from 'debug';
+import { FTSQuery, WarthogModel, ObjectType, Field } from '../model';
 
-const debug = require('debug')('qnode-cli:fts-query-generator');
+const debug = Debug('qnode-cli:model-generator');
 
 interface MustacheQuery {
     entity: {
@@ -72,8 +73,7 @@ export class FTSQueryGenerator {
         }
     }
 
-    // TODO: This is ineffective, a better model/query design 
-    // would make such lookups unnecessary
+    // TODO: This is not needed any more as the query already has ObjectType 
     private lookupType(field: Field): ObjectType {
         const typeMatch = this._model.types.filter((t) => {
             const matches = t.fields.filter((f) => f === field);

@@ -1,0 +1,4 @@
+type Cat {
+  # should fail
+  memberId: Int! @fullTextSearchable(query:"meow") 
+}

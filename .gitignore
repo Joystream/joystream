@@ -25,3 +25,6 @@ yarn*
 
 # Warthog codegen
 **/generated/
+
+# eslint cache
+**/.eslintcache
