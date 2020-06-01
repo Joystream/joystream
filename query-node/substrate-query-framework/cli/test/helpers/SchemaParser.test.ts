@@ -1,6 +1,6 @@
 import { GraphQLSchemaParser, SchemaNode, Visitor } from './../../src/helpers/SchemaParser';
 import { expect } from 'chai';
-import { StringValueNode } from 'graphql';
+import { FULL_TEXT_SEARCHABLE_DIRECTIVE } from './../../src/helpers/SchemaDirective';
 
 describe('SchemaParser', () => {
     it('should fail on non-existent file', () => {
@@ -35,7 +35,7 @@ describe('SchemaParser', () => {
 
     it('should throw on wrong location', () => {
         const schema = `
-            type Cat @fullTextSearchable {
+            type Cat @${FULL_TEXT_SEARCHABLE_DIRECTIVE} {
                 meow: String! 
             }`; 
        expect(() => GraphQLSchemaParser.buildSchema(schema)).to.throw('may not be used on OBJECT');
@@ -44,7 +44,7 @@ describe('SchemaParser', () => {
     it('should throw on wrong argument', () => {
         const schema = `
             type Cat {
-                meow: String! @fullTextSearchable(qquery: "dfd")
+                meow: String! @${FULL_TEXT_SEARCHABLE_DIRECTIVE}(qquery: "dfd")
             }`; 
        expect(() => GraphQLSchemaParser.buildSchema(schema)).to.throw('"String!" is required');
     });
@@ -52,13 +52,13 @@ describe('SchemaParser', () => {
     it('should detect fields types and directives', () => {
         const schema = `
             type Cat {
-                meow: String! @fullTextSearchable(query: "dfd")
+                meow: String! @${FULL_TEXT_SEARCHABLE_DIRECTIVE}(query: "dfd")
             }`; 
        const gSchema = GraphQLSchemaParser.buildSchema(schema);
        const typeNodes = GraphQLSchemaParser.createObjectTypeDefinations(gSchema)
        expect(typeNodes).length(1);
        const node = typeNodes[0];
-       expect(node?.fields?.[0]?.directives?.[0]?.name?.value).eq('fullTextSearchable', 'Should find a directive');
+       expect(node?.fields?.[0]?.directives?.[0]?.name?.value).eq(`${FULL_TEXT_SEARCHABLE_DIRECTIVE}`, 'Should find a directive');
     });
 
     // TODO: this test now failes because apparently __ prefixed types do not pass validation
@@ -87,13 +87,13 @@ describe('SchemaParser', () => {
                 path.map((n: SchemaNode) => names.push(n.name.value));
             }
         }    
+        const directives: { [key:string]: Visitor } = {};
+        directives[`${FULL_TEXT_SEARCHABLE_DIRECTIVE}`] = visitor;
         parser.dfsTraversal({
-            directives: {
-                "fullTextSearchable": visitor
-            }
+            directives
         });
 
-        expect(names).members(["Membership", "handle", "fullTextSearchable"], "Should detect full path");
+        expect(names).members(["Membership", "handle", `${FULL_TEXT_SEARCHABLE_DIRECTIVE}`], "Should detect full path");
     });
 
     // TODO: in order to allow multiple directives we need to switch off SDL validation

@@ -3,7 +3,7 @@ import { WarthogModel, ObjectType, Field } from '../model';
 import { DirectiveNode, TypeNode, ArgumentNode, StringValueNode, FieldDefinitionNode, ObjectTypeDefinitionNode } from 'graphql';
 import { cloneDeep } from 'lodash';
 
-const FULL_TEXT_SEARCHABLE_DIRECTIVE = 'fullTextSearchable';
+export const FULL_TEXT_SEARCHABLE_DIRECTIVE = 'fulltext';
 
 export interface DirectiveVisitor {
     // directive name to watch

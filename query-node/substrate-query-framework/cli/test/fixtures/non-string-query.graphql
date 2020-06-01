@@ -1,4 +1,4 @@
 type Cat {
   # should fail
-  memberId: Int! @fullTextSearchable(query:"meow") 
+  memberId: Int! @fulltext(query:"meow") 
 }

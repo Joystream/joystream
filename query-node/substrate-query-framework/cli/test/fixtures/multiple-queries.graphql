@@ -6,7 +6,7 @@ type Membership {
   memberId: Int!
 
   # The unique handle chosen by member
-  handle: String @fullTextSearchable(query: "handles1") @fullTextSearchable(query: "handles2")
+  handle: String @fulltext(query: "handles1") @fulltext(query: "handles2")
 
   # A Url to member's Avatar image
   avatarUri: String
