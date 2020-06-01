@@ -4,7 +4,7 @@ on: [pull_request, push]
 jobs:
   pioneer_build_code:
     name: Pioneer Build Code
-    runs-on: ubuntu-latest
+    runs-on: [ubuntu-latest, macos-latest]
     strategy:
       matrix:
         node-version: [12.x]
@@ -21,7 +21,7 @@ jobs:
 
   pioneer_build_i18n:
     name: Pioneer Build i18n
-    runs-on: ubuntu-latest
+    runs-on: [ubuntu-latest, macos-latest]
     strategy:
       matrix:
         node-version: [12.x]
