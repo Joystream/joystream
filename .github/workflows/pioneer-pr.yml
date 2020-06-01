@@ -19,7 +19,6 @@ jobs:
         yarn install --frozen-lockfile
         yarn workspace pioneer run build:code
 
-jobs:
   pioneer_build_code_osx:
     name: (MacOS) Build Code
     runs-on: macos-latest
