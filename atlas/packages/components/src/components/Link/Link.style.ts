@@ -1,24 +1,23 @@
-import { css } from "@emotion/core"
-import { typography, colors } from "../../theme"
+import { typography, colors } from "../../theme";
+import { StyleFn, makeStyles } from "../../utils";
 
-export type CustomLinkStyleProps = {}
+export type CustomLinkStyleProps = {};
 
-export let makeStyles = ({}: CustomLinkStyleProps) => {
-
-  return {
-    regular: css`
-      font-family: ${typography.fonts.base};
-      font-size: ${typography.sizes.overhead};
-      color: ${colors.blue[400]};
-      text-decoration: none;
-      cursor: pointer;
-    `,
-    disabled: css`
-      font-family: ${typography.fonts.base};
-      font-size: ${typography.sizes.overhead};
-      color: ${colors.gray[200]};
-      text-decoration: none;
-      cursor: not-allowed;
-    `
-  }
-}
+const regular: StyleFn = () => ({
+	fontFamily: typography.fonts.base,
+	fontSize: typography.sizes.overhead,
+	color: colors.blue[400],
+	textDecoration: "none",
+	cursor: "pointer",
+});
+const disabled: StyleFn = () => ({
+	fontFamily: typography.fonts.base,
+	fontSize: typography.sizes.overhead,
+	color: colors.gray[200],
+	textDecoration: "none",
+	cursor: "not-allowed",
+});
+export const useCSS = (props: CustomLinkStyleProps) => ({
+	regular: makeStyles([regular])(props),
+	disabled: makeStyles([disabled])(props),
+});
