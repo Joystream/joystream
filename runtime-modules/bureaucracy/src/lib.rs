@@ -896,10 +896,6 @@ decl_module! {
 
             let stake_profile = worker.role_stake_profile.ok_or(Error::NoWorkerStakeProfile)?;
 
-            ensure_on_wrapped_error!(
-                <stake::Module<T>>::ensure_can_decrease_stake(&stake_profile.stake_id, balance)
-            )?;
-
             //
             // == MUTATION SAFE ==
             //
@@ -924,10 +920,6 @@ decl_module! {
             ensure!(balance != <BalanceOf<T>>::zero(), Error::StakeBalanceCannotBeZero);
 
             let stake_profile = worker.role_stake_profile.ok_or(Error::NoWorkerStakeProfile)?;
-
-            ensure_on_wrapped_error!(
-                <stake::Module<T>>::ensure_can_increase_stake(&stake_profile.stake_id, balance)
-            )?;
 
             //
             // == MUTATION SAFE ==
