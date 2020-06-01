@@ -6,12 +6,12 @@ type Membership {
   memberId: Int!
 
   # The unique handle chosen by member
-  handle: String @fulltext(query: "handles1") @fulltext(query: "handles2")
+  handle: String @fulltext(query: "handles1")
 
   # A Url to member's Avatar image
   avatarUri: String
 
   # Short text chosen by member to share information about themselves
-  about: String
+  about: String  @fulltext(query: "handles2")
 }
 
