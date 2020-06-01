@@ -1,38 +1,40 @@
-import { css } from "@emotion/core"
-import { typography, colors } from "../../theme"
+import { StyleFn, makeStyles } from "./../../utils/style-reducer";
+import { typography, colors } from "../../theme";
 
 export type TagButtonStyleProps = {
-  selected?: boolean
-}
+	selected?: boolean;
+};
 
-export let makeStyles = ({
-  selected = false
-}: TagButtonStyleProps) => {
-  return css`
-    border: 1px solid ${colors.blue[500]};
-    color: ${colors.white};
-    background-color: ${colors.black};
-    text-align: center;
-    padding: 15px 20px;
-    display: inline-block;
-    cursor: default;
-    font-family: ${typography.fonts.base};
-    font-weight: ${typography.weights.medium};
-    font-size: ${typography.sizes.button.large};
-    margin: 0 15px 0 0;
-    line-height: ${typography.sizes.button.large};
-    box-shadow: ${selected ? `3px 3px ${colors.blue[500]}` : "none"};
+const baseStyles: StyleFn = () => ({
+	border: `1px solid ${colors.blue[500]}`,
+	color: colors.white,
+	backgroundColor: colors.black,
+	textAlign: "center",
+	padding: "15px 20px",
+	display: "inline-block",
+	cursor: "default",
+	fontFamily: typography.fonts.base,
+	fontWeight: typography.weights.medium,
+	fontSize: typography.sizes.button.large,
+	margin: "0 15px 0 0",
+	lineHeight: typography.sizes.button.large,
 
-    span {
-      margin-left: 20px;
-      font-size: ${typography.sizes.icon.xxlarge};
-      font-weight: ${typography.weights.regular};
-      line-height: 0;
-      vertical-align: sub;
-    }
+	span: {
+		marginLeft: "20px",
+		fontSize: typography.sizes.icon.xxlarge,
+		fontWeight: typography.weights.regular,
+		lineHeight: 0,
+		verticalAlign: "sub",
+	},
 
-    &::selection {
-      background: transparent;
-    }
-  `
-}
+	"&::selection": {
+		background: "transparent",
+	},
+});
+
+const shadowFromProps: StyleFn = (styles, { selected = false }) => ({
+	...styles,
+	boxShadow: selected ? `3px 3px ${colors.blue[500]}` : "none",
+});
+
+export const useCSS = (props: TagButtonStyleProps) => makeStyles([baseStyles, shadowFromProps])(props);

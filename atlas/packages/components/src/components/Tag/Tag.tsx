@@ -1,18 +1,11 @@
-import React from "react"
-import { makeStyles, TagStyleProps } from "./Tag.style"
+import React from "react";
+import { TagStyleProps, useCSS } from "./Tag.style";
 
 type TagProps = {
-  text: string
-} & TagStyleProps
+	text: string;
+} & TagStyleProps;
 
-export default function Tag({
-  text,
-  ...styleProps
-}: TagProps) {
-  let styles = makeStyles(styleProps)
-  return (
-    <div css={styles}>
-      {text}
-    </div>
-  )
+export default function Tag({ text, ...styleProps }: TagProps) {
+	let styles = useCSS(styleProps);
+	return <div css={styles}>{text}</div>;
 }
