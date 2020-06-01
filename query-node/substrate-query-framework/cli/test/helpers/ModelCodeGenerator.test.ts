@@ -1,5 +1,6 @@
 import { GraphQLSchemaParser, SchemaNode, Visitor } from './../../src/helpers/SchemaParser';
 import { expect } from 'chai';
+import { StringValueNode } from 'graphql';
 
 describe('SchemaParser', () => {
     it('should fail on non-existent file', () => {
@@ -22,7 +23,7 @@ describe('SchemaParser', () => {
                 meow: String!
             }`; 
        expect(() => GraphQLSchemaParser.buildSchema(schema)).to.throw('Syntax Error');
-    })
+    });
 
     it('should throw on unknown directive', () => {
         const schema = `
@@ -30,7 +31,7 @@ describe('SchemaParser', () => {
                 meow: String! @undeclared
             }`; 
        expect(() => GraphQLSchemaParser.buildSchema(schema)).to.throw('Unknown directive');
-    })
+    });
 
     it('should throw on wrong location', () => {
         const schema = `
@@ -38,7 +39,7 @@ describe('SchemaParser', () => {
                 meow: String! 
             }`; 
        expect(() => GraphQLSchemaParser.buildSchema(schema)).to.throw('may not be used on OBJECT');
-    })
+    });
 
     it('should throw on wrong argument', () => {
         const schema = `
@@ -46,7 +47,7 @@ describe('SchemaParser', () => {
                 meow: String! @fullTextSearchable(qquery: "dfd")
             }`; 
        expect(() => GraphQLSchemaParser.buildSchema(schema)).to.throw('"String!" is required');
-    })
+    });
 
     it('should detect fields types and directives', () => {
         const schema = `
@@ -58,7 +59,7 @@ describe('SchemaParser', () => {
        expect(typeNodes).length(1);
        const node = typeNodes[0];
        expect(node?.fields?.[0]?.directives?.[0]?.name?.value).eq('fullTextSearchable', 'Should find a directive');
-    })
+    });
 
     // TODO: this test now failes because apparently __ prefixed types do not pass validation
     //
@@ -76,7 +77,7 @@ describe('SchemaParser', () => {
         const parser = new GraphQLSchemaParser('test/fixtures/single-type.graphql');
         expect(parser.getTypeNames()).length(1, "Should detect one type");
         expect(parser.getFields(parser.getObjectDefinations()[0])).length(5, "Should detect fields");
-    })
+    });
 
     it('should visit directives', () => {
         const parser = new GraphQLSchemaParser('test/fixtures/single-type.graphql');
@@ -93,6 +94,31 @@ describe('SchemaParser', () => {
         });
 
         expect(names).members(["Membership", "handle", "fullTextSearchable"], "Should detect full path");
-    })
+    });
+
+    // TODO: in order to allow multiple directives we need to switch off SDL validation
+    // in the parser. So this test is comment for the future use
+    //
+    // it('should support multiple directives', () => {
+    //     const parser = new GraphQLSchemaParser('test/fixtures/multiple-queries.graphql');
+    //     const queries: string[] = [];
+    //     const visitor: Visitor = {
+    //         visit: (path) => {
+    //             path.map((n: SchemaNode) => {
+    //                 if (n.kind === 'Directive') {
+    //                     queries.push((n.arguments?.[0].value as StringValueNode).value)    
+    //                 }
+                    
+    //             });
+    //         }
+    //     }    
+    //     parser.dfsTraversal({
+    //         directives: {
+    //             "fullTextSearchable": visitor
+    //         }
+    //     });
+
+    //     expect(queries).members(["handles1", "handles2"], "Should detect multiple queries on the same field");
+    // })
 
 });
