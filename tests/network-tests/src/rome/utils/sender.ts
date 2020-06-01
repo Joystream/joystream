@@ -1,4 +1,4 @@
-import BN = require('bn.js');
+import BN from 'bn.js';
 import { ApiPromise } from '@polkadot/api';
 import { Index } from '@polkadot/types/interfaces';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
