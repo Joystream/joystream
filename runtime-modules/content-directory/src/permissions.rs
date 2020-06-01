@@ -128,6 +128,7 @@ impl<T: Trait> Default for CuratorGroup<T> {
     fn default() -> Self {
         Self {
             curators: BTreeSet::new(),
+            // default curator group status right after creation
             active: false,
             classes_under_maintenance: 0,
         }

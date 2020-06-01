@@ -630,9 +630,6 @@ decl_module! {
             // Remove curator group under given curator group id from runtime storage
             <CuratorGroupById<T>>::remove(curator_group_id);
 
-            // Decrement the next curator curator_group_id:
-            <NextCuratorGroupId<T>>::mutate(|n| *n -= T::CuratorGroupId::one());
-
             // Trigger event
             Self::deposit_event(RawEvent::CuratorGroupRemoved(curator_group_id));
             Ok(())
@@ -659,7 +656,7 @@ decl_module! {
             });
 
             // Trigger event
-            Self::deposit_event(RawEvent::CuratorGroupStatusSet(is_active));
+            Self::deposit_event(RawEvent::CuratorGroupStatusSet(curator_group_id, is_active));
             Ok(())
         }
 
@@ -1994,7 +1991,7 @@ decl_event!(
     {
         CuratorGroupAdded(CuratorGroupId),
         CuratorGroupRemoved(CuratorGroupId),
-        CuratorGroupStatusSet(Status),
+        CuratorGroupStatusSet(CuratorGroupId, Status),
         CuratorAdded(CuratorGroupId, CuratorId),
         CuratorRemoved(CuratorGroupId, CuratorId),
         MaintainerAdded(ClassId, CuratorGroupId),
