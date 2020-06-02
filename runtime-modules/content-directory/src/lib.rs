@@ -145,7 +145,7 @@ pub struct InputValidationLengthConstraint {
 }
 
 /// Structure, representing `inbound_entity_rcs` & `inbound_same_owner_entity_rcs` mappings to their respective count for each referenced entity id
-pub struct EntitiesRc<T: Trait> {
+struct EntitiesRc<T: Trait> {
     /// Entities, which inbound same owner rc should be changed
     pub inbound_entity_rcs: BTreeMap<T::EntityId, ReferenceCounter>,
 
@@ -1657,7 +1657,7 @@ impl<T: Trait> Module<T> {
 
     /// Fill in `entity_ids_to_increase_rcs` & `entity_ids_to_decrease_rcs`,
     /// based on entities involved into update process
-    pub fn fill_in_involved_entity_ids_rcs(
+    fn fill_in_involved_entity_ids_rcs(
         new_value: &PropertyValue<T>,
         current_prop_value: &PropertyValue<T>,
         same_controller: bool,

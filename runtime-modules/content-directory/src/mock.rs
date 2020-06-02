@@ -622,9 +622,16 @@ pub fn update_entity_creation_voucher(
 
 pub fn entity_creation_vouchers(
     class_id: ClassId,
-    entity_controller: EntityController<Runtime>,
+    entity_controller: &EntityController<Runtime>,
 ) -> Option<EntityCreationVoucher<Runtime>> {
     TestModule::entity_creation_vouchers(class_id, entity_controller)
+}
+
+pub fn entity_creation_voucher_exists(
+    class_id: ClassId,
+    entity_controller: &EntityController<Runtime>,
+) -> bool {
+    EntityCreationVouchers::<Runtime>::exists(class_id, entity_controller)
 }
 
 // Entities
