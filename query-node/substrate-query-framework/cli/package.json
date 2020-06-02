@@ -37,6 +37,7 @@
     "jest": "^26.0.1",
     "lint-staged": "^10.2.6",
     "mocha": "^5",
+    "mocha-chai-snapshot": "^1.0.0",
     "nyc": "^14",
     "prettier": "^2.0.5",
     "spawn-command": "^0.0.2-1",
