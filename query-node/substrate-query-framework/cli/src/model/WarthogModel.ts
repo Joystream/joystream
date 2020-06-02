@@ -66,7 +66,7 @@ export class WarthogModel {
      * @param typeName  objectType which defined that field
      */
     addQueryClause(queryName: string, fieldName: string, typeName: string):void {
-        const field = this.lookupField(fieldName, typeName);
+        const field = this.lookupField(typeName, fieldName);
         const objType = this.lookupType(typeName);
         this._addQueryClause(queryName, field, objType);
     }
