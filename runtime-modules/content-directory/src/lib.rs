@@ -444,11 +444,11 @@ pub struct Entity<T: Trait> {
     /// Length is no more than Class.properties.
     pub values: BTreeMap<PropertyId, PropertyValue<T>>,
 
-    /// Number of property values referencing current entity
+    /// Number of inbound references from another entity property values
     pub reference_count: ReferenceCounter,
 
-    /// Number of inbound references from another entities with `SameOwner`flag set
-    pub inbound_same_owner_references_from_other_entities_count: ReferenceCounter,
+    /// Number of inbound references from another entity property values with `SameOwner`flag set
+    pub inbound_same_owner_references_count: ReferenceCounter,
 }
 
 impl<T: Trait> Default for Entity<T> {
@@ -459,7 +459,7 @@ impl<T: Trait> Default for Entity<T> {
             supported_schemas: BTreeSet::new(),
             values: BTreeMap::new(),
             reference_count: 0,
-            inbound_same_owner_references_from_other_entities_count: 0,
+            inbound_same_owner_references_count: 0,
         }
     }
 }
@@ -478,7 +478,7 @@ impl<T: Trait> Entity<T> {
             supported_schemas,
             values,
             reference_count: 0,
-            inbound_same_owner_references_from_other_entities_count: 0,
+            inbound_same_owner_references_count: 0,
         }
     }
 
@@ -541,7 +541,7 @@ impl<T: Trait> Entity<T> {
     /// Ensure any inbound `PropertyValue` points to the given `Entity`
     pub fn ensure_inbound_same_owner_rc_is_zero(&self) -> dispatch::Result {
         ensure!(
-            self.inbound_same_owner_references_from_other_entities_count == 0,
+            self.inbound_same_owner_references_count == 0,
             ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO
         );
         Ok(())
@@ -1593,7 +1593,7 @@ impl<T: Trait> Module<T> {
     fn increase_entity_rcs(entity_id: &T::EntityId, rc: u32, same_owner: bool) {
         <EntityById<T>>::mutate(entity_id, |entity| {
             if same_owner {
-                entity.inbound_same_owner_references_from_other_entities_count += rc;
+                entity.inbound_same_owner_references_count += rc;
                 entity.reference_count += rc
             } else {
                 entity.reference_count += rc
@@ -1606,7 +1606,7 @@ impl<T: Trait> Module<T> {
     fn decrease_entity_rcs(entity_id: &T::EntityId, rc: u32, same_owner: bool) {
         <EntityById<T>>::mutate(entity_id, |entity| {
             if same_owner {
-                entity.inbound_same_owner_references_from_other_entities_count -= rc;
+                entity.inbound_same_owner_references_count -= rc;
                 entity.reference_count -= rc
             } else {
                 entity.reference_count -= rc
