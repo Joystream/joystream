@@ -121,7 +121,7 @@ pub struct CuratorGroup<T: Trait> {
     active: bool,
 
     /// Used to count the number of `Class`(es), given curator group maintains
-    classes_under_maintenance: ReferenceCounter,
+    number_of_classes_maintained: ReferenceCounter,
 }
 
 impl<T: Trait> Default for CuratorGroup<T> {
@@ -129,7 +129,7 @@ impl<T: Trait> Default for CuratorGroup<T> {
         Self {
             curators: BTreeSet::new(),
             active: false,
-            classes_under_maintenance: 0,
+            number_of_classes_maintained: 0,
         }
     }
 }
@@ -161,19 +161,19 @@ impl<T: Trait> CuratorGroup<T> {
     }
 
     /// Increment number of classes `CuratorGroup` maintains
-    pub fn increment_classes_under_maintenance_count(&mut self) {
-        self.classes_under_maintenance += 1;
+    pub fn increment_number_of_classes_maintained_count(&mut self) {
+        self.number_of_classes_maintained += 1;
     }
 
     /// Decrement number of classes `CuratorGroup` maintains
-    pub fn decrement_classes_under_maintenance_count(&mut self) {
-        self.classes_under_maintenance -= 1;
+    pub fn decrement_number_of_classes_maintained_count(&mut self) {
+        self.number_of_classes_maintained -= 1;
     }
 
     /// Ensure curator group does not maintain any class
-    pub fn ensure_curator_is_not_a_maintainer(&self) -> dispatch::Result {
+    pub fn ensure_curator_group_maintains_no_classes(&self) -> dispatch::Result {
         ensure!(
-            self.classes_under_maintenance == 0,
+            self.number_of_classes_maintained == 0,
             ERROR_CURATOR_GROUP_REMOVAL_FORBIDDEN
         );
         Ok(())

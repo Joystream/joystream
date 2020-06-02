@@ -620,7 +620,7 @@ decl_module! {
 
             let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
 
-            curator_group.ensure_curator_is_not_a_maintainer()?;
+            curator_group.ensure_curator_group_maintains_no_classes()?;
 
             //
             // == MUTATION SAFE ==
@@ -744,7 +744,7 @@ decl_module! {
 
             // Increment the number of classes, curator group under given `curator_group_id` maintains
             <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
-                curator_group.increment_classes_under_maintenance_count();
+                curator_group.increment_number_of_classes_maintained_count();
             });
 
             // Trigger event
@@ -776,7 +776,7 @@ decl_module! {
 
             // Decrement the number of classes, curator group under given `curator_group_id` maintains
             <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
-                curator_group.decrement_classes_under_maintenance_count();
+                curator_group.decrement_number_of_classes_maintained_count();
             });
 
             // Trigger event
