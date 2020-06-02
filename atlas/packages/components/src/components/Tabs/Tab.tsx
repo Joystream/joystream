@@ -5,7 +5,7 @@ type TabProps = {
 	children: ReactNode;
 };
 
-//FIXME: Actually add markup for the tab
+// FIXME: This looks incomplete
 export default function Tab({ label, children }: TabProps) {
 	// let styles = makeStyles(styleProps)
 
