@@ -1,6 +1,6 @@
 import Mustache from 'mustache';
 import Debug from 'debug';
-import { FTSQuery, WarthogModel, ObjectType } from '../model';
+import { FTSQuery, ObjectType } from '../model';
 import { upperFirst } from 'lodash';
 
 const debug = Debug('qnode-cli:model-generator');
@@ -9,6 +9,7 @@ interface MustacheQuery {
     entities: MustacheOrmEnitity[],
     query: {
         name: string,
+        viewname: string, // view name holding the union of the documents
         language: string, 
         documents: MustacheQueryDocument[], // all text fields in a table are grouped into documents
         ts: number // migration timestamp
@@ -23,8 +24,10 @@ interface MustacheOrmEnitity {
 
 interface MustacheQueryDocument {
     index_col: string, // generated column to be used for the ts_vector index
+    index_name: string, // name of the ts_vector index
     table: string, // SQL table the text fields belong to 
     fields: MustacheQueryField[] // text fields to be grouped into a document
+    last: boolean // if its last in the list of documents
 }
 
 interface MustacheQueryField {
@@ -34,13 +37,8 @@ interface MustacheQueryField {
 }
 
 export class FTSQueryGenerator {
-    _model: WarthogModel;
     
-    public constructor(model: WarthogModel) {
-        this._model = model;
-
-    }
-
+    
     generate(mustacheTeplate: string, query: FTSQuery):string {
         debug(`Generating query with ${JSON.stringify(query, null, 2)}`);
         const mustacheQuery = this.transform(query);
@@ -63,8 +61,10 @@ export class FTSQueryGenerator {
             if (!name2doc[v.entity.name]) {
                 name2doc[v.entity.name] = {
                     index_col: `${query.name}_index_col`,
+                    index_name: `${query.name}_idx`,
                     table: this.name2table(v.entity.name),
-                    fields: []
+                    fields: [],
+                    last: false
                 };
                 name2entity[v.entity.name] = this.objectTypeToMustache(v.entity);
             }
@@ -82,9 +82,12 @@ export class FTSQueryGenerator {
             documents.push(doc);
         })
         
+        documents[documents.length - 1].last = true;
+
         return {
             entities,
             query: {
+                viewname: `${query.name}_view`,
                 name: query.name,
                 language: 'english',// only English is supported for now
                 documents,
