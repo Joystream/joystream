@@ -3,7 +3,7 @@ import { membershipTest } from './impl/membershipCreation';
 import { councilTest } from './impl/electingCouncil';
 import { initConfig } from '../utils/config';
 import { Keyring, WsProvider } from '@polkadot/api';
-import { setTimeout } from './impl/setTimeout';
+import { setTestTimeout } from '../utils/setTestTimeout';
 import BN from 'bn.js';
 import tap from 'tap';
 import { registerJoystreamTypes } from '@constantinople/types';
@@ -12,6 +12,7 @@ import { closeApi } from './impl/closeApi';
 
 tap.mocha.describe('Electing council scenario', async () => {
   initConfig();
+  registerJoystreamTypes();
   registerJoystreamTypes();
 
   const m1KeyPairs: KeyringPair[] = new Array();
@@ -30,7 +31,7 @@ tap.mocha.describe('Electing council scenario', async () => {
   const provider = new WsProvider(nodeUrl);
   const apiWrapper: ApiWrapper = await ApiWrapper.create(provider);
 
-  setTimeout(apiWrapper, durationInBlocks);
+  setTestTimeout(apiWrapper, durationInBlocks);
   membershipTest(apiWrapper, m1KeyPairs, keyring, N, paidTerms, sudoUri);
   membershipTest(apiWrapper, m2KeyPairs, keyring, N, paidTerms, sudoUri);
   councilTest(apiWrapper, m1KeyPairs, m2KeyPairs, keyring, K, sudoUri, greaterStake, lesserStake);

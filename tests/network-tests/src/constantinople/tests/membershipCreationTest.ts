@@ -2,7 +2,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { membershipTest } from './impl/membershipCreation';
 import { Keyring, WsProvider } from '@polkadot/api';
 import { initConfig } from '../utils/config';
-import { setTimeout } from './impl/setTimeout';
+import { setTestTimeout } from '../utils/setTestTimeout';
 import tap from 'tap';
 import { registerJoystreamTypes } from '@constantinople/types';
 import { ApiWrapper } from '../utils/apiWrapper';
@@ -23,7 +23,7 @@ tap.mocha.describe('Membership creation scenario', async () => {
   const provider = new WsProvider(nodeUrl);
   const apiWrapper: ApiWrapper = await ApiWrapper.create(provider);
 
-  setTimeout(apiWrapper, durationInBlocks);
+  setTestTimeout(apiWrapper, durationInBlocks);
   membershipTest(apiWrapper, nKeyPairs, keyring, N, paidTerms, sudoUri);
   closeApi(apiWrapper);
 });
