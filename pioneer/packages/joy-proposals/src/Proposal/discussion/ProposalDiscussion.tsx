@@ -30,13 +30,19 @@ export default function ProposalDiscussion({
         <>
           <Header as="h3">Discussion ({ discussion.posts.length})</Header>
           <Divider />
-          { discussion.posts.map((post, key) => (
-            <DiscussionPost
-              key={post.postId ? post.postId.toNumber() : `k-${key}`}
-              post={post}
-              memberId={memberId}
-              refreshDiscussion={refreshDiscussion}/>
-          )) }
+          { discussion.posts.length ? (
+              discussion.posts.map((post, key) => (
+                <DiscussionPost
+                  key={post.postId ? post.postId.toNumber() : `k-${key}`}
+                  post={post}
+                  memberId={memberId}
+                  refreshDiscussion={refreshDiscussion}/>
+              ))
+            )
+            : (
+              <Header as="h4" style={{ margin: '1rem 0'}}>Nothing has been posted here yet!</Header>
+            )
+          }
           { memberId && (
             <DiscussionPostForm
               threadId={discussion.threadId}

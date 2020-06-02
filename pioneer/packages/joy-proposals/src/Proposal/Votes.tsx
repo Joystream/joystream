@@ -15,7 +15,7 @@ export default function Votes({ votes }: VotesProps) {
   const nonEmptyVotes = votes.filter(proposalVote => proposalVote.vote !== null);
 
   if (!nonEmptyVotes.length) {
-    return <Header as="h3">No votes submitted yet!</Header>;
+    return <Header as="h4">No votes has been submitted!</Header>;
   }
 
   return (
