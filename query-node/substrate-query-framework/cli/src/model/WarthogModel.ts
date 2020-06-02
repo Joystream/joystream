@@ -33,14 +33,19 @@ export class WarthogModel {
         this._ftsQueries.push(query);
     }
 
-    addQueryClause(name:string, f: Field, t: ObjectType):void {
+    addEmptyFTSQuery(name: string): FTSQuery {
+        const query = {
+            name,
+            clauses: []
+        };
+        this.addFTSQuery(query);
+        return query;
+    }
+
+    private _addQueryClause(name:string, f: Field, t: ObjectType):void {
         let q: FTSQuery = this._name2query[name];
         if (!q) {
-            q = {
-                name,
-                clauses: []
-            } as FTSQuery;
-            this.addFTSQuery(q);
+            q = this.addEmptyFTSQuery(name);
         }
         q.clauses.push({
             entity: t,
@@ -48,6 +53,11 @@ export class WarthogModel {
         });
     }
 
+    addQueryClause(queryName: string, fieldName: string, typeName: string):void {
+        const field = this.lookupField(fieldName, typeName);
+        const objType = this.lookupType(typeName);
+        this._addQueryClause(queryName, field, objType);
+    }
 
     get types(): ObjectType[] {
         return this._types;

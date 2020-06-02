@@ -70,10 +70,7 @@ export class FTSDirective implements SchemaDirective {
         const objTypeNode = path.pop() as ObjectTypeDefinitionNode;
 
         const qName: string  = this._checkFullTextSearchDirective(dirNode);
-        const field: Field  = model.lookupField(objTypeNode.name.value, fieldNode.name.value);
-        const objType: ObjectType = model.lookupType(objTypeNode.name.value);
-
-        model.addQueryClause(qName, field, objType);
+        model.addQueryClause(qName, fieldNode.name.value, objTypeNode.name.value);
 
         return model 
     }
