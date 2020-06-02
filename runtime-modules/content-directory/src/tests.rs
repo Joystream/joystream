@@ -488,3 +488,44 @@ fn update_class_schema_status_success() {
         );
     })
 }
+
+#[test]
+fn create_entity_creation_voucher_success() {
+    with_test_externalities(|| {
+        // Create simple class with default permissions
+        assert_ok!(create_simple_class_with_default_permissions(LEAD_ORIGIN));
+
+        // Events number before tested calls
+        let number_of_events_before_call = System::events().len();
+
+        let entity_controller = EntityController::Member(FIRST_MEMBER_ID);
+
+        // Create entities creation voucher for chosen controller
+        assert_ok!(update_entity_creation_voucher(
+            LEAD_ORIGIN,
+            FIRST_CLASS_ID,
+            entity_controller.clone(),
+            IndividualEntitiesCreationLimit::get()
+        ));
+
+        // Runtime tested state after call
+
+        // Ensure  entity creation voucher for chosen controller created succesfully
+        let entity_voucher = EntityCreationVoucher::new(IndividualEntitiesCreationLimit::get());
+
+        assert_eq!(
+            entity_creation_vouchers(FIRST_CLASS_ID, entity_controller.clone()),
+            Some(entity_voucher.clone())
+        );
+
+        let entity_creation_voucher_created_event = get_test_event(
+            RawEvent::EntityCreationVoucherCreated(entity_controller, entity_voucher),
+        );
+
+        // Last event checked
+        assert_event_success(
+            entity_creation_voucher_created_event,
+            number_of_events_before_call + 1,
+        );
+    })
+}

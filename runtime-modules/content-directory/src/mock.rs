@@ -413,6 +413,8 @@ impl<T: Trait> Property<T> {
     }
 }
 
+// Events
+
 type RawTestEvent = RawEvent<
     CuratorGroupId,
     CuratorId,
@@ -590,11 +592,6 @@ pub fn update_class_schema_status(
     TestModule::update_class_schema_status(Origin::signed(lead_origin), class_id, schema_id, status)
 }
 
-pub fn assert_class_props(class_id: ClassId, expected_props: Vec<Property<Runtime>>) {
-    let class = TestModule::class_by_id(class_id);
-    assert_eq!(class.properties, expected_props);
-}
-
 pub fn next_class_id() -> ClassId {
     TestModule::next_class_id()
 }
@@ -605,6 +602,29 @@ pub fn class_by_id(class_id: ClassId) -> Class<Runtime> {
 
 pub fn class_exists(class_id: ClassId) -> bool {
     ClassById::<Runtime>::exists(class_id)
+}
+
+// Vouchers
+
+pub fn update_entity_creation_voucher(
+    lead_origin: u64,
+    class_id: ClassId,
+    controller: EntityController<Runtime>,
+    maximum_entities_count: EntityId,
+) -> Result<(), &'static str> {
+    TestModule::update_entity_creation_voucher(
+        Origin::signed(lead_origin),
+        class_id,
+        controller,
+        maximum_entities_count,
+    )
+}
+
+pub fn entity_creation_vouchers(
+    class_id: ClassId,
+    entity_controller: EntityController<Runtime>,
+) -> Option<EntityCreationVoucher<Runtime>> {
+    TestModule::entity_creation_vouchers(class_id, entity_controller)
 }
 
 // Entities
