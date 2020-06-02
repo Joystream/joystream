@@ -874,6 +874,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            // This external module call both checks and mutates the state.
             ensure_on_wrapped_error!(
                 <stake::Module<T>>::slash_immediate(
                     &stake_profile.stake_id,
@@ -900,6 +901,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            // This external module call both checks and mutates the state.
             ensure_on_wrapped_error!(
                 <stake::Module<T>>::decrease_stake_to_account(
                     &stake_profile.stake_id,
@@ -925,6 +927,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            // This external module call both checks and mutates the state.
             ensure_on_wrapped_error!(
                 <stake::Module<T>>::increase_stake_from_account(
                     &stake_profile.stake_id,
