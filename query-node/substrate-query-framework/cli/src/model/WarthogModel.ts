@@ -33,6 +33,11 @@ export class WarthogModel {
         this._ftsQueries.push(query);
     }
 
+    /**
+     * Add emply full text search query with the given name
+     * 
+     * @param name query name to be added
+     */
     addEmptyFTSQuery(name: string): FTSQuery {
         const query = {
             name,
@@ -53,6 +58,13 @@ export class WarthogModel {
         });
     }
 
+    /**
+     * Add text search field to the named FTS query
+     * 
+     * @param queryName fulltext query name
+     * @param fieldName name of the field to be added to the query
+     * @param typeName  objectType which defined that field
+     */
     addQueryClause(queryName: string, fieldName: string, typeName: string):void {
         const field = this.lookupField(fieldName, typeName);
         const objType = this.lookupType(typeName);
@@ -67,20 +79,31 @@ export class WarthogModel {
         return this._ftsQueries;
     }
 
-    lookupField(type: string, name: string): Field {
-        const objType = this.lookupType(type);
+    /**
+     * Lookup Warthog's Field model object by it's ObjectType and name
+     * 
+     * @param objTypeName Type name with the given field defined
+     * @param name the name of the field 
+     */
+    lookupField(objTypeName: string, name: string): Field {
+        const objType = this.lookupType(objTypeName);
         const field = objType.fields.find((f) => f.name === name);
         if (!field) {
-            throw new Error(`No field ${name} is found for object type ${type}`);
+            throw new Error(`No field ${name} is found for object type ${objTypeName}`);
         }
         return field;
     }
 
-    lookupType(type: string): ObjectType {
-        if (!this._name2type[type]) {
-            throw new Error(`No ObjectType ${type} found`);
+    /**
+     * Lookup ObjectType by it's name (as defined in the schema file)
+     * 
+     * @param name ObjectTypeName as defined in the schema
+     */
+    lookupType(name: string): ObjectType {
+        if (!this._name2type[name]) {
+            throw new Error(`No ObjectType ${name} found`);
         }
-        return this._name2type[type];
+        return this._name2type[name];
     }
 
     /**
