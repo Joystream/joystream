@@ -570,7 +570,7 @@ decl_storage! {
 
         // The voucher associated with entity creation for a given class and controller.
         // Is updated whenever an entity is created in a given class by a given controller.
-        // Constraint is updated by Root, an initial value comes from `ClassPermissions::default_entity_creation_voucher_upper_bound`.
+        // Constraint is updated by Root, an initial value comes from `Class::default_entity_creation_voucher_upper_bound`.
         pub EntityCreationVouchers get(entity_creation_vouchers): double_map hasher(blake2_128) T::ClassId, blake2_128(EntityController<T>) => Option<EntityCreationVoucher<T>>;
     }
 }

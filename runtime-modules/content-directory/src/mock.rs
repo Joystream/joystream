@@ -629,8 +629,24 @@ pub fn entity_creation_vouchers(
 
 // Entities
 
+pub fn entity_exists(entity_id: EntityId) -> bool {
+    EntityById::<Runtime>::exists(entity_id)
+}
+
+pub fn entity_by_id(entity_id: EntityId) -> Entity<Runtime> {
+    TestModule::entity_by_id(entity_id)
+}
+
 pub fn next_entity_id() -> EntityId {
     TestModule::next_entity_id()
+}
+
+pub fn create_entity(
+    lead_origin: u64,
+    class_id: ClassId,
+    actor: Actor<Runtime>,
+) -> Result<(), &'static str> {
+    TestModule::create_entity(Origin::signed(lead_origin), class_id, actor)
 }
 
 // Assign back to type variables so we can make dispatched calls of these modules later.

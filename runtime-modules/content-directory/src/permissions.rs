@@ -393,7 +393,7 @@ impl<T: Trait> ClassPermissions<T> {
 
     /// Ensure entities creation is not blocked on `Class` level
     pub fn ensure_entity_creation_not_blocked(&self) -> dispatch::Result {
-        ensure!(self.entity_creation_blocked, ERROR_ENTITY_CREATION_BLOCKED);
+        ensure!(!self.entity_creation_blocked, ERROR_ENTITY_CREATION_BLOCKED);
         Ok(())
     }
 
