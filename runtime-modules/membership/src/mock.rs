@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-pub use super::members::{self, Trait, DEFAULT_PAID_TERM_ID};
+pub use crate::{GenesisConfig, Trait, DEFAULT_PAID_TERM_ID};
 pub use common::currency::GovernanceCurrency;
 pub use srml_support::traits::Currency;
 pub use system;
@@ -84,18 +84,17 @@ impl GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
 }
 
-impl members::Trait for Test {
+impl Trait for Test {
     type Event = ();
     type MemberId = u32;
     type PaidTermId = u32;
     type SubscriptionId = u32;
-    type ActorId = u32;
     type InitialMembersBalance = InitialMembersBalance;
 }
 
 pub struct TestExternalitiesBuilder<T: Trait> {
     system_config: Option<system::GenesisConfig>,
-    membership_config: Option<members::GenesisConfig<T>>,
+    membership_config: Option<GenesisConfig<T>>,
 }
 
 impl<T: Trait> Default for TestExternalitiesBuilder<T> {
@@ -114,7 +113,7 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
         self
     }
     */
-    pub fn set_membership_config(mut self, membership_config: members::GenesisConfig<T>) -> Self {
+    pub fn set_membership_config(mut self, membership_config: GenesisConfig<T>) -> Self {
         self.membership_config = Some(membership_config);
         self
     }
@@ -128,7 +127,7 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
 
         // Add membership
         self.membership_config
-            .unwrap_or(members::GenesisConfig::default())
+            .unwrap_or(GenesisConfig::default())
             .assimilate_storage(&mut t)
             .unwrap();
 
@@ -137,4 +136,4 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
 }
 
 pub type Balances = balances::Module<Test>;
-pub type Members = members::Module<Test>;
+pub type Members = crate::Module<Test>;

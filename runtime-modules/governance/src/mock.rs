@@ -62,12 +62,11 @@ impl election::Trait for Test {
 
     type CouncilElected = (Council,);
 }
-impl membership::members::Trait for Test {
+impl membership::Trait for Test {
     type Event = ();
     type MemberId = u32;
     type SubscriptionId = u32;
     type PaidTermId = u32;
-    type ActorId = u32;
     type InitialMembersBalance = InitialMembersBalance;
 }
 impl minting::Trait for Test {
@@ -118,7 +117,7 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities {
         .build_storage::<Test>()
         .unwrap();
 
-    membership::members::GenesisConfig::<Test> {
+    membership::GenesisConfig::<Test> {
         default_paid_membership_fee: 0,
         members: vec![
             (1, "member1".into(), "".into(), "".into()),

@@ -4691,7 +4691,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-content-working-group-module"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "parity-scale-codec",
  "serde",
@@ -4708,6 +4708,7 @@ dependencies = [
  "substrate-membership-module",
  "substrate-primitives",
  "substrate-recurring-reward-module",
+ "substrate-roles-module",
  "substrate-stake-module",
  "substrate-token-mint-module",
  "substrate-versioned-store",
@@ -4913,7 +4914,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-membership-module"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "parity-scale-codec",
  "serde",
@@ -5196,7 +5197,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-roles-module"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "parity-scale-codec",
  "serde",

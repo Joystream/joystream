@@ -2,7 +2,6 @@
 
 use super::genesis;
 use super::mock::{self, *};
-//use crate::membership;
 use hiring;
 use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
@@ -49,9 +48,9 @@ fn create_channel_is_not_a_member() {
 
             // Change to invalid member id, i.e. != channel_creator_member_id
             fixture.channel_creator_member_id = fixture.channel_creator_member_id
-                + <<Test as members::Trait>::MemberId as One>::one();
+                + <<Test as membership::Trait>::MemberId as One>::one();
 
-            fixture.call_and_assert_error(MSG_CREATE_CHANNEL_IS_NOT_MEMBER);
+            fixture.call_and_assert_error(MSG_MEMBER_ID_INVALID);
         });
 }
 
@@ -87,7 +86,7 @@ fn create_channel_with_bad_member_role_account() {
                 Some(0),
             );
 
-            fixture.call_and_assert_error(MSG_CREATE_CHANNEL_NOT_CONTROLLER_ACCOUNT);
+            fixture.call_and_assert_error(MSG_SIGNER_NOT_CONTROLLER_ACCOUNT);
         });
 }
 
@@ -864,7 +863,7 @@ fn multiple_applications_by_same_member_to_opening_fails() {
 
 struct UpdateCuratorRoleAccountFixture {
     pub origin: Origin,
-    pub member_id: <Test as members::Trait>::MemberId,
+    pub member_id: <Test as membership::Trait>::MemberId,
     pub curator_id: CuratorId<Test>,
     pub new_role_account: <Test as system::Trait>::AccountId,
 }
@@ -1154,7 +1153,7 @@ fn terminate_curator_role_success() {
 
 struct SetLeadFixture {
     pub origin: Origin,
-    pub member_id: <Test as members::Trait>::MemberId,
+    pub member_id: <Test as membership::Trait>::MemberId,
     pub new_role_account: <Test as system::Trait>::AccountId,
 }
 
@@ -1186,6 +1185,7 @@ impl SetLeadFixture {
         let new_lead = LeadById::<Test>::get(new_lead_id);
 
         let expected_new_lead = Lead {
+            member_id: 0,
             role_account: self.new_role_account,
             reward_relationship: None,
             inducted: 1, // make dynamic later
@@ -1502,7 +1502,7 @@ fn add_members_and_apply_on_opening(
 
 #[derive(Clone)]
 struct NewMemberAppliedResult {
-    pub member_id: <Test as members::Trait>::MemberId,
+    pub member_id: <Test as membership::Trait>::MemberId,
     pub curator_application_id: crate::CuratorApplicationId<Test>,
 }
 
@@ -1901,7 +1901,7 @@ impl SetupLeadAndHireCuratorResult {
         }
     }
 
-    pub fn curator_member_id(&self) -> <Test as members::Trait>::MemberId {
+    pub fn curator_member_id(&self) -> <Test as membership::Trait>::MemberId {
         self.setup_and_fill_opening_result
             .setup_opening_in_review
             .added_members_application_result[0]
@@ -1926,7 +1926,7 @@ fn setup_lead_and_hire_curator() -> SetupLeadAndHireCuratorResult {
 }
 
 struct CreateChannelFixture {
-    pub channel_creator_member_id: <Test as members::Trait>::MemberId,
+    pub channel_creator_member_id: <Test as membership::Trait>::MemberId,
     pub controller_account: <Test as system::Trait>::AccountId,
     pub channel_creator_role_account: <Test as system::Trait>::AccountId,
     pub channel_handle: Vec<u8>,
@@ -1940,13 +1940,13 @@ struct CreateChannelFixture {
 
 impl CreateChannelFixture {
     pub fn make_valid_unpulished_video_channel_for(
-        channel_creator_member_id: <Test as members::Trait>::MemberId,
+        channel_creator_member_id: <Test as membership::Trait>::MemberId,
         override_controller_account: Option<<Test as system::Trait>::AccountId>,
     ) -> Self {
         let controller_account = if let Some(account) = override_controller_account {
             account
         } else {
-            members::Module::<Test>::ensure_profile(channel_creator_member_id)
+            membership::Module::<Test>::ensure_membership(channel_creator_member_id)
                 .unwrap()
                 .controller_account
         };
@@ -2064,7 +2064,7 @@ impl CreateChannelFixture {
 }
 
 struct NewMemberAsLead {
-    pub member_id: <Test as members::Trait>::MemberId,
+    pub member_id: <Test as membership::Trait>::MemberId,
     pub lead_id: LeadId<Test>,
 }
 
@@ -2081,7 +2081,7 @@ pub fn set_channel_creation_enabled(enabled: bool) {
         .unwrap()
 }
 
-pub fn add_channel_creator_member() -> <Test as members::Trait>::MemberId {
+pub fn add_channel_creator_member() -> <Test as membership::Trait>::MemberId {
     let channel_creator_member_id = add_member(
         CHANNEL_CREATOR_ROOT_AND_CONTROLLER_ACCOUNT,
         to_vec(CHANNEL_CREATOR_HANDLE),
@@ -2093,18 +2093,16 @@ pub fn add_channel_creator_member() -> <Test as members::Trait>::MemberId {
 pub fn add_member(
     root_and_controller_account: <Test as system::Trait>::AccountId,
     handle: Vec<u8>,
-) -> <Test as members::Trait>::MemberId {
-    let next_member_id = members::MembersCreated::<Test>::get();
+) -> <Test as membership::Trait>::MemberId {
+    let next_member_id = membership::NextMemberId::<Test>::get();
 
     assert_eq!(
-        members::Module::<Test>::buy_membership(
+        membership::Module::<Test>::buy_membership(
             Origin::signed(root_and_controller_account),
             0,
-            members::UserInfo {
-                handle: Some(handle),
-                avatar_uri: None,
-                about: None,
-            }
+            Some(handle),
+            None,
+            None
         )
         .unwrap(),
         ()
@@ -2114,11 +2112,11 @@ pub fn add_member(
 }
 
 pub fn set_lead(
-    member_id: <Test as members::Trait>::MemberId,
+    member_id: <Test as membership::Trait>::MemberId,
     new_role_account: <Test as system::Trait>::AccountId,
 ) -> LeadId<Test> {
     // Get controller account
-    //let lead_member_controller_account = members::Module::<Test>::ensure_profile(member_id).unwrap().controller_account;
+    //let lead_member_controller_account = membership::Module::<Test>::ensure_membership(member_id).unwrap().controller_account;
 
     let expected_lead_id = NextLeadId::<Test>::get();
 

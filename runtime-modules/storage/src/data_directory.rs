@@ -8,7 +8,7 @@ use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
 use system::{self, ensure_root, ensure_signed};
 
-pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + membership::members::Trait {
+pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + membership::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type ContentId: Parameter + Member + MaybeSerialize + Copy + Ord + Default;
@@ -123,7 +123,7 @@ decl_module! {
             ipfs_content_id: Vec<u8>
         ) {
             let who = ensure_signed(origin)?;
-            ensure!(<membership::members::Module<T>>::is_member_account(&who), MSG_CREATOR_MUST_BE_MEMBER);
+            ensure!(<membership::Module<T>>::is_member_account(&who), MSG_CREATOR_MUST_BE_MEMBER);
 
             ensure!(T::IsActiveDataObjectType::is_active_data_object_type(&type_id),
                 MSG_DO_TYPE_MUST_BE_ACTIVE);

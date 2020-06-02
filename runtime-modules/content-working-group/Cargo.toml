@@ -1,6 +1,6 @@
 [package]
 name = 'substrate-content-working-group-module'
-version = '1.0.0'
+version = '1.1.0'
 authors = ['Joystream contributors']
 edition = '2018'
 
@@ -15,6 +15,7 @@ std = [
     'primitives/std',
     'rstd/std',
     'membership/std',
+    'roles/std',
     'forum/std',
     'hiring/std',
     'stake/std',
@@ -105,6 +106,11 @@ path = '../versioned-store-permissions'
 default_features = false
 package = 'substrate-membership-module'
 path = '../membership'
+
+[dependencies.roles]
+default_features = false
+package = 'substrate-roles-module'
+path = '../roles'
 
 [dev-dependencies.runtime-io]
 default_features = false

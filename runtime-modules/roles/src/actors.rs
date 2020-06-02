@@ -15,7 +15,7 @@ use system::{self, ensure_root, ensure_signed};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-pub use membership::members::Role;
+pub use crate::Role;
 
 const STAKING_ID: LockIdentifier = *b"role_stk";
 
@@ -87,13 +87,13 @@ pub trait ActorRemoved<T: Trait> {
     fn actor_removed(actor: &T::AccountId);
 }
 
-pub trait Trait: system::Trait + GovernanceCurrency + membership::members::Trait {
+pub trait Trait: system::Trait + GovernanceCurrency + membership::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type OnActorRemoved: ActorRemoved<Self>;
 }
 
-pub type MemberId<T> = <T as membership::members::Trait>::MemberId;
+pub type MemberId<T> = <T as membership::Trait>::MemberId;
 // actor account, memberid, role, expires
 pub type Request<T> = (
     <T as system::Trait>::AccountId,
@@ -277,7 +277,8 @@ decl_module! {
                                     let _ = T::Currency::deposit_into_existing(&actor.account, params.reward);
                                 } else {
                                     // otherwise it should go the the member's root account
-                                    if let Some(profile) = <membership::members::Module<T>>::member_profile(&actor.member_id) {
+                                    if <membership::MembershipById<T>>::exists(actor.member_id) {
+                                        let profile = <membership::Module<T>>::membership(&actor.member_id);
                                         let _ = T::Currency::deposit_into_existing(&profile.root_account, params.reward);
                                     }
                                 }
@@ -297,7 +298,7 @@ decl_module! {
 
             let role_parameters = Self::ensure_role_parameters(role)?;
 
-            <membership::members::Module<T>>::ensure_profile(member_id)?;
+            <membership::Module<T>>::ensure_membership(member_id)?;
 
             // pay (burn) entry fee - spam filter
             let fee = role_parameters.entry_request_fee;
@@ -314,7 +315,7 @@ decl_module! {
         /// Member activating entry request
         pub fn stake(origin, role: Role, actor_account: T::AccountId) {
             let sender = ensure_signed(origin)?;
-            ensure!(<membership::members::Module<T>>::is_member_account(&sender), "members only can accept storage entry request");
+            ensure!(<membership::Module<T>>::is_member_account(&sender), "members only can accept storage entry request");
 
             // get member ids from requests that are controller by origin
             let ids = Self::role_entry_requests()
@@ -322,7 +323,7 @@ decl_module! {
                 .filter(|request| request.0 == actor_account && request.2 == role)
                 .map(|request| request.1)
                 .filter(|member_id|
-                    <membership::members::Module<T>>::ensure_profile(*member_id)
+                    <membership::Module<T>>::ensure_membership(*member_id)
                         .ok()
                         .map_or(false, |profile| profile.root_account == sender || profile.controller_account == sender)
                 )
@@ -373,7 +374,7 @@ decl_module! {
             let sender = ensure_signed(origin)?;
             let actor = Self::ensure_actor(&actor_account)?;
 
-            let profile = <membership::members::Module<T>>::ensure_profile(actor.member_id)?;
+            let profile = <membership::Module<T>>::ensure_membership(actor.member_id)?;
             ensure!(profile.root_account == sender || profile.controller_account == sender, "only member can unstake storage provider");
 
             let role_parameters = Self::ensure_role_parameters(actor.role)?;

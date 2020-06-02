@@ -251,7 +251,7 @@ pub fn testnet_genesis(
                 min_voting_stake: 1 * DOLLARS,
             },
         }),
-        members: Some(MembersConfig {
+        membership: Some(MembersConfig {
             default_paid_membership_fee: 100u128,
             members: crate::members_config::initial_members(),
         }),

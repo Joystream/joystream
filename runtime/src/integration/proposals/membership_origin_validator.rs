@@ -6,14 +6,14 @@ use common::origin_validator::ActorOriginValidator;
 use system::ensure_signed;
 
 /// Member of the Joystream organization
-pub type MemberId<T> = <T as crate::members::Trait>::MemberId;
+pub type MemberId<T> = <T as membership::Trait>::MemberId;
 
 /// Default membership actor origin validator.
 pub struct MembershipOriginValidator<T> {
     marker: PhantomData<T>,
 }
 
-impl<T: crate::members::Trait>
+impl<T: membership::Trait>
     ActorOriginValidator<<T as system::Trait>::Origin, MemberId<T>, <T as system::Trait>::AccountId>
     for MembershipOriginValidator<T>
 {
@@ -27,7 +27,7 @@ impl<T: crate::members::Trait>
         let account_id = ensure_signed(origin)?;
 
         // check whether actor_id belongs to the registered member
-        let profile_result = <crate::members::Module<T>>::ensure_profile(actor_id);
+        let profile_result = <membership::Module<T>>::ensure_membership(actor_id);
 
         if let Ok(profile) = profile_result {
             // whether the account_id belongs to the actor
@@ -47,11 +47,10 @@ mod tests {
     use super::MembershipOriginValidator;
     use crate::Runtime;
     use common::origin_validator::ActorOriginValidator;
-    use membership::members::UserInfo;
     use sr_primitives::AccountId32;
     use system::RawOrigin;
 
-    type Membership = crate::members::Module<Runtime>;
+    type Membership = membership::Module<Runtime>;
 
     fn initial_test_ext() -> runtime_io::TestExternalities {
         let t = system::GenesisConfig::default()
@@ -90,11 +89,9 @@ mod tests {
             Membership::add_screened_member(
                 RawOrigin::Signed(authority_account_id).into(),
                 account_id.clone(),
-                UserInfo {
-                    handle: Some(b"handle".to_vec()),
-                    avatar_uri: None,
-                    about: None,
-                },
+                Some(b"handle".to_vec()),
+                None,
+                None,
             )
             .unwrap();
             let member_id = 0; // newly created member_id
@@ -122,11 +119,9 @@ mod tests {
             Membership::add_screened_member(
                 RawOrigin::Signed(authority_account_id).into(),
                 account_id,
-                UserInfo {
-                    handle: Some(b"handle".to_vec()),
-                    avatar_uri: None,
-                    about: None,
-                },
+                Some(b"handle".to_vec()),
+                None,
+                None,
             )
             .unwrap();
             let member_id = 0; // newly created member_id

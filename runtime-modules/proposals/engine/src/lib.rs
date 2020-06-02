@@ -62,7 +62,7 @@
 //! use codec::Encode;
 //! use substrate_proposals_engine_module::{self as engine, ProposalParameters};
 //!
-//! pub trait Trait: engine::Trait + membership::members::Trait {}
+//! pub trait Trait: engine::Trait + membership::Trait {}
 //!
 //! decl_module! {
 //!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
@@ -138,12 +138,10 @@ use crate::types::ApprovedProposalData;
 use common::origin_validator::ActorOriginValidator;
 use srml_support::dispatch::Dispatchable;
 
-type MemberId<T> = <T as membership::members::Trait>::MemberId;
+type MemberId<T> = <T as membership::Trait>::MemberId;
 
 /// Proposals engine trait.
-pub trait Trait:
-    system::Trait + timestamp::Trait + stake::Trait + membership::members::Trait
-{
+pub trait Trait: system::Trait + timestamp::Trait + stake::Trait + membership::Trait {
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 

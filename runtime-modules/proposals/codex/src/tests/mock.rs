@@ -44,12 +44,11 @@ impl common::currency::GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
 }
 
-impl membership::members::Trait for Test {
+impl membership::Trait for Test {
     type Event = ();
     type MemberId = u64;
     type PaidTermId = u64;
     type SubscriptionId = u64;
-    type ActorId = u64;
     type InitialMembersBalance = ();
 }
 
@@ -168,6 +167,7 @@ impl governance::election::Trait for Test {
 
 impl content_working_group::Trait for Test {
     type Event = ();
+    type ActorId = u64;
 }
 
 impl recurring_rewards::Trait for Test {

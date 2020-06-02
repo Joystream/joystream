@@ -20,7 +20,7 @@ impl_outer_origin! {
 }
 
 pub fn alice_id() -> u32 {
-    Members::member_ids_by_root_account_id(alice_account())[0]
+    0
 }
 pub fn alice_account() -> u64 {
     1
@@ -91,12 +91,11 @@ impl timestamp::Trait for Test {
     type MinimumPeriod = MinimumPeriod;
 }
 
-impl membership::members::Trait for Test {
+impl membership::Trait for Test {
     type Event = ();
     type MemberId = u32;
     type SubscriptionId = u32;
     type PaidTermId = u32;
-    type ActorId = u32;
     type InitialMembersBalance = InitialMembersBalance;
 }
 
@@ -114,7 +113,7 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities {
         .build_storage::<Test>()
         .unwrap();
 
-    membership::members::GenesisConfig::<Test> {
+    membership::GenesisConfig::<Test> {
         default_paid_membership_fee: 0,
         members: vec![(alice_account(), "alice".into(), "".into(), "".into())],
     }
@@ -127,4 +126,3 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities {
 pub type System = system::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type Actors = actors::Module<Test>;
-pub type Members = membership::members::Module<Test>;

@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-pub use crate::*; // {self, Module, Trait, GenesisConfig};
+pub use crate::*;
 pub use srml_support::traits::Currency;
 pub use system;
 
@@ -16,7 +16,7 @@ use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
 
 pub use common::currency::GovernanceCurrency;
 pub use hiring;
-pub use membership::members;
+pub use membership;
 pub use minting;
 pub use recurringrewards;
 pub use stake;
@@ -55,7 +55,7 @@ mod lib {
 impl_outer_event! {
     pub enum TestEvent for Test {
         versioned_store<T>,
-        members<T>,
+        membership<T>,
         balances<T>,
         lib<T>,
     }
@@ -124,16 +124,6 @@ impl balances::Trait for Test {
     type CreationFee = CreationFee;
 }
 
-/*
-pub trait PrincipalIdChecker<T: Trait> {
-    fn account_can_act_as_principal(account: &T::AccountId, group: T::PrincipalId) -> bool;
-}
-
-pub trait CreateClassPermissionsChecker<T: Trait> {
-    fn account_can_create_class_permissions(account: &T::AccountId) -> bool;
-}
-*/
-
 impl GovernanceCurrency for Test {
     type Currency = Balances;
 }
@@ -183,22 +173,22 @@ impl versioned_store_permissions::Trait for Test {
 }
 
 type TestMemberId = u64;
-impl members::Trait for Test {
+impl membership::Trait for Test {
     type Event = TestEvent;
     type MemberId = TestMemberId;
     type PaidTermId = u64;
     type SubscriptionId = u64;
-    type ActorId = u64;
     type InitialMembersBalance = InitialMembersBalance;
 }
 
 impl Trait for Test {
     type Event = TestEvent;
+    type ActorId = u64;
 }
 
 pub struct TestExternalitiesBuilder<T: Trait> {
     system_config: Option<system::GenesisConfig>,
-    membership_config: Option<members::GenesisConfig<T>>,
+    membership_config: Option<membership::GenesisConfig<T>>,
     content_wg_config: Option<GenesisConfig<T>>,
 }
 
@@ -213,17 +203,6 @@ impl<T: Trait> Default for TestExternalitiesBuilder<T> {
 }
 
 impl<T: Trait> TestExternalitiesBuilder<T> {
-    /*
-    pub fn set_system_config(mut self, system_config: system::GenesisConfig) -> Self {
-        self.system_config = Some(system_config);
-        self
-    }
-    pub fn set_membership_config(mut self, membership_config: members::GenesisConfig<T>) -> Self {
-        self.membership_config = Some(membership_config);
-        self
-    }
-    */
-
     pub fn with_content_wg_config(mut self, conteng_wg_config: GenesisConfig<T>) -> Self {
         self.content_wg_config = Some(conteng_wg_config);
         self
@@ -239,12 +218,11 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
 
         // Add membership
         self.membership_config
-            .unwrap_or(members::GenesisConfig::default())
+            .unwrap_or(membership::GenesisConfig::default())
             .assimilate_storage(&mut t)
             .unwrap();
 
         // Add content wg
-
         if self.content_wg_config.is_none() {
             genesis::GenesisConfigBuilder::<Test>::default()
                 .build()

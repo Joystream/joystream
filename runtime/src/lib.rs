@@ -425,7 +425,6 @@ impl finality_tracker::Trait for Runtime {
 pub use forum;
 pub use governance::election_params::ElectionParameters;
 use governance::{council, election};
-use membership::members;
 use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
 pub use versioned_store;
 
@@ -642,13 +641,13 @@ impl stake::StakingEventsHandler<Runtime> for ContentWorkingGroupStakingEventHan
         let member_id = curator_application.member_id;
 
         // get member's profile
-        let member_profile = membership::members::MemberProfile::<Runtime>::get(member_id).unwrap();
+        let membership = membership::MembershipById::<Runtime>::get(member_id);
 
         // deposit funds to member's root_account
         // The application doesn't recorded the original source_account from which staked funds were
         // provided, so we don't really have another option at the moment.
         <Runtime as stake::Trait>::Currency::resolve_creating(
-            &member_profile.root_account,
+            &membership.root_account,
             remaining_imbalance,
         );
 
@@ -677,6 +676,7 @@ impl stake::StakingEventsHandler<Runtime> for ContentWorkingGroupStakingEventHan
 
 impl content_wg::Trait for Runtime {
     type Event = Event;
+    type ActorId = u64;
 }
 
 impl common::currency::GovernanceCurrency for Runtime {
@@ -758,12 +758,11 @@ impl roles::traits::Roles<Runtime> for LookupRoles {
     }
 }
 
-impl members::Trait for Runtime {
+impl membership::Trait for Runtime {
     type Event = Event;
     type MemberId = u64;
     type PaidTermId = u64;
     type SubscriptionId = u64;
-    type ActorId = u64;
     type InitialMembersBalance = InitialMembersBalance;
 }
 
@@ -783,7 +782,7 @@ pub struct ShimMembershipRegistry {}
 
 impl forum::ForumUserRegistry<AccountId> for ShimMembershipRegistry {
     fn get_forum_user(id: &AccountId) -> Option<forum::ForumUser<AccountId>> {
-        if members::Module::<Runtime>::is_member_account(id) {
+        if membership::Module::<Runtime>::is_member_account(id) {
             // For now we don't retreive the members profile since it is not used for anything,
             // but in the future we may need it to read out more
             // information possibly required to construct a
@@ -911,7 +910,7 @@ construct_runtime!(
         CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
         Council: council::{Module, Call, Storage, Event<T>, Config<T>},
         Memo: memo::{Module, Call, Storage, Event<T>},
-        Members: members::{Module, Call, Storage, Event<T>, Config<T>},
+        Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
         Actors: actors::{Module, Call, Storage, Event<T>, Config},
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
