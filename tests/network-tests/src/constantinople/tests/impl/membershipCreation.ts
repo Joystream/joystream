@@ -1,5 +1,3 @@
-import { WsProvider } from '@polkadot/api';
-import { registerJoystreamTypes } from '@constantinople/types';
 import { Keyring } from '@polkadot/keyring';
 import { assert } from 'chai';
 import { KeyringPair } from '@polkadot/keyring/types';
@@ -9,23 +7,19 @@ import { v4 as uuid } from 'uuid';
 import tap from 'tap';
 
 export function membershipTest(
+  apiWrapper: ApiWrapper,
   nKeyPairs: KeyringPair[],
   keyring: Keyring,
   N: number,
   paidTerms: number,
-  nodeUrl: string,
   sudoUri: string
 ) {
-  let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
   let aKeyPair: KeyringPair;
   let membershipFee: BN;
   let membershipTransactionFee: BN;
-  registerJoystreamTypes();
 
   tap.test('Membership creation test setup', async () => {
-    const provider = new WsProvider(nodeUrl);
-    apiWrapper = await ApiWrapper.create(provider);
     sudo = keyring.addFromUri(sudoUri);
     for (let i = 0; i < N; i++) {
       nKeyPairs.push(keyring.addFromUri(i + uuid().substring(0, 8)));
@@ -80,9 +74,5 @@ export function membershipTest(
     apiWrapper
       .getMemberIds(aKeyPair.address)
       .then(membership => assert(membership.length > 0, 'Account A is a not member'));
-  });
-
-  tap.teardown(() => {
-    apiWrapper.close();
   });
 }

@@ -1,6 +1,5 @@
-import { Keyring, WsProvider } from '@polkadot/api';
+import { Keyring } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { registerJoystreamTypes } from '@constantinople/types';
 import { ApiWrapper } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN from 'bn.js';
@@ -9,20 +8,13 @@ import { RoleParameters } from '@constantinople/types/lib/roles';
 import tap from 'tap';
 
 export function storageRoleParametersProposalTest(
+  apiWrapper: ApiWrapper,
   m1KeyPairs: KeyringPair[],
   m2KeyPairs: KeyringPair[],
   keyring: Keyring,
-  nodeUrl: string,
   sudoUri: string
 ) {
-  let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
-
-  tap.test('Storage role parameters proposal test setup', async () => {
-    registerJoystreamTypes();
-    const provider = new WsProvider(nodeUrl);
-    apiWrapper = await ApiWrapper.create(provider);
-  });
 
   tap.test('Storage role parameters proposal test', async () => {
     // Setup
@@ -124,9 +116,5 @@ export function storageRoleParametersProposalTest(
       proposedEntryRequestFee.eq(newRoleParameters.entry_request_fee.toBn()),
       `Entry request fee has unexpected value ${newRoleParameters.entry_request_fee.toBn()}, expected ${proposedEntryRequestFee}`
     );
-  });
-
-  tap.teardown(() => {
-    apiWrapper.close();
   });
 }
