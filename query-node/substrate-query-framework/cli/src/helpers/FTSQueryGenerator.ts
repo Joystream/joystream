@@ -36,8 +36,21 @@ interface MustacheQueryField {
     last: boolean // this field is need for joining, e.g. '<field> || <field> || <field>'
 }
 
+/**
+ * additional context to be passed to the generator, 
+ * e.g. to have predictable timestamps
+ */
+export interface GeneratorContext {
+    [key:string]: unknown
+}
+
+
 export class FTSQueryGenerator {
-    
+    private _context: GeneratorContext = {};
+
+    constructor(context: GeneratorContext = {}) {
+        this._context = context;
+    }
     
     generate(mustacheTeplate: string, query: FTSQuery):string {
         debug(`Generating query with ${JSON.stringify(query, null, 2)}`);
@@ -59,10 +72,11 @@ export class FTSQueryGenerator {
 
         query.clauses.map((v) => {
             if (!name2doc[v.entity.name]) {
+                const table = this.name2table(v.entity.name);
                 name2doc[v.entity.name] = {
                     index_col: `${query.name}_index_col`,
-                    index_name: `${query.name}_idx`,
-                    table: this.name2table(v.entity.name),
+                    index_name: `${query.name}_${table}_idx`,
+                    table,
                     fields: [],
                     last: false
                 };
@@ -91,7 +105,7 @@ export class FTSQueryGenerator {
                 name: query.name,
                 language: 'english',// only English is supported for now
                 documents,
-                ts: Date.now()
+                ts: (this._context["ts"]) ? this._context["ts"] as number : Date.now()
             }
         }
     }
