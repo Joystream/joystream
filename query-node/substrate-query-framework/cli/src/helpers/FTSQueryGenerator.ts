@@ -1,6 +1,7 @@
-import Mustache = require('mustache');
+import Mustache from 'mustache';
 import Debug from 'debug';
-import { FTSQuery, WarthogModel, ObjectType, Field } from '../model';
+import { FTSQuery, WarthogModel, ObjectType } from '../model';
+import { upperFirst } from 'lodash';
 
 const debug = Debug('qnode-cli:model-generator');
 
@@ -9,8 +10,7 @@ interface MustacheQuery {
     query: {
         name: string,
         language: string, 
-        index_col: string, // generated column to be used for the index
-        fields: MustacheQueryField[],
+        documents: MustacheQueryDocument[], // all text fields in a table are grouped into documents
         ts: number // migration timestamp
     }
 }
@@ -21,9 +21,15 @@ interface MustacheOrmEnitity {
     name: string 
 }
 
+interface MustacheQueryDocument {
+    index_col: string, // generated column to be used for the ts_vector index
+    table: string, // SQL table the text fields belong to 
+    fields: MustacheQueryField[] // text fields to be grouped into a document
+}
+
 interface MustacheQueryField {
+    weight: string, // reserved; can be 'A', 'B', 'C' or 'D'. Always set to 'A' for now.
     column: string,  // SQL column this field is mapped to
-    table: string, // SQL table this field mapped to 
     last: boolean // this field is need for joining, e.g. '<field> || <field> || <field>'
 }
 
@@ -47,46 +53,60 @@ export class FTSQueryGenerator {
         }
 
         //const entityObjType = this.lookupType(query.fields[0]);
-        const fields: MustacheQueryField[] = [];
         const entities: MustacheOrmEnitity[] = [];
+        const documents: MustacheQueryDocument[] = [];
         
-        query.clauses.map((v, i) => {
-            fields.push({
-               column: v.field.name,
-               table: v.entity.name.toLowerCase(),
-               last: i == query.clauses.length - 1
-            })
-            entities.push({
-                name: v.entity.name.toLowerCase(),
-                table: v.entity.name,
-                type: v.entity.name
-            })
+        const name2doc: { [entity:string]: MustacheQueryDocument } = {};
+        const name2entity: { [entity:string]: MustacheOrmEnitity } = {};
+
+        query.clauses.map((v) => {
+            if (!name2doc[v.entity.name]) {
+                name2doc[v.entity.name] = {
+                    index_col: `${query.name}_index_col`,
+                    table: this.name2table(v.entity.name),
+                    fields: []
+                };
+                name2entity[v.entity.name] = this.objectTypeToMustache(v.entity);
+            }
+            name2doc[v.entity.name].fields.push({
+                column: this.name2column(v.field.name),
+                weight: 'A',
+                last: false
+            });
+            
+        })
+
+        Object.entries(name2doc).forEach(([entityName, doc]) => {
+            entities.push(name2entity[entityName]);
+            doc.fields[doc.fields.length - 1].last = true;
+            documents.push(doc);
         })
         
         return {
             entities,
             query: {
                 name: query.name,
-                index_col: `${query.name}_index_col`,
                 language: 'english',// only English is supported for now
-                fields,
+                documents,
                 ts: Date.now()
             }
         }
     }
 
-    // TODO: This is not needed any more as the query already has ObjectType 
-    private lookupType(field: Field): ObjectType {
-        const typeMatch = this._model.types.filter((t) => {
-            const matches = t.fields.filter((f) => f === field);
-            return matches.length > 0;
-        })
-        if (!typeMatch) {
-            throw new Error(`No entity is defined with field ${field.name}`);
+    private objectTypeToMustache(objType: ObjectType): MustacheOrmEnitity {
+        return {
+            type: upperFirst(objType.name),
+            table: this.name2table(objType.name), 
+            name: objType.name
         }
-        if (typeMatch.length > 1) {
-            throw new Error(`An ambigous field name ${field.name} is defined for multiple enities`);
-        }
-        return typeMatch[0];
+    } 
+
+    // TODO: hmm this really depends on typeorm naming strategy
+    private name2column(name: string):string {
+        return name.toLowerCase();
+    }
+
+    private name2table(name: string): string {
+        return name.toLowerCase();
     }
 }
