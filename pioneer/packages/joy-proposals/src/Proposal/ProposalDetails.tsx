@@ -16,6 +16,7 @@ import { BlockNumber } from '@polkadot/types/interfaces'
 import { MemberId } from "@joystream/types/members";
 import { Seat } from "@joystream/types/";
 import { PromiseComponent } from "@polkadot/joy-utils/react/components";
+import ProposalDiscussion from "./discussion/ProposalDiscussion";
 
 type BasicProposalStatus = 'Active' | 'Finalized';
 type ProposalPeriodStatus = 'Voting period' | 'Grace period';
@@ -133,6 +134,9 @@ function ProposalDetails({
         message="Fetching the votes...">
         <Votes votes={votesListState.data} />
       </PromiseComponent>
+      <ProposalDiscussion
+        proposalId={proposalId}
+        memberId={ iAmMember ? myMemberId : undefined }/>
     </Container>
   );
 }

@@ -2,18 +2,22 @@ import {
   ParsedProposal,
   ProposalType,
   ProposalTypes,
-  ProposalVote
+  ProposalVote,
+  ParsedPost,
+  ParsedDiscussion,
+  DiscussionContraints
 } from "../types/proposals";
 import { ParsedMember } from "../types/members";
 
 import BaseTransport from './base';
 
-import { Proposal, ProposalId, VoteKind } from "@joystream/types/proposals";
+import { ThreadId, PostId } from "@joystream/types/forum";
+import { Proposal, ProposalId, VoteKind, DiscussionThread, DiscussionPost } from "@joystream/types/proposals";
 import { MemberId } from "@joystream/types/members";
 import { u32 } from "@polkadot/types/";
 import { BalanceOf } from "@polkadot/types/interfaces";
 
-import { includeKeys } from "../functions/misc";
+import { includeKeys, bytesToString } from "../functions/misc";
 import _ from 'lodash';
 import proposalsConsts from "../consts/proposals"
 
@@ -21,6 +25,9 @@ import { ApiPromise } from "@polkadot/api";
 import MembersTransport from "./members";
 import ChainTransport from "./chain";
 import CouncilTransport from "./council";
+
+import { Vec } from '@polkadot/types/codec';
+import { EventRecord } from '@polkadot/types/interfaces';
 
 export default class ProposalsTransport extends BaseTransport {
   private membersT: MembersTransport;
@@ -173,5 +180,69 @@ export default class ProposalsTransport extends BaseTransport {
 
   async subscribeProposal(id: number|ProposalId, callback: () => void) {
     return this.proposalsEngine.proposals(id, callback);
+  }
+
+  // Find postId having only the object and storage key
+  // FIXME: TODO: This is necessary because of the "hacky" workaround described in ./base.ts
+  // (in order to avoid fetching all posts ever created)
+  async findPostId(post: DiscussionPost, storageKey: string): Promise<PostId | null> {
+    const blockHash = await this.api.rpc.chain.getBlockHash(post.created_at);
+    const events = await this.api.query.system.events.at(blockHash) as Vec<EventRecord>;
+    const postIds: PostId[] = events
+      .filter(({event}) => event.section === 'proposalsDiscussion' && event.method === 'PostCreated')
+      .map(({event}) => event.data[0] as PostId);
+
+    // Just in case there were multiple posts created in this block...
+    for (let postId of postIds) {
+      const foundPostKey = await this.proposalsDiscussion.postThreadIdByPostId.key(post.thread_id, postId);
+      if (foundPostKey === storageKey) return postId;
+    }
+
+    return null;
+  }
+
+  async discussion(id: number|ProposalId): Promise<ParsedDiscussion | null> {
+    const threadId = (await this.proposalsCodex.threadIdByProposalId(id)) as ThreadId;
+    if (!threadId.toNumber()) {
+      return null;
+    }
+    const thread = (await this.proposalsDiscussion.threadById(threadId)) as DiscussionThread;
+    const postEntries = await this.doubleMapEntries(
+      this.proposalsDiscussion.postThreadIdByPostId,
+      threadId,
+      (v) => new DiscussionPost(v)
+    );
+
+    let parsedPosts: ParsedPost[] = [];
+    for (let { storageKey, value: post } of postEntries) {
+      parsedPosts.push({
+        postId: await this.findPostId(post, storageKey),
+        threadId: post.thread_id,
+        text: bytesToString(post.text),
+        createdAt: await this.chainT.blockTimestamp(post.created_at.toNumber()),
+        createdAtBlock: post.created_at.toNumber(),
+        updatedAt: await this.chainT.blockTimestamp(post.updated_at.toNumber()),
+        updatedAtBlock: post.updated_at.toNumber(),
+        authorId: post.author_id,
+        author: (await this.membersT.memberProfile(post.author_id)).unwrapOr(null),
+        editsCount: post.edition_number.toNumber()
+      })
+    }
+
+    // Sort by creation block asc
+    parsedPosts.sort((a,b) => a.createdAtBlock - b.createdAtBlock);
+
+    return {
+      title: bytesToString(thread.title),
+      threadId: threadId,
+      posts: parsedPosts
+    };
+  }
+
+  discussionContraints (): DiscussionContraints {
+    return {
+      maxPostEdits: (this.api.consts.proposalsDiscussion.maxPostEditionNumber as u32).toNumber(),
+      maxPostLength: (this.api.consts.proposalsDiscussion.postLengthLimit as u32).toNumber()
+    };
   }
 }
