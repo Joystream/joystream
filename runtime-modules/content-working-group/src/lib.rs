@@ -237,8 +237,7 @@ pub static MSG_ADD_CURATOR_OPENING_ZERO_MAX_APPLICANT_COUNT: &str =
 // Errors for `apply_on_curator_opening`
 pub static MSG_APPLY_ON_CURATOR_OPENING_UNSIGNED_ORIGIN: &str = "Unsigned origin";
 pub static MSG_MEMBER_ID_INVALID: &str = "Member id is invalid";
-pub static MSG_SIGNER_NOT_CONTROLLER_ACCOUNT: &str =
-    "Signer does not match controller account";
+pub static MSG_SIGNER_NOT_CONTROLLER_ACCOUNT: &str = "Signer does not match controller account";
 pub static MSG_ORIGIN_IS_NIETHER_MEMBER_CONTROLLER_OR_ROOT: &str =
     "Origin must be controller or root account of member";
 pub static MSG_MEMBER_HAS_ACTIVE_APPLICATION_ON_OPENING: &str =
@@ -953,9 +952,7 @@ impl rstd::convert::From<WrappedError<membership::MemberControllerAccountDidNotS
             membership::MemberControllerAccountDidNotSign::UnsignedOrigin => {
                 MSG_APPLY_ON_CURATOR_OPENING_UNSIGNED_ORIGIN
             }
-            membership::MemberControllerAccountDidNotSign::MemberIdInvalid => {
-                MSG_MEMBER_ID_INVALID
-            }
+            membership::MemberControllerAccountDidNotSign::MemberIdInvalid => MSG_MEMBER_ID_INVALID,
             membership::MemberControllerAccountDidNotSign::SignerControllerAccountMismatch => {
                 MSG_SIGNER_NOT_CONTROLLER_ACCOUNT
             }
