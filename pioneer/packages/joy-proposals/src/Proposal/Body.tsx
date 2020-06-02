@@ -124,10 +124,10 @@ const ProposalParams = styled.div`
   font-weight: bold;
   grid-template-columns: min-content 1fr;
   grid-row-gap: 0.5rem;
-  background: #f5f5f5;
-  padding: 2.5rem 0.5rem 1rem 0.5rem;
+  border: 1px solid rgba(0,0,0,.2);
+  padding: 1.5rem 1.5rem 1rem 1.25rem;
   position: relative;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
   @media screen and (max-width: 767px) {
     grid-template-columns: 1fr;
   }
@@ -135,9 +135,11 @@ const ProposalParams = styled.div`
 const ParamsHeader = styled.h4`
   position: absolute;
   top: 0;
+  transform: translateY(-50%);
+  background: #fff;
   font-weight: normal;
-  font-size: 0.9em;
-  padding: 0.5rem;
+  padding: 0.3rem;
+  left: 0.5rem;
 `;
 const ProposalParamName = styled.div`
   margin-right: 1rem;
