@@ -11,10 +11,10 @@ export const availableTypes: { [key: string]: string } = {
   
 
 export class WarthogModel {
-    _types: ObjectType[];
-    _ftsQueries: FTSQuery[];
-    _name2query: { [key: string]: FTSQuery } = {};
-    _name2type: { [key: string]: ObjectType } = {};
+    private  _types: ObjectType[];
+    private _ftsQueries: FTSQuery[];
+    private _name2query: { [key: string]: FTSQuery } = {};
+    private _name2type: { [key: string]: ObjectType } = {};
 
     constructor() {
         this._types = [];
@@ -77,6 +77,13 @@ export class WarthogModel {
 
     get ftsQueries(): FTSQuery[] {
         return this._ftsQueries;
+    }
+
+    lookupQuery(queryName: string): FTSQuery {
+        if (!this._name2query) {
+            throw new Error(`No query with name ${queryName} found`);
+        }
+        return this._name2query[queryName];
     }
 
     /**
