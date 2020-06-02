@@ -6,6 +6,7 @@ import DiscussionPostForm from './DiscussionPostForm';
 import { MemberId } from "@joystream/types/members";
 import { useTransport } from "@polkadot/joy-utils/react/hooks";
 import styled from 'styled-components';
+import ReactMarkdown from 'react-markdown';
 
 const StyledComment = styled.div`
   display: flex;
@@ -90,7 +91,7 @@ export default function DiscussionPost({
           </AuthorAndDate>
           <ContentAndActions>
             <CommentContent>
-              <p>{text}</p>
+              <ReactMarkdown source={text} linkTarget='_blank' />
             </CommentContent>
             { canEdit && (
               <CommentActions>
