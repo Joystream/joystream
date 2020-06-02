@@ -1,5 +1,5 @@
 import { SchemaNode } from './SchemaParser';
-import { WarthogModel, ObjectType, Field } from '../model';
+import { WarthogModel } from '../model';
 import { DirectiveNode, TypeNode, ArgumentNode, StringValueNode, FieldDefinitionNode, ObjectTypeDefinitionNode } from 'graphql';
 import { cloneDeep } from 'lodash';
 
