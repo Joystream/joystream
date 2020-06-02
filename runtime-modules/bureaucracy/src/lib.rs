@@ -29,6 +29,12 @@
 //! - [unset_lead](./struct.Module.html#method.unset_lead) - Unset lead.
 //! - [unstake](./struct.Module.html#method.unstake) - Unstake.
 //!
+//! ### Worker stakes
+//!
+//! - [slash_worker_stake](./struct.Module.html#method.slash_worker_stake) - Slashes the worker stake.
+//! - [decrease_worker_stake](./struct.Module.html#method.decrease_worker_stake) - Decreases the worker stake and returns the remainder to the worker _role_account_.
+//! - [increase_worker_stake](./struct.Module.html#method.increase_worker_stake) - Increases the worker stake, demands a worker origin.
+//!
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -237,6 +243,21 @@ decl_event!(
         /// - Worker opening id
         /// - Worker application id to the worker id dictionary
         WorkerOpeningFilled(WorkerOpeningId, WorkerApplicationIdToWorkerIdMap),
+
+        /// Emits on increasing the worker stake.
+        /// Params:
+        /// - worker id.
+        WorkerStakeIncreased(WorkerId),
+
+        /// Emits on decreasing the worker stake.
+        /// Params:
+        /// - worker id.
+        WorkerStakeDecreased(WorkerId),
+
+        /// Emits on slashing the worker stake.
+        /// Params:
+        /// - worker id.
+        WorkerStakeSlashed(WorkerId),
     }
 );
 
@@ -834,6 +855,88 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::WorkerOpeningFilled(worker_opening_id, worker_application_id_to_worker_id));
+        }
+
+        // ****************** Worker stakes **********************
+
+        /// Slashes the worker stake, demands a leader origin. No limits, no actions on zero stake.
+        /// If slashing balance greater than the existing stake - stake is slashed to zero.
+        pub fn slash_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
+            Self::ensure_origin_is_set_lead(origin)?;
+
+            let worker = Self::ensure_worker_exists(&worker_id)?;
+
+            ensure!(balance != <BalanceOf<T>>::zero(), Error::StakeBalanceCannotBeZero);
+
+            let stake_profile = worker.role_stake_profile.ok_or(Error::NoWorkerStakeProfile)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // This external module call both checks and mutates the state.
+            ensure_on_wrapped_error!(
+                <stake::Module<T>>::slash_immediate(
+                    &stake_profile.stake_id,
+                    balance,
+                    false
+                )
+            )?;
+
+            Self::deposit_event(RawEvent::WorkerStakeSlashed(worker_id));
+        }
+
+        /// Decreases the worker stake and returns the remainder to the worker role_account,
+        /// demands a leader origin. Can be decreased to zero, no actions on zero stake.
+        pub fn decrease_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
+            Self::ensure_origin_is_set_lead(origin)?;
+
+            let worker = Self::ensure_worker_exists(&worker_id)?;
+
+            ensure!(balance != <BalanceOf<T>>::zero(), Error::StakeBalanceCannotBeZero);
+
+            let stake_profile = worker.role_stake_profile.ok_or(Error::NoWorkerStakeProfile)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // This external module call both checks and mutates the state.
+            ensure_on_wrapped_error!(
+                <stake::Module<T>>::decrease_stake_to_account(
+                    &stake_profile.stake_id,
+                    &worker.role_account,
+                    balance
+                )
+            )?;
+
+            Self::deposit_event(RawEvent::WorkerStakeDecreased(worker_id));
+        }
+
+        /// Increases the worker stake, demands a worker origin. Transfers tokens from the worker
+        /// role_account to the stake. No limits on the stake.
+        pub fn increase_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
+            // Checks worker origin, worker existence
+            let worker = Self::ensure_worker_signed(origin, &worker_id)?;
+
+            ensure!(balance != <BalanceOf<T>>::zero(), Error::StakeBalanceCannotBeZero);
+
+            let stake_profile = worker.role_stake_profile.ok_or(Error::NoWorkerStakeProfile)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // This external module call both checks and mutates the state.
+            ensure_on_wrapped_error!(
+                <stake::Module<T>>::increase_stake_from_account(
+                    &stake_profile.stake_id,
+                    &worker.role_account,
+                    balance
+                )
+            )?;
+
+            Self::deposit_event(RawEvent::WorkerStakeIncreased(worker_id));
         }
     }
 }

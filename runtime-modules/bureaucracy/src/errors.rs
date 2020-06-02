@@ -5,6 +5,12 @@ use membership::members;
 decl_error! {
     /// Discussion module predefined errors
     pub enum Error {
+        /// Provided stake balance cannot be zero.
+        StakeBalanceCannotBeZero,
+
+        /// Cannot get the worker stake profile.
+        NoWorkerStakeProfile,
+
         /// Current lead is not set.
         CurrentLeadNotSet,
 
@@ -205,6 +211,24 @@ decl_error! {
 
         /// Cannot unstake while slashes ongoing.
         StakingErrorCannotUnstakeWhileSlashesOngoing,
+
+        /// Insufficient balance in source account.
+        StakingErrorInsufficientBalanceInSourceAccount,
+
+        /// Cannot change stake by zero.
+        StakingErrorCannotChangeStakeByZero,
+
+        /// Cannot increase stake while unstaking.
+        StakingErrorCannotIncreaseStakeWhileUnstaking,
+
+        /// Cannot decrease stake while slashes ongoing.
+        StakingErrorCannotDecreaseWhileSlashesOngoing,
+
+        /// Insufficient stake to decrease,
+        StakingErrorInsufficientStake,
+
+        /// Slash amount should be greater than zero,
+        StakingErrorSlashAmountShouldBeGreaterThanZero,
     }
 }
 
@@ -448,6 +472,102 @@ impl rstd::convert::From<WrappedError<stake::StakeActionError<stake::InitiateUns
                     }
                 }
             }
+        }
+    }
+}
+
+impl
+    rstd::convert::From<
+        WrappedError<stake::StakeActionError<stake::IncreasingStakeFromAccountError>>,
+    > for Error
+{
+    fn from(
+        wrapper: WrappedError<stake::StakeActionError<stake::IncreasingStakeFromAccountError>>,
+    ) -> Self {
+        match wrapper.error {
+            stake::StakeActionError::StakeNotFound => Error::StakingErrorStakeNotFound,
+            stake::StakeActionError::Error(increase_stake_error_from_account) => {
+                match increase_stake_error_from_account {
+                    stake::IncreasingStakeFromAccountError::InsufficientBalanceInSourceAccount => {
+                        Error::StakingErrorInsufficientBalanceInSourceAccount
+                    }
+                    stake::IncreasingStakeFromAccountError::IncreasingStakeError(
+                        increasing_stake_error,
+                    ) => match increasing_stake_error {
+                        stake::IncreasingStakeError::NotStaked => Error::StakingErrorNotStaked,
+                        stake::IncreasingStakeError::CannotChangeStakeByZero => {
+                            Error::StakingErrorCannotChangeStakeByZero
+                        }
+                        stake::IncreasingStakeError::CannotIncreaseStakeWhileUnstaking => {
+                            Error::StakingErrorCannotIncreaseStakeWhileUnstaking
+                        }
+                    },
+                }
+            }
+        }
+    }
+}
+
+impl rstd::convert::From<WrappedError<stake::StakeActionError<stake::IncreasingStakeError>>>
+    for Error
+{
+    fn from(wrapper: WrappedError<stake::StakeActionError<stake::IncreasingStakeError>>) -> Self {
+        match wrapper.error {
+            stake::StakeActionError::StakeNotFound => Error::StakingErrorStakeNotFound,
+            stake::StakeActionError::Error(increasing_stake_error) => {
+                match increasing_stake_error {
+                    stake::IncreasingStakeError::NotStaked => Error::StakingErrorNotStaked,
+                    stake::IncreasingStakeError::CannotChangeStakeByZero => {
+                        Error::StakingErrorCannotChangeStakeByZero
+                    }
+                    stake::IncreasingStakeError::CannotIncreaseStakeWhileUnstaking => {
+                        Error::StakingErrorCannotIncreaseStakeWhileUnstaking
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl rstd::convert::From<WrappedError<stake::StakeActionError<stake::DecreasingStakeError>>>
+    for Error
+{
+    fn from(wrapper: WrappedError<stake::StakeActionError<stake::DecreasingStakeError>>) -> Self {
+        match wrapper.error {
+            stake::StakeActionError::StakeNotFound => Error::StakingErrorStakeNotFound,
+            stake::StakeActionError::Error(decreasing_stake_error) => {
+                match decreasing_stake_error {
+                    stake::DecreasingStakeError::NotStaked => Error::StakingErrorNotStaked,
+                    stake::DecreasingStakeError::CannotChangeStakeByZero => {
+                        Error::StakingErrorCannotChangeStakeByZero
+                    }
+                    stake::DecreasingStakeError::CannotDecreaseStakeWhileUnstaking => {
+                        Error::StakingErrorCannotIncreaseStakeWhileUnstaking
+                    }
+                    stake::DecreasingStakeError::CannotDecreaseStakeWhileOngoingSlahes => {
+                        Error::StakingErrorCannotDecreaseWhileSlashesOngoing
+                    }
+                    stake::DecreasingStakeError::InsufficientStake => {
+                        Error::StakingErrorInsufficientStake
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl rstd::convert::From<WrappedError<stake::StakeActionError<stake::ImmediateSlashingError>>>
+    for Error
+{
+    fn from(wrapper: WrappedError<stake::StakeActionError<stake::ImmediateSlashingError>>) -> Self {
+        match wrapper.error {
+            stake::StakeActionError::StakeNotFound => Error::StakingErrorStakeNotFound,
+            stake::StakeActionError::Error(slashing_error) => match slashing_error {
+                stake::ImmediateSlashingError::NotStaked => Error::StakingErrorNotStaked,
+                stake::ImmediateSlashingError::SlashAmountShouldBeGreaterThanZero => {
+                    Error::StakingErrorSlashAmountShouldBeGreaterThanZero
+                }
+            },
         }
     }
 }
