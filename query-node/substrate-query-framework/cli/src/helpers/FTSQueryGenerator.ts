@@ -2,6 +2,7 @@ import Mustache from 'mustache';
 import Debug from 'debug';
 import { FTSQuery, ObjectType } from '../model';
 import { upperFirst } from 'lodash';
+import { snakeCase } from 'typeorm/util/StringUtils';
 
 const debug = Debug('qnode-cli:model-generator');
 
@@ -63,6 +64,8 @@ export class FTSQueryGenerator {
             throw new Error("A query should contain at least one clause");
         }
 
+        const prefix = this.queryName2prefix(query.name);
+
         //const entityObjType = this.lookupType(query.fields[0]);
         const entities: MustacheOrmEnitity[] = [];
         const documents: MustacheQueryDocument[] = [];
@@ -74,8 +77,8 @@ export class FTSQueryGenerator {
             if (!name2doc[v.entity.name]) {
                 const table = this.name2table(v.entity.name);
                 name2doc[v.entity.name] = {
-                    index_col: `${query.name}_index_col`,
-                    index_name: `${query.name}_${table}_idx`,
+                    index_col: `${prefix}_index_col`,
+                    index_name: `${prefix}_${table}_idx`,
                     table,
                     fields: [],
                     last: false
@@ -101,7 +104,7 @@ export class FTSQueryGenerator {
         return {
             entities,
             query: {
-                viewname: `${query.name}_view`,
+                viewname: `${prefix}_view`,
                 name: query.name,
                 language: 'english',// only English is supported for now
                 documents,
@@ -120,10 +123,14 @@ export class FTSQueryGenerator {
 
     // TODO: hmm this really depends on typeorm naming strategy
     private name2column(name: string):string {
-        return name.toLowerCase();
+        return `"${name}"`;
     }
 
     private name2table(name: string): string {
-        return name.toLowerCase();
+        return snakeCase(name);
+    }
+
+    private queryName2prefix(qName: string): string {
+        return snakeCase(qName);
     }
 }
