@@ -9,7 +9,10 @@
     "target": "es2017",
     "esModuleInterop": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "typeRoots": [
+        "./src/node_modules/@types"
+    ] 
   },
-  "include": ["./**/*.ts"]
+  "include": ["./src/**/*.ts"]
 }
