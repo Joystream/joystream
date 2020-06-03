@@ -572,7 +572,7 @@ decl_storage! {
         // The voucher associated with entity creation for a given class and controller.
         // Is updated whenever an entity is created in a given class by a given controller.
         // Constraint is updated by Root, an initial value comes from `ClassPermissions::default_entity_creation_voucher_upper_bound`.
-        pub EntityCreationVouchers get(entity_creation_vouchers): double_map hasher(blake2_128) T::ClassId, blake2_128(EntityController<T>) => Option<EntityCreationVoucher<T>>;
+        pub EntityCreationVouchers get(entity_creation_vouchers): double_map hasher(blake2_128) T::ClassId, blake2_128(EntityController<T>) => EntityCreationVoucher<T>;
     }
 }
 
@@ -797,12 +797,8 @@ decl_module! {
             Self::ensure_known_class_id(class_id)?;
 
             // Check voucher existance
-            let voucher_exists = if let Some(creation_voucher) = Self::entity_creation_vouchers(class_id, &controller) {
-                creation_voucher.ensure_new_max_entities_count_is_valid(maximum_entities_count)?;
-                true
-            } else {
-                false
-            };
+            let voucher_exists = <EntityCreationVouchers<T>>::exists(class_id, &controller);
+
 
             Self::ensure_valid_number_of_class_entities_per_actor_constraint(maximum_entities_count)?;
 
@@ -812,12 +808,10 @@ decl_module! {
 
             if voucher_exists {
                 <EntityCreationVouchers<T>>::mutate(class_id, &controller, |entity_creation_voucher| {
-                    if let Some(entity_creation_voucher) = entity_creation_voucher {
-                        entity_creation_voucher.set_maximum_entities_count(maximum_entities_count);
+                    entity_creation_voucher.set_maximum_entities_count(maximum_entities_count);
 
-                        // Trigger event
-                        Self::deposit_event(RawEvent::EntityCreationVoucherUpdated(controller.clone(), entity_creation_voucher.to_owned()))
-                    }
+                    // Trigger event
+                    Self::deposit_event(RawEvent::EntityCreationVoucherUpdated(controller.clone(), entity_creation_voucher.to_owned()))
                 });
             } else {
                 let entity_creation_voucher = EntityCreationVoucher::new(maximum_entities_count);
@@ -1138,8 +1132,9 @@ decl_module! {
             let entity_controller = EntityController::from_actor(&actor);
 
             // Check if entity creation voucher exists
-            let voucher_exists = if let Some(creation_voucher) = Self::entity_creation_vouchers(class_id, &entity_controller) {
-                Self::ensure_voucher_limit_not_reached(&creation_voucher)?;
+            let voucher_exists = if <EntityCreationVouchers<T>>::exists(class_id, &entity_controller) {
+                // Ensure voucher limit not reached
+                Self::entity_creation_vouchers(class_id, &entity_controller).ensure_voucher_limit_not_reached()?;
                 true
             } else {
                 false
@@ -1154,9 +1149,7 @@ decl_module! {
             if voucher_exists {
                 // Increment number of created entities count, if voucher already exist
                 <EntityCreationVouchers<T>>::mutate(class_id, &entity_controller, |entity_creation_voucher| {
-                    if let Some(entity_creation_voucher) = entity_creation_voucher {
-                        entity_creation_voucher.increment_created_entities_count()
-                    }
+                    entity_creation_voucher.increment_created_entities_count()
                 });
             } else {
                 // Create new voucher for given entity creator with default limit and increment created entities count
@@ -1218,9 +1211,7 @@ decl_module! {
 
             // Decrement entity_creation_voucher after entity removal perfomed
             <EntityCreationVouchers<T>>::mutate(entity.class_id, entity_controller, |entity_creation_voucher| {
-                if let Some(entity_creation_voucher) = entity_creation_voucher {
-                    entity_creation_voucher.decrement_created_entities_count();
-                }
+                entity_creation_voucher.decrement_created_entities_count();
             });
 
             // Trigger event
@@ -1801,14 +1792,6 @@ impl<T: Trait> Module<T> {
     ) -> Result<CuratorGroup<T>, &'static str> {
         Self::ensure_curator_group_under_given_id_exists(curator_group_id)?;
         Ok(Self::curator_group_by_id(curator_group_id))
-    }
-
-    /// Ensure voucher limit not reached
-    pub fn ensure_voucher_limit_not_reached(
-        voucher: &EntityCreationVoucher<T>,
-    ) -> dispatch::Result {
-        ensure!(voucher.limit_not_reached(), ERROR_VOUCHER_LIMIT_REACHED);
-        Ok(())
     }
 
     /// Ensure `MaxNumberOfMaintainersPerClass` constraint satisfied
