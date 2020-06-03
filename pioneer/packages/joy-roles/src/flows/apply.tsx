@@ -1005,14 +1005,14 @@ export function DoneStage (props: DoneStageProps) {
         This role requires a new account, called a <em>role key</em>, which will be used to carry out any duties associated with the role.
       </p>
       <p>
-        {`We've generated a new role key, ${<strong>{props.roleKeyName}</strong>}, automatically.
+        {'We\'ve generated a new role key, '}<strong>{props.roleKeyName}</strong>, automatically.
         A copy of the backup file should have been downloaded, or you can
-        get a backup from the ${<Link to="/accounts">My account</Link>} section.`}
+        get a backup from the <Link to="/accounts">My account</Link> section.
       </p>
       <p>
-        {`You can also switch your role key using the Accounts selector in the top right of the screen. It works like
-        any other account. The application you just completed is associated with your new role key, so you'll need to
-        select ${<strong>{props.roleKeyName}</strong>} in the accounts selector in order to track its progress.`}
+        You can also switch your role key using the Accounts selector in the top right of the screen. It works like
+        any other account. {'The application you just completed is associated with your new role key, so you\'ll need to '}
+        select <strong>{props.roleKeyName}</strong> in the accounts selector in order to track its progress.
       </p>
       <Message warning icon>
         <Icon name='warning sign' />

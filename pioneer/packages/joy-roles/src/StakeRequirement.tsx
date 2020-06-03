@@ -72,11 +72,9 @@ export class RoleStakeRequirement extends StakeRequirement implements IStakeRequ
 
     return (
       <p>
-        {
-          `You must stake ${this.qualifier()} ${<strong>{formatBalance(this.hard)}</strong>} to be eligible for this role.
-          You may lose this stake if you're hired and then dismised from this role.
-          This stake will be returned if your application is unsuccessful, and will also be used to rank applications.`
-        }
+        You must stake {this.qualifier()} <strong>{formatBalance(this.hard)}</strong> to be eligible for this role.
+        { 'You may lose this stake if you\'re hired and then dismised from this role.' }
+        This stake will be returned if your application is unsuccessful, and will also be used to rank applications.
       </p>
     );
   }
