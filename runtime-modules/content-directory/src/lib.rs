@@ -1975,16 +1975,15 @@ impl<T: Trait> Module<T> {
         class_properties: &[Property<T>],
         new_properties: &[Property<T>],
     ) -> Schema {
-        // Create new Schema with existing properies provided
-        let mut schema = Schema::new(existing_properties);
+        // Concatenate existing property ids with new ones
+        let properties = new_properties
+            .iter()
+            .enumerate()
+            .map(|(i, _)| (class_properties.len() + i) as PropertyId)
+            .chain(existing_properties.into_iter())
+            .collect();
 
-        // Add new property ids to `Schema`
-        new_properties.iter().enumerate().for_each(|(i, _)| {
-            let prop_id = (class_properties.len() + i) as PropertyId;
-
-            schema.get_properties_mut().insert(prop_id);
-        });
-        schema
+        Schema::new(properties)
     }
 
     /// Update existing `Class` properties with new ones provided, return updated ones
