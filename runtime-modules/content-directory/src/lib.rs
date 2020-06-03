@@ -885,7 +885,7 @@ decl_module! {
             }
 
             let class_permissions = class.get_permissions();
-            let updated_class_permissions = Self::make_updated_class_permssions(
+            let updated_class_permissions = Self::make_updated_class_permissions(
                 class_permissions, updated_any_member, updated_entity_creation_blocked,
                 updated_all_entity_property_values_locked, updated_maintainers
             );
@@ -1653,7 +1653,7 @@ impl<T: Trait> Module<T> {
 
     /// Used to update `class_permissions` with parameters provided.
     /// Returns `Some(ClassPermissions<T>)` if update performed and `None` otherwise
-    pub fn make_updated_class_permssions(
+    pub fn make_updated_class_permissions(
         class_permissions: ClassPermissions<T>,
         updated_any_member: Option<bool>,
         updated_entity_creation_blocked: Option<bool>,
