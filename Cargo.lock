@@ -4690,6 +4690,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-content-directory-module"
+version = "1.0.1"
+dependencies = [
+ "hex-literal 0.1.4",
+ "parity-scale-codec",
+ "quote 0.6.13",
+ "serde",
+ "sr-io",
+ "sr-primitives",
+ "sr-std",
+ "srml-support",
+ "srml-support-procedural",
+ "srml-system",
+ "srml-timestamp",
+ "substrate-primitives",
+]
+
+[[package]]
 name = "substrate-content-working-group-module"
 version = "1.0.0"
 dependencies = [
