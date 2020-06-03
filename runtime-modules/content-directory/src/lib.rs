@@ -879,45 +879,27 @@ decl_module! {
 
             let class = Self::ensure_known_class_id(class_id)?;
 
-            let mut class_permissions = class.get_permissions();
-
             if let Some(ref updated_maintainers) = updated_maintainers {
                 Self::ensure_curator_groups_exist(updated_maintainers)?;
                 Self::ensure_maintainers_limit_not_reached(updated_maintainers)?;
             }
 
+            let class_permissions = class.get_permissions();
+            let updated_class_permissions = Self::make_updated_class_permssions(
+                class_permissions, updated_any_member, updated_entity_creation_blocked, 
+                updated_all_entity_property_values_locked, updated_maintainers
+            );
+
             //
             // == MUTATION SAFE ==
             //
 
-            // If no update performed, there is no purpose to emit event
-            let mut updated = false;
-
-            if let Some(updated_any_member) = updated_any_member {
-                class_permissions.set_any_member_status(updated_any_member);
-                updated = true;
-            }
-
-            if let Some(updated_entity_creation_blocked) = updated_entity_creation_blocked {
-                class_permissions.set_entity_creation_blocked(updated_entity_creation_blocked);
-                updated = true;
-            }
-
-            if let Some(updated_all_entity_property_values_locked) = updated_all_entity_property_values_locked {
-                class_permissions.set_all_entity_property_values_locked(updated_all_entity_property_values_locked);
-                updated = true;
-            }
-
-            if let Some(updated_maintainers) = updated_maintainers {
-                class_permissions.set_maintainers(updated_maintainers);
-                updated = true;
-            }
-
-            if updated  {
+            // If class_permissions update has been performed
+            if let Some(updated_class_permissions) = updated_class_permissions  {
 
                 // Update `class_permissions` under given class id
                 <ClassById<T>>::mutate(class_id, |class| {
-                    class.update_permissions(class_permissions)
+                    class.update_permissions(updated_class_permissions)
                 });
 
                 // Trigger event
@@ -1678,6 +1660,42 @@ impl<T: Trait> Module<T> {
 
             entity_ids_to_decrease_rcs
                 .fill_in_entity_rcs(entities_rc_to_decrement_vec, same_controller);
+        }
+    }
+
+    /// Used to update `class_permissions` with parameters provided.
+    /// Returns `Some(ClassPermissions<T>)` if update performed and `None` otherwise
+    pub fn make_updated_class_permssions(
+        class_permissions: ClassPermissions<T>,
+        updated_any_member: Option<bool>,
+        updated_entity_creation_blocked: Option<bool>,
+        updated_all_entity_property_values_locked: Option<bool>,
+        updated_maintainers: Option<BTreeSet<T::CuratorGroupId>>,
+    ) -> Option<ClassPermissions<T>> {
+
+        // Used to ensure update performed
+        let mut updated_class_permissions = class_permissions.clone();
+
+        if let Some(updated_any_member) = updated_any_member {
+            updated_class_permissions.set_any_member_status(updated_any_member);
+        }
+
+        if let Some(updated_entity_creation_blocked) = updated_entity_creation_blocked {
+            updated_class_permissions.set_entity_creation_blocked(updated_entity_creation_blocked);
+        }
+
+        if let Some(updated_all_entity_property_values_locked) = updated_all_entity_property_values_locked {
+            updated_class_permissions.set_all_entity_property_values_locked(updated_all_entity_property_values_locked);
+        }
+
+        if let Some(updated_maintainers) = updated_maintainers {
+            updated_class_permissions.set_maintainers(updated_maintainers);
+        }
+
+        if updated_class_permissions != class_permissions {
+            Some(updated_class_permissions)
+        } else {
+            None
         }
     }
 
