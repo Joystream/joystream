@@ -935,14 +935,14 @@ decl_module! {
 
             Self::ensure_schema_properties_are_valid_indices(&existing_properties, &class_properties)?;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             let schema = Self::create_class_schema(existing_properties, &class_properties, &new_properties);
 
             // Update class properties after new `Schema` added
             let updated_class_properties = Self::make_updated_class_properties(class_properties, new_properties);
-
-            //
-            // == MUTATION SAFE ==
-            //
 
             // Update class properties and schemas
             <ClassById<T>>::mutate(class_id, |class| {
