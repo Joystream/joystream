@@ -2,7 +2,7 @@ import React, { createContext, useContext } from "react";
 import { ApiContext } from "@polkadot/react-api";
 import { ApiProps } from "@polkadot/react-api/types";
 
-import Transport from "../../transport";
+import Transport from "../../transport/index";
 
 export const TransportContext = createContext<Transport>((null as unknown) as Transport);
 
