@@ -148,7 +148,7 @@ const ProposalParamName = styled.div`
 const ProposalParamValue = styled.div`
   color: black;
   word-wrap: break-word;
-  word-break: break-all;
+  word-break: break-word;
   & .TextProposalContent {
     font-weight: normal;
   }
