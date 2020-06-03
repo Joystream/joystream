@@ -1,5 +1,5 @@
 import { StyleFn, makeStyles } from "./../../utils/style-reducer"
-import { colors, log } from "../../theme"
+import { colors, typography, spacing } from "../../theme"
 
 export type CheckboxStyleProps = {
 	labelPosition?: "end" | "start" | "top" | "bottom"
@@ -8,6 +8,13 @@ export type CheckboxStyleProps = {
 	selected?: boolean
 	disabled?: boolean
 }
+
+const checkbox: StyleFn = (_, { labelPosition }) => ({
+	color: colors.white,
+	display: "inline-flex",
+	flexDirection: labelPosition === "top" || labelPosition === "bottom" ? "column" : "row",
+	alignItems: "center"
+})
 
 const fillFromProps: StyleFn = (styles, { disabled, error, selected }) => {
 	let fill = error
@@ -54,8 +61,8 @@ const outerContainer: StyleFn = (_, { disabled, error, selected }) => ({
 	color: disabled ? colors.gray[400] : colors.white,
 	maxWidth: "2rem",
 	maxHeight: "2rem",
-	width: "2rem",
-	height: "2rem",
+	minWidth: "2rem",
+	minHeight: "2rem",
 	display: "flex",
 	justifyContent: "center",
 	alignItems: "center",
@@ -72,6 +79,8 @@ const innerContainer: StyleFn = (_, { disabled, error, selected }) => ({
 	height: "1.065rem",
 	maxWidth: "1.065rem",
 	maxHeight: "1.065rem",
+	minWidth: "1.065rem",
+	minHeight: "1.065rem",
 	textAlign: "center",
 	[`& > input[type="checkbox"]:checked`]: {
 		borderColor: !selected ? colors.white : borderColorFromProps({}, { disabled, error, selected }).borderColor,
@@ -98,12 +107,23 @@ const icon: StyleFn = () => ({
 	verticalAlign: "middle"
 })
 
-export const useCSS = ({ selected, error, disabled }: CheckboxStyleProps) => {
-	const props = { selected, error, disabled }
+const label: StyleFn = (_, { labelPosition }) => {
+	const value = labelPosition === "top" || labelPosition === "bottom" ? `${spacing.xs} auto` : `auto ${spacing.xs}`
 	return {
+		fontFamily: typography.fonts.base,
+		color: colors.white,
+		margin: value
+	}
+}
+
+export const useCSS = ({ selected, error, disabled, labelPosition }: CheckboxStyleProps) => {
+	const props = { selected, error, disabled, labelPosition }
+	return {
+		checkbox: makeStyles([checkbox])(props),
 		outerContainer: makeStyles([outerContainer])(props),
 		innerContainer: makeStyles([innerContainer, borderColorFromProps])(props),
 		input: makeStyles([input])(props),
+		label: makeStyles([label])(props),
 		icon: makeStyles([icon])(props)
 	}
 }

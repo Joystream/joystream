@@ -1,5 +1,6 @@
 import { StyleFn, makeStyles } from "../../utils"
 import { typography, colors, spacing } from "../../theme"
+import { CSSProperties } from "react"
 
 export type RadioButtonStyleProps = {
 	selected?: boolean
@@ -76,7 +77,7 @@ const BackgroundFromProps: StyleFn = (styles, { disabled, selected, error }) => 
 			? SELECTED_DEFAULT
 			: disabled
 			? UNSELECTED_DISABLED
-			: styles[key]
+			: styles[key as keyof CSSProperties]
 	return {
 		...styles,
 		[key]: value

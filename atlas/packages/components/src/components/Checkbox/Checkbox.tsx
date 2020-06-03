@@ -21,10 +21,19 @@ export default function Checkbox({
 }: CheckboxProps) {
 	const styles = useCSS({ ...styleProps, selected, error, disabled });
 	return (
-		<div css={styles.outerContainer}>
-			<div css={styles.innerContainer}>
-				<input css={styles.input} type="checkbox" checked={selected} disabled={disabled} onChange={onChange} />
-				{selected && (icon === "check" ? <CheckIcon css={styles.icon} /> : <DashIcon css={styles.icon} />)}
+		<div css={styles.checkbox}>
+			{(labelPosition === "start" || labelPosition === "top") && <label css={styles.label}>{label}</label>}
+			<div css={styles.outerContainer}>
+				<div css={styles.innerContainer}>
+					<input
+						css={styles.input}
+						type="checkbox"
+						checked={selected}
+						disabled={disabled}
+						onChange={onChange}
+					/>
+					{selected && (icon === "check" ? <CheckIcon css={styles.icon} /> : <DashIcon css={styles.icon} />)}
+				</div>
 			</div>
 			{(labelPosition === "end" || labelPosition === "bottom") && <label css={styles.label}>{label}</label>}
 		</div>

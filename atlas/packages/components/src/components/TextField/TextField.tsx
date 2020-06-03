@@ -42,7 +42,8 @@ export default function TextField({
 		setIsActive(false);
 	}
 
-	function onInputTextChange(event: React.FormEvent<HTMLInputElement>): void {
+	// FIXME: add correct typing to event, see here: https://github.com/DefinitelyTyped/DefinitelyTyped/pull/12239
+	function onInputTextChange(event: any): void {
 		if (!disabled) setInputTextValue(event.currentTarget.value);
 	}
 

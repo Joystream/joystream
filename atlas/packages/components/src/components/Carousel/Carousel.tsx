@@ -1,6 +1,6 @@
 import React, { ReactNode, useRef } from "react";
 import { useCSS, CarouselStyleProps } from "./Carousel.style";
-import { NavButton } from "./../../";
+import NavButton from "../NavButton";
 
 type CarouselProps = {
 	children: Array<ReactNode>;

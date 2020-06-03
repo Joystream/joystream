@@ -69,7 +69,7 @@ export const ErrorWithDash = () => {
 export const Disabled = () => {
 	const [selected, setSelected] = useState(false);
 	return (
-		<div style={{ padding: "50px 20px", background: "black" }}>
+		<div style={{ display: "flex", padding: "50px 20px", background: "black" }}>
 			<Checkbox
 				disabled
 				onChange={() => {
@@ -79,6 +79,69 @@ export const Disabled = () => {
 			/>
 			<Checkbox disabled icon="check" selected />
 			<Checkbox disabled icon="dash" selected />
+		</div>
+	);
+};
+
+export const WithLabel = () => {
+	const [selected, setSelected] = useState(false);
+	return (
+		<div style={{ display: "flex", padding: "50px 20px", background: "black" }}>
+			<Checkbox
+				onChange={() => {
+					setSelected(!selected);
+				}}
+				selected={selected}
+				label="quite a long label"
+			/>
+		</div>
+	);
+};
+
+export const WithLabelStart = () => {
+	const [selected, setSelected] = useState(false);
+	return (
+		<div style={{ display: "flex", padding: "50px 20px", background: "black" }}>
+			<Checkbox
+				onChange={() => {
+					setSelected(!selected);
+				}}
+				selected={selected}
+				label="quite a long label"
+				labelPosition="start"
+			/>
+		</div>
+	);
+};
+
+export const WithLabelTop = () => {
+	const [selected, setSelected] = useState(false);
+	return (
+		<div style={{ display: "flex", padding: "50px 20px", background: "black" }}>
+			<Checkbox
+				onChange={() => {
+					setSelected(!selected);
+				}}
+				selected={selected}
+				label="quite a long label"
+				labelPosition="top"
+			/>
+		</div>
+	);
+};
+
+export const WithLabelBottom = () => {
+	const [selected, setSelected] = useState(false);
+	return (
+		<div style={{ display: "flex", padding: "50px 20px", background: "black" }}>
+			<Checkbox
+				onChange={() => {
+					setSelected(!selected);
+				}}
+				selected={selected}
+				label="quite a long label"
+				labelPosition="bottom"
+			/>
 		</div>
 	);
 };
