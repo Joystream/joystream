@@ -1989,13 +1989,13 @@ impl<T: Trait> Module<T> {
 
     /// Update existing `Class` properties with new ones provided, return updated ones
     pub fn update_class_properties(
-        mut class_properties: Vec<Property<T>>,
+        class_properties: Vec<Property<T>>,
         new_properties: Vec<Property<T>>,
     ) -> Vec<Property<T>> {
-        new_properties.into_iter().for_each(|prop| {
-            class_properties.push(prop);
-        });
         class_properties
+            .into_iter()
+            .chain(new_properties.into_iter())
+            .collect()
     }
 
     /// Counts the number of repetetive entities and returns `BTreeMap<T::EntityId, ReferenceCounter>`,
