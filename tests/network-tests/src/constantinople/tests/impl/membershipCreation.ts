@@ -1,32 +1,25 @@
-import { WsProvider } from '@polkadot/api';
-import { registerJoystreamTypes } from '@joystream/types/';
 import { Keyring } from '@polkadot/keyring';
 import { assert } from 'chai';
 import { KeyringPair } from '@polkadot/keyring/types';
-import BN = require('bn.js');
-import { ApiWrapper } from './utils/apiWrapper';
-import { initConfig } from './utils/config';
+import BN from 'bn.js';
+import { ApiWrapper } from '../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
+import tap from 'tap';
 
-export function membershipTest(nKeyPairs: KeyringPair[]) {
-  initConfig();
-  const keyring = new Keyring({ type: 'sr25519' });
-  const N: number = +process.env.MEMBERSHIP_CREATION_N!;
-  const paidTerms: number = +process.env.MEMBERSHIP_PAID_TERMS!;
-  const nodeUrl: string = process.env.NODE_URL!;
-  const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
-  const defaultTimeout: number = 30000;
-  let apiWrapper: ApiWrapper;
+export function membershipTest(
+  apiWrapper: ApiWrapper,
+  nKeyPairs: KeyringPair[],
+  keyring: Keyring,
+  N: number,
+  paidTerms: number,
+  sudoUri: string
+) {
   let sudo: KeyringPair;
   let aKeyPair: KeyringPair;
   let membershipFee: BN;
   let membershipTransactionFee: BN;
 
-  before(async function () {
-    this.timeout(defaultTimeout);
-    registerJoystreamTypes();
-    const provider = new WsProvider(nodeUrl);
-    apiWrapper = await ApiWrapper.create(provider);
+  tap.test('Membership creation test setup', async () => {
     sudo = keyring.addFromUri(sudoUri);
     for (let i = 0; i < N; i++) {
       nKeyPairs.push(keyring.addFromUri(i + uuid().substring(0, 8)));
@@ -42,7 +35,7 @@ export function membershipTest(nKeyPairs: KeyringPair[]) {
     await apiWrapper.transferBalance(sudo, aKeyPair.address, membershipTransactionFee);
   });
 
-  it('Buy membeship is accepted with sufficient funds', async () => {
+  tap.test('Buy membeship is accepted with sufficient funds', async () => {
     await Promise.all(
       nKeyPairs.map(async (keyPair, index) => {
         await apiWrapper.buyMembership(keyPair, paidTerms, `new_member_${index}${keyPair.address.substring(0, 8)}`);
@@ -53,9 +46,9 @@ export function membershipTest(nKeyPairs: KeyringPair[]) {
         .getMemberIds(keyPair.address)
         .then(membership => assert(membership.length > 0, `Account ${keyPair.address} is not a member`))
     );
-  }).timeout(defaultTimeout);
+  });
 
-  it('Account A can not buy the membership with insufficient funds', async () => {
+  tap.test('Account A can not buy the membership with insufficient funds', async () => {
     await apiWrapper
       .getBalance(aKeyPair.address)
       .then(balance =>
@@ -68,9 +61,9 @@ export function membershipTest(nKeyPairs: KeyringPair[]) {
     apiWrapper
       .getMemberIds(aKeyPair.address)
       .then(membership => assert(membership.length === 0, 'Account A is a member'));
-  }).timeout(defaultTimeout);
+  });
 
-  it('Account A was able to buy the membership with sufficient funds', async () => {
+  tap.test('Account A was able to buy the membership with sufficient funds', async () => {
     await apiWrapper.transferBalance(sudo, aKeyPair.address, membershipFee.add(membershipTransactionFee));
     apiWrapper
       .getBalance(aKeyPair.address)
@@ -81,14 +74,5 @@ export function membershipTest(nKeyPairs: KeyringPair[]) {
     apiWrapper
       .getMemberIds(aKeyPair.address)
       .then(membership => assert(membership.length > 0, 'Account A is a not member'));
-  }).timeout(defaultTimeout);
-
-  after(() => {
-    apiWrapper.close();
   });
 }
-
-describe.skip('Membership integration tests', () => {
-  const nKeyPairs: KeyringPair[] = new Array();
-  membershipTest(nKeyPairs);
-});

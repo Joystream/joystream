@@ -2,10 +2,10 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { Option, Vec, Bytes, u32 } from '@polkadot/types';
 import { Codec } from '@polkadot/types/types';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { UserInfo, PaidMembershipTerms, MemberId } from '@joystream/types/lib/members';
-import { Seat, VoteKind } from '@joystream/types/';
+import { UserInfo, PaidMembershipTerms, MemberId } from '@rome/types/lib/members';
+import { Seat, VoteKind } from '@rome/types';
 import { Balance, EventRecord } from '@polkadot/types/interfaces';
-import BN = require('bn.js');
+import BN from 'bn.js';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { Sender } from './sender';
 import { Utils } from './utils';
@@ -61,11 +61,12 @@ export class ApiWrapper {
     return this.getPaidMembershipTerms(paidTermsId).then(terms => terms.unwrap().fee.toBn());
   }
 
-  public async transferBalanceToAccounts(from: KeyringPair, to: KeyringPair[], amount: BN): Promise<void> {
-    for (const keyPair of to) {
-      await this.transferBalance(from, keyPair.address, amount);
-    }
-    return;
+  public async transferBalanceToAccounts(from: KeyringPair, to: KeyringPair[], amount: BN): Promise<void[]> {
+    return Promise.all(
+      to.map(async keyPair => {
+        await this.transferBalance(from, keyPair.address, amount);
+      })
+    );
   }
 
   private getBaseTxFee(): BN {
@@ -98,10 +99,8 @@ export class ApiWrapper {
     return this.estimateTxFee(this.api.tx.councilElection.reveal(hashedVote, nominee, salt));
   }
 
-  public estimateProposeRuntimeUpgradeFee(stake: BN, name: string, description: string, runtime: Bytes | string): BN {
-    return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createRuntimeUpgradeProposal(stake, name, description, stake, runtime)
-    );
+  public estimateProposeRuntimeUpgradeFee(stake: BN, name: string, description: string, runtime: string): BN {
+    return this.estimateTxFee(this.api.tx.proposals.createProposal(stake, name, description, runtime));
   }
 
   public estimateProposeTextFee(stake: BN, name: string, description: string, text: string): BN {
@@ -132,8 +131,12 @@ export class ApiWrapper {
     );
   }
 
-  public estimateVoteForProposalFee(): BN {
-    return this.estimateTxFee(this.api.tx.proposalsEngine.vote(0, 0, 'Approve'));
+  public estimateVoteForRuntimeProposalFee(): BN {
+    return this.estimateTxFee(this.api.tx.proposals.voteOnProposal(0, 'Approve'));
+  }
+
+  public newEstimate(): BN {
+    return new BN(100);
   }
 
   private applyForCouncilElection(account: KeyringPair, amount: BN): Promise<void> {
@@ -218,7 +221,7 @@ export class ApiWrapper {
 
   public getCouncil(): Promise<Seat[]> {
     return this.api.query.council.activeCouncil<Vec<Codec>>().then(seats => {
-      return (seats as unknown) as Seat[];
+      return JSON.parse(seats.toString());
     });
   }
 
@@ -226,16 +229,15 @@ export class ApiWrapper {
     return this.api.query.substrate.code<Bytes>();
   }
 
-  public async proposeRuntime(
+  public proposeRuntime(
     account: KeyringPair,
     stake: BN,
     name: string,
     description: string,
-    runtime: Bytes | string
+    runtime: string
   ): Promise<void> {
-    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn();
     return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createRuntimeUpgradeProposal(memberId, name, description, stake, runtime),
+      this.api.tx.proposals.createProposal(stake, name, description, runtime),
       account,
       false
     );
@@ -293,15 +295,18 @@ export class ApiWrapper {
     );
   }
 
-  public approveProposal(account: KeyringPair, memberId: BN, proposal: BN): Promise<void> {
-    return this.sender.signAndSend(this.api.tx.proposalsEngine.vote(memberId, proposal, 'Approve'), account, false);
+  public approveProposal(account: KeyringPair, proposal: BN): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx.proposals.voteOnProposal(proposal, new VoteKind('Approve')),
+      account,
+      false
+    );
   }
 
   public batchApproveProposal(council: KeyringPair[], proposal: BN): Promise<void[]> {
     return Promise.all(
       council.map(async keyPair => {
-        const memberId: BN = (await this.getMemberIds(keyPair.address))[0].toBn();
-        await this.approveProposal(keyPair, memberId, proposal);
+        await this.approveProposal(keyPair, proposal);
       })
     );
   }
@@ -314,7 +319,7 @@ export class ApiWrapper {
     return new Promise(async resolve => {
       await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
-          if (record.event.method && record.event.method.toString() === 'ProposalCreated') {
+          if (record.event.method.toString() === 'ProposalCreated') {
             resolve(new BN(record.event.data[1].toString()));
           }
         });
@@ -339,9 +344,8 @@ export class ApiWrapper {
       await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (
-            record.event.method &&
             record.event.method.toString() === 'ProposalStatusUpdated' &&
-            record.event.data[1].toString().includes('Executed')
+            record.event.data[1].toString().includes('Finalized')
           ) {
             resolve();
           }
@@ -352,11 +356,6 @@ export class ApiWrapper {
 
   public getTotalIssuance(): Promise<BN> {
     return this.api.query.balances.totalIssuance<Balance>();
-  }
-
-  public async getProposal(id: BN) {
-    const proposal = await this.api.query.proposalsEngine.proposals(id);
-    return;
   }
 
   public async getRequiredProposalStake(numerator: number, denominator: number): Promise<BN> {

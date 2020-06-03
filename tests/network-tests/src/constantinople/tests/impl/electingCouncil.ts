@@ -1,34 +1,26 @@
-import { membershipTest } from './membershipCreationTest';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { ApiWrapper } from './utils/apiWrapper';
-import { WsProvider, Keyring } from '@polkadot/api';
-import { initConfig } from './utils/config';
-import BN = require('bn.js');
-import { registerJoystreamTypes, Seat } from '@rome/types';
+import { ApiWrapper } from '../../utils/apiWrapper';
+import { Keyring } from '@polkadot/api';
+import BN from 'bn.js';
+import { Seat } from '@constantinople/types';
 import { assert } from 'chai';
 import { v4 as uuid } from 'uuid';
-import { Utils } from './utils/utils';
+import { Utils } from '../../utils/utils';
+import tap from 'tap';
 
-export function councilTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]) {
-  initConfig();
-  const keyring = new Keyring({ type: 'sr25519' });
-  const nodeUrl: string = process.env.NODE_URL!;
-  const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
-  const K: number = +process.env.COUNCIL_ELECTION_K!;
-  const greaterStake: BN = new BN(+process.env.COUNCIL_STAKE_GREATER_AMOUNT!);
-  const lesserStake: BN = new BN(+process.env.COUNCIL_STAKE_LESSER_AMOUNT!);
-  const defaultTimeout: number = 120000;
+export function councilTest(
+  apiWrapper: ApiWrapper,
+  m1KeyPairs: KeyringPair[],
+  m2KeyPairs: KeyringPair[],
+  keyring: Keyring,
+  K: number,
+  sudoUri: string,
+  greaterStake: BN,
+  lesserStake: BN
+) {
   let sudo: KeyringPair;
-  let apiWrapper: ApiWrapper;
 
-  before(async function () {
-    this.timeout(defaultTimeout);
-    registerJoystreamTypes();
-    const provider = new WsProvider(nodeUrl);
-    apiWrapper = await ApiWrapper.create(provider);
-  });
-
-  it('Electing a council test', async () => {
+  tap.test('Electing a council test', async () => {
     // Setup goes here because M keypairs are generated after before() function
     sudo = keyring.addFromUri(sudoUri);
     let now = await apiWrapper.getBestBlock();
@@ -111,17 +103,5 @@ export function councilTest(m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[]
         `Member ${seat.member} has unexpected stake ${Utils.getTotalStake(seat)}`
       )
     );
-  }).timeout(defaultTimeout);
-
-  after(() => {
-    apiWrapper.close();
   });
 }
-
-describe.skip('Council integration tests', () => {
-  const m1KeyPairs: KeyringPair[] = new Array();
-  const m2KeyPairs: KeyringPair[] = new Array();
-  membershipTest(m1KeyPairs);
-  membershipTest(m2KeyPairs);
-  councilTest(m1KeyPairs, m2KeyPairs);
-});

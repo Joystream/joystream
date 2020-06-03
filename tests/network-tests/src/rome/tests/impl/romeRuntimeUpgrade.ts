@@ -1,41 +1,30 @@
-import { initConfig } from './utils/config';
 import { Keyring, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { membershipTest } from './membershipCreationTest';
-import { councilTest } from './electingCouncilTest';
 import { registerJoystreamTypes } from '@rome/types';
-import { ApiWrapper } from './utils/apiWrapper';
-import BN = require('bn.js');
-import { Utils } from './utils/utils';
+import { ApiWrapper } from '../../utils/apiWrapper';
+import BN from 'bn.js';
+import { Utils } from '../../utils/utils';
+import tap from 'tap';
 
-describe('Runtime upgrade integration tests', () => {
-  initConfig();
-  const keyring = new Keyring({ type: 'sr25519' });
-  const nodeUrl: string = process.env.NODE_URL!;
-  const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
-  const proposalStake: BN = new BN(+process.env.RUNTIME_UPGRADE_PROPOSAL_STAKE!);
-  const runtimePath: string = process.env.RUNTIME_WASM_PATH!;
-  const defaultTimeout: number = 180000;
-
-  const m1KeyPairs: KeyringPair[] = new Array();
-  const m2KeyPairs: KeyringPair[] = new Array();
-
+export function romeRuntimeUpgradeTest(
+  m1KeyPairs: KeyringPair[],
+  m2KeyPairs: KeyringPair[],
+  keyring: Keyring,
+  nodeUrl: string,
+  sudoUri: string,
+  proposalStake: BN,
+  runtimePath: string
+) {
   let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
-  let provider: WsProvider;
 
-  before(async function () {
-    this.timeout(defaultTimeout);
+  tap.test('Rome runtime upgrade test setup', async () => {
     registerJoystreamTypes();
-    provider = new WsProvider(nodeUrl);
+    const provider = new WsProvider(nodeUrl);
     apiWrapper = await ApiWrapper.create(provider);
   });
 
-  membershipTest(m1KeyPairs);
-  membershipTest(m2KeyPairs);
-  councilTest(m1KeyPairs, m2KeyPairs);
-
-  it('Upgrading the runtime test', async () => {
+  tap.test('Upgrading the runtime test', async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
     const runtime: string = Utils.readRuntimeFromFile(runtimePath);
@@ -67,9 +56,9 @@ describe('Runtime upgrade integration tests', () => {
     const runtimePromise = apiWrapper.expectRuntimeUpgraded();
     await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber);
     await runtimePromise;
-  }).timeout(defaultTimeout);
+  });
 
-  after(() => {
+  tap.teardown(() => {
     apiWrapper.close();
   });
-});
+}
