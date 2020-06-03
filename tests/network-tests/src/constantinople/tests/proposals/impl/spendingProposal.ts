@@ -1,6 +1,5 @@
-import { Keyring, WsProvider } from '@polkadot/api';
+import { Keyring } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { registerJoystreamTypes } from '@constantinople/types';
 import { ApiWrapper } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN from 'bn.js';
@@ -8,22 +7,15 @@ import { assert } from 'chai';
 import tap from 'tap';
 
 export function spendingProposalTest(
+  apiWrapper: ApiWrapper,
   m1KeyPairs: KeyringPair[],
   m2KeyPairs: KeyringPair[],
   keyring: Keyring,
-  nodeUrl: string,
   sudoUri: string,
   spendingBalance: BN,
   mintCapacity: BN
 ) {
-  let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
-
-  tap.test('Spending proposal test setup', async () => {
-    registerJoystreamTypes();
-    const provider = new WsProvider(nodeUrl);
-    apiWrapper = await ApiWrapper.create(provider);
-  });
 
   tap.test('Spending proposal test', async () => {
     // Setup
@@ -68,9 +60,5 @@ export function spendingProposalTest(
         m1KeyPairs[0].address
       } has unexpected balance ${balanceAfterMinting}, expected ${balanceBeforeMinting.add(spendingBalance)}`
     );
-  });
-
-  tap.teardown(() => {
-    apiWrapper.close();
   });
 }

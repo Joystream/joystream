@@ -1,6 +1,5 @@
-import { Keyring, WsProvider } from '@polkadot/api';
+import { Keyring } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { registerJoystreamTypes } from '@constantinople/types';
 import { ApiWrapper } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN from 'bn.js';
@@ -8,20 +7,13 @@ import { assert } from 'chai';
 import tap from 'tap';
 
 export function electionParametersProposalTest(
+  apiWrapper: ApiWrapper,
   m1KeyPairs: KeyringPair[],
   m2KeyPairs: KeyringPair[],
   keyring: Keyring,
-  nodeUrl: string,
   sudoUri: string
 ) {
-  let apiWrapper: ApiWrapper;
   let sudo: KeyringPair;
-
-  tap.test('Election parameters proposal test setup', async () => {
-    registerJoystreamTypes();
-    const provider = new WsProvider(nodeUrl);
-    apiWrapper = await ApiWrapper.create(provider);
-  });
 
   tap.test('Election parameters proposal test', async () => {
     // Setup
@@ -128,9 +120,5 @@ export function electionParametersProposalTest(
       proposedMinVotingStake.eq(newMinVotingStake),
       `Min voting stake has unexpected value ${newMinVotingStake}, expected ${proposedMinVotingStake}`
     );
-  });
-
-  tap.teardown(() => {
-    apiWrapper.close();
   });
 }

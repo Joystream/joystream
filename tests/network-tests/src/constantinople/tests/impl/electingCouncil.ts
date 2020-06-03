@@ -1,31 +1,24 @@
 import { KeyringPair } from '@polkadot/keyring/types';
 import { ApiWrapper } from '../../utils/apiWrapper';
-import { WsProvider, Keyring } from '@polkadot/api';
+import { Keyring } from '@polkadot/api';
 import BN from 'bn.js';
-import { registerJoystreamTypes, Seat } from '@constantinople/types';
+import { Seat } from '@constantinople/types';
 import { assert } from 'chai';
 import { v4 as uuid } from 'uuid';
 import { Utils } from '../../utils/utils';
 import tap from 'tap';
 
 export function councilTest(
+  apiWrapper: ApiWrapper,
   m1KeyPairs: KeyringPair[],
   m2KeyPairs: KeyringPair[],
   keyring: Keyring,
   K: number,
-  nodeUrl: string,
   sudoUri: string,
   greaterStake: BN,
   lesserStake: BN
 ) {
   let sudo: KeyringPair;
-  let apiWrapper: ApiWrapper;
-
-  tap.test('Electing council test setup', async () => {
-    registerJoystreamTypes();
-    const provider = new WsProvider(nodeUrl);
-    apiWrapper = await ApiWrapper.create(provider);
-  });
 
   tap.test('Electing a council test', async () => {
     // Setup goes here because M keypairs are generated after before() function
@@ -110,9 +103,5 @@ export function councilTest(
         `Member ${seat.member} has unexpected stake ${Utils.getTotalStake(seat)}`
       )
     );
-  });
-
-  tap.teardown(() => {
-    apiWrapper.close();
   });
 }
