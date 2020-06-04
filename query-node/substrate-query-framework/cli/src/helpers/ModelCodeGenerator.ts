@@ -1,8 +1,9 @@
-import { ObjectTypeDefinitionNode, FieldDefinitionNode, ListTypeNode, NamedTypeNode, DirectiveNode, ArgumentNode, StringValueNode } from 'graphql';
+import { ObjectTypeDefinitionNode, FieldDefinitionNode, ListTypeNode, NamedTypeNode } from 'graphql';
 import { GraphQLSchemaParser, Visitors, SchemaNode } from './SchemaParser';
 import { WarthogModel, Field, ObjectType } from '../model';
 import Debug from 'debug';
 import { DIRECTIVES } from './SchemaDirective';
+import { ENTITY_DIRECTIVE } from './constant'
 
 const debug = Debug('qnode-cli:model-generator');
 
@@ -62,6 +63,15 @@ export class DatabaseModelCodeGenerator {
     return field;
   }
 
+  /**
+   * Mark the object type as entity if '@entity' directive is used
+   * @param o ObjectTypeDefinitionNode
+   */
+  private isEntity(o: ObjectTypeDefinitionNode): boolean {
+    const entityDirective = o.directives?.find(d => d.name.value === ENTITY_DIRECTIVE)
+    return entityDirective ? true : false
+  }
+
 
   /**
    * Generate a new ObjectType from ObjectTypeDefinitionNode
@@ -92,7 +102,7 @@ export class DatabaseModelCodeGenerator {
 
     debug(`Read and parsed fields: ${JSON.stringify(fields, null, 2)}`)
 
-    return { name: o.name.value, fields: fields } as ObjectType;
+    return { name: o.name.value, fields: fields, isEntity: this.isEntity(o) } as ObjectType;
   }
 
   generateWarthogModel(): WarthogModel {

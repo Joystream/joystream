@@ -11,3 +11,5 @@ type Query {
     _dummy: String           # empty queries are not allowed
 }
 `
+
+export const ENTITY_DIRECTIVE = 'entity'

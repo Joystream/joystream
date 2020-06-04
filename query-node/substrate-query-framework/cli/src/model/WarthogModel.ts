@@ -21,7 +21,9 @@ export class WarthogModel {
         this._ftsQueries = [];
     }
 
-    addObjectType(type: ObjectType):void {
+    addObjectType(type: ObjectType): void {
+        if (!type.isEntity) return;
+
         this._types.push(type);
         this._name2type[type.name] = type; 
     }
@@ -92,6 +94,7 @@ export class WarthogModel {
 export interface ObjectType {
     name: string;
     fields: Field[];
+    isEntity: boolean;
 }
 
 
