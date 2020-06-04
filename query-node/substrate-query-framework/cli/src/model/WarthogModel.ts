@@ -1,14 +1,5 @@
 import { FTSQuery } from './FTSQuery';
-
-// Available types for model code generation
-export const availableTypes: { [key: string]: string } = {
-    String: '',
-    Int: 'int',
-    Boolean: 'bool',
-    Date: 'date',
-    Float: 'float'
-  };
-  
+import { availableTypes } from './ScalarTypes'
 
 export class WarthogModel {
     _types: ObjectType[];
