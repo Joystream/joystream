@@ -1,38 +1,70 @@
-import { BaseService } from 'warthog';
 import { Service } from 'typedi';
-import { {{entity.type}} } from './../{{entity.name}}/{{entity.name}}.model';
+{{#entities}}  
+import { {{type}} } from '../{{model}}/{{model}}.model';
+{{/entities}}  
+
 import { InjectRepository } from 'typeorm-typedi-extensions';
-import { Repository } from 'typeorm';
+import { Repository, getManager } from 'typeorm';
 
-import { {{query.name}}FTSOutput } from './{{query.name}}.resolver'
+import { {{query.typePrefix}}FTSOutput } from './{{query.typePrefix}}.resolver';
 
-@Service('{{query.name}}FTSService')
-export class {{query.name}}FTSService extends BaseService<{{entity.type}}> {
-    constructor(@InjectRepository({{entity.type}}) protected readonly repository: Repository<{{entity.type}}>) {
-        super({{entity.type}}, repository);
+interface RawSQLResult {
+    origin_table: string,
+    id: string,
+    rank: number,
+    highlight: string
+}
+
+@Service('{{query.typePrefix}}FTSService')
+export class {{query.typePrefix}}FTSService {
+    {{#entities}}  
+    readonly {{fieldName}}Repository: Repository<{{type}}>;
+    {{/entities}} 
+
+    constructor({{#entities}}@InjectRepository({{type}}) {{fieldName}}Repository: Repository<{{type}}>{{^last}},{{/last}}
+                 {{/entities}}) {
+        {{#entities}}  
+        this.{{fieldName}}Repository = {{fieldName}}Repository;
+        {{/entities}} 
     }
 
-    async search(query: string, limit:number = 10): Promise<{{query.name}}FTSOutput[]> {
-        const { entities, raw } =  await this.repository.createQueryBuilder()
-            .addSelect(
-                `ts_rank_cd( {{query.index_col}}, (to_tsquery(:t_query)::text || ':*')::tsquery )`,
-                `rank`
-            )
-            .where(`(to_tsquery(:t_query)::text || ':*')::tsquery @@ {{query.index_col}}`)
-            .orderBy('rank', 'DESC')
-            .limit(limit)
-            .setParameter('t_query', query)
-            .getRawAndEntities();
+    async search(text: string, limit:number = 5): Promise<SearchFTSOutput[]> {
+        const query = `
+            SELECT origin_table, id, 
+                ts_rank(tsv, phraseto_tsquery('{{query.language}}', $1)) as rank,
+                ts_headline(document, phraseto_tsquery('{{query.language}}', $1)) as highlight
+            FROM {{query.viewName}}
+            WHERE phraseto_tsquery('{{query.language}}', $1) @@ tsv
+            ORDER BY rank DESC
+            LIMIT $2`;
 
-        const enhancedEntities = entities.map((e, index) => {
-            return { item: e, rank: raw[index].rank, isTypeOf: '{{entity.type}}' } as {{query.name}}FTSOutput;
+        const results = await getManager().query(query, [text, limit]) as RawSQLResult[];
+
+        if (results.length == 0) {
+            return [];
+        }
+
+        const idMap:{ [id:string]: RawSQLResult } = {};
+        results.forEach(item => idMap[item.id] = item);
+        const ids: string[] = results.map(item => item.id);
+        
+        {{#entities}}
+        const {{arrayName}}: {{type}}[] = await this.{{fieldName}}Repository.createQueryBuilder()
+                    .where("id IN (:...ids)", { ids }).getMany();
+        {{/entities}}
+
+        const enhancedEntities = [{{#entities}}...{{arrayName}} {{^last}},{{/last}}{{/entities}}].map((e) => {
+            return { item: e, 
+                rank: idMap[e.id].rank, 
+                highlight: idMap[e.id].highlight,
+                isTypeOf: idMap[e.id].origin_table } as SearchFTSOutput;
         });
           
-        return enhancedEntities.reduce((accum: {{query.name}}FTSOutput[], entity) => {
+        return enhancedEntities.reduce((accum: SearchFTSOutput[], entity) => {
             if (entity.rank > 0) {
                 accum.push(entity);
             }
             return accum;
-        }, []);
-    }   
+        }, []).sort((a,b) => b.rank - a.rank);
+    }
 }

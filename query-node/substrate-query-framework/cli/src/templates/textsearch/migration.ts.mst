@@ -8,7 +8,7 @@ export class {{query.typePrefix}}Migration{{query.ts}} implements MigrationInter
     {{#query.documents}}    
         await queryRunner.query(`
             ALTER TABLE {{table}} 
-            ADD COLUMN {{index_col}} tsvector 
+            ADD COLUMN {{tsvColumn}} tsvector 
             GENERATED ALWAYS AS (  
                 {{#fields}}
                     setweight(to_tsvector('{{query.language}}', coalesce({{{column}}}, '')), '{{weight}}') {{^last}} || {{/last}}
@@ -16,14 +16,24 @@ export class {{query.typePrefix}}Migration{{query.ts}} implements MigrationInter
                 ) 
             STORED;
         `);
-        await queryRunner.query(`CREATE INDEX {{index_name}} ON {{table}} USING GIN ({{index_col}})`);
+        await queryRunner.query(`
+            ALTER TABLE {{table}} 
+            ADD COLUMN {{docColumn}} text 
+            GENERATED ALWAYS AS (  
+                {{#fields}}
+                    coalesce({{{column}}}, '') {{^last}} || {{/last}}
+                {{/fields}}
+                ) 
+            STORED;
+        `);
+        await queryRunner.query(`CREATE INDEX {{index_name}} ON {{table}} USING GIN ({{tsvColumn}})`);
     {{/query.documents}}
 
         await queryRunner.query(`
-            CREATE VIEW {{query.viewname}} AS
+            CREATE VIEW {{query.viewName}} AS
         {{#query.documents}}    
             SELECT 
-                text '{{table}}' AS origin_table, id, {{index_col}} AS document
+                text '{{table}}' AS origin_table, id, {{tsvColumn}} AS tsv, {{docColumn}} AS document 
             FROM
                 {{table}}
             {{^last}}    
@@ -35,10 +45,11 @@ export class {{query.typePrefix}}Migration{{query.ts}} implements MigrationInter
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`DROP VIEW {{query.viewname}}`);
+        await queryRunner.query(`DROP VIEW {{query.viewName}}`);
     {{#query.documents}}    
         await queryRunner.query(`DROP INDEX {{index_name}}`);
-        await queryRunner.query(`ALTER TABLE {{table}} DROP COLUMN {{index_col}}`);
+        await queryRunner.query(`ALTER TABLE {{table}} DROP COLUMN {{tsvColumn}}`);
+        await queryRunner.query(`ALTER TABLE {{table}} DROP COLUMN {{docColumn}}`);
     {{/query.documents}}    
     }
 
