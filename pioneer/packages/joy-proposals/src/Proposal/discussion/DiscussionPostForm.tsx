@@ -76,48 +76,48 @@ const DiscussionPostFormInner = (props: InnerProps) => {
   };
 
   return (
-      <Form className="ui form JoyForm">
-        <LabelledField name='text' {...props}>
-          <Field
-            component='textarea'
-            id='text'
-            name='text'
-            disabled={isSubmitting}
-            rows={5}
-            placeholder='Content of the post...' />
-        </LabelledField>
-        <LabelledField invisibleLabel {...props}>
-          <TxButton
-            type="submit"
+    <Form className="ui form JoyForm">
+      <LabelledField name='text' {...props}>
+        <Field
+          component='textarea'
+          id='text'
+          name='text'
+          disabled={isSubmitting}
+          rows={5}
+          placeholder='Content of the post...' />
+      </LabelledField>
+      <LabelledField invisibleLabel {...props}>
+        <TxButton
+          type="submit"
+          size="large"
+          label={isEditForm ? 'Update' : 'Add Post'}
+          isDisabled={isSubmitting || !isValid}
+          params={buildTxParams()}
+          tx={isEditForm ? 'proposalsDiscussion.updatePost' : 'proposalsDiscussion.addPost'}
+          onClick={onSubmit}
+          txFailedCb={onTxFailed}
+          txSuccessCb={onTxSuccess}
+        />
+        { isEditForm ? (
+          <Button
+            type="button"
             size="large"
-            label={isEditForm ? 'Update' : 'Add Post'}
-            isDisabled={isSubmitting || !isValid}
-            params={buildTxParams()}
-            tx={isEditForm ? 'proposalsDiscussion.updatePost' : 'proposalsDiscussion.addPost'}
-            onClick={onSubmit}
-            txFailedCb={onTxFailed}
-            txSuccessCb={onTxSuccess}
+            disabled={isSubmitting}
+            color="red"
+            onClick={() => onSuccess()}
+            content="Cancel"
           />
-          { isEditForm ? (
-            <Button
-              type="button"
-              size="large"
-              disabled={isSubmitting}
-              color="red"
-              onClick={() => onSuccess()}
-              content="Cancel"
-            />
-          ) : (
-            <Button
-              type="button"
-              size="large"
-              disabled={isSubmitting}
-              onClick={() => resetForm()}
-              content="Clear"
-            />
-          ) }
-        </LabelledField>
-      </Form>
+        ) : (
+          <Button
+            type="button"
+            size="large"
+            disabled={isSubmitting}
+            onClick={() => resetForm()}
+            content="Clear"
+          />
+        ) }
+      </LabelledField>
+    </Form>
   );
 };
 

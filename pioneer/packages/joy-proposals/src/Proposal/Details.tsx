@@ -6,7 +6,6 @@ import styled from 'styled-components';
 
 import ProfilePreview from '@polkadot/joy-utils/MemberProfilePreview';
 
-
 const DetailsContainer = styled(Item.Group)`
   display: grid;
   width: auto;

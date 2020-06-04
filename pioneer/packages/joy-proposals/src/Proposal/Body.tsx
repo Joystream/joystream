@@ -5,14 +5,14 @@ import { blake2AsHex } from '@polkadot/util-crypto';
 import styled from 'styled-components';
 import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import TxButton from '@polkadot/joy-utils/TxButton';
-import { ProposalId } from "@joystream/types/proposals";
-import { MemberId } from "@joystream/types/members";
-import ProfilePreview from "@polkadot/joy-utils/MemberProfilePreview";
-import { useTransport, usePromise } from "@polkadot/joy-utils/react/hooks";
-import { Profile } from "@joystream/types/members";
-import { Option } from "@polkadot/types/";
-import { formatBalance } from "@polkadot/util";
-import { PromiseComponent } from "@polkadot/joy-utils/react/components";
+import { ProposalId } from '@joystream/types/proposals';
+import { MemberId, Profile } from '@joystream/types/members';
+import ProfilePreview from '@polkadot/joy-utils/MemberProfilePreview';
+import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
+
+import { Option } from '@polkadot/types/';
+import { formatBalance } from '@polkadot/util';
+import { PromiseComponent } from '@polkadot/joy-utils/react/components';
 import ReactMarkdown from 'react-markdown';
 
 type BodyProps = {

@@ -1,10 +1,10 @@
-import React, { useState } from "react";
-import { Button, Icon } from "semantic-ui-react";
+import React, { useState } from 'react';
+import { Button, Icon } from 'semantic-ui-react';
 import { ParsedPost } from '@polkadot/joy-utils/types/proposals';
-import MemberProfilePreview from "@polkadot/joy-utils/MemberProfilePreview";
+import MemberProfilePreview from '@polkadot/joy-utils/MemberProfilePreview';
 import DiscussionPostForm from './DiscussionPostForm';
-import { MemberId } from "@joystream/types/members";
-import { useTransport } from "@polkadot/joy-utils/react/hooks";
+import { MemberId } from '@joystream/types/members';
+import { useTransport } from '@polkadot/joy-utils/react/hooks';
 import styled from 'styled-components';
 import ReactMarkdown from 'react-markdown';
 
@@ -47,13 +47,13 @@ type ProposalDiscussionPostProps = {
   refreshDiscussion: () => void;
 }
 
-export default function DiscussionPost({
+export default function DiscussionPost ({
   post,
   memberId,
   refreshDiscussion
 }: ProposalDiscussionPostProps) {
   const { author, authorId, text, createdAt, editsCount } = post;
-  const [ editing, setEditing ] = useState(false);
+  const [editing, setEditing] = useState(false);
   const constraints = useTransport().proposals.discussionContraints();
   const canEdit = (
     memberId &&
@@ -68,44 +68,44 @@ export default function DiscussionPost({
 
   return (
     (memberId && editing) ? (
-        <DiscussionPostForm
-          memberId={memberId}
-          threadId={post.threadId}
-          post={post}
-          onSuccess={onEditSuccess}
-          constraints={constraints}/>
-      ) : (
-        <StyledComment>
-          <AuthorAndDate>
-            { author && (
-              <Author>
-                <MemberProfilePreview
-                  avatar_uri={author.avatar_uri.toString()}
-                  handle={author.handle.toString()}
-                  root_account={author.root_account.toString()}/>
-              </Author>
-            ) }
-            <CreationDate>
-              <span>{ createdAt.toLocaleString() }</span>
-            </CreationDate>
-          </AuthorAndDate>
-          <ContentAndActions>
-            <CommentContent>
-              <ReactMarkdown source={text} linkTarget='_blank' />
-            </CommentContent>
-            { canEdit && (
-              <CommentActions>
-                <CommentAction
-                  onClick={() => setEditing(true)}
-                  primary
-                  size="tiny"
-                  icon>
-                  <Icon name="pencil" />
-                </CommentAction>
-              </CommentActions>
-            ) }
-          </ContentAndActions>
-        </StyledComment>
-      )
-  )
+      <DiscussionPostForm
+        memberId={memberId}
+        threadId={post.threadId}
+        post={post}
+        onSuccess={onEditSuccess}
+        constraints={constraints}/>
+    ) : (
+      <StyledComment>
+        <AuthorAndDate>
+          { author && (
+            <Author>
+              <MemberProfilePreview
+                avatar_uri={author.avatar_uri.toString()}
+                handle={author.handle.toString()}
+                root_account={author.root_account.toString()}/>
+            </Author>
+          ) }
+          <CreationDate>
+            <span>{ createdAt.toLocaleString() }</span>
+          </CreationDate>
+        </AuthorAndDate>
+        <ContentAndActions>
+          <CommentContent>
+            <ReactMarkdown source={text} linkTarget='_blank' />
+          </CommentContent>
+          { canEdit && (
+            <CommentActions>
+              <CommentAction
+                onClick={() => setEditing(true)}
+                primary
+                size="tiny"
+                icon>
+                <Icon name="pencil" />
+              </CommentAction>
+            </CommentActions>
+          ) }
+        </ContentAndActions>
+      </StyledComment>
+    )
+  );
 }

@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 
-import { Icon, Button, Message, Divider, Header } from "semantic-ui-react";
-import useVoteStyles from "./useVoteStyles";
-import TxButton from "@polkadot/joy-utils/TxButton";
-import { MemberId } from "@joystream/types/members";
-import { ProposalId } from "@joystream/types/proposals";
-import { useTransport, usePromise } from "@polkadot/joy-utils/react/hooks";
-import { VoteKind } from '@joystream/types/proposals';
-import { VoteKinds } from "@joystream/types/proposals";
+import { Icon, Button, Message, Divider, Header } from 'semantic-ui-react';
+import useVoteStyles from './useVoteStyles';
+import TxButton from '@polkadot/joy-utils/TxButton';
+import { MemberId } from '@joystream/types/members';
+import { ProposalId, VoteKind, VoteKinds } from '@joystream/types/proposals';
+import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
+
 import styled from 'styled-components';
 
 const VoteButtons = styled.div`

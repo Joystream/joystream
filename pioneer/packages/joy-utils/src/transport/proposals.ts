@@ -6,18 +6,18 @@ import {
   ParsedPost,
   ParsedDiscussion,
   DiscussionContraints
-} from "../types/proposals";
-import { ParsedMember } from "../types/members";
+} from '../types/proposals';
+import { ParsedMember } from '../types/members';
 
 import BaseTransport from './base';
 
-import { ThreadId, PostId } from "@joystream/types/forum";
-import { Proposal, ProposalId, VoteKind, DiscussionThread, DiscussionPost } from "@joystream/types/proposals";
-import { MemberId } from "@joystream/types/members";
-import { u32 } from "@polkadot/types/";
-import { BalanceOf } from "@polkadot/types/interfaces";
+import { ThreadId, PostId } from '@joystream/types/forum';
+import { Proposal, ProposalId, VoteKind, DiscussionThread, DiscussionPost } from '@joystream/types/proposals';
+import { MemberId } from '@joystream/types/members';
+import { u32 } from '@polkadot/types/';
+import { BalanceOf, EventRecord } from '@polkadot/types/interfaces';
 
-import { includeKeys, bytesToString } from "../functions/misc";
+import { includeKeys, bytesToString } from '../functions/misc';
 import _ from 'lodash';
 import proposalsConsts from '../consts/proposals';
 
@@ -27,7 +27,6 @@ import ChainTransport from './chain';
 import CouncilTransport from './council';
 
 import { Vec } from '@polkadot/types/codec';
-import { EventRecord } from '@polkadot/types/interfaces';
 
 export default class ProposalsTransport extends BaseTransport {
   private membersT: MembersTransport;
@@ -185,15 +184,15 @@ export default class ProposalsTransport extends BaseTransport {
   // Find postId having only the object and storage key
   // FIXME: TODO: This is necessary because of the "hacky" workaround described in ./base.ts
   // (in order to avoid fetching all posts ever created)
-  async findPostId(post: DiscussionPost, storageKey: string): Promise<PostId | null> {
+  async findPostId (post: DiscussionPost, storageKey: string): Promise<PostId | null> {
     const blockHash = await this.api.rpc.chain.getBlockHash(post.created_at);
     const events = await this.api.query.system.events.at(blockHash) as Vec<EventRecord>;
     const postIds: PostId[] = events
-      .filter(({event}) => event.section === 'proposalsDiscussion' && event.method === 'PostCreated')
-      .map(({event}) => event.data[0] as PostId);
+      .filter(({ event }) => event.section === 'proposalsDiscussion' && event.method === 'PostCreated')
+      .map(({ event }) => event.data[0] as PostId);
 
     // Just in case there were multiple posts created in this block...
-    for (let postId of postIds) {
+    for (const postId of postIds) {
       const foundPostKey = await this.proposalsDiscussion.postThreadIdByPostId.key(post.thread_id, postId);
       if (foundPostKey === storageKey) return postId;
     }
@@ -201,7 +200,7 @@ export default class ProposalsTransport extends BaseTransport {
     return null;
   }
 
-  async discussion(id: number|ProposalId): Promise<ParsedDiscussion | null> {
+  async discussion (id: number|ProposalId): Promise<ParsedDiscussion | null> {
     const threadId = (await this.proposalsCodex.threadIdByProposalId(id)) as ThreadId;
     if (!threadId.toNumber()) {
       return null;
@@ -213,8 +212,8 @@ export default class ProposalsTransport extends BaseTransport {
       (v) => new DiscussionPost(v)
     );
 
-    let parsedPosts: ParsedPost[] = [];
-    for (let { storageKey, value: post } of postEntries) {
+    const parsedPosts: ParsedPost[] = [];
+    for (const { storageKey, value: post } of postEntries) {
       parsedPosts.push({
         postId: await this.findPostId(post, storageKey),
         threadId: post.thread_id,
@@ -226,11 +225,11 @@ export default class ProposalsTransport extends BaseTransport {
         authorId: post.author_id,
         author: (await this.membersT.memberProfile(post.author_id)).unwrapOr(null),
         editsCount: post.edition_number.toNumber()
-      })
+      });
     }
 
     // Sort by creation block asc
-    parsedPosts.sort((a,b) => a.createdAtBlock - b.createdAtBlock);
+    parsedPosts.sort((a, b) => a.createdAtBlock - b.createdAtBlock);
 
     return {
       title: bytesToString(thread.title),

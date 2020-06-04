@@ -1,9 +1,9 @@
-import { ApiPromise } from "@polkadot/api";
+import { ApiPromise } from '@polkadot/api';
 import { Observable } from 'rxjs';
 import { StorageEntryBase } from '@polkadot/api/types';
 import { CodecArg, Codec } from '@polkadot/types/types';
 
-type ApiMethod = StorageEntryBase<"promise", (arg1?: CodecArg, arg2?: CodecArg) => Observable<Codec>>;
+type ApiMethod = StorageEntryBase<'promise', (arg1?: CodecArg, arg2?: CodecArg) => Observable<Codec>>;
 
 export default abstract class BaseTransport {
   protected api: ApiPromise;
@@ -20,11 +20,11 @@ export default abstract class BaseTransport {
     return this.api.query.proposalsCodex;
   }
 
-  protected get proposalsDiscussion() {
+  protected get proposalsDiscussion () {
     return this.api.query.proposalsDiscussion;
   }
 
-  protected get members() {
+  protected get members () {
     return this.api.query.members;
   }
 
@@ -58,18 +58,18 @@ export default abstract class BaseTransport {
     method: ApiMethod,
     firstKey: Codec,
     valueConverter: (hex: string) => T
-  ): Promise<{ storageKey: string, value: T}[]> {
+  ): Promise<{ storageKey: string; value: T}[]> {
     const entryKey = method.key(firstKey, 0);
     const entryKeyPrefix = entryKey.toString().substr(0, 66); // "0x" + 64 hex characters (32 bytes)
     const allEntryKeys = await this.api.rpc.state.getKeys(entryKeyPrefix);
-    let entries: { storageKey: string, value: T }[] = [];
-    for (let key of allEntryKeys) {
+    const entries: { storageKey: string; value: T }[] = [];
+    for (const key of allEntryKeys) {
       const value: any = await this.api.rpc.state.getStorage(key);
       if (typeof value === 'object' && value !== null && value.raw) {
         entries.push({
           storageKey: key.toString(),
           value: valueConverter(value.raw.toString())
-        })
+        });
       }
     }
 

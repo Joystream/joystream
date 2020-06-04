@@ -1,7 +1,7 @@
-import { ProposalId, VoteKind } from "@joystream/types/proposals";
-import { MemberId, Profile } from "@joystream/types/members";
-import { ThreadId, PostId } from "@joystream/types/forum";
-import { ParsedMember } from "./members";
+import { ProposalId, VoteKind } from '@joystream/types/proposals';
+import { MemberId, Profile } from '@joystream/types/members';
+import { ThreadId, PostId } from '@joystream/types/forum';
+import { ParsedMember } from './members';
 
 export const ProposalTypes = [
   'Text',
@@ -80,9 +80,9 @@ export type ParsedPost = {
 };
 
 export type ParsedDiscussion = {
-  title: string,
-  threadId: ThreadId,
-  posts: ParsedPost[]
+  title: string;
+  threadId: ThreadId;
+  posts: ParsedPost[];
 };
 
 export type DiscussionContraints = {
