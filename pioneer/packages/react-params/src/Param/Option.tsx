@@ -26,11 +26,11 @@ function Option ({ className, defaultValue, isDisabled, name, onChange, onEnter,
     });
   }, [isActive]);
 
-  function doSetIsActive(active: boolean) {
+  function doSetIsActive (active: boolean) {
     active && onChange && onChange({
       isValid: true,
       value: getInitValue(sub as TypeDef)
-    })
+    });
     setIsActive(active);
   }
 

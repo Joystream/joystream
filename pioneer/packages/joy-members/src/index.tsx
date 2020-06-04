@@ -17,16 +17,15 @@ import List from './List';
 import DetailsByHandle from './DetailsByHandle';
 import EditForm from './EditForm';
 import { withMyAccount, MyAccountProps } from '@polkadot/joy-utils/MyAccount';
-import {FIRST_MEMBER_ID} from './constants';
+import { FIRST_MEMBER_ID } from './constants';
 import { RouteComponentProps } from 'react-router-dom';
 
 // define out internal types
 type Props = AppProps & ApiProps & I18nProps & MyAccountProps & {
-  membersCreated?: BN
+  membersCreated?: BN;
 };
 
 class App extends React.PureComponent<Props> {
-
   private buildTabs (): TabItem[] {
     const { t, membersCreated: memberCount, iAmMember } = this.props;
 
@@ -49,8 +48,8 @@ class App extends React.PureComponent<Props> {
 
   private renderList (routeProps: RouteComponentProps) {
     const { membersCreated, ...otherProps } = this.props;
-    return membersCreated ?
-      <List firstMemberId={FIRST_MEMBER_ID} membersCreated={membersCreated} {...otherProps} {...routeProps}/>
+    return membersCreated
+      ? <List firstMemberId={FIRST_MEMBER_ID} membersCreated={membersCreated} {...otherProps} {...routeProps}/>
       : <em>Loading...</em>;
   }
 

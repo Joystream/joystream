@@ -34,7 +34,7 @@ interface Props extends AppProps, ApiProps, I18nProps {
 const EMPY_ACCOUNTS: string[] = [];
 const EMPTY_ALL: [string[], string[]] = [EMPY_ACCOUNTS, EMPY_ACCOUNTS];
 
-function App({
+function App ({
   allAccounts,
   allStashesAndControllers: [allStashes, allControllers] = EMPTY_ALL,
   basePath,

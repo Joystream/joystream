@@ -21,17 +21,16 @@ type Props = AppProps & ApiProps & I18nProps & {
 };
 
 type State = {
-  applicantId?: string | null,
-  salt?: string,
-  hashedVote?: string | null
+  applicantId?: string | null;
+  salt?: string;
+  hashedVote?: string | null;
 };
 
 class RevealVoteForm extends React.PureComponent<Props, State> {
-
   constructor (props: Props) {
     super(props);
     let { applicantId, location } = this.props;
-    applicantId = applicantId ? applicantId : getUrlParam(location, 'applicantId');
+    applicantId = applicantId || getUrlParam(location, 'applicantId');
     const hashedVote = getUrlParam(location, 'hashedVote');
 
     this.state = {

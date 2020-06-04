@@ -14,7 +14,7 @@ interface Props extends BareProps {
   md: string;
 }
 
-function HelpOverlay({ className, md, style }: Props): React.ReactElement<Props> {
+function HelpOverlay ({ className, md, style }: Props): React.ReactElement<Props> {
   const [isVisible, setIsVisible] = useState(false);
 
   const _toggleVisible = (): void => setIsVisible(!isVisible);

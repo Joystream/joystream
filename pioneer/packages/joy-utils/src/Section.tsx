@@ -7,7 +7,7 @@ const Header = styled.div`
   width: 100%;
   justify-content: space-between;
   align-items: flex-end;
-  margin-bottom: ${ (props: { withPagination: boolean }) => props.withPagination ? '1rem' : 0 };
+  margin-bottom: ${(props: { withPagination: boolean }) => props.withPagination ? '1rem' : 0};
   flex-wrap: wrap;
 `;
 
@@ -37,14 +37,13 @@ const BottomPagination = styled(ResponsivePagination)`
 `;
 
 type Props = BareProps & {
-  className?: string,
-  title?: JSX.Element | string,
-  level?: number,
-  pagination?: JSX.Element
+  className?: string;
+  title?: JSX.Element | string;
+  level?: number;
+  pagination?: JSX.Element;
 };
 
 export default class Section extends React.PureComponent<Props> {
-
   render () {
     let { className, children, pagination } = this.props;
     className = (className || '') + ' JoySection';

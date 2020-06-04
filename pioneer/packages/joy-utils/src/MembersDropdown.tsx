@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useContext } from "react";
-import { Dropdown, DropdownItemProps, DropdownProps } from "semantic-ui-react";
-import { Profile } from "@joystream/types/members";
-import { memberFromAccount, MemberFromAccount } from "./accounts";
-import { AccountId } from "@polkadot/types/interfaces";
-import { ApiContext } from "@polkadot/react-api";
+import React, { useEffect, useState, useContext } from 'react';
+import { Dropdown, DropdownItemProps, DropdownProps } from 'semantic-ui-react';
+import { Profile } from '@joystream/types/members';
+import { memberFromAccount, MemberFromAccount } from './accounts';
+import { AccountId } from '@polkadot/types/interfaces';
+import { ApiContext } from '@polkadot/react-api';
 import styled from 'styled-components';
 
 const StyledMembersDropdown = styled(Dropdown)`
@@ -13,30 +13,30 @@ const StyledMembersDropdown = styled(Dropdown)`
   }
 `;
 
-function membersToOptions(members: MemberFromAccount[]) {
+function membersToOptions (members: MemberFromAccount[]) {
   const validMembers = members.filter(m => m.profile !== undefined) as (MemberFromAccount & { profile: Profile })[];
   return validMembers
     .map(({ id, profile, account }) => ({
       key: profile.handle,
-      text: `${ profile.handle } (id:${ id })`,
+      text: `${profile.handle} (id:${id})`,
       value: account,
       image: profile.avatar_uri.toString() ? { avatar: true, src: profile.avatar_uri } : null
     }));
 }
 
 type Props = {
-  accounts: (string | AccountId)[],
-  name?: DropdownProps["name"],
-  onChange?: DropdownProps["onChange"],
-  value?: DropdownProps["value"],
-  placeholder?: DropdownProps["placeholder"],
+  accounts: (string | AccountId)[];
+  name?: DropdownProps['name'];
+  onChange?: DropdownProps['onChange'];
+  value?: DropdownProps['value'];
+  placeholder?: DropdownProps['placeholder'];
 };
 
 const MembersDropdown: React.FunctionComponent<Props> = ({ accounts, ...passedProps }) => {
   const { api } = useContext(ApiContext);
   // State
-  const [ loading, setLoading ] = useState(true);
-  const [ membersOptions, setMembersOptions ] = useState([] as DropdownItemProps[]);
+  const [loading, setLoading] = useState(true);
+  const [membersOptions, setMembersOptions] = useState([] as DropdownItemProps[]);
   // Generate members options array on load
   useEffect(() => {
     let isSubscribed = true;

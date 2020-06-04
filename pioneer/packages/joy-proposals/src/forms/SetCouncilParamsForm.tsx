@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { getFormErrorLabelsProps } from "./errorHandling";
-import { Divider, Form } from "semantic-ui-react";
-import * as Yup from "yup";
+import React, { useEffect, useState } from 'react';
+import { getFormErrorLabelsProps } from './errorHandling';
+import { Divider, Form } from 'semantic-ui-react';
+import * as Yup from 'yup';
 import {
   GenericProposalForm,
   GenericFormValues,
@@ -11,16 +11,16 @@ import {
   ProposalFormExportProps,
   ProposalFormContainerProps,
   ProposalFormInnerProps
-} from "./GenericProposalForm";
-import Validation from "../validationSchema";
-import { InputFormField } from "./FormFields";
-import { withFormContainer } from "./FormContainer";
-import { createType } from "@polkadot/types";
-import "./forms.css";
-import { useTransport, usePromise } from "@polkadot/joy-utils/react/hooks";
-import _ from "lodash";
-import { ElectionParameters } from "@joystream/types/proposals";
-import { PromiseComponent } from "@polkadot/joy-utils/react/components";
+} from './GenericProposalForm';
+import Validation from '../validationSchema';
+import { InputFormField } from './FormFields';
+import { withFormContainer } from './FormContainer';
+import { createType } from '@polkadot/types';
+import './forms.css';
+import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
+import _ from 'lodash';
+import { ElectionParameters } from '@joystream/types/proposals';
+import { PromiseComponent } from '@polkadot/joy-utils/react/components';
 
 type FormValues = GenericFormValues & {
   announcingPeriod: string;
@@ -35,14 +35,14 @@ type FormValues = GenericFormValues & {
 
 const defaultValues: FormValues = {
   ...genericFormDefaultValues,
-  announcingPeriod: "",
-  votingPeriod: "",
-  minVotingStake: "",
-  revealingPeriod: "",
-  minCouncilStake: "",
-  newTermDuration: "",
-  candidacyLimit: "",
-  councilSize: ""
+  announcingPeriod: '',
+  votingPeriod: '',
+  minVotingStake: '',
+  revealingPeriod: '',
+  minCouncilStake: '',
+  newTermDuration: '',
+  candidacyLimit: '',
+  councilSize: ''
 };
 
 type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
@@ -50,38 +50,38 @@ type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormVal
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-function createElectionParameters(values: FormValues): ElectionParameters {
+function createElectionParameters (values: FormValues): ElectionParameters {
   return new ElectionParameters({
-    announcing_period: createType("BlockNumber", parseInt(values.announcingPeriod)),
-    voting_period: createType("BlockNumber", parseInt(values.votingPeriod)),
-    revealing_period: createType("BlockNumber", parseInt(values.revealingPeriod)),
-    council_size: createType("u32", values.councilSize),
-    candidacy_limit: createType("u32", values.candidacyLimit),
-    new_term_duration: createType("BlockNumber", parseInt(values.newTermDuration)),
-    min_council_stake: createType("Balance", values.minCouncilStake),
-    min_voting_stake: createType("Balance", values.minVotingStake)
+    announcing_period: createType('BlockNumber', parseInt(values.announcingPeriod)),
+    voting_period: createType('BlockNumber', parseInt(values.votingPeriod)),
+    revealing_period: createType('BlockNumber', parseInt(values.revealingPeriod)),
+    council_size: createType('u32', values.councilSize),
+    candidacy_limit: createType('u32', values.candidacyLimit),
+    new_term_duration: createType('BlockNumber', parseInt(values.newTermDuration)),
+    min_council_stake: createType('Balance', values.minCouncilStake),
+    min_voting_stake: createType('Balance', values.minVotingStake)
   });
 }
 
 const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
   const { handleChange, errors, touched, values, setFieldValue, setFieldError } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
-  const [ placeholders, setPlaceholders ] = useState<{ [k in keyof FormValues]: string }>(defaultValues);
+  const [placeholders, setPlaceholders] = useState<{ [k in keyof FormValues]: string }>(defaultValues);
 
   const transport = useTransport();
-  const [ councilParams, error, loading ] = usePromise<ElectionParameters | null>(() => transport.council.electionParameters(), null);
+  const [councilParams, error, loading] = usePromise<ElectionParameters | null>(() => transport.council.electionParameters(), null);
   useEffect(() => {
     if (councilParams) {
-      let fetchedPlaceholders = {...placeholders};
+      const fetchedPlaceholders = { ...placeholders };
       const fieldsToPopulate = [
-        "announcing_period",
-        "voting_period",
-        "min_voting_stake",
-        "revealing_period",
-        "min_council_stake",
-        "new_term_duration",
-        "candidacy_limit",
-        "council_size"
+        'announcing_period',
+        'voting_period',
+        'min_voting_stake',
+        'revealing_period',
+        'min_council_stake',
+        'new_term_duration',
+        'candidacy_limit',
+        'council_size'
       ] as const;
       fieldsToPopulate.forEach(field => {
         const camelCaseField = _.camelCase(field) as keyof FormValues;
@@ -94,7 +94,7 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
 
   // This logic may be moved somewhere else in the future, but it's quite easy to enforce it here:
   if (!errors.candidacyLimit && !errors.councilSize && parseInt(values.candidacyLimit) < parseInt(values.councilSize)) {
-    setFieldError('candidacyLimit', `Candidacy limit must be >= council size (${ values.councilSize })`);
+    setFieldError('candidacyLimit', `Candidacy limit must be >= council size (${values.councilSize})`);
   }
 
   return (
@@ -103,10 +103,10 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
         {...props}
         txMethod="createSetElectionParametersProposal"
         proposalType="SetElectionParameters"
-        submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", createElectionParameters(values)]}
+        submitParams={[props.myMemberId, values.title, values.rationale, '{STAKE}', createElectionParameters(values)]}
       >
         <Divider horizontal>Voting </Divider>
-        <Form.Group widths="equal" style={{ marginBottom: "8rem" }}>
+        <Form.Group widths="equal" style={{ marginBottom: '8rem' }}>
           <InputFormField
             label="Announcing Period"
             help="Announcing period in blocks"
@@ -148,7 +148,7 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
           />
         </Form.Group>
         <Divider horizontal>Council</Divider>
-        <Form.Group widths="equal" style={{ marginBottom: "8rem" }}>
+        <Form.Group widths="equal" style={{ marginBottom: '8rem' }}>
           <InputFormField
             label="Minimum Council Stake"
             help="The minimum council stake"
@@ -213,7 +213,7 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     councilSize: Validation.SetElectionParameters.councilSize
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
-  displayName: "SetCouncilParamsForm"
+  displayName: 'SetCouncilParamsForm'
 })(SetCouncilParamsForm);
 
 export default withProposalFormData<FormContainerProps, ExportComponentProps>(FormContainer);

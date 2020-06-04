@@ -5,13 +5,12 @@ import { TextValueEntity } from '@joystream/types/versioned-store/EntityCodec';
 import { InternalEntities } from '../transport';
 
 const buildOptions = (entities: TextValueEntity[]): DropdownItemProps[] =>
-  entities.map(x => ({ key: x.id, value: x.id, text: x.value }))
+  entities.map(x => ({ key: x.id, value: x.id, text: x.value }));
 
 const buildLanguageOptions = (entities: LanguageType[]): DropdownItemProps[] =>
-  entities.map(x => ({ key: x.id, value: x.id, text: ISO6391.getName(x.value) }))
+  entities.map(x => ({ key: x.id, value: x.id, text: ISO6391.getName(x.value) }));
 
 export class MediaDropdownOptions {
-
   public languageOptions: DropdownItemProps[]
   public contentLicenseOptions: DropdownItemProps[]
   public curationStatusOptions: DropdownItemProps[]
@@ -40,6 +39,6 @@ export class MediaDropdownOptions {
     musicMoods: [],
     musicThemes: [],
     publicationStatuses: [],
-    videoCategories: [],
+    videoCategories: []
   });
 }

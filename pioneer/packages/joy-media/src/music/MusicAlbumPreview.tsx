@@ -5,16 +5,16 @@ import { BgImg } from '../common/BgImg';
 import { ChannelEntity } from '../entities/ChannelEntity';
 
 export type MusicAlbumPreviewProps = {
-  id: string,
-  title: string,
-  artist: string,
-  cover: string,
-  tracksCount: number,
+  id: string;
+  title: string;
+  artist: string;
+  cover: string;
+  tracksCount: number;
 
   // Extra props:
-  channel?: ChannelEntity,
-  size?: number,
-  withActions?: boolean
+  channel?: ChannelEntity;
+  size?: number;
+  withActions?: boolean;
 };
 
 export function MusicAlbumPreview (props: MusicAlbumPreviewProps) {
@@ -23,7 +23,7 @@ export function MusicAlbumPreview (props: MusicAlbumPreviewProps) {
   // TODO show the channel this album belongs to.
 
   return <div className='JoyMusicAlbumPreview'>
-  
+
     <BgImg className='AlbumCover' url={props.cover} size={size} />
 
     <div className='AlbumDescription' style={{ maxWidth: size }}>

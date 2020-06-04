@@ -1,11 +1,11 @@
-import { ApiPromise } from "@polkadot/api";
-import ChainTransport from "./chain";
-import ContentWorkingGroupTransport from "./contentWorkingGroup";
-import ProposalsTransport from "./proposals";
-import MembersTransport from "./members";
-import CouncilTransport from "./council";
-import StorageProvidersTransport from "./storageProviders";
-import ValidatorsTransport from "./validators";
+import { ApiPromise } from '@polkadot/api';
+import ChainTransport from './chain';
+import ContentWorkingGroupTransport from './contentWorkingGroup';
+import ProposalsTransport from './proposals';
+import MembersTransport from './members';
+import CouncilTransport from './council';
+import StorageProvidersTransport from './storageProviders';
+import ValidatorsTransport from './validators';
 
 export default class Transport {
   protected api: ApiPromise;
@@ -18,7 +18,7 @@ export default class Transport {
   public storageProviders: StorageProvidersTransport;
   public validators: ValidatorsTransport;
 
-  constructor(api: ApiPromise) {
+  constructor (api: ApiPromise) {
     this.api = api;
     this.chain = new ChainTransport(api);
     this.members = new MembersTransport(api);

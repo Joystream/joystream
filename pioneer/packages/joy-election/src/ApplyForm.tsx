@@ -15,14 +15,14 @@ import { calcTotalStake, ZERO } from '@polkadot/joy-utils/index';
 import { MyAddressProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 
 type Props = ApiProps & I18nProps & MyAddressProps & {
-  minStake?: Balance,
-  alreadyStaked?: Stake,
-  myBalance?: Balance
+  minStake?: Balance;
+  alreadyStaked?: Stake;
+  myBalance?: Balance;
 };
 
 type State = {
-  stake: BN,
-  isStakeValid: boolean
+  stake: BN;
+  isStakeValid: boolean;
 };
 
 const DEFAULT_STATE: State = {
@@ -31,7 +31,6 @@ const DEFAULT_STATE: State = {
 };
 
 class ApplyForm extends React.PureComponent<Props, State> {
-
   state = DEFAULT_STATE;
 
   render () {

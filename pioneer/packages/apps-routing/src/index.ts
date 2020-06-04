@@ -69,7 +69,7 @@ if (appSettings.isFullMode) {
     js,
     toolbox,
     null
-  )
+  );
 }
 
 routes = routes.concat(

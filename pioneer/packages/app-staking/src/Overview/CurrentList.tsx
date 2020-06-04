@@ -23,7 +23,7 @@ interface Props extends I18nProps {
   stakingOverview?: DerivedStakingOverview;
 }
 
-function renderColumn(
+function renderColumn (
   myAccounts: string[],
   addresses: AccountId[] | string[],
   defaultName: string,
@@ -56,11 +56,11 @@ function renderColumn(
   );
 }
 
-function filterAccounts(list: string[] = [], without: AccountId[] | string[]): string[] {
+function filterAccounts (list: string[] = [], without: AccountId[] | string[]): string[] {
   return list.filter((accountId): boolean => !without.includes(accountId as any));
 }
 
-function CurrentList(props: Props): React.ReactElement<Props> {
+function CurrentList (props: Props): React.ReactElement<Props> {
   const { isSubstrateV2 } = useContext(ApiContext);
   const [filter, setFilter] = useState<ValidatorFilter>('all');
   const [myAccounts] = useState(keyring.getAccounts().map(({ address }): string => address));

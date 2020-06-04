@@ -59,7 +59,7 @@ function Overview ({ accounts, onStatusChange, t }: Props): React.ReactElement<P
             label={t('Restore JSON')}
             onClick={_toggleImport}
           />
-         {isLedger() && (
+          {isLedger() && (
             <>
               <Button.Or />
               <Button
@@ -87,7 +87,7 @@ function Overview ({ accounts, onStatusChange, t }: Props): React.ReactElement<P
           onStatusChange={onStatusChange}
         />
       )}
-     {accounts && Object.keys(accounts).map((address): React.ReactNode => (
+      {accounts && Object.keys(accounts).map((address): React.ReactNode => (
         <Account
           address={address}
           key={address}

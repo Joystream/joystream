@@ -9,15 +9,14 @@ import { Text } from '@polkadot/types';
 type Props = MyAccountProps & {};
 
 type State = {
-  memo: string,
-  modified: boolean,
+  memo: string;
+  modified: boolean;
 };
 
 class Component extends React.PureComponent<Props, State> {
-
   state: State = {
     memo: '',
-    modified: false,
+    modified: false
   };
 
   render () {

@@ -1,6 +1,6 @@
-import React from "react";
-import { Card, Header, Button, Icon, Message } from "semantic-ui-react";
-import { ProposalType } from "@polkadot/joy-utils/types/proposals";
+import React from 'react';
+import { Card, Header, Button, Icon, Message } from 'semantic-ui-react';
+import { ProposalType } from '@polkadot/joy-utils/types/proposals';
 import { blake2AsHex } from '@polkadot/util-crypto';
 import styled from 'styled-components';
 import AddressMini from '@polkadot/react-components/AddressMiniJoy';
@@ -27,7 +27,7 @@ type BodyProps = {
   cancellationFee: number;
 };
 
-function ProposedAddress(props: { address?: string | null }) {
+function ProposedAddress (props: { address?: string | null }) {
   if (props.address === null || props.address === undefined) {
     return <>NONE</>;
   }
@@ -37,14 +37,14 @@ function ProposedAddress(props: { address?: string | null }) {
   );
 }
 
-function ProposedMember(props: { memberId?: MemberId | number | null }) {
+function ProposedMember (props: { memberId?: MemberId | number | null }) {
   if (props.memberId === null || props.memberId === undefined) {
     return <>NONE</>;
   }
   const memberId: MemberId | number = props.memberId;
 
   const transport = useTransport();
-  const [ member, error, loading ] = usePromise<Option<Profile> | null>(
+  const [member, error, loading] = usePromise<Option<Profile> | null>(
     () => transport.members.memberProfile(memberId),
     null
   );
@@ -72,50 +72,50 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
     Content: <ReactMarkdown className='TextProposalContent' source={content} linkTarget='_blank' />
   }),
   RuntimeUpgrade: ([wasm]) => {
-    const buffer: Buffer = Buffer.from(wasm.replace("0x", ""), "hex");
+    const buffer: Buffer = Buffer.from(wasm.replace('0x', ''), 'hex');
     return {
-      "Blake2b256 hash of WASM code": blake2AsHex(buffer, 256),
-      "File size": buffer.length + " bytes"
+      'Blake2b256 hash of WASM code': blake2AsHex(buffer, 256),
+      'File size': buffer.length + ' bytes'
     };
   },
   SetElectionParameters: ([params]) => ({
-      "Announcing period": params.announcing_period + " blocks",
-      "Voting period": params.voting_period + " blocks",
-      "Revealing period": params.revealing_period + " blocks",
-      "Council size": params.council_size + " members",
-      "Candidacy limit": params.candidacy_limit + " members",
-      "New term duration": params.new_term_duration + " blocks",
-      "Min. council stake": formatBalance(params.min_council_stake),
-      "Min. voting stake": formatBalance(params.min_voting_stake)
+    'Announcing period': params.announcing_period + ' blocks',
+    'Voting period': params.voting_period + ' blocks',
+    'Revealing period': params.revealing_period + ' blocks',
+    'Council size': params.council_size + ' members',
+    'Candidacy limit': params.candidacy_limit + ' members',
+    'New term duration': params.new_term_duration + ' blocks',
+    'Min. council stake': formatBalance(params.min_council_stake),
+    'Min. voting stake': formatBalance(params.min_voting_stake)
   }),
   Spending: ([amount, account]) => ({
     Amount: formatBalance(amount),
     Account: <ProposedAddress address={account} />
   }),
   SetLead: ([memberId, accountId]) => ({
-    "Member": <ProposedMember memberId={ memberId } />,
-    "Account id": <ProposedAddress address={accountId} />
+    Member: <ProposedMember memberId={ memberId } />,
+    'Account id': <ProposedAddress address={accountId} />
   }),
   SetContentWorkingGroupMintCapacity: ([capacity]) => ({
-    "Mint capacity": formatBalance(capacity)
+    'Mint capacity': formatBalance(capacity)
   }),
   EvictStorageProvider: ([accountId]) => ({
-    "Storage provider account": <ProposedAddress address={accountId} />
+    'Storage provider account': <ProposedAddress address={accountId} />
   }),
   SetValidatorCount: ([count]) => ({
-    "Validator count": count
+    'Validator count': count
   }),
   SetStorageRoleParameters: ([params]) => ({
-    "Min. stake": formatBalance(params.min_stake),
+    'Min. stake': formatBalance(params.min_stake),
     // "Min. actors": params.min_actors,
-    "Max. actors": params.max_actors,
+    'Max. actors': params.max_actors,
     Reward: formatBalance(params.reward),
-    "Reward period": params.reward_period + " blocks",
+    'Reward period': params.reward_period + ' blocks',
     // "Bonding period": params.bonding_period + " blocks",
-    "Unbonding period": params.unbonding_period + " blocks",
+    'Unbonding period': params.unbonding_period + ' blocks',
     // "Min. service period": params.min_service_period + " blocks",
     // "Startup grace period": params.startup_grace_period + " blocks",
-    "Entry request fee": formatBalance(params.entry_request_fee)
+    'Entry request fee': formatBalance(params.entry_request_fee)
   })
 };
 
@@ -157,7 +157,7 @@ const ProposalParamValue = styled.div`
   }
 `;
 
-export default function Body({
+export default function Body ({
   type,
   title,
   description,
@@ -193,7 +193,7 @@ export default function Body({
             <Message.Content>
               <Message.Header>Proposal cancellation</Message.Header>
               <p style={{ margin: '0.5em 0', padding: '0' }}>
-                You can only cancel your proposal while it's still in the Voting Period.
+                {'You can only cancel your proposal while it\'s still in the Voting Period.'}
               </p>
               <p style={{ margin: '0.5em 0', padding: '0' }}>
                 The cancellation fee for this type of proposal is:&nbsp;
@@ -201,11 +201,11 @@ export default function Body({
               </p>
               <Button.Group color="red">
                 <TxButton
-                  params={ [ proposerId, proposalId ] }
-                  tx={ "proposalsEngine.cancelProposal" }
+                  params={ [proposerId, proposalId] }
+                  tx={ 'proposalsEngine.cancelProposal' }
                   onClick={ sendTx => { sendTx(); } }
                   className={'icon left labeled'}
-                  >
+                >
                   <Icon name="cancel" inverted />
                   Withdraw proposal
                 </TxButton>

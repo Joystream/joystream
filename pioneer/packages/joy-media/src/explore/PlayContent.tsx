@@ -7,22 +7,22 @@ import { ChannelEntity } from '../entities/ChannelEntity';
 import { ChannelPreview } from '../channels/ChannelPreview';
 
 type Props = {
-  channel: ChannelEntity,
-  tracks: MusicTrackReaderPreviewProps[],
-  currentTrackIndex?: number,
-  featuredAlbums?: MusicAlbumPreviewProps[],
+  channel: ChannelEntity;
+  tracks: MusicTrackReaderPreviewProps[];
+  currentTrackIndex?: number;
+  featuredAlbums?: MusicAlbumPreviewProps[];
 };
 
 // TODO get meta from track item
 const meta = {
   artist: 'Berlin Philharmonic',
-	composer: 'Wolfgang Amadeus Mozart',
-	genre: 'Classical Music',
-	mood: 'Relaxing',
-	theme: 'Dark',
-	explicit: false,
-	license: 'Public Domain'
-}
+  composer: 'Wolfgang Amadeus Mozart',
+  genre: 'Classical Music',
+  mood: 'Relaxing',
+  theme: 'Dark',
+  explicit: false,
+  license: 'Public Domain'
+};
 
 export function PlayContent (props: Props) {
   const { channel, tracks = [], currentTrackIndex = 0, featuredAlbums = [] } = props;
@@ -33,7 +33,7 @@ export function PlayContent (props: Props) {
     <Table.Row>
       <Table.Cell width={2}>{label}</Table.Cell>
       <Table.Cell>{value}</Table.Cell>
-    </Table.Row>
+    </Table.Row>;
 
   const metaTable = <>
     <h3>Track Info</h3>
@@ -48,7 +48,7 @@ export function PlayContent (props: Props) {
         {metaField('License', meta.license)}
       </Table.Body>
     </Table>
-  </>
+  </>;
 
   const albumTracks = (
     <div className='JoyPlayAlbum_AlbumTracks'>
@@ -57,10 +57,10 @@ export function PlayContent (props: Props) {
         <Table.Body>
           {tracks.map((x, i) => {
             const isCurrent = x.id === currentTrack.id;
-            const className = `TrackRow ` + (isCurrent ? 'Current' : '');
+            const className = 'TrackRow ' + (isCurrent ? 'Current' : '');
 
             return (
-              <Table.Row className={className} onClick={() => setCurrentTrack(x)}>
+              <Table.Row key={x.id} className={className} onClick={() => setCurrentTrack(x)}>
                 <Table.Cell className='TrackNumber' width={1}>{i + 1}</Table.Cell>
                 <Table.Cell className='TrackTitle'>{x.title}</Table.Cell>
               </Table.Row>
@@ -85,7 +85,7 @@ export function PlayContent (props: Props) {
     {featuredAlbums.length > 0 &&
       <div className='JoyPlayAlbum_RightSidePanel'>
         <h3>Featured albums</h3>
-        {featuredAlbums.map(x => <MusicAlbumPreview {...x} size={170} />)}
+        {featuredAlbums.map(x => <MusicAlbumPreview key={x.id} {...x} size={170} />)}
       </div>
     }
   </div>;

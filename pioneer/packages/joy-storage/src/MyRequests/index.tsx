@@ -12,11 +12,11 @@ import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import { ComponentProps } from '../props';
 
 type Props = BareProps & ComponentProps & MyAccountProps & {
-  requests: Array<Request>
+  requests: Array<Request>;
 };
 
 class ActionList extends React.PureComponent<Props> {
-  render() {
+  render () {
     const { myMemberId, requests } = this.props;
     if (!myMemberId) {
       return <em>Loading...</em>;
@@ -32,7 +32,7 @@ class ActionList extends React.PureComponent<Props> {
     }
   }
 
-  private renderActions(requests: Array<Request>) {
+  private renderActions (requests: Array<Request>) {
     return (
       <Table>
         <Table.Body>
@@ -48,14 +48,14 @@ class ActionList extends React.PureComponent<Props> {
 }
 
 type ActionProps = BareProps & CallProps & {
-  account: AccountId,
-  role: Role,
-  balance?: Balance,
-  roleParams?: Option<RoleParameters>
+  account: AccountId;
+  role: Role;
+  balance?: Balance;
+  roleParams?: Option<RoleParameters>;
 };
 
 class Action extends React.PureComponent<ActionProps> {
-  render() {
+  render () {
     const { account, role, balance, roleParams } = this.props;
 
     if (!balance || !roleParams || roleParams.isNone) return null;

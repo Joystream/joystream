@@ -9,7 +9,7 @@ import { withMyAccount, MyAccountProps } from '@polkadot/joy-utils/MyAccount';
 import { useTransportContext } from '@polkadot/joy-media/TransportContext';
 import { MockTransport } from '@polkadot/joy-media/transport.mock';
 import { Button$Sizes } from '@polkadot/react-components/Button/types';
-import { SemanticShorthandItem, IconProps } from 'semantic-ui-react'
+import { SemanticShorthandItem, IconProps } from 'semantic-ui-react';
 
 type InjectedProps = {
   queueExtrinsic: QueueTxExtrinsicAdd;
@@ -18,27 +18,27 @@ type InjectedProps = {
 export type OnTxButtonClick = (sendTx: () => void) => void;
 
 type BasicButtonProps = {
-  accountId?: string,
-  type?: 'submit' | 'button',
-  size?: Button$Sizes,
-  isBasic?: boolean,
-  isPrimary?: boolean,
-  isDisabled?: boolean,
-  label?: React.ReactNode,
-  params: Array<any>,
-  tx: string,
+  accountId?: string;
+  type?: 'submit' | 'button';
+  size?: Button$Sizes;
+  isBasic?: boolean;
+  isPrimary?: boolean;
+  isDisabled?: boolean;
+  label?: React.ReactNode;
+  params: Array<any>;
+  tx: string;
 
-  className?: string,
-  style?: Record<string, string | number>,
-  children?: React.ReactNode,
-  compact?: boolean,
-  icon?: boolean | SemanticShorthandItem<IconProps>,
+  className?: string;
+  style?: Record<string, string | number>;
+  children?: React.ReactNode;
+  compact?: boolean;
+  icon?: boolean | SemanticShorthandItem<IconProps>;
 
-  onClick?: OnTxButtonClick,
-  txFailedCb?: TxFailedCallback,
-  txSuccessCb?: TxCallback,
-  txStartCb?: () => void,
-  txUpdateCb?: TxCallback
+  onClick?: OnTxButtonClick;
+  txFailedCb?: TxFailedCallback;
+  txSuccessCb?: TxCallback;
+  txStartCb?: () => void;
+  txUpdateCb?: TxCallback;
 };
 
 type PropsWithApi = BareProps & ApiProps & MyAccountProps & PartialQueueTxExtrinsic & BasicButtonProps
@@ -65,10 +65,10 @@ class TxButtonInner extends React.PureComponent<PropsWithApi & InjectedProps> {
   private send = (): void => {
     const {
       myAddress, accountId, api, params, queueExtrinsic, tx,
-      txFailedCb, txSuccessCb, txStartCb, txUpdateCb,
+      txFailedCb, txSuccessCb, txStartCb, txUpdateCb
     } = this.props;
     const origin = accountId || myAddress;
-    const [ section, method ] = tx.split('.');
+    const [section, method] = tx.split('.');
 
     assert(api.tx[section] && api.tx[section][method], `Unable to find api.tx.${section}.${method}`);
 
@@ -78,7 +78,7 @@ class TxButtonInner extends React.PureComponent<PropsWithApi & InjectedProps> {
       txFailedCb,
       txSuccessCb,
       txStartCb,
-      txUpdateCb,
+      txUpdateCb
     });
   }
 }
@@ -98,21 +98,21 @@ class TxButton extends React.PureComponent<PropsWithApi> {
   }
 }
 
-const SubstrateTxButton = withApi(withMyAccount(TxButton))
+const SubstrateTxButton = withApi(withMyAccount(TxButton));
 
 const mockSendTx = () => {
-  const msg = 'Cannot send a Substrate tx in a mock mode'
+  const msg = 'Cannot send a Substrate tx in a mock mode';
   if (typeof window !== 'undefined') {
-    window.alert(`WARN: ${msg}`)
+    window.alert(`WARN: ${msg}`);
   } else if (typeof console.warn === 'function') {
-    console.warn(msg)
+    console.warn(msg);
   } else {
-    console.log(`WARN: ${msg}`)
+    console.log(`WARN: ${msg}`);
   }
-}
+};
 
 function MockTxButton (props: BasicButtonProps) {
-  const { isPrimary = true, icon = '', onClick } = props
+  const { isPrimary = true, icon = '', onClick } = props;
 
   return (
     <Button
@@ -120,11 +120,11 @@ function MockTxButton (props: BasicButtonProps) {
       isPrimary={isPrimary}
       icon={icon as string}
       onClick={() => {
-        if (onClick) onClick(mockSendTx)
-        else mockSendTx()
+        if (onClick) onClick(mockSendTx);
+        else mockSendTx();
       }}
     />
-  )
+  );
 }
 
 function ResolvedButton (props: BasicButtonProps) {
@@ -132,7 +132,7 @@ function ResolvedButton (props: BasicButtonProps) {
 
   return isMock
     ? <MockTxButton {...props} />
-    : <SubstrateTxButton {...props} />
+    : <SubstrateTxButton {...props} />;
 }
 
-export default ResolvedButton
+export default ResolvedButton;

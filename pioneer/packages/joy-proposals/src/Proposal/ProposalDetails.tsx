@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 import Details from "./Details";
 import Body from "./Body";
@@ -51,15 +51,15 @@ type ProposalPeriodStatus = 'Voting period' | 'Grace period';
 type ProposalDisplayStatus = BasicProposalStatus | ProposalDecisionStatuses | ApprovedProposalStatuses;
 
 export type ExtendedProposalStatus = {
-  displayStatus: ProposalDisplayStatus,
-  periodStatus: ProposalPeriodStatus | null,
-  expiresIn: number | null,
-  finalizedAtBlock: number | null,
-  executedAtBlock: number | null,
-  executionFailReason: string | null
+  displayStatus: ProposalDisplayStatus;
+  periodStatus: ProposalPeriodStatus | null;
+  expiresIn: number | null;
+  finalizedAtBlock: number | null;
+  executedAtBlock: number | null;
+  executionFailReason: string | null;
 }
 
-export function getExtendedStatus(proposal: ParsedProposal, bestNumber: BlockNumber | undefined): ExtendedProposalStatus {
+export function getExtendedStatus (proposal: ParsedProposal, bestNumber: BlockNumber | undefined): ExtendedProposalStatus {
   const basicStatus = Object.keys(proposal.status)[0] as BasicProposalStatus;
   let expiresIn: number | null = null;
 
@@ -69,7 +69,7 @@ export function getExtendedStatus(proposal: ParsedProposal, bestNumber: BlockNum
   let executedAtBlock: number | null = null;
   let executionFailReason: string | null = null;
 
-  let best = bestNumber ? bestNumber.toNumber() : 0;
+  const best = bestNumber ? bestNumber.toNumber() : 0;
 
   const { votingPeriod, gracePeriod } = proposal.parameters;
   const blockAge = best - proposal.createdAtBlock;
@@ -80,24 +80,23 @@ export function getExtendedStatus(proposal: ParsedProposal, bestNumber: BlockNum
   }
 
   if (basicStatus === 'Finalized') {
-    const { finalizedAt, proposalStatus } = proposal.status['Finalized'];
+    const { finalizedAt, proposalStatus } = proposal.status.Finalized;
     const decisionStatus: ProposalDecisionStatuses = Object.keys(proposalStatus)[0] as ProposalDecisionStatuses;
     displayStatus = decisionStatus;
     finalizedAtBlock = finalizedAt as number;
     if (decisionStatus === 'Approved') {
-      const approvedStatus: ApprovedProposalStatuses = Object.keys(proposalStatus["Approved"])[0] as ApprovedProposalStatuses;
+      const approvedStatus: ApprovedProposalStatuses = Object.keys(proposalStatus.Approved)[0] as ApprovedProposalStatuses;
       if (approvedStatus === 'PendingExecution') {
         const finalizedAge = best - finalizedAt;
         periodStatus = 'Grace period';
         expiresIn = Math.max(gracePeriod - finalizedAge, 0) || null;
-      }
-      else {
+      } else {
         // Executed / ExecutionFailed
         displayStatus = approvedStatus;
         executedAtBlock = finalizedAtBlock + gracePeriod;
         if (approvedStatus === 'ExecutionFailed') {
           const executionFailedStatus = proposalStatus.Approved.ExecutionFailed as ExecutionFailedStatus;
-          executionFailReason = new Buffer(executionFailedStatus.error.toString().replace('0x', ''), 'hex').toString();
+          executionFailReason = Buffer.from(executionFailedStatus.error.toString().replace('0x', ''), 'hex').toString();
         }
       }
     }
@@ -110,19 +109,18 @@ export function getExtendedStatus(proposal: ParsedProposal, bestNumber: BlockNum
     finalizedAtBlock,
     executedAtBlock,
     executionFailReason
-  }
+  };
 }
 
-
 type ProposalDetailsProps = MyAccountProps & {
-  proposal: ParsedProposal,
-  proposalId: ProposalId,
-  votesListState: { data: ProposalVote[], error: any, loading: boolean },
-  bestNumber?: BlockNumber,
-  council?: Seat[]
+  proposal: ParsedProposal;
+  proposalId: ProposalId;
+  votesListState: { data: ProposalVote[]; error: any; loading: boolean };
+  bestNumber?: BlockNumber;
+  council?: Seat[];
 };
 
-function ProposalDetails({
+function ProposalDetails ({
   proposal,
   proposalId,
   myAddress,
@@ -180,6 +178,6 @@ export default withMulti<ProposalDetailsProps>(
   withMyAccount,
   withCalls(
     ['derive.chain.bestNumber', { propName: 'bestNumber' }],
-    ['query.council.activeCouncil', { propName: 'council' }], // TODO: Handle via transport?
+    ['query.council.activeCouncil', { propName: 'council' }] // TODO: Handle via transport?
   )
 );

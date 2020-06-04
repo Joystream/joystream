@@ -4,21 +4,21 @@ import { Labelled } from '@polkadot/react-components/index';
 
 type Props = {
   // TextArea
-  as?: any,
-  autoHeight?: boolean,
-  rows?: number | string,
-  style?: Object,
-  value?: number | string,
-  placeholder?: string,
+  as?: any;
+  autoHeight?: boolean;
+  rows?: number | string;
+  style?: Record<string, any>;
+  value?: number | string;
+  placeholder?: string;
 
   // Label
-  onChange?: (value: string) => void,
-  labelClass?: string,
+  onChange?: (value: string) => void;
+  labelClass?: string;
   labelStyle?: {
-    [index: string]: any
-  },
-  label?: string,
-  withLabel?: boolean
+    [index: string]: any;
+  };
+  label?: string;
+  withLabel?: boolean;
 };
 
 export default class Component extends React.PureComponent<Props> {
