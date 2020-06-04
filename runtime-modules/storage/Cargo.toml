@@ -1,6 +1,6 @@
 [package]
 name = 'substrate-storage-module'
-version = '1.0.0'
+version = '1.1.0'
 authors = ['Joystream contributors']
 edition = '2018'
 
@@ -18,6 +18,7 @@ std = [
 	'common/std',
 	'membership/std',
 	'roles/std',
+	'bureaucracy/std',
 ]
 
 
@@ -83,6 +84,11 @@ default_features = false
 package = 'substrate-roles-module'
 path = '../roles'
 
+[dependencies.bureaucracy]
+default_features = false
+package = 'substrate-bureaucracy-module'
+path = '../bureaucracy'
+
 [dev-dependencies.runtime-io]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
@@ -94,3 +100,23 @@ default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'srml-balances'
 rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
+
+[dev-dependencies.recurringrewards]
+default_features = false
+package = 'substrate-recurring-reward-module'
+path = '../recurring-reward'
+
+[dev-dependencies.hiring]
+default_features = false
+package = 'substrate-hiring-module'
+path = '../hiring'
+
+[dev-dependencies.stake]
+default_features = false
+package = 'substrate-stake-module'
+path = '../stake'
+
+[dev-dependencies.minting]
+default_features = false
+package = 'substrate-token-mint-module'
+path = '../token-minting'

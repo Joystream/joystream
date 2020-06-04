@@ -1,6 +1,7 @@
 // Clippy linter requirement
-#![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
-                                          // example:   NextDataObjectTypeId get(next_data_object_type_id) build(|config: &GenesisConfig<T>|
+// disable it because of the substrate lib design
+// example:   NextDataObjectTypeId get(next_data_object_type_id) build(|config: &GenesisConfig<T>|
+#![allow(clippy::redundant_closure_call)]
 
 use crate::traits;
 use codec::{Codec, Decode, Encode};
@@ -9,7 +10,7 @@ use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_event, decl_module, decl_storage, Parameter};
 use system::ensure_root;
 
-pub trait Trait: system::Trait {
+pub trait Trait: system::Trait + bureaucracy::Trait<bureaucracy::Instance2> {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type DataObjectTypeId: Parameter

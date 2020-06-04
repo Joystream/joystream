@@ -17,6 +17,11 @@ pub use sr_primitives::{
 
 use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
 
+mod bureaucracy_mod {
+    pub use bureaucracy::Event;
+    pub use bureaucracy::Instance2;
+}
+
 impl_outer_origin! {
     pub enum Origin for Test {}
 }
@@ -29,6 +34,7 @@ impl_outer_event! {
         actors<T>,
         balances<T>,
         members<T>,
+        bureaucracy_mod Instance2 <T>,
     }
 }
 
@@ -139,6 +145,7 @@ parameter_types! {
     pub const TransactionBaseFee: u32 = 1;
     pub const TransactionByteFee: u32 = 0;
     pub const InitialMembersBalance: u32 = 2000;
+    pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
 impl balances::Trait for Test {
@@ -160,6 +167,10 @@ impl balances::Trait for Test {
 
 impl GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
+}
+
+impl bureaucracy::Trait<bureaucracy::Instance2> for Test {
+    type Event = MetaEvent;
 }
 
 impl data_object_type_registry::Trait for Test {
@@ -189,6 +200,32 @@ impl members::Trait for Test {
     type PaidTermId = u32;
     type ActorId = u32;
     type InitialMembersBalance = InitialMembersBalance;
+}
+
+impl stake::Trait for Test {
+    type Currency = Balances;
+    type StakePoolId = StakePoolId;
+    type StakingEventsHandler = ();
+    type StakeId = u64;
+    type SlashId = u64;
+}
+
+impl minting::Trait for Test {
+    type Currency = Balances;
+    type MintId = u64;
+}
+
+impl recurringrewards::Trait for Test {
+    type PayoutStatusHandler = ();
+    type RecipientId = u64;
+    type RewardRelationshipId = u64;
+}
+
+impl hiring::Trait for Test {
+    type OpeningId = u64;
+    type ApplicationId = u64;
+    type ApplicationDeactivatedHandler = ();
+    type StakeHandlerProvider = hiring::Module<Self>;
 }
 
 impl actors::Trait for Test {
@@ -263,11 +300,11 @@ impl ExtBuilder {
     }
 }
 
+pub type Balances = balances::Module<Test>;
 pub type System = system::Module<Test>;
 pub type TestDataObjectTypeRegistry = data_object_type_registry::Module<Test>;
 pub type TestDataObjectType = data_object_type_registry::DataObjectType;
 pub type TestDataDirectory = data_directory::Module<Test>;
-// pub type TestDataObject = data_directory::DataObject<Test>;
 pub type TestDataObjectStorageRegistry = data_object_storage_registry::Module<Test>;
 pub type TestActors = actors::Module<Test>;
 

@@ -1,6 +1,7 @@
 // Clippy linter requirement
-#![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
-                                          // example:  pub NextRelationshipId get(next_relationship_id) build(|config: &GenesisConfig<T>|
+// disable it because of the substrate lib design
+// example:  pub NextRelationshipId get(next_relationship_id) build(|config: &GenesisConfig<T>|
+#![allow(clippy::redundant_closure_call)]
 
 use crate::data_directory::Trait as DDTrait;
 use crate::traits::{ContentHasStorage, ContentIdExists};

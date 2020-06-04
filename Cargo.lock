@@ -1614,7 +1614,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "6.14.0"
+version = "6.15.0"
 dependencies = [
  "parity-scale-codec",
  "safe-mix",
@@ -5443,7 +5443,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-storage-module"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "parity-scale-codec",
  "serde",
@@ -5454,10 +5454,15 @@ dependencies = [
  "srml-support",
  "srml-system",
  "srml-timestamp",
+ "substrate-bureaucracy-module",
  "substrate-common-module",
+ "substrate-hiring-module",
  "substrate-membership-module",
  "substrate-primitives",
+ "substrate-recurring-reward-module",
  "substrate-roles-module",
+ "substrate-stake-module",
+ "substrate-token-mint-module",
 ]
 
 [[package]]

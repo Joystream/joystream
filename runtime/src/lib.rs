@@ -142,7 +142,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 6,
-    spec_version: 14,
+    spec_version: 15,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
 };
@@ -814,6 +814,11 @@ impl bureaucracy::Trait<bureaucracy::Instance1> for Runtime {
     type Event = Event;
 }
 
+// Storage working group bureaucracy
+impl bureaucracy::Trait<bureaucracy::Instance2> for Runtime {
+    type Event = Event;
+}
+
 impl actors::Trait for Runtime {
     type Event = Event;
     type OnActorRemoved = HandleActorRemoved;
@@ -935,8 +940,9 @@ construct_runtime!(
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Module, Call, Storage, Error, Config<T>},
-        // ---
+        // --- Bureaucracy
         ForumBureaucracy: bureaucracy::<Instance1>::{Module, Call, Storage, Event<T>},
+        StorageBureaucracy: bureaucracy::<Instance2>::{Module, Call, Storage, Event<T>},
     }
 );
 
