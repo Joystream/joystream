@@ -6,4 +6,4 @@ pub mod data_object_storage_registry;
 pub mod data_object_type_registry;
 pub mod traits;
 
-mod mock;
+mod tests;

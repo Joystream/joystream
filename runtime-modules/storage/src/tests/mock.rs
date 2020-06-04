@@ -1,7 +1,7 @@
 #![cfg(test)]
 
-pub use super::{data_directory, data_object_storage_registry, data_object_type_registry};
 use crate::traits;
+pub use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
 pub use common::currency::GovernanceCurrency;
 use membership::members;
 use roles::actors;
