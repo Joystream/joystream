@@ -1,16 +1,16 @@
-import React from "react";
+import React from 'react';
 
-import { History } from "history";
-import { Item, Icon, Button, Label } from "semantic-ui-react";
+import { History } from 'history';
+import { Item, Icon, Button, Label } from 'semantic-ui-react';
 
-import { Category } from "./ChooseProposalType";
-import { ProposalType } from "@polkadot/joy-utils/types/proposals";
+import { Category } from './ChooseProposalType';
+import { ProposalType } from '@polkadot/joy-utils/types/proposals';
 import _ from 'lodash';
 import styled from 'styled-components';
 import useVoteStyles from './useVoteStyles';
-import { formatBalance } from "@polkadot/util";
+import { formatBalance } from '@polkadot/util';
 
-import "./ProposalType.css";
+import './ProposalType.css';
 
 const QuorumsAndThresholds = styled.div`
   display: grid;
@@ -62,14 +62,14 @@ type ProposalTypePreviewProps = {
   history: History;
 };
 
-const ProposalTypeDetail = (props: { title: string, value: string }) => (
+const ProposalTypeDetail = (props: { title: string; value: string }) => (
   <div className="proposal-detail">
     <div className="detail-title">{ `${props.title}:` }</div>
     <div className="detail-value">{ props.value }</div>
   </div>
 );
 
-export default function ProposalTypePreview(props: ProposalTypePreviewProps) {
+export default function ProposalTypePreview (props: ProposalTypePreviewProps) {
   const {
     typeInfo: {
       type,
@@ -105,36 +105,36 @@ export default function ProposalTypePreview(props: ProposalTypePreviewProps) {
             value={ formatBalance(stake) } />
           <ProposalTypeDetail
             title="Cancellation fee"
-            value={ cancellationFee ? formatBalance(cancellationFee) : "NONE" } />
+            value={ cancellationFee ? formatBalance(cancellationFee) : 'NONE' } />
           <ProposalTypeDetail
             title="Grace period"
-            value={ gracePeriod ? `${gracePeriod} block${gracePeriod > 1 ? "s" : ""}` : "NONE" } />
+            value={ gracePeriod ? `${gracePeriod} block${gracePeriod > 1 ? 's' : ''}` : 'NONE' } />
           <ProposalTypeDetail
             title="Voting period"
-            value={ votingPeriod ? `${votingPeriod} block${votingPeriod > 1 ? "s" : ""}` : "NONE" } />
+            value={ votingPeriod ? `${votingPeriod} block${votingPeriod > 1 ? 's' : ''}` : 'NONE' } />
         </div>
         <QuorumsAndThresholds>
           { approvalQuorum && (
-            <QuorumThresholdLabel color={ useVoteStyles("Approve").color }>
-              <Icon name={ useVoteStyles("Approve").icon } />
+            <QuorumThresholdLabel color={ useVoteStyles('Approve').color }>
+              <Icon name={ useVoteStyles('Approve').icon } />
               Approval Quorum: <b>{ approvalQuorum }%</b>
             </QuorumThresholdLabel>
           ) }
           { approvalThreshold && (
-            <QuorumThresholdLabel color={ useVoteStyles("Approve").color }>
-              <Icon name={ useVoteStyles("Approve").icon } />
+            <QuorumThresholdLabel color={ useVoteStyles('Approve').color }>
+              <Icon name={ useVoteStyles('Approve').icon } />
               Approval Threshold: <b>{ approvalThreshold }%</b>
             </QuorumThresholdLabel>
           ) }
           { slashingQuorum && (
-            <QuorumThresholdLabel color={ useVoteStyles("Slash").color }>
-              <Icon name={ useVoteStyles("Slash").icon } />
+            <QuorumThresholdLabel color={ useVoteStyles('Slash').color }>
+              <Icon name={ useVoteStyles('Slash').icon } />
               Slashing Quorum: <b>{ slashingQuorum }%</b>
             </QuorumThresholdLabel>
           ) }
           { slashingThreshold && (
-            <QuorumThresholdLabel color={ useVoteStyles("Slash").color }>
-              <Icon name={ useVoteStyles("Slash").icon } />
+            <QuorumThresholdLabel color={ useVoteStyles('Slash').color }>
+              <Icon name={ useVoteStyles('Slash').icon } />
               Slashing Threshold: <b>{ slashingThreshold }%</b>
             </QuorumThresholdLabel>
           ) }

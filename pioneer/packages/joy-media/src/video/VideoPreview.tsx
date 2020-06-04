@@ -8,41 +8,41 @@ import { isAccountAChannelOwner } from '../channels/ChannelHelpers';
 import { ChannelAvatarAndName } from '../channels/ChannelAvatarAndName';
 
 export type VideoPreviewProps = {
-  id: number,
-  title: string,
-  thumbnail: string,
+  id: number;
+  title: string;
+  thumbnail: string;
 
-  channel?: ChannelEntity,
-  withChannel?: boolean,
+  channel?: ChannelEntity;
+  withChannel?: boolean;
 
   // Preview-specific props:
-  size?: 'normal' | 'small',
-  orientation?: 'vertical' | 'horizontal',
+  size?: 'normal' | 'small';
+  orientation?: 'vertical' | 'horizontal';
 };
 
 export function VideoPreview (props: VideoPreviewProps) {
   const { myAccountId } = useMyMembership();
   const { id, channel, withChannel = false, title, size = 'normal', orientation = 'vertical' } = props;
 
-  let width: number = 210;
-  let height: number = 118;
+  let width = 210;
+  let height = 118;
 
   if (size === 'small') {
     width = 168;
     height = 94;
   }
-  
-  let descStyle: CSSProperties = {
+
+  const descStyle: CSSProperties = {
     maxWidth: orientation === 'vertical'
       ? width
       : width * 1.5
   };
 
-  const playbackUrl = `/media/videos/${id}`
-  const iAmOwner = isAccountAChannelOwner(channel, myAccountId)
+  const playbackUrl = `/media/videos/${id}`;
+  const iAmOwner = isAccountAChannelOwner(channel, myAccountId);
 
   return (
-    <div className={`JoyMusicAlbumPreview ` + orientation}>
+    <div className={'JoyMusicAlbumPreview ' + orientation}>
 
       <Link to={playbackUrl}>
         <BgImg
@@ -52,7 +52,7 @@ export function VideoPreview (props: VideoPreviewProps) {
           height={height}
         />
       </Link>
-      
+
       <div className='AlbumDescription' style={descStyle}>
 
         <Link to={playbackUrl}>
@@ -76,10 +76,10 @@ export function VideoPreview (props: VideoPreviewProps) {
   );
 }
 
-export function toVideoPreviews(items: VideoType[]): VideoPreviewProps[] {
+export function toVideoPreviews (items: VideoType[]): VideoPreviewProps[] {
   return items.map(x => ({
     id: x.id,
     title: x.title,
-    thumbnail: x.thumbnail,
+    thumbnail: x.thumbnail
   }));
 }

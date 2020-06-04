@@ -2,14 +2,15 @@ import React from 'react';
 import { withMulti } from '@polkadot/react-api/with';
 import { InputValidationLengthConstraint } from '@joystream/types/forum';
 import { withForumCalls } from './calls';
+import { componentName } from '@polkadot/joy-utils/react/helpers';
 
 export type ValidationProps = {
-  categoryTitleConstraint?: InputValidationLengthConstraint,
-  categoryDescriptionConstraint?: InputValidationLengthConstraint,
-  threadTitleConstraint?: InputValidationLengthConstraint,
-  postTextConstraint?: InputValidationLengthConstraint,
-  threadModerationRationaleConstraint?: InputValidationLengthConstraint,
-  postModerationRationaleConstraint?: InputValidationLengthConstraint
+  categoryTitleConstraint?: InputValidationLengthConstraint;
+  categoryDescriptionConstraint?: InputValidationLengthConstraint;
+  threadTitleConstraint?: InputValidationLengthConstraint;
+  postTextConstraint?: InputValidationLengthConstraint;
+  threadModerationRationaleConstraint?: InputValidationLengthConstraint;
+  postModerationRationaleConstraint?: InputValidationLengthConstraint;
 };
 
 const loadAllValidationConstraints = withForumCalls<ValidationProps>(
@@ -25,8 +26,8 @@ function waitForRequiredConstraints (
   requiredConstraintNames: Array<keyof ValidationProps>
 ) {
   return function (Component: React.ComponentType<any>) {
-    return function (props: ValidationProps) {
-      let nonEmptyProps = requiredConstraintNames
+    const ResultComponent: React.FunctionComponent<ValidationProps> = (props: ValidationProps) => {
+      const nonEmptyProps = requiredConstraintNames
         .filter(name => props[name] !== undefined)
         .length;
       if (nonEmptyProps !== requiredConstraintNames.length) {
@@ -34,6 +35,8 @@ function waitForRequiredConstraints (
       }
       return <Component {...props} />;
     };
+    ResultComponent.displayName = `waitForRequiredConstraints(${componentName(Component)})`;
+    return ResultComponent;
   };
 }
 

@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import './index.css';
 
 type Props = {
-  md: string
+  md: string;
 };
 
 export default class Page extends React.PureComponent<Props> {

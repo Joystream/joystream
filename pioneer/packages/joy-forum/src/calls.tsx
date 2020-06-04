@@ -19,7 +19,6 @@ const storage: StorageType = 'substrate';
 type EntityMapName = 'categoryById' | 'threadById' | 'replyById';
 
 const getReactValue = (state: ForumState, endpoint: string, paramValue: any): any => {
-
   const getEntityById = (mapName: EntityMapName, constructor: Constructor): any => {
     const id = (paramValue as u64).toNumber();
     const entity = state[mapName].get(id);
@@ -37,10 +36,9 @@ const getReactValue = (state: ForumState, endpoint: string, paramValue: any): an
 
 function withReactCall<P extends ApiProps> (endpoint: string, { paramName, propName }: Options = {}): (Inner: React.ComponentType<ApiProps>) => React.ComponentType<any> {
   return (Inner: React.ComponentType<ApiProps>): React.ComponentType<SubtractProps<P, ApiProps>> => {
-
     const SetProp = (props: P) => {
       const { state } = useForum();
-      const paramValue = paramName ? (props as any)[paramName] as any : undefined;
+      const paramValue = paramName ? (props as any)[paramName] : undefined;
       const propValue = getReactValue(state, endpoint, paramValue);
       const _propName = propName || endpoint;
       const _props = {

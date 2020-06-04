@@ -40,7 +40,7 @@ type Subtitle = {
 const disabledLog: Map<string, string> = new Map();
 const TOOLTIP_OFFSET = { right: -4 };
 
-function logDisabled(route: string, message: string): void {
+function logDisabled (route: string, message: string): void {
   if (!disabledLog.get(route)) {
     disabledLog.set(route, message);
 
@@ -48,7 +48,7 @@ function logDisabled(route: string, message: string): void {
   }
 }
 
-function hasEndpoint(api: ApiPromise, endpoint: string): boolean {
+function hasEndpoint (api: ApiPromise, endpoint: string): boolean {
   const [area, section, method] = endpoint.split('.');
 
   try {
@@ -58,7 +58,7 @@ function hasEndpoint(api: ApiPromise, endpoint: string): boolean {
   }
 }
 
-function checkVisible(
+function checkVisible (
   name: string,
   { api, isApiReady, isApiConnected }: ApiProps,
   hasAccounts: boolean,
@@ -93,7 +93,7 @@ function checkVisible(
   return notFound.length === 0;
 }
 
-function Item({
+function Item ({
   allAccounts,
   route: { Modal, display, i18n, icon, name },
   t,

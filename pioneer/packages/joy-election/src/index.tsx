@@ -22,15 +22,14 @@ import { Seat } from '@joystream/types/';
 
 // define out internal types
 type Props = AppProps & ApiProps & I18nProps & {
-  activeCouncil?: Seat[],
-  applicants?: AccountId[],
-  commitments?: Hash[]
+  activeCouncil?: Seat[];
+  applicants?: AccountId[];
+  commitments?: Hash[];
 };
 
 type State = {};
 
 class App extends React.PureComponent<Props, State> {
-
   state: State = {};
 
   private buildTabs (): TabItem[] {
@@ -43,15 +42,15 @@ class App extends React.PureComponent<Props, State> {
       },
       {
         name: 'members',
-        text: t(`Council members`) + ` (${activeCouncil.length})`
+        text: t('Council members') + ` (${activeCouncil.length})`
       },
       {
         name: 'applicants',
-        text: t(`Applicants`) + ` (${applicants.length})`
+        text: t('Applicants') + ` (${applicants.length})`
       },
       {
         name: 'votes',
-        text: t(`Votes`) + ` (${commitments.length})`
+        text: t('Votes') + ` (${commitments.length})`
       },
       {
         name: 'reveals',

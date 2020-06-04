@@ -1,6 +1,6 @@
-import React from "react";
-import * as Yup from "yup";
-import { getFormErrorLabelsProps } from "./errorHandling";
+import React from 'react';
+import * as Yup from 'yup';
+import { getFormErrorLabelsProps } from './errorHandling';
 import {
   GenericProposalForm,
   GenericFormValues,
@@ -10,13 +10,13 @@ import {
   ProposalFormExportProps,
   ProposalFormContainerProps,
   ProposalFormInnerProps
-} from "./GenericProposalForm";
-import Validation from "../validationSchema";
-import { InputFormField } from "./FormFields";
-import { withFormContainer } from "./FormContainer";
-import { ProposalType } from "@polkadot/joy-utils/types/proposals";
-import { formatBalance } from "@polkadot/util";
-import "./forms.css";
+} from './GenericProposalForm';
+import Validation from '../validationSchema';
+import { InputFormField } from './FormFields';
+import { withFormContainer } from './FormContainer';
+import { ProposalType } from '@polkadot/joy-utils/types/proposals';
+import { formatBalance } from '@polkadot/util';
+import './forms.css';
 
 type FormValues = GenericFormValues & {
   capacity: string;
@@ -24,10 +24,10 @@ type FormValues = GenericFormValues & {
 
 const defaultValues: FormValues = {
   ...genericFormDefaultValues,
-  capacity: ""
+  capacity: ''
 };
 
-type MintCapacityGroup = "Council" | "Content Working Group";
+type MintCapacityGroup = 'Council' | 'Content Working Group';
 
 // Aditional props coming all the way from export comonent into the inner form.
 type FormAdditionalProps = {
@@ -47,7 +47,7 @@ const MintCapacityForm: React.FunctionComponent<FormInnerProps> = props => {
       {...props}
       txMethod={txMethod}
       proposalType={proposalType}
-      submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", values.capacity]}
+      submitParams={[props.myMemberId, values.title, values.rationale, '{STAKE}', values.capacity]}
     >
       <InputFormField
         error={errorLabelsProps.capacity}
@@ -73,7 +73,7 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     capacity: Validation.SetContentWorkingGroupMintCapacity.mintCapacity
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
-  displayName: "MintCapacityForm"
+  displayName: 'MintCapacityForm'
 })(MintCapacityForm);
 
 export default withProposalFormData<FormContainerProps, ExportComponentProps>(FormContainer);

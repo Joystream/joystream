@@ -1,5 +1,5 @@
-import React from "react";
-import { Form, FormInputProps, FormTextAreaProps } from "semantic-ui-react";
+import React from 'react';
+import { Form, FormInputProps, FormTextAreaProps } from 'semantic-ui-react';
 import LabelWithHelp from './LabelWithHelp';
 
 /*
@@ -11,30 +11,30 @@ import LabelWithHelp from './LabelWithHelp';
 */
 
 type InputFormFieldProps = FormInputProps & {
-  help?: string,
-  unit?: string
+  help?: string;
+  unit?: string;
 };
 
-export function InputFormField(props:InputFormFieldProps) {
+export function InputFormField (props: InputFormFieldProps) {
   const { unit } = props;
   const fieldProps = { ...props, label: undefined };
   return (
     <FormField {...props}>
       <Form.Input
         {...fieldProps}
-        style={ unit ? { display: "flex", alignItems: "center" } : undefined }>
-          <input />
-          { unit && <div style={{ margin: "0 0 0 1rem" }}>{unit}</div> }
+        style={ unit ? { display: 'flex', alignItems: 'center' } : undefined }>
+        <input />
+        { unit && <div style={{ margin: '0 0 0 1rem' }}>{unit}</div> }
       </Form.Input>
     </FormField>
   );
 }
 
 type TextareaFormFieldProps = FormTextAreaProps & {
-  help?: string,
+  help?: string;
 };
 
-export function TextareaFormField(props:TextareaFormFieldProps) {
+export function TextareaFormField (props: TextareaFormFieldProps) {
   const fieldProps = { ...props, label: undefined };
   return (
     <FormField {...props}>
@@ -45,13 +45,13 @@ export function TextareaFormField(props:TextareaFormFieldProps) {
 
 type FormFieldProps = InputFormFieldProps | TextareaFormFieldProps;
 
-export function FormField(props: React.PropsWithChildren<FormFieldProps>) {
+export function FormField (props: React.PropsWithChildren<FormFieldProps>) {
   const { error, label, help, children } = props;
   return (
     <Form.Field error={Boolean(error)}>
-      { (label && help) ?
-        <LabelWithHelp text={ label.toString() } help={ help }/>
-        : ( label ? <label>{ label.toString() }</label> : null )
+      { (label && help)
+        ? <LabelWithHelp text={ label.toString() } help={ help }/>
+        : (label ? <label>{ label.toString() }</label> : null)
       }
       { children }
     </Form.Field>

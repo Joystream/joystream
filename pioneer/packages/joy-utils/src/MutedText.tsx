@@ -1,9 +1,9 @@
 import React from 'react';
 
 type Props = React.PropsWithChildren<{
-  smaller?: boolean
-  className?: string,
-  style?: React.CSSProperties
+  smaller?: boolean;
+  className?: string;
+  style?: React.CSSProperties;
 }>;
 
 function getClassNames (props: Props): string {

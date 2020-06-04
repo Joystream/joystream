@@ -32,7 +32,7 @@ const renderMemo = (accId: string) => {
 export const Component = (_props: Props) => {
   return (<>
     <div style={{ marginBottom: '1rem' }}>
-      Visit our <a href='https://github.com/Joystream/helpdesk' target='_blank'>helpdesk</a>{' '}
+      Visit our <a href='https://github.com/Joystream/helpdesk' target='_blank' rel="noopener noreferrer">helpdesk</a>{' '}
       for instructions and guides to get started!
     </div>
     <Grid divided='vertically'>

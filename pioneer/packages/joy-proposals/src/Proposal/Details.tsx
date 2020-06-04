@@ -1,21 +1,21 @@
-import React from "react";
-import { Item, Header } from "semantic-ui-react";
-import { ParsedProposal } from "@polkadot/joy-utils/types/proposals";
-import { ExtendedProposalStatus } from "./ProposalDetails";
+import React from 'react';
+import { Item, Header } from 'semantic-ui-react';
+import { ParsedProposal } from '@polkadot/joy-utils/types/proposals';
+import { ExtendedProposalStatus } from './ProposalDetails';
 import styled from 'styled-components';
 
-import ProfilePreview from "@polkadot/joy-utils/MemberProfilePreview";
+import ProfilePreview from '@polkadot/joy-utils/MemberProfilePreview';
 
 const BlockInfo = styled.div`
   font-size: 0.9em;
 `;
 
 type DetailProps = {
-  name: string,
-  value?: string
+  name: string;
+  value?: string;
 };
 
-const Detail: React.FunctionComponent<DetailProps> = ({name, value, children}) => (
+const Detail: React.FunctionComponent<DetailProps> = ({ name, value, children }) => (
   <Item>
     <Item.Content>
       <Item.Extra>{ name }:</Item.Extra>
@@ -31,7 +31,7 @@ type DetailsProps = {
   proposerLink?: boolean;
 };
 
-export default function Details({ proposal, extendedStatus, proposerLink = false }: DetailsProps) {
+export default function Details ({ proposal, extendedStatus, proposerLink = false }: DetailsProps) {
   const { type, createdAt, createdAtBlock, proposer } = proposal;
   const { displayStatus, periodStatus, expiresIn, finalizedAtBlock, executedAtBlock, executionFailReason } = extendedStatus;
   console.log(proposal);
@@ -44,7 +44,7 @@ export default function Details({ proposal, extendedStatus, proposerLink = false
           handle={proposer.handle}
           link={ proposerLink }
         />
-        <Item.Extra>{ `${ createdAt.toLocaleString() }` }</Item.Extra>
+        <Item.Extra>{ `${createdAt.toLocaleString()}` }</Item.Extra>
       </Detail>
       <Detail name="Proposal type" value={type} />
       <Detail name="Stage" value={displayStatus}>
@@ -53,7 +53,7 @@ export default function Details({ proposal, extendedStatus, proposerLink = false
           { finalizedAtBlock && <BlockInfo>Finalized at block <b>#{ finalizedAtBlock }</b></BlockInfo> }
           { executedAtBlock && (
             <BlockInfo>
-              { displayStatus === "ExecutionFailed" ? 'Execution failed at' : 'Executed at' } block
+              { displayStatus === 'ExecutionFailed' ? 'Execution failed at' : 'Executed at' } block
               <b> #{ executedAtBlock }</b>
             </BlockInfo>
           ) }
@@ -63,7 +63,7 @@ export default function Details({ proposal, extendedStatus, proposerLink = false
       {expiresIn !== null && (
         <Detail
           name={ periodStatus === 'Grace period' ? 'Executes in' : 'Expires in' }
-          value={`${expiresIn.toLocaleString("en-US")} blocks`} />
+          value={`${expiresIn.toLocaleString('en-US')} blocks`} />
       ) }
       {executionFailReason && <Detail name="Execution error" value={ executionFailReason } /> }
     </Item.Group>

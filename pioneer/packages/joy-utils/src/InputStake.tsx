@@ -4,10 +4,10 @@ import { InputBalance, Bubble } from '@polkadot/react-components/index';
 import { formatBalance } from '@polkadot/util';
 
 type Props = {
-  label?: string,
-  min?: BN,
-  isValid?: boolean,
-  onChange: (stake?: BN) => void
+  label?: string;
+  min?: BN;
+  isValid?: boolean;
+  onChange: (stake?: BN) => void;
 };
 
 export default class Component extends React.PureComponent<Props> {

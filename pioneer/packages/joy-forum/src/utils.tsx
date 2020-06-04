@@ -10,10 +10,10 @@ export const ThreadsPerPage = 10;
 export const RepliesPerPage = 10;
 
 type PaginationProps = {
-  currentPage?: number,
-  totalItems: number,
-  itemsPerPage?: number,
-  onPageChange: (activePage?: string | number) => void
+  currentPage?: number;
+  totalItems: number;
+  itemsPerPage?: number;
+  onPageChange: (activePage?: string | number) => void;
 };
 
 export const Pagination = (p: PaginationProps) => {
@@ -32,18 +32,11 @@ export const Pagination = (p: PaginationProps) => {
 };
 
 type CategoryCrumbsProps = {
-  categoryId?: CategoryId
-  category?: Category
-  threadId?: ThreadId
-  thread?: Thread
+  categoryId?: CategoryId;
+  category?: Category;
+  threadId?: ThreadId;
+  thread?: Thread;
 };
-
-const CategoryCrumb = withMulti(
-  InnerCategoryCrumb,
-  withForumCalls<CategoryCrumbsProps>(
-    ['categoryById', { propName: 'category', paramName: 'categoryId' }]
-  )
-);
 
 function InnerCategoryCrumb (p: CategoryCrumbsProps) {
   const { category } = p;
@@ -64,10 +57,10 @@ function InnerCategoryCrumb (p: CategoryCrumbsProps) {
   return null;
 }
 
-const ThreadCrumb = withMulti(
-  InnerThreadCrumb,
+const CategoryCrumb = withMulti(
+  InnerCategoryCrumb,
   withForumCalls<CategoryCrumbsProps>(
-    ['threadById', { propName: 'thread', paramName: 'threadId' }]
+    ['categoryById', { propName: 'category', paramName: 'categoryId' }]
   )
 );
 
@@ -90,6 +83,13 @@ function InnerThreadCrumb (p: CategoryCrumbsProps) {
   return null;
 }
 
+const ThreadCrumb = withMulti(
+  InnerThreadCrumb,
+  withForumCalls<CategoryCrumbsProps>(
+    ['threadById', { propName: 'thread', paramName: 'threadId' }]
+  )
+);
+
 export const CategoryCrumbs = (p: CategoryCrumbsProps) => {
   return (
     <div className='ui breadcrumb'>
@@ -108,7 +108,7 @@ export const CategoryCrumbs = (p: CategoryCrumbsProps) => {
 export type UrlHasIdProps = {
   match: {
     params: {
-      id: string
-    }
-  }
+      id: string;
+    };
+  };
 };

@@ -1,52 +1,52 @@
 // @ts-nocheck
-import React from 'react'
-import { boolean, number, text, withKnobs } from '@storybook/addon-knobs'
+import React from 'react';
+import { boolean, number, text, withKnobs } from '@storybook/addon-knobs';
 import { Table } from 'semantic-ui-react';
 
-import { u128, Text } from '@polkadot/types'
+import { u128, Text } from '@polkadot/types';
 
-import { Actor } from '@joystream/types/roles'
+import { Actor } from '@joystream/types/roles';
 
-import { BalanceView, GroupMemberView, HandleView, MemberView, MemoView } from './elements'
+import { BalanceView, GroupMemberView, HandleView, MemberView, MemoView } from './elements';
 
-import 'semantic-ui-css/semantic.min.css'
-import '@polkadot/joy-roles/index.sass'
+import 'semantic-ui-css/semantic.min.css';
+import '@polkadot/joy-roles/index.sass';
 
 export default {
   title: 'Roles / Elements',
-  decorators: [withKnobs],
-}
+  decorators: [withKnobs]
+};
 
 export const Balance = () => {
   return (
     <BalanceView balance={new u128(number('Balance', 10))} />
-  )
-}
+  );
+};
 
 export const Memo = () => {
-  const actor = new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' })
-  const memo = new Text(text("Memo text", "This is a memo"))
+  const actor = new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' });
+  const memo = new Text(text('Memo text', 'This is a memo'));
 
   return (
     <MemoView actor={actor} memo={memo} />
-  )
-}
+  );
+};
 
 export const Handle = () => {
   const profile = {
-    handle: new Text(text("Handle", "benholdencrowther")),
-  }
+    handle: new Text(text('Handle', 'benholdencrowther'))
+  };
 
   return (
     <HandleView profile={profile} />
-  )
-}
+  );
+};
 
 export const Member = () => {
-  const actor = new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' })
+  const actor = new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' });
   const profile = {
-    handle: new Text(text("Handle", "benholdencrowther")),
-  }
+    handle: new Text(text('Handle', 'benholdencrowther'))
+  };
 
   return (
     <Table basic='very'>
@@ -62,14 +62,14 @@ export const Member = () => {
         </Table.Row>
       </Table.Body>
     </Table>
-  )
-}
+  );
+};
 
 export const GroupMember = () => {
-  const actor = new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' })
+  const actor = new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' });
   const profile = {
-    handle: new Text(text("Handle", "benholdencrowther")),
-  }
+    handle: new Text(text('Handle', 'benholdencrowther'))
+  };
 
   return (
     <GroupMemberView
@@ -80,6 +80,5 @@ export const GroupMember = () => {
       stake={new u128(number('Stake', 10))}
       earned={new u128(number('Earned', 10))}
     />
-  )
-}
-
+  );
+};

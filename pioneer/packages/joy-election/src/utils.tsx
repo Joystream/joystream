@@ -1,19 +1,26 @@
 import { AccountId } from '@polkadot/types/interfaces';
 
-export type HashedVote = {
-  applicantId: string,
-  salt: string,
-  hash: string
-};
-
 // Keyring / identicon / address
 // -----------------------------------
 
 import createItem from '@polkadot/ui-keyring/options/item';
 import { findNameByAddress } from '@polkadot/joy-utils/index';
 
+// Hash
+// -----------------------------------
+
+import { decodeAddress } from '@polkadot/keyring';
+import { stringToU8a } from '@polkadot/util';
+import { blake2AsHex } from '@polkadot/util-crypto';
+
+export type HashedVote = {
+  applicantId: string;
+  salt: string;
+  hash: string;
+};
+
 const createAddressOption = (address: string) => {
-  let name = findNameByAddress(address);
+  const name = findNameByAddress(address);
   return createItem(address, name);
 };
 
@@ -26,13 +33,6 @@ export const accountIdsToOptions = (applicants: Array<AccountId>): any => {
   }
   return [];
 };
-
-// Hash
-// -----------------------------------
-
-import { decodeAddress } from '@polkadot/keyring';
-import { stringToU8a } from '@polkadot/util';
-import { blake2AsHex } from '@polkadot/util-crypto';
 
 /** hash(accountId + salt) */
 export const hashVote = (accountId?: string | null, salt?: string): string | null => {

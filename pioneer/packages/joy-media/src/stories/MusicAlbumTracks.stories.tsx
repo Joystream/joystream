@@ -10,21 +10,21 @@ import { EditMusicAlbumView } from '../music/EditMusicAlbum.view';
 import EntityId from '@joystream/types/versioned-store/EntityId';
 
 export default {
-	title: 'Media | My music tracks',
-	decorators: [ withMockTransport ],
+  title: 'Media | My music tracks',
+  decorators: [withMockTransport]
 };
 
 export const DefaultState = () =>
-	<EditForm />;
+  <EditForm />;
 
 export const MockEditAlbumView = () =>
-	<EditMusicAlbumView
-		id={new EntityId(1)}
-		tracks={albumTracks}
-	/>;
+  <EditMusicAlbumView
+    id={new EntityId(1)}
+    tracks={albumTracks}
+  />;
 
 export const MyMusicTracksStory = () =>
-	<MyMusicTracks
-		albums={MusicAlbumSamples}
-		tracks={AllMusicTrackSamples}
-	/>;
+  <MyMusicTracks
+    albums={MusicAlbumSamples}
+    tracks={AllMusicTrackSamples}
+  />;

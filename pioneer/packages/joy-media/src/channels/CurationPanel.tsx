@@ -7,7 +7,7 @@ import { ChannelCurationStatus } from '@joystream/types/content-working-group';
 import { AccountId } from '@polkadot/types/interfaces';
 
 type ChannelCurationPanelProps = {
-  channel: ChannelEntity
+  channel: ChannelEntity;
 };
 
 export const CurationPanel = (props: ChannelCurationPanelProps) => {
@@ -16,18 +16,18 @@ export const CurationPanel = (props: ChannelCurationPanelProps) => {
 
   const canUseAccount = (account: AccountId) => {
     if (!allAccounts || !Object.keys(allAccounts).length) {
-      return false
+      return false;
     }
 
     const ix = Object.keys(allAccounts).findIndex((key) => {
-      return account.eq(allAccounts[key].json.address)
+      return account.eq(allAccounts[key].json.address);
     });
 
-    return ix != -1
-  }
+    return ix !== -1;
+  };
 
   const renderToggleCensorshipButton = () => {
-    if (!curationActor) { return null }
+    if (!curationActor) { return null; }
 
     const [curation_actor, role_account] = curationActor;
     const accountAvailable = canUseAccount(role_account);
@@ -52,11 +52,11 @@ export const CurationPanel = (props: ChannelCurationPanelProps) => {
         new_curation_status // toggled curation status
       ]}
       tx={'contentWorkingGroup.updateChannelAsCurationActor'}
-    />
-  }
+    />;
+  };
 
   const renderToggleVerifiedButton = () => {
-    if (!curationActor) { return null }
+    if (!curationActor) { return null; }
 
     const [curation_actor, role_account] = curationActor;
     const accountAvailable = canUseAccount(role_account);
@@ -76,13 +76,13 @@ export const CurationPanel = (props: ChannelCurationPanelProps) => {
         null // not changing curation status
       ]}
       tx={'contentWorkingGroup.updateChannelAsCurationActor'}
-    />
-  }
+    />;
+  };
 
   return <>
     <div style={{ float: 'right' }}>
-    {renderToggleCensorshipButton()}
-    {renderToggleVerifiedButton()}
+      {renderToggleCensorshipButton()}
+      {renderToggleVerifiedButton()}
     </div>
-  </>
-}
+  </>;
+};

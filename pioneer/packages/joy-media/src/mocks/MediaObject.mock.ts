@@ -8,10 +8,10 @@ const values = [
   '5GTXWLWgfCM6GpsBkeJQZvF6RFvZh3SjCsH8aGUY1WwV5YGU',
   '5CSBeDZR5baBcnLYZsP839P1uqZKfz3D9Uip43uvhUd56XAq',
   '5EXsnf4sS6wVsgjqQmT2jchP2LdGXLxZZSJijjTiUxcLm7Vg',
-  '5HRieqw8oRZfwc6paio4TrBeYvmdTstGB2KoKE9gL5qLnAQY',
+  '5HRieqw8oRZfwc6paio4TrBeYvmdTstGB2KoKE9gL5qLnAQY'
 ];
 
 export const AllMediaObjects: MediaObjectType[] =
-  values.map(value => ({ id: newEntityId(), value })) as unknown as MediaObjectType[] // A hack to fix TS compilation.
+  values.map(value => ({ id: newEntityId(), value })) as unknown as MediaObjectType[]; // A hack to fix TS compilation.
 
 export const MediaObject = AllMediaObjects[0];

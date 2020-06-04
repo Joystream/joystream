@@ -19,8 +19,8 @@ interface Props extends I18nProps {
   sessionInfo?: DerivedSessionInfo;
   withEra?: boolean;
   withSession?: boolean;
-  epochIndex?: u64,
-  currentEraStartSessionIndex?: SessionIndex
+  epochIndex?: u64;
+  currentEraStartSessionIndex?: SessionIndex;
 }
 
 function renderSession ({ sessionInfo, t, withSession = true }: Props): React.ReactNode {
@@ -89,6 +89,6 @@ export default translate(
   withCalls<Props>(
     ['derive.session.info', { propName: 'sessionInfo' }],
     ['query.babe.epochIndex', { propName: 'epochIndex' }],
-    ['query.staking.currentEraStartSessionIndex', { propName: 'currentEraStartSessionIndex'}]
+    ['query.staking.currentEraStartSessionIndex', { propName: 'currentEraStartSessionIndex' }]
   )(SummarySession)
 );
