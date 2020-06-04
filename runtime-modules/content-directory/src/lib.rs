@@ -1231,6 +1231,8 @@ decl_module! {
             // Entities, which rc should be incremented
             let entity_ids_to_increase_rcs = Self::get_involved_entity_rcs(&class, &unused_schema_property_values);
 
+            entity_ids_to_increase_rcs.increase_entity_rcs();
+
             // Updated entity values, after new schema support added
             let entity_values_updated = Self::make_updated_entity_property_values(
                 unused_property_ids, unused_schema_property_values, entity_property_values
@@ -1247,8 +1249,6 @@ decl_module! {
                     entity.values = entity_values_updated;
                 }
             });
-
-            entity_ids_to_increase_rcs.increase_entity_rcs();
 
             // Trigger event
             Self::deposit_event(RawEvent::EntitySchemaSupportAdded(actor, entity_id, schema_id));
