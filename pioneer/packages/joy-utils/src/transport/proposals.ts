@@ -193,7 +193,7 @@ export default class ProposalsTransport extends BaseTransport {
 
     // Just in case there were multiple posts created in this block...
     for (const postId of postIds) {
-      const foundPostKey = await this.proposalsDiscussion.postThreadIdByPostId.key(post.thread_id, postId);
+      const foundPostKey = this.proposalsDiscussion.postThreadIdByPostId.key(post.thread_id, postId);
       if (foundPostKey === storageKey) return postId;
     }
 
