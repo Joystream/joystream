@@ -329,9 +329,9 @@ impl<T: Trait> Class<T> {
         self.class_permissions
     }
 
-    /// Retrieve `Class` properties by reference  
-    fn get_properties_ref(&self) -> &[Property<T>] {
-        &self.properties
+    /// Retrieve `Class` properties by value  
+    fn get_properties(self) -> Vec<Property<T>> {
+        self.properties
     }
 
     /// Get per controller `Class`- specific limit
@@ -885,8 +885,8 @@ decl_module! {
             }
 
             let class_permissions = class.get_permissions();
-            let updated_class_permissions = Self::make_updated_class_permssions(
-                class_permissions, updated_any_member, updated_entity_creation_blocked, 
+            let updated_class_permissions = Self::make_updated_class_permissions(
+                class_permissions, updated_any_member, updated_entity_creation_blocked,
                 updated_all_entity_property_values_locked, updated_maintainers
             );
 
@@ -929,36 +929,24 @@ decl_module! {
 
             Self::ensure_all_properties_are_valid(&new_properties)?;
 
-            let class_properties = class.get_properties_ref();
+            let class_properties = class.get_properties();
 
-            Self::ensure_all_property_names_are_unique(class_properties, &new_properties)?;
+            Self::ensure_all_property_names_are_unique(&class_properties, &new_properties)?;
 
-            // Create new Schema with existing properies provided
-            let mut schema = Schema::new(existing_properties);
-
-            schema.ensure_schema_properties_are_valid_indices(class_properties)?;
-
-            // Represents class properties after new `Schema` added
-            let mut updated_class_props = class.properties;
-
-            new_properties.into_iter().for_each(|prop| {
-
-                // Add new property ids to `Schema`
-                let prop_id = updated_class_props.len() as PropertyId;
-
-                schema.get_properties_mut().insert(prop_id);
-
-                // Update existing class properties
-                updated_class_props.push(prop);
-            });
+            Self::ensure_schema_properties_are_valid_indices(&existing_properties, &class_properties)?;
 
             //
             // == MUTATION SAFE ==
             //
 
+            let schema = Self::create_class_schema(existing_properties, &class_properties, &new_properties);
+
+            // Update class properties after new `Schema` added
+            let updated_class_properties = Self::make_updated_class_properties(class_properties, new_properties);
+
             // Update class properties and schemas
             <ClassById<T>>::mutate(class_id, |class| {
-                class.properties = updated_class_props;
+                class.properties = updated_class_properties;
                 class.schemas.push(schema);
 
                 let schema_id = class.schemas.len() - 1;
@@ -1665,14 +1653,13 @@ impl<T: Trait> Module<T> {
 
     /// Used to update `class_permissions` with parameters provided.
     /// Returns `Some(ClassPermissions<T>)` if update performed and `None` otherwise
-    pub fn make_updated_class_permssions(
+    pub fn make_updated_class_permissions(
         class_permissions: ClassPermissions<T>,
         updated_any_member: Option<bool>,
         updated_entity_creation_blocked: Option<bool>,
         updated_all_entity_property_values_locked: Option<bool>,
         updated_maintainers: Option<BTreeSet<T::CuratorGroupId>>,
     ) -> Option<ClassPermissions<T>> {
-
         // Used to ensure update performed
         let mut updated_class_permissions = class_permissions.clone();
 
@@ -1684,8 +1671,11 @@ impl<T: Trait> Module<T> {
             updated_class_permissions.set_entity_creation_blocked(updated_entity_creation_blocked);
         }
 
-        if let Some(updated_all_entity_property_values_locked) = updated_all_entity_property_values_locked {
-            updated_class_permissions.set_all_entity_property_values_locked(updated_all_entity_property_values_locked);
+        if let Some(updated_all_entity_property_values_locked) =
+            updated_all_entity_property_values_locked
+        {
+            updated_class_permissions
+                .set_all_entity_property_values_locked(updated_all_entity_property_values_locked);
         }
 
         if let Some(updated_maintainers) = updated_maintainers {
@@ -1962,6 +1952,49 @@ impl<T: Trait> Module<T> {
         }
 
         Ok(())
+    }
+
+    /// Ensure provided indices of `existing_properties`  are valid indices of `Class` properties
+    pub fn ensure_schema_properties_are_valid_indices(
+        existing_properties: &BTreeSet<PropertyId>,
+        class_properties: &[Property<T>],
+    ) -> dispatch::Result {
+        let has_unknown_properties = existing_properties
+            .iter()
+            .any(|&prop_id| prop_id >= class_properties.len() as PropertyId);
+        ensure!(
+            !has_unknown_properties,
+            ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
+        );
+        Ok(())
+    }
+
+    // Create new `Schema` with existing and new properies provided
+    pub fn create_class_schema(
+        existing_properties: BTreeSet<PropertyId>,
+        class_properties: &[Property<T>],
+        new_properties: &[Property<T>],
+    ) -> Schema {
+        // Concatenate existing property ids with new ones
+        let properties = new_properties
+            .iter()
+            .enumerate()
+            .map(|(i, _)| (class_properties.len() + i) as PropertyId)
+            .chain(existing_properties.into_iter())
+            .collect();
+
+        Schema::new(properties)
+    }
+
+    /// Update existing `Class` properties with new ones provided, return updated ones
+    pub fn make_updated_class_properties(
+        class_properties: Vec<Property<T>>,
+        new_properties: Vec<Property<T>>,
+    ) -> Vec<Property<T>> {
+        class_properties
+            .into_iter()
+            .chain(new_properties.into_iter())
+            .collect()
     }
 
     /// Counts the number of repetetive entities and returns `BTreeMap<T::EntityId, ReferenceCounter>`,

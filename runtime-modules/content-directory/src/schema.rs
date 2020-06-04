@@ -536,22 +536,6 @@ impl Schema {
         Ok(())
     }
 
-    /// Ensure `Schema` properties are valid indices of `Class` properties
-    pub fn ensure_schema_properties_are_valid_indices<T: Trait>(
-        &self,
-        class_properties: &[Property<T>],
-    ) -> dispatch::Result {
-        let has_unknown_properties = self
-            .get_properties()
-            .iter()
-            .any(|&prop_id| prop_id >= class_properties.len() as PropertyId);
-        ensure!(
-            !has_unknown_properties,
-            ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
-        );
-        Ok(())
-    }
-
     /// Get `Schema` `properties` by reference
     pub fn get_properties(&self) -> &BTreeSet<PropertyId> {
         &self.properties
