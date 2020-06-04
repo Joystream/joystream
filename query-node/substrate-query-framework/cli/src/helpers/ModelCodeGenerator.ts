@@ -39,7 +39,7 @@ export class DatabaseModelCodeGenerator {
     } else {
       if (typeNode.type.type.kind === 'ListType') {
         throw new Error('Only one level lists are allowed');
-    }
+      }
       field = this._namedType(fieldName, typeNode.type.type);
       field.nullable = false;
     }
@@ -79,7 +79,7 @@ export class DatabaseModelCodeGenerator {
     const fields = this._schemaParser.getFields(o).map((fieldNode: FieldDefinitionNode) => {
       const typeNode = fieldNode.type;
       const fieldName = fieldNode.name.value;
-      
+
       if (typeNode.kind === 'NamedType') {
         return this._namedType(fieldName, typeNode);
       } else if (typeNode.kind === 'NonNullType') {
@@ -88,8 +88,8 @@ export class DatabaseModelCodeGenerator {
             ? this._namedType(fieldName, typeNode.type)
             : this._listType(typeNode.type, fieldName);
 
-          field.nullable = false;
-          return field;
+        field.nullable = false;
+        return field;
       } else if (typeNode.kind === 'ListType') {
         return this._listType(typeNode, fieldName);
       } else {
@@ -102,25 +102,58 @@ export class DatabaseModelCodeGenerator {
     return { name: o.name.value, fields: fields, isEntity: this.isEntity(o) } as ObjectType;
   }
 
+  /**
+   * Add SQL OneToOne and ManyToOne relationship to object types if there is
+   */
+  generateSQLRelationships(): void {
+    const additionalFields: { [key: string]: string | Field }[] = [];
+
+    this._model._types.forEach(({ name, fields }) => {
+      for (const field of fields) {
+        if (!field.isBuildinType && field.isList) {
+          const typeName = field.type;
+          field.name = field.type.toLowerCase().concat('s');
+          field.type = 'otm'; // OneToMany
+
+          const newField = new Field(field.type, field.type);
+          newField.isBuildinType = false;
+          newField.nullable = false;
+          newField.type = 'mto'; // ManyToOne
+          newField.name = name.toLowerCase();
+          additionalFields.push({ field: newField, name: typeName });
+        }
+      }
+    });
+
+    for (const objType of this._model._types) {
+      for (const field of additionalFields) {
+        if (objType.name === field.name) {
+          objType.fields.push(field.field as Field);
+        }
+      }
+    }
+  }
+
   generateWarthogModel(): WarthogModel {
     this._model = new WarthogModel();
 
-    this._schemaParser.getObjectDefinations().map(o => {
-        const objType = this.generateTypeDefination(o);
-        this._model.addObjectType(objType)
+    this._schemaParser.getObjectDefinations().map((o) => {
+      const objType = this.generateTypeDefination(o);
+      this._model.addObjectType(objType);
     });
 
+    this.generateSQLRelationships();
+
     const visitors: Visitors = {
-        directives: {}
+      directives: {},
     };
     DIRECTIVES.map((d) => {
-        visitors.directives[d.name] = {
-            visit: (path: SchemaNode[]) => d.generate(path, this._model)
-        }
-    })
+      visitors.directives[d.name] = {
+        visit: (path: SchemaNode[]) => d.generate(path, this._model),
+      };
+    });
     this._schemaParser.dfsTraversal(visitors);
-    
+
     return this._model;
   }
-
 }

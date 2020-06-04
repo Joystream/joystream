@@ -128,7 +128,7 @@ export class Field {
     const columnType: string = this.isBuildinType ? availableTypes[this.type] : this.type;
     let column: string = columnType === 'string' ? this.name : this.name.concat(colon, columnType);
 
-    if (!this.isBuildinType && !this.isList) {
+    if (!this.isBuildinType && !this.isList && this.type !== 'otm' && this.type !== 'mto') {
       column = this.name.concat(colon, 'oto');
     } else if (this.isBuildinType && this.isList) {
       column = this.name + colon + 'array' + columnType;
