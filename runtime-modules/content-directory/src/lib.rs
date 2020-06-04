@@ -1215,7 +1215,7 @@ decl_module! {
 
             let entity_property_values_ref = entity.get_values_ref();
             let unused_property_ids = schema.get_unused_property_ids(entity_property_values_ref);
-            let unused_schema_property_values = schema.get_property_values(property_values, &unused_property_ids);
+            let unused_schema_property_values = schema.get_property_values_unused(property_values, &unused_property_ids);
 
             let entity_controller = entity.get_permissions_ref().get_controller();
             Self::ensure_property_values_are_valid(

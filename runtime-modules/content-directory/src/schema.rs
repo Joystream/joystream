@@ -541,8 +541,8 @@ impl Schema {
         &self.properties
     }
 
-    /// Select `PropertyValues`, which ids are in current `Schema` property ids set
-    pub fn get_property_values<T: Trait>(
+    /// Select unused `PropertyValues`, which ids are in current `Schema` property ids set
+    pub fn get_property_values_unused<T: Trait>(
         &self,
         property_values: BTreeMap<u16, PropertyValue<T>>,
         unused_property_ids: &BTreeSet<PropertyId>,
