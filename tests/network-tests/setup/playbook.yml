@@ -3,39 +3,36 @@
   become: yes
   become_method: sudo
   tasks:
-    - name: install pip
-      apt: name=python-pip state=present
-    - name: install docker-py
-      pip: name=docker-py
-    - name: Install yarn with npm
-      npm:
-        name: yarn
-        global: yes
+    - name: setup environment
+      block:
+        - name: install pip
+          apt: name=python-pip state=present
+        - name: install docker-py
+          pip: name=docker-py
+        - name: Install yarn with npm
+          npm:
+            name: yarn
+            global: yes
     - name: create node docker image
       shell: ./scripts/build-joystream-node-docker-image.sh
       args:
         chdir: ../../../
-    - name: list work dir
-      docker_container:
-        name: 'joystream-node'
-        image: 'joystream/node'
-        command: --entrypoint ls .
-        ports:
-          - '9944:9944'
-        state: started
-    - name: run docker container
-      docker_container:
-        name: 'joystream-node'
-        image: 'joystream/node'
-        ports:
-          - '9944:9944'
-        entrypoint: ./node --chain=./chainspec.json --alice --validator --ws-external --rpc-cors=all
-        state: started
-    - name: execute network tests
-      shell: yarn test >> tests.log
-      args:
-        chdir: ../../../
-    - name: stop docker container
-      docker_container:
-        name: 'joystream-node'
-        state: stopped
+    - name: run network
+      block:
+        - name: run docker container
+          docker_container:
+            name: 'joystream-node'
+            image: 'joystream/node'
+            ports:
+              - '9944:9944'
+            entrypoint: ./node --chain=chainspec.json --alice --validator --ws-external --rpc-cors=all
+            state: started
+        - name: execute network tests
+          shell: yarn test >> tests.log
+          args:
+            chdir: ../../../.tmp/
+      always:
+        - name: stop docker container
+          docker_container:
+            name: 'joystream-node'
+            state: absent

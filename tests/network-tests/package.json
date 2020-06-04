@@ -4,7 +4,7 @@
   "license": "GPL-3.0-only",
   "scripts": {
     "build": "tsc --build tsconfig.json",
-    "test": "tap --files ts-node/register src/constantinople/tests/proposals/*Test.ts",
+    "test": "tap --files ts-node/register src/constantinople/tests/proposals/*Test.ts -T",
     "test-migration": "tap --files src/rome/tests/romeRuntimeUpgradeTest.ts --files src/constantinople/tests/electingCouncilTest.ts",
     "lint": "tslint --project tsconfig.json",
     "prettier": "prettier --write ./src"
