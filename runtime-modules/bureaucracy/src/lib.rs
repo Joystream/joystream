@@ -432,7 +432,7 @@ decl_module! {
         ) {
 
             // Ensure lead is set and is origin signer
-            Self::ensure_origin_is_set_lead(origin)?;
+            Self::ensure_origin_is_active_leader(origin)?;
 
             // Ensuring worker actually exists
             let worker = Self::ensure_worker_exists(&worker_id)?;
@@ -463,7 +463,7 @@ decl_module! {
             human_readable_text: Vec<u8>
         ){
             // Ensure lead is set and is origin signer
-            Self::ensure_origin_is_set_lead(origin)?;
+            Self::ensure_origin_is_active_leader(origin)?;
 
             Self::ensure_opening_human_readable_text_is_valid(&human_readable_text)?;
 
@@ -509,7 +509,7 @@ decl_module! {
         pub fn accept_worker_applications(origin, worker_opening_id: WorkerOpeningId<T>)  {
 
             // Ensure lead is set and is origin signer
-            Self::ensure_origin_is_set_lead(origin)?;
+            Self::ensure_origin_is_active_leader(origin)?;
 
             // Ensure opening exists in this working group
             // NB: Even though call to hiring module will have implicit check for
@@ -664,7 +664,7 @@ decl_module! {
         ) {
 
             // Ensure lead is set and is origin signer
-            Self::ensure_origin_is_set_lead(origin)?;
+            Self::ensure_origin_is_active_leader(origin)?;
 
             // Ensuring worker application actually exists
             let (worker_application, _, worker_opening) = Self::ensure_worker_application_exists(&worker_application_id)?;
@@ -691,7 +691,7 @@ decl_module! {
         pub fn begin_worker_applicant_review(origin, worker_opening_id: WorkerOpeningId<T>) {
 
             // Ensure lead is set and is origin signer
-            Self::ensure_origin_is_set_lead(origin)?;
+            Self::ensure_origin_is_active_leader(origin)?;
 
             // Ensure opening exists
             // NB: Even though call to hiring modul will have implicit check for
@@ -721,7 +721,7 @@ decl_module! {
             reward_policy: Option<RewardPolicy<minting::BalanceOf<T>, T::BlockNumber>>
         ) {
             // Ensure lead is set and is origin signer
-            Self::ensure_origin_is_set_lead(origin)?;
+            Self::ensure_origin_is_active_leader(origin)?;
 
             // Ensure worker opening exists
             let (worker_opening, _) = Self::ensure_worker_opening_exists(&worker_opening_id)?;
@@ -862,7 +862,7 @@ decl_module! {
         /// Slashes the worker stake, demands a leader origin. No limits, no actions on zero stake.
         /// If slashing balance greater than the existing stake - stake is slashed to zero.
         pub fn slash_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
-            Self::ensure_origin_is_set_lead(origin)?;
+            Self::ensure_origin_is_active_leader(origin)?;
 
             let worker = Self::ensure_worker_exists(&worker_id)?;
 
@@ -889,7 +889,7 @@ decl_module! {
         /// Decreases the worker stake and returns the remainder to the worker role_account,
         /// demands a leader origin. Can be decreased to zero, no actions on zero stake.
         pub fn decrease_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
-            Self::ensure_origin_is_set_lead(origin)?;
+            Self::ensure_origin_is_active_leader(origin)?;
 
             let worker = Self::ensure_worker_exists(&worker_id)?;
 
@@ -995,7 +995,8 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             .map_err(|e| e.into())
     }
 
-    fn ensure_origin_is_set_lead(origin: T::Origin) -> Result<(), Error> {
+    // Ensures origin is signed by the leader.
+    pub fn ensure_origin_is_active_leader(origin: T::Origin) -> Result<(), Error> {
         // Ensure is signed
         let signer = ensure_signed(origin)?;
 

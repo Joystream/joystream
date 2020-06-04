@@ -1,3 +1,20 @@
+//! # Data object type registry module
+//! Data object type registry module for the Joystream platform.
+//! It allows to set constraints for the data objects. All extrinsics require leader
+//!
+//! ## Comments
+//!
+//! Data object type registry module uses bureaucracy module to authorize actions. Only leader can
+//! call extrinsics.
+//!
+//! ## Supported extrinsics
+//!
+//! - [register_data_object_type](./struct.Module.html#method.register_data_object_type) - Registers the new data object type.
+//! - [update_data_object_type](./struct.Module.html#method.update_data_object_type)- Updates existing data object type.
+//! - [activate_data_object_type](./struct.Module.html#method.activate_data_object_type) -  Activates existing data object type.
+//! - [deactivate_data_object_type](./struct.Module.html#method.deactivate_data_object_type) -  Deactivates existing data object type.
+//!
+
 // Clippy linter requirement
 // disable it because of the substrate lib design
 // example:   NextDataObjectTypeId get(next_data_object_type_id) build(|config: &GenesisConfig<T>|
@@ -8,8 +25,11 @@ use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_event, decl_module, decl_storage, Parameter};
-use system::ensure_root;
 
+// Alias for storage working group bureaucracy
+pub(crate) type StorageBureaucracy<T> = bureaucracy::Module<T, bureaucracy::Instance2>;
+
+/// The _Data object type registry_ main _Trait_
 pub trait Trait: system::Trait + bureaucracy::Trait<bureaucracy::Instance2> {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
@@ -23,17 +43,21 @@ pub trait Trait: system::Trait + bureaucracy::Trait<bureaucracy::Instance2> {
         + PartialEq;
 }
 
-static MSG_DO_TYPE_NOT_FOUND: &str = "Data Object Type with the given ID not found.";
-
+// TODO: migrate to the Substate error style
+const MSG_DO_TYPE_NOT_FOUND: &str = "Data Object Type with the given ID not found.";
 const DEFAULT_TYPE_DESCRIPTION: &str = "Default data object type for audio and video content.";
+
 const DEFAULT_TYPE_ACTIVE: bool = true;
 const CREATE_DETAULT_TYPE: bool = true;
-
 const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u32 = 1;
 
+/// Contains description and constrains for the data object.
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct DataObjectType {
+    /// Data object description.
     pub description: Vec<u8>,
+
+    /// Active/Disabled flag.
     pub active: bool,
     // TODO in future releases
     // - maximum size
@@ -55,36 +79,37 @@ decl_storage! {
 
         // TODO hardcode data object type for ID 1
 
-        // Start at this value
+        /// Data object type ids should start at this value.
         pub FirstDataObjectTypeId get(first_data_object_type_id) config(first_data_object_type_id): T::DataObjectTypeId = T::DataObjectTypeId::from(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
 
-        // Increment
+        /// Provides id counter for the data object types.
         pub NextDataObjectTypeId get(next_data_object_type_id) build(|config: &GenesisConfig<T>| config.first_data_object_type_id): T::DataObjectTypeId = T::DataObjectTypeId::from(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
 
-        // Mapping of Data object types
+        /// Mapping of Data object types.
         pub DataObjectTypes get(data_object_types): map T::DataObjectTypeId => Option<DataObjectType>;
     }
 }
 
 decl_event! {
+    /// _Data object type registry_ events
     pub enum Event<T> where
         <T as Trait>::DataObjectTypeId {
+        /// Emits on the data object type registration.
+        /// Params:
+        /// - Id of the new data object type.
         DataObjectTypeRegistered(DataObjectTypeId),
+
+        /// Emits on the data object type update.
+        /// Params:
+        /// - Id of the updated data object type.
         DataObjectTypeUpdated(DataObjectTypeId),
     }
 }
 
-impl<T: Trait> traits::IsActiveDataObjectType<T> for Module<T> {
-    fn is_active_data_object_type(which: &T::DataObjectTypeId) -> bool {
-        match Self::ensure_data_object_type(*which) {
-            Ok(do_type) => do_type.active,
-            Err(_err) => false,
-        }
-    }
-}
-
 decl_module! {
+    /// _Data object type registry_ substrate module.
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+        /// Default deposit_event() handler
         fn deposit_event() = default;
 
         fn on_initialize() {
@@ -98,8 +123,10 @@ decl_module! {
             }
         }
 
+        /// Registers the new data object type. Requires leader privileges.
         pub fn register_data_object_type(origin, data_object_type: DataObjectType) {
-            ensure_root(origin)?;
+            <StorageBureaucracy<T>>::ensure_origin_is_active_leader(origin)?;
+
             let new_do_type_id = Self::next_data_object_type_id();
             let do_type: DataObjectType = DataObjectType {
                 description: data_object_type.description.clone(),
@@ -112,9 +139,10 @@ decl_module! {
             Self::deposit_event(RawEvent::DataObjectTypeRegistered(new_do_type_id));
         }
 
-        // TODO use DataObjectTypeUpdate
+        /// Updates existing data object type. Requires leader privileges.
         pub fn update_data_object_type(origin, id: T::DataObjectTypeId, data_object_type: DataObjectType) {
-            ensure_root(origin)?;
+            <StorageBureaucracy<T>>::ensure_origin_is_active_leader(origin)?;
+
             let mut do_type = Self::ensure_data_object_type(id)?;
 
             do_type.description = data_object_type.description.clone();
@@ -125,12 +153,10 @@ decl_module! {
             Self::deposit_event(RawEvent::DataObjectTypeUpdated(id));
         }
 
-        // Activate and deactivate functions as separate functions, because
-        // toggling DO types is likely a more common operation than updating
-        // other aspects.
-        // TODO deprecate or express via update_data_type
+        /// Activates existing data object type. Requires leader privileges.
         pub fn activate_data_object_type(origin, id: T::DataObjectTypeId) {
-            ensure_root(origin)?;
+            <StorageBureaucracy<T>>::ensure_origin_is_active_leader(origin)?;
+
             let mut do_type = Self::ensure_data_object_type(id)?;
 
             do_type.active = true;
@@ -140,8 +166,10 @@ decl_module! {
             Self::deposit_event(RawEvent::DataObjectTypeUpdated(id));
         }
 
+        /// Deactivates existing data object type. Requires leader privileges.
         pub fn deactivate_data_object_type(origin, id: T::DataObjectTypeId) {
-            ensure_root(origin)?;
+            <StorageBureaucracy<T>>::ensure_origin_is_active_leader(origin)?;
+
             let mut do_type = Self::ensure_data_object_type(id)?;
 
             do_type.active = false;
@@ -156,5 +184,14 @@ decl_module! {
 impl<T: Trait> Module<T> {
     fn ensure_data_object_type(id: T::DataObjectTypeId) -> Result<DataObjectType, &'static str> {
         Self::data_object_types(&id).ok_or(MSG_DO_TYPE_NOT_FOUND)
+    }
+}
+
+impl<T: Trait> traits::IsActiveDataObjectType<T> for Module<T> {
+    fn is_active_data_object_type(which: &T::DataObjectTypeId) -> bool {
+        match Self::ensure_data_object_type(*which) {
+            Ok(do_type) => do_type.active,
+            Err(_err) => false,
+        }
     }
 }
