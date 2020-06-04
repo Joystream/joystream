@@ -1,1 +1,1 @@
-export { default as PromiseComponent } from "./PromiseComponent";
+export { default as PromiseComponent } from './PromiseComponent';

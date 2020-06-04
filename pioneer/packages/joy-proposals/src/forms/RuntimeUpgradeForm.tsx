@@ -1,6 +1,6 @@
-import React from "react";
-import { Form } from "semantic-ui-react";
-import * as Yup from "yup";
+import React from 'react';
+import { Form } from 'semantic-ui-react';
+import * as Yup from 'yup';
 import {
   GenericProposalForm,
   GenericFormValues,
@@ -10,11 +10,11 @@ import {
   ProposalFormExportProps,
   ProposalFormContainerProps,
   ProposalFormInnerProps
-} from "./GenericProposalForm";
-import Validation from "../validationSchema";
-import { withFormContainer } from "./FormContainer";
-import "./forms.css";
-import FileDropdown from "./FileDropdown";
+} from './GenericProposalForm';
+import Validation from '../validationSchema';
+import { withFormContainer } from './FormContainer';
+import './forms.css';
+import FileDropdown from './FileDropdown';
 
 type FormValues = GenericFormValues & {
   WASM: string;
@@ -22,7 +22,7 @@ type FormValues = GenericFormValues & {
 
 const defaultValues: FormValues = {
   ...genericFormDefaultValues,
-  WASM: ""
+  WASM: ''
 };
 
 type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
@@ -37,7 +37,7 @@ const RuntimeUpgradeForm: React.FunctionComponent<FormInnerProps> = props => {
       {...props}
       txMethod="createRuntimeUpgradeProposal"
       proposalType="RuntimeUpgrade"
-      submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", values.WASM]}
+      submitParams={[props.myMemberId, values.title, values.rationale, '{STAKE}', values.WASM]}
     >
       <Form.Field>
         <FileDropdown<FormValues>
@@ -62,7 +62,7 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     WASM: Validation.RuntimeUpgrade.WASM
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
-  displayName: "RuntimeUpgradeForm"
+  displayName: 'RuntimeUpgradeForm'
 })(RuntimeUpgradeForm);
 
 export default withProposalFormData(FormContainer);

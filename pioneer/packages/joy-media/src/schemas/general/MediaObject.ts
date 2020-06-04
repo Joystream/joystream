@@ -11,22 +11,22 @@ export const MediaObjectValidationSchema = Yup.object().shape({
 });
 
 export type MediaObjectFormValues = {
-  value: string
+  value: string;
 };
 
 export type MediaObjectType = {
-  classId: number
-  inClassSchemaIndexes: number[]
-  id: number
-  value: string
+  classId: number;
+  inClassSchemaIndexes: number[];
+  id: number;
+  value: string;
 };
 
 export class MediaObjectCodec extends EntityCodec<MediaObjectType> { }
 
-export function MediaObjectToFormValues(entity?: MediaObjectType): MediaObjectFormValues {
+export function MediaObjectToFormValues (entity?: MediaObjectType): MediaObjectFormValues {
   return {
-    value: entity && entity.value || ''
-  }
+    value: (entity && entity.value) || ''
+  };
 }
 
 export type MediaObjectPropId =
@@ -34,14 +34,14 @@ export type MediaObjectPropId =
   ;
 
 export type MediaObjectGenericProp = {
-  id: MediaObjectPropId,
-  type: string,
-  name: string,
-  description?: string,
-  required?: boolean,
-  maxItems?: number,
-  maxTextLength?: number,
-  classId?: any
+  id: MediaObjectPropId;
+  type: string;
+  name: string;
+  description?: string;
+  required?: boolean;
+  maxItems?: number;
+  maxTextLength?: number;
+  classId?: any;
 };
 
 type MediaObjectClassType = {
@@ -50,11 +50,11 @@ type MediaObjectClassType = {
 
 export const MediaObjectClass: MediaObjectClassType = {
   value: {
-    "id": "value",
-    "name": "Value",
-    "description": "Content id of object in the data directory.",
-    "type": "Text",
-    "required": true,
-    "maxTextLength": 48
+    id: 'value',
+    name: 'Value',
+    description: 'Content id of object in the data directory.',
+    type: 'Text',
+    required: true,
+    maxTextLength: 48
   }
 };

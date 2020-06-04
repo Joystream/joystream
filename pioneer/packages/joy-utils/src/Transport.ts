@@ -1,11 +1,11 @@
 export abstract class Transport {
-  protected async promise<T>(value: T, timeout?: number): Promise<T> {
-    return new Promise<T>(async (resolve, reject) => {
+  protected promise<T> (value: T, timeout?: number): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
       if (timeout) {
-        await new Promise(r => setTimeout(r, timeout));
+        (new Promise(resolve => setTimeout(resolve, timeout))).then(() => resolve(value));
+      } else {
+        resolve(value);
       }
-      resolve(value)
-    })
+    });
   }
 }
-

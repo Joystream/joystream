@@ -1,18 +1,16 @@
 import React from 'react';
-import { Bubble, InputAddress, Labelled } from '@polkadot/react-components/index';
-import { Balance, Nonce } from '@polkadot/react-components/index';
+import { Bubble, InputAddress, Labelled, Balance, Nonce } from '@polkadot/react-components/index';
 
 type Props = {
-  label?: string,
-  onChange: (accountId?: string | null) => void
+  label?: string;
+  onChange: (accountId?: string | null) => void;
 };
 
 type State = {
-  accountId?: string | null
+  accountId?: string | null;
 };
 
 export default class AccountSelector extends React.PureComponent<Props, State> {
-
   state: State = {};
 
   render () {

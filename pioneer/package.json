@@ -16,6 +16,8 @@
     "clean": "polkadot-dev-clean-build",
     "clean:i18n": "rm -rf packages/apps/public/locales/en && mkdir -p packages/apps/public/locales/en",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx . && tsc --noEmit --pretty",
+    "lint-only-errors": "eslint --quiet --ext .js,.jsx,.ts,.tsx . && tsc --noEmit --pretty",
+    "lint-autofix": "eslint --fix --ext .js,.jsx,.ts,.tsx . && tsc --noEmit --pretty",
     "postinstall": "polkadot-dev-yarn-only",
     "test": "echo \"skipping tests\"",
     "vanitygen": "node packages/app-accounts/scripts/vanitygen.js",

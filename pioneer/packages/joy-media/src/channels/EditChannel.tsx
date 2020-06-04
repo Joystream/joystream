@@ -19,11 +19,11 @@ import { ChannelValidationConstraints } from '../transport';
 import { JoyError } from '@polkadot/joy-utils/JoyStatus';
 
 export type OuterProps = {
-  history?: History,
-  id?: ChannelId,
-  entity?: ChannelType,
-  constraints?: ChannelValidationConstraints,
-  opts?: MediaDropdownOptions
+  history?: History;
+  id?: ChannelId;
+  entity?: ChannelType;
+  constraints?: ChannelValidationConstraints;
+  opts?: MediaDropdownOptions;
 };
 
 type FormValues = ChannelFormValues;
@@ -57,7 +57,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const { myAccountId, myMemberId } = useMyMembership();
 
   if (entity && !isAccountAChannelOwner(entity, myAccountId)) {
-    return <JoyError title={`Only owner can edit channel`} />
+    return <JoyError title={'Only owner can edit channel'} />;
   }
 
   const { avatar } = values;
@@ -67,19 +67,17 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   // return null
 
   const onTxSuccess: TxCallback = (txResult: SubmittableResult) => {
-    setSubmitting(false)
-    if (!history) return
+    setSubmitting(false);
+    if (!history) return;
 
-    const id = existingId
-      ? existingId
-      : findFirstParamOfSubstrateEvent<ChannelId>(txResult, 'ChannelCreated')
+    const id = existingId || findFirstParamOfSubstrateEvent<ChannelId>(txResult, 'ChannelCreated');
 
-    console.log('Channel id:', id?.toString())
+    console.log('Channel id:', id?.toString());
 
     if (id) {
-      history.push('/media/channels/' + id.toString())
+      history.push('/media/channels/' + id.toString());
     }
-  }
+  };
 
   const buildTxParams = () => {
     if (!isValid) return [];
@@ -88,7 +86,6 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     const publicationStatus = new ChannelPublicationStatus('Public');
 
     if (!entity) {
-
       // Create a new channel
 
       const channelOwner = myMemberId;
@@ -107,7 +104,6 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
         publicationStatus
       ];
     } else {
-
       // Update an existing channel
 
       const updOptText = (field: ChannelGenericProp): Option<OptionalText> => {
@@ -115,20 +111,20 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
           isFieldChanged(field)
             ? newOptionalText(values[field.id])
             : null
-        )
-      }
+        );
+      };
 
       const updHandle = new Option(Text,
         isFieldChanged(Fields.handle)
           ? values[Fields.handle.id]
           : null
-      )
+      );
 
       const updPublicationStatus = new Option(ChannelPublicationStatus,
         isFieldChanged(Fields.publicationStatus)
           ? new ChannelPublicationStatus(values[Fields.publicationStatus.id] as any)
           : null
-      )
+      );
 
       return [
         new ChannelId(entity.id),
@@ -173,7 +169,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       onClick={onSubmit}
       txFailedCb={onTxFailed}
       txSuccessCb={onTxSuccess}
-    />
+    />;
 
   return <div className='EditMetaBox'>
     <div className='EditMetaThumb'>
@@ -207,10 +203,10 @@ export const EditForm = withFormik<OuterProps, FormValues>({
   },
 
   validationSchema: (props: OuterProps): any => {
-    const { constraints } = props
-    if (!constraints) return null
+    const { constraints } = props;
+    if (!constraints) return null;
 
-    return buildChannelValidationSchema(constraints)
+    return buildChannelValidationSchema(constraints);
   },
 
   handleSubmit: () => {

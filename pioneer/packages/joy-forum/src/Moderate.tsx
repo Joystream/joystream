@@ -36,12 +36,12 @@ const buildSchema = (props: ValidationProps) => {
 };
 
 type OuterProps = ValidationProps & {
-  id: ThreadId | ReplyId,
-  onCloseForm?: () => void
+  id: ThreadId | ReplyId;
+  onCloseForm?: () => void;
 };
 
 type FormValues = {
-  rationale: string
+  rationale: string;
 };
 
 type FormProps = OuterProps & FormikProps<FormValues>;
@@ -75,7 +75,7 @@ const InnerForm = (props: FormProps) => {
     setSubmitting(false);
     if (txResult == null) {
       // Tx cancelled.
-      return;
+
     }
   };
 
@@ -91,9 +91,9 @@ const InnerForm = (props: FormProps) => {
 
     const rationaleParam = new Text(rationale);
     if (isThread) {
-      return [ id, rationaleParam ];
+      return [id, rationaleParam];
     } else {
-      return [ id, rationaleParam ];
+      return [id, rationaleParam];
     }
   };
 

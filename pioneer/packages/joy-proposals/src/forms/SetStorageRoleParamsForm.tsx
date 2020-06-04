@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { Form, Divider } from "semantic-ui-react";
-import { getFormErrorLabelsProps } from "./errorHandling";
-import * as Yup from "yup";
+import React, { useState, useEffect } from 'react';
+import { Form, Divider } from 'semantic-ui-react';
+import { getFormErrorLabelsProps } from './errorHandling';
+import * as Yup from 'yup';
 import {
   GenericProposalForm,
   GenericFormValues,
@@ -11,17 +11,17 @@ import {
   ProposalFormExportProps,
   ProposalFormContainerProps,
   ProposalFormInnerProps
-} from "./GenericProposalForm";
-import Validation from "../validationSchema";
-import { InputFormField } from "./FormFields";
-import { withFormContainer } from "./FormContainer";
-import { BlockNumber, Balance } from "@polkadot/types/interfaces";
-import { u32 } from "@polkadot/types/primitive";
-import { createType } from "@polkadot/types";
-import { useTransport, usePromise } from "@polkadot/joy-utils/react/hooks";
-import { StorageRoleParameters, IStorageRoleParameters } from "@polkadot/joy-utils/types/storageProviders";
-import { formatBalance } from "@polkadot/util";
-import "./forms.css";
+} from './GenericProposalForm';
+import Validation from '../validationSchema';
+import { InputFormField } from './FormFields';
+import { withFormContainer } from './FormContainer';
+import { BlockNumber, Balance } from '@polkadot/types/interfaces';
+import { u32 } from '@polkadot/types/primitive';
+import { createType } from '@polkadot/types';
+import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
+import { StorageRoleParameters, IStorageRoleParameters } from '@polkadot/joy-utils/types/storageProviders';
+import { formatBalance } from '@polkadot/util';
+import './forms.css';
 
 // Move to joy-types?
 type RoleParameters = {
@@ -39,22 +39,22 @@ type RoleParameters = {
 
 // All of those are strings, because that's how those values are beeing passed from inputs
 type FormValues = GenericFormValues &
-  {
-    [K in keyof RoleParameters]: string;
-  };
+{
+  [K in keyof RoleParameters]: string;
+};
 
 const defaultValues: FormValues = {
   ...genericFormDefaultValues,
-  min_stake: "",
-  min_actors: "",
-  max_actors: "",
-  reward: "",
-  reward_period: "",
-  bonding_period: "",
-  unbonding_period: "",
-  min_service_period: "",
-  startup_grace_period: "",
-  entry_request_fee: ""
+  min_stake: '',
+  min_actors: '',
+  max_actors: '',
+  reward: '',
+  reward_period: '',
+  bonding_period: '',
+  unbonding_period: '',
+  min_service_period: '',
+  startup_grace_period: '',
+  entry_request_fee: ''
 };
 
 type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
@@ -62,18 +62,18 @@ type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormVal
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-function createRoleParameters(values: FormValues): RoleParameters {
+function createRoleParameters (values: FormValues): RoleParameters {
   return {
-    min_stake: createType("Balance", values.min_stake),
-    min_actors: createType("u32", values.min_actors),
-    max_actors: createType("u32", values.max_actors),
-    reward: createType("Balance", values.reward),
-    reward_period: createType("BlockNumber", values.reward_period),
-    bonding_period: createType("BlockNumber", values.bonding_period),
-    unbonding_period: createType("BlockNumber", values.unbonding_period),
-    min_service_period: createType("BlockNumber", values.min_service_period),
-    startup_grace_period: createType("BlockNumber", values.startup_grace_period),
-    entry_request_fee: createType("Balance", values.entry_request_fee)
+    min_stake: createType('Balance', values.min_stake),
+    min_actors: createType('u32', values.min_actors),
+    max_actors: createType('u32', values.max_actors),
+    reward: createType('Balance', values.reward),
+    reward_period: createType('BlockNumber', values.reward_period),
+    bonding_period: createType('BlockNumber', values.bonding_period),
+    unbonding_period: createType('BlockNumber', values.unbonding_period),
+    min_service_period: createType('BlockNumber', values.min_service_period),
+    startup_grace_period: createType('BlockNumber', values.startup_grace_period),
+    entry_request_fee: createType('Balance', values.entry_request_fee)
   };
 }
 
@@ -103,10 +103,10 @@ const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props 
       {...props}
       txMethod="createSetStorageRoleParametersProposal"
       proposalType="SetStorageRoleParameters"
-      submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", createRoleParameters(values)]}
+      submitParams={[props.myMemberId, values.title, values.rationale, '{STAKE}', createRoleParameters(values)]}
     >
       <Divider horizontal>Parameters</Divider>
-      <Form.Group widths="equal" style={{ marginBottom: "2em" }}>
+      <Form.Group widths="equal" style={{ marginBottom: '2em' }}>
         <InputFormField
           label="Min. actors"
           help="Minimum number of actors in this role"
@@ -128,7 +128,7 @@ const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props 
           value={values.max_actors}
         />
       </Form.Group>
-      <Form.Group widths="equal" style={{ marginBottom: "2em" }}>
+      <Form.Group widths="equal" style={{ marginBottom: '2em' }}>
         <InputFormField
           label="Reward"
           help="Reward for performing this role (for each period)"
@@ -153,7 +153,7 @@ const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props 
           disabled
         />
       </Form.Group>
-      <Form.Group widths="equal" style={{ marginBottom: "2em" }}>
+      <Form.Group widths="equal" style={{ marginBottom: '2em' }}>
         <InputFormField
           label="Min. stake"
           help="Minimum stake for this role"
@@ -177,7 +177,7 @@ const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props 
           disabled
         />
       </Form.Group>
-      <Form.Group widths="equal" style={{ marginBottom: "2em" }}>
+      <Form.Group widths="equal" style={{ marginBottom: '2em' }}>
         <InputFormField
           label="Bonding period"
           help="Bonding period in blocks"
@@ -202,7 +202,7 @@ const SetStorageRoleParamsForm: React.FunctionComponent<FormInnerProps> = props 
           unit="blocks"
         />
       </Form.Group>
-      <Form.Group widths="equal" style={{ marginBottom: "2em" }}>
+      <Form.Group widths="equal" style={{ marginBottom: '2em' }}>
         <InputFormField
           label="Startup grace period"
           help="Startup grace period in blocks"
@@ -250,7 +250,7 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     entry_request_fee: Validation.SetStorageRoleParameters.entry_request_fee
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
-  displayName: "SetStorageRoleParamsForm"
+  displayName: 'SetStorageRoleParamsForm'
 })(SetStorageRoleParamsForm);
 
 export default withProposalFormData(FormContainer);

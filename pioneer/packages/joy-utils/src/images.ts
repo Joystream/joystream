@@ -2,8 +2,8 @@ export const DEFAULT_THUMBNAIL_URL = 'images/default-thumbnail.png';
 
 // This is a hack to just satisfy TypeScript compiler.
 type ImageOnErrorEvent = EventTarget & {
-  src: string,
-  onerror?: (e: any) => void
+  src: string;
+  onerror?: (e: any) => void;
 };
 
 export function onImageError (event: React.SyntheticEvent<HTMLImageElement, Event>) {

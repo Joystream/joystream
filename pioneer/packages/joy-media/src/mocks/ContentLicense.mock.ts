@@ -5,10 +5,10 @@ const values = [
   'Public Domain',
   'Share Alike',
   'No Derivatives',
-  'No Commercial',
+  'No Commercial'
 ];
 
 export const AllContentLicenses: ContentLicenseType[] =
-  values.map(value => ({ id: newEntityId(), value })) as unknown as ContentLicenseType[] // A hack to fix TS compilation.
+  values.map(value => ({ id: newEntityId(), value })) as unknown as ContentLicenseType[]; // A hack to fix TS compilation.
 
 export const ContentLicense = AllContentLicenses[0];

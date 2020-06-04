@@ -8,21 +8,22 @@ import { nonEmptyStr } from '../index';
 import './Memo.css';
 import { Link } from 'react-router-dom';
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const remark = require('remark');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const strip = require('strip-markdown');
 const mdStripper = remark().use(strip);
 
 type Props = {
-  accountId: string,
-  memo?: Text,
-  preview?: boolean,
-  showEmpty?: boolean,
-  className?: string,
-  style?: any
+  accountId: string;
+  memo?: Text;
+  preview?: boolean;
+  showEmpty?: boolean;
+  className?: string;
+  style?: any;
 };
 
 class Component extends React.PureComponent<Props> {
-
   private mdToPlainText = (md: string): string => {
     if (nonEmptyStr(md)) {
       try {

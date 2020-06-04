@@ -1,4 +1,4 @@
-import "../index.css";
+import '../index.css';
 import {
   SignalForm,
   EvictStorageProviderForm,
@@ -10,11 +10,11 @@ import {
   SetContentWorkingGroupMintCapForm,
   SetCouncilMintCapForm,
   SetMaxValidatorCountForm
-} from "../forms";
+} from '../forms';
 import withMock from './withMock';
 
 export default {
-  title: "Proposals | Forms"
+  title: 'Proposals | Forms'
 };
 
 export const Signal = () => withMock(SignalForm);

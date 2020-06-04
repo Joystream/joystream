@@ -11,22 +11,22 @@ export const CurationStatusValidationSchema = Yup.object().shape({
 });
 
 export type CurationStatusFormValues = {
-  value: string
+  value: string;
 };
 
 export type CurationStatusType = {
-  classId: number
-  inClassSchemaIndexes: number[]
-  id: number
-  value: string
+  classId: number;
+  inClassSchemaIndexes: number[];
+  id: number;
+  value: string;
 };
 
 export class CurationStatusCodec extends EntityCodec<CurationStatusType> { }
 
-export function CurationStatusToFormValues(entity?: CurationStatusType): CurationStatusFormValues {
+export function CurationStatusToFormValues (entity?: CurationStatusType): CurationStatusFormValues {
   return {
-    value: entity && entity.value || ''
-  }
+    value: (entity && entity.value) || ''
+  };
 }
 
 export type CurationStatusPropId =
@@ -34,14 +34,14 @@ export type CurationStatusPropId =
   ;
 
 export type CurationStatusGenericProp = {
-  id: CurationStatusPropId,
-  type: string,
-  name: string,
-  description?: string,
-  required?: boolean,
-  maxItems?: number,
-  maxTextLength?: number,
-  classId?: any
+  id: CurationStatusPropId;
+  type: string;
+  name: string;
+  description?: string;
+  required?: boolean;
+  maxItems?: number;
+  maxTextLength?: number;
+  classId?: any;
 };
 
 type CurationStatusClassType = {
@@ -50,11 +50,11 @@ type CurationStatusClassType = {
 
 export const CurationStatusClass: CurationStatusClassType = {
   value: {
-    "id": "value",
-    "name": "Value",
-    "description": "The curator publication status of the content in the content directory.",
-    "required": true,
-    "type": "Text",
-    "maxTextLength": 255
+    id: 'value',
+    name: 'Value',
+    description: 'The curator publication status of the content in the content directory.',
+    required: true,
+    type: 'Text',
+    maxTextLength: 255
   }
 };

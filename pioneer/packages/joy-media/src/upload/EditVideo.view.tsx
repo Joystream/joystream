@@ -11,7 +11,7 @@ type Props = OuterProps;
 export const EditVideoView = MediaView<Props>({
   component: EditForm,
   membersOnly: true,
-  triggers: [ 'id' ],
+  triggers: ['id'],
   resolveProps: async (props) => {
     const { transport, id, channelId } = props;
     const channel = channelId && await transport.channelById(channelId);
@@ -21,12 +21,12 @@ export const EditVideoView = MediaView<Props>({
     const opts = await transport.dropdownOptions();
     return { channel, mediaObjectClass, entityClass, entity, opts };
   }
-})
+});
 
 type WithRouterProps = Props & RouteComponentProps<any>
 
 export const UploadVideoWithRouter = (props: WithRouterProps) => {
-  const { match: { params: { channelId }}} = props;
+  const { match: { params: { channelId } } } = props;
 
   if (channelId) {
     try {
@@ -36,11 +36,11 @@ export const UploadVideoWithRouter = (props: WithRouterProps) => {
     }
   }
 
-  return <JoyError title={`Invalid channel id in URL`}>{channelId}</JoyError>
-}
+  return <JoyError title={'Invalid channel id in URL'}>{channelId}</JoyError>;
+};
 
 export const EditVideoWithRouter = (props: WithRouterProps) => {
-  const { match: { params: { id }}} = props;
+  const { match: { params: { id } } } = props;
 
   if (id) {
     try {
@@ -50,7 +50,7 @@ export const EditVideoWithRouter = (props: WithRouterProps) => {
     }
   }
 
-  return <JoyError title={`Invalid video id in URL`}>{id}</JoyError>
-}
+  return <JoyError title={'Invalid video id in URL'}>{id}</JoyError>;
+};
 
 export default EditVideoView;

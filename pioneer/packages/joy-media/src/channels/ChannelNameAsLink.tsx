@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import { ChannelEntity } from '../entities/ChannelEntity';
 
 type Props = {
-  channel: ChannelEntity
-  className?: string
-  style?: React.CSSProperties
+  channel: ChannelEntity;
+  className?: string;
+  style?: React.CSSProperties;
 }
 
 export const ChannelNameAsLink = (props: Props) => {
@@ -14,5 +14,5 @@ export const ChannelNameAsLink = (props: Props) => {
     <Link to={`/media/channels/${channel.id}`} className={className} style={style}>
       {channel.title || channel.handle}
     </Link>
-  )
-}
+  );
+};

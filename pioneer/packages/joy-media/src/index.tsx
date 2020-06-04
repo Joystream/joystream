@@ -27,7 +27,7 @@ import { AllChannelsView } from './explore/AllChannels';
 
 type Props = AppProps & I18nProps & ApiProps & DiscoveryProviderProps & {};
 
-function App(props: Props) {
+function App (props: Props) {
   const { t, basePath } = props;
   const { state: { address: myAddress } } = useMyAccount();
 
@@ -44,7 +44,7 @@ function App(props: Props) {
     {
       name: 'channels/new',
       text: t('New channel')
-    },
+    }
     // !myAddress ? undefined : {
     //   name: `account/${myAddress}/videos`,
     //   text: t('My videos')

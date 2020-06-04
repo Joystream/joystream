@@ -11,22 +11,22 @@ import { isVideoChannel, isMusicChannel } from './ChannelHelpers';
 import { JoyError } from '@polkadot/joy-utils/JoyStatus';
 
 export type ViewChannelProps = {
-  id: ChannelId,
-  channel?: ChannelEntity,
+  id: ChannelId;
+  channel?: ChannelEntity;
 
   // Video channel specific:
-  videos?: VideoType[],
+  videos?: VideoType[];
 
   // Music channel specific:
-  albums?: MusicAlbumPreviewProps[],
-  tracks?: MusicTrackReaderPreviewProps[]
+  albums?: MusicAlbumPreviewProps[];
+  tracks?: MusicTrackReaderPreviewProps[];
 }
 
 export function ViewChannel (props: ViewChannelProps) {
   const { channel, videos = [], albums = [], tracks = [] } = props;
 
   if (!channel) {
-    return <JoyError title={`Channel was not found`} />
+    return <JoyError title={'Channel was not found'} />;
   }
 
   if (isVideoChannel(channel)) {
@@ -35,6 +35,6 @@ export function ViewChannel (props: ViewChannelProps) {
   } else if (isMusicChannel(channel)) {
     return <ViewMusicChannel channel={channel} albums={albums} tracks={tracks} />;
   } else {
-    return <JoyError title={`Unsupported channel type`}>{channel.content}</JoyError>
+    return <JoyError title={'Unsupported channel type'}>{channel.content}</JoyError>;
   }
 }
