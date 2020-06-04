@@ -87,5 +87,7 @@ dist/
 yarn-error.log
 .pnp/
 .pnp.js
+.yarn
+.yarnrc.yml
 # Yarn Integrity file
 .yarn-integrity

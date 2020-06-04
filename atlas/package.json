@@ -51,17 +51,18 @@
 		"lint-staged": "^10.2.7",
 		"parcel": "^1.12.4",
 		"react-docgen-typescript-loader": "^3.7.1",
-		"react-player": "^1.15.3",
 		"rollup": "^2.1.0",
 		"rollup-plugin-babel": "^4.4.0",
 		"rollup-plugin-typescript2": "^0.26.0",
 		"storybook-addon-jsx": "^7.1.15",
 		"ts-loader": "^6.2.1",
-		"typescript": "^3.8.3",
-		"video-react": "^0.14.1"
+		"typescript": "^3.8.3"
 	},
 	"dependencies": {
+		"@emotion/core": "^10.0.28",
 		"app": "file:packages/app",
-		"components": "file:packages/components"
+		"components": "file:packages/components",
+		"react": "^16.13.1",
+		"react-dom": "^16.13.1"
 	}
 }

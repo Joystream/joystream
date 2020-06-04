@@ -30,5 +30,10 @@
 	},
 	"bugs": {
 		"url": "https://github.com/Joystream/atlas/issues"
+	},
+	"dependencies": {
+		"@emotion/core": "^10.0.28",
+		"react": "^16.13.1",
+		"react-dom": "^16.13.1"
 	}
 }

@@ -25,15 +25,13 @@
 		"url": "https://github.com/Joystream/atlas/issues"
 	},
 	"dependencies": {
+		"@emotion/core": "^10.0.28",
 		"@reach/router": "^1.3.3",
 		"normalize.css": "^8.0.1",
 		"packages": "^0.0.8",
-		"react": "^16.13.0",
-		"react-dom": "^16.13.0",
+		"react": "^16.13.1",
+		"react-dom": "^16.13.1",
 		"react-redux": "^7.2.0",
 		"redux": "^4.0.5"
-	},
-	"devDependencies": {
-		"babel-core": "^6.26.3"
 	}
 }

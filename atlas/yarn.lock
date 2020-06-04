@@ -1343,7 +1343,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.0.0, @babel/runtime@npm:^7.1.2, @babel/runtime@npm:^7.3.1, @babel/runtime@npm:^7.4.4, @babel/runtime@npm:^7.4.5, @babel/runtime@npm:^7.5.0, @babel/runtime@npm:^7.5.5, @babel/runtime@npm:^7.6.3, @babel/runtime@npm:^7.7.2, @babel/runtime@npm:^7.7.6, @babel/runtime@npm:^7.8.4, @babel/runtime@npm:^7.8.7, @babel/runtime@npm:^7.9.2":
+"@babel/runtime@npm:^7.0.0, @babel/runtime@npm:^7.1.2, @babel/runtime@npm:^7.3.1, @babel/runtime@npm:^7.4.4, @babel/runtime@npm:^7.5.0, @babel/runtime@npm:^7.5.5, @babel/runtime@npm:^7.6.3, @babel/runtime@npm:^7.7.2, @babel/runtime@npm:^7.7.6, @babel/runtime@npm:^7.8.4, @babel/runtime@npm:^7.8.7, @babel/runtime@npm:^7.9.2":
   version: 7.10.2
   resolution: "@babel/runtime@npm:7.10.2"
   dependencies:
@@ -1464,7 +1464,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@emotion/core@npm:^10.0.20, @emotion/core@npm:^10.0.9":
+"@emotion/core@npm:^10.0.20, @emotion/core@npm:^10.0.28, @emotion/core@npm:^10.0.9":
   version: 10.0.28
   resolution: "@emotion/core@npm:10.0.28"
   dependencies:
@@ -5062,12 +5062,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "app@workspace:packages/app"
   dependencies:
+    "@emotion/core": ^10.0.28
     "@reach/router": ^1.3.3
-    babel-core: ^6.26.3
     normalize.css: ^8.0.1
     packages: ^0.0.8
-    react: ^16.13.0
-    react-dom: ^16.13.0
+    react: ^16.13.1
+    react-dom: ^16.13.1
     react-redux: ^7.2.0
     redux: ^4.0.5
   languageName: unknown
@@ -5352,6 +5352,7 @@ __metadata:
     "@babel/preset-react": ^7.8.3
     "@babel/preset-typescript": ^7.9.0
     "@emotion/babel-preset-css-prop": ^10.0.27
+    "@emotion/core": ^10.0.28
     "@fortawesome/fontawesome-svg-core": ^1.2.28
     "@fortawesome/free-solid-svg-icons": ^5.13.0
     "@fortawesome/react-fontawesome": ^0.1.9
@@ -5384,15 +5385,15 @@ __metadata:
     lerna: ^3.20.2
     lint-staged: ^10.2.7
     parcel: ^1.12.4
+    react: ^16.13.1
     react-docgen-typescript-loader: ^3.7.1
-    react-player: ^1.15.3
+    react-dom: ^16.13.1
     rollup: ^2.1.0
     rollup-plugin-babel: ^4.4.0
     rollup-plugin-typescript2: ^0.26.0
     storybook-addon-jsx: ^7.1.15
     ts-loader: ^6.2.1
     typescript: ^3.8.3
-    video-react: ^0.14.1
   languageName: unknown
   linkType: soft
 
@@ -7568,7 +7569,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"classnames@npm:^2.2.5, classnames@npm:^2.2.6":
+"classnames@npm:^2.2.5":
   version: 2.2.6
   resolution: "classnames@npm:2.2.6"
   checksum: 3/490eaeca5931846737ffd33e472a701d268d5b8bc5717dd4cf108a127b06e86e05350e06799abbbe763a0e4c945b4217f6700b7ae00ddc703505682c370e5cf2
@@ -7948,6 +7949,10 @@ __metadata:
 "components@workspace:packages/components":
   version: 0.0.0-use.local
   resolution: "components@workspace:packages/components"
+  dependencies:
+    "@emotion/core": ^10.0.28
+    react: ^16.13.1
+    react-dom: ^16.13.1
   languageName: unknown
   linkType: soft
 
@@ -8899,7 +8904,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"deepmerge@npm:^4.0.0, deepmerge@npm:^4.2.2":
+"deepmerge@npm:^4.2.2":
   version: 4.2.2
   resolution: "deepmerge@npm:4.2.2"
   checksum: 3/85abf8e0045ee280996e7d2396979c877ef0741e413b716e42441110e0a83ac08098b2a49cea035510060bf667c0eae3189b2a52349f5fa4b000c211041637b1
@@ -13828,13 +13833,6 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"load-script@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "load-script@npm:1.0.0"
-  checksum: 3/9f907ee20dfe8068af210be73a072dd61a287566a23b5666b9c6b9957e66eb33cc7c6a790308cf307c373d7ff75265ab1dde779c3fff90d65535fb3a1c0a167a
-  languageName: node
-  linkType: hard
-
 "loader-runner@npm:^2.4.0":
   version: 2.4.0
   resolution: "loader-runner@npm:2.4.0"
@@ -17572,7 +17570,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"react-dom@npm:^16.13.0, react-dom@npm:^16.8.3":
+"react-dom@npm:^16.13.0, react-dom@npm:^16.13.1, react-dom@npm:^16.8.3":
   version: 16.13.1
   resolution: "react-dom@npm:16.13.1"
   dependencies:
@@ -17701,19 +17699,6 @@ fsevents@^1.2.7:
   version: 3.0.4
   resolution: "react-lifecycles-compat@npm:3.0.4"
   checksum: 3/82176a55ef7526414d770d5e07dc1d28b4c7f20281f22c6f53f3a98df9dbbb5d70c94bebee57b4ea8ccc2eee430b907ca7b564a42fbdd0ed21e7c43bfee35404
-  languageName: node
-  linkType: hard
-
-"react-player@npm:^1.15.3":
-  version: 1.15.3
-  resolution: "react-player@npm:1.15.3"
-  dependencies:
-    deepmerge: ^4.0.0
-    load-script: ^1.0.0
-    prop-types: ^15.7.2
-  peerDependencies:
-    react: "*"
-  checksum: 3/97d8a48517b968c2fbacbc9fac052d22c728d0276e8833285cc3238416d98c3b96569b8bf7368a5042c4fc3e1e2aaed6aec7ee323a3f6919af28e9573f8420f0
   languageName: node
   linkType: hard
 
@@ -17846,7 +17831,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"react@npm:^16.13.0, react@npm:^16.8.3":
+"react@npm:^16.13.0, react@npm:^16.13.1, react@npm:^16.8.3":
   version: 16.13.1
   resolution: "react@npm:16.13.1"
   dependencies:
@@ -18167,7 +18152,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"redux@npm:*, redux@npm:^4.0.0, redux@npm:^4.0.1, redux@npm:^4.0.5":
+"redux@npm:*, redux@npm:^4.0.0, redux@npm:^4.0.5":
   version: 4.0.5
   resolution: "redux@npm:4.0.5"
   dependencies:
@@ -21551,22 +21536,6 @@ typescript@^3.8.3:
     unist-util-stringify-position: ^2.0.0
     vfile-message: ^2.0.0
   checksum: 3/3f84677ed6180335ec2e699c9b91305eda35fad42cba0bddcb0f4561f8b6373fddb87bc9a89d91d926b4281be614a7ec003ff6cd2f3e1c0ccecf95e90ef8b035
-  languageName: node
-  linkType: hard
-
-"video-react@npm:^0.14.1":
-  version: 0.14.1
-  resolution: "video-react@npm:0.14.1"
-  dependencies:
-    "@babel/runtime": ^7.4.5
-    classnames: ^2.2.6
-    lodash.throttle: ^4.1.1
-    prop-types: ^15.7.2
-    redux: ^4.0.1
-  peerDependencies:
-    react: ^15.0.0 || ^16.0.0
-    react-dom: ^15.0.0 || ^16.0.0
-  checksum: 3/a7f2c21905edc760274c37e203039dc554e6ebf8bc661781741e335fc381fac896f3e2743e4edb02900050d8b9354c091bea47e69b4dc5336793f1763063213b
   languageName: node
   linkType: hard
 
