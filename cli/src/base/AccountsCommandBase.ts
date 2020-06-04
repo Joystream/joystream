@@ -18,12 +18,12 @@ const SPECIAL_ACCOUNT_POSTFIX = '__DEV';
  * Abstract base class for account-related commands.
  *
  * All the accounts available in the CLI are stored in the form of json backup files inside:
- * { this.config.dataDir }/{ ACCOUNTS_DIRNAME } (ie. ~/.local/share/joystream-cli/accounts on Ubuntu)
- * Where: this.config.dataDir is provided by oclif and ACCOUNTS_DIRNAME is a const (see above).
+ * { APP_DATA_PATH }/{ ACCOUNTS_DIRNAME } (ie. ~/.local/share/joystream-cli/accounts on Ubuntu)
+ * Where: APP_DATA_PATH is provided by StateAwareCommandBase and ACCOUNTS_DIRNAME is a const (see above).
  */
 export default abstract class AccountsCommandBase extends ApiCommandBase {
     getAccountsDirPath(): string {
-        return path.join(this.config.dataDir, ACCOUNTS_DIRNAME);
+        return path.join(this.getAppDataPath(), ACCOUNTS_DIRNAME);
     }
 
     getAccountFilePath(account: NamedKeyringPair, isSpecial: boolean = false): string {
