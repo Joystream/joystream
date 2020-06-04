@@ -632,13 +632,11 @@ impl<T: Trait> Property<T> {
         unused_schema_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
         entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
-        if self.unique {
+        if self.unique && (*new_value != PropertyValue::default() || self.required) {
             ensure!(
                 unused_schema_property_values
                     .iter()
                     .chain(entity_property_values.iter())
-                    .filter(|(_, property_value)| *new_value == PropertyValue::default()
-                        && !self.required)
                     .all(|(_, prop_value)| *prop_value != *new_value),
                 ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE
             );
