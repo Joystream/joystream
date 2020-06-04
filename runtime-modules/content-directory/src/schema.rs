@@ -541,6 +541,43 @@ impl Schema {
         &self.properties
     }
 
+    /// Select `PropertyValues`, which ids are in current `Schema` property ids set
+    pub fn get_property_values<T: Trait>(
+        &self,
+        property_values: BTreeMap<u16, PropertyValue<T>>,
+        unused_property_ids: &BTreeSet<PropertyId>,
+    ) -> BTreeMap<u16, PropertyValue<T>> {
+        property_values
+            .into_iter()
+            // Select `PropertyValues`, which ids are in `Schema` property ids set
+            .filter(|(entity_property_id, _)| {
+                self.properties
+                    .iter()
+                    .any(|schema_property_id| *schema_property_id == *entity_property_id)
+            })
+            // Select `PropertyValues`, which ids are not added yet to the `Entity`
+            .filter(|(entity_property_id, _)| {
+                unused_property_ids
+                    .iter()
+                    .any(|unused_property_id| *unused_property_id == *entity_property_id)
+            })
+            .collect()
+    }
+
+    /// Retrieve `Property` ids, which corresonding values are not added yet to the current `Entity` `PropertyValue`s set
+    pub fn get_unused_property_ids<T: Trait>(
+        &self,
+        entity_property_values: &BTreeMap<u16, PropertyValue<T>>,
+    ) -> BTreeSet<PropertyId> {
+        self.properties
+            .iter()
+            // Filter property ids, already added to the entity property values set
+            // and though cannot be updated, while adding a schema support to this entity.
+            .filter(|property_id| !entity_property_values.contains_key(property_id))
+            .cloned()
+            .collect()
+    }
+
     /// Get `Schema` `properties` by mutable reference
     pub fn get_properties_mut(&mut self) -> &mut BTreeSet<PropertyId> {
         &mut self.properties
@@ -588,16 +625,20 @@ impl<T: Trait> Property<T> {
         Ok(())
     }
 
-    /// Ensure all values are unique except of null non required values
+    /// Ensure all `PropertyValue`'s are unique except of null non required ones
     pub fn ensure_unique_option_satisfied(
         &self,
         new_value: &PropertyValue<T>,
-        entity_values_updated: &BTreeMap<PropertyId, PropertyValue<T>>,
+        unused_schema_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+        entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
-        if self.unique && (*new_value != PropertyValue::default() || self.required) {
+        if self.unique {
             ensure!(
-                entity_values_updated
+                unused_schema_property_values
                     .iter()
+                    .chain(entity_property_values.iter())
+                    .filter(|(_, property_value)| *new_value == PropertyValue::default()
+                        && !self.required)
                     .all(|(_, prop_value)| *prop_value != *new_value),
                 ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE
             );
