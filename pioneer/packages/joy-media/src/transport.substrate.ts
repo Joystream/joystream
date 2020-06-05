@@ -324,7 +324,7 @@ export class SubstrateTransport extends MediaTransport {
             loadChannelById
           })
         );
-      } catch(conversionError) {
+      } catch (conversionError) {
         console.error(conversionError);
       }
     }
