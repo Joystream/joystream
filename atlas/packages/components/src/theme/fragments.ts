@@ -1,73 +1,55 @@
-import { StyleFn } from "./../utils/style-reducer";
-import { css } from "@emotion/core";
-import spacing from "./spacing";
-import typography from "./typography";
-import colors from "./colors";
-import { StyleObj, stripInline } from "../utils";
-
-export function withSize(size: string) {
-	return css`
-		padding: ${size === "large"
-			? `${spacing.s4} ${spacing.s2}`
-			: size === "normal" || size === "full"
-			? `${spacing.s3} ${spacing.s2}`
-			: `${spacing.s2} ${spacing.s1}`};
-
-		font-size: ${size === "large"
-			? typography.sizes.large
-			: size === "normal" || size === "full"
-			? typography.sizes.normal
-			: typography.sizes.small};
-
-		width: ${size === "full" ? "100%" : "auto"};
-	`;
-}
+import { StyleFn } from "./../utils/style-reducer"
+import { css } from "@emotion/core"
+import spacing from "./spacing"
+import typography from "./typography"
+import colors from "./colors"
+import { StyleObj, stripInline } from "../utils"
 
 export function log(styles: StyleObj, props: any) {
-	console.log("styles", styles);
-	console.log("props", props);
-	return styles;
+	console.log("styles", styles)
+	console.log("props", props)
+	return styles
 }
 
 export function dimensionsFromProps(styles: StyleObj, { full }: { full: boolean }) {
-	let display: string;
+	let display: string
 	if (styles.display == null) {
-		display = "block";
+		display = "block"
 	}
-	display = styles.display as string;
+	display = styles.display as string
 
 	return {
 		...styles,
 		display: full && display.includes("inline") ? stripInline(display) : display,
-		width: full ? "100%" : styles.width || "",
-	};
+		width: full ? "100%" : styles.width || ""
+	}
 }
 
 export function disabled(styles: StyleObj, { disabled }: { disabled: boolean }): StyleObj {
 	if (!disabled) {
-		return styles;
+		return styles
 	}
 
 	return {
 		...unsetStyles(styles),
 		backgroundColor: colors.gray[100],
-		color: colors.white,
-	};
+		color: colors.white
+	}
 }
 
 function unsetStyles(styles: StyleObj): StyleObj {
 	// Filter and unset all properties that give color, on all states.
 	// Need to add more?
-	const colorProperties = ["color", "backgroundColor", "borderColor", "boxShadow", "fill", "stroke"];
+	const colorProperties = ["color", "backgroundColor", "borderColor", "boxShadow", "fill", "stroke"]
 
 	const filteredEntries = Object.entries(styles).map(([key, value]) => {
 		// If it has a psuedo selector, we're going to disable color from that as well.
 		if (key.includes("&:hover") || key.includes("&:active") || key.includes("&:focus")) {
-			return unsetStyles(value as StyleObj);
+			return unsetStyles(value as StyleObj)
 		} else if (colorProperties.includes(key)) {
-			return [key, "unset"];
+			return [key, "unset"]
 		}
-		return [key, value];
-	});
-	return Object.fromEntries(filteredEntries as any);
+		return [key, value]
+	})
+	return Object.fromEntries(filteredEntries as any)
 }

@@ -1,74 +1,115 @@
-import { css } from "@emotion/core"
+import { StyleFn, makeStyles } from "../../utils"
 import { typography, colors, spacing } from "../../theme"
+import { CSSProperties } from "react"
 
 export type RadioButtonStyleProps = {
-  selected?: boolean
-  disabled?: boolean
-  error?: boolean
-  position?: "end" | "start" | "top" | "bottom"
+	selected?: boolean
+	disabled?: boolean
+	error?: boolean
+	position?: "end" | "start" | "top" | "bottom"
+}
+const container: StyleFn = (_, { position }) => ({
+	fontFamily: typography.fonts.base,
+	display: position === "bottom" || position === "bottom" ? "inline-block" : "inline-flex",
+	alignItems: "center",
+	"&:focus": {
+		outline: "none"
+	}
+})
+
+const outerDot: StyleFn = (_, { position, disabled }) => ({
+	width: spacing.xxl,
+	height: spacing.xxl,
+	borderRadius: "50%",
+	position: "relative",
+	margin: position === "bottom" ? `0 auto ${spacing.xs}` : position === "top" ? `${spacing.xs} auto 0` : "",
+	"&:hover": {
+		backgroundColor: disabled ? "none" : colors.gray[50]
+	},
+	"&:active": {
+		backgroundColor: disabled ? "none" : colors.gray[100]
+	},
+	"&:focus": {
+		backgroundColor: disabled ? "none" : colors.blue[100],
+		outline: "none"
+	}
+})
+
+const dot: StyleFn = (_, { disabled, selected, error }) => {
+	return {
+		width: spacing.m,
+		height: spacing.m,
+		borderWidth: 1,
+		borderColor: disabled
+			? colors.gray[200]
+			: error
+			? colors.error
+			: selected
+			? colors.blue[500]
+			: colors.gray[300],
+		borderStyle: "solid",
+		borderRadius: "50%",
+		position: "absolute",
+		top: "7px",
+		left: "7px",
+		"&:focus": {
+			borderColor: disabled ? colors.gray[200] : colors.gray[700]
+		},
+		"&:active": {
+			borderColor: disabled ? colors.gray[200] : colors.gray[700]
+		}
+	}
 }
 
-export let makeStyles = ({
-  selected = false,
-  disabled = false,
-  error = false,
-  position = "end"
-}: RadioButtonStyleProps) => {
+const BackgroundFromProps: StyleFn = (styles, { disabled, selected, error }) => {
+	let key = selected ? `backgroundImage` : `backgroundColor`
+	const SELECTED_ERROR = `repeating-radial-gradient(circle, ${colors.error} 0px, ${colors.error} 3px, transparent 3px, transparent 6px, ${colors.error} 6px, ${colors.error} 8px)`
+	const SELECTED_DISABLED = `repeating-radial-gradient(circle, ${colors.gray[200]} 0px, ${colors.gray[200]} 3px, transparent 3px, transparent 6px, ${colors.gray[200]} 6px, ${colors.gray[200]} 8px)`
+	const SELECTED_DEFAULT = `repeating-radial-gradient(circle, ${colors.blue[500]} 0px, ${colors.blue[500]} 3px, transparent 3px, transparent 6px, ${colors.blue[500]} 6px, ${colors.blue[500]} 8px)`
+	const UNSELECTED_DISABLED = colors.gray[50]
 
-  return {
-    container: css`
-      font-family: ${typography.fonts.base};
-      display: ${(position === "bottom" || position === "top") ? "inline-block" : "inline-flex"};
-      align-items: center;
-      &:focus {
-        outline: none;
-      }`,
-    outterDot: css`
-      width: ${spacing.xxl};
-      height: ${spacing.xxl};
-      border-radius: 50%;
-      position: relative;
-      ${position === "bottom" ? `margin: 0 auto ${spacing.xs};` :
-        position === "top" ? `margin: ${spacing.xs} auto 0;` : ""}
-      ${disabled ? "cursor: not-allowed;" : ""}
-      &:hover {
-        background-color: ${disabled ? "none" : colors.gray[50]};
-      }
-      &:active {
-        background-color: ${disabled ? "none" : colors.gray[100]};
-      }
-      &:focus {
-        background-color: ${disabled ? "none" : colors.blue[100]};
-        outline: none;
-      }
-    `,
-    dot: css`
-      width: ${spacing.m};
-      height: ${spacing.m};
-      border: 1px solid ${disabled ? colors.gray[200] :
-        error ? colors.error :
-        selected ? colors.blue[500] : colors.gray[300]};
-      border-radius: 50%;
-      ${disabled ? `background-color: ${colors.gray[50]};` : ""}
-      ${disabled && selected ?
-        `background-image: repeating-radial-gradient(circle, ${colors.gray[200]} 0px, ${colors.gray[200]} 3px, transparent 3px, transparent 6px, ${colors.gray[200]} 6px, ${colors.gray[200]} 8px);` :
-        disabled && !selected ? `background-color: ${colors.gray[50]};` :
-        error && selected ? `background-image: repeating-radial-gradient(circle, ${colors.error} 0px, ${colors.error} 3px, transparent 3px, transparent 6px, ${colors.error} 6px, ${colors.error} 8px);` :
-        selected ? `background-image: repeating-radial-gradient(circle, ${colors.blue[500]} 0px, ${colors.blue[500]} 3px, transparent 3px, transparent 6px, ${colors.blue[500]} 6px, ${colors.blue[500]} 8px);` : ""}
-      position: absolute;
-      top: 7px;
-      left: 7px;
-      &:focus,
-      &:active {
-        border-color: ${disabled ? colors.gray[200] : colors.gray[700]};
-      }
-    `,
-    label: css`
-      color: ${colors.white};
-      ${position === "end" ? `margin-left: ${spacing.xs};` :
-        position === "start" ? `margin-right: ${spacing.xs};` :
-        position === "bottom" ? `margin: 0 auto ${spacing.xs};` :
-        position === "top" ? `margin: ${spacing.xs} auto 0;` : ""}
-    `
-  }
+	let value =
+		selected && error
+			? SELECTED_ERROR
+			: selected && disabled
+			? SELECTED_DISABLED
+			: selected
+			? SELECTED_DEFAULT
+			: disabled
+			? UNSELECTED_DISABLED
+			: styles[key as keyof CSSProperties]
+	return {
+		...styles,
+		[key]: value
+	}
+}
+
+const label: StyleFn = (_, { position }) => {
+	const key = position === "end" ? "margin-left" : position === "start" ? "margin-right" : "margin"
+	const value =
+		key === "margin-left" || key === "margin-right"
+			? spacing.xs
+			: position === "bottom"
+			? `0 auto ${spacing.xs}`
+			: `${spacing.xs} auto 0`
+
+	return {
+		color: colors.white,
+		[key]: value
+	}
+}
+
+export const useCSS = ({
+	selected = false,
+	disabled = false,
+	error = false,
+	position = "end"
+}: RadioButtonStyleProps) => {
+	const props = { selected, disabled, error, position }
+	return {
+		container: makeStyles([container])(props),
+		outterDot: makeStyles([outerDot])(props),
+		dot: makeStyles([dot, BackgroundFromProps])(props),
+		label: makeStyles([label])(props)
+	}
 }

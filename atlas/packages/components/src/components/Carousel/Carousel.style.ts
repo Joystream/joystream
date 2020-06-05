@@ -1,33 +1,38 @@
-import { css } from "@emotion/core"
+import { css } from "@emotion/core";
+import { StyleFn, makeStyles } from "../../utils";
 
 export type CarouselStyleProps = {
-  navTopPosition?: string
-}
+	navTopPosition?: string;
+};
 
-export let makeStyles = ({
-  navTopPosition = "0"
-}: CarouselStyleProps) => {
-  return {
-    wrapper: css`
-      position: relative;
-    `,
-    container: css`
-      display: flex;
-      width: 100%;
-      overflow: hidden;
-    `,
-    item: css`
-      display: inline-block;
-    `,
-    navLeft: css`
-      position: absolute;
-      left: 0;
-      top: ${navTopPosition};
-    `,
-    navRight: css`
-      position: absolute;
-      right: 0;
-      top: ${navTopPosition};
-    `
-  }
-}
+const wrapper: StyleFn = () => ({
+	position: "relative",
+});
+const container: StyleFn = () => ({
+	display: "flex",
+	width: "100%",
+	overflow: "hidden",
+});
+
+const item: StyleFn = () => ({
+	display: "inline-block",
+});
+const navLeft: StyleFn = (_, { navTopPosition = 0 }) => ({
+	position: "absolute",
+	left: 0,
+	top: `${navTopPosition}`,
+});
+
+const navRight: StyleFn = (_, { navTopPosition = 0 }) => ({
+	position: "absolute",
+	right: 0,
+	top: `${navTopPosition}`,
+});
+
+export const useCSS = (props: CarouselStyleProps) => ({
+	wrapper: makeStyles([wrapper])(props),
+	container: makeStyles([container])(props),
+	item: makeStyles([item])(props),
+	navLeft: makeStyles([navLeft])(props),
+	navRight: makeStyles([navRight])(props),
+});

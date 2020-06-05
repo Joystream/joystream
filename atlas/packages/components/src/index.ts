@@ -1,3 +1,5 @@
+import Checkbox from "./components/Checkbox"
+
 export { default as Button } from "./components/Button"
 export { default as Carousel } from "./components/Carousel"
 export { default as Dropdown } from "./components/Dropdown"
@@ -6,6 +8,7 @@ export { default as Header } from "./components/Header"
 export { default as Link } from "./components/Link"
 export { default as NavButton } from "./components/NavButton"
 export { default as RadioButton } from "./components/RadioButton"
+export { default as Checkbox } from "./components/Checkbox"
 export { default as TagButton } from "./components/TagButton"
 export { default as Tabs } from "./components/Tabs"
 export { default as Tab } from "./components/Tabs/Tab"

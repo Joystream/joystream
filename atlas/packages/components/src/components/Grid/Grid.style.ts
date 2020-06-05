@@ -1,23 +1,21 @@
-import { css } from "@emotion/core"
+import { StyleFn, makeStyles } from "../../utils";
 
 export type GridStyleProps = {
-  minItemWidth?: string | number
-  maxItemWidth?: string | number
-}
+	minItemWidth?: string | number;
+	maxItemWidth?: string | number;
+};
+const container: StyleFn = (_, { minItemWidth = "300", maxItemWidth }) => ({
+	display: "grid",
+	gridTemplateColumns: `repeat(auto-fit, minmax(${minItemWidth}px, ${maxItemWidth ? `${maxItemWidth}px` : "1fr"}))`,
+	gap: "30px",
+});
 
-export let makeStyles = ({
-  minItemWidth = "300",
-  maxItemWidth
-}: GridStyleProps) => {
-  return {
-    container: css`
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(${minItemWidth}px, ${maxItemWidth ? maxItemWidth + "px" : "1fr"}));
-      gap: 30px;
-    `,
-    item: css`
-      width: 100%;
-      cursor: pointer;
-    `,
-  }
-}
+const item: StyleFn = () => ({
+	cursor: "pointer",
+	width: "100%",
+});
+
+export const useCSS = (props: GridStyleProps) => ({
+	container: makeStyles([container])(props),
+	item: makeStyles([item])(props),
+});
