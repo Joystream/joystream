@@ -200,7 +200,7 @@ export abstract class EntityCodec<T extends PlainEntity> {
       id: entity.id.toNumber()
     }
 
-	if (!entity.entity_values.toArray().length) {
+	if (!entity.in_class_schema_indexes.toArray().length && !entity.entity_values.toArray().length) {
 		throw new Error(`Trying to convert empty entity to plain object! (Entity id: ${res.id})`);
 	}
 
