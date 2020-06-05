@@ -13,26 +13,26 @@
           npm:
             name: yarn
             global: yes
-    - name: create node docker image
-      shell: ./scripts/build-joystream-node-docker-image.sh
+    - name: create testing node docker image
+      shell: ./scripts/build-joystream-testing-node-docker-image.sh
       args:
-        chdir: ../../../
+        chdir: ../../
     - name: run network
       block:
         - name: run docker container
           docker_container:
-            name: 'joystream-node'
-            image: 'joystream/node'
+            name: "joystream-node"
+            image: "joystream/node"
             ports:
-              - '9944:9944'
+              - "9944:9944"
             entrypoint: ./node --chain=chainspec.json --alice --validator --ws-external --rpc-cors=all
             state: started
         - name: execute network tests
-          shell: yarn test >> tests.log
+          shell: yarn test >> ../../.tmp/tests.log
           args:
-            chdir: ../../../.tmp/
+            chdir: ../../tests/network-tests/
       always:
         - name: stop docker container
           docker_container:
-            name: 'joystream-node'
+            name: "joystream-node"
             state: absent
