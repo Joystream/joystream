@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use super::mock::*;
-use crate::data_object_type_registry::StorageBureaucracy;
+use crate::StorageBureaucracy;
 use system::{self, EventRecord, Phase, RawOrigin};
 
 const DEFAULT_LEADER_ACCOUNT_ID: u64 = 1;

@@ -6,14 +6,17 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
-use crate::data_directory::{self, ContentIdExists};
 use codec::{Codec, Decode, Encode};
-use roles::actors;
 use roles::traits::Roles;
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_event, decl_module, decl_storage, ensure, Parameter};
-use system::{self, ensure_signed};
+
+use crate::data_directory::{self, ContentIdExists};
+use crate::StorageBureaucracy;
+
+/// Storage provider is a worker from the bureuacracy module.
+pub type StorageProviderId<T> = bureaucracy::WorkerId<T>;
 
 /// The _Data object storage registry_ main _Trait_
 pub trait Trait:
@@ -40,8 +43,6 @@ pub trait Trait:
 // TODO: migrate to the Substrate error style
 static MSG_CID_NOT_FOUND: &str = "Content with this ID not found.";
 static MSG_DOSR_NOT_FOUND: &str = "No data object storage relationship found for this ID.";
-static MSG_ONLY_STORAGE_PROVIDER_MAY_CREATE_DOSR: &str =
-    "Only storage providers can create data object storage relationships.";
 static MSG_ONLY_STORAGE_PROVIDER_MAY_CLAIM_READY: &str =
     "Only the storage provider in a DOSR can decide whether they're ready.";
 
@@ -50,7 +51,7 @@ const DEFAULT_FIRST_RELATIONSHIP_ID: u32 = 1;
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct DataObjectStorageRelationship<T: Trait> {
     pub content_id: <T as data_directory::Trait>::ContentId,
-    pub storage_provider: T::AccountId,
+    pub storage_provider_id: StorageProviderId<T>,
     pub ready: bool,
 }
 
@@ -85,13 +86,10 @@ decl_event! {
     pub enum Event<T> where
         <T as data_directory::Trait>::ContentId,
         <T as Trait>::DataObjectStorageRelationshipId,
-        <T as system::Trait>::AccountId
+        StorageProviderId = StorageProviderId<T>
     {
-        DataObjectStorageRelationshipAdded(DataObjectStorageRelationshipId, ContentId, AccountId),
+        DataObjectStorageRelationshipAdded(DataObjectStorageRelationshipId, ContentId, StorageProviderId),
         DataObjectStorageRelationshipReadyUpdated(DataObjectStorageRelationshipId, bool),
-
-        StorageProviderAddedContent(AccountId, ContentId),
-        StorageProviderRemovedContent(AccountId, ContentId),
     }
 }
 
@@ -99,12 +97,9 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event() = default;
 
-        pub fn add_relationship(origin, cid: T::ContentId) {
-            // Origin has to be a storage provider
-            let who = ensure_signed(origin)?;
-
-            // Check that the origin is a storage provider
-            ensure!(<T as Trait>::Roles::account_has_role(&who, actors::Role::StorageProvider), MSG_ONLY_STORAGE_PROVIDER_MAY_CREATE_DOSR);
+        pub fn add_relationship(origin, storage_provider_id: StorageProviderId<T>, cid: T::ContentId) {
+            // Origin should match storage provider.
+            <StorageBureaucracy<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
 
             // Content ID must exist
             ensure!(T::ContentIdExists::has_content(&cid), MSG_CID_NOT_FOUND);
@@ -113,12 +108,14 @@ decl_module! {
             let new_id = Self::next_relationship_id();
             let dosr: DataObjectStorageRelationship<T> = DataObjectStorageRelationship {
                 content_id: cid,
-                storage_provider: who.clone(),
+                storage_provider_id,
                 ready: false,
             };
 
             <Relationships<T>>::insert(new_id, dosr);
-            <NextRelationshipId<T>>::mutate(|n| { *n += T::DataObjectStorageRelationshipId::from(1); });
+            <NextRelationshipId<T>>::mutate(|n| {
+                *n += T::DataObjectStorageRelationshipId::from(1);
+            });
 
             // Also add the DOSR to the list of DOSRs for the CID. Uniqueness is guaranteed
             // by the map, so we can just append the new_id to the list.
@@ -127,16 +124,26 @@ decl_module! {
             <RelationshipsByContentId<T>>::insert(cid, dosr_list);
 
             // Emit event
-            Self::deposit_event(RawEvent::DataObjectStorageRelationshipAdded(new_id, cid, who));
+            Self::deposit_event(
+                RawEvent::DataObjectStorageRelationshipAdded(new_id, cid, storage_provider_id)
+            );
         }
 
         // A storage provider may flip their own ready state, but nobody else.
-        pub fn set_relationship_ready(origin, id: T::DataObjectStorageRelationshipId) {
-            Self::toggle_dosr_ready(origin, id, true)?;
+        pub fn set_relationship_ready(
+            origin,
+            storage_provider_id: StorageProviderId<T>,
+            id: T::DataObjectStorageRelationshipId
+        ) {
+            Self::toggle_dosr_ready(origin, storage_provider_id, id, true)?;
         }
 
-        pub fn unset_relationship_ready(origin, id: T::DataObjectStorageRelationshipId) {
-            Self::toggle_dosr_ready(origin, id, false)?;
+        pub fn unset_relationship_ready(
+            origin,
+            storage_provider_id: StorageProviderId<T>,
+            id: T::DataObjectStorageRelationshipId
+        ) {
+            Self::toggle_dosr_ready(origin, storage_provider_id, id, false)?;
         }
     }
 }
@@ -144,16 +151,16 @@ decl_module! {
 impl<T: Trait> Module<T> {
     fn toggle_dosr_ready(
         origin: T::Origin,
+        storage_provider_id: StorageProviderId<T>,
         id: T::DataObjectStorageRelationshipId,
         ready: bool,
     ) -> Result<(), &'static str> {
-        // Origin has to be the storage provider mentioned in the DOSR
-        let who = ensure_signed(origin)?;
+        <StorageBureaucracy<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
 
         // For that, we need to fetch the identified DOSR
         let mut dosr = Self::relationships(id).ok_or(MSG_DOSR_NOT_FOUND)?;
         ensure!(
-            dosr.storage_provider == who,
+            dosr.storage_provider_id == storage_provider_id,
             MSG_ONLY_STORAGE_PROVIDER_MAY_CLAIM_READY
         );
 

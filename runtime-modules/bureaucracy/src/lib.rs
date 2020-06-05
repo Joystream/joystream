@@ -1126,7 +1126,8 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Ok((worker_application, *worker_application_id, worker_opening))
     }
 
-    fn ensure_worker_signed(
+    /// Ensures the origin contains signed account that belongs to existing worker.
+    pub fn ensure_worker_signed(
         origin: T::Origin,
         worker_id: &WorkerId<T>,
     ) -> Result<WorkerOf<T>, Error> {

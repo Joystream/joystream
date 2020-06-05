@@ -23,13 +23,11 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
+use crate::StorageBureaucracy;
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_event, decl_module, decl_storage, Parameter};
-
-// Alias for storage working group bureaucracy
-pub(crate) type StorageBureaucracy<T> = bureaucracy::Module<T, bureaucracy::Instance2>;
 
 /// The _Data object type registry_ main _Trait_
 pub trait Trait: system::Trait + bureaucracy::Trait<bureaucracy::Instance2> {
