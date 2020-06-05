@@ -43,10 +43,10 @@ impl InputValidationLengthConstraint {
 }
 
 /// Structure, respresenting inbound entities rc mappings to their respective count for each `entity_id`
-pub struct InboundEntitiesRc<T: Trait>(BTreeMap<T::EntityId, ReferenceCounter>);
+pub struct InboundEntitiesRc<T: Trait>(BTreeMap<T::EntityId, InboundReferenceCounter>);
 
 impl<T: Trait> Deref for InboundEntitiesRc<T> {
-    type Target = BTreeMap<T::EntityId, ReferenceCounter>;
+    type Target = BTreeMap<T::EntityId, InboundReferenceCounter>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -71,13 +71,14 @@ impl<T: Trait> InboundEntitiesRc<T> {
         for entity_id in entity_ids {
             match self.get_mut(&entity_id) {
                 Some(reference_counter) if same_owner => {
-                    reference_counter.inbound_same_owner_reference_counter += 1;
+                    reference_counter.total += 1;
+                    reference_counter.same_owner += 1;
                 }
                 Some(reference_counter) => {
-                    reference_counter.inbound_reference_counter += 1;
+                    reference_counter.total += 1;
                 }
                 _ => {
-                    self.insert(entity_id, ReferenceCounter::default());
+                    self.insert(entity_id, InboundReferenceCounter::default());
                 }
             }
         }

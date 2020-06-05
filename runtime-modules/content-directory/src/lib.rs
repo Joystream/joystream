@@ -330,58 +330,54 @@ impl<T: Trait> Class<T> {
 /// Structure, respresenting inbound entity rcs for each `Entity`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Copy, Debug)]
-pub struct ReferenceCounter {
-    /// Number of inbound references from another entities
-    inbound_reference_counter: u32,
+pub struct InboundReferenceCounter {
+    /// Total number of inbound references from another entities
+    total: u32,
     /// Number of inbound references from another entities with `SameOwner` flag set
-    inbound_same_owner_reference_counter: u32,
+    same_owner: u32,
 }
 
-impl ReferenceCounter {
-    /// Create simple `ReferenceCounter` instance, based on `same_owner` flag provided
+impl InboundReferenceCounter {
+    /// Create simple `InboundReferenceCounter` instance, based on `same_owner` flag provided
     pub fn new(reference_counter: u32, same_owner: bool) -> Self {
         if same_owner {
             Self {
-                inbound_reference_counter: 0,
-                inbound_same_owner_reference_counter: reference_counter,
+                total: reference_counter,
+                same_owner: reference_counter,
             }
         } else {
             Self {
-                inbound_reference_counter: reference_counter,
-                inbound_same_owner_reference_counter: 0,
+                total: reference_counter,
+                same_owner: 0,
             }
         }
     }
 
-    /// Check if `inbound_reference_counter` is equal to zero
-    pub fn is_inbound_reference_counter_equal_to_zero(self) -> bool {
-        self.inbound_reference_counter == 0
+    /// Check if `total` is equal to zero
+    pub fn is_total_equal_to_zero(self) -> bool {
+        self.total == 0
     }
 
-    /// Check if `inbound_same_owner_reference_counter` is equal to zero
-    pub fn is_inbound_same_owner_reference_counter_equal_to_zero(self) -> bool {
-        self.inbound_same_owner_reference_counter == 0
+    /// Check if `same_owner` is equal to zero
+    pub fn is_same_owner_equal_to_zero(self) -> bool {
+        self.same_owner == 0
     }
 }
 
-impl AddAssign for ReferenceCounter {
+impl AddAssign for InboundReferenceCounter {
     fn add_assign(&mut self, other: Self) {
         *self = Self {
-            inbound_reference_counter: self.inbound_reference_counter
-                + other.inbound_reference_counter,
-            inbound_same_owner_reference_counter: self.inbound_same_owner_reference_counter
-                + other.inbound_same_owner_reference_counter,
+            total: self.total + other.total,
+            same_owner: self.same_owner + other.same_owner,
         };
     }
 }
 
-impl SubAssign for ReferenceCounter {
+impl SubAssign for InboundReferenceCounter {
     fn sub_assign(&mut self, other: Self) {
         *self = Self {
-            inbound_reference_counter: self.inbound_reference_counter
-                - other.inbound_reference_counter,
-            inbound_same_owner_reference_counter: self.inbound_same_owner_reference_counter
-                - other.inbound_same_owner_reference_counter,
+            total: self.total - other.total,
+            same_owner: self.same_owner - other.same_owner,
         };
     }
 }
@@ -406,7 +402,7 @@ pub struct Entity<T: Trait> {
     pub values: BTreeMap<PropertyId, PropertyValue<T>>,
 
     /// Number of property values referencing current entity
-    pub reference_counter: ReferenceCounter,
+    pub reference_counter: InboundReferenceCounter,
 }
 
 impl<T: Trait> Default for Entity<T> {
@@ -416,7 +412,7 @@ impl<T: Trait> Default for Entity<T> {
             class_id: T::ClassId::default(),
             supported_schemas: BTreeSet::new(),
             values: BTreeMap::new(),
-            reference_counter: ReferenceCounter::default(),
+            reference_counter: InboundReferenceCounter::default(),
         }
     }
 }
@@ -434,7 +430,7 @@ impl<T: Trait> Entity<T> {
             class_id,
             supported_schemas,
             values,
-            reference_counter: ReferenceCounter::default(),
+            reference_counter: InboundReferenceCounter::default(),
         }
     }
 
@@ -493,8 +489,7 @@ impl<T: Trait> Entity<T> {
     /// Ensure any `PropertyValue` from external entity does not point to the given `Entity`
     pub fn ensure_rc_is_zero(&self) -> dispatch::Result {
         ensure!(
-            self.reference_counter
-                .is_inbound_reference_counter_equal_to_zero(),
+            self.reference_counter.is_total_equal_to_zero(),
             ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO
         );
         Ok(())
@@ -503,8 +498,7 @@ impl<T: Trait> Entity<T> {
     /// Ensure any inbound `PropertyValue` points to the given `Entity`
     pub fn ensure_inbound_same_owner_rc_is_zero(&self) -> dispatch::Result {
         ensure!(
-            self.reference_counter
-                .is_inbound_same_owner_reference_counter_equal_to_zero(),
+            self.reference_counter.is_same_owner_equal_to_zero(),
             ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO
         );
         Ok(())
@@ -1332,7 +1326,7 @@ decl_module! {
                     let same_controller_status = property.property_type.same_controller_status();
                     Self::count_entities(entity_ids_to_decrease_rcs).iter()
                         .for_each(|(entity_id, rc)| {
-                            let reference_counter = ReferenceCounter::new(*rc, same_controller_status);
+                            let reference_counter = InboundReferenceCounter::new(*rc, same_controller_status);
                             Self::decrease_entity_rcs(entity_id, reference_counter);
                         });
                 }
@@ -1397,7 +1391,7 @@ decl_module! {
 
             if let Some(involved_entity_id) = involved_entity_id {
                 let same_controller_status = property.property_type.same_controller_status();
-                let reference_counter = ReferenceCounter::new(1, same_controller_status);
+                let reference_counter = InboundReferenceCounter::new(1, same_controller_status);
                 Self::decrease_entity_rcs(&involved_entity_id, reference_counter);
             }
 
@@ -1444,7 +1438,7 @@ decl_module! {
                 let value = property_value.get_value();
                 if let Some(entity_rc_to_increment) = value.get_involved_entity() {
                     let same_controller_status = class_property.property_type.same_controller_status();
-                    let reference_counter = ReferenceCounter::new(1, same_controller_status);
+                    let reference_counter = InboundReferenceCounter::new(1, same_controller_status);
                     Self::increase_entity_rcs(&entity_rc_to_increment, reference_counter);
                 }
                 if let Some(PropertyValue::Vector(current_prop_value)) =
@@ -1514,7 +1508,7 @@ decl_module! {
 impl<T: Trait> Module<T> {
     /// Increases corresponding `Entity` references count by rc.
     /// Depends on `same_owner` flag provided
-    fn increase_entity_rcs(entity_id: &T::EntityId, reference_counter: ReferenceCounter) {
+    fn increase_entity_rcs(entity_id: &T::EntityId, reference_counter: InboundReferenceCounter) {
         <EntityById<T>>::mutate(entity_id, |entity| {
             entity.reference_counter += reference_counter
         })
@@ -1522,7 +1516,7 @@ impl<T: Trait> Module<T> {
 
     /// Decreases corresponding `Entity` references count by rc.
     /// Depends on `same_owner` flag provided
-    fn decrease_entity_rcs(entity_id: &T::EntityId, reference_counter: ReferenceCounter) {
+    fn decrease_entity_rcs(entity_id: &T::EntityId, reference_counter: InboundReferenceCounter) {
         <EntityById<T>>::mutate(entity_id, |entity| {
             entity.reference_counter -= reference_counter
         })
