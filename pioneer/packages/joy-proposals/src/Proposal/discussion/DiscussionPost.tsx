@@ -11,15 +11,14 @@ import ReactMarkdown from 'react-markdown';
 const StyledComment = styled.div`
   display: flex;
   margin-bottom: 1rem;
-  @media screen and (max-width: 767px) {
-    flex-direction: column;
-  }
+  flex-direction: column;
 `;
 const AuthorAndDate = styled.div`
-  width: 250px;
-  min-width: 250px;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
   @media screen and (max-width: 767px) {
-    width: 100%;
+    flex-direction: column;
   }
 `;
 const Author = styled.div`
@@ -35,6 +34,7 @@ const ContentAndActions = styled.div`
 const CommentContent = styled.div`
   flex-grow: 1;
   padding: 0.5rem;
+  padding-left: 1rem;
 `;
 const CommentActions = styled.div`
 `;
