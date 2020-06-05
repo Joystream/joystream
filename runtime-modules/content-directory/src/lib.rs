@@ -144,7 +144,8 @@ pub struct InputValidationLengthConstraint {
     pub max_min_diff: u16,
 }
 
-/// Structure, representing `inbound_entity_rcs` & `inbound_same_owner_entity_rcs` mappings to their respective count for each referenced entity id
+/// Structure, representing `inbound_entity_rcs` & `inbound_same_owner_entity_rcs`
+/// mappings to their respective count for each referenced entity id
 pub struct EntitiesRc<T: Trait> {
     /// Entities, which inbound same owner rc should be changed
     pub inbound_entity_rcs: BTreeMap<T::EntityId, ReferenceCounter>,
@@ -1218,8 +1219,9 @@ decl_module! {
             let unused_schema_property_values = schema.get_property_values_unused(property_values, &unused_property_ids);
 
             let entity_controller = entity.get_permissions_ref().get_controller();
+            let class_properties = class.properties;
             Self::ensure_property_values_are_valid(
-                &class, entity_controller, &unused_property_ids, &unused_schema_property_values, entity_property_values_ref
+                &class_properties, entity_controller, &unused_property_ids, &unused_schema_property_values, entity_property_values_ref
             )?;
 
             //
@@ -1228,14 +1230,9 @@ decl_module! {
 
             let entity_property_values = entity.get_values();
 
-            // Entities, which rc should be incremented
-            let entity_ids_to_increase_rcs = Self::get_involved_entity_rcs(&class, &unused_schema_property_values);
-
-            entity_ids_to_increase_rcs.increase_entity_rcs();
-
             // Updated entity values, after new schema support added
             let entity_values_updated = Self::make_updated_entity_property_values(
-                unused_property_ids, unused_schema_property_values, entity_property_values
+                unused_property_ids, &unused_schema_property_values, entity_property_values
             );
 
             // Add schema support to `Entity` under given `entity_id`
@@ -1249,6 +1246,10 @@ decl_module! {
                     entity.values = entity_values_updated;
                 }
             });
+
+            // Entities, which rc should be incremented
+            let entity_ids_to_increase_rcs = Self::get_involved_entity_rcs(&class_properties, &unused_schema_property_values);
+            entity_ids_to_increase_rcs.increase_entity_rcs();
 
             // Trigger event
             Self::deposit_event(RawEvent::EntitySchemaSupportAdded(actor, entity_id, schema_id));
@@ -1587,7 +1588,7 @@ impl<T: Trait> Module<T> {
     /// Update `entity_property_values` with `unused_schema_property_values`
     fn make_updated_entity_property_values(
         unused_property_ids: BTreeSet<PropertyId>,
-        unused_schema_property_values: BTreeMap<u16, PropertyValue<T>>,
+        unused_schema_property_values: &BTreeMap<u16, PropertyValue<T>>,
         entity_property_values: BTreeMap<u16, PropertyValue<T>>,
     ) -> BTreeMap<u16, PropertyValue<T>> {
         unused_property_ids
@@ -1607,12 +1608,12 @@ impl<T: Trait> Module<T> {
     /// Get mapping of entity rcs, involved in operations performed
     /// Based on provided `Class` and `unused_schema_property_values`
     fn get_involved_entity_rcs(
-        class: &Class<T>,
+        class_properties: &[Property<T>],
         unused_schema_property_values: &BTreeMap<u16, PropertyValue<T>>,
     ) -> EntitiesRc<T> {
         let mut entity_rcs = EntitiesRc::default();
         for (schema_property_id, schema_property_value) in unused_schema_property_values {
-            let class_property = &class.properties[*schema_property_id as usize];
+            let class_property = &class_properties[*schema_property_id as usize];
             if let Some(entity_rcs_to_increment) = schema_property_value.get_involved_entities() {
                 entity_rcs.fill_in_entity_rcs(
                     entity_rcs_to_increment,
@@ -1728,7 +1729,7 @@ impl<T: Trait> Module<T> {
 
     /// Perform all checks to ensure `unused_schema_property_values` are valid
     pub fn ensure_property_values_are_valid(
-        class: &Class<T>,
+        class_properties: &[Property<T>],
         entity_controller: &EntityController<T>,
         unused_property_ids: &BTreeSet<PropertyId>,
         unused_schema_property_values: &BTreeMap<u16, PropertyValue<T>>,
@@ -1736,7 +1737,7 @@ impl<T: Trait> Module<T> {
     ) -> dispatch::Result {
         for property_id in unused_property_ids {
             // Indexing is safe, class should always maintain such constistency
-            let class_property = &class.properties[*property_id as usize];
+            let class_property = &class_properties[*property_id as usize];
 
             if let Some(new_value) = unused_schema_property_values.get(property_id) {
                 class_property.ensure_unique_option_satisfied(
