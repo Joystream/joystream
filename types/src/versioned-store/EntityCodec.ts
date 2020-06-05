@@ -200,6 +200,10 @@ export abstract class EntityCodec<T extends PlainEntity> {
       id: entity.id.toNumber()
     }
 
+	if (!entity.entity_values.toArray().length) {
+		throw new Error(`Trying to convert empty entity to plain object! (Entity id: ${res.id})`);
+	}
+
     for (const v of entity.entity_values) {
       const propIdx = v.in_class_index.toNumber();
       const propName = this.propIndexToNameMap.get(propIdx);

@@ -304,7 +304,7 @@ export class SubstrateTransport extends MediaTransport {
     const entityCodecResolver = await this.getEntityCodecResolver();
     const loadableClassIds = await this.classNamesToIdSet(ClassNamesThatRequireLoadingInternals);
 
-    const convertions: Promise<PlainEntity>[] = [];
+    const converted: PlainEntity[] = [];
     for (const entity of entities) {
       const classIdStr = entity.class_id.toString();
       const codec = entityCodecResolver.getCodecByClassId(entity.class_id);
@@ -315,16 +315,21 @@ export class SubstrateTransport extends MediaTransport {
       }
 
       const loadInternals = loadableClassIds.has(classIdStr);
-      convertions.push(
-        codec.toPlainObject(
+
+      try {
+        converted.push(await codec.toPlainObject(
           entity, {
             loadInternals,
             loadEntityById,
             loadChannelById
-          }));
+          })
+        );
+      } catch(conversionError) {
+        console.error(conversionError);
+      }
     }
 
-    return Promise.all(convertions);
+    return converted;
   }
 
   // Load entities by class name:
