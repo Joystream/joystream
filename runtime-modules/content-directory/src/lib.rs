@@ -479,13 +479,14 @@ impl<T: Trait> Entity<T> {
     fn ensure_property_value_is_vec(
         &self,
         in_class_schema_property_id: PropertyId,
-    ) -> Result<&VecPropertyValue<T>, &'static str> {
+    ) -> Result<VecPropertyValue<T>, &'static str> {
         self.values
             .get(&in_class_schema_property_id)
             // Throw an error if a property was not found on entity
             // by an in-class index of a property.
             .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?
             .as_vec_property_value()
+            .map(|property_value_vec| property_value_vec.to_owned())
             // Ensure prop value under given class schema property id is vector
             .ok_or(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR)
     }
@@ -1418,21 +1419,23 @@ decl_module! {
 
             let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
-            let current_property_value_vec =
-                entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
-
             let class_property = class.ensure_class_property_type_unlocked_from(
                 in_class_schema_property_id,
                 access_level,
             )?;
 
+            let current_property_value_vec =
+                entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
+
+            let entity_controller = entity.get_permissions_ref().get_controller();
+
             current_property_value_vec.ensure_nonce_equality(nonce)?;
 
             class_property.ensure_prop_value_can_be_inserted_at_prop_vec(
                 &property_value,
-                current_property_value_vec,
+                &current_property_value_vec,
                 index_in_property_vec,
-                entity.get_permissions_ref().get_controller(),
+                entity_controller,
             )?;
 
             //
@@ -1440,26 +1443,27 @@ decl_module! {
             //
 
             // Insert SinglePropertyValue at in_class_schema_property_id into property value vector
-            <EntityById<T>>::mutate(entity_id, |entity| {
-                let value = property_value.get_value();
-                if let Some(entity_rc_to_increment) = value.get_involved_entity() {
-                    let same_controller_status = class_property.property_type.same_controller_status();
-                    let reference_counter = ReferenceCounter::new(1, same_controller_status);
-                    Self::increase_entity_rcs(&entity_rc_to_increment, reference_counter);
-                }
-                if let Some(PropertyValue::Vector(current_prop_value)) =
-                    entity.values.get_mut(&in_class_schema_property_id)
-                {
-                    current_prop_value.vec_insert_at(index_in_property_vec, value);
+            let value = property_value.get_value();
+            let entity_values_updated = Self::insert_at_index_in_property_vec(entity.values, current_property_value_vec, index_in_property_vec, &value);
 
-                    // Trigger event
-                    Self::deposit_event(
-                        RawEvent::InsertedAtEntityPropertyValueVectorIndex(
-                            actor, entity_id, in_class_schema_property_id, index_in_property_vec, nonce
-                        )
-                    )
-                }
+            // Update entity property values
+            <EntityById<T>>::mutate(entity_id, |entity| {
+                entity.values = entity_values_updated
             });
+
+            // Update reference counter of involved entity
+            if let Some(entity_rc_to_increment) = value.get_involved_entity() {
+                let same_controller_status = class_property.property_type.same_controller_status();
+                let reference_counter = ReferenceCounter::new(1, same_controller_status);
+                Self::increase_entity_rcs(&entity_rc_to_increment, reference_counter);
+            }
+
+            // Trigger event
+            Self::deposit_event(
+                RawEvent::InsertedAtEntityPropertyValueVectorIndex(
+                    actor, entity_id, in_class_schema_property_id, index_in_property_vec, nonce
+                )
+            );
 
             Ok(())
         }
@@ -1754,6 +1758,22 @@ impl<T: Trait> Module<T> {
                 }
             })
         }
+    }
+
+    /// Insert `Value` at `index_in_property_vec` in `entity_property_values`.
+    /// Returns updated `entity_property_values`
+    pub fn insert_at_index_in_property_vec(
+        mut entity_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
+        mut current_property_value_vec: VecPropertyValue<T>,
+        index_in_property_vec: VecMaxLength,
+        value: &Value<T>,
+    ) -> BTreeMap<PropertyId, PropertyValue<T>> {
+        current_property_value_vec.insert_at(index_in_property_vec, value.to_owned());
+        entity_property_values.insert(
+            index_in_property_vec,
+            PropertyValue::Vector(current_property_value_vec),
+        );
+        entity_property_values
     }
 
     /// Ensure `Class` under given id exists, return corresponding one

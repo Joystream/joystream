@@ -241,10 +241,12 @@ impl<T: Trait> SinglePropertyValue<T> {
         Self { value }
     }
 
+    /// Get inner `Value` by reference
     pub fn get_value_ref(&self) -> &Value<T> {
         &self.value
     }
 
+    /// Get inner `Value`
     pub fn get_value(self) -> Value<T> {
         self.value
     }
@@ -360,7 +362,7 @@ impl<T: Trait> VecPropertyValue<T> {
     }
 
     /// Insert provided `Value` at given `index_in_property_vec`, increment `nonce`
-    pub fn vec_insert_at(&mut self, index_in_property_vec: VecMaxLength, single_value: Value<T>) {
+    pub fn insert_at(&mut self, index_in_property_vec: VecMaxLength, single_value: Value<T>) {
         fn insert_at<T>(vec: &mut Vec<T>, index_in_property_vec: VecMaxLength, value: T) {
             if (index_in_property_vec as usize) < vec.len() {
                 vec.insert(index_in_property_vec as usize, value);
