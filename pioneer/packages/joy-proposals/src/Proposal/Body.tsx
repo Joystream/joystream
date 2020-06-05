@@ -13,6 +13,7 @@ import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
 import { Option } from '@polkadot/types/';
 import { formatBalance } from '@polkadot/util';
 import { PromiseComponent } from '@polkadot/joy-utils/react/components';
+import ReactMarkdown from 'react-markdown';
 
 type BodyProps = {
   title: string;
@@ -68,7 +69,7 @@ function ProposedMember (props: { memberId?: MemberId | number | null }) {
 // They take the params as array and return { LABEL: VALUE } object.
 const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: string | number | JSX.Element } } = {
   Text: ([content]) => ({
-    Content: content
+    Content: <ReactMarkdown className='TextProposalContent' source={content} linkTarget='_blank' />
   }),
   RuntimeUpgrade: ([wasm]) => {
     const buffer: Buffer = Buffer.from(wasm.replace('0x', ''), 'hex');
@@ -123,9 +124,22 @@ const ProposalParams = styled.div`
   font-weight: bold;
   grid-template-columns: min-content 1fr;
   grid-row-gap: 0.5rem;
+  border: 1px solid rgba(0,0,0,.2);
+  padding: 1.5rem 1.5rem 1rem 1.25rem;
+  position: relative;
+  margin-top: 1.5rem;
   @media screen and (max-width: 767px) {
     grid-template-columns: 1fr;
   }
+`;
+const ParamsHeader = styled.h4`
+  position: absolute;
+  top: 0;
+  transform: translateY(-50%);
+  background: #fff;
+  font-weight: normal;
+  padding: 0.3rem;
+  left: 0.5rem;
 `;
 const ProposalParamName = styled.div`
   margin-right: 1rem;
@@ -134,7 +148,10 @@ const ProposalParamName = styled.div`
 const ProposalParamValue = styled.div`
   color: black;
   word-wrap: break-word;
-  word-break: break-all;
+  word-break: break-word;
+  & .TextProposalContent {
+    font-weight: normal;
+  }
   @media screen and (max-width: 767px) {
     margin-top: -0.25rem;
   }
@@ -159,9 +176,11 @@ export default function Body ({
         <Card.Header>
           <Header as="h1">{title}</Header>
         </Card.Header>
-        <Card.Description>{description}</Card.Description>
-        <Header as="h4">Parameters:</Header>
+        <Card.Description>
+          <ReactMarkdown source={description} linkTarget='_blank' />
+        </Card.Description>
         <ProposalParams>
+          <ParamsHeader>Parameters:</ParamsHeader>
           { Object.entries(parsedParams).map(([paramName, paramValue]) => (
             <React.Fragment key={paramName}>
               <ProposalParamName>{paramName}:</ProposalParamName>

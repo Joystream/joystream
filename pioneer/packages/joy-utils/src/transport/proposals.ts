@@ -2,18 +2,22 @@ import {
   ParsedProposal,
   ProposalType,
   ProposalTypes,
-  ProposalVote
+  ProposalVote,
+  ParsedPost,
+  ParsedDiscussion,
+  DiscussionContraints
 } from '../types/proposals';
 import { ParsedMember } from '../types/members';
 
 import BaseTransport from './base';
 
-import { Proposal, ProposalId, VoteKind } from '@joystream/types/proposals';
+import { ThreadId, PostId } from '@joystream/types/forum';
+import { Proposal, ProposalId, VoteKind, DiscussionThread, DiscussionPost } from '@joystream/types/proposals';
 import { MemberId } from '@joystream/types/members';
-import { u32 } from '@polkadot/types/';
+import { u32, u64 } from '@polkadot/types/';
 import { BalanceOf } from '@polkadot/types/interfaces';
 
-import { includeKeys } from '../functions/misc';
+import { includeKeys, bytesToString } from '../functions/misc';
 import _ from 'lodash';
 import proposalsConsts from '../consts/proposals';
 
@@ -173,5 +177,51 @@ export default class ProposalsTransport extends BaseTransport {
 
   async subscribeProposal (id: number|ProposalId, callback: () => void) {
     return this.proposalsEngine.proposals(id, callback);
+  }
+
+  async discussion (id: number|ProposalId): Promise<ParsedDiscussion | null> {
+    const threadId = (await this.proposalsCodex.threadIdByProposalId(id)) as ThreadId;
+    if (!threadId.toNumber()) {
+      return null;
+    }
+    const thread = (await this.proposalsDiscussion.threadById(threadId)) as DiscussionThread;
+    const postEntries = await this.doubleMapEntries(
+      'proposalsDiscussion.postThreadIdByPostId',
+      threadId,
+      (v) => new DiscussionPost(v),
+      async () => ((await this.proposalsDiscussion.postCount()) as u64).toNumber()
+    );
+
+    const parsedPosts: ParsedPost[] = [];
+    for (const { secondKey: postId, value: post } of postEntries) {
+      parsedPosts.push({
+        postId: new PostId(postId),
+        threadId: post.thread_id,
+        text: bytesToString(post.text),
+        createdAt: await this.chainT.blockTimestamp(post.created_at.toNumber()),
+        createdAtBlock: post.created_at.toNumber(),
+        updatedAt: await this.chainT.blockTimestamp(post.updated_at.toNumber()),
+        updatedAtBlock: post.updated_at.toNumber(),
+        authorId: post.author_id,
+        author: (await this.membersT.memberProfile(post.author_id)).unwrapOr(null),
+        editsCount: post.edition_number.toNumber()
+      });
+    }
+
+    // Sort by creation block asc
+    parsedPosts.sort((a, b) => a.createdAtBlock - b.createdAtBlock);
+
+    return {
+      title: bytesToString(thread.title),
+      threadId: threadId,
+      posts: parsedPosts
+    };
+  }
+
+  discussionContraints (): DiscussionContraints {
+    return {
+      maxPostEdits: (this.api.consts.proposalsDiscussion.maxPostEditionNumber as u32).toNumber(),
+      maxPostLength: (this.api.consts.proposalsDiscussion.postLengthLimit as u32).toNumber()
+    };
   }
 }
