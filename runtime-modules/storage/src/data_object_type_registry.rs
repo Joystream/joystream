@@ -20,7 +20,9 @@
 // example:   NextDataObjectTypeId get(next_data_object_type_id) build(|config: &GenesisConfig<T>|
 #![allow(clippy::redundant_closure_call)]
 
-use crate::traits;
+// Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
+//#![warn(missing_docs)]
+
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
@@ -31,8 +33,10 @@ pub(crate) type StorageBureaucracy<T> = bureaucracy::Module<T, bureaucracy::Inst
 
 /// The _Data object type registry_ main _Trait_
 pub trait Trait: system::Trait + bureaucracy::Trait<bureaucracy::Instance2> {
+    /// _Data object type registry_ event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
+    /// _Data object type id_ type
     type DataObjectTypeId: Parameter
         + Member
         + SimpleArithmetic
@@ -43,12 +47,10 @@ pub trait Trait: system::Trait + bureaucracy::Trait<bureaucracy::Instance2> {
         + PartialEq;
 }
 
-// TODO: migrate to the Substate error style
+// TODO: migrate to the Substrate error style
 const MSG_DO_TYPE_NOT_FOUND: &str = "Data Object Type with the given ID not found.";
 const DEFAULT_TYPE_DESCRIPTION: &str = "Default data object type for audio and video content.";
 
-const DEFAULT_TYPE_ACTIVE: bool = true;
-const CREATE_DETAULT_TYPE: bool = true;
 const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u32 = 1;
 
 /// Contains description and constrains for the data object.
@@ -69,7 +71,7 @@ impl Default for DataObjectType {
     fn default() -> Self {
         DataObjectType {
             description: DEFAULT_TYPE_DESCRIPTION.as_bytes().to_vec(),
-            active: DEFAULT_TYPE_ACTIVE,
+            active: true,
         }
     }
 }
@@ -80,10 +82,12 @@ decl_storage! {
         // TODO hardcode data object type for ID 1
 
         /// Data object type ids should start at this value.
-        pub FirstDataObjectTypeId get(first_data_object_type_id) config(first_data_object_type_id): T::DataObjectTypeId = T::DataObjectTypeId::from(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
+        pub FirstDataObjectTypeId get(first_data_object_type_id) config(first_data_object_type_id):
+            T::DataObjectTypeId = T::DataObjectTypeId::from(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
 
         /// Provides id counter for the data object types.
-        pub NextDataObjectTypeId get(next_data_object_type_id) build(|config: &GenesisConfig<T>| config.first_data_object_type_id): T::DataObjectTypeId = T::DataObjectTypeId::from(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
+        pub NextDataObjectTypeId get(next_data_object_type_id) build(|config: &GenesisConfig<T>|
+            config.first_data_object_type_id): T::DataObjectTypeId = T::DataObjectTypeId::from(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
 
         /// Mapping of Data object types.
         pub DataObjectTypes get(data_object_types): map T::DataObjectTypeId => Option<DataObjectType>;
@@ -114,7 +118,7 @@ decl_module! {
 
         fn on_initialize() {
             // Create a default data object type if it was not created yet.
-            if CREATE_DETAULT_TYPE && !<DataObjectTypes<T>>::exists(Self::first_data_object_type_id()) {
+            if !<DataObjectTypes<T>>::exists(Self::first_data_object_type_id()) {
                 let do_type: DataObjectType = DataObjectType::default();
                 let new_type_id = Self::next_data_object_type_id();
 
@@ -187,9 +191,15 @@ impl<T: Trait> Module<T> {
     }
 }
 
-impl<T: Trait> traits::IsActiveDataObjectType<T> for Module<T> {
-    fn is_active_data_object_type(which: &T::DataObjectTypeId) -> bool {
-        match Self::ensure_data_object_type(*which) {
+/// Active data object type validator trait.
+pub trait IsActiveDataObjectType<T: Trait> {
+    /// Ensures that data object type with given id is active.
+    fn is_active_data_object_type(id: &T::DataObjectTypeId) -> bool;
+}
+
+impl<T: Trait> IsActiveDataObjectType<T> for Module<T> {
+    fn is_active_data_object_type(id: &T::DataObjectTypeId) -> bool {
+        match Self::ensure_data_object_type(*id) {
             Ok(do_type) => do_type.active,
             Err(_err) => false,
         }

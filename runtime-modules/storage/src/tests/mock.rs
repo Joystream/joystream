@@ -1,6 +1,5 @@
 #![cfg(test)]
 
-use crate::traits;
 pub use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
 pub use common::currency::GovernanceCurrency;
 use membership::members;
@@ -15,6 +14,8 @@ pub use sr_primitives::{
     BuildStorage, Perbill,
 };
 
+use crate::data_directory::ContentIdExists;
+use crate::data_object_type_registry::IsActiveDataObjectType;
 use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
 
 mod bureaucracy_mod {
@@ -68,16 +69,14 @@ impl roles::traits::Roles<Test> for MockRoles {
 }
 
 pub struct AnyDataObjectTypeIsActive {}
-impl<T: data_object_type_registry::Trait> traits::IsActiveDataObjectType<T>
-    for AnyDataObjectTypeIsActive
-{
+impl<T: data_object_type_registry::Trait> IsActiveDataObjectType<T> for AnyDataObjectTypeIsActive {
     fn is_active_data_object_type(_which: &T::DataObjectTypeId) -> bool {
         true
     }
 }
 
 pub struct MockContent {}
-impl traits::ContentIdExists<Test> for MockContent {
+impl ContentIdExists<Test> for MockContent {
     fn has_content(which: &<Test as data_directory::Trait>::ContentId) -> bool {
         *which == TEST_MOCK_EXISTING_CID
     }

@@ -3,8 +3,10 @@
 // example:  pub NextRelationshipId get(next_relationship_id) build(|config: &GenesisConfig<T>|
 #![allow(clippy::redundant_closure_call)]
 
-use crate::data_directory::Trait as DDTrait;
-use crate::traits::{ContentHasStorage, ContentIdExists};
+// Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
+//#![warn(missing_docs)]
+
+use crate::data_directory::{self, ContentIdExists};
 use codec::{Codec, Decode, Encode};
 use roles::actors;
 use roles::traits::Roles;
@@ -13,10 +15,15 @@ use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_event, decl_module, decl_storage, ensure, Parameter};
 use system::{self, ensure_signed};
 
-pub trait Trait: timestamp::Trait + system::Trait + DDTrait {
+/// The _Data object storage registry_ main _Trait_
+pub trait Trait:
+    timestamp::Trait
+    + system::Trait
+    + data_directory::Trait
+    + bureaucracy::Trait<bureaucracy::Instance2>
+{
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    // TODO deprecated
     type DataObjectStorageRelationshipId: Parameter
         + Member
         + SimpleArithmetic
@@ -27,9 +34,10 @@ pub trait Trait: timestamp::Trait + system::Trait + DDTrait {
         + PartialEq;
 
     type Roles: Roles<Self>;
-    type ContentIdExists: ContentIdExists<Self>;
+    type ContentIdExists: data_directory::ContentIdExists<Self>;
 }
 
+// TODO: migrate to the Substrate error style
 static MSG_CID_NOT_FOUND: &str = "Content with this ID not found.";
 static MSG_DOSR_NOT_FOUND: &str = "No data object storage relationship found for this ID.";
 static MSG_ONLY_STORAGE_PROVIDER_MAY_CREATE_DOSR: &str =
@@ -37,13 +45,11 @@ static MSG_ONLY_STORAGE_PROVIDER_MAY_CREATE_DOSR: &str =
 static MSG_ONLY_STORAGE_PROVIDER_MAY_CLAIM_READY: &str =
     "Only the storage provider in a DOSR can decide whether they're ready.";
 
-// TODO deprecated
 const DEFAULT_FIRST_RELATIONSHIP_ID: u32 = 1;
 
-// TODO deprecated
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct DataObjectStorageRelationship<T: Trait> {
-    pub content_id: <T as DDTrait>::ContentId,
+    pub content_id: <T as data_directory::Trait>::ContentId,
     pub storage_provider: T::AccountId,
     pub ready: bool,
 }
@@ -51,24 +57,17 @@ pub struct DataObjectStorageRelationship<T: Trait> {
 decl_storage! {
     trait Store for Module<T: Trait> as DataObjectStorageRegistry {
 
-        // TODO deprecated
         // Start at this value
         pub FirstRelationshipId get(first_relationship_id) config(first_relationship_id): T::DataObjectStorageRelationshipId = T::DataObjectStorageRelationshipId::from(DEFAULT_FIRST_RELATIONSHIP_ID);
 
-        // TODO deprecated
         // Increment
         pub NextRelationshipId get(next_relationship_id) build(|config: &GenesisConfig<T>| config.first_relationship_id): T::DataObjectStorageRelationshipId = T::DataObjectStorageRelationshipId::from(DEFAULT_FIRST_RELATIONSHIP_ID);
 
-        // TODO deprecated
         // Mapping of Data object types
         pub Relationships get(relationships): map T::DataObjectStorageRelationshipId => Option<DataObjectStorageRelationship<T>>;
 
-        // TODO deprecated
         // Keep a list of storage relationships per CID
         pub RelationshipsByContentId get(relationships_by_content_id): map T::ContentId => Vec<T::DataObjectStorageRelationshipId>;
-
-        // ------------------------------------------
-        // TODO use next storage items insteam:
 
         // TODO save only if metadata exists and there is at least one relation w/ ready == true.
         ReadyContentIds get(ready_content_ids): Vec<T::ContentId> = vec![];
@@ -84,45 +83,15 @@ decl_storage! {
 
 decl_event! {
     pub enum Event<T> where
-        <T as DDTrait>::ContentId,
+        <T as data_directory::Trait>::ContentId,
         <T as Trait>::DataObjectStorageRelationshipId,
         <T as system::Trait>::AccountId
     {
-        // TODO deprecated
         DataObjectStorageRelationshipAdded(DataObjectStorageRelationshipId, ContentId, AccountId),
         DataObjectStorageRelationshipReadyUpdated(DataObjectStorageRelationshipId, bool),
 
-        // NEW & COOL
         StorageProviderAddedContent(AccountId, ContentId),
         StorageProviderRemovedContent(AccountId, ContentId),
-    }
-}
-
-impl<T: Trait> ContentHasStorage<T> for Module<T> {
-    // TODO deprecated
-    fn has_storage_provider(which: &T::ContentId) -> bool {
-        let dosr_list = Self::relationships_by_content_id(which);
-        dosr_list.iter().any(|&dosr_id| {
-            let res = Self::relationships(dosr_id);
-            if res.is_none() {
-                return false;
-            }
-            let dosr = res.unwrap();
-            dosr.ready
-        })
-    }
-
-    // TODO deprecated
-    fn is_ready_at_storage_provider(which: &T::ContentId, provider: &T::AccountId) -> bool {
-        let dosr_list = Self::relationships_by_content_id(which);
-        dosr_list.iter().any(|&dosr_id| {
-            let res = Self::relationships(dosr_id);
-            if res.is_none() {
-                return false;
-            }
-            let dosr = res.unwrap();
-            dosr.storage_provider == *provider && dosr.ready
-        })
     }
 }
 

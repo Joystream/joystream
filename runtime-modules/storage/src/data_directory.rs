@@ -1,5 +1,6 @@
-use crate::data_object_type_registry::Trait as DOTRTrait;
-use crate::traits::{ContentIdExists, IsActiveDataObjectType};
+// Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
+//#![warn(missing_docs)]
+
 use codec::{Codec, Decode, Encode};
 use roles::actors;
 use roles::traits::Roles;
@@ -8,7 +9,12 @@ use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
 use system::{self, ensure_root, ensure_signed};
 
-pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + membership::members::Trait {
+use crate::data_object_type_registry;
+use crate::data_object_type_registry::IsActiveDataObjectType;
+
+pub trait Trait:
+    timestamp::Trait + system::Trait + data_object_type_registry::Trait + membership::members::Trait
+{
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type ContentId: Parameter + Member + MaybeSerialize + Copy + Ord + Default;
@@ -23,7 +29,7 @@ pub trait Trait: timestamp::Trait + system::Trait + DOTRTrait + membership::memb
         + PartialEq;
 
     type Roles: Roles<Self>;
-    type IsActiveDataObjectType: IsActiveDataObjectType<Self>;
+    type IsActiveDataObjectType: data_object_type_registry::IsActiveDataObjectType<Self>;
 }
 
 static MSG_CID_NOT_FOUND: &str = "Content with this ID not found.";
@@ -55,7 +61,7 @@ impl Default for LiaisonJudgement {
 pub struct DataObject<T: Trait> {
     pub owner: T::AccountId,
     pub added_at: BlockAndTime<T>,
-    pub type_id: <T as DOTRTrait>::DataObjectTypeId,
+    pub type_id: <T as data_object_type_registry::Trait>::DataObjectTypeId,
     pub size: u64,
     pub liaison: T::AccountId,
     pub liaison_judgement: LiaisonJudgement,
@@ -118,7 +124,7 @@ decl_module! {
         pub fn add_content(
             origin,
             content_id: T::ContentId,
-            type_id: <T as DOTRTrait>::DataObjectTypeId,
+            type_id: <T as data_object_type_registry::Trait>::DataObjectTypeId,
             size: u64,
             ipfs_content_id: Vec<u8>
         ) {
@@ -196,19 +202,6 @@ decl_module! {
     }
 }
 
-impl<T: Trait> ContentIdExists<T> for Module<T> {
-    fn has_content(content_id: &T::ContentId) -> bool {
-        Self::data_object_by_content_id(*content_id).is_some()
-    }
-
-    fn get_data_object(content_id: &T::ContentId) -> Result<DataObject<T>, &'static str> {
-        match Self::data_object_by_content_id(*content_id) {
-            Some(data) => Ok(data),
-            None => Err(MSG_CID_NOT_FOUND),
-        }
-    }
-}
-
 impl<T: Trait> Module<T> {
     fn current_block_and_time() -> BlockAndTime<T> {
         BlockAndTime {
@@ -231,5 +224,24 @@ impl<T: Trait> Module<T> {
         <DataObjectByContentId<T>>::insert(content_id, data);
 
         Ok(())
+    }
+}
+
+pub trait ContentIdExists<T: Trait> {
+    fn has_content(_which: &T::ContentId) -> bool;
+
+    fn get_data_object(_which: &T::ContentId) -> Result<DataObject<T>, &'static str>;
+}
+
+impl<T: Trait> ContentIdExists<T> for Module<T> {
+    fn has_content(content_id: &T::ContentId) -> bool {
+        Self::data_object_by_content_id(*content_id).is_some()
+    }
+
+    fn get_data_object(content_id: &T::ContentId) -> Result<DataObject<T>, &'static str> {
+        match Self::data_object_by_content_id(*content_id) {
+            Some(data) => Ok(data),
+            None => Err(MSG_CID_NOT_FOUND),
+        }
     }
 }
