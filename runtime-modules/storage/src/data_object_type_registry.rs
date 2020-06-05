@@ -15,9 +15,9 @@
 //! - [deactivate_data_object_type](./struct.Module.html#method.deactivate_data_object_type) -  Deactivates existing data object type.
 //!
 
-// Clippy linter requirement
-// disable it because of the substrate lib design
-// example:   NextDataObjectTypeId get(next_data_object_type_id) build(|config: &GenesisConfig<T>|
+// Clippy linter requirement.
+// Disable it because of the substrate lib design. Example:
+//   NextDataObjectTypeId get(next_data_object_type_id) build(|config: &GenesisConfig<T>|
 #![allow(clippy::redundant_closure_call)]
 
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
@@ -27,7 +27,10 @@ use crate::StorageBureaucracy;
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
-use srml_support::{decl_event, decl_module, decl_storage, Parameter};
+use srml_support::{decl_error, decl_event, decl_module, decl_storage, Parameter};
+
+const DEFAULT_TYPE_DESCRIPTION: &str = "Default data object type for audio and video content.";
+const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u32 = 1;
 
 /// The _Data object type registry_ main _Trait_
 pub trait Trait: system::Trait + bureaucracy::Trait<bureaucracy::Instance2> {
@@ -45,11 +48,35 @@ pub trait Trait: system::Trait + bureaucracy::Trait<bureaucracy::Instance2> {
         + PartialEq;
 }
 
-// TODO: migrate to the Substrate error style
-const MSG_DO_TYPE_NOT_FOUND: &str = "Data Object Type with the given ID not found.";
-const DEFAULT_TYPE_DESCRIPTION: &str = "Default data object type for audio and video content.";
+decl_error! {
+    /// _Data object type registry_ module predefined errors
+    pub enum Error {
+        /// Data Object Type with the given ID not found.
+        DataObjectTypeNotFound,
 
-const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u32 = 1;
+        /// Require root origin in extrinsics
+        RequireRootOrigin,
+    }
+}
+
+impl From<system::Error> for Error {
+    fn from(error: system::Error) -> Self {
+        match error {
+            system::Error::Other(msg) => Error::Other(msg),
+            system::Error::RequireRootOrigin => Error::RequireRootOrigin,
+            _ => Error::Other(error.into()),
+        }
+    }
+}
+
+impl From<bureaucracy::Error> for Error {
+    fn from(error: bureaucracy::Error) -> Self {
+        match error {
+            bureaucracy::Error::Other(msg) => Error::Other(msg),
+            _ => Error::Other(error.into()),
+        }
+    }
+}
 
 /// Contains description and constrains for the data object.
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
@@ -113,6 +140,9 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         /// Default deposit_event() handler
         fn deposit_event() = default;
+
+        /// Predefined errors
+        type Error = Error;
 
         fn on_initialize() {
             // Create a default data object type if it was not created yet.
@@ -184,8 +214,8 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    fn ensure_data_object_type(id: T::DataObjectTypeId) -> Result<DataObjectType, &'static str> {
-        Self::data_object_types(&id).ok_or(MSG_DO_TYPE_NOT_FOUND)
+    fn ensure_data_object_type(id: T::DataObjectTypeId) -> Result<DataObjectType, Error> {
+        Self::data_object_types(&id).ok_or(Error::DataObjectTypeNotFound)
     }
 }
 

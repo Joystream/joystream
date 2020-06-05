@@ -1,6 +1,6 @@
-// Clippy linter requirement
-// disable it because of the substrate lib design
-// example:  pub NextRelationshipId get(next_relationship_id) build(|config: &GenesisConfig<T>|
+// Clippy linter requirement.
+// Disable it because of the substrate lib design. Example:
+//  pub NextRelationshipId get(next_relationship_id) build(|config: &GenesisConfig<T>|
 #![allow(clippy::redundant_closure_call)]
 
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
@@ -10,10 +10,12 @@ use codec::{Codec, Decode, Encode};
 use roles::traits::Roles;
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
-use srml_support::{decl_event, decl_module, decl_storage, ensure, Parameter};
+use srml_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 
 use crate::data_directory::{self, ContentIdExists};
 use crate::StorageBureaucracy;
+
+const DEFAULT_FIRST_RELATIONSHIP_ID: u32 = 1;
 
 /// Storage provider is a worker from the bureuacracy module.
 pub type StorageProviderId<T> = bureaucracy::WorkerId<T>;
@@ -40,13 +42,41 @@ pub trait Trait:
     type ContentIdExists: data_directory::ContentIdExists<Self>;
 }
 
-// TODO: migrate to the Substrate error style
-static MSG_CID_NOT_FOUND: &str = "Content with this ID not found.";
-static MSG_DOSR_NOT_FOUND: &str = "No data object storage relationship found for this ID.";
-static MSG_ONLY_STORAGE_PROVIDER_MAY_CLAIM_READY: &str =
-    "Only the storage provider in a DOSR can decide whether they're ready.";
+decl_error! {
+    /// _Data object storage registry_ module predefined errors
+    pub enum Error {
+        /// Content with this ID not found.
+        CidNotFound,
 
-const DEFAULT_FIRST_RELATIONSHIP_ID: u32 = 1;
+        /// No data object storage relationship found for this ID.
+        DataObjectStorageRelationshipNotFound,
+
+        /// Only the storage provider in a DOSR can decide whether they're ready.
+        OnlyStorageProviderMayClaimReady,
+
+        /// Require root origin in extrinsics
+        RequireRootOrigin,
+    }
+}
+
+impl From<system::Error> for Error {
+    fn from(error: system::Error) -> Self {
+        match error {
+            system::Error::Other(msg) => Error::Other(msg),
+            system::Error::RequireRootOrigin => Error::RequireRootOrigin,
+            _ => Error::Other(error.into()),
+        }
+    }
+}
+
+impl From<bureaucracy::Error> for Error {
+    fn from(error: bureaucracy::Error) -> Self {
+        match error {
+            bureaucracy::Error::Other(msg) => Error::Other(msg),
+            _ => Error::Other(error.into()),
+        }
+    }
+}
 
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct DataObjectStorageRelationship<T: Trait> {
@@ -94,15 +124,20 @@ decl_event! {
 }
 
 decl_module! {
+    /// _Data object storage registry_ substrate module.
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+        /// Default deposit_event() handler
         fn deposit_event() = default;
+
+        /// Predefined errors
+        type Error = Error;
 
         pub fn add_relationship(origin, storage_provider_id: StorageProviderId<T>, cid: T::ContentId) {
             // Origin should match storage provider.
             <StorageBureaucracy<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
 
             // Content ID must exist
-            ensure!(T::ContentIdExists::has_content(&cid), MSG_CID_NOT_FOUND);
+            ensure!(T::ContentIdExists::has_content(&cid), Error::CidNotFound);
 
             // Create new ID, data.
             let new_id = Self::next_relationship_id();
@@ -154,14 +189,16 @@ impl<T: Trait> Module<T> {
         storage_provider_id: StorageProviderId<T>,
         id: T::DataObjectStorageRelationshipId,
         ready: bool,
-    ) -> Result<(), &'static str> {
+    ) -> Result<(), Error> {
         <StorageBureaucracy<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
 
         // For that, we need to fetch the identified DOSR
-        let mut dosr = Self::relationships(id).ok_or(MSG_DOSR_NOT_FOUND)?;
+        let mut dosr =
+            Self::relationships(id).ok_or(Error::DataObjectStorageRelationshipNotFound)?;
+
         ensure!(
             dosr.storage_provider_id == storage_provider_id,
-            MSG_ONLY_STORAGE_PROVIDER_MAY_CLAIM_READY
+            Error::OnlyStorageProviderMayClaimReady
         );
 
         // Flip to ready
