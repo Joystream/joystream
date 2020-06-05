@@ -330,58 +330,54 @@ impl<T: Trait> Class<T> {
 /// Structure, respresenting inbound entity rcs for each `Entity`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Copy, Debug)]
-pub struct ReferenceCounter {
-    /// Number of inbound references from another entities
-    inbound_reference_counter: u32,
+pub struct InboundReferenceCounter {
+    /// Total number of inbound references from another entities
+    total: u32,
     /// Number of inbound references from another entities with `SameOwner` flag set
-    inbound_same_owner_reference_counter: u32,
+    same_owner: u32,
 }
 
-impl ReferenceCounter {
-    /// Create simple `ReferenceCounter` instance, based on `same_owner` flag provided
+impl InboundReferenceCounter {
+    /// Create simple `InboundReferenceCounter` instance, based on `same_owner` flag provided
     pub fn new(reference_counter: u32, same_owner: bool) -> Self {
         if same_owner {
             Self {
-                inbound_reference_counter: 0,
-                inbound_same_owner_reference_counter: reference_counter,
+                total: reference_counter,
+                same_owner: reference_counter,
             }
         } else {
             Self {
-                inbound_reference_counter: reference_counter,
-                inbound_same_owner_reference_counter: 0,
+                total: reference_counter,
+                same_owner: 0,
             }
         }
     }
 
-    /// Check if `inbound_reference_counter` is equal to zero
-    pub fn is_inbound_reference_counter_equal_to_zero(self) -> bool {
-        self.inbound_reference_counter == 0
+    /// Check if `total` is equal to zero
+    pub fn is_total_equal_to_zero(self) -> bool {
+        self.total == 0
     }
 
-    /// Check if `inbound_same_owner_reference_counter` is equal to zero
-    pub fn is_inbound_same_owner_reference_counter_equal_to_zero(self) -> bool {
-        self.inbound_same_owner_reference_counter == 0
+    /// Check if `same_owner` is equal to zero
+    pub fn is_same_owner_equal_to_zero(self) -> bool {
+        self.same_owner == 0
     }
 }
 
-impl AddAssign for ReferenceCounter {
+impl AddAssign for InboundReferenceCounter {
     fn add_assign(&mut self, other: Self) {
         *self = Self {
-            inbound_reference_counter: self.inbound_reference_counter
-                + other.inbound_reference_counter,
-            inbound_same_owner_reference_counter: self.inbound_same_owner_reference_counter
-                + other.inbound_same_owner_reference_counter,
+            total: self.total + other.total,
+            same_owner: self.same_owner + other.same_owner,
         };
     }
 }
 
-impl SubAssign for ReferenceCounter {
+impl SubAssign for InboundReferenceCounter {
     fn sub_assign(&mut self, other: Self) {
         *self = Self {
-            inbound_reference_counter: self.inbound_reference_counter
-                - other.inbound_reference_counter,
-            inbound_same_owner_reference_counter: self.inbound_same_owner_reference_counter
-                - other.inbound_same_owner_reference_counter,
+            total: self.total - other.total,
+            same_owner: self.same_owner - other.same_owner,
         };
     }
 }
@@ -406,7 +402,7 @@ pub struct Entity<T: Trait> {
     pub values: BTreeMap<PropertyId, PropertyValue<T>>,
 
     /// Number of property values referencing current entity
-    pub reference_counter: ReferenceCounter,
+    pub reference_counter: InboundReferenceCounter,
 }
 
 impl<T: Trait> Default for Entity<T> {
@@ -416,7 +412,7 @@ impl<T: Trait> Default for Entity<T> {
             class_id: T::ClassId::default(),
             supported_schemas: BTreeSet::new(),
             values: BTreeMap::new(),
-            reference_counter: ReferenceCounter::default(),
+            reference_counter: InboundReferenceCounter::default(),
         }
     }
 }
@@ -434,7 +430,7 @@ impl<T: Trait> Entity<T> {
             class_id,
             supported_schemas,
             values,
-            reference_counter: ReferenceCounter::default(),
+            reference_counter: InboundReferenceCounter::default(),
         }
     }
 
@@ -494,8 +490,7 @@ impl<T: Trait> Entity<T> {
     /// Ensure any `PropertyValue` from external entity does not point to the given `Entity`
     pub fn ensure_rc_is_zero(&self) -> dispatch::Result {
         ensure!(
-            self.reference_counter
-                .is_inbound_reference_counter_equal_to_zero(),
+            self.reference_counter.is_total_equal_to_zero(),
             ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO
         );
         Ok(())
@@ -504,8 +499,7 @@ impl<T: Trait> Entity<T> {
     /// Ensure any inbound `PropertyValue` points to the given `Entity`
     pub fn ensure_inbound_same_owner_rc_is_zero(&self) -> dispatch::Result {
         ensure!(
-            self.reference_counter
-                .is_inbound_same_owner_reference_counter_equal_to_zero(),
+            self.reference_counter.is_same_owner_equal_to_zero(),
             ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO
         );
         Ok(())
@@ -1305,7 +1299,7 @@ decl_module! {
 
             let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
-            let current_property_value_vec =
+            let property_value_vector =
                 entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
 
             let property = class.ensure_class_property_type_unlocked_from(
@@ -1313,7 +1307,7 @@ decl_module! {
                 access_level,
             )?;
 
-            let entity_ids_to_decrease_rcs = current_property_value_vec
+            let entity_ids_to_decrease_rcs = property_value_vector
                 .get_vec_value()
                 .get_involved_entities();
 
@@ -1323,17 +1317,17 @@ decl_module! {
 
             // Clear property value vector
             <EntityById<T>>::mutate(entity_id, |entity| {
-                if let Some(PropertyValue::Vector(current_property_value_vec)) =
+                if let Some(PropertyValue::Vector(property_value_vector)) =
                     entity.values.get_mut(&in_class_schema_property_id)
                 {
-                    current_property_value_vec.vec_clear();
+                    property_value_vector.vec_clear();
                 }
 
                 if let Some(entity_ids_to_decrease_rcs) = entity_ids_to_decrease_rcs {
                     let same_controller_status = property.property_type.same_controller_status();
                     Self::count_entities(entity_ids_to_decrease_rcs).iter()
                         .for_each(|(entity_id, rc)| {
-                            let reference_counter = ReferenceCounter::new(*rc, same_controller_status);
+                            let reference_counter = InboundReferenceCounter::new(*rc, same_controller_status);
                             Self::decrease_entity_rcs(entity_id, reference_counter);
                         });
                 }
@@ -1345,20 +1339,20 @@ decl_module! {
             Ok(())
         }
 
-        /// Remove value at given `index_in_property_vec`
+        /// Remove value at given `index_in_property_vector`
         /// from `PropertyValueVec` under in_class_schema_property_id
         pub fn remove_at_entity_property_vector(
             origin,
             actor: Actor<T>,
             entity_id: T::EntityId,
             in_class_schema_property_id: PropertyId,
-            index_in_property_vec: VecMaxLength,
+            index_in_property_vector: VecMaxLength,
             nonce: T::Nonce
         ) -> dispatch::Result {
 
             let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
-            let current_property_value_vec =
+            let property_value_vector =
                 entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
 
             let property = class.ensure_class_property_type_unlocked_from(
@@ -1366,31 +1360,31 @@ decl_module! {
                 access_level,
             )?;
 
-            current_property_value_vec.ensure_nonce_equality(nonce)?;
+            property_value_vector.ensure_nonce_equality(nonce)?;
 
-            current_property_value_vec
-                .ensure_index_in_property_vector_is_valid(index_in_property_vec)?;
+            property_value_vector
+                .ensure_index_in_property_vector_is_valid(index_in_property_vector)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            let involved_entity_id = current_property_value_vec
+            let involved_entity_id = property_value_vector
                 .get_vec_value()
                 .get_involved_entities()
-                .map(|involved_entities| involved_entities[index_in_property_vec as usize]);
+                .map(|involved_entities| involved_entities[index_in_property_vector as usize]);
 
             // Remove value at in_class_schema_property_id in property value vector
             <EntityById<T>>::mutate(entity_id, |entity| {
                 if let Some(PropertyValue::Vector(current_prop_value)) =
                     entity.values.get_mut(&in_class_schema_property_id)
                 {
-                    current_prop_value.vec_remove_at(index_in_property_vec);
+                    current_prop_value.vec_remove_at(index_in_property_vector);
 
                     // Trigger event
                     Self::deposit_event(
                         RawEvent::RemovedAtEntityPropertyValueVectorIndex(
-                            actor, entity_id, in_class_schema_property_id, index_in_property_vec, nonce
+                            actor, entity_id, in_class_schema_property_id, index_in_property_vector, nonce
                         )
                     )
                 }
@@ -1398,43 +1392,43 @@ decl_module! {
 
             if let Some(involved_entity_id) = involved_entity_id {
                 let same_controller_status = property.property_type.same_controller_status();
-                let reference_counter = ReferenceCounter::new(1, same_controller_status);
+                let reference_counter = InboundReferenceCounter::new(1, same_controller_status);
                 Self::decrease_entity_rcs(&involved_entity_id, reference_counter);
             }
 
             Ok(())
         }
 
-        /// Insert `SinglePropertyValue` at given `index_in_property_vec`
-        /// into `PropertyValueVec` under in_class_schema_property_id
+        /// Insert `SinglePropertyValue` at given `index_in_property_vector`
+        /// into `PropertyValueVec` under `in_class_schema_property_id`
         pub fn insert_at_entity_property_vector(
             origin,
             actor: Actor<T>,
             entity_id: T::EntityId,
             in_class_schema_property_id: PropertyId,
-            index_in_property_vec: VecMaxLength,
+            index_in_property_vector: VecMaxLength,
             property_value: SinglePropertyValue<T>,
             nonce: T::Nonce
         ) -> dispatch::Result {
 
             let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
+            let property_value_vector =
+                entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
+
+            property_value_vector.ensure_nonce_equality(nonce)?;
+
+            let entity_controller = entity.get_permissions_ref().get_controller();
+
             let class_property = class.ensure_class_property_type_unlocked_from(
                 in_class_schema_property_id,
                 access_level,
             )?;
 
-            let current_property_value_vec =
-                entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
-
-            let entity_controller = entity.get_permissions_ref().get_controller();
-
-            current_property_value_vec.ensure_nonce_equality(nonce)?;
-
             class_property.ensure_prop_value_can_be_inserted_at_prop_vec(
                 &property_value,
-                &current_property_value_vec,
-                index_in_property_vec,
+                &property_value_vector,
+                index_in_property_vector,
                 entity_controller,
             )?;
 
@@ -1442,26 +1436,33 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Insert SinglePropertyValue at in_class_schema_property_id into property value vector
             let value = property_value.get_value();
-            let entity_values_updated = Self::insert_at_index_in_property_vec(entity.values, current_property_value_vec, index_in_property_vec, &value);
+
+            // Update reference counter of involved entity (if some)
+            if let Some(entity_rc_to_increment) = value.get_involved_entity() {
+                let same_controller_status = class_property.property_type.same_controller_status();
+                let reference_counter = InboundReferenceCounter::new(1, same_controller_status);
+                Self::increase_entity_rcs(&entity_rc_to_increment, reference_counter);
+            }
+
+            // Insert SinglePropertyValue at in_class_schema_property_id into property value vector
+            let property_value_updated = Self::insert_at_index_in_property_vector(
+                property_value_vector, index_in_property_vector, value
+            );
 
             // Update entity property values
+            let entity_values_updated = Self::insert_at_in_class_schema_property_id(
+                entity.values, in_class_schema_property_id, property_value_updated
+            );
+
             <EntityById<T>>::mutate(entity_id, |entity| {
                 entity.values = entity_values_updated
             });
 
-            // Update reference counter of involved entity
-            if let Some(entity_rc_to_increment) = value.get_involved_entity() {
-                let same_controller_status = class_property.property_type.same_controller_status();
-                let reference_counter = ReferenceCounter::new(1, same_controller_status);
-                Self::increase_entity_rcs(&entity_rc_to_increment, reference_counter);
-            }
-
             // Trigger event
             Self::deposit_event(
                 RawEvent::InsertedAtEntityPropertyValueVectorIndex(
-                    actor, entity_id, in_class_schema_property_id, index_in_property_vec, nonce
+                    actor, entity_id, in_class_schema_property_id, index_in_property_vector, nonce
                 )
             );
 
@@ -1518,7 +1519,7 @@ decl_module! {
 impl<T: Trait> Module<T> {
     /// Increases corresponding `Entity` references count by rc.
     /// Depends on `same_owner` flag provided
-    fn increase_entity_rcs(entity_id: &T::EntityId, reference_counter: ReferenceCounter) {
+    fn increase_entity_rcs(entity_id: &T::EntityId, reference_counter: InboundReferenceCounter) {
         <EntityById<T>>::mutate(entity_id, |entity| {
             entity.reference_counter += reference_counter
         })
@@ -1526,7 +1527,7 @@ impl<T: Trait> Module<T> {
 
     /// Decreases corresponding `Entity` references count by rc.
     /// Depends on `same_owner` flag provided
-    fn decrease_entity_rcs(entity_id: &T::EntityId, reference_counter: ReferenceCounter) {
+    fn decrease_entity_rcs(entity_id: &T::EntityId, reference_counter: InboundReferenceCounter) {
         <EntityById<T>>::mutate(entity_id, |entity| {
             entity.reference_counter -= reference_counter
         })
@@ -1760,19 +1761,25 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    /// Insert `Value` at `index_in_property_vec` in `entity_property_values`.
+    /// Insert `Value` into `VecPropertyValue` at `index_in_property_vector`.
+    /// Returns `PropertyValue`
+    pub fn insert_at_index_in_property_vector(
+        mut property_value_vector: VecPropertyValue<T>,
+        index_in_property_vector: VecMaxLength,
+        value: Value<T>,
+    ) -> PropertyValue<T> {
+        property_value_vector.insert_at(index_in_property_vector, value);
+        PropertyValue::Vector(property_value_vector)
+    }
+
+    /// Insert `PropertyValue` into `entity_property_values` mapping at `in_class_schema_property_id`.
     /// Returns updated `entity_property_values`
-    pub fn insert_at_index_in_property_vec(
-        mut entity_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
-        mut current_property_value_vec: VecPropertyValue<T>,
-        index_in_property_vec: VecMaxLength,
-        value: &Value<T>,
-    ) -> BTreeMap<PropertyId, PropertyValue<T>> {
-        current_property_value_vec.insert_at(index_in_property_vec, value.to_owned());
-        entity_property_values.insert(
-            index_in_property_vec,
-            PropertyValue::Vector(current_property_value_vec),
-        );
+    pub fn insert_at_in_class_schema_property_id(
+        mut entity_property_values: BTreeMap<u16, PropertyValue<T>>,
+        in_class_schema_property_id: PropertyId,
+        property_value: PropertyValue<T>,
+    ) -> BTreeMap<u16, PropertyValue<T>> {
+        entity_property_values.insert(in_class_schema_property_id, property_value);
         entity_property_values
     }
 
