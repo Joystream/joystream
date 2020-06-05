@@ -1,6 +1,7 @@
-### Version 6.14.0 - Constantinople runtime upgrade A - June 2020
+### Version 6.15.0 - Constantinople runtime upgrade A - June 2020
 - Updated runtime to sort out type name clashes between the proposal discussion module
 and forum module, in preparing to roll out proposal discussion system in pioneer.
+- Increased ROLE_PARAMETERS_REWARD_MAX_VALUE to 100,000
 
 ### Version 6.13.0 - (Constantinople) runtime upgrade - May 20th 2020
 - New proposal system that strengthens the governance structure of the platform
