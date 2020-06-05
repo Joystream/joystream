@@ -713,7 +713,6 @@ impl storage::data_directory::Trait for Runtime {
 impl storage::data_object_storage_registry::Trait for Runtime {
     type Event = Event;
     type DataObjectStorageRelationshipId = u64;
-    type Roles = LookupRoles;
     type ContentIdExists = DataDirectory;
 }
 

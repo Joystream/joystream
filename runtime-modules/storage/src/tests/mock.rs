@@ -188,7 +188,6 @@ impl data_directory::Trait for Test {
 impl data_object_storage_registry::Trait for Test {
     type Event = MetaEvent;
     type DataObjectStorageRelationshipId = u64;
-    type Roles = MockRoles;
     type ContentIdExists = MockContent;
 }
 

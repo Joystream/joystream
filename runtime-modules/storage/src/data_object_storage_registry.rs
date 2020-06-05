@@ -1,3 +1,20 @@
+//! # Data object storage registry module
+//! Data object storage registry module for the Joystream platform.
+//! It allows to set relationships between the content and the storage providers.
+//! All extrinsics require storage working group registration.
+//!
+//! ## Comments
+//!
+//! Data object storage registry module uses bureaucracy module to authorize actions.
+//! Only registered storage providers can call extrinsics.
+//!
+//! ## Supported extrinsics
+//!
+//! - [add_relationship](./struct.Module.html#method.add_relationship) - Add storage provider-to-content relationship.
+//! - [set_relationship_ready](./struct.Module.html#method.set_relationship_ready)- Activates storage provider-to-content relationship.
+//! - [unset_relationship_ready](./struct.Module.html#method.unset_relationship_ready) - Deactivates storage provider-to-content relationship.
+//!
+
 // Clippy linter requirement.
 // Disable it because of the substrate lib design. Example:
 //  pub NextRelationshipId get(next_relationship_id) build(|config: &GenesisConfig<T>|
@@ -7,7 +24,6 @@
 //#![warn(missing_docs)]
 
 use codec::{Codec, Decode, Encode};
-use roles::traits::Roles;
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
@@ -27,8 +43,10 @@ pub trait Trait:
     + data_directory::Trait
     + bureaucracy::Trait<bureaucracy::Instance2>
 {
+    /// _Data object storage registry_ event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
+    /// Type for data object storage relationship id
     type DataObjectStorageRelationshipId: Parameter
         + Member
         + SimpleArithmetic
@@ -38,7 +56,7 @@ pub trait Trait:
         + MaybeSerialize
         + PartialEq;
 
-    type Roles: Roles<Self>;
+    /// Ensures that a content exists
     type ContentIdExists: data_directory::ContentIdExists<Self>;
 }
 
@@ -78,47 +96,55 @@ impl From<bureaucracy::Error> for Error {
     }
 }
 
+/// Defines a relationship between the content and the storage provider
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct DataObjectStorageRelationship<T: Trait> {
+    /// Content id.
     pub content_id: <T as data_directory::Trait>::ContentId,
+
+    /// Storge provider id.
     pub storage_provider_id: StorageProviderId<T>,
+
+    /// Active state (True=Active)
     pub ready: bool,
 }
 
 decl_storage! {
     trait Store for Module<T: Trait> as DataObjectStorageRegistry {
 
-        // Start at this value
-        pub FirstRelationshipId get(first_relationship_id) config(first_relationship_id): T::DataObjectStorageRelationshipId = T::DataObjectStorageRelationshipId::from(DEFAULT_FIRST_RELATIONSHIP_ID);
+        /// Defines first relationship id.
+        pub FirstRelationshipId get(first_relationship_id) config(first_relationship_id):
+            T::DataObjectStorageRelationshipId = T::DataObjectStorageRelationshipId::from(DEFAULT_FIRST_RELATIONSHIP_ID);
 
-        // Increment
+        /// Defines next relationship id.
         pub NextRelationshipId get(next_relationship_id) build(|config: &GenesisConfig<T>| config.first_relationship_id): T::DataObjectStorageRelationshipId = T::DataObjectStorageRelationshipId::from(DEFAULT_FIRST_RELATIONSHIP_ID);
 
-        // Mapping of Data object types
+        /// Mapping of Data object types
         pub Relationships get(relationships): map T::DataObjectStorageRelationshipId => Option<DataObjectStorageRelationship<T>>;
 
-        // Keep a list of storage relationships per CID
+        /// Keeps a list of storage relationships per content id.
         pub RelationshipsByContentId get(relationships_by_content_id): map T::ContentId => Vec<T::DataObjectStorageRelationshipId>;
-
-        // TODO save only if metadata exists and there is at least one relation w/ ready == true.
-        ReadyContentIds get(ready_content_ids): Vec<T::ContentId> = vec![];
-
-        // TODO need? it can be expressed via StorageProvidersByContentId
-        pub StorageProviderServesContent get(storage_provider_serves_content):
-            map (T::AccountId, T::ContentId) => bool;
-
-        pub StorageProvidersByContentId get(storage_providers_by_content_id):
-            map T::ContentId => Vec<T::AccountId>;
     }
 }
 
 decl_event! {
+    /// _Data object storage registry_ events
     pub enum Event<T> where
         <T as data_directory::Trait>::ContentId,
         <T as Trait>::DataObjectStorageRelationshipId,
         StorageProviderId = StorageProviderId<T>
     {
+        /// Emits on adding of the data object storage relationship.
+        /// Params:
+        /// - Id of the relationship.
+        /// - Id of the content.
+        /// - Id of the storage provider.
         DataObjectStorageRelationshipAdded(DataObjectStorageRelationshipId, ContentId, StorageProviderId),
+
+        /// Emits on adding of the data object storage relationship.
+        /// Params:
+        /// - Id of the relationship.
+        /// - Current state of the relationship (True=Active).
         DataObjectStorageRelationshipReadyUpdated(DataObjectStorageRelationshipId, bool),
     }
 }
@@ -132,6 +158,8 @@ decl_module! {
         /// Predefined errors
         type Error = Error;
 
+        /// Add storage provider-to-content relationship. The storage provider should be registered
+        /// in the storage working group.
         pub fn add_relationship(origin, storage_provider_id: StorageProviderId<T>, cid: T::ContentId) {
             // Origin should match storage provider.
             <StorageBureaucracy<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
@@ -164,7 +192,8 @@ decl_module! {
             );
         }
 
-        // A storage provider may flip their own ready state, but nobody else.
+        /// Activates storage provider-to-content relationship. The storage provider should be registered
+        /// in the storage working group. A storage provider may flip their own ready state, but nobody else.
         pub fn set_relationship_ready(
             origin,
             storage_provider_id: StorageProviderId<T>,
@@ -173,6 +202,8 @@ decl_module! {
             Self::toggle_dosr_ready(origin, storage_provider_id, id, true)?;
         }
 
+        /// Deactivates storage provider-to-content relationship. The storage provider should be registered
+        /// in the storage working group. A storage provider may flip their own ready state, but nobody else.
         pub fn unset_relationship_ready(
             origin,
             storage_provider_id: StorageProviderId<T>,
@@ -207,7 +238,7 @@ impl<T: Trait> Module<T> {
         // Update DOSR and fire event.
         <Relationships<T>>::insert(id, dosr);
         Self::deposit_event(RawEvent::DataObjectStorageRelationshipReadyUpdated(
-            id, true,
+            id, ready,
         ));
 
         Ok(())
