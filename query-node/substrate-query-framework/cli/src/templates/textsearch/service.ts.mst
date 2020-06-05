@@ -28,7 +28,7 @@ export class {{query.typePrefix}}FTSService {
         {{/entities}} 
     }
 
-    async search(text: string, limit:number = 5): Promise<SearchFTSOutput[]> {
+    async search(text: string, limit:number = 5): Promise<{{query.typePrefix}}FTSOutput[]> {
         const query = `
             SELECT origin_table, id, 
                 ts_rank(tsv, phraseto_tsquery('{{query.language}}', $1)) as rank,
@@ -57,10 +57,10 @@ export class {{query.typePrefix}}FTSService {
             return { item: e, 
                 rank: idMap[e.id].rank, 
                 highlight: idMap[e.id].highlight,
-                isTypeOf: idMap[e.id].origin_table } as SearchFTSOutput;
+                isTypeOf: idMap[e.id].origin_table } as {{query.typePrefix}}FTSOutput;
         });
           
-        return enhancedEntities.reduce((accum: SearchFTSOutput[], entity) => {
+        return enhancedEntities.reduce((accum: {{query.typePrefix}}FTSOutput[], entity) => {
             if (entity.rank > 0) {
                 accum.push(entity);
             }
