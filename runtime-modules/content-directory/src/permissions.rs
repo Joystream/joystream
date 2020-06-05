@@ -121,7 +121,7 @@ pub struct CuratorGroup<T: Trait> {
     active: bool,
 
     /// Used to count the number of `Class`(es), given curator group maintains
-    number_of_classes_maintained: ReferenceCounter,
+    number_of_classes_maintained: u32,
 }
 
 impl<T: Trait> Default for CuratorGroup<T> {

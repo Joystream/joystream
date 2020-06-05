@@ -2,6 +2,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 
+use core::fmt::Debug;
+use core::ops::{AddAssign, SubAssign};
+use std::hash::Hash;
+
 use codec::{Codec, Decode, Encode};
 use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use rstd::prelude::*;
@@ -10,29 +14,26 @@ use srml_support::{
     decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter,
     StorageDoubleMap,
 };
-use std::hash::Hash;
 use system::ensure_signed;
 
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 
 mod errors;
+mod helpers;
 mod mock;
 mod operations;
 mod permissions;
 mod schema;
 mod tests;
 
-use core::fmt::Debug;
 pub use errors::*;
+pub use helpers::*;
 pub use operations::*;
 pub use permissions::*;
 pub use schema::*;
 
 type MaxNumber = u32;
-
-/// Type, respresenting inbound entities rc for each entity
-type ReferenceCounter = u32;
 
 pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
     /// The overarching event type.
@@ -128,109 +129,6 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
 
     /// Entities creation constraint per individual
     type IndividualEntitiesCreationLimit: Get<Self::EntityId>;
-}
-
-/// Length constraint for input validation
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, Copy, PartialEq, Eq, Debug)]
-pub struct InputValidationLengthConstraint {
-    /// Minimum length
-    pub min: u16,
-
-    /// Difference between minimum length and max length.
-    /// While having max would have been more direct, this
-    /// way makes max < min unrepresentable semantically,
-    /// which is safer.
-    pub max_min_diff: u16,
-}
-
-/// Structure, representing `inbound_entity_rcs` & `inbound_same_owner_entity_rcs`
-/// mappings to their respective count for each referenced entity id
-pub struct EntitiesRc<T: Trait> {
-    /// Entities, which inbound same owner rc should be changed
-    pub inbound_entity_rcs: BTreeMap<T::EntityId, ReferenceCounter>,
-
-    /// Entities, which rc should be changed (only includes entity ids, which are not in inbound_entity_rcs already)
-    pub inbound_same_owner_entity_rcs: BTreeMap<T::EntityId, ReferenceCounter>,
-}
-
-impl<T: Trait> Default for EntitiesRc<T> {
-    fn default() -> Self {
-        Self {
-            inbound_entity_rcs: BTreeMap::default(),
-            inbound_same_owner_entity_rcs: BTreeMap::default(),
-        }
-    }
-}
-
-impl<T: Trait> EntitiesRc<T> {
-    /// Fill in one of inbound entity rcs mappings, based on `same_owner` flag provided
-    fn fill_in_entity_rcs(&mut self, entity_ids: Vec<T::EntityId>, same_owner: bool) {
-        let inbound_entity_rcs = if same_owner {
-            &mut self.inbound_same_owner_entity_rcs
-        } else {
-            &mut self.inbound_entity_rcs
-        };
-
-        for entity_id in entity_ids {
-            *inbound_entity_rcs.entry(entity_id).or_insert(0) += 1;
-        }
-    }
-
-    /// Traverse `inbound_entity_rcs` & `inbound_same_owner_entity_rcs`,
-    /// increasing each `Entity` respective reference counters
-    fn increase_entity_rcs(self) {
-        self.inbound_same_owner_entity_rcs
-            .iter()
-            .for_each(|(entity_id, rc)| {
-                Module::<T>::increase_entity_rcs(entity_id, *rc, true);
-            });
-
-        self.inbound_entity_rcs.iter().for_each(|(entity_id, rc)| {
-            Module::<T>::increase_entity_rcs(entity_id, *rc, false);
-        });
-    }
-
-    /// Traverse `inbound_entity_rcs` & `inbound_same_owner_entity_rcs`,
-    /// decreasing each `Entity` respective reference counters
-    fn decrease_entity_rcs(self) {
-        self.inbound_same_owner_entity_rcs
-            .iter()
-            .for_each(|(entity_id, rc)| {
-                Module::<T>::decrease_entity_rcs(entity_id, *rc, true);
-            });
-
-        self.inbound_entity_rcs.iter().for_each(|(entity_id, rc)| {
-            Module::<T>::decrease_entity_rcs(entity_id, *rc, false);
-        });
-    }
-}
-
-impl InputValidationLengthConstraint {
-    pub fn new(min: u16, max_min_diff: u16) -> Self {
-        Self { min, max_min_diff }
-    }
-
-    /// Helper for computing max
-    pub fn max(self) -> u16 {
-        self.min + self.max_min_diff
-    }
-
-    pub fn ensure_valid(
-        self,
-        len: usize,
-        too_short_msg: &'static str,
-        too_long_msg: &'static str,
-    ) -> Result<(), &'static str> {
-        let length = len as u16;
-        if length < self.min {
-            Err(too_short_msg)
-        } else if length > self.max() {
-            Err(too_long_msg)
-        } else {
-            Ok(())
-        }
-    }
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -429,6 +327,65 @@ impl<T: Trait> Class<T> {
     }
 }
 
+/// Structure, respresenting inbound entity rcs for each `Entity`
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Copy, Debug)]
+pub struct ReferenceCounter {
+    /// Number of inbound references from another entities
+    inbound_reference_counter: u32,
+    /// Number of inbound references from another entities with `SameOwner` flag set
+    inbound_same_owner_reference_counter: u32,
+}
+
+impl ReferenceCounter {
+    /// Create simple `ReferenceCounter` instance, based on `same_owner` flag provided
+    pub fn new(reference_counter: u32, same_owner: bool) -> Self {
+        if same_owner {
+            Self {
+                inbound_reference_counter: 0,
+                inbound_same_owner_reference_counter: reference_counter,
+            }
+        } else {
+            Self {
+                inbound_reference_counter: reference_counter,
+                inbound_same_owner_reference_counter: 0,
+            }
+        }
+    }
+
+    /// Check if `inbound_reference_counter` is equal to zero
+    pub fn is_inbound_reference_counter_equal_to_zero(self) -> bool {
+        self.inbound_reference_counter == 0
+    }
+
+    /// Check if `inbound_same_owner_reference_counter` is equal to zero
+    pub fn is_inbound_same_owner_reference_counter_equal_to_zero(self) -> bool {
+        self.inbound_same_owner_reference_counter == 0
+    }
+}
+
+impl AddAssign for ReferenceCounter {
+    fn add_assign(&mut self, other: Self) {
+        *self = Self {
+            inbound_reference_counter: self.inbound_reference_counter
+                + other.inbound_reference_counter,
+            inbound_same_owner_reference_counter: self.inbound_same_owner_reference_counter
+                + other.inbound_same_owner_reference_counter,
+        };
+    }
+}
+
+impl SubAssign for ReferenceCounter {
+    fn sub_assign(&mut self, other: Self) {
+        *self = Self {
+            inbound_reference_counter: self.inbound_reference_counter
+                - other.inbound_reference_counter,
+            inbound_same_owner_reference_counter: self.inbound_same_owner_reference_counter
+                - other.inbound_same_owner_reference_counter,
+        };
+    }
+}
+
 /// Represents `Entity`, related to a specific `Class`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -449,10 +406,7 @@ pub struct Entity<T: Trait> {
     pub values: BTreeMap<PropertyId, PropertyValue<T>>,
 
     /// Number of property values referencing current entity
-    pub reference_count: ReferenceCounter,
-
-    /// Number of inbound references from another entities with `SameOwner`flag set
-    pub inbound_same_owner_references_from_other_entities_count: ReferenceCounter,
+    pub reference_counter: ReferenceCounter,
 }
 
 impl<T: Trait> Default for Entity<T> {
@@ -462,8 +416,7 @@ impl<T: Trait> Default for Entity<T> {
             class_id: T::ClassId::default(),
             supported_schemas: BTreeSet::new(),
             values: BTreeMap::new(),
-            reference_count: 0,
-            inbound_same_owner_references_from_other_entities_count: 0,
+            reference_counter: ReferenceCounter::default(),
         }
     }
 }
@@ -481,8 +434,7 @@ impl<T: Trait> Entity<T> {
             class_id,
             supported_schemas,
             values,
-            reference_count: 0,
-            inbound_same_owner_references_from_other_entities_count: 0,
+            reference_counter: ReferenceCounter::default(),
         }
     }
 
@@ -541,7 +493,8 @@ impl<T: Trait> Entity<T> {
     /// Ensure any `PropertyValue` from external entity does not point to the given `Entity`
     pub fn ensure_rc_is_zero(&self) -> dispatch::Result {
         ensure!(
-            self.reference_count == 0,
+            self.reference_counter
+                .is_inbound_reference_counter_equal_to_zero(),
             ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO
         );
         Ok(())
@@ -550,7 +503,8 @@ impl<T: Trait> Entity<T> {
     /// Ensure any inbound `PropertyValue` points to the given `Entity`
     pub fn ensure_inbound_same_owner_rc_is_zero(&self) -> dispatch::Result {
         ensure!(
-            self.inbound_same_owner_references_from_other_entities_count == 0,
+            self.reference_counter
+                .is_inbound_same_owner_reference_counter_equal_to_zero(),
             ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO
         );
         Ok(())
@@ -1219,7 +1173,7 @@ decl_module! {
             let unused_schema_property_values = schema.get_property_values_unused(property_values, &unused_property_ids);
             let entity_controller = entity.get_permissions_ref().get_controller();
             let class_properties = class.properties;
-            
+
             Self::ensure_property_values_are_valid(
                 &class_properties, entity_controller, &unused_property_ids, &unused_schema_property_values, entity_property_values_ref
             )?;
@@ -1274,10 +1228,10 @@ decl_module! {
             let mut updated = false;
 
             // Entities, which rc should be incremented
-            let mut entity_ids_to_increase_rcs = EntitiesRc::<T>::default();
+            let mut entity_ids_to_increase_rcs = InboundEntitiesRc::<T>::default();
 
             // Entities, which rc should be decremented
-            let mut entity_ids_to_decrease_rcs = EntitiesRc::<T>::default();
+            let mut entity_ids_to_decrease_rcs = InboundEntitiesRc::<T>::default();
 
             // Iterate over a vector of new values and update corresponding properties
             // of this entity if new values are valid.
@@ -1375,11 +1329,12 @@ decl_module! {
                 }
 
                 if let Some(entity_ids_to_decrease_rcs) = entity_ids_to_decrease_rcs {
+                    let same_controller_status = property.property_type.same_controller_status();
                     Self::count_entities(entity_ids_to_decrease_rcs).iter()
-                        .for_each(|(entity_id, rc)| Self::decrease_entity_rcs(
-                            entity_id, *rc, property.property_type.same_controller_status()
-                        )
-                    );
+                        .for_each(|(entity_id, rc)| {
+                            let reference_counter = ReferenceCounter::new(*rc, same_controller_status);
+                            Self::decrease_entity_rcs(entity_id, reference_counter);
+                        });
                 }
             });
 
@@ -1441,7 +1396,9 @@ decl_module! {
             });
 
             if let Some(involved_entity_id) = involved_entity_id {
-                Self::decrease_entity_rcs(&involved_entity_id, 1, property.property_type.same_controller_status());
+                let same_controller_status = property.property_type.same_controller_status();
+                let reference_counter = ReferenceCounter::new(1, same_controller_status);
+                Self::decrease_entity_rcs(&involved_entity_id, reference_counter);
             }
 
             Ok(())
@@ -1486,7 +1443,9 @@ decl_module! {
             <EntityById<T>>::mutate(entity_id, |entity| {
                 let value = property_value.get_value();
                 if let Some(entity_rc_to_increment) = value.get_involved_entity() {
-                    Self::increase_entity_rcs(&entity_rc_to_increment, 1, class_property.property_type.same_controller_status());
+                    let same_controller_status = class_property.property_type.same_controller_status();
+                    let reference_counter = ReferenceCounter::new(1, same_controller_status);
+                    Self::increase_entity_rcs(&entity_rc_to_increment, reference_counter);
                 }
                 if let Some(PropertyValue::Vector(current_prop_value)) =
                     entity.values.get_mut(&in_class_schema_property_id)
@@ -1555,27 +1514,17 @@ decl_module! {
 impl<T: Trait> Module<T> {
     /// Increases corresponding `Entity` references count by rc.
     /// Depends on `same_owner` flag provided
-    fn increase_entity_rcs(entity_id: &T::EntityId, rc: u32, same_owner: bool) {
+    fn increase_entity_rcs(entity_id: &T::EntityId, reference_counter: ReferenceCounter) {
         <EntityById<T>>::mutate(entity_id, |entity| {
-            if same_owner {
-                entity.inbound_same_owner_references_from_other_entities_count += rc;
-                entity.reference_count += rc
-            } else {
-                entity.reference_count += rc
-            }
+            entity.reference_counter += reference_counter
         })
     }
 
     /// Decreases corresponding `Entity` references count by rc.
     /// Depends on `same_owner` flag provided
-    fn decrease_entity_rcs(entity_id: &T::EntityId, rc: u32, same_owner: bool) {
+    fn decrease_entity_rcs(entity_id: &T::EntityId, reference_counter: ReferenceCounter) {
         <EntityById<T>>::mutate(entity_id, |entity| {
-            if same_owner {
-                entity.inbound_same_owner_references_from_other_entities_count -= rc;
-                entity.reference_count -= rc
-            } else {
-                entity.reference_count -= rc
-            }
+            entity.reference_counter -= reference_counter
         })
     }
 
@@ -1610,8 +1559,8 @@ impl<T: Trait> Module<T> {
     fn get_involved_entity_rcs(
         class_properties: &[Property<T>],
         unused_schema_property_values: &BTreeMap<u16, PropertyValue<T>>,
-    ) -> EntitiesRc<T> {
-        let mut entity_rcs = EntitiesRc::default();
+    ) -> InboundEntitiesRc<T> {
+        let mut entity_rcs = InboundEntitiesRc::default();
         for (schema_property_id, schema_property_value) in unused_schema_property_values {
             let class_property = &class_properties[*schema_property_id as usize];
             if let Some(entity_rcs_to_increment) = schema_property_value.get_involved_entities() {
@@ -1630,8 +1579,8 @@ impl<T: Trait> Module<T> {
         new_value: &PropertyValue<T>,
         current_prop_value: &PropertyValue<T>,
         same_controller: bool,
-        entity_ids_to_increase_rcs: &mut EntitiesRc<T>,
-        entity_ids_to_decrease_rcs: &mut EntitiesRc<T>,
+        entity_ids_to_increase_rcs: &mut InboundEntitiesRc<T>,
+        entity_ids_to_decrease_rcs: &mut InboundEntitiesRc<T>,
     ) {
         // Retrieve unique entity ids to update rc
         if let (Some(entities_rc_to_increment_vec), Some(entities_rc_to_decrement_vec)) = (
@@ -2033,9 +1982,9 @@ impl<T: Trait> Module<T> {
             .collect()
     }
 
-    /// Counts the number of repetetive entities and returns `BTreeMap<T::EntityId, ReferenceCounter>`,
-    /// where T::EntityId - unique entity_id, ReferenceCounter - related counter
-    pub fn count_entities(entity_ids: Vec<T::EntityId>) -> BTreeMap<T::EntityId, ReferenceCounter> {
+    /// Counts the number of repetetive entities and returns `BTreeMap<T::EntityId, u32>`,
+    /// where T::EntityId - unique entity_id, u32 - related counter
+    pub fn count_entities(entity_ids: Vec<T::EntityId>) -> BTreeMap<T::EntityId, u32> {
         let mut result = BTreeMap::new();
 
         for entity_id in entity_ids {
