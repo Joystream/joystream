@@ -625,7 +625,7 @@ impl<T: Trait> Property<T> {
         Ok(())
     }
 
-    /// Ensure all `PropertyValue`'s are unique except of null non required ones
+    /// Ensure all `PropertyValue`'s with unique option set are unique, except of null non required ones
     pub fn ensure_unique_option_satisfied(
         &self,
         new_value: &PropertyValue<T>,
@@ -644,7 +644,7 @@ impl<T: Trait> Property<T> {
         Ok(())
     }
 
-    /// Validate new `PropertyValue` against the type of this property
+    /// Validate new `PropertyValue` against the type of this `Property`
     /// and check any additional constraints
     pub fn ensure_property_value_to_update_is_valid(
         &self,
