@@ -57,6 +57,7 @@ function ProposalPreviewList ({ bestNumber }: ProposalPreviewListProps) {
 
   const proposalsMap = mapFromProposals(proposals);
   const filteredProposals = proposalsMap.get(activeFilter) as ParsedProposal[];
+  const sortedProposals = filteredProposals.sort((p1, p2) => p2.id.cmp(p1.id));
 
   return (
     <Container className="Proposal">
@@ -72,9 +73,9 @@ function ProposalPreviewList ({ bestNumber }: ProposalPreviewListProps) {
           ))}
         </Menu>
         {
-          filteredProposals.length ? (
+          sortedProposals.length ? (
             <Card.Group>
-              {filteredProposals.map((prop: ParsedProposal, idx: number) => (
+              {sortedProposals.map((prop: ParsedProposal, idx: number) => (
                 <ProposalPreview key={`${prop.title}-${idx}`} proposal={prop} bestNumber={bestNumber} />
               ))}
             </Card.Group>
