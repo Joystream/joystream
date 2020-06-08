@@ -1307,30 +1307,33 @@ decl_module! {
                 access_level,
             )?;
 
+            // Update reference counters of involved entities (if some)
             let entity_ids_to_decrease_rcs = property_value_vector
                 .get_vec_value()
                 .get_involved_entities();
+
+            if let Some(entity_ids_to_decrease_rcs) = entity_ids_to_decrease_rcs {
+                let same_controller_status = property.property_type.same_controller_status();
+                Self::count_entities(entity_ids_to_decrease_rcs).iter()
+                    .for_each(|(entity_id, rc)| {
+                        let reference_counter = InboundReferenceCounter::new(*rc, same_controller_status);
+                        Self::decrease_entity_rcs(entity_id, reference_counter);
+                    });
+            }
+
+            // Update entity property values
+            let empty_property_value_vector = Self::clear_property_vector(clear_property_vector);
+
+            let entity_values_updated = Self::insert_at_in_class_schema_property_id(
+                entity.values, in_class_schema_property_id, empty_property_value_vector
+            );
 
             //
             // == MUTATION SAFE ==
             //
 
-            // Clear property value vector
             <EntityById<T>>::mutate(entity_id, |entity| {
-                if let Some(PropertyValue::Vector(property_value_vector)) =
-                    entity.values.get_mut(&in_class_schema_property_id)
-                {
-                    property_value_vector.vec_clear();
-                }
-
-                if let Some(entity_ids_to_decrease_rcs) = entity_ids_to_decrease_rcs {
-                    let same_controller_status = property.property_type.same_controller_status();
-                    Self::count_entities(entity_ids_to_decrease_rcs).iter()
-                        .for_each(|(entity_id, rc)| {
-                            let reference_counter = InboundReferenceCounter::new(*rc, same_controller_status);
-                            Self::decrease_entity_rcs(entity_id, reference_counter);
-                        });
-                }
+                entity.values = entity_values_updated
             });
 
             // Trigger event
@@ -1769,6 +1772,14 @@ impl<T: Trait> Module<T> {
         value: Value<T>,
     ) -> PropertyValue<T> {
         property_value_vector.insert_at(index_in_property_vector, value);
+        PropertyValue::Vector(property_value_vector)
+    }
+
+    /// Clear `VecPropertyValue`. Returns empty `PropertyValue`
+    pub fn clear_property_vector(
+        mut property_value_vector: VecPropertyValue<T>,
+    ) -> PropertyValue<T> {
+        property_value_vector.clear();
         PropertyValue::Vector(property_value_vector)
     }
 

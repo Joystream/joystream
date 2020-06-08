@@ -322,7 +322,7 @@ impl<T: Trait> VecPropertyValue<T> {
     }
 
     /// Clear current `vec_value`, increment `nonce`
-    pub fn vec_clear(&mut self) {
+    pub fn clear(&mut self) {
         match &mut self.vec_value {
             VecValue::Bool(vec) => *vec = vec![],
             VecValue::Uint16(vec) => *vec = vec![],
