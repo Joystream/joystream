@@ -695,7 +695,6 @@ impl storage::data_object_type_registry::Trait for Runtime {
 impl storage::data_directory::Trait for Runtime {
     type Event = Event;
     type ContentId = ContentId;
-    type SchemaId = u64;
     type StorageProviderHelper = integration::storage::StorageProviderHelper;
     type IsActiveDataObjectType = DataObjectTypeRegistry;
     type MemberOriginValidator = MembershipOriginValidator<Self>;

@@ -1,9 +1,29 @@
+//! # Data directory module
+//! Data directory module for the Joystream platform manages IPFS content id, storage providers,
+//! owners of the content. It allows to add and accept or reject the content in the system.
+//!
+//! ## Comments
+//!
+//! Data object type registry module uses bureaucracy module to authorize actions.
+//!
+//! ## Supported extrinsics
+//!
+//! ### Public extrinsic
+//! - [add_content](./struct.Module.html#method.add_content) - Adds the content to the system.
+//!
+//! ### Private extrinsics
+//! - accept_content - Storage provider accepts a content.
+//! - reject_content - Storage provider rejects a content.
+//! - remove_known_content_id - Removes the content id from the list of known content ids. Requires root privileges.
+//! - set_known_content_id - Sets the content id from the list of known content ids. Requires root privileges.
+//!
+
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
-use codec::{Codec, Decode, Encode};
+use codec::{Decode, Encode};
 use rstd::prelude::*;
-use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
+use sr_primitives::traits::{MaybeSerialize, Member};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
 use system::{self, ensure_root};
 
@@ -16,6 +36,7 @@ use crate::{StorageBureaucracy, StorageProviderId, MemberId};
 
 // TODO: create a StorageProviderHelper implementation
 
+/// The _Data directory_ main _Trait_.
 pub trait Trait:
     timestamp::Trait
     + system::Trait
@@ -23,20 +44,16 @@ pub trait Trait:
     + membership::members::Trait
     + bureaucracy::Trait<bureaucracy::Instance2>
 {
+    /// _Data directory_ event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
+    /// Content id.
     type ContentId: Parameter + Member + MaybeSerialize + Copy + Ord + Default;
 
-    type SchemaId: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
-
+    /// Provides random storage provider id.
     type StorageProviderHelper: StorageProviderHelper<Self>;
+
+    ///Active data object type validator.
     type IsActiveDataObjectType: data_object_type_registry::IsActiveDataObjectType<Self>;
 
     /// Validates member id and origin combination.
@@ -59,10 +76,16 @@ pub struct BlockAndTime<T: Trait> {
     pub time: T::Moment,
 }
 
+/// The decision of the storage provider when it acts as liaison.
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub enum LiaisonJudgement {
+    /// Content awaits for a judgment.
     Pending,
+
+    /// Content accepted.
     Accepted,
+
+    /// Content rejected.
     Rejected,
 }
 
@@ -75,14 +98,29 @@ impl Default for LiaisonJudgement {
 /// Manages content ids, type and storage provider decision about it.
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct DataObject<T: Trait> {
+    /// Content owner.
     pub owner: MemberId<T>,
+
+    /// Content added at.
     pub added_at: BlockAndTime<T>,
+
+    /// Content type id.
     pub type_id: <T as data_object_type_registry::Trait>::DataObjectTypeId,
+
+    /// Content size in bytes.
     pub size: u64,
+
+    /// Storage provider id of the liaison.
     pub liaison: StorageProviderId<T>,
+
+    /// Storage provider as liaison judgment.
     pub liaison_judgement: LiaisonJudgement,
+
+    /// IPFS content id.
     pub ipfs_content_id: Vec<u8>,
 }
+
+//TODO consider to remove
 
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub enum ContentVisibility {
@@ -98,8 +136,10 @@ impl Default for ContentVisibility {
 
 decl_storage! {
     trait Store for Module<T: Trait> as DataDirectory {
-        pub KnownContentIds get(known_content_ids): Vec<T::ContentId> = vec![];
+        /// List of ids known to the system.
+        pub KnownContentIds get(known_content_ids): Vec<T::ContentId> = Vec::new();
 
+        /// Maps data objects by their content id.
         pub DataObjectByContentId get(data_object_by_content_id):
             map T::ContentId => Option<DataObject<T>>;
     }
@@ -133,9 +173,13 @@ decl_event! {
 }
 
 decl_module! {
+    /// _Data directory_ substrate module.
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+        /// Default deposit_event() handler
         fn deposit_event() = default;
 
+        /// Adds the content to the system. Member id should match its origin. The created DataObject
+        /// awaits liaison to accept or reject it.
         pub fn add_content(
             origin,
             member_id: MemberId<T>,
@@ -211,6 +255,7 @@ decl_module! {
 
         // Sudo methods
 
+        /// Removes the content id from the list of known content ids. Requires root privileges.
         fn remove_known_content_id(origin, content_id: T::ContentId) {
             ensure_root(origin)?;
 
@@ -223,6 +268,7 @@ decl_module! {
             <KnownContentIds<T>>::put(upd_content_ids);
         }
 
+        /// Sets the content id from the list of known content ids. Requires root privileges.
         fn set_known_content_id(origin, content_ids: Vec<T::ContentId>) {
             ensure_root(origin)?;
 

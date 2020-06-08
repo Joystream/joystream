@@ -1,6 +1,5 @@
 //! # Data object type registry module
-//! Data object type registry module for the Joystream platform.
-//! It allows to set constraints for the data objects. All extrinsics require leader
+//! Data object type registry module for the Joystream platform allows to set constraints for the data objects. All extrinsics require leader.
 //!
 //! ## Comments
 //!
@@ -32,7 +31,7 @@ use srml_support::{decl_error, decl_event, decl_module, decl_storage, Parameter}
 const DEFAULT_TYPE_DESCRIPTION: &str = "Default data object type for audio and video content.";
 const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u32 = 1;
 
-/// The _Data object type registry_ main _Trait_
+/// The _Data object type registry_ main _Trait_.
 pub trait Trait: system::Trait + bureaucracy::Trait<bureaucracy::Instance2> {
     /// _Data object type registry_ event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;

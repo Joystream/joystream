@@ -1,7 +1,6 @@
 //! # Data object storage registry module
-//! Data object storage registry module for the Joystream platform.
-//! It allows to set relationships between the content and the storage providers.
-//! All extrinsics require storage working group registration.
+//! Data object storage registry module for the Joystream platform allows to set relationships
+//! between the content and the storage providers. All extrinsics require storage working group registration.
 //!
 //! ## Comments
 //!
@@ -33,7 +32,7 @@ use crate::{StorageBureaucracy, StorageProviderId};
 
 const DEFAULT_FIRST_RELATIONSHIP_ID: u32 = 1;
 
-/// The _Data object storage registry_ main _Trait_
+/// The _Data object storage registry_ main _Trait_.
 pub trait Trait:
     timestamp::Trait
     + system::Trait
