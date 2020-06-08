@@ -1402,7 +1402,7 @@ decl_module! {
                 RawEvent::RemovedAtEntityPropertyValueVectorIndex(
                     actor, entity_id, in_class_schema_property_id, index_in_property_vector, nonce
                 )
-            )
+            );
 
             Ok(())
         }
