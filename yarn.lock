@@ -25,14 +25,15 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
-"@joystream/types@^0.9.0":
-  version "0.9.0"
-  resolved "https://registry.yarnpkg.com/@joystream/types/-/types-0.9.0.tgz#1e50c13fad51c54cd70e389f6879a7ef25a43a6c"
-  integrity sha512-3+iggnMGAQOg6/EhkksZb5VhvQMRo7WoBvIHCdBrzL7iSG53DTmcs8uyn+md3KvUZ5I2JPdT42u0hIDXAs+guA==
+"@joystream/types@^0.10.0":
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/@joystream/types/-/types-0.10.0.tgz#7e98ef221410b26a7d952cfc3d1c03d28395ad69"
+  integrity sha512-RDZizqGKWGYpLR5PnUWM4aGa7InpWNh2Txlr7Al3ROFYOHoyQf62/omPfEz29F6scwlFxysOdmEfQaLeVRaUxA==
   dependencies:
     "@polkadot/types" "^0.96.1"
     "@types/vfile" "^4.0.0"
     ajv "^6.11.0"
+    lodash "^4.17.15"
 
 "@polkadot/api-derive@^0.96.1":
   version "0.96.1"
