@@ -65,12 +65,9 @@ pub struct DataObject<T: Trait> {
     pub size: u64,
     pub liaison: T::AccountId,
     pub liaison_judgement: LiaisonJudgement,
-    pub ipfs_content_id: Vec<u8>, // shoule we use rust multi-format crate?
-                                  // TODO signing_key: public key supplied by the uploader,
-                                  // they sigh the content with this key
-
-                                  // TODO add support for this field (Some if judgment == Rejected)
-                                  // pub rejection_reason: Option<Vec<u8>>,
+    pub ipfs_content_id: Vec<u8>,
+    // TODO add support for this field (Some if judgment == Rejected)
+    // pub rejection_reason: Option<Vec<u8>>,
 }
 
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
@@ -97,7 +94,7 @@ decl_storage! {
         pub DataObjectByContentId get(data_object_by_content_id):
             map T::ContentId => Option<DataObject<T>>;
 
-        // Default storage provider account id, overrides all active storage providers as liason if set
+        // Default storage provider account id, overrides all active storage providers as liaison if set
         pub PrimaryLiaisonAccountId get(primary_liaison_account_id): Option<T::AccountId>;
     }
 }
@@ -175,16 +172,6 @@ decl_module! {
         }
 
         // Sudo methods
-
-        fn set_primary_liaison_account_id(origin, account: T::AccountId) {
-            ensure_root(origin)?;
-            <PrimaryLiaisonAccountId<T>>::put(account);
-        }
-
-        fn unset_primary_liaison_account_id(origin) {
-            ensure_root(origin)?;
-            <PrimaryLiaisonAccountId<T>>::take();
-        }
 
         fn remove_known_content_id(origin, content_id: T::ContentId) {
             ensure_root(origin)?;
