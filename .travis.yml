@@ -1,96 +1,35 @@
 language: rust
 
+# Caching of the runtime .wasm blob poses a problem.
+# See: https://github.com/Joystream/joystream/issues/466
+# Always starting with a clean slate is probably better, it allows us to ensure
+# the WASM runtime is always rebuilt. It also allows us to detect when certain upstream dependencies
+# sometimes break the build. When cache is enabled do not use the produced WASM build.
+# This also means the binary should not be used to produce the final chainspec file (because the same
+# one is embedded in the binary)
+cache: cargo
+
 rust:
-  - 1.43.0
+  - stable
 
 matrix:
   include:
     - os: linux
       env: TARGET=x86_64-unknown-linux-gnu
-    - os: linux
-      env: TARGET=arm-unknown-linux-gnueabihf
-      services: docker
-    - os: osx
-      env: TARGET=x86_64-apple-darwin
-    - os: linux
-      env: TARGET=wasm-blob
-      services: docker
-
-before_install:
-  - rustup component add rustfmt
-  - cargo fmt --all -- --check
-  - rustup component add clippy
-  - BUILD_DUMMY_WASM_BINARY=1 cargo clippy -- -D warnings
-  - rustup default stable
-  - rustup update nightly
-  - rustup target add wasm32-unknown-unknown --toolchain nightly
-  - cargo test --verbose --all
 
 install:
-  - |
-    if [ "$TARGET" = "arm-unknown-linux-gnueabihf" ]
-    then
-      docker pull joystream/rust-raspberry
-    fi
+  - rustup install nightly-2020-05-23
+  - rustup target add wasm32-unknown-unknown --toolchain nightly-2020-05-23
+  # travis installs rust using rustup with the "minimal" profile so these tools are not installed by default
+  - rustup component add rustfmt
+  - rustup component add clippy
+
+before_script:
+  - cargo fmt --all -- --check
 
 script:
-  - |
-    if [ "$TARGET" = "arm-unknown-linux-gnueabihf" ]
-    then
-      docker run -u root \
-        --volume ${TRAVIS_BUILD_DIR}:/home/cross/project \
-          joystream/rust-raspberry \
-        build --release
-      sudo chmod a+r ${TRAVIS_BUILD_DIR}/target/${TARGET}/release/joystream-node
-    elif [ "$TARGET" = "wasm-blob" ]
-    then
-      docker build --tag joystream/node \
-        --file ./devops/dockerfiles/node-and-runtime/Dockerfile \
-        .
-      docker create --name temp-container-joystream-node joystream/node
-      docker cp temp-container-joystream-node:/joystream/runtime.compact.wasm joystream_runtime.wasm
-      docker rm temp-container-joystream-node
-    else
-      cargo build --release --target=${TARGET}
-    fi
-
-before_deploy:
-  - |
-    if [ "$TARGET" = "wasm-blob" ]
-    then
-      export ASSET="joystream_runtime.wasm"
-    else
-      cp ./target/${TARGET}/release/joystream-node .
-      if [ "$TARGET" = "arm-unknown-linux-gnueabihf" ]
-      then
-        export FILENAME="joystream-node-armv7-linux-gnueabihf"
-      else
-        export FILENAME=`./joystream-node --version | sed -e "s/ /-/g"`
-      fi
-      tar -cf ${FILENAME}.tar ./joystream-node
-      gzip ${FILENAME}.tar
-      export ASSET=${FILENAME}.tar.gz
-    fi
-
-deploy:
-  - provider: releases
-    api_key:
-      secure: FfxZGQexxAGT0Skbctl1FuqmEvNHejPDPtNG8Du1ACSGjS7Y+M6o/aPqE6HL158AmddOgndsIPR+HM7VfMDAUMkLTbOhv3nMpDBZu1h25vwk+jHOM65tm5LWUu/ROWBpaAQiG7NKrvtfkNfbNBSETsEbWBt/DPrhlIfSbgsXBFDiid7uRrCiwvDUJ097/EUOJ9OVUrk+O4ebSzfIfKPGPtRU2rQQ0eNX7yX3TCm3jbQm/kplkQNRL9mnAJNxtKuvuko4LqZ6jN4XLoLTHUMjO7E0r6wXVB4GVjA4HA214eLlQD6BhgTbWMDxKgWyuKzPG+2GLKyluSSn0RurSl8tYryXKxKxuN3H1FX9r23a8AzGtpRACJtIePC2YmPuQRSnz2Bw8jlSP2WPLJtXGD036J/wVMj6W9TROm7IBigiC7QlqAqCYNByOnoKyhRCgYyAJZb0Jpa3qWaFhA6b6gCGhyH85QCcrc0q6JAB3oqH8Wfm/K2HVzBobmKaSFu5DpwInNnUXnLWGVzhSt3oCq6ld773izReGdLJtLC2vaJ9rZVaVw29s9M662EEuAGgaVLO/sinZJFeIIaCF4i4zUXwXSLIdfKXGOR0ZibkyT2FS6qPGvl/lLN5IREzD7v/rV8htGMLmw4jpPLNskvRjCHX42ewRRYdMvZzQQOAvSlWcsw=
-    file: ${ASSET}
-    on:
-      tags: true
-      repo: Joystream/joystream
-    draft: true
-    overwrite: true
-    skip_cleanup: true
-  - provider: releases
-    api_key:
-      secure: FfxZGQexxAGT0Skbctl1FuqmEvNHejPDPtNG8Du1ACSGjS7Y+M6o/aPqE6HL158AmddOgndsIPR+HM7VfMDAUMkLTbOhv3nMpDBZu1h25vwk+jHOM65tm5LWUu/ROWBpaAQiG7NKrvtfkNfbNBSETsEbWBt/DPrhlIfSbgsXBFDiid7uRrCiwvDUJ097/EUOJ9OVUrk+O4ebSzfIfKPGPtRU2rQQ0eNX7yX3TCm3jbQm/kplkQNRL9mnAJNxtKuvuko4LqZ6jN4XLoLTHUMjO7E0r6wXVB4GVjA4HA214eLlQD6BhgTbWMDxKgWyuKzPG+2GLKyluSSn0RurSl8tYryXKxKxuN3H1FX9r23a8AzGtpRACJtIePC2YmPuQRSnz2Bw8jlSP2WPLJtXGD036J/wVMj6W9TROm7IBigiC7QlqAqCYNByOnoKyhRCgYyAJZb0Jpa3qWaFhA6b6gCGhyH85QCcrc0q6JAB3oqH8Wfm/K2HVzBobmKaSFu5DpwInNnUXnLWGVzhSt3oCq6ld773izReGdLJtLC2vaJ9rZVaVw29s9M662EEuAGgaVLO/sinZJFeIIaCF4i4zUXwXSLIdfKXGOR0ZibkyT2FS6qPGvl/lLN5IREzD7v/rV8htGMLmw4jpPLNskvRjCHX42ewRRYdMvZzQQOAvSlWcsw=
-    file: ${ASSET}
-    on:
-      branch: development
-      repo: Joystream/joystream
-    draft: true
-    prerelease: true
-    overwrite: true
-    skip_cleanup: true
+  # we set release as build type for all steps to benefit from already compiled packages in prior steps
+  - BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --target=${TARGET} -- -D warnings
+  - BUILD_DUMMY_WASM_BINARY=1 cargo test --release --verbose --all --target=${TARGET}
+  - TRIGGER_WASM_BUILD=1 WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo build --release --target=${TARGET} -p joystream-node
+  - ls -l ./target/${TARGET}/release/wbuild/joystream-node-runtime/

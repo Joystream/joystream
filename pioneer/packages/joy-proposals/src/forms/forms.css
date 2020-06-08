@@ -1,0 +1,23 @@
+.Forms {
+  .proposal-form {
+    margin: 0 auto;
+  }
+
+  .ui.form.proposal-form {
+    & label {
+      font-size: 1rem;
+    }
+
+    & input[name="tokens"] {
+      max-width: 16rem;
+    }
+  }
+
+  .form-buttons {
+    display: flex;
+  }
+
+  .ui.dropdown .ui.avatar.image {
+    width: 2em !important;
+  }
+}
