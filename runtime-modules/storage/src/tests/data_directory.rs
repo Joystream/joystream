@@ -5,10 +5,17 @@ use super::mock::*;
 #[test]
 fn succeed_adding_content() {
     with_default_mock_builder(|| {
-        let sender = 1 as u64;
+        let sender = 1u64;
+        let member_id = 1u64;
         // Register a content with 1234 bytes of type 1, which should be recognized.
-        let res =
-            TestDataDirectory::add_content(Origin::signed(sender), 1, 1234, 0, vec![1, 3, 3, 7]);
+        let res = TestDataDirectory::add_content(
+            Origin::signed(sender),
+            member_id,
+            1,
+            1234,
+            0,
+            vec![1, 3, 3, 7],
+        );
         assert!(res.is_ok());
     });
 }
@@ -16,9 +23,17 @@ fn succeed_adding_content() {
 #[test]
 fn accept_content_as_liaison() {
     with_default_mock_builder(|| {
-        let sender = 1 as u64;
-        let res =
-            TestDataDirectory::add_content(Origin::signed(sender), 1, 1234, 0, vec![1, 2, 3, 4]);
+        let sender = 1u64;
+        let member_id = 1u64;
+
+        let res = TestDataDirectory::add_content(
+            Origin::signed(sender),
+            member_id,
+            1,
+            1234,
+            0,
+            vec![1, 2, 3, 4],
+        );
         assert!(res.is_ok());
 
         // An appropriate event should have been fired.
@@ -32,22 +47,37 @@ fn accept_content_as_liaison() {
         assert_ne!(creator, 0xdeadbeefu64);
         assert_eq!(creator, sender);
 
+        let (storage_provider_account_id, storage_provider_id) = hire_storage_provider();
+
         // Accepting content should not work with some random origin
-        let res = TestDataDirectory::accept_content(Origin::signed(1), content_id);
+        let res =
+            TestDataDirectory::accept_content(Origin::signed(55), storage_provider_id, content_id);
         assert!(res.is_err());
 
         // However, with the liaison as origin it should.
-        let res = TestDataDirectory::accept_content(Origin::signed(TEST_MOCK_LIAISON), content_id);
-        assert!(res.is_ok());
+        let res = TestDataDirectory::accept_content(
+            Origin::signed(storage_provider_account_id),
+            storage_provider_id,
+            content_id,
+        );
+        assert_eq!(res, Ok(()));
     });
 }
 
 #[test]
 fn reject_content_as_liaison() {
     with_default_mock_builder(|| {
-        let sender = 1 as u64;
-        let res =
-            TestDataDirectory::add_content(Origin::signed(sender), 1, 1234, 0, vec![1, 2, 3, 4]);
+        let sender = 1u64;
+        let member_id = 1u64;
+
+        let res = TestDataDirectory::add_content(
+            Origin::signed(sender),
+            member_id,
+            1,
+            1234,
+            0,
+            vec![1, 2, 3, 4],
+        );
         assert!(res.is_ok());
 
         // An appropriate event should have been fired.
@@ -61,12 +91,19 @@ fn reject_content_as_liaison() {
         assert_ne!(creator, 0xdeadbeefu64);
         assert_eq!(creator, sender);
 
+        let (storage_provider_account_id, storage_provider_id) = hire_storage_provider();
+
         // Rejecting content should not work with some random origin
-        let res = TestDataDirectory::reject_content(Origin::signed(1), content_id);
+        let res =
+            TestDataDirectory::reject_content(Origin::signed(55), storage_provider_id, content_id);
         assert!(res.is_err());
 
         // However, with the liaison as origin it should.
-        let res = TestDataDirectory::reject_content(Origin::signed(TEST_MOCK_LIAISON), content_id);
-        assert!(res.is_ok());
+        let res = TestDataDirectory::reject_content(
+            Origin::signed(storage_provider_account_id),
+            storage_provider_id,
+            content_id,
+        );
+        assert_eq!(res, Ok(()));
     });
 }

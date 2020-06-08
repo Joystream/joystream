@@ -16,7 +16,7 @@ pub use sr_primitives::{
 
 use crate::data_directory::ContentIdExists;
 use crate::data_object_type_registry::IsActiveDataObjectType;
-use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use srml_support::{impl_outer_event, impl_outer_origin, parameter_types, StorageLinkedMap};
 
 mod bureaucracy_mod {
     pub use bureaucracy::Event;
@@ -44,29 +44,8 @@ pub const TEST_FIRST_CONTENT_ID: u64 = 2000;
 pub const TEST_FIRST_RELATIONSHIP_ID: u64 = 3000;
 pub const TEST_FIRST_METADATA_ID: u64 = 4000;
 
-pub const TEST_MOCK_LIAISON: u64 = 0xd00du64;
+pub const TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID: u32 = 1;
 pub const TEST_MOCK_EXISTING_CID: u64 = 42;
-
-pub struct MockRoles {}
-impl roles::traits::Roles<Test> for MockRoles {
-    fn is_role_account(_account_id: &<Test as system::Trait>::AccountId) -> bool {
-        false
-    }
-
-    fn account_has_role(
-        account_id: &<Test as system::Trait>::AccountId,
-        _role: actors::Role,
-    ) -> bool {
-        *account_id == TEST_MOCK_LIAISON
-    }
-
-    fn random_account_for_role(
-        _role: actors::Role,
-    ) -> Result<<Test as system::Trait>::AccountId, &'static str> {
-        // We "randomly" select an account Id.
-        Ok(TEST_MOCK_LIAISON)
-    }
-}
 
 pub struct AnyDataObjectTypeIsActive {}
 impl<T: data_object_type_registry::Trait> IsActiveDataObjectType<T> for AnyDataObjectTypeIsActive {
@@ -93,7 +72,7 @@ impl ContentIdExists<Test> for MockContent {
                     time: 1024,
                 },
                 owner: 1,
-                liaison: TEST_MOCK_LIAISON,
+                liaison: TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID,
                 liaison_judgement: data_directory::LiaisonJudgement::Pending,
                 ipfs_content_id: vec![],
             }),
@@ -180,9 +159,23 @@ impl data_object_type_registry::Trait for Test {
 impl data_directory::Trait for Test {
     type Event = MetaEvent;
     type ContentId = u64;
-    type Roles = MockRoles;
+    type StorageProviderHelper = ();
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
-    type SchemaId = u64;
+    type MemberOriginValidator = ();
+}
+
+impl crate::data_directory::StorageProviderHelper<Test> for () {
+    fn get_random_storage_provider() -> Result<u32, &'static str> {
+        Ok(1)
+    }
+}
+
+impl common::origin_validator::ActorOriginValidator<Origin, u64, u64> for () {
+    fn ensure_actor_origin(origin: Origin, _account_id: u64) -> Result<u64, &'static str> {
+        let signed_account_id = system::ensure_signed(origin)?;
+
+        Ok(signed_account_id)
+    }
 }
 
 impl data_object_storage_registry::Trait for Test {
@@ -322,4 +315,23 @@ pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
 
             f()
         })
+}
+
+pub(crate) fn hire_storage_provider() -> (u64, u32) {
+    let storage_provider_id = 1;
+    let role_account_id = 1;
+
+    let storage_provider = bureaucracy::Worker {
+        member_id: 1,
+        role_account: role_account_id,
+        reward_relationship: None,
+        role_stake_profile: None,
+    };
+
+    <bureaucracy::WorkerById<Test, bureaucracy::Instance2>>::insert(
+        storage_provider_id,
+        storage_provider,
+    );
+
+    (role_account_id, storage_provider_id)
 }

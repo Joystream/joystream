@@ -31,8 +31,7 @@ use common::origin_validator::ActorOriginValidator;
 
 use crate::data_object_type_registry;
 use crate::data_object_type_registry::IsActiveDataObjectType;
-use crate::{StorageBureaucracy, StorageProviderId, MemberId};
-
+use crate::{MemberId, StorageBureaucracy, StorageProviderId};
 
 // TODO: create a StorageProviderHelper implementation
 
@@ -57,11 +56,7 @@ pub trait Trait:
     type IsActiveDataObjectType: data_object_type_registry::IsActiveDataObjectType<Self>;
 
     /// Validates member id and origin combination.
-    type MemberOriginValidator: ActorOriginValidator<
-        Self::Origin,
-        MemberId<Self>,
-        Self::AccountId,
-    >;
+    type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 }
 
 static MSG_CID_NOT_FOUND: &str = "Content with this ID not found.";
@@ -303,7 +298,6 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 }
-
 
 /// Provides random storage provider id. We use it when assign the content to the storage provider.
 pub trait StorageProviderHelper<T: Trait> {

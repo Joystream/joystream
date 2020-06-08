@@ -13,6 +13,5 @@ pub(crate) type StorageBureaucracy<T> = bureaucracy::Module<T, bureaucracy::Inst
 // Alias for the member id.
 pub(crate) type MemberId<T> = <T as membership::members::Trait>::MemberId;
 
-
 /// Storage provider is a worker from the bureaucracy module.
 pub type StorageProviderId<T> = bureaucracy::WorkerId<T>;

@@ -1,26 +1,6 @@
 #![cfg(test)]
 
 use super::mock::*;
-use srml_support::StorageLinkedMap;
-
-fn hire_storage_provider() -> (u64, u32) {
-    let storage_provider_id = 1;
-    let role_account_id = 1;
-
-    let storage_provider = bureaucracy::Worker {
-        member_id: 1,
-        role_account: role_account_id,
-        reward_relationship: None,
-        role_stake_profile: None,
-    };
-
-    <bureaucracy::WorkerById<Test, bureaucracy::Instance2>>::insert(
-        storage_provider_id,
-        storage_provider,
-    );
-
-    (role_account_id, storage_provider_id)
-}
 
 #[test]
 fn initial_state() {
