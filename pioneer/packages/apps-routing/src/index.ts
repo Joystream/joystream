@@ -39,46 +39,39 @@ import transfer from './transfer';
 
 let routes: Routes = ([] as Routes);
 
-if (appSettings.isFullMode) {
-  routes = routes.concat(explorer);
-}
-
 // Basic routes
 routes = routes.concat(
-  staking,
-  roles,
-  storageRoles,
-  transfer,
-  null,
   media,
+  roles,
+  proposals,
+  election,
   forum,
+  storageRoles,
   members,
+  staking,
+  null,
+  transfer,
   accounts,
   addressbook,
-  null,
-  election,
-  proposals,
-  null
+  settings,
+  pages
 );
 
 if (appSettings.isFullMode) {
   routes = routes.concat(
+    null,
+    explorer,
     storage,
     extrinsics,
     sudo,
     js,
     toolbox,
-    null
   );
 }
 
-routes = routes.concat(
-  settings,
-  pages
-);
 
 const setup: Routing = {
-  default: 'staking',
+  default: 'media',
   routes
 };
 
