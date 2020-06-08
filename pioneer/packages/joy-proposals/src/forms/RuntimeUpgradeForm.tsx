@@ -17,12 +17,13 @@ import './forms.css';
 import FileDropdown from './FileDropdown';
 
 type FormValues = GenericFormValues & {
-  WASM: string;
+  // wasm blob as ArrayBuffer, or an Error string
+  WASM: ArrayBuffer | string;
 };
 
 const defaultValues: FormValues = {
   ...genericFormDefaultValues,
-  WASM: ''
+  WASM: new ArrayBuffer(0)
 };
 
 type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
@@ -46,6 +47,7 @@ const RuntimeUpgradeForm: React.FunctionComponent<FormInnerProps> = props => {
           acceptedFormats=".wasm"
           name="WASM"
           error={errors.WASM}
+          interpretAs='binary'
         />
       </Form.Field>
     </GenericProposalForm>
