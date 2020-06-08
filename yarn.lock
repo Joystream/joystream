@@ -1355,10 +1355,10 @@
     exec-sh "^0.3.2"
     minimist "^1.2.0"
 
-"@constantinople/types@npm:@joystream/types@^0.9.1":
-  version "0.9.1"
-  resolved "https://registry.yarnpkg.com/@joystream/types/-/types-0.9.1.tgz#9dfacd679e91fe7e2e5e72eb1dc292bfa65b227e"
-  integrity sha512-UiaD2mf1wRPhmG1lPWFH0H835Ic79cZynSvyDnanAXKBiazW2rqZRxTWyc0gRXPGCcu79PN9VbJdK67QkNI9Gg==
+"@constantinople/types@npm:@joystream/types@^0.10.0":
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/@joystream/types/-/types-0.10.0.tgz#7e98ef221410b26a7d952cfc3d1c03d28395ad69"
+  integrity sha512-RDZizqGKWGYpLR5PnUWM4aGa7InpWNh2Txlr7Al3ROFYOHoyQf62/omPfEz29F6scwlFxysOdmEfQaLeVRaUxA==
   dependencies:
     "@polkadot/types" "^0.96.1"
     "@types/vfile" "^4.0.0"
