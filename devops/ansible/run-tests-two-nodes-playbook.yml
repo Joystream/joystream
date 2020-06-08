@@ -1,0 +1,25 @@
+- name: install dependencies
+  import_playbook: install-dependencies-playbook.yml
+
+- hosts: 127.0.0.1
+  user: root
+  become: yes
+  become_method: sudo
+
+  tasks:
+    - name: run network
+      block:
+        - name: run two nodes containerized network
+          docker_compose:
+            project_src: ./
+            state: present
+        - name: execute network tests
+          # shell: yarn test >> ../../.tmp/tests.log
+          shell: yarn tap --files src/constantinople/tests/proposals/electionParametersProposalTest.ts -T >> ../../.tmp/tests.log
+          args:
+            chdir: ../../tests/network-tests/
+      always:
+        - name: stop containers
+          docker_compose:
+            project_src: ./
+            state: absent
