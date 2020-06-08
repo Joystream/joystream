@@ -1307,7 +1307,7 @@ decl_module! {
                 access_level,
             )?;
 
-            // Update reference counters of involved entities (if some)
+            // Decrease reference counters of involved entities (if some)
             let entity_ids_to_decrease_rcs = property_value_vector
                 .get_vec_value()
                 .get_involved_entities();
@@ -1322,7 +1322,7 @@ decl_module! {
             }
 
             // Update entity property values
-            let empty_property_value_vector = Self::clear_property_vector(clear_property_vector);
+            let empty_property_value_vector = Self::clear_property_vector(property_value_vector);
 
             let entity_values_updated = Self::insert_at_in_class_schema_property_id(
                 entity.values, in_class_schema_property_id, empty_property_value_vector
@@ -1372,32 +1372,37 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            // Decrease reference counter of involved entity (if some)
             let involved_entity_id = property_value_vector
                 .get_vec_value()
                 .get_involved_entities()
                 .map(|involved_entities| involved_entities[index_in_property_vector as usize]);
-
-            // Remove value at in_class_schema_property_id in property value vector
-            <EntityById<T>>::mutate(entity_id, |entity| {
-                if let Some(PropertyValue::Vector(current_prop_value)) =
-                    entity.values.get_mut(&in_class_schema_property_id)
-                {
-                    current_prop_value.vec_remove_at(index_in_property_vector);
-
-                    // Trigger event
-                    Self::deposit_event(
-                        RawEvent::RemovedAtEntityPropertyValueVectorIndex(
-                            actor, entity_id, in_class_schema_property_id, index_in_property_vector, nonce
-                        )
-                    )
-                }
-            });
 
             if let Some(involved_entity_id) = involved_entity_id {
                 let same_controller_status = property.property_type.same_controller_status();
                 let reference_counter = InboundReferenceCounter::new(1, same_controller_status);
                 Self::decrease_entity_rcs(&involved_entity_id, reference_counter);
             }
+
+            // Remove value at in_class_schema_property_id in property value vector
+            let property_value_vector_updated = Self::remove_at_index_in_property_vector(
+                property_value_vector, index_in_property_vector
+            );
+
+            let entity_values_updated = Self::insert_at_in_class_schema_property_id(
+                entity.values, index_in_property_vector, property_value_vector_updated
+            );
+
+            <EntityById<T>>::mutate(entity_id, |entity| {
+                entity.values = entity_values_updated;
+            });
+
+            // Trigger event
+            Self::deposit_event(
+                RawEvent::RemovedAtEntityPropertyValueVectorIndex(
+                    actor, entity_id, in_class_schema_property_id, index_in_property_vector, nonce
+                )
+            )
 
             Ok(())
         }
@@ -1441,7 +1446,7 @@ decl_module! {
 
             let value = property_value.get_value();
 
-            // Update reference counter of involved entity (if some)
+            // Increase reference counter of involved entity (if some)
             if let Some(entity_rc_to_increment) = value.get_involved_entity() {
                 let same_controller_status = class_property.property_type.same_controller_status();
                 let reference_counter = InboundReferenceCounter::new(1, same_controller_status);
@@ -1772,6 +1777,16 @@ impl<T: Trait> Module<T> {
         value: Value<T>,
     ) -> PropertyValue<T> {
         property_value_vector.insert_at(index_in_property_vector, value);
+        PropertyValue::Vector(property_value_vector)
+    }
+
+    /// Remove `Value` at `index_in_property_vector` in `VecPropertyValue`.
+    /// Returns `PropertyValue`
+    pub fn remove_at_index_in_property_vector(
+        mut property_value_vector: VecPropertyValue<T>,
+        index_in_property_vector: VecMaxLength,
+    ) -> PropertyValue<T> {
+        property_value_vector.remove_at(index_in_property_vector);
         PropertyValue::Vector(property_value_vector)
     }
 

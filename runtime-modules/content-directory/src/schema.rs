@@ -339,7 +339,7 @@ impl<T: Trait> VecPropertyValue<T> {
     }
 
     /// Perform removal at given `index_in_property_vec`, increment `nonce`
-    pub fn vec_remove_at(&mut self, index_in_property_vec: VecMaxLength) {
+    pub fn remove_at(&mut self, index_in_property_vec: VecMaxLength) {
         fn remove_at_checked<T>(vec: &mut Vec<T>, index_in_property_vec: VecMaxLength) {
             if (index_in_property_vec as usize) < vec.len() {
                 vec.remove(index_in_property_vec as usize);
