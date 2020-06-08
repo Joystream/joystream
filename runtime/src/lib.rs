@@ -110,6 +110,10 @@ pub type ThreadId = u64;
 /// See the Note about ThreadId
 pub type PostId = u64;
 
+/// Represent an actor in membership group, which is the same in the working groups.
+pub type ActorId = u64;
+
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -534,20 +538,6 @@ impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
     }
 }
 
-// Impl this in the permissions module - can't be done here because
-// neither CreateClassPermissionsChecker or (X, Y) are local types?
-// impl<
-//         T: versioned_store_permissions::Trait,
-//         X: versioned_store_permissions::CreateClassPermissionsChecker<T>,
-//         Y: versioned_store_permissions::CreateClassPermissionsChecker<T>,
-//     > versioned_store_permissions::CreateClassPermissionsChecker<T> for (X, Y)
-// {
-//     fn account_can_create_class_permissions(account: &T::AccountId) -> bool {
-//         X::account_can_create_class_permissions(account)
-//             || Y::account_can_create_class_permissions(account)
-//     }
-// }
-
 pub struct ContentLeadOrSudoKeyCanCreateClasses {}
 impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
     for ContentLeadOrSudoKeyCanCreateClasses
@@ -706,8 +696,9 @@ impl storage::data_directory::Trait for Runtime {
     type Event = Event;
     type ContentId = ContentId;
     type SchemaId = u64;
-    type Roles = LookupRoles;
+    type StorageProviderHelper = integration::storage::StorageProviderHelper;
     type IsActiveDataObjectType = DataObjectTypeRegistry;
+    type MemberOriginValidator = MembershipOriginValidator<Self>;
 }
 
 impl storage::data_object_storage_registry::Trait for Runtime {
@@ -762,7 +753,7 @@ impl members::Trait for Runtime {
     type MemberId = u64;
     type PaidTermId = u64;
     type SubscriptionId = u64;
-    type ActorId = u64;
+    type ActorId = ActorId;
     type InitialMembersBalance = InitialMembersBalance;
 }
 

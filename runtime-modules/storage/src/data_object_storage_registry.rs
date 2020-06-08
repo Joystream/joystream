@@ -29,12 +29,9 @@ use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 
 use crate::data_directory::{self, ContentIdExists};
-use crate::StorageBureaucracy;
+use crate::{StorageBureaucracy, StorageProviderId};
 
 const DEFAULT_FIRST_RELATIONSHIP_ID: u32 = 1;
-
-/// Storage provider is a worker from the bureuacracy module.
-pub type StorageProviderId<T> = bureaucracy::WorkerId<T>;
 
 /// The _Data object storage registry_ main _Trait_
 pub trait Trait:
@@ -174,6 +171,10 @@ decl_module! {
                 storage_provider_id,
                 ready: false,
             };
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             <Relationships<T>>::insert(new_id, dosr);
             <NextRelationshipId<T>>::mutate(|n| {

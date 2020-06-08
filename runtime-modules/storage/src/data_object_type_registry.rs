@@ -86,10 +86,6 @@ pub struct DataObjectType {
 
     /// Active/Disabled flag.
     pub active: bool,
-    // TODO in future releases
-    // - maximum size
-    // - replication factor
-    // - storage tranches (empty is ok)
 }
 
 impl Default for DataObjectType {
@@ -103,9 +99,6 @@ impl Default for DataObjectType {
 
 decl_storage! {
     trait Store for Module<T: Trait> as DataObjectTypeRegistry {
-
-        // TODO hardcode data object type for ID 1
-
         /// Data object type ids should start at this value.
         pub FirstDataObjectTypeId get(first_data_object_type_id) config(first_data_object_type_id):
             T::DataObjectTypeId = T::DataObjectTypeId::from(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
@@ -165,6 +158,10 @@ decl_module! {
                 active: data_object_type.active,
             };
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             <DataObjectTypes<T>>::insert(new_do_type_id, do_type);
             <NextDataObjectTypeId<T>>::mutate(|n| { *n += T::DataObjectTypeId::from(1); });
 
@@ -180,6 +177,10 @@ decl_module! {
             do_type.description = data_object_type.description.clone();
             do_type.active = data_object_type.active;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             <DataObjectTypes<T>>::insert(id, do_type);
 
             Self::deposit_event(RawEvent::DataObjectTypeUpdated(id));
@@ -193,6 +194,10 @@ decl_module! {
 
             do_type.active = true;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             <DataObjectTypes<T>>::insert(id, do_type);
 
             Self::deposit_event(RawEvent::DataObjectTypeUpdated(id));
@@ -205,6 +210,10 @@ decl_module! {
             let mut do_type = Self::ensure_data_object_type(id)?;
 
             do_type.active = false;
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             <DataObjectTypes<T>>::insert(id, do_type);
 

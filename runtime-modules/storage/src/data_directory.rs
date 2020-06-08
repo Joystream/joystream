@@ -2,18 +2,26 @@
 //#![warn(missing_docs)]
 
 use codec::{Codec, Decode, Encode};
-use roles::actors;
-use roles::traits::Roles;
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
-use system::{self, ensure_root, ensure_signed};
+use system::{self, ensure_root};
+
+use common::origin_validator::ActorOriginValidator;
 
 use crate::data_object_type_registry;
 use crate::data_object_type_registry::IsActiveDataObjectType;
+use crate::{StorageBureaucracy, StorageProviderId, MemberId};
+
+
+// TODO: create a StorageProviderHelper implementation
 
 pub trait Trait:
-    timestamp::Trait + system::Trait + data_object_type_registry::Trait + membership::members::Trait
+    timestamp::Trait
+    + system::Trait
+    + data_object_type_registry::Trait
+    + membership::members::Trait
+    + bureaucracy::Trait<bureaucracy::Instance2>
 {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
@@ -28,16 +36,23 @@ pub trait Trait:
         + MaybeSerialize
         + PartialEq;
 
-    type Roles: Roles<Self>;
+    type StorageProviderHelper: StorageProviderHelper<Self>;
     type IsActiveDataObjectType: data_object_type_registry::IsActiveDataObjectType<Self>;
+
+    /// Validates member id and origin combination.
+    type MemberOriginValidator: ActorOriginValidator<
+        Self::Origin,
+        MemberId<Self>,
+        Self::AccountId,
+    >;
 }
 
 static MSG_CID_NOT_FOUND: &str = "Content with this ID not found.";
 static MSG_LIAISON_REQUIRED: &str = "Only the liaison for the content may modify its status.";
-static MSG_CREATOR_MUST_BE_MEMBER: &str = "Only active members may create content.";
 static MSG_DO_TYPE_MUST_BE_ACTIVE: &str =
     "Cannot create content for inactive or missing data object type.";
 
+// TODO consider to remove it
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct BlockAndTime<T: Trait> {
     pub block: T::BlockNumber,
@@ -57,59 +72,63 @@ impl Default for LiaisonJudgement {
     }
 }
 
+/// Manages content ids, type and storage provider decision about it.
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct DataObject<T: Trait> {
-    pub owner: T::AccountId,
+    pub owner: MemberId<T>,
     pub added_at: BlockAndTime<T>,
     pub type_id: <T as data_object_type_registry::Trait>::DataObjectTypeId,
     pub size: u64,
-    pub liaison: T::AccountId,
+    pub liaison: StorageProviderId<T>,
     pub liaison_judgement: LiaisonJudgement,
     pub ipfs_content_id: Vec<u8>,
-    // TODO add support for this field (Some if judgment == Rejected)
-    // pub rejection_reason: Option<Vec<u8>>,
 }
 
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub enum ContentVisibility {
-    Draft, // TODO rename to Unlisted?
+    Draft,
     Public,
 }
 
 impl Default for ContentVisibility {
     fn default() -> Self {
-        ContentVisibility::Draft // TODO make Public by default?
+        ContentVisibility::Draft
     }
 }
 
 decl_storage! {
     trait Store for Module<T: Trait> as DataDirectory {
-
-        // TODO default_liaison = Joystream storage account id.
-
-        // TODO this list of ids should be moved off-chain once we have Content Indexer.
-        // TODO deprecated, moved tp storage relationship
         pub KnownContentIds get(known_content_ids): Vec<T::ContentId> = vec![];
 
         pub DataObjectByContentId get(data_object_by_content_id):
             map T::ContentId => Option<DataObject<T>>;
-
-        // Default storage provider account id, overrides all active storage providers as liaison if set
-        pub PrimaryLiaisonAccountId get(primary_liaison_account_id): Option<T::AccountId>;
     }
 }
 
 decl_event! {
+    /// _Data directory_ events
     pub enum Event<T> where
         <T as Trait>::ContentId,
-        <T as system::Trait>::AccountId
+        MemberId = MemberId<T>,
+        StorageProviderId = StorageProviderId<T>
     {
-        // The account is the one who uploaded the content.
-        ContentAdded(ContentId, AccountId),
+        /// Emits on adding of the content.
+        /// Params:
+        /// - Id of the relationship.
+        /// - Id of the member.
+        ContentAdded(ContentId, MemberId),
 
-        // The account is the liaison - only they can reject or accept
-        ContentAccepted(ContentId, AccountId),
-        ContentRejected(ContentId, AccountId),
+        /// Emits when the storage provider accepts a content.
+        /// Params:
+        /// - Id of the relationship.
+        /// - Id of the storage provider.
+        ContentAccepted(ContentId, StorageProviderId),
+
+        /// Emits when the storage provider rejects a content.
+        /// Params:
+        /// - Id of the relationship.
+        /// - Id of the storage provider.
+        ContentRejected(ContentId, StorageProviderId),
     }
 }
 
@@ -117,64 +136,86 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event() = default;
 
-        // TODO send file_name as param so we could create a Draft metadata in this fn
         pub fn add_content(
             origin,
-            content_id: T::ContentId,
+            member_id: MemberId<T>,
+            content_id: T::ContentId, // TODO generate content_id by runtime
             type_id: <T as data_object_type_registry::Trait>::DataObjectTypeId,
             size: u64,
             ipfs_content_id: Vec<u8>
         ) {
-            let who = ensure_signed(origin)?;
-            ensure!(<membership::members::Module<T>>::is_member_account(&who), MSG_CREATOR_MUST_BE_MEMBER);
+            T::MemberOriginValidator::ensure_actor_origin(
+                origin,
+                member_id,
+            )?;
 
             ensure!(T::IsActiveDataObjectType::is_active_data_object_type(&type_id),
                 MSG_DO_TYPE_MUST_BE_ACTIVE);
 
             ensure!(!<DataObjectByContentId<T>>::exists(content_id),
-                "Data object aready added under this content id");
+                "Data object already added under this content id");
 
-            let liaison = match Self::primary_liaison_account_id() {
-                // Select primary liaison if set
-                Some(primary_liaison) => primary_liaison,
-
-                // Select liaison from staked roles if available
-                _ => T::Roles::random_account_for_role(actors::Role::StorageProvider)?
-            };
+            let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
             // Let's create the entry then
             let data: DataObject<T> = DataObject {
                 type_id,
                 size,
                 added_at: Self::current_block_and_time(),
-                owner: who.clone(),
+                owner: member_id,
                 liaison,
                 liaison_judgement: LiaisonJudgement::Pending,
                 ipfs_content_id,
             };
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             <DataObjectByContentId<T>>::insert(&content_id, data);
-            Self::deposit_event(RawEvent::ContentAdded(content_id, who));
+            Self::deposit_event(RawEvent::ContentAdded(content_id, member_id));
         }
 
-        // The LiaisonJudgement can be updated, but only by the liaison.
-        pub(crate) fn accept_content(origin, content_id: T::ContentId) {
-            let who = ensure_signed(origin)?;
-            Self::update_content_judgement(&who, content_id, LiaisonJudgement::Accepted)?;
+        /// Storage provider accepts a content. Requires signed storage provider account and its id.
+        /// The LiaisonJudgement can be updated, but only by the liaison.
+        pub(crate) fn accept_content(
+            origin,
+            storage_provider_id: StorageProviderId<T>,
+            content_id: T::ContentId
+        ) {
+            <StorageBureaucracy<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
+
+            // == MUTATION SAFE ==
+
+            Self::update_content_judgement(&storage_provider_id, content_id, LiaisonJudgement::Accepted)?;
+
             <KnownContentIds<T>>::mutate(|ids| ids.push(content_id));
-            Self::deposit_event(RawEvent::ContentAccepted(content_id, who));
+
+            Self::deposit_event(RawEvent::ContentAccepted(content_id, storage_provider_id));
         }
 
-        pub(crate) fn reject_content(origin, content_id: T::ContentId) {
-            let who = ensure_signed(origin)?;
-            Self::update_content_judgement(&who, content_id, LiaisonJudgement::Rejected)?;
-            Self::deposit_event(RawEvent::ContentRejected(content_id, who));
+        /// Storage provider rejects a content. Requires signed storage provider account and its id.
+        /// The LiaisonJudgement can be updated, but only by the liaison.
+        pub(crate) fn reject_content(
+            origin,
+            storage_provider_id: StorageProviderId<T>,
+            content_id: T::ContentId
+        ) {
+            <StorageBureaucracy<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
+
+            // == MUTATION SAFE ==
+
+            Self::update_content_judgement(&storage_provider_id, content_id, LiaisonJudgement::Rejected)?;
+            Self::deposit_event(RawEvent::ContentRejected(content_id, storage_provider_id));
         }
 
         // Sudo methods
 
         fn remove_known_content_id(origin, content_id: T::ContentId) {
             ensure_root(origin)?;
+
+            // == MUTATION SAFE ==
+
             let upd_content_ids: Vec<T::ContentId> = Self::known_content_ids()
                 .into_iter()
                 .filter(|&id| id != content_id)
@@ -184,6 +225,9 @@ decl_module! {
 
         fn set_known_content_id(origin, content_ids: Vec<T::ContentId>) {
             ensure_root(origin)?;
+
+            // == MUTATION SAFE ==
+
             <KnownContentIds<T>>::put(content_ids);
         }
     }
@@ -198,14 +242,14 @@ impl<T: Trait> Module<T> {
     }
 
     fn update_content_judgement(
-        who: &T::AccountId,
+        storage_provider_id: &StorageProviderId<T>,
         content_id: T::ContentId,
         judgement: LiaisonJudgement,
     ) -> dispatch::Result {
         let mut data = Self::data_object_by_content_id(&content_id).ok_or(MSG_CID_NOT_FOUND)?;
 
         // Make sure the liaison matches
-        ensure!(data.liaison == *who, MSG_LIAISON_REQUIRED);
+        ensure!(data.liaison == *storage_provider_id, MSG_LIAISON_REQUIRED);
 
         data.liaison_judgement = judgement;
         <DataObjectByContentId<T>>::insert(content_id, data);
@@ -214,10 +258,20 @@ impl<T: Trait> Module<T> {
     }
 }
 
-pub trait ContentIdExists<T: Trait> {
-    fn has_content(_which: &T::ContentId) -> bool;
 
-    fn get_data_object(_which: &T::ContentId) -> Result<DataObject<T>, &'static str>;
+/// Provides random storage provider id. We use it when assign the content to the storage provider.
+pub trait StorageProviderHelper<T: Trait> {
+    /// Provides random storage provider id.
+    fn get_random_storage_provider() -> Result<StorageProviderId<T>, &'static str>;
+}
+
+/// Content access helper.
+pub trait ContentIdExists<T: Trait> {
+    /// Verifies the content existence.
+    fn has_content(id: &T::ContentId) -> bool;
+
+    /// Returns the data object for the provided content id.
+    fn get_data_object(id: &T::ContentId) -> Result<DataObject<T>, &'static str>;
 }
 
 impl<T: Trait> ContentIdExists<T> for Module<T> {
