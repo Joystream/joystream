@@ -1,6 +1,5 @@
 import React from 'react';
 
-import { Container } from 'semantic-ui-react';
 import Details from './Details';
 import Body from './Body';
 import VotingSection from './VotingSection';
@@ -16,7 +15,37 @@ import { BlockNumber } from '@polkadot/types/interfaces';
 import { MemberId } from '@joystream/types/members';
 import { Seat } from '@joystream/types/';
 import { PromiseComponent } from '@polkadot/joy-utils/react/components';
+import ProposalDiscussion from './discussion/ProposalDiscussion';
 
+import styled from 'styled-components';
+
+const ProposalDetailsMain = styled.div`
+  display: flex;
+  @media screen and (max-width: 1199px) {
+    flex-direction: column;
+  }
+`;
+
+const ProposalDetailsVoting = styled.div`
+  min-width: 30%;
+  margin-left: 3%;
+  @media screen and (max-width: 1399px) {
+    min-width: 40%;
+  }
+  @media screen and (max-width: 1199px) {
+    margin-left: 0;
+  }
+`;
+
+const ProposalDetailsDiscussion = styled.div`
+  margin-top: 1rem;
+  max-width: 67%;
+  @media screen and (max-width: 1399px) {
+    max-width: none;
+  }
+`;
+
+// TODO: That should probably be moved to joy-utils/functions/proposals (or transport)
 type BasicProposalStatus = 'Active' | 'Finalized';
 type ProposalPeriodStatus = 'Voting period' | 'Grace period';
 type ProposalDisplayStatus = BasicProposalStatus | ProposalDecisionStatuses | ApprovedProposalStatuses;
@@ -106,32 +135,41 @@ function ProposalDetails ({
   const extendedStatus = getExtendedStatus(proposal, bestNumber);
   const isVotingPeriod = extendedStatus.periodStatus === 'Voting period';
   return (
-    <Container className="Proposal">
+    <div className="Proposal">
       <Details proposal={proposal} extendedStatus={extendedStatus} proposerLink={ true }/>
-      <Body
-        type={ proposal.type }
-        title={ proposal.title }
-        description={ proposal.description }
-        params={ proposal.details }
-        iAmProposer={ iAmProposer }
-        proposalId={ proposalId }
-        proposerId={ proposal.proposerId }
-        isCancellable={ isVotingPeriod }
-        cancellationFee={ proposal.cancellationFee }
-      />
-      { iAmCouncilMember && (
-        <VotingSection
+      <ProposalDetailsMain>
+        <Body
+          type={ proposal.type }
+          title={ proposal.title }
+          description={ proposal.description }
+          params={ proposal.details }
+          iAmProposer={ iAmProposer }
+          proposalId={ proposalId }
+          proposerId={ proposal.proposerId }
+          isCancellable={ isVotingPeriod }
+          cancellationFee={ proposal.cancellationFee }
+        />
+        <ProposalDetailsVoting>
+          { iAmCouncilMember && (
+            <VotingSection
+              proposalId={proposalId}
+              memberId={ myMemberId as MemberId }
+              isVotingPeriod={ isVotingPeriod }/>
+          ) }
+          <PromiseComponent
+            error={votesListState.error}
+            loading={votesListState.loading}
+            message="Fetching the votes...">
+            <Votes votes={votesListState.data} />
+          </PromiseComponent>
+        </ProposalDetailsVoting>
+      </ProposalDetailsMain>
+      <ProposalDetailsDiscussion>
+        <ProposalDiscussion
           proposalId={proposalId}
-          memberId={ myMemberId as MemberId }
-          isVotingPeriod={ isVotingPeriod }/>
-      ) }
-      <PromiseComponent
-        error={votesListState.error}
-        loading={votesListState.loading}
-        message="Fetching the votes...">
-        <Votes votes={votesListState.data} />
-      </PromiseComponent>
-    </Container>
+          memberId={ iAmMember ? myMemberId : undefined }/>
+      </ProposalDetailsDiscussion>
+    </div>
   );
 }
 

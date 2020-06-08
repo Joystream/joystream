@@ -7,6 +7,23 @@ import { MemberId } from '@joystream/types/members';
 import { ProposalId, VoteKind, VoteKinds } from '@joystream/types/proposals';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
 
+import styled from 'styled-components';
+
+const VoteButtons = styled.div`
+  display: grid;
+  grid-gap: 0.5rem;
+  grid-template-rows: 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
+  @media screen and (max-width: 1199px) {
+    grid-template-rows: auto;
+    grid-template-columns: repeat(4, 1fr);
+  }
+  @media screen and (max-width: 767px) {
+    grid-template-rows: 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
+  }
+`;
+
 export type VoteKindStr = typeof VoteKinds[number];
 
 type VoteButtonProps = {
@@ -83,14 +100,16 @@ export default function VotingSection ({
     <>
       <Header as="h3">Sumbit your vote</Header>
       <Divider />
-      { VoteKinds.map((voteKind) =>
-        <VoteButton
-          voteKind={voteKind}
-          memberId={memberId}
-          proposalId={proposalId}
-          key={voteKind}
-          onSuccess={ () => setVoted(voteKind) }/>
-      ) }
+      <VoteButtons>
+        { VoteKinds.map((voteKind) =>
+          <VoteButton
+            voteKind={voteKind}
+            memberId={memberId}
+            proposalId={proposalId}
+            key={voteKind}
+            onSuccess={ () => setVoted(voteKind) }/>
+        ) }
+      </VoteButtons>
     </>
   );
 }

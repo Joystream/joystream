@@ -1,5 +1,6 @@
 import { ProposalId, VoteKind } from '@joystream/types/proposals';
-import { MemberId } from '@joystream/types/members';
+import { MemberId, Profile } from '@joystream/types/members';
+import { ThreadId, PostId } from '@joystream/types/forum';
 import { ParsedMember } from './members';
 
 export const ProposalTypes = [
@@ -63,4 +64,28 @@ export type ProposalMeta = {
   approvalThreshold: number;
   slashingQuorum: number;
   slashingThreshold: number;
+}
+
+export type ParsedPost = {
+  postId: PostId | null;
+  threadId: ThreadId;
+  text: string;
+  createdAt: Date;
+  createdAtBlock: number;
+  updatedAt: Date;
+  updatedAtBlock: number;
+  author: Profile | null;
+  authorId: MemberId;
+  editsCount: number;
+};
+
+export type ParsedDiscussion = {
+  title: string;
+  threadId: ThreadId;
+  posts: ParsedPost[];
+};
+
+export type DiscussionContraints = {
+  maxPostLength: number;
+  maxPostEdits: number;
 }

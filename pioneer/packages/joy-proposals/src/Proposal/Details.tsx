@@ -6,6 +6,43 @@ import styled from 'styled-components';
 
 import ProfilePreview from '@polkadot/joy-utils/MemberProfilePreview';
 
+const DetailsContainer = styled(Item.Group)`
+  display: grid;
+  width: auto;
+  grid-template-columns: repeat(5, auto) 1fr;
+  grid-column-gap: 5rem;
+
+  & .item .extra {
+    margin-bottom: 0.5em !important;
+  }
+
+  @media screen and (max-width: 1199px) {
+    grid-template-columns: repeat(3, auto);
+    grid-template-rows: repeat(2, auto);
+
+    & .item:first-child {
+      grid-row: 1/3;
+    }
+
+    & .item {
+      margin: 0.5em 0 !important;
+    }
+  }
+
+  @media screen and (max-width: 767px) {
+    grid-template-columns: repeat(2, auto);
+    grid-template-rows: repeat(3, auto);
+
+    & .item:first-child {
+      grid-column: 1/3;
+    }
+
+    & .item {
+      margin: 0.5em 0 !important;
+    }
+  }
+`;
+
 const BlockInfo = styled.div`
   font-size: 0.9em;
 `;
@@ -36,7 +73,7 @@ export default function Details ({ proposal, extendedStatus, proposerLink = fals
   const { displayStatus, periodStatus, expiresIn, finalizedAtBlock, executedAtBlock, executionFailReason } = extendedStatus;
   console.log(proposal);
   return (
-    <Item.Group className="details-container">
+    <DetailsContainer>
       <Detail name="Proposed By">
         <ProfilePreview
           avatar_uri={proposer.avatar_uri}
@@ -66,6 +103,6 @@ export default function Details ({ proposal, extendedStatus, proposerLink = fals
           value={`${expiresIn.toLocaleString('en-US')} blocks`} />
       ) }
       {executionFailReason && <Detail name="Execution error" value={ executionFailReason } /> }
-    </Item.Group>
+    </DetailsContainer>
   );
 }
