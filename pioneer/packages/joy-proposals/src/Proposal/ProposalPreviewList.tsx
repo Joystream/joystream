@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Container, Menu } from 'semantic-ui-react';
+import styled from 'styled-components';
 
 import ProposalPreview from './ProposalPreview';
 import { ParsedProposal } from '@polkadot/joy-utils/types/proposals';
@@ -50,6 +51,26 @@ type ProposalPreviewListProps = {
   bestNumber?: BlockNumber;
 };
 
+const ProposalFilterCountBadge = styled.span`
+  background-color: rgba(0, 0, 0, .3);
+  color: #fff;
+
+  border-radius: 10px;
+  height: 19px;
+  min-width: 19px;
+  padding: 0 4px;
+
+  font-size: .8rem;
+  font-weight: 500;
+  line-height: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-left: 6px;
+`;
+
 function ProposalPreviewList ({ bestNumber }: ProposalPreviewListProps) {
   const transport = useTransport();
   const [proposals, error, loading] = usePromise<ParsedProposal[]>(() => transport.proposals.proposals(), []);
@@ -66,10 +87,15 @@ function ProposalPreviewList ({ bestNumber }: ProposalPreviewListProps) {
           {filters.map((filter, idx) => (
             <Menu.Item
               key={`${filter} - ${idx}`}
-              name={`${filter.toLowerCase()} - ${(proposalsMap.get(filter) as ParsedProposal[]).length}`}
+              name={filter}
               active={activeFilter === filter}
               onClick={() => setActiveFilter(filter)}
-            />
+            >
+              {filter}
+              <ProposalFilterCountBadge>
+                {(proposalsMap.get(filter) as ParsedProposal[]).length}
+              </ProposalFilterCountBadge>
+            </Menu.Item>
           ))}
         </Menu>
         {
