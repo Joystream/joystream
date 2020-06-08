@@ -1,0 +1,10 @@
+- hosts: 127.0.0.1
+  user: root
+  become: yes
+  become_method: sudo
+  tasks:
+    - name: build node
+      include: build-image-playbook.yml
+
+- name: run tests
+  include: run-tests-single-node-playbook.yml

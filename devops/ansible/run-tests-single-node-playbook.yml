@@ -3,20 +3,6 @@
   become: yes
   become_method: sudo
   tasks:
-    - name: setup environment
-      block:
-        - name: install pip
-          apt: name=python-pip state=present
-        - name: install docker-py
-          pip: name=docker-py
-        - name: Install yarn with npm
-          npm:
-            name: yarn
-            global: yes
-    - name: create testing node docker image
-      shell: ./scripts/build-joystream-testing-node-docker-image.sh
-      args:
-        chdir: ../../
     - name: run network
       block:
         - name: run docker container
