@@ -65,10 +65,9 @@ if (appSettings.isFullMode) {
     extrinsics,
     sudo,
     js,
-    toolbox,
+    toolbox
   );
 }
-
 
 const setup: Routing = {
   default: 'media',
