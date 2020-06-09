@@ -11,7 +11,7 @@ export function createDir(path: string, del = false, recursive = false) {
   }
 }
 
-export function createFile(path: string, content = '', replace = false) {
+export function createFile(path: string, content = '', replace =false) {
   if (!fs.existsSync(path) || replace) {
     fs.writeFileSync(path, content);
   }
