@@ -464,10 +464,24 @@ impl<T: Trait> Entity<T> {
         self.entity_permissions = permissions
     }
 
-    /// Ensure `Schema` under given id is not yet added to given `Entity`
+    /// Ensure `Schema` under given id is not added to given `Entity` yet
     pub fn ensure_schema_id_is_not_added(&self, schema_id: SchemaId) -> dispatch::Result {
         let schema_not_added = !self.supported_schemas.contains(&schema_id);
         ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY);
+        Ok(())
+    }
+
+    /// Ensure provided `property_values` are not added to the `Entity` `values` map yet
+    pub fn ensure_property_values_are_not_added(
+        &self,
+        property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+    ) -> dispatch::Result {
+        ensure!(
+            property_values
+                .keys()
+                .all(|key| property_values.contains_key(key)),
+            ERROR_ENTITY_ALREADY_CONTAINS_GIVEN_PROPERTY_ID
+        );
         Ok(())
     }
 
@@ -1158,20 +1172,23 @@ decl_module! {
             let (class, entity, _) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
             entity.ensure_schema_id_is_not_added(schema_id)?;
+            entity.ensure_property_values_are_not_added(&property_values)?;
 
             let schema = class.ensure_schema_exists(schema_id)?;
 
             schema.ensure_is_active()?;
+            schema.ensure_property_value_indices_are_valid(&property_values)?;
 
-            let entity_property_values_ref = entity.get_values_ref();
-            let unused_property_ids = schema.get_unused_property_ids(entity_property_values_ref);
-            let unused_schema_property_values = schema.get_property_values_unused(property_values, &unused_property_ids);
             let entity_controller = entity.get_permissions_ref().get_controller();
-            let class_properties = class.properties;
 
             Self::ensure_property_values_are_valid(
-                &class_properties, entity_controller, &unused_property_ids,
-                &unused_schema_property_values, entity_property_values_ref
+                &class.properties, schema, entity_controller, &property_values,
+            )?;
+
+            let class_properties = class.properties;
+
+            Self::ensure_property_values_unique_option_satisfied(
+                &class_properties, &property_values, entity.get_values_ref()
             )?;
 
             //
@@ -1182,7 +1199,7 @@ decl_module! {
 
             // Updated entity values, after new schema support added
             let entity_values_updated = Self::make_updated_entity_property_values(
-                unused_property_ids, &unused_schema_property_values, entity_property_values
+                entity_property_values, &property_values
             );
 
             // Add schema support to `Entity` under given `entity_id`
@@ -1198,7 +1215,7 @@ decl_module! {
             });
 
             // Entities, which rc should be incremented
-            let entity_ids_to_increase_rcs = Self::get_involved_entity_rcs(&class_properties, &unused_schema_property_values);
+            let entity_ids_to_increase_rcs = Self::get_involved_entity_rcs(&class_properties, &property_values);
             entity_ids_to_increase_rcs.increase_entity_rcs();
 
             // Trigger event
@@ -1517,23 +1534,22 @@ impl<T: Trait> Module<T> {
         Ok(Self::class_by_id(class_id))
     }
 
-    /// Update `entity_property_values` with `unused_schema_property_values`
+    /// Update `entity_property_values` with `property_values`
+    /// Return updated `entity_property_values`
     fn make_updated_entity_property_values(
-        unused_property_ids: BTreeSet<PropertyId>,
-        unused_schema_property_values: &BTreeMap<u16, PropertyValue<T>>,
         entity_property_values: BTreeMap<u16, PropertyValue<T>>,
+        property_values: &BTreeMap<u16, PropertyValue<T>>,
     ) -> BTreeMap<u16, PropertyValue<T>> {
-        unused_property_ids
-            .into_iter()
+        entity_property_values
+            .keys()
             .map(|property_id| {
-                if let Some(new_value) = unused_schema_property_values.get(&property_id) {
-                    (property_id, new_value.to_owned())
+                if let Some(new_value) = property_values.get(property_id) {
+                    (*property_id, new_value.to_owned())
                 } else {
                     // Add all missing non required schema property values as PropertyValue::default()
-                    (property_id, PropertyValue::default())
+                    (*property_id, PropertyValue::default())
                 }
             })
-            .chain(entity_property_values.into_iter())
             .collect()
     }
 
@@ -1688,31 +1704,43 @@ impl<T: Trait> Module<T> {
         Ok((entity, class))
     }
 
-    /// Perform all checks to ensure `unused_schema_property_values` are valid
+    /// Perform all checks to ensure `property_values` are valid
     pub fn ensure_property_values_are_valid(
         class_properties: &[Property<T>],
+        schema: &Schema,
         entity_controller: &EntityController<T>,
-        unused_property_ids: &BTreeSet<PropertyId>,
-        unused_schema_property_values: &BTreeMap<u16, PropertyValue<T>>,
-        entity_property_values: &BTreeMap<u16, PropertyValue<T>>,
+        property_values: &BTreeMap<u16, PropertyValue<T>>,
     ) -> dispatch::Result {
-        for property_id in unused_property_ids {
+        for property_id in schema.get_properties() {
             // Indexing is safe, class should always maintain such constistency
             let class_property = &class_properties[*property_id as usize];
 
-            if let Some(new_value) = unused_schema_property_values.get(property_id) {
-                class_property.ensure_unique_option_satisfied(
-                    new_value,
-                    unused_schema_property_values,
-                    entity_property_values,
-                )?;
-
+            if let Some(new_value) = property_values.get(property_id) {
                 class_property
                     .ensure_property_value_to_update_is_valid(new_value, entity_controller)?;
             } else {
                 // All required property values should be provided
                 ensure!(!class_property.required, ERROR_MISSING_REQUIRED_PROP);
             }
+        }
+        Ok(())
+    }
+
+    /// Ensure `property_values` satisfy unique option, if required
+    pub fn ensure_property_values_unique_option_satisfied(
+        class_properties: &[Property<T>],
+        property_values: &BTreeMap<u16, PropertyValue<T>>,
+        entity_property_values: &BTreeMap<u16, PropertyValue<T>>,
+    ) -> dispatch::Result {
+        for (property_id, property_value) in property_values {
+            // Indexing is safe, class should always maintain such constistency
+            let class_property = &class_properties[*property_id as usize];
+
+            class_property.ensure_unique_option_satisfied(
+                property_value,
+                property_values,
+                entity_property_values,
+            )?;
         }
         Ok(())
     }

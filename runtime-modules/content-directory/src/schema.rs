@@ -543,41 +543,19 @@ impl Schema {
         &self.properties
     }
 
-    /// Select unused `PropertyValues`, which ids are in current `Schema` property ids set
-    pub fn get_property_values_unused<T: Trait>(
+    /// Ensure keys of provided `property_values` are valid indices of current `Schema`
+    pub fn ensure_property_value_indices_are_valid<T: Trait>(
         &self,
-        property_values: BTreeMap<u16, PropertyValue<T>>,
-        unused_property_ids: &BTreeSet<PropertyId>,
-    ) -> BTreeMap<u16, PropertyValue<T>> {
-        property_values
-            .into_iter()
-            // Select `PropertyValues`, which ids are in `Schema` property ids set
-            .filter(|(entity_property_id, _)| {
-                self.properties
-                    .iter()
-                    .any(|schema_property_id| *schema_property_id == *entity_property_id)
-            })
-            // Select `PropertyValues`, which ids are not added yet to the `Entity`
-            .filter(|(entity_property_id, _)| {
-                unused_property_ids
-                    .iter()
-                    .any(|unused_property_id| *unused_property_id == *entity_property_id)
-            })
-            .collect()
-    }
+        property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+    ) -> dispatch::Result {
+        let property_value_indices: BTreeSet<PropertyId> =
+            property_values.keys().cloned().collect();
 
-    /// Retrieve `Property` ids, which corresonding values are not added yet to the current `Entity` `PropertyValue`s set
-    pub fn get_unused_property_ids<T: Trait>(
-        &self,
-        entity_property_values: &BTreeMap<u16, PropertyValue<T>>,
-    ) -> BTreeSet<PropertyId> {
-        self.properties
-            .iter()
-            // Filter property ids, already added to the entity property values set
-            // and though cannot be updated, while adding a schema support to this entity.
-            .filter(|property_id| !entity_property_values.contains_key(property_id))
-            .cloned()
-            .collect()
+        ensure!(
+            property_value_indices.is_subset(&self.properties),
+            ERROR_SCHEMA_DOES_NOT_CONTAIN_PROVIDED_PROPERTY_ID
+        );
+        Ok(())
     }
 
     /// Get `Schema` `properties` by mutable reference
@@ -653,8 +631,8 @@ impl<T: Trait> Property<T> {
         value: &PropertyValue<T>,
         current_entity_controller: &EntityController<T>,
     ) -> dispatch::Result {
-        self.ensure_prop_value_matches_its_type(value)?;
-        self.ensure_valid_reference_prop(value, current_entity_controller)?;
+        self.ensure_property_value_matches_its_type(value)?;
+        self.ensure_property_value_is_valid_reference(value, current_entity_controller)?;
         self.validate_max_len_if_text_prop(value)?;
         self.validate_max_len_if_vec_prop(value)?;
         Ok(())
@@ -725,9 +703,9 @@ impl<T: Trait> Property<T> {
                 VecValue::Reference(vec),
                 Type::Reference(class_id, same_controller_status),
             ) => {
-                Self::ensure_referancable(
-                    *class_id,
-                    *entity_id,
+                let entity = Self::ensure_referenced_entity_match_its_class(*entity_id, *class_id)?;
+                Self::ensure_entity_can_be_referenced(
+                    entity,
                     *same_controller_status,
                     current_entity_controller,
                 )?;
@@ -792,7 +770,10 @@ impl<T: Trait> Property<T> {
         }
     }
 
-    pub fn ensure_prop_value_matches_its_type(&self, value: &PropertyValue<T>) -> dispatch::Result {
+    pub fn ensure_property_value_matches_its_type(
+        &self,
+        value: &PropertyValue<T>,
+    ) -> dispatch::Result {
         ensure!(
             self.does_prop_value_match_type(value),
             ERROR_PROP_VALUE_DONT_MATCH_TYPE
@@ -850,7 +831,9 @@ impl<T: Trait> Property<T> {
         }
     }
 
-    pub fn ensure_valid_reference_prop(
+    /// Perform all required checks to ensure provided `PropertyValue` is valid,
+    /// when current `PropertyType` is `Reference`
+    pub fn ensure_property_value_is_valid_reference(
         &self,
         value: &PropertyValue<T>,
         current_entity_controller: &EntityController<T>,
@@ -867,9 +850,10 @@ impl<T: Trait> Property<T> {
                     single_property_value.get_value_ref(),
                     single_property_type.deref(),
                 ) {
-                    Self::ensure_referancable(
-                        *class_id,
-                        *entity_id,
+                    let entity =
+                        Self::ensure_referenced_entity_match_its_class(*entity_id, *class_id)?;
+                    Self::ensure_entity_can_be_referenced(
+                        entity,
                         *same_controller_status,
                         current_entity_controller,
                     )?;
@@ -887,9 +871,10 @@ impl<T: Trait> Property<T> {
                     vec_property_type.get_vec_type(),
                 ) {
                     for entity_id in entities_vec.iter() {
-                        Self::ensure_referancable(
-                            *class_id,
-                            *entity_id,
+                        let entity =
+                            Self::ensure_referenced_entity_match_its_class(*entity_id, *class_id)?;
+                        Self::ensure_entity_can_be_referenced(
+                            entity,
                             *same_controller_status,
                             current_entity_controller,
                         )?;
@@ -901,27 +886,36 @@ impl<T: Trait> Property<T> {
         Ok(())
     }
 
-    pub fn ensure_referancable(
-        class_id: T::ClassId,
+    /// Ensure `class_id` of `Entity` under provided `entity_id` references `Entity`, which `class_id` is equal to `class_id`,
+    /// declared in corresponding `PropertyType`
+    pub fn ensure_referenced_entity_match_its_class(
         entity_id: T::EntityId,
+        class_id: T::ClassId,
+    ) -> Result<Entity<T>, &'static str> {
+        Module::<T>::ensure_known_class_id(class_id)?;
+        Module::<T>::ensure_known_entity_id(entity_id)?;
+
+        let entity = Module::<T>::entity_by_id(entity_id);
+        ensure!(
+            entity.class_id == class_id,
+            ERROR_REFERENCED_ENTITY_DOES_NOT_MATCH_ITS_CLASS
+        );
+        Ok(entity)
+    }
+
+    /// Ensure `Entity` under provided `entity_id` can be referenced.
+    pub fn ensure_entity_can_be_referenced(
+        entity: Entity<T>,
         same_controller_status: bool,
         current_entity_controller: &EntityController<T>,
     ) -> dispatch::Result {
-        Module::<T>::ensure_known_class_id(class_id)?;
-        Module::<T>::ensure_known_entity_id(entity_id)?;
-        let entity = Module::<T>::entity_by_id(entity_id);
-
-        let entity_permissions = entity.get_permissions_ref();
+        let entity_permissions = entity.get_permissions();
 
         ensure!(
             entity_permissions.is_referancable(),
-            ERROR_ENTITY_CAN_NOT_BE_REFRENCED
+            ERROR_ENTITY_CAN_NOT_BE_REFERENCED
         );
 
-        ensure!(
-            entity.class_id == class_id,
-            ERROR_PROP_DOES_NOT_MATCH_ITS_CLASS
-        );
         if same_controller_status {
             ensure!(
                 entity_permissions.controller_is_equal_to(current_entity_controller),
