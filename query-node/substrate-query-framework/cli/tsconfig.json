@@ -10,6 +10,7 @@
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "types": [ "node" ],
     "typeRoots": [
         "./src/node_modules/@types"
     ] 
