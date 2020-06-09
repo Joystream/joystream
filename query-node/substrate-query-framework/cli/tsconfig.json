@@ -4,7 +4,7 @@
     "importHelpers": true,
     "module": "commonjs",
     "outDir": "lib",
-    "rootDir": "./src",
+    "rootDir": ".",
     "strict": true,
     "target": "es2017",
     "esModuleInterop": true,
@@ -14,5 +14,5 @@
         "./src/node_modules/@types"
     ] 
   },
-  "include": ["./src/**/*.ts"]
+  "include": ["./src/**/*.ts", "./test/**/*.ts"]
 }
