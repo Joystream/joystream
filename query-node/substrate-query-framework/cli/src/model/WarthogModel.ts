@@ -2,10 +2,10 @@ import { FTSQuery } from './FTSQuery';
 import { availableTypes } from './ScalarTypes'
 
 export class WarthogModel {
-    _types: ObjectType[];
-    _ftsQueries: FTSQuery[];
-    _name2query: { [key: string]: FTSQuery } = {};
-    _name2type: { [key: string]: ObjectType } = {};
+    private  _types: ObjectType[];
+    private _ftsQueries: FTSQuery[];
+    private _name2query: { [key: string]: FTSQuery } = {};
+    private _name2type: { [key: string]: ObjectType } = {};
 
     constructor() {
         this._types = [];
@@ -26,19 +26,43 @@ export class WarthogModel {
         this._ftsQueries.push(query);
     }
 
-    addQueryField(name:string, f: Field, t?: ObjectType):void {
-        let q: FTSQuery = this._name2query[name];
-        if (!q) {
-            q = {
-                name,
-                type: t,
-                fields: []
-            } as FTSQuery;
-            this.addFTSQuery(q);
-        }
-        q.fields.push(f);
+    /**
+     * Add emply full text search query with the given name
+     * 
+     * @param name query name to be added
+     */
+    addEmptyFTSQuery(name: string): FTSQuery {
+        const query = {
+            name,
+            clauses: []
+        };
+        this.addFTSQuery(query);
+        return query;
     }
 
+    private _addQueryClause(name:string, f: Field, t: ObjectType):void {
+        let q: FTSQuery = this._name2query[name];
+        if (!q) {
+            q = this.addEmptyFTSQuery(name);
+        }
+        q.clauses.push({
+            entity: t,
+            field: f
+        });
+    }
+
+    /**
+     * Add text search field to the named FTS query
+     * 
+     * @param queryName fulltext query name
+     * @param fieldName name of the field to be added to the query
+     * @param typeName  objectType which defined that field
+     */
+    addQueryClause(queryName: string, fieldName: string, typeName: string):void {
+        const field = this.lookupField(typeName, fieldName);
+        const objType = this.lookupType(typeName);
+        this._addQueryClause(queryName, field, objType);
+    }
 
     get types(): ObjectType[] {
         return this._types;
@@ -48,20 +72,38 @@ export class WarthogModel {
         return this._ftsQueries;
     }
 
-    lookupField(type: string, name: string): Field {
-        const objType = this.lookupType(type);
+    lookupQuery(queryName: string): FTSQuery {
+        if (!this._name2query) {
+            throw new Error(`No query with name ${queryName} found`);
+        }
+        return this._name2query[queryName];
+    }
+
+    /**
+     * Lookup Warthog's Field model object by it's ObjectType and name
+     * 
+     * @param objTypeName Type name with the given field defined
+     * @param name the name of the field 
+     */
+    lookupField(objTypeName: string, name: string): Field {
+        const objType = this.lookupType(objTypeName);
         const field = objType.fields.find((f) => f.name === name);
         if (!field) {
-            throw new Error(`No field ${name} is found for object type ${type}`);
+            throw new Error(`No field ${name} is found for object type ${objTypeName}`);
         }
         return field;
     }
 
-    lookupType(type: string): ObjectType {
-        if (!this._name2type[type]) {
-            throw new Error(`No ObjectType ${type} found`);
+    /**
+     * Lookup ObjectType by it's name (as defined in the schema file)
+     * 
+     * @param name ObjectTypeName as defined in the schema
+     */
+    lookupType(name: string): ObjectType {
+        if (!this._name2type[name]) {
+            throw new Error(`No ObjectType ${name} found`);
         }
-        return this._name2type[type];
+        return this._name2type[name];
     }
 
     /**

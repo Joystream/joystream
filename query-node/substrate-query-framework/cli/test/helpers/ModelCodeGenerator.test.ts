@@ -1,98 +1,28 @@
-import { GraphQLSchemaParser, SchemaNode, Visitor } from './../../src/helpers/SchemaParser';
+import { DatabaseModelCodeGenerator } from './../../src/helpers/ModelCodeGenerator';
 import { expect } from 'chai';
 
-describe('SchemaParser', () => {
-    it('should fail on non-existent file', () => {
-            expect(() => new GraphQLSchemaParser('./non-existent')).to.throw('not found');
+describe('ModelCodeGenerator', () => {
+    it('should add multi-field multi-entity FTSQuery to the model', () => {
+        const generator = new DatabaseModelCodeGenerator('test/fixtures/multiple-entities.graphql');
+        const model = generator.generateWarthogModel()
+
+        expect(model.ftsQueries).length(1, "Should detect a query");
+        const query = model.ftsQueries[0];
+        expect(query.clauses).length(4, "The query should contain four clauses");
+        const entities: string[] = [];
+        const fields: string[] = [];
+        query.clauses.map((c) =>  {
+            entities.push(c.entity.name);
+            fields.push(c.field.name);
+        })
+        expect(entities).to.include.members(["Category", "Thread", "Post"], "Should detect three entities");
+        expect(fields).to.include.members(["initial_body_text", "name"], "Should detect fields");
+        
     });
-    
-    it('should find a top-level entity', () => {
-       const schema = GraphQLSchemaParser.buildSchema(`
-            type Cat {
-                meow: String!
-            }
-       `); 
-       expect(GraphQLSchemaParser.createObjectTypeDefinations(schema)).length(1, 
-            "Should detect exactly one type");
-    });
 
-    it('should throw an error on invalid schema', () => {
-        const schema = `
-            _type Cat {
-                meow: String!
-            }`; 
-       expect(() => GraphQLSchemaParser.buildSchema(schema)).to.throw('Syntax Error');
+    it('should detect multiple queries', () => {
+        const generator = new DatabaseModelCodeGenerator('test/fixtures/multiple-queries.graphql');
+        const model = generator.generateWarthogModel();
+        expect(model.ftsQueries).length(2, "Should detect two queries");
     })
-
-    it('should throw on unknown directive', () => {
-        const schema = `
-            type Cat {
-                meow: String! @undeclared
-            }`; 
-       expect(() => GraphQLSchemaParser.buildSchema(schema)).to.throw('Unknown directive');
-    })
-
-    it('should throw on wrong location', () => {
-        const schema = `
-            type Cat @fullTextSearchable {
-                meow: String! 
-            }`; 
-       expect(() => GraphQLSchemaParser.buildSchema(schema)).to.throw('may not be used on OBJECT');
-    })
-
-    it('should throw on wrong argument', () => {
-        const schema = `
-            type Cat {
-                meow: String! @fullTextSearchable(qquery: "dfd")
-            }`; 
-       expect(() => GraphQLSchemaParser.buildSchema(schema)).to.throw('"String!" is required');
-    })
-
-    it('should detect fields types and directives', () => {
-        const schema = `
-            type Cat {
-                meow: String! @fullTextSearchable(query: "dfd")
-            }`; 
-       const gSchema = GraphQLSchemaParser.buildSchema(schema);
-       const typeNodes = GraphQLSchemaParser.createObjectTypeDefinations(gSchema)
-       expect(typeNodes).length(1);
-       const node = typeNodes[0];
-       expect(node?.fields?.[0]?.directives?.[0]?.name?.value).eq('fullTextSearchable', 'Should find a directive');
-    })
-
-    // TODO: this test now failes because apparently __ prefixed types do not pass validation
-    //
-    // it('should detect fields types and directives', () => {
-    //     const schema = `
-    //         type __Skip {
-    //             a: String! 
-    //         }`; 
-    //    const gSchema = GraphQLSchemaParser.buildSchema(schema);
-    //    const typeNodes = GraphQLSchemaParser.createObjectTypeDefinations(gSchema)
-    //    expect(typeNodes).length(0,'Should ignore __ prefixed types');    
-    // })
-
-    it('should load file', () => {
-        const parser = new GraphQLSchemaParser('test/fixtures/single-type.graphql');
-        expect(parser.getTypeNames()).length(1, "Should detect one type");
-        expect(parser.getFields(parser.getObjectDefinations()[0])).length(5, "Should detect fields");
-    })
-
-    it('should visit directives', () => {
-        const parser = new GraphQLSchemaParser('test/fixtures/single-type.graphql');
-        const names: string[] = [];
-        const visitor: Visitor = {
-            visit: (path) => {
-                path.map((n: SchemaNode) => names.push(n.name.value));
-            }
-        }    
-        parser.dfsTraversal({
-            directives: {
-                "fullTextSearchable": visitor
-            }
-        });
-
-        expect(names).members(["Membership", "handle", "fullTextSearchable"], "Should detect full path");
-    })
-
 });

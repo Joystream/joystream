@@ -123,7 +123,7 @@ export default class WarthogWrapper {
       // create dir if the textsearch module
       createDir(path.resolve(process.cwd(), 'src/modules/textsearch'), false, true);
 
-      const queryGenerator = new FTSQueryGenerator(this.model);
+      const queryGenerator = new FTSQueryGenerator();
       
       this.model.ftsQueries.map((query) => {
          const transform = (template:string) => queryGenerator.generate(template, query);

@@ -1,9 +1,9 @@
 import { SchemaNode } from './SchemaParser';
-import { WarthogModel, ObjectType, Field } from '../model';
+import { WarthogModel } from '../model';
 import { DirectiveNode, TypeNode, ArgumentNode, StringValueNode, FieldDefinitionNode, ObjectTypeDefinitionNode } from 'graphql';
 import { cloneDeep } from 'lodash';
 
-const FULL_TEXT_SEARCHABLE_DIRECTIVE = 'fullTextSearchable';
+export const FULL_TEXT_SEARCHABLE_DIRECTIVE = 'fulltext';
 
 export interface DirectiveVisitor {
     // directive name to watch
@@ -70,10 +70,7 @@ export class FTSDirective implements SchemaDirective {
         const objTypeNode = path.pop() as ObjectTypeDefinitionNode;
 
         const qName: string  = this._checkFullTextSearchDirective(dirNode);
-        const field: Field  = model.lookupField(objTypeNode.name.value, fieldNode.name.value);
-        const objType: ObjectType = model.lookupType(objTypeNode.name.value);
-
-        model.addQueryField(qName, field, objType);
+        model.addQueryClause(qName, fieldNode.name.value, objTypeNode.name.value);
 
         return model 
     }
