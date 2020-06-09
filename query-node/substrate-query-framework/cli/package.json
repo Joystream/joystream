@@ -59,7 +59,7 @@
   "license": "MIT",
   "main": "lib/index.js",
   "oclif": {
-    "commands": "./lib/commands",
+    "commands": "./lib/src/commands",
     "bin": "cli",
     "plugins": [
       "@oclif/plugin-help"
