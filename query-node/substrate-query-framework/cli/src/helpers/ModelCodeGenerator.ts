@@ -108,7 +108,7 @@ export class DatabaseModelCodeGenerator {
   generateSQLRelationships(): void {
     const additionalFields: { [key: string]: string | Field }[] = [];
 
-    this._model._types.forEach(({ name, fields }) => {
+    this._model.types.forEach(({ name, fields }) => {
       for (const field of fields) {
         if (!field.isBuildinType && field.isList) {
           const typeName = field.type;
@@ -125,7 +125,7 @@ export class DatabaseModelCodeGenerator {
       }
     });
 
-    for (const objType of this._model._types) {
+    for (const objType of this._model.types) {
       for (const field of additionalFields) {
         if (objType.name === field.name) {
           objType.fields.push(field.field as Field);
