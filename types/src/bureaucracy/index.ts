@@ -252,11 +252,12 @@ export type IWorkerOpening = {
   policy_commitment: BureaucracyOpeningPolicyCommitment,
 }
 
-// FIXME: Because the api still understands that "policy_commitment" is of type "OpeningPolicyCommitment"
-// (not "BureaucracyOpeningPolicyCommitment"), the CWG's OpeningPolicyCommitment type is used ie. in the "Extrinsic" tab
-// (it has "terminate_curator_role_stake_unstaking_period" insted of "terminate_worker_role_stake_unstaking_period" etc.)
-// Because those are basically the same structs (only filed names are different) it seems not to break anything, but it's
-// very fragile atm, since any change to this type in bureaucracy module could result in inconsistencies
+// FIXME: Because the api still "thinks" that the "commitment" argument of "forumBureaucracy.addWorkerOpening" extrinsic
+// is of type "OpeningPolicyCommitment" (instead of "BureaucracyOpeningPolicyCommitment"), the CWG's OpeningPolicyCommitment type
+// is used there (it has "terminate_curator_role_stake_unstaking_period" insted of "terminate_worker_role_stake_unstaking_period" etc.)
+// Because those types are basically the same structs (only filed names are different) nothing seems to break yet, but it's
+// very fragile atm, since any change to this type in bureaucracy module could result in "unsolvable" inconsistencies
+// (unless the name is changed too)
 export class WorkerOpening extends JoyStruct<IWorkerOpening> {
   constructor (value?: IWorker) {
     super({
