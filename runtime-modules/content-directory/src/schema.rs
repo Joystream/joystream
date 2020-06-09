@@ -470,7 +470,7 @@ impl<T: Trait> PropertyValue<T> {
         ) {
             new_vec_property_value.nonce = vec_property_value.increment_nonce();
         }
-        *self = new_value;
+        *self = new_value
     }
 
     /// Retrieve all involved `entity_id`'s, if current `PropertyValue` is reference
@@ -637,9 +637,9 @@ impl<T: Trait> Property<T> {
         if self.unique && (*new_value != PropertyValue::default() || self.required) {
             ensure!(
                 unused_schema_property_values
-                    .iter()
-                    .chain(entity_property_values.iter())
-                    .all(|(_, prop_value)| *prop_value != *new_value),
+                    .values()
+                    .chain(entity_property_values.values())
+                    .all(|prop_value| *prop_value != *new_value),
                 ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE
             );
         }

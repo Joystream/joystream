@@ -1170,7 +1170,8 @@ decl_module! {
             let class_properties = class.properties;
 
             Self::ensure_property_values_are_valid(
-                &class_properties, entity_controller, &unused_property_ids, &unused_schema_property_values, entity_property_values_ref
+                &class_properties, entity_controller, &unused_property_ids,
+                &unused_schema_property_values, entity_property_values_ref
             )?;
 
             //
@@ -1217,66 +1218,35 @@ decl_module! {
 
             class.ensure_property_values_unlocked()?;
 
-            // Get current property values of an entity,
-            // so we can update them if new values provided present in new_property_values.
-            let mut updated_values = entity.values.clone();
-            let mut updated = false;
+            let new_property_values = Self::try_filter_identical_property_values(&entity.values, new_property_values);
 
-            // Entities, which rc should be incremented
-            let mut entity_ids_to_increase_rcs = InboundEntitiesRc::<T>::default();
+            Self::ensure_all_property_values_are_already_added(&entity.values, &new_property_values)?;
 
-            // Entities, which rc should be decremented
-            let mut entity_ids_to_decrease_rcs = InboundEntitiesRc::<T>::default();
-
-            // Iterate over a vector of new values and update corresponding properties
-            // of this entity if new values are valid.
-            for (id, new_value) in new_property_values.into_iter() {
-
-                // Try to find a current property value in the entity
-                // by matching its id to the id of a property with an updated value.
-                let current_prop_value = updated_values
-                    .get_mut(&id)
-
-                    // Throw an error if a property was not found on entity
-                    // by an in-class index of a property update.
-                    .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?;
-
-                // Skip update if new value is equal to the current one or class property type
-                // is locked for update from current actor
-                if new_value != *current_prop_value {
-
-                    // Get class-level information about this property
-                    if let Some(class_property) = class.properties.get(id as usize) {
-
-                        class_property.ensure_unlocked_from(access_level)?;
-
-                        class_property.ensure_property_value_to_update_is_valid(
-                            &new_value,
-                            entity.get_permissions_ref().get_controller(),
-                        )?;
-
-                        Self::fill_in_involved_entity_ids_rcs(
-                            &new_value, current_prop_value, class_property.property_type.same_controller_status(),
-                            &mut entity_ids_to_increase_rcs, &mut entity_ids_to_decrease_rcs
-                        );
-
-                        current_prop_value.update(new_value);
-
-                        updated = true;
-                    }
-                }
-            }
+            let class_properties = class.properties;
+            Self::ensure_all_property_values_are_unlocked_from(&new_property_values, &class_properties, access_level)?;
+            Self::ensure_new_property_values_are_valid(&entity, &new_property_values, &class_properties)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            // If property values should be updated
-            if updated {
+            // Get current property values of an entity,
+            // so we can update them if new values provided present in new_property_values.
 
+            let entity_property_values = entity.values;
+
+            // Perform entity property values update
+            let entity_property_values_updated = Self::make_updated_values(&entity_property_values, &new_property_values);
+
+            // If property values should be updated
+            if let Some(entity_property_values_updated) = entity_property_values_updated {
                 <EntityById<T>>::mutate(entity_id, |entity| {
-                    entity.values = updated_values;
+                    entity.values = entity_property_values_updated;
                 });
+
+                // Update reference counters of involved entities
+                let (entity_ids_to_increase_rcs, entity_ids_to_decrease_rcs) =
+                    Self::get_involved_entity_ids_rcs(&new_property_values, entity_property_values, class_properties);
 
                 entity_ids_to_increase_rcs.increase_entity_rcs();
 
@@ -1586,38 +1556,67 @@ impl<T: Trait> Module<T> {
         entity_rcs
     }
 
-    /// Fill in `entity_ids_to_increase_rcs` & `entity_ids_to_decrease_rcs`,
+    /// Get `entity_ids_to_increase_rcs` & `entity_ids_to_decrease_rcs`,
     /// based on entities involved into update process
-    pub fn fill_in_involved_entity_ids_rcs(
-        new_value: &PropertyValue<T>,
-        current_prop_value: &PropertyValue<T>,
-        same_controller: bool,
-        entity_ids_to_increase_rcs: &mut InboundEntitiesRc<T>,
-        entity_ids_to_decrease_rcs: &mut InboundEntitiesRc<T>,
-    ) {
-        // Retrieve unique entity ids to update rc
-        if let (Some(entities_rc_to_increment_vec), Some(entities_rc_to_decrement_vec)) = (
-            new_value.get_involved_entities(),
-            current_prop_value.get_involved_entities(),
-        ) {
-            let (entities_rc_to_decrement_vec, entities_rc_to_increment_vec): (
-                Vec<T::EntityId>,
-                Vec<T::EntityId>,
-            ) = entities_rc_to_decrement_vec
-                .into_iter()
-                .zip(entities_rc_to_increment_vec.into_iter())
-                // Do not count entity_ids, that should be incremented and decremented simultaneously
-                .filter(|(entity_rc_to_decrement, entity_rc_to_increment)| {
-                    entity_rc_to_decrement != entity_rc_to_increment
-                })
-                .unzip();
+    pub fn get_involved_entity_ids_rcs(
+        new_property_values: &BTreeMap<u16, PropertyValue<T>>,
+        entity_property_values: BTreeMap<u16, PropertyValue<T>>,
+        class_properties: Vec<Property<T>>,
+    ) -> (InboundEntitiesRc<T>, InboundEntitiesRc<T>) {
+        // Entities, which rc should be incremented
+        let mut entity_ids_to_increase_rcs = InboundEntitiesRc::<T>::default();
 
-            entity_ids_to_increase_rcs
-                .fill_in_entity_rcs(entities_rc_to_increment_vec, same_controller);
+        // Entities, which rc should be decremented
+        let mut entity_ids_to_decrease_rcs = InboundEntitiesRc::<T>::default();
 
-            entity_ids_to_decrease_rcs
-                .fill_in_entity_rcs(entities_rc_to_decrement_vec, same_controller);
-        }
+        new_property_values
+            .iter()
+            .filter_map(|(id, new_property_value)| {
+                let current_property_value = &entity_property_values[id];
+                let same_controller_status = class_properties[*id as usize]
+                    .property_type
+                    .same_controller_status();
+
+                // Retrieve unique entity ids to update rc
+                if let (Some(entities_rc_to_increment_vec), Some(entities_rc_to_decrement_vec)) = (
+                    new_property_value.get_involved_entities(),
+                    current_property_value.get_involved_entities(),
+                ) {
+                    let (entities_rc_to_increment_vec, entities_rc_to_decrement_vec): (
+                        Vec<T::EntityId>,
+                        Vec<T::EntityId>,
+                    ) = entities_rc_to_increment_vec
+                        .into_iter()
+                        .zip(entities_rc_to_decrement_vec.into_iter())
+                        // Do not count entity_ids, that should be incremented and decremented simultaneously
+                        .filter(|(entity_rc_to_increment, entity_rc_to_decrement)| {
+                            entity_rc_to_increment != entity_rc_to_decrement
+                        })
+                        .unzip();
+
+                    Some((
+                        entities_rc_to_increment_vec,
+                        entities_rc_to_decrement_vec,
+                        same_controller_status,
+                    ))
+                } else {
+                    None
+                }
+            })
+            .for_each(
+                |(
+                    entities_rc_to_increment_vec,
+                    entities_rc_to_decrement_vec,
+                    same_controller_status,
+                )| {
+                    entity_ids_to_increase_rcs
+                        .fill_in_entity_rcs(entities_rc_to_increment_vec, same_controller_status);
+
+                    entity_ids_to_decrease_rcs
+                        .fill_in_entity_rcs(entities_rc_to_decrement_vec, same_controller_status);
+                },
+            );
+        (entity_ids_to_increase_rcs, entity_ids_to_decrease_rcs)
     }
 
     /// Used to update `class_permissions` with parameters provided.
@@ -1766,6 +1765,92 @@ impl<T: Trait> Module<T> {
                     );
                 }
             })
+        }
+    }
+
+    /// Perform all necessary checks to ensure `new_property_values` are valid
+    pub fn ensure_new_property_values_are_valid(
+        entity: &Entity<T>,
+        new_property_values: &BTreeMap<u16, PropertyValue<T>>,
+        class_properties: &[Property<T>],
+    ) -> dispatch::Result {
+        for (id, new_property_value) in new_property_values {
+            // Indexing is safe, class should always maintain such constistency
+            let class_property = &class_properties[*id as usize];
+            class_property.ensure_property_value_to_update_is_valid(
+                &new_property_value,
+                entity.get_permissions_ref().get_controller(),
+            )?;
+        }
+
+        Ok(())
+    }
+
+    /// Ensure all provided `new_property_values` are already exist in `entity_property_values` map
+    pub fn ensure_all_property_values_are_already_added(
+        entity_property_values: &BTreeMap<u16, PropertyValue<T>>,
+        new_property_values: &BTreeMap<u16, PropertyValue<T>>,
+    ) -> dispatch::Result {
+        ensure!(
+            new_property_values
+                .keys()
+                .all(|key| entity_property_values.contains_key(key)),
+            ERROR_UNKNOWN_ENTITY_PROP_ID
+        );
+        Ok(())
+    }
+
+    /// Ensure `new_property_values` are accessible for actor with given `access_level`
+    pub fn ensure_all_property_values_are_unlocked_from(
+        new_property_values: &BTreeMap<u16, PropertyValue<T>>,
+        class_properties: &[Property<T>],
+        access_level: EntityAccessLevel,
+    ) -> dispatch::Result {
+        for id in new_property_values.keys() {
+            // Indexing is safe, class should always maintain such constistency
+            let class_property = &class_properties[*id as usize];
+            class_property.ensure_unlocked_from(access_level)?;
+        }
+        Ok(())
+    }
+
+    /// Filter `new_property_values` identical to `entity_property_values`.
+    pub fn try_filter_identical_property_values(
+        entity_property_values: &BTreeMap<u16, PropertyValue<T>>,
+        new_property_values: BTreeMap<u16, PropertyValue<T>>,
+    ) -> BTreeMap<u16, PropertyValue<T>> {
+        new_property_values
+            .into_iter()
+            .filter(|(id, new_property_value)| {
+                matches!(
+                    entity_property_values.get(id),
+                    Some(entity_property_value) if *entity_property_value != *new_property_value
+                )
+            })
+            .collect()
+    }
+
+    /// Update `entity_property_values` with `new_property_values`.
+    /// Returns `Some(entity_property_values_updated)`,
+    /// if `entity_property_values` have been updated, and `None` otherwise.
+    pub fn make_updated_values(
+        entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+        new_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+    ) -> Option<BTreeMap<PropertyId, PropertyValue<T>>> {
+        let mut entity_property_values_updated = entity_property_values.to_owned();
+
+        new_property_values
+            .iter()
+            .for_each(|(id, new_property_value)| {
+                if let Some(entity_property_value) = entity_property_values_updated.get_mut(&id) {
+                    entity_property_value.update(new_property_value.to_owned());
+                }
+            });
+
+        if entity_property_values_updated != *entity_property_values {
+            Some(entity_property_values_updated)
+        } else {
+            None
         }
     }
 
