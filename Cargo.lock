@@ -1569,7 +1569,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "2.1.6"
+version = "2.3.0"
 dependencies = [
  "ctrlc",
  "derive_more 0.14.1",
@@ -1614,7 +1614,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "6.12.0"
+version = "6.15.0"
 dependencies = [
  "parity-scale-codec",
  "safe-mix",
@@ -4837,6 +4837,7 @@ dependencies = [
  "substrate-common-module",
  "substrate-membership-module",
  "substrate-primitives",
+ "substrate-recurring-reward-module",
  "substrate-token-mint-module",
 ]
 

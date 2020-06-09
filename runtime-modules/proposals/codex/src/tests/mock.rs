@@ -3,6 +3,7 @@
 // TODO: remove after post-Rome substrate upgrade
 #![allow(array_into_iter)]
 
+use crate::{ProposalDetailsOf, ProposalEncoder};
 pub use primitives::{Blake2Hasher, H256};
 use proposal_engine::VotersParameters;
 use sr_primitives::curve::PiecewiseLinear;
@@ -140,8 +141,8 @@ parameter_types! {
 impl proposal_discussion::Trait for Test {
     type Event = ();
     type PostAuthorOriginValidator = ();
-    type ThreadId = u32;
-    type PostId = u32;
+    type ThreadId = u64;
+    type PostId = u64;
     type MaxPostEditionNumber = MaxPostEditionNumber;
     type ThreadTitleLengthLimit = ThreadTitleLengthLimit;
     type PostLengthLimit = PostLengthLimit;
@@ -249,6 +250,13 @@ impl crate::Trait for Test {
     type TextProposalMaxLength = TextProposalMaxLength;
     type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
     type MembershipOriginValidator = ();
+    type ProposalEncoder = ();
+}
+
+impl ProposalEncoder<Test> for () {
+    fn encode_proposal(_proposal_details: ProposalDetailsOf<Test>) -> Vec<u8> {
+        Vec::new()
+    }
 }
 
 impl system::Trait for Test {

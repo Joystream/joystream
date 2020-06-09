@@ -56,7 +56,7 @@ use rstd::vec::Vec;
 use srml_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 
 use srml_support::traits::Get;
-use types::{Post, Thread, ThreadCounter};
+use types::{DiscussionPost, DiscussionThread, ThreadCounter};
 
 use common::origin_validator::ActorOriginValidator;
 use srml_support::dispatch::DispatchResult;
@@ -71,13 +71,13 @@ decl_event!(
         MemberId = MemberId<T>,
         <T as Trait>::PostId,
     {
-    	/// Emits on thread creation.
+        /// Emits on thread creation.
         ThreadCreated(ThreadId, MemberId),
 
-    	/// Emits on post creation.
+        /// Emits on post creation.
         PostCreated(PostId, MemberId),
 
-    	/// Emits on post update.
+        /// Emits on post update.
         PostUpdated(PostId, MemberId),
     }
 );
@@ -95,10 +95,10 @@ pub trait Trait: system::Trait + membership::members::Trait {
     >;
 
     /// Discussion thread Id type
-    type ThreadId: From<u32> + Into<u32> + Parameter + Default + Copy;
+    type ThreadId: From<u64> + Into<u64> + Parameter + Default + Copy;
 
     /// Post Id type
-    type PostId: From<u32> + Parameter + Default + Copy;
+    type PostId: From<u64> + Parameter + Default + Copy;
 
     /// Defines post edition number limit.
     type MaxPostEditionNumber: Get<u32>;
@@ -163,17 +163,17 @@ decl_storage! {
     pub trait Store for Module<T: Trait> as ProposalDiscussion {
         /// Map thread identifier to corresponding thread.
         pub ThreadById get(thread_by_id): map T::ThreadId =>
-            Thread<MemberId<T>, T::BlockNumber>;
+            DiscussionThread<MemberId<T>, T::BlockNumber>;
 
         /// Count of all threads that have been created.
-        pub ThreadCount get(fn thread_count): u32;
+        pub ThreadCount get(fn thread_count): u64;
 
         /// Map thread id and post id to corresponding post.
         pub PostThreadIdByPostId: double_map T::ThreadId, twox_128(T::PostId) =>
-             Post<MemberId<T>, T::BlockNumber, T::ThreadId>;
+             DiscussionPost<MemberId<T>, T::BlockNumber, T::ThreadId>;
 
         /// Count of all posts that have been created.
-        pub PostCount get(fn post_count): u32;
+        pub PostCount get(fn post_count): u64;
 
         /// Last author thread counter (part of the antispam mechanism)
         pub LastThreadAuthorCounter get(fn last_thread_author_counter):
@@ -189,6 +189,18 @@ decl_module! {
 
         /// Emits an event. Default substrate implementation.
         fn deposit_event() = default;
+
+        /// Exports post edition number limit const.
+        const MaxPostEditionNumber: u32 = T::MaxPostEditionNumber::get();
+
+        /// Exports thread title length limit const.
+        const ThreadTitleLengthLimit: u32 = T::ThreadTitleLengthLimit::get();
+
+        /// Exports post length limit const.
+        const PostLengthLimit: u32 = T::PostLengthLimit::get();
+
+        /// Exports max thread by same author in a row number limit const.
+        const MaxThreadInARowNumber: u32 = T::MaxThreadInARowNumber::get();
 
         /// Adds a post with author origin check.
         pub fn add_post(
@@ -214,7 +226,7 @@ decl_module! {
             let next_post_count_value = Self::post_count() + 1;
             let new_post_id = next_post_count_value;
 
-            let new_post = Post {
+            let new_post = DiscussionPost {
                 text,
                 created_at: Self::current_block(),
                 updated_at: Self::current_block(),
@@ -257,7 +269,7 @@ decl_module! {
             ensure!(post.edition_number < T::MaxPostEditionNumber::get(),
                 Error::PostEditionNumberExceeded);
 
-            let new_post = Post {
+            let new_post = DiscussionPost {
                 text,
                 updated_at: Self::current_block(),
                 edition_number: post.edition_number + 1,
@@ -284,7 +296,7 @@ impl<T: Trait> Module<T> {
         let next_thread_count_value = Self::thread_count() + 1;
         let new_thread_id = next_thread_count_value;
 
-        let new_thread = Thread {
+        let new_thread = DiscussionThread {
             title,
             created_at: Self::current_block(),
             author_id: thread_author_id,

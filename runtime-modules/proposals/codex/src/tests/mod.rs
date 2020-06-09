@@ -5,12 +5,13 @@ use srml_support::traits::Currency;
 use srml_support::StorageMap;
 use system::RawOrigin;
 
+use crate::*;
 use crate::{BalanceOf, Error, ProposalDetails};
 use proposal_engine::ProposalParameters;
 use roles::actors::RoleParameters;
-use runtime_io::blake2_256;
 use srml_support::dispatch::DispatchResult;
 
+use crate::proposal_types::ProposalsConfigParameters;
 pub use mock::*;
 
 pub(crate) fn increase_total_balance_issuance(balance: u64) {
@@ -133,7 +134,7 @@ fn create_text_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(1250u32)),
+                    Some(<BalanceOf<Test>>::from(25000u32)),
                     b"text".to_vec(),
                 )
             },
@@ -179,7 +180,7 @@ fn create_text_proposal_codex_call_fails_with_incorrect_text_size() {
 #[test]
 fn create_runtime_upgrade_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance(500000);
+        increase_total_balance_issuance_using_account_id(1, 5000000);
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
@@ -218,12 +219,12 @@ fn create_runtime_upgrade_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    Some(<BalanceOf<Test>>::from(1_000_000_u32)),
                     b"wasm".to_vec(),
                 )
             },
             proposal_parameters: crate::proposal_types::parameters::runtime_upgrade_proposal::<Test>(),
-            proposal_details: ProposalDetails::RuntimeUpgrade(blake2_256(b"wasm").to_vec()),
+            proposal_details: ProposalDetails::RuntimeUpgrade(b"wasm".to_vec()),
         };
         proposal_fixture.check_all();
     });
@@ -264,7 +265,7 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_incorrect_wasm_size() {
 #[test]
 fn create_set_election_parameters_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance(500000);
+        increase_total_balance_issuance_using_account_id(1, 500000);
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
@@ -303,7 +304,7 @@ fn create_set_election_parameters_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(3750u32)),
+                    Some(<BalanceOf<Test>>::from(200_000_u32)),
                     get_valid_election_parameters(),
                 )
             },
@@ -468,7 +469,7 @@ fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
 #[test]
 fn create_working_group_mint_capacity_proposal_fails_with_invalid_parameters() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance(500000);
+        increase_total_balance_issuance_using_account_id(1, 500000);
 
         assert_eq!(
             ProposalCodex::create_set_content_working_group_mint_capacity_proposal(
@@ -476,8 +477,8 @@ fn create_working_group_mint_capacity_proposal_fails_with_invalid_parameters() {
                 1,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(<BalanceOf<Test>>::from(1250u32)),
-                5001,
+                Some(<BalanceOf<Test>>::from(50000u32)),
+                (crate::CONTENT_WORKING_GROUP_MINT_CAPACITY_MAX_VALUE + 1) as u64,
             ),
             Err(Error::InvalidStorageWorkingGroupMintCapacity)
         );
@@ -526,7 +527,7 @@ fn create_set_content_working_group_mint_capacity_proposal_common_checks_succeed
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(1250u32)),
+                    Some(<BalanceOf<Test>>::from(50000u32)),
                     10,
                 )
             },
@@ -582,7 +583,7 @@ fn create_spending_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(1250u32)),
+                    Some(<BalanceOf<Test>>::from(25000u32)),
                     100,
                     2,
                 )
@@ -619,7 +620,7 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
                 b"title".to_vec(),
                 b"body".to_vec(),
                 Some(<BalanceOf<Test>>::from(1250u32)),
-                1001,
+                2000001,
                 2,
             ),
             Err(Error::InvalidSpendingProposalBalance)
@@ -695,7 +696,7 @@ fn create_set_lead_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(1250u32)),
+                    Some(<BalanceOf<Test>>::from(50000u32)),
                     Some((20, 10)),
                 )
             },
@@ -748,7 +749,7 @@ fn create_evict_storage_provider_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(500u32)),
+                    Some(<BalanceOf<Test>>::from(25000u32)),
                     1,
                 )
             },
@@ -762,7 +763,7 @@ fn create_evict_storage_provider_proposal_common_checks_succeed() {
 #[test]
 fn create_set_validator_count_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance(500000);
+        increase_total_balance_issuance_using_account_id(1, 500000);
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
@@ -801,7 +802,7 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(1250u32)),
+                    Some(<BalanceOf<Test>>::from(100_000_u32)),
                     4,
                 )
             },
@@ -846,8 +847,11 @@ fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
 #[test]
 fn create_set_storage_role_parameters_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance(500000);
-
+        increase_total_balance_issuance_using_account_id(1, 500000);
+        let role_parameters = RoleParameters {
+            min_actors: 1,
+            ..RoleParameters::default()
+        };
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_set_storage_role_parameters_proposal(
@@ -856,7 +860,7 @@ fn create_set_storage_role_parameters_proposal_common_checks_succeed() {
                     b"title".to_vec(),
                     b"body".to_vec(),
                     None,
-                    RoleParameters::default(),
+                    role_parameters.clone(),
                 )
             },
             empty_stake_call: || {
@@ -866,7 +870,7 @@ fn create_set_storage_role_parameters_proposal_common_checks_succeed() {
                     b"title".to_vec(),
                     b"body".to_vec(),
                     None,
-                    RoleParameters::default(),
+                    role_parameters.clone(),
                 )
             },
             invalid_stake_call: || {
@@ -876,7 +880,7 @@ fn create_set_storage_role_parameters_proposal_common_checks_succeed() {
                     b"title".to_vec(),
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(5000u32)),
-                    RoleParameters::default(),
+                    role_parameters.clone(),
                 )
             },
             successful_call: || {
@@ -885,13 +889,13 @@ fn create_set_storage_role_parameters_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(1250u32)),
-                    RoleParameters::default(),
+                    Some(<BalanceOf<Test>>::from(100_000_u32)),
+                    role_parameters.clone(),
                 )
             },
             proposal_parameters:
                 crate::proposal_types::parameters::set_storage_role_parameters_proposal::<Test>(),
-            proposal_details: ProposalDetails::SetStorageRoleParameters(RoleParameters::default()),
+            proposal_details: ProposalDetails::SetStorageRoleParameters(role_parameters),
         };
         proposal_fixture.check_all();
     });
@@ -907,7 +911,7 @@ fn assert_failed_set_storage_parameters_call(
             1,
             b"title".to_vec(),
             b"body".to_vec(),
-            Some(<BalanceOf<Test>>::from(500u32)),
+            Some(<BalanceOf<Test>>::from(100_000_u32)),
             role_parameters,
         ),
         Err(error)
@@ -917,30 +921,34 @@ fn assert_failed_set_storage_parameters_call(
 #[test]
 fn create_set_storage_role_parameters_proposal_fails_with_invalid_parameters() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance(500000);
+        increase_total_balance_issuance_using_account_id(1, 500000);
 
-        let mut role_parameters = RoleParameters::default();
-        role_parameters.min_actors = 6;
+        let working_role_parameters = RoleParameters {
+            min_actors: 1,
+            ..RoleParameters::default()
+        };
+        let mut role_parameters = working_role_parameters.clone();
+        role_parameters.min_actors = 2;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterMinActors,
         );
 
-        role_parameters = RoleParameters::default();
-        role_parameters.max_actors = 4;
+        role_parameters = working_role_parameters.clone();
+        role_parameters.max_actors = 1;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterMaxActors,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.max_actors = 100;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterMaxActors,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.reward_period = 599;
         assert_failed_set_storage_parameters_call(
             role_parameters,
@@ -953,102 +961,187 @@ fn create_set_storage_role_parameters_proposal_fails_with_invalid_parameters() {
             Error::InvalidStorageRoleParameterRewardPeriod,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.bonding_period = 599;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterBondingPeriod,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.bonding_period = 28801;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterBondingPeriod,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.unbonding_period = 599;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterUnbondingPeriod,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.unbonding_period = 28801;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterUnbondingPeriod,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.min_service_period = 599;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterMinServicePeriod,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.min_service_period = 28801;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterMinServicePeriod,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.startup_grace_period = 599;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterStartupGracePeriod,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.startup_grace_period = 28801;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterStartupGracePeriod,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.min_stake = 0;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterMinStake,
         );
 
-        role_parameters = RoleParameters::default();
-        role_parameters.min_stake = 5001;
+        role_parameters = working_role_parameters.clone();
+        role_parameters.min_stake = 10000001;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterMinStake,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.entry_request_fee = 0;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterEntryRequestFee,
         );
 
-        role_parameters = RoleParameters::default();
-        role_parameters.entry_request_fee = 5001;
+        role_parameters = working_role_parameters.clone();
+        role_parameters.entry_request_fee = 100001;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterEntryRequestFee,
         );
 
-        role_parameters = RoleParameters::default();
+        role_parameters = working_role_parameters.clone();
         role_parameters.reward = 0;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterReward,
         );
 
-        role_parameters = RoleParameters::default();
-        role_parameters.reward = 501;
+        role_parameters = working_role_parameters;
+        role_parameters.reward = 100_000;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterReward,
+        );
+    });
+}
+
+#[test]
+fn set_default_proposal_parameters_succeeded() {
+    initial_test_ext().execute_with(|| {
+        let p = ProposalsConfigParameters::default();
+
+        // nothing is set
+        assert_eq!(<SetValidatorCountProposalVotingPeriod<Test>>::get(), 0);
+
+        ProposalCodex::set_default_config_values();
+
+        assert_eq!(
+            <SetValidatorCountProposalVotingPeriod<Test>>::get(),
+            p.set_validator_count_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <SetValidatorCountProposalGracePeriod<Test>>::get(),
+            p.set_validator_count_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <RuntimeUpgradeProposalVotingPeriod<Test>>::get(),
+            p.runtime_upgrade_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <RuntimeUpgradeProposalGracePeriod<Test>>::get(),
+            p.runtime_upgrade_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <TextProposalVotingPeriod<Test>>::get(),
+            p.text_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <TextProposalGracePeriod<Test>>::get(),
+            p.text_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <SetElectionParametersProposalVotingPeriod<Test>>::get(),
+            p.set_election_parameters_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <SetElectionParametersProposalGracePeriod<Test>>::get(),
+            p.set_election_parameters_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <SetContentWorkingGroupMintCapacityProposalVotingPeriod<Test>>::get(),
+            p.set_content_working_group_mint_capacity_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <SetContentWorkingGroupMintCapacityProposalGracePeriod<Test>>::get(),
+            p.set_content_working_group_mint_capacity_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <SetLeadProposalVotingPeriod<Test>>::get(),
+            p.set_lead_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <SetLeadProposalGracePeriod<Test>>::get(),
+            p.set_lead_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <SpendingProposalVotingPeriod<Test>>::get(),
+            p.spending_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <SpendingProposalGracePeriod<Test>>::get(),
+            p.spending_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <EvictStorageProviderProposalVotingPeriod<Test>>::get(),
+            p.evict_storage_provider_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <EvictStorageProviderProposalGracePeriod<Test>>::get(),
+            p.evict_storage_provider_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <SetStorageRoleParametersProposalVotingPeriod<Test>>::get(),
+            p.set_storage_role_parameters_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <SetStorageRoleParametersProposalGracePeriod<Test>>::get(),
+            p.set_storage_role_parameters_proposal_grace_period as u64
         );
     });
 }
