@@ -105,7 +105,8 @@ export default class Codegen extends Command {
 
     this.log('Installing dependendies for indexer...');
     execSync('yarn install');
-    execSync(`yarn add ${process.env.TYPE_REGISTER_PACKAGE_NAME}`);
+    if (process.env.TYPE_REGISTER_PACKAGE_NAME) 
+        execSync(`yarn add ${process.env.TYPE_REGISTER_PACKAGE_NAME}`);
     this.log('done...');
 
     this.log('Generating typeorm db entities...');
