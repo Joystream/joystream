@@ -4602,13 +4602,14 @@ dependencies = [
 
 [[package]]
 name = "substrate-common-module"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "parity-scale-codec",
  "serde",
  "sr-primitives",
  "srml-support",
  "srml-system",
+ "srml-timestamp",
 ]
 
 [[package]]
@@ -4828,7 +4829,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-forum-module"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",

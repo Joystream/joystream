@@ -28,6 +28,7 @@ use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Para
 use system::{self, ensure_root};
 
 use common::origin_validator::ActorOriginValidator;
+pub(crate) use common::BlockAndTime;
 
 use crate::data_object_type_registry;
 use crate::data_object_type_registry::IsActiveDataObjectType;
@@ -64,13 +65,6 @@ static MSG_LIAISON_REQUIRED: &str = "Only the liaison for the content may modify
 static MSG_DO_TYPE_MUST_BE_ACTIVE: &str =
     "Cannot create content for inactive or missing data object type.";
 
-// TODO consider to remove it
-#[derive(Clone, Encode, Decode, PartialEq, Debug)]
-pub struct BlockAndTime<T: Trait> {
-    pub block: T::BlockNumber,
-    pub time: T::Moment,
-}
-
 /// The decision of the storage provider when it acts as liaison.
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub enum LiaisonJudgement {
@@ -97,7 +91,7 @@ pub struct DataObject<T: Trait> {
     pub owner: MemberId<T>,
 
     /// Content added at.
-    pub added_at: BlockAndTime<T>,
+    pub added_at: BlockAndTime<T::BlockNumber, T::Moment>,
 
     /// Content type id.
     pub type_id: <T as data_object_type_registry::Trait>::DataObjectTypeId,
@@ -113,20 +107,6 @@ pub struct DataObject<T: Trait> {
 
     /// IPFS content id.
     pub ipfs_content_id: Vec<u8>,
-}
-
-//TODO consider to remove
-
-#[derive(Clone, Encode, Decode, PartialEq, Debug)]
-pub enum ContentVisibility {
-    Draft,
-    Public,
-}
-
-impl Default for ContentVisibility {
-    fn default() -> Self {
-        ContentVisibility::Draft
-    }
 }
 
 decl_storage! {
@@ -178,7 +158,7 @@ decl_module! {
         pub fn add_content(
             origin,
             member_id: MemberId<T>,
-            content_id: T::ContentId, // TODO generate content_id by runtime
+            content_id: T::ContentId,
             type_id: <T as data_object_type_registry::Trait>::DataObjectTypeId,
             size: u64,
             ipfs_content_id: Vec<u8>
@@ -200,7 +180,7 @@ decl_module! {
             let data: DataObject<T> = DataObject {
                 type_id,
                 size,
-                added_at: Self::current_block_and_time(),
+                added_at: common::current_block_time::<T>(),
                 owner: member_id,
                 liaison,
                 liaison_judgement: LiaisonJudgement::Pending,
@@ -275,13 +255,6 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    fn current_block_and_time() -> BlockAndTime<T> {
-        BlockAndTime {
-            block: <system::Module<T>>::block_number(),
-            time: <timestamp::Module<T>>::now(),
-        }
-    }
-
     fn update_content_judgement(
         storage_provider_id: &StorageProviderId<T>,
         content_id: T::ContentId,
