@@ -10,6 +10,7 @@
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "types": [ "node", "mocha" ],
     "typeRoots": [
         "./src/node_modules/@types"
     ] 
