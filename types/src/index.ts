@@ -225,4 +225,5 @@ export function registerJoystreamTypes() {
   registerHiringTypes();
   registerContentWorkingGroupTypes();
   registerProposalTypes();
+  require("./bureaucracy").registerBureaucracyTypes();
 }

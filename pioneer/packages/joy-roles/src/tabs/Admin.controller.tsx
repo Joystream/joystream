@@ -689,7 +689,7 @@ export class AdminController extends Controller<State, ITransport> {
         title = (hrt).job.title;
       }
 
-      this.state.openings.set(openingId.toNumber(), {
+      this.state.openings.set(i, {
         openingId: openingId.toNumber(),
         curatorId: i,
         applications: new Array<application>(),
