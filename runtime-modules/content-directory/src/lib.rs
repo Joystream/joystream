@@ -1537,9 +1537,9 @@ impl<T: Trait> Module<T> {
     /// Update `entity_property_values` with `property_values`
     /// Return updated `entity_property_values`
     fn make_updated_entity_property_values(
-        entity_property_values: BTreeMap<u16, PropertyValue<T>>,
-        property_values: &BTreeMap<u16, PropertyValue<T>>,
-    ) -> BTreeMap<u16, PropertyValue<T>> {
+        entity_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
+        property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+    ) -> BTreeMap<PropertyId, PropertyValue<T>> {
         entity_property_values
             .keys()
             .map(|property_id| {
@@ -1557,7 +1557,7 @@ impl<T: Trait> Module<T> {
     /// Based on provided `Class` and `unused_schema_property_values`
     fn get_involved_entity_rcs(
         class_properties: &[Property<T>],
-        unused_schema_property_values: &BTreeMap<u16, PropertyValue<T>>,
+        unused_schema_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> InboundEntitiesRc<T> {
         let mut entity_rcs = InboundEntitiesRc::default();
         for (schema_property_id, schema_property_value) in unused_schema_property_values {
@@ -1575,8 +1575,8 @@ impl<T: Trait> Module<T> {
     /// Get `entity_ids_to_increase_rcs` & `entity_ids_to_decrease_rcs`,
     /// based on entities involved into update process
     pub fn get_involved_entity_ids_rcs(
-        new_property_values: &BTreeMap<u16, PropertyValue<T>>,
-        entity_property_values: BTreeMap<u16, PropertyValue<T>>,
+        new_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+        entity_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
         class_properties: Vec<Property<T>>,
     ) -> (InboundEntitiesRc<T>, InboundEntitiesRc<T>) {
         // Entities, which rc should be incremented
@@ -1709,7 +1709,7 @@ impl<T: Trait> Module<T> {
         class_properties: &[Property<T>],
         schema: &Schema,
         entity_controller: &EntityController<T>,
-        property_values: &BTreeMap<u16, PropertyValue<T>>,
+        property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
         for property_id in schema.get_properties() {
             // Indexing is safe, class should always maintain such constistency
@@ -1729,8 +1729,8 @@ impl<T: Trait> Module<T> {
     /// Ensure `property_values` satisfy unique option, if required
     pub fn ensure_property_values_unique_option_satisfied(
         class_properties: &[Property<T>],
-        property_values: &BTreeMap<u16, PropertyValue<T>>,
-        entity_property_values: &BTreeMap<u16, PropertyValue<T>>,
+        property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+        entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
         for (property_id, property_value) in property_values {
             // Indexing is safe, class should always maintain such constistency
@@ -1799,7 +1799,7 @@ impl<T: Trait> Module<T> {
     /// Perform all necessary checks to ensure `new_property_values` are valid
     pub fn ensure_new_property_values_are_valid(
         entity: &Entity<T>,
-        new_property_values: &BTreeMap<u16, PropertyValue<T>>,
+        new_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
         class_properties: &[Property<T>],
     ) -> dispatch::Result {
         for (id, new_property_value) in new_property_values {
@@ -1816,8 +1816,8 @@ impl<T: Trait> Module<T> {
 
     /// Ensure all provided `new_property_values` are already exist in `entity_property_values` map
     pub fn ensure_all_property_values_are_already_added(
-        entity_property_values: &BTreeMap<u16, PropertyValue<T>>,
-        new_property_values: &BTreeMap<u16, PropertyValue<T>>,
+        entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+        new_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
         ensure!(
             new_property_values
@@ -1830,7 +1830,7 @@ impl<T: Trait> Module<T> {
 
     /// Ensure `new_property_values` are accessible for actor with given `access_level`
     pub fn ensure_all_property_values_are_unlocked_from(
-        new_property_values: &BTreeMap<u16, PropertyValue<T>>,
+        new_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
         class_properties: &[Property<T>],
         access_level: EntityAccessLevel,
     ) -> dispatch::Result {
@@ -1844,9 +1844,9 @@ impl<T: Trait> Module<T> {
 
     /// Filter `new_property_values` identical to `entity_property_values`.
     pub fn try_filter_identical_property_values(
-        entity_property_values: &BTreeMap<u16, PropertyValue<T>>,
-        new_property_values: BTreeMap<u16, PropertyValue<T>>,
-    ) -> BTreeMap<u16, PropertyValue<T>> {
+        entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+        new_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
+    ) -> BTreeMap<PropertyId, PropertyValue<T>> {
         new_property_values
             .into_iter()
             .filter(|(id, new_property_value)| {
@@ -1914,10 +1914,10 @@ impl<T: Trait> Module<T> {
     /// Insert `PropertyValue` into `entity_property_values` mapping at `in_class_schema_property_id`.
     /// Returns updated `entity_property_values`
     pub fn insert_at_in_class_schema_property_id(
-        mut entity_property_values: BTreeMap<u16, PropertyValue<T>>,
+        mut entity_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
         in_class_schema_property_id: PropertyId,
         property_value: PropertyValue<T>,
-    ) -> BTreeMap<u16, PropertyValue<T>> {
+    ) -> BTreeMap<PropertyId, PropertyValue<T>> {
         entity_property_values.insert(in_class_schema_property_id, property_value);
         entity_property_values
     }
