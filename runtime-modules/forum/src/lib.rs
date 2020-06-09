@@ -18,6 +18,7 @@ use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Para
 use system::{ensure_signed, RawOrigin};
 
 pub use common::constraints::InputValidationLengthConstraint;
+use common::BlockAndTime;
 
 mod mock;
 mod tests;
@@ -72,20 +73,12 @@ pub trait ForumUserRegistry<AccountId> {
     fn get_forum_user(id: &AccountId) -> Option<ForumUser<AccountId>>;
 }
 
-/// Convenient composite time stamp
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct BlockchainTimestamp<BlockNumber, Moment> {
-    block: BlockNumber,
-    time: Moment,
-}
-
 /// Represents a moderation outcome applied to a post or a thread.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct ModerationAction<BlockNumber, Moment, AccountId> {
     /// When action occured.
-    moderated_at: BlockchainTimestamp<BlockNumber, Moment>,
+    moderated_at: BlockAndTime<BlockNumber, Moment>,
 
     /// Account forum sudo which acted.
     moderator_id: AccountId,
@@ -99,7 +92,7 @@ pub struct ModerationAction<BlockNumber, Moment, AccountId> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct PostTextChange<BlockNumber, Moment> {
     /// When this expiration occured
-    expired_at: BlockchainTimestamp<BlockNumber, Moment>,
+    expired_at: BlockAndTime<BlockNumber, Moment>,
 
     /// Text that expired
     text: Vec<u8>,
@@ -132,7 +125,7 @@ pub struct Post<BlockNumber, Moment, AccountId, ThreadId, PostId> {
     text_change_history: Vec<PostTextChange<BlockNumber, Moment>>,
 
     /// When post was submitted.
-    created_at: BlockchainTimestamp<BlockNumber, Moment>,
+    created_at: BlockAndTime<BlockNumber, Moment>,
 
     /// Author of post.
     author_id: AccountId,
@@ -175,7 +168,7 @@ pub struct Thread<BlockNumber, Moment, AccountId, ThreadId> {
     num_moderated_posts: u32,
 
     /// When thread was established.
-    created_at: BlockchainTimestamp<BlockNumber, Moment>,
+    created_at: BlockAndTime<BlockNumber, Moment>,
 
     /// Author of post.
     author_id: AccountId,
@@ -216,7 +209,7 @@ pub struct Category<BlockNumber, Moment, AccountId> {
     description: Vec<u8>,
 
     /// When category was established.
-    created_at: BlockchainTimestamp<BlockNumber, Moment>,
+    created_at: BlockAndTime<BlockNumber, Moment>,
 
     /// Whether category is deleted.
     deleted: bool,
@@ -443,7 +436,7 @@ decl_module! {
                 id : next_category_id,
                 title,
                 description,
-                created_at : Self::current_block_and_time(),
+                created_at : common::current_block_time::<T>(),
                 deleted: false,
                 archived: false,
                 num_direct_subcategories: 0,
@@ -603,7 +596,7 @@ decl_module! {
 
             // Add moderation to thread
             thread.moderation = Some(ModerationAction {
-                moderated_at: Self::current_block_and_time(),
+                moderated_at: common::current_block_time::<T>(),
                 moderator_id: who,
                 rationale
             });
@@ -689,7 +682,7 @@ decl_module! {
             <PostById<T>>::mutate(post_id, |p| {
 
                 let expired_post_text = PostTextChange {
-                    expired_at: Self::current_block_and_time(),
+                    expired_at: common::current_block_time::<T>(),
                     text: post.current_text.clone()
                 };
 
@@ -726,7 +719,7 @@ decl_module! {
 
             // Update moderation action on post
             let moderation_action = ModerationAction{
-                moderated_at: Self::current_block_and_time(),
+                moderated_at: common::current_block_time::<T>(),
                 moderator_id: who,
                 rationale
             };
@@ -797,13 +790,6 @@ impl<T: Trait> Module<T> {
             ERROR_POST_MODERATION_RATIONALE_TOO_SHORT,
             ERROR_POST_MODERATION_RATIONALE_TOO_LONG,
         )
-    }
-
-    fn current_block_and_time() -> BlockchainTimestamp<T::BlockNumber, T::Moment> {
-        BlockchainTimestamp {
-            block: <system::Module<T>>::block_number(),
-            time: <timestamp::Module<T>>::now(),
-        }
     }
 
     fn ensure_post_is_mutable(
@@ -991,7 +977,7 @@ impl<T: Trait> Module<T> {
             moderation: None,
             num_unmoderated_posts: 0,
             num_moderated_posts: 0,
-            created_at: Self::current_block_and_time(),
+            created_at: common::current_block_time::<T>(),
             author_id: author_id.clone(),
         };
 
@@ -1031,7 +1017,7 @@ impl<T: Trait> Module<T> {
             current_text: text.to_owned(),
             moderation: None,
             text_change_history: vec![],
-            created_at: Self::current_block_and_time(),
+            created_at: common::current_block_time::<T>(),
             author_id: author_id.clone(),
         };
 
