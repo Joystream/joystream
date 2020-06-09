@@ -14,8 +14,7 @@
             project_src: ./
             state: present
         - name: execute network tests
-          # shell: yarn test >> ../../.tmp/tests.log
-          shell: yarn tap --files src/constantinople/tests/proposals/electionParametersProposalTest.ts -T >> ../../.tmp/tests.log
+          shell: yarn test >> ../../.tmp/tests.log
           args:
             chdir: ../../tests/network-tests/
       always:
