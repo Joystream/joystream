@@ -17,12 +17,13 @@ import './forms.css';
 import FileDropdown from './FileDropdown';
 
 type FormValues = GenericFormValues & {
-  WASM: string;
+  // wasm blob as ArrayBuffer, or an Error string
+  WASM: ArrayBuffer | string;
 };
 
 const defaultValues: FormValues = {
   ...genericFormDefaultValues,
-  WASM: ''
+  WASM: new ArrayBuffer(0)
 };
 
 type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
@@ -31,7 +32,7 @@ type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
 const RuntimeUpgradeForm: React.FunctionComponent<FormInnerProps> = props => {
-  const { errors, setFieldValue, values } = props;
+  const { errors, setFieldValue, setFieldTouched, values, touched } = props;
   return (
     <GenericProposalForm
       {...props}
@@ -42,10 +43,12 @@ const RuntimeUpgradeForm: React.FunctionComponent<FormInnerProps> = props => {
       <Form.Field>
         <FileDropdown<FormValues>
           setFieldValue={setFieldValue}
+          setFieldTouched={setFieldTouched}
           defaultText="Drag-n-drop WASM bytecode of a runtime upgrade (*.wasm)"
           acceptedFormats=".wasm"
           name="WASM"
-          error={errors.WASM}
+          error={touched.WASM ? errors.WASM : undefined}
+          interpretAs='binary'
         />
       </Form.Field>
     </GenericProposalForm>
