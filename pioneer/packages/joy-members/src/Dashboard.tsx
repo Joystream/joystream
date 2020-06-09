@@ -15,16 +15,15 @@ import { queryMembershipToProp } from './utils';
 import { FIRST_MEMBER_ID } from './constants';
 
 type Props = ApiProps & I18nProps & {
-  newMembershipsAllowed?: Bool,
-  membersCreated?: BN,
-  minHandleLength?: BN,
-  maxHandleLength?: BN,
-  maxAvatarUriLength?: BN,
-  maxAboutTextLength?: BN
+  newMembershipsAllowed?: Bool;
+  membersCreated?: BN;
+  minHandleLength?: BN;
+  maxHandleLength?: BN;
+  maxAvatarUriLength?: BN;
+  maxAboutTextLength?: BN;
 };
 
 class Dashboard extends React.PureComponent<Props> {
-
   renderGeneral () {
     const p = this.props;
     const { newMembershipsAllowed: isAllowed } = p;

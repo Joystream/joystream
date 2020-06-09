@@ -14,9 +14,9 @@ export const ExploreContentView = MediaView<ExploreContentProps>({
       transport.latestPublicVideoChannels(),
       transport.latestPublicVideos(),
       transport.featuredVideos()
-    ])
+    ]);
 
-    return { featuredVideos, latestVideos, latestVideoChannels }
+    return { featuredVideos, latestVideos, latestVideoChannels };
   }
 });
 

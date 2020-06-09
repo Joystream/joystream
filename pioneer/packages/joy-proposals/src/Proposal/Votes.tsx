@@ -1,21 +1,20 @@
-import React from "react";
-import { Header, Divider, Table, Icon } from "semantic-ui-react";
-import useVoteStyles from "./useVoteStyles";
-import { ProposalVote } from "@polkadot/joy-utils/types/proposals";
-import { VoteKind } from "@joystream/types/proposals";
-import { VoteKindStr } from "./VotingSection";
-import ProfilePreview from "@polkadot/joy-utils/MemberProfilePreview";
-
+import React from 'react';
+import { Header, Divider, Table, Icon } from 'semantic-ui-react';
+import useVoteStyles from './useVoteStyles';
+import { ProposalVote } from '@polkadot/joy-utils/types/proposals';
+import { VoteKind } from '@joystream/types/proposals';
+import { VoteKindStr } from './VotingSection';
+import ProfilePreview from '@polkadot/joy-utils/MemberProfilePreview';
 
 type VotesProps = {
-  votes: ProposalVote[]
+  votes: ProposalVote[];
 };
 
-export default function Votes({ votes }: VotesProps) {
+export default function Votes ({ votes }: VotesProps) {
   const nonEmptyVotes = votes.filter(proposalVote => proposalVote.vote !== null);
 
   if (!nonEmptyVotes.length) {
-    return <Header as="h3">No votes submitted yet!</Header>;
+    return <Header as="h4">No votes has been submitted!</Header>;
   }
 
   return (

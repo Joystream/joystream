@@ -1,13 +1,13 @@
 import React, { CSSProperties } from 'react';
 
 type Props = {
-  url: string,
-  size?: number,
-  width?: number,
-  height?: number,
-  circle?: boolean,
-  className?: string,
-  style?: CSSProperties
+  url: string;
+  size?: number;
+  width?: number;
+  height?: number;
+  circle?: boolean;
+  className?: string;
+  style?: CSSProperties;
 };
 
 export function BgImg (props: Props) {
@@ -16,7 +16,7 @@ export function BgImg (props: Props) {
   const fullClass = 'JoyBgImg ' + className;
 
   let fullStyle: CSSProperties = {
-    backgroundImage: `url(${url})`,
+    backgroundImage: `url(${url})`
   };
 
   if (!width || !height) {
@@ -29,12 +29,12 @@ export function BgImg (props: Props) {
     height,
     minWidth: width,
     minHeight: height
-  })
+  });
 
   if (circle) {
     fullStyle = Object.assign(fullStyle, {
       borderRadius: '50%'
-    })
+    });
   }
 
   fullStyle = Object.assign(fullStyle, style);

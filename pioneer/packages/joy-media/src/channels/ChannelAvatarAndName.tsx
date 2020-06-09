@@ -4,13 +4,13 @@ import { ChannelAvatar } from './ChannelAvatar';
 import { ChannelNameAsLink } from './ChannelNameAsLink';
 
 type Props = {
-  channel: ChannelEntity
+  channel: ChannelEntity;
 }
 
 export const ChannelAvatarAndName = (props: Props) => {
   const { channel } = props;
   return (
-    <div className={`ChannelPreview small`}>
+    <div className={'ChannelPreview small'}>
       <ChannelAvatar channel={channel} size='small' />
       <div className='ChannelDetails'>
         <h3 className='ChannelTitle' style={{ display: 'block' }}>
@@ -18,5 +18,5 @@ export const ChannelAvatarAndName = (props: Props) => {
         </h3>
       </div>
     </div>
-  )
-}
+  );
+};

@@ -15,29 +15,28 @@ import { ElectionStage, Seat } from '@joystream/types/';
 import translate from './translate';
 
 type Props = ApiProps & I18nProps & {
-  bestNumber?: BN,
+  bestNumber?: BN;
 
-  activeCouncil?: Seat[],
-  termEndsAt?: BlockNumber,
+  activeCouncil?: Seat[];
+  termEndsAt?: BlockNumber;
 
-  autoStart?: Boolean,
-  newTermDuration?: BN,
-  candidacyLimit?: BN,
-  councilSize?: BN,
-  minCouncilStake?: Balance,
-  minVotingStake?: Balance,
-  announcingPeriod?: BlockNumber,
-  votingPeriod?: BlockNumber,
-  revealingPeriod?: BlockNumber,
+  autoStart?: boolean;
+  newTermDuration?: BN;
+  candidacyLimit?: BN;
+  councilSize?: BN;
+  minCouncilStake?: Balance;
+  minVotingStake?: Balance;
+  announcingPeriod?: BlockNumber;
+  votingPeriod?: BlockNumber;
+  revealingPeriod?: BlockNumber;
 
-  round?: BN,
-  stage?: Option<ElectionStage>
+  round?: BN;
+  stage?: Option<ElectionStage>;
 };
 
 type State = {};
 
 class Dashboard extends React.PureComponent<Props, State> {
-
   state: State = {};
 
   renderCouncil () {
@@ -58,12 +57,12 @@ class Dashboard extends React.PureComponent<Props, State> {
   renderElection () {
     const { bestNumber, round, stage } = this.props;
 
-    let stageName: string | undefined = undefined;
-    let stageEndsAt: BlockNumber | undefined = undefined;
+    let stageName: string | undefined;
+    let stageEndsAt: BlockNumber | undefined;
     if (stage && stage.isSome) {
       const stageValue = stage.value as ElectionStage;
       stageEndsAt = stageValue.value as BlockNumber; // contained value
-      stageName = stageValue.type; //name of Enum variant
+      stageName = stageValue.type; // name of Enum variant
     }
 
     let leftBlocks: BN | undefined;

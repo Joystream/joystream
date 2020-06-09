@@ -5,7 +5,7 @@ import { ChannelEntity } from '../entities/ChannelEntity';
 import { ChannelPreview } from '../channels/ChannelPreview';
 
 export type Props = {
-  channels?: ChannelEntity[]
+  channels?: ChannelEntity[];
 }
 
 export function AllChannels (props: Props) {
@@ -14,10 +14,10 @@ export function AllChannels (props: Props) {
   return channels.length === 0
     ? <em>No channels found</em>
     : <Section title={`All channels (${channels.length})`} className='ListOfChannels'>
-        {channels.map((x) =>
-          <ChannelPreview key={x.id} channel={x} withSubtitle={false} />
-        )}
-      </Section>
+      {channels.map((x) =>
+        <ChannelPreview key={x.id} channel={x} withSubtitle={false} />
+      )}
+    </Section>;
 }
 
 export const AllChannelsView = MediaView<Props>({
@@ -25,4 +25,4 @@ export const AllChannelsView = MediaView<Props>({
   resolveProps: async ({ transport }) => ({
     channels: await transport.allPublicVideoChannels()
   })
-})
+});

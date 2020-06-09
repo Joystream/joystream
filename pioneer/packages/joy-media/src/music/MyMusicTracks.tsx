@@ -8,8 +8,8 @@ import { ReorderableTracks } from './ReorderableTracks';
 import { MusicAlbumPreviewProps } from './MusicAlbumPreview';
 
 export type MyMusicTracksProps = {
-  albums?: MusicAlbumPreviewProps[],
-  tracks?: EditableMusicTrackPreviewProps[]
+  albums?: MusicAlbumPreviewProps[];
+  tracks?: EditableMusicTrackPreviewProps[];
 };
 
 export function MyMusicTracks (props: MyMusicTracksProps) {
@@ -28,7 +28,7 @@ export function MyMusicTracks (props: MyMusicTracksProps) {
       : set.delete(id)
     ;
     setIdsOfSelectedTracks(set);
-  }
+  };
 
   const { albums = [], tracks = [] } = props;
   const albumsCount = albums.length;
@@ -62,8 +62,8 @@ export function MyMusicTracks (props: MyMusicTracksProps) {
 
       // This is a required hack to fit every dropdown items on a single line:
       minWidth: `${longestAlbumName.length / 1.5}rem`
-    }
-    
+    };
+
     return <div style={style}>
       <Dropdown
         onChange={(_e, { value: id }) => {
@@ -80,21 +80,21 @@ export function MyMusicTracks (props: MyMusicTracksProps) {
         value={albumName}
       />
     </div>;
-  }
+  };
 
   const AddTracksText = () => albumsCount
     ? <span style={{ marginRight: '1rem' }}>
         Add <Pluralize count={selectedCount} singularText='track' /> to
-      </span>
+    </span>
     : <em>
         You have no albums.
-        <Button content='Create first album' icon='plus' />
-      </em>
+      <Button content='Create first album' icon='plus' />
+    </em>;
 
   const goBack = () => {
     setAlbumName('');
     setShowSecondScreen(false);
-  }
+  };
 
   const renderAllTracks = () => {
     return <Section title={`My Music Tracks (${tracksCount})`}>
@@ -111,21 +111,21 @@ export function MyMusicTracks (props: MyMusicTracksProps) {
         {tracksCount === 0
           ? <em className='NoItems'>You have no music tracks yet</em>
           : tracks.map((track, i) =>
-              <MusicTrackPreview
-                key={i}
-                {...track}
-                position={i + 1}
-                selected={idsOfSelectedTracks.has(track.id)}
-                onSelect={(e, d) => onTrackSelect(track, e, d)}
-                withEditButton
-              />
-            )
+            <MusicTrackPreview
+              key={i}
+              {...track}
+              position={i + 1}
+              selected={idsOfSelectedTracks.has(track.id)}
+              onSelect={(e, d) => onTrackSelect(track, e, d)}
+              withEditButton
+            />
+          )
         }
       </div>
     </Section>;
-  }
+  };
 
-  const selectedTracks = tracks.filter(track => idsOfSelectedTracks.has(track.id))
+  const selectedTracks = tracks.filter(track => idsOfSelectedTracks.has(track.id));
 
   const renderReorderTracks = () => {
     return <Section title={`Add tracks to album "${albumName}"`}>
@@ -150,11 +150,11 @@ export function MyMusicTracks (props: MyMusicTracksProps) {
         <Button size='large' primary style={{ float: 'right' }} onClick={() => alert('Not implemented yet')}>Add to album &gt;</Button>
       </div>
     </Section>;
-  }
+  };
 
   return <div className='JoyPaperWidth'>{
     !showSecondScreen
       ? renderAllTracks()
       : renderReorderTracks()
-    }</div>;
+  }</div>;
 }

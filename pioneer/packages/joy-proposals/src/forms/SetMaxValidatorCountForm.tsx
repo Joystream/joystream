@@ -1,6 +1,6 @@
-import React, { useEffect } from "react";
-import { getFormErrorLabelsProps } from "./errorHandling";
-import * as Yup from "yup";
+import React, { useEffect } from 'react';
+import { getFormErrorLabelsProps } from './errorHandling';
+import * as Yup from 'yup';
 import {
   GenericProposalForm,
   GenericFormValues,
@@ -10,12 +10,12 @@ import {
   ProposalFormExportProps,
   ProposalFormContainerProps,
   ProposalFormInnerProps
-} from "./GenericProposalForm";
-import Validation from "../validationSchema";
-import { InputFormField } from "./FormFields";
-import { withFormContainer } from "./FormContainer";
-import { useTransport, usePromise } from "@polkadot/joy-utils/react/hooks";
-import "./forms.css";
+} from './GenericProposalForm';
+import Validation from '../validationSchema';
+import { InputFormField } from './FormFields';
+import { withFormContainer } from './FormContainer';
+import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
+import './forms.css';
 
 type FormValues = GenericFormValues & {
   maxValidatorCount: string;
@@ -23,7 +23,7 @@ type FormValues = GenericFormValues & {
 
 const defaultValues: FormValues = {
   ...genericFormDefaultValues,
-  maxValidatorCount: ""
+  maxValidatorCount: ''
 };
 
 type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
@@ -39,7 +39,7 @@ const SetMaxValidatorCountForm: React.FunctionComponent<FormInnerProps> = props 
 
   useEffect(() => {
     if (validatorCount) {
-      setFieldValue("maxValidatorCount", validatorCount);
+      setFieldValue('maxValidatorCount', validatorCount);
     }
   }, [validatorCount]);
   return (
@@ -47,7 +47,7 @@ const SetMaxValidatorCountForm: React.FunctionComponent<FormInnerProps> = props 
       {...props}
       txMethod="createSetValidatorCountProposal"
       proposalType="SetValidatorCount"
-      submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", values.maxValidatorCount]}
+      submitParams={[props.myMemberId, values.title, values.rationale, '{STAKE}', values.maxValidatorCount]}
     >
       <InputFormField
         error={errorLabelsProps.maxValidatorCount}
@@ -72,7 +72,7 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     maxValidatorCount: Validation.SetValidatorCount.maxValidatorCount
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
-  displayName: "SetMaxValidatorCountForm"
+  displayName: 'SetMaxValidatorCountForm'
 })(SetMaxValidatorCountForm);
 
 export default withProposalFormData<FormContainerProps, ExportComponentProps>(FormContainer);

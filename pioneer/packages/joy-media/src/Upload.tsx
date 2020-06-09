@@ -29,25 +29,25 @@ const MAX_FILE_SIZE_MB = 500;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 type Props = ApiProps & I18nProps & DiscoveryProviderProps & {
-  channelId: ChannelId
-  history?: History
+  channelId: ChannelId;
+  history?: History;
   match: {
     params: {
-      channelId: string
-    }
-  }
+      channelId: string;
+    };
+  };
 };
 
 type State = {
-  error?: any,
-  file?: File,
-  computingHash: boolean,
-  ipfs_cid?: string,
-  newContentId: ContentId,
-  discovering: boolean,
-  uploading: boolean,
-  progress: number,
-  cancelSource: CancelTokenSource
+  error?: any;
+  file?: File;
+  computingHash: boolean;
+  ipfs_cid?: string;
+  newContentId: ContentId;
+  discovering: boolean;
+  uploading: boolean;
+  progress: number;
+  cancelSource: CancelTokenSource;
 };
 
 const defaultState = (): State => ({
@@ -63,13 +63,12 @@ const defaultState = (): State => ({
 });
 
 class Component extends React.PureComponent<Props, State> {
-
   state = defaultState();
 
   componentWillUnmount () {
     this.setState({
       discovering: false,
-      uploading: false,
+      uploading: false
     });
 
     const { cancelSource } = this.state;
@@ -118,7 +117,7 @@ class Component extends React.PureComponent<Props, State> {
     if (!file || !file.name) return <JoyInfo title='Loading...' />;
 
     const success = !error && progress >= 100;
-    const { history, match: { params: { channelId } } } = this.props
+    const { history, match: { params: { channelId } } } = this.props;
 
     return <div style={{ width: '100%' }}>
       {this.renderProgress()}
@@ -134,7 +133,7 @@ class Component extends React.PureComponent<Props, State> {
   }
 
   private renderDiscovering () {
-    return <JoyInfo title={`Please wait...`}>Contacting storage provider.</JoyInfo>;
+    return <JoyInfo title={'Please wait...'}>Contacting storage provider.</JoyInfo>;
   }
 
   private renderProgress () {
@@ -144,9 +143,9 @@ class Component extends React.PureComponent<Props, State> {
 
     let label = '';
     if (active) {
-      label = `Your file is uploading. Please keep this page open until it's done.`;
+      label = 'Your file is uploading. Please keep this page open until it\'s done.';
     } else if (success) {
-      label = `Uploaded! Click "Publish" button to make your file live.`;
+      label = 'Uploaded! Click "Publish" button to make your file live.';
     }
 
     return <Progress
@@ -196,20 +195,21 @@ class Component extends React.PureComponent<Props, State> {
     </div>;
   }
 
-  private onFileSelected = async (file: File) => {
+  private onFileSelected = (file: File) => {
     if (!file.size) {
-      this.setState({ error: `You cannot upload an empty file.` });
+      this.setState({ error: 'You cannot upload an empty file.' });
     } else if (file.size > MAX_FILE_SIZE_BYTES) {
-      this.setState({ error:
+      this.setState({
+        error:
         `You can't upload files larger than ${MAX_FILE_SIZE_MB} MBytes in size.`
       });
     } else {
-      this.setState({ file, computingHash: true })
+      this.setState({ file, computingHash: true });
       this.startComputingHash();
     }
   }
 
-  private async startComputingHash() {
+  private async startComputingHash () {
     const { file } = this.state;
 
     if (!file) {
@@ -220,26 +220,26 @@ class Component extends React.PureComponent<Props, State> {
       const iterableFile = new IterableFile(file, { chunkSize: 65535 });
       const ipfs_cid = await IpfsHash.of(iterableFile);
 
-      this.hashComputationComplete(ipfs_cid)
+      this.hashComputationComplete(ipfs_cid);
     } catch (err) {
       return this.hashComputationComplete(undefined, err);
     }
   }
 
-  private hashComputationComplete(ipfs_cid: string | undefined, error?: string) {
+  private hashComputationComplete (ipfs_cid: string | undefined, error?: string) {
     if (!error) {
-      console.log('Computed IPFS hash:', ipfs_cid)
+      console.log('Computed IPFS hash:', ipfs_cid);
     }
 
     this.setState({
       computingHash: false,
       ipfs_cid,
       error
-    })
+    });
   }
 
-  private renderComputingHash() {
-    return <JoyInfo title='Processing your file. Please wait...' />
+  private renderComputingHash () {
+    return <JoyInfo title='Processing your file. Please wait...' />;
   }
 
   private buildTxParams = () => {
@@ -249,16 +249,17 @@ class Component extends React.PureComponent<Props, State> {
     // TODO get corresponding data type id based on file content
     const dataObjectTypeId = new BN(1);
 
-    return [ newContentId, dataObjectTypeId, new BN(file.size), ipfs_cid];
+    return [newContentId, dataObjectTypeId, new BN(file.size), ipfs_cid];
   }
 
   private onDataObjectCreated = async (_txResult: SubmittableResult) => {
-    this.setState({ discovering: true});
+    this.setState({ discovering: true });
 
     const { api } = this.props;
     const { newContentId } = this.state;
+    let dataObject: Option<DataObject>;
     try {
-      var dataObject = await api.query.dataDirectory.dataObjectByContentId(newContentId) as Option<DataObject>;
+      dataObject = await api.query.dataDirectory.dataObjectByContentId(newContentId) as Option<DataObject>;
     } catch (err) {
       this.setState({
         error: err,
@@ -289,7 +290,7 @@ class Component extends React.PureComponent<Props, State> {
     if (!file || !file.size) {
       this.setState({
         error: new Error('No file to upload!'),
-        discovering: false,
+        discovering: false
       });
       return;
     }
@@ -304,7 +305,7 @@ class Component extends React.PureComponent<Props, State> {
       },
       cancelToken: cancelSource.token,
       onUploadProgress: (progressEvent: any) => {
-        const percentCompleted = Math.round( (progressEvent.loaded * 100) / progressEvent.total );
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
         this.setState({
           progress: percentCompleted
         });
@@ -312,13 +313,13 @@ class Component extends React.PureComponent<Props, State> {
     };
 
     const { discoveryProvider } = this.props;
-
+    let url: string;
     try {
-      var url = await discoveryProvider.resolveAssetEndpoint(storageProvider, contentId, cancelSource.token);
+      url = await discoveryProvider.resolveAssetEndpoint(storageProvider, contentId, cancelSource.token);
     } catch (err) {
       return this.setState({
         error: new Error(`Failed to contact storage provider: ${err.message}`),
-        discovering: false,
+        discovering: false
       });
     }
 
@@ -334,7 +335,7 @@ class Component extends React.PureComponent<Props, State> {
 
     try {
       await axios.put<{ message: string }>(url, file, config);
-    } catch(err) {
+    } catch (err) {
       this.setState({ progress: 0, error: err, uploading: false });
       if (axios.isCancel(err)) {
         return;
@@ -353,4 +354,4 @@ export const UploadWithRouter = withMulti(
   withApi,
   withMembershipRequired,
   withDiscoveryProvider
-)
+);

@@ -7,20 +7,19 @@ import { ApiProps } from '@polkadot/react-api/types';
 import { withCalls } from '@polkadot/react-api/with';
 import { AccountId } from '@polkadot/types/interfaces';
 import { formatBalance } from '@polkadot/util';
-import CandidatePreview from "./CandidatePreview";
+import CandidatePreview from './CandidatePreview';
 
 import translate from './translate';
 import { calcTotalStake } from '@polkadot/joy-utils/index';
 import { Stake } from '@joystream/types/';
 
 type Props = ApiProps & I18nProps & {
-  index: number,
-  accountId: AccountId,
-  stake?: Stake
+  index: number;
+  accountId: AccountId;
+  stake?: Stake;
 };
 
 class Applicant extends React.PureComponent<Props> {
-
   render () {
     const { index, accountId, stake } = this.props;
     const voteUrl = `/council/votes?applicantId=${accountId.toString()}`;

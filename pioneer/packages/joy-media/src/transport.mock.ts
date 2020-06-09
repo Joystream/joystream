@@ -19,25 +19,24 @@ import { ChannelEntity } from './entities/ChannelEntity';
 import { AllMockChannels } from './stories/data/ChannelSamples';
 
 export class MockTransport extends MediaTransport {
-
-  constructor() {
+  constructor () {
     super();
-    console.log('Create new MockTransport')
+    console.log('Create new MockTransport');
   }
 
   protected notImplementedYet<T> (): T {
-    throw new Error('Mock transport: Requested function is not implemented yet')
+    throw new Error('Mock transport: Requested function is not implemented yet');
   }
 
-  allChannels(): Promise<ChannelEntity[]> {
+  allChannels (): Promise<ChannelEntity[]> {
     return this.promise(AllMockChannels);
   }
 
-  channelValidationConstraints(): Promise<ChannelValidationConstraints> {
+  channelValidationConstraints (): Promise<ChannelValidationConstraints> {
     return this.notImplementedYet(); // TODO impl
   }
 
-  allClasses(): Promise<Class[]> {
+  allClasses (): Promise<Class[]> {
     return this.notImplementedYet(); // TODO impl
   }
 
@@ -45,55 +44,55 @@ export class MockTransport extends MediaTransport {
     return this.notImplementedYet(); // TODO impl
   }
 
-  allVideos(): Promise<VideoType[]> {
-    return this.promise(mocks.AllVideos)
+  allVideos (): Promise<VideoType[]> {
+    return this.promise(mocks.AllVideos);
   }
 
-  allMusicTracks(): Promise<MusicTrackType[]> {
-    return this.promise(mocks.AllMusicTracks)
+  allMusicTracks (): Promise<MusicTrackType[]> {
+    return this.promise(mocks.AllMusicTracks);
   }
 
-  allMusicAlbums(): Promise<MusicAlbumType[]> {
-    return this.promise(mocks.AllMusicAlbums)
+  allMusicAlbums (): Promise<MusicAlbumType[]> {
+    return this.promise(mocks.AllMusicAlbums);
   }
 
-  featuredContent(): Promise<FeaturedContentType | undefined> {
-    return this.promise(mocks.FeaturedContent)
+  featuredContent (): Promise<FeaturedContentType | undefined> {
+    return this.promise(mocks.FeaturedContent);
   }
 
   allContentLicenses (): Promise<ContentLicenseType[]> {
     return this.promise(mocks.AllContentLicenses);
   }
 
-  allCurationStatuses(): Promise<CurationStatusType[]> {
+  allCurationStatuses (): Promise<CurationStatusType[]> {
     return this.promise(mocks.AllCurationStatuses);
   }
 
-  allLanguages(): Promise<LanguageType[]> {
+  allLanguages (): Promise<LanguageType[]> {
     return this.promise(mocks.AllLanguages);
   }
 
-  allMediaObjects(): Promise<MediaObjectType[]> {
+  allMediaObjects (): Promise<MediaObjectType[]> {
     return this.promise(mocks.AllMediaObjects);
   }
 
-  allMusicGenres(): Promise<MusicGenreType[]> {
+  allMusicGenres (): Promise<MusicGenreType[]> {
     return this.promise(mocks.AllMusicGenres);
   }
 
-  allMusicMoods(): Promise<MusicMoodType[]> {
+  allMusicMoods (): Promise<MusicMoodType[]> {
     return this.promise(mocks.AllMusicMoods);
   }
 
-  allMusicThemes(): Promise<MusicThemeType[]> {
+  allMusicThemes (): Promise<MusicThemeType[]> {
     return this.promise(mocks.AllMusicThemes);
   }
 
-  allPublicationStatuses(): Promise<PublicationStatusType[]> {
+  allPublicationStatuses (): Promise<PublicationStatusType[]> {
     return this.promise(mocks.AllPublicationStatuses);
   }
 
-  allVideoCategories(): Promise<VideoCategoryType[]> {
+  allVideoCategories (): Promise<VideoCategoryType[]> {
     return this.promise(mocks.AllVideoCategories);
   }
 }

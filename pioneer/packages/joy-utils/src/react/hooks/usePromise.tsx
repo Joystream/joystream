@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from 'react';
 
-export default function usePromise<T>(promise: () => Promise<T>, defaultValue: T): [T, any, boolean, () => Promise<void|null>] {
+export default function usePromise<T> (promise: () => Promise<T>, defaultValue: T): [T, any, boolean, () => Promise<void|null>] {
   const [state, setState] = useState<{
     value: T;
     error: any;

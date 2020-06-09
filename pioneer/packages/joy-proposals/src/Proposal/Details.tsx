@@ -1,21 +1,58 @@
-import React from "react";
-import { Item, Header } from "semantic-ui-react";
-import { ParsedProposal } from "@polkadot/joy-utils/types/proposals";
-import { ExtendedProposalStatus } from "./ProposalDetails";
+import React from 'react';
+import { Item, Header } from 'semantic-ui-react';
+import { ParsedProposal } from '@polkadot/joy-utils/types/proposals';
+import { ExtendedProposalStatus } from './ProposalDetails';
 import styled from 'styled-components';
 
-import ProfilePreview from "@polkadot/joy-utils/MemberProfilePreview";
+import ProfilePreview from '@polkadot/joy-utils/MemberProfilePreview';
+
+const DetailsContainer = styled(Item.Group)`
+  display: grid;
+  width: auto;
+  grid-template-columns: repeat(5, auto) 1fr;
+  grid-column-gap: 5rem;
+
+  & .item .extra {
+    margin-bottom: 0.5em !important;
+  }
+
+  @media screen and (max-width: 1199px) {
+    grid-template-columns: repeat(3, auto);
+    grid-template-rows: repeat(2, auto);
+
+    & .item:first-child {
+      grid-row: 1/3;
+    }
+
+    & .item {
+      margin: 0.5em 0 !important;
+    }
+  }
+
+  @media screen and (max-width: 767px) {
+    grid-template-columns: repeat(2, auto);
+    grid-template-rows: repeat(3, auto);
+
+    & .item:first-child {
+      grid-column: 1/3;
+    }
+
+    & .item {
+      margin: 0.5em 0 !important;
+    }
+  }
+`;
 
 const BlockInfo = styled.div`
   font-size: 0.9em;
 `;
 
 type DetailProps = {
-  name: string,
-  value?: string
+  name: string;
+  value?: string;
 };
 
-const Detail: React.FunctionComponent<DetailProps> = ({name, value, children}) => (
+const Detail: React.FunctionComponent<DetailProps> = ({ name, value, children }) => (
   <Item>
     <Item.Content>
       <Item.Extra>{ name }:</Item.Extra>
@@ -31,12 +68,12 @@ type DetailsProps = {
   proposerLink?: boolean;
 };
 
-export default function Details({ proposal, extendedStatus, proposerLink = false }: DetailsProps) {
+export default function Details ({ proposal, extendedStatus, proposerLink = false }: DetailsProps) {
   const { type, createdAt, createdAtBlock, proposer } = proposal;
   const { displayStatus, periodStatus, expiresIn, finalizedAtBlock, executedAtBlock, executionFailReason } = extendedStatus;
   console.log(proposal);
   return (
-    <Item.Group className="details-container">
+    <DetailsContainer>
       <Detail name="Proposed By">
         <ProfilePreview
           avatar_uri={proposer.avatar_uri}
@@ -44,7 +81,7 @@ export default function Details({ proposal, extendedStatus, proposerLink = false
           handle={proposer.handle}
           link={ proposerLink }
         />
-        <Item.Extra>{ `${ createdAt.toLocaleString() }` }</Item.Extra>
+        <Item.Extra>{ `${createdAt.toLocaleString()}` }</Item.Extra>
       </Detail>
       <Detail name="Proposal type" value={type} />
       <Detail name="Stage" value={displayStatus}>
@@ -53,7 +90,7 @@ export default function Details({ proposal, extendedStatus, proposerLink = false
           { finalizedAtBlock && <BlockInfo>Finalized at block <b>#{ finalizedAtBlock }</b></BlockInfo> }
           { executedAtBlock && (
             <BlockInfo>
-              { displayStatus === "ExecutionFailed" ? 'Execution failed at' : 'Executed at' } block
+              { displayStatus === 'ExecutionFailed' ? 'Execution failed at' : 'Executed at' } block
               <b> #{ executedAtBlock }</b>
             </BlockInfo>
           ) }
@@ -63,9 +100,9 @@ export default function Details({ proposal, extendedStatus, proposerLink = false
       {expiresIn !== null && (
         <Detail
           name={ periodStatus === 'Grace period' ? 'Executes in' : 'Expires in' }
-          value={`${expiresIn.toLocaleString("en-US")} blocks`} />
+          value={`${expiresIn.toLocaleString('en-US')} blocks`} />
       ) }
       {executionFailReason && <Detail name="Execution error" value={ executionFailReason } /> }
-    </Item.Group>
+    </DetailsContainer>
   );
 }

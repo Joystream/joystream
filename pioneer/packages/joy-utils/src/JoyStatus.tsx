@@ -3,21 +3,21 @@ import { Message } from 'semantic-ui-react';
 import { nonEmptyStr } from '.';
 
 type BaseProps = {
-  title?: React.ReactNode
-  children?: React.ReactNode
+  title?: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 type Variants = {
-  info?: boolean
-  success?: boolean
-  warning?: boolean
-  error?: boolean
+  info?: boolean;
+  success?: boolean;
+  warning?: boolean;
+  error?: boolean;
 }
 
 type Props = BaseProps & Variants
 
 export const JoyStatus = (props: Props) => {
-  const { title, children, ...variants } = props
+  const { title, children, ...variants } = props;
 
   return (
     <Message className='JoyMainStatus' {...variants}>
@@ -30,13 +30,13 @@ export const JoyStatus = (props: Props) => {
         </div>
       }
     </Message>
-  )
-}
+  );
+};
 
-export const JoyInfo = (props: BaseProps) => <JoyStatus {...props} info />
+export const JoyInfo = (props: BaseProps) => <JoyStatus {...props} info />;
 
-export const JoySuccess = (props: BaseProps) => <JoyStatus {...props} success />
+export const JoySuccess = (props: BaseProps) => <JoyStatus {...props} success />;
 
-export const JoyWarn = (props: BaseProps) => <JoyStatus {...props} warning />
+export const JoyWarn = (props: BaseProps) => <JoyStatus {...props} warning />;
 
-export const JoyError = (props: BaseProps) => <JoyStatus {...props} error />
+export const JoyError = (props: BaseProps) => <JoyStatus {...props} error />;

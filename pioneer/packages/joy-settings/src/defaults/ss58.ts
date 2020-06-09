@@ -16,7 +16,7 @@ export const PREFIXES: Option[] = [
     info: 'substrate',
     text: 'Substrate (development)',
     value: 42
-  },
+  }
   /*
   {
     info: 'kusama',
