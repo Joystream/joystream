@@ -10,8 +10,9 @@ import { createDir, getTemplatePath, createFile } from '../utils/utils';
 import { formatWithPrettier } from '../helpers/formatter';
 import WarthogWrapper from '../helpers/WarthogWrapper';
 import { getTypeormConfig, getTypeormModelGeneratorConnectionConfig, createSavedEntityEventTable } from '../helpers/db';
+import Debug from "debug";
 
-const debug = require('debug')('qnode-cli:codegen')
+const debug = Debug('qnode-cli:codegen');
 
 export default class Codegen extends Command {
   static description = 'Code generator';
