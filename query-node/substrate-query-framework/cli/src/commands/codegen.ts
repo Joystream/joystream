@@ -22,7 +22,8 @@ export default class Codegen extends Command {
     // pass --no-indexer to skip indexer generation
     indexer: flags.boolean({ char: 'i', allowNo: true, description: 'Generate indexer', default: true }),
     // pass --no-graphql to skip graphql generation
-    graphql: flags.boolean({ char: 'g', allowNo: true, description: 'Generate GraphQL server', default: true})
+    graphql: flags.boolean({ char: 'g', allowNo: true, description: 'Generate GraphQL server', default: true }),
+    preview: flags.boolean({ char: 'p', allowNo: true, description: 'Generate GraphQL API preview', default: false }),
   };
 
   async run() {
@@ -31,10 +32,18 @@ export default class Codegen extends Command {
     const { flags } = this.parse(Codegen);
 
     const generatedFolderPath = path.resolve(process.cwd(), Codegen.generatedFolderName);
+    const isGeneratedFolderPathExists = fs.existsSync(generatedFolderPath);
+
     createDir(generatedFolderPath);
 
     // Change directory to generated
     process.chdir(generatedFolderPath);
+
+    if (flags.preview) {
+      debug('Generating GraphQL API preview');
+      await this.generateAPIPreview(flags.schema, generatedFolderPath, isGeneratedFolderPathExists);
+      return;
+    }
 
     // Create warthog graphql server
     if (flags.graphql) {
@@ -104,5 +113,25 @@ export default class Codegen extends Command {
     this.log('done...');
 
     process.chdir(goBackDir);
+  }
+
+  async generateAPIPreview(schemaPath: string, generatedFolderPath: string, isExists: boolean): Promise<void> {
+    const warthogProjectPath = path.resolve(process.cwd(), 'api-preview');
+
+    createDir(warthogProjectPath);
+    process.chdir(warthogProjectPath);
+
+    await new WarthogWrapper(this, schemaPath).generateAPIPreview();
+
+    fs.copyFileSync(
+      path.resolve(warthogProjectPath, Codegen.generatedFolderName, 'schema.graphql'),
+      path.resolve('../../apipreview.graphql')
+    );
+    // if 'generated' folder was already there dont delete it otherwise delete
+    if (!isExists) {
+      debug('Removing unused files...');
+      fs.removeSync(generatedFolderPath);
+      this.log('Generated API Preview file -> apipreview.graphql');
+    }
   }
 }

@@ -43,6 +43,15 @@ export default class WarthogWrapper {
     await this.runMigrations();
   }
 
+  async generateAPIPreview(): Promise<void> {
+    // Order of calling functions is important!!!
+    await this.newProject();
+    this.installDependencies();
+    this.createModels();
+    this.codegen();
+    this.generateQueries();
+  }
+
   async newProject(projectName: string = 'query_node') {
     await warthogCli.run(`new ${projectName}`);
 
