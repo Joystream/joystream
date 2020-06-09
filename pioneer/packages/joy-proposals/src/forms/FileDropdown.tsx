@@ -100,6 +100,7 @@ type FileDropdownProps<FormValuesT> = {
   error: string | undefined;
   name: keyof FormValuesT & string;
   setFieldValue: FormikProps<FormValuesT>['setFieldValue'];
+  setFieldTouched: FormikProps<FormValuesT>['setFieldTouched'];
   acceptedFormats: string | string[];
   defaultText: string;
   interpretAs: 'utf-8' | 'binary';
@@ -107,7 +108,7 @@ type FileDropdownProps<FormValuesT> = {
 
 export default function FileDropdown<ValuesT = {}> (props: FileDropdownProps<ValuesT>) {
   const [parsing, setParsing] = useState(false);
-  const { error, name, setFieldValue, acceptedFormats, defaultText, interpretAs } = props;
+  const { error, name, setFieldValue, setFieldTouched, acceptedFormats, defaultText, interpretAs } = props;
   return (
     <Dropzone
       onDropAccepted={async acceptedFiles => {
@@ -119,6 +120,7 @@ export default function FileDropdown<ValuesT = {}> (props: FileDropdownProps<Val
           contents = await parseFileAsBinary(acceptedFiles[0]);
         }
         setFieldValue(name, contents, true);
+        setFieldTouched(name, true);
         setParsing(false);
       }}
       multiple={false}
