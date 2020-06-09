@@ -119,6 +119,9 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
   })
 };
 
+const StyledProposalDescription = styled(Card.Description)`
+  font-size: 1.15rem;
+`;
 const ProposalParams = styled.div`
   display: grid;
   font-weight: bold;
@@ -127,7 +130,7 @@ const ProposalParams = styled.div`
   border: 1px solid rgba(0,0,0,.2);
   padding: 1.5rem 1.5rem 1rem 1.25rem;
   position: relative;
-  margin-top: 1.5rem;
+  margin-top: 1.7rem;
   @media screen and (max-width: 767px) {
     grid-template-columns: 1fr;
   }
@@ -149,6 +152,7 @@ const ProposalParamValue = styled.div`
   color: black;
   word-wrap: break-word;
   word-break: break-word;
+  font-size: 1.15rem;
   & .TextProposalContent {
     font-weight: normal;
   }
@@ -176,9 +180,9 @@ export default function Body ({
         <Card.Header>
           <Header as="h1">{title}</Header>
         </Card.Header>
-        <Card.Description>
+        <StyledProposalDescription>
           <ReactMarkdown source={description} linkTarget='_blank' />
-        </Card.Description>
+        </StyledProposalDescription>
         <ProposalParams>
           <ParamsHeader>Parameters:</ParamsHeader>
           { Object.entries(parsedParams).map(([paramName, paramValue]) => (
