@@ -1,14 +1,5 @@
 import { FTSQuery } from './FTSQuery';
-
-// Available types for model code generation
-export const availableTypes: { [key: string]: string } = {
-    String: '',
-    Int: 'int',
-    Boolean: 'bool',
-    Date: 'date',
-    Float: 'float'
-  };
-  
+import { availableTypes } from './ScalarTypes'
 
 export class WarthogModel {
     private  _types: ObjectType[];
@@ -21,7 +12,9 @@ export class WarthogModel {
         this._ftsQueries = [];
     }
 
-    addObjectType(type: ObjectType):void {
+    addObjectType(type: ObjectType): void {
+        if (!type.isEntity) return;
+
         this._types.push(type);
         this._name2type[type.name] = type; 
     }
@@ -134,6 +127,7 @@ export class WarthogModel {
 export interface ObjectType {
     name: string;
     fields: Field[];
+    isEntity: boolean;
 }
 
 
@@ -172,14 +166,14 @@ export class Field {
      * it adds exclamation mark (!) at then end of string
      */
     format(): string {
-        let column: string;
-        const columnType = this.isBuildinType ? availableTypes[this.type] : this.type;
+    const colon = ':';
+    const columnType: string = this.isBuildinType ? availableTypes[this.type] : this.type;
+    let column: string = columnType === 'string' ? this.name : this.name.concat(colon, columnType);
 
-        if (columnType === '') {
-        // String type is provided implicitly
-        column = this.name;
-        } else {
-        column = this.name + ':' + columnType;
+    if (!this.isBuildinType && !this.isList && this.type !== 'otm' && this.type !== 'mto') {
+      column = this.name.concat(colon, 'oto');
+    } else if (this.isBuildinType && this.isList) {
+      column = this.name + colon + 'array' + columnType;
         }
         return this.nullable ? column : column + '!';
     }

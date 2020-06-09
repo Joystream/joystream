@@ -24,6 +24,13 @@ export default interface DatabaseManager {
    * @param options: FindOneOptions<T>
    */
   get<T>(entity: { new (...args: any[]): T }, options: FindOneOptions<T>): Promise<T | undefined>;
+
+  /**
+   * Finds entities that match given options.
+   * @param entity: T
+   * @param options: FindOneOptions<T>
+   */
+  getMany<T>(entity: { new (...args: any[]): T }, options: FindOneOptions<T>): Promise<T[]>;
 }
 
 /**
@@ -41,6 +48,9 @@ export function makeDatabaseManager(entityManager: EntityManager): DatabaseManag
     },
     get: async <T>(entity: { new (...args: any[]): T }, options: FindOneOptions<T>): Promise<T | undefined> => {
       return await entityManager.findOne(entity, options);
+    },
+    getMany: async <T>(entity: { new (...args: any[]): T }, options: FindOneOptions<T>): Promise<T[]> => {
+      return await entityManager.find(entity, options);
     },
   } as DatabaseManager;
 }

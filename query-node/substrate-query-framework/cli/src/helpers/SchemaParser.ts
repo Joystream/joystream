@@ -12,17 +12,9 @@ import * as fs from 'fs-extra';
 import Debug from "debug";
 import { cloneDeep } from 'lodash';
 import { DIRECTIVES } from './SchemaDirective'
+import { SCHEMA_DEFINITIONS_PREAMBLE } from './constant';
 
 const debug = Debug('qnode-cli:schema-parser');
-
-
-// this preamble is added to the schema 
-// in order to pass the SDL validation
-const SCHEMA_DEFINITIONS_PREAMBLE = `
-type Query {
-    _dummy: String # empty queries are not allowed
-}
-`
 
 export type SchemaNode = ObjectTypeDefinitionNode | FieldDefinitionNode | DirectiveNode;
 
