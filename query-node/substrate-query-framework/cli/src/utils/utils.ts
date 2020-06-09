@@ -1,7 +1,7 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
 
-export function createDir(path: string, del: boolean = false, recursive: boolean = false) {
+export function createDir(path: string, del = false, recursive = false) {
   if (!fs.existsSync(path)) {
     fs.mkdirSync(path, { recursive });
   }
@@ -11,7 +11,7 @@ export function createDir(path: string, del: boolean = false, recursive: boolean
   }
 }
 
-export function createFile(path: string, content: string = '', replace: boolean =false) {
+export function createFile(path: string, content = '', replace =false) {
   if (!fs.existsSync(path) || replace) {
     fs.writeFileSync(path, content);
   }

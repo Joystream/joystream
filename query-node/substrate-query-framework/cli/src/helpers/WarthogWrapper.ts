@@ -52,7 +52,7 @@ export default class WarthogWrapper {
     this.generateQueries();
   }
 
-  async newProject(projectName: string = 'query_node') {
+  async newProject(projectName = 'query_node') {
     await warthogCli.run(`new ${projectName}`);
 
     // Override warthog's index.ts file for custom naming strategy
@@ -67,7 +67,7 @@ export default class WarthogWrapper {
     }
 
     // Temporary tslib fix
-    let pkgFile = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    const pkgFile = JSON.parse(fs.readFileSync('package.json', 'utf8'));
     pkgFile.resolutions['tslib'] = '1.11.2';
     pkgFile.scripts['sync'] = 'SYNC=true WARTHOG_DB_SYNCHRONIZE=true ts-node-dev --type-check src/index.ts';
     fs.writeFileSync('package.json', JSON.stringify(pkgFile, null, 2));
