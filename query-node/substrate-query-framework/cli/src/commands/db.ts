@@ -1,5 +1,7 @@
-const cli = require('warthog/dist/cli/cli');
+//require('app-module-path').addPath(`${__dirname}/../node_modules`)
+//const cli = require('warthog/dist/cli/cli');
 import { Command, flags } from '@oclif/command';
+import { cli } from './../index'
 
 export default class DB extends Command {
   static description = 'Database management';
