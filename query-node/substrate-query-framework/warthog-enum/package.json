@@ -1,0 +1,10 @@
+{
+  "name": "warthog-enum",
+  "version": "1.0.0",
+  "description": "Warthog plugin for the enum type support ",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "warthog": "^2.9.2"
+  }
+}
