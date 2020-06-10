@@ -16,7 +16,7 @@ const postObjType = {
         new Field("id", "ID")]
 }
 
-const createModel = () => {
+const createModel = ():WarthogModel => {
     const warthogModel = new WarthogModel();
     warthogModel.addObjectType(threadObjType);
     warthogModel.addObjectType(postObjType);

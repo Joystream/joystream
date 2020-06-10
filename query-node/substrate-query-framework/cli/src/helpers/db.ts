@@ -22,7 +22,7 @@ export function getTypeormConfig(): string {
   return newEnvConfig;
 }
 
-export function getTypeormModelGeneratorConnectionConfig() {
+export function getTypeormModelGeneratorConnectionConfig():string {
   const envConfig = dotenv.parse(fs.readFileSync('.env'));
 
   const command = [
@@ -40,7 +40,7 @@ export function getTypeormModelGeneratorConnectionConfig() {
   return command;
 }
 
-export async function resetLastProcessedEvent() {
+export async function resetLastProcessedEvent(): Promise<void> {
   await createConnection();
   // get a connection and create a new query runner
   const queryRunner = getConnection().createQueryRunner();
@@ -64,7 +64,7 @@ export async function resetLastProcessedEvent() {
   await queryRunner.release();
 }
 
-export async function createSavedEntityEventTable() {
+export async function createSavedEntityEventTable(): Promise<void> {
   const query = `CREATE TABLE "saved_entity_event" (
       "index" integer PRIMARY KEY,
       "eventName" character varying NOT NULL,
