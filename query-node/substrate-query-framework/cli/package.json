@@ -23,7 +23,7 @@
     "tslib": "1.11.2",
     "typeorm-model-generator": "^0.4.2",
     "warthog": "https://github.com/metmirr/warthog/releases/download/v2.9.7/warthog-v2.9.7.tgz",
-    "warthog-enum": "../warthog-enum"
+    "warthog-graph": "../warthog-graph/dist"
   },
   "devDependencies": {
     "@oclif/dev-cli": "^1",
