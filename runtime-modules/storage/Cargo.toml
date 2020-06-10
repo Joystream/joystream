@@ -17,7 +17,6 @@ std = [
 	'primitives/std',
 	'common/std',
 	'membership/std',
-	'roles/std',
 	'bureaucracy/std',
 ]
 
@@ -78,11 +77,6 @@ path = '../membership'
 default_features = false
 package = 'substrate-common-module'
 path = '../common'
-
-[dependencies.roles]
-default_features = false
-package = 'substrate-roles-module'
-path = '../roles'
 
 [dependencies.bureaucracy]
 default_features = false

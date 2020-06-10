@@ -5375,10 +5375,18 @@ dependencies = [
  "sr-io",
  "sr-primitives",
  "sr-std",
+ "srml-balances",
  "srml-support",
  "srml-system",
+ "srml-timestamp",
+ "substrate-bureaucracy-module",
+ "substrate-common-module",
+ "substrate-hiring-module",
+ "substrate-membership-module",
  "substrate-primitives",
- "substrate-roles-module",
+ "substrate-recurring-reward-module",
+ "substrate-stake-module",
+ "substrate-token-mint-module",
 ]
 
 [[package]]
@@ -5461,7 +5469,6 @@ dependencies = [
  "substrate-membership-module",
  "substrate-primitives",
  "substrate-recurring-reward-module",
- "substrate-roles-module",
  "substrate-stake-module",
  "substrate-token-mint-module",
 ]

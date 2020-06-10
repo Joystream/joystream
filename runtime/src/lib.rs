@@ -435,7 +435,6 @@ pub use versioned_store;
 pub use content_working_group as content_wg;
 mod migration;
 use roles::actors;
-use service_discovery::discovery;
 
 /// Alias for ContentId, used in various places.
 pub type ContentId = primitives::H256;
@@ -734,7 +733,7 @@ impl roles::traits::Roles<Runtime> for LookupRoles {
 
         let live_ids: Vec<<Runtime as system::Trait>::AccountId> = ids
             .into_iter()
-            .filter(|id| !<discovery::Module<Runtime>>::is_account_info_expired(id))
+            //            .filter(|id| !<service_discovery::Module<Runtime>>::is_account_info_expired(id)) //TODO : SWG  restore
             .collect();
 
         if live_ids.is_empty() {
@@ -809,19 +808,16 @@ impl bureaucracy::Trait<bureaucracy::Instance2> for Runtime {
 
 impl actors::Trait for Runtime {
     type Event = Event;
-    type OnActorRemoved = HandleActorRemoved;
+    type OnActorRemoved = ();
 }
 
-pub struct HandleActorRemoved {}
-impl actors::ActorRemoved<Runtime> for HandleActorRemoved {
-    fn actor_removed(actor: &<Runtime as system::Trait>::AccountId) {
-        Discovery::remove_account_info(actor);
-    }
+//TODO: SWG -  remove with roles module deletion
+impl actors::ActorRemoved<Runtime> for () {
+    fn actor_removed(_: &AccountId) {}
 }
 
-impl discovery::Trait for Runtime {
+impl service_discovery::Trait for Runtime {
     type Event = Event;
-    type Roles = LookupRoles;
 }
 
 parameter_types! {
@@ -913,10 +909,6 @@ construct_runtime!(
         Members: members::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
         Actors: actors::{Module, Call, Storage, Event<T>, Config},
-        DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
-        DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
-        DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
-        Discovery: discovery::{Module, Call, Storage, Event<T>},
         VersionedStore: versioned_store::{Module, Call, Storage, Event<T>, Config},
         VersionedStorePermissions: versioned_store_permissions::{Module, Call, Storage},
         Stake: stake::{Module, Call, Storage},
@@ -924,6 +916,11 @@ construct_runtime!(
         RecurringRewards: recurringrewards::{Module, Call, Storage},
         Hiring: hiring::{Module, Call, Storage},
         ContentWorkingGroup: content_wg::{Module, Call, Storage, Event<T>, Config<T>},
+        // --- Storage
+        DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
+        DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
+        DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
+        Discovery: service_discovery::{Module, Call, Storage, Event<T>},
         // --- Proposals
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},

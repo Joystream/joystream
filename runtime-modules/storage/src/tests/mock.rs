@@ -3,7 +3,6 @@
 pub use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
 pub use common::currency::GovernanceCurrency;
 use membership::members;
-use roles::actors;
 pub use system;
 
 pub use primitives::{Blake2Hasher, H256};
@@ -32,7 +31,6 @@ impl_outer_event! {
         data_object_type_registry<T>,
         data_directory<T>,
         data_object_storage_registry<T>,
-        actors<T>,
         balances<T>,
         members<T>,
         bureaucracy_mod Instance2 <T>,
@@ -219,15 +217,6 @@ impl hiring::Trait for Test {
     type StakeHandlerProvider = hiring::Module<Self>;
 }
 
-impl actors::Trait for Test {
-    type Event = MetaEvent;
-    type OnActorRemoved = ();
-}
-
-impl actors::ActorRemoved<Test> for () {
-    fn actor_removed(_: &u64) {}
-}
-
 pub struct ExtBuilder {
     first_data_object_type_id: u64,
     first_content_id: u64,
@@ -297,7 +286,6 @@ pub type TestDataObjectTypeRegistry = data_object_type_registry::Module<Test>;
 pub type TestDataObjectType = data_object_type_registry::DataObjectType;
 pub type TestDataDirectory = data_directory::Module<Test>;
 pub type TestDataObjectStorageRegistry = data_object_storage_registry::Module<Test>;
-pub type TestActors = actors::Module<Test>;
 
 pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
     ExtBuilder::default()
@@ -306,15 +294,7 @@ pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
         .first_relationship_id(TEST_FIRST_RELATIONSHIP_ID)
         .first_metadata_id(TEST_FIRST_METADATA_ID)
         .build()
-        .execute_with(|| {
-            let roles: Vec<actors::Role> = vec![actors::Role::StorageProvider];
-            assert!(
-                TestActors::set_available_roles(system::RawOrigin::Root.into(), roles).is_ok(),
-                ""
-            );
-
-            f()
-        })
+        .execute_with(|| f())
 }
 
 pub(crate) fn hire_storage_provider() -> (u64, u32) {
