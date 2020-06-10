@@ -55,7 +55,7 @@ type ProposalPreviewListProps = {
 const FilterContainer = styled.div`
   display: flex;
   justify-content: flex-end;
-`
+`;
 const FilterOption = styled.span`
   display: inline-flex;
   align-items: center;
