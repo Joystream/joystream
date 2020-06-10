@@ -56,16 +56,16 @@ impl Default for DeltaMode {
     }
 }
 
+/// Representing delta on which respective `InboundReferenceCounter` should be changed.
+/// Direction of performed operation depends on `DeltaMode`.
 #[derive(Default, Clone, PartialEq, Eq, Copy, Debug)]
 pub struct InboundReferenceCounterDelta {
-    /// Delta of inbound references from another entities
     pub reference_counter: InboundReferenceCounter,
-    /// Delta of inbound references from another entities with `SameOwner` flag set
     pub delta_mode: DeltaMode,
 }
 
 impl InboundReferenceCounterDelta {
-    /// Create simple `InboundReferenceCounterDelta` instance, based on `delta_mode`
+    /// Create simple `InboundReferenceCounterDelta` instance
     pub fn new(reference_counter: u32, same_owner_status: bool, delta_mode: DeltaMode) -> Self {
         Self {
             reference_counter: InboundReferenceCounter::new(reference_counter, same_owner_status),
@@ -73,7 +73,7 @@ impl InboundReferenceCounterDelta {
         }
     }
 
-    pub fn is_delta_mode_equal_to(&self, delta_mode: DeltaMode) -> bool {
+    fn is_delta_mode_equal_to(&self, delta_mode: DeltaMode) -> bool {
         self.delta_mode == delta_mode
     }
 
@@ -104,7 +104,7 @@ impl InboundReferenceCounterDelta {
     }
 }
 
-/// Structure, respresenting entities inbound rc mappings to their respective count for each `entity_id`
+/// Structure, respresenting `entity_id` mappings to their respective `InboundReferenceCounterDelta`
 pub struct EntitiesInboundRcsDelta<T: Trait>(BTreeMap<T::EntityId, InboundReferenceCounterDelta>);
 
 impl<T: Trait> Deref for EntitiesInboundRcsDelta<T> {
@@ -160,7 +160,7 @@ impl<T: Trait> EntitiesInboundRcsDelta<T> {
     }
 
     /// Traverse `EntitiesInboundRcsDelta`, updating each `Entity` respective reference counters
-    pub fn update_entities_rc(self) {
+    pub fn update_entities_rcs(self) {
         self.0
             .into_iter()
             .for_each(|(entity_id, inbound_reference_counter_delta)| {

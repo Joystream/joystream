@@ -1214,14 +1214,14 @@ decl_module! {
                 }
             });
 
-            // Entities, which rc should be increased
+            // Entities, which rc should be updated
             let mut entities_inbound_rcs_delta = EntitiesInboundRcsDelta::default();
 
             Self::calculate_entities_inbound_rcs_delta(
                 &class_properties, &property_values, &mut entities_inbound_rcs_delta, DeltaMode::Increment
             );
 
-            entities_inbound_rcs_delta.update_entities_rc();
+            entities_inbound_rcs_delta.update_entities_rcs();
 
             // Trigger event
             Self::deposit_event(RawEvent::EntitySchemaSupportAdded(actor, entity_id, schema_id));
@@ -1270,7 +1270,7 @@ decl_module! {
                 let entities_inbound_rcs_delta =
                     Self::get_updated_inbound_rcs_delta(class_properties, entity_property_values, &new_property_values);
 
-                entities_inbound_rcs_delta.update_entities_rc();
+                entities_inbound_rcs_delta.update_entities_rcs();
 
                 // Trigger event
                 Self::deposit_event(RawEvent::EntityPropertyValuesUpdated(actor, entity_id));
@@ -1554,8 +1554,7 @@ impl<T: Trait> Module<T> {
             .collect()
     }
 
-    /// Get mapping of entities rcs, involved in operations performed.
-    /// Based on provided `class_properties` and `property_values`.
+    /// Calculate `entities_inbound_rcs_delta`, based on values provided and chosen `DeltaMode`
     fn calculate_entities_inbound_rcs_delta(
         class_properties: &[Property<T>],
         property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
@@ -1575,12 +1574,13 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    /// Get `entity_ids_to_update_rcs`, based on entities involved into update process
+    /// Get `updated_inbound_rcs_delta`, based on entities involved into update process
     pub fn get_updated_inbound_rcs_delta(
         class_properties: Vec<Property<T>>,
         entity_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
         new_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> EntitiesInboundRcsDelta<T> {
+        
         // Entities, which rcs should be updated
         let mut updated_inbound_rcs_delta = EntitiesInboundRcsDelta::<T>::default();
 
