@@ -1,6 +1,6 @@
 [package]
 name = 'substrate-service-discovery-module'
-version = '1.0.0'
+version = '2.0.0'
 authors = ['Joystream contributors']
 edition = '2018'
 
