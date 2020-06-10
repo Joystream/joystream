@@ -1042,11 +1042,12 @@ fn fill_default_worker_position() -> u64 {
             payout_interval: None,
         }),
         None,
+        true,
     )
 }
 
 fn fill_worker_position_with_no_reward() -> u64 {
-    fill_worker_position(None, None)
+    fill_worker_position(None, None, true)
 }
 
 fn fill_worker_position_with_stake(stake: u64) -> u64 {
@@ -1057,18 +1058,22 @@ fn fill_worker_position_with_stake(stake: u64) -> u64 {
             payout_interval: None,
         }),
         Some(stake),
+        true,
     )
 }
 
 fn fill_worker_position(
     reward_policy: Option<RewardPolicy<u64, u64>>,
     role_stake: Option<u64>,
+    setup_environment: bool,
 ) -> u64 {
-    let lead_account_id = 1;
+    if setup_environment {
+        let lead_account_id = 1;
 
-    SetLeadFixture::set_lead(lead_account_id);
-    increase_total_balance_issuance_using_account_id(1, 10000);
-    setup_members(2);
+        SetLeadFixture::set_lead(lead_account_id);
+        increase_total_balance_issuance_using_account_id(1, 10000);
+        setup_members(2);
+    }
 
     let mut add_worker_opening_fixture = AddWorkerOpeningFixture::default();
     if let Some(stake) = role_stake.clone() {
@@ -1084,18 +1089,14 @@ fn fill_worker_position(
             });
     }
 
-    add_worker_opening_fixture.call_and_assert(Ok(()));
-
-    let opening_id = 0; // newly created opening
+    let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
 
     let mut appy_on_worker_opening_fixture =
         ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
     if let Some(stake) = role_stake.clone() {
         appy_on_worker_opening_fixture = appy_on_worker_opening_fixture.with_role_stake(stake);
     }
-    appy_on_worker_opening_fixture.call_and_assert(Ok(()));
-
-    let application_id = 0; // newly created application
+    let application_id = appy_on_worker_opening_fixture.call_and_assert(Ok(()));
 
     let begin_review_worker_applications_fixture =
         BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
@@ -1111,9 +1112,7 @@ fn fill_worker_position(
         fill_worker_opening_fixture = fill_worker_opening_fixture.with_reward_policy(reward_policy);
     }
 
-    fill_worker_opening_fixture.call_and_assert(Ok(()));
-
-    let worker_id = 0; // newly created worker
+    let worker_id = fill_worker_opening_fixture.call_and_assert(Ok(()));
 
     worker_id
 }
@@ -1527,5 +1526,27 @@ fn slash_worker_stake_fails_with_not_set_lead() {
         let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
 
         slash_stake_fixture.call_and_assert(Err(Error::CurrentLeadNotSet));
+    });
+}
+
+#[test]
+fn get_all_worker_ids_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let worker_ids = Bureaucracy1::get_all_worker_ids();
+        assert_eq!(worker_ids, Vec::new());
+
+        let worker_id1 = fill_worker_position(None, None, true);
+        let worker_id2 = fill_worker_position(None, None, false);
+
+        let mut expected_ids = vec![worker_id1, worker_id2];
+        expected_ids.sort();
+
+        let mut worker_ids = Bureaucracy1::get_all_worker_ids();
+        worker_ids.sort();
+        assert_eq!(worker_ids, expected_ids);
+
+        <crate::WorkerById<Test, crate::Instance1>>::remove(worker_id1);
+        let worker_ids = Bureaucracy1::get_all_worker_ids();
+        assert_eq!(worker_ids, vec![worker_id2]);
     });
 }

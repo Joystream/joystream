@@ -975,6 +975,13 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Ok(())
     }
 
+    /// Returns all existing worker id list.
+    pub fn get_all_worker_ids() -> Vec<WorkerId<T>> {
+        <WorkerById<T, I>>::enumerate()
+            .map(|(worker_id, _)| worker_id)
+            .collect()
+    }
+
     fn ensure_lead_is_set() -> Result<Lead<MemberId<T>, T::AccountId>, Error> {
         let lead = <CurrentLead<T, I>>::get();
 
