@@ -73,8 +73,8 @@ impl InboundReferenceCounterDelta {
         }
     }
 
-    pub fn is_delta_mode_equal_to(&self, delta_mode: &DeltaMode) -> bool {
-        self.delta_mode == *delta_mode
+    pub fn is_delta_mode_equal_to(&self, delta_mode: DeltaMode) -> bool {
+        self.delta_mode == delta_mode
     }
 
     fn is_empty(&self) -> bool {
@@ -138,7 +138,7 @@ impl<T: Trait> EntitiesInboundRcsDelta<T> {
         for entity_id in entity_ids {
             match self.get_mut(&entity_id) {
                 Some(inbound_reference_counter_delta)
-                    if inbound_reference_counter_delta.is_delta_mode_equal_to(&delta_mode) =>
+                    if inbound_reference_counter_delta.is_delta_mode_equal_to(delta_mode) =>
                 {
                     inbound_reference_counter_delta.increment_entity_rc(same_owner);
                 }
