@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Container, Menu } from 'semantic-ui-react';
+import { Card, Container } from 'semantic-ui-react';
 import styled from 'styled-components';
 
 import ProposalPreview from './ProposalPreview';
@@ -8,6 +8,7 @@ import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
 import { PromiseComponent } from '@polkadot/joy-utils/react/components';
 import { withCalls } from '@polkadot/react-api';
 import { BlockNumber } from '@polkadot/types/interfaces';
+import { Dropdown } from '@polkadot/react-components';
 
 const filters = ['All', 'Active', 'Canceled', 'Approved', 'Rejected', 'Slashed', 'Expired'] as const;
 
@@ -51,6 +52,10 @@ type ProposalPreviewListProps = {
   bestNumber?: BlockNumber;
 };
 
+const FilterOption = styled.span`
+  display: inline-flex;
+  align-items: center;
+`;
 const ProposalFilterCountBadge = styled.span`
   background-color: rgba(0, 0, 0, .3);
   color: #fff;
@@ -70,6 +75,14 @@ const ProposalFilterCountBadge = styled.span`
 
   margin-left: 6px;
 `;
+const StyledDropdown = styled(Dropdown)`
+  padding-left: 0 !important;
+  margin-bottom: 1.75rem;
+
+  label {
+    left: 1.55rem !important;
+  }
+`;
 
 function ProposalPreviewList ({ bestNumber }: ProposalPreviewListProps) {
   const transport = useTransport();
@@ -80,24 +93,27 @@ function ProposalPreviewList ({ bestNumber }: ProposalPreviewListProps) {
   const filteredProposals = proposalsMap.get(activeFilter) as ParsedProposal[];
   const sortedProposals = filteredProposals.sort((p1, p2) => p2.id.cmp(p1.id));
 
+  const filterOptions = filters.map(filter => ({
+    text: (
+      <FilterOption>
+        {filter}
+        <ProposalFilterCountBadge>{(proposalsMap.get(filter) as ParsedProposal[]).length}</ProposalFilterCountBadge>
+      </FilterOption>
+    ),
+    value: filter
+  }));
+
+  const _onChangePrefix = (f: ProposalFilter) => setActiveFilter(f);
+
   return (
     <Container className="Proposal">
       <PromiseComponent error={ error } loading={ loading } message="Fetching proposals...">
-        <Menu tabular className="list-menu">
-          {filters.map((filter, idx) => (
-            <Menu.Item
-              key={`${filter} - ${idx}`}
-              name={filter}
-              active={activeFilter === filter}
-              onClick={() => setActiveFilter(filter)}
-            >
-              {filter}
-              <ProposalFilterCountBadge>
-                {(proposalsMap.get(filter) as ParsedProposal[]).length}
-              </ProposalFilterCountBadge>
-            </Menu.Item>
-          ))}
-        </Menu>
+        <StyledDropdown
+          label="Proposal state"
+          options={filterOptions}
+          value={activeFilter}
+          onChange={_onChangePrefix}
+        />
         {
           sortedProposals.length ? (
             <Card.Group>
