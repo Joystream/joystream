@@ -26,3 +26,9 @@ yarn*
 
 # Compiled WASM code
 *.wasm
+
+# Temporary files
+.tmp/
+
+# Istanbul report output
+**.nyc_output/
