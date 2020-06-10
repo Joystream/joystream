@@ -704,47 +704,6 @@ impl storage::data_object_storage_registry::Trait for Runtime {
     type ContentIdExists = DataDirectory;
 }
 
-fn random_index(upper_bound: usize) -> usize {
-    let seed = RandomnessCollectiveFlip::random_seed();
-    let mut rand: u64 = 0;
-    for offset in 0..8 {
-        rand += (seed.as_ref()[offset] as u64) << offset;
-    }
-    (rand as usize) % upper_bound
-}
-
-pub struct LookupRoles {}
-impl roles::traits::Roles<Runtime> for LookupRoles {
-    fn is_role_account(account_id: &<Runtime as system::Trait>::AccountId) -> bool {
-        <actors::Module<Runtime>>::is_role_account(account_id)
-    }
-
-    fn account_has_role(
-        account_id: &<Runtime as system::Trait>::AccountId,
-        role: actors::Role,
-    ) -> bool {
-        <actors::Module<Runtime>>::account_has_role(account_id, role)
-    }
-
-    fn random_account_for_role(
-        role: actors::Role,
-    ) -> Result<<Runtime as system::Trait>::AccountId, &'static str> {
-        let ids = <actors::AccountIdsByRole<Runtime>>::get(role);
-
-        let live_ids: Vec<<Runtime as system::Trait>::AccountId> = ids
-            .into_iter()
-            //            .filter(|id| !<service_discovery::Module<Runtime>>::is_account_info_expired(id)) //TODO : SWG  restore
-            .collect();
-
-        if live_ids.is_empty() {
-            Err("no staked account found")
-        } else {
-            let index = random_index(live_ids.len());
-            Ok(live_ids[index].clone())
-        }
-    }
-}
-
 impl members::Trait for Runtime {
     type Event = Event;
     type MemberId = u64;

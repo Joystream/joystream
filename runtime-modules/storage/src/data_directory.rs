@@ -34,8 +34,6 @@ use crate::data_object_type_registry;
 use crate::data_object_type_registry::IsActiveDataObjectType;
 use crate::{MemberId, StorageBureaucracy, StorageProviderId};
 
-// TODO: create a StorageProviderHelper implementation
-
 /// The _Data directory_ main _Trait_.
 pub trait Trait:
     timestamp::Trait
