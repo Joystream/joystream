@@ -2,8 +2,8 @@ import { cosmiconfig } from 'cosmiconfig';
 import * as path from 'path';
 import * as prettier from 'prettier';
 
-import { Toolbox } from 'gluegun/build/types/domain/toolbox';
 import { GluegunToolbox } from 'gluegun';
+import { Toolbox } from 'gluegun/build/types/domain/toolbox';
 
 export default {
   name: 'generate',
@@ -54,13 +54,23 @@ export default {
       warthogPathInSourceFiles = path.relative(destFolder, warthogAbsolutePath);
     }
 
+    const getRelativePathForModel = (name: string): string => {
+      // relative import path
+      return path.join(
+        '..',
+        toolbox.strings.kebabCase(name),
+        `${toolbox.strings.camelCase(name)}.model`
+      );
+    };
+
     const props = {
       ...names,
       pascalCase: toolbox.strings.pascalCase,
       camelCase: toolbox.strings.camelCase,
       fields: array ? processFields(array.slice(1)) : [],
       generatedFolderRelativePath,
-      warthogPathInSourceFiles
+      warthogPathInSourceFiles,
+      getRelativePathForModel
     };
 
     await generateFile(
