@@ -17,6 +17,7 @@ import { keyPairDetails, FlowModal, ProgressSteps } from './apply';
 
 import { OpeningStakeAndApplicationStatus } from '../tabs/Opportunities';
 import { Min, Step, Sum } from '../balances';
+import { WorkingGroups } from '../working_groups';
 
 type State = {
   // Input data from state
@@ -196,6 +197,9 @@ export class ApplyController extends Controller<State, ITransport> {
 
 export const ApplyView = View<ApplyController, State>(
   (state, controller, params) => {
+    if (params.get('group') !== WorkingGroups.ContentCurators) {
+      return <h1>Applying not yet implemented for this group!</h1>;
+    }
     controller.findOpening(params.get('id'));
     return (
       <Container className="apply-flow">
