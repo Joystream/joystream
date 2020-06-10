@@ -52,6 +52,10 @@ type ProposalPreviewListProps = {
   bestNumber?: BlockNumber;
 };
 
+const FilterContainer = styled.div`
+  display: flex;
+  justify-content: flex-end;
+`
 const FilterOption = styled.span`
   display: inline-flex;
   align-items: center;
@@ -76,12 +80,10 @@ const ProposalFilterCountBadge = styled.span`
   margin-left: 6px;
 `;
 const StyledDropdown = styled(Dropdown)`
-  padding-left: 0 !important;
-  margin-bottom: 1.75rem;
-
-  label {
-    left: 1.55rem !important;
+  .dropdown {
+    width: 200px;
   }
+  margin-bottom: 1.75rem;
 `;
 
 function ProposalPreviewList ({ bestNumber }: ProposalPreviewListProps) {
@@ -108,12 +110,14 @@ function ProposalPreviewList ({ bestNumber }: ProposalPreviewListProps) {
   return (
     <Container className="Proposal">
       <PromiseComponent error={ error } loading={ loading } message="Fetching proposals...">
-        <StyledDropdown
-          label="Proposal state"
-          options={filterOptions}
-          value={activeFilter}
-          onChange={_onChangePrefix}
-        />
+        <FilterContainer>
+          <StyledDropdown
+            label="Proposal state"
+            options={filterOptions}
+            value={activeFilter}
+            onChange={_onChangePrefix}
+          />
+        </FilterContainer>
         {
           sortedProposals.length ? (
             <Card.Group>
