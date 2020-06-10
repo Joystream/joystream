@@ -7,8 +7,8 @@
       block:
         - name: run docker container
           docker_container:
-            name: "joystream-node"
-            image: "joystream/node"
+            name: "joystream-node-testing"
+            image: "joystream/node-testing"
             ports:
               - "9944:9944"
             entrypoint: ./node --chain=chainspec.json --alice --validator --ws-external --rpc-cors=all
@@ -20,5 +20,5 @@
       always:
         - name: stop docker container
           docker_container:
-            name: "joystream-node"
+            name: "joystream-node-testing"
             state: absent

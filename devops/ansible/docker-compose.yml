@@ -1,7 +1,7 @@
 version: "3"
 services:
   node_alice:
-    image: joystream/node
+    image: joystream/node-testing
     container_name: alice
     entrypoint: ./node --chain=chainspec.json --alice --validator --ws-external --rpc-cors=all
     ports:
@@ -13,7 +13,7 @@ services:
         ipv4_address: 172.28.1.1
 
   node_bob:
-    image: joystream/node
+    image: joystream/node-testing
     container_name: bob
     entrypoint: ./node --chain=chainspec.json --bob --ws-external --rpc-cors=all
     ports:
