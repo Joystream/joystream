@@ -4,18 +4,18 @@ import ReactMarkdown from 'react-markdown';
 import { Icon, Label, SemanticICONS, SemanticCOLORS } from 'semantic-ui-react';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { ChannelAvatar, ChannelAvatarSize } from './ChannelAvatar';
-import { isPublicChannel } from './ChannelHelpers';
-import { isMusicChannel, isVideoChannel, isAccountAChannelOwner, isVerifiedChannel } from './ChannelHelpers';
+import { isPublicChannel, isMusicChannel, isVideoChannel, isAccountAChannelOwner, isVerifiedChannel } from './ChannelHelpers';
+
 import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
 import { nonEmptyStr } from '@polkadot/joy-utils/index';
 import { CurationPanel } from './CurationPanel';
 import { ChannelNameAsLink } from './ChannelNameAsLink';
 
 type ChannelPreviewProps = {
-  channel: ChannelEntity
-  size?: ChannelAvatarSize
-  withSubtitle?: boolean
-  withDescription?: boolean
+  channel: ChannelEntity;
+  size?: ChannelAvatarSize;
+  withSubtitle?: boolean;
+  withDescription?: boolean;
 };
 
 export const ChannelPreview = (props: ChannelPreviewProps) => {
@@ -26,11 +26,11 @@ export const ChannelPreview = (props: ChannelPreviewProps) => {
   let icon: 'music' | 'film' | undefined;
 
   if (isMusicChannel(channel)) {
-    subtitle = 'Music channel',
-    icon = 'music'
+    subtitle = 'Music channel';
+    icon = 'music';
   } else if (isVideoChannel(channel)) {
-    subtitle = 'Video channel'
-    icon = 'film'
+    subtitle = 'Video channel';
+    icon = 'film';
   }
 
   let visibilityIcon: SemanticICONS = 'eye';
@@ -110,5 +110,5 @@ export const ChannelPreview = (props: ChannelPreviewProps) => {
       {/* <ChannelStats channel={channel} /> */}
 
     </div>
-  </>
-}
+  </>;
+};

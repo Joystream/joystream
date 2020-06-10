@@ -1,4 +1,4 @@
-import { Transport } from '@polkadot/joy-utils/index'
+import { Transport } from '@polkadot/joy-utils/index';
 import { AccountId } from '@polkadot/types/interfaces';
 import { EntityId, Class, ClassName, unifyClassName, ClassIdByNameMap } from '@joystream/types/versioned-store';
 import { MusicTrackType, MusicTrackCodec } from './schemas/music/MusicTrack';
@@ -21,22 +21,22 @@ import { isVideoChannel, isPublicChannel } from './channels/ChannelHelpers';
 import { ValidationConstraint } from '@polkadot/joy-utils/ValidationConstraint';
 
 export interface ChannelValidationConstraints {
-  handle: ValidationConstraint
-  title: ValidationConstraint
-  description: ValidationConstraint
-  avatar: ValidationConstraint
-  banner: ValidationConstraint
+  handle: ValidationConstraint;
+  title: ValidationConstraint;
+  description: ValidationConstraint;
+  avatar: ValidationConstraint;
+  banner: ValidationConstraint;
 }
 
 export interface InternalEntities {
-  languages: LanguageType[]
-  contentLicenses: ContentLicenseType[]
-  curationStatuses: CurationStatusType[]
-  musicGenres: MusicGenreType[]
-  musicMoods: MusicMoodType[]
-  musicThemes: MusicThemeType[]
-  publicationStatuses: PublicationStatusType[]
-  videoCategories: VideoCategoryType[]
+  languages: LanguageType[];
+  contentLicenses: ContentLicenseType[];
+  curationStatuses: CurationStatusType[];
+  musicGenres: MusicGenreType[];
+  musicMoods: MusicMoodType[];
+  musicThemes: MusicThemeType[];
+  publicationStatuses: PublicationStatusType[];
+  videoCategories: VideoCategoryType[];
 }
 
 export const EntityCodecByClassNameMap = {
@@ -52,100 +52,99 @@ export const EntityCodecByClassNameMap = {
   MusicTrack: MusicTrackCodec,
   PublicationStatus: PublicationStatusCodec,
   Video: VideoCodec,
-  VideoCategory: VideoCategoryCodec,
-}
+  VideoCategory: VideoCategoryCodec
+};
 
-function insensitiveEq(text1: string, text2: string): boolean {
-  const prepare = (txt: string) => txt.replace(/[\s]+/mg, '').toLowerCase()
-  return prepare(text1) === prepare(text2)
+function insensitiveEq (text1: string, text2: string): boolean {
+  const prepare = (txt: string) => txt.replace(/[\s]+/mg, '').toLowerCase();
+  return prepare(text1) === prepare(text2);
 }
 
 export abstract class MediaTransport extends Transport {
-
   protected cachedClassIdByNameMap: ClassIdByNameMap | undefined
 
-  protected sessionId: number = 0
+  protected sessionId = 0
 
   protected abstract notImplementedYet<T> (): T
 
-  clearSessionCache(): void {}
+  clearSessionCache (): void { /* not implemented */ }
 
-  openSession(): void {
-    this.sessionId++
-    console.info(`Open transport session no. ${this.sessionId}`)
+  openSession (): void {
+    this.sessionId++;
+    console.info(`Open transport session no. ${this.sessionId}`);
   }
 
-  closeSession(): void {
-    this.clearSessionCache()
-    console.info(`Close transport session no. ${this.sessionId}`)
+  closeSession (): void {
+    this.clearSessionCache();
+    console.info(`Close transport session no. ${this.sessionId}`);
   }
 
-  async session<R>(operation: () => R): Promise<R> {
+  async session<R> (operation: () => R | Promise<R>): Promise<R> {
     if (typeof operation !== 'function') {
-      throw new Error('Operation is not a function')
+      throw new Error('Operation is not a function');
     }
-    this.openSession()
-    const res = await operation()
-    this.closeSession()
-    return res
+    this.openSession();
+    const res = await operation();
+    this.closeSession();
+    return res;
   }
 
   abstract allChannels(): Promise<ChannelEntity[]>
 
-  async channelById(id: ChannelId): Promise<ChannelEntity | undefined> {
+  async channelById (id: ChannelId): Promise<ChannelEntity | undefined> {
     return (await this.allChannels())
-      .find(x => id && id.eq(x.id))
+      .find(x => id && id.eq(x.id));
   }
 
-  async channelsByAccount(accountId: AccountId): Promise<ChannelEntity[]> {
+  async channelsByAccount (accountId: AccountId): Promise<ChannelEntity[]> {
     return (await this.allChannels())
-      .filter(x => accountId && accountId.eq(x.roleAccount))
+      .filter(x => accountId && accountId.eq(x.roleAccount));
   }
 
   abstract channelValidationConstraints(): Promise<ChannelValidationConstraints>
 
   abstract allClasses(): Promise<Class[]>
 
-  async classByName(className: ClassName): Promise<Class | undefined> {
+  async classByName (className: ClassName): Promise<Class | undefined> {
     return (await this.allClasses())
-      .find((x) => className === unifyClassName(x.name))
+      .find((x) => className === unifyClassName(x.name));
   }
 
-  async classIdByNameMap(): Promise<ClassIdByNameMap> {
+  async classIdByNameMap (): Promise<ClassIdByNameMap> {
     if (!this.cachedClassIdByNameMap) {
-      const map: ClassIdByNameMap = {}
-      const classes = await this.allClasses()
+      const map: ClassIdByNameMap = {};
+      const classes = await this.allClasses();
       classes.forEach((c) => {
-        const className = unifyClassName(c.name)
-        map[className] = c.id
-      })
-      this.cachedClassIdByNameMap = map
+        const className = unifyClassName(c.name);
+        map[className] = c.id;
+      });
+      this.cachedClassIdByNameMap = map;
     }
-    return this.cachedClassIdByNameMap
+    return this.cachedClassIdByNameMap;
   }
 
   abstract featuredContent(): Promise<FeaturedContentType | undefined>
 
-  async topVideo(): Promise<VideoType | undefined> {
-    const content = await this.featuredContent()
-    const topVideoId = content?.topVideo as unknown as number | undefined
-    return !topVideoId ? undefined : await this.videoById(new EntityId(topVideoId))
+  async topVideo (): Promise<VideoType | undefined> {
+    const content = await this.featuredContent();
+    const topVideoId = content?.topVideo as unknown as number | undefined;
+    return !topVideoId ? undefined : await this.videoById(new EntityId(topVideoId));
   }
 
-  async featuredVideos(): Promise<VideoType[]> {
-    const content = await this.featuredContent()
-    const videoIds = (content?.featuredVideos || []) as unknown as number[]
+  async featuredVideos (): Promise<VideoType[]> {
+    const content = await this.featuredContent();
+    const videoIds = (content?.featuredVideos || []) as unknown as number[];
     const videos = await Promise.all(videoIds.map((id) =>
-      this.videoById(new EntityId(id))))
-    return videos.filter(x => x !== undefined) as VideoType[]
+      this.videoById(new EntityId(id))));
+    return videos.filter(x => x !== undefined) as VideoType[];
   }
 
-  async featuredAlbums(): Promise<MusicAlbumType[]> {
-    const content = await this.featuredContent()
-    const albumIds = (content?.featuredAlbums || []) as unknown as EntityId[]
+  async featuredAlbums (): Promise<MusicAlbumType[]> {
+    const content = await this.featuredContent();
+    const albumIds = (content?.featuredAlbums || []) as unknown as EntityId[];
     const albums = await Promise.all(albumIds.map((id) =>
-      this.musicAlbumById(new EntityId(id))))
-    return albums.filter(x => x !== undefined) as MusicAlbumType[]
+      this.musicAlbumById(new EntityId(id))));
+    return albums.filter(x => x !== undefined) as MusicAlbumType[];
   }
 
   abstract allMediaObjects(): Promise<MediaObjectType[]>
@@ -156,109 +155,108 @@ export abstract class MediaTransport extends Transport {
 
   abstract allMusicAlbums(): Promise<MusicAlbumType[]>
 
-  async videosByChannelId(channelId: ChannelId, limit?: number, additionalFilter?: (x: VideoType) => boolean): Promise<VideoType[]> {
+  async videosByChannelId (channelId: ChannelId, limit?: number, additionalFilter?: (x: VideoType) => boolean): Promise<VideoType[]> {
     let videos = (await this.allVideos())
       .filter(x => channelId && channelId.eq(x.channelId) && (additionalFilter || (() => true))(x))
-      .sort(x => -1 * x.id)
+      .sort(x => -1 * x.id);
 
     if (limit && limit > 0) {
-      videos = videos.slice(0, limit)
+      videos = videos.slice(0, limit);
     }
 
-    return videos
+    return videos;
   }
 
-  async videosByAccount(accountId: AccountId): Promise<VideoType[]> {
-    const accountChannels = await this.channelsByAccount(accountId)
-    const accountChannelIds = new Set(accountChannels.map(x => x.id))
+  async videosByAccount (accountId: AccountId): Promise<VideoType[]> {
+    const accountChannels = await this.channelsByAccount(accountId);
+    const accountChannelIds = new Set(accountChannels.map(x => x.id));
 
     return (await this.allVideos())
-      .filter(x => x.channelId && accountChannelIds.has(x.channelId))
+      .filter(x => x.channelId && accountChannelIds.has(x.channelId));
   }
 
-  async mediaObjectById(id: EntityId): Promise<MediaObjectType | undefined> {
+  async mediaObjectById (id: EntityId): Promise<MediaObjectType | undefined> {
     return (await this.allMediaObjects())
-      .find(x => id && id.eq(x.id))
+      .find(x => id && id.eq(x.id));
   }
 
-  async videoById(id: EntityId): Promise<VideoType | undefined> {
+  async videoById (id: EntityId): Promise<VideoType | undefined> {
     return (await this.allVideos())
-      .find(x => id && id.eq(x.id))
+      .find(x => id && id.eq(x.id));
   }
 
-  async musicTrackById(id: EntityId): Promise<MusicTrackType | undefined> {
+  async musicTrackById (id: EntityId): Promise<MusicTrackType | undefined> {
     return (await this.allMusicTracks())
-      .find(x => id && id.eq(x.id))
+      .find(x => id && id.eq(x.id));
   }
 
-  async musicAlbumById(id: EntityId): Promise<MusicAlbumType | undefined> {
+  async musicAlbumById (id: EntityId): Promise<MusicAlbumType | undefined> {
     return (await this.allMusicAlbums())
-      .find(x => id && id.eq(x.id))
+      .find(x => id && id.eq(x.id));
   }
 
-  async allPublicChannels(): Promise<ChannelEntity[]> {
+  async allPublicChannels (): Promise<ChannelEntity[]> {
     return (await this.allChannels())
-      .filter(isPublicChannel)
+      .filter(isPublicChannel);
   }
 
-  async allVideoChannels(): Promise<ChannelEntity[]> {
+  async allVideoChannels (): Promise<ChannelEntity[]> {
     return (await this.allChannels())
-      .filter(isVideoChannel)
+      .filter(isVideoChannel);
   }
 
-  async allPublicVideoChannels(): Promise<ChannelEntity[]> {
+  async allPublicVideoChannels (): Promise<ChannelEntity[]> {
     return (await this.allVideoChannels())
       .filter(isPublicChannel)
-      .sort(x => -1 * x.id)
+      .sort(x => -1 * x.id);
   }
 
-  async latestPublicVideoChannels(limit: number = 6): Promise<ChannelEntity[]> {
-    return (await this.allPublicVideoChannels()).slice(0, limit)
+  async latestPublicVideoChannels (limit = 6): Promise<ChannelEntity[]> {
+    return (await this.allPublicVideoChannels()).slice(0, limit);
   }
 
-  async allPublicVideos(): Promise<VideoType[]> {
-
+  async allPublicVideos (): Promise<VideoType[]> {
     const idOfPublicPS = (await this.allPublicationStatuses())
       .find(x =>
         insensitiveEq(x.value, 'Public')
-      )?.id
+      )?.id;
 
     const idsOfCuratedCS = (await this.allCurationStatuses())
       .filter(x =>
         insensitiveEq(x.value, 'Under review') ||
         insensitiveEq(x.value, 'Removed')
-      ).map(x => x.id)
+      ).map(x => x.id);
 
     const isPublicAndNotCurated = (video: VideoType) => {
-      const isPublic = video.publicationStatus.id === idOfPublicPS
-      const isNotCurated = idsOfCuratedCS.indexOf(video.curationStatus?.id || -1) < 0
-      const isPubChannel = video.channel ? isPublicChannel(video.channel) : true
-      return isPublic && isNotCurated && isPubChannel
-    }
+      const isPublic = video.publicationStatus.id === idOfPublicPS;
+      const isNotCurated = !idsOfCuratedCS.includes(video.curationStatus?.id || -1);
+      const isPubChannel = video.channel ? isPublicChannel(video.channel) : true;
+      return isPublic && isNotCurated && isPubChannel;
+    };
 
     return (await this.allVideos())
       .filter(isPublicAndNotCurated)
-      .sort(x => -1 * x.id)
+      .sort(x => -1 * x.id);
   }
 
-  async latestPublicVideos(limit: number = 12): Promise<VideoType[]> {
-    return (await this.allPublicVideos()).slice(0, limit)
+  async latestPublicVideos (limit = 12): Promise<VideoType[]> {
+    return (await this.allPublicVideos()).slice(0, limit);
   }
 
-  async mediaObjectClass() {
-    return await this.classByName('MediaObject')
+  async mediaObjectClass () {
+    return await this.classByName('MediaObject');
   }
 
-  async videoClass() {
-    return await this.classByName('Video')
+  async videoClass () {
+    return await this.classByName('Video');
   }
 
-  async musicTrackClass() {
-    return await this.classByName('MusicTrack')
+  async musicTrackClass () {
+    return await this.classByName('MusicTrack');
   }
 
-  async musicAlbumClass() {
-    return await this.classByName('MusicAlbum')
+  async musicAlbumClass () {
+    return await this.classByName('MusicAlbum');
   }
 
   abstract allContentLicenses(): Promise<ContentLicenseType[]>
@@ -270,7 +268,7 @@ export abstract class MediaTransport extends Transport {
   abstract allPublicationStatuses(): Promise<PublicationStatusType[]>
   abstract allVideoCategories(): Promise<VideoCategoryType[]>
 
-  async allInternalEntities(): Promise<InternalEntities> {
+  async allInternalEntities (): Promise<InternalEntities> {
     return {
       contentLicenses: await this.allContentLicenses(),
       curationStatuses: await this.allCurationStatuses(),
@@ -280,14 +278,14 @@ export abstract class MediaTransport extends Transport {
       musicThemes: await this.allMusicThemes(),
       publicationStatuses: await this.allPublicationStatuses(),
       videoCategories: await this.allVideoCategories()
-    }
+    };
   }
 
-  async dropdownOptions(): Promise<MediaDropdownOptions> {
+  async dropdownOptions (): Promise<MediaDropdownOptions> {
     const res = new MediaDropdownOptions(
       await this.allInternalEntities()
-    )
-    //console.log('Transport.dropdownOptions', res)
-    return res
+    );
+    // console.log('Transport.dropdownOptions', res)
+    return res;
   }
 }

@@ -116,7 +116,7 @@ const ROLE_PARAMETERS_ENTRY_REQUEST_FEE_MAX_VALUE: u32 = 100_000;
 // reward min value for the 'set storage role parameters' proposal
 const ROLE_PARAMETERS_REWARD_MIN_VALUE: u32 = 0;
 // reward max value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_REWARD_MAX_VALUE: u32 = 1000;
+const ROLE_PARAMETERS_REWARD_MAX_VALUE: u32 = 100_000;
 // council_size min value for the 'set election parameters' proposal
 const ELECTION_PARAMETERS_COUNCIL_SIZE_MIN_VALUE: u32 = 4;
 // council_size max value for the 'set election parameters' proposal

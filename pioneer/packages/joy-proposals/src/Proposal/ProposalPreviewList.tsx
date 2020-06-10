@@ -1,24 +1,24 @@
-import React, { useState } from "react";
-import { Card, Container, Menu } from "semantic-ui-react";
+import React, { useState } from 'react';
+import { Card, Container, Menu } from 'semantic-ui-react';
 
-import ProposalPreview from "./ProposalPreview";
-import { useTransport, ParsedProposal } from "../runtime";
-import { usePromise } from "../utils";
-import PromiseComponent from './PromiseComponent';
-import { withCalls } from "@polkadot/react-api";
-import { BlockNumber } from "@polkadot/types/interfaces";
+import ProposalPreview from './ProposalPreview';
+import { ParsedProposal } from '@polkadot/joy-utils/types/proposals';
+import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
+import { PromiseComponent } from '@polkadot/joy-utils/react/components';
+import { withCalls } from '@polkadot/react-api';
+import { BlockNumber } from '@polkadot/types/interfaces';
 
-const filters = ["All", "Active", "Canceled", "Approved", "Rejected", "Slashed", "Expired"] as const;
+const filters = ['All', 'Active', 'Canceled', 'Approved', 'Rejected', 'Slashed', 'Expired'] as const;
 
 type ProposalFilter = typeof filters[number];
 
-function filterProposals(filter: ProposalFilter, proposals: ParsedProposal[]) {
-  if (filter === "All") {
+function filterProposals (filter: ProposalFilter, proposals: ParsedProposal[]) {
+  if (filter === 'All') {
     return proposals;
-  } else if (filter === "Active") {
+  } else if (filter === 'Active') {
     return proposals.filter((prop: ParsedProposal) => {
       const [activeOrFinalized] = Object.keys(prop.status);
-      return activeOrFinalized === "Active";
+      return activeOrFinalized === 'Active';
     });
   }
 
@@ -32,16 +32,16 @@ function filterProposals(filter: ProposalFilter, proposals: ParsedProposal[]) {
   });
 }
 
-function mapFromProposals(proposals: ParsedProposal[]) {
+function mapFromProposals (proposals: ParsedProposal[]) {
   const proposalsMap = new Map<ProposalFilter, ParsedProposal[]>();
 
-  proposalsMap.set("All", proposals);
-  proposalsMap.set("Canceled", filterProposals("Canceled", proposals));
-  proposalsMap.set("Active", filterProposals("Active", proposals));
-  proposalsMap.set("Approved", filterProposals("Approved", proposals));
-  proposalsMap.set("Rejected", filterProposals("Rejected", proposals));
-  proposalsMap.set("Slashed", filterProposals("Slashed", proposals));
-  proposalsMap.set("Expired", filterProposals("Expired", proposals));
+  proposalsMap.set('All', proposals);
+  proposalsMap.set('Canceled', filterProposals('Canceled', proposals));
+  proposalsMap.set('Active', filterProposals('Active', proposals));
+  proposalsMap.set('Approved', filterProposals('Approved', proposals));
+  proposalsMap.set('Rejected', filterProposals('Rejected', proposals));
+  proposalsMap.set('Slashed', filterProposals('Slashed', proposals));
+  proposalsMap.set('Expired', filterProposals('Expired', proposals));
 
   return proposalsMap;
 }
@@ -50,10 +50,10 @@ type ProposalPreviewListProps = {
   bestNumber?: BlockNumber;
 };
 
-function ProposalPreviewList({ bestNumber }: ProposalPreviewListProps) {
+function ProposalPreviewList ({ bestNumber }: ProposalPreviewListProps) {
   const transport = useTransport();
-  const [proposals, error, loading] = usePromise<ParsedProposal[]>(() => transport.proposals(), []);
-  const [activeFilter, setActiveFilter] = useState<ProposalFilter>("All");
+  const [proposals, error, loading] = usePromise<ParsedProposal[]>(() => transport.proposals.proposals(), []);
+  const [activeFilter, setActiveFilter] = useState<ProposalFilter>('All');
 
   const proposalsMap = mapFromProposals(proposals);
   const filteredProposals = proposalsMap.get(activeFilter) as ParsedProposal[];
@@ -78,13 +78,13 @@ function ProposalPreviewList({ bestNumber }: ProposalPreviewListProps) {
                 <ProposalPreview key={`${prop.title}-${idx}`} proposal={prop} bestNumber={bestNumber} />
               ))}
             </Card.Group>
-          ) : `There are currently no ${ activeFilter !== 'All' ? activeFilter.toLocaleLowerCase() : 'submitted' } proposals.`
+          ) : `There are currently no ${activeFilter !== 'All' ? activeFilter.toLocaleLowerCase() : 'submitted'} proposals.`
         }
       </PromiseComponent>
     </Container>
   );
 }
 
-export default withCalls<ProposalPreviewListProps>(["derive.chain.bestNumber", { propName: "bestNumber" }])(
+export default withCalls<ProposalPreviewListProps>(['derive.chain.bestNumber', { propName: 'bestNumber' }])(
   ProposalPreviewList
 );

@@ -10,5 +10,5 @@ export const EditAlbumModal = (props: TracksOfMyMusicAlbumProps) => {
         <TracksOfMyMusicAlbum {...props} />
       </Modal.Description>
     </Modal.Content>
-  </Modal>
-}
+  </Modal>;
+};

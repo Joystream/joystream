@@ -200,6 +200,10 @@ export abstract class EntityCodec<T extends PlainEntity> {
       id: entity.id.toNumber()
     }
 
+    if (!entity.in_class_schema_indexes.toArray().length) {
+		throw new Error(`No schema support exists for entity! Entity id: ${res.id}`);
+	}
+
     for (const v of entity.entity_values) {
       const propIdx = v.in_class_index.toNumber();
       const propName = this.propIndexToNameMap.get(propIdx);

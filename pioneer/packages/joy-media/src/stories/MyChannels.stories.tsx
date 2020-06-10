@@ -11,24 +11,24 @@ import { ChannelId } from '@joystream/types/content-working-group';
 import { AccountIdSamples } from './data/AccountIdSamples';
 
 export default {
-	title: 'Media | My channels',
-	decorators: [ withMockTransport ],
+  title: 'Media | My channels',
+  decorators: [withMockTransport]
 };
 
 // TODO pass to mocked MyMembershipContext provider via Stories decorators:
 const accountId = new GenericAccountId(AccountIdSamples.Alice);
 
 export const DefaultState = () =>
-	<ChannelsByOwner accountId={accountId} />;
+  <ChannelsByOwner accountId={accountId} />;
 
 export const ChannelCreationSuspended = () =>
-	<ChannelsByOwner accountId={accountId} suspended={true} />;
+  <ChannelsByOwner accountId={accountId} suspended={true} />;
 
 export const YouHaveChannels = () =>
-	<ChannelsByOwner accountId={accountId} channels={AllMockChannels} />;
+  <ChannelsByOwner accountId={accountId} channels={AllMockChannels} />;
 
 export const DefaultEditForm = () =>
-	<EditForm />;
+  <EditForm />;
 
 export const MockEditFormView = () =>
-	<EditChannelView id={new ChannelId(1)} />;
+  <EditChannelView id={new ChannelId(1)} />;

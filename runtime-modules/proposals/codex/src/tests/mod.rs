@@ -1053,7 +1053,7 @@ fn create_set_storage_role_parameters_proposal_fails_with_invalid_parameters() {
         );
 
         role_parameters = working_role_parameters;
-        role_parameters.reward = 1001;
+        role_parameters.reward = 100_000;
         assert_failed_set_storage_parameters_call(
             role_parameters,
             Error::InvalidStorageRoleParameterReward,

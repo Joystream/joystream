@@ -20,6 +20,6 @@ const values = [
 ];
 
 export const AllVideoCategories: VideoCategoryType[] =
-  values.map(value => ({ id: newEntityId(), value })) as unknown as VideoCategoryType[] // A hack to fix TS compilation.
+  values.map(value => ({ id: newEntityId(), value })) as unknown as VideoCategoryType[]; // A hack to fix TS compilation.
 
 export const VideoCategory = AllVideoCategories[0];

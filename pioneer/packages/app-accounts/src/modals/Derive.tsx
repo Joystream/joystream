@@ -11,13 +11,13 @@ import React, { useContext, useEffect, useState } from 'react';
 import { AddressRow, Button, Input, InputAddress, Modal, Password, StatusContext } from '@polkadot/react-components';
 import { useDebounce } from '@polkadot/react-components/hooks';
 import keyring from '@polkadot/ui-keyring';
-import { isPasswordValid } from '@polkadot/joy-utils/accounts';
+import { isPasswordValid, downloadAccount } from '@polkadot/joy-utils/accounts';
 import { keyExtractPath } from '@polkadot/util-crypto';
 
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 
 import translate from '../translate';
-import { downloadAccount } from '@polkadot/joy-utils/accounts';
+
 import CreateConfirmation from './CreateConfirmation';
 
 interface Props extends I18nProps {
@@ -82,7 +82,7 @@ function Derive ({ className, from, onClose, t }: Props): React.ReactElement {
   const [suri, setSuri] = useState('');
   const debouncedSuri = useDebounce(suri);
   const isValid = !!address && !deriveError && isNameValid && isPassValid;
-  const context = useMyAccount()
+  const context = useMyAccount();
 
   useEffect((): void => {
     setIsLocked(source.isLocked);
@@ -122,7 +122,7 @@ function Derive ({ className, from, onClose, t }: Props): React.ReactElement {
     }
 
     const status = createAccount(source, suri, name, password, t('created account'));
-    context.set(status.account as string)
+    context.set(status.account as string);
 
     _toggleConfirmation();
     queueAction(status);

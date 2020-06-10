@@ -8,36 +8,33 @@ import { ApiProps } from '@polkadot/react-api/types';
 export const TransportContext = createContext<MediaTransport>(undefined as unknown as MediaTransport);
 
 export const useTransportContext = () =>
-  useContext(TransportContext)
+  useContext(TransportContext);
 
 export const MockTransportProvider = (props: React.PropsWithChildren<{}>) =>
   <TransportContext.Provider value={new MockTransport()}>
     {props.children}
-  </TransportContext.Provider>
+  </TransportContext.Provider>;
 
 export const SubstrateTransportProvider = (props: React.PropsWithChildren<{}>) => {
   const api: ApiProps = useContext(ApiContext);
-  const [ transport, setTransport ] = useState<SubstrateTransport>()
-  const [ loaded, setLoaded ] = useState<boolean>()
-  
+  const [transport, setTransport] = useState<SubstrateTransport>();
+  const [loaded, setLoaded] = useState<boolean>();
+
   useEffect(() => {
-    const load = async () => {
-      if (!loaded && api && api.isApiReady) {
-        setTransport(new SubstrateTransport(api))
-        setLoaded(true)
-      }
+    if (!loaded && api && api.isApiReady) {
+      setTransport(new SubstrateTransport(api));
+      setLoaded(true);
     }
-    load()
-  }, [loaded])
+  }, [loaded]);
 
   if (!transport) {
     // Substrate API is not ready yet.
-    return null
+    return null;
   }
 
   return (
     <TransportContext.Provider value={transport}>
       {props.children}
     </TransportContext.Provider>
-  )
-}
+  );
+};

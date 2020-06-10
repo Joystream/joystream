@@ -6,7 +6,7 @@ import { withCalls, withMulti } from '@polkadot/react-api/with';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 
 type OnlySudoProps = {
-  sudo?: AccountId
+  sudo?: AccountId;
 };
 
 function OnlySudo<P extends OnlySudoProps> (Component: React.ComponentType<P>) {
@@ -32,8 +32,8 @@ function OnlySudo<P extends OnlySudoProps> (Component: React.ComponentType<P>) {
 }
 
 export const withOnlySudo = <P extends OnlySudoProps> (Component: React.ComponentType<P>) =>
-withMulti(
-  Component,
-  withCalls(['query.sudo.key', { propName: 'sudo' }]),
-  OnlySudo
-);
+  withMulti(
+    Component,
+    withCalls(['query.sudo.key', { propName: 'sudo' }]),
+    OnlySudo
+  );

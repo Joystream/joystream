@@ -290,10 +290,10 @@ const values = [
   'Wistful',
   'Witty',
   'Wry',
-  'Yearning' 
+  'Yearning'
 ];
 
 export const AllMusicMoods: MusicMoodType[] =
-  values.map(value => ({ id: newEntityId(), value })) as unknown as MusicMoodType[] // A hack to fix TS compilation.
+  values.map(value => ({ id: newEntityId(), value })) as unknown as MusicMoodType[]; // A hack to fix TS compilation.
 
 export const MusicMood = AllMusicMoods[0];

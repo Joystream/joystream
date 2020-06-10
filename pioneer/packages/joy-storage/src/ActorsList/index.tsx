@@ -1,4 +1,4 @@
-import React from 'react'
+import React from 'react';
 import { BareProps } from '@polkadot/react-components/types';
 import { ComponentProps } from '../props';
 import { withCalls } from '@polkadot/react-api/index';
@@ -13,8 +13,8 @@ import TxButton from '@polkadot/joy-utils/TxButton';
 type Props = BareProps & ComponentProps & MyAccountProps;
 
 class ActorsList extends React.PureComponent<Props> {
-  render() {
-    const { actorAccountIds, myMemberId, iAmMember} = this.props;
+  render () {
+    const { actorAccountIds, myMemberId, iAmMember } = this.props;
 
     return (
       <Table>
@@ -31,25 +31,24 @@ class ActorsList extends React.PureComponent<Props> {
         )}
         </Table.Body>
       </Table>
-    )
+    );
   }
 }
 
-
 type ActorProps = MyAccountProps & {
-  actor_account: string,
-  actor?: Option<Actor>,
+  actor_account: string;
+  actor?: Option<Actor>;
 }
 
 class ActorInner extends React.PureComponent<ActorProps> {
-  render() {
+  render () {
     const { actor: actorOpt, iAmMember, myMemberId } = this.props;
 
     if (!actorOpt || actorOpt.isNone) return null;
 
     const actor = actorOpt.unwrap();
-    const memberIsActor = iAmMember && myMemberId
-                            && (myMemberId.toString() == actor.member_id.toString());
+    const memberIsActor = iAmMember && myMemberId &&
+                            (myMemberId.toString() === actor.member_id.toString());
 
     return (
       <Table.Row>
@@ -59,19 +58,18 @@ class ActorInner extends React.PureComponent<ActorProps> {
           <AddressMini value={actor.account} isShort={false} isPadded={false} withBalance={true} /></Table.Cell>
         {memberIsActor ? <Table.Cell>{this.renderUnstakeTxButton(actor.account)}</Table.Cell> : null}
       </Table.Row>
-    )
+    );
   }
 
-  private renderUnstakeTxButton(account: AccountId) {
+  private renderUnstakeTxButton (account: AccountId) {
     return <TxButton tx={'actors.unstake'} params={[account]} label={'Unstake'}
-      type='submit' size='large' isDisabled={false} />
+      type='submit' size='large' isDisabled={false} />;
   }
 }
 
 const ActorDisplay = withCalls<ActorProps>(
   ['query.actors.actorByAccountId', { propName: 'actor', paramName: 'actor_account' }]
-)(ActorInner)
-
+)(ActorInner);
 
 const ActionableActorsList = withMyAccount(ActorsList);
 

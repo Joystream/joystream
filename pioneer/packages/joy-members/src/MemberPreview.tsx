@@ -19,17 +19,16 @@ import { MutedSpan } from '@polkadot/joy-utils/MutedText';
 const AvatarSizePx = 36;
 
 type MemberPreviewProps = ApiProps & I18nProps & {
-  accountId: AccountId,
-  memberId?: MemberId,
-  memberProfile?: Option<any>, // TODO refactor to Option<Profile>
-  activeCouncil?: Seat[],
-  prefixLabel?: string,
-  className?: string,
-  style?: React.CSSProperties
+  accountId: AccountId;
+  memberId?: MemberId;
+  memberProfile?: Option<any>; // TODO refactor to Option<Profile>
+  activeCouncil?: Seat[];
+  prefixLabel?: string;
+  className?: string;
+  style?: React.CSSProperties;
 };
 
 class InnerMemberPreview extends React.PureComponent<MemberPreviewProps> {
-
   render () {
     const { memberProfile } = this.props;
     return memberProfile
@@ -71,13 +70,13 @@ class InnerMemberPreview extends React.PureComponent<MemberPreviewProps> {
 }
 
 type WithMemberIdByAccountIdProps = {
-  memberIdsByRootAccountId?: Vec<MemberId>,
-  memberIdsByControllerAccountId?: Vec<MemberId>
+  memberIdsByRootAccountId?: Vec<MemberId>;
+  memberIdsByControllerAccountId?: Vec<MemberId>;
 };
 
 const withMemberIdByAccountId = withCalls<WithMemberIdByAccountIdProps>(
   queryMembershipToProp('memberIdsByRootAccountId', 'accountId'),
-  queryMembershipToProp('memberIdsByControllerAccountId', 'accountId'),
+  queryMembershipToProp('memberIdsByControllerAccountId', 'accountId')
 );
 
 // Get first matching memberid controlled by an account
@@ -91,9 +90,8 @@ function setMemberIdByAccountId (Component: React.ComponentType<MemberPreviewPro
       if (memberIdsByRootAccountId.length) {
         return <Component {...props} memberId={memberIdsByRootAccountId[0]} />;
       } else {
-        return <em>Member not found</em>
+        return <em>Member not found</em>;
       }
-
     } else {
       return null;
     }

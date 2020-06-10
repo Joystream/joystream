@@ -1,6 +1,6 @@
-import React from "react";
+import React from 'react';
 
-export default function NotDone(props: any) {
+export default function NotDone (props: any) {
   return (
     <>
       <h1>This is not implemented yet :( </h1>

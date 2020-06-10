@@ -4,7 +4,7 @@ import { ChannelEntity } from '../entities/ChannelEntity';
 import { ChannelPreview } from './ChannelPreview';
 
 type Props = {
-  channel: ChannelEntity
+  channel: ChannelEntity;
 }
 
 export function ChannelHeader (props: Props) {

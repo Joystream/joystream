@@ -1,29 +1,29 @@
-import { ISubscribable, IUnsubscribable, Observer } from './Subscribable'
+import { ISubscribable, IUnsubscribable, Observer } from './Subscribable';
 
 export abstract class Observable<S extends { [key: string ]: any }, T> implements ISubscribable<S> {
   state: S
   protected transport: T
   protected observers: Observer<S>[] = []
 
-  constructor(transport: T, initialState: S) {
-    this.state = initialState
-    this.transport = transport
+  constructor (transport: T, initialState: S) {
+    this.state = initialState;
+    this.transport = transport;
   }
 
-  public subscribe(observer: Observer<S>): IUnsubscribable<S> {
-    this.observers.push(observer)
-	  return this
+  public subscribe (observer: Observer<S>): IUnsubscribable<S> {
+    this.observers.push(observer);
+    return this;
   }
 
-  public unsubscribe(observerToRemove: Observer<S>) {
-    this.observers = this.observers.filter(observer => observerToRemove !== observer)
+  public unsubscribe (observerToRemove: Observer<S>) {
+    this.observers = this.observers.filter(observer => observerToRemove !== observer);
   }
 
-  public dispatch() {
-    this.observers.forEach(observer => observer(this.state))
+  public dispatch () {
+    this.observers.forEach(observer => observer(this.state));
   }
 
-  public setState(updatedState: Partial<S>) {
+  public setState (updatedState: Partial<S>) {
     if (typeof this.state === 'object') {
       this.state = Object.assign(this.state, updatedState);
     } else {

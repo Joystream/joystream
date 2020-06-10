@@ -12,15 +12,15 @@ const reorder = (list: OrderableItem[], startIndex: number, endIndex: number) =>
 };
 
 type Props = {
-  tracks: EditableMusicTrackPreviewProps[],
-  onRemove?: (track: EditableMusicTrackPreviewProps) => void,
-  noTracksView?: React.ReactElement
+  tracks: EditableMusicTrackPreviewProps[];
+  onRemove?: (track: EditableMusicTrackPreviewProps) => void;
+  noTracksView?: React.ReactElement;
 }
 
 type OrderableItem = EditableMusicTrackPreviewProps;
 
 export const ReorderableTracks = (props: Props) => {
-  const { tracks = [], onRemove = () => {}, noTracksView = null } = props;
+  const { tracks = [], onRemove = () => { /* do nothing */ }, noTracksView = null } = props;
 
   const [items, setItems] = useState(tracks);
 
@@ -29,7 +29,6 @@ export const ReorderableTracks = (props: Props) => {
   }
 
   const onDragEnd = (result: DropResult) => {
-
     // Dropped outside the list
     if (!result.destination) {
       return;
@@ -42,7 +41,7 @@ export const ReorderableTracks = (props: Props) => {
     );
 
     setItems(reorderedItems);
-  }
+  };
 
   // Normally you would want to split things out into separate components.
   // But in this example everything is just done in one place for simplicity
@@ -52,6 +51,7 @@ export const ReorderableTracks = (props: Props) => {
         {(provided, _snapshot) => (
           <div
             {...provided.droppableProps}
+            // eslint-disable-next-line @typescript-eslint/unbound-method
             ref={provided.innerRef}
             className='JoyListOfPreviews'
           >
@@ -59,12 +59,13 @@ export const ReorderableTracks = (props: Props) => {
               <Draggable key={item.id} draggableId={item.id} index={index}>
                 {(provided, snapshot) => (
                   <div
+                    // eslint-disable-next-line @typescript-eslint/unbound-method
                     ref={provided.innerRef}
                     {...provided.draggableProps}
                     {...provided.dragHandleProps}
                   >
                     <MusicTrackPreview
-                      key={index} 
+                      key={index}
                       {...item}
                       position={index + 1}
                       isDraggable={snapshot.isDragging}
@@ -85,4 +86,4 @@ export const ReorderableTracks = (props: Props) => {
       </Droppable>
     </DragDropContext>
   );
-}
+};

@@ -14,7 +14,7 @@ interface Props extends BareProps {
   children: React.ReactNode;
 }
 
-function FilterOverlay({ children, className }: Props): React.ReactElement<Props> {
+function FilterOverlay ({ children, className }: Props): React.ReactElement<Props> {
   const { allAccounts } = useMyMembership();
   const hasAccount = allAccounts && Object.keys(allAccounts).length;
   const style = { top: hasAccount ? '5.5rem' : '5px' };
