@@ -1,0 +1,65 @@
+import { Arg, Args, Mutation, Query, Resolver } from 'type-graphql';
+import { Inject } from 'typedi';
+import { Fields, StandardDeleteResponse, UserId } from '<%= props.warthogPathInSourceFiles %>';
+
+import {
+  <%= props.className %>CreateInput,
+  <%= props.className %>CreateManyArgs,
+  <%= props.className %>UpdateArgs,
+  <%= props.className %>WhereArgs,
+  <%= props.className %>WhereInput,
+  <%= props.className %>WhereUniqueInput
+} from '<%= props.generatedFolderRelativePath %>';
+
+import { <%= props.className %> } from './<%= props.kebabName %>.model';
+import { <%= props.className %>Service } from './<%= props.kebabName %>.service';
+
+@Resolver(<%= props.className %>)
+export class <%= props.className %>Resolver {
+  constructor(@Inject('<%= props.className %>Service') public readonly service: <%= props.className %>Service) {}
+
+  @Query(() => [<%= props.className %>])
+  async <%= props.camelName %>s(
+    @Args() { where, orderBy, limit, offset }: <%= props.className %>WhereArgs,
+    @Fields() fields: string[]
+  ): Promise<<%= props.className %>[]> {
+    return this.service.find<<%= props.className %>WhereInput>(where, orderBy, limit, offset, fields);
+  }
+
+  @Query(() => <%= props.className %>)
+  async <%= props.camelName %>(@Arg('where') where: <%= props.className %>WhereUniqueInput): Promise<<%= props.className %>> {
+    return this.service.findOne<<%= props.className %>WhereUniqueInput>(where);
+  }
+
+  @Mutation(() => <%= props.className %>)
+  async create<%= props.className %>(
+    @Arg('data') data: <%= props.className %>CreateInput,
+    @UserId() userId: string
+  ): Promise<<%= props.className %>> {
+    return this.service.create(data, userId);
+  }
+
+  @Mutation(() => [<%= props.className %>])
+  async createMany<%= props.className %>s(
+    @Args() { data }: <%= props.className %>CreateManyArgs,
+    @UserId() userId: string
+  ): Promise<<%= props.className %>[]> {
+    return this.service.createMany(data, userId);
+  }
+
+  @Mutation(() => <%= props.className %>)
+  async update<%= props.className %>(
+    @Args() { data, where }: <%= props.className %>UpdateArgs,
+    @UserId() userId: string
+  ): Promise<<%= props.className %>> {
+    return this.service.update(data, where, userId);
+  }
+
+  @Mutation(() => StandardDeleteResponse)
+  async delete<%= props.className %>(
+    @Arg('where') where: <%= props.className %>WhereUniqueInput,
+    @UserId() userId: string
+  ): Promise<StandardDeleteResponse> {
+    return this.service.delete(where, userId);
+  }
+}

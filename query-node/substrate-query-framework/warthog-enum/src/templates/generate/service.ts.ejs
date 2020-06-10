@@ -1,0 +1,15 @@
+import { Service } from 'typedi';
+import { Repository } from 'typeorm';
+import { InjectRepository } from 'typeorm-typedi-extensions';
+import { BaseService } from '<%= props.warthogPathInSourceFiles %>';
+
+import { <%= props.className %> } from './<%= props.kebabName %>.model';
+
+@Service('<%= props.className %>Service')
+export class <%= props.className %>Service extends BaseService<<%= props.className %>> {
+  constructor(
+    @InjectRepository(<%= props.className %>) protected readonly repository: Repository<<%= props.className %>>
+  ) {
+    super(<%= props.className %>, repository);
+  }
+}

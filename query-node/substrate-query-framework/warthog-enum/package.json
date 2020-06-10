@@ -2,9 +2,38 @@
   "name": "warthog-enum",
   "version": "1.0.0",
   "description": "Warthog plugin for the enum type support ",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/types/index.d.ts",
   "license": "MIT",
+  "scripts": {
+    "build": "rm -rf ./dist && yarn tsc && copyfiles -u 1 src/**/*.ejs dist/",
+    "lint": "eslint './+(examples|src|test|tools)/**/*.{js,ts}' --fix",
+    "prettify": "yarn prettier './+(examples|src|test|tools)/**/*.ts' --write"
+  },
   "dependencies": {
+    "cosmiconfig": "^6.0.0",
+    "gluegun": "^4.3.1",
+    "prettier": "^2.0.5",
     "warthog": "^2.9.2"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^8.3.5",
+    "@commitlint/config-conventional": "^8.3.4",
+    "@types/faker": "^4.1.7",
+    "@types/supertest": "^2.0.8",
+    "@typescript-eslint/eslint-plugin": "^2.7.0",
+    "@typescript-eslint/parser": "^2.7.0",
+    "copyfiles": "^2.1.1",
+    "dotenv": "^8.2.0",
+    "eslint": "^6.6.0",
+    "eslint-config-prettier": "^6.5.0",
+    "eslint-plugin-prettier": "^3.1.1",
+    "faker": "^4.1.0",
+    "husky": "^3.0.9",
+    "lint-staged": "^9.4.3",
+    "markdownlint-cli": "^0.19.0",
+    "supertest": "^4.0.2",
+    "ts-node": "^8.5.2",
+    "typescript": "^3.9.3"
   }
 }

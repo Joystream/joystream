@@ -1,0 +1,30 @@
+{
+    "compilerOptions": {
+      "allowSyntheticDefaultImports": true,
+      "baseUrl": "src",
+      "declaration": true,
+      "declarationDir": "dist/types",
+      "emitDecoratorMetadata": true,
+      "experimentalDecorators": true,
+      "forceConsistentCasingInFileNames": true,
+      "keyofStringsOnly": true,
+      "lib": ["es2016" ],
+      "module": "commonjs",
+      "moduleResolution": "node",
+      "noImplicitAny": true,
+      "noImplicitReturns": true,
+      "noImplicitThis": true,
+      "noUnusedLocals": false,
+      "outDir": "./dist",
+      "pretty": true,
+      "skipLibCheck": true,
+      "sourceMap": true,
+      "strict": true,
+      "strictNullChecks": true,
+      "target": "es5",
+      "typeRoots": ["node_modules/@types" ],
+      "types": [ "node"]
+    },
+    "exclude": ["node_modules", "**/node_modules/*", "src/**/*.test.ts", "**/generated/*"],
+    "include": ["src/**/*", "typings"]
+  }
