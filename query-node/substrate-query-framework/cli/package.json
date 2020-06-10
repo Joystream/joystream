@@ -70,7 +70,7 @@
   },
   "repository": "joystream/joystream/joystream-query-node/cli",
   "scripts": {
-    "build": "tsc --build tsconfig.json",
+    "build": "rm -rf lib && tsc --build tsconfig.json",
     "postpack": "rm -f oclif.manifest.json",
     "lint": "eslint . --cache --ext .ts --config .eslintrc.js",
     "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
