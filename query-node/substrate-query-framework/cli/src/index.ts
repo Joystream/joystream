@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
 import { build } from 'gluegun';
 
 export const cli = build()
