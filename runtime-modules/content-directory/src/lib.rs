@@ -1580,7 +1580,6 @@ impl<T: Trait> Module<T> {
         entity_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
         new_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> EntitiesInboundRcsDelta<T> {
-        
         // Entities, which rcs should be updated
         let mut updated_inbound_rcs_delta = EntitiesInboundRcsDelta::<T>::default();
 
