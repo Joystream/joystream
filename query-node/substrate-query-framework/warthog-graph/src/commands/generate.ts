@@ -4,19 +4,25 @@ import * as prettier from 'prettier';
 
 import { GluegunToolbox } from 'gluegun';
 import { Toolbox } from 'gluegun/build/types/domain/toolbox';
+import Debug from "debug";
+
+const debug = Debug('warthog-graph:generate');
+
 
 export default {
-  name: 'generate',
-  alias: ['g'],
+  name: 'graph-generate',
+  alias: ['gr-g'],
   run: async (toolbox: GluegunToolbox) => {
     const {
       config: { load },
       parameters: { options, first, array },
-      print: { error },
+      print: { info, error },
       string: { supplant }
     } = toolbox;
 
     const config: any = load();
+
+    debug(`Config: ${JSON.stringify(config, null, 2)}`);
 
     const name = first;
     if (!name) {
@@ -63,6 +69,7 @@ export default {
       );
     };
 
+    // derive props directly from the WarthhogModel
     const props = {
       ...names,
       pascalCase: toolbox.strings.pascalCase,

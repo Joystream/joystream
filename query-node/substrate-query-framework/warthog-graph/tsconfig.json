@@ -22,6 +22,7 @@
       "strict": true,
       "strictNullChecks": true,
       "target": "es5",
+      "rootDir": "./src",
       "typeRoots": ["node_modules/@types" ],
       "types": [ "node"]
     },
