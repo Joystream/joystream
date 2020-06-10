@@ -1,4 +1,4 @@
-type Membership {
+type Membership @entity {
   # Member's root account id
   accountId: String!
 
@@ -6,7 +6,7 @@ type Membership {
   memberId: Int!
 
   # The unique handle chosen by member
-  handle: String @fullTextSearchable(query: "handles")
+  handle: String @fulltext(query: "handles")
 
   # A Url to member's Avatar image
   avatarUri: String
