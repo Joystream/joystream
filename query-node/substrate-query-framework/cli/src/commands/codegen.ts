@@ -27,7 +27,7 @@ export default class Codegen extends Command {
     preview: flags.boolean({ char: 'p', allowNo: true, description: 'Generate GraphQL API preview', default: false }),
   };
 
-  async run() {
+  async run(): Promise<void> {
     dotenv.config();
 
     const { flags } = this.parse(Codegen);
@@ -60,7 +60,7 @@ export default class Codegen extends Command {
     
   }
 
-  async createGraphQLServer(schemaPath: string) {
+  async createGraphQLServer(schemaPath: string): Promise<void> {
     const goBackDir = process.cwd();
 
     const warthogProjectName = 'graphql-server';
@@ -76,7 +76,7 @@ export default class Codegen extends Command {
     process.chdir(goBackDir);
   }
 
-  async createBlockIndexer() {
+  async createBlockIndexer(): Promise<void> {
     // Take process where back at the end of the function execution
     const goBackDir = process.cwd();
 
