@@ -24,7 +24,7 @@
 use codec::{Decode, Encode};
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member};
-use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
+use srml_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use system::{self, ensure_root};
 
 use common::origin_validator::ActorOriginValidator;
@@ -60,10 +60,44 @@ pub trait Trait:
     type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 }
 
-static MSG_CID_NOT_FOUND: &str = "Content with this ID not found.";
-static MSG_LIAISON_REQUIRED: &str = "Only the liaison for the content may modify its status.";
-static MSG_DO_TYPE_MUST_BE_ACTIVE: &str =
-    "Cannot create content for inactive or missing data object type.";
+decl_error! {
+    /// _Data object storage registry_ module predefined errors.
+    pub enum Error {
+        /// Content with this ID not found.
+        CidNotFound,
+
+        /// Only the liaison for the content may modify its status.
+        LiaisonRequired,
+
+        /// Cannot create content for inactive or missing data object type.
+        DataObjectTypeMustBeActive,
+
+        /// "Data object already added under this content id".
+        DataObjectAlreadyAdded,
+
+        /// Require root origin in extrinsics.
+        RequireRootOrigin,
+    }
+}
+
+impl From<system::Error> for Error {
+    fn from(error: system::Error) -> Self {
+        match error {
+            system::Error::Other(msg) => Error::Other(msg),
+            system::Error::RequireRootOrigin => Error::RequireRootOrigin,
+            _ => Error::Other(error.into()),
+        }
+    }
+}
+
+impl From<bureaucracy::Error> for Error {
+    fn from(error: bureaucracy::Error) -> Self {
+        match error {
+            bureaucracy::Error::Other(msg) => Error::Other(msg),
+            _ => Error::Other(error.into()),
+        }
+    }
+}
 
 /// The decision of the storage provider when it acts as liaison.
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
@@ -153,6 +187,10 @@ decl_module! {
         /// Default deposit_event() handler
         fn deposit_event() = default;
 
+        /// Predefined errors.
+        type Error = Error;
+
+
         /// Adds the content to the system. Member id should match its origin. The created DataObject
         /// awaits liaison to accept or reject it.
         pub fn add_content(
@@ -169,10 +207,10 @@ decl_module! {
             )?;
 
             ensure!(T::IsActiveDataObjectType::is_active_data_object_type(&type_id),
-                MSG_DO_TYPE_MUST_BE_ACTIVE);
+                Error::DataObjectTypeMustBeActive);
 
             ensure!(!<DataObjectByContentId<T>>::exists(content_id),
-                "Data object already added under this content id");
+                Error::DataObjectAlreadyAdded);
 
             let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
@@ -259,11 +297,11 @@ impl<T: Trait> Module<T> {
         storage_provider_id: &StorageProviderId<T>,
         content_id: T::ContentId,
         judgement: LiaisonJudgement,
-    ) -> dispatch::Result {
-        let mut data = Self::data_object_by_content_id(&content_id).ok_or(MSG_CID_NOT_FOUND)?;
+    ) -> Result<(), Error> {
+        let mut data = Self::data_object_by_content_id(&content_id).ok_or(Error::CidNotFound)?;
 
         // Make sure the liaison matches
-        ensure!(data.liaison == *storage_provider_id, MSG_LIAISON_REQUIRED);
+        ensure!(data.liaison == *storage_provider_id, Error::LiaisonRequired);
 
         data.liaison_judgement = judgement;
         <DataObjectByContentId<T>>::insert(content_id, data);
@@ -295,7 +333,7 @@ impl<T: Trait> ContentIdExists<T> for Module<T> {
     fn get_data_object(content_id: &T::ContentId) -> Result<DataObject<T>, &'static str> {
         match Self::data_object_by_content_id(*content_id) {
             Some(data) => Ok(data),
-            None => Err(MSG_CID_NOT_FOUND),
+            None => Err(Error::LiaisonRequired.into()),
         }
     }
 }

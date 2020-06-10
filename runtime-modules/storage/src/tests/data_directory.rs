@@ -1,6 +1,7 @@
 #![cfg(test)]
 
 use super::mock::*;
+use crate::data_directory::Error;
 use system::RawOrigin;
 
 #[test]
@@ -34,7 +35,7 @@ fn add_content_fails_with_invalid_origin() {
             0,
             vec![1, 3, 3, 7],
         );
-        assert_eq!(res, Err("RequireSignedOrigin"));
+        assert_eq!(res, Err(Error::Other("RequireSignedOrigin")));
     });
 }
 
@@ -70,14 +71,14 @@ fn accept_and_reject_content_fail_with_invalid_storage_provider() {
             storage_provider_id,
             content_id,
         );
-        assert_eq!(res, Err("WorkerDoesNotExist"));
+        assert_eq!(res, Err(Error::Other("WorkerDoesNotExist")));
 
         let res = TestDataDirectory::reject_content(
             Origin::signed(storage_provider_account_id),
             storage_provider_id,
             content_id,
         );
-        assert_eq!(res, Err("WorkerDoesNotExist"));
+        assert_eq!(res, Err(Error::Other("WorkerDoesNotExist")));
     });
 }
 

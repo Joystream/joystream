@@ -148,10 +148,10 @@ decl_event! {
 decl_module! {
     /// _Data object storage registry_ substrate module.
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        /// Default deposit_event() handler
+        /// Default deposit_event() handler.
         fn deposit_event() = default;
 
-        /// Predefined errors
+        /// Predefined errors.
         type Error = Error;
 
         /// Add storage provider-to-content relationship. The storage provider should be registered
