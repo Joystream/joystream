@@ -3,3 +3,12 @@
 #![cfg(test)]
 
 mod proposals_integration;
+mod storage_integration;
+
+pub(crate) fn initial_test_ext() -> runtime_io::TestExternalities {
+    let t = system::GenesisConfig::default()
+        .build_storage::<crate::Runtime>()
+        .unwrap();
+
+    t.into()
+}

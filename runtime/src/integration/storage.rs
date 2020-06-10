@@ -16,7 +16,7 @@ impl storage::data_directory::StorageProviderHelper<Runtime> for StorageProvider
             .collect();
 
         if live_ids.is_empty() {
-            Err("no staked account found")
+            Err("No valid storage provider found.")
         } else {
             let index = Self::random_index(live_ids.len());
             Ok(live_ids[index])

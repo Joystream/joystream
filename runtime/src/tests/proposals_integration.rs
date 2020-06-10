@@ -20,15 +20,9 @@ use srml_support::traits::Currency;
 use srml_support::{StorageLinkedMap, StorageMap, StorageValue};
 use system::RawOrigin;
 
+use super::initial_test_ext;
+
 use crate::CouncilManager;
-
-fn initial_test_ext() -> runtime_io::TestExternalities {
-    let t = system::GenesisConfig::default()
-        .build_storage::<Runtime>()
-        .unwrap();
-
-    t.into()
-}
 
 type Balances = balances::Module<Runtime>;
 type System = system::Module<Runtime>;
