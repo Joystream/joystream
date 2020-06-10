@@ -8,7 +8,7 @@
 #![allow(array_into_iter)]
 
 // Runtime integration tests
-mod test;
+mod tests;
 
 // Make the WASM binary available.
 // This is required only by the node build.
