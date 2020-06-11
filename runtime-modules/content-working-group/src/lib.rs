@@ -38,9 +38,7 @@ use srml_support::{
 };
 use system::{self, ensure_root, ensure_signed};
 
-/// DIRTY IMPORT BECAUSE
-/// InputValidationLengthConstraint has not been factored out yet!!!
-use forum::InputValidationLengthConstraint;
+use common::constraints::InputValidationLengthConstraint;
 
 /// Module configuration trait for this Substrate module.
 pub trait Trait:

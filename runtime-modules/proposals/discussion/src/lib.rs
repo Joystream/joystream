@@ -38,8 +38,6 @@
 //! # fn main() {}
 //! ```
 
-//!
-
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -84,7 +82,7 @@ decl_event!(
 
 /// 'Proposal discussion' substrate module Trait
 pub trait Trait: system::Trait + membership::members::Trait {
-    /// Engine event type.
+    /// Discussion event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     /// Validates post author id and origin combination

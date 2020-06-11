@@ -70,6 +70,11 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
+    pub const InitialMembersBalance: u64 = 2000;
+    pub const ExistentialDeposit: u32 = 0;
+    pub const TransferFee: u32 = 0;
+    pub const CreationFee: u32 = 0;
+    pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
 impl system::Trait for Runtime {
@@ -97,9 +102,66 @@ impl timestamp::Trait for Runtime {
     type MinimumPeriod = MinimumPeriod;
 }
 
+impl bureaucracy::Trait<bureaucracy::Instance1> for Runtime {
+    type Event = ();
+}
+
+impl recurringrewards::Trait for Runtime {
+    type PayoutStatusHandler = ();
+    type RecipientId = u64;
+    type RewardRelationshipId = u64;
+}
+
+impl stake::Trait for Runtime {
+    type Currency = Balances;
+    type StakePoolId = StakePoolId;
+    type StakingEventsHandler = ();
+    type StakeId = u64;
+    type SlashId = u64;
+}
+
+impl hiring::Trait for Runtime {
+    type OpeningId = u64;
+    type ApplicationId = u64;
+    type ApplicationDeactivatedHandler = ();
+    type StakeHandlerProvider = hiring::Module<Self>;
+}
+
+impl membership::members::Trait for Runtime {
+    type Event = ();
+    type MemberId = u64;
+    type PaidTermId = u64;
+    type SubscriptionId = u64;
+    type ActorId = u64;
+    type InitialMembersBalance = InitialMembersBalance;
+}
+
+impl balances::Trait for Runtime {
+    type Balance = u64;
+    type OnFreeBalanceZero = ();
+    type OnNewAccount = ();
+    type Event = ();
+    type DustRemoval = ();
+    type TransferPayment = ();
+    type ExistentialDeposit = ExistentialDeposit;
+    type TransferFee = TransferFee;
+    type CreationFee = CreationFee;
+}
+pub type Balances = balances::Module<Runtime>;
+
+impl common::currency::GovernanceCurrency for Runtime {
+    type Currency = Balances;
+}
+
+impl minting::Trait for Runtime {
+    type Currency = Balances;
+    type MintId = u64;
+}
+
 impl Trait for Runtime {
     type Event = ();
     type MembershipRegistry = registry::TestMembershipRegistryModule;
+    type EnsureForumLeader = bureaucracy::Module<Runtime, bureaucracy::Instance1>;
     type ThreadId = u64;
     type PostId = u64;
 }
@@ -108,16 +170,18 @@ impl Trait for Runtime {
 pub enum OriginType {
     Signed(<Runtime as system::Trait>::AccountId),
     //Inherent, <== did not find how to make such an origin yet
-    Root,
+    //Root,
 }
 
 pub fn mock_origin(origin: OriginType) -> mock::Origin {
     match origin {
         OriginType::Signed(account_id) => Origin::signed(account_id),
         //OriginType::Inherent => Origin::inherent,
-        OriginType::Root => system::RawOrigin::Root.into(), //Origin::root
+        //OriginType::Root => system::RawOrigin::Root.into(), //Origin::root
     }
 }
+
+pub static ERROR_ORIGIN_NOT_FORUM_SUDO: &str = "Invalid origin";
 
 pub const NOT_FORUM_SUDO_ORIGIN: OriginType = OriginType::Signed(111);
 
@@ -128,6 +192,10 @@ pub const INVLAID_CATEGORY_ID: CategoryId = 333;
 pub const INVLAID_THREAD_ID: RuntimeThreadId = 444;
 
 pub const INVLAID_POST_ID: RuntimePostId = 555;
+
+pub(crate) const FORUM_SUDO_ID: u64 = 33;
+
+pub(crate) const FORUM_SUDO_MEMBER_ID: u64 = 1;
 
 pub fn generate_text(len: usize) -> Vec<u8> {
     vec![b'x'; len]
@@ -172,6 +240,7 @@ pub struct CreateCategoryFixture {
 
 impl CreateCategoryFixture {
     pub fn call_and_assert(&self) {
+        set_bureaucracy_forum_lead();
         assert_eq!(
             TestForumModule::create_category(
                 mock_origin(self.origin.clone()),
@@ -194,6 +263,7 @@ pub struct UpdateCategoryFixture {
 
 impl UpdateCategoryFixture {
     pub fn call_and_assert(&self) {
+        set_bureaucracy_forum_lead();
         assert_eq!(
             TestForumModule::update_category(
                 mock_origin(self.origin.clone()),
@@ -212,6 +282,15 @@ pub struct CreateThreadFixture {
     pub title: Vec<u8>,
     pub text: Vec<u8>,
     pub result: dispatch::Result,
+}
+
+type Bureaucracy1 = bureaucracy::Module<Runtime, bureaucracy::Instance1>;
+
+pub(crate) fn set_bureaucracy_forum_lead() {
+    assert_eq!(
+        Bureaucracy1::set_lead(RawOrigin::Root.into(), FORUM_SUDO_MEMBER_ID, FORUM_SUDO_ID),
+        Ok(())
+    );
 }
 
 impl CreateThreadFixture {
@@ -384,7 +463,7 @@ pub fn assert_not_forum_sudo_cannot_update_category(
     update_operation: fn(OriginType, CategoryId) -> dispatch::Result,
 ) {
     let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
+    let origin = OriginType::Signed(FORUM_SUDO_ID);
 
     build_test_externalities(config).execute_with(|| {
         let category_id = create_root_category(origin.clone());
@@ -410,8 +489,6 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         next_thread_id: 1,
         post_by_id: vec![],
         next_post_id: 1,
-
-        forum_sudo: 33,
 
         category_title_constraint: InputValidationLengthConstraint {
             min: 10,
@@ -481,7 +558,6 @@ pub fn genesis_config(
     next_thread_id: u64,
     post_by_id: &RuntimeMap<RuntimePostId, RuntimePost>,
     next_post_id: u64,
-    forum_sudo: <Runtime as system::Trait>::AccountId,
     category_title_constraint: &InputValidationLengthConstraint,
     category_description_constraint: &InputValidationLengthConstraint,
     thread_title_constraint: &InputValidationLengthConstraint,
@@ -496,7 +572,6 @@ pub fn genesis_config(
         next_thread_id,
         post_by_id: post_by_id.clone(),
         next_post_id,
-        forum_sudo,
         category_title_constraint: category_title_constraint.clone(),
         category_description_constraint: category_description_constraint.clone(),
         thread_title_constraint: thread_title_constraint.clone(),

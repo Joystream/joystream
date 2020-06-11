@@ -1645,6 +1645,7 @@ dependencies = [
  "srml-timestamp",
  "srml-transaction-payment",
  "substrate-authority-discovery-primitives",
+ "substrate-bureaucracy-module",
  "substrate-client",
  "substrate-common-module",
  "substrate-consensus-babe-primitives",
@@ -4462,6 +4463,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-bureaucracy-module"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "serde",
+ "sr-io",
+ "sr-primitives",
+ "sr-std",
+ "srml-balances",
+ "srml-support",
+ "srml-system",
+ "srml-timestamp",
+ "substrate-common-module",
+ "substrate-hiring-module",
+ "substrate-membership-module",
+ "substrate-primitives",
+ "substrate-recurring-reward-module",
+ "substrate-stake-module",
+ "substrate-token-mint-module",
+]
+
+[[package]]
 name = "substrate-chain-spec"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8#c37bb08535c49a12320af7facfd555ce05cce2e8"
@@ -4581,6 +4604,8 @@ dependencies = [
 name = "substrate-common-module"
 version = "1.0.0"
 dependencies = [
+ "parity-scale-codec",
+ "serde",
  "sr-primitives",
  "srml-support",
  "srml-system",
@@ -4803,7 +4828,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-forum-module"
-version = "1.1.1"
+version = "1.2.0"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
@@ -4818,7 +4843,14 @@ dependencies = [
  "srml-support-procedural",
  "srml-system",
  "srml-timestamp",
+ "substrate-bureaucracy-module",
+ "substrate-common-module",
+ "substrate-hiring-module",
+ "substrate-membership-module",
  "substrate-primitives",
+ "substrate-recurring-reward-module",
+ "substrate-stake-module",
+ "substrate-token-mint-module",
 ]
 
 [[package]]
