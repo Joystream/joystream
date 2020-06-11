@@ -970,30 +970,20 @@ decl_module! {
 
             let entity = Self::ensure_known_entity_id(entity_id)?;
 
-            let mut entity_permissions = entity.get_permissions();
-
             //
             // == MUTATION SAFE ==
             //
 
-            // If no update performed, there is no purpose to emit event
-            let mut updated = false;
+            let entity_permissions = entity.get_permissions();
 
-            if let Some(updated_frozen_for_controller) = updated_frozen_for_controller {
-                entity_permissions.set_frozen(updated_frozen_for_controller);
-                updated = true;
-            }
+            let updated_entity_permissions =
+                Self::make_updated_entity_permissions(entity_permissions, updated_frozen_for_controller, updated_referenceable);
 
-            if let Some(updated_referenceable) = updated_referenceable {
-                entity_permissions.set_referencable(updated_referenceable);
-                updated = true;
-            }
-
-            if updated {
+            if let Some(updated_entity_permissions) = updated_entity_permissions {
 
                 // Update entity permissions under given entity id
                 <EntityById<T>>::mutate(entity_id, |entity| {
-                    entity.update_permissions(entity_permissions)
+                    entity.update_permissions(updated_entity_permissions)
                 });
 
                 // Trigger event
@@ -1633,6 +1623,31 @@ impl<T: Trait> Module<T> {
 
         if updated_class_permissions != class_permissions {
             Some(updated_class_permissions)
+        } else {
+            None
+        }
+    }
+
+    /// Used to update `entity_permissions` with parameters provided.
+    /// Returns `Some(EntityPermissions<T>)` if update performed and `None` otherwise
+    pub fn make_updated_entity_permissions(
+        entity_permissions: EntityPermissions<T>,
+        updated_frozen_for_controller: Option<bool>,
+        updated_referenceable: Option<bool>,
+    ) -> Option<EntityPermissions<T>> {
+        // Used to ensure update performed
+        let mut updated_entity_permissions = entity_permissions.clone();
+
+        if let Some(updated_frozen_for_controller) = updated_frozen_for_controller {
+            updated_entity_permissions.set_frozen(updated_frozen_for_controller);
+        }
+
+        if let Some(updated_referenceable) = updated_referenceable {
+            updated_entity_permissions.set_referencable(updated_referenceable);
+        }
+
+        if updated_entity_permissions != entity_permissions {
+            Some(updated_entity_permissions)
         } else {
             None
         }
