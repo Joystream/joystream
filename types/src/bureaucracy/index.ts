@@ -75,6 +75,8 @@ export class WorkerApplication extends JoyStruct<IWorkerApplication> {
 
 export class WorkerId extends ActorId { };
 
+export class StorageProviderId extends WorkerId { };
+
 export class WorkerApplicationIdSet extends BTreeSet.with(WorkerApplicationId) { };
 
 export class WorkerApplicationIdToWorkerIdMap extends BTreeMap.with(WorkerApplicationId, WorkerId) { };
@@ -139,6 +141,10 @@ export class Worker extends JoyStruct<IWorker> {
 
   get role_stake_profile(): Option<WorkerRoleStakeProfile> {
     return this.getField<Option<WorkerRoleStakeProfile>>('role_stake_profile');
+  }
+
+  get is_active(): boolean {
+    return !Boolean(this.isEmpty);
   }
 }
 
@@ -306,7 +312,8 @@ export function registerBureaucracyTypes() {
       WorkerId,
       WorkerOf: Worker,
       WorkerOpening,
-      WorkerOpeningId
+      WorkerOpeningId,
+      StorageProviderId
     });
   } catch (err) {
     console.error('Failed to register custom types of bureaucracy module', err);
