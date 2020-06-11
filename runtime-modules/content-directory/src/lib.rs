@@ -249,7 +249,6 @@ impl<T: Trait> Class<T> {
     fn ensure_schema_exists(&self, schema_index: SchemaId) -> Result<&Schema, &'static str> {
         self.schemas
             .get(schema_index as usize)
-            .map(|schema| schema)
             .ok_or(ERROR_UNKNOWN_CLASS_SCHEMA_ID)
     }
 
@@ -1164,18 +1163,18 @@ decl_module! {
             entity.ensure_schema_id_is_not_added(schema_id)?;
             entity.ensure_property_values_are_not_added(&property_values)?;
 
-            let schema = class.ensure_schema_exists(schema_id)?;
+            let schema = class.ensure_schema_exists(schema_id)?.to_owned();
 
             schema.ensure_is_active()?;
             schema.ensure_property_value_indices_are_valid(&property_values)?;
 
             let entity_controller = entity.get_permissions_ref().get_controller();
 
-            Self::ensure_property_values_are_valid(
-                &class.properties, schema, entity_controller, &property_values,
-            )?;
-
             let class_properties = class.properties;
+
+            Self::ensure_property_values_are_valid(
+                &class_properties, &schema, entity_controller, &property_values,
+            )?;
 
             Self::ensure_property_values_unique_option_satisfied(
                 &class_properties, &property_values, entity.get_values_ref()
@@ -1189,7 +1188,7 @@ decl_module! {
 
             // Updated entity values, after new schema support added
             let entity_values_updated = Self::make_updated_entity_property_values(
-                entity_property_values, &property_values
+                schema, entity_property_values, &property_values
             );
 
             // Add schema support to `Entity` under given `entity_id`
@@ -1528,19 +1527,33 @@ impl<T: Trait> Module<T> {
     /// Update `entity_property_values` with `property_values`
     /// Return updated `entity_property_values`
     fn make_updated_entity_property_values(
+        schema: Schema,
         entity_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
         property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> BTreeMap<PropertyId, PropertyValue<T>> {
-        entity_property_values
-            .keys()
-            .map(|property_id| {
-                if let Some(new_value) = property_values.get(property_id) {
-                    (*property_id, new_value.to_owned())
+        // Concatenate existing `entity_property_values` with `property_values`, provided, when adding `Schema` support.
+        let updated_entity_property_values: BTreeMap<PropertyId, PropertyValue<T>> =
+            entity_property_values
+                .into_iter()
+                .chain(property_values.to_owned().into_iter())
+                .collect();
+
+        // Write all missing non required `Schema` `property_values` as PropertyValue::default()
+        let non_required_property_values: BTreeMap<PropertyId, PropertyValue<T>> = schema
+            .get_properties()
+            .iter()
+            .filter_map(|property_id| {
+                if updated_entity_property_values.contains_key(property_id) {
+                    Some((*property_id, PropertyValue::default()))
                 } else {
-                    // Add all missing non required schema property values as PropertyValue::default()
-                    (*property_id, PropertyValue::default())
+                    None
                 }
             })
+            .collect();
+
+        updated_entity_property_values
+            .into_iter()
+            .chain(non_required_property_values.into_iter())
             .collect()
     }
 
