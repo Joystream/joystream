@@ -1,7 +1,7 @@
 import React from 'react';
 import { withKnobs } from '@storybook/addon-knobs';
 import { Container, Tab } from 'semantic-ui-react';
-import { ContentCuratorsSection, StorageProvidersSection } from './tabs/WorkingGroup.stories';
+import { ContentCuratorsSection } from './tabs/WorkingGroup.stories';
 import { OpportunitySandbox } from './tabs/Opportunities.stories';
 import { ApplicationSandbox } from './flows/apply.stories';
 import { MyRolesSandbox } from './tabs/MyRoles.stories';
@@ -16,9 +16,6 @@ export const RolesPage = () => {
     <Container>
       <Container className="outer">
         <ContentCuratorsSection />
-      </Container>
-      <Container>
-        <StorageProvidersSection />
       </Container>
     </Container>
   );

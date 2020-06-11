@@ -1,135 +1,155 @@
 import React from 'react';
-import { Button, Card, Icon, Message, SemanticICONS, Table } from 'semantic-ui-react';
+import { Button, Card, Icon, Message, SemanticICONS } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 
-import { Balance } from '@polkadot/types/interfaces';
-import { Actor } from '@joystream/types/roles';
-import { IProfile } from '@joystream/types/members';
-import { Text } from '@polkadot/types';
-
-import { ActorDetailsView, MemberView, GroupMemberView, GroupLeadView, GroupMember, GroupLead } from '../elements';
-
+import { GroupLeadView, GroupMember, GroupMemberView, GroupLead } from '../elements';
 import { Loadable } from '@polkadot/joy-utils/index';
+
+import { WorkingGroups } from '../working_groups';
+import styled from 'styled-components';
+import _ from 'lodash';
 
 export type WorkingGroupMembership = {
   members: GroupMember[];
   rolesAvailable: boolean;
 }
 
-export const ContentCurators = Loadable<WorkingGroupMembership>(
-  ['members'],
-  props => {
-    let message = (
-      <Message>
-        <Message.Header>No open roles at the moment</Message.Header>
-        <p>The team is full at the moment, but we intend to expand. Check back for open roles soon!</p>
-      </Message>
-    );
-
-    if (props.rolesAvailable) {
-      message = (
-        <Message positive>
-          <Message.Header>Join us and get paid to curate!</Message.Header>
-          <p>
-            There are openings for new content curators. This is a great way to support Joystream!
-          </p>
-          <Link to="/working-groups/opportunities/curators">
-            <Button icon labelPosition="right" color="green" positive>
-              Find out more
-              <Icon name={'right arrow' as SemanticICONS} />
-            </Button>
-          </Link>
-        </Message>
-      );
-    }
-
-    return (
-      <section id="content-curators">
-        <h2>Content curators</h2>
-        <p>
-          Content Curators are responsible for ensuring that all content is uploaded correctly and in line with the terms of service.
-        </p>
-        <Card.Group>
-          {props.members.map((member, key) => (
-            <GroupMemberView key={key} {...member} />
-          ))}
-        </Card.Group>
-        {message}
-      </section>
-    );
-  }
+const NoRolesAvailable = () => (
+  <Message>
+    <Message.Header>No open roles at the moment</Message.Header>
+    <p>The team is full at the moment, but we intend to expand. Check back for open roles soon!</p>
+  </Message>
 );
 
-export type StorageAndDistributionMembership = {
-  actors: Actor[];
-  balances: Map<string, Balance>;
-  memos: Map<string, Text>;
-  profiles: Map<number, IProfile>;
+type JoinRoleProps = {
+  group: WorkingGroups;
+  title: string;
+  description: string;
+};
+
+const JoinRole = ({ group, title, description }: JoinRoleProps) => (
+  <Message positive>
+    <Message.Header>{title}</Message.Header>
+    <p>{description}</p>
+    <Link to={`/working-groups/opportunities/${group}`}>
+      <Button icon labelPosition="right" color="green" positive>
+        Find out more
+        <Icon name={'right arrow' as SemanticICONS} />
+      </Button>
+    </Link>
+  </Message>
+);
+
+const GroupOverviewSection = styled.section`
+  padding: 2rem;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+
+  & .staked-card {
+    margin-right: 1.2em !important;
+  }
+
+  & .cards {
+    margin-top: 1em;
+    margin-bottom: 1em;
+  }
+`;
+
+type GroupOverviewOuterProps = WorkingGroupMembership & {
+  leadStatus?: GroupLeadStatus;
 }
 
-export const StorageAndDistribution = Loadable<StorageAndDistributionMembership>(
-  ['actors'],
-  props => {
+type GroupOverviewProps = GroupOverviewOuterProps & {
+  group: WorkingGroups;
+  description: string;
+  customGroupName?: string;
+  customJoinTitle?: string;
+  customJoinDesc?: string;
+}
+
+const GroupOverview = Loadable<GroupOverviewProps>(
+  ['members', 'leadStatus'],
+  ({
+    group,
+    description,
+    members,
+    leadStatus,
+    rolesAvailable,
+    customGroupName,
+    customJoinTitle,
+    customJoinDesc
+  }: GroupOverviewProps) => {
+    const groupName = customGroupName || _.startCase(group);
+    const joinTitle = customJoinTitle || `Join the ${groupName} group!`;
+    const joinDesc = customJoinDesc || `There are openings for new ${groupName}. This is a great way to support Joystream!`;
     return (
-      <section id="storage-providers">
-        <h2>Storage and distribution</h2>
-        <Table basic='very'>
-          <Table.Header>
-            <Table.Row>
-              <Table.HeaderCell>Member</Table.HeaderCell>
-              <Table.HeaderCell>Details</Table.HeaderCell>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-            {props.actors.map((actor, key) => (
-              <Table.Row key={key}>
-                <Table.Cell>
-                  <MemberView
-                    actor={actor}
-                    balance={props.balances.get(actor.account.toString())}
-                    profile={props.profiles.get(actor.member_id.toNumber()) as IProfile}
-                  />
-                </Table.Cell>
-                <Table.Cell>
-                  <ActorDetailsView
-                    actor={actor}
-                    balance={props.balances.get(actor.account.toString())}
-                    memo={props.memos.get(actor.account.toString())}
-                  />
-                </Table.Cell>
-              </Table.Row>
-            ))}
-          </Table.Body>
-        </Table>
-      </section>
+      <GroupOverviewSection>
+        <h2>{ groupName }</h2>
+        <p>{ description }</p>
+        <Card.Group>
+          { members.map((member, key) => (
+            <GroupMemberView key={key} {...member} />
+          )) }
+        </Card.Group>
+        { rolesAvailable
+          ? <JoinRole group={group} title={joinTitle} description={joinDesc} />
+          : <NoRolesAvailable /> }
+        { leadStatus && <CurrentLead groupName={groupName} {...leadStatus}/> }
+      </GroupOverviewSection>
     );
   }
 );
+
+export const ContentCurators = (props: GroupOverviewOuterProps) => (
+  <GroupOverview
+    group={WorkingGroups.ContentCurators}
+    description={
+      'Content Curators are responsible for ensuring that all content is uploaded correctly ' +
+      'and in line with the terms of service.'
+    }
+    {...props}
+  />
+);
+
+export const StorageProviders = (props: GroupOverviewOuterProps) => (
+  <GroupOverview
+    group={WorkingGroups.StorageProviders}
+    description={
+      'Storage Providers are responsible for storing and providing platform content!'
+    }
+    {...props}
+  />
+);
+
+const LeadSection = styled.div`
+  margin-top: 1rem;
+`;
 
 export type GroupLeadStatus = {
   lead?: GroupLead;
   loaded: boolean;
 }
 
-export const ContentLead = Loadable<GroupLeadStatus>(
-  ['loaded'],
-  props => {
-    return (
-      <section id='lead'>
-        <br/>
-        <Message positive>
-          <Message.Header>Content Lead</Message.Header>
-          <p>
-          This role is responsible for hiring curators, and is assigned by the platform.
-          </p>
-          {props.lead
-            ? <Card.Group>
-              <GroupLeadView {...props.lead} />
-            </Card.Group>
-            : 'There is no active Content Lead assigned.'}
-        </Message>
+type CurrentLeadProps = GroupLeadStatus & {
+  groupName: string;
+  customLeadDesc?: string;
+};
 
-      </section>
+export const CurrentLead = Loadable<CurrentLeadProps>(
+  ['loaded'],
+  ({ customLeadDesc, groupName, lead }: CurrentLeadProps) => {
+    const leadDesc = customLeadDesc || `This role is responsible for hiring ${groupName}.`;
+    return (
+      <LeadSection>
+        <Message positive>
+          <Message.Header>{ groupName } Lead</Message.Header>
+          <p>{ leadDesc }</p>
+          {lead
+            ? <Card.Group><GroupLeadView {...lead} /></Card.Group>
+            : `There is no active ${groupName} Lead assigned.` }
+        </Message>
+      </LeadSection>
     );
   }
 );
