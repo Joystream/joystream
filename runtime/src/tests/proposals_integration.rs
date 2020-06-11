@@ -6,18 +6,16 @@ use crate::{BlockNumber, ElectionParameters, ProposalCancellationFee, Runtime};
 use codec::Encode;
 use governance::election::CouncilElected;
 use membership::members;
-use membership::role_types::Role;
 use proposals_engine::{
     ActiveStake, ApprovedProposalStatus, BalanceOf, Error, FinalizationData, Proposal,
     ProposalDecisionStatus, ProposalParameters, ProposalStatus, VoteKind, VotersParameters,
     VotingResults,
 };
-use roles::actors::RoleParameters;
 
 use sr_primitives::traits::{DispatchResult, OnFinalize, OnInitialize};
 use sr_primitives::AccountId32;
 use srml_support::traits::Currency;
-use srml_support::{StorageLinkedMap, StorageMap, StorageValue};
+use srml_support::{StorageLinkedMap, StorageValue};
 use system::RawOrigin;
 
 use super::initial_test_ext;
@@ -601,58 +599,6 @@ fn set_election_parameters_proposal_execution_succeeds() {
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
         assert_eq!(Election::announcing_period(), 14400);
-    });
-}
-
-#[test]
-fn evict_storage_provider_proposal_execution_succeeds() {
-    initial_test_ext().execute_with(|| {
-        let member_id = 1;
-        let account_id: [u8; 32] = [member_id; 32];
-
-        let target_member_id = 3;
-        let target_account: [u8; 32] = [target_member_id; 32];
-        let target_account_id: AccountId32 = target_account.into();
-
-        <roles::actors::Parameters<Runtime>>::insert(
-            Role::StorageProvider,
-            roles::actors::RoleParameters::default(),
-        );
-
-        <roles::actors::AccountIdsByRole<Runtime>>::insert(
-            Role::StorageProvider,
-            vec![target_account_id.clone()],
-        );
-
-        <roles::actors::ActorByAccountId<Runtime>>::insert(
-            target_account_id.clone(),
-            roles::actors::Actor {
-                member_id: target_member_id as u64,
-                role: Role::StorageProvider,
-                account: target_account_id,
-                joined_at: 1,
-            },
-        );
-
-        let codex_extrinsic_test_fixture = CodexProposalTestFixture {
-            member_id: member_id as u64,
-            successful_call: || {
-                ProposalCodex::create_evict_storage_provider_proposal(
-                    RawOrigin::Signed(account_id.clone().into()).into(),
-                    member_id as u64,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(<BalanceOf<Runtime>>::from(25000u32)),
-                    target_account.into(),
-                )
-            },
-        };
-        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
-
-        assert_eq!(
-            <roles::actors::AccountIdsByRole<Runtime>>::get(Role::StorageProvider),
-            Vec::new()
-        );
     });
 }
 

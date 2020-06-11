@@ -324,10 +324,6 @@ pub fn testnet_genesis(
             set_lead_proposal_grace_period: cpcp.set_lead_proposal_voting_period,
             spending_proposal_voting_period: cpcp.spending_proposal_voting_period,
             spending_proposal_grace_period: cpcp.spending_proposal_grace_period,
-            evict_storage_provider_proposal_voting_period: cpcp
-                .evict_storage_provider_proposal_voting_period,
-            evict_storage_provider_proposal_grace_period: cpcp
-                .evict_storage_provider_proposal_grace_period,
         }),
     }
 }

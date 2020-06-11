@@ -707,59 +707,6 @@ fn create_set_lead_proposal_common_checks_succeed() {
 }
 
 #[test]
-fn create_evict_storage_provider_proposal_common_checks_succeed() {
-    initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance(500000);
-
-        let proposal_fixture = ProposalTestFixture {
-            insufficient_rights_call: || {
-                ProposalCodex::create_evict_storage_provider_proposal(
-                    RawOrigin::None.into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
-                    1,
-                )
-            },
-            empty_stake_call: || {
-                ProposalCodex::create_evict_storage_provider_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
-                    1,
-                )
-            },
-            invalid_stake_call: || {
-                ProposalCodex::create_evict_storage_provider_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(5000u32)),
-                    1,
-                )
-            },
-            successful_call: || {
-                ProposalCodex::create_evict_storage_provider_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(25000u32)),
-                    1,
-                )
-            },
-            proposal_parameters: crate::proposal_types::parameters::evict_storage_provider_proposal::<Test>(),
-            proposal_details: ProposalDetails::EvictStorageProvider(1),
-        };
-        proposal_fixture.check_all();
-    });
-}
-
-#[test]
 fn create_set_validator_count_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance_using_account_id(1, 500000);
@@ -908,14 +855,6 @@ fn set_default_proposal_parameters_succeeded() {
         assert_eq!(
             <SpendingProposalGracePeriod<Test>>::get(),
             p.spending_proposal_grace_period as u64
-        );
-        assert_eq!(
-            <EvictStorageProviderProposalVotingPeriod<Test>>::get(),
-            p.evict_storage_provider_proposal_voting_period as u64
-        );
-        assert_eq!(
-            <EvictStorageProviderProposalGracePeriod<Test>>::get(),
-            p.evict_storage_provider_proposal_grace_period as u64
         );
     });
 }

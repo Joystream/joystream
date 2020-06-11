@@ -31,9 +31,6 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                 Call::ContentWorkingGroup(content_working_group::Call::replace_lead(new_lead))
                     .encode()
             }
-            ProposalDetails::EvictStorageProvider(actor_account) => {
-                Call::Actors(roles::actors::Call::remove_actor(actor_account)).encode()
-            }
             ProposalDetails::SetValidatorCount(new_validator_count) => {
                 Call::Staking(staking::Call::set_validator_count(new_validator_count)).encode()
             }

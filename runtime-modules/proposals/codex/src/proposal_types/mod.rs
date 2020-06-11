@@ -46,9 +46,6 @@ pub enum ProposalDetails<MintedBalance, CurrencyBalance, BlockNumber, AccountId,
     /// Balance for the `set content working group mint capacity` proposal
     SetContentWorkingGroupMintCapacity(MintedBalance),
 
-    /// AccountId for the `evict storage provider` proposal
-    EvictStorageProvider(AccountId),
-
     /// Validator count for the `set validator count` proposal
     SetValidatorCount(u32),
 }
@@ -104,12 +101,6 @@ pub struct ProposalsConfigParameters {
 
     /// 'Spending' proposal grace period
     pub spending_proposal_grace_period: u32,
-
-    /// 'Evict storage provider' proposal voting period
-    pub evict_storage_provider_proposal_voting_period: u32,
-
-    /// 'Evict storage provider' proposal grace period
-    pub evict_storage_provider_proposal_grace_period: u32,
 }
 
 impl Default for ProposalsConfigParameters {
@@ -129,8 +120,6 @@ impl Default for ProposalsConfigParameters {
             set_lead_proposal_grace_period: 0u32,
             spending_proposal_voting_period: 72000u32,
             spending_proposal_grace_period: 14400u32,
-            evict_storage_provider_proposal_voting_period: 43200u32,
-            evict_storage_provider_proposal_grace_period: 0u32,
         }
     }
 }

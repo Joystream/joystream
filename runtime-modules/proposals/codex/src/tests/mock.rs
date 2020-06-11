@@ -193,15 +193,6 @@ impl hiring::Trait for Test {
     type StakeHandlerProvider = hiring::Module<Self>;
 }
 
-impl roles::actors::Trait for Test {
-    type Event = ();
-    type OnActorRemoved = ();
-}
-
-impl roles::actors::ActorRemoved<Test> for () {
-    fn actor_removed(_: &u64) {}
-}
-
 srml_staking_reward_curve::build! {
     const I_NPOS: PiecewiseLinear<'static> = curve!(
         min_inflation: 0_025_000,

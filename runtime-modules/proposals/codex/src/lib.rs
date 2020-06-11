@@ -19,7 +19,6 @@
 //! - [create_set_content_working_group_mint_capacity_proposal](./struct.Module.html#method.create_set_content_working_group_mint_capacity_proposal)
 //! - [create_spending_proposal](./struct.Module.html#method.create_spending_proposal)
 //! - [create_set_lead_proposal](./struct.Module.html#method.create_set_lead_proposal)
-//! - [create_evict_storage_provider_proposal](./struct.Module.html#method.create_evict_storage_provider_proposal)
 //! - [create_set_validator_count_proposal](./struct.Module.html#method.create_set_validator_count_proposal)
 //!
 //! ### Proposal implementations of this module
@@ -118,7 +117,6 @@ pub trait Trait:
     + membership::members::Trait
     + governance::election::Trait
     + content_working_group::Trait
-    + roles::actors::Trait
     + staking::Trait
 {
     /// Defines max allowed text proposal length.
@@ -315,14 +313,6 @@ decl_storage! {
 
         /// Grace period for the 'spending' proposal
         pub SpendingProposalGracePeriod get(spending_proposal_grace_period) config(): T::BlockNumber;
-
-        /// Voting period for the 'evict storage provider' proposal
-        pub EvictStorageProviderProposalVotingPeriod get(evict_storage_provider_proposal_voting_period)
-            config(): T::BlockNumber;
-
-        /// Grace period for the 'evict storage provider' proposal
-        pub EvictStorageProviderProposalGracePeriod get(evict_storage_provider_proposal_grace_period)
-            config(): T::BlockNumber;
     }
 }
 
@@ -515,33 +505,6 @@ decl_module! {
             let proposal_parameters =
                 proposal_types::parameters::set_lead_proposal::<T>();
             let proposal_details = ProposalDetails::SetLead(new_lead);
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
-
-            Self::create_proposal(
-                origin,
-                member_id,
-                title,
-                description,
-                stake_balance,
-                proposal_code,
-                proposal_parameters,
-                proposal_details,
-            )?;
-        }
-
-        /// Create 'Evict storage provider' proposal type.
-        /// This proposal uses `remove_actor()` extrinsic from the `roles::actors`  module.
-        pub fn create_evict_storage_provider_proposal(
-            origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
-            actor_account: T::AccountId,
-        ) {
-            let proposal_parameters =
-                proposal_types::parameters::evict_storage_provider_proposal::<T>();
-            let proposal_details = ProposalDetails::EvictStorageProvider(actor_account);
             let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
 
             Self::create_proposal(
@@ -838,12 +801,6 @@ impl<T: Trait> Module<T> {
         ));
         <SpendingProposalGracePeriod<T>>::put(T::BlockNumber::from(
             p.spending_proposal_grace_period,
-        ));
-        <EvictStorageProviderProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.evict_storage_provider_proposal_voting_period,
-        ));
-        <EvictStorageProviderProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.evict_storage_provider_proposal_grace_period,
         ));
     }
 }
