@@ -19,22 +19,21 @@ import { nonEmptyStr, queryToProp } from '@polkadot/joy-utils/index';
 import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
 
 type Props = ApiProps & I18nProps & MyAccountProps & {
-  preview?: boolean,
-  memberId: MemberId,
+  preview?: boolean;
+  memberId: MemberId;
   // This cannot be named just "memberProfile", since it will conflict with "withAccount's" memberProfile
   // (which holds  member profile associated with currently selected account)
-  detailsMemberProfile?: Option<any>, // TODO refactor to Option<Profile>
-  activeCouncil?: Seat[]
+  detailsMemberProfile?: Option<any>; // TODO refactor to Option<Profile>
+  activeCouncil?: Seat[];
 };
 
 class Component extends React.PureComponent<Props> {
-
   render () {
     const { detailsMemberProfile } = this.props;
     return detailsMemberProfile
       ? this.renderProfile(detailsMemberProfile.unwrap() as Profile)
       : (
-        <div className={`item ProfileDetails`}>
+        <div className={'item ProfileDetails'}>
           <Loader active inline/>
         </div>
       );
@@ -44,14 +43,14 @@ class Component extends React.PureComponent<Props> {
     const {
       preview = false,
       myAddress,
-      activeCouncil = [],
+      activeCouncil = []
     } = this.props;
 
     const {
       handle,
       avatar_uri,
       root_account,
-      controller_account,
+      controller_account
     } = memberProfile;
 
     const hasAvatar = avatar_uri && nonEmptyStr(avatar_uri.toString());
@@ -71,7 +70,7 @@ class Component extends React.PureComponent<Props> {
         <div className='content'>
           <div className='header'>
             <Link to={`/members/${handle.toString()}`} className='handle'>{handle.toString()}</Link>
-            {isMyProfile && <Link to={`/members/edit`} className='ui tiny button'>Edit my profile</Link>}
+            {isMyProfile && <Link to={'/members/edit'} className='ui tiny button'>Edit my profile</Link>}
           </div>
           <div className='description'>
             {isCouncilor &&
@@ -79,8 +78,8 @@ class Component extends React.PureComponent<Props> {
                 <i className='university icon'></i>
                 Council member
               </b>}
-              <BalanceDisplay label='Balance(root): ' params={root_account} />
-              <div>MemberId: {this.props.memberId.toString()}</div>
+            <BalanceDisplay label='Balance(root): ' params={root_account} />
+            <div>MemberId: {this.props.memberId.toString()}</div>
           </div>
         </div>
       </div>
@@ -98,7 +97,7 @@ class Component extends React.PureComponent<Props> {
       suspended,
       subscription,
       root_account,
-      controller_account,
+      controller_account
 
     } = memberProfile;
 
@@ -106,44 +105,44 @@ class Component extends React.PureComponent<Props> {
 
     return (
       <Table celled selectable compact definition className='ProfileDetailsTable'>
-      <Table.Body>
-      <Table.Row>
-        <Table.Cell>Membership ID</Table.Cell>
-        <Table.Cell>{memberId.toNumber()}</Table.Cell>
-      </Table.Row>
-      <Table.Row>
-        <Table.Cell>Root account</Table.Cell>
-        <Table.Cell><AddressMini value={root_account} isShort={false} isPadded={false} withBalance /></Table.Cell>
-      </Table.Row>
-      <Table.Row>
-        <Table.Cell>Controller account</Table.Cell>
-        <Table.Cell><AddressMini value={controller_account} isShort={false} isPadded={false} withBalance /></Table.Cell>
-      </Table.Row>
-      <Table.Row>
-        <Table.Cell>Registered on</Table.Cell>
-        <Table.Cell>{new Date(registered_at_time.toNumber()).toLocaleString()} at block #{formatNumber(registered_at_block)}</Table.Cell>
-      </Table.Row>
-      <Table.Row>
-        <Table.Cell>Suspended?</Table.Cell>
-        <Table.Cell>{suspended.eq(true) ? 'Yes' : 'No'}</Table.Cell>
-      </Table.Row>
-      <Table.Row>
-        <Table.Cell>Council member?</Table.Cell>
-        <Table.Cell>{isCouncilor ? 'Yes' : 'No'}</Table.Cell>
-      </Table.Row>
-      <Table.Row>
-        <Table.Cell>Entry method</Table.Cell>
-        <Table.Cell>{this.renderEntryMethod(entry)}</Table.Cell>
-      </Table.Row>
-      <Table.Row>
-        <Table.Cell>Subscription ID</Table.Cell>
-        <Table.Cell>{this.renderSubscription(subscription)}</Table.Cell>
-      </Table.Row>
-      <Table.Row>
-        <Table.Cell>About</Table.Cell>
-        <Table.Cell><ReactMarkdown className='JoyMemo--full' source={about.toString()} linkTarget='_blank' /></Table.Cell>
-      </Table.Row>
-      </Table.Body>
+        <Table.Body>
+          <Table.Row>
+            <Table.Cell>Membership ID</Table.Cell>
+            <Table.Cell>{memberId.toNumber()}</Table.Cell>
+          </Table.Row>
+          <Table.Row>
+            <Table.Cell>Root account</Table.Cell>
+            <Table.Cell><AddressMini value={root_account} isShort={false} isPadded={false} withBalance /></Table.Cell>
+          </Table.Row>
+          <Table.Row>
+            <Table.Cell>Controller account</Table.Cell>
+            <Table.Cell><AddressMini value={controller_account} isShort={false} isPadded={false} withBalance /></Table.Cell>
+          </Table.Row>
+          <Table.Row>
+            <Table.Cell>Registered on</Table.Cell>
+            <Table.Cell>{new Date(registered_at_time.toNumber()).toLocaleString()} at block #{formatNumber(registered_at_block)}</Table.Cell>
+          </Table.Row>
+          <Table.Row>
+            <Table.Cell>Suspended?</Table.Cell>
+            <Table.Cell>{suspended.eq(true) ? 'Yes' : 'No'}</Table.Cell>
+          </Table.Row>
+          <Table.Row>
+            <Table.Cell>Council member?</Table.Cell>
+            <Table.Cell>{isCouncilor ? 'Yes' : 'No'}</Table.Cell>
+          </Table.Row>
+          <Table.Row>
+            <Table.Cell>Entry method</Table.Cell>
+            <Table.Cell>{this.renderEntryMethod(entry)}</Table.Cell>
+          </Table.Row>
+          <Table.Row>
+            <Table.Cell>Subscription ID</Table.Cell>
+            <Table.Cell>{this.renderSubscription(subscription)}</Table.Cell>
+          </Table.Row>
+          <Table.Row>
+            <Table.Cell>About</Table.Cell>
+            <Table.Cell><ReactMarkdown className='JoyMemo--full' source={about.toString()} linkTarget='_blank' /></Table.Cell>
+          </Table.Row>
+        </Table.Body>
       </Table>
     );
   }
@@ -176,6 +175,6 @@ export default translate(withMyAccount(
     queryMembershipToProp(
       'memberProfile',
       { paramName: 'memberId', propName: 'detailsMemberProfile' }
-    ),
+    )
   )(Component)
 ));

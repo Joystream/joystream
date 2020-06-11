@@ -1,12 +1,12 @@
-import React from "react";
-import { Header, Card } from "semantic-ui-react";
-import Details from "./Details";
-import { ParsedProposal } from "../runtime/transport";
-import { getExtendedStatus } from "./ProposalDetails";
+import React from 'react';
+import { Header, Card } from 'semantic-ui-react';
+import Details from './Details';
+import { ParsedProposal } from '@polkadot/joy-utils/types/proposals';
+import { getExtendedStatus } from './ProposalDetails';
 import { BlockNumber } from '@polkadot/types/interfaces';
 import styled from 'styled-components';
 
-import "./Proposal.css";
+import './Proposal.css';
 
 const ProposalIdBox = styled.div`
   position: absolute;
@@ -18,10 +18,10 @@ const ProposalIdBox = styled.div`
 `;
 
 export type ProposalPreviewProps = {
-  proposal: ParsedProposal,
-  bestNumber?: BlockNumber
+  proposal: ParsedProposal;
+  bestNumber?: BlockNumber;
 };
-export default function ProposalPreview({ proposal, bestNumber }: ProposalPreviewProps) {
+export default function ProposalPreview ({ proposal, bestNumber }: ProposalPreviewProps) {
   const extendedStatus = getExtendedStatus(proposal, bestNumber);
   return (
     <Card

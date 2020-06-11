@@ -1,6 +1,6 @@
-import React from "react";
-import { getFormErrorLabelsProps } from "./errorHandling";
-import * as Yup from "yup";
+import React from 'react';
+import { getFormErrorLabelsProps } from './errorHandling';
+import * as Yup from 'yup';
 import {
   GenericProposalForm,
   GenericFormValues,
@@ -10,11 +10,11 @@ import {
   ProposalFormExportProps,
   ProposalFormContainerProps,
   ProposalFormInnerProps
-} from "./GenericProposalForm";
-import Validation from "../validationSchema";
-import { TextareaFormField } from "./FormFields";
-import { withFormContainer } from "./FormContainer";
-import "./forms.css";
+} from './GenericProposalForm';
+import Validation from '../validationSchema';
+import { TextareaFormField } from './FormFields';
+import { withFormContainer } from './FormContainer';
+import './forms.css';
 
 type FormValues = GenericFormValues & {
   description: string;
@@ -22,7 +22,7 @@ type FormValues = GenericFormValues & {
 
 const defaultValues: FormValues = {
   ...genericFormDefaultValues,
-  description: ""
+  description: ''
 };
 
 type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
@@ -39,7 +39,7 @@ const SignalForm: React.FunctionComponent<FormInnerProps> = props => {
       {...props}
       txMethod="createTextProposal"
       proposalType="Text"
-      submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", values.description]}
+      submitParams={[props.myMemberId, values.title, values.rationale, '{STAKE}', values.description]}
     >
       <TextareaFormField
         label="Description"
@@ -64,7 +64,7 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     description: Validation.Text.description
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
-  displayName: "SignalForm"
+  displayName: 'SignalForm'
 })(SignalForm);
 
 export default withProposalFormData<FormContainerProps, ExportComponentProps>(FormContainer);

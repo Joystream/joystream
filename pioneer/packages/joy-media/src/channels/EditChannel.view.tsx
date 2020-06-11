@@ -10,19 +10,19 @@ type Props = OuterProps;
 export const EditChannelView = MediaView<Props>({
   component: EditForm,
   membersOnly: true,
-  triggers: [ 'id' ],
+  triggers: ['id'],
   resolveProps: async (props) => {
     const { transport, id } = props;
     const entity = id && await transport.channelById(id);
-    const constraints = await transport.channelValidationConstraints()
+    const constraints = await transport.channelValidationConstraints();
     return { entity, constraints };
   }
-})
+});
 
 type WithRouterProps = Props & RouteComponentProps<any>
 
 export const EditChannelWithRouter = (props: WithRouterProps) => {
-  const { match: { params: { id }}} = props;
+  const { match: { params: { id } } } = props;
 
   if (id) {
     try {
@@ -32,5 +32,5 @@ export const EditChannelWithRouter = (props: WithRouterProps) => {
     }
   }
 
-  return <JoyError title={`Invalid channel id in URL`}>{id}</JoyError>
-}
+  return <JoyError title={'Invalid channel id in URL'}>{id}</JoyError>;
+};

@@ -13,12 +13,11 @@ import { SavedVote } from './myVotesStore';
 import Section from '@polkadot/joy-utils/Section';
 
 type Props = ApiProps & I18nProps & MyAddressProps & {
-  myVotes?: SavedVote[],
-  commitments?: Hash[]
+  myVotes?: SavedVote[];
+  commitments?: Hash[];
 };
 
 class Comp extends React.PureComponent<Props> {
-
   private filterVotes = (myVotesOnly: boolean): Hash[] => {
     const { myVotes = [], commitments = [] } = this.props;
     const isMyVote = (hash: string): boolean => {
@@ -40,13 +39,13 @@ class Comp extends React.PureComponent<Props> {
     return <>
       <Section title={`My previous votes (${myVotes.length})`}>{
         !myVotes.length
-        ? <em>No votes by the current account found on the current browser.</em>
-        : this.renderVotes(myVotes)
+          ? <em>No votes by the current account found on the current browser.</em>
+          : this.renderVotes(myVotes)
       }</Section>
       <Section title={`Other votes (${otherVotes.length})`}>{
         !otherVotes.length
-        ? <em>No votes submitted by other accounts yet.</em>
-        : this.renderVotes(otherVotes)
+          ? <em>No votes submitted by other accounts yet.</em>
+          : this.renderVotes(otherVotes)
       }</Section>
     </>;
   }

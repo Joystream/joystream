@@ -11,21 +11,21 @@ import { Video } from '../mocks';
 import { EntityId } from '@joystream/types/versioned-store';
 
 export default {
-	title: 'Media | Playback',
-	decorators: [ withMockTransport ],
+  title: 'Media | Playback',
+  decorators: [withMockTransport]
 };
 
 export const PlayVideoStory = () =>
-	<PlayVideo
-		id={new EntityId(Video.id)}
-		video={Video}
-		channel={MockVideoChannel}
-	/>;
+  <PlayVideo
+    id={new EntityId(Video.id)}
+    video={Video}
+    channel={MockVideoChannel}
+  />;
 
 export const PlayAlbumStory = () =>
-	<PlayContent
-		channel={MockMusicChannel}
-		featuredAlbums={FeaturedAlbums}
-		tracks={Album1TrackSamples}
-		currentTrackIndex={3}
-	/>;
+  <PlayContent
+    channel={MockMusicChannel}
+    featuredAlbums={FeaturedAlbums}
+    tracks={Album1TrackSamples}
+    currentTrackIndex={3}
+  />;

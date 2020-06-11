@@ -18,7 +18,6 @@ type Props = AppProps & I18nProps & {};
 type State = {};
 
 class App extends React.PureComponent<Props, State> {
-
   state: State = {};
 
   private buildTabs (): TabItem[] {

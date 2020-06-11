@@ -50,15 +50,15 @@ const buildSchema = (props: ValidationProps) => {
 };
 
 type OuterProps = ValidationProps & {
-  history?: History,
-  id?: CategoryId,
-  parentId?: CategoryId,
-  struct?: Category
+  history?: History;
+  id?: CategoryId;
+  parentId?: CategoryId;
+  struct?: Category;
 };
 
 type FormValues = {
-  title: string,
-  description: string
+  title: string;
+  description: string;
 };
 
 type FormProps = OuterProps & FormikProps<FormValues>;
@@ -94,7 +94,7 @@ const InnerForm = (props: FormProps) => {
     setSubmitting(false);
     if (txResult == null) {
       // Tx cancelled.
-      return;
+
     }
   };
 
@@ -134,11 +134,11 @@ const InnerForm = (props: FormProps) => {
       ];
     } else {
       // NOTE: currently update_category doesn't support title and description updates.
-      return [ /* TODO add all required params */ ];
+      return [];
     }
   };
 
-  const categoryWord = isSubcategory ? `subcategory` : `category`;
+  const categoryWord = isSubcategory ? 'subcategory' : 'category';
 
   const form =
     <Form className='ui form JoyForm EditEntityForm'>
@@ -155,7 +155,7 @@ const InnerForm = (props: FormProps) => {
           size='large'
           label={isNew
             ? `Create a ${categoryWord}`
-            : `Update a category`
+            : 'Update a category'
           }
           isDisabled={!dirty || isSubmitting}
           params={buildTxParams()}

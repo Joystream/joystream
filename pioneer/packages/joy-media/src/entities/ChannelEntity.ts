@@ -5,6 +5,6 @@ import { ChannelType } from '../schemas/channel/Channel';
 export type ChannelEntity = ChannelType & {
 
   // Stats:
-  rewardEarned: BN,
-  contentItemsCount: number,
+  rewardEarned: BN;
+  contentItemsCount: number;
 };

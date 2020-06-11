@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { Dropdown, Label, Loader, Message, Icon, DropdownItemProps, DropdownOnSearchChangeData, DropdownProps } from "semantic-ui-react";
-import { getFormErrorLabelsProps } from "./errorHandling";
-import * as Yup from "yup";
+import React, { useEffect, useState } from 'react';
+import { Dropdown, Label, Loader, Message, Icon, DropdownItemProps, DropdownOnSearchChangeData, DropdownProps } from 'semantic-ui-react';
+import { getFormErrorLabelsProps } from './errorHandling';
+import * as Yup from 'yup';
 import {
   GenericProposalForm,
   GenericFormValues,
@@ -11,16 +11,15 @@ import {
   ProposalFormExportProps,
   ProposalFormContainerProps,
   ProposalFormInnerProps
-} from "./GenericProposalForm";
-import Validation from "../validationSchema";
-import { FormField } from "./FormFields";
-import { withFormContainer } from "./FormContainer";
-import { useTransport } from "../runtime";
-import { usePromise } from "../utils";
-import { Profile } from "@joystream/types/members";
-import PromiseComponent from "../Proposal/PromiseComponent";
+} from './GenericProposalForm';
+import Validation from '../validationSchema';
+import { FormField } from './FormFields';
+import { withFormContainer } from './FormContainer';
+import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
+import { Profile } from '@joystream/types/members';
+import { PromiseComponent } from '@polkadot/joy-utils/react/components';
 import _ from 'lodash';
-import "./forms.css";
+import './forms.css';
 
 type FormValues = GenericFormValues & {
   workingGroupLead: any;
@@ -28,7 +27,7 @@ type FormValues = GenericFormValues & {
 
 const defaultValues: FormValues = {
   ...genericFormDefaultValues,
-  workingGroupLead: ""
+  workingGroupLead: ''
 };
 
 type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
@@ -36,7 +35,7 @@ type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormVal
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-function memberOptionKey(id: number, profile: Profile) {
+function memberOptionKey (id: number, profile: Profile) {
   return `${id}:${profile.root_account.toString()}`;
 }
 
@@ -45,26 +44,26 @@ const MEMBERS_NONE_OPTION: DropdownItemProps = {
   key: '- NONE -',
   text: '- NONE -',
   value: 'none'
-}
+};
 
-function membersToOptions(members: { id: number, profile: Profile }[]) {
+function membersToOptions (members: { id: number; profile: Profile }[]) {
   return [MEMBERS_NONE_OPTION].concat(
     members
       .map(({ id, profile }) => ({
         key: profile.handle,
-        text: `${ profile.handle } (id:${ id })`,
+        text: `${profile.handle} (id:${id})`,
         value: memberOptionKey(id, profile),
         image: profile.avatar_uri.toString() ? { avatar: true, src: profile.avatar_uri } : null
       }))
   );
 }
 
-function filterMembers(options: DropdownItemProps[], query: string) {
+function filterMembers (options: DropdownItemProps[], query: string) {
   if (query.length < MEMBERS_QUERY_MIN_LENGTH) {
     return [MEMBERS_NONE_OPTION];
   }
   const regexp = new RegExp(_.escapeRegExp(query));
-  return options.filter((opt) => regexp.test((opt.text || '').toString()))
+  return options.filter((opt) => regexp.test((opt.text || '').toString()));
 }
 
 type MemberWithId = { id: number; profile: Profile };
@@ -73,17 +72,17 @@ const SetContentWorkingGroupsLeadForm: React.FunctionComponent<FormInnerProps> =
   const { handleChange, errors, touched, values } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   // State
-  const [ membersOptions, setMembersOptions ] = useState([] as DropdownItemProps[]);
-  const [ filteredOptions, setFilteredOptions ] = useState([] as DropdownItemProps[]);
-  const [ membersSearchQuery, setMembersSearchQuery ] = useState("");
+  const [membersOptions, setMembersOptions] = useState([] as DropdownItemProps[]);
+  const [filteredOptions, setFilteredOptions] = useState([] as DropdownItemProps[]);
+  const [membersSearchQuery, setMembersSearchQuery] = useState('');
   // Transport
   const transport = useTransport();
   const [members, /* error */, loading] = usePromise<MemberWithId[]>(
-    () => transport.membersExceptCouncil(),
+    () => transport.council.membersExceptCouncil(),
     []
   );
   const [currentLead, clError, clLoading] = usePromise<MemberWithId | null>(
-    () => transport.WGLead(),
+    () => transport.contentWorkingGroup.currentLead(),
     null
   );
   // Generate members options array on load
@@ -107,13 +106,13 @@ const SetContentWorkingGroupsLeadForm: React.FunctionComponent<FormInnerProps> =
           props.myMemberId,
           values.title,
           values.rationale,
-          "{STAKE}",
-          values.workingGroupLead !== MEMBERS_NONE_OPTION.value ? values.workingGroupLead.split(":") : undefined
+          '{STAKE}',
+          values.workingGroupLead !== MEMBERS_NONE_OPTION.value ? values.workingGroupLead.split(':') : undefined
         ]}
       >
         {loading ? (
           <>
-            <Loader active inline style={{ marginRight: "5px" }} /> Fetching members...
+            <Loader active inline style={{ marginRight: '5px' }} /> Fetching members...
           </>
         ) : (<>
           <FormField
@@ -136,13 +135,13 @@ const SetContentWorkingGroupsLeadForm: React.FunctionComponent<FormInnerProps> =
               clearable
               // Here we just ignore search query and return all options, since we pulled-out this logic
               // to our component to avoid lags
-              search={ (options: DropdownItemProps[], query:string ) => options }
+              search={ (options: DropdownItemProps[], query: string) => options }
               // On search change we update it in our state
               onSearchChange={ (e: React.SyntheticEvent, data: DropdownOnSearchChangeData) => {
                 setMembersSearchQuery(data.searchQuery);
               } }
               name="workingGroupLead"
-              placeholder={ "Start typing member handle or \"id:[ID]\" query..." }
+              placeholder={ 'Start typing member handle or "id:[ID]" query...' }
               fluid
               selection
               options={filteredOptions}
@@ -182,7 +181,7 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     workingGroupLead: Validation.SetLead.workingGroupLead
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
-  displayName: "SetContentWorkingGroupLeadForm"
+  displayName: 'SetContentWorkingGroupLeadForm'
 })(SetContentWorkingGroupsLeadForm);
 
 export default withProposalFormData<FormContainerProps, ExportComponentProps>(FormContainer);

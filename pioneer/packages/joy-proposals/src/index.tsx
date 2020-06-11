@@ -1,15 +1,15 @@
-import React from "react";
-import { Route, Switch } from "react-router";
+import React from 'react';
+import { Route, Switch } from 'react-router';
 
-import { AppProps, I18nProps } from "@polkadot/react-components/types";
-import Tabs, { TabItem } from "@polkadot/react-components/Tabs";
-import { SubstrateProvider } from "./runtime";
-import { ProposalPreviewList, ProposalFromId, ChooseProposalType } from "./Proposal";
+import { AppProps, I18nProps } from '@polkadot/react-components/types';
+import Tabs, { TabItem } from '@polkadot/react-components/Tabs';
+import { TransportProvider } from '@polkadot/joy-utils/react/context';
+import { ProposalPreviewList, ProposalFromId, ChooseProposalType } from './Proposal';
 
-import "./index.css";
+import './index.css';
 
-import translate from "./translate";
-import NotDone from "./NotDone";
+import translate from './translate';
+import NotDone from './NotDone';
 import {
   SignalForm,
   EvictStorageProviderForm,
@@ -20,27 +20,27 @@ import {
   SetStorageRoleParamsForm,
   SetMaxValidatorCountForm,
   RuntimeUpgradeForm
-} from "./forms";
+} from './forms';
 
 interface Props extends AppProps, I18nProps {}
 
-function App(props: Props): React.ReactElement<Props> {
+function App (props: Props): React.ReactElement<Props> {
   const { t, basePath } = props;
 
   const tabs: TabItem[] = [
     {
       isRoot: true,
-      name: "proposals",
-      text: t("Proposals")
+      name: 'proposals',
+      text: t('Proposals')
     },
     {
-      name: "new",
-      text: t("New Proposal")
+      name: 'new',
+      text: t('New Proposal')
     }
   ];
 
   return (
-    <SubstrateProvider>
+    <TransportProvider>
       <main className="proposal--App">
         <header>
           <Tabs basePath={basePath} items={tabs} />
@@ -66,7 +66,7 @@ function App(props: Props): React.ReactElement<Props> {
           <Route component={ProposalPreviewList} />
         </Switch>
       </main>
-    </SubstrateProvider>
+    </TransportProvider>
   );
 }
 

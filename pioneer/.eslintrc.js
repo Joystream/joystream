@@ -11,6 +11,10 @@ module.exports = {
   },
   rules: {
     ...base.rules,
-    '@typescript-eslint/no-explicit-any': 'off'
+    '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/camelcase': 'off',
+    'react/prop-types': 'off',
+    'new-cap': 'off',
+    '@typescript-eslint/interface-name-prefix': 'off'
   }
 };
