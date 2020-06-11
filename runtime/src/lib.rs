@@ -434,7 +434,6 @@ pub use versioned_store;
 
 pub use content_working_group as content_wg;
 mod migration;
-use roles::actors;
 
 /// Alias for ContentId, used in various places.
 pub type ContentId = primitives::H256;
@@ -759,16 +758,6 @@ impl working_group::Trait<working_group::Instance2> for Runtime {
     type Event = Event;
 }
 
-impl actors::Trait for Runtime {
-    type Event = Event;
-    type OnActorRemoved = ();
-}
-
-//TODO: SWG -  remove with roles module deletion
-impl actors::ActorRemoved<Runtime> for () {
-    fn actor_removed(_: &AccountId) {}
-}
-
 impl service_discovery::Trait for Runtime {
     type Event = Event;
 }
@@ -861,7 +850,6 @@ construct_runtime!(
         Memo: memo::{Module, Call, Storage, Event<T>},
         Members: members::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
-        Actors: actors::{Module, Call, Storage, Event<T>, Config},
         VersionedStore: versioned_store::{Module, Call, Storage, Event<T>, Config},
         VersionedStorePermissions: versioned_store_permissions::{Module, Call, Storage},
         Stake: stake::{Module, Call, Storage},

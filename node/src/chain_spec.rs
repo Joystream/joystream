@@ -15,11 +15,12 @@
 // along with Joystream node.  If not, see <http://www.gnu.org/licenses/>.
 
 // Clippy linter warning.
-#![allow(clippy::identity_op)] // disable it because we use such syntax for a code readability
-                               // Example:  voting_period: 1 * DAY
+// Disable it because we use such syntax for a code readability.
+// Example:  voting_period: 1 * DAY
+#![allow(clippy::identity_op)]
 
 use node_runtime::{
-    versioned_store::InputValidationLengthConstraint as VsInputValidation, ActorsConfig,
+    versioned_store::InputValidationLengthConstraint as VsInputValidation,
     AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
     CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
     DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, IndicesConfig,
@@ -263,10 +264,6 @@ pub fn testnet_genesis(
         }),
         data_object_storage_registry: Some(DataObjectStorageRegistryConfig {
             first_relationship_id: 1,
-        }),
-        actors: Some(ActorsConfig {
-            enable_storage_role: true,
-            request_life_time: 300,
         }),
         versioned_store: Some(VersionedStoreConfig {
             class_by_id: vec![],

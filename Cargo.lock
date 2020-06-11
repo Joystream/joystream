@@ -1660,7 +1660,6 @@ dependencies = [
  "substrate-proposals-discussion-module",
  "substrate-proposals-engine-module",
  "substrate-recurring-reward-module",
- "substrate-roles-module",
  "substrate-service-discovery-module",
  "substrate-session",
  "substrate-stake-module",
@@ -5196,24 +5195,6 @@ dependencies = [
  "srml-timestamp",
  "substrate-primitives",
  "substrate-token-mint-module",
-]
-
-[[package]]
-name = "substrate-roles-module"
-version = "1.0.1"
-dependencies = [
- "parity-scale-codec",
- "serde",
- "sr-io",
- "sr-primitives",
- "sr-std",
- "srml-balances",
- "srml-support",
- "srml-system",
- "srml-timestamp",
- "substrate-common-module",
- "substrate-membership-module",
- "substrate-primitives",
 ]
 
 [[package]]
