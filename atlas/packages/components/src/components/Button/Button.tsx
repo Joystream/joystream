@@ -6,7 +6,7 @@ type ButtonProps = {
 	children?: React.ReactNode;
 	icon?: boolean;
 	disabled?: boolean;
-	onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
+	onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 } & ButtonStyleProps;
 
 export default function Button({
@@ -14,12 +14,12 @@ export default function Button({
 	icon,
 	type = "primary",
 	disabled = false,
-	onClick,
+	onClick = () => {},
 	...styleProps
 }: ButtonProps) {
 	let styles = useCSS({ disabled, type, children, ...styleProps });
 	return (
-		<button css={styles.container} onClick={disabled ? null : onClick}>
+		<button css={styles.container} onClick={onClick} disabled={disabled}>
 			{icon && <BlockIcon css={styles.icon} />}
 			{children}
 		</button>

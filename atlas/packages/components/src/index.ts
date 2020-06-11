@@ -1,5 +1,3 @@
-import Checkbox from "./components/Checkbox"
-
 export { default as Button } from "./components/Button"
 export { default as Carousel } from "./components/Carousel"
 export { default as Dropdown } from "./components/Dropdown"
@@ -15,3 +13,6 @@ export { default as Tab } from "./components/Tabs/Tab"
 export { default as Tag } from "./components/Tag"
 export { default as TextField } from "./components/TextField"
 export { default as Typography } from "./components/Typography"
+export { default as VideoPreview } from "./components/VideoPreview"
+export { default as VideoPlayer } from "./components/VideoPlayer"
+export * as theme from "./theme"

@@ -1,7 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import { DropdownStyleProps, useCSS } from "./Dropdown.style";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import ChevronIconUp from "../../../assets/chevron-down-big.svg";
 import ChevronIconDown from "../../../assets/chevron-up-big.svg";
 import { spacing } from "./../../theme";
@@ -15,7 +13,7 @@ type DropdownProps = {
 	label: string;
 	helper?: string;
 	value?: string;
-	options: Array<DropdownOption>;
+	options: DropdownOption[];
 	onChange?: (option: DropdownOption) => void;
 } & DropdownStyleProps;
 
@@ -23,7 +21,7 @@ export default function Dropdown({
 	label,
 	helper = "",
 	value = "",
-	options,
+	options = [],
 	disabled = false,
 	onChange = () => {},
 	...styleProps
@@ -31,7 +29,7 @@ export default function Dropdown({
 	const inputRef = useRef(null);
 	const [isActive, setIsActive] = useState(!!value);
 	const [inputTextValue, setInputTextValue] = useState(
-		!!value ? options.find(option => option.value === value).text : ""
+		!!value ? options.find(({ value: optionValue = NaN }) => optionValue === value)?.text : ""
 	);
 	const [showOptions, setShowOptions] = useState(false);
 	const styles = useCSS({ isActive, disabled, ...styleProps });

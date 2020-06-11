@@ -1,0 +1,43 @@
+"use strict";
+
+var helpers = require("../../../../node_modules/@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js");
+
+var prevRefreshReg = window.$RefreshReg$;
+var prevRefreshSig = window.$RefreshSig$;
+helpers.prelude(module);
+
+try {
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports["default"] = Layout;
+
+  var _react = _interopRequireDefault(require("react"));
+
+  var _core = require("@emotion/core");
+
+  var _emotionNormalize = _interopRequireDefault(require("emotion-normalize"));
+
+  var _components = require("@joystream/components");
+
+  function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+
+  var globalStyles = /*#__PURE__*/(0, _core.css)(_emotionNormalize["default"], ";body{box-sizing:border-box;font-family:", _components.theme.typography.fonts.base, ";background:", _components.theme.colors.black, ";color:", _components.theme.colors.gray[500], ";}h1,h2,h3,h4,h5,h6{font-family:", _components.theme.typography.fonts.headers, ";color:", _components.theme.colors.white, ";};label:globalStyles;" + ("development" === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkxheW91dC50c3giXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBT3dCIiwiZmlsZSI6IkxheW91dC50c3giLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgUmVhY3QgZnJvbSBcInJlYWN0XCI7XG5pbXBvcnQgeyBjc3MsIEdsb2JhbCB9IGZyb20gXCJAZW1vdGlvbi9jb3JlXCI7XG5pbXBvcnQgZW1vdGlvbk5vcm1hbGl6ZSBmcm9tIFwiZW1vdGlvbi1ub3JtYWxpemVcIjtcbmltcG9ydCB7IHRoZW1lIH0gZnJvbSBcIkBqb3lzdHJlYW0vY29tcG9uZW50c1wiO1xuXG50eXBlIExheW91dFByb3BzID0geyBjaGlsZHJlbjogUmVhY3QuUmVhY3ROb2RlIHwgUmVhY3QuUmVhY3ROb2RlW10gfTtcblxuY29uc3QgZ2xvYmFsU3R5bGVzID0gY3NzYFxuXHQke2Vtb3Rpb25Ob3JtYWxpemV9O1xuXG5cdGJvZHkge1xuXHRcdGJveC1zaXppbmc6IGJvcmRlci1ib3g7XG5cdFx0Zm9udC1mYW1pbHk6ICR7dGhlbWUudHlwb2dyYXBoeS5mb250cy5iYXNlfTtcblx0XHRiYWNrZ3JvdW5kOiAke3RoZW1lLmNvbG9ycy5ibGFja307XG5cdFx0Y29sb3I6ICR7dGhlbWUuY29sb3JzLmdyYXlbNTAwXX07XG5cdH1cblxuXHRoMSxcblx0aDIsXG5cdGgzLFxuXHRoNCxcblx0aDUsXG5cdGg2IHtcblx0XHRmb250LWZhbWlseTogJHt0aGVtZS50eXBvZ3JhcGh5LmZvbnRzLmhlYWRlcnN9O1xuXHRcdGNvbG9yOiAke3RoZW1lLmNvbG9ycy53aGl0ZX07XG5cdH1cbmA7XG5leHBvcnQgZGVmYXVsdCBmdW5jdGlvbiBMYXlvdXQoeyBjaGlsZHJlbiB9OiBMYXlvdXRQcm9wcykge1xuXHRyZXR1cm4gKFxuXHRcdDw+XG5cdFx0XHQ8R2xvYmFsIHN0eWxlcz17Z2xvYmFsU3R5bGVzfSAvPlxuXHRcdFx0e2NoaWxkcmVufVxuXHRcdDwvPlxuXHQpO1xufVxuIl19 */"));
+
+  function Layout(_ref) {
+    var children = _ref.children;
+    return (0, _core.jsx)(_react["default"].Fragment, null, (0, _core.jsx)(_core.Global, {
+      styles: globalStyles
+    }), children);
+  }
+
+  _c = Layout;
+
+  var _c;
+
+  $RefreshReg$(_c, "Layout");
+  helpers.postlude(module);
+} finally {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}

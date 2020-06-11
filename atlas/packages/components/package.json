@@ -1,5 +1,5 @@
 {
-	"name": "components",
+	"name": "@joystream/components",
 	"version": "1.0.0",
 	"description": "React Components for the Atlas Project",
 	"homepage": "https://github.com/Joystream/atlas#readme",
@@ -20,7 +20,7 @@
 	},
 	"scripts": {
 		"start": "rollup -wc",
-		"dev": "concurrently \"yarn start\" \"yarn storybook\" ",
+		"dev": "yarn start",
 		"index": "node scripts/build-index.js",
 		"build": "rollup -c",
 		"storybook": "start-storybook -p 6006",
@@ -32,8 +32,12 @@
 		"url": "https://github.com/Joystream/atlas/issues"
 	},
 	"dependencies": {
+		"react-player": "^2.2.0"
+	},
+	"peerDependencies": {
+		"@babel/runtime": "^7.10.2",
 		"@emotion/core": "^10.0.28",
 		"react": "^16.13.1",
-		"react-dom": "^16.13.1"
+		"react-spring": "^8.0.27"
 	}
 }

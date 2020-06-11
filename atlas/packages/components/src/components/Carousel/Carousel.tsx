@@ -1,21 +1,14 @@
-import React, { ReactNode, useRef } from "react";
+import React, { useRef } from "react";
 import { useCSS, CarouselStyleProps } from "./Carousel.style";
 import NavButton from "../NavButton";
 
 type CarouselProps = {
-	children: Array<ReactNode>;
+	children: React.ReactNode[];
 	scrollAmount?: Number;
 } & CarouselStyleProps;
 
 export default function Carousel({ children, scrollAmount = 200, ...styleProps }: CarouselProps) {
 	const container = useRef(null);
-
-	function onScroll(direction: "right" | "left") {
-		container.current.scrollBy({
-			left: direction === "left" ? -scrollAmount : scrollAmount,
-			behavior: "smooth",
-		});
-	}
 
 	let styles = useCSS(styleProps);
 
@@ -29,10 +22,10 @@ export default function Carousel({ children, scrollAmount = 200, ...styleProps }
 				))}
 			</div>
 			<div css={styles.navLeft}>
-				<NavButton type="primary" direction="left" onClick={() => onScroll("left")} />
+				<NavButton type="primary" direction="left" onClick={() => {}} />
 			</div>
 			<div css={styles.navRight}>
-				<NavButton type="primary" direction="right" onClick={() => onScroll("right")} />
+				<NavButton type="primary" direction="right" onClick={() => {}} />
 			</div>
 		</div>
 	);

@@ -24,7 +24,7 @@ const baseStyles: StyleFn = () => ({
 		background: "transparent"
 	}
 })
-const colorFromType: StyleFn = (styles, { type }: ButtonStyleProps) => {
+const colorFromType: StyleFn = (styles = {}, { type }: ButtonStyleProps) => {
 	switch (type) {
 		case "primary":
 			return {
@@ -61,6 +61,9 @@ const colorFromType: StyleFn = (styles, { type }: ButtonStyleProps) => {
 					color: colors.blue[700]
 				}
 			}
+
+		default:
+			return { ...styles }
 	}
 }
 const paddingFromType: StyleFn = (

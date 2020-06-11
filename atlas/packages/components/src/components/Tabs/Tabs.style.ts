@@ -22,7 +22,7 @@ const tab: StyleFn = () => ({
 })
 
 const activeTab: StyleFn = () => ({
-	...tab(),
+	...tab({}),
 	color: colors.white,
 	backgroundColor: "transparent",
 	borderBottom: `3px solid ${colors.blue[500]}`
