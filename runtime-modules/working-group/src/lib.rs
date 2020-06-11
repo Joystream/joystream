@@ -52,10 +52,10 @@ use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 use rstd::vec::Vec;
-use sr_primitives::traits::{EnsureOrigin, One, Zero};
+use sr_primitives::traits::{One, Zero};
 use srml_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
 use srml_support::{decl_event, decl_module, decl_storage, ensure};
-use system::{ensure_root, ensure_signed, RawOrigin};
+use system::{ensure_root, ensure_signed};
 
 use crate::types::WorkerExitInitiationOrigin;
 use common::constraints::InputValidationLengthConstraint;
@@ -336,9 +336,7 @@ decl_module! {
 
             let lead = Self::ensure_lead_is_set()?;
 
-            //
             // == MUTATION SAFE ==
-            //
 
             // Update current lead
             <CurrentLead<T, I>>::kill();
@@ -941,24 +939,6 @@ decl_module! {
     }
 }
 
-impl<Origin, T, I> EnsureOrigin<Origin> for Module<T, I>
-where
-    Origin: Into<Result<RawOrigin<T::AccountId>, Origin>> + From<RawOrigin<T::AccountId>>,
-    T: Trait<I>,
-    I: Instance,
-{
-    type Success = ();
-
-    fn try_origin(o: Origin) -> Result<Self::Success, Origin> {
-        o.into().and_then(|o| match o {
-            RawOrigin::Signed(account_id) => {
-                Self::ensure_is_lead_account(account_id).map_err(|_| RawOrigin::None.into())
-            }
-            _ => Err(RawOrigin::None.into()),
-        })
-    }
-}
-
 impl<T: Trait<I>, I: Instance> Module<T, I> {
     /// Checks that provided lead account id belongs to the current working group leader
     pub fn ensure_is_lead_account(lead_account_id: T::AccountId) -> Result<(), Error> {
@@ -1190,7 +1170,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         // Unstake if stake profile exists
         if let Some(ref stake_profile) = worker.role_stake_profile {
-            // Determine unstaknig period based on who initiated deactivation
+            // Determine unstaking period based on who initiated deactivation
             let unstaking_period = match exit_initiation_origin {
                 WorkerExitInitiationOrigin::Lead => stake_profile.termination_unstaking_period,
                 WorkerExitInitiationOrigin::Worker => stake_profile.exit_unstaking_period,

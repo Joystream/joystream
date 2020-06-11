@@ -23,8 +23,7 @@ fn parse_forum_json() -> Result<ForumData> {
     serde_json::from_str(data)
 }
 
-//TODO: should we set the forum_sudo account in the working group module?
-pub fn create(_forum_sudo: AccountId) -> ForumConfig {
+pub fn create(forum_sudo: AccountId) -> ForumConfig {
     let forum_data = parse_forum_json().expect("failed loading forum data");
 
     let next_category_id: CategoryId = forum_data
@@ -47,5 +46,6 @@ pub fn create(_forum_sudo: AccountId) -> ForumConfig {
         post_text_constraint: new_validation(10, 990),
         thread_moderation_rationale_constraint: new_validation(10, 290),
         post_moderation_rationale_constraint: new_validation(10, 290),
+        forum_sudo,
     }
 }

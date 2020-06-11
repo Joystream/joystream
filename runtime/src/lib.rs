@@ -746,17 +746,11 @@ impl forum::ForumUserRegistry<AccountId> for ShimMembershipRegistry {
 impl forum::Trait for Runtime {
     type Event = Event;
     type MembershipRegistry = ShimMembershipRegistry;
-    type EnsureForumLeader = working_group::Module<Runtime, working_group::Instance1>;
     type ThreadId = ThreadId;
     type PostId = PostId;
 }
 
 impl migration::Trait for Runtime {
-    type Event = Event;
-}
-
-// Forum working group
-impl working_group::Trait<working_group::Instance1> for Runtime {
     type Event = Event;
 }
 
@@ -885,7 +879,7 @@ construct_runtime!(
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Module, Call, Storage, Error, Config<T>},
         // --- Working groups
-        ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
+        // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Event<T>},
     }
 );
