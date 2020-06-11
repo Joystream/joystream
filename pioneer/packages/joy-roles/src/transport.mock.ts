@@ -28,6 +28,7 @@ import { OpeningState } from './classifiers';
 
 import * as faker from 'faker';
 import { mockProfile } from './mocks';
+import { WorkingGroups } from './working_groups';
 
 export class Transport extends TransportBase implements ITransport {
   protected simulateApiResponse<T> (value: T): Promise<T> {
@@ -299,6 +300,10 @@ export class Transport extends TransportBase implements ITransport {
         defactoMinimumStake: new u128(0)
       }
     );
+  }
+
+  async groupOpening (group: WorkingGroups, id: number): Promise<WorkingGroupOpening> {
+    return await this.curationGroupOpening(id);
   }
 
   openingApplicationRanks (openingId: number): Promise<Balance[]> {

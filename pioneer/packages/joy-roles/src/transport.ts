@@ -7,6 +7,7 @@ import { WorkingGroupMembership, StorageAndDistributionMembership, GroupLeadStat
 import { WorkingGroupOpening } from './tabs/Opportunities';
 import { keyPairDetails } from './flows/apply';
 import { ActiveRole, OpeningApplication } from './tabs/MyRoles';
+import { WorkingGroups } from './working_groups';
 
 export interface ITransport {
   roles: () => Promise<Array<Role>>;
@@ -14,6 +15,7 @@ export interface ITransport {
   curationGroup: () => Promise<WorkingGroupMembership>;
   storageGroup: () => Promise<StorageAndDistributionMembership>;
   currentOpportunities: () => Promise<Array<WorkingGroupOpening>>;
+  groupOpening: (group: WorkingGroups, id: number) => Promise<WorkingGroupOpening>;
   curationGroupOpening: (id: number) => Promise<WorkingGroupOpening>;
   openingApplicationRanks: (openingId: number) => Promise<Balance[]>;
   expectedBlockTime: () => Promise<number>;
