@@ -1543,7 +1543,7 @@ impl<T: Trait> Module<T> {
             .get_properties()
             .iter()
             .filter_map(|property_id| {
-                if updated_entity_property_values.contains_key(property_id) {
+                if !updated_entity_property_values.contains_key(property_id) {
                     Some((*property_id, PropertyValue::default()))
                 } else {
                     None
