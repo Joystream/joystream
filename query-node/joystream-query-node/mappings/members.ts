@@ -1,31 +1,27 @@
 import * as assert from 'assert';
 
-import { Membership } from '../generated/graphql-server/src/modules/membership/membership.model';
+import { Member } from '../generated/graphql-server/src/modules/member/member.model';
 import { DB, SubstrateEvent } from '../generated/indexer';
 
 export async function handleMemberRegistered(db: DB, event: SubstrateEvent) {
-  // Get event data
   const { AccountId, MemberId } = event.event_params;
 
-  let member = new Membership();
-  member.accountId = AccountId.toString()
-  member.memberId = +MemberId
+  let member = new Member();
+  member.rootAccount = Buffer.from(AccountId);
+  member.memberId = MemberId.toString();
 
-  // Save to database.
-  db.save<Membership>(member);
+  db.save<Member>(member);
 }
 
 export async function handleMemberUpdatedAboutText(db: DB, event: SubstrateEvent) {
-  // Get event data
   const { MemberId } = event.event_params;
-
-  // Query from database since it is an existsing user
-  const member = await db.get(Membership, { where: { memberId: MemberId } });
+  const member = await db.get(Member, { where: { memberId: MemberId.toString() } });
 
   assert(member);
 
-  // Member data is updated at: now
   member.updatedAt = new Date();
+  db.save<Member>(member);
+}
 
   // Save back to database.
   db.save<Membership>(member);
