@@ -6,14 +6,16 @@
     "build": "tsc --build tsconfig.json",
     "test": "tap --files ts-node/register src/constantinople/tests/proposals/*Test.ts",
     "test-migration": "tap --files src/rome/tests/romeRuntimeUpgradeTest.ts --files src/constantinople/tests/electingCouncilTest.ts",
+    "debug": "tap --files src/nicaea/tests/bureaucracy/workerApplicationHappyCaseTest.ts -T",
     "lint": "tslint --project tsconfig.json",
     "prettier": "prettier --write ./src"
   },
   "dependencies": {
+    "@rome/types@npm:@joystream/types": "^0.7.0",
     "@constantinople/types@npm:@joystream/types": "^0.10.0",
+    "@nicaea/types": "./types",
     "@polkadot/api": "^0.96.1",
     "@polkadot/keyring": "^1.7.0-beta.5",
-    "@rome/types@npm:@joystream/types": "^0.7.0",
     "@types/bn.js": "^4.11.5",
     "bn.js": "^4.11.8",
     "dotenv": "^8.2.0",
