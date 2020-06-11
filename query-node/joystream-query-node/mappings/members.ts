@@ -22,7 +22,3 @@ export async function handleMemberUpdatedAboutText(db: DB, event: SubstrateEvent
   member.updatedAt = new Date();
   db.save<Member>(member);
 }
-
-  // Save back to database.
-  db.save<Membership>(member);
-}
