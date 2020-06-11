@@ -21,7 +21,6 @@
 //! - [create_set_lead_proposal](./struct.Module.html#method.create_set_lead_proposal)
 //! - [create_evict_storage_provider_proposal](./struct.Module.html#method.create_evict_storage_provider_proposal)
 //! - [create_set_validator_count_proposal](./struct.Module.html#method.create_set_validator_count_proposal)
-//! - [create_set_storage_role_parameters_proposal](./struct.Module.html#method.create_set_storage_role_parameters_proposal)
 //!
 //! ### Proposal implementations of this module
 //! - execute_text_proposal - prints the proposal to the log
@@ -59,7 +58,6 @@ mod tests;
 use common::origin_validator::ActorOriginValidator;
 use governance::election_params::ElectionParameters;
 use proposal_engine::ProposalParameters;
-use roles::actors::RoleParameters;
 use rstd::clone::Clone;
 use rstd::prelude::*;
 use rstd::str::from_utf8;
@@ -79,44 +77,6 @@ const CONTENT_WORKING_GROUP_MINT_CAPACITY_MAX_VALUE: u32 = 1_000_000;
 const MAX_SPENDING_PROPOSAL_VALUE: u32 = 2_000_000_u32;
 // Max validator count for the 'set validator count' proposal
 const MAX_VALIDATOR_COUNT: u32 = 100;
-// min_actors min value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_MIN_ACTORS_MAX_VALUE: u32 = 2;
-// max_actors min value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_MAX_ACTORS_MIN_VALUE: u32 = 2;
-// max_actors max value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_MAX_ACTORS_MAX_VALUE: u32 = 100;
-// reward_period min value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_REWARD_PERIOD_MIN_VALUE: u32 = 600;
-// reward_period max value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_REWARD_PERIOD_MAX_VALUE: u32 = 3600;
-// bonding_period min value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_BONDING_PERIOD_MIN_VALUE: u32 = 600;
-// bonding_period max value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_BONDING_PERIOD_MAX_VALUE: u32 = 28800;
-// unbonding_period min value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_UNBONDING_PERIOD_MIN_VALUE: u32 = 600;
-// unbonding_period max value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_UNBONDING_PERIOD_MAX_VALUE: u32 = 28800;
-// min_service_period min value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_MIN_SERVICE_PERIOD_MIN_VALUE: u32 = 600;
-// min_service_period max value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_MIN_SERVICE_PERIOD_MAX_VALUE: u32 = 28800;
-// startup_grace_period min value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_STARTUP_GRACE_PERIOD_MIN_VALUE: u32 = 600;
-// startup_grace_period max value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_STARTUP_GRACE_PERIOD_MAX_VALUE: u32 = 28800;
-// min_stake min value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_MIN_STAKE_MIN_VALUE: u32 = 0;
-// min_stake max value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_MIN_STAKE_MAX_VALUE: u32 = 10_000_000;
-// entry_request_fee min value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_ENTRY_REQUEST_FEE_MIN_VALUE: u32 = 0;
-// entry_request_fee max value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_ENTRY_REQUEST_FEE_MAX_VALUE: u32 = 100_000;
-// reward min value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_REWARD_MIN_VALUE: u32 = 0;
-// reward max value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_REWARD_MAX_VALUE: u32 = 1000;
 // council_size min value for the 'set election parameters' proposal
 const ELECTION_PARAMETERS_COUNCIL_SIZE_MIN_VALUE: u32 = 4;
 // council_size max value for the 'set election parameters' proposal
@@ -225,27 +185,6 @@ decl_error! {
         /// Require root origin in extrinsics
         RequireRootOrigin,
 
-        /// Invalid storage role parameter - min_actors
-        InvalidStorageRoleParameterMinActors,
-
-        /// Invalid storage role parameter - max_actors
-        InvalidStorageRoleParameterMaxActors,
-
-        /// Invalid storage role parameter - reward_period
-        InvalidStorageRoleParameterRewardPeriod,
-
-        /// Invalid storage role parameter - bonding_period
-        InvalidStorageRoleParameterBondingPeriod,
-
-        /// Invalid storage role parameter - unbonding_period
-        InvalidStorageRoleParameterUnbondingPeriod,
-
-        /// Invalid storage role parameter - min_service_period
-        InvalidStorageRoleParameterMinServicePeriod,
-
-        /// Invalid storage role parameter - startup_grace_period
-        InvalidStorageRoleParameterStartupGracePeriod,
-
         /// Invalid council election parameter - council_size
         InvalidCouncilElectionParameterCouncilSize,
 
@@ -269,15 +208,6 @@ decl_error! {
 
         /// Invalid council election parameter - announcing_period
         InvalidCouncilElectionParameterAnnouncingPeriod,
-
-        /// Invalid council election parameter - min_stake
-        InvalidStorageRoleParameterMinStake,
-
-        /// Invalid council election parameter - reward
-        InvalidStorageRoleParameterReward,
-
-        /// Invalid council election parameter - entry_request_fee
-        InvalidStorageRoleParameterEntryRequestFee,
 
         /// Invalid working group mint capacity parameter
         InvalidStorageWorkingGroupMintCapacity,
@@ -392,14 +322,6 @@ decl_storage! {
 
         /// Grace period for the 'evict storage provider' proposal
         pub EvictStorageProviderProposalGracePeriod get(evict_storage_provider_proposal_grace_period)
-            config(): T::BlockNumber;
-
-        /// Voting period for the 'set storage role parameters' proposal
-        pub SetStorageRoleParametersProposalVotingPeriod get(set_storage_role_parameters_proposal_voting_period)
-            config(): T::BlockNumber;
-
-        /// Grace period for the 'set storage role parameters' proposal
-        pub SetStorageRoleParametersProposalGracePeriod get(set_storage_role_parameters_proposal_grace_period)
             config(): T::BlockNumber;
     }
 }
@@ -671,35 +593,6 @@ decl_module! {
             )?;
         }
 
-        /// Create 'Set storage roles parameters' proposal type.
-        /// This proposal uses `set_role_parameters()` extrinsic from the Substrate `roles::actors`  module.
-        pub fn create_set_storage_role_parameters_proposal(
-            origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
-            role_parameters: RoleParameters<BalanceOfGovernanceCurrency<T>, T::BlockNumber>
-        ) {
-            Self::ensure_storage_role_parameters_valid(&role_parameters)?;
-
-            let proposal_parameters =
-                proposal_types::parameters::set_storage_role_parameters_proposal::<T>();
-            let proposal_details =  ProposalDetails::SetStorageRoleParameters(role_parameters);
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
-
-            Self::create_proposal(
-                origin,
-                member_id,
-                title,
-                description,
-                stake_balance,
-                proposal_code,
-                proposal_parameters,
-                proposal_details,
-            )?;
-        }
-
 // *************** Extrinsic to execute
 
         /// Text proposal extrinsic. Should be used as callable object to pass to the `engine` module.
@@ -799,134 +692,6 @@ impl<T: Trait> Module<T> {
 
         Ok(())
     }
-
-    // validates storage role parameters for the 'Set storage role parameters' proposal
-    fn ensure_storage_role_parameters_valid(
-        role_parameters: &RoleParameters<BalanceOfGovernanceCurrency<T>, T::BlockNumber>,
-    ) -> Result<(), Error> {
-        ensure!(
-            role_parameters.min_actors < ROLE_PARAMETERS_MIN_ACTORS_MAX_VALUE,
-            Error::InvalidStorageRoleParameterMinActors
-        );
-
-        ensure!(
-            role_parameters.max_actors >= ROLE_PARAMETERS_MAX_ACTORS_MIN_VALUE,
-            Error::InvalidStorageRoleParameterMaxActors
-        );
-
-        ensure!(
-            role_parameters.max_actors < ROLE_PARAMETERS_MAX_ACTORS_MAX_VALUE,
-            Error::InvalidStorageRoleParameterMaxActors
-        );
-
-        ensure!(
-            role_parameters.reward_period
-                >= T::BlockNumber::from(ROLE_PARAMETERS_REWARD_PERIOD_MIN_VALUE),
-            Error::InvalidStorageRoleParameterRewardPeriod
-        );
-
-        ensure!(
-            role_parameters.reward_period
-                <= T::BlockNumber::from(ROLE_PARAMETERS_REWARD_PERIOD_MAX_VALUE),
-            Error::InvalidStorageRoleParameterRewardPeriod
-        );
-
-        ensure!(
-            role_parameters.bonding_period
-                >= T::BlockNumber::from(ROLE_PARAMETERS_BONDING_PERIOD_MIN_VALUE),
-            Error::InvalidStorageRoleParameterBondingPeriod
-        );
-
-        ensure!(
-            role_parameters.bonding_period
-                <= T::BlockNumber::from(ROLE_PARAMETERS_BONDING_PERIOD_MAX_VALUE),
-            Error::InvalidStorageRoleParameterBondingPeriod
-        );
-
-        ensure!(
-            role_parameters.unbonding_period
-                >= T::BlockNumber::from(ROLE_PARAMETERS_UNBONDING_PERIOD_MIN_VALUE),
-            Error::InvalidStorageRoleParameterUnbondingPeriod
-        );
-
-        ensure!(
-            role_parameters.unbonding_period
-                <= T::BlockNumber::from(ROLE_PARAMETERS_UNBONDING_PERIOD_MAX_VALUE),
-            Error::InvalidStorageRoleParameterUnbondingPeriod
-        );
-
-        ensure!(
-            role_parameters.min_service_period
-                >= T::BlockNumber::from(ROLE_PARAMETERS_MIN_SERVICE_PERIOD_MIN_VALUE),
-            Error::InvalidStorageRoleParameterMinServicePeriod
-        );
-
-        ensure!(
-            role_parameters.min_service_period
-                <= T::BlockNumber::from(ROLE_PARAMETERS_MIN_SERVICE_PERIOD_MAX_VALUE),
-            Error::InvalidStorageRoleParameterMinServicePeriod
-        );
-
-        ensure!(
-            role_parameters.startup_grace_period
-                >= T::BlockNumber::from(ROLE_PARAMETERS_STARTUP_GRACE_PERIOD_MIN_VALUE),
-            Error::InvalidStorageRoleParameterStartupGracePeriod
-        );
-
-        ensure!(
-            role_parameters.startup_grace_period
-                <= T::BlockNumber::from(ROLE_PARAMETERS_STARTUP_GRACE_PERIOD_MAX_VALUE),
-            Error::InvalidStorageRoleParameterStartupGracePeriod
-        );
-
-        ensure!(
-            role_parameters.min_stake
-                > <BalanceOfGovernanceCurrency<T>>::from(ROLE_PARAMETERS_MIN_STAKE_MIN_VALUE),
-            Error::InvalidStorageRoleParameterMinStake
-        );
-
-        ensure!(
-            role_parameters.min_stake
-                <= <BalanceOfGovernanceCurrency<T>>::from(ROLE_PARAMETERS_MIN_STAKE_MAX_VALUE),
-            Error::InvalidStorageRoleParameterMinStake
-        );
-
-        ensure!(
-            role_parameters.entry_request_fee
-                > <BalanceOfGovernanceCurrency<T>>::from(
-                    ROLE_PARAMETERS_ENTRY_REQUEST_FEE_MIN_VALUE
-                ),
-            Error::InvalidStorageRoleParameterEntryRequestFee
-        );
-
-        ensure!(
-            role_parameters.entry_request_fee
-                <= <BalanceOfGovernanceCurrency<T>>::from(
-                    ROLE_PARAMETERS_ENTRY_REQUEST_FEE_MAX_VALUE
-                ),
-            Error::InvalidStorageRoleParameterEntryRequestFee
-        );
-
-        ensure!(
-            role_parameters.reward
-                > <BalanceOfGovernanceCurrency<T>>::from(ROLE_PARAMETERS_REWARD_MIN_VALUE),
-            Error::InvalidStorageRoleParameterReward
-        );
-
-        ensure!(
-            role_parameters.reward
-                < <BalanceOfGovernanceCurrency<T>>::from(ROLE_PARAMETERS_REWARD_MAX_VALUE),
-            Error::InvalidStorageRoleParameterReward
-        );
-
-        Ok(())
-    }
-
-    /*
-    entry_request_fee [tJOY]	>0	<1%	NA
-    * Not enforced by runtime. Should not be displayed in the UI, or at least grayed out.
-    ** Should not be displayed in the UI, or at least grayed out.
-        */
 
     // validates council election parameters for the 'Set election parameters' proposal
     pub(crate) fn ensure_council_election_parameters_valid(
@@ -1079,12 +844,6 @@ impl<T: Trait> Module<T> {
         ));
         <EvictStorageProviderProposalGracePeriod<T>>::put(T::BlockNumber::from(
             p.evict_storage_provider_proposal_grace_period,
-        ));
-        <SetStorageRoleParametersProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.set_storage_role_parameters_proposal_voting_period,
-        ));
-        <SetStorageRoleParametersProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.set_storage_role_parameters_proposal_grace_period,
         ));
     }
 }

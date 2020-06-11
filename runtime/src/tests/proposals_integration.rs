@@ -657,49 +657,6 @@ fn evict_storage_provider_proposal_execution_succeeds() {
 }
 
 #[test]
-fn set_storage_role_parameters_proposal_execution_succeeds() {
-    initial_test_ext().execute_with(|| {
-        let member_id = 1;
-        let account_id: [u8; 32] = [member_id; 32];
-
-        let default_role_parameters = RoleParameters {
-            min_actors: 1,
-            ..RoleParameters::default()
-        };
-
-        <roles::actors::Parameters<Runtime>>::insert(
-            Role::StorageProvider,
-            default_role_parameters.clone(),
-        );
-
-        let target_role_parameters = RoleParameters {
-            startup_grace_period: 700,
-            ..default_role_parameters
-        };
-
-        let codex_extrinsic_test_fixture = CodexProposalTestFixture {
-            member_id: member_id as u64,
-            successful_call: || {
-                ProposalCodex::create_set_storage_role_parameters_proposal(
-                    RawOrigin::Signed(account_id.clone().into()).into(),
-                    member_id as u64,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(<BalanceOf<Runtime>>::from(100_000_u32)),
-                    target_role_parameters.clone(),
-                )
-            },
-        };
-        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
-
-        assert_eq!(
-            <roles::actors::Parameters<Runtime>>::get(Role::StorageProvider),
-            Some(target_role_parameters)
-        );
-    });
-}
-
-#[test]
 fn set_validator_count_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
         let member_id = 1;

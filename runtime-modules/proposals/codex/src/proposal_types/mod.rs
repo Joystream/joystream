@@ -8,7 +8,6 @@ use rstd::vec::Vec;
 use serde::{Deserialize, Serialize};
 
 use crate::ElectionParameters;
-use roles::actors::RoleParameters;
 
 /// Encodes proposal using its details information.
 pub trait ProposalEncoder<T: crate::Trait> {
@@ -52,9 +51,6 @@ pub enum ProposalDetails<MintedBalance, CurrencyBalance, BlockNumber, AccountId,
 
     /// Validator count for the `set validator count` proposal
     SetValidatorCount(u32),
-
-    /// Role parameters for the `set storage role parameters` proposal
-    SetStorageRoleParameters(RoleParameters<CurrencyBalance, BlockNumber>),
 }
 
 impl<MintedBalance, CurrencyBalance, BlockNumber, AccountId, MemberId> Default
@@ -114,12 +110,6 @@ pub struct ProposalsConfigParameters {
 
     /// 'Evict storage provider' proposal grace period
     pub evict_storage_provider_proposal_grace_period: u32,
-
-    /// 'Set storage role parameters' proposal voting period
-    pub set_storage_role_parameters_proposal_voting_period: u32,
-
-    /// 'Set storage role parameters' proposal grace period
-    pub set_storage_role_parameters_proposal_grace_period: u32,
 }
 
 impl Default for ProposalsConfigParameters {
@@ -141,8 +131,6 @@ impl Default for ProposalsConfigParameters {
             spending_proposal_grace_period: 14400u32,
             evict_storage_provider_proposal_voting_period: 43200u32,
             evict_storage_provider_proposal_grace_period: 0u32,
-            set_storage_role_parameters_proposal_voting_period: 43200u32,
-            set_storage_role_parameters_proposal_grace_period: 14400u32,
         }
     }
 }

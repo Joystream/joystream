@@ -1,6 +1,5 @@
 use crate::{Call, Runtime};
 use proposals_codex::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
-use roles::actors::Role;
 
 use codec::Encode;
 use rstd::vec::Vec;
@@ -38,10 +37,6 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::SetValidatorCount(new_validator_count) => {
                 Call::Staking(staking::Call::set_validator_count(new_validator_count)).encode()
             }
-            ProposalDetails::SetStorageRoleParameters(role_parameters) => Call::Actors(
-                roles::actors::Call::set_role_parameters(Role::StorageProvider, role_parameters),
-            )
-            .encode(),
             ProposalDetails::RuntimeUpgrade(wasm_code) => Call::ProposalsCodex(
                 proposals_codex::Call::execute_runtime_upgrade_proposal(wasm_code),
             )
