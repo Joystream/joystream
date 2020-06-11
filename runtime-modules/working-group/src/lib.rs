@@ -1,12 +1,12 @@
-//! # Bureaucracy module
-//! Bureaucracy module for the Joystream platform. Version 1.
+//! # Working group module
+//! Working group module for the Joystream platform. Version 1.
 //! Contains abstract working group workflow.
 //!
 //! ## Overview
 //!
-//! The bureaucracy module provides working group workflow to use in different modules.
-//! Exact working group (eg.: forum working group) should create an instance of the Bureaucracy module.
-//! Bureacracy module contains extrinsics for the hiring workflow and the roles lifecycle.
+//! The working group module provides working group workflow to use in different modules.
+//! Exact working group (eg.: forum working group) should create an instance of the Working group module.
+//! The Working group module contains extrinsics for the hiring workflow and the roles lifecycle.
 //!
 //! ## Supported extrinsics
 //! ### Hiring flow
@@ -145,7 +145,7 @@ type WorkerOf<T> = Worker<
     MemberId<T>,
 >;
 
-/// The _Bureaucracy_ main _Trait_
+/// The _Working group_ main _Trait_
 pub trait Trait<I: Instance>:
     system::Trait
     + membership::members::Trait
@@ -154,12 +154,12 @@ pub trait Trait<I: Instance>:
     + stake::Trait
     + recurringrewards::Trait
 {
-    /// _Bureaucracy_ event type.
+    /// _Working group_ event type.
     type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
 }
 
 decl_event!(
-    /// _Bureaucracy_ events
+    /// _Working group_ events
     pub enum Event<T, I>
     where
         MemberId = MemberId<T>,
@@ -262,7 +262,7 @@ decl_event!(
 );
 
 decl_storage! {
-    trait Store for Module<T: Trait<I>, I: Instance> as Bureaucracy {
+    trait Store for Module<T: Trait<I>, I: Instance> as WorkingGroup {
         /// The mint currently funding the rewards for this module.
         pub Mint get(mint) : <T as minting::Trait>::MintId;
 
@@ -299,7 +299,7 @@ decl_storage! {
 }
 
 decl_module! {
-    /// _Bureaucracy_ substrate module.
+    /// _Working group_ substrate module.
     pub struct Module<T: Trait<I>, I: Instance> for enum Call where origin: T::Origin {
         /// Default deposit_event() handler
         fn deposit_event() = default;
@@ -960,7 +960,7 @@ where
 }
 
 impl<T: Trait<I>, I: Instance> Module<T, I> {
-    /// Checks that provided lead account id belongs to the current bureaucracy leader
+    /// Checks that provided lead account id belongs to the current working group leader
     pub fn ensure_is_lead_account(lead_account_id: T::AccountId) -> Result<(), Error> {
         let lead = <CurrentLead<T, I>>::get();
 

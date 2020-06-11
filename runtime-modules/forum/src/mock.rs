@@ -103,7 +103,7 @@ impl timestamp::Trait for Runtime {
     type MinimumPeriod = MinimumPeriod;
 }
 
-impl bureaucracy::Trait<bureaucracy::Instance1> for Runtime {
+impl working_group::Trait<working_group::Instance1> for Runtime {
     type Event = ();
 }
 
@@ -162,7 +162,7 @@ impl minting::Trait for Runtime {
 impl Trait for Runtime {
     type Event = ();
     type MembershipRegistry = registry::TestMembershipRegistryModule;
-    type EnsureForumLeader = bureaucracy::Module<Runtime, bureaucracy::Instance1>;
+    type EnsureForumLeader = working_group::Module<Runtime, working_group::Instance1>;
     type ThreadId = u64;
     type PostId = u64;
 }
@@ -241,7 +241,7 @@ pub struct CreateCategoryFixture {
 
 impl CreateCategoryFixture {
     pub fn call_and_assert(&self) {
-        set_bureaucracy_forum_lead();
+        set_working_group_forum_lead();
         assert_eq!(
             TestForumModule::create_category(
                 mock_origin(self.origin.clone()),
@@ -264,7 +264,7 @@ pub struct UpdateCategoryFixture {
 
 impl UpdateCategoryFixture {
     pub fn call_and_assert(&self) {
-        set_bureaucracy_forum_lead();
+        set_working_group_forum_lead();
         assert_eq!(
             TestForumModule::update_category(
                 mock_origin(self.origin.clone()),
@@ -285,11 +285,11 @@ pub struct CreateThreadFixture {
     pub result: dispatch::Result,
 }
 
-type Bureaucracy1 = bureaucracy::Module<Runtime, bureaucracy::Instance1>;
+type WorkingGroup1 = working_group::Module<Runtime, working_group::Instance1>;
 
-pub(crate) fn set_bureaucracy_forum_lead() {
+pub(crate) fn set_working_group_forum_lead() {
     assert_eq!(
-        Bureaucracy1::set_lead(RawOrigin::Root.into(), FORUM_SUDO_MEMBER_ID, FORUM_SUDO_ID),
+        WorkingGroup1::set_lead(RawOrigin::Root.into(), FORUM_SUDO_MEMBER_ID, FORUM_SUDO_ID),
         Ok(())
     );
 }

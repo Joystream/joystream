@@ -12,7 +12,7 @@ impl_outer_origin! {
         pub enum Origin for Test {}
 }
 
-mod bureaucracy {
+mod working_group {
     pub use crate::Event;
     pub use crate::Instance1;
 }
@@ -24,7 +24,7 @@ mod membership_mod {
 impl_outer_event! {
     pub enum TestEvent for Test {
         balances<T>,
-        bureaucracy Instance1 <T>,
+        working_group Instance1 <T>,
         membership_mod<T>,
     }
 }
@@ -129,7 +129,7 @@ impl Trait<Instance1> for Test {
 }
 
 pub type Membership = membership::members::Module<Test>;
-pub type Bureaucracy1 = Module<Test, Instance1>;
+pub type WorkingGroup1 = Module<Test, Instance1>;
 
 pub fn build_test_externalities() -> runtime_io::TestExternalities {
     let t = system::GenesisConfig::default()

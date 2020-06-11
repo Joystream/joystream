@@ -23,7 +23,7 @@ fn parse_forum_json() -> Result<ForumData> {
     serde_json::from_str(data)
 }
 
-//TODO: should we set the forum_sudo account in the bureaucracy module?
+//TODO: should we set the forum_sudo account in the working group module?
 pub fn create(_forum_sudo: AccountId) -> ForumConfig {
     let forum_data = parse_forum_json().expect("failed loading forum data");
 

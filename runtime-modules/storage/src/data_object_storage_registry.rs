@@ -4,7 +4,7 @@
 //!
 //! ## Comments
 //!
-//! Data object storage registry module uses bureaucracy module to authorize actions.
+//! Data object storage registry module uses  working group module to authorize actions.
 //! Only registered storage providers can call extrinsics.
 //!
 //! ## Supported extrinsics
@@ -28,7 +28,7 @@ use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
 use srml_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 
 use crate::data_directory::{self, ContentIdExists};
-use crate::{StorageBureaucracy, StorageProviderId};
+use crate::{StorageProviderId, StorageWorkingGroup};
 
 const DEFAULT_FIRST_RELATIONSHIP_ID: u32 = 1;
 
@@ -37,7 +37,7 @@ pub trait Trait:
     timestamp::Trait
     + system::Trait
     + data_directory::Trait
-    + bureaucracy::Trait<bureaucracy::Instance2>
+    + working_group::Trait<working_group::Instance2>
 {
     /// _Data object storage registry_ event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -83,10 +83,10 @@ impl From<system::Error> for Error {
     }
 }
 
-impl From<bureaucracy::Error> for Error {
-    fn from(error: bureaucracy::Error) -> Self {
+impl From<working_group::Error> for Error {
+    fn from(error: working_group::Error) -> Self {
         match error {
-            bureaucracy::Error::Other(msg) => Error::Other(msg),
+            working_group::Error::Other(msg) => Error::Other(msg),
             _ => Error::Other(error.into()),
         }
     }
@@ -158,7 +158,7 @@ decl_module! {
         /// in the storage working group.
         pub fn add_relationship(origin, storage_provider_id: StorageProviderId<T>, cid: T::ContentId) {
             // Origin should match storage provider.
-            <StorageBureaucracy<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
+            <StorageWorkingGroup<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
 
             // Content ID must exist
             ensure!(T::ContentIdExists::has_content(&cid), Error::CidNotFound);
@@ -221,7 +221,7 @@ impl<T: Trait> Module<T> {
         id: T::DataObjectStorageRelationshipId,
         ready: bool,
     ) -> Result<(), Error> {
-        <StorageBureaucracy<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
+        <StorageWorkingGroup<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
 
         // For that, we need to fetch the identified DOSR
         let mut dosr =

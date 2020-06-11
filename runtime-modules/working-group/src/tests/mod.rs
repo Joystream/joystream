@@ -5,7 +5,7 @@ use crate::tests::mock::Test;
 use crate::types::{OpeningPolicyCommitment, RewardPolicy};
 use crate::{Error, Instance1, Lead, RawEvent};
 use common::constraints::InputValidationLengthConstraint;
-use mock::{build_test_externalities, Bureaucracy1, TestEvent};
+use mock::{build_test_externalities, TestEvent, WorkingGroup1};
 use srml_support::{StorageLinkedMap, StorageValue};
 use std::collections::BTreeMap;
 use system::RawOrigin;
@@ -16,14 +16,14 @@ use fixtures::*;
 fn set_lead_succeeds() {
     build_test_externalities().execute_with(|| {
         // Ensure that lead is default
-        assert_eq!(Bureaucracy1::current_lead(), None);
+        assert_eq!(WorkingGroup1::current_lead(), None);
 
         let lead_account_id = 1;
         let lead_member_id = 1;
 
         // Set lead
         assert_eq!(
-            Bureaucracy1::set_lead(RawOrigin::Root.into(), lead_member_id, lead_account_id),
+            WorkingGroup1::set_lead(RawOrigin::Root.into(), lead_member_id, lead_account_id),
             Ok(())
         );
 
@@ -31,7 +31,7 @@ fn set_lead_succeeds() {
             member_id: lead_member_id,
             role_account_id: lead_account_id,
         };
-        assert_eq!(Bureaucracy1::current_lead(), Some(lead));
+        assert_eq!(WorkingGroup1::current_lead(), Some(lead));
 
         EventFixture::assert_crate_events(vec![RawEvent::LeaderSet(
             lead_member_id,
@@ -190,11 +190,11 @@ fn apply_on_worker_opening_succeeds() {
         appy_on_worker_opening_fixture.call_and_assert(Ok(()));
 
         EventFixture::assert_global_events(vec![
-            TestEvent::bureaucracy_Instance1(RawEvent::LeaderSet(1, lead_account_id)),
+            TestEvent::working_group_Instance1(RawEvent::LeaderSet(1, lead_account_id)),
             TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(0, 0)),
             TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(1, 1)),
-            TestEvent::bureaucracy_Instance1(RawEvent::WorkerOpeningAdded(opening_id)),
-            TestEvent::bureaucracy_Instance1(RawEvent::AppliedOnWorkerOpening(opening_id, 0)),
+            TestEvent::working_group_Instance1(RawEvent::WorkerOpeningAdded(opening_id)),
+            TestEvent::working_group_Instance1(RawEvent::AppliedOnWorkerOpening(opening_id, 0)),
         ]);
     });
 }
@@ -374,15 +374,17 @@ fn withdraw_worker_application_succeeds() {
         withdraw_application_fixture.call_and_assert(Ok(()));
 
         EventFixture::assert_global_events(vec![
-            TestEvent::bureaucracy_Instance1(RawEvent::LeaderSet(1, lead_account_id)),
+            TestEvent::working_group_Instance1(RawEvent::LeaderSet(1, lead_account_id)),
             TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(0, 0)),
             TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(1, 1)),
-            TestEvent::bureaucracy_Instance1(RawEvent::WorkerOpeningAdded(opening_id)),
-            TestEvent::bureaucracy_Instance1(RawEvent::AppliedOnWorkerOpening(
+            TestEvent::working_group_Instance1(RawEvent::WorkerOpeningAdded(opening_id)),
+            TestEvent::working_group_Instance1(RawEvent::AppliedOnWorkerOpening(
                 opening_id,
                 application_id,
             )),
-            TestEvent::bureaucracy_Instance1(RawEvent::WorkerApplicationWithdrawn(application_id)),
+            TestEvent::working_group_Instance1(RawEvent::WorkerApplicationWithdrawn(
+                application_id,
+            )),
         ]);
     });
 }
@@ -501,15 +503,17 @@ fn terminate_worker_application_succeeds() {
         terminate_application_fixture.call_and_assert(Ok(()));
 
         EventFixture::assert_global_events(vec![
-            TestEvent::bureaucracy_Instance1(RawEvent::LeaderSet(1, lead_account_id)),
+            TestEvent::working_group_Instance1(RawEvent::LeaderSet(1, lead_account_id)),
             TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(0, 0)),
             TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(1, 1)),
-            TestEvent::bureaucracy_Instance1(RawEvent::WorkerOpeningAdded(opening_id)),
-            TestEvent::bureaucracy_Instance1(RawEvent::AppliedOnWorkerOpening(
+            TestEvent::working_group_Instance1(RawEvent::WorkerOpeningAdded(opening_id)),
+            TestEvent::working_group_Instance1(RawEvent::AppliedOnWorkerOpening(
                 opening_id,
                 application_id,
             )),
-            TestEvent::bureaucracy_Instance1(RawEvent::WorkerApplicationTerminated(application_id)),
+            TestEvent::working_group_Instance1(RawEvent::WorkerApplicationTerminated(
+                application_id,
+            )),
         ]);
     });
 }
@@ -923,11 +927,11 @@ fn unset_lead_succeeds() {
             member_id: lead_member_id,
             role_account_id: lead_account_id,
         };
-        assert_eq!(Bureaucracy1::current_lead(), Some(lead));
+        assert_eq!(WorkingGroup1::current_lead(), Some(lead));
 
         UnsetLeadFixture::unset_lead();
 
-        assert_eq!(Bureaucracy1::current_lead(), None);
+        assert_eq!(WorkingGroup1::current_lead(), None);
 
         EventFixture::assert_crate_events(vec![
             RawEvent::LeaderSet(lead_member_id, lead_account_id),
@@ -1200,7 +1204,7 @@ fn leave_worker_role_fails_with_invalid_recurring_reward_relationships() {
     build_test_externalities().execute_with(|| {
         let worker_id = fill_default_worker_position();
 
-        let mut worker = Bureaucracy1::worker_by_id(worker_id);
+        let mut worker = WorkingGroup1::worker_by_id(worker_id);
         worker.reward_relationship = Some(2);
 
         <crate::WorkerById<Test, crate::Instance1>>::insert(worker_id, worker);
@@ -1532,7 +1536,7 @@ fn slash_worker_stake_fails_with_not_set_lead() {
 #[test]
 fn get_all_worker_ids_succeeds() {
     build_test_externalities().execute_with(|| {
-        let worker_ids = Bureaucracy1::get_all_worker_ids();
+        let worker_ids = WorkingGroup1::get_all_worker_ids();
         assert_eq!(worker_ids, Vec::new());
 
         let worker_id1 = fill_worker_position(None, None, true);
@@ -1541,12 +1545,12 @@ fn get_all_worker_ids_succeeds() {
         let mut expected_ids = vec![worker_id1, worker_id2];
         expected_ids.sort();
 
-        let mut worker_ids = Bureaucracy1::get_all_worker_ids();
+        let mut worker_ids = WorkingGroup1::get_all_worker_ids();
         worker_ids.sort();
         assert_eq!(worker_ids, expected_ids);
 
         <crate::WorkerById<Test, crate::Instance1>>::remove(worker_id1);
-        let worker_ids = Bureaucracy1::get_all_worker_ids();
+        let worker_ids = WorkingGroup1::get_all_worker_ids();
         assert_eq!(worker_ids, vec![worker_id2]);
     });
 }

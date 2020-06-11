@@ -686,7 +686,7 @@ fn cannot_moderate_thread_with_invalid_id() {
     let origin = OriginType::Signed(FORUM_SUDO_ID);
 
     build_test_externalities(config).execute_with(|| {
-        set_bureaucracy_forum_lead();
+        set_working_group_forum_lead();
         assert_err!(
             moderate_thread(origin, INVLAID_THREAD_ID, good_rationale()),
             ERROR_THREAD_DOES_NOT_EXIST
@@ -700,7 +700,7 @@ fn cannot_moderate_post_with_invalid_id() {
     let origin = OriginType::Signed(FORUM_SUDO_ID);
 
     build_test_externalities(config).execute_with(|| {
-        mock::set_bureaucracy_forum_lead();
+        mock::set_working_group_forum_lead();
         assert_err!(
             moderate_post(origin, INVLAID_POST_ID, good_rationale()),
             ERROR_POST_DOES_NOT_EXIST

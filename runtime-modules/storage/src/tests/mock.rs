@@ -17,9 +17,9 @@ use crate::data_directory::ContentIdExists;
 use crate::data_object_type_registry::IsActiveDataObjectType;
 use srml_support::{impl_outer_event, impl_outer_origin, parameter_types, StorageLinkedMap};
 
-mod bureaucracy_mod {
-    pub use bureaucracy::Event;
-    pub use bureaucracy::Instance2;
+mod working_group_mod {
+    pub use working_group::Event;
+    pub use working_group::Instance2;
 }
 
 impl_outer_origin! {
@@ -33,7 +33,7 @@ impl_outer_event! {
         data_object_storage_registry<T>,
         balances<T>,
         members<T>,
-        bureaucracy_mod Instance2 <T>,
+        working_group_mod Instance2 <T>,
     }
 }
 
@@ -145,7 +145,7 @@ impl GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
 }
 
-impl bureaucracy::Trait<bureaucracy::Instance2> for Test {
+impl working_group::Trait<working_group::Instance2> for Test {
     type Event = MetaEvent;
 }
 
@@ -301,14 +301,14 @@ pub(crate) fn hire_storage_provider() -> (u64, u32) {
     let storage_provider_id = 1;
     let role_account_id = 1;
 
-    let storage_provider = bureaucracy::Worker {
+    let storage_provider = working_group::Worker {
         member_id: 1,
         role_account: role_account_id,
         reward_relationship: None,
         role_stake_profile: None,
     };
 
-    <bureaucracy::WorkerById<Test, bureaucracy::Instance2>>::insert(
+    <working_group::WorkerById<Test, working_group::Instance2>>::insert(
         storage_provider_id,
         storage_provider,
     );

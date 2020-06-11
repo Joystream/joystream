@@ -1645,7 +1645,6 @@ dependencies = [
  "srml-timestamp",
  "srml-transaction-payment",
  "substrate-authority-discovery-primitives",
- "substrate-bureaucracy-module",
  "substrate-client",
  "substrate-common-module",
  "substrate-consensus-babe-primitives",
@@ -1670,6 +1669,7 @@ dependencies = [
  "substrate-versioned-store",
  "substrate-versioned-store-permissions-module",
  "substrate-wasm-builder-runner",
+ "substrate-working-group-module",
 ]
 
 [[package]]
@@ -4463,28 +4463,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "substrate-bureaucracy-module"
-version = "1.0.0"
-dependencies = [
- "parity-scale-codec",
- "serde",
- "sr-io",
- "sr-primitives",
- "sr-std",
- "srml-balances",
- "srml-support",
- "srml-system",
- "srml-timestamp",
- "substrate-common-module",
- "substrate-hiring-module",
- "substrate-membership-module",
- "substrate-primitives",
- "substrate-recurring-reward-module",
- "substrate-stake-module",
- "substrate-token-mint-module",
-]
-
-[[package]]
 name = "substrate-chain-spec"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8#c37bb08535c49a12320af7facfd555ce05cce2e8"
@@ -4844,7 +4822,6 @@ dependencies = [
  "srml-support-procedural",
  "srml-system",
  "srml-timestamp",
- "substrate-bureaucracy-module",
  "substrate-common-module",
  "substrate-hiring-module",
  "substrate-membership-module",
@@ -4852,6 +4829,7 @@ dependencies = [
  "substrate-recurring-reward-module",
  "substrate-stake-module",
  "substrate-token-mint-module",
+ "substrate-working-group-module",
 ]
 
 [[package]]
@@ -5379,7 +5357,6 @@ dependencies = [
  "srml-support",
  "srml-system",
  "srml-timestamp",
- "substrate-bureaucracy-module",
  "substrate-common-module",
  "substrate-hiring-module",
  "substrate-membership-module",
@@ -5387,6 +5364,7 @@ dependencies = [
  "substrate-recurring-reward-module",
  "substrate-stake-module",
  "substrate-token-mint-module",
+ "substrate-working-group-module",
 ]
 
 [[package]]
@@ -5463,7 +5441,6 @@ dependencies = [
  "srml-support",
  "srml-system",
  "srml-timestamp",
- "substrate-bureaucracy-module",
  "substrate-common-module",
  "substrate-hiring-module",
  "substrate-membership-module",
@@ -5471,6 +5448,7 @@ dependencies = [
  "substrate-recurring-reward-module",
  "substrate-stake-module",
  "substrate-token-mint-module",
+ "substrate-working-group-module",
 ]
 
 [[package]]
@@ -5611,6 +5589,28 @@ version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8#c37bb08535c49a12320af7facfd555ce05cce2e8"
 dependencies = [
  "wasmi",
+]
+
+[[package]]
+name = "substrate-working-group-module"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "serde",
+ "sr-io",
+ "sr-primitives",
+ "sr-std",
+ "srml-balances",
+ "srml-support",
+ "srml-system",
+ "srml-timestamp",
+ "substrate-common-module",
+ "substrate-hiring-module",
+ "substrate-membership-module",
+ "substrate-primitives",
+ "substrate-recurring-reward-module",
+ "substrate-stake-module",
+ "substrate-token-mint-module",
 ]
 
 [[package]]
