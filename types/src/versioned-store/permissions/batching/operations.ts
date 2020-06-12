@@ -1,5 +1,5 @@
 import ClassId from "../../ClassId";
-import { JoyStruct } from '../../../JoyStruct';
+import { JoyStruct } from '../../../common';
 import { ParametrizedEntity } from "./parametrized-entity";
 import { Vec, u16 } from "@polkadot/types";
 import ParametrizedClassPropertyValue from "./ParametrizedClassPropertyValue";

@@ -1,7 +1,6 @@
-import { JoyStruct } from '../../JoyStruct';
-import ClassId from '../ClassId';
 import { u16 } from '@polkadot/types';
-
+import { JoyStruct } from '../../common';
+import ClassId from '../ClassId';
 
 type IPropertyOfClass = {
     class_id: ClassId,

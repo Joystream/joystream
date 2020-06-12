@@ -7,6 +7,9 @@ export { JoyStruct } from './JoyStruct';
 // Treat a BTreeSet as a Vec since it is encoded in the same way
 export class BTreeSet<T extends Codec> extends Vec<T> {}
 
+export class Credential extends u64 {}
+export class CredentialSet extends Vec.with(Credential) {} // BtreeSet ?
+
 // common types between Forum and Proposal Discussions modules
 export class ThreadId extends u64 {}
 export class PostId extends u64 {}
@@ -89,6 +92,8 @@ export function registerCommonTypes() {
     const typeRegistry = getTypeRegistry();
 
     typeRegistry.register({
+      Credential,
+      CredentialSet,
       BlockAndTime,
       ThreadId,
       PostId,

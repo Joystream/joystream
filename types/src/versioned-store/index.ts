@@ -1,10 +1,10 @@
 import { getTypeRegistry, u16, Text, bool as Bool } from '@polkadot/types';
 import { Vec as Vector } from '@polkadot/types/codec';
-import { JoyStruct } from '../JoyStruct';
+import { JoyStruct } from '../common';
+import EntityId from './EntityId';
+import ClassId from './ClassId';
 import PropertyType from './PropertyType';
 import PropertyValue from './PropertyValue';
-import ClassId from './ClassId';
-import EntityId from './EntityId';
 import { camelCase, upperFirst } from 'lodash'
 
 export {
@@ -12,32 +12,6 @@ export {
   EntityId,
   PropertyType,
   PropertyValue
-}
-
-export type InputValidationLengthConstraintType = {
-  min: u16,
-  max_min_diff: u16
-};
-
-export class InputValidationLengthConstraint extends JoyStruct<InputValidationLengthConstraintType> {
-  constructor (value: InputValidationLengthConstraintType) {
-    super({
-      min: u16,
-      max_min_diff: u16
-    }, value);
-  }
-
-  get min (): u16 {
-    return this.getField('min');
-  }
-
-  get max_min_diff (): u16 {
-    return this.getField('max_min_diff');
-  }
-
-  get max (): u16 {
-    return new u16(this.min.add(this.max_min_diff));
-  }
 }
 
 export type PropertyTsType = {
@@ -224,7 +198,6 @@ export function unifyPropName(propName: string): string {
 export function registerVersionedStoreTypes () {
   try {
     getTypeRegistry().register({
-      InputValidationLengthConstraint,
       ClassId: 'u64',
       EntityId: 'u64',
       Class,
