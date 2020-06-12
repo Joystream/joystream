@@ -14,7 +14,6 @@ import { APIQueryCache, MultipleLinkedMapEntry, SingleLinkedMapEntry, Subscribab
 import { ITransport } from './transport';
 import { GroupMember } from './elements';
 
-import { Role } from '@joystream/types/members';
 import {
   Curator, CuratorId,
   CuratorApplication, CuratorApplicationId,
@@ -27,7 +26,7 @@ import {
 import { Application, Opening, OpeningId } from '@joystream/types/hiring';
 import { Stake, StakeId } from '@joystream/types/stake';
 import { Recipient, RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
-import { ActorInRole, Profile, MemberId, Role as MemberRole, RoleKeys, ActorId } from '@joystream/types/members';
+import { ActorInRole, Profile, MemberId, Role, RoleKeys, ActorId } from '@joystream/types/members';
 import { createAccount, generateSeed } from '@polkadot/joy-utils/accounts';
 
 import { WorkingGroupMembership, StorageAndDistributionMembership, GroupLeadStatus } from './tabs/WorkingGroup';
@@ -113,7 +112,7 @@ export class Transport extends TransportBase implements ITransport {
     return recipient.value.total_reward_received;
   }
 
-  protected async memberIdFromRoleAndActorId (role: MemberRole, id: ActorId): Promise<MemberId> {
+  protected async memberIdFromRoleAndActorId (role: Role, id: ActorId): Promise<MemberId> {
     const memberId = (
       await this.cachedApi.query.members.membershipIdByActorInRole(
         new ActorInRole({
@@ -128,14 +127,14 @@ export class Transport extends TransportBase implements ITransport {
 
   protected memberIdFromCuratorId (curatorId: CuratorId): Promise<MemberId> {
     return this.memberIdFromRoleAndActorId(
-      new MemberRole(RoleKeys.Curator),
+      new Role(RoleKeys.Curator),
       curatorId
     );
   }
 
   protected memberIdFromLeadId (leadId: LeadId): Promise<MemberId> {
     return this.memberIdFromRoleAndActorId(
-      new MemberRole(RoleKeys.CuratorLead),
+      new Role(RoleKeys.CuratorLead),
       leadId
     );
   }
