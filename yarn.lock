@@ -1356,7 +1356,7 @@
     minimist "^1.2.0"
 
 "@constantinople/types@./types", "@joystream/types@./types":
-  version "0.10.0"
+  version "0.11.0"
   dependencies:
     "@polkadot/types" "^0.96.1"
     "@types/vfile" "^4.0.0"

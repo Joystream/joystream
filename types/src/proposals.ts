@@ -1,12 +1,11 @@
 import { Text, u32, Enum, getTypeRegistry, Tuple, GenericAccountId, u8, Vec, Option, Struct, Null, Bytes } from "@polkadot/types";
 import { BlockNumber, Balance } from "@polkadot/types/interfaces";
-import { MemberId } from "./members";
-import { ThreadId } from "./forum";
-import { StakeId } from "./stake";
 import AccountId from "@polkadot/types/primitive/Generic/AccountId";
-import { JoyStruct } from "./JoyStruct";
-
+import { ThreadId, JoyStruct } from "./common";
+import { MemberId } from "./members";
 import { RoleParameters } from "./roles";
+import { StakeId } from "./stake";
+import { ElectionParameters } from "./council";
 
 export type IVotingResults = {
   abstensions: u32;
@@ -259,59 +258,6 @@ export type ProposalVotes = [MemberId, VoteKind][];
 
 export class ProposalId extends u32 {}
 
-export type IElectionParameters = {
-  announcing_period: BlockNumber;
-  voting_period: BlockNumber;
-  revealing_period: BlockNumber;
-  council_size: u32;
-  candidacy_limit: u32;
-  new_term_duration: BlockNumber;
-  min_council_stake: Balance;
-  min_voting_stake: Balance;
-};
-
-export class ElectionParameters extends Struct {
-  constructor(value?: any) {
-    super(
-      {
-        announcing_period: "BlockNumber",
-        voting_period: "BlockNumber",
-        revealing_period: "BlockNumber",
-        council_size: "u32",
-        candidacy_limit: "u32",
-        new_term_duration: "BlockNumber",
-        min_council_stake: "Balance",
-        min_voting_stake: "Balance"
-      },
-      value
-    );
-  }
-  get announcing_period () {
-    return this.get('announcing_period') as BlockNumber;
-  }
-  get voting_period () {
-    return this.get('voting_period') as BlockNumber;
-  }
-  get revealing_period () {
-    return this.get('revealing_period') as BlockNumber;
-  }
-  get council_size () {
-    return this.get('council_size') as u32;
-  }
-  get candidacy_limit () {
-    return this.get('candidacy_limit') as u32;
-  }
-  get new_term_duration () {
-    return this.get('new_term_duration') as BlockNumber;
-  }
-  get min_council_stake () {
-    return this.get('min_council_stake') as Balance;
-  }
-  get min_voting_stake () {
-    return this.get('min_voting_stake') as Balance;
-  }
-}
-
 export class SpendingParams extends Tuple {
   constructor(value?: any) {
     super(["Balance", "AccountId"], value);
@@ -403,54 +349,6 @@ export class Proposal extends Struct {
     return this.get("votingResults") as VotingResults;
   }
 }
-
-export class Backer extends Struct {
-  constructor(value?: any) {
-    super(
-      {
-        member: "AccountId",
-        stake: "Balance"
-      },
-      value
-    );
-  }
-
-  get member(): MemberId {
-    return this.get("member") as MemberId;
-  }
-
-  get stake(): Balance {
-    return this.get("stake") as Balance;
-  }
-}
-
-export class Backers extends Vec.with(Backer) {}
-export class Seat extends Struct {
-  constructor(value?: any) {
-    super(
-      {
-        member: "AccountId",
-        stake: "Balance",
-        backers: Backers
-      },
-      value
-    );
-  }
-
-  get member(): AccountId {
-    return this.get("member") as AccountId;
-  }
-
-  get stake(): Balance {
-    return this.get("stake") as Balance;
-  }
-
-  get backers(): Backers {
-    return this.get("backers") as Backers;
-  }
-}
-
-export class Seats extends Vec.with(Seat) {}
 
 export class ThreadCounter extends Struct {
   constructor(value?: any) {
@@ -553,10 +451,6 @@ export function registerProposalTypes() {
       VotingResults,
       ProposalParameters,
       VoteKind,
-      Seat,
-      Seats,
-      Backer,
-      Backers,
       ThreadCounter,
       DiscussionThread,
       DiscussionPost

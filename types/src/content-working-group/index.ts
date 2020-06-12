@@ -1,12 +1,11 @@
 import { getTypeRegistry, BTreeMap, Enum, bool, u8, u32, u128, Text, GenericAccountId, Null , Option, Vec, u16 } from '@polkadot/types';
 import { BlockNumber, AccountId, Balance } from '@polkadot/types/interfaces';
+import { BTreeSet, JoyStruct } from '../common';
 import { ActorId, MemberId } from '../members';
+import { StakeId } from '../stake';
 import { OpeningId, ApplicationId, ApplicationRationingPolicy, StakingPolicy } from '../hiring/index';
 import { Credential } from '../versioned-store/permissions/credentials';
 import { RewardRelationshipId } from '../recurring-rewards';
-import { StakeId } from '../stake';
-import { JoyStruct } from '../JoyStruct';
-import { BTreeSet } from '../';
 
 export class ChannelId extends ActorId {};
 export class CuratorId extends ActorId {};

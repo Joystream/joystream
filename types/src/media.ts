@@ -1,8 +1,8 @@
 import { Enum, Struct, Option, Vec as Vector, H256 } from '@polkadot/types';
-import { getTypeRegistry, u32, u64, bool, Text } from '@polkadot/types';
-import { BlockNumber, Moment } from '@polkadot/types/interfaces';
-import { StorageProviderId } from './bureaucracy';
+import { getTypeRegistry, u64, bool, Text } from '@polkadot/types';
+import { BlockAndTime } from './common';
 import { MemberId } from './members';
+import { StorageProviderId } from './bureaucracy'; // this should be in discovery really
 
 import { randomAsU8a } from '@polkadot/util-crypto';
 import { encodeAddress, decodeAddress } from '@polkadot/keyring';
@@ -30,32 +30,6 @@ export class ContentId extends H256 {
 
 export class DataObjectTypeId extends u64 {}
 export class DataObjectStorageRelationshipId extends u64 {}
-
-export type BlockAndTimeType = {
-  block: BlockNumber,
-  time: Moment
-};
-
-export class BlockAndTime extends Struct {
-  constructor (value?: BlockAndTimeType) {
-    super({
-      block: u32, // BlockNumber
-      time: u64, // Moment
-    }, value);
-  }
-
-  get block (): BlockNumber {
-    return this.get('block') as BlockNumber;
-  }
-
-  get time (): Moment {
-    return this.get('time') as Moment;
-  }
-
-  static newEmpty (): BlockAndTime {
-    return new BlockAndTime({} as BlockAndTime);
-  }
-}
 
 export class VecContentId extends Vector.with(ContentId) {}
 export class OptionVecContentId extends Option.with(VecContentId) {}
