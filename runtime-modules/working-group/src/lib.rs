@@ -1208,3 +1208,8 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             .map_err(|e| e.into())
     }
 }
+
+/// Creates default text constraint.
+pub fn default_text_constraint() -> InputValidationLengthConstraint {
+    InputValidationLengthConstraint::new(1, 1024)
+}

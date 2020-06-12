@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// Length constraint for input validation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Copy)]
 pub struct InputValidationLengthConstraint {
     /// Minimum length
     pub min: u16,
@@ -18,12 +18,12 @@ pub struct InputValidationLengthConstraint {
 
 impl InputValidationLengthConstraint {
     /// Helper for computing max
-    pub fn max(&self) -> u16 {
+    pub fn max(self) -> u16 {
         self.min + self.max_min_diff
     }
 
     pub fn ensure_valid(
-        &self,
+        self,
         len: usize,
         too_short_msg: &'static str,
         too_long_msg: &'static str,

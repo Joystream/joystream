@@ -62,6 +62,22 @@ pub use timestamp::Call as TimestampCall;
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
 pub use proposals_codex::ProposalsConfigParameters;
 
+pub use common;
+pub use forum;
+pub use working_group;
+
+pub use governance::election_params::ElectionParameters;
+use governance::{council, election};
+use membership::members;
+use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
+pub use versioned_store;
+
+pub use content_working_group as content_wg;
+mod migration;
+
+/// Alias for ContentId, used in various places.
+pub type ContentId = primitives::H256;
+
 /// An index to a block.
 pub type BlockNumber = u32;
 
@@ -424,21 +440,6 @@ impl finality_tracker::Trait for Runtime {
     type WindowSize = WindowSize;
     type ReportLatency = ReportLatency;
 }
-
-pub use common;
-pub use forum;
-
-pub use governance::election_params::ElectionParameters;
-use governance::{council, election};
-use membership::members;
-use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
-pub use versioned_store;
-
-pub use content_working_group as content_wg;
-mod migration;
-
-/// Alias for ContentId, used in various places.
-pub type ContentId = primitives::H256;
 
 impl versioned_store::Trait for Runtime {
     type Event = Event;

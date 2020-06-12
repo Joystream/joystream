@@ -189,6 +189,7 @@ pub fn testnet_genesis(
 
     // default codex proposals config parameters
     let cpcp = node_runtime::ProposalsConfigParameters::default();
+    let default_text_constraint = node_runtime::working_group::default_text_constraint();
 
     GenesisConfig {
         system: Some(SystemConfig {
@@ -267,11 +268,9 @@ pub fn testnet_genesis(
         data_object_storage_registry: Some(DataObjectStorageRegistryConfig {
             first_relationship_id: 1,
             storage_working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: InputValidationLengthConstraint::new(5, 1024),
-            worker_application_human_readable_text_constraint: InputValidationLengthConstraint::new(
-                5, 1024,
-            ),
-            worker_exit_rationale_text_constraint: InputValidationLengthConstraint::new(5, 1024),
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
         }),
         versioned_store: Some(VersionedStoreConfig {
             class_by_id: vec![],

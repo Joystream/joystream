@@ -20,6 +20,7 @@ impl<T: Trait> Module<T> {
         // Other tasks like resetting values, migrating values etc.
 
         Self::initialize_storage_working_group_mint();
+        Self::initialize_storage_working_group_text_constraints();
     }
 }
 
@@ -77,5 +78,17 @@ impl<T: Trait> Module<T> {
         } else {
             print("Failed to create a mint for the storage working group");
         }
+    }
+
+    fn initialize_storage_working_group_text_constraints() {
+        <working_group::OpeningHumanReadableText<working_group::Instance2>>::put(
+            working_group::default_text_constraint(),
+        );
+        <working_group::WorkerApplicationHumanReadableText<working_group::Instance2>>::put(
+            working_group::default_text_constraint(),
+        );
+        <working_group::WorkerExitRationaleText<working_group::Instance2>>::put(
+            working_group::default_text_constraint(),
+        );
     }
 }

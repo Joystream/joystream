@@ -143,13 +143,13 @@ decl_storage! {
 
             // Create constraints
             <working_group::OpeningHumanReadableText::<working_group::Instance2>>::put(
-                config.opening_human_readable_text_constraint.clone()
+                config.opening_human_readable_text_constraint
             );
             <working_group::WorkerApplicationHumanReadableText::<working_group::Instance2>>::put(
-                config.worker_application_human_readable_text_constraint.clone()
+                config.worker_application_human_readable_text_constraint
             );
             <working_group::WorkerExitRationaleText::<working_group::Instance2>>::put(
-                config.worker_exit_rationale_text_constraint.clone()
+                config.worker_exit_rationale_text_constraint
             );
         });
     }
