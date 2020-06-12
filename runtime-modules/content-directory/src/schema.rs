@@ -170,21 +170,13 @@ impl<T: Trait> PropertyType<T> {
         }
     }
 
-    /// Retrives same_controller.
+    /// Retrives `same_controller` flag.
     /// Always returns false if `Type` is not a reference,
     pub fn same_controller_status(&self) -> SameController {
         if let Type::Reference(_, same_controller) = self.get_inner_type() {
             *same_controller
         } else {
             false
-        }
-    }
-
-    pub fn get_referenced_class_id(&self) -> Option<T::ClassId> {
-        if let Type::Reference(class_id, _) = self.get_inner_type() {
-            Some(*class_id)
-        } else {
-            None
         }
     }
 }
@@ -609,14 +601,12 @@ impl<T: Trait> Property<T> {
     pub fn ensure_unique_option_satisfied(
         &self,
         new_value: &PropertyValue<T>,
-        unused_schema_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
-        entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+        updated_entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
         if self.unique && (*new_value != PropertyValue::default() || self.required) {
             ensure!(
-                unused_schema_property_values
+                updated_entity_property_values
                     .values()
-                    .chain(entity_property_values.values())
                     .all(|prop_value| *prop_value != *new_value),
                 ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE
             );

@@ -518,6 +518,17 @@ impl<T: Trait> EntityPermissions<T> {
             _ => Err(ERROR_ENTITY_REMOVAL_ACCESS_DENIED),
         }
     }
+
+    pub fn ensure_controllers_are_not_equal(
+        &self,
+        entity_controller: &EntityController<T>,
+    ) -> dispatch::Result {
+        ensure!(
+            self.controller_is_equal_to(entity_controller),
+            ERROR_PROVIDED_ENTITY_CONTROLLER_IS_EQUAL_TO_CURRENT_ONE
+        );
+        Ok(())
+    }
 }
 
 /// Type, derived from dispatchable call, identifies the caller

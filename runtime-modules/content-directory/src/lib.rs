@@ -438,11 +438,6 @@ impl<T: Trait> Entity<T> {
         self.values
     }
 
-    /// Get `Entity` values by reference
-    fn get_values_ref(&self) -> &BTreeMap<PropertyId, PropertyValue<T>> {
-        &self.values
-    }
-
     /// Get mutable `EntityPermissions` reference, related to given `Entity`
     fn get_permissions_mut(&mut self) -> &mut EntityPermissions<T> {
         &mut self.entity_permissions
@@ -998,32 +993,68 @@ decl_module! {
             origin,
             entity_id: T::EntityId,
             new_controller: EntityController<T>,
+            new_property_value_references_with_same_owner_flag_set: BTreeMap<PropertyId, PropertyValue<T>>
         ) -> dispatch::Result {
 
             ensure_is_lead::<T>(origin)?;
 
-            let (entity, class) = Self::ensure_entity_and_class(entity_id)?;
+            let (entity, class) = Self::ensure_known_entity_and_class(entity_id)?;
+
+            entity.get_permissions_ref().ensure_controllers_are_not_equal(&new_controller)?;
 
             entity.ensure_inbound_same_owner_rc_is_zero()?;
+
+            let class_properties = class.properties;
+
+            let entity_property_values = entity.values;
+
+            let entity_property_id_references_with_same_owner_flag_set =
+                Self::get_property_id_references_with_same_owner_flag_set(&class_properties, &entity_property_values);
+
+            Self::ensure_only_references_with_same_owner_flag_set_provided(
+                &entity_property_id_references_with_same_owner_flag_set,
+                &new_property_value_references_with_same_owner_flag_set
+            )?;
+
+            Self::ensure_property_values_are_valid(
+                &class_properties, &entity_property_id_references_with_same_owner_flag_set,
+                &new_controller, &new_property_value_references_with_same_owner_flag_set
+            )?;
+
+            let entity_property_values_updated = 
+                if let Some(entity_property_values_updated) = Self::make_updated_property_value_references_with_same_owner_flag_set(
+                    entity_property_id_references_with_same_owner_flag_set, &entity_property_values,
+                    &new_property_value_references_with_same_owner_flag_set,
+                ) {
+                    Self::ensure_property_values_unique_option_satisfied(&class_properties, &entity_property_values_updated)?;
+                    Some(entity_property_values_updated)
+                } else {
+                    None
+                };
 
             //
             // == MUTATION SAFE ==
             //
 
-            // Set of all entities, which controller should be updated after ownership transfer performed
-            let mut entities = BTreeSet::new();
+            // Transfer entity ownership
+            if let Some(entity_property_values_updated) = entity_property_values_updated {
+                // Update reference counters of involved entities
+                let entities_inbound_rcs_delta =
+                    Self::get_updated_inbound_rcs_delta(
+                        class_properties, entity_property_values, &new_property_value_references_with_same_owner_flag_set
+                    );
 
-            // Insert root entity_id into entities set
-            entities.insert(entity_id);
+                entities_inbound_rcs_delta.update_entities_rcs();
 
-            Self::retrieve_all_entities_to_perform_ownership_transfer(&class, entity, &mut entities);
-
-            // Perform ownership transfer of all involved entities
-            entities.into_iter().for_each(|involved_entity_id| {
-                <EntityById<T>>::mutate(involved_entity_id, |inner_entity|
-                    inner_entity.get_permissions_mut().set_conroller(new_controller.clone())
-                );
-            });
+                <EntityById<T>>::mutate(entity_id, |entity| {
+                    entity.values = entity_property_values_updated;
+                    entity.get_permissions_mut().set_conroller(new_controller.clone());
+                });
+            } else {
+                <EntityById<T>>::mutate(entity_id, |entity| {
+                    entity.get_permissions_mut().set_conroller(new_controller.clone());
+                });
+            };
 
             // Trigger event
             Self::deposit_event(RawEvent::EntityOwnershipTransfered(entity_id, new_controller));
@@ -1173,23 +1204,33 @@ decl_module! {
             let class_properties = class.properties;
 
             Self::ensure_property_values_are_valid(
-                &class_properties, &schema, entity_controller, &property_values,
+                &class_properties, schema.get_properties(), entity_controller, &property_values,
             )?;
 
-            Self::ensure_property_values_unique_option_satisfied(
-                &class_properties, &property_values, entity.get_values_ref()
-            )?;
+            // Entities, which rc should be updated
+            let mut entities_inbound_rcs_delta = EntitiesInboundRcsDelta::default();
 
-            //
-            // == MUTATION SAFE ==
-            //
+            Self::calculate_entities_inbound_rcs_delta(
+                &class_properties, &property_values, &mut entities_inbound_rcs_delta, DeltaMode::Increment
+            );
+
+            entities_inbound_rcs_delta.update_entities_rcs();
 
             let entity_property_values = entity.get_values();
 
             // Updated entity values, after new schema support added
             let entity_values_updated = Self::make_updated_entity_property_values(
-                schema, entity_property_values, &property_values
+                schema, entity_property_values, property_values
             );
+
+            Self::ensure_property_values_unique_option_satisfied(
+                &class_properties, &entity_values_updated
+            )?;
+
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             // Add schema support to `Entity` under given `entity_id`
             <EntityById<T>>::mutate(entity_id, |entity| {
@@ -1202,15 +1243,6 @@ decl_module! {
                     entity.values = entity_values_updated;
                 }
             });
-
-            // Entities, which rc should be updated
-            let mut entities_inbound_rcs_delta = EntitiesInboundRcsDelta::default();
-
-            Self::calculate_entities_inbound_rcs_delta(
-                &class_properties, &property_values, &mut entities_inbound_rcs_delta, DeltaMode::Increment
-            );
-
-            entities_inbound_rcs_delta.update_entities_rcs();
 
             // Trigger event
             Self::deposit_event(RawEvent::EntitySchemaSupportAdded(actor, entity_id, schema_id));
@@ -1529,13 +1561,13 @@ impl<T: Trait> Module<T> {
     fn make_updated_entity_property_values(
         schema: Schema,
         entity_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
-        property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+        property_values: BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> BTreeMap<PropertyId, PropertyValue<T>> {
         // Concatenate existing `entity_property_values` with `property_values`, provided, when adding `Schema` support.
         let updated_entity_property_values: BTreeMap<PropertyId, PropertyValue<T>> =
             entity_property_values
                 .into_iter()
-                .chain(property_values.to_owned().into_iter())
+                .chain(property_values.into_iter())
                 .collect();
 
         // Write all missing non required `Schema` `property_values` as PropertyValue::default()
@@ -1688,7 +1720,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure `Entity` under given `entity_id` exists, retrieve corresponding `Entity` & `Class`
-    pub fn ensure_entity_and_class(
+    pub fn ensure_known_entity_and_class(
         entity_id: T::EntityId,
     ) -> Result<(Entity<T>, Class<T>), &'static str> {
         let entity = Self::ensure_known_entity_id(entity_id)?;
@@ -1697,14 +1729,84 @@ impl<T: Trait> Module<T> {
         Ok((entity, class))
     }
 
-    /// Perform all checks to ensure `property_values` are valid
+    /// Retrieve property value ids from provided `entity_property_values`,
+    /// if `Type` of corresponding `Property` is `Reference` and `SameOwner` flag set
+    pub fn get_property_id_references_with_same_owner_flag_set(
+        class_properties: &[Property<T>],
+        entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+    ) -> BTreeSet<PropertyId> {
+        entity_property_values
+            .keys()
+            .filter(|&&property_id| {
+                // Indexing is safe, class should always maintain such constistency
+                let class_property = &class_properties[property_id as usize];
+                class_property.property_type.same_controller_status()
+            })
+            .copied()
+            .collect()
+    }
+
+    /// Ensure all provided `new_property_value_references_with_same_owner_flag_set` are references with `SameOwner` flag set
+    pub fn ensure_only_references_with_same_owner_flag_set_provided(
+        entity_property_id_references_with_same_owner_flag_set: &BTreeSet<PropertyId>,
+        new_property_value_references_with_same_owner_flag_set: &BTreeMap<
+            PropertyId,
+            PropertyValue<T>,
+        >,
+    ) -> dispatch::Result {
+        let new_property_value_id_references_with_same_owner_flag_set: BTreeSet<PropertyId> =
+            new_property_value_references_with_same_owner_flag_set
+                .keys()
+                .copied()
+                .collect();
+        ensure!(
+            new_property_value_id_references_with_same_owner_flag_set
+                .is_subset(entity_property_id_references_with_same_owner_flag_set),
+            ERROR_ALL_PROVIDED_PROPERTY_VALUES_MUST_BE_REFERENCES_WITH_SAME_OWNER_FLAG_SET
+        );
+        Ok(())
+    }
+
+    pub fn make_updated_property_value_references_with_same_owner_flag_set(
+        entity_property_id_references_with_same_owner_flag_set: BTreeSet<PropertyId>,
+        entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+        new_property_value_references_with_same_owner_flag_set: &BTreeMap<
+            PropertyId,
+            PropertyValue<T>,
+        >,
+    ) -> Option<BTreeMap<PropertyId, PropertyValue<T>>> {
+        let mut entity_property_values_updated = entity_property_values.clone();
+        for property_id_reference in entity_property_id_references_with_same_owner_flag_set {
+            if let Some(new_property_value_reference_with_same_owner_flag_set) =
+                new_property_value_references_with_same_owner_flag_set.get(&property_id_reference)
+            {
+                entity_property_values_updated.insert(
+                    property_id_reference,
+                    new_property_value_reference_with_same_owner_flag_set.to_owned(),
+                );
+            } else {
+                // Throw away old non required property value references with same owner flag set
+                // and replace them with Default ones
+                entity_property_values_updated
+                    .insert(property_id_reference, PropertyValue::default());
+            }
+        }
+
+        if *entity_property_values != entity_property_values_updated {
+            Some(entity_property_values_updated)
+        } else {
+            None
+        }
+    }
+
+    /// Perform all checks to ensure `property_values` under provided `property_ids` are valid
     pub fn ensure_property_values_are_valid(
         class_properties: &[Property<T>],
-        schema: &Schema,
+        property_ids: &BTreeSet<PropertyId>,
         entity_controller: &EntityController<T>,
         property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
-        for property_id in schema.get_properties() {
+        for property_id in property_ids {
             // Indexing is safe, class should always maintain such constistency
             let class_property = &class_properties[*property_id as usize];
 
@@ -1722,71 +1824,16 @@ impl<T: Trait> Module<T> {
     /// Ensure `property_values` satisfy unique option, if required
     pub fn ensure_property_values_unique_option_satisfied(
         class_properties: &[Property<T>],
-        property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
-        entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+        updated_entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
-        for (property_id, property_value) in property_values {
+        for (property_id, property_value) in updated_entity_property_values {
             // Indexing is safe, class should always maintain such constistency
             let class_property = &class_properties[*property_id as usize];
 
-            class_property.ensure_unique_option_satisfied(
-                property_value,
-                property_values,
-                entity_property_values,
-            )?;
+            class_property
+                .ensure_unique_option_satisfied(property_value, updated_entity_property_values)?;
         }
         Ok(())
-    }
-
-    /// Retrieve all `entity_id`'s, depending on current `Entity` (the tree of referenced entities with `SameOwner` flag set)
-    pub fn retrieve_all_entities_to_perform_ownership_transfer(
-        class: &Class<T>,
-        entity: Entity<T>,
-        entities: &mut BTreeSet<T::EntityId>,
-    ) {
-        for (id, value) in entity.values.iter() {
-            // Check, that property_type of class_property under given index is reference with `SameOwner` flag set
-            match class.properties.get(*id as usize) {
-                Some(class_property) if class_property.property_type.same_controller_status() => {
-                    // Always safe
-                    let class_id = class_property
-                        .property_type
-                        .get_referenced_class_id()
-                        .unwrap();
-
-                    // If property class_id is not equal to current one, retrieve corresponding Class from runtime storage
-                    if class_id != entity.class_id {
-                        let new_class = Self::class_by_id(class_id);
-
-                        Self::get_all_same_owner_entities(&new_class, value, entities)
-                    } else {
-                        Self::get_all_same_owner_entities(&class, value, entities)
-                    }
-                }
-                _ => (),
-            }
-        }
-    }
-
-    /// Get all referenced entities from corresponding property with `SameOwner` flag set,
-    /// call `retrieve_all_entities_to_perform_ownership_transfer` recursively to complete tree traversal
-    pub fn get_all_same_owner_entities(
-        class: &Class<T>,
-        value: &PropertyValue<T>,
-        entities: &mut BTreeSet<T::EntityId>,
-    ) {
-        if let Some(entity_ids) = value.get_involved_entities() {
-            entity_ids.into_iter().for_each(|entity_id| {
-                // If new entity with `SameOwner` flag set found
-                if !entities.contains(&entity_id) {
-                    entities.insert(entity_id);
-                    let new_entity = Self::entity_by_id(entity_id);
-                    Self::retrieve_all_entities_to_perform_ownership_transfer(
-                        &class, new_entity, entities,
-                    );
-                }
-            })
-        }
     }
 
     /// Perform all necessary checks to ensure `new_property_values` are valid
