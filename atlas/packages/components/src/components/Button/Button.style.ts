@@ -71,7 +71,7 @@ const paddingFromType: StyleFn = (
 	{
 		size = "regular",
 		children,
-		full
+		full = false
 	}: { size: "regular" | "small" | "smaller"; children?: React.ReactNode; full: boolean }
 ) => {
 	const buttonHeight = size === "regular" ? "20px" : size === "small" ? "15px" : "10px"
@@ -80,11 +80,11 @@ const paddingFromType: StyleFn = (
 		margin: `0 ${full ? "0" : "15px"} 0 0`,
 		padding:
 			size === "regular"
-				? !!children
-					? "14px 17px"
+				? children
+					? "14px 20px"
 					: "14px"
 				: size === "small"
-				? !!children
+				? children
 					? "12px 14px"
 					: "12px"
 				: "10px",
@@ -93,10 +93,7 @@ const paddingFromType: StyleFn = (
 				? typography.sizes.button.large
 				: size === "small"
 				? typography.sizes.button.medium
-				: typography.sizes.button.small,
-
-		height: buttonHeight,
-		maxHeight: buttonHeight
+				: typography.sizes.button.small
 	}
 }
 
@@ -119,7 +116,7 @@ const iconStyles: StyleFn = (styles, { children, size }) => {
 }
 
 export const useCSS = (props: ButtonStyleProps) => ({
-	container: makeStyles([baseStyles, colorFromType, dimensionsFromProps, paddingFromType, disabled])(props),
+	container: makeStyles([baseStyles, colorFromType, dimensionsFromProps, log, paddingFromType, disabled])(props),
 	icon: makeStyles([iconStyles])(props)
 })
 

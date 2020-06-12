@@ -1,5 +1,7 @@
-export { default as typography } from "./typography";
-export { default as colors } from "./colors";
-export { default as spacing } from "./spacing";
-export { default as breakpoints } from "./breakpoints";
-export * from "./fragments";
+import typography from "./typography"
+import colors from "./colors"
+import spacing from "./spacing"
+import breakpoints from "./breakpoints"
+import * as fragments from "./fragments"
+
+export { typography, breakpoints, spacing, colors, fragments }

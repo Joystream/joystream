@@ -3,22 +3,31 @@ import { typography, colors } from "./../../theme";
 
 export type VideoPreviewStyleProps = {
 	showChannel?: boolean;
+	poster?: string;
+	width?: number;
+	height?: number;
 };
 
-export let makeStyles = ({ showChannel = false }: VideoPreviewStyleProps) => {
+export let makeStyles = ({ showChannel = false, width = 320, height = 190, poster = "" }: VideoPreviewStyleProps) => {
+	const withPoster = poster ? `url(${poster})` : `linear-gradient(${colors.gray[300]}, ${colors.gray[700]})`;
+
 	return {
-		container: css``,
+		container: css`
+			color: ${colors.gray[300]};
+		`,
 		link: css`
 			text-decoration: none;
 		`,
 		coverContainer: css`
-			width: 100%;
+			width: ${width}px;
+			height: ${height}px;
 			background-color: black;
 		`,
 		cover: css`
-			display: block;
 			width: 100%;
-			height: auto;
+			height: 100%;
+			background-image: ${withPoster};
+			background-size: cover;
 		`,
 		infoContainer: css`
 			display: grid;
@@ -27,6 +36,8 @@ export let makeStyles = ({ showChannel = false }: VideoPreviewStyleProps) => {
 		`,
 		avatar: css`
 			grid-column: 1 / 1;
+			width: 40px;
+			height: 40px;
 		`,
 		textContainer: css`
 			grid-column: ${showChannel ? "2 / 2" : "1 / 1"};
@@ -35,13 +46,15 @@ export let makeStyles = ({ showChannel = false }: VideoPreviewStyleProps) => {
 			margin: 0;
 			font-weight: ${typography.weights.bold};
 			text-transform: capitalize;
-			color: ${colors.black};
-			font-size: ${typography.sizes.h3};
+			color: ${colors.white};
 		`,
 		channel: css`
-			margin: 5px 0 0;
+			margin: 0.5rem 0;
 			font-size: ${typography.sizes.subtitle2};
-			color: ${colors.gray[700]};
+			display: block;
+		`,
+		meta: css`
+			font-size: ${typography.sizes.subtitle2};
 		`,
 	};
 };
