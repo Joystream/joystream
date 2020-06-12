@@ -1,6 +1,7 @@
 #![cfg(test)]
 
 pub use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
+use common::constraints::InputValidationLengthConstraint;
 pub use common::currency::GovernanceCurrency;
 use membership::members;
 pub use system;
@@ -226,6 +227,8 @@ pub struct ExtBuilder {
 }
 
 pub(crate) const STORAGE_WORKING_GROUP_MINT_CAPACITY: u64 = 40000;
+pub(crate) const STORAGE_WORKING_GROUP_CONSTRAINT_MIN: u16 = 1;
+pub(crate) const STORAGE_WORKING_GROUP_CONSTRAINT_DIFF: u16 = 40;
 
 impl Default for ExtBuilder {
     fn default() -> Self {
@@ -270,6 +273,18 @@ impl ExtBuilder {
         data_object_storage_registry::GenesisConfig::<Test> {
             first_relationship_id: self.first_relationship_id,
             storage_working_group_mint_capacity: self.storage_working_group_mint_capacity,
+            opening_human_readable_text_constraint: InputValidationLengthConstraint::new(
+                STORAGE_WORKING_GROUP_CONSTRAINT_MIN,
+                STORAGE_WORKING_GROUP_CONSTRAINT_DIFF,
+            ),
+            worker_application_human_readable_text_constraint: InputValidationLengthConstraint::new(
+                STORAGE_WORKING_GROUP_CONSTRAINT_MIN,
+                STORAGE_WORKING_GROUP_CONSTRAINT_DIFF,
+            ),
+            worker_exit_rationale_text_constraint: InputValidationLengthConstraint::new(
+                STORAGE_WORKING_GROUP_CONSTRAINT_MIN,
+                STORAGE_WORKING_GROUP_CONSTRAINT_DIFF,
+            ),
         }
         .assimilate_storage(&mut t)
         .unwrap();

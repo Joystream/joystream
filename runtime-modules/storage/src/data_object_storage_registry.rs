@@ -25,7 +25,11 @@
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
-use srml_support::{decl_error, decl_event, decl_module, decl_storage, ensure, print, Parameter};
+use srml_support::{
+    decl_error, decl_event, decl_module, decl_storage, ensure, print, Parameter, StorageValue,
+};
+
+use common::constraints::InputValidationLengthConstraint;
 
 use crate::data_directory::{self, ContentIdExists};
 use crate::{StorageProviderId, StorageWorkingGroup};
@@ -123,6 +127,9 @@ decl_storage! {
     }
     add_extra_genesis {
         config(storage_working_group_mint_capacity): minting::BalanceOf<T>;
+        config(opening_human_readable_text_constraint): InputValidationLengthConstraint;
+        config(worker_application_human_readable_text_constraint): InputValidationLengthConstraint;
+        config(worker_exit_rationale_text_constraint): InputValidationLengthConstraint;
         build(|config: &GenesisConfig<T>| {
             // Create a mint.
             let mint_id_result =
@@ -133,6 +140,17 @@ decl_storage! {
             } else {
                 print("Failed to create a mint for the storage working group");
             }
+
+            // Create constraints
+            <working_group::OpeningHumanReadableText::<working_group::Instance2>>::put(
+                config.opening_human_readable_text_constraint.clone()
+            );
+            <working_group::WorkerApplicationHumanReadableText::<working_group::Instance2>>::put(
+                config.worker_application_human_readable_text_constraint.clone()
+            );
+            <working_group::WorkerExitRationaleText::<working_group::Instance2>>::put(
+                config.worker_exit_rationale_text_constraint.clone()
+            );
         });
     }
 }

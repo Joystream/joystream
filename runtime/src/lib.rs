@@ -425,7 +425,9 @@ impl finality_tracker::Trait for Runtime {
     type ReportLatency = ReportLatency;
 }
 
+pub use common;
 pub use forum;
+
 pub use governance::election_params::ElectionParameters;
 use governance::{council, election};
 use membership::members;

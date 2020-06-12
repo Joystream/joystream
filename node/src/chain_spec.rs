@@ -42,6 +42,8 @@ type AccountPublic = <Signature as Verify>::Signer;
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
 pub type ChainSpec = substrate_service::ChainSpec<GenesisConfig>;
 
+use node_runtime::common::constraints::InputValidationLengthConstraint;
+
 /// The chain specification option. This is expected to come in from the CLI and
 /// is little more than one of a number of alternatives which can easily be converted
 /// from a string (`--chain=...`) into a `ChainSpec`.
@@ -265,6 +267,11 @@ pub fn testnet_genesis(
         data_object_storage_registry: Some(DataObjectStorageRegistryConfig {
             first_relationship_id: 1,
             storage_working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: InputValidationLengthConstraint::new(5, 1024),
+            worker_application_human_readable_text_constraint: InputValidationLengthConstraint::new(
+                5, 1024,
+            ),
+            worker_exit_rationale_text_constraint: InputValidationLengthConstraint::new(5, 1024),
         }),
         versioned_store: Some(VersionedStoreConfig {
             class_by_id: vec![],
@@ -291,14 +298,14 @@ pub fn testnet_genesis(
             next_principal_id: 0,
             channel_creation_enabled: true, // there is no extrinsic to change it so enabling at genesis
             unstaker_by_stake_id: vec![],
-            channel_handle_constraint: crate::forum_config::new_validation(5, 20),
-            channel_description_constraint: crate::forum_config::new_validation(1, 1024),
-            opening_human_readable_text: crate::forum_config::new_validation(1, 2048),
-            curator_application_human_readable_text: crate::forum_config::new_validation(1, 2048),
-            curator_exit_rationale_text: crate::forum_config::new_validation(1, 2048),
-            channel_avatar_constraint: crate::forum_config::new_validation(5, 1024),
-            channel_banner_constraint: crate::forum_config::new_validation(5, 1024),
-            channel_title_constraint: crate::forum_config::new_validation(5, 1024),
+            channel_handle_constraint: InputValidationLengthConstraint::new(5, 20),
+            channel_description_constraint: InputValidationLengthConstraint::new(1, 1024),
+            opening_human_readable_text: InputValidationLengthConstraint::new(1, 2048),
+            curator_application_human_readable_text: InputValidationLengthConstraint::new(1, 2048),
+            curator_exit_rationale_text: InputValidationLengthConstraint::new(1, 2048),
+            channel_avatar_constraint: InputValidationLengthConstraint::new(5, 1024),
+            channel_banner_constraint: InputValidationLengthConstraint::new(5, 1024),
+            channel_title_constraint: InputValidationLengthConstraint::new(5, 1024),
         }),
         migration: Some(MigrationConfig {}),
         proposals_codex: Some(ProposalsCodexConfig {

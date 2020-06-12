@@ -37,4 +37,9 @@ impl InputValidationLengthConstraint {
             Ok(())
         }
     }
+
+    /// Create default input text constraints.
+    pub fn new(min: u16, max_min_diff: u16) -> Self {
+        InputValidationLengthConstraint { min, max_min_diff }
+    }
 }

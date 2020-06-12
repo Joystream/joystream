@@ -2,7 +2,6 @@
 
 use super::mock::*;
 use crate::StorageWorkingGroup;
-use srml_support::StorageLinkedMap;
 use system::{self, EventRecord, Phase, RawOrigin};
 
 const DEFAULT_LEADER_ACCOUNT_ID: u64 = 1;
@@ -282,17 +281,5 @@ fn activate_existing() {
         let data = TestDataObjectTypeRegistry::data_object_types(TEST_FIRST_DATA_OBJECT_TYPE_ID);
         assert!(data.is_some());
         assert!(!data.unwrap().active);
-    });
-}
-
-#[test]
-fn ensure_setting_genesis_storage_working_group_mint_succeeds() {
-    with_default_mock_builder(|| {
-        let mint_id = <StorageWorkingGroup<Test>>::mint();
-
-        assert!(minting::Mints::<Test>::exists(mint_id));
-
-        let mint = <minting::Module<Test>>::mints(mint_id);
-        assert_eq!(mint.capacity(), STORAGE_WORKING_GROUP_MINT_CAPACITY);
     });
 }
