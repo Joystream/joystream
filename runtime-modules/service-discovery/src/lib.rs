@@ -118,20 +118,10 @@ decl_module! {
             origin,
             storage_provider_id: StorageProviderId<T>,
             id: Vec<u8>,
-            lifetime: Option<T::BlockNumber>
         ) {
             <StorageBureaucracy<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
 
             // TODO: ensure id is a valid base58 encoded IPNS identity
-
-            let ttl = lifetime.map_or(Self::default_lifetime(), |value| {
-                let min_lifetime = T::BlockNumber::from(MINIMUM_LIFETIME);
-                if value >= min_lifetime {
-                    value
-                } else {
-                    min_lifetime
-                }
-            });
 
             //
             // == MUTATION SAFE ==
@@ -139,7 +129,7 @@ decl_module! {
 
             <AccountInfoByStorageProviderId<T>>::insert(storage_provider_id, AccountInfo {
                 identity: id.clone(),
-                expires_at: <system::Module<T>>::block_number() + ttl,
+                expires_at: <system::Module<T>>::block_number() + Self::default_lifetime(),
             });
 
             Self::deposit_event(RawEvent::AccountInfoUpdated(storage_provider_id, id));
@@ -172,7 +162,7 @@ decl_module! {
         }
 
         /// Sets bootstrap endpoints for the Colossus. Requires root privileges.
-        pub fn set_bootstrap_endpoints(origin, endpoints: Vec<Vec<u8>>) {
+        pub fn set_bootstrap_endpoints(origin, endpoints: Vec<Url>) {
             ensure_root(origin)?;
 
             // == MUTATION SAFE ==
