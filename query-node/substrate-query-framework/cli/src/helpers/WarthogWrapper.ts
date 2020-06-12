@@ -2,6 +2,8 @@ import * as fs from 'fs-extra';
 import { execSync } from 'child_process';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
+import * as prettier from 'prettier';
+
 import Command from '@oclif/command';
 import { copyFileSync } from 'fs-extra';
 import { cli as warthogCli } from '../index';
@@ -10,6 +12,7 @@ import { DatabaseModelCodeGenerator } from './ModelCodeGenerator';
 import { getTemplatePath, createFile, createDir } from '../utils/utils';
 import { WarthogModel } from '../model/WarthogModel';
 import { FTSQueryGenerator } from './FTSQueryGenerator';
+import { ModelRenderer } from '../renderers/ModelRenderer';
 import Debug from "debug";
 
 const debug = Debug('qnode-cli:warthog-wrapper');
@@ -32,7 +35,7 @@ export default class WarthogWrapper {
 
     await this.createDB();
 
-    await this.createModels();
+    this.createModels();
 
     this.codegen();
 
@@ -47,7 +50,7 @@ export default class WarthogWrapper {
     // Order of calling functions is important!!!
     await this.newProject();
     this.installDependencies();
-    await this.createModels();
+    this.createModels();
     this.codegen();
     this.generateQueries();
   }
@@ -86,31 +89,31 @@ export default class WarthogWrapper {
   /**
    * Generate model/resolver/service for input types in schema.json
    */
-  async createModels():Promise<void> {
+  createModels():void {
     const schemaPath = path.resolve(process.cwd(), this.schemaPath);
 
     const modelGenerator = new DatabaseModelCodeGenerator(schemaPath);
     this.model = modelGenerator.generateWarthogModel();
 
-    debug(`Genetated Warthog Model: ${JSON.stringify(this.model, null, 2)}`);
+    const modelRenderer = new ModelRenderer();
 
-    const commands = this.model.toWarthogStringDefinitions()
-      .map(modelString => ['generate', modelString].join(' '));
+    //TODO: Refactor this and read all the paths from Warthog's config
+    createDir(path.resolve(process.cwd(), 'src/modules'), false, true);
 
-    // Execute commands
-    const runAll = async () => {
-      for (const command of commands) {
-        if (command) {
-          // Doesnt wait for the process to finish
-          debug(`Running ${command}`);
-          await warthogCli.run(command);
-
-          // it waits till it's done
-          //execSync(command);
-        }
-      }
-    }
-    await runAll();
+    this.model.types.map((objType) => {
+      const transform = (template:string) => modelRenderer.generate(template, objType);
+      
+      createDir(path.resolve(process.cwd(), modelRenderer.getDestFolder(objType.name)), false, true);
+      
+      const destFiles = modelRenderer.getDestFiles(objType.name);
+      ['model', 'resolver', 'service'].map((s) => {
+        this.transformAndWrite(`entities/${s}.ts.mst`, 
+          destFiles[s],
+          transform);
+      })
+         
+    })
+    
   }
 
   codegen():void {
@@ -166,8 +169,12 @@ export default class WarthogWrapper {
   private transformAndWrite(template: string, destPath: string, transform: (data: string) => string) {
     const templateData: string = fs.readFileSync(getTemplatePath(template), 'utf-8');
     debug(`Source: ${getTemplatePath(template)}`);
-    const transformed: string = transform(templateData);
+    let transformed: string = transform(templateData);
     
+    transformed = prettier.format(transformed, {
+      parser: 'typescript'
+    });
+
     debug(`Transformed: ${transformed}`);
     const destFullPath = path.resolve(process.cwd(), destPath);
     
