@@ -1021,7 +1021,7 @@ decl_module! {
                 &new_controller, &new_property_value_references_with_same_owner_flag_set
             )?;
 
-            let entity_property_values_updated = 
+            let entity_property_values_updated =
                 if let Some(entity_property_values_updated) = Self::make_updated_property_value_references_with_same_owner_flag_set(
                     entity_property_id_references_with_same_owner_flag_set, &entity_property_values,
                     &new_property_value_references_with_same_owner_flag_set,
@@ -1279,7 +1279,13 @@ decl_module! {
             let entity_property_values = entity.values;
 
             // Perform entity property values update
-            let entity_property_values_updated = Self::make_updated_values(&entity_property_values, &new_property_values);
+            let entity_property_values_updated = if let Some(entity_property_values_updated) =
+                Self::make_updated_values(&entity_property_values, &new_property_values) {
+                    Self::ensure_property_values_unique_option_satisfied(&class_properties, &entity_property_values_updated)?;
+                    Some(entity_property_values_updated)
+                } else {
+                    None
+                };
 
             // If property values should be updated
             if let Some(entity_property_values_updated) = entity_property_values_updated {
