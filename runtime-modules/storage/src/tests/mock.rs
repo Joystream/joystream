@@ -1,10 +1,8 @@
 #![cfg(test)]
 
-pub use super::{data_directory, data_object_storage_registry, data_object_type_registry};
-use crate::traits;
+pub use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
 pub use common::currency::GovernanceCurrency;
 use membership::members;
-use roles::actors;
 pub use system;
 
 pub use primitives::{Blake2Hasher, H256};
@@ -15,7 +13,14 @@ pub use sr_primitives::{
     BuildStorage, Perbill,
 };
 
-use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use crate::data_directory::ContentIdExists;
+use crate::data_object_type_registry::IsActiveDataObjectType;
+use srml_support::{impl_outer_event, impl_outer_origin, parameter_types, StorageLinkedMap};
+
+mod bureaucracy_mod {
+    pub use bureaucracy::Event;
+    pub use bureaucracy::Instance2;
+}
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -26,9 +31,9 @@ impl_outer_event! {
         data_object_type_registry<T>,
         data_directory<T>,
         data_object_storage_registry<T>,
-        actors<T>,
         balances<T>,
         members<T>,
+        bureaucracy_mod Instance2 <T>,
     }
 }
 
@@ -37,41 +42,18 @@ pub const TEST_FIRST_CONTENT_ID: u64 = 2000;
 pub const TEST_FIRST_RELATIONSHIP_ID: u64 = 3000;
 pub const TEST_FIRST_METADATA_ID: u64 = 4000;
 
-pub const TEST_MOCK_LIAISON: u64 = 0xd00du64;
+pub const TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID: u32 = 1;
 pub const TEST_MOCK_EXISTING_CID: u64 = 42;
 
-pub struct MockRoles {}
-impl roles::traits::Roles<Test> for MockRoles {
-    fn is_role_account(_account_id: &<Test as system::Trait>::AccountId) -> bool {
-        false
-    }
-
-    fn account_has_role(
-        account_id: &<Test as system::Trait>::AccountId,
-        _role: actors::Role,
-    ) -> bool {
-        *account_id == TEST_MOCK_LIAISON
-    }
-
-    fn random_account_for_role(
-        _role: actors::Role,
-    ) -> Result<<Test as system::Trait>::AccountId, &'static str> {
-        // We "randomly" select an account Id.
-        Ok(TEST_MOCK_LIAISON)
-    }
-}
-
 pub struct AnyDataObjectTypeIsActive {}
-impl<T: data_object_type_registry::Trait> traits::IsActiveDataObjectType<T>
-    for AnyDataObjectTypeIsActive
-{
+impl<T: data_object_type_registry::Trait> IsActiveDataObjectType<T> for AnyDataObjectTypeIsActive {
     fn is_active_data_object_type(_which: &T::DataObjectTypeId) -> bool {
         true
     }
 }
 
 pub struct MockContent {}
-impl traits::ContentIdExists<Test> for MockContent {
+impl ContentIdExists<Test> for MockContent {
     fn has_content(which: &<Test as data_directory::Trait>::ContentId) -> bool {
         *which == TEST_MOCK_EXISTING_CID
     }
@@ -88,7 +70,7 @@ impl traits::ContentIdExists<Test> for MockContent {
                     time: 1024,
                 },
                 owner: 1,
-                liaison: TEST_MOCK_LIAISON,
+                liaison: TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID,
                 liaison_judgement: data_directory::LiaisonJudgement::Pending,
                 ipfs_content_id: vec![],
             }),
@@ -139,6 +121,7 @@ parameter_types! {
     pub const TransactionBaseFee: u32 = 1;
     pub const TransactionByteFee: u32 = 0;
     pub const InitialMembersBalance: u32 = 2000;
+    pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
 impl balances::Trait for Test {
@@ -162,6 +145,10 @@ impl GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
 }
 
+impl bureaucracy::Trait<bureaucracy::Instance2> for Test {
+    type Event = MetaEvent;
+}
+
 impl data_object_type_registry::Trait for Test {
     type Event = MetaEvent;
     type DataObjectTypeId = u64;
@@ -170,34 +157,64 @@ impl data_object_type_registry::Trait for Test {
 impl data_directory::Trait for Test {
     type Event = MetaEvent;
     type ContentId = u64;
-    type Roles = MockRoles;
+    type StorageProviderHelper = ();
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
-    type SchemaId = u64;
+    type MemberOriginValidator = ();
+}
+
+impl crate::data_directory::StorageProviderHelper<Test> for () {
+    fn get_random_storage_provider() -> Result<u32, &'static str> {
+        Ok(1)
+    }
+}
+
+impl common::origin_validator::ActorOriginValidator<Origin, u64, u64> for () {
+    fn ensure_actor_origin(origin: Origin, _account_id: u64) -> Result<u64, &'static str> {
+        let signed_account_id = system::ensure_signed(origin)?;
+
+        Ok(signed_account_id)
+    }
 }
 
 impl data_object_storage_registry::Trait for Test {
     type Event = MetaEvent;
     type DataObjectStorageRelationshipId = u64;
-    type Roles = MockRoles;
     type ContentIdExists = MockContent;
 }
 
 impl members::Trait for Test {
     type Event = MetaEvent;
-    type MemberId = u32;
+    type MemberId = u64;
     type SubscriptionId = u32;
     type PaidTermId = u32;
     type ActorId = u32;
     type InitialMembersBalance = InitialMembersBalance;
 }
 
-impl actors::Trait for Test {
-    type Event = MetaEvent;
-    type OnActorRemoved = ();
+impl stake::Trait for Test {
+    type Currency = Balances;
+    type StakePoolId = StakePoolId;
+    type StakingEventsHandler = ();
+    type StakeId = u64;
+    type SlashId = u64;
 }
 
-impl actors::ActorRemoved<Test> for () {
-    fn actor_removed(_: &u64) {}
+impl minting::Trait for Test {
+    type Currency = Balances;
+    type MintId = u64;
+}
+
+impl recurringrewards::Trait for Test {
+    type PayoutStatusHandler = ();
+    type RecipientId = u64;
+    type RewardRelationshipId = u64;
+}
+
+impl hiring::Trait for Test {
+    type OpeningId = u64;
+    type ApplicationId = u64;
+    type ApplicationDeactivatedHandler = ();
+    type StakeHandlerProvider = hiring::Module<Self>;
 }
 
 pub struct ExtBuilder {
@@ -263,13 +280,12 @@ impl ExtBuilder {
     }
 }
 
+pub type Balances = balances::Module<Test>;
 pub type System = system::Module<Test>;
 pub type TestDataObjectTypeRegistry = data_object_type_registry::Module<Test>;
 pub type TestDataObjectType = data_object_type_registry::DataObjectType;
 pub type TestDataDirectory = data_directory::Module<Test>;
-// pub type TestDataObject = data_directory::DataObject<Test>;
 pub type TestDataObjectStorageRegistry = data_object_storage_registry::Module<Test>;
-pub type TestActors = actors::Module<Test>;
 
 pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
     ExtBuilder::default()
@@ -278,13 +294,24 @@ pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
         .first_relationship_id(TEST_FIRST_RELATIONSHIP_ID)
         .first_metadata_id(TEST_FIRST_METADATA_ID)
         .build()
-        .execute_with(|| {
-            let roles: Vec<actors::Role> = vec![actors::Role::StorageProvider];
-            assert!(
-                TestActors::set_available_roles(system::RawOrigin::Root.into(), roles).is_ok(),
-                ""
-            );
+        .execute_with(|| f())
+}
 
-            f()
-        })
+pub(crate) fn hire_storage_provider() -> (u64, u32) {
+    let storage_provider_id = 1;
+    let role_account_id = 1;
+
+    let storage_provider = bureaucracy::Worker {
+        member_id: 1,
+        role_account: role_account_id,
+        reward_relationship: None,
+        role_stake_profile: None,
+    };
+
+    <bureaucracy::WorkerById<Test, bureaucracy::Instance2>>::insert(
+        storage_provider_id,
+        storage_provider,
+    );
+
+    (role_account_id, storage_provider_id)
 }

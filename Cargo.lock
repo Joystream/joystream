@@ -1614,7 +1614,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "6.15.0"
+version = "6.16.0"
 dependencies = [
  "parity-scale-codec",
  "safe-mix",
@@ -4602,13 +4602,14 @@ dependencies = [
 
 [[package]]
 name = "substrate-common-module"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "parity-scale-codec",
  "serde",
  "sr-primitives",
  "srml-support",
  "srml-system",
+ "srml-timestamp",
 ]
 
 [[package]]
@@ -4828,7 +4829,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-forum-module"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "hex-literal 0.1.4",
  "parity-scale-codec",
@@ -5367,17 +5368,25 @@ dependencies = [
 
 [[package]]
 name = "substrate-service-discovery-module"
-version = "1.0.0"
+version = "2.0.0"
 dependencies = [
  "parity-scale-codec",
  "serde",
  "sr-io",
  "sr-primitives",
  "sr-std",
+ "srml-balances",
  "srml-support",
  "srml-system",
+ "srml-timestamp",
+ "substrate-bureaucracy-module",
+ "substrate-common-module",
+ "substrate-hiring-module",
+ "substrate-membership-module",
  "substrate-primitives",
- "substrate-roles-module",
+ "substrate-recurring-reward-module",
+ "substrate-stake-module",
+ "substrate-token-mint-module",
 ]
 
 [[package]]
@@ -5443,7 +5452,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-storage-module"
-version = "1.0.0"
+version = "2.0.0"
 dependencies = [
  "parity-scale-codec",
  "serde",
@@ -5454,10 +5463,14 @@ dependencies = [
  "srml-support",
  "srml-system",
  "srml-timestamp",
+ "substrate-bureaucracy-module",
  "substrate-common-module",
+ "substrate-hiring-module",
  "substrate-membership-module",
  "substrate-primitives",
- "substrate-roles-module",
+ "substrate-recurring-reward-module",
+ "substrate-stake-module",
+ "substrate-token-mint-module",
 ]
 
 [[package]]
