@@ -254,6 +254,37 @@ export class ApiWrapper {
     );
   }
 
+  public estimateAcceptWorkerApplicationsFee(): BN {
+    return this.estimateTxFee(this.api.tx.forumBureaucracy.acceptWorkerApplications(0));
+  }
+
+  public estimateApplyOnOpeningFee(account: KeyringPair): BN {
+    return this.estimateTxFee(
+      this.api.tx.forumBureaucracy.applyOnWorkerOpening(
+        0,
+        0,
+        account.address,
+        0,
+        0,
+        'Some testing text used for estimation purposes which is longer than text expected during the test'
+      )
+    );
+  }
+
+  public estimateBeginWorkerApplicantReviewFee(): BN {
+    return this.estimateTxFee(this.api.tx.forumBureaucracy.beginWorkerApplicantReview(0));
+  }
+
+  public estimateFillWorkerOpeningFee(): BN {
+    return this.estimateTxFee(
+      this.api.tx.forumBureaucracy.fillWorkerOpening(0, [0], {
+        amount_per_payout: 0,
+        next_payment_at_block: 0,
+        payout_interval: 0,
+      })
+    );
+  }
+
   private applyForCouncilElection(account: KeyringPair, amount: BN): Promise<void> {
     return this.sender.signAndSend(this.api.tx.councilElection.apply(amount), account, false);
   }
@@ -653,10 +684,11 @@ export class ApiWrapper {
     );
   }
 
-  public async addWorkerOpening(account: KeyringPair, activateAt: string, text: string): Promise<void> {
+  public async addWorkerOpening(account: KeyringPair, maxActiveApplicants: number, text: string): Promise<void> {
+    //TODO add text as soon as opening text limitations will be introduced in migrations
     const commitment = {
-      application_rationing_policy: { max_active_applicants: '32' },
-      max_review_period_length: 2,
+      application_rationing_policy: { max_active_applicants: maxActiveApplicants },
+      max_review_period_length: 32,
       application_staking_policy: {
         amount: 0,
         amount_mode: 'AtLeast',
@@ -671,8 +703,8 @@ export class ApiWrapper {
       },
       role_slashing_terms: {
         Slashable: {
-          max_count: 0,
-          max_percent_pts_per_time: 0,
+          max_count: 1,
+          max_percent_pts_per_time: 100,
         },
       },
       fill_opening_successful_applicant_application_stake_unstaking_period: 0,
@@ -684,9 +716,63 @@ export class ApiWrapper {
       exit_curator_role_stake_unstaking_period: 0,
     };
     await this.sender.signAndSend(
-      this.api.tx.forumBureaucracy.addWorkerOpening(activateAt, commitment, text),
+      this.api.tx.forumBureaucracy.addWorkerOpening('CurrentBlock', commitment, ''),
       account,
       false
+    );
+  }
+
+  public async acceptWorkerApplications(account: KeyringPair, workerOpeningId: BN): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx.forumBureaucracy.acceptWorkerApplications(workerOpeningId),
+      account,
+      false
+    );
+  }
+
+  public async beginWorkerApplicationReview(account: KeyringPair): Promise<void> {
+    return this.sender.signAndSend(this.api.tx.forumBureaucracy.beginWorkerApplicantReview(), account, false);
+  }
+
+  public async applyOnWorkerOpening(account: KeyringPair, workerOpeningId: BN): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn();
+    return this.sender.signAndSend(
+      this.api.tx.forumBureaucracy.applyOnWorkerOpening(memberId, workerOpeningId, account.address, 0, 0, ''),
+      account,
+      false
+    );
+  }
+
+  public async batchApplyOnWorkerOpening(accounts: KeyringPair[], workerOpeningId: BN): Promise<void[]> {
+    return Promise.all(
+      accounts.map(async keyPair => {
+        await this.applyOnWorkerOpening(keyPair, workerOpeningId);
+      })
+    );
+  }
+
+  public async fillWorkerOpening(account: KeyringPair, workerOpeningId: BN, applicationId: BN): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx.forumBureaucracy.fillWorkerOpening(workerOpeningId, [applicationId], {
+        amount_per_payout: 0,
+        next_payment_at_block: 0,
+        payout_interval: 0,
+      }),
+      account,
+      false
+    );
+  }
+
+  public async batchFillWorkerOpening(
+    lead: KeyringPair,
+    accounts: KeyringPair[],
+    firstApplicationId: BN,
+    workerOpeningId: BN
+  ): Promise<void[]> {
+    return Promise.all(
+      accounts.map(async (keyPair, index) => {
+        await this.fillWorkerOpening(lead, workerOpeningId, firstApplicationId.addn(index));
+      })
     );
   }
 
@@ -724,5 +810,13 @@ export class ApiWrapper {
 
   public async getMinVotingStake(): Promise<BN> {
     return await this.api.query.councilElection.minVotingStake<BalanceOf>();
+  }
+
+  public async getNextWorkerOpeningId(): Promise<BN> {
+    return await this.api.query.forumBureaucracy.nextWorkerOpeningId<u32>();
+  }
+
+  public async getNextApplicationId(): Promise<BN> {
+    return await this.api.query.forumBureaucracy.nextWorkerApplicationId<u32>();
   }
 }

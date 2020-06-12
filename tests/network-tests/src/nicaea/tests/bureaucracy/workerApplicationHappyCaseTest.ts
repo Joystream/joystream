@@ -14,6 +14,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   registerJoystreamTypes();
 
   const nKeyPairs: KeyringPair[] = new Array();
+  const leadKeyPair: KeyringPair[] = new Array();
 
   const keyring = new Keyring({ type: 'sr25519' });
   const N: number = +process.env.WORKING_GROUP_N!;
@@ -27,7 +28,8 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
 
   setTestTimeout(apiWrapper, durationInBlocks);
   membershipTest(apiWrapper, nKeyPairs, keyring, N, paidTerms, sudoUri);
-  workerApplicationHappyCase(apiWrapper, nKeyPairs, keyring, sudoUri);
+  membershipTest(apiWrapper, leadKeyPair, keyring, N, paidTerms, sudoUri);
+  workerApplicationHappyCase(apiWrapper, nKeyPairs, leadKeyPair, keyring, sudoUri);
 
   closeApi(apiWrapper);
 });
