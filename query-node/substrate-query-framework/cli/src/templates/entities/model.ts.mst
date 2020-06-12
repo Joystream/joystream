@@ -1,0 +1,59 @@
+import {
+  BaseModel,
+  {{#has.bool}}BooleanField,{{/has.bool}}
+  {{#has.date}}DateField,{{/has.date}}
+  {{#has.float}}FloatField,{{/has.float}}
+  {{#has.int}}IntField,{{/has.int}}
+  {{#has.numeric}}NumericField,{{/has.numeric}}
+  {{#has.json}}JSONField,{{/has.json}}
+  {{#has.bytes}}JSONField,{{/has.bytes}}
+  Model,
+  {{#has.mto}}ManyToOne,{{/has.mto}}
+  {{#has.otm}}OneToMany,{{/has.otm}}
+  {{#has.oto}}OneToOne, JoinColumn,{{/has.oto}}
+  {{#has.array}}CustomField,{{/has.array}}
+  StringField
+} from 'warthog';  {{! we don't need extra twists here }}
+
+{{#fields}}
+  {{#is.refType}}
+  import { {{relClassName}} } from '{{relPathForModel}}'
+  {{/is.refType}}
+{{/fields}}
+
+@Model()
+export class {{className}} extends BaseModel {
+{{#fields}}
+  {{#is.otm}}
+    @OneToMany(() => {{tsType}}, ({{relCamelName}}: {{relClassName}}) => {{relCamelName}}.{{camelName}})
+    {{camelName}}?: {{relClassName}}[];  
+  {{/is.otm}}
+
+  {{#is.mto}}
+    @ManyToOne(() => {{relClassName}}, ({{relCamelName}}: {{relClassName}}) => {{relCamelName}}.{{camelNamePlural}}, { 
+      skipGraphQLField: true,
+      nullable: true 
+    })
+    {{camelName}}?: {{relClassName}};
+  {{/is.mto}}
+
+  {{#is.oto}}
+    @OneToOne(() => {{relClassName}})
+    @JoinColumn()
+    {{camelName}}?: {{relClassName}};
+  {{/is.oto}}
+
+  {{#is.array}}
+    @CustomField({ db: { type: '{{dbType}}', array: true {{^required}}, nullable: true {{/required}} }, 
+        api: { type: '{{apiType}}' {{^required}}, nullable: true {{/required}} }})
+    {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{tsType}}[];
+  {{/is.array}}
+
+  {{! TODO: add enums here }}
+  {{#is.scalar}}
+    @{{decorator}}({{^required}}{ nullable: true }{{/required}})
+    {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{tsType}};
+  {{/is.scalar}}
+
+{{/fields}}
+}
