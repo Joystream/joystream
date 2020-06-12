@@ -1,36 +1,65 @@
-import React from "react";
+import React from 'react';
 
-import { Container } from "semantic-ui-react";
-import Details from "./Details";
-import Body from "./Body";
-import VotingSection from "./VotingSection";
-import Votes from "./Votes";
-import { MyAccountProps, withMyAccount } from "@polkadot/joy-utils/MyAccount"
-import { ParsedProposal, ProposalVote } from "../runtime";
+import Details from './Details';
+import Body from './Body';
+import VotingSection from './VotingSection';
+import Votes from './Votes';
+import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
+import { ParsedProposal, ProposalVote } from '@polkadot/joy-utils/types/proposals';
 import { withCalls } from '@polkadot/react-api';
 import { withMulti } from '@polkadot/react-api/with';
 
-import "./Proposal.css";
-import { ProposalId, ProposalDecisionStatuses, ApprovedProposalStatuses, ExecutionFailedStatus } from "@joystream/types/proposals";
-import { BlockNumber } from '@polkadot/types/interfaces'
-import { MemberId } from "@joystream/types/members";
-import { Seat } from "@joystream/types/";
-import PromiseComponent from './PromiseComponent';
+import './Proposal.css';
+import { ProposalId, ProposalDecisionStatuses, ApprovedProposalStatuses, ExecutionFailedStatus } from '@joystream/types/proposals';
+import { BlockNumber } from '@polkadot/types/interfaces';
+import { MemberId } from '@joystream/types/members';
+import { Seat } from '@joystream/types/';
+import { PromiseComponent } from '@polkadot/joy-utils/react/components';
+import ProposalDiscussion from './discussion/ProposalDiscussion';
 
+import styled from 'styled-components';
+
+const ProposalDetailsMain = styled.div`
+  display: flex;
+  @media screen and (max-width: 1199px) {
+    flex-direction: column;
+  }
+`;
+
+const ProposalDetailsVoting = styled.div`
+  min-width: 30%;
+  margin-left: 3%;
+  @media screen and (max-width: 1399px) {
+    min-width: 40%;
+  }
+  @media screen and (max-width: 1199px) {
+    margin-left: 0;
+  }
+`;
+
+const ProposalDetailsDiscussion = styled.div`
+  margin-top: 1rem;
+  max-width: 67%;
+  @media screen and (max-width: 1399px) {
+    max-width: none;
+  }
+`;
+
+// TODO: That should probably be moved to joy-utils/functions/proposals (or transport)
 type BasicProposalStatus = 'Active' | 'Finalized';
 type ProposalPeriodStatus = 'Voting period' | 'Grace period';
 type ProposalDisplayStatus = BasicProposalStatus | ProposalDecisionStatuses | ApprovedProposalStatuses;
 
 export type ExtendedProposalStatus = {
-  displayStatus: ProposalDisplayStatus,
-  periodStatus: ProposalPeriodStatus | null,
-  expiresIn: number | null,
-  finalizedAtBlock: number | null,
-  executedAtBlock: number | null,
-  executionFailReason: string | null
+  displayStatus: ProposalDisplayStatus;
+  periodStatus: ProposalPeriodStatus | null;
+  expiresIn: number | null;
+  finalizedAtBlock: number | null;
+  executedAtBlock: number | null;
+  executionFailReason: string | null;
 }
 
-export function getExtendedStatus(proposal: ParsedProposal, bestNumber: BlockNumber | undefined): ExtendedProposalStatus {
+export function getExtendedStatus (proposal: ParsedProposal, bestNumber: BlockNumber | undefined): ExtendedProposalStatus {
   const basicStatus = Object.keys(proposal.status)[0] as BasicProposalStatus;
   let expiresIn: number | null = null;
 
@@ -40,7 +69,7 @@ export function getExtendedStatus(proposal: ParsedProposal, bestNumber: BlockNum
   let executedAtBlock: number | null = null;
   let executionFailReason: string | null = null;
 
-  let best = bestNumber ? bestNumber.toNumber() : 0;
+  const best = bestNumber ? bestNumber.toNumber() : 0;
 
   const { votingPeriod, gracePeriod } = proposal.parameters;
   const blockAge = best - proposal.createdAtBlock;
@@ -51,24 +80,23 @@ export function getExtendedStatus(proposal: ParsedProposal, bestNumber: BlockNum
   }
 
   if (basicStatus === 'Finalized') {
-    const { finalizedAt, proposalStatus } = proposal.status['Finalized'];
+    const { finalizedAt, proposalStatus } = proposal.status.Finalized;
     const decisionStatus: ProposalDecisionStatuses = Object.keys(proposalStatus)[0] as ProposalDecisionStatuses;
     displayStatus = decisionStatus;
     finalizedAtBlock = finalizedAt as number;
     if (decisionStatus === 'Approved') {
-      const approvedStatus: ApprovedProposalStatuses = Object.keys(proposalStatus["Approved"])[0] as ApprovedProposalStatuses;
+      const approvedStatus: ApprovedProposalStatuses = Object.keys(proposalStatus.Approved)[0] as ApprovedProposalStatuses;
       if (approvedStatus === 'PendingExecution') {
         const finalizedAge = best - finalizedAt;
         periodStatus = 'Grace period';
         expiresIn = Math.max(gracePeriod - finalizedAge, 0) || null;
-      }
-      else {
+      } else {
         // Executed / ExecutionFailed
         displayStatus = approvedStatus;
         executedAtBlock = finalizedAtBlock + gracePeriod;
         if (approvedStatus === 'ExecutionFailed') {
           const executionFailedStatus = proposalStatus.Approved.ExecutionFailed as ExecutionFailedStatus;
-          executionFailReason = new Buffer(executionFailedStatus.error.toString().replace('0x', ''), 'hex').toString();
+          executionFailReason = Buffer.from(executionFailedStatus.error.toString().replace('0x', ''), 'hex').toString();
         }
       }
     }
@@ -81,19 +109,18 @@ export function getExtendedStatus(proposal: ParsedProposal, bestNumber: BlockNum
     finalizedAtBlock,
     executedAtBlock,
     executionFailReason
-  }
+  };
 }
 
-
 type ProposalDetailsProps = MyAccountProps & {
-  proposal: ParsedProposal,
-  proposalId: ProposalId,
-  votesListState: { data: ProposalVote[], error: any, loading: boolean },
-  bestNumber?: BlockNumber,
-  council?: Seat[]
+  proposal: ParsedProposal;
+  proposalId: ProposalId;
+  votesListState: { data: ProposalVote[]; error: any; loading: boolean };
+  bestNumber?: BlockNumber;
+  council?: Seat[];
 };
 
-function ProposalDetails({
+function ProposalDetails ({
   proposal,
   proposalId,
   myAddress,
@@ -108,32 +135,41 @@ function ProposalDetails({
   const extendedStatus = getExtendedStatus(proposal, bestNumber);
   const isVotingPeriod = extendedStatus.periodStatus === 'Voting period';
   return (
-    <Container className="Proposal">
+    <div className="Proposal">
       <Details proposal={proposal} extendedStatus={extendedStatus} proposerLink={ true }/>
-      <Body
-        type={ proposal.type }
-        title={ proposal.title }
-        description={ proposal.description }
-        params={ proposal.details }
-        iAmProposer={ iAmProposer }
-        proposalId={ proposalId }
-        proposerId={ proposal.proposerId }
-        isCancellable={ isVotingPeriod }
-        cancellationFee={ proposal.cancellationFee }
+      <ProposalDetailsMain>
+        <Body
+          type={ proposal.type }
+          title={ proposal.title }
+          description={ proposal.description }
+          params={ proposal.details }
+          iAmProposer={ iAmProposer }
+          proposalId={ proposalId }
+          proposerId={ proposal.proposerId }
+          isCancellable={ isVotingPeriod }
+          cancellationFee={ proposal.cancellationFee }
         />
-      { iAmCouncilMember && (
-        <VotingSection
+        <ProposalDetailsVoting>
+          { iAmCouncilMember && (
+            <VotingSection
+              proposalId={proposalId}
+              memberId={ myMemberId as MemberId }
+              isVotingPeriod={ isVotingPeriod }/>
+          ) }
+          <PromiseComponent
+            error={votesListState.error}
+            loading={votesListState.loading}
+            message="Fetching the votes...">
+            <Votes votes={votesListState.data} />
+          </PromiseComponent>
+        </ProposalDetailsVoting>
+      </ProposalDetailsMain>
+      <ProposalDetailsDiscussion>
+        <ProposalDiscussion
           proposalId={proposalId}
-          memberId={ myMemberId as MemberId }
-          isVotingPeriod={ isVotingPeriod }/>
-      ) }
-      <PromiseComponent
-        error={votesListState.error}
-        loading={votesListState.loading}
-        message="Fetching the votes...">
-        <Votes votes={votesListState.data} />
-      </PromiseComponent>
-    </Container>
+          memberId={ iAmMember ? myMemberId : undefined }/>
+      </ProposalDetailsDiscussion>
+    </div>
   );
 }
 
@@ -142,6 +178,6 @@ export default withMulti<ProposalDetailsProps>(
   withMyAccount,
   withCalls(
     ['derive.chain.bestNumber', { propName: 'bestNumber' }],
-    ['query.council.activeCouncil', { propName: 'council' }], // TODO: Handle via transport?
+    ['query.council.activeCouncil', { propName: 'council' }] // TODO: Handle via transport?
   )
 );

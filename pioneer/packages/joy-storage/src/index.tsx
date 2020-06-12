@@ -20,13 +20,13 @@ import './index.css';
 import translate from './translate';
 
 type Props = AppProps &
-  ApiProps &
-  I18nProps & {
-    requests?: Array<Request>;
-    actorAccountIds?: Array<AccountId>;
-    roles?: Array<Role>;
-    allAccounts?: SubjectInfo;
-  };
+ApiProps &
+I18nProps & {
+  requests?: Array<Request>;
+  actorAccountIds?: Array<AccountId>;
+  roles?: Array<Role>;
+  allAccounts?: SubjectInfo;
+};
 
 type State = {
   tabs: Array<TabItem>;
@@ -38,7 +38,7 @@ type State = {
 class App extends React.PureComponent<Props, State> {
   state: State;
 
-  constructor(props: Props) {
+  constructor (props: Props) {
     super(props);
 
     const { t } = props;
@@ -65,7 +65,7 @@ class App extends React.PureComponent<Props, State> {
     };
   }
 
-  static getDerivedStateFromProps({ actorAccountIds, requests, roles }: Props): State {
+  static getDerivedStateFromProps ({ actorAccountIds, requests, roles }: Props): State {
     return {
       actorAccountIds: (actorAccountIds || []).map(accountId => accountId.toString()),
       requests: (requests || []).map(request => request),
@@ -73,7 +73,7 @@ class App extends React.PureComponent<Props, State> {
     } as State;
   }
 
-  render() {
+  render () {
     const { tabs } = this.state;
     const { basePath } = this.props;
 
@@ -91,7 +91,7 @@ class App extends React.PureComponent<Props, State> {
     );
   }
 
-  private renderComponent(Component: React.ComponentType<ComponentProps>) {
+  private renderComponent (Component: React.ComponentType<ComponentProps>) {
     return (): React.ReactNode => {
       const { actorAccountIds, requests, roles } = this.state;
 

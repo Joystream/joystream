@@ -1,8 +1,13 @@
+### Version 6.15.0 - Constantinople runtime upgrade A - June 2020
+- Updated runtime to sort out type name clashes between the proposal discussion module
+and forum module, in preparing to roll out proposal discussion system in pioneer.
+- Increased ROLE_PARAMETERS_REWARD_MAX_VALUE to 100,000
+
 ### Version 6.13.0 - (Constantinople) runtime upgrade - May 20th 2020
 - New proposal system that strengthens the governance structure of the platform
 - Adjusted inflation curve to better reflect a new realistic economic system for the platform
 
-### Version 6.8.0 (Rome release) - March 9th 2020
+### Version 6.8.0 (Rome release - new chain) - March 9th 2020
 - New versioned and permissioned content mangement system that powers a new media experience.
 - Content Working Group - introduces staked content curator roles to maintain quality of content and ensure that is meets the platform's terms of service.
 - Update of core substrate to pre-release of version 2.0 - [c37bb08](https://github.com/paritytech/substrate/commit/c37bb08535c49a12320af7facfd555ce05cce2e8)

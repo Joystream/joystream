@@ -11,22 +11,22 @@ export const LanguageValidationSchema = Yup.object().shape({
 });
 
 export type LanguageFormValues = {
-  value: string
+  value: string;
 };
 
 export type LanguageType = {
-  classId: number
-  inClassSchemaIndexes: number[]
-  id: number
-  value: string
+  classId: number;
+  inClassSchemaIndexes: number[];
+  id: number;
+  value: string;
 };
 
 export class LanguageCodec extends EntityCodec<LanguageType> { }
 
-export function LanguageToFormValues(entity?: LanguageType): LanguageFormValues {
+export function LanguageToFormValues (entity?: LanguageType): LanguageFormValues {
   return {
-    value: entity && entity.value || ''
-  }
+    value: (entity && entity.value) || ''
+  };
 }
 
 export type LanguagePropId =
@@ -34,14 +34,14 @@ export type LanguagePropId =
   ;
 
 export type LanguageGenericProp = {
-  id: LanguagePropId,
-  type: string,
-  name: string,
-  description?: string,
-  required?: boolean,
-  maxItems?: number,
-  maxTextLength?: number,
-  classId?: any
+  id: LanguagePropId;
+  type: string;
+  name: string;
+  description?: string;
+  required?: boolean;
+  maxItems?: number;
+  maxTextLength?: number;
+  classId?: any;
 };
 
 type LanguageClassType = {
@@ -50,11 +50,11 @@ type LanguageClassType = {
 
 export const LanguageClass: LanguageClassType = {
   value: {
-    "id": "value",
-    "name": "Value",
-    "description": "Language code following the ISO 639-1 two letter standard.",
-    "type": "Text",
-    "required": true,
-    "maxTextLength": 2
+    id: 'value',
+    name: 'Value',
+    description: 'Language code following the ISO 639-1 two letter standard.',
+    type: 'Text',
+    required: true,
+    maxTextLength: 2
   }
 };

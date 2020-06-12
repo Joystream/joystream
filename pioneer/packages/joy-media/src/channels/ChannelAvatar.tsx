@@ -9,8 +9,8 @@ const defaultSizePx = 75;
 export type ChannelAvatarSize = 'big' | 'default' | 'small';
 
 type Props = {
-  channel: ChannelEntity,
-  size?: ChannelAvatarSize
+  channel: ChannelEntity;
+  size?: ChannelAvatarSize;
 }
 
 function sizeToPx (size: ChannelAvatarSize): number {
@@ -28,10 +28,10 @@ export function ChannelAvatar (props: Props) {
   return (
     <Link to={`/media/channels/${channel.id}`}>
       <BgImg
-        className={`ChannelAvatar ` + size}
+        className={'ChannelAvatar ' + size}
         url={channel.avatar || DEFAULT_THUMBNAIL_URL}
         size={sizeToPx(size)}
       />
     </Link>
-  )
+  );
 }

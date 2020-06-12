@@ -1,6 +1,7 @@
-import { Text, u32, Enum, getTypeRegistry, Tuple, GenericAccountId, u8, Vec, Option, Struct, Null } from "@polkadot/types";
+import { Text, u32, Enum, getTypeRegistry, Tuple, GenericAccountId, u8, Vec, Option, Struct, Null, Bytes } from "@polkadot/types";
 import { BlockNumber, Balance } from "@polkadot/types/interfaces";
 import { MemberId } from "./members";
+import { ThreadId } from "./forum";
 import { StakeId } from "./stake";
 import AccountId from "@polkadot/types/primitive/Generic/AccountId";
 import { JoyStruct } from "./JoyStruct";
@@ -471,6 +472,76 @@ export class ThreadCounter extends Struct {
   }
 }
 
+export class DiscussionThread extends Struct {
+  constructor(value?: any) {
+    super(
+    {
+      title: Bytes,
+      'created_at': "BlockNumber",
+      'author_id': MemberId
+    },
+    value
+    );
+  }
+
+  get title(): Bytes {
+	  return this.get('title') as Bytes;
+  }
+
+  get created_at(): BlockNumber {
+	  return this.get('created_ad') as BlockNumber;
+  }
+
+  get author_id(): MemberId {
+	  return this.get('author_id') as MemberId;
+  }
+}
+
+export class DiscussionPost extends Struct {
+  constructor(value?: any) {
+    super(
+      {
+        text: Bytes,
+        /// When post was added.
+        created_at: "BlockNumber",
+        /// When post was updated last time.
+        updated_at: "BlockNumber",
+        /// Author of the post.
+        author_id: MemberId,
+        /// Parent thread id for this post
+        thread_id: ThreadId,
+        /// Defines how many times this post was edited. Zero on creation.
+        edition_number: u32,
+      },
+      value
+    );
+  }
+
+  get text(): Bytes {
+    return this.get('text') as Bytes;
+  }
+
+  get created_at(): BlockNumber {
+    return this.get('created_at') as BlockNumber;
+  }
+
+  get updated_at(): BlockNumber {
+    return this.get('updated_at') as BlockNumber;
+  }
+
+  get author_id(): MemberId {
+    return this.get('author_id') as MemberId;
+  }
+
+  get thread_id(): ThreadId {
+    return this.get('thread_id') as ThreadId;
+  }
+
+  get edition_number(): u32 {
+    return this.get('edition_number') as u32;
+  }
+}
+
 // export default proposalTypes;
 export function registerProposalTypes() {
   try {
@@ -486,7 +557,9 @@ export function registerProposalTypes() {
       Seats,
       Backer,
       Backers,
-      ThreadCounter
+      ThreadCounter,
+      DiscussionThread,
+      DiscussionPost
     });
   } catch (err) {
     console.error("Failed to register custom types of proposals module", err);

@@ -83,19 +83,19 @@ function createWebpack ({ alias = {}, context, name = 'index' }) {
           ]
         },
         {
-            test: /\.s[ac]ss$/i,
-            use: [
-              // Creates `style` nodes from JS strings
-              'style-loader',
-              // Translates CSS into CommonJS
-              'css-loader',
-              // Compiles Sass to CSS
-              'sass-loader',
-            ],
+          test: /\.s[ac]ss$/i,
+          use: [
+            // Creates `style` nodes from JS strings
+            'style-loader',
+            // Translates CSS into CommonJS
+            'css-loader',
+            // Compiles Sass to CSS
+            'sass-loader'
+          ]
         },
         {
-            test: /\.less$/,
-            loaders: [ 'style-loader', 'css-loader', 'less-loader' ]
+          test: /\.less$/,
+          loaders: ['style-loader', 'css-loader', 'less-loader']
         },
         {
           test: /\.css$/,
@@ -233,6 +233,6 @@ module.exports = createWebpack({
       }, {})
     ),
     // TODO: Me might try to add it to "findPackages", but this will be a little more tricky
-    "@joystream/types": path.resolve(__dirname, '../../../types/src')
+    '@joystream/types': path.resolve(__dirname, '../../../types/src')
   }
 });

@@ -28,6 +28,6 @@ export const MusicTrack: MusicTrackType = {
   explicit: false,
   license: ContentLicense,
   attribution: undefined
-} as unknown as MusicTrackType // A hack to fix TS compilation.
+} as unknown as MusicTrackType; // A hack to fix TS compilation.
 
-export const AllMusicTracks: MusicTrackType[] = [ MusicTrack ]
+export const AllMusicTracks: MusicTrackType[] = [MusicTrack];

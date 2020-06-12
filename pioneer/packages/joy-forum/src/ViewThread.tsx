@@ -20,8 +20,8 @@ import { IfIAmForumSudo } from './ForumSudo';
 import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
 
 type ThreadTitleProps = {
-  thread: Thread,
-  className?: string
+  thread: Thread;
+  className?: string;
 };
 
 function ThreadTitle (props: ThreadTitleProps) {
@@ -37,24 +37,16 @@ function ThreadTitle (props: ThreadTitleProps) {
 }
 
 type InnerViewThreadProps = {
-  category: Category,
-  thread: Thread,
-  page?: number,
-  preview?: boolean,
-  history?: History
+  category: Category;
+  thread: Thread;
+  page?: number;
+  preview?: boolean;
+  history?: History;
 };
 
 type ViewThreadProps = ApiProps & InnerViewThreadProps & {
-  nextPostId?: ThreadId
+  nextPostId?: ThreadId;
 };
-
-export const ViewThread = withMulti(
-  InnerViewThread,
-  withApi,
-  withForumCalls<ViewThreadProps>(
-    ['nextPostId', { propName: 'nextPostId' }]
-  )
-);
 
 function InnerViewThread (props: ViewThreadProps) {
   const [showModerateForm, setShowModerateForm] = useState(false);
@@ -76,7 +68,7 @@ function InnerViewThread (props: ViewThreadProps) {
   const totalPostsInThread = thread.num_posts_ever_created.toNumber();
 
   if (!category) {
-    return <em>Thread's category was not found.</em>;
+    return <em>{'Thread\'s category was not found.'}</em>;
   } else if (category.deleted) {
     return renderThreadNotFound();
   }
@@ -129,8 +121,8 @@ function InnerViewThread (props: ViewThreadProps) {
       );
       const sortedPosts = orderBy(
         postsInThisThread,
-        [ x => x.nr_in_thread.toNumber() ],
-        [ 'asc' ]
+        [x => x.nr_in_thread.toNumber()],
+        ['asc']
       );
 
       setPosts(sortedPosts);
@@ -138,7 +130,7 @@ function InnerViewThread (props: ViewThreadProps) {
     };
 
     loadPosts();
-  }, [ bnToStr(thread.id), bnToStr(nextPostId) ]);
+  }, [bnToStr(thread.id), bnToStr(nextPostId)]);
 
   // console.log({ nextPostId: bnToStr(nextPostId), loaded, posts });
 
@@ -211,7 +203,7 @@ function InnerViewThread (props: ViewThreadProps) {
     if (!thread.moderation) return null;
 
     return <>
-      <JoyWarn title={`This thread is moderated. Rationale:`}>
+      <JoyWarn title={'This thread is moderated. Rationale:'}>
         <ReactMarkdown className='JoyMemo--full' source={thread.moderation.rationale} linkTarget='_blank' />
       </JoyWarn>
     </>;
@@ -224,7 +216,7 @@ function InnerViewThread (props: ViewThreadProps) {
       {renderActions()}
     </h1>
     {category.archived &&
-      <JoyWarn title={`This thread is in archived category.`}>
+      <JoyWarn title={'This thread is in archived category.'}>
         No new replies can be posted.
       </JoyWarn>
     }
@@ -238,17 +230,23 @@ function InnerViewThread (props: ViewThreadProps) {
   </div>;
 }
 
+export const ViewThread = withMulti(
+  InnerViewThread,
+  withApi,
+  withForumCalls<ViewThreadProps>(
+    ['nextPostId', { propName: 'nextPostId' }]
+  )
+);
+
 type ViewThreadByIdProps = ApiProps & {
-  history: History,
+  history: History;
   match: {
     params: {
-      id: string
-      page?: string
-    }
-  }
+      id: string;
+      page?: string;
+    };
+  };
 };
-
-export const ViewThreadById = withApi(InnerViewThreadById);
 
 function InnerViewThreadById (props: ViewThreadByIdProps) {
   const { api, history, match: { params: { id, page: pageStr } } } = props;
@@ -288,7 +286,7 @@ function InnerViewThreadById (props: ViewThreadByIdProps) {
     };
 
     loadThreadAndCategory();
-  }, [ id, page ]);
+  }, [id, page]);
 
   // console.log({ threadId: id, page });
 
@@ -301,8 +299,10 @@ function InnerViewThreadById (props: ViewThreadByIdProps) {
   }
 
   if (category.isEmpty) {
-    return <em>Thread's category was not found</em>;
+    return <em>{ 'Thread\'s category was not found' }</em>;
   }
 
   return <ViewThread id={threadId} category={category} thread={thread} page={page} history={history} />;
 }
+
+export const ViewThreadById = withApi(InnerViewThreadById);

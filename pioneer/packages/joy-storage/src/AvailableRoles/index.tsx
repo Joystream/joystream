@@ -1,4 +1,4 @@
-import React from 'react'
+import React from 'react';
 import { BareProps } from '@polkadot/react-components/types';
 import { ComponentProps } from '../props';
 import { Role, RoleParameters } from '@joystream/types/roles';
@@ -14,24 +14,23 @@ import BN from 'bn.js';
 type Props = BareProps & ComponentProps;
 
 export default class AvailableRoles extends React.PureComponent<Props> {
-  render() {
+  render () {
     return (
       <div>{this.props.roles.map((role) =>
         <div key={role.toString()}><RoleDisplay role={role} /></div>)
       }</div>
-    )
+    );
   }
 }
 
-
 type RoleProps = BareProps & {
-  role: Role,
-  roleParams?: Option<RoleParameters>,
-  actorAccountIds?: Array<AccountId>
+  role: Role;
+  roleParams?: Option<RoleParameters>;
+  actorAccountIds?: Array<AccountId>;
 }
 
 class RoleDisplayInner extends React.PureComponent<RoleProps> {
-  render() {
+  render () {
     const { role, roleParams, actorAccountIds } = this.props;
     if (!roleParams || roleParams.isNone || !actorAccountIds) return <em>Loading...</em>;
 
@@ -41,23 +40,22 @@ class RoleDisplayInner extends React.PureComponent<RoleProps> {
       <Section title={role.toString()}>
         <Parameters role={role} params={params} active={actorAccountIds.length}></Parameters>
       </Section>
-    )
+    );
   }
 }
 
 const RoleDisplay = withCalls<RoleProps>(
   ['query.actors.parameters', { propName: 'roleParams', paramName: 'role' }],
-  ['query.actors.accountIdsByRole', { propName: 'actorAccountIds', paramName: 'role' }],
-)(RoleDisplayInner)
-
+  ['query.actors.accountIdsByRole', { propName: 'actorAccountIds', paramName: 'role' }]
+)(RoleDisplayInner);
 
 type ParamProps = BareProps & {
-  role: Role,
-  params: RoleParameters,
-  active: number,
+  role: Role;
+  params: RoleParameters;
+  active: number;
 }
 
-const Parameters = function Parameters(props: ParamProps) {
+const Parameters = function Parameters (props: ParamProps) {
   const { params, role, active } = props;
 
   const minStake = formatBalance(new BN(params.min_stake));
@@ -93,5 +91,5 @@ const Parameters = function Parameters(props: ParamProps) {
         </Table.Row>
       </Table.Body>
     </Table>
-  )
+  );
 };

@@ -33,15 +33,15 @@ const CHAIN_INFO: Record<ChainName, ChainData> = {
     chainDisplay: 'Joystream',
     logo: 'joystream',
     type: 'Current Testnet'
-  },
+  }
 };
 
 // the actual providers with all  the nodes they provide
 const PROVIDERS: Record<ProviderName, PoviderData> = {
-  'joystream_org': {
+  joystream_org: {
     providerDisplay: 'Joystream.org',
     nodes: {
-      'testnet' : 'wss://rome-rpc-endpoint.joystream.org:9944/'
+      testnet: 'wss://rome-rpc-endpoint.joystream.org:9944/'
     }
   }
 };

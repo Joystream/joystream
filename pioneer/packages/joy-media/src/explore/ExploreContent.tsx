@@ -8,29 +8,29 @@ import { ChannelPreview } from '../channels/ChannelPreview';
 const LatestVideosTitle = () => (
   <div>
     Latest videos
-    <Link to={`/media/videos`} className='ViewAllLink'>All videos</Link>
+    <Link to={'/media/videos'} className='ViewAllLink'>All videos</Link>
   </div>
-)
+);
 
 const LatestChannelsTitle = () => (
   <div>
     Latest video channels
-    <Link to={`/media/channels`} className='ViewAllLink'>All channels</Link>
+    <Link to={'/media/channels'} className='ViewAllLink'>All channels</Link>
   </div>
-)
+);
 
 export type ExploreContentProps = {
-  featuredVideos?: VideoPreviewProps[]
-  latestVideos?: VideoPreviewProps[]
-  latestVideoChannels?: ChannelEntity[]
+  featuredVideos?: VideoPreviewProps[];
+  latestVideos?: VideoPreviewProps[];
+  latestVideoChannels?: ChannelEntity[];
 }
 
 export function ExploreContent (props: ExploreContentProps) {
-  const { featuredVideos = [], latestVideos = [], latestVideoChannels = [] } = props
+  const { featuredVideos = [], latestVideos = [], latestVideoChannels = [] } = props;
 
   return <div>
     {featuredVideos.length > 0 &&
-      <Section title={`Featured videos`} className='ListOfVideos'>
+      <Section title={'Featured videos'} className='ListOfVideos'>
         {featuredVideos.map((x) =>
           <VideoPreview key={x.id} {...x} withChannel />
         )}
@@ -50,5 +50,5 @@ export function ExploreContent (props: ExploreContentProps) {
         )}
       </Section>
     }
-  </div>
+  </div>;
 }

@@ -29,6 +29,6 @@ export const MusicAlbum: MusicAlbumType = {
   explicit: false,
   license: ContentLicense,
   attribution: undefined
-} as unknown as MusicAlbumType // A hack to fix TS compilation.
+} as unknown as MusicAlbumType; // A hack to fix TS compilation.
 
-export const AllMusicAlbums: MusicAlbumType[] = [ MusicAlbum ]
+export const AllMusicAlbums: MusicAlbumType[] = [MusicAlbum];

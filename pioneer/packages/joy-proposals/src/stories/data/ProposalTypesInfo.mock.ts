@@ -1,15 +1,14 @@
-import { ProposalTypeInfo } from "../../Proposal/ProposalTypePreview";
-import { Categories } from "../../Proposal/ChooseProposalType";
+import { ProposalTypeInfo } from '../../Proposal/ProposalTypePreview';
+import { Categories } from '../../Proposal/ChooseProposalType';
 
 const MockProposalTypesInfo: ProposalTypeInfo[] = [
   {
-    type: "Text",
+    type: 'Text',
     category: Categories.other,
-    image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
-        "Change the total reward across all validators in a given block."+
-        "This is not the direct reward, but base reward for Pallet staking module."+
-        "The minimum value must be greater than 450 tJOY based on current runtime.",
+        'Change the total reward across all validators in a given block.' +
+        'This is not the direct reward, but base reward for Pallet staking module.' +
+        'The minimum value must be greater than 450 tJOY based on current runtime.',
     stake: 5,
     cancellationFee: 0,
     gracePeriod: 0,
@@ -17,16 +16,15 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     approvalQuorum: 80,
     approvalThreshold: 80,
     slashingQuorum: 80,
-    slashingThreshold: 80,
+    slashingThreshold: 80
   },
   {
-    type: "Spending",
+    type: 'Spending',
     category: Categories.other,
-    image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
-        "Change the total reward across all validators in a given block."+
-        "This is not the direct reward, but base reward for Pallet staking module."+
-        "The minimum value must be greater than 450 tJOY based on current runtime.",
+        'Change the total reward across all validators in a given block.' +
+        'This is not the direct reward, but base reward for Pallet staking module.' +
+        'The minimum value must be greater than 450 tJOY based on current runtime.',
     stake: 10,
     cancellationFee: 5,
     gracePeriod: 3,
@@ -34,16 +32,15 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     approvalQuorum: 80,
     approvalThreshold: 80,
     slashingQuorum: 80,
-    slashingThreshold: 80,
+    slashingThreshold: 80
   },
   {
-    type: "RuntimeUpgrade",
+    type: 'RuntimeUpgrade',
     category: Categories.other,
-    image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
-        "Change the total reward across all validators in a given block."+
-        "This is not the direct reward, but base reward for Pallet staking module."+
-        "The minimum value must be greater than 450 tJOY based on current runtime.",
+        'Change the total reward across all validators in a given block.' +
+        'This is not the direct reward, but base reward for Pallet staking module.' +
+        'The minimum value must be greater than 450 tJOY based on current runtime.',
     stake: 100,
     cancellationFee: 10,
     gracePeriod: 14,
@@ -51,16 +48,15 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     approvalQuorum: 80,
     approvalThreshold: 80,
     slashingQuorum: 80,
-    slashingThreshold: 80,
+    slashingThreshold: 80
   },
   {
-    type: "EvictStorageProvider",
+    type: 'EvictStorageProvider',
     category: Categories.storage,
-    image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
-        "Change the total reward across all validators in a given block."+
-        "This is not the direct reward, but base reward for Pallet staking module."+
-        "The minimum value must be greater than 450 tJOY based on current runtime.",
+        'Change the total reward across all validators in a given block.' +
+        'This is not the direct reward, but base reward for Pallet staking module.' +
+        'The minimum value must be greater than 450 tJOY based on current runtime.',
     stake: 100,
     cancellationFee: 10,
     gracePeriod: 1,
@@ -68,16 +64,15 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     approvalQuorum: 80,
     approvalThreshold: 80,
     slashingQuorum: 80,
-    slashingThreshold: 80,
+    slashingThreshold: 80
   },
   {
-    type: "SetStorageRoleParameters",
+    type: 'SetStorageRoleParameters',
     category: Categories.storage,
-    image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
-        "Change the total reward across all validators in a given block."+
-        "This is not the direct reward, but base reward for Pallet staking module."+
-        "The minimum value must be greater than 450 tJOY based on current runtime.",
+        'Change the total reward across all validators in a given block.' +
+        'This is not the direct reward, but base reward for Pallet staking module.' +
+        'The minimum value must be greater than 450 tJOY based on current runtime.',
     stake: 500,
     cancellationFee: 60,
     gracePeriod: 14,
@@ -85,16 +80,15 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     approvalQuorum: 80,
     approvalThreshold: 80,
     slashingQuorum: 80,
-    slashingThreshold: 80,
+    slashingThreshold: 80
   },
   {
-    type: "SetValidatorCount",
+    type: 'SetValidatorCount',
     category: Categories.validators,
-    image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
-        "Change the total reward across all validators in a given block."+
-        "This is not the direct reward, but base reward for Pallet staking module."+
-        "The minimum value must be greater than 450 tJOY based on current runtime.",
+        'Change the total reward across all validators in a given block.' +
+        'This is not the direct reward, but base reward for Pallet staking module.' +
+        'The minimum value must be greater than 450 tJOY based on current runtime.',
     stake: 45,
     cancellationFee: 10,
     gracePeriod: 5,
@@ -102,16 +96,15 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     approvalQuorum: 80,
     approvalThreshold: 80,
     slashingQuorum: 80,
-    slashingThreshold: 80,
+    slashingThreshold: 80
   },
   {
-    type: "SetContentWorkingGroupMintCapacity",
+    type: 'SetContentWorkingGroupMintCapacity',
     category: Categories.cwg,
-    image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
-        "Change the total reward across all validators in a given block."+
-        "This is not the direct reward, but base reward for Pallet staking module."+
-        "The minimum value must be greater than 450 tJOY based on current runtime.",
+        'Change the total reward across all validators in a given block.' +
+        'This is not the direct reward, but base reward for Pallet staking module.' +
+        'The minimum value must be greater than 450 tJOY based on current runtime.',
     stake: 90,
     cancellationFee: 8,
     gracePeriod: 5,
@@ -119,16 +112,15 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     approvalQuorum: 80,
     approvalThreshold: 80,
     slashingQuorum: 80,
-    slashingThreshold: 80,
+    slashingThreshold: 80
   },
   {
-    type: "SetLead",
+    type: 'SetLead',
     category: Categories.cwg,
-    image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
-        "Change the total reward across all validators in a given block."+
-        "This is not the direct reward, but base reward for Pallet staking module."+
-        "The minimum value must be greater than 450 tJOY based on current runtime.",
+        'Change the total reward across all validators in a given block.' +
+        'This is not the direct reward, but base reward for Pallet staking module.' +
+        'The minimum value must be greater than 450 tJOY based on current runtime.',
     stake: 500,
     cancellationFee: 50,
     gracePeriod: 7,
@@ -136,16 +128,15 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     approvalQuorum: 80,
     approvalThreshold: 80,
     slashingQuorum: 80,
-    slashingThreshold: 80,
+    slashingThreshold: 80
   },
   {
-    type: "SetElectionParameters",
+    type: 'SetElectionParameters',
     category: Categories.council,
-    image: "https://react.semantic-ui.com/images/wireframe/image.png",
     description:
-        "Change the total reward across all validators in a given block."+
-        "This is not the direct reward, but base reward for Pallet staking module."+
-        "The minimum value must be greater than 450 tJOY based on current runtime.",
+        'Change the total reward across all validators in a given block.' +
+        'This is not the direct reward, but base reward for Pallet staking module.' +
+        'The minimum value must be greater than 450 tJOY based on current runtime.',
     stake: 1000,
     cancellationFee: 100,
     gracePeriod: 30,
@@ -153,8 +144,8 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     approvalQuorum: 80,
     approvalThreshold: 80,
     slashingQuorum: 80,
-    slashingThreshold: 80,
-  },
+    slashingThreshold: 80
+  }
 ];
 
 export default MockProposalTypesInfo;

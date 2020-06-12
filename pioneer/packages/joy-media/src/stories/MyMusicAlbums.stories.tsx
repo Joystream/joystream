@@ -5,9 +5,9 @@ import { MyMusicAlbums } from '../music/MyMusicAlbums';
 import { MusicAlbumSamples } from './data/MusicAlbumSamples';
 import { withMockTransport } from './withMockTransport';
 
-export default { 
+export default {
   title: 'Media | My music albums',
-  decorators: [ withMockTransport ],
+  decorators: [withMockTransport]
 };
 
 export const DefaultState = () =>

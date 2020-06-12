@@ -1,4 +1,4 @@
-import mockedProposal from "./ProposalDetails.mock";
+import mockedProposal from './ProposalDetails.mock';
 
 // const MockProposalPreviewList: ParsedProposal[] = [
 //   {

@@ -45,7 +45,7 @@ function Create ({ className, onClose, onStatusChange, seed: propsSeed, t, type:
   };
   const _onChangeName = (name: string): void => setName({ isNameValid: !!name.trim(), name });
   const _toggleConfirmation = (): void => setIsConfirmationOpen(!isConfirmationOpen);
-  const context = useMyAccount()
+  const context = useMyAccount();
 
   const _onCommit = (): void => {
     if (!isValid) {
@@ -53,7 +53,7 @@ function Create ({ className, onClose, onStatusChange, seed: propsSeed, t, type:
     }
 
     const status = createAccount(`${seed}${derivePath}`, pairType, name, password, t('created account'));
-    context.set(status.account as string)
+    context.set(status.account as string);
 
     _toggleConfirmation();
     onStatusChange(status);
