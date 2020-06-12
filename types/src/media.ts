@@ -51,6 +51,10 @@ export class BlockAndTime extends Struct {
   get time (): Moment {
     return this.get('time') as Moment;
   }
+
+  static newEmpty (): BlockAndTime {
+    return new BlockAndTime({} as BlockAndTime);
+  }
 }
 
 // TODO rename to Draft to Unlisted
