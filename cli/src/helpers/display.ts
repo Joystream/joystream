@@ -24,6 +24,9 @@ export function displayNameValueTable(rows: NameValueObj[]) {
 }
 
 export function displayTable(rows: { [k: string]: string }[], minColumnWidth = 0) {
+    if (!rows.length) {
+        return;
+    }
     const columnDef = (columnName: string) => ({
         get: (row: typeof rows[number])  => chalk.white(row[columnName]),
         minWidth: minColumnWidth
