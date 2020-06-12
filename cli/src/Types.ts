@@ -1,9 +1,11 @@
 import BN from 'bn.js';
 import { ElectionStage, Seat } from '@joystream/types/';
 import { Option } from '@polkadot/types';
-import { BlockNumber, Balance } from '@polkadot/types/interfaces';
+import { BlockNumber, Balance, AccountId } from '@polkadot/types/interfaces';
 import { DerivedBalances } from '@polkadot/api-derive/types';
 import { KeyringPair } from '@polkadot/keyring/types';
+import { WorkerId, Lead } from '@joystream/types/lib/bureaucracy';
+import { Profile, MemberId } from '@joystream/types/lib/members';
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -61,3 +63,28 @@ export function createCouncilInfoObj(
 // Total balance:   100 JOY
 // Free calance:     50 JOY
 export type NameValueObj = { name: string, value: string };
+
+// Working groups related types
+export enum WorkingGroups {
+    StorageProviders = 'storageProviders'
+}
+
+// In contrast to Pioneer, currently only StorageProviders group is available in CLI
+export const AvailableGroups: readonly WorkingGroups[] = [
+  WorkingGroups.StorageProviders
+] as const;
+
+// Compound working group types
+export type GroupLeadWithProfile = {
+    lead: Lead;
+    profile: Profile;
+}
+
+export type GroupMember = {
+    workerId: WorkerId;
+    memberId: MemberId;
+    roleAccount: AccountId;
+    profile: Profile;
+    stake: Balance;
+    earned: Balance;
+}

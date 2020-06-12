@@ -3,19 +3,36 @@ import { registerJoystreamTypes } from '@joystream/types/';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { QueryableStorageMultiArg } from '@polkadot/api/types';
 import { formatBalance } from '@polkadot/util';
-import { Hash } from '@polkadot/types/interfaces';
+import { Hash, Balance } from '@polkadot/types/interfaces';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { Codec } from '@polkadot/types/types';
-import { AccountSummary, CouncilInfoObj, CouncilInfoTuple, createCouncilInfoObj } from './Types';
+import { Option, Vec } from '@polkadot/types';
+import { u32 } from '@polkadot/types/primitive';
+import {
+    AccountSummary,
+    CouncilInfoObj, CouncilInfoTuple, createCouncilInfoObj,
+    WorkingGroups,
+    GroupLeadWithProfile,
+    GroupMember,
+} from './Types';
 import { DerivedFees, DerivedBalances } from '@polkadot/api-derive/types';
 import { CLIError } from '@oclif/errors';
 import ExitCodes from './ExitCodes';
+import { Worker, Lead as WorkerLead, WorkerId, WorkerRoleStakeProfile } from '@joystream/types/lib/bureaucracy';
+import { MemberId, Profile } from '@joystream/types/lib/members';
+import { RewardRelationship, RewardRelationshipId } from '@joystream/types/lib/recurring-rewards';
+import { Stake, StakeId } from '@joystream/types/lib/stake';
+import { LinkageResult } from '@polkadot/types/codec/Linkage';
 
 export const DEFAULT_API_URI = 'wss://rome-rpc-endpoint.joystream.org:9944/';
-export const TOKEN_SYMBOL = 'JOY';
+const DEFAULT_DECIMALS = new u32(12);
+
+// Mapping of working group to api module
+const apiModuleByGroup: { [key in WorkingGroups]: string } = {
+    [WorkingGroups.StorageProviders]: 'storageBureaucracy'
+};
 
 // Api wrapper for handling most common api calls and allowing easy API implementation switch in the future
-
 export default class Api {
     private _api: ApiPromise;
 
@@ -28,11 +45,25 @@ export default class Api {
     }
 
     private static async initApi(apiUri: string = DEFAULT_API_URI): Promise<ApiPromise> {
-        formatBalance.setDefaults({ unit: TOKEN_SYMBOL });
         const wsProvider:WsProvider = new WsProvider(apiUri);
         registerJoystreamTypes();
+        const api = await ApiPromise.create({ provider: wsProvider });
 
-        return await ApiPromise.create({ provider: wsProvider });
+        // Initializing some api params based on pioneer/packages/react-api/Api.tsx
+        const [ properties ] = await Promise.all([
+            api.rpc.system.properties()
+        ]);
+
+        const tokenSymbol = properties.tokenSymbol.unwrapOr('DEV').toString();
+        const tokenDecimals = properties.tokenDecimals.unwrapOr(DEFAULT_DECIMALS).toNumber();
+
+        // formatBlanace config
+        formatBalance.setDefaults({
+          decimals: tokenDecimals,
+          unit: tokenSymbol
+        });
+
+        return api;
     }
 
     static async create(apiUri: string = DEFAULT_API_URI): Promise<Api> {
@@ -111,4 +142,110 @@ export default class Api {
             .signAndSend(account);
         return txHash;
     }
+
+    // Working groups
+    // TODO: This is a lot of repeated logic from "/pioneer/joy-roles/src/transport.substrate.ts"
+    // (although simplified a little bit)
+    // Hopefully this will be refactored to "joystream-js" soon
+    protected singleLinkageResult<T extends Codec>(result: LinkageResult) {
+        return result[0] as T;
+    }
+
+    protected multiLinkageResult<K extends Codec, V extends Codec>(result: LinkageResult): [Vec<K>, Vec<V>] {
+        return [ result[0] as Vec<K>, result[1] as Vec<V> ];
+    }
+
+    protected workingGroupApiQuery(group: WorkingGroups) {
+        const module = apiModuleByGroup[group];
+        return this._api.query[module];
+    }
+
+    protected async memberProfileById(memberId: MemberId, throwError = true): Promise<Profile | null> {
+        const profile = await this._api.query.members.memberProfile(memberId) as Option<Profile>;
+
+        if (throwError && profile.isNone) {
+          throw new Error(`Profile not found for member id: ${memberId.toNumber()}!`);
+        }
+
+        return profile.unwrapOr(null);
+    }
+
+    async groupLead (group: WorkingGroups): Promise <GroupLeadWithProfile | null> {
+        const optLead = (await this.workingGroupApiQuery(group).currentLead()) as Option<WorkerLead>;
+
+        if (!optLead.isSome) {
+          return null;
+        }
+
+        const lead = optLead.unwrap();
+        const profile = (await this.memberProfileById(lead.member_id))!;
+
+        return { lead, profile };
+    }
+
+    protected async stakeValue (stakeId: StakeId): Promise<Balance> {
+        const stake = (await this._api.query.stake.stakes(stakeId)) as Stake;
+        return stake.value;
+    }
+
+    protected async workerStake (stakeProfile: WorkerRoleStakeProfile): Promise<Balance> {
+        return this.stakeValue(stakeProfile.stake_id);
+    }
+
+    protected async workerTotalReward (relationshipId: RewardRelationshipId): Promise<Balance> {
+        const relationship = this.singleLinkageResult<RewardRelationship>(
+            await this._api.query.recurringRewards.rewardRelationships(relationshipId) as LinkageResult
+        );
+        return relationship.total_reward_received;
+    }
+
+    protected async groupMember (
+        id: WorkerId,
+        worker: Worker
+      ): Promise<GroupMember> {
+        const roleAccount = worker.role_account;
+        const memberId = worker.member_id;
+
+        const profile = (await this.memberProfileById(memberId))!;
+
+        let stakeValue: Balance = this._api.createType("Balance", 0);
+        if (worker.role_stake_profile && worker.role_stake_profile.isSome) {
+          stakeValue = await this.workerStake(worker.role_stake_profile.unwrap());
+        }
+
+        let earnedValue: Balance = this._api.createType("Balance", 0);
+        if (worker.reward_relationship && worker.reward_relationship.isSome) {
+          earnedValue = await this.workerTotalReward(worker.reward_relationship.unwrap());
+        }
+
+        return ({
+            workerId: id,
+            roleAccount,
+            memberId,
+            profile,
+            stake: stakeValue,
+            earned: earnedValue
+        });
+    }
+
+    async groupMembers (group: WorkingGroups): Promise<GroupMember[]> {
+        const nextId = (await this.workingGroupApiQuery(group).nextWorkerId()) as WorkerId;
+
+        // This is chain specfic, but if next id is still 0, it means no curators have been added yet
+        if (nextId.eq(0)) {
+          return [];
+        }
+
+        const [ workerIds, workers ] = this.multiLinkageResult<WorkerId, Worker>(
+            (await this.workingGroupApiQuery(group).workerById()) as LinkageResult
+        );
+
+        let groupMembers: GroupMember[] = [];
+        for (let [ index, worker ] of Object.entries(workers.toArray())) {
+            const workerId = workerIds[parseInt(index)];
+            groupMembers.push(await this.groupMember(workerId, worker));
+        }
+
+        return groupMembers.reverse();
+      }
 }

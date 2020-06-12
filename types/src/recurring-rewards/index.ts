@@ -54,6 +54,10 @@ export class RewardRelationship extends JoyStruct<IRewardRelationship> {
   get recipient(): RecipientId {
     return this.getField<RecipientId>('recipient')
   }
+
+  get total_reward_received(): u128 {
+    return this.getField<u128>('total_reward_received');
+  }
 };
 
 export function registerRecurringRewardsTypes () {
