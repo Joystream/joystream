@@ -28,7 +28,7 @@ export class ContentId extends H256 {
 
 export class DataObjectTypeId extends u64 {}
 export class DataObjectStorageRelationshipId extends u64 {}
-export class SchemaId extends u64 {}
+
 export class DownloadSessionId extends u64 {}
 
 export type BlockAndTimeType = {
@@ -57,23 +57,8 @@ export class BlockAndTime extends Struct {
   }
 }
 
-// TODO rename to Draft to Unlisted
-export type ContentVisibilityKey = 'Draft' | 'Public';
-
-export class ContentVisibility extends Enum {
-  constructor (value?: ContentVisibilityKey) {
-    super([
-      'Draft',
-      'Public'
-    ], value);
-  }
-}
-
 export class VecContentId extends Vector.with(ContentId) {}
-
 export class OptionVecContentId extends Option.with(VecContentId) {}
-export class OptionSchemaId extends Option.with(SchemaId) {}
-export class OptionContentVisibility extends Option.with(ContentVisibility) {}
 export type LiaisonJudgementKey = 'Pending' | 'Accepted' | 'Rejected';
 
 export class LiaisonJudgement extends Enum {
@@ -226,9 +211,7 @@ export function registerMediaTypes () {
     getTypeRegistry().register({
       '::ContentId': ContentId,
       '::DataObjectTypeId': DataObjectTypeId,
-      // SchemaId, // This isn't required? (its what caused issue with type mismatch in permissions module!)
       ContentId,
-      ContentVisibility,
       LiaisonJudgement,
       DataObject,
       DataObjectStorageRelationshipId,
