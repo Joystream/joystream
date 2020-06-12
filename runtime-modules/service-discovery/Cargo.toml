@@ -61,7 +61,7 @@ rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 default-features = false
 features = ['derive']
 package = 'parity-scale-codec'
-version = '1.1.0'
+version = '1.0.0'
 
 [dev-dependencies.runtime-io]
 default_features = false
