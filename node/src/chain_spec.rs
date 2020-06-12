@@ -264,6 +264,7 @@ pub fn testnet_genesis(
         }),
         data_object_storage_registry: Some(DataObjectStorageRegistryConfig {
             first_relationship_id: 1,
+            storage_working_group_mint_capacity: 0,
         }),
         versioned_store: Some(VersionedStoreConfig {
             class_by_id: vec![],

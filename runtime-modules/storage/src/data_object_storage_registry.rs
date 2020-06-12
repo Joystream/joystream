@@ -25,7 +25,7 @@
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
-use srml_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
+use srml_support::{decl_error, decl_event, decl_module, decl_storage, ensure, print, Parameter};
 
 use crate::data_directory::{self, ContentIdExists};
 use crate::{StorageProviderId, StorageWorkingGroup};
@@ -120,6 +120,20 @@ decl_storage! {
 
         /// Keeps a list of storage relationships per content id.
         pub RelationshipsByContentId get(relationships_by_content_id): map T::ContentId => Vec<T::DataObjectStorageRelationshipId>;
+    }
+    add_extra_genesis {
+        config(storage_working_group_mint_capacity): minting::BalanceOf<T>;
+        build(|config: &GenesisConfig<T>| {
+            // Create a mint.
+            let mint_id_result =
+                <minting::Module<T>>::add_mint(config.storage_working_group_mint_capacity, None);
+
+            if let Ok(mint_id) = mint_id_result {
+                <working_group::Mint::<T, working_group::Instance2>>::put(mint_id);
+            } else {
+                print("Failed to create a mint for the storage working group");
+            }
+        });
     }
 }
 

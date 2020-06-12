@@ -219,10 +219,13 @@ impl hiring::Trait for Test {
 
 pub struct ExtBuilder {
     first_data_object_type_id: u64,
+    storage_working_group_mint_capacity: u64,
     first_content_id: u64,
     first_relationship_id: u64,
     first_metadata_id: u64,
 }
+
+pub(crate) const STORAGE_WORKING_GROUP_MINT_CAPACITY: u64 = 40000;
 
 impl Default for ExtBuilder {
     fn default() -> Self {
@@ -231,6 +234,7 @@ impl Default for ExtBuilder {
             first_content_id: 2,
             first_relationship_id: 3,
             first_metadata_id: 4,
+            storage_working_group_mint_capacity: STORAGE_WORKING_GROUP_MINT_CAPACITY,
         }
     }
 }
@@ -265,6 +269,7 @@ impl ExtBuilder {
 
         data_object_storage_registry::GenesisConfig::<Test> {
             first_relationship_id: self.first_relationship_id,
+            storage_working_group_mint_capacity: self.storage_working_group_mint_capacity,
         }
         .assimilate_storage(&mut t)
         .unwrap();

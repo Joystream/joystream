@@ -17,6 +17,7 @@ std = [
 	'primitives/std',
 	'common/std',
 	'membership/std',
+	'minting/std',
 	'working-group/std',
 ]
 
@@ -73,6 +74,11 @@ default_features = false
 package = 'substrate-membership-module'
 path = '../membership'
 
+[dependencies.minting]
+default_features = false
+package = 'substrate-token-mint-module'
+path = '../token-minting'
+
 [dependencies.common]
 default_features = false
 package = 'substrate-common-module'
@@ -109,8 +115,3 @@ path = '../hiring'
 default_features = false
 package = 'substrate-stake-module'
 path = '../stake'
-
-[dev-dependencies.minting]
-default_features = false
-package = 'substrate-token-mint-module'
-path = '../token-minting'

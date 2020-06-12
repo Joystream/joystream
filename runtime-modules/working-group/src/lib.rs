@@ -67,8 +67,6 @@ pub use types::{
     WorkerRoleStakeProfile,
 };
 
-//TODO: initialize a mint!
-
 /// Alias for the _Lead_ type
 pub type LeadOf<T> = Lead<MemberId<T>, <T as system::Trait>::AccountId>;
 
