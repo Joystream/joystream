@@ -349,11 +349,7 @@ export class Transport extends TransportBase implements ITransport {
         await this.cachedApiMethodByGroup(group, 'applicationById')(i)
       );
 
-      if (
-        group === WorkingGroups.ContentCurators
-          ? (cApplication.value as CuratorApplication).curator_opening_id.toNumber() !== groupOpeningId
-          : (cApplication.value as WorkerApplication).worker_opening_id.toNumber() !== groupOpeningId
-      ) {
+      if (cApplication.value.worker_opening_id.toNumber() !== groupOpeningId) {
         continue;
       }
 
