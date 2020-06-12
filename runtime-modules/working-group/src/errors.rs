@@ -235,6 +235,9 @@ decl_error! {
 
         /// Cannot find mint in the minting module.
         CannotFindMint,
+
+        /// Require root origin in extrinsics.
+        RequireRootOrigin,
     }
 }
 
@@ -242,6 +245,7 @@ impl From<system::Error> for Error {
     fn from(error: system::Error) -> Self {
         match error {
             system::Error::Other(msg) => Error::Other(msg),
+            system::Error::RequireRootOrigin => Error::RequireRootOrigin,
             _ => Error::Other(error.into()),
         }
     }

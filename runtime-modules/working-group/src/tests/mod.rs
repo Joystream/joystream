@@ -943,7 +943,7 @@ fn unset_lead_succeeds() {
 #[test]
 fn unset_lead_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
-        UnsetLeadFixture::call_and_assert(RawOrigin::None, Err(Error::Other("RequireRootOrigin")));
+        UnsetLeadFixture::call_and_assert(RawOrigin::None, Err(Error::RequireRootOrigin));
     });
 }
 
@@ -957,12 +957,7 @@ fn unset_lead_fails_with_no_lead() {
 #[test]
 fn set_lead_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
-        SetLeadFixture::call_and_assert(
-            RawOrigin::None,
-            1,
-            1,
-            Err(Error::Other("RequireRootOrigin")),
-        );
+        SetLeadFixture::call_and_assert(RawOrigin::None, 1, 1, Err(Error::RequireRootOrigin));
     });
 }
 
@@ -1552,5 +1547,53 @@ fn get_all_worker_ids_succeeds() {
         <crate::WorkerById<Test, crate::Instance1>>::remove(worker_id1);
         let worker_ids = WorkingGroup1::get_all_worker_ids();
         assert_eq!(worker_ids, vec![worker_id2]);
+    });
+}
+
+#[test]
+fn set_working_group_mint_capacity_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let mint_id = <minting::Module<Test>>::add_mint(0, None).unwrap();
+        <crate::Mint<Test, crate::Instance1>>::put(mint_id);
+
+        let capacity = 15000;
+        let result = WorkingGroup1::set_mint_capacity(RawOrigin::Root.into(), capacity);
+
+        assert_eq!(result, Ok(()));
+
+        let mint = <minting::Module<Test>>::mints(mint_id);
+        assert_eq!(mint.capacity(), capacity);
+    });
+}
+
+#[test]
+fn set_working_group_mint_capacity_fails_with_not_set_working_group_mint() {
+    build_test_externalities().execute_with(|| {
+        let capacity = 15000;
+        let result = WorkingGroup1::set_mint_capacity(RawOrigin::Root.into(), capacity);
+
+        assert_eq!(result, Err(Error::WorkingGroupMintIsNotSet));
+    });
+}
+
+#[test]
+fn set_working_group_mint_capacity_fails_with_mint_not_found() {
+    build_test_externalities().execute_with(|| {
+        let capacity = 15000;
+
+        <crate::Mint<Test, Instance1>>::put(5); // random mint id
+        let result = WorkingGroup1::set_mint_capacity(RawOrigin::Root.into(), capacity);
+
+        assert_eq!(result, Err(Error::CannotFindMint));
+    });
+}
+
+#[test]
+fn set_working_group_mint_capacity_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let capacity = 15000;
+        let result = WorkingGroup1::set_mint_capacity(RawOrigin::None.into(), capacity);
+
+        assert_eq!(result, Err(Error::RequireRootOrigin));
     });
 }
