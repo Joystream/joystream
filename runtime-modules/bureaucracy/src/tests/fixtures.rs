@@ -259,7 +259,7 @@ impl FillWorkerOpeningFixture {
         }
     }
 
-    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
+    pub fn call_and_assert(&self, expected_result: Result<(), Error>) -> u64 {
         let saved_worker_next_id = Bureaucracy1::next_worker_id();
         let actual_result = Bureaucracy1::fill_worker_opening(
             self.origin.clone().into(),
@@ -307,6 +307,8 @@ impl FillWorkerOpeningFixture {
 
             assert_eq!(actual_worker, expected_worker);
         }
+
+        saved_worker_next_id
     }
 }
 
@@ -462,7 +464,7 @@ impl ApplyOnWorkerOpeningFixture {
         }
     }
 
-    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
+    pub fn call_and_assert(&self, expected_result: Result<(), Error>) -> u64 {
         let saved_application_next_id = Bureaucracy1::next_worker_application_id();
         let actual_result = Bureaucracy1::apply_on_worker_opening(
             self.origin.clone().into(),
@@ -498,6 +500,8 @@ impl ApplyOnWorkerOpeningFixture {
                 .worker_applications
                 .contains(&application_id));
         }
+
+        saved_application_next_id
     }
 }
 
@@ -572,7 +576,7 @@ impl AddWorkerOpeningFixture {
         }
     }
 
-    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
+    pub fn call_and_assert(&self, expected_result: Result<(), Error>) -> u64 {
         let saved_opening_next_id = Bureaucracy1::next_worker_opening_id();
         let actual_result = Bureaucracy1::add_worker_opening(
             self.origin.clone().into(),
@@ -599,6 +603,8 @@ impl AddWorkerOpeningFixture {
 
             assert_eq!(actual_opening, expected_opening);
         }
+
+        saved_opening_next_id
     }
 
     pub fn with_text(self, text: Vec<u8>) -> Self {

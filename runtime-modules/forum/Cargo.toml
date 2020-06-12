@@ -1,6 +1,6 @@
 [package]
 name = 'substrate-forum-module'
-version = '1.2.0'
+version = '1.2.1'
 authors = ['Joystream contributors']
 edition = '2018'
 
