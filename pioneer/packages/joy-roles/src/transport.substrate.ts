@@ -14,7 +14,7 @@ import { APIQueryCache, MultipleLinkedMapEntry, SingleLinkedMapEntry, Subscribab
 import { ITransport } from './transport';
 import { GroupMember } from './elements';
 
-import { Role } from '@joystream/types/roles';
+import { Role } from '@joystream/types/members';
 import {
   Curator, CuratorId,
   CuratorApplication, CuratorApplicationId,

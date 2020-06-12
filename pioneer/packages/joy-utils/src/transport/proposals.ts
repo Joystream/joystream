@@ -11,7 +11,7 @@ import { ParsedMember } from '../types/members';
 
 import BaseTransport from './base';
 
-import { ThreadId, PostId } from '@joystream/types/forum';
+import { ThreadId, PostId } from '@joystream/types/common';
 import { Proposal, ProposalId, VoteKind, DiscussionThread, DiscussionPost } from '@joystream/types/proposals';
 import { MemberId } from '@joystream/types/members';
 import { u32, u64 } from '@polkadot/types/';

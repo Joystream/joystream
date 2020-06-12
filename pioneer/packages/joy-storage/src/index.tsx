@@ -2,7 +2,8 @@ import { AppProps, I18nProps } from '@polkadot/react-components/types';
 import { ApiProps } from '@polkadot/react-api/types';
 import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import { ComponentProps } from './props';
-import { Request, Role } from '@joystream/types/roles';
+import { Role } from '@joystream/types/members';
+import { Request } from '@joystream/types/roles';
 
 import React from 'react';
 import { Route, Switch } from 'react-router';

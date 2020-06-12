@@ -5,8 +5,8 @@ import { Option, Text, u32, u128, GenericAccountId } from '@polkadot/types';
 import { Subscribable, Transport as TransportBase } from '@polkadot/joy-utils/index';
 
 import { ITransport } from './transport';
-
-import { Actor, Role } from '@joystream/types/roles';
+import { Role } from '@joystream/types/members';
+import { Actor } from '@joystream/types/roles';
 import {
   Opening,
   AcceptingApplications,
