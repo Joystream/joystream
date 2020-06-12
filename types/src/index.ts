@@ -10,12 +10,12 @@ import { registerStakeTypes } from "./stake";
 import { registerMintTypes } from "./mint";
 import { registerRecurringRewardsTypes } from "./recurring-rewards";
 import { registerHiringTypes } from "./hiring";
-import { registerVersionedStoreTypes } from "./versioned-store";
-import { registerVersionedStorePermissionsTypes } from "./versioned-store/permissions";
-import { registerContentWorkingGroupTypes } from "./content-working-group";
+import { registerVersionedStoreTypes } from "./versioned-store"; //Circular dep FIX needed - depends on ChannelId from content working group!
+import { registerVersionedStorePermissionsTypes } from "./versioned-store/permissions"; // depends on versioned store!
+import { registerContentWorkingGroupTypes } from "./content-working-group"; // depends on Credential from versioned permissions store!
 import { registerBureaucracyTypes } from "./bureaucracy";
 import { registerDiscoveryTypes } from "./discovery";
-import { registerMediaTypes } from "./media";
+import { registerMediaTypes } from "./media"; // depends on StorageProviderId from buraucracy.. not ideal
 import { registerProposalTypes } from "./proposals";
 
 export function registerJoystreamTypes() {
