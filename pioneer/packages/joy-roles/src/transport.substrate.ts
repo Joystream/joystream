@@ -175,13 +175,7 @@ export class Transport extends TransportBase implements ITransport {
         relationshipId
       )
     );
-    const recipient = new SingleLinkedMapEntry<Recipient>(
-      Recipient,
-      await this.cachedApi.query.recurringRewards.rewardRelationships(
-        relationship.value.recipient
-      )
-    );
-    return recipient.value.total_reward_received;
+    return relationship.value.total_reward_received;
   }
 
   protected async memberIdFromRoleAndActorId (role: Role, id: ActorId): Promise<MemberId> {
