@@ -10,7 +10,8 @@ fn storage_provider_helper_succeeds() {
     initial_test_ext().execute_with(|| {
 
 		// Error - no workers.
-		let random_provider_result = <StorageProviderHelper as storage::data_directory::StorageProviderHelper<Runtime>>::get_random_storage_provider();
+		let random_provider_result = <StorageProviderHelper
+			as storage::data_directory::StorageProviderHelper<Runtime>>::get_random_storage_provider();
 		assert!(random_provider_result.is_err());
 
 		let worker_id1 = 1;
