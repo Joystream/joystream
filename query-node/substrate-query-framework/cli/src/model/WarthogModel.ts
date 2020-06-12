@@ -166,15 +166,19 @@ export class Field {
      * it adds exclamation mark (!) at then end of string
      */
     format(): string {
-    const colon = ':';
-    const columnType: string = this.isBuildinType ? availableTypes[this.type] : this.type;
-    let column: string = columnType === 'string' ? this.name : this.name.concat(colon, columnType);
+      const colon = ':';
+      const columnType = this.columnType();
+      let column: string = columnType === 'string' ? this.name : this.name.concat(colon, columnType);
 
-    if (!this.isBuildinType && !this.isList && this.type !== 'otm' && this.type !== 'mto') {
-      column = this.name.concat(colon, 'oto');
-    } else if (this.isBuildinType && this.isList) {
-      column = this.name + colon + 'array' + columnType;
-        }
-        return this.nullable ? column : column + '!';
+      if (!this.isBuildinType && !this.isList && this.type !== 'otm' && this.type !== 'mto') {
+        column = this.name.concat(colon, 'oto');
+      } else if (this.isBuildinType && this.isList) {
+        column = this.name + colon + 'array' + columnType;
+      }
+      return this.nullable ? column : column + '!';
+    }
+
+    columnType(): string {
+      return this.isBuildinType ? availableTypes[this.type] : this.type;
     }
 }
