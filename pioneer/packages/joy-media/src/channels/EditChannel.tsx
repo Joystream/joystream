@@ -17,6 +17,7 @@ import { TxCallback } from '@polkadot/react-components/Status/types';
 import { SubmittableResult } from '@polkadot/api';
 import { ChannelValidationConstraints } from '../transport';
 import { JoyError } from '@polkadot/joy-utils/JoyStatus';
+import Section from '@polkadot/joy-utils/Section';
 
 export type OuterProps = {
   history?: History;
@@ -176,21 +177,23 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       {avatar && <img src={avatar} onError={onImageError} />}
     </div>
 
-    <Form className='ui form JoyForm EditMetaForm'>
+    <Section title={isNew ? 'Create a channel' : 'Edit a channel'}>
+      <Form className='ui form JoyForm EditMetaForm'>
 
-      {formFields()}
+        {formFields()}
 
-      <LabelledField style={{ marginTop: '1rem' }} {...props}>
-        {renderMainButton()}
-        <Button
-          type='button'
-          size='large'
-          disabled={!dirty || isSubmitting}
-          onClick={() => resetForm()}
-          content='Reset form'
-        />
-      </LabelledField>
-    </Form>
+        <LabelledField style={{ marginTop: '1rem' }} {...props}>
+          {renderMainButton()}
+          <Button
+            type='button'
+            size='large'
+            disabled={!dirty || isSubmitting}
+            onClick={() => resetForm()}
+            content='Reset form'
+          />
+        </LabelledField>
+      </Form>
+    </Section>
   </div>;
 };
 
