@@ -1,6 +1,6 @@
-import React from "react";
-import { Form } from "semantic-ui-react";
-import * as Yup from "yup";
+import React from 'react';
+import { Form } from 'semantic-ui-react';
+import * as Yup from 'yup';
 import {
   GenericProposalForm,
   GenericFormValues,
@@ -10,19 +10,20 @@ import {
   ProposalFormExportProps,
   ProposalFormContainerProps,
   ProposalFormInnerProps
-} from "./GenericProposalForm";
-import Validation from "../validationSchema";
-import { withFormContainer } from "./FormContainer";
-import "./forms.css";
-import FileDropdown from "./FileDropdown";
+} from './GenericProposalForm';
+import Validation from '../validationSchema';
+import { withFormContainer } from './FormContainer';
+import './forms.css';
+import FileDropdown from './FileDropdown';
 
 type FormValues = GenericFormValues & {
-  WASM: string;
+  // wasm blob as ArrayBuffer, or an Error string
+  WASM: ArrayBuffer | string;
 };
 
 const defaultValues: FormValues = {
   ...genericFormDefaultValues,
-  WASM: ""
+  WASM: new ArrayBuffer(0)
 };
 
 type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
@@ -31,21 +32,23 @@ type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
 const RuntimeUpgradeForm: React.FunctionComponent<FormInnerProps> = props => {
-  const { errors, setFieldValue, values } = props;
+  const { errors, setFieldValue, setFieldTouched, values, touched } = props;
   return (
     <GenericProposalForm
       {...props}
       txMethod="createRuntimeUpgradeProposal"
       proposalType="RuntimeUpgrade"
-      submitParams={[props.myMemberId, values.title, values.rationale, "{STAKE}", values.WASM]}
+      submitParams={[props.myMemberId, values.title, values.rationale, '{STAKE}', values.WASM]}
     >
       <Form.Field>
         <FileDropdown<FormValues>
           setFieldValue={setFieldValue}
+          setFieldTouched={setFieldTouched}
           defaultText="Drag-n-drop WASM bytecode of a runtime upgrade (*.wasm)"
           acceptedFormats=".wasm"
           name="WASM"
-          error={errors.WASM}
+          error={touched.WASM ? errors.WASM : undefined}
+          interpretAs='binary'
         />
       </Form.Field>
     </GenericProposalForm>
@@ -62,7 +65,7 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     WASM: Validation.RuntimeUpgrade.WASM
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
-  displayName: "RuntimeUpgradeForm"
+  displayName: 'RuntimeUpgradeForm'
 })(RuntimeUpgradeForm);
 
 export default withProposalFormData(FormContainer);

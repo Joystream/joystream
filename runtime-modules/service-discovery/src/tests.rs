@@ -14,12 +14,11 @@ fn set_ipns_id() {
         let (storage_provider_account_id, storage_provider_id) = hire_storage_provider();
 
         let identity = "alice".as_bytes().to_vec();
-        let ttl = <Test as system::Trait>::BlockNumber::from(MINIMUM_LIFETIME + 100);
+        let ttl = <Test as system::Trait>::BlockNumber::from(DEFAULT_LIFETIME);
         assert!(Discovery::set_ipns_id(
             Origin::signed(storage_provider_account_id),
             storage_provider_id,
             identity.clone(),
-            Some(ttl)
         )
         .is_ok());
 
@@ -54,7 +53,6 @@ fn set_ipns_id() {
             Origin::signed(invalid_storage_provider_id),
             invalid_storage_provider_account_id,
             identity.clone(),
-            None
         )
         .is_err());
         assert!(!<AccountInfoByStorageProviderId<Test>>::exists(

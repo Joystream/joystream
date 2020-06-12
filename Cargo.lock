@@ -1569,7 +1569,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "2.2.0"
+version = "2.3.0"
 dependencies = [
  "ctrlc",
  "derive_more 0.14.1",
@@ -1614,7 +1614,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "6.15.0"
+version = "6.16.0"
 dependencies = [
  "parity-scale-codec",
  "safe-mix",
@@ -4579,7 +4579,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-common-module"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "parity-scale-codec",
  "serde",

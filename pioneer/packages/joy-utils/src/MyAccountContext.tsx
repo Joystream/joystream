@@ -10,17 +10,16 @@ function readMyAddress (): string | undefined {
 }
 
 type MyAccountState = {
-  inited: boolean,
-  address?: string // TODO rename to 'myAddress'
+  inited: boolean;
+  address?: string; // TODO rename to 'myAddress'
 };
 
 type MyAccountAction = {
-  type: 'reload' | 'set' | 'forget' | 'forgetExact',
-  address?: string
+  type: 'reload' | 'set' | 'forget' | 'forgetExact';
+  address?: string;
 };
 
 function reducer (state: MyAccountState, action: MyAccountAction): MyAccountState {
-
   function forget () {
     console.log('Forget my address');
     store.remove(MY_ADDRESS);
@@ -30,13 +29,13 @@ function reducer (state: MyAccountState, action: MyAccountAction): MyAccountStat
   let address: string | undefined;
 
   switch (action.type) {
-
-    case 'reload':
+    case 'reload': {
       address = readMyAddress();
       console.log('Reload my address:', address);
       return { ...state, address, inited: true };
+    }
 
-    case 'set':
+    case 'set': {
       address = action.address;
       if (address !== state.address) {
         if (address) {
@@ -48,14 +47,16 @@ function reducer (state: MyAccountState, action: MyAccountAction): MyAccountStat
         }
       }
       return state;
+    }
 
-    case 'forget':
+    case 'forget': {
       address = action.address;
       const isMyAddress = address && address === readMyAddress();
       if (!address || isMyAddress) {
         return forget();
       }
       return state;
+    }
 
     default:
       throw new Error('No action type provided');
@@ -72,10 +73,10 @@ const initialState = {
 };
 
 export type MyAccountContextProps = {
-  state: MyAccountState,
-  dispatch: React.Dispatch<MyAccountAction>,
-  set: (address: string) => void,
-  forget: (address: string) => void
+  state: MyAccountState;
+  dispatch: React.Dispatch<MyAccountAction>;
+  set: (address: string) => void;
+  forget: (address: string) => void;
 };
 
 const contextStub: MyAccountContextProps = {

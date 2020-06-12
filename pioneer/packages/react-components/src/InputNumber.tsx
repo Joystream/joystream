@@ -129,7 +129,7 @@ class InputNumber extends React.PureComponent<Props, State> {
 
     return (
       <Dropdown
-        /*isPrimary={false}*/
+        /* isPrimary={false} */
         dropdownClassName='ui--SiDropdown'
         isButton
         defaultValue={siUnit}

@@ -24,7 +24,7 @@ interface Props extends I18nProps, ComponentProps, ApiProps {
   myControllers?: string[];
 }
 
-function getMyStashes(myControllers?: string[], allAccounts?: SubjectInfo): string[] | null {
+function getMyStashes (myControllers?: string[], allAccounts?: SubjectInfo): string[] | null {
   const result: string[] = [];
 
   if (!myControllers) {
@@ -40,7 +40,7 @@ function getMyStashes(myControllers?: string[], allAccounts?: SubjectInfo): stri
   return result;
 }
 
-function Accounts({
+function Accounts ({
   allAccounts,
   allStashes,
   className,

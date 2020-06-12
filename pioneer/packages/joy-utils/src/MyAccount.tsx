@@ -16,6 +16,8 @@ import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { queryToProp, MultipleLinkedMapEntry, SingleLinkedMapEntry } from '@polkadot/joy-utils/index';
 import { useMyMembership } from './MyMembershipContext';
 
+import { componentName } from '@polkadot/joy-utils/react/helpers';
+
 export type MyAddressProps = {
   myAddress?: string;
 };
@@ -30,7 +32,7 @@ export type MyAccountProps = MyAddressProps & {
   memberProfile?: Option<any>;
 
   // Content Working Group
-  curatorEntries?: any; //entire linked_map: CuratorId => Curator
+  curatorEntries?: any; // entire linked_map: CuratorId => Curator
   isLeadSet?: Option<LeadId>;
   contentLeadId?: LeadId;
   contentLeadEntry?: any; // linked_map value
@@ -45,14 +47,16 @@ export type MyAccountProps = MyAddressProps & {
   allAccounts?: SubjectInfo;
 };
 
-function withMyAddress<P extends MyAccountProps>(Component: React.ComponentType<P>) {
-  return function(props: P) {
+function withMyAddress<P extends MyAccountProps> (Component: React.ComponentType<P>) {
+  const ResultComponent: React.FunctionComponent<P> = (props: P) => {
     const {
       state: { address }
     } = useMyAccount();
     const myAccountId = address ? new GenericAccountId(address) : undefined;
     return <Component myAddress={address} myAccountId={myAccountId} {...props} />;
   };
+  ResultComponent.displayName = `withMyAddress(${componentName(Component)})`;
+  return ResultComponent;
 }
 
 const withMyMemberIds = withCalls<MyAccountProps>(
@@ -60,8 +64,8 @@ const withMyMemberIds = withCalls<MyAccountProps>(
   queryMembershipToProp('memberIdsByControllerAccountId', 'myAddress')
 );
 
-function withMyMembership<P extends MyAccountProps>(Component: React.ComponentType<P>) {
-  return function(props: P) {
+function withMyMembership<P extends MyAccountProps> (Component: React.ComponentType<P>) {
+  const ResultComponent: React.FunctionComponent<P> = (props: P) => {
     const { memberIdsByRootAccountId, memberIdsByControllerAccountId } = props;
 
     const myMemberIdChecked = memberIdsByRootAccountId && memberIdsByControllerAccountId;
@@ -84,6 +88,8 @@ function withMyMembership<P extends MyAccountProps>(Component: React.ComponentTy
 
     return <Component {...props} {...newProps} />;
   };
+  ResultComponent.displayName = `withMyMembership(${componentName(Component)})`;
+  return ResultComponent;
 }
 
 const withMyProfile = withCalls<MyAccountProps>(queryMembershipToProp('memberProfile', 'myMemberId'));
@@ -93,8 +99,8 @@ const withContentWorkingGroupDetails = withCalls<MyAccountProps>(
   queryToProp('query.contentWorkingGroup.curatorById', { propName: 'curatorEntries' })
 );
 
-function resolveLead<P extends MyAccountProps>(Component: React.ComponentType<P>) {
-  return function(props: P) {
+function resolveLead<P extends MyAccountProps> (Component: React.ComponentType<P>) {
+  const ResultComponent: React.FunctionComponent<P> = (props: P) => {
     const { isLeadSet } = props;
 
     let contentLeadId;
@@ -103,12 +109,14 @@ function resolveLead<P extends MyAccountProps>(Component: React.ComponentType<P>
       contentLeadId = isLeadSet.unwrap();
     }
 
-    let newProps = {
+    const newProps = {
       contentLeadId
     };
 
     return <Component {...props} {...newProps} />;
   };
+  ResultComponent.displayName = `resolveLead(${componentName(Component)})`;
+  return ResultComponent;
 }
 
 const resolveLeadEntry = withCalls<MyAccountProps>(
@@ -118,12 +126,12 @@ const resolveLeadEntry = withCalls<MyAccountProps>(
 const withContentWorkingGroup = <P extends MyAccountProps>(Component: React.ComponentType<P>) =>
   withMulti(Component, withContentWorkingGroupDetails, resolveLead, resolveLeadEntry);
 
-function withMyRoles<P extends MyAccountProps>(Component: React.ComponentType<P>) {
-  return function(props: P) {
+function withMyRoles<P extends MyAccountProps> (Component: React.ComponentType<P>) {
+  const ResultComponent: React.FunctionComponent<P> = (props: P) => {
     const { iAmMember, memberProfile } = props;
 
     let myContentLeadId;
-    let myCuratorIds: Array<CuratorId> = [];
+    const myCuratorIds: Array<CuratorId> = [];
 
     if (iAmMember && memberProfile && memberProfile.isSome) {
       const profile = memberProfile.unwrap() as Profile;
@@ -148,6 +156,8 @@ function withMyRoles<P extends MyAccountProps>(Component: React.ComponentType<P>
 
     return <Component {...props} {...newProps} />;
   };
+  ResultComponent.displayName = `withMyRoles(${componentName(Component)})`;
+  return ResultComponent;
 }
 
 const canUseAccount = (account: AccountId, allAccounts: SubjectInfo | undefined) => {
@@ -159,11 +169,11 @@ const canUseAccount = (account: AccountId, allAccounts: SubjectInfo | undefined)
     return account.eq(allAccounts[key].json.address);
   });
 
-  return ix != -1;
+  return ix !== -1;
 };
 
-function withCurationActor<P extends MyAccountProps>(Component: React.ComponentType<P>) {
-  return function(props: P) {
+function withCurationActor<P extends MyAccountProps> (Component: React.ComponentType<P>) {
+  const ResultComponent: React.FunctionComponent<P> = (props: P) => {
     const {
       myAccountId,
       isLeadSet,
@@ -195,8 +205,8 @@ function withCurationActor<P extends MyAccountProps>(Component: React.ComponentT
 
       return ix >= 0
         ? new CurationActor({
-            Curator: curators.linked_keys[ix]
-          })
+          Curator: curators.linked_keys[ix]
+        })
         : null;
     };
 
@@ -242,7 +252,7 @@ function withCurationActor<P extends MyAccountProps>(Component: React.ComponentT
     // Use first available active curator role key if available
     if (curators.linked_keys.length) {
       for (let i = 0; i < curators.linked_keys.length; i++) {
-        let curator = curators.linked_values[i];
+        const curator = curators.linked_values[i];
         if (curator.is_active && canUseAccount(curator.role_account, allAccounts)) {
           return (
             <Component
@@ -257,6 +267,8 @@ function withCurationActor<P extends MyAccountProps>(Component: React.ComponentT
     // we don't have any key that can fulfill a curation action
     return <Component {...props} />;
   };
+  ResultComponent.displayName = `withCurationActor(${componentName(Component)})`;
+  return ResultComponent;
 }
 
 export const withMyAccount = <P extends MyAccountProps>(Component: React.ComponentType<P>) =>
@@ -272,9 +284,9 @@ export const withMyAccount = <P extends MyAccountProps>(Component: React.Compone
     withCurationActor
   );
 
-export function MembershipRequired<P extends {}>(Component: React.ComponentType<P>): React.ComponentType<P> {
-  return function (props: P) {
-    const { myMemberIdChecked, iAmMember } = useMyMembership()
+export function MembershipRequired<P extends {}> (Component: React.ComponentType<P>): React.ComponentType<P> {
+  const ResultComponent: React.FunctionComponent<P> = (props: P) => {
+    const { myMemberIdChecked, iAmMember } = useMyMembership();
 
     if (!myMemberIdChecked) {
       return <em>Loading...</em>;
@@ -286,21 +298,23 @@ export function MembershipRequired<P extends {}>(Component: React.ComponentType<
       <Message warning className="JoyMainStatus">
         <Message.Header>Only members can access this functionality.</Message.Header>
         <div style={{ marginTop: '1rem' }}>
-          <Link to={`/members/edit`} className="ui button orange">
+          <Link to={'/members/edit'} className="ui button orange">
             Register here
           </Link>
           <span style={{ margin: '0 .5rem' }}> or </span>
-          <Link to={`/accounts`} className="ui button">
+          <Link to={'/accounts'} className="ui button">
             Change key
           </Link>
         </div>
       </Message>
     );
   };
+  ResultComponent.displayName = `MembershipRequired(${componentName(Component)})`;
+  return ResultComponent;
 }
 
-export function AccountRequired<P extends {}>(Component: React.ComponentType<P>): React.ComponentType<P> {
-  return function(props: P) {
+export function AccountRequired<P extends {}> (Component: React.ComponentType<P>): React.ComponentType<P> {
+  const ResultComponent: React.FunctionComponent<P> = (props: P) => {
     const { allAccounts } = useMyMembership();
 
     if (allAccounts && !Object.keys(allAccounts).length) {
@@ -308,7 +322,7 @@ export function AccountRequired<P extends {}>(Component: React.ComponentType<P>)
         <Message warning className="JoyMainStatus">
           <Message.Header>Please create a key to get started.</Message.Header>
           <div style={{ marginTop: '1rem' }}>
-            <Link to={`/accounts`} className="ui button orange">
+            <Link to={'/accounts'} className="ui button orange">
               Create key
             </Link>
           </div>
@@ -318,6 +332,8 @@ export function AccountRequired<P extends {}>(Component: React.ComponentType<P>)
 
     return <Component {...props} />;
   };
+  ResultComponent.displayName = `AccountRequired(${componentName(Component)})`;
+  return ResultComponent;
 }
 
 // TODO: We could probably use withAccountRequired, which wouldn't pass any addiotional props, just like withMembershipRequired.
@@ -326,7 +342,7 @@ export const withOnlyAccounts = <P extends MyAccountProps>(Component: React.Comp
   withMulti(Component, withMyAccount, AccountRequired);
 
 export const withMembershipRequired = <P extends {}> (Component: React.ComponentType<P>): React.ComponentType<P> =>
-  withMulti(Component, AccountRequired, MembershipRequired)
+  withMulti(Component, AccountRequired, MembershipRequired);
 
 export const withOnlyMembers = <P extends MyAccountProps>(Component: React.ComponentType<P>): React.ComponentType<P> =>
   withMulti(Component, withMyAccount, withMembershipRequired);

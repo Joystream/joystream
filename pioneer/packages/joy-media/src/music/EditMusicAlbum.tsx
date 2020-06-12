@@ -14,11 +14,11 @@ import { MusicTrackReaderPreviewProps } from './MusicTrackReaderPreview';
 import { FormTabs } from '../common/FormTabs';
 
 export type OuterProps = {
-  history?: History,
-  id?: EntityId,
-  entity?: MusicAlbumType,
-  tracks?: MusicTrackReaderPreviewProps[]
-  opts?: MediaDropdownOptions
+  history?: History;
+  id?: EntityId;
+  entity?: MusicAlbumType;
+  tracks?: MusicTrackReaderPreviewProps[];
+  opts?: MediaDropdownOptions;
 };
 
 type FormValues = MusicAlbumFormValues;
@@ -55,7 +55,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const buildTxParams = () => {
     if (!isValid) return [];
 
-    return [ /* TODO save entity to versioned store */ ];
+    return [];
   };
 
   const basicInfoTab = () => <Tab.Pane as='div'>
@@ -67,7 +67,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     <MediaText field={Fields.explicit} {...props} />
     <MediaDropdown field={Fields.license} options={opts.contentLicenseOptions} {...props} />
     <MediaDropdown field={Fields.publicationStatus} options={opts.publicationStatusOptions} {...props} />
-  </Tab.Pane>
+  </Tab.Pane>;
 
   const additionalTab = () => <Tab.Pane as='div'>
     <MediaText field={Fields.composerOrSongwriter} {...props} />
@@ -77,14 +77,14 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     <MediaDropdown field={Fields.language} options={opts.languageOptions} {...props} />
     <MediaText field={Fields.lyrics} {...props} />
     <MediaText field={Fields.attribution} {...props} />
-  </Tab.Pane>
+  </Tab.Pane>;
 
   const tracksTab = () => <Tab.Pane as='div'>
     <ReorderableTracks
       tracks={tracks}
       noTracksView={<em style={{ padding: '1rem 0', display: 'block' }}>This album has no tracks yet.</em>}
     />
-  </Tab.Pane>
+  </Tab.Pane>;
 
   const tabs = <FormTabs errors={errors} panes={[
     {
@@ -98,7 +98,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
         Fields.firstReleased,
         Fields.explicit,
         Fields.license,
-        Fields.publicationStatus,
+        Fields.publicationStatus
       ]
     },
     {
@@ -111,7 +111,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
         Fields.theme,
         Fields.language,
         Fields.lyrics,
-        Fields.attribution,
+        Fields.attribution
       ]
     },
     {
@@ -137,7 +137,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       onClick={onSubmit}
       txFailedCb={onTxFailed}
       txSuccessCb={onTxSuccess}
-    />
+    />;
 
   return <div className='EditMetaBox'>
     <div className='EditMetaThumb'>

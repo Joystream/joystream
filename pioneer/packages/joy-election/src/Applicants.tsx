@@ -16,25 +16,24 @@ import { queryToProp } from '@polkadot/joy-utils/index';
 import { withMyAccount, MyAccountProps } from '@polkadot/joy-utils/MyAccount';
 
 type Props = ApiProps & I18nProps & MyAccountProps & {
-  candidacyLimit?: BN,
-  applicants?: Array<AccountId>
+  candidacyLimit?: BN;
+  applicants?: Array<AccountId>;
 };
 
 class Applicants extends React.PureComponent<Props> {
-
   private renderTable = (applicants: Array<AccountId>) => (
     <Table celled selectable compact>
-    <Table.Header>
-      <Table.Row>
-        <Table.HeaderCell>#</Table.HeaderCell>
-        <Table.HeaderCell>Applicant</Table.HeaderCell>
-        <Table.HeaderCell>Total stake</Table.HeaderCell>
-        <Table.HeaderCell style={{ width: '1%' }}>Actions</Table.HeaderCell>
-      </Table.Row>
-    </Table.Header>
-    <Table.Body>{applicants.map((accountId, index) => (
-      <Applicant key={index} index={index} accountId={accountId} />
-    ))}</Table.Body>
+      <Table.Header>
+        <Table.Row>
+          <Table.HeaderCell>#</Table.HeaderCell>
+          <Table.HeaderCell>Applicant</Table.HeaderCell>
+          <Table.HeaderCell>Total stake</Table.HeaderCell>
+          <Table.HeaderCell style={{ width: '1%' }}>Actions</Table.HeaderCell>
+        </Table.Row>
+      </Table.Header>
+      <Table.Body>{applicants.map((accountId, index) => (
+        <Applicant key={index} index={index} accountId={accountId} />
+      ))}</Table.Body>
     </Table>
   )
 
@@ -47,10 +46,10 @@ class Applicants extends React.PureComponent<Props> {
         <ApplyForm myAddress={myAddress} />
       </Section>
       <Section title={title}>
-      {!applicants.length
-        ? <em>No applicants yet</em>
-        : this.renderTable(applicants)
-      }
+        {!applicants.length
+          ? <em>No applicants yet</em>
+          : this.renderTable(applicants)
+        }
       </Section>
     </>;
   }

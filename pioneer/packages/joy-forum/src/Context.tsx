@@ -2,29 +2,29 @@
 // NOTE: The purpose of this context is to immitate a Substrate storage for the forum until it's implemented as a substrate runtime module.
 
 import React, { useReducer, createContext, useContext } from 'react';
-import { Category, Thread, Reply, ModerationAction, BlockchainTimestamp } from '@joystream/types/forum';
-import { Option, Text } from '@polkadot/types';
-import { GenericAccountId } from '@polkadot/types';
+import { Category, Thread, Reply, ModerationAction } from '@joystream/types/forum';
+import { BlockAndTime } from '@joystream/types/media';
+import { Option, Text, GenericAccountId } from '@polkadot/types';
 
 type CategoryId = number;
 type ThreadId = number;
 type ReplyId = number;
 
 export type ForumState = {
-  sudo?: string,
+  sudo?: string;
 
-  nextCategoryId: CategoryId,
-  categoryById: Map<CategoryId, Category>,
-  rootCategoryIds: CategoryId[],
-  categoryIdsByParentId: Map<CategoryId, CategoryId[]>,
+  nextCategoryId: CategoryId;
+  categoryById: Map<CategoryId, Category>;
+  rootCategoryIds: CategoryId[];
+  categoryIdsByParentId: Map<CategoryId, CategoryId[]>;
 
-  nextThreadId: ThreadId,
-  threadById: Map<ThreadId, Thread>,
-  threadIdsByCategoryId: Map<CategoryId, ThreadId[]>,
+  nextThreadId: ThreadId;
+  threadById: Map<ThreadId, Thread>;
+  threadIdsByCategoryId: Map<CategoryId, ThreadId[]>;
 
-  nextReplyId: ReplyId,
-  replyById: Map<ReplyId, Reply>,
-  replyIdsByThreadId: Map<ThreadId, ReplyId[]>
+  nextReplyId: ReplyId;
+  replyById: Map<ReplyId, Reply>;
+  replyIdsByThreadId: Map<ThreadId, ReplyId[]>;
 };
 
 const initialState: ForumState = {
@@ -45,58 +45,58 @@ const initialState: ForumState = {
 };
 
 type SetForumSudo = {
-  type: 'SetForumSudo',
-  sudo?: string
+  type: 'SetForumSudo';
+  sudo?: string;
 };
 
 type NewCategoryAction = {
-  type: 'NewCategory',
-  category: Category,
-  onCreated?: (newId: number) => void
+  type: 'NewCategory';
+  category: Category;
+  onCreated?: (newId: number) => void;
 };
 
 type UpdateCategoryAction = {
-  type: 'UpdateCategory',
-  category: Category,
-  id: CategoryId
+  type: 'UpdateCategory';
+  category: Category;
+  id: CategoryId;
 };
 
 type NewThreadAction = {
-  type: 'NewThread',
-  thread: Thread,
-  onCreated?: (newId: number) => void
+  type: 'NewThread';
+  thread: Thread;
+  onCreated?: (newId: number) => void;
 };
 
 type UpdateThreadAction = {
-  type: 'UpdateThread',
-  thread: Thread,
-  id: ThreadId
+  type: 'UpdateThread';
+  thread: Thread;
+  id: ThreadId;
 };
 
 type ModerateThreadAction = {
-  type: 'ModerateThread',
-  id: ThreadId,
-  moderator: string,
-  rationale: string
+  type: 'ModerateThread';
+  id: ThreadId;
+  moderator: string;
+  rationale: string;
 };
 
 type NewReplyAction = {
-  type: 'NewReply',
-  reply: Reply,
-  onCreated?: (newId: number) => void
+  type: 'NewReply';
+  reply: Reply;
+  onCreated?: (newId: number) => void;
 };
 
 type UpdateReplyAction = {
-  type: 'UpdateReply',
-  reply: Reply,
-  id: ReplyId
+  type: 'UpdateReply';
+  reply: Reply;
+  id: ReplyId;
 };
 
 type ModerateReplyAction = {
-  type: 'ModerateReply',
-  id: ReplyId,
-  moderator: string,
-  rationale: string
+  type: 'ModerateReply';
+  id: ReplyId;
+  moderator: string;
+  rationale: string;
 };
 
 type ForumAction =
@@ -111,9 +111,7 @@ type ForumAction =
   ModerateReplyAction;
 
 function reducer (state: ForumState, action: ForumAction): ForumState {
-
   switch (action.type) {
-
     case 'SetForumSudo': {
       const { sudo } = action;
       return {
@@ -223,7 +221,7 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
 
       const thread = threadById.get(id) as Thread;
       const moderation = new ModerationAction({
-        moderated_at: BlockchainTimestamp.newEmpty(),
+        moderated_at: BlockAndTime.newEmpty(),
         moderator_id: new GenericAccountId(moderator),
         rationale: new Text(rationale)
       });
@@ -288,7 +286,7 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
 
       const reply = replyById.get(id) as Reply;
       const moderation = new ModerationAction({
-        moderated_at: BlockchainTimestamp.newEmpty(),
+        moderated_at: BlockAndTime.newEmpty(),
         moderator_id: new GenericAccountId(moderator),
         rationale: new Text(rationale)
       });
@@ -314,8 +312,8 @@ function functionStub () {
 }
 
 export type ForumContextProps = {
-  state: ForumState,
-  dispatch: React.Dispatch<ForumAction>
+  state: ForumState;
+  dispatch: React.Dispatch<ForumAction>;
 };
 
 const contextStub: ForumContextProps = {

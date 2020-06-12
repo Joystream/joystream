@@ -1,4 +1,4 @@
-import React from 'react'
+import React from 'react';
 import { Button, Card, Icon, Message, SemanticICONS, Table } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 
@@ -7,13 +7,13 @@ import { Actor } from '@joystream/types/roles';
 import { IProfile } from '@joystream/types/members';
 import { Text } from '@polkadot/types';
 
-import { ActorDetailsView, MemberView, GroupMemberView, GroupLeadView } from "../elements"
-import { GroupMember, GroupLead } from "../elements";
-import { Loadable } from '@polkadot/joy-utils/index'
+import { ActorDetailsView, MemberView, GroupMemberView, GroupLeadView, GroupMember, GroupLead } from '../elements';
+
+import { Loadable } from '@polkadot/joy-utils/index';
 
 export type WorkingGroupMembership = {
-  members: GroupMember[]
-  rolesAvailable: boolean
+  members: GroupMember[];
+  rolesAvailable: boolean;
 }
 
 export const ContentCurators = Loadable<WorkingGroupMembership>(
@@ -24,7 +24,7 @@ export const ContentCurators = Loadable<WorkingGroupMembership>(
         <Message.Header>No open roles at the moment</Message.Header>
         <p>The team is full at the moment, but we intend to expand. Check back for open roles soon!</p>
       </Message>
-    )
+    );
 
     if (props.rolesAvailable) {
       message = (
@@ -36,11 +36,11 @@ export const ContentCurators = Loadable<WorkingGroupMembership>(
           <Link to="/working-groups/opportunities">
             <Button icon labelPosition="right" color="green" positive>
               Find out more
-			  <Icon name={'right arrow' as SemanticICONS} />
+              <Icon name={'right arrow' as SemanticICONS} />
             </Button>
           </Link>
         </Message>
-      )
+      );
     }
 
     return (
@@ -48,7 +48,7 @@ export const ContentCurators = Loadable<WorkingGroupMembership>(
         <h2>Content curators</h2>
         <p>
           Content Curators are responsible for ensuring that all content is uploaded correctly and in line with the terms of service.
-      </p>
+        </p>
         <Card.Group>
           {props.members.map((member, key) => (
             <GroupMemberView key={key} {...member} />
@@ -56,15 +56,15 @@ export const ContentCurators = Loadable<WorkingGroupMembership>(
         </Card.Group>
         {message}
       </section>
-    )
+    );
   }
-)
+);
 
 export type StorageAndDistributionMembership = {
-  actors: Actor[]
-  balances: Map<string, Balance>
-  memos: Map<string, Text>
-  profiles: Map<number, IProfile>
+  actors: Actor[];
+  balances: Map<string, Balance>;
+  memos: Map<string, Text>;
+  profiles: Map<number, IProfile>;
 }
 
 export const StorageAndDistribution = Loadable<StorageAndDistributionMembership>(
@@ -102,13 +102,13 @@ export const StorageAndDistribution = Loadable<StorageAndDistributionMembership>
           </Table.Body>
         </Table>
       </section>
-    )
+    );
   }
-)
+);
 
 export type GroupLeadStatus = {
-  lead?: GroupLead
-  loaded: boolean
+  lead?: GroupLead;
+  loaded: boolean;
 }
 
 export const ContentLead = Loadable<GroupLeadStatus>(
@@ -122,14 +122,14 @@ export const ContentLead = Loadable<GroupLeadStatus>(
           <p>
           This role is responsible for hiring curators, and is assigned by the platform.
           </p>
-          {props.lead ?
-          <Card.Group>
-            <GroupLeadView {...props.lead} />
-          </Card.Group>
-          : 'There is no active Content Lead assigned.'}
+          {props.lead
+            ? <Card.Group>
+              <GroupLeadView {...props.lead} />
+            </Card.Group>
+            : 'There is no active Content Lead assigned.'}
         </Message>
 
       </section>
-    )
+    );
   }
-)
+);

@@ -9,7 +9,7 @@ type Props = ViewChannelProps;
 
 export const ViewChannelView = MediaView<Props>({
   component: ViewChannel,
-  triggers: [ 'id' ],
+  triggers: ['id'],
   resolveProps: async (props) => {
     const { transport, id } = props;
     const channel = await transport.channelById(id);
@@ -19,7 +19,7 @@ export const ViewChannelView = MediaView<Props>({
 });
 
 export const ViewChannelWithRouter = (props: Props & RouteComponentProps<any>) => {
-  const { match: { params: { id }}} = props;
+  const { match: { params: { id } } } = props;
 
   if (id) {
     try {
@@ -29,5 +29,5 @@ export const ViewChannelWithRouter = (props: Props & RouteComponentProps<any>) =
     }
   }
 
-  return <JoyError title={`Invalid channel id in URL`}>{id}</JoyError>
-}
+  return <JoyError title={'Invalid channel id in URL'}>{id}</JoyError>;
+};

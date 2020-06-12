@@ -4,7 +4,7 @@ import { VideoPreviewProps, VideoPreview } from '../video/VideoPreview';
 import { MediaView } from '../MediaView';
 
 export type Props = {
-  videos?: VideoPreviewProps[]
+  videos?: VideoPreviewProps[];
 }
 
 export function AllVideos (props: Props) {
@@ -13,10 +13,10 @@ export function AllVideos (props: Props) {
   return videos.length === 0
     ? <em>No videos found</em>
     : <Section title={`All videos (${videos.length})`} className='ListOfVideos'>
-        {videos.map((x) =>
-          <VideoPreview key={x.id} {...x} withChannel />
-        )}
-      </Section>
+      {videos.map((x) =>
+        <VideoPreview key={x.id} {...x} withChannel />
+      )}
+    </Section>;
 }
 
 export const AllVideosView = MediaView<Props>({
@@ -24,4 +24,4 @@ export const AllVideosView = MediaView<Props>({
   resolveProps: async ({ transport }) => ({
     videos: await transport.allPublicVideos()
   })
-})
+});

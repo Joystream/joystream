@@ -10,33 +10,33 @@ type Props = PlayVideoProps;
 
 export const PlayVideoView = MediaView<Props>({
   component: PlayVideo,
-  triggers: [ 'id' ],
+  triggers: ['id'],
   resolveProps: async (props) => {
-    const { transport, id } = props
+    const { transport, id } = props;
 
-    const video = await transport.videoById(id)
-    if (!video) return {}
+    const video = await transport.videoById(id);
+    if (!video) return {};
 
-    const channelId = new ChannelId(video.channelId)
-    const channel = await transport.channelById(channelId)
+    const channelId = new ChannelId(video.channelId);
+    const channel = await transport.channelById(channelId);
     const moreChannelVideos = (await transport.videosByChannelId(channelId, 5, x => x.id !== video.id));
-    const featuredVideos = await transport.featuredVideos()
-    const mediaObject = video.object
+    const featuredVideos = await transport.featuredVideos();
+    const mediaObject = video.object;
 
-    return { channel, mediaObject, video, moreChannelVideos, featuredVideos }
+    return { channel, mediaObject, video, moreChannelVideos, featuredVideos };
   }
 });
 
 export const PlayVideoWithRouter = (props: Props & RouteComponentProps<any>) => {
-  const { match: { params: { id }}} = props;
+  const { match: { params: { id } } } = props;
 
   if (id) {
     try {
-      return <PlayVideoView {...props} id={new EntityId(id)} />
+      return <PlayVideoView {...props} id={new EntityId(id)} />;
     } catch (err) {
       console.log('PlayVideoWithRouter failed:', err);
     }
   }
 
-  return <JoyError title={`Invalid video id in URL`}>{id}</JoyError>
-}
+  return <JoyError title={'Invalid video id in URL'}>{id}</JoyError>;
+};

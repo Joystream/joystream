@@ -20,7 +20,9 @@ pub struct BlockAndTime<BlockNumber, Moment> {
     pub time: Moment,
 }
 
-/// Gathers current block and time information for the runtime
+/// Gathers current block and time information for the runtime.
+/// If this function is used inside a config() at genesis the timestamp will be 0
+/// because the timestamp is actually produced by validators.
 pub fn current_block_time<T: system::Trait + timestamp::Trait>(
 ) -> BlockAndTime<T::BlockNumber, T::Moment> {
     BlockAndTime {

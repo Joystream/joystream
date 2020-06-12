@@ -12,10 +12,15 @@ import { withCalls } from '@polkadot/react-api';
 import translate from './translate';
 import { formatNumber } from '@polkadot/util';
 
+import { SessionIndex } from '@polkadot/types/interfaces';
+import { u64 } from '@polkadot/types/primitive';
+
 interface Props extends I18nProps {
   sessionInfo?: DerivedSessionInfo;
   withEra?: boolean;
   withSession?: boolean;
+  epochIndex?: u64;
+  currentEraStartSessionIndex?: SessionIndex;
 }
 
 function renderSession ({ sessionInfo, t, withSession = true }: Props): React.ReactNode {
@@ -44,12 +49,15 @@ function renderSession ({ sessionInfo, t, withSession = true }: Props): React.Re
     );
 }
 
-function renderEra ({ sessionInfo, t, withEra = true }: Props): React.ReactNode {
-  if (!withEra || !sessionInfo) {
+function renderEra ({ sessionInfo, t, withEra = true, epochIndex, currentEraStartSessionIndex }: Props): React.ReactNode {
+  if (!withEra || !sessionInfo || !epochIndex || !currentEraStartSessionIndex) {
     return null;
   }
 
   const label = t('era');
+  const { sessionLength, sessionProgress } = sessionInfo;
+  // eraProgress is calculated the wrong way in polkadot/api v0.96.1 (fixed in v0.97.1)
+  const eraProgress = epochIndex.sub(currentEraStartSessionIndex).mul(sessionLength).add(sessionProgress);
 
   return sessionInfo.sessionLength.gtn(0)
     ? (
@@ -57,7 +65,7 @@ function renderEra ({ sessionInfo, t, withEra = true }: Props): React.ReactNode 
         label={label}
         progress={{
           total: sessionInfo.eraLength,
-          value: sessionInfo.eraProgress
+          value: eraProgress
         }}
       />
     )
@@ -79,6 +87,8 @@ function SummarySession (props: Props): React.ReactElement<Props> {
 
 export default translate(
   withCalls<Props>(
-    ['derive.session.info', { propName: 'sessionInfo' }]
+    ['derive.session.info', { propName: 'sessionInfo' }],
+    ['query.babe.epochIndex', { propName: 'epochIndex' }],
+    ['query.staking.currentEraStartSessionIndex', { propName: 'currentEraStartSessionIndex' }]
   )(SummarySession)
 );

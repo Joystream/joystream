@@ -12,9 +12,9 @@ import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
 import { FlexCenter } from '@polkadot/joy-utils/FlexCenter';
 
 type ViewReplyProps = {
-  reply: Post,
-  thread: Thread,
-  category: Category
+  reply: Post;
+  thread: Thread;
+  category: Category;
 };
 
 export function ViewReply (props: ViewReplyProps) {
@@ -35,7 +35,7 @@ export function ViewReply (props: ViewReplyProps) {
     if (!reply.moderation) return null;
 
     return <>
-      <JoyWarn title={`This reply is moderated. Rationale:`}>
+      <JoyWarn title={'This reply is moderated. Rationale:'}>
         <ReactMarkdown className='JoyMemo--full' source={reply.moderation.rationale} linkTarget='_blank' />
       </JoyWarn>
     </>;

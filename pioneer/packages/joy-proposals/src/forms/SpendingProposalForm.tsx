@@ -1,7 +1,7 @@
-import React from "react";
-import { getFormErrorLabelsProps } from "./errorHandling";
-import * as Yup from "yup";
-import { Label } from "semantic-ui-react";
+import React from 'react';
+import { getFormErrorLabelsProps } from './errorHandling';
+import * as Yup from 'yup';
+import { Label } from 'semantic-ui-react';
 import {
   GenericProposalForm,
   GenericFormValues,
@@ -11,13 +11,13 @@ import {
   ProposalFormExportProps,
   ProposalFormContainerProps,
   ProposalFormInnerProps
-} from "./GenericProposalForm";
-import Validation from "../validationSchema";
-import { InputFormField, FormField } from "./FormFields";
-import { withFormContainer } from "./FormContainer";
-import { InputAddress } from "@polkadot/react-components/index";
-import { formatBalance } from "@polkadot/util";
-import "./forms.css";
+} from './GenericProposalForm';
+import Validation from '../validationSchema';
+import { InputFormField, FormField } from './FormFields';
+import { withFormContainer } from './FormContainer';
+import { InputAddress } from '@polkadot/react-components/index';
+import { formatBalance } from '@polkadot/util';
+import './forms.css';
 
 type FormValues = GenericFormValues & {
   destinationAccount: any;
@@ -26,8 +26,8 @@ type FormValues = GenericFormValues & {
 
 const defaultValues: FormValues = {
   ...genericFormDefaultValues,
-  destinationAccount: "",
-  tokens: ""
+  destinationAccount: '',
+  tokens: ''
 };
 
 type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
@@ -47,7 +47,7 @@ const SpendingProposalForm: React.FunctionComponent<FormInnerProps> = props => {
         props.myMemberId,
         values.title,
         values.rationale,
-        "{STAKE}",
+        '{STAKE}',
         values.tokens,
         values.destinationAccount
       ]}
@@ -68,7 +68,7 @@ const SpendingProposalForm: React.FunctionComponent<FormInnerProps> = props => {
         help="The account you propose to send the tokens into"
       >
         <InputAddress
-          onChange={address => setFieldValue("destinationAccount", address)}
+          onChange={address => setFieldValue('destinationAccount', address)}
           type="all"
           placeholder="Select Destination Account"
           value={values.destinationAccount}
@@ -90,7 +90,7 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     destinationAccount: Validation.Spending.destinationAccount
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
-  displayName: "SpendingProposalsForm"
+  displayName: 'SpendingProposalsForm'
 })(SpendingProposalForm);
 
 export default withProposalFormData<FormContainerProps, ExportComponentProps>(FormContainer);

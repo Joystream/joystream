@@ -1,3 +1,3 @@
 export enum WorkingGroups {
-  ContentCurators = "curators",
+  ContentCurators = 'curators',
 }

@@ -21,45 +21,45 @@ const PLAYER_COMMON_PARAMS = {
   lang: 'en',
   autoplay: true,
   theme: '#2185d0'
-}
+};
 
 // This is just a part of Player's methods that are used in this component.
 // To see all the methods available on APlayer and DPlayer visit the next URLs:
 // http://aplayer.js.org/#/home?id=api
 // http://dplayer.js.org/#/home?id=api
 interface PartOfPlayer {
-  pause: () => void
-  destroy: () => void
+  pause: () => void;
+  destroy: () => void;
 }
 
 export type RequiredMediaPlayerProps = {
-  channel: ChannelEntity
-  video: VideoType
-  contentId: ContentId
+  channel: ChannelEntity;
+  video: VideoType;
+  contentId: ContentId;
 }
 
 type ContentProps = {
-  contentType?: string
-  dataObjectOpt?: Option<DataObject>
-  resolvedAssetUrl?: string
+  contentType?: string;
+  dataObjectOpt?: Option<DataObject>;
+  resolvedAssetUrl?: string;
 }
 
 type MediaPlayerViewProps = ApiProps & I18nProps &
-  DiscoveryProviderProps & RequiredMediaPlayerProps & ContentProps
+DiscoveryProviderProps & RequiredMediaPlayerProps & ContentProps
 
 type PlayerProps = RequiredMediaPlayerProps & ContentProps
 
-function Player(props: PlayerProps) {
-  const { video, resolvedAssetUrl: url, contentType = 'video/video' } = props
-  const { thumbnail: cover } = video
-  const prefix = contentType.substring(0, contentType.indexOf('/'))
+function Player (props: PlayerProps) {
+  const { video, resolvedAssetUrl: url, contentType = 'video/video' } = props;
+  const { thumbnail: cover } = video;
+  const prefix = contentType.substring(0, contentType.indexOf('/'));
 
-  const [ player, setPlayer ] = useState<PartOfPlayer>()
+  const [player, setPlayer] = useState<PartOfPlayer>();
 
   const onPlayerCreated = (newPlayer: PartOfPlayer) => {
-    console.log('onPlayerCreated:', newPlayer)
-    setPlayer(newPlayer)
-  }
+    console.log('onPlayerCreated:', newPlayer);
+    setPlayer(newPlayer);
+  };
 
   const destroyPlayer = () => {
     if (!player) return;
@@ -67,14 +67,14 @@ function Player(props: PlayerProps) {
     console.log('Destroy the current player');
     player.pause();
     player.destroy();
-    setPlayer(undefined)
-  }
+    setPlayer(undefined);
+  };
 
   useEffect(() => {
     return () => {
-      destroyPlayer()
-    }
-  }, [ url ])
+      destroyPlayer();
+    };
+  }, [url]);
 
   if (prefix === 'video') {
     const video = { url, name, pic: cover };
@@ -94,22 +94,22 @@ function Player(props: PlayerProps) {
     />;
   }
 
-  return <JoyError title={`Unsupported type of content`}>{contentType}</JoyError>
+  return <JoyError title={'Unsupported type of content'}>{contentType}</JoyError>;
 }
 
-function InnerComponent(props: MediaPlayerViewProps) {
-  const { video, resolvedAssetUrl: url } = props
+function InnerComponent (props: MediaPlayerViewProps) {
+  const { video, resolvedAssetUrl: url } = props;
 
   const { dataObjectOpt, channel } = props;
-  if (!dataObjectOpt || dataObjectOpt.isNone ) {
+  if (!dataObjectOpt || dataObjectOpt.isNone) {
     return null;
   }
 
   // TODO extract and show the next info from dataObject:
   // {"owner":"5GSMNn8Sy8k64mGUWPDafjMZu9bQNX26GujbBQ1LeJpNbrfg","added_at":{"block":2781,"time":1582750854000},"type_id":1,"size":3664485,"liaison":"5HN528fspu4Jg3KXWm7Pu7aUK64RSBz2ZSbwo1XKR9iz3hdY","liaison_judgement":1,"ipfs_content_id":"QmNk4QczoJyPTAKdfoQna6KhAz3FwfjpKyRBXAZHG5djYZ"}
 
-  const { myAccountId } = useMyMembership()
-  const iAmOwner = isAccountAChannelOwner(channel, myAccountId)
+  const { myAccountId } = useMyMembership();
+  const iAmOwner = isAccountAChannelOwner(channel, myAccountId);
 
   return (
     <div className='PlayBox'>
@@ -138,6 +138,6 @@ export const MediaPlayerView = withMulti(
   translate,
   withCalls<MediaPlayerViewProps>(
     ['query.dataDirectory.dataObjectByContentId',
-      { paramName: 'contentId', propName: 'dataObjectOpt' } ]
+      { paramName: 'contentId', propName: 'dataObjectOpt' }]
   )
-)
+);

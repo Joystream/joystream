@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import moment from 'moment'
+import React, { useEffect, useState } from 'react';
+import moment from 'moment';
 import { Header, Card, Icon, Image, Label, Statistic } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 
@@ -12,28 +12,28 @@ import { Text, GenericAccountId } from '@polkadot/types';
 import { LeadRoleState } from '@joystream/types/content-working-group';
 
 type ActorProps = {
-  actor: Actor
+  actor: Actor;
 }
 
 type BalanceProps = {
-  balance?: Balance
+  balance?: Balance;
 }
 
-export function BalanceView(props: BalanceProps) {
+export function BalanceView (props: BalanceProps) {
   return (
     <div className="balance">
       <span>Balance:</span> {formatBalance(props.balance)}
     </div>
-  )
+  );
 }
 
 type MemoProps = ActorProps & {
-  memo?: Text
+  memo?: Text;
 }
 
-export function MemoView(props: MemoProps) {
-  if (typeof props.memo === "undefined") {
-    return null
+export function MemoView (props: MemoProps) {
+  if (typeof props.memo === 'undefined') {
+    return null;
   }
 
   return (
@@ -41,29 +41,29 @@ export function MemoView(props: MemoProps) {
       <span>Memo:</span> {props.memo.toString()}
       <Link to={`/addressbook/memo/${props.actor.account.toString()}`}>{' view full memo'}</Link>
     </div>
-  )
+  );
 }
 
 type ProfileProps = {
-  profile: IProfile
+  profile: IProfile;
 }
 
-export function HandleView(props: ProfileProps) {
-  if (typeof props.profile === "undefined") {
-    return null
+export function HandleView (props: ProfileProps) {
+  if (typeof props.profile === 'undefined') {
+    return null;
   }
 
   return (
     <Link to={`/members/${props.profile.handle.toString()}`}>{props.profile.handle.toString()}</Link>
-  )
+  );
 }
 
 type MemberProps = ActorProps & BalanceProps & ProfileProps
 
-export function MemberView(props: MemberProps) {
-  let avatar = <Identicon value={props.actor.account.toString()} size={50} />
-  if (typeof props.profile.avatar_uri !== "undefined" && props.profile.avatar_uri.toString() != "") {
-    avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />
+export function MemberView (props: MemberProps) {
+  let avatar = <Identicon value={props.actor.account.toString()} size={50} />;
+  if (typeof props.profile.avatar_uri !== 'undefined' && props.profile.avatar_uri.toString() !== '') {
+    avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />;
   }
 
   return (
@@ -74,50 +74,50 @@ export function MemberView(props: MemberProps) {
         <BalanceView balance={props.balance} />
       </Header.Content>
     </Header>
-  )
+  );
 }
 
 type ActorDetailsProps = MemoProps & BalanceProps
 
-export function ActorDetailsView(props: ActorDetailsProps) {
+export function ActorDetailsView (props: ActorDetailsProps) {
   return (
     <div className="actor-summary" id={props.actor.account.toString()}>
       {props.actor.account.toString()}
       <MemoView actor={props.actor} memo={props.memo} />
     </div>
-  )
+  );
 }
 
 export type GroupMember = {
-  memberId: MemberId
-  roleAccount: GenericAccountId
-  profile: IProfile
-  title: string
-  stake?: Balance
-  earned?: Balance
+  memberId: MemberId;
+  roleAccount: GenericAccountId;
+  profile: IProfile;
+  title: string;
+  stake?: Balance;
+  earned?: Balance;
 }
 
 export type GroupLead = {
-  memberId: MemberId
-  roleAccount: GenericAccountId
-  profile: IProfile
-  title: string
-  stage: LeadRoleState
+  memberId: MemberId;
+  roleAccount: GenericAccountId;
+  profile: IProfile;
+  title: string;
+  stage: LeadRoleState;
 }
 
 type inset = {
-  inset?: boolean
+  inset?: boolean;
 }
 
-export function GroupLeadView(props: GroupLead & inset) {
-  let fluid = false
-  if (typeof props.inset !== "undefined") {
-    fluid = props.inset
+export function GroupLeadView (props: GroupLead & inset) {
+  let fluid = false;
+  if (typeof props.inset !== 'undefined') {
+    fluid = props.inset;
   }
 
-  let avatar = <Identicon value={props.roleAccount.toString()} size={50} />
-  if (typeof props.profile.avatar_uri !== "undefined" && props.profile.avatar_uri.toString() != "") {
-    avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />
+  let avatar = <Identicon value={props.roleAccount.toString()} size={50} />;
+  if (typeof props.profile.avatar_uri !== 'undefined' && props.profile.avatar_uri.toString() !== '') {
+    avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />;
   }
 
   return (
@@ -130,9 +130,9 @@ export function GroupLeadView(props: GroupLead & inset) {
         <Card.Meta>{props.title}</Card.Meta>
         <Card.Description>
           <Label color='teal' ribbon={fluid}>
-          <Icon name="shield" />
+            <Icon name="shield" />
           Content Lead
-          <Label.Detail>{/* ... */}</Label.Detail>
+            <Label.Detail>{/* ... */}</Label.Detail>
           </Label>
         </Card.Description>
       </Card.Content>
@@ -140,40 +140,40 @@ export function GroupLeadView(props: GroupLead & inset) {
         <Label>Something about <Label.Detail> the lead </Label.Detail></Label>
       </Card.Content> */}
     </Card>
-  )
+  );
 }
 
-export function GroupMemberView(props: GroupMember & inset) {
-  let fluid = false
-  if (typeof props.inset !== "undefined") {
-    fluid = props.inset
+export function GroupMemberView (props: GroupMember & inset) {
+  let fluid = false;
+  if (typeof props.inset !== 'undefined') {
+    fluid = props.inset;
   }
 
-  let stake = null
-  if (typeof props.stake !== "undefined" && props.stake.toNumber() !== 0) {
+  let stake = null;
+  if (typeof props.stake !== 'undefined' && props.stake.toNumber() !== 0) {
     stake = (
       <Label color='green' ribbon={fluid}>
         <Icon name="shield" />
         Staked
         <Label.Detail>{formatBalance(props.stake)}</Label.Detail>
       </Label>
-    )
+    );
   }
 
-  let avatar = <Identicon value={props.roleAccount.toString()} size={50} />
-  if (typeof props.profile.avatar_uri !== "undefined" && props.profile.avatar_uri.toString() != "") {
-    avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />
+  let avatar = <Identicon value={props.roleAccount.toString()} size={50} />;
+  if (typeof props.profile.avatar_uri !== 'undefined' && props.profile.avatar_uri.toString() !== '') {
+    avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />;
   }
 
-  let earned = null
-  if (typeof props.earned !== "undefined" &&
+  let earned = null;
+  if (typeof props.earned !== 'undefined' &&
     props.earned.toNumber() > 0 &&
     !fluid) {
     earned = (
       <Card.Content extra>
         <Label>Earned <Label.Detail>{formatBalance(props.earned)}</Label.Detail></Label>
       </Card.Content>
-    )
+    );
   }
 
   return (
@@ -190,35 +190,35 @@ export function GroupMemberView(props: GroupMember & inset) {
       </Card.Content>
       {earned}
     </Card>
-  )
+  );
 }
 
 type CountdownProps = {
-  end: Date
+  end: Date;
 }
 
-export function Countdown(props: CountdownProps) {
-  let interval: number = -1
+export function Countdown (props: CountdownProps) {
+  let interval = -1;
 
-  const [days, setDays] = useState<number | undefined>(undefined)
-  const [hours, setHours] = useState<number | undefined>(undefined)
-  const [minutes, setMinutes] = useState<number | undefined>(undefined)
-  const [seconds, setSeconds] = useState<number | undefined>(undefined)
+  const [days, setDays] = useState<number | undefined>(undefined);
+  const [hours, setHours] = useState<number | undefined>(undefined);
+  const [minutes, setMinutes] = useState<number | undefined>(undefined);
+  const [seconds, setSeconds] = useState<number | undefined>(undefined);
 
   const update = () => {
-    const then = moment(props.end)
-    const now = moment()
-    const d = moment.duration(then.diff(now))
-    setDays(d.days())
-    setHours(d.hours())
-    setMinutes(d.minutes())
-    setSeconds(d.seconds())
-  }
+    const then = moment(props.end);
+    const now = moment();
+    const d = moment.duration(then.diff(now));
+    setDays(d.days());
+    setHours(d.hours());
+    setMinutes(d.minutes());
+    setSeconds(d.seconds());
+  };
 
   interval = window.setInterval(update, 1000);
 
   useEffect(() => {
-    update()
+    update();
     return () => {
       clearInterval(interval);
     };
@@ -247,5 +247,5 @@ export function Countdown(props: CountdownProps) {
         <Statistic.Label>seconds</Statistic.Label>
       </Statistic>
     </div>
-  )
+  );
 }

@@ -19,7 +19,6 @@ import { ViewThreadById } from './ViewThread';
 type Props = AppProps & I18nProps & {};
 
 class App extends React.PureComponent<Props> {
-
   private buildTabs (): TabItem[] {
     const { t } = this.props;
     return [
@@ -45,34 +44,34 @@ class App extends React.PureComponent<Props> {
     const tabs = this.buildTabs();
     return (
       <ForumProvider>
-      <ForumSudoProvider>
-      <main className='forum--App'>
-        <header>
-          <Tabs basePath={basePath} items={tabs} />
-        </header>
-        <Switch>
-          <Route path={`${basePath}/sudo`} component={EditForumSudo} />
+        <ForumSudoProvider>
+          <main className='forum--App'>
+            <header>
+              <Tabs basePath={basePath} items={tabs} />
+            </header>
+            <Switch>
+              <Route path={`${basePath}/sudo`} component={EditForumSudo} />
 
-          <Route path={`${basePath}/categories/new`} component={NewCategory} />
-          <Route path={`${basePath}/categories/:id/newSubcategory`} component={NewSubcategory} />
-          <Route path={`${basePath}/categories/:id/newThread`} component={NewThread} />
-          <Route path={`${basePath}/categories/:id/edit`} component={EditCategory} />
-          <Route path={`${basePath}/categories/:id/page/:page`} component={ViewCategoryById} />
-          <Route path={`${basePath}/categories/:id`} component={ViewCategoryById} />
-          <Route path={`${basePath}/categories`} component={CategoryList} />
+              <Route path={`${basePath}/categories/new`} component={NewCategory} />
+              <Route path={`${basePath}/categories/:id/newSubcategory`} component={NewSubcategory} />
+              <Route path={`${basePath}/categories/:id/newThread`} component={NewThread} />
+              <Route path={`${basePath}/categories/:id/edit`} component={EditCategory} />
+              <Route path={`${basePath}/categories/:id/page/:page`} component={ViewCategoryById} />
+              <Route path={`${basePath}/categories/:id`} component={ViewCategoryById} />
+              <Route path={`${basePath}/categories`} component={CategoryList} />
 
-          <Route path={`${basePath}/threads/:id/reply`} component={NewReply} />
-          <Route path={`${basePath}/threads/:id/edit`} component={EditThread} />
-          <Route path={`${basePath}/threads/:id/page/:page`} component={ViewThreadById} />
-          <Route path={`${basePath}/threads/:id`} component={ViewThreadById} />
+              <Route path={`${basePath}/threads/:id/reply`} component={NewReply} />
+              <Route path={`${basePath}/threads/:id/edit`} component={EditThread} />
+              <Route path={`${basePath}/threads/:id/page/:page`} component={ViewThreadById} />
+              <Route path={`${basePath}/threads/:id`} component={ViewThreadById} />
 
-          <Route path={`${basePath}/replies/:id/edit`} component={EditReply} />
-          {/* <Route path={`${basePath}/replies/:id`} component={ViewReplyById} /> */}
+              <Route path={`${basePath}/replies/:id/edit`} component={EditReply} />
+              {/* <Route path={`${basePath}/replies/:id`} component={ViewReplyById} /> */}
 
-          <Route component={CategoryList} />
-        </Switch>
-      </main>
-      </ForumSudoProvider>
+              <Route component={CategoryList} />
+            </Switch>
+          </main>
+        </ForumSudoProvider>
       </ForumProvider>
     );
   }

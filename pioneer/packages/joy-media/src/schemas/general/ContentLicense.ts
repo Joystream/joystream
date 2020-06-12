@@ -11,22 +11,22 @@ export const ContentLicenseValidationSchema = Yup.object().shape({
 });
 
 export type ContentLicenseFormValues = {
-  value: string
+  value: string;
 };
 
 export type ContentLicenseType = {
-  classId: number
-  inClassSchemaIndexes: number[]
-  id: number
-  value: string
+  classId: number;
+  inClassSchemaIndexes: number[];
+  id: number;
+  value: string;
 };
 
 export class ContentLicenseCodec extends EntityCodec<ContentLicenseType> { }
 
-export function ContentLicenseToFormValues(entity?: ContentLicenseType): ContentLicenseFormValues {
+export function ContentLicenseToFormValues (entity?: ContentLicenseType): ContentLicenseFormValues {
   return {
-    value: entity && entity.value || ''
-  }
+    value: (entity && entity.value) || ''
+  };
 }
 
 export type ContentLicensePropId =
@@ -34,14 +34,14 @@ export type ContentLicensePropId =
   ;
 
 export type ContentLicenseGenericProp = {
-  id: ContentLicensePropId,
-  type: string,
-  name: string,
-  description?: string,
-  required?: boolean,
-  maxItems?: number,
-  maxTextLength?: number,
-  classId?: any
+  id: ContentLicensePropId;
+  type: string;
+  name: string;
+  description?: string;
+  required?: boolean;
+  maxItems?: number;
+  maxTextLength?: number;
+  classId?: any;
 };
 
 type ContentLicenseClassType = {
@@ -50,11 +50,11 @@ type ContentLicenseClassType = {
 
 export const ContentLicenseClass: ContentLicenseClassType = {
   value: {
-    "id": "value",
-    "name": "Value",
-    "description": "The license of which the content is originally published under.",
-    "type": "Text",
-    "required": true,
-    "maxTextLength": 200
+    id: 'value',
+    name: 'Value',
+    description: 'The license of which the content is originally published under.',
+    type: 'Text',
+    required: true,
+    maxTextLength: 200
   }
 };

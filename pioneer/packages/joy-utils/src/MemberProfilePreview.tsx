@@ -1,7 +1,7 @@
-import React from "react";
-import { Image } from "semantic-ui-react";
-import { IdentityIcon } from "@polkadot/react-components";
-import { Link } from "react-router-dom";
+import React from 'react';
+import { Image } from 'semantic-ui-react';
+import { IdentityIcon } from '@polkadot/react-components';
+import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 
 type ProfileItemProps = {
@@ -38,7 +38,7 @@ const DetailsID = styled.div`
   color: #777;
 `;
 
-export default function ProfilePreview({ id, avatar_uri, root_account, handle, link = false }: ProfileItemProps) {
+export default function ProfilePreview ({ id, avatar_uri, root_account, handle, link = false }: ProfileItemProps) {
   const Preview = (
     <StyledProfilePreview>
       {avatar_uri ? (
@@ -54,7 +54,7 @@ export default function ProfilePreview({ id, avatar_uri, root_account, handle, l
   );
 
   if (link) {
-    return <Link to={ `/members/${ handle }` }>{ Preview }</Link>;
+    return <Link to={ `/members/${handle}` }>{ Preview }</Link>;
   }
 
   return Preview;

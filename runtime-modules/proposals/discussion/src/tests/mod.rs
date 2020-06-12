@@ -37,7 +37,7 @@ fn assert_thread_content(thread_entry: TestThreadEntry, post_entries: Vec<TestPo
     assert!(<ThreadById<Test>>::exists(thread_entry.thread_id));
 
     let actual_thread = <ThreadById<Test>>::get(thread_entry.thread_id);
-    let expected_thread = Thread {
+    let expected_thread = DiscussionThread {
         title: thread_entry.title,
         created_at: 1,
         author_id: 1,
@@ -47,7 +47,7 @@ fn assert_thread_content(thread_entry: TestThreadEntry, post_entries: Vec<TestPo
     for post_entry in post_entries {
         let actual_post =
             <PostThreadIdByPostId<Test>>::get(thread_entry.thread_id, post_entry.post_id);
-        let expected_post = Post {
+        let expected_post = DiscussionPost {
             text: post_entry.text,
             created_at: 1,
             updated_at: 1,
