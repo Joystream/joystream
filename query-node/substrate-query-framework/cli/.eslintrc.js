@@ -9,7 +9,7 @@ module.exports = {
 	parserOptions: {
         project: './tsconfig.json',
         tsconfigRootDir: __dirname,
-        debugLevel: true
+        //debugLevel: true
 	},
 	plugins: ["@typescript-eslint"]
 }

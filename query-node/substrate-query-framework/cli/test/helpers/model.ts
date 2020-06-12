@@ -2,6 +2,7 @@ import { WarthogModel, Field } from "../../src/model";
 
 const threadObjType = {
     name: "Thread",
+    isEntity: true,
     fields: [new Field("initial_body_text", "String"),  
         new Field("title", "String"), 
         new Field("id", "ID")]
@@ -9,12 +10,13 @@ const threadObjType = {
 
 const postObjType = {
     name: "Post",
+    isEntity: true,
     fields: [new Field("initial_body_text", "String"), 
         new Field("title", "String"), 
         new Field("id", "ID")]
 }
 
-const createModel = () => {
+const createModel = ():WarthogModel => {
     const warthogModel = new WarthogModel();
     warthogModel.addObjectType(threadObjType);
     warthogModel.addObjectType(postObjType);

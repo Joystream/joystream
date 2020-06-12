@@ -5,7 +5,7 @@ const prettierOptions: Prettier.Options = {
   endOfLine: 'auto',
 };
 
-export function formatWithPrettier(text: string, options: Prettier.Options = prettierOptions) {
+export function formatWithPrettier(text: string, options: Prettier.Options = prettierOptions):string {
   let formatted = '';
   try {
     formatted = Prettier.format(text, options);

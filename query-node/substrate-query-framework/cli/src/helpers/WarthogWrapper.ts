@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as dotenv from 'dotenv';
 import Command from '@oclif/command';
 import { copyFileSync } from 'fs-extra';
-const warthogCli = require('warthog/dist/cli/cli');
+import { cli as warthogCli } from '../index';
 
 import { DatabaseModelCodeGenerator } from './ModelCodeGenerator';
 import { getTemplatePath, createFile, createDir } from '../utils/utils';
@@ -24,7 +24,7 @@ export default class WarthogWrapper {
     this.schemaPath = schemaPath;
   }
 
-  async run() {
+  async run():Promise<void> {
     // Order of calling functions is important!!!
     await this.newProject();
 
@@ -36,23 +36,23 @@ export default class WarthogWrapper {
 
     this.codegen();
 
-    await this.createMigrations();
+    this.createMigrations();
 
     this.generateQueries();
 
-    await this.runMigrations();
+    this.runMigrations();
   }
 
   async generateAPIPreview(): Promise<void> {
     // Order of calling functions is important!!!
     await this.newProject();
     this.installDependencies();
-    this.createModels();
+    await this.createModels();
     this.codegen();
     this.generateQueries();
   }
 
-  async newProject(projectName: string = 'query_node') {
+  async newProject(projectName = 'query_node'):Promise<void> {
     await warthogCli.run(`new ${projectName}`);
 
     // Override warthog's index.ts file for custom naming strategy
@@ -61,13 +61,13 @@ export default class WarthogWrapper {
     this.updateDotenv();
   }
 
-  installDependencies() {
+  installDependencies():void {
     if (!fs.existsSync('package.json')) {
       this.command.error('Could not found package.json file in the current working directory');
     }
 
     // Temporary tslib fix
-    let pkgFile = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    const pkgFile = JSON.parse(fs.readFileSync('package.json', 'utf8')) as Record<string, Record<string, unknown>>; 
     pkgFile.resolutions['tslib'] = '1.11.2';
     pkgFile.scripts['sync'] = 'SYNC=true WARTHOG_DB_SYNCHRONIZE=true ts-node-dev --type-check src/index.ts';
     fs.writeFileSync('package.json', JSON.stringify(pkgFile, null, 2));
@@ -79,14 +79,14 @@ export default class WarthogWrapper {
     this.command.log('done...');
   }
 
-  async createDB() {
+  async createDB():Promise<void> {
     await warthogCli.run('db:create');
   }
 
   /**
    * Generate model/resolver/service for input types in schema.json
    */
-  async createModels() {
+  async createModels():Promise<void> {
     const schemaPath = path.resolve(process.cwd(), this.schemaPath);
 
     const modelGenerator = new DatabaseModelCodeGenerator(schemaPath);
@@ -95,34 +95,38 @@ export default class WarthogWrapper {
     debug(`Genetated Warthog Model: ${JSON.stringify(this.model, null, 2)}`);
 
     const commands = this.model.toWarthogStringDefinitions()
-      .map(modelString => ['yarn warthog generate', modelString].join(' '));
+      .map(modelString => ['generate', modelString].join(' '));
 
     // Execute commands
-    commands.forEach(async command => {
-      if (command) {
-        // Doesnt wait for the process to finish
-        // await warthogCli.run(command);
+    const runAll = async () => {
+      for (const command of commands) {
+        if (command) {
+          // Doesnt wait for the process to finish
+          debug(`Running ${command}`);
+          await warthogCli.run(command);
 
-        // it waits till it's done
-        execSync(command);
+          // it waits till it's done
+          //execSync(command);
+        }
       }
-    });
+    }
+    await runAll();
   }
 
-  async codegen() {
+  codegen():void {
     execSync('yarn warthog codegen && yarn dotenv:generate');
   }
 
-  async createMigrations() {
+  createMigrations():void {
     execSync('yarn sync');
   }
 
-  async runMigrations() {
+  runMigrations():void {
       debug('performing migrations');
       execSync('yarn db:migrate');
   }
 
-  generateQueries() {
+  generateQueries():void {
       if (!this.model) {
           throw new Error("Warthog model is undefined");
       }
@@ -171,7 +175,7 @@ export default class WarthogWrapper {
     createFile(destFullPath, transformed, true);
   }
 
-  updateDotenv() {
+  updateDotenv():void {
     // copy dotnenvi env.yml file 
     debug("Creating graphql-server/env.yml")
     copyFileSync(getTemplatePath('warthog.env.yml'), path.resolve(process.cwd(), 'env.yml'));
