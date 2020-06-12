@@ -8,7 +8,7 @@
   },
   "bugs": "https://github.com/Joystream/substrate-runtime-joystream/issues",
   "dependencies": {
-    "@joystream/types": "^0.10.0",
+    "@joystream/types": "./types",
     "@oclif/command": "^1.5.19",
     "@oclif/config": "^1.14.0",
     "@oclif/plugin-help": "^2.2.3",
