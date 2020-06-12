@@ -59,7 +59,7 @@ function ProposalPreviewList ({ bestNumber }: ProposalPreviewListProps) {
   const filteredProposals = proposalsMap.get(activeFilter) as ParsedProposal[];
 
   return (
-    <Container className="Proposal">
+    <Container className="Proposal" fluid>
       <PromiseComponent error={ error } loading={ loading } message="Fetching proposals...">
         <Menu tabular className="list-menu">
           {filters.map((filter, idx) => (
