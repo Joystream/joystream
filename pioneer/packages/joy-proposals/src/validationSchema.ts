@@ -100,7 +100,7 @@ type ValidationType = {
     description: Yup.StringSchema<string>;
   };
   RuntimeUpgrade: {
-    WASM: Yup.StringSchema<string>;
+    WASM: Yup.MixedSchema<any>;
   };
   SetElectionParameters: {
     announcingPeriod: Yup.NumberSchema<number>;
@@ -157,10 +157,10 @@ const Validation: ValidationType = {
       .max(DESCRIPTION_MAX_LENGTH, `Description should be under ${DESCRIPTION_MAX_LENGTH}`)
   },
   RuntimeUpgrade: {
-    WASM: Yup.string()
-      .required('A file is required')
-      .min(FILE_SIZE_BYTES_MIN, 'File is empty.')
-      .max(FILE_SIZE_BYTES_MAX, `The maximum file size is ${FILE_SIZE_BYTES_MAX} bytes.`)
+    WASM: Yup.mixed()
+      .test('fileArrayBuffer', 'Unexpected data format, file cannot be processed.', value => typeof value.byteLength !== 'undefined')
+      .test('fileSizeMin', `Minimum file size is ${FILE_SIZE_BYTES_MIN} bytes.`, value => value.byteLength >= FILE_SIZE_BYTES_MIN)
+      .test('fileSizeMax', `Maximum file size is ${FILE_SIZE_BYTES_MAX} bytes.`, value => value.byteLength <= FILE_SIZE_BYTES_MAX)
   },
   SetElectionParameters: {
     announcingPeriod: Yup.number()

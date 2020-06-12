@@ -69,30 +69,58 @@ const innerSpanStyle = (): React.CSSProperties => {
   };
 };
 
-// Here we define a way of coverting the file into string for Formik purposes
-// This may change depnding on how we decide to actually send the data
-const parseFile = async (file: any): Promise<string> => {
+// Interpret the file as a UTF-8 string
+// https://developer.mozilla.org/en-US/docs/Web/API/Blob/text
+const parseFileAsUtf8 = async (file: any): Promise<string> => {
   const text = await file.text();
   return text;
+};
+
+// Interpret the file as containing binary data. This will load the entire
+// file into memory which may crash the brower with very large files.
+const parseFileAsBinary = async (file: any): Promise<ArrayBuffer> => {
+  // return file.arrayBuffer();
+  // This newer API not fully supported yet in all browsers
+  // https://developer.mozilla.org/en-US/docs/Web/API/Blob/arrayBuffer
+
+  return new Promise((resolve): void => {
+    const reader = new FileReader();
+
+    reader.onload = ({ target }: ProgressEvent<FileReader>): void => {
+      if (target && target.result) {
+        resolve(target.result as ArrayBuffer);
+      }
+    };
+
+    reader.readAsArrayBuffer(file);
+  });
 };
 
 type FileDropdownProps<FormValuesT> = {
   error: string | undefined;
   name: keyof FormValuesT & string;
   setFieldValue: FormikProps<FormValuesT>['setFieldValue'];
+  setFieldTouched: FormikProps<FormValuesT>['setFieldTouched'];
   acceptedFormats: string | string[];
   defaultText: string;
+  interpretAs: 'utf-8' | 'binary';
 };
 
 export default function FileDropdown<ValuesT = {}> (props: FileDropdownProps<ValuesT>) {
   const [parsing, setParsing] = useState(false);
-  const { error, name, setFieldValue, acceptedFormats, defaultText } = props;
+  const { error, name, setFieldValue, setFieldTouched, acceptedFormats, defaultText, interpretAs } = props;
   return (
     <Dropzone
       onDropAccepted={async acceptedFiles => {
         setParsing(true);
-        const fileAsString: string = await parseFile(acceptedFiles[0]);
-        setFieldValue(name, fileAsString, true);
+        let contents;
+        if (interpretAs === 'utf-8') {
+          contents = await parseFileAsUtf8(acceptedFiles[0]);
+        } else {
+          contents = await parseFileAsBinary(acceptedFiles[0]);
+        }
+        setFieldValue(name, contents, true);
+        setFieldTouched(name, true);
         setParsing(false);
       }}
       multiple={false}
