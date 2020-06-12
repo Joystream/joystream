@@ -3,7 +3,7 @@
 
 use crate::VERSION;
 use rstd::prelude::*;
-// use sr_primitives::{print, traits::Zero};
+use sr_primitives::{print, traits::Zero};
 use srml_support::{debug, decl_event, decl_module, decl_storage};
 
 impl<T: Trait> Module<T> {
@@ -18,10 +18,14 @@ impl<T: Trait> Module<T> {
         // would be any new storage values that need an initial value which would not
         // have been initialized with config() or build() chainspec construction mechanism.
         // Other tasks like resetting values, migrating values etc.
+
+        Self::initialize_storage_working_group_mint();
     }
 }
 
-pub trait Trait: system::Trait {
+pub trait Trait:
+    system::Trait + minting::Trait + working_group::Trait<working_group::Instance2>
+{
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
 
@@ -60,6 +64,18 @@ decl_module! {
                     VERSION.spec_version,
                 ));
             }
+        }
+    }
+}
+
+impl<T: Trait> Module<T> {
+    fn initialize_storage_working_group_mint() {
+        let mint_id_result = <minting::Module<T>>::add_mint(<minting::BalanceOf<T>>::zero(), None);
+
+        if let Ok(mint_id) = mint_id_result {
+            <working_group::Mint<T, working_group::Instance2>>::put(mint_id);
+        } else {
+            print("Failed to create a mint for the storage working group");
         }
     }
 }
