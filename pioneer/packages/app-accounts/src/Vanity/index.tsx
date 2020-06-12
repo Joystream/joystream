@@ -18,6 +18,7 @@ import matchRegex from '../vanitygen/regex';
 import generatorSort from '../vanitygen/sort';
 import Match from './Match';
 import translate from './translate';
+import Section from '@polkadot/joy-utils/Section';
 
 interface Props extends ComponentProps, I18nProps {}
 
@@ -41,6 +42,10 @@ const BOOL_OPTIONS = [
   { text: 'No', value: false },
   { text: 'Yes', value: true }
 ];
+
+const SectionContentWrapper = styled.div`
+  margin-left: -2rem;
+`;
 
 class VanityApp extends TxComponent<Props, State> {
   private results: GeneratorResult[] = [];
@@ -72,18 +77,22 @@ class VanityApp extends TxComponent<Props, State> {
 
     return (
       <div className={className}>
-        {this.renderOptions()}
-        {this.renderButtons()}
-        {this.renderStats()}
-        {this.renderMatches()}
-        {createSeed && (
-          <CreateModal
-            onClose={this.closeCreate}
-            onStatusChange={onStatusChange}
-            seed={createSeed}
-            type={type}
-          />
-        )}
+        <Section title="Generate a vanity address">
+          <SectionContentWrapper>
+            {this.renderOptions()}
+            {this.renderButtons()}
+            {this.renderStats()}
+            {this.renderMatches()}
+            {createSeed && (
+              <CreateModal
+                onClose={this.closeCreate}
+                onStatusChange={onStatusChange}
+                seed={createSeed}
+                type={type}
+              />
+            )}
+          </SectionContentWrapper>
+        </Section>
       </div>
     );
   }
