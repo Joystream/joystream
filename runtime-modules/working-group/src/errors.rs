@@ -224,11 +224,17 @@ decl_error! {
         /// Cannot decrease stake while slashes ongoing.
         StakingErrorCannotDecreaseWhileSlashesOngoing,
 
-        /// Insufficient stake to decrease,
+        /// Insufficient stake to decrease.
         StakingErrorInsufficientStake,
 
-        /// Slash amount should be greater than zero,
+        /// Slash amount should be greater than zero.
         StakingErrorSlashAmountShouldBeGreaterThanZero,
+
+        /// Working group mint is not set.
+        WorkingGroupMintIsNotSet,
+
+        /// Cannot find mint in the minting module.
+        CannotFindMint,
     }
 }
 
@@ -568,6 +574,15 @@ impl rstd::convert::From<WrappedError<stake::StakeActionError<stake::ImmediateSl
                     Error::StakingErrorSlashAmountShouldBeGreaterThanZero
                 }
             },
+        }
+    }
+}
+
+impl rstd::convert::From<WrappedError<minting::GeneralError>> for Error {
+    fn from(wrapper: WrappedError<minting::GeneralError>) -> Self {
+        match wrapper.error {
+            minting::GeneralError::MintNotFound => Error::CannotFindMint,
+            minting::GeneralError::NextAdjustmentInPast => Error::Other("NextAdjustmentInPast"),
         }
     }
 }

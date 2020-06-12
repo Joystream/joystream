@@ -635,6 +635,8 @@ impl EventFixture {
                 u64,
                 std::collections::BTreeMap<u64, u64>,
                 Vec<u8>,
+                u64,
+                u64,
                 crate::Instance1,
             >,
         >,
@@ -669,6 +671,8 @@ impl EventFixture {
             u64,
             std::collections::BTreeMap<u64, u64>,
             Vec<u8>,
+            u64,
+            u64,
             crate::Instance1,
         >,
     ) {

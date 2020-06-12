@@ -28,6 +28,7 @@
 //! - [set_lead](./struct.Module.html#method.set_lead) - Set lead.
 //! - [unset_lead](./struct.Module.html#method.unset_lead) - Unset lead.
 //! - [unstake](./struct.Module.html#method.unstake) - Unstake.
+//! - [set_mint_capacity](./struct.Module.html#method.set_mint_capacity) -  Sets the capacity to enable working group budget.
 //!
 //! ### Worker stakes
 //!
@@ -168,6 +169,8 @@ decl_event!(
         WorkerApplicationId = WorkerApplicationId<T>,
         WorkerApplicationIdToWorkerIdMap = WorkerApplicationIdToWorkerIdMap<T>,
         RationaleText = Vec<u8>,
+        MintBalanceOf = minting::BalanceOf<T>,
+        <T as minting::Trait>::MintId,
     {
         /// Emits on setting the leader.
         /// Params:
@@ -256,6 +259,12 @@ decl_event!(
         /// Params:
         /// - worker id.
         WorkerStakeSlashed(WorkerId),
+
+        /// Emits on changing working group mint capacity.
+        /// Params:
+        /// - mint id.
+        /// - new mint balance.
+        MintCapacityChanged(MintId, MintBalanceOf),
     }
 );
 
@@ -933,6 +942,37 @@ decl_module! {
             )?;
 
             Self::deposit_event(RawEvent::WorkerStakeIncreased(worker_id));
+        }
+
+        /// Sets the capacity to enable working group budget.
+        pub fn set_mint_capacity(
+            origin,
+            new_capacity: minting::BalanceOf<T>
+        ) {
+            ensure_root(origin)?;
+
+            ensure!(<Mint<T, I>>::exists(), Error::WorkingGroupMintIsNotSet);
+
+            let mint_id = Self::mint();
+
+            ensure!(<minting::Mints<T>>::exists(mint_id), Error::CannotFindMint);
+
+            // Mint must exist - it is set at genesis or migration.
+            let mint = <minting::Module<T>>::mints(mint_id);
+
+            let current_capacity = mint.capacity();
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            if new_capacity != current_capacity {
+                ensure_on_wrapped_error!(
+                    <minting::Module<T>>::set_mint_capacity(mint_id, new_capacity)
+                )?;
+
+                Self::deposit_event(RawEvent::MintCapacityChanged(mint_id, new_capacity));
+            }
         }
     }
 }

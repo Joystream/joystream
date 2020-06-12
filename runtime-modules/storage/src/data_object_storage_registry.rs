@@ -16,7 +16,7 @@
 
 // Clippy linter requirement.
 // Disable it because of the substrate lib design. Example:
-//  pub NextRelationshipId get(next_relationship_id) build(|config: &GenesisConfig<T>|
+// pub NextRelationshipId get(next_relationship_id) build(|config: &GenesisConfig<T>|
 #![allow(clippy::redundant_closure_call)]
 
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
