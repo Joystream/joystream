@@ -6,7 +6,7 @@ import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
 import { withMulti } from '@polkadot/react-api/with';
 import { Option } from '@polkadot/types/codec';
-import { StorageProviderId } from '@joystream/types/bureaucracy';
+import { StorageProviderId, Worker } from '@joystream/types/bureaucracy';
 
 import translate from '../translate';
 import { DiscoveryProviderProps, withDiscoveryProvider } from '../DiscoveryProvider';
@@ -14,8 +14,7 @@ import { DataObjectStorageRelationshipId, DataObjectStorageRelationship } from '
 import { Message } from 'semantic-ui-react';
 import { MediaPlayerView, RequiredMediaPlayerProps } from './MediaPlayerView';
 import { JoyInfo } from '@polkadot/joy-utils/JoyStatus';
-import { MultipleLinkedMapEntry} from '@polkadot/joy-utils/index';
-import { Worker } from '@joystream/types/bureaucracy';
+import { MultipleLinkedMapEntry } from '@polkadot/joy-utils/index';
 
 type Props = ApiProps & I18nProps & DiscoveryProviderProps & RequiredMediaPlayerProps;
 
@@ -31,7 +30,7 @@ function InnerComponent (props: Props) {
   const [contentType, setContentType] = useState<string>();
   const [cancelSource, setCancelSource] = useState<CancelTokenSource>(newCancelSource());
 
-  const getActiveStorageProviderIds = async () : Promise<StorageProviderId[]> => {
+  const getActiveStorageProviderIds = async (): Promise<StorageProviderId[]> => {
     const nextId = await api.query.storageBureaucracy.nextWorkerId() as StorageProviderId;
     // This is chain specfic, but if next id is still 0, it means no workers have been added,
     // so the workerById is empty
@@ -45,8 +44,8 @@ function InnerComponent (props: Props) {
       await api.query.storageBureaucracy.workerById()
     );
 
-    return workers.linked_keys
-  }
+    return workers.linked_keys;
+  };
 
   const resolveAsset = async () => {
     setError(undefined);

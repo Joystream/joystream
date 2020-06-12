@@ -108,7 +108,7 @@ class Component extends React.PureComponent<Props, State> {
     const { cancelSource } = this.state;
     this.setState({
       ...defaultState(),
-      cancelSource,
+      cancelSource
     });
   }
 
