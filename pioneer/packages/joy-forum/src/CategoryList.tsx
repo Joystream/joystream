@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { Table, Dropdown, Button, Segment, Label } from 'semantic-ui-react';
+import styled from 'styled-components';
 import { History } from 'history';
 import orderBy from 'lodash/orderBy';
 import BN from 'bn.js';
@@ -108,6 +109,10 @@ type ViewCategoryProps = InnerViewCategoryProps & {
   id: CategoryId;
 };
 
+const CategoryPreviewRow = styled(Table.Row)`
+  height: 55px;
+`;
+
 function InnerViewCategory (props: InnerViewCategoryProps) {
   const { history, category, page = 1, preview = false } = props;
 
@@ -127,7 +132,7 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
 
   if (preview) {
     return (
-      <Table.Row>
+      <CategoryPreviewRow>
         <Table.Cell>
           <Link to={`/forum/categories/${id.toString()}`}>
             {category.archived
@@ -143,12 +148,9 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
           {category.num_direct_subcategories.toString()}
         </Table.Cell>
         <Table.Cell>
-          {renderCategoryActions()}
+          {category.description}
         </Table.Cell>
-        <Table.Cell>
-          <MemberPreview accountId={category.moderator_id} />
-        </Table.Cell>
-      </Table.Row>
+      </CategoryPreviewRow>
     );
   }
 
@@ -391,8 +393,7 @@ function InnerCategoryList (props: CategoryListProps) {
           <Table.HeaderCell>Category</Table.HeaderCell>
           <Table.HeaderCell>Threads</Table.HeaderCell>
           <Table.HeaderCell>Subcategories</Table.HeaderCell>
-          <Table.HeaderCell>Actions</Table.HeaderCell>
-          <Table.HeaderCell>Creator</Table.HeaderCell>
+          <Table.HeaderCell>Description</Table.HeaderCell>
         </Table.Row>
       </Table.Header>
       <Table.Body>{categories.map((category, i) => (
