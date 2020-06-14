@@ -20,27 +20,24 @@ import { BalanceOf } from '@polkadot/types/interfaces';
 import { includeKeys, bytesToString } from '../functions/misc';
 import _ from 'lodash';
 import proposalsConsts from '../consts/proposals';
+import { FIRST_MEMBER_ID } from '../consts/members';
 
 import { ApiPromise } from '@polkadot/api';
 import MembersTransport from './members';
 import ChainTransport from './chain';
-import CouncilTransport from './council';
 
 export default class ProposalsTransport extends BaseTransport {
   private membersT: MembersTransport;
   private chainT: ChainTransport;
-  private councilT: CouncilTransport;
 
   constructor (
     api: ApiPromise,
     membersTransport: MembersTransport,
-    chainTransport: ChainTransport,
-    councilTransport: CouncilTransport
+    chainTransport: ChainTransport
   ) {
     super(api);
     this.membersT = membersTransport;
     this.chainT = chainTransport;
-    this.councilT = councilTransport;
   }
 
   proposalCount () {
@@ -121,16 +118,29 @@ export default class ProposalsTransport extends BaseTransport {
   }
 
   async votes (proposalId: ProposalId): Promise<ProposalVote[]> {
-    const councilMembers = await this.councilT.councilMembers();
-    return Promise.all(
-      councilMembers.map(async member => {
-        const vote = await this.voteByProposalAndMember(proposalId, member.memberId);
-        return {
-          vote,
-          member
-        };
-      })
+    const voteEntries = await this.doubleMapEntries(
+      'proposalsEngine.voteExistsByProposalByVoter', // Double map of intrest
+      proposalId, // First double-map key value
+      (v) => new VoteKind(v), // Converter from hex
+      async () => (await this.membersT.membersCreated()), // A function that returns max. possible value for second double-map key (memberId)
+      FIRST_MEMBER_ID.toNumber() // Min. possible value for second double-map key (memberId)
     );
+
+    const votesWithMembers: ProposalVote[] = [];
+    for (const voteEntry of voteEntries) {
+      const memberId = voteEntry.secondKey;
+      const vote = voteEntry.value;
+      const parsedMember = (await this.membersT.memberProfile(memberId)).toJSON() as ParsedMember;
+      votesWithMembers.push({
+        vote,
+        member: {
+          memberId: new MemberId(memberId),
+          ...parsedMember
+        }
+      });
+    }
+
+    return votesWithMembers;
   }
 
   async fetchProposalMethodsFromCodex (includeKey: string) {

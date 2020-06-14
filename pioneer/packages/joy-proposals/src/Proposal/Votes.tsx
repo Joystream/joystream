@@ -20,7 +20,7 @@ export default function Votes ({ votes }: VotesProps) {
   return (
     <>
       <Header as="h3">
-        All Votes: ({nonEmptyVotes.length} / {votes.length})
+        All Votes: ({nonEmptyVotes.length})
       </Header>
       <Divider />
       <Table basic="very">

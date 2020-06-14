@@ -26,6 +26,6 @@ export default class Transport {
     this.validators = new ValidatorsTransport(api);
     this.council = new CouncilTransport(api, this.members);
     this.contentWorkingGroup = new ContentWorkingGroupTransport(api, this.members);
-    this.proposals = new ProposalsTransport(api, this.members, this.chain, this.council);
+    this.proposals = new ProposalsTransport(api, this.members, this.chain);
   }
 }
