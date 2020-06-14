@@ -35,16 +35,37 @@ export class SavedEntityEvent {
    * @param event
    */
   static async update(event: SubstrateEvent, manager: EntityManager): Promise<void> {
-    let lastProcessedEvent = await manager.findOne(SavedEntityEvent);
+    let lastProcessedEvent = await manager
+      .getRepository(SavedEntityEvent)
+      .createQueryBuilder('saved_entity_event')
+      .select()
+      .limit(1)
+      .setLock('pessimistic_read')
+      .getOne();
 
-    if (!lastProcessedEvent) {
-      lastProcessedEvent = new SavedEntityEvent();
+    if (lastProcessedEvent) {
+      await manager
+        .getRepository(SavedEntityEvent)
+        .createQueryBuilder()
+        .setLock('pessimistic_write')
+        .update()
+        .set({ index: event.index, eventName: event.event_method, blockNumber: event.block_number })
+        .execute();
+    } else {
+      lastProcessedEvent = new SavedEntityEvent({
+        index: event.index,
+        eventName: event.event_method,
+        blockNumber: event.block_number,
+      });
+
+      await manager
+        .getRepository(SavedEntityEvent)
+        .createQueryBuilder()
+        .setLock('pessimistic_write')
+        .insert()
+        .into(SavedEntityEvent)
+        .values(lastProcessedEvent)
+        .execute();
     }
-
-    lastProcessedEvent.index = event.index;
-    lastProcessedEvent.eventName = event.event_method;
-    lastProcessedEvent.blockNumber = event.block_number;
-
-    await manager.save(lastProcessedEvent);
   }
 }
