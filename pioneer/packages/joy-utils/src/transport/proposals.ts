@@ -122,7 +122,7 @@ export default class ProposalsTransport extends BaseTransport {
       'proposalsEngine.voteExistsByProposalByVoter', // Double map of intrest
       proposalId, // First double-map key value
       (v) => new VoteKind(v), // Converter from hex
-      async () => (await this.membersT.membersCreated()), // A function that returns max. possible value for second double-map key (memberId)
+      async () => (await this.membersT.membersCreated()), // A function that returns the number of iterations to go through when chekcing possible values for the second double-map key (memberId)
       FIRST_MEMBER_ID.toNumber() // Min. possible value for second double-map key (memberId)
     );
 
