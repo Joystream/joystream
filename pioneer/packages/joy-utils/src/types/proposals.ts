@@ -46,6 +46,11 @@ export type ProposalVote = {
   member: ParsedMember & { memberId: MemberId };
 };
 
+export type ProposalVotes = {
+  councilMembersLength: number;
+  votes: ProposalVote[];
+};
+
 export const Categories = {
   storage: 'Storage',
   council: 'Council',

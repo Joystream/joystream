@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ParsedProposal, ProposalVote } from '../../../types/proposals';
+import { ParsedProposal, ProposalVotes } from '../../../types/proposals';
 import { useTransport, usePromise } from '../';
 import { ProposalId } from '@joystream/types/proposals';
 
@@ -15,9 +15,9 @@ const useProposalSubscription = (id: ProposalId) => {
     {} as ParsedProposal
   );
 
-  const [votes, votesError, votesLoading, refreshVotes] = usePromise<ProposalVote[]>(
+  const [votes, votesError, votesLoading, refreshVotes] = usePromise<ProposalVotes | null>(
     () => transport.proposals.votes(id),
-    []
+    null
   );
 
   // Function to re-fetch the data using transport

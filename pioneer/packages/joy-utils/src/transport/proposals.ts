@@ -3,6 +3,7 @@ import {
   ProposalType,
   ProposalTypes,
   ProposalVote,
+  ProposalVotes,
   ParsedPost,
   ParsedDiscussion,
   DiscussionContraints
@@ -25,19 +26,23 @@ import { FIRST_MEMBER_ID } from '../consts/members';
 import { ApiPromise } from '@polkadot/api';
 import MembersTransport from './members';
 import ChainTransport from './chain';
+import CouncilTransport from './council';
 
 export default class ProposalsTransport extends BaseTransport {
   private membersT: MembersTransport;
   private chainT: ChainTransport;
+  private councilT: CouncilTransport;
 
   constructor (
     api: ApiPromise,
     membersTransport: MembersTransport,
-    chainTransport: ChainTransport
+    chainTransport: ChainTransport,
+    councilTransport: CouncilTransport
   ) {
     super(api);
     this.membersT = membersTransport;
     this.chainT = chainTransport;
+    this.councilT = councilTransport;
   }
 
   proposalCount () {
@@ -117,7 +122,7 @@ export default class ProposalsTransport extends BaseTransport {
     return hasVoted ? vote : null;
   }
 
-  async votes (proposalId: ProposalId): Promise<ProposalVote[]> {
+  async votes (proposalId: ProposalId): Promise<ProposalVotes> {
     const voteEntries = await this.doubleMapEntries(
       'proposalsEngine.voteExistsByProposalByVoter', // Double map of intrest
       proposalId, // First double-map key value
@@ -140,7 +145,12 @@ export default class ProposalsTransport extends BaseTransport {
       });
     }
 
-    return votesWithMembers;
+    const proposal = await this.rawProposalById(proposalId);
+
+    return {
+      councilMembersLength: await this.councilT.councilMembersLength(proposal.createdAt.toNumber()),
+      votes: votesWithMembers
+    };
   }
 
   async fetchProposalMethodsFromCodex (includeKey: string) {
