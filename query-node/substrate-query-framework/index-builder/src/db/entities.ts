@@ -47,6 +47,7 @@ export class SavedEntityEvent {
     lastProcessedEvent.index = event.index;
     lastProcessedEvent.eventName = event.event_method;
     lastProcessedEvent.blockNumber = event.block_number;
+    lastProcessedEvent.updatedAt = new Date();
 
     await manager.save(lastProcessedEvent);
   }
