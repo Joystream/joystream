@@ -12,7 +12,7 @@ const { expect } = chai;
 chai.use(chaiSnapshot);
 
 
-describe('FTSQueryGenerator', () => {
+describe('FTSQueryRenderer', () => {
     let generator: FTSQueryRenderer;
 
     before(() => {
