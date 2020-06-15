@@ -327,10 +327,10 @@ impl<T: hiring::Trait> rstd::convert::From<WrappedError<hiring::FillOpeningError
             ) => match stake_purpose {
                 hiring::StakePurpose::Application => match outcome_in_filled_opening {
                     hiring::ApplicationOutcomeInFilledOpening::Success => {
-                        Error::FullWorkerOpeningUnsuccessfulApplicationStakeUnstakingPeriodTooShort
+                        Error::FullWorkerOpeningSuccessfulApplicationStakeUnstakingPeriodTooShort
                     }
                     hiring::ApplicationOutcomeInFilledOpening::Failure => {
-                        Error::FullWorkerOpeningSuccessfulApplicationStakeUnstakingPeriodTooShort
+                        Error::FullWorkerOpeningUnsuccessfulApplicationStakeUnstakingPeriodTooShort
                     }
                 },
                 hiring::StakePurpose::Role => match outcome_in_filled_opening {
