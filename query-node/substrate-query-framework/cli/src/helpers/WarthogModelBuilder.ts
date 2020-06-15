@@ -11,7 +11,7 @@ const debug = Debug('qnode-cli:model-generator');
  * Parse a graphql schema and generate model defination strings for Warthog. It use GraphQLSchemaParser for parsing
  * @constructor(schemaPath: string)
  */
-export class DatabaseModelCodeGenerator {
+export class WarthogModelBuilder {
   private _schemaParser: GraphQLSchemaParser;
   private _model: WarthogModel;
 
@@ -134,7 +134,7 @@ export class DatabaseModelCodeGenerator {
     }
   }
 
-  generateWarthogModel(): WarthogModel {
+  buildWarthogModel(): WarthogModel {
     this._model = new WarthogModel();
 
     this._schemaParser.getObjectDefinations().map((o) => {

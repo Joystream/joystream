@@ -8,11 +8,11 @@ import Command from '@oclif/command';
 import { copyFileSync } from 'fs-extra';
 import { cli as warthogCli } from '../index';
 
-import { DatabaseModelCodeGenerator } from './ModelCodeGenerator';
+import { WarthogModelBuilder } from './WarthogModelBuilder';
 import { getTemplatePath, createFile, createDir } from '../utils/utils';
 import { WarthogModel } from '../model/WarthogModel';
 import { FTSQueryGenerator } from './FTSQueryGenerator';
-import { ModelRenderer } from '../renderers/ModelRenderer';
+import { ModelRenderer } from '../generators/ModelRenderer';
 import Debug from "debug";
 
 const debug = Debug('qnode-cli:warthog-wrapper');
@@ -92,8 +92,8 @@ export default class WarthogWrapper {
   createModels():void {
     const schemaPath = path.resolve(process.cwd(), this.schemaPath);
 
-    const modelGenerator = new DatabaseModelCodeGenerator(schemaPath);
-    this.model = modelGenerator.generateWarthogModel();
+    const modelBuilder = new WarthogModelBuilder(schemaPath);
+    this.model = modelBuilder.buildWarthogModel();
 
     const modelRenderer = new ModelRenderer();
 
