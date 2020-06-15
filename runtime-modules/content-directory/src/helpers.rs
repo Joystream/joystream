@@ -1,6 +1,60 @@
 use crate::*;
 use core::ops::{Deref, DerefMut};
 
+#[derive(Default)]
+pub struct ValueForExistingProperty<T: Trait> {
+    pub property: Property<T>,
+    pub value: PropertyValue<T>,
+}
+
+impl<T: Trait> ValueForExistingProperty<T> {
+    fn new(property: Property<T>, value: PropertyValue<T>) -> Self {
+        Self { property, value }
+    }
+}
+
+/// Mapping, used to represent `PropertyId` relation to its respective `ValueForExistingProperty` structure
+pub struct ValuesForExistingProperties<T: Trait>(BTreeMap<PropertyId, ValueForExistingProperty<T>>);
+
+impl<T: Trait> Default for ValuesForExistingProperties<T> {
+    fn default() -> Self {
+        Self(BTreeMap::default())
+    }
+}
+
+impl<T: Trait> Deref for ValuesForExistingProperties<T> {
+    type Target = BTreeMap<PropertyId, ValueForExistingProperty<T>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T: Trait> DerefMut for ValuesForExistingProperties<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl<T: Trait> ValuesForExistingProperties<T> {
+    pub fn from(
+        property_values: BTreeMap<PropertyId, PropertyValue<T>>,
+        properties: Vec<Property<T>>,
+    ) -> Self {
+        property_values.into_iter().fold(
+            ValuesForExistingProperties::<T>::default(),
+            |mut values_for_existing_properties, (property_id, property_value)| {
+                let property = properties[property_id as usize].to_owned();
+                values_for_existing_properties.insert(
+                    property_id,
+                    ValueForExistingProperty::new(property, property_value),
+                );
+                values_for_existing_properties
+            },
+        )
+    }
+}
+
 /// Length constraint for input validation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, Copy, PartialEq, Eq, Debug)]
