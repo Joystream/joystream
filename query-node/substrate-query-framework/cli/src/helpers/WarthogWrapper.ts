@@ -2,15 +2,13 @@ import * as fs from 'fs-extra';
 import { execSync } from 'child_process';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
-import * as prettier from 'prettier';
 
 import Command from '@oclif/command';
 import { copyFileSync } from 'fs-extra';
 import { cli as warthogCli } from '../index';
 
 import { WarthogModelBuilder } from './WarthogModelBuilder';
-import { getTemplatePath, createFile, createDir } from '../utils/utils';
-import { WarthogModel } from '../model/WarthogModel';
+import { getTemplatePath } from '../utils/utils';
 import Debug from "debug";
 import { SourcesGenerator } from '../generate/SourcesGenerator';
 
@@ -33,13 +31,11 @@ export default class WarthogWrapper {
 
     await this.createDB();
 
-    this.createModels();
+    this.generateWarthogSources();
 
     this.codegen();
 
     this.createMigrations();
-
-    //this.generateQueries();
 
     this.runMigrations();
   }
@@ -48,9 +44,9 @@ export default class WarthogWrapper {
     // Order of calling functions is important!!!
     await this.newProject();
     this.installDependencies();
-    this.createModels();
+    this.generateWarthogSources();
     this.codegen();
-    //this.generateQueries();
+  
   }
 
   async newProject(projectName = 'query_node'):Promise<void> {
@@ -85,11 +81,11 @@ export default class WarthogWrapper {
   }
 
   /**
-   * Generate all source files: 
-   *   - model/resolver/service for input types 
-   *   - Fulltext search queries
+   * Generate the warthog source files: 
+   *   - model/resolver/service for entities
+   *   - Fulltext search queries (migration/resolver/service)
    */
-  createModels():void {
+  generateWarthogSources():void {
     const schemaPath = path.resolve(process.cwd(), this.schemaPath);
 
     const modelBuilder = new WarthogModelBuilder(schemaPath);
@@ -111,59 +107,6 @@ export default class WarthogWrapper {
       debug('performing migrations');
       execSync('yarn db:migrate');
   }
-
-  // generateQueries():void {
-  //     if (!this.model) {
-  //         throw new Error("Warthog model is undefined");
-  //     }
-  //     // create migrations dir if not exists
-  //     createDir(path.resolve(process.cwd(), 'db/migrations'), false, true);
-      
-  //     // create dir if the textsearch module
-  //     createDir(path.resolve(process.cwd(), 'src/modules/textsearch'), false, true);
-
-  //     const queryGenerator = new FTSQueryGenerator();
-      
-  //     this.model.ftsQueries.map((query) => {
-  //        const transform = (template:string) => queryGenerator.generate(template, query);
-         
-  //        // migration
-  //        this.transformAndWrite('textsearch/migration.ts.mst', 
-  //           `db/migrations/${query.name}.migration.ts`,
-  //           transform);
-          
-  //        // resolver   
-  //        this.transformAndWrite('textsearch/resolver.ts.mst', 
-  //           `src/modules/textsearch/${query.name}.resolver.ts`, transform);   
-
-  //        // service
-  //        this.transformAndWrite('textsearch/service.ts.mst', 
-  //           `src/modules/textsearch/${query.name}.service.ts`, transform);   
-  //     })
-      
-  // }
-
-  // /**
-  //  * 
-  //  * @param template relative path to a template from the templates folder, e.g. 'db-helper.mst'
-  //  * @param destPath relative path to the `generated/graphql-server' folder, e.g. 'src/index.ts'
-  //  * @param transformer function which transforms the template contents
-  //  */
-  // private transformAndWrite(template: string, destPath: string, transform: (data: string) => string) {
-  //   const templateData: string = fs.readFileSync(getTemplatePath(template), 'utf-8');
-  //   debug(`Source: ${getTemplatePath(template)}`);
-  //   let transformed: string = transform(templateData);
-    
-  //   transformed = prettier.format(transformed, {
-  //     parser: 'typescript'
-  //   });
-
-  //   debug(`Transformed: ${transformed}`);
-  //   const destFullPath = path.resolve(process.cwd(), destPath);
-    
-  //   debug(`Writing to: ${destFullPath}`);
-  //   createFile(destFullPath, transformed, true);
-  // }
 
   updateDotenv():void {
     // copy dotnenvi env.yml file 
