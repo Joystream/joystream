@@ -1183,7 +1183,7 @@ decl_module! {
             let schema = class.ensure_schema_exists(schema_id)?.to_owned();
 
             schema.ensure_is_active()?;
-            schema.ensure_property_value_indices_are_valid(&property_values)?;
+            schema.ensure_has_properties(&property_values)?;
 
             let entity_controller = entity.get_permissions_ref().get_controller();
 

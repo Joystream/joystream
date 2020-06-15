@@ -536,7 +536,7 @@ impl Schema {
     }
 
     /// Ensure keys of provided `property_values` are valid indices of current `Schema`
-    pub fn ensure_property_value_indices_are_valid<T: Trait>(
+    pub fn ensure_has_properties<T: Trait>(
         &self,
         property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> dispatch::Result {
