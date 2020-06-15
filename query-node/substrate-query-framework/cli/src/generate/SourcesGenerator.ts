@@ -48,15 +48,17 @@ export class SourcesGenerator {
     createDir(path.resolve(process.cwd(), 'src/modules'), false, true);
 
     this.model.types.map((objType) => {
-      const modelRenderer = new ModelRenderer({ "generatedFolderRelPath": this.getGeneratedFolderRelativePath(objType.name) });
+      const destFolder = this.getDestFolder(objType.name);
+      const generatedFolderRelPath = path.relative(destFolder, this.config.get('GENERATED_FOLDER'));
+
+      const modelRenderer = new ModelRenderer({ "generatedFolderRelPath": generatedFolderRelPath });
       const render = (template:string) => modelRenderer.generate(template, objType);
       
-      createDir(path.resolve(process.cwd(), this.getDestFolder(objType.name)), false, true);
+      createDir(path.resolve(process.cwd(), destFolder), false, true);
       
-      const destFiles = this.getDestFiles(objType.name);
-      ['model', 'resolver', 'service'].map((s) => {
-        this.renderAndWrite(`entities/${s}.ts.mst`, 
-          destFiles[s],
+      ['model', 'resolver', 'service'].map((template) => {
+        this.renderAndWrite(`entities/${template}.ts.mst`, 
+          path.join(destFolder, `${kebabCase(objType.name)}.${template}.ts`),
           render);
       })
     });
@@ -101,7 +103,7 @@ export class SourcesGenerator {
    * 
    * @param template relative path to a template from the templates folder, e.g. 'db-helper.mst'
    * @param destPath relative path to the `generated/graphql-server' folder, e.g. 'src/index.ts'
-   * @param transformer function which transforms the template contents
+   * @param render function which transforms the template contents
    */
   private renderAndWrite(template: string, destPath: string, render: (data: string) => string) {
     const templateData: string = fs.readFileSync(getTemplatePath(template), 'utf-8');
@@ -129,15 +131,4 @@ export class SourcesGenerator {
     return supplant(this.cliGeneratePath, names);
   }
   
-  getGeneratedFolderRelativePath(name: string): string {
-    return path.relative(this.getDestFolder(name), this.config.get('GENERATED_FOLDER')); 
-  }
-
-  getDestFiles(name: string): { [key: string]: string }{
-    return {
-      model: path.join(this.getDestFolder(name), `${kebabCase(name)}.model.ts`),
-      resolver: path.join(this.getDestFolder(name), `${kebabCase(name)}.resolver.ts`),
-      service: path.join(this.getDestFolder(name), `${kebabCase(name)}.service.ts`)
-    }
-  }
 }
