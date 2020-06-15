@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { Segment, Button } from 'semantic-ui-react';
@@ -10,6 +11,10 @@ import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { IfIAmForumSudo } from './ForumSudo';
 import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
 import { FlexCenter } from '@polkadot/joy-utils/FlexCenter';
+
+const ReplyDetails = styled(ReactMarkdown)`
+  font-size: 1.15rem;
+`;
 
 type ViewReplyProps = {
   reply: Post;
@@ -28,7 +33,7 @@ export function ViewReply (props: ViewReplyProps) {
   }
 
   const renderReplyDetails = () => {
-    return <ReactMarkdown className='JoyMemo--full' source={reply.current_text} linkTarget='_blank' />;
+    return <ReplyDetails className='JoyMemo--full' source={reply.current_text} linkTarget='_blank' />;
   };
 
   const renderModerationRationale = () => {
