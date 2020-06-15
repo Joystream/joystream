@@ -5,6 +5,7 @@
 		"packages/*"
 	],
 	"scripts": {
+		"build": "lerna run build",
 		"dev": "lerna run --parallel dev",
 		"test": "jest",
 		"tdd": "jest --watch"
