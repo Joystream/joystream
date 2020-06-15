@@ -1,5 +1,5 @@
 use crate::*;
-use core::ops::{AddAssign, Deref, DerefMut};
+use core::ops::{Deref, DerefMut};
 
 /// Length constraint for input validation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -92,15 +92,6 @@ impl AddAssign for EntityReferenceCounterSideEffect {
         *self = Self {
             total: self.total + other.total,
             same_owner: self.same_owner + other.same_owner,
-        };
-    }
-}
-
-impl SubAssign for EntityReferenceCounterSideEffect {
-    fn sub_assign(&mut self, other: EntityReferenceCounterSideEffect) {
-        *self = Self {
-            total: self.total - other.total,
-            same_owner: self.same_owner - other.same_owner,
         };
     }
 }

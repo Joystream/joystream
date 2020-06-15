@@ -3,7 +3,7 @@
 #![recursion_limit = "256"]
 
 use core::fmt::Debug;
-use core::ops::{AddAssign, SubAssign};
+use core::ops::AddAssign;
 use std::hash::Hash;
 
 use codec::{Codec, Decode, Encode};
@@ -360,24 +360,6 @@ impl InboundReferenceCounter {
     /// Check if `same_owner` is equal to zero
     pub fn is_same_owner_equal_to_zero(self) -> bool {
         self.same_owner == 0
-    }
-}
-
-impl AddAssign for InboundReferenceCounter {
-    fn add_assign(&mut self, other: InboundReferenceCounter) {
-        *self = Self {
-            total: self.total + other.total,
-            same_owner: self.same_owner + other.same_owner,
-        };
-    }
-}
-
-impl SubAssign for InboundReferenceCounter {
-    fn sub_assign(&mut self, other: InboundReferenceCounter) {
-        *self = Self {
-            total: self.total - other.total,
-            same_owner: self.same_owner - other.same_owner,
-        };
     }
 }
 
