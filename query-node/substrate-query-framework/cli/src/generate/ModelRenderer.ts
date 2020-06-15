@@ -1,9 +1,8 @@
 import Mustache from 'mustache';
-import { Config } from 'warthog';
 import { Field, ObjectType } from '../model';
 import * as path from 'path';
-import { kebabCase, camelCase } from 'lodash';
-import { supplant, pascalCase, camelPlural, getTypesForArray, names } from './utils';
+import { kebabCase } from 'lodash';
+import { getTypesForArray, names } from './utils';
 import Debug from "debug";
 import { GeneratorContext } from './SourcesGenerator';
 
