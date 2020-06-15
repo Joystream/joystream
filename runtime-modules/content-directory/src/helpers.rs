@@ -1,5 +1,5 @@
 use crate::*;
-use core::ops::{Deref, DerefMut};
+use core::ops::{AddAssign, Deref, DerefMut};
 
 /// Length constraint for input validation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -42,8 +42,7 @@ impl InputValidationLengthConstraint {
     }
 }
 
-/// Enum, used to specify, which mode of operation should be chosen,
-/// when calling `fill_in_inbound_entities_rcs` method on the instance of `EntitiesInboundRcsDelta`
+/// Enum, used to specify, which mode of operation should be chosen
 #[derive(Clone, PartialEq, Eq, Copy, Debug)]
 pub enum DeltaMode {
     Increment,
@@ -57,58 +56,62 @@ impl Default for DeltaMode {
 }
 
 /// Representing delta on which respective `InboundReferenceCounter` should be changed.
-/// Direction of performed operation depends on `DeltaMode`.
 #[derive(Default, Clone, PartialEq, Eq, Copy, Debug)]
-pub struct InboundReferenceCounterDelta {
-    pub reference_counter: InboundReferenceCounter,
-    pub delta_mode: DeltaMode,
+pub struct EntityReferenceCounterSideEffect {
+    /// Delta number of all inbound references from another entities
+    pub total: i32,
+    /// Delta number of inbound references from another entities with `SameOwner` flag set
+    pub same_owner: i32,
 }
 
-impl InboundReferenceCounterDelta {
-    /// Create simple `InboundReferenceCounterDelta` instance
-    pub fn new(reference_counter: u32, same_owner_status: bool, delta_mode: DeltaMode) -> Self {
-        Self {
-            reference_counter: InboundReferenceCounter::new(reference_counter, same_owner_status),
-            delta_mode,
-        }
-    }
-
-    fn is_delta_mode_equal_to(&self, delta_mode: DeltaMode) -> bool {
-        self.delta_mode == delta_mode
-    }
-
-    fn is_empty(&self) -> bool {
-        self.reference_counter.is_total_equal_to_zero()
-    }
-
-    fn increment_entity_rc(&mut self, same_owner: bool) {
-        self.reference_counter.total += 1;
-        if same_owner {
-            self.reference_counter.same_owner += 1;
-        }
-    }
-
-    fn decrement_entity_rc(&mut self, same_owner: bool) {
-        self.reference_counter.total -= 1;
-        if same_owner {
-            self.reference_counter.same_owner -= 1;
-        }
-    }
-
-    fn flip_mode(&mut self) {
-        if let DeltaMode::Increment = self.delta_mode {
-            self.delta_mode = DeltaMode::Decrement
+impl EntityReferenceCounterSideEffect {
+    /// Create atomic `EntityReferenceCounterSideEffect` instance, based on `same_owner` flag provided and `DeltaMode`
+    pub fn one(same_owner: bool, delta_mode: DeltaMode) -> Self {
+        let counter = if let DeltaMode::Increment = delta_mode {
+            1
         } else {
-            self.delta_mode = DeltaMode::Increment
+            -1
+        };
+
+        if same_owner {
+            Self {
+                total: counter,
+                same_owner: counter,
+            }
+        } else {
+            Self {
+                total: counter,
+                same_owner: 0,
+            }
         }
+    }
+}
+
+impl AddAssign for EntityReferenceCounterSideEffect {
+    fn add_assign(&mut self, other: EntityReferenceCounterSideEffect) {
+        *self = Self {
+            total: self.total + other.total,
+            same_owner: self.same_owner + other.same_owner,
+        };
+    }
+}
+
+impl SubAssign for EntityReferenceCounterSideEffect {
+    fn sub_assign(&mut self, other: EntityReferenceCounterSideEffect) {
+        *self = Self {
+            total: self.total - other.total,
+            same_owner: self.same_owner - other.same_owner,
+        };
     }
 }
 
 /// Structure, respresenting `entity_id` mappings to their respective `InboundReferenceCounterDelta`
-pub struct EntitiesInboundRcsDelta<T: Trait>(BTreeMap<T::EntityId, InboundReferenceCounterDelta>);
+pub struct EntitiesInboundRcsDelta<T: Trait>(
+    BTreeMap<T::EntityId, EntityReferenceCounterSideEffect>,
+);
 
 impl<T: Trait> Deref for EntitiesInboundRcsDelta<T> {
-    type Target = BTreeMap<T::EntityId, InboundReferenceCounterDelta>;
+    type Target = BTreeMap<T::EntityId, EntityReferenceCounterSideEffect>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -128,35 +131,21 @@ impl<T: Trait> Default for EntitiesInboundRcsDelta<T> {
 }
 
 impl<T: Trait> EntitiesInboundRcsDelta<T> {
-    /// Fill in `EntitiesInboundRcsDelta` mapping, based on `same_owner` flag provided and `delta_mode`
-    pub fn fill_in_inbound_entities_rcs(
-        &mut self,
-        entity_ids: Vec<T::EntityId>,
-        same_owner: bool,
-        delta_mode: DeltaMode,
-    ) {
+    /// Updates all the elements of `other` with `Self`
+    pub fn update(mut self, mut other: Self) -> Self {
+        let entity_ids: BTreeSet<T::EntityId> = self.keys().chain(other.keys()).copied().collect();
         for entity_id in entity_ids {
-            match self.get_mut(&entity_id) {
-                Some(inbound_reference_counter_delta)
-                    if inbound_reference_counter_delta.is_delta_mode_equal_to(delta_mode) =>
-                {
-                    inbound_reference_counter_delta.increment_entity_rc(same_owner);
-                }
-                Some(inbound_reference_counter_delta) => {
-                    // Flip mode for current `InboundReferenceCounterDelta`,
-                    // when total rc is equal to zero and reverse operation performed
-                    if inbound_reference_counter_delta.is_empty() {
-                        inbound_reference_counter_delta.flip_mode();
-                        inbound_reference_counter_delta.increment_entity_rc(same_owner);
-                    } else {
-                        inbound_reference_counter_delta.decrement_entity_rc(same_owner);
-                    }
-                }
-                _ => {
-                    self.insert(entity_id, InboundReferenceCounterDelta::default());
-                }
-            }
+            *self
+                .entry(entity_id)
+                // Unwrap always safe here.
+                .or_insert_with(|| other.remove(&entity_id).unwrap()) +=
+                if let Some(entity_rc_side_effect) = other.remove(&entity_id) {
+                    entity_rc_side_effect
+                } else {
+                    EntityReferenceCounterSideEffect::default()
+                };
         }
+        self
     }
 
     /// Traverse `EntitiesInboundRcsDelta`, updating each `Entity` respective reference counters
@@ -164,11 +153,7 @@ impl<T: Trait> EntitiesInboundRcsDelta<T> {
         self.0
             .into_iter()
             .for_each(|(entity_id, inbound_reference_counter_delta)| {
-                Module::<T>::update_entity_rc(
-                    &entity_id,
-                    inbound_reference_counter_delta.reference_counter,
-                    inbound_reference_counter_delta.delta_mode,
-                );
+                Module::<T>::update_entity_rc(entity_id, inbound_reference_counter_delta);
             });
     }
 }

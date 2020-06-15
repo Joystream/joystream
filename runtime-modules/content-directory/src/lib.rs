@@ -512,6 +512,10 @@ impl<T: Trait> Entity<T> {
         );
         Ok(())
     }
+
+    pub fn get_reference_counter_mut(&mut self) -> &mut InboundReferenceCounter {
+        &mut self.reference_counter
+    }
 }
 
 decl_storage! {
@@ -1208,10 +1212,8 @@ decl_module! {
             )?;
 
             // Entities, which rc should be updated
-            let mut entities_inbound_rcs_delta = EntitiesInboundRcsDelta::default();
-
-            Self::calculate_entities_inbound_rcs_delta(
-                &class_properties, &property_values, &mut entities_inbound_rcs_delta, DeltaMode::Increment
+            let entities_inbound_rcs_delta = Self::calculate_entities_inbound_rcs_delta(
+                &class_properties, &property_values, DeltaMode::Increment
             );
 
             entities_inbound_rcs_delta.update_entities_rcs();
@@ -1327,11 +1329,10 @@ decl_module! {
             // Decrease reference counters of involved entities (if some)
             if let Some(entity_ids_to_decrease_rcs) = property_value_vector.get_vec_value().get_involved_entities() {
                 let same_controller_status = property.property_type.same_controller_status();
-                let mut entities_inbound_rcs_delta = EntitiesInboundRcsDelta::<T>::default();
-
-                entities_inbound_rcs_delta.fill_in_inbound_entities_rcs(
-                    entity_ids_to_decrease_rcs, same_controller_status, DeltaMode::Decrement
-                )
+                let entities_inbound_rcs_delta = Self::perform_entities_inbound_rcs_delta_calculation(
+                    EntitiesInboundRcsDelta::<T>::default(), entity_ids_to_decrease_rcs, same_controller_status, DeltaMode::Decrement
+                );
+                entities_inbound_rcs_delta.update_entities_rcs();
             }
 
             // Update entity property values
@@ -1393,8 +1394,8 @@ decl_module! {
 
             if let Some(involved_entity_id) = involved_entity_id {
                 let same_controller_status = property.property_type.same_controller_status();
-                let reference_counter = InboundReferenceCounter::new(1, same_controller_status);
-                Self::update_entity_rc(&involved_entity_id, reference_counter, DeltaMode::Decrement);
+                let rc_delta = EntityReferenceCounterSideEffect::one(same_controller_status, DeltaMode::Decrement);
+                Self::update_entity_rc(involved_entity_id, rc_delta);
             }
 
             // Remove value at in_class_schema_property_id in property value vector
@@ -1462,8 +1463,8 @@ decl_module! {
             // Increase reference counter of involved entity (if some)
             if let Some(entity_rc_to_increment) = value.get_involved_entity() {
                 let same_controller_status = class_property.property_type.same_controller_status();
-                let reference_counter = InboundReferenceCounter::new(1, same_controller_status);
-                Self::update_entity_rc(&entity_rc_to_increment, reference_counter, DeltaMode::Increment);
+                let rc_delta = EntityReferenceCounterSideEffect::one(same_controller_status, DeltaMode::Increment);
+                Self::update_entity_rc(entity_rc_to_increment, rc_delta);
             }
 
             // Insert SinglePropertyValue at in_class_schema_property_id into property value vector
@@ -1541,19 +1542,16 @@ impl<T: Trait> Module<T> {
     /// Updates corresponding `Entity` `reference_counter` by `reference_counter_delta`.
     /// Depends on `delta_mode` enum provided.
     fn update_entity_rc(
-        entity_id: &T::EntityId,
-        reference_counter_delta: InboundReferenceCounter,
-        delta_mode: DeltaMode,
+        entity_id: T::EntityId,
+        reference_counter_delta: EntityReferenceCounterSideEffect,
     ) {
-        if let DeltaMode::Increment = delta_mode {
-            <EntityById<T>>::mutate(entity_id, |entity| {
-                entity.reference_counter += reference_counter_delta
-            })
-        } else {
-            <EntityById<T>>::mutate(entity_id, |entity| {
-                entity.reference_counter -= reference_counter_delta
-            })
-        }
+        <EntityById<T>>::mutate(entity_id, |entity| {
+            let entity_inbound_rc = entity.get_reference_counter_mut();
+            entity_inbound_rc.total =
+                (entity_inbound_rc.total as i32 + reference_counter_delta.total) as u32;
+            entity_inbound_rc.same_owner =
+                (entity_inbound_rc.same_owner as i32 + reference_counter_delta.same_owner) as u32;
+        })
     }
 
     /// Returns the stored `Class` if exist, error otherwise.
@@ -1595,50 +1593,76 @@ impl<T: Trait> Module<T> {
             .collect()
     }
 
+    fn perform_entities_inbound_rcs_delta_calculation(
+        mut inbound_rcs_delta: EntitiesInboundRcsDelta<T>,
+        involved_entity_ids: Vec<T::EntityId>,
+        same_controller_status: bool,
+        delta_mode: DeltaMode,
+    ) -> EntitiesInboundRcsDelta<T> {
+        for involved_entity_id in involved_entity_ids {
+            *inbound_rcs_delta
+                .entry(involved_entity_id)
+                .or_insert_with(EntityReferenceCounterSideEffect::default) +=
+                EntityReferenceCounterSideEffect::one(same_controller_status, delta_mode);
+        }
+        inbound_rcs_delta
+    }
+
     /// Calculate `entities_inbound_rcs_delta`, based on values provided and chosen `DeltaMode`
     fn calculate_entities_inbound_rcs_delta(
         class_properties: &[Property<T>],
         property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
-        entities_inbound_rcs_delta: &mut EntitiesInboundRcsDelta<T>,
         delta_mode: DeltaMode,
-    ) {
-        for (property_id, property_value) in property_values {
-            // Indexing is safe, class should always maintain such constistency
-            let class_property = &class_properties[*property_id as usize];
-            if let Some(involved_entity_ids) = property_value.get_involved_entities() {
-                entities_inbound_rcs_delta.fill_in_inbound_entities_rcs(
-                    involved_entity_ids,
-                    class_property.property_type.same_controller_status(),
-                    delta_mode,
-                );
-            }
-        }
+    ) -> EntitiesInboundRcsDelta<T> {
+        property_values
+            .iter()
+            .filter_map(|(property_id, property_value)| {
+                property_value
+                    .get_involved_entities()
+                    .map(|involved_entity_ids| {
+                        let class_property = &class_properties[*property_id as usize];
+                        (
+                            involved_entity_ids,
+                            class_property.property_type.same_controller_status(),
+                        )
+                    })
+            })
+            .fold(
+                EntitiesInboundRcsDelta::default(),
+                |inbound_rcs_delta, (involved_entity_ids, same_controller_status)| {
+                    Self::perform_entities_inbound_rcs_delta_calculation(
+                        inbound_rcs_delta,
+                        involved_entity_ids,
+                        same_controller_status,
+                        delta_mode,
+                    )
+                },
+            )
     }
 
-    /// Get `updated_inbound_rcs_delta`, based on entities involved into update process
+    /// Get `EntitiesInboundRcsDelta`, based on entities involved into update process
     pub fn get_updated_inbound_rcs_delta(
         class_properties: Vec<Property<T>>,
         entity_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
         new_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> EntitiesInboundRcsDelta<T> {
         // Entities, which rcs should be updated
-        let mut updated_inbound_rcs_delta = EntitiesInboundRcsDelta::<T>::default();
+        let entity_property_values_to_update: BTreeMap<PropertyId, PropertyValue<T>> =
+            entity_property_values
+                .into_iter()
+                .filter(|(entity_id, _)| new_property_values.contains_key(entity_id))
+                .collect();
 
         Self::calculate_entities_inbound_rcs_delta(
             &class_properties,
-            &entity_property_values,
-            &mut updated_inbound_rcs_delta,
+            &entity_property_values_to_update,
             DeltaMode::Decrement,
-        );
-
-        Self::calculate_entities_inbound_rcs_delta(
+        )
+        .update(Self::calculate_entities_inbound_rcs_delta(
             &class_properties,
             new_property_values,
-            &mut updated_inbound_rcs_delta,
             DeltaMode::Increment,
-        );
-
-        updated_inbound_rcs_delta
+        ))
     }
 
     /// Used to update `class_permissions` with parameters provided.
