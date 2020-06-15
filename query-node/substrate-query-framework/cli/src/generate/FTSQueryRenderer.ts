@@ -45,7 +45,7 @@ interface MustacheQueryField {
 
 
 
-export class FTSQueryGenerator {
+export class FTSQueryRenderer {
     private _context: GeneratorContext = {};
 
     constructor(context: GeneratorContext = {}) {

@@ -6,7 +6,7 @@ import * as prettier from 'prettier';
 
 import Debug from "debug";
 import { WarthogModel } from '../model';
-import { FTSQueryGenerator } from './FTSQueryRenderer';
+import { FTSQueryRenderer } from './FTSQueryRenderer';
 import { ModelRenderer } from './ModelRenderer';
 import { kebabCase, camelCase } from 'lodash';
 import { supplant, pascalCase, camelPlural } from './utils';
@@ -49,15 +49,15 @@ export class SourcesGenerator {
 
     this.model.types.map((objType) => {
       const modelRenderer = new ModelRenderer({ "generatedFolderRelPath": this.getGeneratedFolderRelativePath(objType.name) });
-      const transform = (template:string) => modelRenderer.generate(template, objType);
+      const render = (template:string) => modelRenderer.generate(template, objType);
       
       createDir(path.resolve(process.cwd(), this.getDestFolder(objType.name)), false, true);
       
       const destFiles = this.getDestFiles(objType.name);
       ['model', 'resolver', 'service'].map((s) => {
-        this.transformAndWrite(`entities/${s}.ts.mst`, 
+        this.renderAndWrite(`entities/${s}.ts.mst`, 
           destFiles[s],
-          transform);
+          render);
       })
     });
   } 
@@ -75,26 +75,26 @@ export class SourcesGenerator {
     const ftsDir = this.getDestFolder(FULL_TEXT_QUERIES_FOLDER);
     createDir(path.resolve(process.cwd(), ftsDir), false, true);
 
-    const queryGenerator = new FTSQueryGenerator();
+    const queryRenderer = new FTSQueryRenderer();
     
     this.model.ftsQueries.map((query) => {
-      const transform = (template:string) => queryGenerator.generate(template, query);
+      const render = (template:string) => queryRenderer.generate(template, query);
       const filePrefix = kebabCase(query.name);
 
        // migration
-      this.transformAndWrite('textsearch/migration.ts.mst', 
-          path.join(migrationsDir, `${filePrefix}.migration.ts`), transform);
+      this.renderAndWrite('textsearch/migration.ts.mst', 
+          path.join(migrationsDir, `${filePrefix}.migration.ts`), render);
         
        // resolver   
-      this.transformAndWrite('textsearch/resolver.ts.mst', 
-          path.join(ftsDir, `${filePrefix}.resolver.ts`), transform);   
+      this.renderAndWrite('textsearch/resolver.ts.mst', 
+          path.join(ftsDir, `${filePrefix}.resolver.ts`), render);   
 
        // service
-      this.transformAndWrite('textsearch/service.ts.mst', 
-          path.join(ftsDir, `${filePrefix}.service.ts`), transform);   
+      this.renderAndWrite('textsearch/service.ts.mst', 
+          path.join(ftsDir, `${filePrefix}.service.ts`), render);   
     })
     
-}
+  }
 
 
   /**
@@ -103,20 +103,20 @@ export class SourcesGenerator {
    * @param destPath relative path to the `generated/graphql-server' folder, e.g. 'src/index.ts'
    * @param transformer function which transforms the template contents
    */
-  private transformAndWrite(template: string, destPath: string, transform: (data: string) => string) {
+  private renderAndWrite(template: string, destPath: string, render: (data: string) => string) {
     const templateData: string = fs.readFileSync(getTemplatePath(template), 'utf-8');
     debug(`Source: ${getTemplatePath(template)}`);
-    let transformed: string = transform(templateData);
+    let rendered: string = render(templateData);
     
-    transformed = prettier.format(transformed, {
+    rendered = prettier.format(rendered, {
       parser: 'typescript'
     });
 
-    debug(`Transformed: ${transformed}`);
+    debug(`Transformed: ${rendered}`);
     const destFullPath = path.resolve(process.cwd(), destPath);
     
     debug(`Writing to: ${destFullPath}`);
-    createFile(destFullPath, transformed, true);
+    createFile(destFullPath, rendered, true);
   }
 
   getDestFolder(name: string): string {
