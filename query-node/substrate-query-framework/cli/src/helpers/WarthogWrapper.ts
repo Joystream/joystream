@@ -11,17 +11,15 @@ import { cli as warthogCli } from '../index';
 import { WarthogModelBuilder } from './WarthogModelBuilder';
 import { getTemplatePath, createFile, createDir } from '../utils/utils';
 import { WarthogModel } from '../model/WarthogModel';
-import { FTSQueryGenerator } from './FTSQueryGenerator';
-import { ModelRenderer } from '../generators/ModelRenderer';
 import Debug from "debug";
+import { SourcesGenerator } from '../generate/SourcesGenerator';
 
 const debug = Debug('qnode-cli:warthog-wrapper');
 
 export default class WarthogWrapper {
   private readonly command: Command;
   private readonly schemaPath: string;
-  private model?: WarthogModel;
-
+  
   constructor(command: Command, schemaPath: string) {
     this.command = command;
     this.schemaPath = schemaPath;
@@ -41,7 +39,7 @@ export default class WarthogWrapper {
 
     this.createMigrations();
 
-    this.generateQueries();
+    //this.generateQueries();
 
     this.runMigrations();
   }
@@ -52,7 +50,7 @@ export default class WarthogWrapper {
     this.installDependencies();
     this.createModels();
     this.codegen();
-    this.generateQueries();
+    //this.generateQueries();
   }
 
   async newProject(projectName = 'query_node'):Promise<void> {
@@ -87,33 +85,18 @@ export default class WarthogWrapper {
   }
 
   /**
-   * Generate model/resolver/service for input types in schema.json
+   * Generate all source files: 
+   *   - model/resolver/service for input types 
+   *   - Fulltext search queries
    */
   createModels():void {
     const schemaPath = path.resolve(process.cwd(), this.schemaPath);
 
     const modelBuilder = new WarthogModelBuilder(schemaPath);
-    this.model = modelBuilder.buildWarthogModel();
-
-    const modelRenderer = new ModelRenderer();
-
-    //TODO: Refactor this and read all the paths from Warthog's config
-    createDir(path.resolve(process.cwd(), 'src/modules'), false, true);
-
-    this.model.types.map((objType) => {
-      const transform = (template:string) => modelRenderer.generate(template, objType);
-      
-      createDir(path.resolve(process.cwd(), modelRenderer.getDestFolder(objType.name)), false, true);
-      
-      const destFiles = modelRenderer.getDestFiles(objType.name);
-      ['model', 'resolver', 'service'].map((s) => {
-        this.transformAndWrite(`entities/${s}.ts.mst`, 
-          destFiles[s],
-          transform);
-      })
-         
-    })
+    const model = modelBuilder.buildWarthogModel();
     
+    const sourcesGenerator = new SourcesGenerator(model);
+    sourcesGenerator.generate();
   }
 
   codegen():void {
@@ -129,58 +112,58 @@ export default class WarthogWrapper {
       execSync('yarn db:migrate');
   }
 
-  generateQueries():void {
-      if (!this.model) {
-          throw new Error("Warthog model is undefined");
-      }
-      // create migrations dir if not exists
-      createDir(path.resolve(process.cwd(), 'db/migrations'), false, true);
+  // generateQueries():void {
+  //     if (!this.model) {
+  //         throw new Error("Warthog model is undefined");
+  //     }
+  //     // create migrations dir if not exists
+  //     createDir(path.resolve(process.cwd(), 'db/migrations'), false, true);
       
-      // create dir if the textsearch module
-      createDir(path.resolve(process.cwd(), 'src/modules/textsearch'), false, true);
+  //     // create dir if the textsearch module
+  //     createDir(path.resolve(process.cwd(), 'src/modules/textsearch'), false, true);
 
-      const queryGenerator = new FTSQueryGenerator();
+  //     const queryGenerator = new FTSQueryGenerator();
       
-      this.model.ftsQueries.map((query) => {
-         const transform = (template:string) => queryGenerator.generate(template, query);
+  //     this.model.ftsQueries.map((query) => {
+  //        const transform = (template:string) => queryGenerator.generate(template, query);
          
-         // migration
-         this.transformAndWrite('textsearch/migration.ts.mst', 
-            `db/migrations/${query.name}.migration.ts`,
-            transform);
+  //        // migration
+  //        this.transformAndWrite('textsearch/migration.ts.mst', 
+  //           `db/migrations/${query.name}.migration.ts`,
+  //           transform);
           
-         // resolver   
-         this.transformAndWrite('textsearch/resolver.ts.mst', 
-            `src/modules/textsearch/${query.name}.resolver.ts`, transform);   
+  //        // resolver   
+  //        this.transformAndWrite('textsearch/resolver.ts.mst', 
+  //           `src/modules/textsearch/${query.name}.resolver.ts`, transform);   
 
-         // service
-         this.transformAndWrite('textsearch/service.ts.mst', 
-            `src/modules/textsearch/${query.name}.service.ts`, transform);   
-      })
+  //        // service
+  //        this.transformAndWrite('textsearch/service.ts.mst', 
+  //           `src/modules/textsearch/${query.name}.service.ts`, transform);   
+  //     })
       
-  }
+  // }
 
-  /**
-   * 
-   * @param template relative path to a template from the templates folder, e.g. 'db-helper.mst'
-   * @param destPath relative path to the `generated/graphql-server' folder, e.g. 'src/index.ts'
-   * @param transformer function which transforms the template contents
-   */
-  private transformAndWrite(template: string, destPath: string, transform: (data: string) => string) {
-    const templateData: string = fs.readFileSync(getTemplatePath(template), 'utf-8');
-    debug(`Source: ${getTemplatePath(template)}`);
-    let transformed: string = transform(templateData);
+  // /**
+  //  * 
+  //  * @param template relative path to a template from the templates folder, e.g. 'db-helper.mst'
+  //  * @param destPath relative path to the `generated/graphql-server' folder, e.g. 'src/index.ts'
+  //  * @param transformer function which transforms the template contents
+  //  */
+  // private transformAndWrite(template: string, destPath: string, transform: (data: string) => string) {
+  //   const templateData: string = fs.readFileSync(getTemplatePath(template), 'utf-8');
+  //   debug(`Source: ${getTemplatePath(template)}`);
+  //   let transformed: string = transform(templateData);
     
-    transformed = prettier.format(transformed, {
-      parser: 'typescript'
-    });
+  //   transformed = prettier.format(transformed, {
+  //     parser: 'typescript'
+  //   });
 
-    debug(`Transformed: ${transformed}`);
-    const destFullPath = path.resolve(process.cwd(), destPath);
+  //   debug(`Transformed: ${transformed}`);
+  //   const destFullPath = path.resolve(process.cwd(), destPath);
     
-    debug(`Writing to: ${destFullPath}`);
-    createFile(destFullPath, transformed, true);
-  }
+  //   debug(`Writing to: ${destFullPath}`);
+  //   createFile(destFullPath, transformed, true);
+  // }
 
   updateDotenv():void {
     // copy dotnenvi env.yml file 

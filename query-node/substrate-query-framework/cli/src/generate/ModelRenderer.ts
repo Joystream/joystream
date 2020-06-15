@@ -5,6 +5,7 @@ import * as path from 'path';
 import { kebabCase, camelCase } from 'lodash';
 import { supplant, pascalCase, camelPlural, getTypesForArray, names } from './utils';
 import Debug from "debug";
+import { GeneratorContext } from './SourcesGenerator';
 
 const debug = Debug('qnode-cli:model-renderer');
 
@@ -88,17 +89,11 @@ interface Props {
 }
 
 export class ModelRenderer {
-  readonly config: Config;
-  readonly cliGeneratePath: string;
 
-  // TODO: this should be refactored the hell otta here
-  constructor() {
-    this.config = new Config();
-    this.config.loadSync();
+  private context: GeneratorContext = {};
 
-    this.cliGeneratePath =
-      path.join(this.config.get('ROOT_FOLDER'), '/', this.config.get('CLI_GENERATE_PATH'), '/');
-    
+  constructor(context: GeneratorContext = {}) {
+    this.context = context;
   }
 
   transformField(f: Field): MustacheField {
@@ -153,7 +148,7 @@ export class ModelRenderer {
     debug(`ObjectType has: ${JSON.stringify(has, null, 2)}`);
 
     return { fields, 
-            generatedFolderRelPath: this.getGeneratedFolderRelativePath(objType.name),
+            generatedFolderRelPath: this.context["generatedFolderRelPath"] as string, //this.getGeneratedFolderRelativePath(objType.name),
             has,
             ...names(objType.name) } as MustacheObjectType;
   }
@@ -163,27 +158,6 @@ export class ModelRenderer {
     return Mustache.render(mustacheTeplate, mustacheQuery);
   }
 
-  getDestFolder(name: string): string {
-    const names = {
-        className: pascalCase(name),
-        camelName: camelCase(name),
-        kebabName: kebabCase(name),
-        camelNamePlural: camelPlural(name)
-    }
-    return supplant(this.cliGeneratePath, names);
-  }
-  
-  getGeneratedFolderRelativePath(name: string): string {
-    return path.relative(this.getDestFolder(name), this.config.get('GENERATED_FOLDER')); 
-  }
-
-  getDestFiles(name: string): { [key: string]: string }{
-    return {
-      model: path.join(this.getDestFolder(name), `${kebabCase(name)}.model.ts`),
-      resolver: path.join(this.getDestFolder(name), `${kebabCase(name)}.resolver.ts`),
-      service: path.join(this.getDestFolder(name), `${kebabCase(name)}.service.ts`)
-    }
-  }
   
   relativePathForModel(referenced: string): string {
     return path.join(

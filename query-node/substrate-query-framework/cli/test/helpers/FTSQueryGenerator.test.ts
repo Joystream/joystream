@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { createModel } from './model';
 import * as fs from 'fs-extra';
-import { FTSQueryGenerator } from '../../src/helpers/FTSQueryGenerator';
+import { FTSQueryGenerator } from '../../src/generate/FTSQueryRenderer';
 import * as chai from 'chai';
 
 const chaiSnapshot = require('mocha-chai-snapshot');

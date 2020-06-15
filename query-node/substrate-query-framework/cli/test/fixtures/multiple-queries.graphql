@@ -1,4 +1,4 @@
-type Membership {
+type Membership @entity {
   # Member's root account id
   accountId: String!
 
