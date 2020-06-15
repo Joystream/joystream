@@ -1312,7 +1312,7 @@ decl_module! {
             if let Some(entity_ids_to_decrease_rcs) = property_value_vector.get_vec_value().get_involved_entities() {
                 let same_controller_status = property.property_type.same_controller_status();
                 let entities_inbound_rcs_delta = Self::perform_entities_inbound_rcs_delta_calculation(
-                    EntitiesInboundRcsDelta::<T>::default(), entity_ids_to_decrease_rcs, same_controller_status, DeltaMode::Decrement
+                    ReferenceCounterSideEffects::<T>::default(), entity_ids_to_decrease_rcs, same_controller_status, DeltaMode::Decrement
                 );
                 entities_inbound_rcs_delta.update_entities_rcs();
             }
@@ -1576,11 +1576,11 @@ impl<T: Trait> Module<T> {
     }
 
     fn perform_entities_inbound_rcs_delta_calculation(
-        mut inbound_rcs_delta: EntitiesInboundRcsDelta<T>,
+        mut inbound_rcs_delta: ReferenceCounterSideEffects<T>,
         involved_entity_ids: Vec<T::EntityId>,
         same_controller_status: bool,
         delta_mode: DeltaMode,
-    ) -> EntitiesInboundRcsDelta<T> {
+    ) -> ReferenceCounterSideEffects<T> {
         for involved_entity_id in involved_entity_ids {
             *inbound_rcs_delta
                 .entry(involved_entity_id)
@@ -1595,7 +1595,7 @@ impl<T: Trait> Module<T> {
         class_properties: &[Property<T>],
         property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
         delta_mode: DeltaMode,
-    ) -> EntitiesInboundRcsDelta<T> {
+    ) -> ReferenceCounterSideEffects<T> {
         property_values
             .iter()
             .filter_map(|(property_id, property_value)| {
@@ -1610,7 +1610,7 @@ impl<T: Trait> Module<T> {
                     })
             })
             .fold(
-                EntitiesInboundRcsDelta::default(),
+                ReferenceCounterSideEffects::default(),
                 |inbound_rcs_delta, (involved_entity_ids, same_controller_status)| {
                     Self::perform_entities_inbound_rcs_delta_calculation(
                         inbound_rcs_delta,
@@ -1622,12 +1622,12 @@ impl<T: Trait> Module<T> {
             )
     }
 
-    /// Get `EntitiesInboundRcsDelta`, based on entities involved into update process
+    /// Get `ReferenceCounterSideEffects`, based on entities involved into update process
     pub fn get_updated_inbound_rcs_delta(
         class_properties: Vec<Property<T>>,
         entity_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
         new_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
-    ) -> EntitiesInboundRcsDelta<T> {
+    ) -> ReferenceCounterSideEffects<T> {
         // Entities, which rcs should be updated
         let entity_property_values_to_update: BTreeMap<PropertyId, PropertyValue<T>> =
             entity_property_values

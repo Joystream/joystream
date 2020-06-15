@@ -96,12 +96,12 @@ impl AddAssign for EntityReferenceCounterSideEffect {
     }
 }
 
-/// Structure, respresenting `entity_id` mappings to their respective `InboundReferenceCounterDelta`
-pub struct EntitiesInboundRcsDelta<T: Trait>(
+/// The net side effect on a set of entities from some operations.
+pub struct ReferenceCounterSideEffects<T: Trait>(
     BTreeMap<T::EntityId, EntityReferenceCounterSideEffect>,
 );
 
-impl<T: Trait> Deref for EntitiesInboundRcsDelta<T> {
+impl<T: Trait> Deref for ReferenceCounterSideEffects<T> {
     type Target = BTreeMap<T::EntityId, EntityReferenceCounterSideEffect>;
 
     fn deref(&self) -> &Self::Target {
@@ -109,19 +109,19 @@ impl<T: Trait> Deref for EntitiesInboundRcsDelta<T> {
     }
 }
 
-impl<T: Trait> DerefMut for EntitiesInboundRcsDelta<T> {
+impl<T: Trait> DerefMut for ReferenceCounterSideEffects<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl<T: Trait> Default for EntitiesInboundRcsDelta<T> {
+impl<T: Trait> Default for ReferenceCounterSideEffects<T> {
     fn default() -> Self {
         Self(BTreeMap::default())
     }
 }
 
-impl<T: Trait> EntitiesInboundRcsDelta<T> {
+impl<T: Trait> ReferenceCounterSideEffects<T> {
     /// Updates all the elements of `other` with `Self`
     pub fn update(mut self, mut other: Self) -> Self {
         let entity_ids: BTreeSet<T::EntityId> = self.keys().chain(other.keys()).copied().collect();
@@ -139,7 +139,7 @@ impl<T: Trait> EntitiesInboundRcsDelta<T> {
         self
     }
 
-    /// Traverse `EntitiesInboundRcsDelta`, updating each `Entity` respective reference counters
+    /// Traverse `ReferenceCounterSideEffects`, updating each `Entity` respective reference counters
     pub fn update_entities_rcs(self) {
         self.0
             .into_iter()
