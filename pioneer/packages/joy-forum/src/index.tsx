@@ -9,8 +9,8 @@ import './index.css';
 
 import translate from './translate';
 import { ForumProvider } from './Context';
-import { EditForumSudo, ForumSudoProvider } from './ForumSudo';
-import { NewCategory, NewSubcategory, EditCategory } from './EditCategory';
+import { ForumSudoProvider } from './ForumSudo';
+import { NewSubcategory, EditCategory } from './EditCategory';
 import { NewThread, EditThread } from './EditThread';
 import { NewReply, EditReply } from './EditReply';
 import { CategoryList, ViewCategoryById } from './CategoryList';
