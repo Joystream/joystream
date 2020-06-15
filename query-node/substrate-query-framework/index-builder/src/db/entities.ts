@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryColumn, EntityManager } from 'typeorm';
+import { Entity, Column, EntityManager, PrimaryGeneratedColumn } from 'typeorm';
 import { SubstrateEvent } from '..';
 
 /**
@@ -7,8 +7,11 @@ import { SubstrateEvent } from '..';
  */
 @Entity()
 export class SavedEntityEvent {
+  @PrimaryGeneratedColumn()
+  id!: number;
+
   // Index of the event. @polkadot/types/interfaces/EventId
-  @PrimaryColumn()
+  @Column()
   index!: number;
 
   // The actually event name without event section. Event.method
@@ -23,7 +26,7 @@ export class SavedEntityEvent {
   @Column('timestamp without time zone', {
     default: () => 'now()',
   })
-  createdAt!: Date;
+  updatedAt!: Date;
 
   constructor(init?: Partial<SavedEntityEvent>) {
     Object.assign(this, init);
@@ -35,37 +38,16 @@ export class SavedEntityEvent {
    * @param event
    */
   static async update(event: SubstrateEvent, manager: EntityManager): Promise<void> {
-    let lastProcessedEvent = await manager
-      .getRepository(SavedEntityEvent)
-      .createQueryBuilder('saved_entity_event')
-      .select()
-      .limit(1)
-      .setLock('pessimistic_read')
-      .getOne();
+    let lastProcessedEvent = await manager.findOne(SavedEntityEvent, { where: { id: 1 } });
 
-    if (lastProcessedEvent) {
-      await manager
-        .getRepository(SavedEntityEvent)
-        .createQueryBuilder()
-        .setLock('pessimistic_write')
-        .update()
-        .set({ index: event.index, eventName: event.event_method, blockNumber: event.block_number })
-        .execute();
-    } else {
-      lastProcessedEvent = new SavedEntityEvent({
-        index: event.index,
-        eventName: event.event_method,
-        blockNumber: event.block_number,
-      });
-
-      await manager
-        .getRepository(SavedEntityEvent)
-        .createQueryBuilder()
-        .setLock('pessimistic_write')
-        .insert()
-        .into(SavedEntityEvent)
-        .values(lastProcessedEvent)
-        .execute();
+    if (!lastProcessedEvent) {
+      lastProcessedEvent = new SavedEntityEvent();
     }
+
+    lastProcessedEvent.index = event.index;
+    lastProcessedEvent.eventName = event.event_method;
+    lastProcessedEvent.blockNumber = event.block_number;
+
+    await manager.save(lastProcessedEvent);
   }
 }
