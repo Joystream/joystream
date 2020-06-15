@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Pagination as SuiPagination } from 'semantic-ui-react';
+import { Breadcrumb, Pagination as SuiPagination } from 'semantic-ui-react';
+import styled from 'styled-components';
 
 import { Category, CategoryId, Thread, ThreadId } from '@joystream/types/forum';
 import { withForumCalls } from './calls';
@@ -36,6 +37,7 @@ type CategoryCrumbsProps = {
   category?: Category;
   threadId?: ThreadId;
   thread?: Thread;
+  root?: boolean;
 };
 
 function InnerCategoryCrumb (p: CategoryCrumbsProps) {
@@ -46,8 +48,8 @@ function InnerCategoryCrumb (p: CategoryCrumbsProps) {
       const url = `/forum/categories/${category.id.toString()}`;
       return <>
         {category.parent_id ? <CategoryCrumb categoryId={category.parent_id} /> : null}
-        <i className='right angle icon divider'></i>
-        <Link className='section' to={url}>{category.title}</Link>
+        <Breadcrumb.Divider icon="right angle" />
+        <Breadcrumb.Section as={Link} to={url}>{category.title}</Breadcrumb.Section>
       </>;
     } catch (err) {
       console.log('Failed to create a category breadcrumb', err);
@@ -72,8 +74,8 @@ function InnerThreadCrumb (p: CategoryCrumbsProps) {
       const url = `/forum/threads/${thread.id.toString()}`;
       return <>
         <CategoryCrumb categoryId={thread.category_id} />
-        <i className='right angle icon divider'></i>
-        <Link className='section' to={url}>{thread.title}</Link>
+        <Breadcrumb.Divider icon="right angle" />
+        <Breadcrumb.Section as={Link} to={url}>{thread.title}</Breadcrumb.Section>
       </>;
     } catch (err) {
       console.log('Failed to create a thread breadcrumb', err);
@@ -90,13 +92,26 @@ const ThreadCrumb = withMulti(
   )
 );
 
-export const CategoryCrumbs = (p: CategoryCrumbsProps) => {
+const StyledBreadcrumbs = styled(Breadcrumb)`
+  && {
+    font-size: 1.3rem;
+    line-height: 1.2;
+  }
+`;
+
+export const CategoryCrumbs = ({ categoryId, threadId, root }: CategoryCrumbsProps) => {
   return (
-    <div className='ui breadcrumb'>
-      <Link className='section' to='/forum'>Top categories</Link>
-      <CategoryCrumb categoryId={p.categoryId} />
-      <ThreadCrumb threadId={p.threadId} />
-    </div>
+    <StyledBreadcrumbs>
+      <Breadcrumb.Section>Forum</Breadcrumb.Section>
+      {!root && (
+        <>
+          <Breadcrumb.Divider icon="right angle" />
+          <Breadcrumb.Section as={Link} to="/forum">Top categories</Breadcrumb.Section>
+          <CategoryCrumb categoryId={categoryId} />
+          <ThreadCrumb threadId={threadId} />
+        </>
+      )}
+    </StyledBreadcrumbs>
   );
 };
 
