@@ -25,8 +25,8 @@
 		"build": "rollup -c",
 		"storybook": "start-storybook -p 6006",
 		"build-storybook": "build-storybook",
-		"now-build": "build-storybook",
-		"test": "echo \"Error: run tests from root\" && exit 1"
+		"test": "echo \"Error: run tests from root\" && exit 1",
+		"chromatic": "chromatic --project-token=qq8aetz26u"
 	},
 	"bugs": {
 		"url": "https://github.com/Joystream/atlas/issues"
