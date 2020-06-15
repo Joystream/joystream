@@ -1,6 +1,7 @@
 import { getTypeRegistry, bool, u16, u32, u64, Text, Option, Vec as Vector} from '@polkadot/types';
 import { AccountId, Moment, BlockNumber } from '@polkadot/types/interfaces';
 import { GenericAccountId } from '@polkadot/types';
+import moment from 'moment';
 
 import { JoyStruct } from './JoyStruct';
 
@@ -25,6 +26,10 @@ export class BlockchainTimestamp extends JoyStruct<BlockchainTimestampType> {
 
   get time (): Moment {
     return this.getField('time');
+  }
+
+  get momentDate (): moment.Moment {
+    return moment(this.time.toNumber());
   }
 
   static newEmpty (): BlockchainTimestamp {
