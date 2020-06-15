@@ -52,7 +52,7 @@ cargo build --release
 Run the node and connect to the public testnet.
 
 ```bash
-cargo run --release -- --chain ./rome-tesnet.json
+cargo run --release -- --chain ./rome-testnet.json
 ```
 
 The `rome-testnet.json` chain file can be obtained from the [releases page](https://github.com/Joystream/joystream/releases/tag/v6.8.0)
@@ -68,7 +68,7 @@ cargo install joystream-node --path node/
 Now you can run
 
 ```bash
-joystream-node --chain rome-testnet.json
+joystream-node --chain ./rome-testnet.json
 ```
 
 ### Local development
@@ -149,15 +149,15 @@ cargo-fmt
 
 ## Contributing
 
-Please see our [contributing guidlines](https://github.com/Joystream/joystream#contribute) for details on our code of conduct, and the process for submitting pull requests to us.
+Please see our [contributing guidlines](./pioneer/CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## Authors
 
-See also the list of [CONTRIBUTORS](./CONTRIBUTORS) who participated in this project.
+See also the list of [CONTRIBUTORS](https://github.com/Joystream/joystream/graphs/contributors) who participated in this project.
 
 ## License
 
-This project is licensed under the GPLv3 License - see the [LICENSE](LICENSE) file for details
+This project is licensed under the GPLv3 License - see the [LICENSE](./pioneer/LICENSE) file for details
 
 ## Acknowledgments
 
