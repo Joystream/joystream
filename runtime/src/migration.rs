@@ -3,8 +3,11 @@
 
 use crate::VERSION;
 use rstd::prelude::*;
-use sr_primitives::{print, traits::Zero};
-use srml_support::{debug, decl_event, decl_module, decl_storage};
+use sr_primitives::{
+    print,
+    traits::{One, Zero},
+};
+use srml_support::{debug, decl_event, decl_module, decl_storage, StorageMap};
 
 impl<T: Trait> Module<T> {
     /// This method is called from on_initialize() when a runtime upgrade is detected. This
@@ -21,11 +24,20 @@ impl<T: Trait> Module<T> {
 
         Self::initialize_storage_working_group_mint();
         Self::initialize_storage_working_group_text_constraints();
+
+        // ** Order is important!
+        Self::clear_storage_data_object_registry_data();
+        Self::clear_storage_data_directory_data();
+        // **
     }
 }
 
 pub trait Trait:
-    system::Trait + minting::Trait + working_group::Trait<working_group::Instance2>
+    system::Trait
+    + minting::Trait
+    + working_group::Trait<working_group::Instance2>
+    + storage::data_directory::Trait
+    + storage::data_object_storage_registry::Trait
 {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
@@ -90,5 +102,28 @@ impl<T: Trait> Module<T> {
         <working_group::WorkerExitRationaleText<working_group::Instance2>>::put(
             working_group::default_text_constraint(),
         );
+    }
+
+    fn clear_storage_data_object_registry_data() {
+        for id in <storage::data_directory::Module<T>>::known_content_ids() {
+            <storage::data_object_storage_registry::RelationshipsByContentId<T>>::remove(id);
+        }
+
+        let mut potential_id = <T as storage::data_object_storage_registry::Trait>::DataObjectStorageRelationshipId::zero();
+        while potential_id
+            < storage::data_object_storage_registry::Module::<T>::next_relationship_id()
+        {
+            <storage::data_object_storage_registry::Relationships<T>>::remove(&potential_id);
+
+            potential_id += <T as storage::data_object_storage_registry::Trait>::DataObjectStorageRelationshipId::one();
+        }
+    }
+
+    fn clear_storage_data_directory_data() {
+        for id in <storage::data_directory::Module<T>>::known_content_ids() {
+            <storage::data_directory::DataObjectByContentId<T>>::remove(id);
+        }
+
+        <storage::data_directory::KnownContentIds<T>>::kill();
     }
 }
