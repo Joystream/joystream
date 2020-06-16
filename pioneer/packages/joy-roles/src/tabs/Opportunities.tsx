@@ -547,7 +547,6 @@ export const OpeningsView = Loadable<OpeningsViewProps>(
               [{ value: '', text: 'All opportunities' }]
                 .concat(AvailableGroups.map(g => ({ value: g, text: _.startCase(g) })))
             }
-            defaultValue={''}
             value={group}
             onChange={onFilterChange}
             selection
