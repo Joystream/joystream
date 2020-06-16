@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import { flags } from '@oclif/command';
 import { ApiMethodInputArg } from '../../base/ApiCommandBase';
 import { schemaValidator } from '@joystream/types/lib/hiring';
+import { apiModuleByGroup } from '../../Api';
 
 export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase {
     static description = 'Create working group opening (requires lead access)';
@@ -46,7 +47,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
         if (!flags.skipPrompts) {
             const params = await this.buildAndSendExtrinsic(
                 account,
-                'storageBureaucracy',
+                apiModuleByGroup[this.group],
                 'addWorkerOpening',
                 { 'human_readable_text': { struct: HRTStruct, schemaValidator } },
                 defaultValues
@@ -66,7 +67,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
         }
         else {
             this.log(chalk.white('Sending the extrinsic...'));
-            await this.sendExtrinsic(account, 'storageBureaucracy', 'addWorkerOpening', defaultValues!);
+            await this.sendExtrinsic(account, apiModuleByGroup[this.group], 'addWorkerOpening', defaultValues!);
             this.log(chalk.green('Opening succesfully created!'));
         }
     }

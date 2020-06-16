@@ -2,6 +2,7 @@ import ExitCodes from '../ExitCodes';
 import AccountsCommandBase from './AccountsCommandBase';
 import { flags } from '@oclif/command';
 import { WorkingGroups, AvailableGroups, NamedKeyringPair, GroupLeadWithProfile, GroupMember } from '../Types';
+import { apiModuleByGroup } from '../Api';
 import { CLIError } from '@oclif/errors';
 import inquirer from 'inquirer';
 import { ApiMethodInputArg } from './ApiCommandBase';
@@ -122,7 +123,7 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
     loadOpeningDraftParams(draftName: string) {
         const draftFilePath = this.getOpeningDraftPath(draftName);
         const params = this.extrinsicArgsFromDraft(
-            'storageBureaucracy',
+            apiModuleByGroup[this.group],
             'addWorkerOpening',
             draftFilePath
         );

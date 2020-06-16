@@ -28,7 +28,7 @@ export const DEFAULT_API_URI = 'wss://rome-rpc-endpoint.joystream.org:9944/';
 const DEFAULT_DECIMALS = new u32(12);
 
 // Mapping of working group to api module
-const apiModuleByGroup: { [key in WorkingGroups]: string } = {
+export const apiModuleByGroup: { [key in WorkingGroups]: string } = {
     [WorkingGroups.StorageProviders]: 'storageWorkingGroup'
 };
 
