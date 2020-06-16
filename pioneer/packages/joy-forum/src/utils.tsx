@@ -2,6 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Breadcrumb, Pagination as SuiPagination } from 'semantic-ui-react';
 import styled from 'styled-components';
+import moment from 'moment';
+import Tooltip from 'react-tooltip';
 
 import { Category, CategoryId, Thread, ThreadId } from '@joystream/types/forum';
 import { withForumCalls } from './calls';
@@ -114,6 +116,22 @@ export const CategoryCrumbs = ({ categoryId, threadId, root }: CategoryCrumbsPro
     </StyledBreadcrumbs>
   );
 };
+
+type TimeAgoDateProps = {
+  date: moment.Moment;
+  id: any;
+};
+
+export const TimeAgoDate: React.FC<TimeAgoDateProps> = ({ date, id }) => (
+  <>
+    <span data-tip data-for={`${id}-date-tooltip`}>
+      {date.fromNow()}
+    </span>
+    <Tooltip id={`${id}-date-tooltip`} place="top" effect="solid">
+      {date.toLocaleString()}
+    </Tooltip>
+  </>
+);
 
 // It's used on such routes as:
 //   /categories/:id

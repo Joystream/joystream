@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import Tooltip from 'react-tooltip';
 import { Segment, Button, Icon } from 'semantic-ui-react';
 
 import { Post, Category, Thread } from '@joystream/types/forum';
@@ -11,6 +10,7 @@ import { JoyWarn } from '@polkadot/joy-utils/JoyStatus';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { IfIAmForumSudo } from './ForumSudo';
 import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
+import { TimeAgoDate } from './utils';
 
 const HORIZONTAL_PADDING = '1em';
 const ReplyMarkdown = styled(ReactMarkdown)`
@@ -41,7 +41,7 @@ const ReplyContent = styled.div`
 const ReplyFooter = styled.div`
   border-top: 1px solid rgba(34, 36, 38, .15);
   background-color: #fafcfc;
-  padding: 0.5em ${HORIZONTAL_PADDING};
+  padding: 0.35em ${HORIZONTAL_PADDING};
 `;
 const ReplyFooterActionsRow = styled.div`
   display: flex;
@@ -108,8 +108,6 @@ export function ViewReply (props: ViewReplyProps) {
     </ReplyFooterActionsRow>;
   };
 
-  const replyDate = reply.created_at.momentDate;
-
   return (
     <ReplyContainer>
       <ReplyHeader>
@@ -117,12 +115,7 @@ export function ViewReply (props: ViewReplyProps) {
           <MemberPreview accountId={reply.author_id} />
         </ReplyHeaderAuthorRow>
         <ReplyHeaderDetailsRow>
-          <span data-tip data-for="reply-full-date">
-            {replyDate.fromNow()}
-          </span>
-          <Tooltip id="reply-full-date" place="top" effect="solid">
-            {replyDate.toLocaleString()}
-          </Tooltip>
+          <TimeAgoDate date={reply.created_at.momentDate} id={reply.id} />
           <a>
             #{reply.nr_in_thread.toNumber()}
           </a>

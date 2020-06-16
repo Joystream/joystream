@@ -24,6 +24,7 @@ type MemberPreviewProps = ApiProps & I18nProps & {
   memberProfile?: Option<any>; // TODO refactor to Option<Profile>
   activeCouncil?: Seat[];
   prefixLabel?: string;
+  inline?: boolean;
   className?: string;
   style?: React.CSSProperties;
 };
@@ -37,7 +38,7 @@ class InnerMemberPreview extends React.PureComponent<MemberPreviewProps> {
   }
 
   private renderProfile (memberProfile: Profile) {
-    const { activeCouncil = [], accountId, prefixLabel, className, style } = this.props;
+    const { activeCouncil = [], accountId, prefixLabel, inline, className, style } = this.props;
     const { handle, avatar_uri } = memberProfile;
 
     const hasAvatar = avatar_uri && nonEmptyStr(avatar_uri.toString());
@@ -48,21 +49,26 @@ class InnerMemberPreview extends React.PureComponent<MemberPreviewProps> {
         {prefixLabel &&
           <MutedSpan className='PrefixLabel'>{prefixLabel}</MutedSpan>
         }
-        {hasAvatar
-          ? <img className='Avatar' src={avatar_uri.toString()} width={AvatarSizePx} height={AvatarSizePx} />
-          : <IdentityIcon className='Avatar' value={accountId} size={AvatarSizePx} />
-        }
+        {!inline && (
+          hasAvatar ? (
+            <img className="Avatar" src={avatar_uri.toString()} width={AvatarSizePx} height={AvatarSizePx} />
+          ) : (
+            <IdentityIcon className="Avatar" value={accountId} size={AvatarSizePx} />
+          )
+        )}
         <div className='Content'>
           <div className='Username'>
             <Link to={`/members/${handle.toString()}`} className='handle'>{handle.toString()}</Link>
           </div>
-          <div className='Details'>
-            {isCouncilor &&
-              <b className='muted text' style={{ color: '#607d8b' }}>
-                <i className='university icon'></i>
-                Council member
-              </b>}
-          </div>
+          {!inline && (
+            <div className='Details'>
+              {isCouncilor &&
+                <b className='muted text' style={{ color: '#607d8b' }}>
+                  <i className='university icon'></i>
+                  Council member
+                </b>}
+            </div>
+          )}
         </div>
       </FlexCenter>
     </div>;

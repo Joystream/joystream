@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
+import styled from 'styled-components';
 import { Table, Button, Label } from 'semantic-ui-react';
 import { History } from 'history';
 import BN from 'bn.js';
 
 import { Category, Thread, ThreadId, Post, PostId } from '@joystream/types/forum';
-import { Pagination, RepliesPerPage, CategoryCrumbs } from './utils';
+import { Pagination, RepliesPerPage, CategoryCrumbs, TimeAgoDate } from './utils';
 import { ViewReply } from './ViewReply';
 import { Moderate } from './Moderate';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
@@ -18,6 +19,7 @@ import { orderBy } from 'lodash';
 import { bnToStr } from '@polkadot/joy-utils/index';
 import { IfIAmForumSudo } from './ForumSudo';
 import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
+import { formatDate } from '@polkadot/joy-utils/functions/date';
 
 type ThreadTitleProps = {
   thread: Thread;
@@ -35,6 +37,40 @@ function ThreadTitle (props: ThreadTitleProps) {
     {thread.title}
   </span>;
 }
+
+const ThreadHeader = styled.div`
+  margin: 1rem 0;
+
+  h1 {
+    margin: 0;
+  }
+`;
+
+const ThreadInfoAndActions = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-top: .3rem;
+
+  h1 {
+    margin: 0;
+  }
+`;
+
+const ThreadInfo = styled.span`
+  display: inline-flex;
+  align-items: center;
+
+  font-size: .85rem;
+  color: rgba(0, 0, 0, 0.5);
+`;
+
+const ThreadInfoMemberPreview = styled(MemberPreview)`
+  && {
+    margin: 0 .2rem;
+  }
+`;
 
 type InnerViewThreadProps = {
   category: Category;
@@ -89,6 +125,9 @@ function InnerViewThread (props: ViewThreadProps) {
         </Table.Cell>
         <Table.Cell>
           <MemberPreview accountId={thread.author_id} />
+        </Table.Cell>
+        <Table.Cell>
+          {formatDate(thread.created_at.momentDate)}
         </Table.Cell>
       </Table.Row>
     );
@@ -211,10 +250,20 @@ function InnerViewThread (props: ViewThreadProps) {
 
   return <div style={{ marginBottom: '1rem' }}>
     <CategoryCrumbs categoryId={thread.category_id} />
-    <h1 className='ForumPageTitle'>
-      <ThreadTitle thread={thread} className='TitleText' />
-      {renderActions()}
-    </h1>
+    <ThreadHeader>
+      <h1 className='ForumPageTitle'>
+        <ThreadTitle thread={thread} className='TitleText' />
+      </h1>
+      <ThreadInfoAndActions>
+        <ThreadInfo>
+          Created by
+          <ThreadInfoMemberPreview accountId={thread.author_id} inline />
+          <TimeAgoDate date={thread.created_at.momentDate} id="thread" />
+        </ThreadInfo>
+        {renderActions()}
+      </ThreadInfoAndActions>
+    </ThreadHeader>
+
     {category.archived &&
       <JoyWarn title={'This thread is in archived category.'}>
         No new replies can be posted.

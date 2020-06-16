@@ -29,7 +29,20 @@ export class BlockchainTimestamp extends JoyStruct<BlockchainTimestampType> {
   }
 
   get momentDate (): moment.Moment {
-    return moment(this.time.toNumber());
+    const YEAR_2000_MILLISECONDS = 946684801000;
+
+    // overflowing in ~270,000 years
+    const timestamp = this.time.toNumber();
+
+    // TODO: remove once https://github.com/Joystream/joystream/issues/705 is resolved
+    // due to a bug, timestamp can be either in seconds or milliseconds
+    let timestampInMillis = timestamp;
+    if (timestamp < YEAR_2000_MILLISECONDS) {
+      // timestamp is in seconds
+      timestampInMillis = timestamp * 1000;
+    }
+
+    return moment(timestampInMillis);
   }
 
   static newEmpty (): BlockchainTimestamp {
