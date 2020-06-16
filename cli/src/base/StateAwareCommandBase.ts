@@ -5,7 +5,7 @@ import { CLIError } from '@oclif/errors';
 import { DEFAULT_API_URI } from '../Api';
 import lockFile from 'proper-lockfile';
 import DefaultCommandBase from './DefaultCommandBase';
-import { getDataHome } from 'platform-folders';
+import os from 'os';
 
 // Type for the state object (which is preserved as json in the state file)
 type StateObject = {
@@ -32,17 +32,24 @@ enum DataDirErrorType {
 /**
  * Abstract base class for commands that need to work with the preserved state.
  *
- * The preserved state is kept in a json file inside the data directory (created with the support of platform-folders package).
+ * The preserved state is kept in a json file inside the data directory.
  * The state object contains all the information that needs to be preserved across sessions, ie. the default account
  * choosen by the user after executing account:choose command etc. (see "StateObject" type above).
  */
 export default abstract class StateAwareCommandBase extends DefaultCommandBase {
     getAppDataPath(): string {
+        const systemAppDataPath =
+            process.env.APPDATA ||
+            (
+                process.platform === 'darwin'
+                    ? path.join(os.homedir(), '/Library/Preferences')
+                    : path.join(os.homedir(), '/.local/share')
+            );
         const packageJson: { name?: string } = require('../../package.json');
         if (!packageJson || !packageJson.name) {
             throw new CLIError('Cannot get package name from package.json!');
         }
-        return path.join(getDataHome(), packageJson.name);
+        return path.join(systemAppDataPath, packageJson.name);
     }
 
     getStateFilePath(): string {
