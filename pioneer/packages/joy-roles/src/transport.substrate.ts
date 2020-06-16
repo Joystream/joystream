@@ -33,7 +33,7 @@ import {
 
 import { Application, Opening, OpeningId } from '@joystream/types/hiring';
 import { Stake, StakeId } from '@joystream/types/stake';
-import { Recipient, RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
+import { RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
 import { ActorInRole, Profile, MemberId, Role, RoleKeys, ActorId } from '@joystream/types/members';
 import { createAccount, generateSeed } from '@polkadot/joy-utils/accounts';
 

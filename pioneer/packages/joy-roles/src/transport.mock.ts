@@ -6,7 +6,7 @@ import { Subscribable, Transport as TransportBase } from '@polkadot/joy-utils/in
 
 import { ITransport } from './transport';
 
-import { Role } from '@joystream/types/roles';
+import { Role, MemberId } from '@joystream/types/members';
 import {
   Opening,
   AcceptingApplications,
@@ -14,7 +14,6 @@ import {
   ApplicationRationingPolicy,
   StakingPolicy
 } from '@joystream/types/hiring';
-import { MemberId } from '@joystream/types/members';
 
 import { WorkingGroupMembership, GroupLeadStatus } from './tabs/WorkingGroup';
 import { CuratorId } from '@joystream/types/content-working-group';
