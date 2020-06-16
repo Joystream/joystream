@@ -1,4 +1,4 @@
-import { cli } from 'cli-ux';
+import { cli, Table } from 'cli-ux';
 import chalk from 'chalk';
 import { NameValueObj } from '../Types';
 
@@ -21,6 +21,19 @@ export function displayNameValueTable(rows: NameValueObj[]) {
         },
         { 'no-header': true }
     );
+}
+
+export function displayTable(rows: { [k: string]: string }[], minColumnWidth = 0) {
+    if (!rows.length) {
+        return;
+    }
+    const columnDef = (columnName: string) => ({
+        get: (row: typeof rows[number])  => chalk.white(row[columnName]),
+        minWidth: minColumnWidth
+    });
+    let columns: Table.table.Columns<{ [k: string]: string }> = {};
+    Object.keys(rows[0]).forEach(columnName => columns[columnName] = columnDef(columnName))
+    cli.table(rows, columns);
 }
 
 export function toFixedLength(text: string, length: number, spacesOnLeft = false): string {

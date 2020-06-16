@@ -71,6 +71,9 @@
       },
       "api": {
         "description": "Inspect the substrate node api, perform lower-level api calls or change the current api provider uri"
+      },
+      "working-groups": {
+        "description": "Working group lead and worker actions"
       }
     }
   },
@@ -84,6 +87,7 @@
     "posttest": "eslint . --ext .ts --config .eslintrc",
     "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
+    "build": "tsc --build tsconfig.json",
     "version": "oclif-dev readme && git add README.md"
   },
   "types": "lib/index.d.ts"
