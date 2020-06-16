@@ -42,7 +42,7 @@ export default abstract class StateAwareCommandBase extends DefaultCommandBase {
             process.env.APPDATA ||
             (
                 process.platform === 'darwin'
-                    ? path.join(os.homedir(), '/Library/Preferences')
+                    ? path.join(os.homedir(), '/Library/Application Support')
                     : path.join(os.homedir(), '/.local/share')
             );
         const packageJson: { name?: string } = require('../../package.json');
