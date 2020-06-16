@@ -69,6 +69,11 @@ const ThreadInfo = styled.span`
 const ThreadInfoMemberPreview = styled(MemberPreview)`
   && {
     margin: 0 .2rem;
+
+    .PrefixLabel {
+      color: inherit;
+      margin-right: .2rem;
+    }
   }
 `;
 
@@ -256,8 +261,8 @@ function InnerViewThread (props: ViewThreadProps) {
       </h1>
       <ThreadInfoAndActions>
         <ThreadInfo>
-          Created by
-          <ThreadInfoMemberPreview accountId={thread.author_id} inline />
+          Created
+          <ThreadInfoMemberPreview accountId={thread.author_id} inline prefixLabel="by" />
           <TimeAgoDate date={thread.created_at.momentDate} id="thread" />
         </ThreadInfo>
         {renderActions()}
