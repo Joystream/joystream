@@ -5,8 +5,8 @@ import { Option, Text, u32, u128, GenericAccountId } from '@polkadot/types';
 import { Subscribable, Transport as TransportBase } from '@polkadot/joy-utils/index';
 
 import { ITransport } from './transport';
-
-import { Actor, Role } from '@joystream/types/roles';
+import { IProfile, MemberId, Role } from '@joystream/types/members';
+import { Actor } from '@joystream/types/roles';
 import {
   Opening,
   AcceptingApplications,
@@ -14,7 +14,6 @@ import {
   ApplicationRationingPolicy,
   StakingPolicy
 } from '@joystream/types/hiring';
-import { IProfile, MemberId } from '@joystream/types/members';
 
 import { WorkingGroupMembership, StorageAndDistributionMembership, GroupLeadStatus } from './tabs/WorkingGroup';
 import { CuratorId } from '@joystream/types/content-working-group';

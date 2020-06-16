@@ -1,5 +1,5 @@
 import { getTypeRegistry, u32, u64, u128, Enum, Null, BTreeMap, bool } from '@polkadot/types';
-import { JoyStruct } from '../JoyStruct';
+import { JoyStruct } from '../common';
 import { BlockNumber, Balance } from '@polkadot/types/interfaces';
 
 export class StakeId extends u64 {};

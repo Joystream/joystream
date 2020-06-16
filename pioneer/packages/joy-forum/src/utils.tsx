@@ -2,7 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Pagination as SuiPagination } from 'semantic-ui-react';
 
-import { Category, CategoryId, Thread, ThreadId } from '@joystream/types/forum';
+import { ThreadId } from '@joystream/types/common';
+import { Category, CategoryId, Thread } from '@joystream/types/forum';
 import { withForumCalls } from './calls';
 import { withMulti } from '@polkadot/react-api';
 

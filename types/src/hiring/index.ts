@@ -1,8 +1,8 @@
 import { getTypeRegistry, Null, u128, u64, u32, Vec, Option, Text } from '@polkadot/types';
 import { Enum } from '@polkadot/types/codec';
 import { BlockNumber, Balance } from '@polkadot/types/interfaces';
+import { JoyStruct } from '../common';
 import { StakeId } from '../stake';
-import { JoyStruct } from '../JoyStruct';
 
 import { GenericJoyStreamRoleSchema } from './schemas/role.schema.typings'
 

@@ -1,12 +1,11 @@
 import { getTypeRegistry, Bytes, BTreeMap, Option, Enum } from '@polkadot/types';
 import { u16, Null } from '@polkadot/types/primitive';
 import { AccountId, BlockNumber } from '@polkadot/types/interfaces';
+import { BTreeSet, JoyStruct } from '../common';
 import { MemberId, ActorId } from '../members';
-import { ApplicationId, OpeningId, ApplicationRationingPolicy, StakingPolicy } from '../hiring';
 import { RewardRelationshipId } from '../recurring-rewards';
 import { StakeId } from '../stake';
-import { JoyStruct } from '../JoyStruct';
-import { BTreeSet } from '../';
+import { ApplicationId, OpeningId, ApplicationRationingPolicy, StakingPolicy } from '../hiring';
 
 export type ILead = {
   member_id: MemberId,

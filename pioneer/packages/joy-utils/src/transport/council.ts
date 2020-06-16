@@ -1,6 +1,6 @@
 import { ParsedMember } from '../types/members';
 import BaseTransport from './base';
-import { Seats, ElectionParameters } from '@joystream/types/proposals';
+import { Seats, ElectionParameters } from '@joystream/types/council';
 import { MemberId, Profile } from '@joystream/types/members';
 import { u32, Vec } from '@polkadot/types/';
 import { Balance, BlockNumber } from '@polkadot/types/interfaces';
