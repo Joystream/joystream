@@ -1,9 +1,11 @@
 import tap from 'tap';
+import BN from 'bn.js';
+import { assert } from 'chai';
 import { ApiWrapper } from '../../../utils/apiWrapper';
+import { Utils } from '../../../utils/utils';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { Keyring } from '@polkadot/api';
-import BN from 'bn.js';
-import { Utils } from '../../../utils/utils';
+import { WorkerOpening } from '@nicaea/types/lib/bureaucracy';
 
 export function workerApplicationHappyCase(
   apiWrapper: ApiWrapper,
@@ -24,7 +26,7 @@ export function workerApplicationHappyCase(
   });
 
   tap.test('Add worker opening', async () => {
-    //Fee estimation and transfer
+    // Fee estimation and transfer
     const addWorkerOpeningFee: BN = apiWrapper.estimateAddWorkerOpeningFee();
     const beginReviewFee: BN = apiWrapper.estimateBeginWorkerApplicantReviewFee();
     const fillWorkerOpeningFee: BN = apiWrapper.estimateFillWorkerOpeningFee();
@@ -34,7 +36,7 @@ export function workerApplicationHappyCase(
       addWorkerOpeningFee.add(beginReviewFee).add(fillWorkerOpeningFee)
     );
 
-    //Worker opening creation
+    // Worker opening creation
     const workerOpeningId: BN = await apiWrapper.getNextWorkerOpeningId();
     await apiWrapper.addWorkerOpening(
       lead,
@@ -58,16 +60,16 @@ export function workerApplicationHappyCase(
       ''
     );
 
-    //Applying for created worker opening
+    // Applying for created worker opening
     const nextApplicationId: BN = await apiWrapper.getNextApplicationId();
     const applyOnOpeningFee: BN = apiWrapper.estimateApplyOnOpeningFee(lead).add(applicationStake).add(roleStake);
     await apiWrapper.transferBalanceToAccounts(sudo, membersKeyPairs, applyOnOpeningFee);
     await apiWrapper.batchApplyOnWorkerOpening(membersKeyPairs, workerOpeningId, roleStake, applicationStake, '');
 
-    //Begin application review
+    // Begin application review
     await apiWrapper.beginWorkerApplicationReview(lead, workerOpeningId);
 
-    //Fill worker opening
+    // Fill worker opening
     await apiWrapper.fillWorkerOpening(
       lead,
       workerOpeningId,
@@ -75,6 +77,15 @@ export function workerApplicationHappyCase(
       new BN(1),
       new BN(99999999),
       new BN(99999999)
+    );
+
+    // Assertions
+    const workerOpening: WorkerOpening = await apiWrapper.getWorkerOpening(workerOpeningId);
+    const openingWorkersAccounts: string[] = await Promise.all(
+      workerOpening.worker_applications.map(async id => (await apiWrapper.getWorker(id)).role_account.toString())
+    );
+    membersKeyPairs.forEach(keyPair =>
+      assert(openingWorkersAccounts.includes(keyPair.address), `Account ${keyPair.address} is not worker`)
     );
   });
 }

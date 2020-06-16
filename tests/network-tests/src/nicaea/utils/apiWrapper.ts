@@ -5,6 +5,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { UserInfo, PaidMembershipTerms, MemberId } from '@nicaea/types/lib/members';
 import { Mint, MintId } from '@nicaea/types/lib/mint';
 import { Lead, LeadId } from '@nicaea/types/lib/content-working-group';
+import { WorkerOpening, Worker } from '@nicaea/types/lib/bureaucracy';
 import { RoleParameters } from '@nicaea/types/lib/roles';
 import { Seat } from '@nicaea/types';
 import { Balance, EventRecord, AccountId, BlockNumber, BalanceOf } from '@polkadot/types/interfaces';
@@ -903,5 +904,17 @@ export class ApiWrapper {
 
   public async getNextApplicationId(): Promise<BN> {
     return this.api.query.forumBureaucracy.nextWorkerApplicationId<u32>();
+  }
+
+  public async getWorkerOpening(id: BN): Promise<WorkerOpening> {
+    return ((await this.api.query.forumBureaucracy.workerOpeningById<Codec[]>(id))[0] as unknown) as WorkerOpening;
+  }
+
+  public async getWorkers(): Promise<Worker[]> {
+    return ((await this.api.query.forumBureaucracy.workerById<Codec[]>())[1] as unknown) as Worker[];
+  }
+
+  public async getWorker(id: BN): Promise<Worker> {
+    return ((await this.api.query.forumBureaucracy.workerById<Codec[]>(id))[0] as unknown) as Worker;
   }
 }

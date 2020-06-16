@@ -48,7 +48,7 @@ export class Utils {
   }
 
   public static getNextNIds(firstId: BN, n: number): BN[] {
-    let result: BN[] = new Array();
+    const result: BN[] = new Array();
     for (let i = 0; i < n; i++) {
       result.push(firstId.addn(i));
     }
