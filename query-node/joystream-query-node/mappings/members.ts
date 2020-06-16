@@ -28,14 +28,17 @@ export async function handleMemberUpdatedAboutText(db: DB, event: SubstrateEvent
 
   assert(member);
 
-  member.updatedAt = new Date();
+  // Not safe type casting!
+  const userInfo = (event.extrinsic?.args[1].toJSON() as unknown) as CheckedUserInfo;
+  member.about = userInfo.about.toString();
+
   db.save<Member>(member);
 }
 
 export async function handleMemberUpdatedAvatar(db: DB, event: SubstrateEvent) {
   const { MemberId } = event.event_params;
   const member = await db.get(Member, { where: { memberId: MemberId.toString() } });
-  console.log('member', member);
+
   assert(member);
 
   // Not safe type casting!
@@ -58,3 +61,25 @@ export async function handleMemberUpdatedHandle(db: DB, event: SubstrateEvent) {
   db.save<Member>(member);
 }
 
+export async function handleMemberSetRootAccount(db: DB, event: SubstrateEvent) {
+  const { MemberId, AccountId } = event.event_params;
+  const member = await db.get(Member, { where: { memberId: MemberId.toString() } });
+
+  assert(member);
+
+  member.rootAccount = Buffer.from(AccountId);
+  db.save<Member>(member);
+}
+
+export async function handleMemberSetControllerAccount(db: DB, event: SubstrateEvent) {
+  const { MemberId, AccountId } = event.event_params;
+  const member = await db.get(Member, { where: { memberId: MemberId.toString() } });
+
+  assert(member);
+
+  member.controllerAccount = Buffer.from(AccountId);
+  db.save<Member>(member);
+}
+
+// MemberRegisteredRole(MemberId, ActorInRole<ActorId>),
+// MemberUnregisteredRole(MemberId, ActorInRole<ActorId>),
