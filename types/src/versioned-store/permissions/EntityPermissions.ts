@@ -1,6 +1,6 @@
 import { JoyStruct } from '../../JoyStruct';
 import { bool } from '@polkadot/types';
-import { CredentialSet } from './credentials';
+import { CredentialSet } from '../../common';
 
 type IEntityPermissions = {
     update: CredentialSet,

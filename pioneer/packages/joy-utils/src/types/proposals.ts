@@ -1,6 +1,6 @@
 import { ProposalId, VoteKind } from '@joystream/types/proposals';
 import { MemberId, Profile } from '@joystream/types/members';
-import { ThreadId, PostId } from '@joystream/types/forum';
+import { ThreadId, PostId } from '@joystream/types/common';
 import { ParsedMember } from './members';
 
 export const ProposalTypes = [
@@ -44,6 +44,11 @@ export type ParsedProposal = {
 export type ProposalVote = {
   vote: VoteKind | null;
   member: ParsedMember & { memberId: MemberId };
+};
+
+export type ProposalVotes = {
+  councilMembersLength: number;
+  votes: ProposalVote[];
 };
 
 export const Categories = {

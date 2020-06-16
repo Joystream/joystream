@@ -5,7 +5,7 @@ edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
-version = '6.15.0'
+version = '6.16.0'
 
 [features]
 default = ['std']
@@ -350,13 +350,13 @@ version = '1.0.0'
 default_features = false
 package = 'substrate-service-discovery-module'
 path = '../runtime-modules/service-discovery'
-version = '1.0.0'
+version = '2.0.0'
 
 [dependencies.storage]
 default_features = false
 package = 'substrate-storage-module'
 path = '../runtime-modules/storage'
-version = '1.0.0'
+version = '2.0.0'
 
 [dependencies.proposals_engine]
 default_features = false

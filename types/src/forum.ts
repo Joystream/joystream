@@ -1,39 +1,10 @@
-import { getTypeRegistry, bool, u16, u32, u64, Text, Option, Vec as Vector} from '@polkadot/types';
-import { AccountId, Moment, BlockNumber } from '@polkadot/types/interfaces';
+import { getTypeRegistry, bool, u32, u64, Text, Option, Vec as Vector} from '@polkadot/types';
+import { AccountId } from '@polkadot/types/interfaces';
 import { GenericAccountId } from '@polkadot/types';
-
-import { JoyStruct } from './JoyStruct';
-
-// Based on copypasta from joy-media/BlockAndTimeType
-export type BlockchainTimestampType = {
-  block: BlockNumber,
-  time: Moment
-};
-
-// Based on copypasta from joy-media/BlockAndTime
-export class BlockchainTimestamp extends JoyStruct<BlockchainTimestampType> {
-  constructor (value?: BlockchainTimestampType) {
-    super({
-      block: u32, // BlockNumber
-      time: u64, // Moment
-    }, value);
-  }
-
-  get block (): BlockNumber {
-    return this.getField('block');
-  }
-
-  get time (): Moment {
-    return this.getField('time');
-  }
-
-  static newEmpty (): BlockchainTimestamp {
-    return new BlockchainTimestamp({} as BlockchainTimestampType);
-  }
-}
+import { BlockAndTime, JoyStruct, ThreadId, PostId } from './common';
 
 export type ModerationActionType = {
-  moderated_at: BlockchainTimestamp,
+  moderated_at: BlockAndTime,
   moderator_id: AccountId,
   rationale: Text
 };
@@ -41,13 +12,13 @@ export type ModerationActionType = {
 export class ModerationAction extends JoyStruct<ModerationActionType> {
   constructor (value: ModerationActionType) {
     super({
-      moderated_at: BlockchainTimestamp,
+      moderated_at: BlockAndTime,
       moderator_id: GenericAccountId,
       rationale: Text
     }, value);
   }
 
-  get moderated_at (): BlockchainTimestamp {
+  get moderated_at (): BlockAndTime {
     return this.getField('moderated_at');
   }
 
@@ -61,19 +32,19 @@ export class ModerationAction extends JoyStruct<ModerationActionType> {
 }
 
 export type PostTextChangeType = {
-  expired_at: BlockchainTimestamp,
+  expired_at: BlockAndTime,
   text: Text
 };
 
 export class PostTextChange extends JoyStruct<PostTextChangeType> {
   constructor (value: PostTextChangeType) {
     super({
-      expired_at: BlockchainTimestamp,
+      expired_at: BlockAndTime,
       text: Text
     }, value);
   }
 
-  get expired_at (): BlockchainTimestamp {
+  get expired_at (): BlockAndTime {
     return this.getField('expired_at');
   }
 
@@ -90,41 +61,12 @@ export class CategoryId extends u64 {}
 export class OptionCategoryId extends Option.with(CategoryId) {}
 export class VecCategoryId extends Vector.with(CategoryId) {}
 
-export class ThreadId extends u64 {}
 export class VecThreadId extends Vector.with(ThreadId) {}
-
-export class PostId extends u64 {}
 export class VecPostId extends Vector.with(PostId) {}
 
 // TODO deprectated: replaced w/ PostId
 export class ReplyId extends u64 {}
 export class VecReplyId extends Vector.with(ReplyId) {}
-
-export type InputValidationLengthConstraintType = {
-  min: u16,
-  max_min_diff: u16
-};
-
-export class InputValidationLengthConstraint extends JoyStruct<InputValidationLengthConstraintType> {
-  constructor (value: InputValidationLengthConstraintType) {
-    super({
-      min: u16,
-      max_min_diff: u16
-    }, value);
-  }
-
-  get min (): u16 {
-    return this.getField('min');
-  }
-
-  get max_min_diff (): u16 {
-    return this.getField('max_min_diff');
-  }
-
-  get max (): u16 {
-    return new u16(this.min.add(this.max_min_diff));
-  }
-}
 
 export type ChildPositionInParentCategoryType = {
   parent_id: CategoryId,
@@ -154,7 +96,7 @@ export type CategoryType = {
   id: CategoryId,
   title: Text,
   description: Text,
-  created_at: BlockchainTimestamp,
+  created_at: BlockAndTime,
   deleted: bool,
   archived: bool,
   num_direct_subcategories: u32,
@@ -170,7 +112,7 @@ export class Category extends JoyStruct<CategoryType> {
       id: CategoryId,
       title: Text,
       description: Text,
-      created_at: BlockchainTimestamp,
+      created_at: BlockAndTime,
       deleted: bool,
       archived: bool,
       num_direct_subcategories: u32,
@@ -197,7 +139,7 @@ export class Category extends JoyStruct<CategoryType> {
     return this.getString('description');
   }
 
-  get created_at (): BlockchainTimestamp {
+  get created_at (): BlockAndTime {
     return this.getField('created_at');
   }
 
@@ -264,7 +206,7 @@ export type ThreadType = {
   moderation: OptionModerationAction,
   num_unmoderated_posts: u32,
   num_moderated_posts: u32,
-  created_at: BlockchainTimestamp,
+  created_at: BlockAndTime,
   author_id: AccountId
 };
 
@@ -278,7 +220,7 @@ export class Thread extends JoyStruct<ThreadType> {
       moderation: OptionModerationAction,
       num_unmoderated_posts: u32,
       num_moderated_posts: u32,
-      created_at: BlockchainTimestamp,
+      created_at: BlockAndTime,
       author_id: GenericAccountId
     }, value);
   }
@@ -323,7 +265,7 @@ export class Thread extends JoyStruct<ThreadType> {
     return new u32(this.num_unmoderated_posts.add(this.num_moderated_posts));
   }
 
-  get created_at (): BlockchainTimestamp {
+  get created_at (): BlockAndTime {
     return this.getField('created_at');
   }
 
@@ -339,7 +281,7 @@ export type PostType = {
   current_text: Text,
   moderation: OptionModerationAction,
   text_change_history: VecPostTextChange,
-  created_at: BlockchainTimestamp,
+  created_at: BlockAndTime,
   author_id: AccountId
 };
 
@@ -353,7 +295,7 @@ export class Post extends JoyStruct<PostType> {
       current_text: Text,
       moderation: OptionModerationAction,
       text_change_history: VecPostTextChange,
-      created_at: BlockchainTimestamp,
+      created_at: BlockAndTime,
       author_id: GenericAccountId
     }, value);
   }
@@ -390,7 +332,7 @@ export class Post extends JoyStruct<PostType> {
     return this.getField('text_change_history');
   }
 
-  get created_at (): BlockchainTimestamp {
+  get created_at (): BlockAndTime {
     return this.getField('created_at');
   }
 
@@ -441,16 +383,12 @@ export class Reply extends JoyStruct<ReplyType> {
 export function registerForumTypes () {
   try {
     getTypeRegistry().register({
-      BlockchainTimestamp,
       PostTextChange,
       ModerationAction,
-      InputValidationLengthConstraint,
       ChildPositionInParentCategory,
       CategoryId,
       Category,
-      ThreadId,
       Thread,
-      PostId,
       Post,
       ReplyId,
       Reply

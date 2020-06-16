@@ -1,21 +1,20 @@
 import { getTypeRegistry, BTreeMap, Enum, bool, u8, u32, u128, Text, GenericAccountId, Null , Option, Vec, u16 } from '@polkadot/types';
 import { BlockNumber, AccountId, Balance } from '@polkadot/types/interfaces';
+import { BTreeSet, JoyStruct, OptionText, Credential } from '../common';
 import { ActorId, MemberId } from '../members';
-import { OpeningId, ApplicationId, ApplicationRationingPolicy, StakingPolicy } from '../hiring/index';
-import { Credential } from '../versioned-store/permissions/credentials';
-import { RewardRelationshipId } from '../recurring-rewards';
 import { StakeId } from '../stake';
-import { JoyStruct } from '../JoyStruct';
-import { BTreeSet } from '../';
+import { OpeningId, ApplicationId, ApplicationRationingPolicy, StakingPolicy } from '../hiring/index';
+import { RewardRelationshipId } from '../recurring-rewards';
 
-export class ChannelId extends ActorId {};
+import ChannelId from './ChannelId';
+export { ChannelId };
 export class CuratorId extends ActorId {};
 export class CuratorOpeningId extends OpeningId {};
 export class CuratorApplicationId extends ApplicationId {};
 export class LeadId extends ActorId {};
 export class PrincipalId extends Credential {};
 
-export class OptionalText extends Option.with(Text) {};
+export class OptionalText extends OptionText {};
 
 export type ChannelContentTypeValue =
   'Video' |
@@ -212,6 +211,11 @@ export class CuratorInduction extends JoyStruct<ICuratorInduction> {
     return this.getField<CuratorApplicationId>('curator_application_id')
   }
 
+  // Helper for bureaucracy compatibility
+  get worker_application_id(): CuratorApplicationId {
+    return this.curator_application_id;
+  }
+
   get at_block(): u32 {
     return this.getField<u32>('at_block')
   }
@@ -288,6 +292,11 @@ export class CuratorApplication extends JoyStruct<ICuratorApplication> {
 
   get curator_opening_id(): CuratorOpeningId {
     return this.getField<CuratorOpeningId>('curator_opening_id')
+  }
+
+  // Helper for bureaucracy compatibility
+  get worker_opening_id(): CuratorOpeningId {
+    return this.curator_opening_id;
   }
 
   get member_id(): MemberId {
@@ -465,6 +474,11 @@ export class Lead extends JoyStruct<ILead> {
 
   get role_account(): GenericAccountId {
     return this.getField<GenericAccountId>('role_account')
+  }
+
+  // Helper for bureaucracy compatibility
+  get role_account_id(): GenericAccountId {
+    return this.role_account;
   }
 
   get reward_relationship(): Option<RewardRelationshipId> {

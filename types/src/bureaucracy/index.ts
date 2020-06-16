@@ -1,18 +1,20 @@
 import { getTypeRegistry, Bytes, BTreeMap, Option, Enum } from '@polkadot/types';
 import { u16, Null } from '@polkadot/types/primitive';
 import { AccountId, BlockNumber } from '@polkadot/types/interfaces';
+import { BTreeSet, JoyStruct } from '../common';
 import { MemberId, ActorId } from '../members';
-import { ApplicationId, OpeningId, ApplicationRationingPolicy, StakingPolicy } from '../hiring';
 import { RewardRelationshipId } from '../recurring-rewards';
 import { StakeId } from '../stake';
-import { JoyStruct } from '../JoyStruct';
-import { BTreeSet } from '../';
+import { ApplicationId, OpeningId, ApplicationRationingPolicy, StakingPolicy } from '../hiring';
 
 export type ILead = {
   member_id: MemberId,
   role_account_id: AccountId
 };
 
+// This type is also defined in /content-workig-group (and those are incosistent), but here
+// it is beeing registered as "LeadOf" (which is an alias used by the runtime bureaucracy module),
+// so it shouldn't cause any conflicts)
 export class Lead extends JoyStruct<ILead> {
   constructor (value?: ILead) {
     super({
@@ -71,6 +73,8 @@ export class WorkerApplication extends JoyStruct<IWorkerApplication> {
 }
 
 export class WorkerId extends ActorId { };
+
+export class StorageProviderId extends WorkerId { };
 
 export class WorkerApplicationIdSet extends BTreeSet.with(WorkerApplicationId) { };
 
@@ -137,6 +141,10 @@ export class Worker extends JoyStruct<IWorker> {
   get role_stake_profile(): Option<WorkerRoleStakeProfile> {
     return this.getField<Option<WorkerRoleStakeProfile>>('role_stake_profile');
   }
+
+  get is_active(): boolean {
+    return !Boolean(this.isEmpty);
+  }
 }
 
 export type ISlashableTerms = {
@@ -144,6 +152,9 @@ export type ISlashableTerms = {
   max_percent_pts_per_time: u16,
 };
 
+// This type is also defined in /content-working-group, but currently both those definitions are identical
+// (I added this defininition here too, because techinicaly those are 2 different types in the runtime.
+// Later the definition in /content-working-group will be removed and we can just register this type here)
 export class SlashableTerms extends JoyStruct<ISlashableTerms> {
   constructor (value?: ISlashableTerms) {
     super({
@@ -153,6 +164,7 @@ export class SlashableTerms extends JoyStruct<ISlashableTerms> {
   }
 };
 
+// This type is also defined in /content-working-group (as above)
 export class SlashingTerms extends Enum {
   constructor (value?: any, index?: number) {
     super(
@@ -179,6 +191,17 @@ export type IBureaucracyOpeningPolicyCommitment = {
   exit_worker_role_stake_unstaking_period: Option<BlockNumber>,
 };
 
+// This type represents OpeningPolicyCommitment defined inside the runtime's bureaucracy module.
+// The only difference between this and the one defined in /content-working-group is in the names of some fields.
+//
+// There is also a minor issue here:
+// Because api metadata still says that ie. the "commitment" argument of "forumBureaucracy.addWorkerOpening" extrinsic
+// is of type "OpeningPolicyCommitment" (not the "BureaucracyOpeningPolicyCommitment" defined here), the CWG's OpeningPolicyCommitment
+// type is used when sending this extrinsic (it has "terminate_curator_role_stake_unstaking_period" field insted
+// of "terminate_worker_role_stake_unstaking_period" etc.).
+// Since both those types are basically the same structs (only filed names are different) nothing seems to break, but it's
+// very fragile atm and any change to this type in bureaucracy module could result in "unsolvable" inconsistencies
+// (this won't be an issue after CWG gets refactored to use the bureaucracy module too)
 export class BureaucracyOpeningPolicyCommitment extends JoyStruct<IBureaucracyOpeningPolicyCommitment> {
   constructor (value?: BureaucracyOpeningPolicyCommitment) {
     super({
@@ -252,12 +275,6 @@ export type IWorkerOpening = {
   policy_commitment: BureaucracyOpeningPolicyCommitment,
 }
 
-// FIXME: Because the api still "thinks" that the "commitment" argument of "forumBureaucracy.addWorkerOpening" extrinsic
-// is of type "OpeningPolicyCommitment" (instead of "BureaucracyOpeningPolicyCommitment"), the CWG's OpeningPolicyCommitment type
-// is used there (it has "terminate_curator_role_stake_unstaking_period" insted of "terminate_worker_role_stake_unstaking_period" etc.)
-// Because those types are basically the same structs (only filed names are different) nothing seems to break yet, but it's
-// very fragile atm, since any change to this type in bureaucracy module could result in "unsolvable" inconsistencies
-// (unless the name is changed too)
 export class WorkerOpening extends JoyStruct<IWorkerOpening> {
   constructor (value?: IWorker) {
     super({
@@ -294,7 +311,8 @@ export function registerBureaucracyTypes() {
       WorkerId,
       WorkerOf: Worker,
       WorkerOpening,
-      WorkerOpeningId
+      WorkerOpeningId,
+      StorageProviderId
     });
   } catch (err) {
     console.error('Failed to register custom types of bureaucracy module', err);

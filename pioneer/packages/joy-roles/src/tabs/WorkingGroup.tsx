@@ -33,7 +33,7 @@ export const ContentCurators = Loadable<WorkingGroupMembership>(
           <p>
             There are openings for new content curators. This is a great way to support Joystream!
           </p>
-          <Link to="/working-groups/opportunities">
+          <Link to="/working-groups/opportunities/curators">
             <Button icon labelPosition="right" color="green" positive>
               Find out more
               <Icon name={'right arrow' as SemanticICONS} />

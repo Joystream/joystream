@@ -88,6 +88,7 @@ export const App: React.FC<Props> = (props: Props) => {
       <Switch>
         <Route path={`${basePath}/opportunities/:group/:id/apply`} render={(props) => renderViewComponent(ApplyView(applyCtrl), props)} />
         <Route path={`${basePath}/opportunities/:group/:id`} render={(props) => renderViewComponent(OpportunityView(oppCtrl), props)} />
+        <Route path={`${basePath}/opportunities/:group`} render={(props) => renderViewComponent(OpportunitiesView(oppsCtrl), props)} />
         <Route path={`${basePath}/opportunities`} render={() => renderViewComponent(OpportunitiesView(oppsCtrl))} />
         <Route path={`${basePath}/my-roles`} render={() => renderViewComponent(MyRolesView(myRolesCtrl))} />
         <Route path={`${basePath}/admin`} render={() => renderViewComponent(AdminView(adminCtrl))} />

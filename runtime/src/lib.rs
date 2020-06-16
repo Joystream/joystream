@@ -8,7 +8,7 @@
 #![allow(array_into_iter)]
 
 // Runtime integration tests
-mod test;
+mod tests;
 
 // Make the WASM binary available.
 // This is required only by the node build.
@@ -110,6 +110,9 @@ pub type ThreadId = u64;
 /// See the Note about ThreadId
 pub type PostId = u64;
 
+/// Represent an actor in membership group, which is the same in the working groups.
+pub type ActorId = u64;
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -142,7 +145,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 6,
-    spec_version: 15,
+    spec_version: 16,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
 };
@@ -432,7 +435,6 @@ pub use versioned_store;
 pub use content_working_group as content_wg;
 mod migration;
 use roles::actors;
-use service_discovery::discovery;
 
 /// Alias for ContentId, used in various places.
 pub type ContentId = primitives::H256;
@@ -533,20 +535,6 @@ impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
         <sudo::Module<Runtime>>::key() == *account
     }
 }
-
-// Impl this in the permissions module - can't be done here because
-// neither CreateClassPermissionsChecker or (X, Y) are local types?
-// impl<
-//         T: versioned_store_permissions::Trait,
-//         X: versioned_store_permissions::CreateClassPermissionsChecker<T>,
-//         Y: versioned_store_permissions::CreateClassPermissionsChecker<T>,
-//     > versioned_store_permissions::CreateClassPermissionsChecker<T> for (X, Y)
-// {
-//     fn account_can_create_class_permissions(account: &T::AccountId) -> bool {
-//         X::account_can_create_class_permissions(account)
-//             || Y::account_can_create_class_permissions(account)
-//     }
-// }
 
 pub struct ContentLeadOrSudoKeyCanCreateClasses {}
 impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
@@ -705,57 +693,15 @@ impl storage::data_object_type_registry::Trait for Runtime {
 impl storage::data_directory::Trait for Runtime {
     type Event = Event;
     type ContentId = ContentId;
-    type SchemaId = u64;
-    type Roles = LookupRoles;
+    type StorageProviderHelper = integration::storage::StorageProviderHelper;
     type IsActiveDataObjectType = DataObjectTypeRegistry;
+    type MemberOriginValidator = MembershipOriginValidator<Self>;
 }
 
 impl storage::data_object_storage_registry::Trait for Runtime {
     type Event = Event;
     type DataObjectStorageRelationshipId = u64;
-    type Roles = LookupRoles;
     type ContentIdExists = DataDirectory;
-}
-
-fn random_index(upper_bound: usize) -> usize {
-    let seed = RandomnessCollectiveFlip::random_seed();
-    let mut rand: u64 = 0;
-    for offset in 0..8 {
-        rand += (seed.as_ref()[offset] as u64) << offset;
-    }
-    (rand as usize) % upper_bound
-}
-
-pub struct LookupRoles {}
-impl roles::traits::Roles<Runtime> for LookupRoles {
-    fn is_role_account(account_id: &<Runtime as system::Trait>::AccountId) -> bool {
-        <actors::Module<Runtime>>::is_role_account(account_id)
-    }
-
-    fn account_has_role(
-        account_id: &<Runtime as system::Trait>::AccountId,
-        role: actors::Role,
-    ) -> bool {
-        <actors::Module<Runtime>>::account_has_role(account_id, role)
-    }
-
-    fn random_account_for_role(
-        role: actors::Role,
-    ) -> Result<<Runtime as system::Trait>::AccountId, &'static str> {
-        let ids = <actors::AccountIdsByRole<Runtime>>::get(role);
-
-        let live_ids: Vec<<Runtime as system::Trait>::AccountId> = ids
-            .into_iter()
-            .filter(|id| !<discovery::Module<Runtime>>::is_account_info_expired(id))
-            .collect();
-
-        if live_ids.is_empty() {
-            Err("no staked account found")
-        } else {
-            let index = random_index(live_ids.len());
-            Ok(live_ids[index].clone())
-        }
-    }
 }
 
 impl members::Trait for Runtime {
@@ -763,7 +709,7 @@ impl members::Trait for Runtime {
     type MemberId = u64;
     type PaidTermId = u64;
     type SubscriptionId = u64;
-    type ActorId = u64;
+    type ActorId = ActorId;
     type InitialMembersBalance = InitialMembersBalance;
 }
 
@@ -814,21 +760,23 @@ impl bureaucracy::Trait<bureaucracy::Instance1> for Runtime {
     type Event = Event;
 }
 
+// Storage working group bureaucracy
+impl bureaucracy::Trait<bureaucracy::Instance2> for Runtime {
+    type Event = Event;
+}
+
 impl actors::Trait for Runtime {
     type Event = Event;
-    type OnActorRemoved = HandleActorRemoved;
+    type OnActorRemoved = ();
 }
 
-pub struct HandleActorRemoved {}
-impl actors::ActorRemoved<Runtime> for HandleActorRemoved {
-    fn actor_removed(actor: &<Runtime as system::Trait>::AccountId) {
-        Discovery::remove_account_info(actor);
-    }
+//TODO: SWG -  remove with roles module deletion
+impl actors::ActorRemoved<Runtime> for () {
+    fn actor_removed(_: &AccountId) {}
 }
 
-impl discovery::Trait for Runtime {
+impl service_discovery::Trait for Runtime {
     type Event = Event;
-    type Roles = LookupRoles;
 }
 
 parameter_types! {
@@ -920,10 +868,6 @@ construct_runtime!(
         Members: members::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
         Actors: actors::{Module, Call, Storage, Event<T>, Config},
-        DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
-        DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
-        DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
-        Discovery: discovery::{Module, Call, Storage, Event<T>},
         VersionedStore: versioned_store::{Module, Call, Storage, Event<T>, Config},
         VersionedStorePermissions: versioned_store_permissions::{Module, Call, Storage},
         Stake: stake::{Module, Call, Storage},
@@ -931,12 +875,18 @@ construct_runtime!(
         RecurringRewards: recurringrewards::{Module, Call, Storage},
         Hiring: hiring::{Module, Call, Storage},
         ContentWorkingGroup: content_wg::{Module, Call, Storage, Event<T>, Config<T>},
+        // --- Storage
+        DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
+        DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
+        DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
+        Discovery: service_discovery::{Module, Call, Storage, Event<T>},
         // --- Proposals
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Module, Call, Storage, Error, Config<T>},
-        // ---
+        // --- Bureaucracy
         ForumBureaucracy: bureaucracy::<Instance1>::{Module, Call, Storage, Event<T>},
+        StorageBureaucracy: bureaucracy::<Instance2>::{Module, Call, Storage, Event<T>},
     }
 );
 
