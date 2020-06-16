@@ -7,7 +7,7 @@ import Command from '@oclif/command';
 import { copyFileSync } from 'fs-extra';
 import { cli as warthogCli } from '../index';
 
-import { WarthogModelBuilder } from './WarthogModelBuilder';
+import { WarthogModelBuilder } from './../parse/WarthogModelBuilder';
 import { getTemplatePath } from '../utils/utils';
 import Debug from "debug";
 import { SourcesGenerator } from '../generate/SourcesGenerator';
