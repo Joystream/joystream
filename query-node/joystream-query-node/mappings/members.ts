@@ -80,6 +80,3 @@ export async function handleMemberSetControllerAccount(db: DB, event: SubstrateE
   member.controllerAccount = Buffer.from(AccountId);
   db.save<Member>(member);
 }
-
-// MemberRegisteredRole(MemberId, ActorInRole<ActorId>),
-// MemberUnregisteredRole(MemberId, ActorInRole<ActorId>),
