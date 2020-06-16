@@ -1,26 +1,22 @@
 use crate::*;
 use core::ops::{Deref, DerefMut};
 
+/// Wrapper for existing `PropertyValue` and its respective `Class` `Property`
 pub struct ValueForExistingProperty<'a, T: Trait>(&'a Property<T>, &'a PropertyValue<T>);
 
-impl<'a, T: Trait> Clone for ValueForExistingProperty<'a, T> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<'a, T: Trait> Copy for ValueForExistingProperty<'a, T> {}
-
 impl<'a, T: Trait> ValueForExistingProperty<'a, T> {
+    /// Create single instance of `ValueForExistingProperty` from provided `property` and `value`
     fn new(property: &'a Property<T>, value: &'a PropertyValue<T>) -> Self {
         Self(property, value)
     }
 
+    /// Retrieve `Property` reference
     pub fn get_property(&self) -> &Property<T> {
         self.0
     }
 
-    pub fn unzip(self) -> (&'a Property<T>, &'a PropertyValue<T>) {
+    /// Retrieve `Property` and `PropertyValue` references
+    pub fn unzip(&self) -> (&Property<T>, &PropertyValue<T>) {
         (self.0, self.1)
     }
 }
@@ -51,6 +47,7 @@ impl<'a, T: Trait> DerefMut for ValuesForExistingProperties<'a, T> {
 }
 
 impl<'a, T: Trait> ValuesForExistingProperties<'a, T> {
+    /// Create `ValuesForExistingProperties` helper structure from provided `property_values` and their corresponding `Class` properties
     pub fn from(
         properties: &'a [Property<T>],
         property_values: &'a BTreeMap<PropertyId, PropertyValue<T>>,
@@ -193,8 +190,12 @@ impl<T: Trait> Default for ReferenceCounterSideEffects<T> {
 impl<T: Trait> ReferenceCounterSideEffects<T> {
     /// Updates all the elements of `other` with `Self`
     pub fn update(mut self, mut other: Self) -> Self {
+        // Make a set, that includes both self and other entity_id keys
         let entity_ids: BTreeSet<T::EntityId> = self.keys().chain(other.keys()).copied().collect();
+
         for entity_id in entity_ids {
+            // If `self` contains value under provided `entity_id`, increase it on `EntityReferenceCounterSideEffect` value from `other` if exists,
+            // otherwise update `self` entry under provided `entity_id` with `EntityReferenceCounterSideEffect` from `other`
             *self
                 .entry(entity_id)
                 // Unwrap always safe here.
