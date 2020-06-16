@@ -3,11 +3,10 @@ import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import styled from 'styled-components';
 import { Table, Button, Label } from 'semantic-ui-react';
-import { History } from 'history';
 import BN from 'bn.js';
 
 import { Category, Thread, ThreadId, Post, PostId } from '@joystream/types/forum';
-import { Pagination, RepliesPerPage, CategoryCrumbs, TimeAgoDate } from './utils';
+import { Pagination, RepliesPerPage, CategoryCrumbs, TimeAgoDate, usePagination } from './utils';
 import { ViewReply } from './ViewReply';
 import { Moderate } from './Moderate';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
@@ -80,9 +79,7 @@ const ThreadInfoMemberPreview = styled(MemberPreview)`
 type InnerViewThreadProps = {
   category: Category;
   thread: Thread;
-  page?: number;
   preview?: boolean;
-  history?: History;
 };
 
 type ViewThreadProps = ApiProps & InnerViewThreadProps & {
@@ -91,7 +88,8 @@ type ViewThreadProps = ApiProps & InnerViewThreadProps & {
 
 function InnerViewThread (props: ViewThreadProps) {
   const [showModerateForm, setShowModerateForm] = useState(false);
-  const { history, category, thread, page = 1, preview = false } = props;
+  const { category, thread, preview = false } = props;
+  const [currentPage, setCurrentPage] = usePagination();
 
   if (!thread) {
     return <em>Loading thread details...</em>;
@@ -138,10 +136,6 @@ function InnerViewThread (props: ViewThreadProps) {
     );
   }
 
-  if (!history) {
-    return <em>History propoerty is undefined</em>;
-  }
-
   const { api, nextPostId } = props;
   const [loaded, setLoaded] = useState(false);
   const [posts, setPosts] = useState(new Array<Post>());
@@ -183,20 +177,16 @@ function InnerViewThread (props: ViewThreadProps) {
       return <em>Loading posts...</em>;
     }
 
-    const onPageChange = (activePage?: string | number) => {
-      history.push(`/forum/threads/${id.toString()}/page/${activePage}`);
-    };
-
     const itemsPerPage = RepliesPerPage;
-    const minIdx = (page - 1) * RepliesPerPage;
+    const minIdx = (currentPage - 1) * RepliesPerPage;
     const maxIdx = minIdx + RepliesPerPage - 1;
 
     const pagination =
       <Pagination
-        currentPage={page}
+        currentPage={currentPage}
         totalItems={totalPostsInThread}
         itemsPerPage={itemsPerPage}
-        onPageChange={onPageChange}
+        onPageChange={setCurrentPage}
       />;
 
     const pageOfItems = posts
@@ -293,27 +283,15 @@ export const ViewThread = withMulti(
 );
 
 type ViewThreadByIdProps = ApiProps & {
-  history: History;
   match: {
     params: {
       id: string;
-      page?: string;
     };
   };
 };
 
 function InnerViewThreadById (props: ViewThreadByIdProps) {
-  const { api, history, match: { params: { id, page: pageStr } } } = props;
-
-  let page = 1;
-  if (pageStr) {
-    try {
-      // tslint:disable-next-line:radix
-      page = parseInt(pageStr);
-    } catch (err) {
-      console.log('Failed to parse page number form URL');
-    }
-  }
+  const { api, match: { params: { id } } } = props;
 
   let threadId: ThreadId;
   try {
@@ -340,7 +318,7 @@ function InnerViewThreadById (props: ViewThreadByIdProps) {
     };
 
     loadThreadAndCategory();
-  }, [id, page]);
+  }, [id]);
 
   // console.log({ threadId: id, page });
 
@@ -356,7 +334,7 @@ function InnerViewThreadById (props: ViewThreadByIdProps) {
     return <em>{ 'Thread\'s category was not found' }</em>;
   }
 
-  return <ViewThread id={threadId} category={category} thread={thread} page={page} history={history} />;
+  return <ViewThread id={threadId} category={category} thread={thread} />;
 }
 
 export const ViewThreadById = withApi(InnerViewThreadById);

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useHistory, useLocation } from 'react-router';
 import { Link } from 'react-router-dom';
 import { Breadcrumb, Pagination as SuiPagination } from 'semantic-ui-react';
 import styled from 'styled-components';
@@ -144,4 +145,60 @@ export type UrlHasIdProps = {
       id: string;
     };
   };
+};
+
+type QueryValueType = string | null;
+type QuerySetValueType = (value?: QueryValueType | number) => void;
+type QueryReturnType = [QueryValueType, QuerySetValueType];
+
+export const useQueryParam = (queryParam: string): QueryReturnType => {
+  const { pathname, search } = useLocation();
+  const history = useHistory();
+  const [value, setValue] = useState<QueryValueType>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const paramValue = params.get(queryParam);
+    if (paramValue !== value) {
+      setValue(paramValue);
+    }
+  }, [search, setValue, queryParam]);
+
+  const setParam: QuerySetValueType = (rawValue) => {
+    let parsedValue: string | null;
+    if (!rawValue && rawValue !== 0) {
+      parsedValue = null;
+    } else {
+      parsedValue = rawValue.toString();
+    }
+
+    const params = new URLSearchParams(search);
+    if (parsedValue) {
+      params.set(queryParam, parsedValue);
+    } else {
+      params.delete(queryParam);
+    }
+
+    setValue(parsedValue);
+    history.push({ pathname, search: params.toString() });
+  };
+
+  return [value, setParam];
+};
+
+export const usePagination = (): [number, QuerySetValueType] => {
+  const [rawCurrentPage, setCurrentPage] = useQueryParam('page');
+
+  let currentPage = 1;
+  if (rawCurrentPage) {
+    const parsedPage = Number.parseInt(rawCurrentPage);
+    if (!Number.isNaN(parsedPage)) {
+      currentPage = parsedPage;
+    } else {
+      // eslint-disable-next-line no-console
+      console.warn('Failed to parse URL page idx');
+    }
+  }
+
+  return [currentPage, setCurrentPage];
 };

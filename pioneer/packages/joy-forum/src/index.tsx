@@ -15,6 +15,7 @@ import { NewThread, EditThread } from './EditThread';
 import { NewReply, EditReply } from './EditReply';
 import { CategoryList, ViewCategoryById } from './CategoryList';
 import { ViewThreadById } from './ViewThread';
+import { LegacyPagingRedirect } from './LegacyPagingRedirect';
 
 const ForumContentWrapper = styled.main`
   padding-top: 1.5rem;
@@ -30,22 +31,25 @@ class App extends React.PureComponent<Props> {
         <ForumSudoProvider>
           <ForumContentWrapper className='forum--App'>
             <Switch>
+              {/* routes for handling legacy format of forum paging within the routing path */}
+              {/* translate page param to search query */}
+              <Route path={`${basePath}/categories/:id/page/:page`} component={LegacyPagingRedirect} />
+              <Route path={`${basePath}/threads/:id/page/:page`} component={LegacyPagingRedirect} />
+
               {/* <Route path={`${basePath}/sudo`} component={EditForumSudo} /> */}
               {/* <Route path={`${basePath}/categories/new`} component={NewCategory} /> */}
+
               <Route path={`${basePath}/categories/:id/newSubcategory`} component={NewSubcategory} />
               <Route path={`${basePath}/categories/:id/newThread`} component={NewThread} />
               <Route path={`${basePath}/categories/:id/edit`} component={EditCategory} />
-              <Route path={`${basePath}/categories/:id/page/:page`} component={ViewCategoryById} />
               <Route path={`${basePath}/categories/:id`} component={ViewCategoryById} />
               <Route path={`${basePath}/categories`} component={CategoryList} />
 
               <Route path={`${basePath}/threads/:id/reply`} component={NewReply} />
               <Route path={`${basePath}/threads/:id/edit`} component={EditThread} />
-              <Route path={`${basePath}/threads/:id/page/:page`} component={ViewThreadById} />
               <Route path={`${basePath}/threads/:id`} component={ViewThreadById} />
 
               <Route path={`${basePath}/replies/:id/edit`} component={EditReply} />
-              {/* <Route path={`${basePath}/replies/:id`} component={ViewReplyById} /> */}
 
               <Route component={CategoryList} />
             </Switch>

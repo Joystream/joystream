@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { Table, Dropdown, Button, Segment, Label } from 'semantic-ui-react';
 import styled from 'styled-components';
-import { History } from 'history';
 import orderBy from 'lodash/orderBy';
 import BN from 'bn.js';
 
@@ -11,7 +10,7 @@ import { Option, bool } from '@polkadot/types';
 import { CategoryId, Category, ThreadId, Thread } from '@joystream/types/forum';
 import { ViewThread } from './ViewThread';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
-import { UrlHasIdProps, CategoryCrumbs, Pagination, ThreadsPerPage } from './utils';
+import { UrlHasIdProps, CategoryCrumbs, Pagination, ThreadsPerPage, usePagination } from './utils';
 import Section from '@polkadot/joy-utils/Section';
 import { JoyWarn } from '@polkadot/joy-utils/JoyStatus';
 import { withForumCalls } from './calls';
@@ -100,9 +99,7 @@ function CategoryActions (props: CategoryActionsProps) {
 
 type InnerViewCategoryProps = {
   category?: Category;
-  page?: number;
   preview?: boolean;
-  history?: History;
 };
 
 type ViewCategoryProps = InnerViewCategoryProps & {
@@ -114,7 +111,7 @@ const CategoryPreviewRow = styled(Table.Row)`
 `;
 
 function InnerViewCategory (props: InnerViewCategoryProps) {
-  const { history, category, page = 1, preview = false } = props;
+  const { category, preview = false } = props;
 
   if (!category) {
     return <em>Loading...</em>;
@@ -154,10 +151,6 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
     );
   }
 
-  if (!history) {
-    return <em>Error: <code>history</code> property was not found.</em>;
-  }
-
   const renderSubCategoriesAndThreads = () => <>
     {category.archived &&
       <JoyWarn title={'This category is archived.'}>
@@ -181,7 +174,7 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
     }
 
     <Section title={`Threads (${category.num_direct_unmoderated_threads.toString()})`}>
-      <CategoryThreads category={category} page={page} history={history} />
+      <CategoryThreads category={category} />
     </Section>
   </>;
 
@@ -205,8 +198,6 @@ const ViewCategory = withForumCalls<ViewCategoryProps>(
 
 type InnerCategoryThreadsProps = {
   category: Category;
-  page: number;
-  history: History;
 };
 
 type CategoryThreadsProps = ApiProps & InnerCategoryThreadsProps & {
@@ -214,7 +205,8 @@ type CategoryThreadsProps = ApiProps & InnerCategoryThreadsProps & {
 };
 
 function InnerCategoryThreads (props: CategoryThreadsProps) {
-  const { api, category, nextThreadId, page, history } = props;
+  const { api, category, nextThreadId } = props;
+  const [currentPage, setCurrentPage] = usePagination();
 
   if (!category.hasUnmoderatedThreads) {
     return <em>No threads in this category</em>;
@@ -273,20 +265,16 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
     return <em>No threads in this category</em>;
   }
 
-  const onPageChange = (activePage?: string | number) => {
-    history.push(`/forum/categories/${category.id.toString()}/page/${activePage}`);
-  };
-
   const itemsPerPage = ThreadsPerPage;
-  const minIdx = (page - 1) * itemsPerPage;
+  const minIdx = (currentPage - 1) * itemsPerPage;
   const maxIdx = minIdx + itemsPerPage - 1;
 
   const pagination =
     <Pagination
-      currentPage={page}
+      currentPage={currentPage}
       totalItems={threadCount}
       itemsPerPage={itemsPerPage}
-      onPageChange={onPageChange}
+      onPageChange={setCurrentPage}
     />;
 
   const pageOfItems = threads
@@ -321,21 +309,17 @@ export const CategoryThreads = withMulti(
 );
 
 type ViewCategoryByIdProps = UrlHasIdProps & {
-  history: History;
   match: {
     params: {
       id: string;
-      page?: string;
     };
   };
 };
 
 export function ViewCategoryById (props: ViewCategoryByIdProps) {
-  const { history, match: { params: { id, page: pageStr } } } = props;
+  const { match: { params: { id } } } = props;
   try {
-    // tslint:disable-next-line:radix
-    const page = pageStr ? parseInt(pageStr) : 1;
-    return <ViewCategory id={new CategoryId(id)} page={page} history={history} />;
+    return <ViewCategory id={new CategoryId(id)} />;
   } catch (err) {
     return <em>Invalid category ID: {id}</em>;
   }
