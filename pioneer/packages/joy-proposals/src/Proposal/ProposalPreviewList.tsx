@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Card, Container, Menu } from 'semantic-ui-react';
+import { Card, Container } from 'semantic-ui-react';
+import styled from 'styled-components';
 
 import ProposalPreview from './ProposalPreview';
 import { ParsedProposal } from '@polkadot/joy-utils/types/proposals';
@@ -7,6 +8,7 @@ import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
 import { PromiseComponent } from '@polkadot/joy-utils/react/components';
 import { withCalls } from '@polkadot/react-api';
 import { BlockNumber } from '@polkadot/types/interfaces';
+import { Dropdown } from '@polkadot/react-components';
 
 const filters = ['All', 'Active', 'Canceled', 'Approved', 'Rejected', 'Slashed', 'Expired'] as const;
 
@@ -50,6 +52,40 @@ type ProposalPreviewListProps = {
   bestNumber?: BlockNumber;
 };
 
+const FilterContainer = styled.div`
+  display: flex;
+  justify-content: flex-end;
+`;
+const FilterOption = styled.span`
+  display: inline-flex;
+  align-items: center;
+`;
+const ProposalFilterCountBadge = styled.span`
+  background-color: rgba(0, 0, 0, .3);
+  color: #fff;
+
+  border-radius: 10px;
+  height: 19px;
+  min-width: 19px;
+  padding: 0 4px;
+
+  font-size: .8rem;
+  font-weight: 500;
+  line-height: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-left: 6px;
+`;
+const StyledDropdown = styled(Dropdown)`
+  .dropdown {
+    width: 200px;
+  }
+  margin-bottom: 1.75rem;
+`;
+
 function ProposalPreviewList ({ bestNumber }: ProposalPreviewListProps) {
   const transport = useTransport();
   const [proposals, error, loading] = usePromise<ParsedProposal[]>(() => transport.proposals.proposals(), []);
@@ -57,24 +93,35 @@ function ProposalPreviewList ({ bestNumber }: ProposalPreviewListProps) {
 
   const proposalsMap = mapFromProposals(proposals);
   const filteredProposals = proposalsMap.get(activeFilter) as ParsedProposal[];
+  const sortedProposals = filteredProposals.sort((p1, p2) => p2.id.cmp(p1.id));
+
+  const filterOptions = filters.map(filter => ({
+    text: (
+      <FilterOption>
+        {filter}
+        <ProposalFilterCountBadge>{(proposalsMap.get(filter) as ParsedProposal[]).length}</ProposalFilterCountBadge>
+      </FilterOption>
+    ),
+    value: filter
+  }));
+
+  const _onChangePrefix = (f: ProposalFilter) => setActiveFilter(f);
 
   return (
     <Container className="Proposal" fluid>
       <PromiseComponent error={ error } loading={ loading } message="Fetching proposals...">
-        <Menu tabular className="list-menu">
-          {filters.map((filter, idx) => (
-            <Menu.Item
-              key={`${filter} - ${idx}`}
-              name={`${filter.toLowerCase()} - ${(proposalsMap.get(filter) as ParsedProposal[]).length}`}
-              active={activeFilter === filter}
-              onClick={() => setActiveFilter(filter)}
-            />
-          ))}
-        </Menu>
+        <FilterContainer>
+          <StyledDropdown
+            label="Proposal state"
+            options={filterOptions}
+            value={activeFilter}
+            onChange={_onChangePrefix}
+          />
+        </FilterContainer>
         {
-          filteredProposals.length ? (
+          sortedProposals.length ? (
             <Card.Group>
-              {filteredProposals.map((prop: ParsedProposal, idx: number) => (
+              {sortedProposals.map((prop: ParsedProposal, idx: number) => (
                 <ProposalPreview key={`${prop.title}-${idx}`} proposal={prop} bestNumber={bestNumber} />
               ))}
             </Card.Group>
