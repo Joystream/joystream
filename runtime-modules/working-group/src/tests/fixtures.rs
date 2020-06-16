@@ -1,7 +1,6 @@
 use super::mock::{Balances, Membership, System, Test, TestEvent, WorkingGroup1};
 use crate::types::{
-    OpeningPolicyCommitment, RewardPolicy, Worker, Application, Opening,
-    RoleStakeProfile,
+    Application, Opening, OpeningPolicyCommitment, RewardPolicy, RoleStakeProfile, Worker,
 };
 use crate::Error;
 use crate::{Instance1, RawEvent};
@@ -39,11 +38,8 @@ impl IncreaseWorkerStakeFixture {
         let stake_id = 0;
         let old_stake = <stake::Module<Test>>::stakes(stake_id);
         let old_balance = Balances::free_balance(&self.account_id);
-        let actual_result = WorkingGroup1::increase_stake(
-            self.origin.clone().into(),
-            self.worker_id,
-            self.balance,
-        );
+        let actual_result =
+            WorkingGroup1::increase_stake(self.origin.clone().into(), self.worker_id, self.balance);
 
         assert_eq!(actual_result, expected_result);
 
@@ -144,6 +140,35 @@ impl LeaveWorkerRoleFixture {
     }
 }
 
+pub struct UpdateWorkerRewardAmountFixture {
+    worker_id: u64,
+    amount: u64,
+    origin: RawOrigin<u64>,
+}
+
+impl UpdateWorkerRewardAmountFixture {
+    pub fn default_for_worker_id(worker_id: u64) -> Self {
+        UpdateWorkerRewardAmountFixture {
+            worker_id,
+            amount: 100,
+            origin: RawOrigin::Signed(1),
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        UpdateWorkerRewardAmountFixture { origin, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
+        assert_eq!(
+            WorkingGroup1::update_reward_amount(
+                self.origin.clone().into(),
+                self.worker_id,
+                self.amount
+            ),
+            expected_result
+        );
+    }
+}
 pub struct UpdateWorkerRewardAccountFixture {
     worker_id: u64,
     new_role_account_id: u64,
@@ -328,10 +353,8 @@ impl BeginReviewWorkerApplicationsFixture {
         BeginReviewWorkerApplicationsFixture { origin, ..self }
     }
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
-        let actual_result = WorkingGroup1::begin_applicant_review(
-            self.origin.clone().into(),
-            self.opening_id,
-        );
+        let actual_result =
+            WorkingGroup1::begin_applicant_review(self.origin.clone().into(), self.opening_id);
         assert_eq!(actual_result, expected_result);
     }
 }
@@ -496,9 +519,7 @@ impl ApplyOnWorkerOpeningFixture {
             assert_eq!(actual_application, expected_application);
 
             let current_opening = WorkingGroup1::opening_by_id(self.worker_opening_id);
-            assert!(current_opening
-                .applications
-                .contains(&application_id));
+            assert!(current_opening.applications.contains(&application_id));
         }
 
         saved_application_next_id
@@ -587,10 +608,7 @@ impl AddWorkerOpeningFixture {
         assert_eq!(actual_result.clone(), expected_result);
 
         if actual_result.is_ok() {
-            assert_eq!(
-                WorkingGroup1::next_opening_id(),
-                saved_opening_next_id + 1
-            );
+            assert_eq!(WorkingGroup1::next_opening_id(), saved_opening_next_id + 1);
             let opening_id = saved_opening_next_id;
 
             let actual_opening = WorkingGroup1::opening_by_id(opening_id);
@@ -721,11 +739,8 @@ impl DecreaseWorkerStakeFixture {
         let stake_id = 0;
         let old_balance = Balances::free_balance(&self.account_id);
         let old_stake = <stake::Module<Test>>::stakes(stake_id);
-        let actual_result = WorkingGroup1::decrease_stake(
-            self.origin.clone().into(),
-            self.worker_id,
-            self.balance,
-        );
+        let actual_result =
+            WorkingGroup1::decrease_stake(self.origin.clone().into(), self.worker_id, self.balance);
 
         assert_eq!(actual_result, expected_result);
 
@@ -783,11 +798,8 @@ impl SlashWorkerStakeFixture {
         let stake_id = 0;
         let old_balance = Balances::free_balance(&self.account_id);
         let old_stake = <stake::Module<Test>>::stakes(stake_id);
-        let actual_result = WorkingGroup1::slash_stake(
-            self.origin.clone().into(),
-            self.worker_id,
-            self.balance,
-        );
+        let actual_result =
+            WorkingGroup1::slash_stake(self.origin.clone().into(), self.worker_id, self.balance);
 
         assert_eq!(actual_result, expected_result);
 

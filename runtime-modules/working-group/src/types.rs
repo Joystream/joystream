@@ -217,7 +217,6 @@ pub enum ExitInitiationOrigin {
 
     /// The curator exiting is the origin.
     Worker,
-
     //TODO
 }
 

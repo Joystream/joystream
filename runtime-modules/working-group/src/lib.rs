@@ -23,6 +23,7 @@
 //!
 //! - [update_role_account](./struct.Module.html#method.update_role_account) -  Update the role account of the worker/lead.
 //! - [update_reward_account](./struct.Module.html#method.update_reward_account) -  Update the reward account of the worker/lead.
+//! - [update_reward_account](./struct.Module.html#method.update_reward_account) -  Update the reward amount of the worker/lead.
 //! - [leave_role](./struct.Module.html#method.leave_role) - Leave the role by the active worker/lead.
 //! - [terminate_role](./struct.Module.html#method.terminate_role) - Terminate the worker role by the lead.
 //! - [set_mint_capacity](./struct.Module.html#method.set_mint_capacity) -  Sets the capacity to enable working group budget.
@@ -61,8 +62,7 @@ use errors::WrappedError;
 
 pub use errors::Error;
 pub use types::{
-    Lead, OpeningPolicyCommitment, RewardPolicy, Worker, Application, Opening,
-    RoleStakeProfile,
+    Application, Lead, Opening, OpeningPolicyCommitment, RewardPolicy, RoleStakeProfile, Worker,
 };
 
 /// Alias for the _Lead_ type
@@ -86,6 +86,10 @@ pub type ApplicationId<T> = <T as hiring::Trait>::ApplicationId;
 /// Balance type of runtime
 pub type BalanceOf<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+
+/// Balance type of runtime reward
+pub type BalanceOfMint<T> =
+    <<T as minting::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
 /// Balance type of runtime
 pub type CurrencyOf<T> = <T as stake::Trait>::Currency;
@@ -204,6 +208,11 @@ decl_event!(
         /// - Member id of the worker.
         /// - Reward account id of the worker.
         WorkerRewardAccountUpdated(ActorId, AccountId),
+
+        /// Emits on updating the reward amount of the worker.
+        /// Params:
+        /// - Member id of the worker.
+        WorkerRewardAmountUpdated(ActorId),
 
         /// Emits on adding new worker opening.
         /// Params:
@@ -403,6 +412,39 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::WorkerRewardAccountUpdated(worker_id, new_reward_account_id));
+        }
+
+        /// Update the reward amount associated with a set reward relationship for the active worker.
+        pub fn update_reward_amount(
+            origin,
+            worker_id: WorkerId<T>,
+            new_amount: BalanceOfMint<T>
+        ) {
+            // Ensure lead is set and is origin signer
+            Self::ensure_origin_is_active_leader(origin)?;
+
+            // Ensuring worker actually exists
+            let worker = Self::ensure_worker_exists(&worker_id)?;
+
+            // Ensure the worker actually has a recurring reward
+            let relationship_id = Self::ensure_worker_has_recurring_reward(&worker)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update only the reward account.
+            ensure_on_wrapped_error!(
+                recurringrewards::Module::<T>::set_reward_relationship(
+                    relationship_id,
+                    None, // new_account
+                    Some(new_amount), // new_payout
+                    None, //new_next_payment_at
+                    None) //new_payout_interval
+            )?;
+
+            // Trigger event
+            Self::deposit_event(RawEvent::WorkerRewardAmountUpdated(worker_id));
         }
 
         /// Leave the role by the active worker.
@@ -1027,9 +1069,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Self::ensure_is_lead_account(signer)
     }
 
-    fn ensure_opening_exists(
-        opening_id: &OpeningId<T>,
-    ) -> Result<OpeningInfo<T>, Error> {
+    fn ensure_opening_exists(opening_id: &OpeningId<T>) -> Result<OpeningInfo<T>, Error> {
         ensure!(
             OpeningById::<T, I>::exists(opening_id),
             Error::OpeningDoesNotExist

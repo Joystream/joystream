@@ -664,8 +664,7 @@ fn begin_review_worker_applications_fails_with_invalid_opening() {
 
         let begin_review_worker_applications_fixture =
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(invalid_opening_id);
-        begin_review_worker_applications_fixture
-            .call_and_assert(Err(Error::OpeningDoesNotExist));
+        begin_review_worker_applications_fixture.call_and_assert(Err(Error::OpeningDoesNotExist));
     });
 }
 
@@ -1033,6 +1032,95 @@ fn update_worker_reward_account_fails_with_invalid_origin_signed_account() {
     });
 }
 
+#[test]
+fn update_worker_reward_account_fails_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        let invalid_worker_id = 1;
+        fill_default_worker_position();
+
+        let update_worker_account_fixture =
+            UpdateWorkerRewardAccountFixture::default_with_ids(invalid_worker_id, lead_account_id);
+
+        update_worker_account_fixture.call_and_assert(Err(Error::WorkerDoesNotExist));
+    });
+}
+
+#[test]
+fn update_worker_reward_account_fails_with_no_recurring_reward() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        let worker_id = fill_worker_position_with_no_reward();
+
+        let update_worker_account_fixture =
+            UpdateWorkerRewardAccountFixture::default_with_ids(worker_id, lead_account_id);
+
+        update_worker_account_fixture.call_and_assert(Err(Error::WorkerHasNoReward));
+    });
+}
+
+#[test]
+fn update_worker_reward_amount_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_default_worker_position();
+
+        let update_worker_amount_fixture =
+            UpdateWorkerRewardAmountFixture::default_for_worker_id(worker_id);
+
+        update_worker_amount_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkerRewardAmountUpdated(worker_id));
+    });
+}
+
+#[test]
+fn update_worker_reward_amount_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let update_worker_amount_fixture =
+            UpdateWorkerRewardAmountFixture::default_for_worker_id(1).with_origin(RawOrigin::None);
+
+        update_worker_amount_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
+    });
+}
+
+#[test]
+fn update_worker_reward_amount_fails_with_invalid_origin_signed_account() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_default_worker_position();
+
+        let update_worker_amount_fixture =
+            UpdateWorkerRewardAmountFixture::default_for_worker_id(worker_id)
+                .with_origin(RawOrigin::Signed(2));
+
+        update_worker_amount_fixture.call_and_assert(Err(Error::IsNotLeadAccount));
+    });
+}
+
+#[test]
+fn update_worker_reward_amount_fails_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        let invalid_worker_id = 1;
+        fill_default_worker_position();
+
+        let update_worker_amount_fixture =
+            UpdateWorkerRewardAmountFixture::default_for_worker_id(invalid_worker_id);
+
+        update_worker_amount_fixture.call_and_assert(Err(Error::WorkerDoesNotExist));
+    });
+}
+
+#[test]
+fn update_worker_reward_amount_fails_with_no_recurring_reward() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = fill_worker_position_with_no_reward();
+
+        let update_worker_amount_fixture =
+            UpdateWorkerRewardAmountFixture::default_for_worker_id(worker_id);
+
+        update_worker_amount_fixture.call_and_assert(Err(Error::WorkerHasNoReward));
+    });
+}
+
 fn fill_default_worker_position() -> u64 {
     fill_worker_position(
         Some(RewardPolicy {
@@ -1114,33 +1202,6 @@ fn fill_worker_position(
     let worker_id = fill_worker_opening_fixture.call_and_assert(Ok(()));
 
     worker_id
-}
-
-#[test]
-fn update_worker_reward_account_fails_with_invalid_worker_id() {
-    build_test_externalities().execute_with(|| {
-        let lead_account_id = 1;
-        let invalid_worker_id = 1;
-        fill_default_worker_position();
-
-        let update_worker_account_fixture =
-            UpdateWorkerRewardAccountFixture::default_with_ids(invalid_worker_id, lead_account_id);
-
-        update_worker_account_fixture.call_and_assert(Err(Error::WorkerDoesNotExist));
-    });
-}
-
-#[test]
-fn update_worker_reward_account_fails_with_no_recurring_reward() {
-    build_test_externalities().execute_with(|| {
-        let lead_account_id = 1;
-        let worker_id = fill_worker_position_with_no_reward();
-
-        let update_worker_account_fixture =
-            UpdateWorkerRewardAccountFixture::default_with_ids(worker_id, lead_account_id);
-
-        update_worker_account_fixture.call_and_assert(Err(Error::WorkerHasNoReward));
-    });
 }
 
 #[test]

@@ -178,8 +178,7 @@ fn ensure_setting_genesis_constraints_succeeds() {
             STORAGE_WORKING_GROUP_CONSTRAINT_DIFF,
         );
         let opening_text_constraint = <StorageWorkingGroup<Test>>::opening_human_readable_text();
-        let worker_text_constraint =
-            <StorageWorkingGroup<Test>>::application_human_readable_text();
+        let worker_text_constraint = <StorageWorkingGroup<Test>>::application_human_readable_text();
         let worker_exit_text_constraint = <StorageWorkingGroup<Test>>::worker_exit_rationale_text();
 
         assert_eq!(opening_text_constraint, default_constraint);
