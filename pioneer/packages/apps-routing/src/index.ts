@@ -40,10 +40,6 @@ let routes: Routes = ([] as Routes);
 
 // Basic routes
 routes = routes.concat(
-  staking,
-  roles,
-  transfer,
-  null,
   media,
   roles,
   proposals,
