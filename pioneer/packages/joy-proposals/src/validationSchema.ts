@@ -1,5 +1,4 @@
 import * as Yup from 'yup';
-import { checkAddress } from '@polkadot/util-crypto';
 
 // TODO: If we really need this (currency unit) we can we make "Validation" a functiction that returns an object.
 // We could then "instantialize" it in "withFormContainer" where instead of passing
@@ -242,7 +241,6 @@ const Validation: ValidationType = {
       .required('You need to specify an amount of tokens.'),
     destinationAccount: Yup.string()
       .required('Select a destination account!')
-      .test('address-test', 'Invalid account address.', account => checkAddress(account, 5)[0])
   },
   SetLead: {
     workingGroupLead: Yup.string().required('Select a proposed lead!')

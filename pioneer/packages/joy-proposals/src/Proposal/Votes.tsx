@@ -1,31 +1,29 @@
 import React from 'react';
 import { Header, Divider, Table, Icon } from 'semantic-ui-react';
 import useVoteStyles from './useVoteStyles';
-import { ProposalVote } from '@polkadot/joy-utils/types/proposals';
+import { ProposalVotes } from '@polkadot/joy-utils/types/proposals';
 import { VoteKind } from '@joystream/types/proposals';
 import { VoteKindStr } from './VotingSection';
 import ProfilePreview from '@polkadot/joy-utils/MemberProfilePreview';
 
 type VotesProps = {
-  votes: ProposalVote[];
+  votes: ProposalVotes;
 };
 
 export default function Votes ({ votes }: VotesProps) {
-  const nonEmptyVotes = votes.filter(proposalVote => proposalVote.vote !== null);
-
-  if (!nonEmptyVotes.length) {
+  if (!votes.votes.length) {
     return <Header as="h4">No votes has been submitted!</Header>;
   }
 
   return (
     <>
       <Header as="h3">
-        All Votes: ({nonEmptyVotes.length} / {votes.length})
+        All Votes: ({votes.votes.length}/{votes.councilMembersLength})
       </Header>
       <Divider />
       <Table basic="very">
         <Table.Body>
-          {nonEmptyVotes.map((proposalVote, idx) => {
+          {votes.votes.map((proposalVote, idx) => {
             const { vote, member } = proposalVote;
             const voteStr = (vote as VoteKind).type.toString() as VoteKindStr;
             const { icon, textColor } = useVoteStyles(voteStr);
