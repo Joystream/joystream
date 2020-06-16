@@ -6,6 +6,7 @@ import Gallery from "./Gallery";
 
 type VideoGalleryProps = {
 	title: string;
+	log?: boolean;
 };
 
 function Video() {
@@ -26,10 +27,10 @@ const articleStyles = css`
 	margin: auto ${theme.spacing.m};
 `;
 
-export default function VideoGallery({ title = "" }: VideoGalleryProps) {
+export default function VideoGallery({ title = "", log = false }: VideoGalleryProps) {
 	const items = Array.from({ length: 15 }, (_, i) => i);
 	return (
-		<Gallery title={title}>
+		<Gallery title={title} log={log}>
 			{items.map((item) => (
 				<article css={articleStyles} key={`${title}- ${item}`}>
 					<Video />

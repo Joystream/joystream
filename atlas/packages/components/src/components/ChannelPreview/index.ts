@@ -1,3 +1,2 @@
-import ChannelPreview from "./ChannelPreview"
-
-export default ChannelPreview
+import ChannelPreview from "./ChannelPreview";
+export default ChannelPreview;

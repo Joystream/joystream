@@ -6,6 +6,7 @@ import { Carousel, theme } from "@joystream/components";
 type VideoGalleryProps = {
 	title?: string;
 	children?: React.ReactNode;
+	log?: boolean;
 };
 
 const sectionStyles = css`
@@ -18,11 +19,11 @@ const sectionStyles = css`
 	}
 `;
 
-export default function Gallery({ title = "", children }: VideoGalleryProps) {
+export default function Gallery({ title = "", log = false, children }: VideoGalleryProps) {
 	return (
 		<section css={sectionStyles}>
 			<h4>{title}</h4>
-			<Carousel>{children}</Carousel>
+			<Carousel log={log}>{children}</Carousel>
 		</section>
 	);
 }

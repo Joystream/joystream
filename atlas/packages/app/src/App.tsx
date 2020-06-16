@@ -11,7 +11,7 @@ export default function App() {
 			<Provider store={store}>
 				<Layout>
 					<Hero />
-					<VideoGallery title="Continue Watching" />
+					<VideoGallery title="Continue Watching" log />
 					<VideoGallery title="Top Trending Videos" />
 					<SeriesGallery title="Top Trending Series" />
 					<VideoGallery title="Featured Videos" />

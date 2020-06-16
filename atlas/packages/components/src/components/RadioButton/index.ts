@@ -1,3 +1,2 @@
-import { memo } from "react"
-import RadioButton from "./RadioButton"
-export default memo(RadioButton)
+import RadioButton from "./RadioButton";
+export default RadioButton;
