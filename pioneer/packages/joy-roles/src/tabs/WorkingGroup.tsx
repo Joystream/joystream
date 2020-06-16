@@ -56,7 +56,7 @@ const GroupOverviewSection = styled.section`
   }
 `;
 
-type GroupOverviewOuterProps = WorkingGroupMembership & {
+type GroupOverviewOuterProps = Partial<WorkingGroupMembership> & {
   leadStatus?: GroupLeadStatus;
 }
 
@@ -88,7 +88,7 @@ const GroupOverview = Loadable<GroupOverviewProps>(
         <h2>{ groupName }</h2>
         <p>{ description }</p>
         <Card.Group>
-          { members.map((member, key) => (
+          { members!.map((member, key) => (
             <GroupMemberView key={key} {...member} />
           )) }
         </Card.Group>

@@ -71,8 +71,8 @@ const WorkingGroupsOverview = styled.div`
 export const WorkingGroupsView = View<WorkingGroupsController, State>(
   (state) => (
     <WorkingGroupsOverview>
-      <ContentCurators {...state.contentCurators!} leadStatus={state.contentLeadStatus}/>
-      <StorageProviders {...state.storageProviders!} leadStatus={state.storageLeadStatus}/>
+      <ContentCurators {...state.contentCurators} leadStatus={state.contentLeadStatus}/>
+      <StorageProviders {...state.storageProviders} leadStatus={state.storageLeadStatus}/>
     </WorkingGroupsOverview>
   )
 );
