@@ -601,13 +601,17 @@ impl<T: Trait> Property<T> {
     pub fn ensure_unique_option_satisfied(
         &self,
         new_value: &PropertyValue<T>,
-        updated_entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+        updated_values_for_existing_properties: &ValuesForExistingProperties<T>,
     ) -> dispatch::Result {
         if self.unique && (*new_value != PropertyValue::default() || self.required) {
             ensure!(
-                updated_entity_property_values
+                updated_values_for_existing_properties
                     .values()
-                    .all(|prop_value| *prop_value != *new_value),
+                    .map(
+                        |updated_value_for_existing_property| updated_value_for_existing_property
+                            .unzip()
+                    )
+                    .all(|(_, value)| *value != *new_value),
                 ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE
             );
         }

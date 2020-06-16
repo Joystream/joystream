@@ -994,8 +994,10 @@ decl_module! {
 
             let entity_property_values = entity.values;
 
+            let values_for_existing_properties = ValuesForExistingProperties::from(&class_properties, &entity_property_values);
+
             let entity_property_id_references_with_same_owner_flag_set =
-                Self::get_property_id_references_with_same_owner_flag_set(&class_properties, &entity_property_values);
+                Self::get_property_id_references_with_same_owner_flag_set(values_for_existing_properties);
 
             Self::ensure_only_references_with_same_owner_flag_set_provided(
                 &entity_property_id_references_with_same_owner_flag_set,
@@ -1012,7 +1014,8 @@ decl_module! {
                     entity_property_id_references_with_same_owner_flag_set, &entity_property_values,
                     &new_property_value_references_with_same_owner_flag_set,
                 ) {
-                    Self::ensure_property_values_unique_option_satisfied(&class_properties, &entity_property_values_updated)?;
+                    let values_for_updated_properties = ValuesForExistingProperties::from(&class_properties, &entity_property_values_updated);
+                    Self::ensure_property_values_unique_option_satisfied(values_for_updated_properties)?;
                     Some(entity_property_values_updated)
                 } else {
                     None
@@ -1193,9 +1196,11 @@ decl_module! {
                 &class_properties, schema.get_properties(), entity_controller, &property_values,
             )?;
 
+            let values_for_existing_properties = ValuesForExistingProperties::from(&class_properties, &property_values);
+
             // Entities, which rc should be updated
             let entities_inbound_rcs_delta = Self::calculate_entities_inbound_rcs_delta(
-                &class_properties, &property_values, DeltaMode::Increment
+                values_for_existing_properties, DeltaMode::Increment
             );
 
             entities_inbound_rcs_delta.update_entities_rcs();
@@ -1207,8 +1212,12 @@ decl_module! {
                 schema, entity_property_values, property_values
             );
 
-            Self::ensure_property_values_unique_option_satisfied(
+            let updated_values_for_existing_properties = ValuesForExistingProperties::from(
                 &class_properties, &entity_values_updated
+            );
+
+            Self::ensure_property_values_unique_option_satisfied(
+                updated_values_for_existing_properties
             )?;
 
 
@@ -1250,8 +1259,11 @@ decl_module! {
             Self::ensure_all_property_values_are_already_added(&entity.values, &new_property_values)?;
 
             let class_properties = class.properties;
-            Self::ensure_all_property_values_are_unlocked_from(&new_property_values, &class_properties, access_level)?;
-            Self::ensure_new_property_values_are_valid(&entity, &new_property_values, &class_properties)?;
+
+            let new_values_for_existing_properties = ValuesForExistingProperties::from(&class_properties, &new_property_values);
+
+            Self::ensure_all_property_values_are_unlocked_from(&new_values_for_existing_properties, access_level)?;
+            Self::ensure_new_property_values_are_valid(&entity, &new_values_for_existing_properties)?;
 
             //
             // == MUTATION SAFE ==
@@ -1265,7 +1277,10 @@ decl_module! {
             // Perform entity property values update
             let entity_property_values_updated = if let Some(entity_property_values_updated) =
                 Self::make_updated_values(&entity_property_values, &new_property_values) {
-                    Self::ensure_property_values_unique_option_satisfied(&class_properties, &entity_property_values_updated)?;
+                    let updated_values_for_existing_properties = ValuesForExistingProperties::from(
+                        &class_properties, &new_property_values
+                    );
+                    Self::ensure_property_values_unique_option_satisfied(updated_values_for_existing_properties)?;
                     Some(entity_property_values_updated)
                 } else {
                     None
@@ -1312,7 +1327,8 @@ decl_module! {
             if let Some(entity_ids_to_decrease_rcs) = property_value_vector.get_vec_value().get_involved_entities() {
                 let same_controller_status = property.property_type.same_controller_status();
                 let entities_inbound_rcs_delta = Self::perform_entities_inbound_rcs_delta_calculation(
-                    ReferenceCounterSideEffects::<T>::default(), entity_ids_to_decrease_rcs, same_controller_status, DeltaMode::Decrement
+                    ReferenceCounterSideEffects::<T>::default(), entity_ids_to_decrease_rcs,
+                    same_controller_status, DeltaMode::Decrement
                 );
                 entities_inbound_rcs_delta.update_entities_rcs();
             }
@@ -1592,22 +1608,19 @@ impl<T: Trait> Module<T> {
 
     /// Calculate `entities_inbound_rcs_delta`, based on values provided and chosen `DeltaMode`
     fn calculate_entities_inbound_rcs_delta(
-        class_properties: &[Property<T>],
-        property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+        values_for_existing_properties: ValuesForExistingProperties<T>,
         delta_mode: DeltaMode,
     ) -> ReferenceCounterSideEffects<T> {
-        property_values
-            .iter()
-            .filter_map(|(property_id, property_value)| {
-                property_value
-                    .get_involved_entities()
-                    .map(|involved_entity_ids| {
-                        let class_property = &class_properties[*property_id as usize];
-                        (
-                            involved_entity_ids,
-                            class_property.property_type.same_controller_status(),
-                        )
-                    })
+        values_for_existing_properties
+            .values()
+            .map(|value_for_existing_property| value_for_existing_property.unzip())
+            .filter_map(|(property, value)| {
+                value.get_involved_entities().map(|involved_entity_ids| {
+                    (
+                        involved_entity_ids,
+                        property.property_type.same_controller_status(),
+                    )
+                })
             })
             .fold(
                 ReferenceCounterSideEffects::default(),
@@ -1636,13 +1649,11 @@ impl<T: Trait> Module<T> {
                 .collect();
 
         Self::calculate_entities_inbound_rcs_delta(
-            &class_properties,
-            &entity_property_values_to_update,
+            ValuesForExistingProperties::from(&class_properties, &entity_property_values_to_update),
             DeltaMode::Decrement,
         )
         .update(Self::calculate_entities_inbound_rcs_delta(
-            &class_properties,
-            new_property_values,
+            ValuesForExistingProperties::from(&class_properties, new_property_values),
             DeltaMode::Increment,
         ))
     }
@@ -1744,15 +1755,15 @@ impl<T: Trait> Module<T> {
     /// Retrieve property value ids from provided `entity_property_values`,
     /// if `Type` of corresponding `Property` is `Reference` and `SameOwner` flag set
     pub fn get_property_id_references_with_same_owner_flag_set(
-        class_properties: &[Property<T>],
-        entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+        values_for_existing_properties: ValuesForExistingProperties<T>,
     ) -> BTreeSet<PropertyId> {
-        entity_property_values
+        values_for_existing_properties
             .keys()
-            .filter(|&&property_id| {
-                // Indexing is safe, class should always maintain such constistency
-                let class_property = &class_properties[property_id as usize];
-                class_property.property_type.same_controller_status()
+            .filter(|&property_id| {
+                values_for_existing_properties[property_id]
+                    .get_property()
+                    .property_type
+                    .same_controller_status()
             })
             .copied()
             .collect()
@@ -1835,15 +1846,12 @@ impl<T: Trait> Module<T> {
 
     /// Ensure `property_values` satisfy unique option, if required
     pub fn ensure_property_values_unique_option_satisfied(
-        class_properties: &[Property<T>],
-        updated_entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+        updated_values_for_existing_properties: ValuesForExistingProperties<T>,
     ) -> dispatch::Result {
-        for (property_id, property_value) in updated_entity_property_values {
-            // Indexing is safe, class should always maintain such constistency
-            let class_property = &class_properties[*property_id as usize];
-
-            class_property
-                .ensure_unique_option_satisfied(property_value, updated_entity_property_values)?;
+        for updated_value_for_existing_property in updated_values_for_existing_properties.values() {
+            let (property, value) = updated_value_for_existing_property.unzip();
+            property
+                .ensure_unique_option_satisfied(value, &updated_values_for_existing_properties)?;
         }
         Ok(())
     }
@@ -1851,14 +1859,12 @@ impl<T: Trait> Module<T> {
     /// Perform all necessary checks to ensure `new_property_values` are valid
     pub fn ensure_new_property_values_are_valid(
         entity: &Entity<T>,
-        new_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
-        class_properties: &[Property<T>],
+        new_values_for_existing_properties: &ValuesForExistingProperties<T>,
     ) -> dispatch::Result {
-        for (id, new_property_value) in new_property_values {
-            // Indexing is safe, class should always maintain such constistency
-            let class_property = &class_properties[*id as usize];
-            class_property.ensure_property_value_to_update_is_valid(
-                &new_property_value,
+        for new_value_for_existing_property in new_values_for_existing_properties.values() {
+            let (property, value) = new_value_for_existing_property.unzip();
+            property.ensure_property_value_to_update_is_valid(
+                value,
                 entity.get_permissions_ref().get_controller(),
             )?;
         }
@@ -1882,14 +1888,13 @@ impl<T: Trait> Module<T> {
 
     /// Ensure `new_property_values` are accessible for actor with given `access_level`
     pub fn ensure_all_property_values_are_unlocked_from(
-        new_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
-        class_properties: &[Property<T>],
+        new_values_for_existing_properties: &ValuesForExistingProperties<T>,
         access_level: EntityAccessLevel,
     ) -> dispatch::Result {
-        for id in new_property_values.keys() {
-            // Indexing is safe, class should always maintain such constistency
-            let class_property = &class_properties[*id as usize];
-            class_property.ensure_unlocked_from(access_level)?;
+        for value_for_new_property in new_values_for_existing_properties.values() {
+            value_for_new_property
+                .get_property()
+                .ensure_unlocked_from(access_level)?;
         }
         Ok(())
     }
