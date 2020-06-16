@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { css } from "@emotion/core";
 import { animated, useSpring } from "react-spring";
 import { useCSS, CarouselStyleProps } from "./Carousel.style";
 import NavButton from "../NavButton";
@@ -6,10 +7,10 @@ import NavButton from "../NavButton";
 type CarouselProps = {
 	children: React.ReactNode[];
 	scrollAmount?: number;
-	maxInView?: number;
+	log?: boolean;
 } & CarouselStyleProps;
 
-export default function Carousel({ children, scrollAmount = 200, ...styleProps }: CarouselProps) {
+export default function Carousel({ children, scrollAmount = 200, log, ...styleProps }: CarouselProps) {
 	let styles = useCSS(styleProps);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const elementsRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -36,35 +37,49 @@ export default function Carousel({ children, scrollAmount = 200, ...styleProps }
 		}
 	}, [children.length]);
 
-	const handleScroll = useCallback(
-		function (direction: "right" | "left") {
-			let newDist = NaN;
-			const MIN_DISTANCE = 0;
-			const MAX_DISTANCE = maxDistance;
-			switch (direction) {
-				case "left": {
-					newDist = distance + scrollAmount <= MIN_DISTANCE ? distance + scrollAmount : distance;
-					break;
-				}
-				case "right": {
-					newDist = distance - scrollAmount >= -MAX_DISTANCE ? distance - scrollAmount : distance;
-					break;
-				}
+	if (log) {
+		console.log({
+			totalChildrensLength: elementsRefs.current.reduce(
+				(accWidth, el) => (el != null ? accWidth + el.clientWidth : accWidth),
+				0
+			),
+			longestChildrenWidth: elementsRefs.current.reduce(
+				(longest, el) => (el != null && el.clientWidth > longest ? el.clientWidth : longest),
+				0
+			),
+			maxDistance,
+			childrens: children.length,
+			distance,
+		});
+	}
+	const MIN_DISTANCE = 0;
+	const MAX_DISTANCE = maxDistance;
+
+	function handleScroll(direction: "right" | "left") {
+		let newDist = NaN;
+
+		switch (direction) {
+			case "left": {
+				newDist = distance + scrollAmount <= MIN_DISTANCE ? distance + scrollAmount : distance;
+				break;
 			}
+			case "right": {
+				newDist = distance - scrollAmount > -MAX_DISTANCE ? distance - scrollAmount : distance;
+				break;
+			}
+		}
+		console.log("newDist", newDist);
+		setDistance(newDist);
+		set({
+			transform: `translateX(${newDist}px)`,
+		});
 
-			setDistance(newDist);
-			set({
-				transform: `translateX(${newDist}px)`,
-			});
-
-			return newDist;
-		},
-		[maxDistance]
-	);
+		return newDist;
+	}
 
 	return (
-		<div css={styles.wrapper}>
-			<div css={styles.container} ref={containerRef}>
+		<div css={styles.container}>
+			<div css={styles.innerContainer} ref={containerRef}>
 				{children.map((item, idx) => (
 					<animated.div
 						style={props}
@@ -78,10 +93,24 @@ export default function Carousel({ children, scrollAmount = 200, ...styleProps }
 					</animated.div>
 				))}
 			</div>
-			<div css={styles.navLeft}>
+			<div
+				css={[
+					styles.navLeft,
+					css`
+						opacity: ${distance === MIN_DISTANCE ? 0 : 1};
+					`,
+				]}
+			>
 				<NavButton type="primary" direction="left" onClick={() => handleScroll("left")} />
 			</div>
-			<div css={styles.navRight}>
+			<div
+				css={[
+					styles.navRight,
+					css`
+						opacity: ${distance - scrollAmount < -MAX_DISTANCE ? 0 : 1};
+					`,
+				]}
+			>
 				<NavButton type="primary" direction="right" onClick={() => handleScroll("right")} />
 			</div>
 		</div>

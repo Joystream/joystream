@@ -62,6 +62,7 @@ export default function SeriesGallery({ title }: SeriesGalleryProps) {
 		<Gallery title={title}>
 			{series.map((series) => (
 				<SeriesPreview
+					key={series.series}
 					channel={series.channel}
 					poster={series.poster}
 					series={series.series}
