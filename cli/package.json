@@ -21,7 +21,8 @@
     "moment": "^2.24.0",
     "proper-lockfile": "^4.1.1",
     "slug": "^2.1.1",
-    "tslib": "^1.11.1"
+    "tslib": "^1.11.1",
+    "ajv": "^6.11.0"
   },
   "devDependencies": {
     "@oclif/dev-cli": "^1.22.2",

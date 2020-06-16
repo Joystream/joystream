@@ -345,7 +345,7 @@ export class StakingPolicy extends JoyStruct<IStakingPolicy> {
 };
 
 import * as role_schema_json from './schemas/role.schema.json'
-const schemaValidator = new ajv({ allErrors: true }).compile(role_schema_json)
+export const schemaValidator: ajv.ValidateFunction = new ajv({ allErrors: true }).compile(role_schema_json)
 
 export type IOpening = {
   created: BlockNumber,
@@ -379,11 +379,16 @@ export class Opening extends JoyStruct<IOpening> {
 
     const str = hrt.toString()
 
+    console.log('Parse hrt string:', str);
+
+
     try {
       const obj = JSON.parse(str)
       if (schemaValidator(obj) === true) {
+        console.log('HRT success', obj);
         return obj as unknown as GenericJoyStreamRoleSchema
       }
+      console.log('HRT fail', obj);
     } catch (e) {
       console.log("JSON schema validation failed:", e.toString())
     }
