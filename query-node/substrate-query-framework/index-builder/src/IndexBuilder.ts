@@ -46,7 +46,7 @@ export default class IndexBuilder {
 
     if (lastProcessedEvent !== undefined) {
       this.lastProcessedEvent = lastProcessedEvent;
-      await this._producer.start(this.lastProcessedEvent.blockNumber);
+      await this._producer.start(this.lastProcessedEvent.blockNumber, this.lastProcessedEvent.index);
     } else {
       // Setup worker
       await this._producer.start();
@@ -60,13 +60,7 @@ export default class IndexBuilder {
   _onQueryEventBlock(query_event_block: QueryEventBlock): void {
     debug(`Yay, block producer at height: #${query_event_block.block_number}`);
 
-    let query_events = query_event_block.query_events;
-    // Filter processed events! Will run only once
-    if (this.lastProcessedEvent && query_event_block.block_number === this.lastProcessedEvent.blockNumber) {
-      query_events = query_events.filter((event) => event.index !== this.lastProcessedEvent.index);
-    }
-
-    asyncForEach(query_events, async (query_event: QueryEvent) => {
+    asyncForEach(query_event_block.query_events, async (query_event: QueryEvent) => {
       if (!this._processing_pack[query_event.event_method]) {
         debug(`Unrecognized: ` + query_event.event_name);
 
