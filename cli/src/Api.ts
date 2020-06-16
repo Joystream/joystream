@@ -160,12 +160,8 @@ export default class Api {
         return this._api.query[module];
     }
 
-    protected async memberProfileById(memberId: MemberId, throwError = true): Promise<Profile | null> {
+    protected async memberProfileById(memberId: MemberId): Promise<Profile | null> {
         const profile = await this._api.query.members.memberProfile(memberId) as Option<Profile>;
-
-        if (throwError && profile.isNone) {
-          throw new Error(`Profile not found for member id: ${memberId.toNumber()}!`);
-        }
 
         return profile.unwrapOr(null);
     }
@@ -178,7 +174,11 @@ export default class Api {
         }
 
         const lead = optLead.unwrap();
-        const profile = (await this.memberProfileById(lead.member_id))!;
+        const profile = await this.memberProfileById(lead.member_id);
+
+        if (!profile) {
+            throw new Error(`Group lead profile not found! (member id: ${lead.member_id.toNumber()})`);
+        }
 
         return { lead, profile };
     }
@@ -206,7 +206,11 @@ export default class Api {
         const roleAccount = worker.role_account;
         const memberId = worker.member_id;
 
-        const profile = (await this.memberProfileById(memberId))!;
+        const profile = await this.memberProfileById(memberId);
+
+        if (!profile) {
+            throw new Error(`Group member profile not found! (member id: ${memberId.toNumber()})`);
+        }
 
         let stakeValue: Balance = this._api.createType("Balance", 0);
         if (worker.role_stake_profile && worker.role_stake_profile.isSome) {
