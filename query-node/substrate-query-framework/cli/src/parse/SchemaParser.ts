@@ -11,10 +11,13 @@ import {
 import * as fs from 'fs-extra';
 import Debug from "debug";
 import { cloneDeep } from 'lodash';
-import { DIRECTIVES } from './SchemaDirective'
 import { SCHEMA_DEFINITIONS_PREAMBLE } from './constant';
+import { SchemaDirective } from './SchemaDirective';
+import { FTSDirective } from './FTSDirective';
 
 const debug = Debug('qnode-cli:schema-parser');
+
+export const DIRECTIVES: SchemaDirective[] = [new FTSDirective()];
 
 export type SchemaNode = ObjectTypeDefinitionNode | FieldDefinitionNode | DirectiveNode;
 

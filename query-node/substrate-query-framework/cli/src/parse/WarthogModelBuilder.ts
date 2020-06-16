@@ -1,9 +1,9 @@
 import { ObjectTypeDefinitionNode, FieldDefinitionNode, ListTypeNode, NamedTypeNode } from 'graphql';
-import { GraphQLSchemaParser, Visitors, SchemaNode } from './SchemaParser';
+import { GraphQLSchemaParser, Visitors, SchemaNode, DIRECTIVES } from './SchemaParser';
 import { WarthogModel, Field, ObjectType } from '../model';
 import Debug from 'debug';
-import { DIRECTIVES } from './SchemaDirective';
 import { ENTITY_DIRECTIVE } from './constant';
+
 
 const debug = Debug('qnode-cli:model-generator');
 
