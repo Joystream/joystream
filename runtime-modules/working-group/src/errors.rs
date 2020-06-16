@@ -23,8 +23,8 @@ decl_error! {
         /// Opening text too long.
         OpeningTextTooLong,
 
-        /// Worker opening does not exist.
-        WorkerOpeningDoesNotExist,
+        /// Opening does not exist.
+        OpeningDoesNotExist,
 
         /// Insufficient balance to apply.
         InsufficientBalanceToApply,
@@ -63,10 +63,10 @@ decl_error! {
         SuccessfulWorkerApplicationDoesNotExist,
 
         /// Reward policy has invalid next payment block number.
-        FillWorkerOpeningInvalidNextPaymentBlock,
+        FillOpeningInvalidNextPaymentBlock,
 
         /// Working group mint does not exist.
-        FillWorkerOpeningMintDoesNotExist,
+        FillOpeningMintDoesNotExist,
 
         ///Relationship must exist.
         RelationshipMustExist,

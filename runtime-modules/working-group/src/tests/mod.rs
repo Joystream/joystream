@@ -52,7 +52,7 @@ fn add_worker_opening_succeeds() {
 
         EventFixture::assert_crate_events(vec![
             RawEvent::LeaderSet(1, lead_account_id),
-            RawEvent::WorkerOpeningAdded(0),
+            RawEvent::OpeningAdded(0),
         ]);
     });
 }
@@ -117,7 +117,7 @@ fn accept_worker_applications_succeeds() {
 
         EventFixture::assert_crate_events(vec![
             RawEvent::LeaderSet(1, lead_account_id),
-            RawEvent::WorkerOpeningAdded(opening_id),
+            RawEvent::OpeningAdded(opening_id),
             RawEvent::AcceptedWorkerApplications(opening_id),
         ]);
     });
@@ -168,7 +168,7 @@ fn accept_worker_applications_fails_with_no_opening() {
 
         let accept_worker_applications_fixture =
             AcceptWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        accept_worker_applications_fixture.call_and_assert(Err(Error::WorkerOpeningDoesNotExist));
+        accept_worker_applications_fixture.call_and_assert(Err(Error::OpeningDoesNotExist));
     });
 }
 
@@ -193,8 +193,8 @@ fn apply_on_worker_opening_succeeds() {
             TestEvent::working_group_Instance1(RawEvent::LeaderSet(1, lead_account_id)),
             TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(0, 0)),
             TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(1, 1)),
-            TestEvent::working_group_Instance1(RawEvent::WorkerOpeningAdded(opening_id)),
-            TestEvent::working_group_Instance1(RawEvent::AppliedOnWorkerOpening(opening_id, 0)),
+            TestEvent::working_group_Instance1(RawEvent::OpeningAdded(opening_id)),
+            TestEvent::working_group_Instance1(RawEvent::AppliedOnOpening(opening_id, 0)),
         ]);
     });
 }
@@ -211,7 +211,7 @@ fn apply_on_worker_opening_fails_with_no_opening() {
 
         let appy_on_worker_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        appy_on_worker_opening_fixture.call_and_assert(Err(Error::WorkerOpeningDoesNotExist));
+        appy_on_worker_opening_fixture.call_and_assert(Err(Error::OpeningDoesNotExist));
     });
 }
 
@@ -377,8 +377,8 @@ fn withdraw_worker_application_succeeds() {
             TestEvent::working_group_Instance1(RawEvent::LeaderSet(1, lead_account_id)),
             TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(0, 0)),
             TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(1, 1)),
-            TestEvent::working_group_Instance1(RawEvent::WorkerOpeningAdded(opening_id)),
-            TestEvent::working_group_Instance1(RawEvent::AppliedOnWorkerOpening(
+            TestEvent::working_group_Instance1(RawEvent::OpeningAdded(opening_id)),
+            TestEvent::working_group_Instance1(RawEvent::AppliedOnOpening(
                 opening_id,
                 application_id,
             )),
@@ -506,8 +506,8 @@ fn terminate_worker_application_succeeds() {
             TestEvent::working_group_Instance1(RawEvent::LeaderSet(1, lead_account_id)),
             TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(0, 0)),
             TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(1, 1)),
-            TestEvent::working_group_Instance1(RawEvent::WorkerOpeningAdded(opening_id)),
-            TestEvent::working_group_Instance1(RawEvent::AppliedOnWorkerOpening(
+            TestEvent::working_group_Instance1(RawEvent::OpeningAdded(opening_id)),
+            TestEvent::working_group_Instance1(RawEvent::AppliedOnOpening(
                 opening_id,
                 application_id,
             )),
@@ -628,7 +628,7 @@ fn begin_review_worker_applications_succeeds() {
 
         EventFixture::assert_crate_events(vec![
             RawEvent::LeaderSet(1, lead_account_id),
-            RawEvent::WorkerOpeningAdded(opening_id),
+            RawEvent::OpeningAdded(opening_id),
             RawEvent::BeganWorkerApplicationReview(opening_id),
         ]);
     });
@@ -665,7 +665,7 @@ fn begin_review_worker_applications_fails_with_invalid_opening() {
         let begin_review_worker_applications_fixture =
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(invalid_opening_id);
         begin_review_worker_applications_fixture
-            .call_and_assert(Err(Error::WorkerOpeningDoesNotExist));
+            .call_and_assert(Err(Error::OpeningDoesNotExist));
     });
 }
 
@@ -756,7 +756,7 @@ fn fill_worker_opening_succeeds() {
         let mut worker_application_dictionary = BTreeMap::new();
         worker_application_dictionary.insert(application_id, worker_id);
 
-        EventFixture::assert_last_crate_event(RawEvent::WorkerOpeningFilled(
+        EventFixture::assert_last_crate_event(RawEvent::OpeningFilled(
             opening_id,
             worker_application_dictionary,
         ));
@@ -811,7 +811,7 @@ fn fill_worker_opening_fails_with_invalid_opening() {
 
         let fill_worker_opening_fixture =
             FillWorkerOpeningFixture::default_for_ids(invalid_opening_id, Vec::new());
-        fill_worker_opening_fixture.call_and_assert(Err(Error::WorkerOpeningDoesNotExist));
+        fill_worker_opening_fixture.call_and_assert(Err(Error::OpeningDoesNotExist));
     });
 }
 
@@ -899,7 +899,7 @@ fn fill_worker_opening_fails_with_invalid_reward_policy() {
                     payout_interval: None,
                 });
 
-        fill_worker_opening_fixture.call_and_assert(Err(Error::FillWorkerOpeningMintDoesNotExist));
+        fill_worker_opening_fixture.call_and_assert(Err(Error::FillOpeningMintDoesNotExist));
 
         set_mint_id(22);
 
