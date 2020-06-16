@@ -149,7 +149,7 @@ cargo-fmt
 
 ## Contributing
 
-Please see our [contributing guidlines](./pioneer/CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
+Please see our [contributing guidlines](./CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## Authors
 
@@ -157,7 +157,7 @@ See also the list of [CONTRIBUTORS](https://github.com/Joystream/joystream/graph
 
 ## License
 
-This project is licensed under the GPLv3 License - see the [LICENSE](./pioneer/LICENSE) file for details
+This project is licensed under the GPLv3 License - see the [LICENSE](./LICENSE) file for details
 
 ## Acknowledgments
 
