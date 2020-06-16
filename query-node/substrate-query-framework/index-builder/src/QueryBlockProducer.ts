@@ -4,6 +4,7 @@ import QueryEventBlock from './QueryEventBlock';
 import { Header, Extrinsic, EventRecord } from '@polkadot/types/interfaces';
 import { EventEmitter } from 'events';
 import * as assert from 'assert';
+import * as BN from 'bn.js';
 
 const DEBUG_TOPIC = 'index-builder:producer';
 
@@ -18,12 +19,14 @@ export default class QueryBlockProducer extends EventEmitter {
 
   private _new_heads_unsubscriber: () => void;
 
-  private _block_to_be_produced_next: number;
+  private _block_to_be_produced_next: BN;
 
   // Index of the last processed event
-  private _last_processed_event_index: number;
+  private _last_processed_event_index: BN;
 
-  private _height_of_chain: number;
+  private _at_block: BN;
+
+  private _height_of_chain: BN;
 
   constructor(query_service: ISubstrateQueryService) {
     super();
@@ -37,13 +40,14 @@ export default class QueryBlockProducer extends EventEmitter {
     // will be refactored
     this._new_heads_unsubscriber = () => {};
 
-    this._block_to_be_produced_next = 0;
-    this._height_of_chain = 0;
-    this._last_processed_event_index = 0;
+    this._block_to_be_produced_next = new BN(0);
+    this._height_of_chain = new BN(0);
+    this._last_processed_event_index = new BN(0);
+    this._at_block = new BN(0)
   }
 
   // TODO: We cannot assume first block has events... we need more robust logic.
-  async start(at_block?: number, at_event_index?: number) {
+  async start(at_block?: BN, at_event?: BN) {
     if (this._started) throw Error(`Cannot start when already started.`);
 
     // mark as started
@@ -56,13 +60,18 @@ export default class QueryBlockProducer extends EventEmitter {
         return this._query_service.getHeader(hash);
       })
       .then((header) => {
-        return header.number.toNumber();
+        return header.number.toBn();
       });
 
     if (at_block) {
       this._block_to_be_produced_next = at_block;
+      this._at_block = at_block;
 
-      if (this._height_of_chain < at_block) throw Error(`Provided block is ahead of chain.`);
+      if (at_block.gt(this._height_of_chain)) throw Error(`Provided block is ahead of chain.`);
+    }
+
+    if (at_event) {
+      this._last_processed_event_index = at_event
     }
 
     //
@@ -87,7 +96,7 @@ export default class QueryBlockProducer extends EventEmitter {
   private async _OnNewHeads(header: Header) {
     assert(this._started, 'Has to be started to process new heads.');
 
-    this._height_of_chain = header.number.toNumber();
+    this._height_of_chain = header.number.toBn();
 
     debug(`New block found at height #${this._height_of_chain}`);
 
@@ -100,10 +109,10 @@ export default class QueryBlockProducer extends EventEmitter {
     this._producing_blocks_blocks = true;
 
     // Continue as long as we know there are outstanding blocks.
-    while (this._block_to_be_produced_next <= this._height_of_chain) {
+    while (this._block_to_be_produced_next.lte(this._height_of_chain)) {
       debug(`Fetching block #${this._block_to_be_produced_next}`);
 
-      let block_hash_of_target = await this._query_service.getBlockHash(this._block_to_be_produced_next);
+      let block_hash_of_target = await this._query_service.getBlockHash(this._block_to_be_produced_next.toString());
       // TODO: CATCH HERE
 
       debug(`\tHash ${block_hash_of_target.toString()}.`);
@@ -141,12 +150,12 @@ export default class QueryBlockProducer extends EventEmitter {
           return query_event;
         }
       );
-
-      // This will run only once when at_block provided. And remove already processed events from the list.
-      if (this._last_processed_event_index !== 0) {
-        query_events = query_events.filter((event) => this._last_processed_event_index < event.index);
-        this._last_processed_event_index = 0;
+      
+      // Remove processed events from the list.
+      if (this._block_to_be_produced_next.eq(this._at_block)) {
+        query_events = query_events.filter((event) => event.index.gt(this._last_processed_event_index));
       }
+      
 
       let query_block = new QueryEventBlock(this._block_to_be_produced_next, query_events);
 
@@ -154,7 +163,7 @@ export default class QueryBlockProducer extends EventEmitter {
 
       debug(`\tEmitted query event block.`);
 
-      this._block_to_be_produced_next++;
+      this._block_to_be_produced_next = this._block_to_be_produced_next.addn(1);
     }
 
     this._producing_blocks_blocks = false;
