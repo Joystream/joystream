@@ -32,7 +32,6 @@ export class Utils {
     voteU8a.set(saltU8a, accountU8a.length);
 
     const hash = blake2AsHex(voteU8a, 256);
-    // console.log('Vote hash:', hash, 'for', { accountId, salt });
     return hash;
   }
 
@@ -46,5 +45,13 @@ export class Utils {
 
   public static readRuntimeFromFile(path: string): string {
     return '0x' + fs.readFileSync(path).toString('hex');
+  }
+
+  public static getNextNIds(firstId: BN, n: number): BN[] {
+    let result: BN[] = new Array();
+    for (let i = 0; i < n; i++) {
+      result.push(firstId.addn(i));
+    }
+    return result;
   }
 }

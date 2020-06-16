@@ -8,6 +8,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { setTestTimeout } from '../../utils/setTestTimeout';
 import { membershipTest } from '../impl/membershipCreation';
 import { workerApplicationHappyCase } from './impl/workerApplicationHappyCase';
+import BN from 'bn.js';
 
 tap.mocha.describe('Worker application happy case scenario', async () => {
   initConfig();
@@ -21,7 +22,9 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   const paidTerms: number = +process.env.MEMBERSHIP_PAID_TERMS!;
   const nodeUrl: string = process.env.NODE_URL!;
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
-  const durationInBlocks: number = 25;
+  const applicationStake: BN = new BN(process.env.WORKING_GROUP_APPLICATION_STAKE!);
+  const roleStake: BN = new BN(process.env.WORKING_GROUP_ROLE_STAKE!);
+  const durationInBlocks: number = 100;
 
   const provider = new WsProvider(nodeUrl);
   const apiWrapper: ApiWrapper = await ApiWrapper.create(provider);
@@ -29,7 +32,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   setTestTimeout(apiWrapper, durationInBlocks);
   membershipTest(apiWrapper, nKeyPairs, keyring, N, paidTerms, sudoUri);
   membershipTest(apiWrapper, leadKeyPair, keyring, N, paidTerms, sudoUri);
-  workerApplicationHappyCase(apiWrapper, nKeyPairs, leadKeyPair, keyring, sudoUri);
+  workerApplicationHappyCase(apiWrapper, nKeyPairs, leadKeyPair, keyring, sudoUri, applicationStake, roleStake);
 
   closeApi(apiWrapper);
 });

@@ -222,7 +222,7 @@ export class ApiWrapper {
         'CurrentBlock',
         {
           application_rationing_policy: { max_active_applicants: '32' },
-          max_review_period_length: 2,
+          max_review_period_length: 32,
           application_staking_policy: {
             amount: 0,
             amount_mode: 'AtLeast',
@@ -684,41 +684,109 @@ export class ApiWrapper {
     );
   }
 
-  public async addWorkerOpening(account: KeyringPair, maxActiveApplicants: number, text: string): Promise<void> {
-    //TODO add text as soon as opening text limitations will be introduced in migrations
+  public async addWorkerOpening(
+    account: KeyringPair,
+    maxActiveApplicants: BN,
+    maxReviewPeriodLength: BN,
+    applicationStakingPolicyAmount: BN,
+    applicationCrowdedOutUnstakingPeriodLength: BN,
+    applicationExpiredUnstakingPeriodLength: BN,
+    roleStakingPolicyAmount: BN,
+    roleCrowdedOutUnstakingPeriodLength: BN,
+    roleExpiredUnstakingPeriodLength: BN,
+    slashableMaxCount: BN,
+    slashableMaxPercentPtsPerTime: BN,
+    successfulApplicantApplicationStakeUnstakingPeriod: BN,
+    failedApplicantApplicationStakeUnstakingPeriod: BN,
+    failedApplicantRoleStakeUnstakingPeriod: BN,
+    terminateCuratorApplicationStakeUnstakingPeriod: BN,
+    terminateCuratorRoleStakeUnstakingPeriod: BN,
+    exitCuratorRoleApplicationStakeUnstakingPeriod: BN,
+    exitCuratorRoleStakeUnstakingPeriod: BN,
+    text: string
+  ): Promise<void> {
     const commitment = {
       application_rationing_policy: { max_active_applicants: maxActiveApplicants },
-      max_review_period_length: 32,
+      max_review_period_length: maxReviewPeriodLength,
       application_staking_policy: {
-        amount: 0,
+        amount: applicationStakingPolicyAmount,
         amount_mode: 'AtLeast',
-        crowded_out_unstaking_period_length: 0,
-        review_period_expired_unstaking_period_length: 0,
+        crowded_out_unstaking_period_length: applicationCrowdedOutUnstakingPeriodLength,
+        review_period_expired_unstaking_period_length: applicationExpiredUnstakingPeriodLength,
       },
       role_staking_policy: {
-        amount: 0,
+        amount: roleStakingPolicyAmount,
         amount_mode: 'AtLeast',
-        crowded_out_unstaking_period_length: 0,
-        review_period_expired_unstaking_period_length: 0,
+        crowded_out_unstaking_period_length: roleCrowdedOutUnstakingPeriodLength,
+        review_period_expired_unstaking_period_length: roleExpiredUnstakingPeriodLength,
       },
       role_slashing_terms: {
         Slashable: {
-          max_count: 1,
-          max_percent_pts_per_time: 100,
+          max_count: slashableMaxCount,
+          max_percent_pts_per_time: slashableMaxPercentPtsPerTime,
         },
       },
-      fill_opening_successful_applicant_application_stake_unstaking_period: 0,
-      fill_opening_failed_applicant_application_stake_unstaking_period: 0,
-      fill_opening_failed_applicant_role_stake_unstaking_period: 0,
-      terminate_curator_application_stake_unstaking_period: 0,
-      terminate_curator_role_stake_unstaking_period: 0,
-      exit_curator_role_application_stake_unstaking_period: 0,
-      exit_curator_role_stake_unstaking_period: 0,
+      fill_opening_successful_applicant_application_stake_unstaking_period: successfulApplicantApplicationStakeUnstakingPeriod,
+      fill_opening_failed_applicant_application_stake_unstaking_period: failedApplicantApplicationStakeUnstakingPeriod,
+      fill_opening_failed_applicant_role_stake_unstaking_period: failedApplicantRoleStakeUnstakingPeriod,
+      terminate_curator_application_stake_unstaking_period: terminateCuratorApplicationStakeUnstakingPeriod,
+      terminate_curator_role_stake_unstaking_period: terminateCuratorRoleStakeUnstakingPeriod,
+      exit_curator_role_application_stake_unstaking_period: exitCuratorRoleApplicationStakeUnstakingPeriod,
+      exit_curator_role_stake_unstaking_period: exitCuratorRoleStakeUnstakingPeriod,
     };
     await this.sender.signAndSend(
-      this.api.tx.forumBureaucracy.addWorkerOpening('CurrentBlock', commitment, ''),
+      this.api.tx.forumBureaucracy.addWorkerOpening('CurrentBlock', commitment, text),
       account,
       false
+    );
+  }
+
+  public async batchAddWorkerOpening(
+    lead: KeyringPair,
+    accounts: KeyringPair[],
+    maxActiveApplicants: BN,
+    maxReviewPeriodLength: BN,
+    applicationStakingPolicyAmount: BN,
+    applicationCrowdedOutUnstakingPeriodLength: BN,
+    applicationExpiredUnstakingPeriodLength: BN,
+    roleStakingPolicyAmount: BN,
+    roleCrowdedOutUnstakingPeriodLength: BN,
+    roleExpiredUnstakingPeriodLength: BN,
+    slashableMaxCount: BN,
+    slashableMaxPercentPtsPerTime: BN,
+    successfulApplicantApplicationStakeUnstakingPeriod: BN,
+    failedApplicantApplicationStakeUnstakingPeriod: BN,
+    failedApplicantRoleStakeUnstakingPeriod: BN,
+    terminateCuratorApplicationStakeUnstakingPeriod: BN,
+    terminateCuratorRoleStakeUnstakingPeriod: BN,
+    exitCuratorRoleApplicationStakeUnstakingPeriod: BN,
+    exitCuratorRoleStakeUnstakingPeriod: BN,
+    text: string
+  ): Promise<void[]> {
+    return Promise.all(
+      accounts.map(async () => {
+        await this.addWorkerOpening(
+          lead,
+          maxActiveApplicants,
+          maxReviewPeriodLength,
+          applicationStakingPolicyAmount,
+          applicationCrowdedOutUnstakingPeriodLength,
+          applicationExpiredUnstakingPeriodLength,
+          roleStakingPolicyAmount,
+          roleCrowdedOutUnstakingPeriodLength,
+          roleExpiredUnstakingPeriodLength,
+          slashableMaxCount,
+          slashableMaxPercentPtsPerTime,
+          successfulApplicantApplicationStakeUnstakingPeriod,
+          failedApplicantApplicationStakeUnstakingPeriod,
+          failedApplicantRoleStakeUnstakingPeriod,
+          terminateCuratorApplicationStakeUnstakingPeriod,
+          terminateCuratorRoleStakeUnstakingPeriod,
+          exitCuratorRoleApplicationStakeUnstakingPeriod,
+          exitCuratorRoleStakeUnstakingPeriod,
+          text
+        );
+      })
     );
   }
 
@@ -730,49 +798,66 @@ export class ApiWrapper {
     );
   }
 
-  public async beginWorkerApplicationReview(account: KeyringPair): Promise<void> {
-    return this.sender.signAndSend(this.api.tx.forumBureaucracy.beginWorkerApplicantReview(), account, false);
-  }
-
-  public async applyOnWorkerOpening(account: KeyringPair, workerOpeningId: BN): Promise<void> {
-    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn();
+  public async beginWorkerApplicationReview(account: KeyringPair, workerOpeningId: BN): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx.forumBureaucracy.applyOnWorkerOpening(memberId, workerOpeningId, account.address, 0, 0, ''),
+      this.api.tx.forumBureaucracy.beginWorkerApplicantReview(workerOpeningId),
       account,
       false
     );
   }
 
-  public async batchApplyOnWorkerOpening(accounts: KeyringPair[], workerOpeningId: BN): Promise<void[]> {
+  public async applyOnWorkerOpening(
+    account: KeyringPair,
+    workerOpeningId: BN,
+    roleStake: BN,
+    applicantStake: BN,
+    text: string
+  ): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn();
+    return this.sender.signAndSend(
+      this.api.tx.forumBureaucracy.applyOnWorkerOpening(
+        memberId,
+        workerOpeningId,
+        account.address,
+        roleStake,
+        applicantStake,
+        text
+      ),
+      account,
+      false
+    );
+  }
+
+  public async batchApplyOnWorkerOpening(
+    accounts: KeyringPair[],
+    workerOpeningId: BN,
+    roleStake: BN,
+    applicantStake: BN,
+    text: string
+  ): Promise<void[]> {
     return Promise.all(
       accounts.map(async keyPair => {
-        await this.applyOnWorkerOpening(keyPair, workerOpeningId);
+        await this.applyOnWorkerOpening(keyPair, workerOpeningId, roleStake, applicantStake, text);
       })
     );
   }
 
-  public async fillWorkerOpening(account: KeyringPair, workerOpeningId: BN, applicationId: BN): Promise<void> {
+  public async fillWorkerOpening(
+    account: KeyringPair,
+    workerOpeningId: BN,
+    applicationId: BN[],
+    amountPerPayout: BN,
+    nextPaymentBlock: BN,
+    payoutInterval: BN
+  ): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx.forumBureaucracy.fillWorkerOpening(workerOpeningId, [applicationId], {
-        amount_per_payout: 0,
-        next_payment_at_block: 0,
-        payout_interval: 0,
+      this.api.tx.forumBureaucracy.fillWorkerOpening(workerOpeningId, applicationId, {
+        amount_per_payout: amountPerPayout,
+        next_payment_at_block: nextPaymentBlock,
+        payout_interval: payoutInterval,
       }),
       account,
       false
-    );
-  }
-
-  public async batchFillWorkerOpening(
-    lead: KeyringPair,
-    accounts: KeyringPair[],
-    firstApplicationId: BN,
-    workerOpeningId: BN
-  ): Promise<void[]> {
-    return Promise.all(
-      accounts.map(async (keyPair, index) => {
-        await this.fillWorkerOpening(lead, workerOpeningId, firstApplicationId.addn(index));
-      })
     );
   }
 
@@ -781,42 +866,42 @@ export class ApiWrapper {
   }
 
   public async getAnnouncingPeriod(): Promise<BN> {
-    return await this.api.query.councilElection.announcingPeriod<BlockNumber>();
+    return this.api.query.councilElection.announcingPeriod<BlockNumber>();
   }
 
   public async getVotingPeriod(): Promise<BN> {
-    return await this.api.query.councilElection.votingPeriod<BlockNumber>();
+    return this.api.query.councilElection.votingPeriod<BlockNumber>();
   }
 
   public async getRevealingPeriod(): Promise<BN> {
-    return await this.api.query.councilElection.revealingPeriod<BlockNumber>();
+    return this.api.query.councilElection.revealingPeriod<BlockNumber>();
   }
 
   public async getCouncilSize(): Promise<BN> {
-    return await this.api.query.councilElection.councilSize<u32>();
+    return this.api.query.councilElection.councilSize<u32>();
   }
 
   public async getCandidacyLimit(): Promise<BN> {
-    return await this.api.query.councilElection.candidacyLimit<u32>();
+    return this.api.query.councilElection.candidacyLimit<u32>();
   }
 
   public async getNewTermDuration(): Promise<BN> {
-    return await this.api.query.councilElection.newTermDuration<BlockNumber>();
+    return this.api.query.councilElection.newTermDuration<BlockNumber>();
   }
 
   public async getMinCouncilStake(): Promise<BN> {
-    return await this.api.query.councilElection.minCouncilStake<BalanceOf>();
+    return this.api.query.councilElection.minCouncilStake<BalanceOf>();
   }
 
   public async getMinVotingStake(): Promise<BN> {
-    return await this.api.query.councilElection.minVotingStake<BalanceOf>();
+    return this.api.query.councilElection.minVotingStake<BalanceOf>();
   }
 
   public async getNextWorkerOpeningId(): Promise<BN> {
-    return await this.api.query.forumBureaucracy.nextWorkerOpeningId<u32>();
+    return this.api.query.forumBureaucracy.nextWorkerOpeningId<u32>();
   }
 
   public async getNextApplicationId(): Promise<BN> {
-    return await this.api.query.forumBureaucracy.nextWorkerApplicationId<u32>();
+    return this.api.query.forumBureaucracy.nextWorkerApplicationId<u32>();
   }
 }
