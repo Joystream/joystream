@@ -117,5 +117,20 @@ describe('ModelRenderer', () => {
   
   })
 
+  it('should renderer array types', function() {
+    const model = fromStringSchema(`
+    type Author @entity {
+      posts: [String]
+    }`)
+
+    const rendered = generator.generate(modelTemplate, model.lookupType("Author"));
+    debug(`rendered: ${JSON.stringify(rendered, null, 2)}`);
+    expect(rendered).to.include('CustomField,', 'Should import CustomField');
+    expect(rendered).to.include(`@CustomField`, 'Should decorate arrays with @CustomField');
+    expect(rendered).to.include(`db: { type: 'text', array: true, nullable: true }`, 'Should add db option')
+    expect(rendered).to.include(`api: { type: 'string', nullable: true }`, 'Should inclued api option')
+    expect(rendered).to.include('posts?: string[]', `should add an array field`);
+    
+  })
 
 })

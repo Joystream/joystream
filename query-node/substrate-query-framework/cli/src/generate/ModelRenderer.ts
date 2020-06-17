@@ -98,8 +98,8 @@ export class ModelRenderer {
   transformField(f: Field, entity: ObjectType): MustacheField {
     let ret = {};
     const isProps: Props = {};
-    isProps['array'] = f.isBuildinType && f.isList; 
-    isProps['scalar'] = f.isBuildinType && !f.isList;
+    isProps['array'] = f.isArray(); 
+    isProps['scalar'] = f.isScalar();
     ['mto', 'oto', 'otm'].map((s) => isProps[s] = (f.type === s));
 
     isProps['refType'] = isProps['mto'] || isProps['oto'] || isProps['otm'];
@@ -156,6 +156,7 @@ export class ModelRenderer {
       const _key: string = (key === 'numeric') ? 'numeric' || 'decimal' : key;
       has[key] = objType.fields.some((f) => f.columnType() === _key);
     }
+    has['array'] = objType.fields.some((f) => f.isArray());
 
     debug(`ObjectType has: ${JSON.stringify(has, null, 2)}`);
 

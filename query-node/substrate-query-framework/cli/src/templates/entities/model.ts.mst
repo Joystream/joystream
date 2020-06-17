@@ -44,8 +44,8 @@ export class {{className}} extends BaseModel {
   {{/is.oto}}
 
   {{#is.array}}
-    @CustomField({ db: { type: '{{dbType}}', array: true {{^required}}, nullable: true {{/required}} }, 
-        api: { type: '{{apiType}}' {{^required}}, nullable: true {{/required}} }})
+    @CustomField({ db: { type: '{{dbType}}', array: true{{^required}}, nullable: true{{/required}} }, 
+        api: { type: '{{apiType}}'{{^required}}, nullable: true{{/required}} }})
     {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{tsType}}[];
   {{/is.array}}
 
