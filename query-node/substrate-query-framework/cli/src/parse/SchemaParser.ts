@@ -7,6 +7,7 @@ import {
   ObjectTypeDefinitionNode,
   FieldDefinitionNode,
   DirectiveNode,
+  GraphQLEnumType,
 } from 'graphql';
 import * as fs from 'fs-extra';
 import Debug from 'debug';
@@ -94,6 +95,14 @@ export class GraphQLSchemaParser {
     return schemaAST;
   }
 
+  getEnumTypes(): GraphQLEnumType[] {
+    return [
+      ...Object.values(this.schema.getTypeMap()).filter(
+        t => t instanceof GraphQLEnumType
+      ),
+    ] as GraphQLEnumType[];
+  }
+
   /**
    * Get object type definations from the schema. Build-in and scalar types are excluded.
    */
@@ -123,8 +132,6 @@ export class GraphQLSchemaParser {
     return [];
   }
 
-
-  
   /**
    * Returns GraphQL object names
    */

@@ -1,9 +1,18 @@
-import { ObjectTypeDefinitionNode, FieldDefinitionNode, ListTypeNode, NamedTypeNode } from 'graphql';
-import { GraphQLSchemaParser, Visitors, SchemaNode, DIRECTIVES } from './SchemaParser';
+import {
+  ObjectTypeDefinitionNode,
+  FieldDefinitionNode,
+  ListTypeNode,
+  NamedTypeNode,
+} from 'graphql';
+import {
+  GraphQLSchemaParser,
+  Visitors,
+  SchemaNode,
+  DIRECTIVES,
+} from './SchemaParser';
 import { WarthogModel, Field, ObjectType } from '../model';
 import Debug from 'debug';
 import { ENTITY_DIRECTIVE } from './constant';
-
 
 const debug = Debug('qnode-cli:model-generator');
 
@@ -67,7 +76,9 @@ export class WarthogModelBuilder {
    * @param o ObjectTypeDefinitionNode
    */
   private isEntity(o: ObjectTypeDefinitionNode): boolean {
-    const entityDirective = o.directives?.find((d) => d.name.value === ENTITY_DIRECTIVE);
+    const entityDirective = o.directives?.find(
+      d => d.name.value === ENTITY_DIRECTIVE
+    );
     return entityDirective ? true : false;
   }
 
@@ -76,30 +87,38 @@ export class WarthogModelBuilder {
    * @param o ObjectTypeDefinitionNode
    */
   private generateTypeDefination(o: ObjectTypeDefinitionNode): ObjectType {
-    const fields = this._schemaParser.getFields(o).map((fieldNode: FieldDefinitionNode) => {
-      const typeNode = fieldNode.type;
-      const fieldName = fieldNode.name.value;
+    const fields = this._schemaParser
+      .getFields(o)
+      .map((fieldNode: FieldDefinitionNode) => {
+        const typeNode = fieldNode.type;
+        const fieldName = fieldNode.name.value;
 
-      if (typeNode.kind === 'NamedType') {
-        return this._namedType(fieldName, typeNode);
-      } else if (typeNode.kind === 'NonNullType') {
-        const field =
-          typeNode.type.kind === 'NamedType'
-            ? this._namedType(fieldName, typeNode.type)
-            : this._listType(typeNode.type, fieldName);
+        if (typeNode.kind === 'NamedType') {
+          return this._namedType(fieldName, typeNode);
+        } else if (typeNode.kind === 'NonNullType') {
+          const field =
+            typeNode.type.kind === 'NamedType'
+              ? this._namedType(fieldName, typeNode.type)
+              : this._listType(typeNode.type, fieldName);
 
-        field.nullable = false;
-        return field;
-      } else if (typeNode.kind === 'ListType') {
-        return this._listType(typeNode, fieldName);
-      } else {
-        throw new Error(`Unrecognized type. ${JSON.stringify(typeNode, null, 2)}`);
-      }
-    });
+          field.nullable = false;
+          return field;
+        } else if (typeNode.kind === 'ListType') {
+          return this._listType(typeNode, fieldName);
+        } else {
+          throw new Error(
+            `Unrecognized type. ${JSON.stringify(typeNode, null, 2)}`
+          );
+        }
+      });
 
     debug(`Read and parsed fields: ${JSON.stringify(fields, null, 2)}`);
 
-    return { name: o.name.value, fields: fields, isEntity: this.isEntity(o) } as ObjectType;
+    return {
+      name: o.name.value,
+      fields: fields,
+      isEntity: this.isEntity(o),
+    } as ObjectType;
   }
 
   /**
@@ -137,17 +156,19 @@ export class WarthogModelBuilder {
   buildWarthogModel(): WarthogModel {
     this._model = new WarthogModel();
 
-    this._schemaParser.getObjectDefinations().map((o) => {
+    this._schemaParser.getObjectDefinations().map(o => {
       const objType = this.generateTypeDefination(o);
       this._model.addObjectType(objType);
     });
+
+    this._schemaParser.getEnumTypes().map(e => this._model.addEnum(e.toJSON()));
 
     this.generateSQLRelationships();
 
     const visitors: Visitors = {
       directives: {},
     };
-    DIRECTIVES.map((d) => {
+    DIRECTIVES.map(d => {
       visitors.directives[d.name] = {
         visit: (path: SchemaNode[]) => d.generate(path, this._model),
       };
