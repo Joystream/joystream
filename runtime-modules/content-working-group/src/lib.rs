@@ -192,6 +192,7 @@ pub static MSG_FULL_CURATOR_OPENING_APPLICATION_NOT_ACTIVE: &str = "ApplicationN
 pub static MSG_FILL_CURATOR_OPENING_INVALID_NEXT_PAYMENT_BLOCK: &str =
     "Reward policy has invalid next payment block number";
 pub static MSG_FILL_CURATOR_OPENING_MINT_DOES_NOT_EXIST: &str = "Working group mint does not exist";
+pub static MSG_FILL_CURATOR_OPENING_MINT_NOT_SET: &str = "Working group mint not set";
 pub static MSG_FILL_CURATOR_OPENING_APPLICATION_FOR_WRONG_OPENING: &str =
     "Applications not for opening";
 // Errors for `withdraw_curator_application`
@@ -1468,6 +1469,10 @@ decl_module! {
 
             // Ensure a mint exists if lead is providing a reward for positions being filled
             let create_reward_settings = if let Some(policy) = reward_policy {
+                // check the value of the mint is actually set before reading it or we will
+                // read a value 0 and possibly use the wrong mint if it exists.
+                ensure!(<Mint<T>>::exists(), MSG_FILL_CURATOR_OPENING_MINT_NOT_SET);
+
                 // A reward will need to be created so ensure our configured mint exists
                 let mint_id = Self::mint();
 
@@ -1979,6 +1984,8 @@ decl_module! {
             new_capacity: minting::BalanceOf<T>
         ) {
             ensure_root(origin)?;
+
+            ensure!(<Mint<T>>::exists(), MSG_FILL_CURATOR_OPENING_MINT_NOT_SET);
 
             let mint_id = Self::mint();
 
