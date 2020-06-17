@@ -94,6 +94,11 @@ export class WarthogModel {
         return field;
     }
 
+    addField(entity: string, field: Field): void {
+        const objType = this.lookupType(entity);
+        objType.fields.push(field);
+    }
+
     /**
      * Lookup ObjectType by it's name (as defined in the schema file)
      * 
