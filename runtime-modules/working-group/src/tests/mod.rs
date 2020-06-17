@@ -921,20 +921,21 @@ fn fill_worker_opening_fails_with_invalid_reward_policy() {
                     payout_interval: None,
                 });
 
-        remove_mint(); //removes default mintx
-        fill_worker_opening_fixture.call_and_assert(Err(Error::FillWorkerOpeningMintDoesNotExist));
+        remove_mint(); //removes default mint
+        fill_worker_opening_fixture.call_and_assert(Err(Error::WorkingGroupMintIsNotSet));
 
-        set_mint_id(22);
+        set_mint_id(create_mint());
 
         let fill_worker_opening_fixture =
             FillWorkerOpeningFixture::default_for_ids(opening_id, vec![application_id])
                 .with_reward_policy(RewardPolicy {
                     amount_per_payout: 10000,
+                    // Invalid next payment at block zero
                     next_payment_at_block: 0,
                     payout_interval: None,
                 });
         fill_worker_opening_fixture
-            .call_and_assert(Err(Error::FullWorkerOpeningOpeningNotInReviewPeriodStage));
+            .call_and_assert(Err(Error::FillWorkerOpeningInvalidNextPaymentBlock));
     });
 }
 

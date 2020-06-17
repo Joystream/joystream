@@ -745,6 +745,27 @@ decl_module! {
             // Ensure worker opening exists
             let (worker_opening, _) = Self::ensure_worker_opening_exists(&worker_opening_id)?;
 
+            // Ensure a mint exists if lead is providing a reward for positions being filled
+            let create_reward_settings = if let Some(policy) = reward_policy {
+                // check the value of the mint is actually set before reading it or we will
+                // read a value 0 and possibly use the wrong mint if it exists.
+                ensure!(<Mint<T, I>>::exists(), Error::WorkingGroupMintIsNotSet);
+
+                // A reward will need to be created so ensure our configured mint exists
+                let mint_id = Self::mint();
+
+                ensure!(<minting::Mints<T>>::exists(mint_id), Error::FillWorkerOpeningMintDoesNotExist);
+
+                // Make sure valid parameters are selected for next payment at block number
+                ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(),
+                    Error::FillWorkerOpeningInvalidNextPaymentBlock);
+
+                // The verified reward settings to use
+                Some((mint_id, policy))
+            } else {
+                None
+            };
+
             // Make iterator over successful worker application
             let successful_iter = successful_worker_application_ids
                                     .iter()
@@ -782,22 +803,6 @@ decl_module! {
                     worker_opening.policy_commitment.fill_opening_failed_applicant_role_stake_unstaking_period
                 )
             )?;
-
-            let create_reward_settings = if let Some(policy) = reward_policy {
-                // A reward will need to be created so ensure our configured mint exists
-                let mint_id = Self::mint();
-
-                ensure!(<minting::Mints<T>>::exists(mint_id), Error::FillWorkerOpeningMintDoesNotExist);
-
-                // Make sure valid parameters are selected for next payment at block number
-                ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(),
-                    Error::FillWorkerOpeningInvalidNextPaymentBlock);
-
-                // The verified reward settings to use
-                Some((mint_id, policy))
-            } else {
-                None
-            };
 
             //
             // == MUTATION SAFE ==
