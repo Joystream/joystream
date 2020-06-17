@@ -378,7 +378,7 @@ pub struct Entity<T: Trait> {
 
     /// What schemas under which this entity of a class is available, think
     /// v.2.0 Person schema for John, v3.0 Person schema for John
-    /// Unlikely to be more than roughly 20ish, assuming schemas for a given class eventually stableize, 
+    /// Unlikely to be more than roughly 20ish, assuming schemas for a given class eventually stableize,
     /// or that very old schema are eventually removed.
     pub supported_schemas: BTreeSet<SchemaId>, // indices of schema in corresponding class
 
@@ -528,7 +528,7 @@ decl_storage! {
         // The voucher associated with entity creation for a given class and controller.
         // Is updated whenever an entity is created in a given class by a given controller.
         // Constraint is updated by Root, an initial value comes from `ClassPermissions::default_entity_creation_voucher_upper_bound`.
-        pub EntityCreationVouchers get(entity_creation_vouchers): 
+        pub EntityCreationVouchers get(entity_creation_vouchers):
             double_map hasher(blake2_128) T::ClassId, blake2_128(EntityController<T>) => EntityCreationVoucher<T>;
     }
 }
@@ -799,7 +799,7 @@ decl_module! {
                 // Create new EntityCreationVoucher instance with provided maximum_entities_count
                 let entity_creation_voucher = EntityCreationVoucher::new(maximum_entities_count);
 
-                // Add newly created `EntityCreationVoucher` into `EntityCreationVouchers` 
+                // Add newly created `EntityCreationVoucher` into `EntityCreationVouchers`
                 // runtime storage under given `class_id`, `controller` key
                 <EntityCreationVouchers<T>>::insert(class_id, controller.clone(), entity_creation_voucher.clone());
 
@@ -1068,7 +1068,7 @@ decl_module! {
             let entity_property_id_references_with_same_owner_flag_set =
                 Self::get_property_id_references_with_same_owner_flag_set(values_for_existing_properties);
 
-            // Ensure provided `new_property_value_references_with_same_owner_flag_set` 
+            // Ensure provided `new_property_value_references_with_same_owner_flag_set`
             // are valid references with `SameOwner` flag set
             Self::ensure_only_references_with_same_owner_flag_set_provided(
                 &entity_property_id_references_with_same_owner_flag_set,
@@ -1090,7 +1090,7 @@ decl_module! {
                         &new_property_value_references_with_same_owner_flag_set,
                     ) {
 
-                        // Create wrapper structure from provided entity_property_values_updated 
+                        // Create wrapper structure from provided entity_property_values_updated
                         // and their corresponding Class properties
                         let values_for_updated_properties = ValuesForExistingProperties::from(
                             &class_properties, &entity_property_values_updated
@@ -1108,7 +1108,7 @@ decl_module! {
             //
 
             // Transfer entity ownership
-            if let Some(entity_property_values_updated) = entity_property_values_updated {
+            let entities_inbound_rcs_delta = if let Some(entity_property_values_updated) = entity_property_values_updated {
 
                 // Calculate entities reference counter side effects for current operation
                 let entities_inbound_rcs_delta =
@@ -1127,15 +1127,19 @@ decl_module! {
                     // Set up new controller for the current Entity instance
                     entity.get_permissions_mut().set_conroller(new_controller.clone());
                 });
+
+                Some(entities_inbound_rcs_delta)
             } else {
                 // Set up new controller for the current Entity instance
                 <EntityById<T>>::mutate(entity_id, |entity| {
                     entity.get_permissions_mut().set_conroller(new_controller.clone());
                 });
+
+                None
             };
 
             // Trigger event
-            Self::deposit_event(RawEvent::EntityOwnershipTransfered(entity_id, new_controller));
+            Self::deposit_event(RawEvent::EntityOwnershipTransfered(entity_id, new_controller, entities_inbound_rcs_delta));
 
             Ok(())
         }
@@ -1351,7 +1355,7 @@ decl_module! {
             });
 
             // Trigger event
-            Self::deposit_event(RawEvent::EntitySchemaSupportAdded(actor, entity_id, schema_id));
+            Self::deposit_event(RawEvent::EntitySchemaSupportAdded(actor, entity_id, schema_id, entities_inbound_rcs_delta));
             Ok(())
         }
 
@@ -1426,7 +1430,7 @@ decl_module! {
                 entities_inbound_rcs_delta.update_entities_rcs();
 
                 // Trigger event
-                Self::deposit_event(RawEvent::EntityPropertyValuesUpdated(actor, entity_id));
+                Self::deposit_event(RawEvent::EntityPropertyValuesUpdated(actor, entity_id, entities_inbound_rcs_delta));
             }
 
             Ok(())
@@ -1455,7 +1459,8 @@ decl_module! {
             )?;
 
             // Decrease reference counters of involved entities (if some)
-            if let Some(entity_ids_to_decrease_rcs) = property_value_vector.get_vec_value().get_involved_entities() {
+            let entities_inbound_rcs_delta = if let Some(entity_ids_to_decrease_rcs) = 
+            property_value_vector.get_vec_value().get_involved_entities() {
 
                 // Calculate `ReferenceCounterSideEffects`, based on entity_ids involved, same_controller_status and chosen `DeltaMode`
                 let same_controller_status = property.property_type.same_controller_status();
@@ -1466,7 +1471,10 @@ decl_module! {
 
                 // Update InboundReferenceCounter, based on previously calculated ReferenceCounterSideEffects, for each Entity involved
                 entities_inbound_rcs_delta.update_entities_rcs();
-            }
+                Some(entities_inbound_rcs_delta)
+            } else {
+                None
+            };
 
             // Clear property_value_vector.
             let empty_property_value_vector = Self::clear_property_vector(property_value_vector);
@@ -1487,7 +1495,11 @@ decl_module! {
             });
 
             // Trigger event
-            Self::deposit_event(RawEvent::EntityPropertyValueVectorCleared(actor, entity_id, in_class_schema_property_id));
+            Self::deposit_event(
+                RawEvent::EntityPropertyValueVectorCleared(
+                    actor, entity_id, in_class_schema_property_id, entities_inbound_rcs_delta
+                )
+            );
 
             Ok(())
         }
@@ -1535,13 +1547,16 @@ decl_module! {
                 .get_involved_entities()
                 .map(|involved_entities| involved_entities[index_in_property_vector as usize]);
 
-            if let Some(involved_entity_id) = involved_entity_id {
+            let involved_entity_and_side_effect = if let Some(involved_entity_id) = involved_entity_id {
                 let same_controller_status = property.property_type.same_controller_status();
                 let rc_delta = EntityReferenceCounterSideEffect::one(same_controller_status, DeltaMode::Decrement);
 
                 // Update InboundReferenceCounter of involved entity, based on previously calculated ReferenceCounterSideEffect
-                Self::update_entity_rc(involved_entity_id, rc_delta);
-            }
+                Self::update_entity_rc(&involved_entity_id, &rc_delta);
+                Some((involved_entity_id, rc_delta))
+            } else {
+                None
+            };
 
             // Remove value at in_class_schema_property_id in property value vector
             let property_value_vector_updated = Self::remove_at_index_in_property_vector(
@@ -1561,7 +1576,7 @@ decl_module! {
             // Trigger event
             Self::deposit_event(
                 RawEvent::RemovedAtEntityPropertyValueVectorIndex(
-                    actor, entity_id, in_class_schema_property_id, index_in_property_vector, nonce
+                    actor, entity_id, in_class_schema_property_id, index_in_property_vector, nonce, involved_entity_and_side_effect
                 )
             );
 
@@ -1615,13 +1630,16 @@ decl_module! {
             let value = property_value.get_value();
 
             // Increase reference counter of involved entity (if some)
-            if let Some(entity_rc_to_increment) = value.get_involved_entity() {
+            let involved_entity_and_side_effect = if let Some(entity_rc_to_increment) = value.get_involved_entity() {
                 let same_controller_status = class_property.property_type.same_controller_status();
                 let rc_delta = EntityReferenceCounterSideEffect::one(same_controller_status, DeltaMode::Increment);
 
                 // Update InboundReferenceCounter of involved entity, based on previously calculated ReferenceCounterSideEffect
-                Self::update_entity_rc(entity_rc_to_increment, rc_delta);
-            }
+                Self::update_entity_rc(&entity_rc_to_increment, &rc_delta);
+                Some((entity_rc_to_increment, rc_delta))
+            } else {
+                None
+            };
 
             // Insert SinglePropertyValue at in_class_schema_property_id into property value vector
             let property_value_updated = Self::insert_at_index_in_property_vector(
@@ -1642,7 +1660,7 @@ decl_module! {
             // Trigger event
             Self::deposit_event(
                 RawEvent::InsertedAtEntityPropertyValueVectorIndex(
-                    actor, entity_id, in_class_schema_property_id, index_in_property_vector, nonce
+                    actor, entity_id, in_class_schema_property_id, index_in_property_vector, nonce, involved_entity_and_side_effect
                 )
             );
 
@@ -1703,8 +1721,8 @@ decl_module! {
 impl<T: Trait> Module<T> {
     /// Updates corresponding `Entity` `reference_counter` by `reference_counter_delta`.
     fn update_entity_rc(
-        entity_id: T::EntityId,
-        reference_counter_delta: EntityReferenceCounterSideEffect,
+        entity_id: &T::EntityId,
+        reference_counter_delta: &EntityReferenceCounterSideEffect,
     ) {
         // Update both total and same owner number of inbound references for the Entity instance under given entity_id
         <EntityById<T>>::mutate(entity_id, |entity| {
@@ -2428,6 +2446,9 @@ decl_event!(
         Status = bool,
         Actor = Actor<T>,
         Nonce = <T as Trait>::Nonce,
+        ReferenceCounterSideEffects = ReferenceCounterSideEffects<T>,
+        InvolvedEntityAndReferenceCounterSideEffect = Option<(<T as Trait>::EntityId, EntityReferenceCounterSideEffect)>
+
     {
         CuratorGroupAdded(CuratorGroupId),
         CuratorGroupRemoved(CuratorGroupId),
@@ -2445,12 +2466,12 @@ decl_event!(
         EntityPermissionsUpdated(EntityId),
         EntityCreated(Actor, EntityId),
         EntityRemoved(Actor, EntityId),
-        EntitySchemaSupportAdded(Actor, EntityId, SchemaId),
-        EntityPropertyValuesUpdated(Actor, EntityId),
-        EntityPropertyValueVectorCleared(Actor, EntityId, PropertyId),
-        RemovedAtEntityPropertyValueVectorIndex(Actor, EntityId, PropertyId, VecMaxLength, Nonce),
-        InsertedAtEntityPropertyValueVectorIndex(Actor, EntityId, PropertyId, VecMaxLength, Nonce),
+        EntitySchemaSupportAdded(Actor, EntityId, SchemaId, ReferenceCounterSideEffects),
+        EntityPropertyValuesUpdated(Actor, EntityId, ReferenceCounterSideEffects),
+        EntityPropertyValueVectorCleared(Actor, EntityId, PropertyId, Option<ReferenceCounterSideEffects>),
+        RemovedAtEntityPropertyValueVectorIndex(Actor, EntityId, PropertyId, VecMaxLength, Nonce, InvolvedEntityAndReferenceCounterSideEffect),
+        InsertedAtEntityPropertyValueVectorIndex(Actor, EntityId, PropertyId, VecMaxLength, Nonce, InvolvedEntityAndReferenceCounterSideEffect),
+        EntityOwnershipTransfered(EntityId, EntityController, Option<ReferenceCounterSideEffects>),
         TransactionCompleted(Actor),
-        EntityOwnershipTransfered(EntityId, EntityController),
     }
 );

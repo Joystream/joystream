@@ -122,13 +122,21 @@ impl Default for DeltaMode {
 }
 
 /// Representing delta on which respective `InboundReferenceCounter` should be changed.
-#[derive(Default, Clone, PartialEq, Eq, Copy, Debug)]
+#[derive(Default, PartialEq, Eq, Debug)]
 pub struct EntityReferenceCounterSideEffect {
     /// Delta number of all inbound references from another entities
     pub total: i32,
     /// Delta number of inbound references from another entities with `SameOwner` flag set
     pub same_owner: i32,
 }
+
+impl Clone for EntityReferenceCounterSideEffect {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl Copy for EntityReferenceCounterSideEffect {}
 
 impl EntityReferenceCounterSideEffect {
     /// Create atomic `EntityReferenceCounterSideEffect` instance, based on `same_owner` flag provided and `DeltaMode`
@@ -210,9 +218,8 @@ impl<T: Trait> ReferenceCounterSideEffects<T> {
     }
 
     /// Traverse `ReferenceCounterSideEffects`, updating each `Entity` respective reference counters
-    pub fn update_entities_rcs(self) {
-        self.0
-            .into_iter()
+    pub fn update_entities_rcs(&self) {
+        self.iter()
             .for_each(|(entity_id, inbound_reference_counter_delta)| {
                 Module::<T>::update_entity_rc(entity_id, inbound_reference_counter_delta);
             });

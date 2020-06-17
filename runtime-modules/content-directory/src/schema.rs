@@ -911,7 +911,7 @@ impl<T: Trait> Property<T> {
         Ok(())
     }
 
-    /// Ensure `class_id` of `Entity` under provided `entity_id` references `Entity`, 
+    /// Ensure `class_id` of `Entity` under provided `entity_id` references `Entity`,
     /// which `class_id` is equal to `class_id`, declared in corresponding `PropertyType`
     pub fn ensure_referenced_entity_match_its_class(
         entity_id: T::EntityId,
