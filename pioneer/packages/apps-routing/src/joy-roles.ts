@@ -7,7 +7,8 @@ export default ([
     Component: Roles,
     display: {
       needsApi: [
-        'query.actors.actorAccountIds'
+        'query.contentWorkingGroup.mint',
+        'query.storageWorkingGroup.mint',
       ]
     },
     i18n: {
