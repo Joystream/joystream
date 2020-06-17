@@ -9,6 +9,7 @@ const container: StyleFn = () => ({
 	textAlign: "left",
 	color: colors.white,
 	display: "flex",
+	lineHeight: 1.33,
 	padding: `0 144px`,
 	"& > *": {
 		flexBasis: `50%`
@@ -16,12 +17,17 @@ const container: StyleFn = () => ({
 })
 
 const content: StyleFn = () => ({
-	margin: `auto 1.5rem`,
+	marginLeft: spacing.xxl,
+	marginBottom: 85,
 	maxWidth: breakpoints.medium,
 	overflowWrap: ""
 })
 
-const title: StyleFn = () => ({})
+const title: StyleFn = () => ({
+	lineHeight: 1.05,
+	letterSpacing: "-0.01em",
+	fontWeight: "bold"
+})
 
 const subtitle: StyleFn = () => ({
 	marginTop: `1rem`,

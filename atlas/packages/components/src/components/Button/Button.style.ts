@@ -1,15 +1,15 @@
-import { typography, colors } from "../../theme";
-import { makeStyles, StyleFn } from "../../utils";
-import { disabled, dimensionsFromProps } from "../../theme/fragments";
+import { typography, colors } from "../../theme"
+import { makeStyles, StyleFn } from "../../utils"
+import { disabled, dimensionsFromProps } from "../../theme/fragments"
 
 export type ButtonStyleProps = {
-	text?: string;
-	type?: "primary" | "secondary";
-	full?: boolean;
-	size?: "regular" | "small" | "smaller";
-	children?: React.ReactNode;
-	disabled?: boolean;
-};
+	text?: string
+	type?: "primary" | "secondary"
+	full?: boolean
+	size?: "regular" | "small" | "smaller"
+	children?: React.ReactNode
+	disabled?: boolean
+}
 
 const baseStyles: StyleFn = () => ({
 	borderWidth: "1px",
@@ -21,9 +21,9 @@ const baseStyles: StyleFn = () => ({
 	alignItems: "center",
 	color: colors.white,
 	"&::selected": {
-		background: "transparent",
-	},
-});
+		background: "transparent"
+	}
+})
 const colorFromType: StyleFn = (styles = {}, { type }: ButtonStyleProps) => {
 	switch (type) {
 		case "primary":
@@ -35,46 +35,45 @@ const colorFromType: StyleFn = (styles = {}, { type }: ButtonStyleProps) => {
 				"&:hover": {
 					backgroundColor: colors.blue[700],
 					borderColor: colors.blue[700],
-					color: colors.white,
+					color: colors.white
 				},
 				"&:active": {
 					backgroundColor: colors.blue[900],
 					borderColor: colors.blue[900],
-					color: colors.white,
-				},
-			};
+					color: colors.white
+				}
+			}
 
 		case "secondary":
 			return {
 				...styles,
-				color: colors.blue[500],
 				backgroundColor: colors.black,
 				borderColor: colors.blue[500],
 
 				"&:hover": {
 					borderColor: colors.blue[700],
-					color: colors.blue[300],
+					color: colors.blue[300]
 				},
 
 				"&:active": {
 					borderColor: colors.blue[700],
-					color: colors.blue[700],
-				},
-			};
+					color: colors.blue[700]
+				}
+			}
 
 		default:
-			return { ...styles };
+			return { ...styles }
 	}
-};
+}
 const paddingFromType: StyleFn = (
 	styles,
 	{
 		size = "regular",
 		children,
-		full = false,
+		full = false
 	}: { size: "regular" | "small" | "smaller"; children?: React.ReactNode; full: boolean }
 ) => {
-	const buttonHeight = size === "regular" ? "20px" : size === "small" ? "15px" : "10px";
+	const buttonHeight = size === "regular" ? "20px" : size === "small" ? "15px" : "10px"
 	return {
 		...styles,
 		margin: `0 ${full ? "0" : "15px"} 0 0`,
@@ -93,9 +92,9 @@ const paddingFromType: StyleFn = (
 				? typography.sizes.button.large
 				: size === "small"
 				? typography.sizes.button.medium
-				: typography.sizes.button.small,
-	};
-};
+				: typography.sizes.button.small
+	}
+}
 
 const iconStyles: StyleFn = (styles, { children, size }) => {
 	return {
@@ -110,15 +109,15 @@ const iconStyles: StyleFn = (styles, { children, size }) => {
 
 		flexShrink: 0,
 		"& > *": {
-			stroke: "currentColor",
-		},
-	};
-};
+			stroke: "currentColor"
+		}
+	}
+}
 
 export const useCSS = (props: ButtonStyleProps) => ({
 	container: makeStyles([baseStyles, colorFromType, dimensionsFromProps, paddingFromType, disabled])(props),
-	icon: makeStyles([iconStyles])(props),
-});
+	icon: makeStyles([iconStyles])(props)
+})
 
 // 	text,
 // 	type = "primary",

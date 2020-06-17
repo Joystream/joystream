@@ -1,14 +1,15 @@
-import React, { Children } from "react";
+import React from "react";
 import { SerializedStyles } from "@emotion/core";
 import { useCSS, HeaderStyleProps } from "./Header.style";
 
 type HeaderProps = {
 	text: string;
-	subtext?: string;
-	img?: string;
-	cssTitle?: SerializedStyles;
-	cssSubtitle?: SerializedStyles;
-	children?: React.ReactNode;
+	subtext: string;
+	img: string;
+	css: SerializedStyles;
+	cssTitle: SerializedStyles;
+	cssSubtitle: SerializedStyles;
+	children: React.ReactNode;
 } & HeaderStyleProps;
 
 export default function Header({
@@ -16,13 +17,14 @@ export default function Header({
 	subtext = "",
 	children,
 	img,
+	css,
 	cssTitle,
 	cssSubtitle,
 	...styleProps
-}: HeaderProps) {
+}: Partial<HeaderProps>) {
 	const styles = useCSS({ ...styleProps });
 	return (
-		<div css={styles.container}>
+		<div css={[styles.container, css]}>
 			<div css={styles.content}>
 				<h1 css={[styles.title, cssTitle]}>{text}</h1>
 				{subtext && <p css={[styles.subtitle, cssSubtitle]}>{subtext}</p>}
