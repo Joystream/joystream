@@ -15,7 +15,7 @@ class CardGrid extends Collection<Props, State> {
 
     return {
       ...state,
-      showHeader: !state.isEmpty || !!props.headerText
+      showFullHeader: !state.isEmpty
     };
   }
 

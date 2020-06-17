@@ -7,6 +7,8 @@ import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import { ComponentProps } from './types';
 
 import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Button as SUIButton } from 'semantic-ui-react';
 import keyring from '@polkadot/ui-keyring';
 import accountObservable from '@polkadot/ui-keyring/observable/accounts';
 import { getLedger, isLedger, withMulti, withObservable } from '@polkadot/react-api';
@@ -35,6 +37,7 @@ async function queryLedger (): Promise<void> {
 }
 
 function Overview ({ accounts, onStatusChange, t }: Props): React.ReactElement<Props> {
+  const { pathname } = useLocation();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const emptyScreen = !(isCreateOpen || isImportOpen) && accounts && (Object.keys(accounts).length === 0);
@@ -44,6 +47,9 @@ function Overview ({ accounts, onStatusChange, t }: Props): React.ReactElement<P
 
   return (
     <CardGrid
+      topButtons={
+        !emptyScreen && <SUIButton as={Link} to={`${pathname}/vanity`}>Generate a vanity address</SUIButton>
+      }
       buttons={
         <Button.Group>
           <Button

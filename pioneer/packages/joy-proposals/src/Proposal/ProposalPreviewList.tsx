@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Card, Container } from 'semantic-ui-react';
+import { Button, Card, Container, Icon } from 'semantic-ui-react';
 import styled from 'styled-components';
+import { Link, useLocation } from 'react-router-dom';
 
 import ProposalPreview from './ProposalPreview';
 import { ParsedProposal } from '@polkadot/joy-utils/types/proposals';
@@ -54,7 +55,9 @@ type ProposalPreviewListProps = {
 
 const FilterContainer = styled.div`
   display: flex;
-  justify-content: flex-end;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.75rem;
 `;
 const FilterOption = styled.span`
   display: inline-flex;
@@ -83,10 +86,10 @@ const StyledDropdown = styled(Dropdown)`
   .dropdown {
     width: 200px;
   }
-  margin-bottom: 1.75rem;
 `;
 
 function ProposalPreviewList ({ bestNumber }: ProposalPreviewListProps) {
+  const { pathname } = useLocation();
   const transport = useTransport();
   const [proposals, error, loading] = usePromise<ParsedProposal[]>(() => transport.proposals.proposals(), []);
   const [activeFilter, setActiveFilter] = useState<ProposalFilter>('All');
@@ -109,15 +112,21 @@ function ProposalPreviewList ({ bestNumber }: ProposalPreviewListProps) {
 
   return (
     <Container className="Proposal" fluid>
-      <PromiseComponent error={ error } loading={ loading } message="Fetching proposals...">
-        <FilterContainer>
+      <FilterContainer>
+        <Button primary as={Link} to={`${pathname}/new`}>
+          <Icon name="add" />
+          New proposal
+        </Button>
+        {!loading && (
           <StyledDropdown
             label="Proposal state"
             options={filterOptions}
             value={activeFilter}
             onChange={_onChangePrefix}
           />
-        </FilterContainer>
+        )}
+      </FilterContainer>
+      <PromiseComponent error={ error } loading={ loading } message="Fetching proposals...">
         {
           sortedProposals.length ? (
             <Card.Group>
