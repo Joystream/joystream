@@ -48,8 +48,11 @@ pub type IPNSIdentity = Vec<u8>;
 /// HTTP Url string to a discovery service endpoint
 pub type Url = Vec<u8>;
 
-// Alias for storage working group
-pub(crate) type StorageWorkingGroup<T> = working_group::Module<T, working_group::Instance2>;
+// The storage working group instance alias.
+pub(crate) type StorageWorkingGroupInstance = working_group::Instance2;
+
+// Alias for storage working group.
+pub(crate) type StorageWorkingGroup<T> = working_group::Module<T, StorageWorkingGroupInstance>;
 
 /// Storage provider is a worker from the  working_group module.
 pub type StorageProviderId<T> = working_group::WorkerId<T>;
@@ -68,7 +71,7 @@ pub struct AccountInfo<BlockNumber> {
 }
 
 /// The _Service discovery_ main _Trait_.
-pub trait Trait: system::Trait + working_group::Trait<working_group::Instance2> {
+pub trait Trait: system::Trait + working_group::Trait<StorageWorkingGroupInstance> {
     /// _Service discovery_ event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }

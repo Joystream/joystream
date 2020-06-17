@@ -32,7 +32,7 @@ pub(crate) use common::BlockAndTime;
 
 use crate::data_object_type_registry;
 use crate::data_object_type_registry::IsActiveDataObjectType;
-use crate::{MemberId, StorageProviderId, StorageWorkingGroup};
+use crate::{MemberId, StorageProviderId, StorageWorkingGroup, StorageWorkingGroupInstance};
 
 /// The _Data directory_ main _Trait_.
 pub trait Trait:
@@ -40,7 +40,7 @@ pub trait Trait:
     + system::Trait
     + data_object_type_registry::Trait
     + membership::members::Trait
-    + working_group::Trait<working_group::Instance2>
+    + working_group::Trait<StorageWorkingGroupInstance>
 {
     /// _Data directory_ event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;

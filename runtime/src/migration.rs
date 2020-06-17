@@ -25,10 +25,7 @@ impl<T: Trait> Module<T> {
         Self::initialize_storage_working_group_mint();
         Self::initialize_storage_working_group_text_constraints();
 
-        // ** Order is important!
-        Self::clear_storage_data_object_registry_data();
-        Self::clear_storage_data_directory_data();
-        // **
+        Self::clear_storage_data();
     }
 }
 
@@ -104,7 +101,8 @@ impl<T: Trait> Module<T> {
         );
     }
 
-    fn clear_storage_data_object_registry_data() {
+    fn clear_storage_data() {
+        // Clear storage data object registry data.
         for id in <storage::data_directory::Module<T>>::known_content_ids() {
             <storage::data_object_storage_registry::RelationshipsByContentId<T>>::remove(id);
         }
@@ -117,9 +115,10 @@ impl<T: Trait> Module<T> {
 
             potential_id += <T as storage::data_object_storage_registry::Trait>::DataObjectStorageRelationshipId::one();
         }
-    }
 
-    fn clear_storage_data_directory_data() {
+        storage::data_object_storage_registry::NextRelationshipId::<T>::put(<T as storage::data_object_storage_registry::Trait>::DataObjectStorageRelationshipId::one());
+
+        // Clear storage data directory data.
         for id in <storage::data_directory::Module<T>>::known_content_ids() {
             <storage::data_directory::DataObjectByContentId<T>>::remove(id);
         }

@@ -1,11 +1,14 @@
 mod fixtures;
 mod mock;
 
-use crate::tests::mock::Test;
 use crate::types::{OpeningPolicyCommitment, RewardPolicy};
-use crate::{Error, Instance1, Lead, RawEvent};
+use crate::{Error, Lead, RawEvent};
 use common::constraints::InputValidationLengthConstraint;
-use mock::{build_test_externalities, TestEvent, WorkingGroup1};
+use mock::{
+    build_test_externalities, Test, TestEvent, TestWorkingGroup, TestWorkingGroupInstance,
+    STORAGE_WORKING_GROUP_CONSTRAINT_DIFF, STORAGE_WORKING_GROUP_CONSTRAINT_MIN,
+    STORAGE_WORKING_GROUP_MINT_CAPACITY,
+};
 use srml_support::{StorageLinkedMap, StorageValue};
 use std::collections::BTreeMap;
 use system::RawOrigin;
@@ -16,14 +19,14 @@ use fixtures::*;
 fn set_lead_succeeds() {
     build_test_externalities().execute_with(|| {
         // Ensure that lead is default
-        assert_eq!(WorkingGroup1::current_lead(), None);
+        assert_eq!(TestWorkingGroup::current_lead(), None);
 
         let lead_account_id = 1;
         let lead_member_id = 1;
 
         // Set lead
         assert_eq!(
-            WorkingGroup1::set_lead(RawOrigin::Root.into(), lead_member_id, lead_account_id),
+            TestWorkingGroup::set_lead(RawOrigin::Root.into(), lead_member_id, lead_account_id),
             Ok(())
         );
 
@@ -31,7 +34,7 @@ fn set_lead_succeeds() {
             member_id: lead_member_id,
             role_account_id: lead_account_id,
         };
-        assert_eq!(WorkingGroup1::current_lead(), Some(lead));
+        assert_eq!(TestWorkingGroup::current_lead(), Some(lead));
 
         EventFixture::assert_crate_events(vec![RawEvent::LeaderSet(
             lead_member_id,
@@ -71,10 +74,12 @@ fn add_worker_opening_fails_with_invalid_human_readable_text() {
     build_test_externalities().execute_with(|| {
         SetLeadFixture::set_lead(1);
 
-        <crate::OpeningHumanReadableText<Instance1>>::put(InputValidationLengthConstraint {
-            min: 1,
-            max_min_diff: 5,
-        });
+        <crate::OpeningHumanReadableText<TestWorkingGroupInstance>>::put(
+            InputValidationLengthConstraint {
+                min: 1,
+                max_min_diff: 5,
+            },
+        );
 
         let add_worker_opening_fixture = AddWorkerOpeningFixture::default().with_text(Vec::new());
 
@@ -190,11 +195,18 @@ fn apply_on_worker_opening_succeeds() {
         appy_on_worker_opening_fixture.call_and_assert(Ok(()));
 
         EventFixture::assert_global_events(vec![
-            TestEvent::working_group_Instance1(RawEvent::LeaderSet(1, lead_account_id)),
+            TestEvent::working_group_TestWorkingGroupInstance(RawEvent::LeaderSet(
+                1,
+                lead_account_id,
+            )),
             TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(0, 0)),
             TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(1, 1)),
-            TestEvent::working_group_Instance1(RawEvent::WorkerOpeningAdded(opening_id)),
-            TestEvent::working_group_Instance1(RawEvent::AppliedOnWorkerOpening(opening_id, 0)),
+            TestEvent::working_group_TestWorkingGroupInstance(RawEvent::WorkerOpeningAdded(
+                opening_id,
+            )),
+            TestEvent::working_group_TestWorkingGroupInstance(RawEvent::AppliedOnWorkerOpening(
+                opening_id, 0,
+            )),
         ]);
     });
 }
@@ -308,7 +320,7 @@ fn apply_on_worker_opening_fails_with_invalid_text() {
 
         let opening_id = 0; // newly created opening
 
-        <crate::WorkerApplicationHumanReadableText<Instance1>>::put(
+        <crate::WorkerApplicationHumanReadableText<TestWorkingGroupInstance>>::put(
             InputValidationLengthConstraint {
                 min: 1,
                 max_min_diff: 5,
@@ -374,17 +386,22 @@ fn withdraw_worker_application_succeeds() {
         withdraw_application_fixture.call_and_assert(Ok(()));
 
         EventFixture::assert_global_events(vec![
-            TestEvent::working_group_Instance1(RawEvent::LeaderSet(1, lead_account_id)),
+            TestEvent::working_group_TestWorkingGroupInstance(RawEvent::LeaderSet(
+                1,
+                lead_account_id,
+            )),
             TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(0, 0)),
             TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(1, 1)),
-            TestEvent::working_group_Instance1(RawEvent::WorkerOpeningAdded(opening_id)),
-            TestEvent::working_group_Instance1(RawEvent::AppliedOnWorkerOpening(
+            TestEvent::working_group_TestWorkingGroupInstance(RawEvent::WorkerOpeningAdded(
+                opening_id,
+            )),
+            TestEvent::working_group_TestWorkingGroupInstance(RawEvent::AppliedOnWorkerOpening(
                 opening_id,
                 application_id,
             )),
-            TestEvent::working_group_Instance1(RawEvent::WorkerApplicationWithdrawn(
-                application_id,
-            )),
+            TestEvent::working_group_TestWorkingGroupInstance(
+                RawEvent::WorkerApplicationWithdrawn(application_id),
+            ),
         ]);
     });
 }
@@ -503,17 +520,22 @@ fn terminate_worker_application_succeeds() {
         terminate_application_fixture.call_and_assert(Ok(()));
 
         EventFixture::assert_global_events(vec![
-            TestEvent::working_group_Instance1(RawEvent::LeaderSet(1, lead_account_id)),
+            TestEvent::working_group_TestWorkingGroupInstance(RawEvent::LeaderSet(
+                1,
+                lead_account_id,
+            )),
             TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(0, 0)),
             TestEvent::membership_mod(membership::members::RawEvent::MemberRegistered(1, 1)),
-            TestEvent::working_group_Instance1(RawEvent::WorkerOpeningAdded(opening_id)),
-            TestEvent::working_group_Instance1(RawEvent::AppliedOnWorkerOpening(
+            TestEvent::working_group_TestWorkingGroupInstance(RawEvent::WorkerOpeningAdded(
+                opening_id,
+            )),
+            TestEvent::working_group_TestWorkingGroupInstance(RawEvent::AppliedOnWorkerOpening(
                 opening_id,
                 application_id,
             )),
-            TestEvent::working_group_Instance1(RawEvent::WorkerApplicationTerminated(
-                application_id,
-            )),
+            TestEvent::working_group_TestWorkingGroupInstance(
+                RawEvent::WorkerApplicationTerminated(application_id),
+            ),
         ]);
     });
 }
@@ -899,6 +921,7 @@ fn fill_worker_opening_fails_with_invalid_reward_policy() {
                     payout_interval: None,
                 });
 
+        remove_mint(); //removes default mintx
         fill_worker_opening_fixture.call_and_assert(Err(Error::FillWorkerOpeningMintDoesNotExist));
 
         set_mint_id(22);
@@ -927,11 +950,11 @@ fn unset_lead_succeeds() {
             member_id: lead_member_id,
             role_account_id: lead_account_id,
         };
-        assert_eq!(WorkingGroup1::current_lead(), Some(lead));
+        assert_eq!(TestWorkingGroup::current_lead(), Some(lead));
 
         UnsetLeadFixture::unset_lead();
 
-        assert_eq!(WorkingGroup1::current_lead(), None);
+        assert_eq!(TestWorkingGroup::current_lead(), None);
 
         EventFixture::assert_crate_events(vec![
             RawEvent::LeaderSet(lead_member_id, lead_account_id),
@@ -1199,10 +1222,10 @@ fn leave_worker_role_fails_with_invalid_recurring_reward_relationships() {
     build_test_externalities().execute_with(|| {
         let worker_id = fill_default_worker_position();
 
-        let mut worker = WorkingGroup1::worker_by_id(worker_id);
+        let mut worker = TestWorkingGroup::worker_by_id(worker_id);
         worker.reward_relationship = Some(2);
 
-        <crate::WorkerById<Test, crate::Instance1>>::insert(worker_id, worker);
+        <crate::WorkerById<Test, TestWorkingGroupInstance>>::insert(worker_id, worker);
 
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
 
@@ -1531,7 +1554,7 @@ fn slash_worker_stake_fails_with_not_set_lead() {
 #[test]
 fn get_all_worker_ids_succeeds() {
     build_test_externalities().execute_with(|| {
-        let worker_ids = WorkingGroup1::get_all_worker_ids();
+        let worker_ids = TestWorkingGroup::get_all_worker_ids();
         assert_eq!(worker_ids, Vec::new());
 
         let worker_id1 = fill_worker_position(None, None, true);
@@ -1540,12 +1563,12 @@ fn get_all_worker_ids_succeeds() {
         let mut expected_ids = vec![worker_id1, worker_id2];
         expected_ids.sort();
 
-        let mut worker_ids = WorkingGroup1::get_all_worker_ids();
+        let mut worker_ids = TestWorkingGroup::get_all_worker_ids();
         worker_ids.sort();
         assert_eq!(worker_ids, expected_ids);
 
-        <crate::WorkerById<Test, crate::Instance1>>::remove(worker_id1);
-        let worker_ids = WorkingGroup1::get_all_worker_ids();
+        <crate::WorkerById<Test, TestWorkingGroupInstance>>::remove(worker_id1);
+        let worker_ids = TestWorkingGroup::get_all_worker_ids();
         assert_eq!(worker_ids, vec![worker_id2]);
     });
 }
@@ -1554,10 +1577,10 @@ fn get_all_worker_ids_succeeds() {
 fn set_working_group_mint_capacity_succeeds() {
     build_test_externalities().execute_with(|| {
         let mint_id = <minting::Module<Test>>::add_mint(0, None).unwrap();
-        <crate::Mint<Test, crate::Instance1>>::put(mint_id);
+        <crate::Mint<Test, TestWorkingGroupInstance>>::put(mint_id);
 
         let capacity = 15000;
-        let result = WorkingGroup1::set_mint_capacity(RawOrigin::Root.into(), capacity);
+        let result = TestWorkingGroup::set_mint_capacity(RawOrigin::Root.into(), capacity);
 
         assert_eq!(result, Ok(()));
 
@@ -1569,8 +1592,10 @@ fn set_working_group_mint_capacity_succeeds() {
 #[test]
 fn set_working_group_mint_capacity_fails_with_not_set_working_group_mint() {
     build_test_externalities().execute_with(|| {
+        remove_mint(); //removes default mint
+
         let capacity = 15000;
-        let result = WorkingGroup1::set_mint_capacity(RawOrigin::Root.into(), capacity);
+        let result = TestWorkingGroup::set_mint_capacity(RawOrigin::Root.into(), capacity);
 
         assert_eq!(result, Err(Error::WorkingGroupMintIsNotSet));
     });
@@ -1581,8 +1606,8 @@ fn set_working_group_mint_capacity_fails_with_mint_not_found() {
     build_test_externalities().execute_with(|| {
         let capacity = 15000;
 
-        <crate::Mint<Test, Instance1>>::put(5); // random mint id
-        let result = WorkingGroup1::set_mint_capacity(RawOrigin::Root.into(), capacity);
+        <crate::Mint<Test, TestWorkingGroupInstance>>::put(5); // random mint id
+        let result = TestWorkingGroup::set_mint_capacity(RawOrigin::Root.into(), capacity);
 
         assert_eq!(result, Err(Error::CannotFindMint));
     });
@@ -1592,8 +1617,37 @@ fn set_working_group_mint_capacity_fails_with_mint_not_found() {
 fn set_working_group_mint_capacity_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
         let capacity = 15000;
-        let result = WorkingGroup1::set_mint_capacity(RawOrigin::None.into(), capacity);
+        let result = TestWorkingGroup::set_mint_capacity(RawOrigin::None.into(), capacity);
 
         assert_eq!(result, Err(Error::RequireRootOrigin));
+    });
+}
+
+#[test]
+fn ensure_setting_genesis_storage_working_group_mint_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let mint_id = TestWorkingGroup::mint();
+
+        assert!(minting::Mints::<Test>::exists(mint_id));
+
+        let mint = <minting::Module<Test>>::mints(mint_id);
+        assert_eq!(mint.capacity(), STORAGE_WORKING_GROUP_MINT_CAPACITY);
+    });
+}
+
+#[test]
+fn ensure_setting_genesis_constraints_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let default_constraint = common::constraints::InputValidationLengthConstraint::new(
+            STORAGE_WORKING_GROUP_CONSTRAINT_MIN,
+            STORAGE_WORKING_GROUP_CONSTRAINT_DIFF,
+        );
+        let opening_text_constraint = TestWorkingGroup::opening_human_readable_text();
+        let worker_text_constraint = TestWorkingGroup::worker_application_human_readable_text();
+        let worker_exit_text_constraint = TestWorkingGroup::worker_exit_rationale_text();
+
+        assert_eq!(opening_text_constraint, default_constraint);
+        assert_eq!(worker_text_constraint, default_constraint);
+        assert_eq!(worker_exit_text_constraint, default_constraint);
     });
 }

@@ -7,8 +7,11 @@ pub mod data_object_type_registry;
 
 mod tests;
 
+// The storage working group instance alias.
+pub type StorageWorkingGroupInstance = working_group::Instance2;
+
 // Alias for storage working group
-pub(crate) type StorageWorkingGroup<T> = working_group::Module<T, working_group::Instance2>;
+pub(crate) type StorageWorkingGroup<T> = working_group::Module<T, StorageWorkingGroupInstance>;
 
 // Alias for the member id.
 pub(crate) type MemberId<T> = <T as membership::members::Trait>::MemberId;

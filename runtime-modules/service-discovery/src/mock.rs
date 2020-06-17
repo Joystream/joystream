@@ -11,9 +11,12 @@ pub use sr_primitives::{
 
 use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
 
+// The storage working group instance alias.
+pub type StorageWorkingGroupInstance = working_group::Instance2;
+
 mod working_group_mod {
+    pub use super::StorageWorkingGroupInstance;
     pub use working_group::Event;
-    pub use working_group::Instance2;
     pub use working_group::Trait;
 }
 
@@ -34,7 +37,7 @@ impl_outer_event! {
         discovery<T>,
         balances<T>,
         membership_mod<T>,
-         working_group_mod Instance2 <T>,
+         working_group_mod StorageWorkingGroupInstance <T>,
     }
 }
 
@@ -127,7 +130,7 @@ impl recurringrewards::Trait for Test {
     type RewardRelationshipId = u64;
 }
 
-impl working_group::Trait<working_group::Instance2> for Test {
+impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type Event = MetaEvent;
 }
 
@@ -160,7 +163,7 @@ pub(crate) fn hire_storage_provider() -> (u64, u64) {
         role_stake_profile: None,
     };
 
-    <working_group::WorkerById<Test, working_group::Instance2>>::insert(
+    <working_group::WorkerById<Test, StorageWorkingGroupInstance>>::insert(
         storage_provider_id,
         storage_provider,
     );

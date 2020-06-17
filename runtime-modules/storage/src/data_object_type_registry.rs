@@ -22,7 +22,7 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
-use crate::StorageWorkingGroup;
+use crate::{StorageWorkingGroup, StorageWorkingGroupInstance};
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
@@ -32,7 +32,7 @@ const DEFAULT_TYPE_DESCRIPTION: &str = "Default data object type for audio and v
 const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u32 = 1;
 
 /// The _Data object type registry_ main _Trait_.
-pub trait Trait: system::Trait + working_group::Trait<working_group::Instance2> {
+pub trait Trait: system::Trait + working_group::Trait<StorageWorkingGroupInstance> {
     /// _Data object type registry_ event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 

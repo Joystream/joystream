@@ -303,6 +303,20 @@ decl_storage! {
         /// Worker exit rationale text length limits.
         pub WorkerExitRationaleText get(worker_exit_rationale_text) : InputValidationLengthConstraint;
     }
+        add_extra_genesis {
+        config(phantom): rstd::marker::PhantomData<I>;
+        config(storage_working_group_mint_capacity): minting::BalanceOf<T>;
+        config(opening_human_readable_text_constraint): InputValidationLengthConstraint;
+        config(worker_application_human_readable_text_constraint): InputValidationLengthConstraint;
+        config(worker_exit_rationale_text_constraint): InputValidationLengthConstraint;
+        build(|config: &GenesisConfig<T, I>| {
+            Module::<T, I>::initialize_working_group(
+                config.opening_human_readable_text_constraint,
+                config.worker_application_human_readable_text_constraint,
+                config.worker_exit_rationale_text_constraint,
+                config.storage_working_group_mint_capacity)
+        });
+    }
 }
 
 decl_module! {
@@ -1246,6 +1260,30 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                 Error::WorkerExitRationaleTextTooLong.into(),
             )
             .map_err(|e| e.into())
+    }
+
+    fn initialize_working_group(
+        opening_human_readable_text_constraint: InputValidationLengthConstraint,
+        worker_application_human_readable_text_constraint: InputValidationLengthConstraint,
+        worker_exit_rationale_text_constraint: InputValidationLengthConstraint,
+        storage_working_group_mint_capacity: minting::BalanceOf<T>,
+    ) {
+        // Create a mint.
+        let mint_id_result =
+            <minting::Module<T>>::add_mint(storage_working_group_mint_capacity, None);
+
+        if let Ok(mint_id) = mint_id_result {
+            <Mint<T, I>>::put(mint_id);
+        } else {
+            panic!("Failed to create a mint for the storage working group");
+        }
+
+        // Create constraints
+        <OpeningHumanReadableText<I>>::put(opening_human_readable_text_constraint);
+        <WorkerApplicationHumanReadableText<I>>::put(
+            worker_application_human_readable_text_constraint,
+        );
+        <WorkerExitRationaleText<I>>::put(worker_exit_rationale_text_constraint);
     }
 }
 

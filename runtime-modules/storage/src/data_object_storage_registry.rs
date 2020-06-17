@@ -25,14 +25,10 @@
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
-use srml_support::{
-    decl_error, decl_event, decl_module, decl_storage, ensure, print, Parameter, StorageValue,
-};
-
-use common::constraints::InputValidationLengthConstraint;
+use srml_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 
 use crate::data_directory::{self, ContentIdExists};
-use crate::{StorageProviderId, StorageWorkingGroup};
+use crate::{StorageProviderId, StorageWorkingGroup, StorageWorkingGroupInstance};
 
 const DEFAULT_FIRST_RELATIONSHIP_ID: u32 = 1;
 
@@ -41,7 +37,7 @@ pub trait Trait:
     timestamp::Trait
     + system::Trait
     + data_directory::Trait
-    + working_group::Trait<working_group::Instance2>
+    + working_group::Trait<StorageWorkingGroupInstance>
 {
     /// _Data object storage registry_ event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -124,34 +120,6 @@ decl_storage! {
 
         /// Keeps a list of storage relationships per content id.
         pub RelationshipsByContentId get(relationships_by_content_id): map T::ContentId => Vec<T::DataObjectStorageRelationshipId>;
-    }
-    add_extra_genesis {
-        config(storage_working_group_mint_capacity): minting::BalanceOf<T>;
-        config(opening_human_readable_text_constraint): InputValidationLengthConstraint;
-        config(worker_application_human_readable_text_constraint): InputValidationLengthConstraint;
-        config(worker_exit_rationale_text_constraint): InputValidationLengthConstraint;
-        build(|config: &GenesisConfig<T>| {
-            // Create a mint.
-            let mint_id_result =
-                <minting::Module<T>>::add_mint(config.storage_working_group_mint_capacity, None);
-
-            if let Ok(mint_id) = mint_id_result {
-                <working_group::Mint::<T, working_group::Instance2>>::put(mint_id);
-            } else {
-                print("Failed to create a mint for the storage working group");
-            }
-
-            // Create constraints
-            <working_group::OpeningHumanReadableText::<working_group::Instance2>>::put(
-                config.opening_human_readable_text_constraint
-            );
-            <working_group::WorkerApplicationHumanReadableText::<working_group::Instance2>>::put(
-                config.worker_application_human_readable_text_constraint
-            );
-            <working_group::WorkerExitRationaleText::<working_group::Instance2>>::put(
-                config.worker_exit_rationale_text_constraint
-            );
-        });
     }
 }
 
