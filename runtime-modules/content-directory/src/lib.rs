@@ -378,7 +378,8 @@ pub struct Entity<T: Trait> {
 
     /// What schemas under which this entity of a class is available, think
     /// v.2.0 Person schema for John, v3.0 Person schema for John
-    /// Unlikely to be more than roughly 20ish, assuming schemas for a given class eventually stableize, or that very old schema are eventually removed.
+    /// Unlikely to be more than roughly 20ish, assuming schemas for a given class eventually stableize, 
+    /// or that very old schema are eventually removed.
     pub supported_schemas: BTreeSet<SchemaId>, // indices of schema in corresponding class
 
     /// Values for properties on class that are used by some schema used by this entity!
@@ -527,7 +528,8 @@ decl_storage! {
         // The voucher associated with entity creation for a given class and controller.
         // Is updated whenever an entity is created in a given class by a given controller.
         // Constraint is updated by Root, an initial value comes from `ClassPermissions::default_entity_creation_voucher_upper_bound`.
-        pub EntityCreationVouchers get(entity_creation_vouchers): double_map hasher(blake2_128) T::ClassId, blake2_128(EntityController<T>) => EntityCreationVoucher<T>;
+        pub EntityCreationVouchers get(entity_creation_vouchers): 
+            double_map hasher(blake2_128) T::ClassId, blake2_128(EntityController<T>) => EntityCreationVoucher<T>;
     }
 }
 
@@ -797,7 +799,8 @@ decl_module! {
                 // Create new EntityCreationVoucher instance with provided maximum_entities_count
                 let entity_creation_voucher = EntityCreationVoucher::new(maximum_entities_count);
 
-                // Add newly created `EntityCreationVoucher` into `EntityCreationVouchers` runtime storage under given `class_id`, `controller` key
+                // Add newly created `EntityCreationVoucher` into `EntityCreationVouchers` 
+                // runtime storage under given `class_id`, `controller` key
                 <EntityCreationVouchers<T>>::insert(class_id, controller.clone(), entity_creation_voucher.clone());
 
                 // Trigger event
@@ -837,7 +840,9 @@ decl_module! {
             Self::ensure_class_maintainers_are_valid(classs_maintainers)?;
 
             // Create new Class instance from provided values
-            let class = Class::new(class_permissions, name, description, maximum_entities_count, default_entity_creation_voucher_upper_bound);
+            let class = Class::new(
+                class_permissions, name, description, maximum_entities_count, default_entity_creation_voucher_upper_bound
+            );
 
             let class_id = Self::next_class_id();
 
@@ -1063,7 +1068,8 @@ decl_module! {
             let entity_property_id_references_with_same_owner_flag_set =
                 Self::get_property_id_references_with_same_owner_flag_set(values_for_existing_properties);
 
-            // Ensure provided `new_property_value_references_with_same_owner_flag_set` are valid references with `SameOwner` flag set
+            // Ensure provided `new_property_value_references_with_same_owner_flag_set` 
+            // are valid references with `SameOwner` flag set
             Self::ensure_only_references_with_same_owner_flag_set_provided(
                 &entity_property_id_references_with_same_owner_flag_set,
                 &new_property_value_references_with_same_owner_flag_set
@@ -1084,8 +1090,11 @@ decl_module! {
                         &new_property_value_references_with_same_owner_flag_set,
                     ) {
 
-                        // Create wrapper structure from provided entity_property_values_updated and their corresponding Class properties
-                        let values_for_updated_properties = ValuesForExistingProperties::from(&class_properties, &entity_property_values_updated);
+                        // Create wrapper structure from provided entity_property_values_updated 
+                        // and their corresponding Class properties
+                        let values_for_updated_properties = ValuesForExistingProperties::from(
+                            &class_properties, &entity_property_values_updated
+                        );
 
                         // Traverse all values_for_updated_properties to ensure unique property satisfied (if required)
                         Self::ensure_property_values_unique_option_satisfied(values_for_updated_properties)?;
@@ -1961,7 +1970,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Used to update entity_property_values with parameters provided.
-    /// Returns Some(BTreeMap<PropertyId, PropertyValue<T>>) if update performed and None otherwise
+    /// Returns `Some(BTreeMap<PropertyId, PropertyValue<T>>)` if update performed and `None` otherwise
     pub fn make_updated_property_value_references_with_same_owner_flag_set(
         entity_property_id_references_with_same_owner_flag_set: BTreeSet<PropertyId>,
         entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
