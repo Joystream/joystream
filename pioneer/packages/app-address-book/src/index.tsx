@@ -32,7 +32,7 @@ const StyledHeader = styled.header`
   }
 `;
 
-function AddressBookApp ({ basePath, onStatusChange, t }: Props): React.ReactElement<Props> {
+function AddressBookApp ({ basePath, onStatusChange }: Props): React.ReactElement<Props> {
   const _renderComponent = (Component: React.ComponentType<ComponentProps>): () => React.ReactNode => {
     // eslint-disable-next-line react/display-name
     return (): React.ReactNode =>
