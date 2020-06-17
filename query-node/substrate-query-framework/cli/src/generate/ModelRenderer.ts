@@ -1,8 +1,8 @@
 import Mustache from 'mustache';
 import { Field, ObjectType } from '../model';
 import * as path from 'path';
-import { kebabCase } from 'lodash';
-import { getTypesForArray, names } from './utils';
+import { kebabCase, camelCase } from 'lodash';
+import { getTypesForArray, names, pascalCase, camelPlural } from './utils';
 import Debug from "debug";
 import { GeneratorContext } from './SourcesGenerator';
 
@@ -95,7 +95,7 @@ export class ModelRenderer {
     this.context = context;
   }
 
-  transformField(f: Field): MustacheField {
+  transformField(f: Field, entity: ObjectType): MustacheField {
     let ret = {};
     const isProps: Props = {};
     isProps['array'] = f.isBuildinType && f.isList; 
@@ -120,12 +120,12 @@ export class ModelRenderer {
       }
     }
 
-    const fieldNames = (f.type === 'mto') ? names(f.name.slice(0, -1)) : names(f.name);
+    const names = this.interpolateNames(f, entity);
 
     ret = {
       ...ret,
-      ...fieldNames,
-      relPathForModel: this.relativePathForModel(fieldNames['relClassName'])
+      ...this.interpolateNames(f, entity),
+      relPathForModel: this.relativePathForModel(names['relClassName'])
     }
 
     debug(`Mustache Field: ${JSON.stringify(ret, null, 2)}`);
@@ -133,10 +133,23 @@ export class ModelRenderer {
     return ret as MustacheField; 
   }
 
+  interpolateNames(f: Field, entity: ObjectType): { [key: string]: string } {
+    const single = (f.type === 'otm') ? f.name.slice(0, -1) : f.name; // strip s at the end if otm
+    return {
+        ...names(single),
+        relClassName: pascalCase(single),
+        relCamelName: camelCase(single),
+        relFieldName: camelCase(entity.name),
+        relFieldNamePlural: camelPlural(entity.name)
+    }
+    
+  }
+
+
   transform(objType: ObjectType): MustacheObjectType {
     const fields: MustacheField[] = [];
     
-    objType.fields.map((f) => fields.push(this.transformField(f)));
+    objType.fields.map((f) => fields.push(this.transformField(f, objType)));
     
     const has: Props = {};
     for (const key in TYPE_FIELDS) {

@@ -17,7 +17,7 @@ import {
 
 {{#fields}}
   {{#is.refType}}
-  import { {{relClassName}} } from '{{relPathForModel}}'
+  import { {{relClassName}} } from '{{{relPathForModel}}}'
   {{/is.refType}}
 {{/fields}}
 
@@ -25,16 +25,16 @@ import {
 export class {{className}} extends BaseModel {
 {{#fields}}
   {{#is.otm}}
-    @OneToMany(() => {{tsType}}, ({{relCamelName}}: {{relClassName}}) => {{relCamelName}}.{{camelName}})
-    {{camelName}}?: {{relClassName}}[];  
+    @OneToMany(() => {{relClassName}}, ({{relCamelName}}: {{relClassName}}) => {{relCamelName}}.{{relFieldName}})
+    {{camelNamePlural}}?: {{relClassName}}[];  
   {{/is.otm}}
 
   {{#is.mto}}
-    @ManyToOne(() => {{relClassName}}, ({{relCamelName}}: {{relClassName}}) => {{relCamelName}}.{{camelNamePlural}}, { 
-      skipGraphQLField: true,
-      nullable: true 
+    @ManyToOne(() => {{relClassName}}, ({{relCamelName}}: {{relClassName}}) => {{relCamelName}}.{{relFieldNamePlural}}, { 
+      skipGraphQLField: true{{^required}},
+      nullable: true{{/required}} 
     })
-    {{camelName}}?: {{relClassName}};
+    {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{relClassName}};
   {{/is.mto}}
 
   {{#is.oto}}
