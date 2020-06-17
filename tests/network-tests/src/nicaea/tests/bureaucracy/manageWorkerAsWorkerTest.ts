@@ -1,4 +1,4 @@
-import tap from 'tap';
+import tap = require('tap');
 import { initConfig } from '../../utils/config';
 import { registerJoystreamTypes } from '@nicaea/types';
 import { closeApi } from '../impl/closeApi';
@@ -9,8 +9,9 @@ import { setTestTimeout } from '../../utils/setTestTimeout';
 import { membershipTest } from '../impl/membershipCreation';
 import { workerApplicationHappyCase } from './impl/workerApplicationHappyCase';
 import BN from 'bn.js';
+import { manageWorkerAsWorker } from './impl/manageWorkerAsWorker';
 
-tap.mocha.describe('Worker application happy case scenario', async () => {
+tap.mocha.describe('Manage worker as worker scenario', async () => {
   initConfig();
   registerJoystreamTypes();
 
@@ -24,7 +25,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const applicationStake: BN = new BN(process.env.WORKING_GROUP_APPLICATION_STAKE!);
   const roleStake: BN = new BN(process.env.WORKING_GROUP_ROLE_STAKE!);
-  const durationInBlocks: number = 21;
+  const durationInBlocks: number = 100;
 
   const provider = new WsProvider(nodeUrl);
   const apiWrapper: ApiWrapper = await ApiWrapper.create(provider);
@@ -33,6 +34,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   membershipTest(apiWrapper, nKeyPairs, keyring, N, paidTerms, sudoUri);
   membershipTest(apiWrapper, leadKeyPair, keyring, N, paidTerms, sudoUri);
   workerApplicationHappyCase(apiWrapper, nKeyPairs, leadKeyPair, keyring, sudoUri, applicationStake, roleStake);
+  manageWorkerAsWorker(apiWrapper, nKeyPairs, keyring, sudoUri);
 
   closeApi(apiWrapper);
 });

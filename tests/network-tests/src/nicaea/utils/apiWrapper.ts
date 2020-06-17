@@ -5,7 +5,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { UserInfo, PaidMembershipTerms, MemberId } from '@nicaea/types/lib/members';
 import { Mint, MintId } from '@nicaea/types/lib/mint';
 import { Lead, LeadId } from '@nicaea/types/lib/content-working-group';
-import { WorkerOpening, Worker } from '@nicaea/types/lib/bureaucracy';
+import { WorkerOpening, Worker, WorkerId } from '@nicaea/types/lib/bureaucracy';
 import { RoleParameters } from '@nicaea/types/lib/roles';
 import { Seat } from '@nicaea/types';
 import { Balance, EventRecord, AccountId, BlockNumber, BalanceOf } from '@polkadot/types/interfaces';
@@ -13,6 +13,8 @@ import BN from 'bn.js';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { Sender } from './sender';
 import { Utils } from './utils';
+import { Stake, StakedState } from '@nicaea/types/lib/stake';
+import { RewardRelationship } from '@nicaea/types/lib/recurring-rewards';
 
 export class ApiWrapper {
   private readonly api: ApiPromise;
@@ -284,6 +286,22 @@ export class ApiWrapper {
         payout_interval: 0,
       })
     );
+  }
+
+  public estimateIncreaseWorkerStakeFee(): BN {
+    return this.estimateTxFee(this.api.tx.forumBureaucracy.increaseWorkerStake(0, 0));
+  }
+
+  public estimateUpdateRoleAccountFee(address: string): BN {
+    return this.estimateTxFee(this.api.tx.forumBureaucracy.updateWorkerRoleAccount(0, address));
+  }
+
+  public estimateUpdateRewardAccountFee(address: string): BN {
+    return this.estimateTxFee(this.api.tx.forumBureaucracy.updateWorkerRewardAccount(0, address));
+  }
+
+  public estimateLeaveWorkerRoleFee(text: string): BN {
+    return this.estimateTxFee(this.api.tx.forumBureaucracy.leaveWorkerRole(0, text));
   }
 
   private applyForCouncilElection(account: KeyringPair, amount: BN): Promise<void> {
@@ -862,6 +880,26 @@ export class ApiWrapper {
     );
   }
 
+  public async increaseWorkerStake(account: KeyringPair, workerId: BN, stake: BN): Promise<void> {
+    return this.sender.signAndSend(this.api.tx.forumBureaucracy.increaseWorkerStake(workerId, stake), account, false);
+  }
+
+  public async updateRoleAccount(account: KeyringPair, workerId: BN, newRoleAccount: string): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx.forumBureaucracy.updateWorkerRoleAccount(workerId, newRoleAccount),
+      account,
+      false
+    );
+  }
+
+  public async updateRewardAccount(account: KeyringPair, workerId: BN, newRewardAccount: string): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx.forumBureaucracy.updateWorkerRewardAccount(workerId, newRewardAccount),
+      account,
+      false
+    );
+  }
+
   public async getStorageRoleParameters(): Promise<RoleParameters> {
     return (await this.api.query.actors.parameters<Option<RoleParameters>>('StorageProvider')).unwrap();
   }
@@ -916,5 +954,36 @@ export class ApiWrapper {
 
   public async getWorker(id: BN): Promise<Worker> {
     return ((await this.api.query.forumBureaucracy.workerById<Codec[]>(id))[0] as unknown) as Worker;
+  }
+
+  public async getWorkerIdByRoleAccount(address: string): Promise<BN> {
+    const workersAndIds = await this.api.query.forumBureaucracy.workerById<Codec[]>();
+    const workers: Worker[] = (workersAndIds[1] as unknown) as Worker[];
+    const ids: WorkerId[] = (workersAndIds[0] as unknown) as WorkerId[];
+    let index: number;
+    workers.forEach((worker, i) => {
+      if (worker.role_account.toString() === address) index = i;
+    });
+    return ids[index!];
+  }
+
+  public async getStake(id: BN): Promise<Stake> {
+    return ((await this.api.query.stake.stakes<Codec[]>(id))[0] as unknown) as Stake;
+  }
+
+  public async getWorkerStakeAmount(workerId: BN): Promise<BN> {
+    let stakeId: BN = (await this.getWorker(workerId)).role_stake_profile.unwrap().stake_id;
+    return (((await this.getStake(stakeId)).staking_status.value as unknown) as StakedState).staked_amount;
+  }
+
+  public async getRewardRelationship(id: BN): Promise<RewardRelationship> {
+    return ((
+      await this.api.query.recurringRewards.rewardRelationships<Codec[]>(id)
+    )[0] as unknown) as RewardRelationship;
+  }
+
+  public async getWorkerRewardAccount(workerId: BN): Promise<string> {
+    let rewardRelationshipId: BN = (await this.getWorker(workerId)).reward_relationship.unwrap();
+    return (await this.getRewardRelationship(rewardRelationshipId)).getField('account').toString();
   }
 }
