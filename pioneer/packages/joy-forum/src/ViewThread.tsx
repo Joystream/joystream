@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import styled from 'styled-components';
@@ -6,7 +6,7 @@ import { Table, Button, Label } from 'semantic-ui-react';
 import BN from 'bn.js';
 
 import { Category, Thread, ThreadId, Post, PostId } from '@joystream/types/forum';
-import { Pagination, RepliesPerPage, CategoryCrumbs, TimeAgoDate, usePagination } from './utils';
+import { Pagination, RepliesPerPage, CategoryCrumbs, TimeAgoDate, usePagination, useQueryParam } from './utils';
 import { ViewReply } from './ViewReply';
 import { Moderate } from './Moderate';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
@@ -88,8 +88,14 @@ type ViewThreadProps = ApiProps & InnerViewThreadProps & {
 
 function InnerViewThread (props: ViewThreadProps) {
   const [showModerateForm, setShowModerateForm] = useState(false);
+  const [displayedPosts, setDisplayedPosts] = useState<Post[]>([]);
+  const postsRefs = useRef<Record<number, React.RefObject<HTMLDivElement>>>({});
   const { category, thread, preview = false } = props;
   const [currentPage, setCurrentPage] = usePagination();
+  const [rawSelectedPostIdx, setSelectedPostIdx] = useQueryParam('replyIdx');
+
+  const parsedSelectedPostIdx = rawSelectedPostIdx ? parseInt(rawSelectedPostIdx) : null;
+  const selectedPostIdx = (parsedSelectedPostIdx && !Number.isNaN(parsedSelectedPostIdx)) ? parsedSelectedPostIdx : null;
 
   if (!thread) {
     return <em>Loading thread details...</em>;
@@ -105,6 +111,11 @@ function InnerViewThread (props: ViewThreadProps) {
 
   const { id } = thread;
   const totalPostsInThread = thread.num_posts_ever_created.toNumber();
+
+  const changePageAndClearSelectedPost = (page?: number | string) => {
+    setSelectedPostIdx(null);
+    setCurrentPage(page, true);
+  };
 
   if (!category) {
     return <em>{'Thread\'s category was not found.'}</em>;
@@ -163,12 +174,57 @@ function InnerViewThread (props: ViewThreadProps) {
         ['asc']
       );
 
+      // initialize refs for posts
+      postsRefs.current = sortedPosts.reduce((acc, reply) => {
+        const refKey = reply.nr_in_thread.toNumber();
+        acc[refKey] = React.createRef();
+        return acc;
+      }, postsRefs.current);
+
       setPosts(sortedPosts);
       setLoaded(true);
     };
 
     loadPosts();
   }, [bnToStr(thread.id), bnToStr(nextPostId)]);
+
+  // handle selected post
+  useEffect(() => {
+    if (!selectedPostIdx) return;
+
+    const selectedPostPage = Math.ceil(selectedPostIdx / RepliesPerPage);
+    if (currentPage !== selectedPostPage) {
+      setCurrentPage(selectedPostPage);
+    }
+
+    if (!loaded) return;
+    if (selectedPostIdx > posts.length) {
+      // eslint-disable-next-line no-console
+      console.warn(`Tried to open nonexistent reply with idx: ${selectedPostIdx}`);
+      return;
+    }
+
+    const postRef = postsRefs.current[selectedPostIdx];
+
+    // postpone scrolling for one render to make sure the ref is set
+    setTimeout(() => {
+      if (postRef.current) {
+        postRef.current.scrollIntoView();
+      } else {
+        // eslint-disable-next-line no-console
+        console.warn('Ref for selected post empty');
+      }
+    });
+  }, [loaded, selectedPostIdx, currentPage]);
+
+  // handle displayed posts based on pagination
+  useEffect(() => {
+    if (!loaded) return;
+    const minIdx = (currentPage - 1) * RepliesPerPage;
+    const maxIdx = minIdx + RepliesPerPage - 1;
+    const postsToDisplay = posts.filter((_id, i) => i >= minIdx && i <= maxIdx);
+    setDisplayedPosts(postsToDisplay);
+  }, [loaded, posts, currentPage]);
 
   // console.log({ nextPostId: bnToStr(nextPostId), loaded, posts });
 
@@ -177,25 +233,31 @@ function InnerViewThread (props: ViewThreadProps) {
       return <em>Loading posts...</em>;
     }
 
-    const itemsPerPage = RepliesPerPage;
-    const minIdx = (currentPage - 1) * RepliesPerPage;
-    const maxIdx = minIdx + RepliesPerPage - 1;
-
     const pagination =
       <Pagination
         currentPage={currentPage}
         totalItems={totalPostsInThread}
-        itemsPerPage={itemsPerPage}
-        onPageChange={setCurrentPage}
+        itemsPerPage={RepliesPerPage}
+        onPageChange={changePageAndClearSelectedPost}
       />;
 
-    const pageOfItems = posts
-      .filter((_id, i) => i >= minIdx && i <= maxIdx)
-      .map((reply, i) => <ViewReply key={i} category={category} thread={thread} reply={reply} />);
+    const renderedReplies = displayedPosts.map((reply) => {
+      const replyIdx = reply.nr_in_thread.toNumber();
+      return (
+        <ViewReply
+          ref={postsRefs.current[replyIdx]}
+          key={replyIdx}
+          category={category}
+          thread={thread}
+          reply={reply}
+          selected={selectedPostIdx === replyIdx}
+        />
+      );
+    });
 
     return <>
       {pagination}
-      {pageOfItems}
+      {renderedReplies}
       {pagination}
     </>;
   };

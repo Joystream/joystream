@@ -148,7 +148,7 @@ export type UrlHasIdProps = {
 };
 
 type QueryValueType = string | null;
-type QuerySetValueType = (value?: QueryValueType | number) => void;
+type QuerySetValueType = (value?: QueryValueType | number, clear?: boolean) => void;
 type QueryReturnType = [QueryValueType, QuerySetValueType];
 
 export const useQueryParam = (queryParam: string): QueryReturnType => {
@@ -164,7 +164,7 @@ export const useQueryParam = (queryParam: string): QueryReturnType => {
     }
   }, [search, setValue, queryParam]);
 
-  const setParam: QuerySetValueType = (rawValue) => {
+  const setParam: QuerySetValueType = (rawValue, clear = false) => {
     let parsedValue: string | null;
     if (!rawValue && rawValue !== 0) {
       parsedValue = null;
@@ -172,7 +172,7 @@ export const useQueryParam = (queryParam: string): QueryReturnType => {
       parsedValue = rawValue.toString();
     }
 
-    const params = new URLSearchParams(search);
+    const params = new URLSearchParams(!clear ? search : '');
     if (parsedValue) {
       params.set(queryParam, parsedValue);
     } else {

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { Segment, Button, Icon } from 'semantic-ui-react';
+import { Button, Icon } from 'semantic-ui-react';
 
 import { Post, Category, Thread } from '@joystream/types/forum';
 import { Moderate } from './Moderate';
@@ -16,9 +16,11 @@ const HORIZONTAL_PADDING = '1em';
 const ReplyMarkdown = styled(ReactMarkdown)`
   font-size: 1.15rem;
 `;
-const ReplyContainer = styled(Segment)`
+const ReplyContainer = styled.div<{ selected?: boolean }>`
   && {
     padding: 0;
+
+    outline: ${({ selected }) => selected ? '2px solid #ffc87b' : 'none'};
   }
   overflow: hidden;
 `;
@@ -52,12 +54,15 @@ type ViewReplyProps = {
   reply: Post;
   thread: Thread;
   category: Category;
+  selected?: boolean;
 };
 
-export function ViewReply (props: ViewReplyProps) {
+// eslint-disable-next-line react/display-name
+export const ViewReply = React.forwardRef((props: ViewReplyProps, ref: React.Ref<HTMLDivElement>) => {
   const { state: { address: myAddress } } = useMyAccount();
   const [showModerateForm, setShowModerateForm] = useState(false);
-  const { reply, thread, category } = props;
+  const { pathname, search } = useLocation();
+  const { reply, thread, category, selected = false } = props;
   const { id } = reply;
 
   if (reply.isEmpty) {
@@ -108,17 +113,20 @@ export function ViewReply (props: ViewReplyProps) {
     </ReplyFooterActionsRow>;
   };
 
+  const replyLinkSearch = new URLSearchParams(search);
+  replyLinkSearch.set('replyIdx', reply.nr_in_thread.toString());
+
   return (
-    <ReplyContainer>
+    <ReplyContainer className="ui segment" ref={ref} selected={selected}>
       <ReplyHeader>
         <ReplyHeaderAuthorRow>
           <MemberPreview accountId={reply.author_id} />
         </ReplyHeaderAuthorRow>
         <ReplyHeaderDetailsRow>
           <TimeAgoDate date={reply.created_at.momentDate} id={reply.id} />
-          <a>
+          <Link to={{ pathname, search: replyLinkSearch.toString() }}>
             #{reply.nr_in_thread.toNumber()}
-          </a>
+          </Link>
         </ReplyHeaderDetailsRow>
       </ReplyHeader>
 
@@ -137,4 +145,4 @@ export function ViewReply (props: ViewReplyProps) {
       </ReplyFooter>
     </ReplyContainer>
   );
-}
+});
