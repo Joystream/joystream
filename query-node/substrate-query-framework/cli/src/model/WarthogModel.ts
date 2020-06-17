@@ -186,4 +186,12 @@ export class Field {
     columnType(): string {
       return this.isBuildinType ? availableTypes[this.type] : this.type;
     }
+
+    isArray(): boolean {
+        return this.isBuildinType && this.isList;
+    }
+
+    isScalar(): boolean {
+        return this.isBuildinType && !this.isList;
+    }
 }
