@@ -6,7 +6,7 @@ import {
   {{#has.int}}IntField,{{/has.int}}
   {{#has.numeric}}NumericField,{{/has.numeric}}
   {{#has.json}}JSONField,{{/has.json}}
-  {{#has.bytes}}JSONField,{{/has.bytes}}
+  {{#has.bytes}}BytesField,{{/has.bytes}}
   Model,
   {{#has.mto}}ManyToOne,{{/has.mto}}
   {{#has.otm}}OneToMany,{{/has.otm}}
