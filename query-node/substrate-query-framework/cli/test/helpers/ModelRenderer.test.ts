@@ -1,6 +1,6 @@
 import { ModelRenderer } from "../../src/generate/ModelRenderer";
 import { WarthogModel, Field, ObjectType } from '../../src/model';
-import { createModel } from './model';
+import { createModel, fromStringSchema } from './model';
 import * as fs from 'fs-extra';
 import { expect } from 'chai';
 import Debug from "debug";
@@ -76,4 +76,46 @@ describe('ModelRenderer', () => {
 
 
   })
+
+  it('should render otm types', function() {
+    const model = fromStringSchema(`
+    type Author @entity {
+      posts: [Post!]
+    }
+    
+    type Post @entity {
+      title: String
+      author: Author!
+    }`)
+    const rendered = generator.generate(modelTemplate, model.lookupType("Author"));
+    debug(`rendered: ${JSON.stringify(rendered, null, 2)}`);
+
+    expect(rendered).to.include(`import { Post } from '../post/post.model`, `Should render imports`);
+    expect(rendered).to.include(`@OneToMany(() => Post, (post: Post) => post.author)`, 'Should render OTM decorator');
+    expect(rendered).to.include(`posts?: Post[];`, 'Should render plural references');
+  
+  })
+
+  it('should render mto types', function() {
+    const model = fromStringSchema(`
+    type Author @entity {
+      posts: [Post!]
+    }
+    
+    type Post @entity {
+      title: String
+      author: Author!
+    }`)
+    const rendered = generator.generate(modelTemplate, model.lookupType("Post"));
+    debug(`rendered: ${JSON.stringify(rendered, null, 2)}`);
+
+    expect(rendered).to.include(`import { Author } from '../author/author.model`, `Should render imports`);
+    expect(rendered).to.include(`@ManyToOne(() => Author, (author: Author) => author.posts, { 
+      skipGraphQLField: true 
+    })`, 'Should render MTO decorator'); // nullable: true is not includered?
+    expect(rendered).to.include(`author!: Author;`, 'Should render required referenced field');
+  
+  })
+
+
 })
