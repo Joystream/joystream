@@ -23,7 +23,7 @@
 //!
 //! - [update_role_account](./struct.Module.html#method.update_role_account) -  Update the role account of the worker/lead.
 //! - [update_reward_account](./struct.Module.html#method.update_reward_account) -  Update the reward account of the worker/lead.
-//! - [update_reward_account](./struct.Module.html#method.update_reward_account) -  Update the reward amount of the worker/lead.
+//! - [update_reward_amount](./struct.Module.html#method.update_reward_amount) -  Update the reward amount of the worker/lead.
 //! - [leave_role](./struct.Module.html#method.leave_role) - Leave the role by the active worker/lead.
 //! - [terminate_role](./struct.Module.html#method.terminate_role) - Terminate the worker role by the lead.
 //! - [set_mint_capacity](./struct.Module.html#method.set_mint_capacity) -  Sets the capacity to enable working group budget.
