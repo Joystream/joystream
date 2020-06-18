@@ -74,7 +74,7 @@ export function MemberView (props: MemberProps) {
 }
 
 type WorkerDetailsProps = MemoProps & BalanceProps & {
-  worker: Worker
+  worker: Worker;
 }
 
 export function WorkerDetailsView (props: WorkerDetailsProps) {
