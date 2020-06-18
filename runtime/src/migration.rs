@@ -116,7 +116,7 @@ impl<T: Trait> Module<T> {
             potential_id += <T as storage::data_object_storage_registry::Trait>::DataObjectStorageRelationshipId::one();
         }
 
-        storage::data_object_storage_registry::NextRelationshipId::<T>::put(<T as storage::data_object_storage_registry::Trait>::DataObjectStorageRelationshipId::one());
+        storage::data_object_storage_registry::NextRelationshipId::<T>::kill();
 
         // Clear storage data directory data.
         for id in <storage::data_directory::Module<T>>::known_content_ids() {

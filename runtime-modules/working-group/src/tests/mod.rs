@@ -6,8 +6,7 @@ use crate::{Error, Lead, RawEvent};
 use common::constraints::InputValidationLengthConstraint;
 use mock::{
     build_test_externalities, Test, TestEvent, TestWorkingGroup, TestWorkingGroupInstance,
-    STORAGE_WORKING_GROUP_CONSTRAINT_DIFF, STORAGE_WORKING_GROUP_CONSTRAINT_MIN,
-    STORAGE_WORKING_GROUP_MINT_CAPACITY,
+    WORKING_GROUP_CONSTRAINT_DIFF, WORKING_GROUP_CONSTRAINT_MIN, WORKING_GROUP_MINT_CAPACITY,
 };
 use srml_support::{StorageLinkedMap, StorageValue};
 use std::collections::BTreeMap;
@@ -1624,14 +1623,14 @@ fn set_working_group_mint_capacity_fails_with_invalid_origin() {
 }
 
 #[test]
-fn ensure_setting_genesis_storage_working_group_mint_succeeds() {
+fn ensure_setting_genesis_working_group_mint_succeeds() {
     build_test_externalities().execute_with(|| {
         let mint_id = TestWorkingGroup::mint();
 
         assert!(minting::Mints::<Test>::exists(mint_id));
 
         let mint = <minting::Module<Test>>::mints(mint_id);
-        assert_eq!(mint.capacity(), STORAGE_WORKING_GROUP_MINT_CAPACITY);
+        assert_eq!(mint.capacity(), WORKING_GROUP_MINT_CAPACITY);
     });
 }
 
@@ -1639,8 +1638,8 @@ fn ensure_setting_genesis_storage_working_group_mint_succeeds() {
 fn ensure_setting_genesis_constraints_succeeds() {
     build_test_externalities().execute_with(|| {
         let default_constraint = common::constraints::InputValidationLengthConstraint::new(
-            STORAGE_WORKING_GROUP_CONSTRAINT_MIN,
-            STORAGE_WORKING_GROUP_CONSTRAINT_DIFF,
+            WORKING_GROUP_CONSTRAINT_MIN,
+            WORKING_GROUP_CONSTRAINT_DIFF,
         );
         let opening_text_constraint = TestWorkingGroup::opening_human_readable_text();
         let worker_text_constraint = TestWorkingGroup::worker_application_human_readable_text();

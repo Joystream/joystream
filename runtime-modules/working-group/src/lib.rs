@@ -1266,16 +1266,15 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         opening_human_readable_text_constraint: InputValidationLengthConstraint,
         worker_application_human_readable_text_constraint: InputValidationLengthConstraint,
         worker_exit_rationale_text_constraint: InputValidationLengthConstraint,
-        storage_working_group_mint_capacity: minting::BalanceOf<T>,
+        working_group_mint_capacity: minting::BalanceOf<T>,
     ) {
         // Create a mint.
-        let mint_id_result =
-            <minting::Module<T>>::add_mint(storage_working_group_mint_capacity, None);
+        let mint_id_result = <minting::Module<T>>::add_mint(working_group_mint_capacity, None);
 
         if let Ok(mint_id) = mint_id_result {
             <Mint<T, I>>::put(mint_id);
         } else {
-            panic!("Failed to create a mint for the storage working group");
+            panic!("Failed to create a mint for the working group");
         }
 
         // Create constraints

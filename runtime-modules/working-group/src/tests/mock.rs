@@ -133,9 +133,9 @@ pub type Membership = membership::members::Module<Test>;
 pub type TestWorkingGroupInstance = crate::Instance1;
 pub type TestWorkingGroup = Module<Test, TestWorkingGroupInstance>;
 
-pub(crate) const STORAGE_WORKING_GROUP_MINT_CAPACITY: u64 = 40000;
-pub(crate) const STORAGE_WORKING_GROUP_CONSTRAINT_MIN: u16 = 1;
-pub(crate) const STORAGE_WORKING_GROUP_CONSTRAINT_DIFF: u16 = 40;
+pub(crate) const WORKING_GROUP_MINT_CAPACITY: u64 = 40000;
+pub(crate) const WORKING_GROUP_CONSTRAINT_MIN: u16 = 1;
+pub(crate) const WORKING_GROUP_CONSTRAINT_DIFF: u16 = 40;
 
 pub fn build_test_externalities() -> runtime_io::TestExternalities {
     let mut t = system::GenesisConfig::default()
@@ -144,18 +144,18 @@ pub fn build_test_externalities() -> runtime_io::TestExternalities {
 
     crate::GenesisConfig::<Test, TestWorkingGroupInstance> {
         phantom: Default::default(),
-        storage_working_group_mint_capacity: STORAGE_WORKING_GROUP_MINT_CAPACITY,
+        storage_working_group_mint_capacity: WORKING_GROUP_MINT_CAPACITY,
         opening_human_readable_text_constraint: InputValidationLengthConstraint::new(
-            STORAGE_WORKING_GROUP_CONSTRAINT_MIN,
-            STORAGE_WORKING_GROUP_CONSTRAINT_DIFF,
+            WORKING_GROUP_CONSTRAINT_MIN,
+            WORKING_GROUP_CONSTRAINT_DIFF,
         ),
         worker_application_human_readable_text_constraint: InputValidationLengthConstraint::new(
-            STORAGE_WORKING_GROUP_CONSTRAINT_MIN,
-            STORAGE_WORKING_GROUP_CONSTRAINT_DIFF,
+            WORKING_GROUP_CONSTRAINT_MIN,
+            WORKING_GROUP_CONSTRAINT_DIFF,
         ),
         worker_exit_rationale_text_constraint: InputValidationLengthConstraint::new(
-            STORAGE_WORKING_GROUP_CONSTRAINT_MIN,
-            STORAGE_WORKING_GROUP_CONSTRAINT_DIFF,
+            WORKING_GROUP_CONSTRAINT_MIN,
+            WORKING_GROUP_CONSTRAINT_DIFF,
         ),
     }
     .assimilate_storage(&mut t)
