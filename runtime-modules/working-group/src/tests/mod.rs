@@ -2,7 +2,7 @@ mod fixtures;
 mod mock;
 
 use crate::tests::mock::Test;
-use crate::types::{OpeningPolicyCommitment, RewardPolicy};
+use crate::types::{OpeningPolicyCommitment, OpeningType, RewardPolicy};
 use crate::{Error, Instance1, Lead, RawEvent};
 use common::constraints::InputValidationLengthConstraint;
 use mock::{build_test_externalities, TestEvent, WorkingGroup1};
@@ -54,6 +54,33 @@ fn add_worker_opening_succeeds() {
             RawEvent::LeaderSet(1, lead_account_id),
             RawEvent::OpeningAdded(0),
         ]);
+    });
+}
+
+#[test]
+fn add_leader_opening_succeeds_fails_with_incorrect_origin() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        SetLeadFixture::set_lead(lead_account_id);
+
+        let add_worker_opening_fixture =
+            AddWorkerOpeningFixture::default().with_opening_type(OpeningType::Leader);
+
+        add_worker_opening_fixture.call_and_assert(Err(Error::RequireRootOrigin));
+    });
+}
+
+#[test]
+fn add_leader_opening_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let lead_account_id = 1;
+        SetLeadFixture::set_lead(lead_account_id);
+
+        let add_worker_opening_fixture = AddWorkerOpeningFixture::default()
+            .with_opening_type(OpeningType::Leader)
+            .with_origin(RawOrigin::Root);
+
+        add_worker_opening_fixture.call_and_assert(Ok(()));
     });
 }
 

@@ -1,6 +1,7 @@
 use super::mock::{Balances, Membership, System, Test, TestEvent, WorkingGroup1};
 use crate::types::{
-    Application, Opening, OpeningPolicyCommitment, RewardPolicy, RoleStakeProfile, Worker,
+    Application, Opening, OpeningPolicyCommitment, OpeningType, RewardPolicy, RoleStakeProfile,
+    Worker,
 };
 use crate::Error;
 use crate::{Instance1, RawEvent};
@@ -573,6 +574,7 @@ pub struct AddWorkerOpeningFixture {
     activate_at: hiring::ActivateOpeningAt<u64>,
     commitment: OpeningPolicyCommitment<u64, u64>,
     human_readable_text: Vec<u8>,
+    opening_type: OpeningType,
 }
 
 impl Default for AddWorkerOpeningFixture {
@@ -582,6 +584,7 @@ impl Default for AddWorkerOpeningFixture {
             activate_at: hiring::ActivateOpeningAt::CurrentBlock,
             commitment: <OpeningPolicyCommitment<u64, u64>>::default(),
             human_readable_text: Vec::new(),
+            opening_type: OpeningType::Worker,
         }
     }
 }
@@ -604,6 +607,7 @@ impl AddWorkerOpeningFixture {
             self.activate_at.clone(),
             self.commitment.clone(),
             self.human_readable_text.clone(),
+            self.opening_type,
         );
         assert_eq!(actual_result.clone(), expected_result);
 
@@ -617,6 +621,7 @@ impl AddWorkerOpeningFixture {
                 opening_id,
                 applications: BTreeSet::new(),
                 policy_commitment: self.commitment.clone(),
+                opening_type: self.opening_type,
             };
 
             assert_eq!(actual_opening, expected_opening);
@@ -630,6 +635,17 @@ impl AddWorkerOpeningFixture {
             human_readable_text: text,
             ..self
         }
+    }
+
+    pub fn with_opening_type(self, opening_type: OpeningType) -> Self {
+        AddWorkerOpeningFixture {
+            opening_type,
+            ..self
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        AddWorkerOpeningFixture { origin, ..self }
     }
 
     pub fn with_activate_at(self, activate_at: hiring::ActivateOpeningAt<u64>) -> Self {

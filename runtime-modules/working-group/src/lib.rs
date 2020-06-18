@@ -62,7 +62,8 @@ use errors::WrappedError;
 
 pub use errors::Error;
 pub use types::{
-    Application, Lead, Opening, OpeningPolicyCommitment, RewardPolicy, RoleStakeProfile, Worker,
+    Application, Lead, Opening, OpeningPolicyCommitment, OpeningType, RewardPolicy,
+    RoleStakeProfile, Worker,
 };
 
 /// Alias for the _Lead_ type
@@ -254,7 +255,7 @@ decl_event!(
         /// Emits on increasing the worker/lead stake.
         /// Params:
         /// - worker/lead id.
-       StakeIncreased(WorkerId),
+        StakeIncreased(WorkerId),
 
         /// Emits on decreasing the worker/lead stake.
         /// Params:
@@ -504,10 +505,20 @@ decl_module! {
             activate_at: hiring::ActivateOpeningAt<T::BlockNumber>,
             commitment: OpeningPolicyCommitment<T::BlockNumber,
             BalanceOf<T>>,
-            human_readable_text: Vec<u8>
+            human_readable_text: Vec<u8>,
+            opening_type: OpeningType,
         ){
-            // Ensure lead is set and is origin signer
-            Self::ensure_origin_is_active_leader(origin)?;
+            match opening_type {
+                OpeningType::Worker => {
+                    // Ensure lead is set and is origin signer.
+                    Self::ensure_origin_is_active_leader(origin)?;
+                }
+                OpeningType::Leader => {
+                    // Council proposal.
+                    ensure_root(origin)?;
+                }
+            }
+
 
             Self::ensure_opening_human_readable_text_is_valid(&human_readable_text)?;
 
@@ -537,7 +548,8 @@ decl_module! {
             let new_opening_by_id = Opening::<OpeningId<T>, T::BlockNumber, BalanceOf<T>, ApplicationId<T>> {
                 opening_id,
                 applications: BTreeSet::new(),
-                policy_commitment
+                policy_commitment,
+                opening_type,
             };
 
             OpeningById::<T, I>::insert(new_opening_id, new_opening_by_id);

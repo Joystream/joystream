@@ -91,6 +91,28 @@ pub struct Opening<OpeningId, BlockNumber, Balance, WorkerApplicationId: core::c
 
     /// Commitment to policies in opening.
     pub policy_commitment: OpeningPolicyCommitment<BlockNumber, Balance>,
+
+    /// Defines opening type: Leader or worker.
+    pub opening_type: OpeningType,
+}
+
+/// Defines type of the opening: regular working group fellow or group leader.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Debug, Clone, PartialEq, Eq, Copy)]
+pub enum OpeningType {
+    /// Group leader.
+    Leader,
+
+    /// Regular worker.
+    Worker,
+}
+
+/// Must be default constructible because it indirectly is a value in a storage map.
+/// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED TO DUE BAD STORAGE MODEL IN SUBSTRATE***
+impl Default for OpeningType {
+    fn default() -> Self {
+        Self::Worker
+    }
 }
 
 /// Working group lead: worker lead.
