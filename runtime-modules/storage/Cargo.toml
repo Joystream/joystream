@@ -17,7 +17,7 @@ std = [
 	'primitives/std',
 	'common/std',
 	'membership/std',
-	'bureaucracy/std',
+	'working-group/std',
 ]
 
 
@@ -78,10 +78,10 @@ default_features = false
 package = 'substrate-common-module'
 path = '../common'
 
-[dependencies.bureaucracy]
+[dependencies.working-group]
 default_features = false
-package = 'substrate-bureaucracy-module'
-path = '../bureaucracy'
+package = 'substrate-working-group-module'
+path = '../working-group'
 
 [dev-dependencies.runtime-io]
 default_features = false

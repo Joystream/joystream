@@ -22,7 +22,7 @@ fn add_relationship_fails_with_invalid_authorization() {
             storage_provider_id,
             TEST_MOCK_EXISTING_CID,
         );
-        assert_eq!(res, Err(bureaucracy::Error::WorkerDoesNotExist.into()));
+        assert_eq!(res, Err(working_group::Error::WorkerDoesNotExist.into()));
     });
 }
 
@@ -44,7 +44,7 @@ fn set_relationship_ready_fails_with_invalid_authorization() {
             invalid_storage_provider_id,
             TEST_MOCK_EXISTING_CID,
         );
-        assert_eq!(res, Err(bureaucracy::Error::WorkerDoesNotExist.into()));
+        assert_eq!(res, Err(working_group::Error::WorkerDoesNotExist.into()));
     });
 }
 
@@ -66,7 +66,7 @@ fn unset_relationship_ready_fails_with_invalid_authorization() {
             invalid_storage_provider_id,
             TEST_MOCK_EXISTING_CID,
         );
-        assert_eq!(res, Err(bureaucracy::Error::WorkerDoesNotExist.into()));
+        assert_eq!(res, Err(working_group::Error::WorkerDoesNotExist.into()));
     });
 }
 

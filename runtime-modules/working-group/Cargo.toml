@@ -1,5 +1,5 @@
 [package]
-name = 'substrate-bureaucracy-module'
+name = 'substrate-working-group-module'
 version = '1.0.0'
 authors = ['Joystream contributors']
 edition = '2018'

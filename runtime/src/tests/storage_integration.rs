@@ -2,8 +2,8 @@ use super::initial_test_ext;
 use crate::integration::storage::StorageProviderHelper;
 use crate::Runtime;
 
-use bureaucracy::{Instance2, Worker};
 use srml_support::{StorageLinkedMap, StorageMap};
+use working_group::{Instance2, Worker};
 
 #[test]
 fn storage_provider_helper_succeeds() {
@@ -18,9 +18,9 @@ fn storage_provider_helper_succeeds() {
 		let worker_id2 = 7;
 		let worker_id3 = 19;
 
-		<bureaucracy::WorkerById<Runtime, Instance2>>::insert(worker_id1, Worker::default());
-		<bureaucracy::WorkerById<Runtime, Instance2>>::insert(worker_id2, Worker::default());
-		<bureaucracy::WorkerById<Runtime, Instance2>>::insert(worker_id3, Worker::default());
+		<working_group::WorkerById<Runtime, Instance2>>::insert(worker_id1, Worker::default());
+		<working_group::WorkerById<Runtime, Instance2>>::insert(worker_id2, Worker::default());
+		<working_group::WorkerById<Runtime, Instance2>>::insert(worker_id3, Worker::default());
 
 		// Still error - not registered in the service discovery.
 		let random_provider_result = <StorageProviderHelper as storage::data_directory::StorageProviderHelper<Runtime>>::get_random_storage_provider();

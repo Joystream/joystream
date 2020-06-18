@@ -5,7 +5,7 @@
 //!
 //! ## Comments
 //!
-//! Service discovery module uses bureaucracy module to authorize actions. It is generally used by
+//! Service discovery module uses working group module to authorize actions. It is generally used by
 //! the Colossus service.
 //!
 //! ## Supported extrinsics
@@ -48,11 +48,14 @@ pub type IPNSIdentity = Vec<u8>;
 /// HTTP Url string to a discovery service endpoint
 pub type Url = Vec<u8>;
 
-// Alias for storage working group bureaucracy
-pub(crate) type StorageBureaucracy<T> = bureaucracy::Module<T, bureaucracy::Instance2>;
+// The storage working group instance alias.
+pub(crate) type StorageWorkingGroupInstance = working_group::Instance2;
 
-/// Storage provider is a worker from the bureaucracy module.
-pub type StorageProviderId<T> = bureaucracy::WorkerId<T>;
+// Alias for storage working group.
+pub(crate) type StorageWorkingGroup<T> = working_group::Module<T, StorageWorkingGroupInstance>;
+
+/// Storage provider is a worker from the  working_group module.
+pub type StorageProviderId<T> = working_group::WorkerId<T>;
 
 pub(crate) const MINIMUM_LIFETIME: u32 = 600; // 1hr assuming 6s block times
 pub(crate) const DEFAULT_LIFETIME: u32 = MINIMUM_LIFETIME * 24; // 24hr
@@ -68,7 +71,7 @@ pub struct AccountInfo<BlockNumber> {
 }
 
 /// The _Service discovery_ main _Trait_.
-pub trait Trait: system::Trait + bureaucracy::Trait<bureaucracy::Instance2> {
+pub trait Trait: system::Trait + working_group::Trait<StorageWorkingGroupInstance> {
     /// _Service discovery_ event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
@@ -119,7 +122,7 @@ decl_module! {
             storage_provider_id: StorageProviderId<T>,
             id: Vec<u8>,
         ) {
-            <StorageBureaucracy<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
+            <StorageWorkingGroup<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
 
             // TODO: ensure id is a valid base58 encoded IPNS identity
 
@@ -138,7 +141,7 @@ decl_module! {
         /// Deletes the AccountInfo with the IPNS identity for the storage provider.
         /// Requires signed storage provider credentials.
         pub fn unset_ipns_id(origin, storage_provider_id: StorageProviderId<T>) {
-            <StorageBureaucracy<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
+            <StorageWorkingGroup<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
 
             // == MUTATION SAFE ==
 

@@ -1,3 +1,5 @@
+use crate::{Module, Trait};
+use common::constraints::InputValidationLengthConstraint;
 use primitives::H256;
 use sr_primitives::{
     testing::Header,
@@ -6,15 +8,13 @@ use sr_primitives::{
 };
 use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
 
-use crate::{Instance1, Module, Trait};
-
 impl_outer_origin! {
         pub enum Origin for Test {}
 }
 
-mod bureaucracy {
+mod working_group {
+    pub use super::TestWorkingGroupInstance;
     pub use crate::Event;
-    pub use crate::Instance1;
 }
 
 mod membership_mod {
@@ -24,7 +24,7 @@ mod membership_mod {
 impl_outer_event! {
     pub enum TestEvent for Test {
         balances<T>,
-        bureaucracy Instance1 <T>,
+        working_group TestWorkingGroupInstance <T>,
         membership_mod<T>,
     }
 }
@@ -124,17 +124,42 @@ impl recurringrewards::Trait for Test {
 pub type Balances = balances::Module<Test>;
 pub type System = system::Module<Test>;
 
-impl Trait<Instance1> for Test {
+impl Trait<TestWorkingGroupInstance> for Test {
     type Event = TestEvent;
 }
 
 pub type Membership = membership::members::Module<Test>;
-pub type Bureaucracy1 = Module<Test, Instance1>;
+
+pub type TestWorkingGroupInstance = crate::Instance1;
+pub type TestWorkingGroup = Module<Test, TestWorkingGroupInstance>;
+
+pub(crate) const WORKING_GROUP_MINT_CAPACITY: u64 = 40000;
+pub(crate) const WORKING_GROUP_CONSTRAINT_MIN: u16 = 1;
+pub(crate) const WORKING_GROUP_CONSTRAINT_DIFF: u16 = 40;
 
 pub fn build_test_externalities() -> runtime_io::TestExternalities {
-    let t = system::GenesisConfig::default()
+    let mut t = system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
+
+    crate::GenesisConfig::<Test, TestWorkingGroupInstance> {
+        phantom: Default::default(),
+        storage_working_group_mint_capacity: WORKING_GROUP_MINT_CAPACITY,
+        opening_human_readable_text_constraint: InputValidationLengthConstraint::new(
+            WORKING_GROUP_CONSTRAINT_MIN,
+            WORKING_GROUP_CONSTRAINT_DIFF,
+        ),
+        worker_application_human_readable_text_constraint: InputValidationLengthConstraint::new(
+            WORKING_GROUP_CONSTRAINT_MIN,
+            WORKING_GROUP_CONSTRAINT_DIFF,
+        ),
+        worker_exit_rationale_text_constraint: InputValidationLengthConstraint::new(
+            WORKING_GROUP_CONSTRAINT_MIN,
+            WORKING_GROUP_CONSTRAINT_DIFF,
+        ),
+    }
+    .assimilate_storage(&mut t)
+    .unwrap();
 
     t.into()
 }

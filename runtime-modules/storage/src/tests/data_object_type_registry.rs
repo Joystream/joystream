@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use super::mock::*;
-use crate::StorageBureaucracy;
+use crate::StorageWorkingGroup;
 use system::{self, EventRecord, Phase, RawOrigin};
 
 const DEFAULT_LEADER_ACCOUNT_ID: u64 = 1;
@@ -10,7 +10,7 @@ const DEFAULT_LEADER_MEMBER_ID: u64 = 1;
 struct SetLeadFixture;
 impl SetLeadFixture {
     fn set_default_lead() {
-        let set_lead_result = <StorageBureaucracy<Test>>::set_lead(
+        let set_lead_result = <StorageWorkingGroup<Test>>::set_lead(
             RawOrigin::Root.into(),
             DEFAULT_LEADER_MEMBER_ID,
             DEFAULT_LEADER_ACCOUNT_ID,
@@ -81,7 +81,7 @@ fn activate_data_object_type_fails_with_invalid_lead() {
             RawOrigin::Signed(invalid_leader_account_id).into(),
             dot_id,
         );
-        assert_eq!(res, Err(bureaucracy::Error::IsNotLeadAccount.into()));
+        assert_eq!(res, Err(working_group::Error::IsNotLeadAccount.into()));
     });
 }
 
@@ -108,7 +108,7 @@ fn deactivate_data_object_type_fails_with_invalid_lead() {
             RawOrigin::Signed(invalid_leader_account_id).into(),
             dot_id,
         );
-        assert_eq!(res, Err(bureaucracy::Error::IsNotLeadAccount.into()));
+        assert_eq!(res, Err(working_group::Error::IsNotLeadAccount.into()));
     });
 }
 
@@ -140,7 +140,7 @@ fn update_data_object_type_fails_with_invalid_lead() {
             dot_id,
             updated1,
         );
-        assert_eq!(res, Err(bureaucracy::Error::IsNotLeadAccount.into()));
+        assert_eq!(res, Err(working_group::Error::IsNotLeadAccount.into()));
     });
 }
 

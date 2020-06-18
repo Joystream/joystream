@@ -15,17 +15,18 @@
 // along with Joystream node.  If not, see <http://www.gnu.org/licenses/>.
 
 // Clippy linter warning.
-#![allow(clippy::identity_op)] // disable it because we use such syntax for a code readability
-                               // Example:  voting_period: 1 * DAY
+// Disable it because we use such syntax for a code readability.
+// Example:  voting_period: 1 * DAY
+#![allow(clippy::identity_op)]
 
 use node_runtime::{
-    versioned_store::InputValidationLengthConstraint as VsInputValidation, ActorsConfig,
+    versioned_store::InputValidationLengthConstraint as VsInputValidation,
     AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
     CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
     DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, IndicesConfig,
     MembersConfig, MigrationConfig, Perbill, ProposalsCodexConfig, SessionConfig, SessionKeys,
-    Signature, StakerStatus, StakingConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS,
-    WASM_BINARY,
+    Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig,
+    VersionedStoreConfig, DAYS, WASM_BINARY,
 };
 pub use node_runtime::{AccountId, GenesisConfig};
 use primitives::{sr25519, Pair, Public};
@@ -40,6 +41,8 @@ type AccountPublic = <Signature as Verify>::Signer;
 
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
 pub type ChainSpec = substrate_service::ChainSpec<GenesisConfig>;
+
+use node_runtime::common::constraints::InputValidationLengthConstraint;
 
 /// The chain specification option. This is expected to come in from the CLI and
 /// is little more than one of a number of alternatives which can easily be converted
@@ -186,6 +189,7 @@ pub fn testnet_genesis(
 
     // default codex proposals config parameters
     let cpcp = node_runtime::ProposalsConfigParameters::default();
+    let default_text_constraint = node_runtime::working_group::default_text_constraint();
 
     GenesisConfig {
         system: Some(SystemConfig {
@@ -264,9 +268,12 @@ pub fn testnet_genesis(
         data_object_storage_registry: Some(DataObjectStorageRegistryConfig {
             first_relationship_id: 1,
         }),
-        actors: Some(ActorsConfig {
-            enable_storage_role: true,
-            request_life_time: 300,
+        working_group_Instance2: Some(StorageWorkingGroupConfig {
+            phantom: Default::default(),
+            storage_working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
         }),
         versioned_store: Some(VersionedStoreConfig {
             class_by_id: vec![],
@@ -293,14 +300,14 @@ pub fn testnet_genesis(
             next_principal_id: 0,
             channel_creation_enabled: true, // there is no extrinsic to change it so enabling at genesis
             unstaker_by_stake_id: vec![],
-            channel_handle_constraint: crate::forum_config::new_validation(5, 20),
-            channel_description_constraint: crate::forum_config::new_validation(1, 1024),
-            opening_human_readable_text: crate::forum_config::new_validation(1, 2048),
-            curator_application_human_readable_text: crate::forum_config::new_validation(1, 2048),
-            curator_exit_rationale_text: crate::forum_config::new_validation(1, 2048),
-            channel_avatar_constraint: crate::forum_config::new_validation(5, 1024),
-            channel_banner_constraint: crate::forum_config::new_validation(5, 1024),
-            channel_title_constraint: crate::forum_config::new_validation(5, 1024),
+            channel_handle_constraint: InputValidationLengthConstraint::new(5, 20),
+            channel_description_constraint: InputValidationLengthConstraint::new(1, 1024),
+            opening_human_readable_text: InputValidationLengthConstraint::new(1, 2048),
+            curator_application_human_readable_text: InputValidationLengthConstraint::new(1, 2048),
+            curator_exit_rationale_text: InputValidationLengthConstraint::new(1, 2048),
+            channel_avatar_constraint: InputValidationLengthConstraint::new(5, 1024),
+            channel_banner_constraint: InputValidationLengthConstraint::new(5, 1024),
+            channel_title_constraint: InputValidationLengthConstraint::new(5, 1024),
         }),
         migration: Some(MigrationConfig {}),
         proposals_codex: Some(ProposalsCodexConfig {
@@ -324,14 +331,6 @@ pub fn testnet_genesis(
             set_lead_proposal_grace_period: cpcp.set_lead_proposal_voting_period,
             spending_proposal_voting_period: cpcp.spending_proposal_voting_period,
             spending_proposal_grace_period: cpcp.spending_proposal_grace_period,
-            evict_storage_provider_proposal_voting_period: cpcp
-                .evict_storage_provider_proposal_voting_period,
-            evict_storage_provider_proposal_grace_period: cpcp
-                .evict_storage_provider_proposal_grace_period,
-            set_storage_role_parameters_proposal_voting_period: cpcp
-                .set_storage_role_parameters_proposal_voting_period,
-            set_storage_role_parameters_proposal_grace_period: cpcp
-                .set_storage_role_parameters_proposal_grace_period,
         }),
     }
 }

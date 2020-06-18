@@ -1,9 +1,9 @@
 use crate::{Call, Runtime};
 use proposals_codex::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
-use roles::actors::Role;
 
 use codec::Encode;
 use rstd::vec::Vec;
+use srml_support::print;
 
 /// _ProposalEncoder_ implementation. It encodes extrinsics with proposal details parameters
 /// using Runtime Call and parity codec.
@@ -32,20 +32,25 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                 Call::ContentWorkingGroup(content_working_group::Call::replace_lead(new_lead))
                     .encode()
             }
-            ProposalDetails::EvictStorageProvider(actor_account) => {
-                Call::Actors(roles::actors::Call::remove_actor(actor_account)).encode()
-            }
             ProposalDetails::SetValidatorCount(new_validator_count) => {
                 Call::Staking(staking::Call::set_validator_count(new_validator_count)).encode()
             }
-            ProposalDetails::SetStorageRoleParameters(role_parameters) => Call::Actors(
-                roles::actors::Call::set_role_parameters(Role::StorageProvider, role_parameters),
-            )
-            .encode(),
             ProposalDetails::RuntimeUpgrade(wasm_code) => Call::ProposalsCodex(
                 proposals_codex::Call::execute_runtime_upgrade_proposal(wasm_code),
             )
             .encode(),
+            // ********** Deprecated during the Nicaea release.
+            // It is kept only for backward compatibility in the Pioneer. **********
+            ProposalDetails::EvictStorageProvider(_) => {
+                print("Error: Calling deprecated EvictStorageProvider encoding option.");
+                Vec::new()
+            }
+            // ********** Deprecated during the Nicaea release.
+            // It is kept only for backward compatibility in the Pioneer. **********
+            ProposalDetails::SetStorageRoleParameters(_) => {
+                print("Error: Calling deprecated SetStorageRoleParameters encoding option.");
+                Vec::new()
+            }
         }
     }
 }
