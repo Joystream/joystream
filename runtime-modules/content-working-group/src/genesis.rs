@@ -6,7 +6,7 @@ use rstd::prelude::*;
 
 /// DIRTY IMPORT BECAUSE
 /// InputValidationLengthConstraint has not been factored out yet!!!
-use forum::InputValidationLengthConstraint;
+use common::constraints::InputValidationLengthConstraint;
 
 /// The way a map (linked_map) is represented in the GenesisConfig produced by decl_storage
 //pub type GenesisConfigMap<K, V> = std::vec::Vec<(K, V)>;

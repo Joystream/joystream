@@ -4,7 +4,7 @@
 //!
 //! ## Comments
 //!
-//! Data object type registry module uses bureaucracy module to authorize actions.
+//! Data object type registry module uses  working group module to authorize actions.
 //!
 //! ## Supported extrinsics
 //!
@@ -32,7 +32,7 @@ pub(crate) use common::BlockAndTime;
 
 use crate::data_object_type_registry;
 use crate::data_object_type_registry::IsActiveDataObjectType;
-use crate::{MemberId, StorageBureaucracy, StorageProviderId};
+use crate::{MemberId, StorageProviderId, StorageWorkingGroup, StorageWorkingGroupInstance};
 
 /// The _Data directory_ main _Trait_.
 pub trait Trait:
@@ -40,7 +40,7 @@ pub trait Trait:
     + system::Trait
     + data_object_type_registry::Trait
     + membership::members::Trait
-    + bureaucracy::Trait<bureaucracy::Instance2>
+    + working_group::Trait<StorageWorkingGroupInstance>
 {
     /// _Data directory_ event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -88,10 +88,10 @@ impl From<system::Error> for Error {
     }
 }
 
-impl From<bureaucracy::Error> for Error {
-    fn from(error: bureaucracy::Error) -> Self {
+impl From<working_group::Error> for Error {
+    fn from(error: working_group::Error) -> Self {
         match error {
-            bureaucracy::Error::Other(msg) => Error::Other(msg),
+            working_group::Error::Other(msg) => Error::Other(msg),
             _ => Error::Other(error.into()),
         }
     }
@@ -238,7 +238,7 @@ decl_module! {
             storage_provider_id: StorageProviderId<T>,
             content_id: T::ContentId
         ) {
-            <StorageBureaucracy<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
+            <StorageWorkingGroup<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
 
             // == MUTATION SAFE ==
 
@@ -256,7 +256,7 @@ decl_module! {
             storage_provider_id: StorageProviderId<T>,
             content_id: T::ContentId
         ) {
-            <StorageBureaucracy<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
+            <StorageWorkingGroup<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
 
             // == MUTATION SAFE ==
 

@@ -154,7 +154,7 @@ decl_module! {
                         hiring::ActiveOpeningStage::Deactivated {
                             cause: hiring::OpeningDeactivationCause::ReviewPeriodExpired,
                             deactivated_at_block: now,
-                            started_accepting_applicants_at_block: started_accepting_applicants_at_block,
+                            started_accepting_applicants_at_block,
                             started_review_period_at_block: Some(started_review_period_at_block),
                     });
 

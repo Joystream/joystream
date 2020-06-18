@@ -56,13 +56,12 @@ std = [
     'governance/std',
     'membership/std',
     'memo/std',
-    'roles/std',
     'service_discovery/std',
     'storage/std',
     'proposals_engine/std',
     'proposals_discussion/std',
     'proposals_codex/std',
-    'bureaucracy/std',
+    'working-group/std',
 ]
 
 # [dependencies]
@@ -340,12 +339,6 @@ package = 'substrate-memo-module'
 path = '../runtime-modules/memo'
 version = '1.0.0'
 
-[dependencies.roles]
-default_features = false
-package = 'substrate-roles-module'
-path = '../runtime-modules/roles'
-version = '1.0.0'
-
 [dependencies.service_discovery]
 default_features = false
 package = 'substrate-service-discovery-module'
@@ -376,8 +369,8 @@ package = 'substrate-proposals-codex-module'
 path = '../runtime-modules/proposals/codex'
 version = '2.0.0'
 
-[dependencies.bureaucracy]
+[dependencies.working-group]
 default_features = false
-package = 'substrate-bureaucracy-module'
-path = '../runtime-modules/bureaucracy'
+package = 'substrate-working-group-module'
+path = '../runtime-modules/working-group'
 version = '1.0.0'

@@ -3,7 +3,7 @@
 //!
 //! ## Comments
 //!
-//! Data object type registry module uses bureaucracy module to authorize actions. Only leader can
+//! Data object type registry module uses  working group module to authorize actions. Only leader can
 //! call extrinsics.
 //!
 //! ## Supported extrinsics
@@ -22,7 +22,7 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
-use crate::StorageBureaucracy;
+use crate::{StorageWorkingGroup, StorageWorkingGroupInstance};
 use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
@@ -32,7 +32,7 @@ const DEFAULT_TYPE_DESCRIPTION: &str = "Default data object type for audio and v
 const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u32 = 1;
 
 /// The _Data object type registry_ main _Trait_.
-pub trait Trait: system::Trait + bureaucracy::Trait<bureaucracy::Instance2> {
+pub trait Trait: system::Trait + working_group::Trait<StorageWorkingGroupInstance> {
     /// _Data object type registry_ event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
@@ -68,10 +68,10 @@ impl From<system::Error> for Error {
     }
 }
 
-impl From<bureaucracy::Error> for Error {
-    fn from(error: bureaucracy::Error) -> Self {
+impl From<working_group::Error> for Error {
+    fn from(error: working_group::Error) -> Self {
         match error {
-            bureaucracy::Error::Other(msg) => Error::Other(msg),
+            working_group::Error::Other(msg) => Error::Other(msg),
             _ => Error::Other(error.into()),
         }
     }
@@ -149,7 +149,7 @@ decl_module! {
 
         /// Registers the new data object type. Requires leader privileges.
         pub fn register_data_object_type(origin, data_object_type: DataObjectType) {
-            <StorageBureaucracy<T>>::ensure_origin_is_active_leader(origin)?;
+            <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
 
             let new_do_type_id = Self::next_data_object_type_id();
             let do_type: DataObjectType = DataObjectType {
@@ -169,7 +169,7 @@ decl_module! {
 
         /// Updates existing data object type. Requires leader privileges.
         pub fn update_data_object_type(origin, id: T::DataObjectTypeId, data_object_type: DataObjectType) {
-            <StorageBureaucracy<T>>::ensure_origin_is_active_leader(origin)?;
+            <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
 
             let mut do_type = Self::ensure_data_object_type(id)?;
 
@@ -187,7 +187,7 @@ decl_module! {
 
         /// Activates existing data object type. Requires leader privileges.
         pub fn activate_data_object_type(origin, id: T::DataObjectTypeId) {
-            <StorageBureaucracy<T>>::ensure_origin_is_active_leader(origin)?;
+            <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
 
             let mut do_type = Self::ensure_data_object_type(id)?;
 
@@ -204,7 +204,7 @@ decl_module! {
 
         /// Deactivates existing data object type. Requires leader privileges.
         pub fn deactivate_data_object_type(origin, id: T::DataObjectTypeId) {
-            <StorageBureaucracy<T>>::ensure_origin_is_active_leader(origin)?;
+            <StorageWorkingGroup<T>>::ensure_origin_is_active_leader(origin)?;
 
             let mut do_type = Self::ensure_data_object_type(id)?;
 

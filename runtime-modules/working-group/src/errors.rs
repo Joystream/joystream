@@ -224,11 +224,17 @@ decl_error! {
         /// Cannot decrease stake while slashes ongoing.
         StakingErrorCannotDecreaseWhileSlashesOngoing,
 
-        /// Insufficient stake to decrease,
+        /// Insufficient stake to decrease.
         StakingErrorInsufficientStake,
 
-        /// Slash amount should be greater than zero,
+        /// Slash amount should be greater than zero.
         StakingErrorSlashAmountShouldBeGreaterThanZero,
+
+        /// Cannot find mint in the minting module.
+        CannotFindMint,
+
+        /// Require root origin in extrinsics.
+        RequireRootOrigin,
     }
 }
 
@@ -236,6 +242,7 @@ impl From<system::Error> for Error {
     fn from(error: system::Error) -> Self {
         match error {
             system::Error::Other(msg) => Error::Other(msg),
+            system::Error::RequireRootOrigin => Error::RequireRootOrigin,
             _ => Error::Other(error.into()),
         }
     }
@@ -568,6 +575,15 @@ impl rstd::convert::From<WrappedError<stake::StakeActionError<stake::ImmediateSl
                     Error::StakingErrorSlashAmountShouldBeGreaterThanZero
                 }
             },
+        }
+    }
+}
+
+impl rstd::convert::From<WrappedError<minting::GeneralError>> for Error {
+    fn from(wrapper: WrappedError<minting::GeneralError>) -> Self {
+        match wrapper.error {
+            minting::GeneralError::MintNotFound => Error::CannotFindMint,
+            minting::GeneralError::NextAdjustmentInPast => Error::Other("NextAdjustmentInPast"),
         }
     }
 }

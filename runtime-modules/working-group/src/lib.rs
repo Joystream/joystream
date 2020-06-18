@@ -1,12 +1,12 @@
-//! # Bureaucracy module
-//! Bureaucracy module for the Joystream platform. Version 1.
+//! # Working group module
+//! Working group module for the Joystream platform. Version 1.
 //! Contains abstract working group workflow.
 //!
 //! ## Overview
 //!
-//! The bureaucracy module provides working group workflow to use in different modules.
-//! Exact working group (eg.: forum working group) should create an instance of the Bureaucracy module.
-//! Bureacracy module contains extrinsics for the hiring workflow and the roles lifecycle.
+//! The working group module provides working group workflow to use in different modules.
+//! Exact working group (eg.: forum working group) should create an instance of the Working group module.
+//! The Working group module contains extrinsics for the hiring workflow and the roles lifecycle.
 //!
 //! ## Supported extrinsics
 //! ### Hiring flow
@@ -28,6 +28,7 @@
 //! - [set_lead](./struct.Module.html#method.set_lead) - Set lead.
 //! - [unset_lead](./struct.Module.html#method.unset_lead) - Unset lead.
 //! - [unstake](./struct.Module.html#method.unstake) - Unstake.
+//! - [set_mint_capacity](./struct.Module.html#method.set_mint_capacity) -  Sets the capacity to enable working group budget.
 //!
 //! ### Worker stakes
 //!
@@ -52,10 +53,10 @@ use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 use rstd::vec::Vec;
-use sr_primitives::traits::{EnsureOrigin, One, Zero};
+use sr_primitives::traits::{One, Zero};
 use srml_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
 use srml_support::{decl_event, decl_module, decl_storage, ensure};
-use system::{ensure_root, ensure_signed, RawOrigin};
+use system::{ensure_root, ensure_signed};
 
 use crate::types::WorkerExitInitiationOrigin;
 use common::constraints::InputValidationLengthConstraint;
@@ -66,8 +67,6 @@ pub use types::{
     Lead, OpeningPolicyCommitment, RewardPolicy, Worker, WorkerApplication, WorkerOpening,
     WorkerRoleStakeProfile,
 };
-
-//TODO: initialize a mint!
 
 /// Alias for the _Lead_ type
 pub type LeadOf<T> = Lead<MemberId<T>, <T as system::Trait>::AccountId>;
@@ -145,7 +144,7 @@ type WorkerOf<T> = Worker<
     MemberId<T>,
 >;
 
-/// The _Bureaucracy_ main _Trait_
+/// The _Working group_ main _Trait_
 pub trait Trait<I: Instance>:
     system::Trait
     + membership::members::Trait
@@ -154,12 +153,12 @@ pub trait Trait<I: Instance>:
     + stake::Trait
     + recurringrewards::Trait
 {
-    /// _Bureaucracy_ event type.
+    /// _Working group_ event type.
     type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
 }
 
 decl_event!(
-    /// _Bureaucracy_ events
+    /// _Working group_ events
     pub enum Event<T, I>
     where
         MemberId = MemberId<T>,
@@ -170,6 +169,8 @@ decl_event!(
         WorkerApplicationId = WorkerApplicationId<T>,
         WorkerApplicationIdToWorkerIdMap = WorkerApplicationIdToWorkerIdMap<T>,
         RationaleText = Vec<u8>,
+        MintBalanceOf = minting::BalanceOf<T>,
+        <T as minting::Trait>::MintId,
     {
         /// Emits on setting the leader.
         /// Params:
@@ -258,11 +259,17 @@ decl_event!(
         /// Params:
         /// - worker id.
         WorkerStakeSlashed(WorkerId),
+
+        /// Emits on changing working group mint capacity.
+        /// Params:
+        /// - mint id.
+        /// - new mint balance.
+        MintCapacityChanged(MintId, MintBalanceOf),
     }
 );
 
 decl_storage! {
-    trait Store for Module<T: Trait<I>, I: Instance> as Bureaucracy {
+    trait Store for Module<T: Trait<I>, I: Instance> as WorkingGroup {
         /// The mint currently funding the rewards for this module.
         pub Mint get(mint) : <T as minting::Trait>::MintId;
 
@@ -296,10 +303,24 @@ decl_storage! {
         /// Worker exit rationale text length limits.
         pub WorkerExitRationaleText get(worker_exit_rationale_text) : InputValidationLengthConstraint;
     }
+        add_extra_genesis {
+        config(phantom): rstd::marker::PhantomData<I>;
+        config(storage_working_group_mint_capacity): minting::BalanceOf<T>;
+        config(opening_human_readable_text_constraint): InputValidationLengthConstraint;
+        config(worker_application_human_readable_text_constraint): InputValidationLengthConstraint;
+        config(worker_exit_rationale_text_constraint): InputValidationLengthConstraint;
+        build(|config: &GenesisConfig<T, I>| {
+            Module::<T, I>::initialize_working_group(
+                config.opening_human_readable_text_constraint,
+                config.worker_application_human_readable_text_constraint,
+                config.worker_exit_rationale_text_constraint,
+                config.storage_working_group_mint_capacity)
+        });
+    }
 }
 
 decl_module! {
-    /// _Bureaucracy_ substrate module.
+    /// _Working group_ substrate module.
     pub struct Module<T: Trait<I>, I: Instance> for enum Call where origin: T::Origin {
         /// Default deposit_event() handler
         fn deposit_event() = default;
@@ -336,9 +357,7 @@ decl_module! {
 
             let lead = Self::ensure_lead_is_set()?;
 
-            //
             // == MUTATION SAFE ==
-            //
 
             // Update current lead
             <CurrentLead<T, I>>::kill();
@@ -726,6 +745,24 @@ decl_module! {
             // Ensure worker opening exists
             let (worker_opening, _) = Self::ensure_worker_opening_exists(&worker_opening_id)?;
 
+            // Ensure a mint exists if lead is providing a reward for positions being filled
+            let create_reward_settings = if let Some(policy) = reward_policy {
+                // A reward will need to be created so ensure our configured mint exists
+                let mint_id = Self::mint();
+
+                // Technically this is a bug-check and should not be here.
+                ensure!(<minting::Mints<T>>::exists(mint_id), Error::FillWorkerOpeningMintDoesNotExist);
+
+                // Make sure valid parameters are selected for next payment at block number
+                ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(),
+                    Error::FillWorkerOpeningInvalidNextPaymentBlock);
+
+                // The verified reward settings to use
+                Some((mint_id, policy))
+            } else {
+                None
+            };
+
             // Make iterator over successful worker application
             let successful_iter = successful_worker_application_ids
                                     .iter()
@@ -763,22 +800,6 @@ decl_module! {
                     worker_opening.policy_commitment.fill_opening_failed_applicant_role_stake_unstaking_period
                 )
             )?;
-
-            let create_reward_settings = if let Some(policy) = reward_policy {
-                // A reward will need to be created so ensure our configured mint exists
-                let mint_id = Self::mint();
-
-                ensure!(<minting::Mints<T>>::exists(mint_id), Error::FillWorkerOpeningMintDoesNotExist);
-
-                // Make sure valid parameters are selected for next payment at block number
-                ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(),
-                    Error::FillWorkerOpeningInvalidNextPaymentBlock);
-
-                // The verified reward settings to use
-                Some((mint_id, policy))
-            } else {
-                None
-            };
 
             //
             // == MUTATION SAFE ==
@@ -938,29 +959,41 @@ decl_module! {
 
             Self::deposit_event(RawEvent::WorkerStakeIncreased(worker_id));
         }
-    }
-}
 
-impl<Origin, T, I> EnsureOrigin<Origin> for Module<T, I>
-where
-    Origin: Into<Result<RawOrigin<T::AccountId>, Origin>> + From<RawOrigin<T::AccountId>>,
-    T: Trait<I>,
-    I: Instance,
-{
-    type Success = ();
+        /// Sets the capacity to enable working group budget.
+        pub fn set_mint_capacity(
+            origin,
+            new_capacity: minting::BalanceOf<T>
+        ) {
+            ensure_root(origin)?;
 
-    fn try_origin(o: Origin) -> Result<Self::Success, Origin> {
-        o.into().and_then(|o| match o {
-            RawOrigin::Signed(account_id) => {
-                Self::ensure_is_lead_account(account_id).map_err(|_| RawOrigin::None.into())
+            let mint_id = Self::mint();
+
+            // Technically this is a bug-check and should not be here.
+            ensure!(<minting::Mints<T>>::exists(mint_id), Error::CannotFindMint);
+
+            // Mint must exist - it is set at genesis or migration.
+            let mint = <minting::Module<T>>::mints(mint_id);
+
+            let current_capacity = mint.capacity();
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            if new_capacity != current_capacity {
+                ensure_on_wrapped_error!(
+                    <minting::Module<T>>::set_mint_capacity(mint_id, new_capacity)
+                )?;
+
+                Self::deposit_event(RawEvent::MintCapacityChanged(mint_id, new_capacity));
             }
-            _ => Err(RawOrigin::None.into()),
-        })
+        }
     }
 }
 
 impl<T: Trait<I>, I: Instance> Module<T, I> {
-    /// Checks that provided lead account id belongs to the current bureaucracy leader
+    /// Checks that provided lead account id belongs to the current working group leader
     pub fn ensure_is_lead_account(lead_account_id: T::AccountId) -> Result<(), Error> {
         let lead = <CurrentLead<T, I>>::get();
 
@@ -1190,7 +1223,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         // Unstake if stake profile exists
         if let Some(ref stake_profile) = worker.role_stake_profile {
-            // Determine unstaknig period based on who initiated deactivation
+            // Determine unstaking period based on who initiated deactivation
             let unstaking_period = match exit_initiation_origin {
                 WorkerExitInitiationOrigin::Lead => stake_profile.termination_unstaking_period,
                 WorkerExitInitiationOrigin::Worker => stake_profile.exit_unstaking_period,
@@ -1229,4 +1262,32 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             )
             .map_err(|e| e.into())
     }
+
+    fn initialize_working_group(
+        opening_human_readable_text_constraint: InputValidationLengthConstraint,
+        worker_application_human_readable_text_constraint: InputValidationLengthConstraint,
+        worker_exit_rationale_text_constraint: InputValidationLengthConstraint,
+        working_group_mint_capacity: minting::BalanceOf<T>,
+    ) {
+        // Create a mint.
+        let mint_id_result = <minting::Module<T>>::add_mint(working_group_mint_capacity, None);
+
+        if let Ok(mint_id) = mint_id_result {
+            <Mint<T, I>>::put(mint_id);
+        } else {
+            panic!("Failed to create a mint for the working group");
+        }
+
+        // Create constraints
+        <OpeningHumanReadableText<I>>::put(opening_human_readable_text_constraint);
+        <WorkerApplicationHumanReadableText<I>>::put(
+            worker_application_human_readable_text_constraint,
+        );
+        <WorkerExitRationaleText<I>>::put(worker_exit_rationale_text_constraint);
+    }
+}
+
+/// Creates default text constraint.
+pub fn default_text_constraint() -> InputValidationLengthConstraint {
+    InputValidationLengthConstraint::new(1, 1024)
 }
