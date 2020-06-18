@@ -1679,7 +1679,7 @@ decl_module! {
                 match operation_type {
                     OperationType::CreateEntity(create_entity_operation) => {
                         Self::create_entity(origin, create_entity_operation.class_id, actor)?;
-                        
+
                         // entity id of newly created entity
                         let entity_id = Self::next_entity_id() - T::EntityId::one();
                         entity_created_in_operation.push(entity_id);
