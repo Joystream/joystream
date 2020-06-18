@@ -171,6 +171,7 @@ impl AddAssign for EntityReferenceCounterSideEffect {
 }
 
 /// The net side effect on a set of entities from some operations.
+#[derive(PartialEq, Eq, Debug)]
 pub struct ReferenceCounterSideEffects<T: Trait>(
     BTreeMap<T::EntityId, EntityReferenceCounterSideEffect>,
 );

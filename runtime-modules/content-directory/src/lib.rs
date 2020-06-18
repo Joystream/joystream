@@ -1125,15 +1125,6 @@ decl_module! {
             // Transfer entity ownership
             let entities_inbound_rcs_delta = if let Some(entity_property_values_updated) = entity_property_values_updated {
 
-                // Calculate entities reference counter side effects for current operation
-                let entities_inbound_rcs_delta =
-                    Self::get_updated_inbound_rcs_delta(
-                        class_properties, entity_property_values, &new_property_value_references_with_same_owner_flag_set
-                    );
-
-                // Update InboundReferenceCounter, based on previously calculated ReferenceCounterSideEffects, for each Entity involved
-                entities_inbound_rcs_delta.update_entities_rcs();
-
                 <EntityById<T>>::mutate(entity_id, |entity| {
 
                     // Update current Entity property values with updated ones
@@ -1143,7 +1134,16 @@ decl_module! {
                     entity.get_permissions_mut().set_conroller(new_controller.clone());
                 });
 
-                Some(entities_inbound_rcs_delta)
+                // Calculate entities reference counter side effects for current operation
+                Self::get_updated_inbound_rcs_delta(
+                    class_properties, entity_property_values, &new_property_value_references_with_same_owner_flag_set
+                ).map(|entities_inbound_rcs_delta| {
+
+                    // Update InboundReferenceCounter, based on previously calculated ReferenceCounterSideEffects, for each Entity involved
+                    entities_inbound_rcs_delta.update_entities_rcs();
+                    entities_inbound_rcs_delta
+                })
+
             } else {
                 // Set up new controller for the current Entity instance
                 <EntityById<T>>::mutate(entity_id, |entity| {
@@ -1334,10 +1334,12 @@ decl_module! {
             // Calculate entities reference counter side effects for current operation
             let entities_inbound_rcs_delta = Self::calculate_entities_inbound_rcs_delta(
                 values_for_existing_properties, DeltaMode::Increment
-            );
-
-            // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
-            entities_inbound_rcs_delta.update_entities_rcs();
+            )
+            .map(|entities_inbound_rcs_delta| {
+                // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
+                entities_inbound_rcs_delta.update_entities_rcs();
+                entities_inbound_rcs_delta
+            });
 
             let entity_property_values = entity.get_values();
 
@@ -1447,10 +1449,13 @@ decl_module! {
 
                 // Calculate entities reference counter side effects for current operation
                 let entities_inbound_rcs_delta =
-                    Self::get_updated_inbound_rcs_delta(class_properties, entity_property_values, &new_property_values);
+                    Self::get_updated_inbound_rcs_delta(class_properties, entity_property_values, &new_property_values)
+                        .map(|entities_inbound_rcs_delta| {
 
-                // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
-                entities_inbound_rcs_delta.update_entities_rcs();
+                            // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
+                            entities_inbound_rcs_delta.update_entities_rcs();
+                            entities_inbound_rcs_delta
+                        });
 
                 // Trigger event
                 Self::deposit_event(RawEvent::EntityPropertyValuesUpdated(actor, entity_id, entities_inbound_rcs_delta));
@@ -1482,22 +1487,27 @@ decl_module! {
             )?;
 
             // Decrease reference counters of involved entities (if some)
-            let entities_inbound_rcs_delta = if let Some(entity_ids_to_decrease_rcs) = 
-            property_value_vector.get_vec_value().get_involved_entities() {
+            let entities_inbound_rcs_delta = if let Some(entity_ids_to_decrease_rcs) =
+                property_value_vector.get_vec_value().get_involved_entities() {
 
-                // Calculate `ReferenceCounterSideEffects`, based on entity_ids involved, same_controller_status and chosen `DeltaMode`
-                let same_controller_status = property.property_type.same_controller_status();
-                let entities_inbound_rcs_delta = Self::perform_entities_inbound_rcs_delta_calculation(
-                    ReferenceCounterSideEffects::<T>::default(), entity_ids_to_decrease_rcs,
-                    same_controller_status, DeltaMode::Decrement
-                );
+                    // Calculate `ReferenceCounterSideEffects`, based on entity_ids involved, same_controller_status and chosen `DeltaMode`
+                    let same_controller_status = property.property_type.same_controller_status();
+                    let entities_inbound_rcs_delta = Self::perform_entities_inbound_rcs_delta_calculation(
+                        ReferenceCounterSideEffects::<T>::default(), entity_ids_to_decrease_rcs,
+                        same_controller_status, DeltaMode::Decrement
+                    );
 
-                // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
-                entities_inbound_rcs_delta.update_entities_rcs();
-                Some(entities_inbound_rcs_delta)
-            } else {
-                None
-            };
+                    // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
+                    if !entities_inbound_rcs_delta.is_empty() {
+
+                        entities_inbound_rcs_delta.update_entities_rcs();
+                        Some(entities_inbound_rcs_delta)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
 
             // Clear property_value_vector.
             let empty_property_value_vector = Self::clear_property_vector(property_value_vector);
@@ -1598,7 +1608,7 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(
-                RawEvent::RemovedAtEntityPropertyValueVectorIndex(
+                RawEvent::RemovedAtVectorIndex(
                     actor, entity_id, in_class_schema_property_id, index_in_property_vector, nonce, involved_entity_and_side_effect
                 )
             );
@@ -1682,7 +1692,7 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(
-                RawEvent::InsertedAtEntityPropertyValueVectorIndex(
+                RawEvent::InsertedAtVectorIndex(
                     actor, entity_id, in_class_schema_property_id, index_in_property_vector, nonce, involved_entity_and_side_effect
                 )
             );
@@ -1828,8 +1838,8 @@ impl<T: Trait> Module<T> {
     fn calculate_entities_inbound_rcs_delta(
         values_for_existing_properties: ValuesForExistingProperties<T>,
         delta_mode: DeltaMode,
-    ) -> ReferenceCounterSideEffects<T> {
-        values_for_existing_properties
+    ) -> Option<ReferenceCounterSideEffects<T>> {
+        let entities_inbound_rcs_delta = values_for_existing_properties
             .values()
             .map(|value_for_existing_property| value_for_existing_property.unzip())
             .filter_map(|(property, value)| {
@@ -1851,7 +1861,13 @@ impl<T: Trait> Module<T> {
                         delta_mode,
                     )
                 },
-            )
+            );
+
+        if !entities_inbound_rcs_delta.is_empty() {
+            Some(entities_inbound_rcs_delta)
+        } else {
+            None
+        }
     }
 
     /// Compute `ReferenceCounterSideEffects`, based on `PropertyValue` `Reference`'s involved into update process.
@@ -1860,7 +1876,7 @@ impl<T: Trait> Module<T> {
         class_properties: Vec<Property<T>>,
         entity_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
         new_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
-    ) -> ReferenceCounterSideEffects<T> {
+    ) -> Option<ReferenceCounterSideEffects<T>> {
         // Filter entity_property_values to get only those, which will be substituted with new_property_values
         let entity_property_values_to_update: BTreeMap<PropertyId, PropertyValue<T>> =
             entity_property_values
@@ -1884,10 +1900,28 @@ impl<T: Trait> Module<T> {
             DeltaMode::Increment,
         );
 
-        // Add up both net decremental_reference_counter_side_effects and incremental_reference_counter_side_effects
-        // to get one net sideffect per entity.
-        decremental_reference_counter_side_effects
-            .update(incremental_reference_counter_side_effects)
+        match (
+            decremental_reference_counter_side_effects,
+            incremental_reference_counter_side_effects,
+        ) {
+            (
+                Some(decremental_reference_counter_side_effects),
+                Some(incremental_reference_counter_side_effects),
+            ) => {
+                // Add up both net decremental_reference_counter_side_effects and incremental_reference_counter_side_effects
+                // to get one net sideffect per entity.
+                let reference_counter_side_effects = decremental_reference_counter_side_effects
+                    .update(incremental_reference_counter_side_effects);
+                Some(reference_counter_side_effects)
+            }
+            (Some(decremental_reference_counter_side_effects), _) => {
+                Some(decremental_reference_counter_side_effects)
+            }
+            (_, Some(incremental_reference_counter_side_effects)) => {
+                Some(incremental_reference_counter_side_effects)
+            }
+            _ => None,
+        }
     }
 
     /// Used to update `class_permissions` with parameters provided.
@@ -2496,9 +2530,8 @@ decl_event!(
         Status = bool,
         Actor = Actor<T>,
         Nonce = <T as Trait>::Nonce,
-        ReferenceCounterSideEffects = ReferenceCounterSideEffects<T>,
-        InvolvedEntityAndReferenceCounterSideEffect = Option<(<T as Trait>::EntityId, EntityReferenceCounterSideEffect)>
-
+        SideEffects = Option<ReferenceCounterSideEffects<T>>,
+        SideEffect = Option<(<T as Trait>::EntityId, EntityReferenceCounterSideEffect)>,
     {
         CuratorGroupAdded(CuratorGroupId),
         CuratorGroupRemoved(CuratorGroupId),
@@ -2516,12 +2549,12 @@ decl_event!(
         EntityPermissionsUpdated(EntityId),
         EntityCreated(Actor, EntityId),
         EntityRemoved(Actor, EntityId),
-        EntitySchemaSupportAdded(Actor, EntityId, SchemaId, ReferenceCounterSideEffects),
-        EntityPropertyValuesUpdated(Actor, EntityId, ReferenceCounterSideEffects),
-        EntityPropertyValueVectorCleared(Actor, EntityId, PropertyId, Option<ReferenceCounterSideEffects>),
-        RemovedAtEntityPropertyValueVectorIndex(Actor, EntityId, PropertyId, VecMaxLength, Nonce, InvolvedEntityAndReferenceCounterSideEffect),
-        InsertedAtEntityPropertyValueVectorIndex(Actor, EntityId, PropertyId, VecMaxLength, Nonce, InvolvedEntityAndReferenceCounterSideEffect),
-        EntityOwnershipTransfered(EntityId, EntityController, Option<ReferenceCounterSideEffects>),
+        EntitySchemaSupportAdded(Actor, EntityId, SchemaId, SideEffects),
+        EntityPropertyValuesUpdated(Actor, EntityId, SideEffects),
         TransactionCompleted(Actor),
+        EntityPropertyValueVectorCleared(Actor, EntityId, PropertyId, SideEffects),
+        RemovedAtVectorIndex(Actor, EntityId, PropertyId, VecMaxLength, Nonce, SideEffect),
+        InsertedAtVectorIndex(Actor, EntityId, PropertyId, VecMaxLength, Nonce, SideEffect),
+        EntityOwnershipTransfered(EntityId, EntityController, SideEffects),
     }
 );
