@@ -24,8 +24,8 @@ impl<T: Trait> Module<T> {
 
         Self::initialize_storage_working_group_mint();
         Self::initialize_storage_working_group_text_constraints();
-
-        Self::clear_storage_data();
+// temporary comment storage migration
+//        Self::clear_storage_data();
     }
 }
 
