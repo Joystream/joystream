@@ -211,7 +211,7 @@ export class CuratorInduction extends JoyStruct<ICuratorInduction> {
     return this.getField<CuratorApplicationId>('curator_application_id')
   }
 
-  // Helper for bureaucracy compatibility
+  // Helper for working-group compatibility
   get worker_application_id(): CuratorApplicationId {
     return this.curator_application_id;
   }
@@ -294,7 +294,7 @@ export class CuratorApplication extends JoyStruct<ICuratorApplication> {
     return this.getField<CuratorOpeningId>('curator_opening_id')
   }
 
-  // Helper for bureaucracy compatibility
+  // Helper for working-group compatibility
   get worker_opening_id(): CuratorOpeningId {
     return this.curator_opening_id;
   }
@@ -476,7 +476,7 @@ export class Lead extends JoyStruct<ILead> {
     return this.getField<GenericAccountId>('role_account')
   }
 
-  // Helper for bureaucracy compatibility
+  // Helper for working-group compatibility
   get role_account_id(): GenericAccountId {
     return this.role_account;
   }

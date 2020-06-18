@@ -13,7 +13,7 @@ export type ILead = {
 };
 
 // This type is also defined in /content-workig-group (and those are incosistent), but here
-// it is beeing registered as "LeadOf" (which is an alias used by the runtime bureaucracy module),
+// it is beeing registered as "LeadOf" (which is an alias used by the runtime working-group module),
 // so it shouldn't cause any conflicts)
 export class Lead extends JoyStruct<ILead> {
   constructor (value?: ILead) {
