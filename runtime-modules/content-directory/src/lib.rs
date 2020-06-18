@@ -775,24 +775,27 @@ decl_module! {
             // Ensure Class under given id exists, return corresponding one
             Self::ensure_known_class_id(class_id)?;
 
-            // Check voucher existance
-            let voucher_exists = <EntityCreationVouchers<T>>::exists(class_id, &controller);
-
             // Ensure maximum_entities_count does not exceed individual entities creation limit
             Self::ensure_valid_number_of_class_entities_per_actor_constraint(maximum_entities_count)?;
+
+            // Check voucher existance
+            let voucher_exists = <EntityCreationVouchers<T>>::exists(class_id, &controller);
 
             //
             // == MUTATION SAFE ==
             //
 
             if voucher_exists {
-                // Set new maximum_entities_count limit for selected voucher
-                <EntityCreationVouchers<T>>::mutate(class_id, &controller, |entity_creation_voucher| {
-                    entity_creation_voucher.set_maximum_entities_count(maximum_entities_count);
 
-                    // Trigger event
-                    Self::deposit_event(RawEvent::EntityCreationVoucherUpdated(controller.clone(), entity_creation_voucher.to_owned()))
-                });
+                // Set new maximum_entities_count limit for selected voucher
+                let mut entity_creation_voucher = Self::entity_creation_vouchers(class_id, &controller);
+                
+                entity_creation_voucher.set_maximum_entities_count(maximum_entities_count);
+
+                <EntityCreationVouchers<T>>::insert(class_id, controller.clone(), entity_creation_voucher.clone());
+
+                // Trigger event
+                Self::deposit_event(RawEvent::EntityCreationVoucherUpdated(controller, entity_creation_voucher))
             } else {
                 // Create new EntityCreationVoucher instance with provided maximum_entities_count
                 let entity_creation_voucher = EntityCreationVoucher::new(maximum_entities_count);
