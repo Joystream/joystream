@@ -5,10 +5,17 @@ export type VideoPreviewStyleProps = {
 	showChannel?: boolean;
 	poster?: string;
 	width?: number;
+	darken?: boolean;
 	height?: number;
 };
 
-export let makeStyles = ({ showChannel = false, width = 320, height = 190, poster = "" }: VideoPreviewStyleProps) => {
+export let makeStyles = ({
+	showChannel = false,
+	width = 320,
+	height = 190,
+	poster = "",
+	darken = false,
+}: VideoPreviewStyleProps) => {
 	const withPoster = poster ? `url(${poster})` : `linear-gradient(${colors.gray[300]}, ${colors.gray[700]})`;
 
 	return {

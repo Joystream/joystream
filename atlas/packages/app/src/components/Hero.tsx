@@ -11,6 +11,7 @@ export default function Hero({ backgroundImg }: Partial<HeroProps>) {
 			css={css`
 				background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(${backgroundImg});
 				background-size: cover;
+				background-position: center;
 			`}
 		>
 			<Header
@@ -18,9 +19,11 @@ export default function Hero({ backgroundImg }: Partial<HeroProps>) {
 				subtext="Lorem ipsum sit amet, consectetur adipiscing elit. Proin non nisl sollicitudin, tempor diam."
 				cssTitle={css`
 					font-size: 72px;
+					line-height: 0.94;
 				`}
 				cssSubtitle={css`
 					font-size: 18px;
+					line-height: 1.33;
 				`}
 			>
 				<Button>

@@ -24,10 +24,18 @@ const info: StyleFn = () => ({
 	flexDirection: "column",
 	justifyContent: "center",
 	alignItems: "center",
+	marginBottom: spacing.l,
+});
+
+const text: StyleFn = () => ({
+	display: "flex",
+	flexDirection: "column",
+	marginTop: spacing.xs,
 	"& > h4": {
 		margin: 0,
 	},
 	"& > span": {
+		marginTop: spacing.xxs,
 		fontSize: typography.sizes.subtitle2,
 	},
 });
@@ -40,5 +48,6 @@ const avatar: StyleFn = () => ({
 export const useCSS = (props: SeriesPreviewStyleProps) => ({
 	container: makeStyles([container])(props),
 	info: makeStyles([info])(props),
+	text: makeStyles([text])(props),
 	avatar: makeStyles([avatar])(props),
 });

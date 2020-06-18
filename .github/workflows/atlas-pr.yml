@@ -1,0 +1,14 @@
+name: Atlas
+on: [pull_request, push]
+
+jobs:
+  atlas_storybook:
+    name: Build Storybook
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: chromaui/action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+         projectToken: qq8aetz26u

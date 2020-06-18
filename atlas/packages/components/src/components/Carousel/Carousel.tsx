@@ -84,6 +84,11 @@ export default function Carousel({ children, scrollAmount = 200, log, ...stylePr
 					<animated.div
 						style={props}
 						key={`Carousel-${idx}`}
+						css={css`
+							&::after {
+								background-color: red;
+							}
+						`}
 						ref={(el) => {
 							elementsRefs.current[idx] = el;
 							return el;
@@ -93,26 +98,28 @@ export default function Carousel({ children, scrollAmount = 200, log, ...stylePr
 					</animated.div>
 				))}
 			</div>
-			<div
-				css={[
+			<NavButton
+				outerCss={[
 					styles.navLeft,
 					css`
 						opacity: ${distance === MIN_DISTANCE ? 0 : 1};
 					`,
 				]}
-			>
-				<NavButton type="primary" direction="left" onClick={() => handleScroll("left")} />
-			</div>
-			<div
-				css={[
+				type="primary"
+				direction="left"
+				onClick={() => handleScroll("left")}
+			/>
+			<NavButton
+				outerCss={[
 					styles.navRight,
 					css`
 						opacity: ${distance - scrollAmount < -MAX_DISTANCE ? 0 : 1};
 					`,
 				]}
-			>
-				<NavButton type="primary" direction="right" onClick={() => handleScroll("right")} />
-			</div>
+				type="primary"
+				direction="right"
+				onClick={() => handleScroll("right")}
+			/>
 		</div>
 	);
 }

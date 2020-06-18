@@ -24,8 +24,10 @@ export default function SeriesPreview({
 		<article css={[styles.container, outerCss]}>
 			<div css={styles.info}>
 				<Avatar img={channelAvatar} outerStyles={styles.avatar} />
-				<h4>{series}</h4>
-				<span>{channel}</span>
+				<div css={styles.text}>
+					<h4>{series}</h4>
+					<span>{channel}</span>
+				</div>
 			</div>
 		</article>
 	);
