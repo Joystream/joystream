@@ -1073,6 +1073,7 @@ decl_module! {
                 &new_property_value_references_with_same_owner_flag_set, &entity_property_id_references_with_same_owner_flag_set
             );
 
+            // Perform all checks to ensure all required property_values under provided unused_schema_property_ids provided
             Self::ensure_all_required_properties_provided(&class_properties, unused_schema_property_ids)?;
 
             // Create wrapper structure from provided new_property_value_references_with_same_owner_flag_set and their corresponding Class properties
@@ -1080,7 +1081,8 @@ decl_module! {
                 &class_properties, &new_property_value_references_with_same_owner_flag_set
             );
 
-            // Perform checks to ensure all `values_for_existing_properties` are valid
+            // Validate all values, provided in values_for_existing_properties, 
+            // against the type of its Property and check any additional constraints
             Self::ensure_property_values_are_valid(&new_controller, &values_for_existing_properties)?;
 
             // Make updated entity_property_values from parameters provided
@@ -1308,7 +1310,8 @@ decl_module! {
             // Create wrapper structure from provided property_values and their corresponding Class properties
             let values_for_existing_properties = ValuesForExistingProperties::from(&class_properties, &property_values);
 
-            // Perform all required checks to ensure values_for_existing_properties are valid
+            // Validate all values, provided in values_for_existing_properties, 
+            // against the type of its Property and check any additional constraints            
             Self::ensure_property_values_are_valid(&entity_controller, &values_for_existing_properties)?;
 
             // Calculate entities reference counter side effects for current operation
@@ -1388,7 +1391,8 @@ decl_module! {
 
             let entity_controller = entity.get_permissions_ref().get_controller();
 
-            // Perform all necessary checks to ensure `new_values_for_existing_properties` are valid
+            // Validate all values, provided in values_for_existing_properties, 
+            // against the type of its Property and check any additional constraints            
             Self::ensure_property_values_are_valid(&entity_controller, &new_values_for_existing_properties)?;
 
             //
