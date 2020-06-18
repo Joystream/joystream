@@ -789,7 +789,7 @@ decl_module! {
 
                 // Set new maximum_entities_count limit for selected voucher
                 let mut entity_creation_voucher = Self::entity_creation_vouchers(class_id, &controller);
-                
+
                 entity_creation_voucher.set_maximum_entities_count(maximum_entities_count);
 
                 <EntityCreationVouchers<T>>::insert(class_id, controller.clone(), entity_creation_voucher.clone());
