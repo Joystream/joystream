@@ -916,24 +916,12 @@ fn fill_worker_opening_fails_with_invalid_reward_policy() {
             FillWorkerOpeningFixture::default_for_ids(opening_id, vec![application_id])
                 .with_reward_policy(RewardPolicy {
                     amount_per_payout: 10000,
-                    next_payment_at_block: 100,
-                    payout_interval: None,
-                });
-
-        remove_mint(); //removes default mintx
-        fill_worker_opening_fixture.call_and_assert(Err(Error::FillWorkerOpeningMintDoesNotExist));
-
-        set_mint_id(22);
-
-        let fill_worker_opening_fixture =
-            FillWorkerOpeningFixture::default_for_ids(opening_id, vec![application_id])
-                .with_reward_policy(RewardPolicy {
-                    amount_per_payout: 10000,
+                    // Invalid next payment at block zero
                     next_payment_at_block: 0,
                     payout_interval: None,
                 });
         fill_worker_opening_fixture
-            .call_and_assert(Err(Error::FullWorkerOpeningOpeningNotInReviewPeriodStage));
+            .call_and_assert(Err(Error::FillWorkerOpeningInvalidNextPaymentBlock));
     });
 }
 
@@ -1585,18 +1573,6 @@ fn set_working_group_mint_capacity_succeeds() {
 
         let mint = <minting::Module<Test>>::mints(mint_id);
         assert_eq!(mint.capacity(), capacity);
-    });
-}
-
-#[test]
-fn set_working_group_mint_capacity_fails_with_not_set_working_group_mint() {
-    build_test_externalities().execute_with(|| {
-        remove_mint(); //removes default mint
-
-        let capacity = 15000;
-        let result = TestWorkingGroup::set_mint_capacity(RawOrigin::Root.into(), capacity);
-
-        assert_eq!(result, Err(Error::WorkingGroupMintIsNotSet));
     });
 }
 

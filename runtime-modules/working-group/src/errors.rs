@@ -230,9 +230,6 @@ decl_error! {
         /// Slash amount should be greater than zero.
         StakingErrorSlashAmountShouldBeGreaterThanZero,
 
-        /// Working group mint is not set.
-        WorkingGroupMintIsNotSet,
-
         /// Cannot find mint in the minting module.
         CannotFindMint,
 

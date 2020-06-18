@@ -219,13 +219,6 @@ impl UnsetLeadFixture {
     }
 }
 
-pub fn remove_mint() {
-    let mint_id = <crate::Mint<Test, TestWorkingGroupInstance>>::get();
-    <crate::Mint<Test, TestWorkingGroupInstance>>::kill();
-
-    <minting::Module<Test>>::remove_mint(mint_id);
-}
-
 pub fn set_mint_id(mint_id: u64) {
     <crate::Mint<Test, TestWorkingGroupInstance>>::put(mint_id);
 }
