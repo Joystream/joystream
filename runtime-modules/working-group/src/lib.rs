@@ -747,13 +747,10 @@ decl_module! {
 
             // Ensure a mint exists if lead is providing a reward for positions being filled
             let create_reward_settings = if let Some(policy) = reward_policy {
-                // check the value of the mint is actually set before reading it or we will
-                // read a value 0 and possibly use the wrong mint if it exists.
-                ensure!(<Mint<T, I>>::exists(), Error::WorkingGroupMintIsNotSet);
-
                 // A reward will need to be created so ensure our configured mint exists
                 let mint_id = Self::mint();
 
+                // Technically this is a bug-check and should not be here.
                 ensure!(<minting::Mints<T>>::exists(mint_id), Error::FillWorkerOpeningMintDoesNotExist);
 
                 // Make sure valid parameters are selected for next payment at block number
@@ -970,10 +967,9 @@ decl_module! {
         ) {
             ensure_root(origin)?;
 
-            ensure!(<Mint<T, I>>::exists(), Error::WorkingGroupMintIsNotSet);
-
             let mint_id = Self::mint();
 
+            // Technically this is a bug-check and should not be here.
             ensure!(<minting::Mints<T>>::exists(mint_id), Error::CannotFindMint);
 
             // Mint must exist - it is set at genesis or migration.
