@@ -45,8 +45,6 @@ export function names(name: string): { [key: string]: string } {
     camelName: camelCase(name),
     kebabName: kebabCase(name),
     // Not proper pluralization, but good enough and easy to fix in generated code
-    camelNamePlural: camelPlural(name),
-    relClassName: pascalCase(name),
-    relCamelName: camelCase(name)
+    camelNamePlural: camelPlural(name)
   }
 }

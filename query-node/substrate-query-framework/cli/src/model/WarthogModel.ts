@@ -100,6 +100,11 @@ export class WarthogModel {
     return field;
   }
 
+  addField(entity: string, field: Field): void {
+    const objType = this.lookupType(entity);
+    objType.fields.push(field);
+  }
+
   /**
    * Lookup ObjectType by it's name (as defined in the schema file)
    *
@@ -110,18 +115,6 @@ export class WarthogModel {
       throw new Error(`No ObjectType ${name} found`);
     }
     return this._name2type[name];
-  }
-
-  /**
-   * Generate model defination as one-line string literal
-   * Example: User username! age:int! isActive:bool!
-   */
-  toWarthogStringDefinitions(): string[] {
-    const models = this._types.map(input => {
-      const fields = input.fields.map(field => field.format()).join(' ');
-      return [input.name, fields].join(' ');
-    });
-    return models;
   }
 }
 
@@ -189,5 +182,13 @@ export class Field {
 
   columnType(): string {
     return this.isBuildinType ? availableTypes[this.type] : this.type;
+  }
+
+  isArray(): boolean {
+    return this.isBuildinType && this.isList;
+  }
+
+  isScalar(): boolean {
+    return this.isBuildinType && !this.isList;
   }
 }

@@ -64,7 +64,7 @@ export class GraphQLSchemaParser {
     }
     const contents = fs.readFileSync(schemaPath, 'utf8');
     this.schema = GraphQLSchemaParser.buildSchema(contents);
-    this._objectTypeDefinations = this.createObjectTypeDefinations();
+    this._objectTypeDefinations = GraphQLSchemaParser.createObjectTypeDefinations(this.schema);
   }
 
   private static buildPreamble(): string {
@@ -106,9 +106,9 @@ export class GraphQLSchemaParser {
   /**
    * Get object type definations from the schema. Build-in and scalar types are excluded.
    */
-  createObjectTypeDefinations(): ObjectTypeDefinitionNode[] {
+  static createObjectTypeDefinations(schema: GraphQLSchema): ObjectTypeDefinitionNode[] {
     return [
-      ...Object.values(this.schema.getTypeMap())
+      ...Object.values(schema.getTypeMap())
         // eslint-disable-next-line @typescript-eslint/prefer-regexp-exec
         .filter(t => !t.name.match(/^__/) && !t.name.match(/Query/)) // skip the top-level Query type
         .sort((a, b) => (a.name > b.name ? 1 : -1))
