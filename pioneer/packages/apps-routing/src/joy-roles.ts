@@ -8,7 +8,7 @@ export default ([
     display: {
       needsApi: [
         'query.contentWorkingGroup.mint',
-        'query.storageWorkingGroup.mint',
+        'query.storageWorkingGroup.mint'
       ]
     },
     i18n: {
