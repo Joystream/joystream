@@ -1081,7 +1081,7 @@ decl_module! {
                 &class_properties, &new_property_value_references_with_same_owner_flag_set
             );
 
-            // Validate all values, provided in values_for_existing_properties, 
+            // Validate all values, provided in values_for_existing_properties,
             // against the type of its Property and check any additional constraints
             Self::ensure_property_values_are_valid(&new_controller, &values_for_existing_properties)?;
 
@@ -1310,8 +1310,8 @@ decl_module! {
             // Create wrapper structure from provided property_values and their corresponding Class properties
             let values_for_existing_properties = ValuesForExistingProperties::from(&class_properties, &property_values);
 
-            // Validate all values, provided in values_for_existing_properties, 
-            // against the type of its Property and check any additional constraints            
+            // Validate all values, provided in values_for_existing_properties,
+            // against the type of its Property and check any additional constraints
             Self::ensure_property_values_are_valid(&entity_controller, &values_for_existing_properties)?;
 
             // Calculate entities reference counter side effects for current operation
@@ -1391,8 +1391,8 @@ decl_module! {
 
             let entity_controller = entity.get_permissions_ref().get_controller();
 
-            // Validate all values, provided in values_for_existing_properties, 
-            // against the type of its Property and check any additional constraints            
+            // Validate all values, provided in values_for_existing_properties,
+            // against the type of its Property and check any additional constraints
             Self::ensure_property_values_are_valid(&entity_controller, &new_values_for_existing_properties)?;
 
             //
@@ -2060,7 +2060,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Validate all values, provided in `values_for_existing_properties`, against the type of its `Property` 
+    /// Validate all values, provided in `values_for_existing_properties`, against the type of its `Property`
     /// and check any additional constraints
     pub fn ensure_property_values_are_valid(
         entity_controller: &EntityController<T>,
