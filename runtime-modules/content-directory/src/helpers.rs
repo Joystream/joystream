@@ -96,7 +96,7 @@ impl InputValidationLengthConstraint {
         len: usize,
         too_short_msg: &'static str,
         too_long_msg: &'static str,
-    ) -> Result<(), &'static str> {
+    ) -> dispatch::Result {
         let length = len as u16;
         if length < self.min {
             Err(too_short_msg)
@@ -140,7 +140,7 @@ impl Copy for EntityReferenceCounterSideEffect {}
 
 impl EntityReferenceCounterSideEffect {
     /// Create atomic `EntityReferenceCounterSideEffect` instance, based on `same_owner` flag provided and `DeltaMode`
-    pub fn one(same_owner: bool, delta_mode: DeltaMode) -> Self {
+    pub fn atomic(same_owner: bool, delta_mode: DeltaMode) -> Self {
         let counter = if let DeltaMode::Increment = delta_mode {
             1
         } else {
@@ -202,7 +202,8 @@ impl<T: Trait> ReferenceCounterSideEffects<T> {
         let entity_ids: BTreeSet<T::EntityId> = self.keys().chain(other.keys()).copied().collect();
 
         for entity_id in entity_ids {
-            // If `self` contains value under provided `entity_id`, increase it on `EntityReferenceCounterSideEffect` value from `other` if exists,
+            // If `self` contains value under provided `entity_id`,
+            // increase it on `EntityReferenceCounterSideEffect` value from `other` if exists,
             // otherwise update `self` entry under provided `entity_id` with `EntityReferenceCounterSideEffect` from `other`
             *self
                 .entry(entity_id)

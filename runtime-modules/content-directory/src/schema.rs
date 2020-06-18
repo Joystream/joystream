@@ -76,7 +76,7 @@ impl<T: Trait> VecPropertyType<T> {
         }
     }
 
-    /// Ensure `Type` spcific `TextMaxLengthConstraint` & `VecMaxLengthConstraint` satisfied
+    /// Ensure `Type` specific `TextMaxLengthConstraint` & `VecMaxLengthConstraint` satisfied
     fn ensure_property_type_size_is_valid(&self) -> dispatch::Result {
         if let Type::Text(text_max_len) = self.vec_type {
             ensure!(
@@ -548,6 +548,7 @@ impl Schema {
             property_value_indices.is_subset(&self.properties),
             ERROR_SCHEMA_DOES_NOT_CONTAIN_PROVIDED_PROPERTY_ID
         );
+
         Ok(())
     }
 
@@ -710,6 +711,7 @@ impl<T: Trait> Property<T> {
             ) => {
                 // Ensure class_id of Entity under provided entity_id references Entity,
                 // which class_id is equal to class_id, declared in corresponding PropertyType
+                // Retrieve corresponding Entity
                 let entity = Self::ensure_referenced_entity_match_its_class(*entity_id, *class_id)?;
                 // Ensure Entity can be referenced.
                 Self::ensure_entity_can_be_referenced(
@@ -747,7 +749,7 @@ impl<T: Trait> Property<T> {
         Ok(())
     }
 
-    /// Ensure vector property does not exceed its max len
+    /// Ensure `VecValue` does not exceed its max len
     pub fn validate_max_len_if_vec_property(&self, value: &PropertyValue<T>) -> dispatch::Result {
         let (vec_value, vec_property_type) = if let (Some(vec_value), Some(vec_property_type)) = (
             value
@@ -795,7 +797,7 @@ impl<T: Trait> Property<T> {
         Ok(())
     }
 
-    // Check if provided `PropertyValue` matches its `Type`
+    /// Check if provided `PropertyValue` matches its `Type`
     pub fn does_prop_value_match_type(&self, value: &PropertyValue<T>) -> bool {
         // A non required property can be updated to Bool(false):
         if !self.required && *value == PropertyValue::default() {
@@ -911,8 +913,9 @@ impl<T: Trait> Property<T> {
         Ok(())
     }
 
-    /// Ensure `class_id` of `Entity` under provided `entity_id` references `Entity`,
-    /// which `class_id` is equal to `class_id`, declared in corresponding `PropertyType`
+    /// Ensure `class_id` of `Entity` under provided `entity_id` references `Entity`, which `class_id` is equal to `class_id`,
+    /// declared in corresponding `PropertyType`.
+    /// Returns  corresponding `Entity` instance
     pub fn ensure_referenced_entity_match_its_class(
         entity_id: T::EntityId,
         class_id: T::ClassId,
@@ -981,13 +984,13 @@ impl<T: Trait> Property<T> {
                 single_property_type.ensure_property_type_size_is_valid()
             }
             PropertyType::Vector(vec_property_type) => {
-                // Ensure Type spcific TextMaxLengthConstraint & VecMaxLengthConstraint satisfied
+                // Ensure Type specific TextMaxLengthConstraint & VecMaxLengthConstraint satisfied
                 vec_property_type.ensure_property_type_size_is_valid()
             }
         }
     }
 
-    /// Ensure refers to existing class_id, if If Property Type is Reference,
+    /// Ensure refers to existing `class_id`, if If `Property` `Type` is `Reference`,
     pub fn ensure_property_type_reference_is_valid(&self) -> dispatch::Result {
         let has_unknown_reference =
             if let Type::Reference(other_class_id, _) = self.property_type.get_inner_type() {

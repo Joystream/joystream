@@ -777,24 +777,27 @@ decl_module! {
             // Ensure Class under given id exists, return corresponding one
             Self::ensure_known_class_id(class_id)?;
 
-            // Check voucher existance
-            let voucher_exists = <EntityCreationVouchers<T>>::exists(class_id, &controller);
-
             // Ensure maximum_entities_count does not exceed individual entities creation limit
             Self::ensure_valid_number_of_class_entities_per_actor_constraint(maximum_entities_count)?;
+
+            // Check voucher existance
+            let voucher_exists = <EntityCreationVouchers<T>>::exists(class_id, &controller);
 
             //
             // == MUTATION SAFE ==
             //
 
             if voucher_exists {
-                // Set new maximum_entities_count limit for selected voucher
-                <EntityCreationVouchers<T>>::mutate(class_id, &controller, |entity_creation_voucher| {
-                    entity_creation_voucher.set_maximum_entities_count(maximum_entities_count);
 
-                    // Trigger event
-                    Self::deposit_event(RawEvent::EntityCreationVoucherUpdated(controller.clone(), entity_creation_voucher.to_owned()))
-                });
+                // Set new maximum_entities_count limit for selected voucher
+                let mut entity_creation_voucher = Self::entity_creation_vouchers(class_id, &controller);
+
+                entity_creation_voucher.set_maximum_entities_count(maximum_entities_count);
+
+                <EntityCreationVouchers<T>>::insert(class_id, controller.clone(), entity_creation_voucher.clone());
+
+                // Trigger event
+                Self::deposit_event(RawEvent::EntityCreationVoucherUpdated(controller, entity_creation_voucher))
             } else {
                 // Create new EntityCreationVoucher instance with provided maximum_entities_count
                 let entity_creation_voucher = EntityCreationVoucher::new(maximum_entities_count);
@@ -839,16 +842,16 @@ decl_module! {
             let classs_maintainers = class_permissions.get_maintainers();
             Self::ensure_class_maintainers_are_valid(classs_maintainers)?;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             // Create new Class instance from provided values
             let class = Class::new(
                 class_permissions, name, description, maximum_entities_count, default_entity_creation_voucher_upper_bound
             );
 
             let class_id = Self::next_class_id();
-
-            //
-            // == MUTATION SAFE ==
-            //
 
             // Add new `Class` to runtime storage
             <ClassById<T>>::insert(&class_id, class);
@@ -882,6 +885,10 @@ decl_module! {
                 Self::ensure_class_maintainers_are_valid(updated_maintainers)?;
             }
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             let class_permissions = class.get_permissions();
 
             // Make updated class_permissions from parameters provided
@@ -889,10 +896,6 @@ decl_module! {
                 class_permissions, updated_any_member, updated_entity_creation_blocked,
                 updated_all_entity_property_values_locked, updated_maintainers
             );
-
-            //
-            // == MUTATION SAFE ==
-            //
 
             // If class_permissions update has been performed
             if let Some(updated_class_permissions) = updated_class_permissions  {
@@ -935,6 +938,9 @@ decl_module! {
             // Complete all checks to ensure all provided new_properties are valid
             Self::ensure_all_properties_are_valid(&new_properties)?;
 
+            // Id of next Class Schema being added
+            let schema_id = class.schemas.len() as SchemaId;
+
             let class_properties = class.get_properties();
 
             // Ensure all Property names are unique within Class
@@ -957,12 +963,10 @@ decl_module! {
             <ClassById<T>>::mutate(class_id, |class| {
                 class.properties = updated_class_properties;
                 class.schemas.push(schema);
-
-                let schema_id = class.schemas.len() - 1;
-
-                // Trigger event
-                Self::deposit_event(RawEvent::ClassSchemaAdded(class_id, schema_id as SchemaId));
             });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::ClassSchemaAdded(class_id, schema_id));
 
             Ok(())
         }
@@ -1075,29 +1079,40 @@ decl_module! {
                 &new_property_value_references_with_same_owner_flag_set
             )?;
 
-            // Perform checks to ensure all `new_property_value_references_with_same_owner_flag_set`
-            // under provided `entity_property_id_references_with_same_owner_flag_set` are valid
-            Self::ensure_property_values_are_valid(
-                &class_properties, &entity_property_id_references_with_same_owner_flag_set,
-                &new_controller, &new_property_value_references_with_same_owner_flag_set
-            )?;
+            // Retrieve `entity_property_id_references_with_same_owner_flag_set`,
+            // that are not in `new_property_value_references_with_same_owner_flag_set`
+            let unused_property_id_references_with_same_owner_flag_set = Self::compute_unused_property_ids(
+                &new_property_value_references_with_same_owner_flag_set, &entity_property_id_references_with_same_owner_flag_set
+            );
+
+            // Perform checks to ensure all required property_values under provided unused_schema_property_ids provided
+            Self::ensure_all_required_properties_provided(&class_properties, &unused_property_id_references_with_same_owner_flag_set)?;
+
+            // Create wrapper structure from provided new_property_value_references_with_same_owner_flag_set and their corresponding Class properties
+            let values_for_existing_properties = ValuesForExistingProperties::from(
+                &class_properties, &new_property_value_references_with_same_owner_flag_set
+            );
+
+            // Validate all values, provided in values_for_existing_properties,
+            // against the type of its Property and check any additional constraints
+            Self::ensure_property_values_are_valid(&new_controller, &values_for_existing_properties)?;
 
             // Make updated entity_property_values from parameters provided
             let entity_property_values_updated =
                 if let Some(entity_property_values_updated) =
                     Self::make_updated_property_value_references_with_same_owner_flag_set(
-                        entity_property_id_references_with_same_owner_flag_set, &entity_property_values,
+                        unused_property_id_references_with_same_owner_flag_set, &entity_property_values,
                         &new_property_value_references_with_same_owner_flag_set,
                     ) {
 
                         // Create wrapper structure from provided entity_property_values_updated
                         // and their corresponding Class properties
-                        let values_for_updated_properties = ValuesForExistingProperties::from(
+                        let updated_values_for_existing_properties = ValuesForExistingProperties::from(
                             &class_properties, &entity_property_values_updated
                         );
 
-                        // Traverse all values_for_updated_properties to ensure unique property satisfied (if required)
-                        Self::ensure_property_values_unique_option_satisfied(values_for_updated_properties)?;
+                        // Traverse all updated_values_for_existing_properties to ensure unique property satisfied (if required)
+                        Self::ensure_property_values_unique_option_satisfied(updated_values_for_existing_properties)?;
                         Some(entity_property_values_updated)
                     } else {
                         None
@@ -1299,25 +1314,29 @@ decl_module! {
             // Ensure all provided property values are for properties in the given schema
             schema.ensure_has_properties(&property_values)?;
 
+            // Retrieve Schema property ids, which are not provided in property_values
+            let unused_schema_property_ids = Self::compute_unused_property_ids(&property_values, schema.get_properties());
+            let class_properties = class.properties;
+
+            // Perform checks to ensure all required property_values under provided unused_schema_property_ids provided
+            Self::ensure_all_required_properties_provided(&class_properties, &unused_schema_property_ids)?;
+
             // Ensure all property_values under given Schema property ids are valid
             let entity_controller = entity.get_permissions_ref().get_controller();
 
-            let class_properties = class.properties;
-
-            // Perform all required checks to ensure property_values under provided schema property_ids are valid
-            Self::ensure_property_values_are_valid(
-                &class_properties, schema.get_properties(), entity_controller, &property_values,
-            )?;
-
             // Create wrapper structure from provided property_values and their corresponding Class properties
             let values_for_existing_properties = ValuesForExistingProperties::from(&class_properties, &property_values);
+
+            // Validate all values, provided in values_for_existing_properties,
+            // against the type of its Property and check any additional constraints
+            Self::ensure_property_values_are_valid(&entity_controller, &values_for_existing_properties)?;
 
             // Calculate entities reference counter side effects for current operation
             let entities_inbound_rcs_delta = Self::calculate_entities_inbound_rcs_delta(
                 values_for_existing_properties, DeltaMode::Increment
             );
 
-            // Update InboundReferenceCounter, based on previously calculated ReferenceCounterSideEffects, for each Entity involved
+            // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
             entities_inbound_rcs_delta.update_entities_rcs();
 
             let entity_property_values = entity.get_values();
@@ -1374,6 +1393,7 @@ decl_module! {
             class.ensure_property_values_unlocked()?;
 
             // Filter new_property_values, that are identical to entity_property_values.
+            // Get `new_property_values`, that are not in `entity_property_values`
             let new_property_values = Self::try_filter_identical_property_values(&entity.values, new_property_values);
 
             // Ensure all provided new_property_values are already added to the current Entity instance
@@ -1387,21 +1407,20 @@ decl_module! {
             // Ensure all provided property values are unlocked for the actor with given access_level
             Self::ensure_all_property_values_are_unlocked_from(&new_values_for_existing_properties, access_level)?;
 
-            // Perform all necessary checks to ensure `new_values_for_existing_properties` are valid
-            Self::ensure_new_property_values_are_valid(&entity, &new_values_for_existing_properties)?;
+            let entity_controller = entity.get_permissions_ref().get_controller();
 
-            //
-            // == MUTATION SAFE ==
-            //
+            // Validate all values, provided in values_for_existing_properties,
+            // against the type of its Property and check any additional constraints
+            Self::ensure_property_values_are_valid(&entity_controller, &new_values_for_existing_properties)?;
 
             // Get current property values of an entity,
             // so we can update them if new values provided present in new_property_values.
 
             let entity_property_values = entity.values;
 
-            // Make updated entity_property_values from current entity_property_values and new_property_values
+            // Make updated entity_property_values from current entity_property_values and new_property_values provided
             let entity_property_values_updated = if let Some(entity_property_values_updated) =
-                Self::make_updated_values(&entity_property_values, &new_property_values) {
+                Self::make_updated_property_values(&entity_property_values, &new_property_values) {
 
                     // Create wrapper structure from new_property_values and their corresponding Class properties
                     let updated_values_for_existing_properties = ValuesForExistingProperties::from(
@@ -1415,6 +1434,10 @@ decl_module! {
                     None
                 };
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             // If property values should be updated
             if let Some(entity_property_values_updated) = entity_property_values_updated {
                 // Update entity property values
@@ -1426,7 +1449,7 @@ decl_module! {
                 let entities_inbound_rcs_delta =
                     Self::get_updated_inbound_rcs_delta(class_properties, entity_property_values, &new_property_values);
 
-                // Update InboundReferenceCounter, based on previously calculated ReferenceCounterSideEffects, for each Entity involved
+                // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
                 entities_inbound_rcs_delta.update_entities_rcs();
 
                 // Trigger event
@@ -1469,7 +1492,7 @@ decl_module! {
                     same_controller_status, DeltaMode::Decrement
                 );
 
-                // Update InboundReferenceCounter, based on previously calculated ReferenceCounterSideEffects, for each Entity involved
+                // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
                 entities_inbound_rcs_delta.update_entities_rcs();
                 Some(entities_inbound_rcs_delta)
             } else {
@@ -1541,17 +1564,17 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Decrease reference counter of involved entity (if some)
             let involved_entity_id = property_value_vector
                 .get_vec_value()
                 .get_involved_entities()
                 .map(|involved_entities| involved_entities[index_in_property_vector as usize]);
 
             let involved_entity_and_side_effect = if let Some(involved_entity_id) = involved_entity_id {
+                // Decrease reference counter of involved entity (if some)
                 let same_controller_status = property.property_type.same_controller_status();
-                let rc_delta = EntityReferenceCounterSideEffect::one(same_controller_status, DeltaMode::Decrement);
+                let rc_delta = EntityReferenceCounterSideEffect::atomic(same_controller_status, DeltaMode::Decrement);
 
-                // Update InboundReferenceCounter of involved entity, based on previously calculated ReferenceCounterSideEffect
+                // Update InboundReferenceCounter of involved entity, based on previously calculated rc_delta
                 Self::update_entity_rc(&involved_entity_id, &rc_delta);
                 Some((involved_entity_id, rc_delta))
             } else {
@@ -1632,7 +1655,7 @@ decl_module! {
             // Increase reference counter of involved entity (if some)
             let involved_entity_and_side_effect = if let Some(entity_rc_to_increment) = value.get_involved_entity() {
                 let same_controller_status = class_property.property_type.same_controller_status();
-                let rc_delta = EntityReferenceCounterSideEffect::one(same_controller_status, DeltaMode::Increment);
+                let rc_delta = EntityReferenceCounterSideEffect::atomic(same_controller_status, DeltaMode::Increment);
 
                 // Update InboundReferenceCounter of involved entity, based on previously calculated ReferenceCounterSideEffect
                 Self::update_entity_rc(&entity_rc_to_increment, &rc_delta);
@@ -1672,6 +1695,10 @@ decl_module! {
             // Ensure maximum number of operations during atomic batching limit not reached
             Self::ensure_number_of_operations_during_atomic_batching_limit_not_reached(&operations)?;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             // This Vec holds the T::EntityId of the entity created as a result of executing a `CreateEntity` `Operation`
             let mut entity_created_in_operation = vec![];
 
@@ -1684,6 +1711,7 @@ decl_module! {
                 match operation_type {
                     OperationType::CreateEntity(create_entity_operation) => {
                         Self::create_entity(origin, create_entity_operation.class_id, actor)?;
+
                         // entity id of newly created entity
                         let entity_id = Self::next_entity_id() - T::EntityId::one();
                         entity_created_in_operation.push(entity_id);
@@ -1724,7 +1752,7 @@ impl<T: Trait> Module<T> {
         entity_id: &T::EntityId,
         reference_counter_delta: &EntityReferenceCounterSideEffect,
     ) {
-        // Update both total and same owner number of inbound references for the Entity instance under given entity_id
+        // Update both `total` and `same owner` number of inbound references for the Entity instance under given `entity_id`
         <EntityById<T>>::mutate(entity_id, |entity| {
             let entity_inbound_rc = entity.get_reference_counter_mut();
             entity_inbound_rc.total =
@@ -1741,7 +1769,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Update `entity_property_values` with `property_values`
-    /// Return updated `entity_property_values`
+    /// Returns updated `entity_property_values`
     fn make_updated_entity_property_values(
         schema: Schema,
         entity_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
@@ -1754,7 +1782,7 @@ impl<T: Trait> Module<T> {
                 .chain(property_values.into_iter())
                 .collect();
 
-        // Write all missing non required `Schema` `property_values` as PropertyValue::default()
+        // Write all missing non required `Schema` `property_values` as `PropertyValue::default()`
         let non_required_property_values: BTreeMap<PropertyId, PropertyValue<T>> = schema
             .get_properties()
             .iter()
@@ -1774,7 +1802,8 @@ impl<T: Trait> Module<T> {
             .collect()
     }
 
-    /// Update `ReferenceCounterSideEffects`, based on `involved_entity_ids`, `same_controller_status` provided and chosen `DeltaMode`
+    /// Update `inbound_rcs_delta`, based on `involved_entity_ids`, `same_controller_status` provided and chosen `DeltaMode`
+    /// Returns updated `inbound_rcs_delta`
     fn perform_entities_inbound_rcs_delta_calculation(
         mut inbound_rcs_delta: ReferenceCounterSideEffects<T>,
         involved_entity_ids: Vec<T::EntityId>,
@@ -1788,13 +1817,14 @@ impl<T: Trait> Module<T> {
             *inbound_rcs_delta
                 .entry(involved_entity_id)
                 .or_insert_with(|| {
-                    EntityReferenceCounterSideEffect::one(same_controller_status, delta_mode)
-                }) += EntityReferenceCounterSideEffect::one(same_controller_status, delta_mode);
+                    EntityReferenceCounterSideEffect::atomic(same_controller_status, delta_mode)
+                }) += EntityReferenceCounterSideEffect::atomic(same_controller_status, delta_mode);
         }
         inbound_rcs_delta
     }
 
-    /// Calculate `ReferenceCounterSideEffects`, based on values provided and chosen `DeltaMode`
+    /// Calculate `ReferenceCounterSideEffects`, based on `values_for_existing_properties` provided and chosen `DeltaMode`
+    /// Returns calculated `ReferenceCounterSideEffects`
     fn calculate_entities_inbound_rcs_delta(
         values_for_existing_properties: ValuesForExistingProperties<T>,
         delta_mode: DeltaMode,
@@ -1810,6 +1840,7 @@ impl<T: Trait> Module<T> {
                     )
                 })
             })
+            // Aggeregate all sideffects on a single entity together into one side effect map
             .fold(
                 ReferenceCounterSideEffects::default(),
                 |inbound_rcs_delta, (involved_entity_ids, same_controller_status)| {
@@ -1823,32 +1854,44 @@ impl<T: Trait> Module<T> {
             )
     }
 
-    /// Get `ReferenceCounterSideEffects`, based on entities involved into update process
+    /// Compute `ReferenceCounterSideEffects`, based on `PropertyValue` `Reference`'s involved into update process.
+    /// Returns computed `ReferenceCounterSideEffects`
     pub fn get_updated_inbound_rcs_delta(
         class_properties: Vec<Property<T>>,
         entity_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
         new_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> ReferenceCounterSideEffects<T> {
-        // Entities, which rcs should be updated
+        // Filter entity_property_values to get only those, which will be substituted with new_property_values
         let entity_property_values_to_update: BTreeMap<PropertyId, PropertyValue<T>> =
             entity_property_values
                 .into_iter()
                 .filter(|(entity_id, _)| new_property_values.contains_key(entity_id))
                 .collect();
 
-        // Calculate entities reference counter side effects for current operation
-        Self::calculate_entities_inbound_rcs_delta(
+        // Calculate entities reference counter side effects for update operation
+
+        // Calculate entities inbound reference counter delta with Decrement DeltaMode for entity_property_values_to_update,
+        // as involved PropertyValue References will be substituted with new ones
+        let decremental_reference_counter_side_effects = Self::calculate_entities_inbound_rcs_delta(
             ValuesForExistingProperties::from(&class_properties, &entity_property_values_to_update),
             DeltaMode::Decrement,
-        )
-        .update(Self::calculate_entities_inbound_rcs_delta(
+        );
+
+        // Calculate entities inbound reference counter delta with Increment DeltaMode for new_property_values,
+        // as involved PropertyValue References will substitute the old ones
+        let incremental_reference_counter_side_effects = Self::calculate_entities_inbound_rcs_delta(
             ValuesForExistingProperties::from(&class_properties, new_property_values),
             DeltaMode::Increment,
-        ))
+        );
+
+        // Add up both net decremental_reference_counter_side_effects and incremental_reference_counter_side_effects
+        // to get one net sideffect per entity.
+        decremental_reference_counter_side_effects
+            .update(incremental_reference_counter_side_effects)
     }
 
     /// Used to update `class_permissions` with parameters provided.
-    /// Returns `Some(ClassPermissions<T>)` if update performed and `None` otherwise
+    /// Returns updated `class_permissions` if update performed
     pub fn make_updated_class_permissions(
         class_permissions: ClassPermissions<T>,
         updated_any_member: Option<bool>,
@@ -1886,7 +1929,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Used to update `entity_permissions` with parameters provided.
-    /// Returns `Some(EntityPermissions<T>)` if update performed and `None` otherwise
+    /// Returns updated `entity_permissions` if update performed
     pub fn make_updated_entity_permissions(
         entity_permissions: EntityPermissions<T>,
         updated_frozen_for_controller: Option<bool>,
@@ -1988,9 +2031,9 @@ impl<T: Trait> Module<T> {
     }
 
     /// Used to update entity_property_values with parameters provided.
-    /// Returns `Some(BTreeMap<PropertyId, PropertyValue<T>>)` if update performed and `None` otherwise
+    /// Returns updated `entity_property_values`, if update performed
     pub fn make_updated_property_value_references_with_same_owner_flag_set(
-        entity_property_id_references_with_same_owner_flag_set: BTreeSet<PropertyId>,
+        unused_property_id_references_with_same_owner_flag_set: BTreeSet<PropertyId>,
         entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
         new_property_value_references_with_same_owner_flag_set: &BTreeMap<
             PropertyId,
@@ -2000,23 +2043,25 @@ impl<T: Trait> Module<T> {
         // Used to check if update performed
         let mut entity_property_values_updated = entity_property_values.clone();
 
-        for entity_property_id_reference in entity_property_id_references_with_same_owner_flag_set {
-            // If new_property_value_reference_with_same_owner_flag_set under provided entity_property_id_reference exists,
-            if let Some(new_property_value_reference_with_same_owner_flag_set) =
-                new_property_value_references_with_same_owner_flag_set
-                    .get(&entity_property_id_reference)
-            {
-                // Update entity_property_values with new_property_value_reference_with_same_owner_flag_set
-                entity_property_values_updated.insert(
-                    entity_property_id_reference,
-                    new_property_value_reference_with_same_owner_flag_set.to_owned(),
-                );
-            } else {
-                // Throw away old non required property value references with same owner flag set
-                // and replace them with Default ones
-                entity_property_values_updated
-                    .insert(entity_property_id_reference, PropertyValue::default());
-            }
+        for (property_id, new_property_value_reference_with_same_owner_flag_set) in
+            new_property_value_references_with_same_owner_flag_set
+        {
+            // Update entity_property_values map at property_id with new_property_value_reference_with_same_owner_flag_set
+            entity_property_values_updated.insert(
+                *property_id,
+                new_property_value_reference_with_same_owner_flag_set.to_owned(),
+            );
+        }
+
+        // Throw away old non required property value references with same owner flag set
+        // and replace them with Default ones
+        for unused_property_id_reference_with_same_owner_flag_set in
+            unused_property_id_references_with_same_owner_flag_set
+        {
+            entity_property_values_updated.insert(
+                unused_property_id_reference_with_same_owner_flag_set,
+                PropertyValue::default(),
+            );
         }
 
         if *entity_property_values != entity_property_values_updated {
@@ -2026,30 +2071,36 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    /// Perform all checks to ensure `property_values` under provided `property_ids` are valid
-    pub fn ensure_property_values_are_valid(
-        class_properties: &[Property<T>],
-        property_ids: &BTreeSet<PropertyId>,
-        entity_controller: &EntityController<T>,
+    /// Retrieve `property_ids`, that are not in `property_values`
+    pub fn compute_unused_property_ids(
         property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
-    ) -> dispatch::Result {
-        for property_id in property_ids {
-            // Indexing is safe, Class should always maintain such constistency
-            let class_property = &class_properties[*property_id as usize];
+        property_ids: &BTreeSet<PropertyId>,
+    ) -> BTreeSet<PropertyId> {
+        let property_value_indices: BTreeSet<PropertyId> =
+            property_values.keys().cloned().collect();
 
-            if let Some(new_value) = property_values.get(property_id) {
-                // Validate new PropertyValue against the type of this Property and check any additional constraints
-                class_property
-                    .ensure_property_value_to_update_is_valid(new_value, entity_controller)?;
-            } else {
-                // All required property values should be provided
-                ensure!(!class_property.required, ERROR_MISSING_REQUIRED_PROP);
-            }
+        property_ids
+            .difference(&property_value_indices)
+            .copied()
+            .collect()
+    }
+
+    /// Perform checks to ensure all required `property_values` under provided `unused_schema_property_ids` provided
+    pub fn ensure_all_required_properties_provided(
+        class_properties: &[Property<T>],
+        unused_schema_property_ids: &BTreeSet<PropertyId>,
+    ) -> dispatch::Result {
+        for &unused_schema_property_id in unused_schema_property_ids {
+            // Indexing is safe, Class should always maintain such constistency
+            let class_property = &class_properties[unused_schema_property_id as usize];
+
+            // All required property values should be provided
+            ensure!(!class_property.required, ERROR_MISSING_REQUIRED_PROP);
         }
         Ok(())
     }
 
-    /// Ensure all `updated_values_for_existing_properties` satisfy unique option, if required
+    /// Ensure all `updated_values_for_existing_properties` provided satisfy unique option, if required
     pub fn ensure_property_values_unique_option_satisfied(
         updated_values_for_existing_properties: ValuesForExistingProperties<T>,
     ) -> dispatch::Result {
@@ -2063,19 +2114,17 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Perform all necessary checks to ensure `new_values_for_existing_properties` are valid
-    pub fn ensure_new_property_values_are_valid(
-        entity: &Entity<T>,
-        new_values_for_existing_properties: &ValuesForExistingProperties<T>,
+    /// Validate all values, provided in `values_for_existing_properties`, against the type of its `Property`
+    /// and check any additional constraints
+    pub fn ensure_property_values_are_valid(
+        entity_controller: &EntityController<T>,
+        values_for_existing_properties: &ValuesForExistingProperties<T>,
     ) -> dispatch::Result {
-        for new_value_for_existing_property in new_values_for_existing_properties.values() {
-            let (property, value) = new_value_for_existing_property.unzip();
+        for value_for_existing_property in values_for_existing_properties.values() {
+            let (property, value) = value_for_existing_property.unzip();
 
             // Validate new PropertyValue against the type of this Property and check any additional constraints
-            property.ensure_property_value_to_update_is_valid(
-                value,
-                entity.get_permissions_ref().get_controller(),
-            )?;
+            property.ensure_property_value_to_update_is_valid(value, entity_controller)?;
         }
 
         Ok(())
@@ -2110,6 +2159,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Filter `new_property_values` identical to `entity_property_values`.
+    /// Return only `new_property_values`, that are not in `entity_property_values`
     pub fn try_filter_identical_property_values(
         entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
         new_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
@@ -2125,10 +2175,9 @@ impl<T: Trait> Module<T> {
             .collect()
     }
 
-    /// Update `entity_property_values` with `new_property_values`.
-    /// Returns `Some(BTreeMap<PropertyId, PropertyValue<T>>)`,
-    /// if `entity_property_values` have been updated, and `None` otherwise.
-    pub fn make_updated_values(
+    /// Update existing `entity_property_values` with `new_property_values`.
+    /// if update performed, returns updated entity property values
+    pub fn make_updated_property_values(
         entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
         new_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
     ) -> Option<BTreeMap<PropertyId, PropertyValue<T>>> {
@@ -2151,7 +2200,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Insert `Value` into `VecPropertyValue` at `index_in_property_vector`.
-    /// Returns `PropertyValue`
+    /// Returns `VecPropertyValue` wrapped in `PropertyValue`
     pub fn insert_at_index_in_property_vector(
         mut property_value_vector: VecPropertyValue<T>,
         index_in_property_vector: VecMaxLength,
@@ -2162,7 +2211,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Remove `Value` at `index_in_property_vector` in `VecPropertyValue`.
-    /// Returns `PropertyValue`
+    /// Returns `VecPropertyValue` wrapped in `PropertyValue`
     pub fn remove_at_index_in_property_vector(
         mut property_value_vector: VecPropertyValue<T>,
         index_in_property_vector: VecMaxLength,
@@ -2171,7 +2220,8 @@ impl<T: Trait> Module<T> {
         PropertyValue::Vector(property_value_vector)
     }
 
-    /// Clear `VecPropertyValue`. Returns empty `PropertyValue`
+    /// Clear `VecPropertyValue`.
+    /// Returns empty `VecPropertyValue` wrapped in `PropertyValue`
     pub fn clear_property_vector(
         mut property_value_vector: VecPropertyValue<T>,
     ) -> PropertyValue<T> {
@@ -2224,7 +2274,7 @@ impl<T: Trait> Module<T> {
     /// Ensure `MaxNumberOfMaintainersPerClass` constraint satisfied
     pub fn ensure_maintainers_limit_not_reached(
         curator_groups: &BTreeSet<T::CuratorGroupId>,
-    ) -> Result<(), &'static str> {
+    ) -> dispatch::Result {
         ensure!(
             curator_groups.len() < T::MaxNumberOfMaintainersPerClass::get() as usize,
             ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED
@@ -2315,7 +2365,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Ensure, that all entities creation limits, defined for a given `Class`, are valid
+    /// Ensure all entities creation limits, defined for a given `Class`, are valid
     pub fn ensure_entities_creation_limits_are_valid(
         maximum_entities_count: T::EntityId,
         default_entity_creation_voucher_upper_bound: T::EntityId,
