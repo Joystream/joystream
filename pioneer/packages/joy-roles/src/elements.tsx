@@ -102,7 +102,7 @@ export type GroupLead = {
   roleAccount: GenericAccountId;
   profile: IProfile;
   title: string;
-  stage: LeadRoleState;
+  stage?: LeadRoleState;
 }
 
 type inset = {
@@ -131,7 +131,7 @@ export function GroupLeadView (props: GroupLead & inset) {
         <Card.Description>
           <Label color='teal' ribbon={fluid}>
             <Icon name="shield" />
-          Content Lead
+            { props.title }
             <Label.Detail>{/* ... */}</Label.Detail>
           </Label>
         </Card.Description>
