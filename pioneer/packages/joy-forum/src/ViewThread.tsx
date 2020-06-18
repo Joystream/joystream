@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import styled from 'styled-components';
-import { Table, Button, Label } from 'semantic-ui-react';
+import { Table, Button, Label, Icon } from 'semantic-ui-react';
 import BN from 'bn.js';
 
 import { Category, Thread, ThreadId, Post, PostId } from '@joystream/types/forum';
-import { Pagination, RepliesPerPage, CategoryCrumbs, TimeAgoDate, usePagination, useQueryParam } from './utils';
+import { Pagination, RepliesPerPage, CategoryCrumbs, TimeAgoDate, usePagination, useQueryParam, ReplyIdxQueryParam, ReplyEditIdQueryParam } from './utils';
 import { ViewReply } from './ViewReply';
 import { Moderate } from './Moderate';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
@@ -19,6 +19,7 @@ import { bnToStr } from '@polkadot/joy-utils/index';
 import { IfIAmForumSudo } from './ForumSudo';
 import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
 import { formatDate } from '@polkadot/joy-utils/functions/date';
+import { NewReply, EditReply } from './EditReply';
 
 type ThreadTitleProps = {
   thread: Thread;
@@ -76,6 +77,47 @@ const ThreadInfoMemberPreview = styled(MemberPreview)`
   }
 `;
 
+const ReplyEditContainer = styled.div`
+  margin-top: 30px;
+  padding-bottom: 60px;
+`;
+
+type ThreadPreviewProps = {
+  thread: Thread;
+  repliesCount: number;
+}
+
+const ThreadPreview: React.FC<ThreadPreviewProps> = ({ thread, repliesCount }) => {
+  const title = <ThreadTitle thread={thread} />;
+
+  return (
+    <Table.Row>
+      <Table.Cell>
+        <Link to={`/forum/threads/${thread.id.toString()}`}>
+          {
+            thread.moderated
+              ? (
+                <MutedSpan>
+                  <Label color='orange'>Moderated</Label> {title}
+                </MutedSpan>
+              )
+              : title
+          }
+        </Link>
+      </Table.Cell>
+      <Table.Cell>
+        {repliesCount}
+      </Table.Cell>
+      <Table.Cell>
+        <MemberPreview accountId={thread.author_id} />
+      </Table.Cell>
+      <Table.Cell>
+        {formatDate(thread.created_at.momentDate)}
+      </Table.Cell>
+    </Table.Row>
+  );
+};
+
 type InnerViewThreadProps = {
   category: Category;
   thread: Thread;
@@ -91,11 +133,15 @@ function InnerViewThread (props: ViewThreadProps) {
   const [displayedPosts, setDisplayedPosts] = useState<Post[]>([]);
   const postsRefs = useRef<Record<number, React.RefObject<HTMLDivElement>>>({});
   const { category, thread, preview = false } = props;
+  const replyFormRef = useRef<HTMLDivElement>(null);
+  const [rawSelectedPostIdx, setSelectedPostIdx] = useQueryParam(ReplyIdxQueryParam);
+  const [rawEditedPostId, setEditedPostId] = useQueryParam(ReplyEditIdQueryParam);
   const [currentPage, setCurrentPage] = usePagination();
-  const [rawSelectedPostIdx, setSelectedPostIdx] = useQueryParam('replyIdx');
 
   const parsedSelectedPostIdx = rawSelectedPostIdx ? parseInt(rawSelectedPostIdx) : null;
   const selectedPostIdx = (parsedSelectedPostIdx && !Number.isNaN(parsedSelectedPostIdx)) ? parsedSelectedPostIdx : null;
+
+  const editedPostId = rawEditedPostId && new PostId(rawEditedPostId);
 
   if (!thread) {
     return <em>Loading thread details...</em>;
@@ -114,7 +160,7 @@ function InnerViewThread (props: ViewThreadProps) {
 
   const changePageAndClearSelectedPost = (page?: number | string) => {
     setSelectedPostIdx(null);
-    setCurrentPage(page, true);
+    setCurrentPage(page, [ReplyIdxQueryParam]);
   };
 
   if (!category) {
@@ -124,33 +170,14 @@ function InnerViewThread (props: ViewThreadProps) {
   }
 
   if (preview) {
-    const title = <ThreadTitle thread={thread} />;
-    const repliesCount = totalPostsInThread - 1;
-    return (
-      <Table.Row>
-        <Table.Cell>
-          <Link to={`/forum/threads/${id.toString()}`}>{thread.moderated
-            ? <MutedSpan><Label color='orange'>Moderated</Label> {title}</MutedSpan>
-            : title
-          }</Link>
-        </Table.Cell>
-        <Table.Cell>
-          {repliesCount}
-        </Table.Cell>
-        <Table.Cell>
-          <MemberPreview accountId={thread.author_id} />
-        </Table.Cell>
-        <Table.Cell>
-          {formatDate(thread.created_at.momentDate)}
-        </Table.Cell>
-      </Table.Row>
-    );
+    return <ThreadPreview thread={thread} repliesCount={totalPostsInThread - 1} />;
   }
 
   const { api, nextPostId } = props;
   const [loaded, setLoaded] = useState(false);
   const [posts, setPosts] = useState(new Array<Post>());
 
+  // fetch posts
   useEffect(() => {
     const loadPosts = async () => {
       if (!nextPostId || totalPostsInThread === 0) return;
@@ -226,6 +253,34 @@ function InnerViewThread (props: ViewThreadProps) {
     setDisplayedPosts(postsToDisplay);
   }, [loaded, posts, currentPage]);
 
+  const scrollToReplyForm = () => {
+    if (!replyFormRef.current) return;
+    replyFormRef.current.scrollIntoView();
+  };
+
+  const clearEditedPost = () => {
+    setEditedPostId(null);
+  };
+
+  const onThreadReplyClick = () => {
+    clearEditedPost();
+    scrollToReplyForm();
+  };
+
+  const onPostEditSuccess = async () => {
+    if (!editedPostId) {
+      // eslint-disable-next-line no-console
+      console.error('editedPostId not set!');
+      return;
+    }
+
+    const updatedPost = await api.query.forum.postById(editedPostId) as Post;
+    const updatedPosts = posts.map(post => post.id.eq(editedPostId) ? updatedPost : post);
+
+    setPosts(updatedPosts);
+    clearEditedPost();
+  };
+
   // console.log({ nextPostId: bnToStr(nextPostId), loaded, posts });
 
   const renderPageOfPosts = () => {
@@ -236,13 +291,19 @@ function InnerViewThread (props: ViewThreadProps) {
     const pagination =
       <Pagination
         currentPage={currentPage}
-        totalItems={totalPostsInThread}
+        totalItems={posts.length}
         itemsPerPage={RepliesPerPage}
         onPageChange={changePageAndClearSelectedPost}
       />;
 
     const renderedReplies = displayedPosts.map((reply) => {
       const replyIdx = reply.nr_in_thread.toNumber();
+
+      const onReplyEditClick = () => {
+        setEditedPostId(reply.id.toString());
+        scrollToReplyForm();
+      };
+
       return (
         <ViewReply
           ref={postsRefs.current[replyIdx]}
@@ -251,6 +312,8 @@ function InnerViewThread (props: ViewThreadProps) {
           thread={thread}
           reply={reply}
           selected={selectedPostIdx === replyIdx}
+          onEdit={onReplyEditClick}
+          onQuote={() => {}}
         />
       );
     });
@@ -267,13 +330,10 @@ function InnerViewThread (props: ViewThreadProps) {
       return null;
     }
     return <span className='JoyInlineActions'>
-      <Link
-        to={`/forum/threads/${id.toString()}/reply`}
-        className='ui small button'
-      >
-        <i className='reply icon' />
+      <Button onClick={onThreadReplyClick}>
+        <Icon name="reply" />
         Reply
-      </Link>
+      </Button>
 
       {/* TODO show 'Edit' button only if I am owner */}
       {/* <Link
@@ -333,6 +393,15 @@ function InnerViewThread (props: ViewThreadProps) {
       ? renderModerationRationale()
       : renderPageOfPosts()
     }
+    <ReplyEditContainer ref={replyFormRef}>
+      {
+        editedPostId ? (
+          <EditReply id={editedPostId} key={editedPostId.toString()} onEditSuccess={onPostEditSuccess} onEditCancel={clearEditedPost} />
+        ) : (
+          <NewReply threadId={thread.id} />
+        )
+      }
+    </ReplyEditContainer>
   </div>;
 }
 

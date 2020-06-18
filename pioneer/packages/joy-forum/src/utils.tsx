@@ -12,6 +12,9 @@ import { withMulti } from '@polkadot/react-api';
 
 export const ThreadsPerPage = 10;
 export const RepliesPerPage = 10;
+export const ReplyIdxQueryParam = 'replyIdx';
+export const ReplyEditIdQueryParam = 'editReplyId';
+export const PagingQueryParam = 'page';
 
 type PaginationProps = {
   currentPage?: number;
@@ -148,7 +151,7 @@ export type UrlHasIdProps = {
 };
 
 type QueryValueType = string | null;
-type QuerySetValueType = (value?: QueryValueType | number, clear?: boolean) => void;
+type QuerySetValueType = (value?: QueryValueType | number, paramsToReset?: string[]) => void;
 type QueryReturnType = [QueryValueType, QuerySetValueType];
 
 export const useQueryParam = (queryParam: string): QueryReturnType => {
@@ -164,7 +167,7 @@ export const useQueryParam = (queryParam: string): QueryReturnType => {
     }
   }, [search, setValue, queryParam]);
 
-  const setParam: QuerySetValueType = (rawValue, clear = false) => {
+  const setParam: QuerySetValueType = (rawValue, paramsToReset = []) => {
     let parsedValue: string | null;
     if (!rawValue && rawValue !== 0) {
       parsedValue = null;
@@ -172,12 +175,14 @@ export const useQueryParam = (queryParam: string): QueryReturnType => {
       parsedValue = rawValue.toString();
     }
 
-    const params = new URLSearchParams(!clear ? search : '');
+    const params = new URLSearchParams(search);
     if (parsedValue) {
       params.set(queryParam, parsedValue);
     } else {
       params.delete(queryParam);
     }
+
+    paramsToReset.forEach(p => params.delete(p));
 
     setValue(parsedValue);
     history.push({ pathname, search: params.toString() });
@@ -187,7 +192,7 @@ export const useQueryParam = (queryParam: string): QueryReturnType => {
 };
 
 export const usePagination = (): [number, QuerySetValueType] => {
-  const [rawCurrentPage, setCurrentPage] = useQueryParam('page');
+  const [rawCurrentPage, setCurrentPage] = useQueryParam(PagingQueryParam);
 
   let currentPage = 1;
   if (rawCurrentPage) {

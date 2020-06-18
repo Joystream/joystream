@@ -45,11 +45,8 @@ class App extends React.PureComponent<Props> {
               <Route path={`${basePath}/categories/:id`} component={ViewCategoryById} />
               <Route path={`${basePath}/categories`} component={CategoryList} />
 
-              <Route path={`${basePath}/threads/:id/reply`} component={NewReply} />
               <Route path={`${basePath}/threads/:id/edit`} component={EditThread} />
               <Route path={`${basePath}/threads/:id`} component={ViewThreadById} />
-
-              <Route path={`${basePath}/replies/:id/edit`} component={EditReply} />
 
               <Route component={CategoryList} />
             </Switch>

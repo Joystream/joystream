@@ -10,7 +10,7 @@ import { JoyWarn } from '@polkadot/joy-utils/JoyStatus';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { IfIAmForumSudo } from './ForumSudo';
 import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
-import { TimeAgoDate } from './utils';
+import { TimeAgoDate, ReplyIdxQueryParam } from './utils';
 
 const HORIZONTAL_PADDING = '1em';
 const ReplyMarkdown = styled(ReactMarkdown)`
@@ -55,6 +55,8 @@ type ViewReplyProps = {
   thread: Thread;
   category: Category;
   selected?: boolean;
+  onEdit: () => void;
+  onQuote: () => void;
 };
 
 // eslint-disable-next-line react/display-name
@@ -62,7 +64,7 @@ export const ViewReply = React.forwardRef((props: ViewReplyProps, ref: React.Ref
   const { state: { address: myAddress } } = useMyAccount();
   const [showModerateForm, setShowModerateForm] = useState(false);
   const { pathname, search } = useLocation();
-  const { reply, thread, category, selected = false } = props;
+  const { reply, thread, category, selected = false, onEdit, onQuote } = props;
   const { id } = reply;
 
   if (reply.isEmpty) {
@@ -91,7 +93,7 @@ export const ViewReply = React.forwardRef((props: ViewReplyProps, ref: React.Ref
     return <ReplyFooterActionsRow>
       <div>
         {isMyPost &&
-          <Button as={Link} to={`/forum/replies/${id.toString()}/edit`} size="mini">
+          <Button onClick={onEdit} size="mini">
             <Icon name="pencil" />
             Edit
           </Button>
@@ -106,7 +108,7 @@ export const ViewReply = React.forwardRef((props: ViewReplyProps, ref: React.Ref
           </Button>
         </IfIAmForumSudo>
       </div>
-      <Button size="mini">
+      <Button onClick={onQuote} size="mini">
         <Icon name="quote left" />
         Quote
       </Button>
@@ -114,7 +116,7 @@ export const ViewReply = React.forwardRef((props: ViewReplyProps, ref: React.Ref
   };
 
   const replyLinkSearch = new URLSearchParams(search);
-  replyLinkSearch.set('replyIdx', reply.nr_in_thread.toString());
+  replyLinkSearch.set(ReplyIdxQueryParam, reply.nr_in_thread.toString());
 
   return (
     <ReplyContainer className="ui segment" ref={ref} selected={selected}>
