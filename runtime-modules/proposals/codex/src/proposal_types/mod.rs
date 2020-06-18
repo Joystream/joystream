@@ -46,8 +46,18 @@ pub enum ProposalDetails<MintedBalance, CurrencyBalance, BlockNumber, AccountId,
     /// Balance for the `set content working group mint capacity` proposal
     SetContentWorkingGroupMintCapacity(MintedBalance),
 
+    /// ********** Deprecated during the Nicaea release.
+    /// It is kept only for backward compatibility in the Pioneer. **********
+    /// AccountId for the `evict storage provider` proposal
+    EvictStorageProvider(AccountId),
+
     /// Validator count for the `set validator count` proposal
     SetValidatorCount(u32),
+
+    /// ********** Deprecated during the Nicaea release.
+    /// It is kept only for backward compatibility in the Pioneer. **********
+    /// Role parameters for the `set storage role parameters` proposal
+    SetStorageRoleParameters(RoleParameters<CurrencyBalance, BlockNumber>),
 }
 
 impl<MintedBalance, CurrencyBalance, BlockNumber, AccountId, MemberId> Default
@@ -56,6 +66,45 @@ impl<MintedBalance, CurrencyBalance, BlockNumber, AccountId, MemberId> Default
     fn default() -> Self {
         ProposalDetails::Text(b"invalid proposal details".to_vec())
     }
+}
+
+/// ********** Deprecated during the Nicaea release.
+/// It is kept only for backward compatibility in the Pioneer. **********
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Copy, Clone, Eq, PartialEq, Debug)]
+pub struct RoleParameters<Balance, BlockNumber> {
+    /// Minimum balance required to stake to enter a role.
+    pub min_stake: Balance,
+
+    /// Minimum actors to maintain - if role is unstaking
+    /// and remaining actors would be less that this value - prevent or punish for unstaking.
+    pub min_actors: u32,
+
+    /// The maximum number of spots available to fill for a role.
+    pub max_actors: u32,
+
+    /// Fixed amount of tokens paid to actors' primary account.
+    pub reward: Balance,
+
+    /// Payouts are made at this block interval.
+    pub reward_period: BlockNumber,
+
+    /// Minimum amount of time before being able to unstake.
+    pub bonding_period: BlockNumber,
+
+    /// How long tokens remain locked for after unstaking.
+    pub unbonding_period: BlockNumber,
+
+    /// Minimum period required to be in service. unbonding before this time is highly penalized
+    pub min_service_period: BlockNumber,
+
+    /// "Startup" time allowed for roles that need to sync their infrastructure
+    /// with other providers before they are considered in service and punishable for
+    /// not delivering required level of service.
+    pub startup_grace_period: BlockNumber,
+
+    /// Small fee burned to make a request to enter role.
+    pub entry_request_fee: Balance,
 }
 
 /// Contains proposal config parameters. Default values are used by migration and genesis config.

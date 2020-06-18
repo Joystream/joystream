@@ -3,6 +3,7 @@ use proposals_codex::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 
 use codec::Encode;
 use rstd::vec::Vec;
+use srml_support::print;
 
 /// _ProposalEncoder_ implementation. It encodes extrinsics with proposal details parameters
 /// using Runtime Call and parity codec.
@@ -38,6 +39,18 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                 proposals_codex::Call::execute_runtime_upgrade_proposal(wasm_code),
             )
             .encode(),
+            // ********** Deprecated during the Nicaea release.
+            // It is kept only for backward compatibility in the Pioneer. **********
+            ProposalDetails::EvictStorageProvider(_) => {
+                print("Error: Calling deprecated EvictStorageProvider encoding option.");
+                Vec::new()
+            }
+            // ********** Deprecated during the Nicaea release.
+            // It is kept only for backward compatibility in the Pioneer. **********
+            ProposalDetails::SetStorageRoleParameters(_) => {
+                print("Error: Calling deprecated SetStorageRoleParameters encoding option.");
+                Vec::new()
+            }
         }
     }
 }
