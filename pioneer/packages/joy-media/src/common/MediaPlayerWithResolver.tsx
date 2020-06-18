@@ -6,7 +6,7 @@ import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
 import { withMulti } from '@polkadot/react-api/with';
 import { Option } from '@polkadot/types/codec';
-import { StorageProviderId, Worker } from '@joystream/types/bureaucracy';
+import { StorageProviderId, Worker } from '@joystream/types/working-group';
 
 import translate from '../translate';
 import { DiscoveryProviderProps, withDiscoveryProvider } from '../DiscoveryProvider';

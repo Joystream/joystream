@@ -23,7 +23,7 @@ import { ChannelId } from '@joystream/types/content-working-group';
 import { EditVideoView } from './upload/EditVideo.view';
 import { JoyInfo } from '@polkadot/joy-utils/JoyStatus';
 import { IterableFile } from './IterableFile';
-import { StorageProviderId } from '@joystream/types/bureaucracy';
+import { StorageProviderId } from '@joystream/types/working-group';
 
 const MAX_FILE_SIZE_MB = 500;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;

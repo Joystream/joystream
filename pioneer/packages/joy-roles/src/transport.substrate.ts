@@ -25,7 +25,7 @@ import {
 
 import {
   WorkerApplication, WorkerApplicationId, WorkerOpening, WorkerOpeningId
-} from '@joystream/types/bureaucracy';
+} from '@joystream/types/working-group';
 
 import { Application, Opening } from '@joystream/types/hiring';
 import { Stake, StakeId } from '@joystream/types/stake';
@@ -76,7 +76,7 @@ type GroupOpeningId = CuratorOpeningId | WorkerOpeningId;
 
 const wgApiMethodsMapping: WGToApiMethodsMapping = {
   [WorkingGroups.StorageProviders]: {
-    module: 'storageBureaucracy',
+    module: 'storageWorkingGroup',
     methods: {
       nextOpeningId: 'nextWorkerOpeningId',
       openingById: 'workerOpeningById',
