@@ -1,37 +1,9 @@
 import { Struct } from '@polkadot/types/codec';
-import { getTypeRegistry, u32, u128, GenericAccountId } from '@polkadot/types';
-import { BlockNumber, AccountId, Balance } from '@polkadot/types/interfaces';
-import { MemberId, Role } from './members';
+import { getTypeRegistry, u32, u128 } from '@polkadot/types';
+import { BlockNumber, Balance } from '@polkadot/types/interfaces';
 
-export class Actor extends Struct {
-  constructor (value?: any) {
-    super({
-      member_id: MemberId,
-      role: Role,
-      account: GenericAccountId,
-      joined_at: u32, // BlockNumber
-    }, value);
-  }
-
-  get member_id (): MemberId {
-    return this.get('member_id') as MemberId;
-  }
-
-  get role (): Role {
-    return this.get('role') as Role;
-  }
-
-  get account (): AccountId {
-    return this.get('account') as AccountId;
-  }
-  get joined_at (): BlockNumber {
-    return this.get('joined_at') as BlockNumber;
-  }
-}
-
-export type Request = [AccountId, MemberId, Role, BlockNumber];
-export type Requests = Array<Request>;
-
+// We only need this type for historic reasons to read old proposal state
+// that was related to the now defunct actors module
 export class RoleParameters extends Struct {
   constructor (value?: any) {
     super({
@@ -85,9 +57,6 @@ export function registerRolesTypes () {
     const typeRegistry = getTypeRegistry();
     typeRegistry.register({
       RoleParameters,
-      Request: '(AccountId, MemberId, Role, BlockNumber)',
-      Requests: 'Vec<Request>',
-      Actor
     });
   } catch (err) {
     console.error('Failed to register custom types of roles module', err);
