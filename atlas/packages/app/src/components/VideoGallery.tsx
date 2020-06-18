@@ -101,7 +101,7 @@ const articleStyles = css`
 export default function VideoGallery({ title = "", log = false }: VideoGalleryProps) {
 	const videos = videoPlaceholders.concat(videoPlaceholders).concat(videoPlaceholders);
 	return (
-		<Gallery title={title} log={log}>
+		<Gallery title={title} seeAll>
 			{videos.map((video, idx) => (
 				<article css={articleStyles} key={`${title}- ${video.title} - ${idx}`}>
 					<VideoPreview

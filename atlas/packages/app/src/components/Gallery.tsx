@@ -1,29 +1,43 @@
 import React from "react";
 import { css } from "@emotion/core";
 
-import { Carousel, theme } from "@joystream/components";
+import { Carousel, Button, theme } from "@joystream/components";
 
-type VideoGalleryProps = {
-	title?: string;
-	children?: React.ReactNode;
-	log?: boolean;
+type GalleryProps = {
+	title: string;
+	children: React.ReactNode;
+	onSeeAll: () => void;
+	seeAll: boolean;
 };
 
-const sectionStyles = css`
-	margin-bottom: 2rem;
-	padding: 1rem;
+const styles = {
+	section: css`
+		margin-bottom: 2rem;
+		padding: 1rem;
+	`,
+	headingContainer: css`
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		& > h4 {
+			font-size: ${theme.typography.sizes.h4};
+			margin-block: 1rem;
+		}
+	`,
+};
 
-	& > h4 {
-		font-size: ${theme.typography.sizes.h4};
-		margin-block: 1rem;
-	}
-`;
-
-export default function Gallery({ title = "", log = false, children }: VideoGalleryProps) {
+export default function Gallery({ title = "", children, seeAll = false, onSeeAll }: Partial<GalleryProps>) {
 	return (
-		<section css={sectionStyles}>
-			<h4>{title}</h4>
-			<Carousel log={log}>{children}</Carousel>
+		<section css={styles.section}>
+			<div css={styles.headingContainer}>
+				<h4>{title}</h4>
+				{seeAll && (
+					<Button type="tertiary" onClick={onSeeAll}>
+						See All
+					</Button>
+				)}
+			</div>
+			<Carousel>{children}</Carousel>
 		</section>
 	);
 }

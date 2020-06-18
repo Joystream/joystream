@@ -1,6 +1,5 @@
 import { StyleFn, makeStyles } from "../../utils"
-import { spacing } from "src/theme"
-
+import { spacing } from "../../theme"
 export type CarouselStyleProps = {
 	navTopPosition?: string
 }

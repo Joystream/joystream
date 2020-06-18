@@ -4,7 +4,7 @@ import { disabled, dimensionsFromProps } from "../../theme/fragments"
 
 export type ButtonStyleProps = {
 	text?: string
-	type?: "primary" | "secondary"
+	type?: "primary" | "secondary" | "tertiary"
 	full?: boolean
 	size?: "regular" | "small" | "smaller"
 	children?: React.ReactNode
@@ -57,6 +57,20 @@ const colorFromType: StyleFn = (styles = {}, { type }: ButtonStyleProps) => {
 
 				"&:active": {
 					borderColor: colors.blue[700],
+					color: colors.blue[700]
+				}
+			}
+
+		case "tertiary":
+			return {
+				...styles,
+				backgroundColor: "transparent",
+				borderColor: "transparent",
+				color: colors.blue[500],
+				"&:hover": {
+					color: colors.blue[300]
+				},
+				"&:active": {
 					color: colors.blue[700]
 				}
 			}
