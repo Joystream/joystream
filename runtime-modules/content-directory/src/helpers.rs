@@ -132,7 +132,7 @@ pub struct EntityReferenceCounterSideEffect {
 
 impl EntityReferenceCounterSideEffect {
     /// Create atomic `EntityReferenceCounterSideEffect` instance, based on `same_owner` flag provided and `DeltaMode`
-    pub fn one(same_owner: bool, delta_mode: DeltaMode) -> Self {
+    pub fn atomic(same_owner: bool, delta_mode: DeltaMode) -> Self {
         let counter = if let DeltaMode::Increment = delta_mode {
             1
         } else {

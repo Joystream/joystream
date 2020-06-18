@@ -1553,7 +1553,7 @@ decl_module! {
             // Decrease reference counter of involved entity (if some)
             if let Some(involved_entity_id) = involved_entity_id {
                 let same_controller_status = property.property_type.same_controller_status();
-                let rc_delta = EntityReferenceCounterSideEffect::one(same_controller_status, DeltaMode::Decrement);
+                let rc_delta = EntityReferenceCounterSideEffect::atomic(same_controller_status, DeltaMode::Decrement);
 
                 // Update InboundReferenceCounter of involved entity, based on previously calculated rc_delta
                 Self::update_entity_rc(involved_entity_id, rc_delta);
@@ -1633,7 +1633,7 @@ decl_module! {
             // Increase reference counter of involved entity (if some)
             if let Some(entity_rc_to_increment) = value.get_involved_entity() {
                 let same_controller_status = class_property.property_type.same_controller_status();
-                let rc_delta = EntityReferenceCounterSideEffect::one(same_controller_status, DeltaMode::Increment);
+                let rc_delta = EntityReferenceCounterSideEffect::atomic(same_controller_status, DeltaMode::Increment);
 
                 // Update InboundReferenceCounter of involved entity, based on previously calculated ReferenceCounterSideEffect
                 Self::update_entity_rc(entity_rc_to_increment, rc_delta);
@@ -1744,7 +1744,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Update `entity_property_values` with `property_values`
-    /// Return updated `entity_property_values`
+    /// Returns updated `entity_property_values`
     fn make_updated_entity_property_values(
         schema: Schema,
         entity_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
@@ -1778,6 +1778,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Update `inbound_rcs_delta`, based on `involved_entity_ids`, `same_controller_status` provided and chosen `DeltaMode`
+    /// Returns updated `inbound_rcs_delta`
     fn perform_entities_inbound_rcs_delta_calculation(
         mut inbound_rcs_delta: ReferenceCounterSideEffects<T>,
         involved_entity_ids: Vec<T::EntityId>,
@@ -1791,13 +1792,14 @@ impl<T: Trait> Module<T> {
             *inbound_rcs_delta
                 .entry(involved_entity_id)
                 .or_insert_with(|| {
-                    EntityReferenceCounterSideEffect::one(same_controller_status, delta_mode)
-                }) += EntityReferenceCounterSideEffect::one(same_controller_status, delta_mode);
+                    EntityReferenceCounterSideEffect::atomic(same_controller_status, delta_mode)
+                }) += EntityReferenceCounterSideEffect::atomic(same_controller_status, delta_mode);
         }
         inbound_rcs_delta
     }
 
     /// Calculate `ReferenceCounterSideEffects`, based on `values_for_existing_properties` provided and chosen `DeltaMode`
+    /// Returns calculated `ReferenceCounterSideEffects`
     fn calculate_entities_inbound_rcs_delta(
         values_for_existing_properties: ValuesForExistingProperties<T>,
         delta_mode: DeltaMode,
@@ -1827,7 +1829,8 @@ impl<T: Trait> Module<T> {
             )
     }
 
-    /// Compute `ReferenceCounterSideEffects`, based on entities involved into update process
+    /// Compute `ReferenceCounterSideEffects`, based on `PropertyValue` `Reference`'s involved into update process.
+    /// Returns computed `ReferenceCounterSideEffects`
     pub fn get_updated_inbound_rcs_delta(
         class_properties: Vec<Property<T>>,
         entity_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
