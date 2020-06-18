@@ -548,6 +548,7 @@ impl Schema {
             property_value_indices.is_subset(&self.properties),
             ERROR_SCHEMA_DOES_NOT_CONTAIN_PROVIDED_PROPERTY_ID
         );
+
         Ok(())
     }
 
