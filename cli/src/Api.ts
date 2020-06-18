@@ -29,7 +29,7 @@ const DEFAULT_DECIMALS = new u32(12);
 
 // Mapping of working group to api module
 const apiModuleByGroup: { [key in WorkingGroups]: string } = {
-    [WorkingGroups.StorageProviders]: 'storageBureaucracy'
+    [WorkingGroups.StorageProviders]: 'storageWorkingGroup'
 };
 
 // Api wrapper for handling most common api calls and allowing easy API implementation switch in the future
