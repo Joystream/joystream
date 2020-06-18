@@ -291,7 +291,7 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   protected async currentStorageLead (): Promise <GroupLeadWithMemberId | null> {
-    const optLead = (await this.cachedApi.query.storageBureaucracy.currentLead()) as Option<LeadOf>;
+    const optLead = (await this.cachedApi.query.storageWorkingGroup.currentLead()) as Option<LeadOf>;
 
     if (!optLead.isSome) {
       return null;
