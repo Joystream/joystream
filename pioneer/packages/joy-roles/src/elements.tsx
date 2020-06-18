@@ -6,14 +6,10 @@ import { Link } from 'react-router-dom';
 import { Balance } from '@polkadot/types/interfaces';
 import { formatBalance } from '@polkadot/util';
 import Identicon from '@polkadot/react-identicon';
-import { Actor } from '@joystream/types/roles';
 import { IProfile, MemberId } from '@joystream/types/members';
 import { Text, GenericAccountId } from '@polkadot/types';
 import { LeadRoleState } from '@joystream/types/content-working-group';
-
-type ActorProps = {
-  actor: Actor;
-}
+import { Worker } from '@joystream/types/working-group';
 
 type BalanceProps = {
   balance?: Balance;
@@ -27,7 +23,7 @@ export function BalanceView (props: BalanceProps) {
   );
 }
 
-type MemoProps = ActorProps & {
+type MemoProps = ProfileProps & {
   memo?: Text;
 }
 
@@ -39,7 +35,7 @@ export function MemoView (props: MemoProps) {
   return (
     <div className="memo">
       <span>Memo:</span> {props.memo.toString()}
-      <Link to={`/addressbook/memo/${props.actor.account.toString()}`}>{' view full memo'}</Link>
+      <Link to={`/addressbook/memo/${props.profile.controller_account.toString()}`}>{' view full memo'}</Link>
     </div>
   );
 }
@@ -58,10 +54,10 @@ export function HandleView (props: ProfileProps) {
   );
 }
 
-type MemberProps = ActorProps & BalanceProps & ProfileProps
+type MemberProps = BalanceProps & ProfileProps
 
 export function MemberView (props: MemberProps) {
-  let avatar = <Identicon value={props.actor.account.toString()} size={50} />;
+  let avatar = <Identicon value={props.profile.controller_account.toString()} size={50} />;
   if (typeof props.profile.avatar_uri !== 'undefined' && props.profile.avatar_uri.toString() !== '') {
     avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />;
   }
@@ -77,13 +73,14 @@ export function MemberView (props: MemberProps) {
   );
 }
 
-type ActorDetailsProps = MemoProps & BalanceProps
+type WorkerDetailsProps = MemoProps & BalanceProps & {
+  worker: Worker
+}
 
-export function ActorDetailsView (props: ActorDetailsProps) {
+export function WorkerDetailsView (props: WorkerDetailsProps) {
   return (
-    <div className="actor-summary" id={props.actor.account.toString()}>
-      {props.actor.account.toString()}
-      <MemoView actor={props.actor} memo={props.memo} />
+    <div id={props.worker.role_account.toString()}>
+      {props.worker.role_account.toString()}
     </div>
   );
 }
