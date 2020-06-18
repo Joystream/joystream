@@ -1,6 +1,6 @@
 
 import { ParametrizedPropertyValue } from './parametrized-property-value';
-import { JoyStruct } from '../../../JoyStruct';
+import { JoyStruct } from '../../../common';
 import { u16 } from '@polkadot/types';
 
 type IParametrizedClassPropertyValue = {

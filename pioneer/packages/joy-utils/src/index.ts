@@ -7,7 +7,7 @@ import keyring from '@polkadot/ui-keyring';
 // Joystream Stake utils
 // --------------------------------------
 
-import { Stake, Backer } from '@joystream/types/';
+import { Stake, Backer } from '@joystream/types/council';
 
 // Substrate/Polkadot API utils
 // --------------------------------------

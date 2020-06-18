@@ -1,9 +1,7 @@
-import { getTypeRegistry, bool, u16, u32, u64, Text, Option, Vec as Vector} from '@polkadot/types';
+import { getTypeRegistry, bool, u32, u64, Text, Option, Vec as Vector} from '@polkadot/types';
 import { AccountId } from '@polkadot/types/interfaces';
 import { GenericAccountId } from '@polkadot/types';
-import { BlockAndTime } from './media';
-
-import { JoyStruct } from './JoyStruct';
+import { BlockAndTime, JoyStruct, ThreadId, PostId } from './common';
 
 export type ModerationActionType = {
   moderated_at: BlockAndTime,
@@ -63,41 +61,12 @@ export class CategoryId extends u64 {}
 export class OptionCategoryId extends Option.with(CategoryId) {}
 export class VecCategoryId extends Vector.with(CategoryId) {}
 
-export class ThreadId extends u64 {}
 export class VecThreadId extends Vector.with(ThreadId) {}
-
-export class PostId extends u64 {}
 export class VecPostId extends Vector.with(PostId) {}
 
 // TODO deprectated: replaced w/ PostId
 export class ReplyId extends u64 {}
 export class VecReplyId extends Vector.with(ReplyId) {}
-
-export type InputValidationLengthConstraintType = {
-  min: u16,
-  max_min_diff: u16
-};
-
-export class InputValidationLengthConstraint extends JoyStruct<InputValidationLengthConstraintType> {
-  constructor (value: InputValidationLengthConstraintType) {
-    super({
-      min: u16,
-      max_min_diff: u16
-    }, value);
-  }
-
-  get min (): u16 {
-    return this.getField('min');
-  }
-
-  get max_min_diff (): u16 {
-    return this.getField('max_min_diff');
-  }
-
-  get max (): u16 {
-    return new u16(this.min.add(this.max_min_diff));
-  }
-}
 
 export type ChildPositionInParentCategoryType = {
   parent_id: CategoryId,
@@ -416,13 +385,10 @@ export function registerForumTypes () {
     getTypeRegistry().register({
       PostTextChange,
       ModerationAction,
-      InputValidationLengthConstraint,
       ChildPositionInParentCategory,
       CategoryId,
       Category,
-      ThreadId,
       Thread,
-      PostId,
       Post,
       ReplyId,
       Reply

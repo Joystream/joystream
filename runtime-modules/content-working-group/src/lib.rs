@@ -1179,17 +1179,17 @@ decl_module! {
             let new_channel = Channel {
                 verified: false,
                 handle: handle.clone(),
-                title: title,
-                description: description,
-                avatar: avatar,
-                banner: banner,
-                content: content,
-                owner: owner,
-                role_account: role_account,
-                publication_status: publication_status,
+                title,
+                description,
+                avatar,
+                banner,
+                content,
+                owner,
+                role_account,
+                publication_status,
                 curation_status: ChannelCurationStatus::Normal,
                 created: <system::Module<T>>::block_number(),
-                principal_id: principal_id
+                principal_id,
             };
 
             // Add channel to ChannelById under id
@@ -1387,9 +1387,9 @@ decl_module! {
 
             // Create and add curator opening.
             let new_opening_by_id = CuratorOpening {
-                opening_id : opening_id,
+                opening_id,
                 curator_applications: BTreeSet::new(),
-                policy_commitment: policy_commitment
+                policy_commitment,
             };
 
             CuratorOpeningById::<T>::insert(new_curator_opening_id, new_opening_by_id);
@@ -1466,6 +1466,23 @@ decl_module! {
             // Ensure curator opening exists
             let (curator_opening, _) = Self::ensure_curator_opening_exists(&curator_opening_id)?;
 
+            // Ensure a mint exists if lead is providing a reward for positions being filled
+            let create_reward_settings = if let Some(policy) = reward_policy {
+                // A reward will need to be created so ensure our configured mint exists
+                let mint_id = Self::mint();
+
+                // Technically this is a bug-check and should not be here.
+                ensure!(<minting::Mints<T>>::exists(mint_id), MSG_FILL_CURATOR_OPENING_MINT_DOES_NOT_EXIST);
+
+                // Make sure valid parameters are selected for next payment at block number
+                ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(), MSG_FILL_CURATOR_OPENING_INVALID_NEXT_PAYMENT_BLOCK);
+
+                // The verified reward settings to use
+                Some((mint_id, policy))
+            } else {
+                None
+            };
+
             // Make iterator over successful curator application
             let successful_iter = successful_curator_application_ids
                                     .iter()
@@ -1515,21 +1532,6 @@ decl_module! {
                     curator_opening.policy_commitment.fill_opening_failed_applicant_role_stake_unstaking_period
                 )
             )?;
-
-            let create_reward_settings = if let Some(policy) = reward_policy {
-                // A reward will need to be created so ensure our configured mint exists
-                let mint_id = Self::mint();
-
-                ensure!(<minting::Mints<T>>::exists(mint_id), MSG_FILL_CURATOR_OPENING_MINT_DOES_NOT_EXIST);
-
-                // Make sure valid parameters are selected for next payment at block number
-                ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(), MSG_FILL_CURATOR_OPENING_INVALID_NEXT_PAYMENT_BLOCK);
-
-                // The verified reward settings to use
-                Some((mint_id, policy))
-            } else {
-                None
-            };
 
             //
             // == MUTATION SAFE ==
@@ -1978,6 +1980,8 @@ decl_module! {
             new_capacity: minting::BalanceOf<T>
         ) {
             ensure_root(origin)?;
+
+            ensure!(<Mint<T>>::exists(), MSG_FILL_CURATOR_OPENING_MINT_DOES_NOT_EXIST);
 
             let mint_id = Self::mint();
 

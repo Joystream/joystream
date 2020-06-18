@@ -3,7 +3,7 @@
 
 import React, { useReducer, createContext, useContext } from 'react';
 import { Category, Thread, Reply, ModerationAction } from '@joystream/types/forum';
-import { BlockAndTime } from '@joystream/types/media';
+import { BlockAndTime } from '@joystream/types/common';
 import { Option, Text, GenericAccountId } from '@polkadot/types';
 
 type CategoryId = number;

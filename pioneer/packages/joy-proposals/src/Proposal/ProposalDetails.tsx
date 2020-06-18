@@ -5,7 +5,7 @@ import Body from './Body';
 import VotingSection from './VotingSection';
 import Votes from './Votes';
 import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
-import { ParsedProposal, ProposalVote } from '@polkadot/joy-utils/types/proposals';
+import { ParsedProposal, ProposalVotes } from '@polkadot/joy-utils/types/proposals';
 import { withCalls } from '@polkadot/react-api';
 import { withMulti } from '@polkadot/react-api/with';
 
@@ -13,7 +13,7 @@ import './Proposal.css';
 import { ProposalId, ProposalDecisionStatuses, ApprovedProposalStatuses, ExecutionFailedStatus } from '@joystream/types/proposals';
 import { BlockNumber } from '@polkadot/types/interfaces';
 import { MemberId } from '@joystream/types/members';
-import { Seat } from '@joystream/types/';
+import { Seat } from '@joystream/types/council';
 import { PromiseComponent } from '@polkadot/joy-utils/react/components';
 import ProposalDiscussion from './discussion/ProposalDiscussion';
 
@@ -115,7 +115,7 @@ export function getExtendedStatus (proposal: ParsedProposal, bestNumber: BlockNu
 type ProposalDetailsProps = MyAccountProps & {
   proposal: ParsedProposal;
   proposalId: ProposalId;
-  votesListState: { data: ProposalVote[]; error: any; loading: boolean };
+  votesListState: { data: ProposalVotes | null; error: any; loading: boolean };
   bestNumber?: BlockNumber;
   council?: Seat[];
 };
@@ -160,7 +160,7 @@ function ProposalDetails ({
             error={votesListState.error}
             loading={votesListState.loading}
             message="Fetching the votes...">
-            <Votes votes={votesListState.data} />
+            <Votes votes={votesListState.data as ProposalVotes} />
           </PromiseComponent>
         </ProposalDetailsVoting>
       </ProposalDetailsMain>

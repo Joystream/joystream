@@ -13,9 +13,8 @@ import {
   Vec,
 } from "@polkadot/types";
 import { BlockNumber, Moment, BalanceOf } from "@polkadot/types/interfaces";
-import { OptionText } from "./index";
+import { OptionText, JoyStruct } from "./common";
 import AccountId from "@polkadot/types/primitive/Generic/AccountId";
-import { JoyStruct } from "./JoyStruct";
 
 export class MemberId extends u64 {}
 export class PaidTermId extends u64 {}

@@ -1,21 +1,20 @@
 import { getTypeRegistry, BTreeMap, Enum, bool, u8, u32, u128, Text, GenericAccountId, Null , Option, Vec, u16 } from '@polkadot/types';
 import { BlockNumber, AccountId, Balance } from '@polkadot/types/interfaces';
+import { BTreeSet, JoyStruct, OptionText, Credential } from '../common';
 import { ActorId, MemberId } from '../members';
-import { OpeningId, ApplicationId, ApplicationRationingPolicy, StakingPolicy } from '../hiring/index';
-import { Credential } from '../versioned-store/permissions/credentials';
-import { RewardRelationshipId } from '../recurring-rewards';
 import { StakeId } from '../stake';
-import { JoyStruct } from '../JoyStruct';
-import { BTreeSet } from '../';
+import { OpeningId, ApplicationId, ApplicationRationingPolicy, StakingPolicy } from '../hiring/index';
+import { RewardRelationshipId } from '../recurring-rewards';
 
-export class ChannelId extends ActorId {};
+import ChannelId from './ChannelId';
+export { ChannelId };
 export class CuratorId extends ActorId {};
 export class CuratorOpeningId extends OpeningId {};
 export class CuratorApplicationId extends ApplicationId {};
 export class LeadId extends ActorId {};
 export class PrincipalId extends Credential {};
 
-export class OptionalText extends Option.with(Text) {};
+export class OptionalText extends OptionText {};
 
 export type ChannelContentTypeValue =
   'Video' |

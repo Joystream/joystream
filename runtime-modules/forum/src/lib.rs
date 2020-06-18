@@ -19,7 +19,7 @@ use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Para
 mod mock;
 mod tests;
 
-pub use common::constraints::InputValidationLengthConstraint;
+use common::constraints::InputValidationLengthConstraint;
 use common::BlockAndTime;
 
 /// Constants

@@ -25,8 +25,8 @@ use node_runtime::{
     CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
     DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, IndicesConfig,
     MembersConfig, MigrationConfig, Perbill, ProposalsCodexConfig, SessionConfig, SessionKeys,
-    Signature, StakerStatus, StakingConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS,
-    WASM_BINARY,
+    Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig,
+    VersionedStoreConfig, DAYS, WASM_BINARY,
 };
 pub use node_runtime::{AccountId, GenesisConfig};
 use primitives::{sr25519, Pair, Public};
@@ -267,6 +267,9 @@ pub fn testnet_genesis(
         }),
         data_object_storage_registry: Some(DataObjectStorageRegistryConfig {
             first_relationship_id: 1,
+        }),
+        working_group_Instance2: Some(StorageWorkingGroupConfig {
+            phantom: Default::default(),
             storage_working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,
             worker_application_human_readable_text_constraint: default_text_constraint,

@@ -1,19 +1,31 @@
 import { ParsedMember } from '../types/members';
 import BaseTransport from './base';
-import { Seats, ElectionParameters } from '@joystream/types/proposals';
+import { Seats, ElectionParameters } from '@joystream/types/council';
 import { MemberId, Profile } from '@joystream/types/members';
 import { u32, Vec } from '@polkadot/types/';
 import { Balance, BlockNumber } from '@polkadot/types/interfaces';
 import { FIRST_MEMBER_ID } from '../consts/members';
 import { ApiPromise } from '@polkadot/api';
 import MembersTransport from './members';
+import ChainTransport from './chain';
 
 export default class CouncilTransport extends BaseTransport {
   private membersT: MembersTransport;
+  private chainT: ChainTransport;
 
-  constructor (api: ApiPromise, membersTransport: MembersTransport) {
+  constructor (api: ApiPromise, membersTransport: MembersTransport, chainTransport: ChainTransport) {
     super(api);
     this.membersT = membersTransport;
+    this.chainT = chainTransport;
+  }
+
+  async councilMembersLength (atBlock?: number): Promise<number> {
+    if (atBlock) {
+      const blockHash = await this.chainT.blockHash(atBlock);
+      return ((await this.council.activeCouncil.at(blockHash)) as Seats).length;
+    }
+
+    return ((await this.council.activeCouncil()) as Seats).length;
   }
 
   async councilMembers (): Promise<(ParsedMember & { memberId: MemberId })[]> {

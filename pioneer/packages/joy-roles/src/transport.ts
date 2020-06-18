@@ -1,19 +1,21 @@
 import { Subscribable } from '@polkadot/joy-utils/index';
 import { Balance } from '@polkadot/types/interfaces';
 
-import { Role } from '@joystream/types/roles';
+import { Role } from '@joystream/types/members';
 
-import { WorkingGroupMembership, StorageAndDistributionMembership, GroupLeadStatus } from './tabs/WorkingGroup';
+import { WorkingGroupMembership, GroupLeadStatus } from './tabs/WorkingGroup';
 import { WorkingGroupOpening } from './tabs/Opportunities';
 import { keyPairDetails } from './flows/apply';
 import { ActiveRole, OpeningApplication } from './tabs/MyRoles';
+import { WorkingGroups } from './working_groups';
 
 export interface ITransport {
   roles: () => Promise<Array<Role>>;
-  groupLeadStatus: () => Promise<GroupLeadStatus>;
+  groupLeadStatus: (group: WorkingGroups) => Promise<GroupLeadStatus>;
   curationGroup: () => Promise<WorkingGroupMembership>;
-  storageGroup: () => Promise<StorageAndDistributionMembership>;
+  storageGroup: () => Promise<WorkingGroupMembership>;
   currentOpportunities: () => Promise<Array<WorkingGroupOpening>>;
+  groupOpening: (group: WorkingGroups, id: number) => Promise<WorkingGroupOpening>;
   curationGroupOpening: (id: number) => Promise<WorkingGroupOpening>;
   openingApplicationRanks: (openingId: number) => Promise<Balance[]>;
   expectedBlockTime: () => Promise<number>;

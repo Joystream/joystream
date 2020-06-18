@@ -12,6 +12,8 @@ import {
   OpeningView
 } from './Opportunities';
 
+import { WorkingGroups, AvailableGroups } from '../working_groups';
+
 type State = {
   blockTime?: number;
   opportunity?: WorkingGroupOpening;
@@ -26,12 +28,16 @@ export class OpportunityController extends Controller<State, ITransport> {
   }
 
   @memoize()
-  async getOpportunity (id: string | undefined) {
+  async getOpportunity (group: string | undefined, id: string | undefined) {
     if (!id) {
       return this.onError('OpportunityController: no ID provided in params');
     }
 
-    this.state.opportunity = await this.transport.curationGroupOpening(parseInt(id));
+    if (!group || !AvailableGroups.includes(group as any)) {
+      return this.onError('OppportunityController: invalid group provided in params');
+    }
+
+    this.state.opportunity = await this.transport.groupOpening(group as WorkingGroups, parseInt(id));
     this.dispatch();
   }
 
@@ -42,7 +48,7 @@ export class OpportunityController extends Controller<State, ITransport> {
 }
 
 const renderOpeningView = (state: State, controller: OpportunityController, params: Params) => {
-  controller.getOpportunity(params.get('id'));
+  controller.getOpportunity(params.get('group'), params.get('id'));
   return (
     <OpeningView {...state.opportunity!} block_time_in_seconds={state.blockTime!} member_id={state.memberId} />
   );

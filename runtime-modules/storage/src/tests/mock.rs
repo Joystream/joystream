@@ -1,7 +1,6 @@
 #![cfg(test)]
 
 pub use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
-use common::constraints::InputValidationLengthConstraint;
 pub use common::currency::GovernanceCurrency;
 use membership::members;
 pub use system;
@@ -16,11 +15,12 @@ pub use sr_primitives::{
 
 use crate::data_directory::ContentIdExists;
 use crate::data_object_type_registry::IsActiveDataObjectType;
+pub use crate::StorageWorkingGroupInstance;
 use srml_support::{impl_outer_event, impl_outer_origin, parameter_types, StorageLinkedMap};
 
 mod working_group_mod {
+    pub use super::StorageWorkingGroupInstance;
     pub use working_group::Event;
-    pub use working_group::Instance2;
 }
 
 impl_outer_origin! {
@@ -34,7 +34,7 @@ impl_outer_event! {
         data_object_storage_registry<T>,
         balances<T>,
         members<T>,
-        working_group_mod Instance2 <T>,
+        working_group_mod StorageWorkingGroupInstance <T>,
     }
 }
 
@@ -146,7 +146,7 @@ impl GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
 }
 
-impl working_group::Trait<working_group::Instance2> for Test {
+impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type Event = MetaEvent;
 }
 
@@ -220,15 +220,10 @@ impl hiring::Trait for Test {
 
 pub struct ExtBuilder {
     first_data_object_type_id: u64,
-    storage_working_group_mint_capacity: u64,
     first_content_id: u64,
     first_relationship_id: u64,
     first_metadata_id: u64,
 }
-
-pub(crate) const STORAGE_WORKING_GROUP_MINT_CAPACITY: u64 = 40000;
-pub(crate) const STORAGE_WORKING_GROUP_CONSTRAINT_MIN: u16 = 1;
-pub(crate) const STORAGE_WORKING_GROUP_CONSTRAINT_DIFF: u16 = 40;
 
 impl Default for ExtBuilder {
     fn default() -> Self {
@@ -237,7 +232,6 @@ impl Default for ExtBuilder {
             first_content_id: 2,
             first_relationship_id: 3,
             first_metadata_id: 4,
-            storage_working_group_mint_capacity: STORAGE_WORKING_GROUP_MINT_CAPACITY,
         }
     }
 }
@@ -272,19 +266,6 @@ impl ExtBuilder {
 
         data_object_storage_registry::GenesisConfig::<Test> {
             first_relationship_id: self.first_relationship_id,
-            storage_working_group_mint_capacity: self.storage_working_group_mint_capacity,
-            opening_human_readable_text_constraint: InputValidationLengthConstraint::new(
-                STORAGE_WORKING_GROUP_CONSTRAINT_MIN,
-                STORAGE_WORKING_GROUP_CONSTRAINT_DIFF,
-            ),
-            worker_application_human_readable_text_constraint: InputValidationLengthConstraint::new(
-                STORAGE_WORKING_GROUP_CONSTRAINT_MIN,
-                STORAGE_WORKING_GROUP_CONSTRAINT_DIFF,
-            ),
-            worker_exit_rationale_text_constraint: InputValidationLengthConstraint::new(
-                STORAGE_WORKING_GROUP_CONSTRAINT_MIN,
-                STORAGE_WORKING_GROUP_CONSTRAINT_DIFF,
-            ),
         }
         .assimilate_storage(&mut t)
         .unwrap();
@@ -328,7 +309,7 @@ pub(crate) fn hire_storage_provider() -> (u64, u32) {
         role_stake_profile: None,
     };
 
-    <working_group::WorkerById<Test, working_group::Instance2>>::insert(
+    <working_group::WorkerById<Test, StorageWorkingGroupInstance>>::insert(
         storage_provider_id,
         storage_provider,
     );

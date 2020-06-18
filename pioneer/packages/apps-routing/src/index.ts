@@ -13,7 +13,6 @@ import media from './joy-media';
 import members from './joy-members';
 import proposals from './joy-proposals';
 import roles from './joy-roles';
-import storageRoles from './joy-storage';
 import pages from './joy-pages';
 
 // import template from './123code';
@@ -39,46 +38,37 @@ import transfer from './transfer';
 
 let routes: Routes = ([] as Routes);
 
-if (appSettings.isFullMode) {
-  routes = routes.concat(explorer);
-}
-
 // Basic routes
 routes = routes.concat(
-  staking,
-  roles,
-  storageRoles,
-  transfer,
-  null,
   media,
+  roles,
+  proposals,
+  election,
   forum,
   members,
+  staking,
+  null,
+  transfer,
   accounts,
   addressbook,
-  null,
-  election,
-  proposals,
-  null
-);
-
-if (appSettings.isFullMode) {
-  routes = routes.concat(
-    storage,
-    extrinsics,
-    sudo,
-    js,
-    toolbox,
-    null
-  );
-}
-
-routes = routes.concat(
   settings,
   pages
 );
 
+if (appSettings.isFullMode) {
+  routes = routes.concat(
+    null,
+    explorer,
+    storage,
+    extrinsics,
+    sudo,
+    js,
+    toolbox
+  );
+}
+
 const setup: Routing = {
-  default: 'staking',
+  default: 'media',
   routes
 };
 

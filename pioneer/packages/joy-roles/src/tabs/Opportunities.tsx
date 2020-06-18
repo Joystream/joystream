@@ -4,7 +4,7 @@ import NumberFormat from 'react-number-format';
 import marked from 'marked';
 import CopyToClipboard from 'react-copy-to-clipboard';
 
-import { Link } from 'react-router-dom';
+import { Link, useHistory } from 'react-router-dom';
 import {
   Button,
   Card,
@@ -14,7 +14,9 @@ import {
   Label,
   List,
   Message,
-  Statistic
+  Statistic,
+  Dropdown,
+  DropdownProps
 } from 'semantic-ui-react';
 
 import { formatBalance } from '@polkadot/util';
@@ -37,6 +39,9 @@ import {
 } from '../openingStateMarkup';
 
 import { Loadable } from '@polkadot/joy-utils/index';
+import styled from 'styled-components';
+import _ from 'lodash';
+import { WorkingGroups, AvailableGroups } from '../working_groups';
 
 type OpeningStage = OpeningMetadataProps & {
   stage: OpeningStageClassification;
@@ -458,6 +463,14 @@ export type WorkingGroupOpening = OpeningStage & DefactoMinimumStake & OpeningMe
   applications: OpeningStakeAndApplicationStatus;
 }
 
+const OpeningTitle = styled.h2`
+  display: flex;
+  align-items: flex-end;
+`;
+const OpeningLabel = styled(Label)`
+  margin-left: auto !important;
+`;
+
 type OpeningViewProps = WorkingGroupOpening & BlockTimeProps & MemberIdProps
 
 export const OpeningView = Loadable<OpeningViewProps>(
@@ -473,7 +486,10 @@ export const OpeningView = Loadable<OpeningViewProps>(
 
     return (
       <Container className={'opening ' + openingClass(props.stage.state)}>
-        <h2>{text.job.title}</h2>
+        <OpeningTitle>
+          {text.job.title}
+          <OpeningLabel>{ _.startCase(props.meta.group) }</OpeningLabel>
+        </OpeningTitle>
         <Card fluid className="container">
           <Card.Content className="header">
             <OpeningHeader stage={props.stage} meta={props.meta} />
@@ -497,17 +513,46 @@ export const OpeningView = Loadable<OpeningViewProps>(
   }
 );
 
+const FilterOpportunities = styled.div`
+  display: flex;
+  width: 100%;
+  margin-bottom: 1rem;
+`;
+const FilterOpportunitiesDropdown = styled(Dropdown)`
+  margin-left: auto !important;
+  width: 250px !important;
+`;
+
 export type OpeningsViewProps = MemberIdProps & {
   openings?: Array<WorkingGroupOpening>;
   block_time_in_seconds?: number;
+  group?: WorkingGroups;
 }
 
 export const OpeningsView = Loadable<OpeningsViewProps>(
   ['openings', 'block_time_in_seconds'],
   props => {
+    const history = useHistory();
+    const { group = '' } = props;
+    const onFilterChange: DropdownProps['onChange'] = (e, data) => (
+      data.value !== group && history.push(`/working-groups/opportunities/${data.value}`)
+    );
+
     return (
       <Container>
-        {props.openings && props.openings.map((opening, key) => (
+        <FilterOpportunities>
+          <FilterOpportunitiesDropdown
+            placeholder="All opportunities"
+            options={
+              [{ value: '', text: 'All opportunities' }]
+                .concat(AvailableGroups.map(g => ({ value: g, text: _.startCase(g) })))
+            }
+            value={group}
+            onChange={onFilterChange}
+            selection
+          />
+        </FilterOpportunities>
+        {props.openings && props.openings.filter(o => !group || o.meta.group === group).map((opening, key) => (
           <OpeningView key={key} {...opening} block_time_in_seconds={props.block_time_in_seconds as number} member_id={props.member_id} />
         ))}
       </Container>

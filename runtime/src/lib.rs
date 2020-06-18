@@ -755,9 +755,10 @@ impl forum::Trait for Runtime {
 impl migration::Trait for Runtime {
     type Event = Event;
 }
+// The storage working group instance alias.
+pub type StorageWorkingGroupInstance = working_group::Instance2;
 
-// Storage working group
-impl working_group::Trait<working_group::Instance2> for Runtime {
+impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
     type Event = Event;
 }
 
@@ -871,7 +872,7 @@ construct_runtime!(
         ProposalsCodex: proposals_codex::{Module, Call, Storage, Error, Config<T>},
         // --- Working groups
         // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
-        StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Event<T>},
+        StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Error, Event<T>},
     }
 );
 

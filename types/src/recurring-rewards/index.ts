@@ -1,6 +1,6 @@
 import { getTypeRegistry, u32, u64, u128, Option, GenericAccountId } from '@polkadot/types';
 import { AccountId, Balance, BlockNumber } from '@polkadot/types/interfaces';
-import { JoyStruct } from '../JoyStruct';
+import { JoyStruct } from '../common';
 import { MintId } from '../mint';
 
 export class RecipientId extends u64 {};
@@ -53,6 +53,10 @@ export class RewardRelationship extends JoyStruct<IRewardRelationship> {
 
   get recipient(): RecipientId {
     return this.getField<RecipientId>('recipient')
+  }
+
+  get total_reward_received(): u128 {
+    return this.getField<u128>('total_reward_received');
   }
 };
 

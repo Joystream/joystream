@@ -1,12 +1,12 @@
 import { Observable } from 'rxjs';
 import { Balance } from '@polkadot/types/interfaces';
-import { Option, Text, u32, u128, GenericAccountId } from '@polkadot/types';
+import { Option, u32, u128, GenericAccountId } from '@polkadot/types';
 
 import { Subscribable, Transport as TransportBase } from '@polkadot/joy-utils/index';
 
 import { ITransport } from './transport';
 
-import { Actor, Role } from '@joystream/types/roles';
+import { Role, MemberId } from '@joystream/types/members';
 import {
   Opening,
   AcceptingApplications,
@@ -14,9 +14,8 @@ import {
   ApplicationRationingPolicy,
   StakingPolicy
 } from '@joystream/types/hiring';
-import { IProfile, MemberId } from '@joystream/types/members';
 
-import { WorkingGroupMembership, StorageAndDistributionMembership, GroupLeadStatus } from './tabs/WorkingGroup';
+import { WorkingGroupMembership, GroupLeadStatus } from './tabs/WorkingGroup';
 import { CuratorId } from '@joystream/types/content-working-group';
 import { WorkingGroupOpening } from './tabs/Opportunities';
 import { ActiveRole, OpeningApplication } from './tabs/MyRoles';
@@ -28,6 +27,7 @@ import { OpeningState } from './classifiers';
 
 import * as faker from 'faker';
 import { mockProfile } from './mocks';
+import { WorkingGroups } from './working_groups';
 
 export class Transport extends TransportBase implements ITransport {
   protected simulateApiResponse<T> (value: T): Promise<T> {
@@ -46,7 +46,7 @@ export class Transport extends TransportBase implements ITransport {
     );
   }
 
-  groupLeadStatus (): Promise<GroupLeadStatus> {
+  groupLeadStatus (group: WorkingGroups = WorkingGroups.ContentCurators): Promise<GroupLeadStatus> {
     return this.simulateApiResponse<GroupLeadStatus>({
       loaded: true
     });
@@ -112,28 +112,23 @@ export class Transport extends TransportBase implements ITransport {
     });
   }
 
-  storageGroup (): Promise<StorageAndDistributionMembership> {
-    return this.simulateApiResponse<StorageAndDistributionMembership>(
-      {
-        balances: new Map<string, Balance>([
-          ['5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew', new u128(101)]
-        ]),
-        memos: new Map<string, Text>([
-          ['5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew', new Text('This is a memo')]
-        ]),
-        profiles: new Map<number, IProfile>([
-          [1, mockProfile('bwhm0')],
-          [2, mockProfile(
+  storageGroup (): Promise<WorkingGroupMembership> {
+    return this.simulateApiResponse<WorkingGroupMembership>({
+      rolesAvailable: true,
+      members: [
+        {
+          memberId: new MemberId(1),
+          roleAccount: new GenericAccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
+          profile: mockProfile(
             'benholdencrowther',
             'https://www.benholdencrowther.com/wp-content/uploads/2019/03/Hanging_Gardens_of_Babylon.jpg'
-          )]
-        ]),
-        actors: [
-          new Actor({ member_id: 1, account: '5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew' }),
-          new Actor({ member_id: 2, account: '5DQqNWRFPruFs9YKheVMqxUbqoXeMzAWfVfcJgzuia7NA3D3' })
-        ]
-      }
-    );
+          ),
+          title: 'Storage provider',
+          stake: new u128(10101),
+          earned: new u128(347829)
+        }
+      ]
+    });
   }
 
   currentOpportunities (): Promise<Array<WorkingGroupOpening>> {
@@ -299,6 +294,10 @@ export class Transport extends TransportBase implements ITransport {
         defactoMinimumStake: new u128(0)
       }
     );
+  }
+
+  async groupOpening (group: WorkingGroups, id: number): Promise<WorkingGroupOpening> {
+    return await this.curationGroupOpening(id);
   }
 
   openingApplicationRanks (openingId: number): Promise<Balance[]> {

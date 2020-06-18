@@ -1,8 +1,6 @@
 #![cfg(test)]
 
 use super::mock::*;
-use crate::StorageWorkingGroup;
-use srml_support::StorageLinkedMap;
 
 #[test]
 fn initial_state() {
@@ -155,34 +153,5 @@ fn test_toggle_ready() {
                 )
             )
         );
-    });
-}
-
-#[test]
-fn ensure_setting_genesis_storage_working_group_mint_succeeds() {
-    with_default_mock_builder(|| {
-        let mint_id = <StorageWorkingGroup<Test>>::mint();
-
-        assert!(minting::Mints::<Test>::exists(mint_id));
-
-        let mint = <minting::Module<Test>>::mints(mint_id);
-        assert_eq!(mint.capacity(), STORAGE_WORKING_GROUP_MINT_CAPACITY);
-    });
-}
-
-#[test]
-fn ensure_setting_genesis_constraints_succeeds() {
-    with_default_mock_builder(|| {
-        let default_constraint = common::constraints::InputValidationLengthConstraint::new(
-            STORAGE_WORKING_GROUP_CONSTRAINT_MIN,
-            STORAGE_WORKING_GROUP_CONSTRAINT_DIFF,
-        );
-        let opening_text_constraint = <StorageWorkingGroup<Test>>::opening_human_readable_text();
-        let worker_text_constraint = <StorageWorkingGroup<Test>>::application_human_readable_text();
-        let worker_exit_text_constraint = <StorageWorkingGroup<Test>>::worker_exit_rationale_text();
-
-        assert_eq!(opening_text_constraint, default_constraint);
-        assert_eq!(worker_text_constraint, default_constraint);
-        assert_eq!(worker_exit_text_constraint, default_constraint);
     });
 }

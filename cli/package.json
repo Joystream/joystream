@@ -8,7 +8,7 @@
   },
   "bugs": "https://github.com/Joystream/substrate-runtime-joystream/issues",
   "dependencies": {
-    "@joystream/types": "^0.10.0",
+    "@joystream/types": "./types",
     "@oclif/command": "^1.5.19",
     "@oclif/config": "^1.14.0",
     "@oclif/plugin-help": "^2.2.3",
@@ -26,6 +26,7 @@
   "devDependencies": {
     "@oclif/dev-cli": "^1.22.2",
     "@oclif/test": "^1.2.5",
+    "@polkadot/ts": "^0.1.56",
     "@types/chai": "^4.2.11",
     "@types/mocha": "^5.2.7",
     "@types/node": "^10.17.18",
@@ -37,8 +38,7 @@
     "mocha": "^5.2.0",
     "nyc": "^14.1.1",
     "ts-node": "^8.8.2",
-    "typescript": "^3.8.3",
-    "@polkadot/ts": "^0.1.56"
+    "typescript": "^3.8.3"
   },
   "engines": {
     "node": ">=8.0.0"
@@ -71,6 +71,9 @@
       },
       "api": {
         "description": "Inspect the substrate node api, perform lower-level api calls or change the current api provider uri"
+      },
+      "working-groups": {
+        "description": "Working group lead and worker actions"
       }
     }
   },
@@ -84,6 +87,7 @@
     "posttest": "eslint . --ext .ts --config .eslintrc",
     "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
+    "build": "tsc --build tsconfig.json",
     "version": "oclif-dev readme && git add README.md"
   },
   "types": "lib/index.d.ts"

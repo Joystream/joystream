@@ -310,6 +310,20 @@ decl_storage! {
         /// Worker exit rationale text length limits.
         pub WorkerExitRationaleText get(worker_exit_rationale_text) : InputValidationLengthConstraint;
     }
+        add_extra_genesis {
+        config(phantom): rstd::marker::PhantomData<I>;
+        config(storage_working_group_mint_capacity): minting::BalanceOf<T>;
+        config(opening_human_readable_text_constraint): InputValidationLengthConstraint;
+        config(worker_application_human_readable_text_constraint): InputValidationLengthConstraint;
+        config(worker_exit_rationale_text_constraint): InputValidationLengthConstraint;
+        build(|config: &GenesisConfig<T, I>| {
+            Module::<T, I>::initialize_working_group(
+                config.opening_human_readable_text_constraint,
+                config.worker_application_human_readable_text_constraint,
+                config.worker_exit_rationale_text_constraint,
+                config.storage_working_group_mint_capacity)
+        });
+    }
 }
 
 decl_module! {
@@ -767,6 +781,24 @@ decl_module! {
 
             Self::ensure_origin_for_opening_type(origin, opening.opening_type)?;
 
+            // Ensure a mint exists if lead is providing a reward for positions being filled
+            let create_reward_settings = if let Some(policy) = reward_policy {
+                // A reward will need to be created so ensure our configured mint exists
+                let mint_id = Self::mint();
+
+                // Technically this is a bug-check and should not be here.
+                ensure!(<minting::Mints<T>>::exists(mint_id), Error::FillOpeningMintDoesNotExist);
+
+                // Make sure valid parameters are selected for next payment at block number
+                ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(),
+                    Error::FillOpeningInvalidNextPaymentBlock);
+
+                // The verified reward settings to use
+                Some((mint_id, policy))
+            } else {
+                None
+            };
+
             // Make iterator over successful worker application
             let successful_iter = successful_application_ids
                                     .iter()
@@ -804,22 +836,6 @@ decl_module! {
                     opening.policy_commitment.fill_opening_failed_applicant_role_stake_unstaking_period
                 )
             )?;
-
-            let create_reward_settings = if let Some(policy) = reward_policy {
-                // A reward will need to be created so ensure our configured mint exists
-                let mint_id = Self::mint();
-
-                ensure!(<minting::Mints<T>>::exists(mint_id), Error::FillOpeningMintDoesNotExist);
-
-                // Make sure valid parameters are selected for next payment at block number
-                ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(),
-                    Error::FillOpeningInvalidNextPaymentBlock);
-
-                // The verified reward settings to use
-                Some((mint_id, policy))
-            } else {
-                None
-            };
 
             //
             // == MUTATION SAFE ==
@@ -987,10 +1003,9 @@ decl_module! {
         ) {
             ensure_root(origin)?;
 
-            ensure!(<Mint<T, I>>::exists(), Error::WorkingGroupMintIsNotSet);
-
             let mint_id = Self::mint();
 
+            // Technically this is a bug-check and should not be here.
             ensure!(<minting::Mints<T>>::exists(mint_id), Error::CannotFindMint);
 
             // Mint must exist - it is set at genesis or migration.
@@ -1298,6 +1313,29 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                 Error::WorkerExitRationaleTextTooLong.into(),
             )
             .map_err(|e| e.into())
+    }
+
+    fn initialize_working_group(
+        opening_human_readable_text_constraint: InputValidationLengthConstraint,
+        worker_application_human_readable_text_constraint: InputValidationLengthConstraint,
+        worker_exit_rationale_text_constraint: InputValidationLengthConstraint,
+        working_group_mint_capacity: minting::BalanceOf<T>,
+    ) {
+        // Create a mint.
+        let mint_id_result = <minting::Module<T>>::add_mint(working_group_mint_capacity, None);
+
+        if let Ok(mint_id) = mint_id_result {
+            <Mint<T, I>>::put(mint_id);
+        } else {
+            panic!("Failed to create a mint for the working group");
+        }
+
+        // Create constraints
+        <OpeningHumanReadableText<I>>::put(opening_human_readable_text_constraint);
+        <WorkerApplicationHumanReadableText<I>>::put(
+            worker_application_human_readable_text_constraint,
+        );
+        <WorkerExitRationaleText<I>>::put(worker_exit_rationale_text_constraint);
     }
 }
 

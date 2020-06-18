@@ -12,25 +12,26 @@ import { DerivedBalances } from '@polkadot/api-derive/types';
 import { toFixedLength } from '../helpers/display';
 
 const ACCOUNTS_DIRNAME = '/accounts';
+const SPECIAL_ACCOUNT_POSTFIX = '__DEV';
 
 /**
  * Abstract base class for account-related commands.
  *
  * All the accounts available in the CLI are stored in the form of json backup files inside:
- * { this.config.dataDir }/{ ACCOUNTS_DIRNAME } (ie. ~/.local/share/joystream-cli/accounts on Ubuntu)
- * Where: this.config.dataDir is provided by oclif and ACCOUNTS_DIRNAME is a const (see above).
+ * { APP_DATA_PATH }/{ ACCOUNTS_DIRNAME } (ie. ~/.local/share/joystream-cli/accounts on Ubuntu)
+ * Where: APP_DATA_PATH is provided by StateAwareCommandBase and ACCOUNTS_DIRNAME is a const (see above).
  */
 export default abstract class AccountsCommandBase extends ApiCommandBase {
     getAccountsDirPath(): string {
-        return path.join(this.config.dataDir, ACCOUNTS_DIRNAME);
+        return path.join(this.getAppDataPath(), ACCOUNTS_DIRNAME);
     }
 
-    getAccountFilePath(account: NamedKeyringPair): string {
-        return path.join(this.getAccountsDirPath(), this.generateAccountFilename(account));
+    getAccountFilePath(account: NamedKeyringPair, isSpecial: boolean = false): string {
+        return path.join(this.getAccountsDirPath(), this.generateAccountFilename(account, isSpecial));
     }
 
-    generateAccountFilename(account: NamedKeyringPair): string {
-        return `${ slug(account.meta.name, '_') }__${ account.address }.json`;
+    generateAccountFilename(account: NamedKeyringPair, isSpecial: boolean = false): string {
+        return `${ slug(account.meta.name, '_') }__${ account.address }${ isSpecial ? SPECIAL_ACCOUNT_POSTFIX : '' }.json`;
     }
 
     private initAccountsFs(): void {
@@ -39,12 +40,25 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
         }
     }
 
-    saveAccount(account: NamedKeyringPair, password: string): void {
+    saveAccount(account: NamedKeyringPair, password: string, isSpecial: boolean = false): void {
         try {
-            fs.writeFileSync(this.getAccountFilePath(account), JSON.stringify(account.toJson(password)));
+            const destPath = this.getAccountFilePath(account, isSpecial);
+            fs.writeFileSync(destPath, JSON.stringify(account.toJson(password)));
         } catch(e) {
             throw this.createDataWriteError();
         }
+    }
+
+    // Add dev "Alice" and "Bob" accounts
+    initSpecialAccounts() {
+        const keyring = new Keyring({ type: 'sr25519' });
+        keyring.addFromUri('//Alice', { name: 'Alice' });
+        keyring.addFromUri('//Bob', { name: 'Bob' });
+        keyring.getPairs().forEach(pair => this.saveAccount(
+            { ...pair, meta: { name: pair.meta.name } },
+            '',
+            true
+        ));
     }
 
     fetchAccountFromJsonFile(jsonBackupFilePath: string): NamedKeyringPair {
@@ -91,7 +105,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
         }
     }
 
-    fetchAccounts(): NamedKeyringPair[] {
+    fetchAccounts(includeSpecial: boolean = false): NamedKeyringPair[] {
         let files: string[] = [];
         const accountDir = this.getAccountsDirPath();
         try {
@@ -104,6 +118,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
         return <NamedKeyringPair[]> files
             .map(fileName => {
                 const filePath = path.join(accountDir, fileName);
+                if (!includeSpecial && filePath.includes(SPECIAL_ACCOUNT_POSTFIX+'.')) return null;
                 return this.fetchAccountOrNullFromFile(filePath);
             })
             .filter(accObj => accObj !== null);
@@ -145,7 +160,11 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     }
 
     async setSelectedAccount(account: NamedKeyringPair): Promise<void> {
-        await this.setPreservedState({ selectedAccountFilename: this.generateAccountFilename(account) });
+        const accountFilename = fs.existsSync(this.getAccountFilePath(account, true))
+            ? this.generateAccountFilename(account, true)
+            : this.generateAccountFilename(account);
+
+        await this.setPreservedState({ selectedAccountFilename: accountFilename });
     }
 
     async promptForPassword(message:string = 'Your account\'s password') {
@@ -210,6 +229,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
         await super.init();
         try {
             this.initAccountsFs();
+            this.initSpecialAccounts();
         } catch (e) {
             throw this.createDataDirInitError();
         }
