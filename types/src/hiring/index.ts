@@ -379,18 +379,14 @@ export class Opening extends JoyStruct<IOpening> {
 
     const str = hrt.toString()
 
-    console.log('Parse hrt string:', str);
-
-
     try {
       const obj = JSON.parse(str)
       if (schemaValidator(obj) === true) {
-        console.log('HRT success', obj);
         return obj as unknown as GenericJoyStreamRoleSchema
       }
-      console.log('HRT fail', obj);
+      console.log("parse_human_readable_text JSON schema validation failed:", schemaValidator.errors);
     } catch (e) {
-      console.log("JSON schema validation failed:", e.toString())
+      console.log("parse_human_readable_text JSON schema validation failed:", e.toString())
     }
 
     return str

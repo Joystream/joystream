@@ -279,16 +279,17 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
                         .filter(({ event: { section } }): boolean => section === 'system')
                         .forEach(({ event: { method } }): void => {
                           if (method === 'ExtrinsicFailed') {
-                            reject(new ExtrinsicFailedError('Extrinsic failed!'));
+                            reject(new ExtrinsicFailedError('Extrinsic execution error!'));
                           } else if (method === 'ExtrinsicSuccess') {
                             resolve();
                           }
                         });
                     } else if (result.isError) {
-                        reject(new ExtrinsicFailedError('Extrinsic failed!'));
+                        reject(new ExtrinsicFailedError('Extrinsic execution error!'));
                     }
                 })
-                .then(unsubFunc => unsubscribe = unsubFunc);
+                .then(unsubFunc => unsubscribe = unsubFunc)
+                .catch(e => reject(new ExtrinsicFailedError(`Cannot send the extrinsic: ${e.message ? e.message : JSON.stringify(e)}`)));
         });
 
     }
@@ -298,7 +299,8 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         module: string,
         method: string,
         jsonArgs?: JSONArgsMapping, // Special JSON arguments (ie. human_readable_text of worker opening)
-        defaultValues?: ApiMethodInputArg[]
+        defaultValues?: ApiMethodInputArg[],
+        warnOnly: boolean = false // If specified - only warning will be displayed (instead of error beeing thrown)
     ): Promise<ApiMethodInputArg[]> {
         const params = await this.promptForExtrinsicParams(module, method, jsonArgs, defaultValues);
         try {
@@ -306,10 +308,15 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
             await this.sendExtrinsic(account, module, method, params);
             this.log(chalk.green(`Extrinsic successful!`));
         } catch (e) {
-            if (e instanceof ExtrinsicFailedError) {
-                throw new CLIError(`${ module }.${ method } extrinsic failed!`, { exit: ExitCodes.ApiError });
+            if (e instanceof ExtrinsicFailedError && warnOnly) {
+                this.warn(`${ module }.${ method } extrinsic failed! ${ e.message }`);
             }
-            throw e;
+            else if (e instanceof ExtrinsicFailedError) {
+                throw new CLIError(`${ module }.${ method } extrinsic failed! ${ e.message }`, { exit: ExitCodes.ApiError });
+            }
+            else {
+                throw e;
+            }
         }
 
         return params;
