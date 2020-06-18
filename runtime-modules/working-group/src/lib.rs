@@ -508,17 +508,7 @@ decl_module! {
             human_readable_text: Vec<u8>,
             opening_type: OpeningType,
         ){
-            match opening_type {
-                OpeningType::Worker => {
-                    // Ensure lead is set and is origin signer.
-                    Self::ensure_origin_is_active_leader(origin)?;
-                }
-                OpeningType::Leader => {
-                    // Council proposal.
-                    ensure_root(origin)?;
-                }
-            }
-
+            Self::ensure_origin_for_opening_type(origin, opening_type)?;
 
             Self::ensure_opening_human_readable_text_is_valid(&human_readable_text)?;
 
@@ -563,15 +553,13 @@ decl_module! {
 
         /// Begin accepting worker applications to an opening that is active.
         pub fn accept_applications(origin, opening_id: OpeningId<T>)  {
-
-            // Ensure lead is set and is origin signer
-            Self::ensure_origin_is_active_leader(origin)?;
-
             // Ensure opening exists in this working group
             // NB: Even though call to hiring module will have implicit check for
             // existence of opening as well, this check is to make sure that the opening is for
             // this working group, not something else.
             let (opening, _opening) = Self::ensure_opening_exists(&opening_id)?;
+
+            Self::ensure_origin_for_opening_type(origin, opening.opening_type)?;
 
             // Attempt to begin accepting applications
             // NB: Combined ensure check and mutation in hiring module
@@ -745,15 +733,13 @@ decl_module! {
 
         /// Begin reviewing, and therefore not accepting new applications.
         pub fn begin_applicant_review(origin, opening_id: OpeningId<T>) {
-
-            // Ensure lead is set and is origin signer
-            Self::ensure_origin_is_active_leader(origin)?;
-
             // Ensure opening exists
             // NB: Even though call to hiring modul will have implicit check for
             // existence of opening as well, this check is to make sure that the opening is for
             // this working group, not something else.
             let (opening, _opening) = Self::ensure_opening_exists(&opening_id)?;
+
+            Self::ensure_origin_for_opening_type(origin, opening.opening_type)?;
 
             //
             // == MUTATION SAFE ==
@@ -776,11 +762,10 @@ decl_module! {
             successful_application_ids: ApplicationIdSet<T>,
             reward_policy: Option<RewardPolicy<minting::BalanceOf<T>, T::BlockNumber>>
         ) {
-            // Ensure lead is set and is origin signer
-            Self::ensure_origin_is_active_leader(origin)?;
-
             // Ensure worker opening exists
             let (opening, _) = Self::ensure_opening_exists(&opening_id)?;
+
+            Self::ensure_origin_for_opening_type(origin, opening.opening_type)?;
 
             // Make iterator over successful worker application
             let successful_iter = successful_application_ids
@@ -1051,6 +1036,22 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             .collect()
 
         //TODO not lead
+    }
+
+    fn ensure_origin_for_opening_type(
+        origin: T::Origin,
+        opening_type: OpeningType,
+    ) -> Result<(), Error> {
+        match opening_type {
+            OpeningType::Worker => {
+                // Ensure lead is set and is origin signer.
+                Self::ensure_origin_is_active_leader(origin)
+            }
+            OpeningType::Leader => {
+                // Council proposal.
+                ensure_root(origin).map_err(|err| err.into())
+            }
+        }
     }
 
     fn ensure_lead_is_set() -> Result<Lead<MemberId<T>, T::AccountId>, Error> {
