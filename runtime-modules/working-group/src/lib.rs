@@ -216,34 +216,34 @@ decl_event!(
 
         /// Emits on adding new worker opening.
         /// Params:
-        /// - Worker opening id
+        /// - Opening id
         OpeningAdded(OpeningId),
 
         /// Emits on accepting application for the worker opening.
         /// Params:
-        /// - Worker opening id
-        AcceptedWorkerApplications(OpeningId),
+        /// - Opening id
+        AcceptedApplications(OpeningId),
 
         /// Emits on adding the application for the worker opening.
         /// Params:
-        /// - Worker opening id
-        /// - Worker application id
+        /// - Opening id
+        /// - Application id
         AppliedOnOpening(OpeningId, ApplicationId),
 
-        /// Emits on withdrawing the application for the worker opening.
+        /// Emits on withdrawing the application for the worker/lead opening.
         /// Params:
         /// - Worker application id
-        WorkerApplicationWithdrawn(ApplicationId),
+        ApplicationWithdrawn(ApplicationId),
 
-        /// Emits on terminating the application for the worker opening.
+        /// Emits on terminating the application for the worker/lead opening.
         /// Params:
         /// - Worker application id
-        WorkerApplicationTerminated(ApplicationId),
+        ApplicationTerminated(ApplicationId),
 
-        /// Emits on beginning the application review for the worker opening.
+        /// Emits on beginning the application review for the worker/lead opening.
         /// Params:
-        /// - Worker opening id
-        BeganWorkerApplicationReview(OpeningId),
+        /// - Opening id
+        BeganApplicationReview(OpeningId),
 
         /// Emits on filling the worker opening.
         /// Params:
@@ -251,20 +251,20 @@ decl_event!(
         /// - Worker application id to the worker id dictionary
         OpeningFilled(OpeningId, ApplicationIdToWorkerIdMap),
 
-        /// Emits on increasing the worker stake.
+        /// Emits on increasing the worker/lead stake.
         /// Params:
-        /// - worker id.
-        WorkerStakeIncreased(WorkerId),
+        /// - worker/lead id.
+       StakeIncreased(WorkerId),
 
-        /// Emits on decreasing the worker stake.
+        /// Emits on decreasing the worker/lead stake.
         /// Params:
-        /// - worker id.
-        WorkerStakeDecreased(WorkerId),
+        /// - worker/lead id.
+        StakeDecreased(WorkerId),
 
-        /// Emits on slashing the worker stake.
+        /// Emits on slashing the worker/lead stake.
         /// Params:
-        /// - worker id.
-        WorkerStakeSlashed(WorkerId),
+        /// - worker/lead id.
+        StakeSlashed(WorkerId),
 
         /// Emits on changing working group mint capacity.
         /// Params:
@@ -574,7 +574,7 @@ decl_module! {
 
 
             // Trigger event
-            Self::deposit_event(RawEvent::AcceptedWorkerApplications(opening_id));
+            Self::deposit_event(RawEvent::AcceptedApplications(opening_id));
         }
 
         /// Apply on a worker opening.
@@ -698,7 +698,7 @@ decl_module! {
 
 
             // Trigger event
-            Self::deposit_event(RawEvent::WorkerApplicationWithdrawn(application_id));
+            Self::deposit_event(RawEvent::ApplicationWithdrawn(application_id));
         }
 
         /// Terminate the worker application. Can be done by the lead only.
@@ -728,7 +728,7 @@ decl_module! {
             //
 
             // Trigger event
-            Self::deposit_event(RawEvent::WorkerApplicationTerminated(application_id));
+            Self::deposit_event(RawEvent::ApplicationTerminated(application_id));
         }
 
         /// Begin reviewing, and therefore not accepting new applications.
@@ -754,7 +754,7 @@ decl_module! {
                 )?;
 
             // Trigger event
-            Self::deposit_event(RawEvent::BeganWorkerApplicationReview(opening_id));
+            Self::deposit_event(RawEvent::BeganApplicationReview(opening_id));
         }
 
         /// Fill opening for worker/lead.
@@ -927,7 +927,7 @@ decl_module! {
                 )
             )?;
 
-            Self::deposit_event(RawEvent::WorkerStakeSlashed(worker_id));
+            Self::deposit_event(RawEvent::StakeSlashed(worker_id));
         }
 
         /// Decreases the worker/lead stake and returns the remainder to the worker role_account,
@@ -954,7 +954,7 @@ decl_module! {
                 )
             )?;
 
-            Self::deposit_event(RawEvent::WorkerStakeDecreased(worker_id));
+            Self::deposit_event(RawEvent::StakeDecreased(worker_id));
         }
 
         /// Increases the worker/lead stake, demands a worker origin. Transfers tokens from the worker
@@ -980,7 +980,7 @@ decl_module! {
                 )
             )?;
 
-            Self::deposit_event(RawEvent::WorkerStakeIncreased(worker_id));
+            Self::deposit_event(RawEvent::StakeIncreased(worker_id));
         }
 
         /// Sets the capacity to enable working group budget.
