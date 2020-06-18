@@ -836,14 +836,14 @@ decl_module! {
             let classs_maintainers = class_permissions.get_maintainers();
             Self::ensure_class_maintainers_are_valid(classs_maintainers)?;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             // Create new Class instance from provided values
             let class = Class::new(class_permissions, name, description, maximum_entities_count, default_entity_creation_voucher_upper_bound);
 
             let class_id = Self::next_class_id();
-
-            //
-            // == MUTATION SAFE ==
-            //
 
             // Add new `Class` to runtime storage
             <ClassById<T>>::insert(&class_id, class);
@@ -877,6 +877,10 @@ decl_module! {
                 Self::ensure_class_maintainers_are_valid(updated_maintainers)?;
             }
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             let class_permissions = class.get_permissions();
 
             // Make updated class_permissions from parameters provided
@@ -884,10 +888,6 @@ decl_module! {
                 class_permissions, updated_any_member, updated_entity_creation_blocked,
                 updated_all_entity_property_values_locked, updated_maintainers
             );
-
-            //
-            // == MUTATION SAFE ==
-            //
 
             // If class_permissions update has been performed
             if let Some(updated_class_permissions) = updated_class_permissions  {
@@ -1395,10 +1395,6 @@ decl_module! {
             // against the type of its Property and check any additional constraints
             Self::ensure_property_values_are_valid(&entity_controller, &new_values_for_existing_properties)?;
 
-            //
-            // == MUTATION SAFE ==
-            //
-
             // Get current property values of an entity,
             // so we can update them if new values provided present in new_property_values.
 
@@ -1419,6 +1415,10 @@ decl_module! {
                 } else {
                     None
                 };
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             // If property values should be updated
             if let Some(entity_property_values_updated) = entity_property_values_updated {
@@ -1663,6 +1663,10 @@ decl_module! {
             // Ensure maximum number of operations during atomic batching limit not reached
             Self::ensure_number_of_operations_during_atomic_batching_limit_not_reached(&operations)?;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             // This Vec holds the T::EntityId of the entity created as a result of executing a `CreateEntity` `Operation`
             let mut entity_created_in_operation = vec![];
 
@@ -1675,6 +1679,7 @@ decl_module! {
                 match operation_type {
                     OperationType::CreateEntity(create_entity_operation) => {
                         Self::create_entity(origin, create_entity_operation.class_id, actor)?;
+                        
                         // entity id of newly created entity
                         let entity_id = Self::next_entity_id() - T::EntityId::one();
                         entity_created_in_operation.push(entity_id);
