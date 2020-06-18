@@ -930,6 +930,9 @@ decl_module! {
             // Complete all checks to ensure all provided new_properties are valid
             Self::ensure_all_properties_are_valid(&new_properties)?;
 
+            // Id of next Class Schema being added
+            let schema_id = class.schemas.len() as SchemaId;
+
             let class_properties = class.get_properties();
 
             // Ensure all Property names are unique within Class
@@ -952,12 +955,10 @@ decl_module! {
             <ClassById<T>>::mutate(class_id, |class| {
                 class.properties = updated_class_properties;
                 class.schemas.push(schema);
-
-                let schema_id = class.schemas.len() - 1;
-
-                // Trigger event
-                Self::deposit_event(RawEvent::ClassSchemaAdded(class_id, schema_id as SchemaId));
             });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::ClassSchemaAdded(class_id, schema_id));
 
             Ok(())
         }
