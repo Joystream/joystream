@@ -33,6 +33,6 @@ export default class WorkingGroupsOverview extends WorkingGroupsCommandBase {
             'Stake': formatBalance(m.stake),
             'Earned': formatBalance(m.earned)
         }));
-        displayTable(membersRows, 20);
+        displayTable(membersRows, 5);
     }
   }

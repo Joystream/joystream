@@ -416,6 +416,10 @@ export class Opening extends JoyStruct<IOpening> {
     return this.getField<Option<StakingPolicy>>('role_staking_policy')
   }
 
+  get human_readable_text(): Text {
+    return this.getField<Text>('human_readable_text');
+  }
+
   get max_applicants(): number {
     const appPolicy = this.application_rationing_policy
     if (appPolicy.isNone) {

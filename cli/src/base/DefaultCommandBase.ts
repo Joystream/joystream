@@ -1,6 +1,7 @@
 import ExitCodes from '../ExitCodes';
 import Command from '@oclif/command';
 import inquirer, { DistinctQuestion } from 'inquirer';
+import chalk from 'chalk';
 
 /**
  * Abstract base class for pretty much all commands
@@ -8,6 +9,7 @@ import inquirer, { DistinctQuestion } from 'inquirer';
  */
 export default abstract class DefaultCommandBase extends Command {
     protected indentGroupsOpened = 0;
+    protected jsonPrettyIdent = '';
 
     openIndentGroup() {
         console.group();
@@ -28,6 +30,60 @@ export default abstract class DefaultCommandBase extends Command {
         }]);
 
         return result;
+    }
+
+    private jsonPrettyIndented(line:string) {
+        return `${this.jsonPrettyIdent}${ line }`;
+    }
+
+    private jsonPrettyOpen(char: '{' | '[') {
+        this.jsonPrettyIdent += '    ';
+        return chalk.gray(char)+"\n";
+    }
+
+    private jsonPrettyClose(char: '}' | ']') {
+        this.jsonPrettyIdent = this.jsonPrettyIdent.slice(0, -4);
+        return this.jsonPrettyIndented(chalk.gray(char));
+    }
+
+    private jsonPrettyKeyVal(key:string, val:any): string {
+        return this.jsonPrettyIndented(chalk.white(`${key}: ${this.jsonPrettyAny(val)}`));
+    }
+
+    private jsonPrettyObj(obj: { [key: string]: any }): string {
+        return this.jsonPrettyOpen('{')
+            + Object.keys(obj).map(k => this.jsonPrettyKeyVal(k, obj[k])).join(',\n') + "\n"
+            + this.jsonPrettyClose('}');
+    }
+
+    private jsonPrettyArr(arr: any[]): string {
+        return this.jsonPrettyOpen('[')
+            + arr.map(v => this.jsonPrettyIndented(this.jsonPrettyAny(v))).join(',\n') + "\n"
+            + this.jsonPrettyClose(']');
+    }
+
+    private jsonPrettyAny(val: any): string {
+        if (Array.isArray(val)) {
+            return this.jsonPrettyArr(val);
+        }
+        else if (typeof val === 'object' && val !== null) {
+            return this.jsonPrettyObj(val);
+        }
+        else if (typeof val === 'string') {
+            return chalk.green(`"${val}"`);
+        }
+
+        // Number, boolean etc.
+        return chalk.cyan(val);
+    }
+
+    jsonPrettyPrint(json: string) {
+        try {
+            const parsed = JSON.parse(json);
+            console.log(this.jsonPrettyAny(parsed));
+        } catch(e) {
+            console.log(this.jsonPrettyAny(json));
+        }
     }
 
     async finally(err: any) {

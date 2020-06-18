@@ -23,6 +23,7 @@ import {
     CreatorDetails
 } from '@joystream/types/lib/hiring/schemas/role.schema.typings';
 import ajv from 'ajv';
+import { Opening, StakingPolicy, ApplicationStageKeys } from '@joystream/types/lib/hiring';
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -104,6 +105,48 @@ export type GroupMember = {
     profile: Profile;
     stake: Balance;
     earned: Balance;
+}
+
+export type GroupApplication = {
+    workerApplicationId: number;
+    applicationId: number;
+    member: Profile | null;
+    roleAccout: AccountId;
+    stakes: {
+        application: number;
+        role: number;
+    },
+    humanReadableText: string;
+    stage: ApplicationStageKeys;
+}
+
+export enum OpeningStatus {
+    WaitingToBegin = 'WaitingToBegin',
+    AcceptingApplications = 'AcceptingApplications',
+    InReview = 'InReview',
+    Complete = 'Complete',
+    Cancelled = 'Cancelled',
+    Unknown = 'Unknown'
+}
+
+export type GroupOpeningStage = {
+    status: OpeningStatus;
+    block?: number;
+    date?: Date;
+}
+
+export type GroupOpeningStakes = {
+    application?: StakingPolicy;
+    role?: StakingPolicy;
+}
+
+export type GroupOpening = {
+    workerOpeningId: number;
+    openingId: number;
+    stage: GroupOpeningStage;
+    opening: Opening;
+    stakes: GroupOpeningStakes;
+    applications: GroupApplication[];
 }
 
 // Some helper structs for generating human_readable_text in worker opening extrinsic
