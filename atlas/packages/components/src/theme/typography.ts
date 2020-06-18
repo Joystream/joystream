@@ -1,7 +1,7 @@
 export default {
 	fonts: {
 		base: "Inter, Lato, 'Helvetica Neue', Arial, Helvetica, sans-serif",
-		headers: "Px Grotesk, Lato, 'Helvetica Neue', Arial, Helvetica, sans-serif"
+		headers: "PxGroteskRegular, Lato, 'Helvetica Neue', Arial, Helvetica, sans-serif"
 	},
 	weights: {
 		thin: "100",

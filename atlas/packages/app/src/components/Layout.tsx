@@ -3,7 +3,7 @@ import { css, Global } from "@emotion/core";
 import emotionNormalize from "emotion-normalize";
 import { theme } from "@joystream/components";
 
-type LayoutProps = { children: React.ReactNode | React.ReactNode[] };
+type LayoutProps = { children: React.ReactNode };
 
 const globalStyles = css`
 	${emotionNormalize};
