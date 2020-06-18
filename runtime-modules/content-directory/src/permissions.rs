@@ -376,7 +376,7 @@ impl<T: Trait> ClassPermissions<T> {
         &self,
         account_id: &T::AccountId,
         actor: &Actor<T>,
-    ) -> Result<(), &'static str> {
+    ) -> dispatch::Result {
         let can_create = match &actor {
             Actor::Lead => {
                 // Ensure lead authorization performed succesfully
