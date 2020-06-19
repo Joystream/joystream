@@ -41,6 +41,13 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
+// TODO: terminate role - add 'include slashing' parameter.
+// TODO: terminate role - unset lead on success when the leader is being fired.
+// TODO: leave role - unset lead on success when the leader is leaving.
+// TODO: fill_opening: single application winner.
+// TODO: stakes - disallow zero stake.
+// TODO: check all that a leader can set only its own parameters as a worker.
+
 #[cfg(test)]
 mod tests;
 mod types;
@@ -336,41 +343,6 @@ decl_module! {
         type Error = Error;
 
         // ****************** Roles lifecycle **********************
-
-        /// Introduce a lead when one is not currently set.
-        pub fn set_lead(origin, member_id: T::MemberId, role_account_id: T::AccountId) {
-            ensure_root(origin)?;
-
-            // Construct lead
-            let new_lead = Lead {
-                member_id,
-                role_account_id: role_account_id.clone(),
-            };
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Update current lead
-            <CurrentLead<T, I>>::put(new_lead);
-
-            // Trigger an event
-            Self::deposit_event(RawEvent::LeaderSet(member_id, role_account_id));
-        }
-
-        /// Evict the currently set lead
-        pub fn unset_lead(origin) {
-            ensure_root(origin)?;
-
-            let lead = Self::ensure_lead_is_set()?;
-
-            // == MUTATION SAFE ==
-
-            // Update current lead
-            <CurrentLead<T, I>>::kill();
-
-            Self::deposit_event(RawEvent::LeaderUnset(lead.member_id, lead.role_account_id));
-        }
 
         /// Update the associated role account of the active worker/lead.
         pub fn update_role_account(
@@ -781,6 +753,10 @@ decl_module! {
 
             Self::ensure_origin_for_opening_type(origin, opening.opening_type)?;
 
+            if matches!(opening.opening_type, OpeningType::Leader) {
+                ensure!(!<CurrentLead<T,I>>::exists(), Error::CannotHireLeaderWhenLeaderExists);
+            }
+
             // Ensure a mint exists if lead is providing a reward for positions being filled
             let create_reward_settings = if let Some(policy) = reward_policy {
                 // A reward will need to be created so ensure our configured mint exists
@@ -902,12 +878,17 @@ decl_module! {
                 );
 
                 // Store a worker
-                <WorkerById<T, I>>::insert(new_worker_id, worker);
+                <WorkerById<T, I>>::insert(new_worker_id, worker.clone());
 
                 // Update next worker id
                 <NextWorkerId<T, I>>::mutate(|id| *id += <WorkerId<T> as One>::one());
 
                 application_id_to_worker_id.insert(id, new_worker_id);
+
+                // Sets a leader on successful opening when opening is for leader.
+                if matches!(opening.opening_type, OpeningType::Leader) {
+                    Self::set_lead(worker.member_id, worker.role_account);
+                }
             });
 
             // Trigger event
@@ -1336,6 +1317,31 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             worker_application_human_readable_text_constraint,
         );
         <WorkerExitRationaleText<I>>::put(worker_exit_rationale_text_constraint);
+    }
+
+    // Introduce a lead.
+    pub(crate) fn set_lead(member_id: T::MemberId, role_account_id: T::AccountId) {
+        // Construct lead
+        let new_lead = Lead {
+            member_id,
+            role_account_id: role_account_id.clone(),
+        };
+
+        // Update current lead
+        <CurrentLead<T, I>>::put(new_lead);
+
+        // Trigger an event
+        Self::deposit_event(RawEvent::LeaderSet(member_id, role_account_id));
+    }
+
+    // Evict the currently set lead.
+    pub(crate) fn unset_lead() {
+        if let Ok(lead) = Self::ensure_lead_is_set() {
+            // Update current lead
+            <CurrentLead<T, I>>::kill();
+
+            Self::deposit_event(RawEvent::LeaderUnset(lead.member_id, lead.role_account_id));
+        }
     }
 }
 

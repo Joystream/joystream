@@ -14,6 +14,9 @@ decl_error! {
         /// Current lead is not set.
         CurrentLeadNotSet,
 
+        /// There is leader already, cannot hire another one.
+        CannotHireLeaderWhenLeaderExists,
+
         /// Not a lead account.
         IsNotLeadAccount,
 

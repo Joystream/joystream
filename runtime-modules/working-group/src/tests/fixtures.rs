@@ -1,6 +1,7 @@
 use super::mock::{
     Balances, Membership, System, Test, TestEvent, TestWorkingGroup, TestWorkingGroupInstance,
 };
+use crate::tests::fill_worker_position;
 use crate::types::{
     Application, Opening, OpeningPolicyCommitment, OpeningType, RewardPolicy, RoleStakeProfile,
     Worker,
@@ -175,15 +176,15 @@ impl UpdateWorkerRewardAmountFixture {
 }
 pub struct UpdateWorkerRewardAccountFixture {
     worker_id: u64,
-    new_role_account_id: u64,
+    new_reward_account_id: u64,
     origin: RawOrigin<u64>,
 }
 
 impl UpdateWorkerRewardAccountFixture {
-    pub fn default_with_ids(worker_id: u64, new_role_account_id: u64) -> Self {
+    pub fn default_with_ids(worker_id: u64, new_reward_account_id: u64) -> Self {
         UpdateWorkerRewardAccountFixture {
             worker_id,
-            new_role_account_id,
+            new_reward_account_id,
             origin: RawOrigin::Signed(1),
         }
     }
@@ -196,7 +197,7 @@ impl UpdateWorkerRewardAccountFixture {
             TestWorkingGroup::update_reward_account(
                 self.origin.clone().into(),
                 self.worker_id,
-                self.new_role_account_id
+                self.new_reward_account_id
             ),
             expected_result
         );
@@ -240,11 +241,11 @@ impl UpdateWorkerRoleAccountFixture {
 pub struct UnsetLeadFixture;
 impl UnsetLeadFixture {
     pub fn unset_lead() {
-        assert_eq!(TestWorkingGroup::unset_lead(RawOrigin::Root.into()), Ok(()));
+        TestWorkingGroup::unset_lead();
     }
 
     pub fn call_and_assert(origin: RawOrigin<u64>, expected_result: Result<(), Error>) {
-        assert_eq!(TestWorkingGroup::unset_lead(origin.into()), expected_result);
+        TestWorkingGroup::unset_lead();
     }
 }
 
@@ -550,26 +551,64 @@ impl AcceptWorkerApplicationsFixture {
     }
 }
 
-pub struct SetLeadFixture;
+pub struct SetLeadFixture {
+    pub member_id: u64,
+    pub role_account: u64,
+}
+impl Default for SetLeadFixture {
+    fn default() -> Self {
+        SetLeadFixture {
+            member_id: 1,
+            role_account: 1,
+        }
+    }
+}
+
 impl SetLeadFixture {
-    pub fn set_lead(lead_account_id: u64) {
-        assert_eq!(
-            TestWorkingGroup::set_lead(RawOrigin::Root.into(), 1, lead_account_id),
-            Ok(())
-        );
+    pub fn set_lead(self) {
+        TestWorkingGroup::set_lead(self.member_id, self.role_account);
+    }
+    pub fn set_lead_with_ids(member_id: u64, role_account: u64) {
+        SetLeadFixture {
+            member_id,
+            role_account,
+        }
+        .set_lead();
+    }
+}
+
+pub struct HireLeadFixture {
+    setup_environment: bool,
+}
+
+impl Default for HireLeadFixture {
+    fn default() -> Self {
+        HireLeadFixture {
+            setup_environment: true,
+        }
+    }
+}
+impl HireLeadFixture {
+    pub fn disable_setup_environment(self) -> Self {
+        HireLeadFixture {
+            setup_environment: false,
+            ..self
+        }
     }
 
-    pub fn call_and_assert(
-        origin: RawOrigin<u64>,
-        member_id: u64,
-        account_id: u64,
-        expected_result: Result<(), Error>,
-    ) {
-        assert_eq!(
-            TestWorkingGroup::set_lead(origin.into(), member_id, account_id),
-            expected_result
-        );
+    pub fn hire_lead(self) -> u64 {
+        fill_worker_position(
+            None,
+            None,
+            self.setup_environment,
+            OpeningType::Leader,
+            Some(b"leader".to_vec()),
+        )
     }
+}
+
+pub fn get_worker_by_id(worker_id: u64) -> Worker<u64, u64, u64, u64, u64> {
+    TestWorkingGroup::worker_by_id(worker_id)
 }
 
 pub struct AddWorkerOpeningFixture {
@@ -664,43 +703,6 @@ impl AddWorkerOpeningFixture {
 
 pub struct EventFixture;
 impl EventFixture {
-    pub fn assert_crate_events(
-        expected_raw_events: Vec<
-            RawEvent<
-                u64,
-                u64,
-                u64,
-                u64,
-                u64,
-                u64,
-                std::collections::BTreeMap<u64, u64>,
-                Vec<u8>,
-                u64,
-                u64,
-                TestWorkingGroupInstance,
-            >,
-        >,
-    ) {
-        let converted_events = expected_raw_events
-            .iter()
-            .map(|ev| TestEvent::working_group_TestWorkingGroupInstance(ev.clone()))
-            .collect::<Vec<TestEvent>>();
-
-        Self::assert_global_events(converted_events)
-    }
-    pub fn assert_global_events(expected_raw_events: Vec<TestEvent>) {
-        let expected_events = expected_raw_events
-            .iter()
-            .map(|ev| EventRecord {
-                phase: Phase::ApplyExtrinsic(0),
-                event: ev.clone(),
-                topics: vec![],
-            })
-            .collect::<Vec<EventRecord<_, _>>>();
-
-        assert_eq!(System::events(), expected_events);
-    }
-
     pub fn assert_last_crate_event(
         expected_raw_event: RawEvent<
             u64,

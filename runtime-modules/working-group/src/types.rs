@@ -117,7 +117,7 @@ impl Default for OpeningType {
 
 /// Working group lead: worker lead.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
+#[derive(Encode, Decode, Default, Debug, Clone, PartialEq, Copy)]
 pub struct Lead<MemberId, AccountId> {
     /// Member id of the leader.
     pub member_id: MemberId,
@@ -239,7 +239,7 @@ pub enum ExitInitiationOrigin {
 
     /// The curator exiting is the origin.
     Worker,
-    //TODO
+    //TODO council ?
 }
 
 /// The recurring reward if any to be assigned to an actor when filling in the position.
