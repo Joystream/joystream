@@ -1472,6 +1472,10 @@ decl_module! {
                 access_level,
             )?;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             // Decrease reference counters of involved entities (if some)
             if let Some(entity_ids_to_decrease_rcs) = property_value_vector.get_vec_value().get_involved_entities() {
 
@@ -1494,10 +1498,6 @@ decl_module! {
             let entity_values_updated = Self::insert_at_in_class_schema_property_id(
                 entity.values, in_class_schema_property_id, empty_property_value_vector
             );
-
-            //
-            // == MUTATION SAFE ==
-            //
 
             // Update entity property values
             <EntityById<T>>::mutate(entity_id, |entity| {
