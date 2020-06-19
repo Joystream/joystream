@@ -3,6 +3,7 @@ import Debug from 'debug';
 import { FTSQuery, ObjectType } from '../model';
 import { upperFirst, lowerFirst, kebabCase } from 'lodash';
 import { snakeCase } from 'typeorm/util/StringUtils';
+import { GeneratorContext } from '../generate/SourcesGenerator';
 
 const debug = Debug('qnode-cli:model-generator');
 
@@ -42,16 +43,9 @@ interface MustacheQueryField {
     last: boolean // this field is need for joining, e.g. '<field> || <field> || <field>'
 }
 
-/**
- * additional context to be passed to the generator, 
- * e.g. to have predictable timestamps
- */
-export interface GeneratorContext {
-    [key:string]: unknown
-}
 
 
-export class FTSQueryGenerator {
+export class FTSQueryRenderer {
     private _context: GeneratorContext = {};
 
     constructor(context: GeneratorContext = {}) {

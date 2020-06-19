@@ -94,6 +94,11 @@ export class WarthogModel {
         return field;
     }
 
+    addField(entity: string, field: Field): void {
+        const objType = this.lookupType(entity);
+        objType.fields.push(field);
+    }
+
     /**
      * Lookup ObjectType by it's name (as defined in the schema file)
      * 
@@ -166,15 +171,27 @@ export class Field {
      * it adds exclamation mark (!) at then end of string
      */
     format(): string {
-    const colon = ':';
-    const columnType: string = this.isBuildinType ? availableTypes[this.type] : this.type;
-    let column: string = columnType === 'string' ? this.name : this.name.concat(colon, columnType);
+      const colon = ':';
+      const columnType = this.columnType();
+      let column: string = columnType === 'string' ? this.name : this.name.concat(colon, columnType);
 
-    if (!this.isBuildinType && !this.isList && this.type !== 'otm' && this.type !== 'mto') {
-      column = this.name.concat(colon, 'oto');
-    } else if (this.isBuildinType && this.isList) {
-      column = this.name + colon + 'array' + columnType;
-        }
-        return this.nullable ? column : column + '!';
+      if (!this.isBuildinType && !this.isList && this.type !== 'otm' && this.type !== 'mto') {
+        column = this.name.concat(colon, 'oto');
+      } else if (this.isBuildinType && this.isList) {
+        column = this.name + colon + 'array' + columnType;
+      }
+      return this.nullable ? column : column + '!';
+    }
+
+    columnType(): string {
+      return this.isBuildinType ? availableTypes[this.type] : this.type;
+    }
+
+    isArray(): boolean {
+        return this.isBuildinType && this.isList;
+    }
+
+    isScalar(): boolean {
+        return this.isBuildinType && !this.isList;
     }
 }

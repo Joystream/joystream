@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { createModel } from './model';
 import * as fs from 'fs-extra';
-import { FTSQueryGenerator } from '../../src/helpers/FTSQueryGenerator';
+import { FTSQueryRenderer } from '../../src/generate/FTSQueryRenderer';
 import * as chai from 'chai';
 
 const chaiSnapshot = require('mocha-chai-snapshot');
@@ -12,12 +12,12 @@ const { expect } = chai;
 chai.use(chaiSnapshot);
 
 
-describe('FTSQueryGenerator', () => {
-    let generator: FTSQueryGenerator;
+describe('FTSQueryRenderer', () => {
+    let generator: FTSQueryRenderer;
 
     before(() => {
         // set timestamp in the context to make the output predictable
-        generator = new FTSQueryGenerator({"ts": 111111111});
+        generator = new FTSQueryRenderer({"ts": 111111111});
     })
 
     it('Should generate migration', function() {

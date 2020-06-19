@@ -1,0 +1,15 @@
+import { Service } from 'typedi';
+import { Repository } from 'typeorm';
+import { InjectRepository } from 'typeorm-typedi-extensions';
+import { BaseService } from 'warthog';
+
+import { {{className}} } from './{{kebabName}}.model';
+
+@Service('{{className}}Service')
+export class {{className}}Service extends BaseService<{{className}}> {
+  constructor(
+    @InjectRepository({{className}}) protected readonly repository: Repository<{{className}}>
+  ) {
+    super({{className}}, repository);
+  }
+}
