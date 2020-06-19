@@ -23,7 +23,7 @@ pub struct IncreaseWorkerStakeFixture {
 impl IncreaseWorkerStakeFixture {
     pub fn default_for_worker_id(worker_id: u64) -> Self {
         let account_id = 1;
-        IncreaseWorkerStakeFixture {
+        Self {
             origin: RawOrigin::Signed(1),
             worker_id,
             balance: 10,
@@ -31,11 +31,11 @@ impl IncreaseWorkerStakeFixture {
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        IncreaseWorkerStakeFixture { origin, ..self }
+        Self { origin, ..self }
     }
 
     pub fn with_balance(self, balance: u64) -> Self {
-        IncreaseWorkerStakeFixture { balance, ..self }
+        Self { balance, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
@@ -72,11 +72,12 @@ pub struct TerminateWorkerRoleFixture {
     origin: RawOrigin<u64>,
     text: Vec<u8>,
     constraint: InputValidationLengthConstraint,
+    slash_stake: bool,
 }
 
 impl TerminateWorkerRoleFixture {
     pub fn default_for_worker_id(worker_id: u64) -> Self {
-        TerminateWorkerRoleFixture {
+        Self {
             worker_id,
             origin: RawOrigin::Signed(1),
             text: b"rationale_text".to_vec(),
@@ -84,14 +85,22 @@ impl TerminateWorkerRoleFixture {
                 min: 1,
                 max_min_diff: 20,
             },
+            slash_stake: false,
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        TerminateWorkerRoleFixture { origin, ..self }
+        Self { origin, ..self }
     }
 
     pub fn with_text(self, text: Vec<u8>) -> Self {
-        TerminateWorkerRoleFixture { text, ..self }
+        Self { text, ..self }
+    }
+
+    pub fn with_slashing(self) -> Self {
+        Self {
+            slash_stake: true,
+            ..self
+        }
     }
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
@@ -101,6 +110,7 @@ impl TerminateWorkerRoleFixture {
             self.origin.clone().into(),
             self.worker_id,
             self.text.clone(),
+            self.slash_stake,
         );
         assert_eq!(actual_result, expected_result);
 
@@ -121,13 +131,13 @@ pub(crate) struct LeaveWorkerRoleFixture {
 
 impl LeaveWorkerRoleFixture {
     pub fn default_for_worker_id(worker_id: u64) -> Self {
-        LeaveWorkerRoleFixture {
+        Self {
             worker_id,
             origin: RawOrigin::Signed(1),
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        LeaveWorkerRoleFixture { origin, ..self }
+        Self { origin, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
@@ -153,14 +163,14 @@ pub struct UpdateWorkerRewardAmountFixture {
 
 impl UpdateWorkerRewardAmountFixture {
     pub fn default_for_worker_id(worker_id: u64) -> Self {
-        UpdateWorkerRewardAmountFixture {
+        Self {
             worker_id,
             amount: 100,
             origin: RawOrigin::Signed(1),
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        UpdateWorkerRewardAmountFixture { origin, ..self }
+        Self { origin, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
@@ -182,14 +192,14 @@ pub struct UpdateWorkerRewardAccountFixture {
 
 impl UpdateWorkerRewardAccountFixture {
     pub fn default_with_ids(worker_id: u64, new_reward_account_id: u64) -> Self {
-        UpdateWorkerRewardAccountFixture {
+        Self {
             worker_id,
             new_reward_account_id,
             origin: RawOrigin::Signed(1),
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        UpdateWorkerRewardAccountFixture { origin, ..self }
+        Self { origin, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
@@ -212,14 +222,14 @@ pub struct UpdateWorkerRoleAccountFixture {
 
 impl UpdateWorkerRoleAccountFixture {
     pub fn default_with_ids(worker_id: u64, new_role_account_id: u64) -> Self {
-        UpdateWorkerRoleAccountFixture {
+        Self {
             worker_id,
             new_role_account_id,
             origin: RawOrigin::Signed(1),
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        UpdateWorkerRoleAccountFixture { origin, ..self }
+        Self { origin, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
@@ -258,7 +268,7 @@ impl FillWorkerOpeningFixture {
     pub fn default_for_ids(opening_id: u64, application_ids: Vec<u64>) -> Self {
         let application_ids: BTreeSet<u64> = application_ids.iter().map(|x| *x).collect();
 
-        FillWorkerOpeningFixture {
+        Self {
             origin: RawOrigin::Signed(1),
             opening_id,
             successful_application_ids: application_ids,
@@ -268,11 +278,11 @@ impl FillWorkerOpeningFixture {
     }
 
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        FillWorkerOpeningFixture { origin, ..self }
+        Self { origin, ..self }
     }
 
     pub fn with_reward_policy(self, reward_policy: RewardPolicy<u64, u64>) -> Self {
-        FillWorkerOpeningFixture {
+        Self {
             reward_policy: Some(reward_policy),
             ..self
         }
@@ -345,13 +355,13 @@ pub struct BeginReviewWorkerApplicationsFixture {
 
 impl BeginReviewWorkerApplicationsFixture {
     pub fn default_for_opening_id(opening_id: u64) -> Self {
-        BeginReviewWorkerApplicationsFixture {
+        Self {
             origin: RawOrigin::Signed(1),
             opening_id,
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        BeginReviewWorkerApplicationsFixture { origin, ..self }
+        Self { origin, ..self }
     }
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
         let actual_result =
@@ -367,16 +377,16 @@ pub struct TerminateApplicationFixture {
 
 impl TerminateApplicationFixture {
     pub fn with_signer(self, account_id: u64) -> Self {
-        TerminateApplicationFixture {
+        Self {
             origin: RawOrigin::Signed(account_id),
             ..self
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        TerminateApplicationFixture { origin, ..self }
+        Self { origin, ..self }
     }
     pub fn default_for_application_id(application_id: u64) -> Self {
-        TerminateApplicationFixture {
+        Self {
             origin: RawOrigin::Signed(1),
             worker_application_id: application_id,
         }
@@ -396,16 +406,16 @@ pub struct WithdrawApplicationFixture {
 
 impl WithdrawApplicationFixture {
     pub fn with_signer(self, account_id: u64) -> Self {
-        WithdrawApplicationFixture {
+        Self {
             origin: RawOrigin::Signed(account_id),
             ..self
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        WithdrawApplicationFixture { origin, ..self }
+        Self { origin, ..self }
     }
     pub fn default_for_application_id(application_id: u64) -> Self {
-        WithdrawApplicationFixture {
+        Self {
             origin: RawOrigin::Signed(1),
             worker_application_id: application_id,
         }
@@ -422,6 +432,10 @@ impl WithdrawApplicationFixture {
 pub fn increase_total_balance_issuance_using_account_id(account_id: u64, balance: u64) {
     let _ =
         <Balances as srml_support::traits::Currency<u64>>::deposit_creating(&account_id, balance);
+}
+
+pub fn get_balance(account_id: u64) -> u64 {
+    <super::mock::Balances as srml_support::traits::Currency<u64>>::total_balance(&account_id)
 }
 
 pub fn setup_members(count: u8) {
@@ -549,7 +563,7 @@ pub struct AcceptWorkerApplicationsFixture {
 
 impl AcceptWorkerApplicationsFixture {
     pub fn default_for_opening_id(opening_id: u64) -> Self {
-        AcceptWorkerApplicationsFixture {
+        Self {
             origin: RawOrigin::Signed(1),
             opening_id,
         }
@@ -586,7 +600,7 @@ impl SetLeadFixture {
         TestWorkingGroup::set_lead(self.member_id, self.role_account, self.worker_id);
     }
     pub fn set_lead_with_ids(member_id: u64, role_account: u64, worker_id: u64) {
-        SetLeadFixture {
+        Self {
             member_id,
             role_account,
             worker_id,
@@ -601,7 +615,7 @@ pub struct HireLeadFixture {
 
 impl Default for HireLeadFixture {
     fn default() -> Self {
-        HireLeadFixture {
+        Self {
             setup_environment: true,
         }
     }
@@ -632,7 +646,7 @@ pub struct AddWorkerOpeningFixture {
 
 impl Default for AddWorkerOpeningFixture {
     fn default() -> Self {
-        AddWorkerOpeningFixture {
+        Self {
             origin: RawOrigin::Signed(1),
             activate_at: hiring::ActivateOpeningAt::CurrentBlock,
             commitment: <OpeningPolicyCommitment<u64, u64>>::default(),
@@ -647,7 +661,7 @@ impl AddWorkerOpeningFixture {
         self,
         policy_commitment: OpeningPolicyCommitment<u64, u64>,
     ) -> Self {
-        AddWorkerOpeningFixture {
+        Self {
             commitment: policy_commitment,
             ..self
         }
@@ -695,25 +709,25 @@ impl AddWorkerOpeningFixture {
     }
 
     pub fn with_text(self, text: Vec<u8>) -> Self {
-        AddWorkerOpeningFixture {
+        Self {
             human_readable_text: text,
             ..self
         }
     }
 
     pub fn with_opening_type(self, opening_type: OpeningType) -> Self {
-        AddWorkerOpeningFixture {
+        Self {
             opening_type,
             ..self
         }
     }
 
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        AddWorkerOpeningFixture { origin, ..self }
+        Self { origin, ..self }
     }
 
     pub fn with_activate_at(self, activate_at: hiring::ActivateOpeningAt<u64>) -> Self {
-        AddWorkerOpeningFixture {
+        Self {
             activate_at,
             ..self
         }
@@ -763,7 +777,7 @@ pub struct DecreaseWorkerStakeFixture {
 impl DecreaseWorkerStakeFixture {
     pub fn default_for_worker_id(worker_id: u64) -> Self {
         let account_id = 1;
-        DecreaseWorkerStakeFixture {
+        Self {
             origin: RawOrigin::Signed(account_id),
             worker_id,
             balance: 10,
@@ -771,11 +785,11 @@ impl DecreaseWorkerStakeFixture {
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        DecreaseWorkerStakeFixture { origin, ..self }
+        Self { origin, ..self }
     }
 
     pub fn with_balance(self, balance: u64) -> Self {
-        DecreaseWorkerStakeFixture { balance, ..self }
+        Self { balance, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
@@ -807,7 +821,7 @@ impl DecreaseWorkerStakeFixture {
     }
 }
 
-fn get_stake_balance(stake: stake::Stake<u64, u64, u64>) -> u64 {
+pub(crate) fn get_stake_balance(stake: stake::Stake<u64, u64, u64>) -> u64 {
     if let stake::StakingStatus::Staked(stake) = stake.staking_status {
         return stake.staked_amount;
     }
@@ -825,7 +839,7 @@ pub struct SlashWorkerStakeFixture {
 impl SlashWorkerStakeFixture {
     pub fn default_for_worker_id(worker_id: u64) -> Self {
         let account_id = 1;
-        SlashWorkerStakeFixture {
+        Self {
             origin: RawOrigin::Signed(account_id),
             worker_id,
             balance: 10,
@@ -833,11 +847,11 @@ impl SlashWorkerStakeFixture {
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        SlashWorkerStakeFixture { origin, ..self }
+        Self { origin, ..self }
     }
 
     pub fn with_balance(self, balance: u64) -> Self {
-        SlashWorkerStakeFixture { balance, ..self }
+        Self { balance, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {

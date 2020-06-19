@@ -158,7 +158,7 @@ impl HiringWorkflow {
 
         let opening_id = add_worker_opening_fixture.call()?;
 
-        // fill applications
+        // Fill applications.
         let mut application_ids = Vec::new();
         for application in self.applications.clone() {
             let apply_on_worker_opening_fixture =

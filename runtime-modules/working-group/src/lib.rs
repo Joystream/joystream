@@ -42,11 +42,8 @@
 //#![warn(missing_docs)]
 
 // TODO: terminate role - add 'include slashing' parameter.
-// TODO: terminate role - unset lead on success when the leader is being fired.
 // TODO: leave role - unset lead on success when the leader is leaving.
-// TODO: stakes - disallow zero stake.
 // TODO: check all that a leader can set only its own parameters as a worker.
-// TODO: get_all_worker_ids() - remove leader worker_id
 
 #[cfg(test)]
 mod tests;
@@ -58,7 +55,7 @@ use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 use rstd::vec::Vec;
-use sr_primitives::traits::{One, Zero};
+use sr_primitives::traits::{Bounded, One, Zero};
 use srml_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
 use srml_support::{decl_event, decl_module, decl_storage, ensure};
 use system::{ensure_root, ensure_signed};
@@ -466,13 +463,16 @@ decl_module! {
         pub fn terminate_role(
             origin,
             worker_id: WorkerId<T>,
-            rationale_text: Vec<u8>
+            rationale_text: Vec<u8>,
+            slash_stake: bool,
         ) {
-            // Ensuring worker actually exists.
-            let worker = Self::ensure_worker_exists(&worker_id)?;
+            let (cloned_origin1, cloned_origin2) = common::origin::double_origin::<T>(origin);
 
             // Ensure lead is set or it is the council terminating the leader.
-            let exit_origin = Self::ensure_origin_for_leader(origin, worker.member_id)?;
+            let exit_origin = Self::ensure_origin_for_leader(cloned_origin1, worker_id)?;
+
+            // Ensuring worker actually exists.
+            let worker = Self::ensure_worker_exists(&worker_id)?;
 
             // Ensure rationale text is valid.
             Self::ensure_worker_exit_rationale_text_is_valid(&rationale_text)?;
@@ -480,6 +480,10 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            if slash_stake {
+                Self::slash_stake(cloned_origin2, worker_id, BalanceOf::<T>::max_value())?;
+            }
 
             Self::deactivate_worker(
                 &worker_id,
@@ -912,8 +916,10 @@ decl_module! {
         /// Slashes the worker stake, demands a leader origin. No limits, no actions on zero stake.
         /// If slashing balance greater than the existing stake - stake is slashed to zero.
         pub fn slash_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
-            Self::ensure_origin_is_active_leader(origin)?;
+            // Ensure lead is set or it is the council terminating the leader.
+            Self::ensure_origin_for_leader(origin, worker_id)?;
 
+            // Ensuring worker actually exists.
             let worker = Self::ensure_worker_exists(&worker_id)?;
 
             ensure!(balance != <BalanceOf<T>>::zero(), Error::StakeBalanceCannotBeZero);
@@ -1042,11 +1048,11 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     fn ensure_origin_for_leader(
         origin: T::Origin,
-        member_id: MemberId<T>,
+        worker_id: WorkerId<T>,
     ) -> Result<ExitInitiationOrigin, Error> {
         let lead = Self::ensure_lead_is_set()?;
 
-        let (worker_opening_type, exit_origin) = if lead.member_id == member_id {
+        let (worker_opening_type, exit_origin) = if lead.worker_id == worker_id {
             (OpeningType::Leader, ExitInitiationOrigin::Sudo)
         } else {
             (OpeningType::Worker, ExitInitiationOrigin::Lead)

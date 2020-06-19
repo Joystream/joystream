@@ -1161,15 +1161,18 @@ fn leave_worker_role_succeeds_with_stakes() {
 #[test]
 fn terminate_worker_role_succeeds_with_stakes() {
     build_test_externalities().execute_with(|| {
+        let total_balance = 10000;
+        let stake_balance = 100;
+
         let worker_account_id = 2;
         let worker_member_id = 2;
-        increase_total_balance_issuance_using_account_id(worker_account_id, 10000);
+        increase_total_balance_issuance_using_account_id(worker_account_id, total_balance);
 
         HireLeadFixture::default().hire_lead();
 
         let worker_id = HiringWorkflow::default()
             .disable_setup_environment()
-            .with_role_stake(Some(100))
+            .with_role_stake(Some(stake_balance))
             .add_application_with_origin(
                 b"worker_handle".to_vec(),
                 RawOrigin::Signed(worker_account_id),
@@ -1177,6 +1180,12 @@ fn terminate_worker_role_succeeds_with_stakes() {
             )
             .execute()
             .unwrap();
+
+        // Balance was staked.
+        assert_eq!(
+            get_balance(worker_account_id),
+            total_balance - stake_balance
+        );
 
         let terminate_worker_role_fixture =
             TerminateWorkerRoleFixture::default_for_worker_id(worker_id);
@@ -1186,6 +1195,65 @@ fn terminate_worker_role_succeeds_with_stakes() {
         EventFixture::assert_last_crate_event(RawEvent::TerminatedWorker(
             worker_id,
             b"rationale_text".to_vec(),
+        ));
+    });
+}
+
+#[test]
+fn terminate_worker_role_succeeds_with_slashing() {
+    build_test_externalities().execute_with(|| {
+        let total_balance = 10000;
+        let stake_balance = 100;
+
+        let worker_account_id = 2;
+        let worker_member_id = 2;
+        increase_total_balance_issuance_using_account_id(worker_account_id, total_balance);
+
+        assert_eq!(get_balance(worker_account_id), total_balance);
+
+        HireLeadFixture::default().hire_lead();
+
+        let worker_id = HiringWorkflow::default()
+            .disable_setup_environment()
+            .with_role_stake(Some(stake_balance))
+            .add_application_with_origin(
+                b"worker_handle".to_vec(),
+                RawOrigin::Signed(worker_account_id),
+                worker_member_id,
+            )
+            .execute()
+            .unwrap();
+
+        // Balance was staked.
+
+        assert_eq!(
+            get_balance(worker_account_id),
+            total_balance - stake_balance
+        );
+
+        let stake_id = 0;
+        let old_stake = <stake::Module<Test>>::stakes(stake_id);
+
+        assert_eq!(get_stake_balance(old_stake), stake_balance);
+
+        // Terminate with slashing.
+
+        let terminate_worker_role_fixture =
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id).with_slashing();
+
+        terminate_worker_role_fixture.call_and_assert(Ok(()));
+
+        // Balance was slashed.
+
+        assert_eq!(
+            get_balance(worker_account_id),
+            total_balance - stake_balance
+        );
+
+        let new_stake = <stake::Module<Test>>::stakes(stake_id);
+        assert!(matches!(
+            new_stake.staking_status,
+            stake::StakingStatus::NotStaked
         ));
     });
 }
@@ -1473,13 +1541,46 @@ fn slash_worker_stake_succeeds() {
 }
 
 #[test]
+fn slash_leader_stake_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let leader_worker_id = HiringWorkflow::default()
+            .with_role_stake(Some(100))
+            .with_opening_type(OpeningType::Leader)
+            .add_default_application()
+            .execute()
+            .unwrap();
+
+        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(leader_worker_id)
+            .with_origin(RawOrigin::Root);
+
+        slash_stake_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::StakeSlashed(leader_worker_id));
+    });
+}
+
+#[test]
 fn slash_worker_stake_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
-        let worker_id = 0;
+        HireLeadFixture::default().hire_lead();
+
+        let invalid_worker_id = 22;
+        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id)
+            .with_origin(RawOrigin::None);
+
+        slash_stake_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
+    });
+}
+
+#[test]
+fn slash_leader_stake_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = HireLeadFixture::default().hire_lead();
+
         let slash_stake_fixture =
             SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_origin(RawOrigin::None);
 
-        slash_stake_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
+        slash_stake_fixture.call_and_assert(Err(Error::RequireRootOrigin));
     });
 }
 

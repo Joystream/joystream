@@ -135,7 +135,7 @@ use srml_support::{
 use system::{ensure_root, RawOrigin};
 
 use crate::types::ApprovedProposalData;
-use common::origin_validator::ActorOriginValidator;
+use common::origin::ActorOriginValidator;
 use srml_support::dispatch::Dispatchable;
 
 type MemberId<T> = <T as membership::members::Trait>::MemberId;
