@@ -1,4 +1,5 @@
 mod fixtures;
+mod hiring_workflow;
 mod mock;
 
 use crate::types::{OpeningPolicyCommitment, OpeningType, RewardPolicy};

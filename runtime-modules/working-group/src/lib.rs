@@ -753,6 +753,7 @@ decl_module! {
 
             Self::ensure_origin_for_opening_type(origin, opening.opening_type)?;
 
+            // Cannot hire a lead when another leader exists.
             if matches!(opening.opening_type, OpeningType::Leader) {
                 ensure!(!<CurrentLead<T,I>>::exists(), Error::CannotHireLeaderWhenLeaderExists);
             }
@@ -801,6 +802,11 @@ decl_module! {
                                             .clone()
                                             .map(|(successful_application, _, _)| successful_application.hiring_application_id)
                                             .collect::<BTreeSet<_>>();
+
+            // Check for a single application for a leader.
+            if matches!(opening.opening_type, OpeningType::Leader) {
+                ensure!(successful_application_ids.len() == 1, Error::CannotHireSeveralLeader);
+            }
 
             // NB: Combined ensure check and mutation in hiring module
             ensure_on_wrapped_error!(

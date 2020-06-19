@@ -492,9 +492,9 @@ impl ApplyOnWorkerOpeningFixture {
         }
     }
 
-    pub fn call_and_assert(&self, expected_result: Result<(), Error>) -> u64 {
+    pub fn call(&self) -> Result<u64, Error> {
         let saved_application_next_id = TestWorkingGroup::next_application_id();
-        let actual_result = TestWorkingGroup::apply_on_opening(
+        TestWorkingGroup::apply_on_opening(
             self.origin.clone().into(),
             self.member_id,
             self.worker_opening_id,
@@ -502,7 +502,14 @@ impl ApplyOnWorkerOpeningFixture {
             self.opt_role_stake_balance,
             self.opt_application_stake_balance,
             self.human_readable_text.clone(),
-        );
+        )?;
+
+        Ok(saved_application_next_id)
+    }
+    pub fn call_and_assert(&self, expected_result: Result<(), Error>) -> u64 {
+        let saved_application_next_id = TestWorkingGroup::next_application_id();
+
+        let actual_result = self.call().map(|_| ());
         assert_eq!(actual_result.clone(), expected_result);
 
         if actual_result.is_ok() {
@@ -644,13 +651,8 @@ impl AddWorkerOpeningFixture {
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) -> u64 {
         let saved_opening_next_id = TestWorkingGroup::next_opening_id();
-        let actual_result = TestWorkingGroup::add_opening(
-            self.origin.clone().into(),
-            self.activate_at.clone(),
-            self.commitment.clone(),
-            self.human_readable_text.clone(),
-            self.opening_type,
-        );
+        let actual_result = self.call().map(|_| ());
+
         assert_eq!(actual_result.clone(), expected_result);
 
         if actual_result.is_ok() {
@@ -673,6 +675,19 @@ impl AddWorkerOpeningFixture {
         }
 
         saved_opening_next_id
+    }
+
+    pub fn call(&self) -> Result<u64, Error> {
+        let saved_opening_next_id = TestWorkingGroup::next_opening_id();
+        TestWorkingGroup::add_opening(
+            self.origin.clone().into(),
+            self.activate_at.clone(),
+            self.commitment.clone(),
+            self.human_readable_text.clone(),
+            self.opening_type,
+        )?;
+
+        Ok(saved_opening_next_id)
     }
 
     pub fn with_text(self, text: Vec<u8>) -> Self {
