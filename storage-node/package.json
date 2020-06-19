@@ -1,0 +1,43 @@
+{
+  "private": true,
+  "name": "@joystream/storage-node",
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=10.15.3",
+    "yarn": "^1.15.2"
+  },
+  "homepage": "https://github.com/Joystream/joystream/",
+  "bugs": {
+    "url": "https://github.com/Joystream/joystream/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Joystream/joystream.git"
+  },
+  "license": "GPL-3.0",
+  "contributors": [
+    {
+      "name": "Joystream",
+      "url": "https://joystream.org"
+    }
+  ],
+  "keywords": [
+    "joystream",
+    "storage",
+    "node"
+  ],
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "wsrun --serial test",
+    "lint": "wsrun --serial lint"
+  },
+  "devDependencies": {
+    "wsrun": "^3.6.5"
+  }
+}

@@ -1,0 +1,16 @@
+version: '3'
+services:
+  ipfs:
+    image: ipfs/go-ipfs:latest
+    ports:
+      - "5001:5001"
+    volumes:
+      - storage-node-shared-data:/data/ipfs
+  chain:
+    image: joystream/node:2.1.2
+    ports:
+      - "9944:9944"
+    command: --dev --ws-external
+volumes:
+  storage-node-shared-data:
+    driver: local
