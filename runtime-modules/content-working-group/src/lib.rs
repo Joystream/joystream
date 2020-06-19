@@ -1181,17 +1181,17 @@ decl_module! {
             let new_channel = Channel {
                 verified: false,
                 handle: handle.clone(),
-                title: title,
-                description: description,
-                avatar: avatar,
-                banner: banner,
-                content: content,
-                owner: owner,
-                role_account: role_account,
-                publication_status: publication_status,
+                title,
+                description,
+                avatar,
+                banner,
+                content,
+                owner,
+                role_account,
+                publication_status,
                 curation_status: ChannelCurationStatus::Normal,
                 created: <system::Module<T>>::block_number(),
-                principal_id: principal_id
+                principal_id,
             };
 
             // Add channel to ChannelById under id
@@ -1389,9 +1389,9 @@ decl_module! {
 
             // Create and add curator opening.
             let new_opening_by_id = CuratorOpening {
-                opening_id : opening_id,
+                opening_id,
                 curator_applications: BTreeSet::new(),
-                policy_commitment: policy_commitment
+                policy_commitment,
             };
 
             CuratorOpeningById::<T>::insert(new_curator_opening_id, new_opening_by_id);

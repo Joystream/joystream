@@ -51,10 +51,6 @@ class App extends React.PureComponent<Props, State> {
       {
         name: 'votes',
         text: t('Votes') + ` (${commitments.length})`
-      },
-      {
-        name: 'reveals',
-        text: t('Reveal a vote')
       }
     ];
   }

@@ -37,7 +37,7 @@ class App extends React.PureComponent<Props> {
       },
       {
         name: 'edit',
-        text: iAmMember ? t('Edit my profile') : t('Register')
+        text: iAmMember ? 'My profile' : t('Register')
       },
       {
         name: 'dashboard',
