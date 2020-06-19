@@ -1,10 +1,11 @@
 import { FTSQuery } from './FTSQuery';
-import { availableTypes } from './ScalarTypes';
+import { Field } from './Field';
+import { GraphQLEnumType } from 'graphql';
 
 export class WarthogModel {
   private _types: ObjectType[];
   private _ftsQueries: FTSQuery[];
-  private _enums: string[] = []; // JSON strings
+  private _enums: GraphQLEnumType[] = [];
   private _name2query: { [key: string]: FTSQuery } = {};
   private _name2type: { [key: string]: ObjectType } = {};
 
@@ -27,8 +28,8 @@ export class WarthogModel {
     this._ftsQueries.push(query);
   }
 
-  addEnum(json: string): void {
-    this._enums.push(json);
+  addEnum(_enum: GraphQLEnumType): void {
+    this._enums.push(_enum);
   }
   /**
    * Add emply full text search query with the given name
@@ -74,6 +75,16 @@ export class WarthogModel {
 
   get ftsQueries(): FTSQuery[] {
     return this._ftsQueries;
+  }
+
+  get enums(): GraphQLEnumType[] {
+    return this._enums;
+  }
+
+  lookupEnum(name: string): GraphQLEnumType {
+    const e = this._enums.find(e => e.name === name);
+    if (!e) throw new Error(`Cannot find enum with name ${name}`);
+    return e;
   }
 
   lookupQuery(queryName: string): FTSQuery {
@@ -125,70 +136,4 @@ export interface ObjectType {
   name: string;
   fields: Field[];
   isEntity: boolean;
-}
-
-/**
- * Reperenst GraphQL object type field
- * @constructor(name: string, type: string, nullable: boolean = true, isBuildinType: boolean = true, isList = false)
- */
-export class Field {
-  // GraphQL field name
-  name: string;
-  // GraphQL field type
-  type: string;
-  // Is field type built-in or not
-  isBuildinType: boolean;
-  // Is field nullable or not
-  nullable: boolean;
-  // Is field a list. eg: post: [Post]
-  isList: boolean;
-
-  constructor(
-    name: string,
-    type: string,
-    nullable = true,
-    isBuildinType = true,
-    isList = false
-  ) {
-    this.name = name;
-    this.type = type;
-    this.nullable = nullable;
-    this.isBuildinType = isBuildinType;
-    this.isList = isList;
-  }
-
-  /**
-   * Create a string from name, type properties in the 'name:type' format. If field is not nullable
-   * it adds exclamation mark (!) at then end of string
-   */
-  format(): string {
-    const colon = ':';
-    const columnType = this.columnType();
-    let column: string =
-      columnType === 'string' ? this.name : this.name.concat(colon, columnType);
-
-    if (
-      !this.isBuildinType &&
-      !this.isList &&
-      this.type !== 'otm' &&
-      this.type !== 'mto'
-    ) {
-      column = this.name.concat(colon, 'oto');
-    } else if (this.isBuildinType && this.isList) {
-      column = this.name + colon + 'array' + columnType;
-    }
-    return this.nullable ? column : column + '!';
-  }
-
-  columnType(): string {
-    return this.isBuildinType ? availableTypes[this.type] : this.type;
-  }
-
-  isArray(): boolean {
-    return this.isBuildinType && this.isList;
-  }
-
-  isScalar(): boolean {
-    return this.isBuildinType && !this.isList;
-  }
 }

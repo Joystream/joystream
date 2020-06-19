@@ -161,7 +161,7 @@ export class WarthogModelBuilder {
       this._model.addObjectType(objType);
     });
 
-    this._schemaParser.getEnumTypes().map(e => this._model.addEnum(e.toJSON()));
+    this._schemaParser.getEnumTypes().map(e => this._model.addEnum(e));
 
     this.generateSQLRelationships();
 

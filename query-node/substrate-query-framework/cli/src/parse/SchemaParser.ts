@@ -64,7 +64,9 @@ export class GraphQLSchemaParser {
     }
     const contents = fs.readFileSync(schemaPath, 'utf8');
     this.schema = GraphQLSchemaParser.buildSchema(contents);
-    this._objectTypeDefinations = GraphQLSchemaParser.createObjectTypeDefinations(this.schema);
+    this._objectTypeDefinations = GraphQLSchemaParser.createObjectTypeDefinations(
+      this.schema
+    );
   }
 
   private static buildPreamble(): string {
@@ -98,7 +100,7 @@ export class GraphQLSchemaParser {
   getEnumTypes(): GraphQLEnumType[] {
     return [
       ...Object.values(this.schema.getTypeMap()).filter(
-        t => t instanceof GraphQLEnumType
+        t => !t.name.startsWith('__') && t instanceof GraphQLEnumType
       ),
     ] as GraphQLEnumType[];
   }
@@ -106,7 +108,9 @@ export class GraphQLSchemaParser {
   /**
    * Get object type definations from the schema. Build-in and scalar types are excluded.
    */
-  static createObjectTypeDefinations(schema: GraphQLSchema): ObjectTypeDefinitionNode[] {
+  static createObjectTypeDefinations(
+    schema: GraphQLSchema
+  ): ObjectTypeDefinitionNode[] {
     return [
       ...Object.values(schema.getTypeMap())
         // eslint-disable-next-line @typescript-eslint/prefer-regexp-exec
@@ -136,7 +140,8 @@ export class GraphQLSchemaParser {
    * Returns GraphQL object names
    */
   getTypeNames(): string[] {
-    return this._objectTypeDefinations.map(o => o.name.value);
+    return [...this._objectTypeDefinations.map(o => o.name.value), 
+      ...this.getEnumTypes().map(e => e.name)];
   }
 
   /**
