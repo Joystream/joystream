@@ -197,8 +197,9 @@ impl<T: Trait> Class<T> {
 
     /// Used to update `Schema` status under given `schema_index`
     fn update_schema_status(&mut self, schema_index: SchemaId, schema_status: bool) {
-        // Such indexing is safe, when length bounds were previously checked
-        self.schemas[schema_index as usize].set_status(schema_status);
+        if let Some(schema) = self.schemas.get_mut(schema_index as usize) {
+            schema.set_status(schema_status);
+        };
     }
 
     /// Used to update `Class` permissions
