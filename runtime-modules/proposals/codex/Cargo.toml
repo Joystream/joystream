@@ -24,7 +24,6 @@ std = [
     'membership/std',
     'governance/std',
     'mint/std',
-    'roles/std',
     'common/std',
     'content_working_group/std',
 ]
@@ -132,11 +131,6 @@ path = '../../common'
 default_features = false
 package = 'substrate-content-working-group-module'
 path = '../../content-working-group'
-
-[dependencies.roles]
-default_features = false
-package = 'substrate-roles-module'
-path = '../../roles'
 
 [dev-dependencies.hiring]
 default_features = false

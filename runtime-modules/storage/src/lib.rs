@@ -7,11 +7,14 @@ pub mod data_object_type_registry;
 
 mod tests;
 
-// Alias for storage working group bureaucracy
-pub(crate) type StorageBureaucracy<T> = bureaucracy::Module<T, bureaucracy::Instance2>;
+// The storage working group instance alias.
+pub type StorageWorkingGroupInstance = working_group::Instance2;
+
+// Alias for storage working group
+pub(crate) type StorageWorkingGroup<T> = working_group::Module<T, StorageWorkingGroupInstance>;
 
 // Alias for the member id.
 pub(crate) type MemberId<T> = <T as membership::members::Trait>::MemberId;
 
-/// Storage provider is a worker from the bureaucracy module.
-pub type StorageProviderId<T> = bureaucracy::WorkerId<T>;
+/// Storage provider is a worker from the working group module.
+pub type StorageProviderId<T> = working_group::WorkerId<T>;

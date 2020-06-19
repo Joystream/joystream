@@ -62,6 +62,22 @@ pub use timestamp::Call as TimestampCall;
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
 pub use proposals_codex::ProposalsConfigParameters;
 
+pub use common;
+pub use forum;
+pub use working_group;
+
+pub use governance::election_params::ElectionParameters;
+use governance::{council, election};
+use membership::members;
+use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
+pub use versioned_store;
+
+pub use content_working_group as content_wg;
+mod migration;
+
+/// Alias for ContentId, used in various places.
+pub type ContentId = primitives::H256;
+
 /// An index to a block.
 pub type BlockNumber = u32;
 
@@ -425,20 +441,6 @@ impl finality_tracker::Trait for Runtime {
     type ReportLatency = ReportLatency;
 }
 
-pub use forum;
-pub use governance::election_params::ElectionParameters;
-use governance::{council, election};
-use membership::members;
-use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
-pub use versioned_store;
-
-pub use content_working_group as content_wg;
-mod migration;
-use roles::actors;
-
-/// Alias for ContentId, used in various places.
-pub type ContentId = primitives::H256;
-
 impl versioned_store::Trait for Runtime {
     type Event = Event;
 }
@@ -746,7 +748,6 @@ impl forum::ForumUserRegistry<AccountId> for ShimMembershipRegistry {
 impl forum::Trait for Runtime {
     type Event = Event;
     type MembershipRegistry = ShimMembershipRegistry;
-    type EnsureForumLeader = bureaucracy::Module<Runtime, bureaucracy::Instance1>;
     type ThreadId = ThreadId;
     type PostId = PostId;
 }
@@ -754,25 +755,11 @@ impl forum::Trait for Runtime {
 impl migration::Trait for Runtime {
     type Event = Event;
 }
+// The storage working group instance alias.
+pub type StorageWorkingGroupInstance = working_group::Instance2;
 
-// Forum bureaucracy
-impl bureaucracy::Trait<bureaucracy::Instance1> for Runtime {
+impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
     type Event = Event;
-}
-
-// Storage working group bureaucracy
-impl bureaucracy::Trait<bureaucracy::Instance2> for Runtime {
-    type Event = Event;
-}
-
-impl actors::Trait for Runtime {
-    type Event = Event;
-    type OnActorRemoved = ();
-}
-
-//TODO: SWG -  remove with roles module deletion
-impl actors::ActorRemoved<Runtime> for () {
-    fn actor_removed(_: &AccountId) {}
 }
 
 impl service_discovery::Trait for Runtime {
@@ -867,7 +854,6 @@ construct_runtime!(
         Memo: memo::{Module, Call, Storage, Event<T>},
         Members: members::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
-        Actors: actors::{Module, Call, Storage, Event<T>, Config},
         VersionedStore: versioned_store::{Module, Call, Storage, Event<T>, Config},
         VersionedStorePermissions: versioned_store_permissions::{Module, Call, Storage},
         Stake: stake::{Module, Call, Storage},
@@ -884,9 +870,9 @@ construct_runtime!(
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Module, Call, Storage, Error, Config<T>},
-        // --- Bureaucracy
-        ForumBureaucracy: bureaucracy::<Instance1>::{Module, Call, Storage, Event<T>},
-        StorageBureaucracy: bureaucracy::<Instance2>::{Module, Call, Storage, Event<T>},
+        // --- Working groups
+        // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
+        StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Error, Event<T>},
     }
 );
 

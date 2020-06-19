@@ -97,31 +97,3 @@ pub(crate) fn set_lead_proposal<T: crate::Trait>(
         required_stake: Some(<BalanceOf<T>>::from(50000u32)),
     }
 }
-
-// Proposal parameters for the 'Evict storage provider' proposal
-pub(crate) fn evict_storage_provider_proposal<T: crate::Trait>(
-) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
-    ProposalParameters {
-        voting_period: <Module<T>>::evict_storage_provider_proposal_voting_period(),
-        grace_period: <Module<T>>::evict_storage_provider_proposal_grace_period(),
-        approval_quorum_percentage: 50,
-        approval_threshold_percentage: 75,
-        slashing_quorum_percentage: 60,
-        slashing_threshold_percentage: 80,
-        required_stake: Some(<BalanceOf<T>>::from(25000u32)),
-    }
-}
-
-// Proposal parameters for the 'Set storage role parameters' proposal
-pub(crate) fn set_storage_role_parameters_proposal<T: crate::Trait>(
-) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
-    ProposalParameters {
-        voting_period: <Module<T>>::set_storage_role_parameters_proposal_voting_period(),
-        grace_period: <Module<T>>::set_storage_role_parameters_proposal_grace_period(),
-        approval_quorum_percentage: 66,
-        approval_threshold_percentage: 80,
-        slashing_quorum_percentage: 60,
-        slashing_threshold_percentage: 80,
-        required_stake: Some(<BalanceOf<T>>::from(100_000_u32)),
-    }
-}

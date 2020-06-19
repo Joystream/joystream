@@ -14,7 +14,7 @@ std = [
 	'serde',
     'codec/std',
     'primitives/std',
-    'bureaucracy/std',
+    'working-group/std',
 ]
 
 [dependencies.sr-primitives]
@@ -69,10 +69,10 @@ git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-io'
 rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
-[dependencies.bureaucracy]
+[dependencies.working-group]
 default_features = false
-package = 'substrate-bureaucracy-module'
-path = '../bureaucracy'
+package = 'substrate-working-group-module'
+path = '../working-group'
 
 [dev-dependencies.balances]
 default_features = false

@@ -13,7 +13,7 @@ import { registerHiringTypes } from "./hiring";
 import { registerVersionedStoreTypes } from "./versioned-store";
 import { registerVersionedStorePermissionsTypes } from "./versioned-store/permissions";
 import { registerContentWorkingGroupTypes } from "./content-working-group";
-import { registerBureaucracyTypes } from "./bureaucracy";
+import { registerWorkingGroupTypes } from "./working-group";
 import { registerDiscoveryTypes } from "./discovery";
 import { registerMediaTypes } from "./media";
 import { registerProposalTypes } from "./proposals";
@@ -37,7 +37,7 @@ export function registerJoystreamTypes() {
   registerVersionedStoreTypes();
   registerVersionedStorePermissionsTypes();
   registerContentWorkingGroupTypes();
-  registerBureaucracyTypes();
+  registerWorkingGroupTypes();
   registerDiscoveryTypes();
   registerMediaTypes();
   registerProposalTypes();
