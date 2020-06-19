@@ -47,23 +47,21 @@ impl<'a, T: Trait> DerefMut for ValuesForExistingProperties<'a, T> {
 }
 
 impl<'a, T: Trait> ValuesForExistingProperties<'a, T> {
-    /// Create `ValuesForExistingProperties` helper structure from provided `property_values` and their corresponding `Class` properties
+    /// Create `ValuesForExistingProperties` helper structure from provided `property_values` and their corresponding `Class` properties.
+    /// Throws an error, when `Class` `Property` under `property_id`, corresponding to provided `property_value` not found
     pub fn from(
         properties: &'a [Property<T>],
         property_values: &'a BTreeMap<PropertyId, PropertyValue<T>>,
-    ) -> Self {
-        property_values.iter().fold(
-            ValuesForExistingProperties::<T>::default(),
-            |mut values_for_existing_properties, (&property_id, property_value)| {
-                // Indexing is safe, class should always maintain such constistency
-                let property = &properties[property_id as usize];
-                values_for_existing_properties.insert(
-                    property_id,
-                    ValueForExistingProperty::new(property, property_value),
-                );
-                values_for_existing_properties
-            },
-        )
+    ) -> Result<Self, &'static str> {
+        let mut values_for_existing_properties = ValuesForExistingProperties::<T>::default();
+        for (&property_id, property_value) in property_values {
+            let property = properties.get(property_id as usize).ok_or(ERROR_CLASS_PROP_NOT_FOUND)?;
+            values_for_existing_properties.insert(
+                property_id,
+                ValueForExistingProperty::new(property, property_value),
+            );
+        }
+        Ok(values_for_existing_properties)
     }
 }
 
