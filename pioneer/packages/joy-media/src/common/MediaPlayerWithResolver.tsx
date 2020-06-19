@@ -6,7 +6,7 @@ import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
 import { withMulti } from '@polkadot/react-api/with';
 import { Option } from '@polkadot/types/codec';
-import { StorageProviderId, Worker } from '@joystream/types/bureaucracy';
+import { StorageProviderId, Worker } from '@joystream/types/working-group';
 
 import translate from '../translate';
 import { DiscoveryProviderProps, withDiscoveryProvider } from '../DiscoveryProvider';
@@ -31,7 +31,7 @@ function InnerComponent (props: Props) {
   const [cancelSource, setCancelSource] = useState<CancelTokenSource>(newCancelSource());
 
   const getActiveStorageProviderIds = async (): Promise<StorageProviderId[]> => {
-    const nextId = await api.query.storageBureaucracy.nextWorkerId() as StorageProviderId;
+    const nextId = await api.query.storageWorkingGroup.nextWorkerId() as StorageProviderId;
     // This is chain specfic, but if next id is still 0, it means no workers have been added,
     // so the workerById is empty
     if (nextId.eq(0)) {
@@ -41,7 +41,7 @@ function InnerComponent (props: Props) {
     const workers = new MultipleLinkedMapEntry<StorageProviderId, Worker>(
       StorageProviderId,
       Worker,
-      await api.query.storageBureaucracy.workerById()
+      await api.query.storageWorkingGroup.workerById()
     );
 
     return workers.linked_keys;

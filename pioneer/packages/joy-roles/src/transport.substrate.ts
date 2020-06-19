@@ -29,7 +29,7 @@ import {
   Worker, WorkerId,
   WorkerRoleStakeProfile,
   Lead as LeadOf
-} from '@joystream/types/bureaucracy';
+} from '@joystream/types/working-group';
 
 import { Application, Opening, OpeningId } from '@joystream/types/hiring';
 import { Stake, StakeId } from '@joystream/types/stake';
@@ -97,7 +97,7 @@ type WGApiMapping = {
 
 const workingGroupsApiMapping: WGApiMapping = {
   [WorkingGroups.StorageProviders]: {
-    module: 'storageBureaucracy',
+    module: 'storageWorkingGroup',
     methods: {
       nextOpeningId: 'nextWorkerOpeningId',
       openingById: 'workerOpeningById',
@@ -291,7 +291,7 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   protected async currentStorageLead (): Promise <GroupLeadWithMemberId | null> {
-    const optLead = (await this.cachedApi.query.storageBureaucracy.currentLead()) as Option<LeadOf>;
+    const optLead = (await this.cachedApi.query.storageWorkingGroup.currentLead()) as Option<LeadOf>;
 
     if (!optLead.isSome) {
       return null;
