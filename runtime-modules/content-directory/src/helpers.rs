@@ -189,7 +189,7 @@ impl<T: Trait> Default for ReferenceCounterSideEffects<T> {
 
 impl<T: Trait> ReferenceCounterSideEffects<T> {
     /// Updates all the elements of `other` with `Self`
-    pub fn update(mut self, mut other: Self) -> Self {
+    pub fn update(mut self, other: Self) -> Self {
         // Make a set, that includes both self and other entity_id keys
         let entity_ids: BTreeSet<T::EntityId> = self.keys().chain(other.keys()).copied().collect();
 
@@ -197,15 +197,15 @@ impl<T: Trait> ReferenceCounterSideEffects<T> {
             // If `self` contains value under provided `entity_id`,
             // increase it on `EntityReferenceCounterSideEffect` value from `other` if exists,
             // otherwise update `self` entry under provided `entity_id` with `EntityReferenceCounterSideEffect` from `other`
-            *self
-                .entry(entity_id)
-                // Unwrap always safe here.
-                .or_insert_with(|| other.remove(&entity_id).unwrap()) +=
-                if let Some(entity_rc_side_effect) = other.remove(&entity_id) {
-                    entity_rc_side_effect
-                } else {
-                    EntityReferenceCounterSideEffect::default()
-                };
+            match (self.get_mut(&entity_id), other.get(&entity_id)) {
+                (Some(self_entity_rc_side_effect), Some(other_entity_rc_side_effect)) => {
+                    *self_entity_rc_side_effect += *other_entity_rc_side_effect
+                }
+                (_, Some(other_entity_rc_side_effect)) => {
+                    self.insert(entity_id, *other_entity_rc_side_effect);
+                }
+                _ => (),
+            }
         }
         self
     }
