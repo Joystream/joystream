@@ -12,6 +12,7 @@ import {
   {{#has.otm}}OneToMany,{{/has.otm}}
   {{#has.oto}}OneToOne, JoinColumn,{{/has.oto}}
   {{#has.array}}CustomField,{{/has.array}}
+  {{#has.enum}}EnumField,{{/has.enum}}
   StringField
 } from 'warthog';  {{! we don't need extra twists here }}
 
@@ -20,6 +21,11 @@ import {
   import { {{relClassName}} } from '{{{relPathForModel}}}'
   {{/is.refType}}
 {{/fields}}
+
+{{#enums}}
+  import { {{name}} } from '../enums/enum';
+  export { {{name}} }; {{! we need to re-export enums for type-GraphQL to resolve types correctly }}
+{{/enums}}
 
 @Model()
 export class {{className}} extends BaseModel {
@@ -55,5 +61,9 @@ export class {{className}} extends BaseModel {
     {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{tsType}};
   {{/is.scalar}}
 
+  {{#is.enum}}
+    @EnumField('{{relClassName}}', {{relClassName}} {{^required}},{ nullable: true }{{/required}})
+    {{camelName}}{{#required}}!{{/required}}:{{tsType}} 
+  {{/is.enum}}
 {{/fields}}
 }
