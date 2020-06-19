@@ -12,10 +12,10 @@ import { ForumProvider } from './Context';
 import { ForumSudoProvider } from './ForumSudo';
 import { NewSubcategory, EditCategory } from './EditCategory';
 import { NewThread, EditThread } from './EditThread';
-import { NewReply, EditReply } from './EditReply';
 import { CategoryList, ViewCategoryById } from './CategoryList';
 import { ViewThreadById } from './ViewThread';
 import { LegacyPagingRedirect } from './LegacyPagingRedirect';
+import ForumRoot from './ForumRoot';
 
 const ForumContentWrapper = styled.main`
   padding-top: 1.5rem;
@@ -48,7 +48,7 @@ class App extends React.PureComponent<Props> {
               <Route path={`${basePath}/threads/:id/edit`} component={EditThread} />
               <Route path={`${basePath}/threads/:id`} component={ViewThreadById} />
 
-              <Route component={CategoryList} />
+              <Route component={ForumRoot} />
             </Switch>
           </ForumContentWrapper>
         </ForumSudoProvider>

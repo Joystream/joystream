@@ -372,27 +372,19 @@ function InnerCategoryList (props: CategoryListProps) {
   }
 
   return (
-    <>
-      {!parentId && (
-        <>
-          <CategoryCrumbs root />
-          <h1 className="ForumPageTitle">Top categories</h1>
-        </>
-      )}
-      <Table celled selectable compact>
-        <Table.Header>
-          <Table.Row>
-            <Table.HeaderCell>Category</Table.HeaderCell>
-            <Table.HeaderCell>Threads</Table.HeaderCell>
-            <Table.HeaderCell>Subcategories</Table.HeaderCell>
-            <Table.HeaderCell>Description</Table.HeaderCell>
-          </Table.Row>
-        </Table.Header>
-        <Table.Body>{categories.map((category, i) => (
-          <InnerViewCategory key={i} preview category={category} />
-        ))}</Table.Body>
-      </Table>
-    </>
+    <Table celled selectable compact>
+      <Table.Header>
+        <Table.Row>
+          <Table.HeaderCell>Category</Table.HeaderCell>
+          <Table.HeaderCell>Threads</Table.HeaderCell>
+          <Table.HeaderCell>Subcategories</Table.HeaderCell>
+          <Table.HeaderCell>Description</Table.HeaderCell>
+        </Table.Row>
+      </Table.Header>
+      <Table.Body>{categories.map((category, i) => (
+        <InnerViewCategory key={i} preview category={category} />
+      ))}</Table.Body>
+    </Table>
   );
 }
 

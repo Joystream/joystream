@@ -12,6 +12,7 @@ import { withMulti } from '@polkadot/react-api';
 
 export const ThreadsPerPage = 10;
 export const RepliesPerPage = 10;
+export const RecentActivityPostsCount = 7;
 export const ReplyIdxQueryParam = 'replyIdx';
 export const ReplyEditIdQueryParam = 'editReplyId';
 export const PagingQueryParam = 'page';
