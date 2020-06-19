@@ -1,0 +1,52 @@
+{
+  "name": "@joystream/cli",
+  "version": "0.1.0",
+  "description": "Joystream Runtime & Colossus CLI",
+  "author": "Joystream",
+  "homepage": "https://github.com/Joystream/storage-node-joystream",
+  "bugs": {
+    "url": "https://github.com/Joystream/storage-node-joystream/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Joystream/storage-node-joystream.git"
+  },
+  "license": "GPL-3.0",
+  "contributors": [
+    {
+      "name": "Joystream",
+      "url": "https://joystream.org"
+    }
+  ],
+  "keywords": [
+    "joystream",
+    "cli"
+  ],
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "engines": {
+    "node": ">=10.15.3"
+  },
+  "scripts": {
+    "test": "mocha 'test/**/*.js'",
+    "lint": "eslint 'paths/**/*.js' 'lib/**/*.js'"
+  },
+  "bin": {
+    "joystream": "bin/cli.js"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "eslint": "^5.13.0",
+    "mocha": "^5.2.0",
+    "temp": "^0.9.0"
+  },
+  "dependencies": {
+    "@joystream/runtime-api": "^0.1.0",
+    "chalk": "^2.4.2",
+    "lodash": "^4.17.11",
+    "meow": "^5.0.0",
+    "request": "^2.88.0"
+  }
+}
