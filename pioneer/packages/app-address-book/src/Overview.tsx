@@ -7,7 +7,9 @@ import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import { ComponentProps } from './types';
 
 import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Button, CardGrid } from '@polkadot/react-components';
+import { Button as SUIButton, Icon } from 'semantic-ui-react';
 import addressObservable from '@polkadot/ui-keyring/observable/addresses';
 import { withMulti, withObservable } from '@polkadot/react-api';
 
@@ -20,6 +22,7 @@ interface Props extends ComponentProps, I18nProps {
 }
 
 function Overview ({ addresses, onStatusChange, t }: Props): React.ReactElement<Props> {
+  const { pathname } = useLocation();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const emptyScreen = !isCreateOpen && (!addresses || Object.keys(addresses).length === 0);
 
@@ -27,15 +30,19 @@ function Overview ({ addresses, onStatusChange, t }: Props): React.ReactElement<
 
   return (
     <CardGrid
+      topButtons={
+        <SUIButton as={Link} to={`${pathname}/memo`}>
+          <Icon name="search" />
+          View memo
+        </SUIButton>
+      }
       buttons={
-        <Button.Group>
-          <Button
-            icon='add'
-            isPrimary
-            label={t('Add contact')}
-            onClick={_toggleCreate}
-          />
-        </Button.Group>
+        <Button
+          icon='add'
+          isPrimary
+          label={t('Add contact')}
+          onClick={_toggleCreate}
+        />
       }
       isEmpty={emptyScreen}
       emptyText={t('No contacts found.')}
