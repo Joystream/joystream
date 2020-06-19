@@ -15,7 +15,7 @@ import { formatNumber } from '@polkadot/util';
 import translate from './translate';
 import { fileNameWoExt } from './utils';
 import { ContentId, DataObject } from '@joystream/types/media';
-import { withMembershipRequired } from '@polkadot/joy-utils/MyAccount';
+import { withOnlyMembers, MyAccountProps } from '@polkadot/joy-utils/MyAccount';
 import { DiscoveryProviderProps, withDiscoveryProvider } from './DiscoveryProvider';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import IpfsHash from 'ipfs-only-hash';
@@ -24,12 +24,11 @@ import { EditVideoView } from './upload/EditVideo.view';
 import { JoyInfo } from '@polkadot/joy-utils/JoyStatus';
 import { IterableFile } from './IterableFile';
 import { StorageProviderId } from '@joystream/types/working-group';
-import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
 
 const MAX_FILE_SIZE_MB = 500;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
-type Props = ApiProps & I18nProps & DiscoveryProviderProps & {
+type Props = ApiProps & I18nProps & DiscoveryProviderProps & MyAccountProps & {
   channelId: ChannelId;
   history?: History;
   match: {
@@ -63,7 +62,7 @@ const defaultState = (): State => ({
   cancelSource: axios.CancelToken.source()
 });
 
-class Component extends React.PureComponent<Props, State> {
+class Upload extends React.PureComponent<Props, State> {
   state = defaultState();
 
   componentWillUnmount () {
@@ -249,7 +248,7 @@ class Component extends React.PureComponent<Props, State> {
 
     // TODO get corresponding data type id based on file content
     const dataObjectTypeId = new BN(1);
-    const { myMemberId } = useMyMembership();
+    const { myMemberId } = this.props;
     return [newContentId, myMemberId, dataObjectTypeId, new BN(file.size), ipfs_cid];
   }
 
@@ -350,9 +349,9 @@ class Component extends React.PureComponent<Props, State> {
 }
 
 export const UploadWithRouter = withMulti(
-  Component,
+  Upload,
   translate,
   withApi,
-  withMembershipRequired,
+  withOnlyMembers,
   withDiscoveryProvider
 );
