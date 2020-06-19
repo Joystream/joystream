@@ -55,7 +55,9 @@ impl<'a, T: Trait> ValuesForExistingProperties<'a, T> {
     ) -> Result<Self, &'static str> {
         let mut values_for_existing_properties = ValuesForExistingProperties::<T>::default();
         for (&property_id, property_value) in property_values {
-            let property = properties.get(property_id as usize).ok_or(ERROR_CLASS_PROP_NOT_FOUND)?;
+            let property = properties
+                .get(property_id as usize)
+                .ok_or(ERROR_CLASS_PROP_NOT_FOUND)?;
             values_for_existing_properties.insert(
                 property_id,
                 ValueForExistingProperty::new(property, property_value),

@@ -1434,7 +1434,7 @@ decl_module! {
                 //
                 // == MUTATION SAFE ==
                 //
-                
+
                 // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
                 entities_inbound_rcs_delta.update_entities_rcs();
 
@@ -1550,7 +1550,7 @@ decl_module! {
             let involved_entity_id = property_value_vector
                 .get_vec_value()
                 .get_involved_entities()
-                .map(|involved_entities| involved_entities[index_in_property_vector as usize]);
+                .and_then(|involved_entities| involved_entities.get(index_in_property_vector as usize).copied());
 
             // Decrease reference counter of involved entity (if some)
             if let Some(involved_entity_id) = involved_entity_id {
@@ -1646,7 +1646,7 @@ decl_module! {
                 property_value_vector, index_in_property_vector, value
             );
 
-            // Insert updated propery value into entity_property_values mapping at in_class_schema_property_id.
+            // Insert updated property value into entity_property_values mapping at in_class_schema_property_id.
             // Retrieve updated entity_property_values
             let entity_values_updated = Self::insert_at_in_class_schema_property_id(
                 entity.values, in_class_schema_property_id, property_value_updated
@@ -1850,7 +1850,10 @@ impl<T: Trait> Module<T> {
         // Calculate entities inbound reference counter delta with Decrement DeltaMode for entity_property_values_to_update,
         // as involved PropertyValue References will be substituted with new ones
         let decremental_reference_counter_side_effects = Self::calculate_entities_inbound_rcs_delta(
-            ValuesForExistingProperties::from(&class_properties, &entity_property_values_to_update)?,
+            ValuesForExistingProperties::from(
+                &class_properties,
+                &entity_property_values_to_update,
+            )?,
             DeltaMode::Decrement,
         );
 
