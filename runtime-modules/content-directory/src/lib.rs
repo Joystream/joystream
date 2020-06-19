@@ -1074,8 +1074,8 @@ decl_module! {
                 &new_property_value_references_with_same_owner_flag_set
             )?;
 
-            // Retrieve `entity_property_id_references_with_same_owner_flag_set`,
-            // that are not in `new_property_value_references_with_same_owner_flag_set`
+            // Retrieve ids of all entity property values, that are references with same owner flag set and which are not provided
+            // in new property value references with same owner flag set
             let unused_property_id_references_with_same_owner_flag_set = Self::compute_unused_property_ids(
                 &new_property_value_references_with_same_owner_flag_set, &entity_property_id_references_with_same_owner_flag_set
             );
@@ -1563,6 +1563,7 @@ decl_module! {
             }
 
             // Remove value at in_class_schema_property_id in property value vector
+            // Get VecPropertyValue wrapped in PropertyValue
             let property_value_vector_updated = Self::remove_at_index_in_property_vector(
                 property_value_vector, index_in_property_vector
             );
@@ -1643,14 +1644,15 @@ decl_module! {
             }
 
             // Insert SinglePropertyValue at in_class_schema_property_id into property value vector
-            let property_value_updated = Self::insert_at_index_in_property_vector(
+            // Get VecPropertyValue wrapped in PropertyValue
+            let property_value_vector_updated = Self::insert_at_index_in_property_vector(
                 property_value_vector, index_in_property_vector, value
             );
 
             // Insert updated property value into entity_property_values mapping at in_class_schema_property_id.
             // Retrieve updated entity_property_values
             let entity_values_updated = Self::insert_at_in_class_schema_property_id(
-                entity.values, in_class_schema_property_id, property_value_updated
+                entity.values, in_class_schema_property_id, property_value_vector_updated
             );
 
             // Update entity property values
