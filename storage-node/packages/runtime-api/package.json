@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "description": "Runtime API abstraction for Joystream Storage Node",
   "author": "Joystream",
-  "homepage": "https://github.com/Joystream/storage-node-joystream",
+  "homepage": "https://github.com/Joystream/joystream",
   "bugs": {
-    "url": "https://github.com/Joystream/storage-node-joystream/issues"
+    "url": "https://github.com/Joystream/joystream/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Joystream/storage-node-joystream.git"
+    "url": "https://github.com/Joystream/joystream.git"
   },
   "license": "GPL-3.0",
   "contributors": [

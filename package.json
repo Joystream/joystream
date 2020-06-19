@@ -14,7 +14,9 @@
 		"cli",
 		"types",
 		"pioneer",
-		"pioneer/packages/*"
+		"pioneer/packages/*",
+		"storage-node/",
+		"storage-node/packages/*"
 	],
 	"resolutions": {
 		"@polkadot/api": "^0.96.1",
