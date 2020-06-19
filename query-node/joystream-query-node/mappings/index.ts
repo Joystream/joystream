@@ -1,1 +1,1 @@
-export { handleMemberRegistered, handleMemberUpdatedAboutText } from './members';
+export * from './members';

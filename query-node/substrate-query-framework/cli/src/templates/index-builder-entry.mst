@@ -122,7 +122,9 @@ async function main() {
       "WS_PROVIDER_ENDPOINT_URI environment variable is not set! Make sure you set it in your .env file or system wide."
     );
   }
-
+  
+  // Required for warthog models.
+  dotenv.config({ path: '../graphql-server/.env' });
   await createConnection();
 
   const node = new QueryNodeManager(process);

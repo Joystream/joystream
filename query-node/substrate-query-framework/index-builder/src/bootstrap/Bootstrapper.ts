@@ -1,3 +1,4 @@
+import * as BN from 'bn.js'
 import { BootstrapPack, BootstrapFunc, SubstrateEvent, DatabaseManager, SavedEntityEvent } from '..';
 import { WsProvider, ApiPromise } from '@polkadot/api';
 import {  getConnection, EntityManager } from 'typeorm';
@@ -77,8 +78,8 @@ export default class Bootstrapper {
             event_name: 'Bootstrap',
             event_method: `Bootstrap.${boot.name}`,
             event_params: {},
-            index: Date.now() / 1000 | 0, // simply put the timestamp here
-            block_number: process.env.BLOCK_HEIGHT ? parseInt(process.env.BLOCK_HEIGHT) : 0, 
+            index: new BN(Date.now() / 1000 | 0), // simply put the timestamp here
+            block_number: process.env.BLOCK_HEIGHT ? new BN(process.env.BLOCK_HEIGHT) : new BN(0), 
         };
     }
 
