@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
-import { Header, Card, Icon, Image, Label, Statistic } from 'semantic-ui-react';
+import { Card, Icon, Image, Label, Statistic } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 
 import { Balance } from '@polkadot/types/interfaces';
 import { formatBalance } from '@polkadot/util';
 import Identicon from '@polkadot/react-identicon';
 import { IProfile, MemberId } from '@joystream/types/members';
-import { Text, GenericAccountId } from '@polkadot/types';
+import { GenericAccountId } from '@polkadot/types';
 import { LeadRoleState } from '@joystream/types/content-working-group';
-import { Worker } from '@joystream/types/working-group';
 
 type BalanceProps = {
   balance?: Balance;
@@ -19,23 +18,6 @@ export function BalanceView (props: BalanceProps) {
   return (
     <div className="balance">
       <span>Balance:</span> {formatBalance(props.balance)}
-    </div>
-  );
-}
-
-type MemoProps = ProfileProps & {
-  memo?: Text;
-}
-
-export function MemoView (props: MemoProps) {
-  if (typeof props.memo === 'undefined') {
-    return null;
-  }
-
-  return (
-    <div className="memo">
-      <span>Memo:</span> {props.memo.toString()}
-      <Link to={`/addressbook/memo/${props.profile.controller_account.toString()}`}>{' view full memo'}</Link>
     </div>
   );
 }
@@ -51,37 +33,6 @@ export function HandleView (props: ProfileProps) {
 
   return (
     <Link to={`/members/${props.profile.handle.toString()}`}>{props.profile.handle.toString()}</Link>
-  );
-}
-
-type MemberProps = BalanceProps & ProfileProps
-
-export function MemberView (props: MemberProps) {
-  let avatar = <Identicon value={props.profile.controller_account.toString()} size={50} />;
-  if (typeof props.profile.avatar_uri !== 'undefined' && props.profile.avatar_uri.toString() !== '') {
-    avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />;
-  }
-
-  return (
-    <Header as='h4' image>
-      {avatar}
-      <Header.Content>
-        <HandleView profile={props.profile} />
-        <BalanceView balance={props.balance} />
-      </Header.Content>
-    </Header>
-  );
-}
-
-type WorkerDetailsProps = MemoProps & BalanceProps & {
-  worker: Worker;
-}
-
-export function WorkerDetailsView (props: WorkerDetailsProps) {
-  return (
-    <div id={props.worker.role_account.toString()}>
-      {props.worker.role_account.toString()}
-    </div>
   );
 }
 
