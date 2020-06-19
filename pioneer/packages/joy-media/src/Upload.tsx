@@ -249,7 +249,7 @@ class Upload extends React.PureComponent<Props, State> {
     // TODO get corresponding data type id based on file content
     const dataObjectTypeId = new BN(1);
     const { myMemberId } = this.props;
-    return [newContentId, myMemberId, dataObjectTypeId, new BN(file.size), ipfs_cid];
+    return [myMemberId, newContentId, dataObjectTypeId, new BN(file.size), ipfs_cid];
   }
 
   private onDataObjectCreated = async (_txResult: SubmittableResult) => {
