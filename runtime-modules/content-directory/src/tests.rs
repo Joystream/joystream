@@ -540,7 +540,7 @@ fn create_entity_success() {
 
         assert_eq!(
             entity_creation_vouchers(FIRST_CLASS_ID, &entity_controller),
-            Some(entity_voucher.clone())
+            entity_voucher.clone(),
         );
 
         // Ensure new entity created
@@ -596,7 +596,7 @@ fn create_entity_creation_voucher_success() {
 
         assert_eq!(
             entity_creation_vouchers(FIRST_CLASS_ID, &entity_controller),
-            Some(entity_voucher.clone())
+            entity_voucher.clone(),
         );
 
         let entity_creation_voucher_created_event = get_test_event(
@@ -637,7 +637,7 @@ fn update_entity_creation_voucher_success() {
         // Runtime state before tested call
 
         let mut entity_creation_voucher =
-            entity_creation_vouchers(FIRST_CLASS_ID, &entity_controller).unwrap();
+            entity_creation_vouchers(FIRST_CLASS_ID, &entity_controller);
 
         // Events number before tested calls
         let number_of_events_before_call = System::events().len();
@@ -657,7 +657,7 @@ fn update_entity_creation_voucher_success() {
         entity_creation_voucher.set_maximum_entities_count(new_maximum_entities_count);
         assert_eq!(
             entity_creation_vouchers(FIRST_CLASS_ID, &entity_controller),
-            Some(entity_creation_voucher.clone())
+            entity_creation_voucher.clone()
         );
 
         let entity_creation_voucher_created_event = get_test_event(

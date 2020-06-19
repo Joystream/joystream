@@ -425,6 +425,8 @@ type RawTestEvent = RawEvent<
     bool,
     Actor<Runtime>,
     Nonce,
+    Option<ReferenceCounterSideEffects<Runtime>>,
+    Option<(EntityId, EntityReferenceCounterSideEffect)>,
 >;
 
 pub fn get_test_event(raw_event: RawTestEvent) -> TestEvent {
@@ -623,7 +625,7 @@ pub fn update_entity_creation_voucher(
 pub fn entity_creation_vouchers(
     class_id: ClassId,
     entity_controller: &EntityController<Runtime>,
-) -> Option<EntityCreationVoucher<Runtime>> {
+) -> EntityCreationVoucher<Runtime> {
     TestModule::entity_creation_vouchers(class_id, entity_controller)
 }
 
