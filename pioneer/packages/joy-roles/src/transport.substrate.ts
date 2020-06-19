@@ -70,7 +70,12 @@ type WGApiMethodType =
   | 'applicationById'
   | 'nextWorkerId'
   | 'workerById';
-type WGApiMethodsMapping = { [key in WGApiMethodType]: string };
+type WGApiTxMethodType =
+  'applyOnOpening';
+type WGApiMethodsMapping = {
+  query: { [key in WGApiMethodType]: string };
+  tx: { [key in WGApiTxMethodType]: string };
+};
 
 type GroupApplication = CuratorApplication | WorkerApplication;
 type GroupApplicationId = CuratorApplicationId | WorkerApplicationId;
@@ -99,12 +104,17 @@ const workingGroupsApiMapping: WGApiMapping = {
   [WorkingGroups.StorageProviders]: {
     module: 'storageWorkingGroup',
     methods: {
-      nextOpeningId: 'nextWorkerOpeningId',
-      openingById: 'workerOpeningById',
-      nextApplicationId: 'nextWorkerApplicationId',
-      applicationById: 'workerApplicationById',
-      nextWorkerId: 'nextWorkerId',
-      workerById: 'workerById'
+      query: {
+        nextOpeningId: 'nextWorkerOpeningId',
+        openingById: 'workerOpeningById',
+        nextApplicationId: 'nextWorkerApplicationId',
+        applicationById: 'workerApplicationById',
+        nextWorkerId: 'nextWorkerId',
+        workerById: 'workerById'
+      },
+      tx: {
+        applyOnOpening: 'applyOnWorkerOpening'
+      }
     },
     openingType: WorkerOpening,
     applicationType: WorkerApplication,
@@ -113,12 +123,17 @@ const workingGroupsApiMapping: WGApiMapping = {
   [WorkingGroups.ContentCurators]: {
     module: 'contentWorkingGroup',
     methods: {
-      nextOpeningId: 'nextCuratorOpeningId',
-      openingById: 'curatorOpeningById',
-      nextApplicationId: 'nextCuratorApplicationId',
-      applicationById: 'curatorApplicationById',
-      nextWorkerId: 'nextCuratorId',
-      workerById: 'curatorById'
+      query: {
+        nextOpeningId: 'nextCuratorOpeningId',
+        openingById: 'curatorOpeningById',
+        nextApplicationId: 'nextCuratorApplicationId',
+        applicationById: 'curatorApplicationById',
+        nextWorkerId: 'nextCuratorId',
+        workerById: 'curatorById'
+      },
+      tx: {
+        applyOnOpening: 'applyOnCuratorOpening'
+      }
     },
     openingType: CuratorOpening,
     applicationType: CuratorApplication,
@@ -140,9 +155,16 @@ export class Transport extends TransportBase implements ITransport {
 
   cachedApiMethodByGroup (group: WorkingGroups, method: WGApiMethodType) {
     const apiModule = workingGroupsApiMapping[group].module;
-    const apiMethod = workingGroupsApiMapping[group].methods[method];
+    const apiMethod = workingGroupsApiMapping[group].methods.query[method];
 
     return this.cachedApi.query[apiModule][apiMethod];
+  }
+
+  apiExtrinsicByGroup (group: WorkingGroups, method: WGApiTxMethodType) {
+    const apiModule = workingGroupsApiMapping[group].module;
+    const apiMethod = workingGroupsApiMapping[group].methods.tx[method];
+
+    return this.api.tx[apiModule][apiMethod];
   }
 
   unsubscribe () {
@@ -497,8 +519,8 @@ export class Transport extends TransportBase implements ITransport {
     return Sum(await Promise.all(promises));
   }
 
-  async openingApplicationRanks (openingId: number): Promise<Balance[]> {
-    const applications = await this.curatorOpeningApplications(openingId);
+  async openingApplicationRanks (group: WorkingGroups, openingId: number): Promise<Balance[]> {
+    const applications = await this.groupOpeningApplications(group, openingId);
     return Sort(
       (await Promise.all(
         applications.map(application => this.openingApplicationTotalStake(application.hiringModule))
@@ -699,7 +721,8 @@ export class Transport extends TransportBase implements ITransport {
     return status.account as string;
   }
 
-  applyToCuratorOpening (
+  applyToOpening (
+    group: WorkingGroups,
     id: number,
     roleAccountName: string,
     sourceAccount: string,
@@ -717,13 +740,13 @@ export class Transport extends TransportBase implements ITransport {
           if (!roleAccount) {
             reject(new Error('failed to create role account'));
           }
-          const tx = this.api.tx.contentWorkingGroup.applyOnCuratorOpening(
-            membershipIds[0],
-            new u32(id),
-            new GenericAccountId(roleAccount as string),
-            roleStake.eq(Zero) ? null : roleStake,
-            appStake.eq(Zero) ? null : appStake,
-            applicationText
+          const tx = this.apiExtrinsicByGroup(group, 'applyOnOpening')(
+            membershipIds[0], // Member id
+            new u32(id), // Worker/Curator opening id
+            new GenericAccountId(roleAccount as string), // Role account
+            roleStake.eq(Zero) ? null : roleStake, // Role stake
+            appStake.eq(Zero) ? null : appStake, // Application stake
+            applicationText // Human readable text
           ) as unknown as SubmittableExtrinsic;
 
           const txFailedCb = () => {

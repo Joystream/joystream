@@ -300,7 +300,7 @@ export class Transport extends TransportBase implements ITransport {
     return await this.curationGroupOpening(id);
   }
 
-  openingApplicationRanks (openingId: number): Promise<Balance[]> {
+  openingApplicationRanks (group: WorkingGroups, openingId: number): Promise<Balance[]> {
     const slots: Balance[] = [];
     for (let i = 0; i < 20; i++) {
       slots.push(new u128((i * 100) + 10 + i + 1));
@@ -440,7 +440,8 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await
-  async applyToCuratorOpening (
+  async applyToOpening (
+    group: WorkingGroups,
     id: number,
     roleAccountName: string,
     sourceAccount: string,

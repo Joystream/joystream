@@ -377,24 +377,17 @@ export type StageTransitionProps = {
   prevTransition: () => void;
 }
 
-export type ApplicationStatusProps = {
-  numberOfApplications: number;
-}
-
 type CaptureKeyAndPassphraseProps = {
   keyAddress: AccountId;
   setKeyAddress: (a: AccountId) => void;
-  keyPassphrase: string;
-  setKeyPassphrase: (p: string) => void;
-  minStake: Balance;
+  // keyPassphrase: string;
+  // setKeyPassphrase: (p: string) => void;
+  // minStake: Balance;
 }
 
 export type ConfirmStakesStageProps =
-  StakeRequirementProps &
   FundSourceSelectorProps &
-  ApplicationStatusProps &
-  StakeRankSelectorProps &
-  CaptureKeyAndPassphraseProps & {
+  Pick<StakeRankSelectorProps, 'slots' | 'step'> & {
     applications: OpeningStakeAndApplicationStatus;
     selectedApplicationStake: Balance;
     setSelectedApplicationStake: (b: Balance) => void;
@@ -426,7 +419,7 @@ export function ConfirmStakesStage (props: ConfirmStakesStageProps & StageTransi
   );
 }
 
-type StakeSelectorProps = ConfirmStakesStageProps & ApplicationStatusProps
+type StakeSelectorProps = ConfirmStakesStageProps;
 
 function ConfirmStakes (props: StakeSelectorProps) {
   if (bothStakesVariable(props.applications)) {
@@ -677,7 +670,8 @@ function StakeRankMiniSelector (props: StakeRankMiniSelectorProps) {
   );
 }
 
-type CaptureStake1UpProps = ApplicationStatusProps & {
+type CaptureStake1UpProps = {
+  numberOfApplications: number;
   name: string;
   stakeReturnPolicy: string;
   colour: string;
@@ -1030,7 +1024,7 @@ export function DoneStage (props: DoneStageProps) {
   );
 }
 
-export type FlowModalProps = ConfirmStakesStageProps & FundSourceSelectorProps & {
+export type FlowModalProps = Pick<StakeRankSelectorProps, 'slots' | 'step'> & FundSourceSelectorProps & {
   role: GenericJoyStreamRoleSchema;
   applications: OpeningStakeAndApplicationStatus;
   hasConfirmStep: boolean;
