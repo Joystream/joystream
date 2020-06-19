@@ -118,12 +118,15 @@ impl Default for OpeningType {
 /// Working group lead: worker lead.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq, Copy)]
-pub struct Lead<MemberId, AccountId> {
+pub struct Lead<MemberId, AccountId, WorkerId> {
     /// Member id of the leader.
     pub member_id: MemberId,
 
     /// Account used to authenticate in this role.
     pub role_account_id: AccountId,
+
+    /// Leader worker id.
+    pub worker_id: WorkerId,
 }
 
 /// An application for the worker role.

@@ -565,12 +565,14 @@ impl AcceptWorkerApplicationsFixture {
 pub struct SetLeadFixture {
     pub member_id: u64,
     pub role_account: u64,
+    pub worker_id: u64,
 }
 impl Default for SetLeadFixture {
     fn default() -> Self {
         SetLeadFixture {
             member_id: 1,
             role_account: 1,
+            worker_id: 1,
         }
     }
 }
@@ -581,12 +583,13 @@ impl SetLeadFixture {
     }
 
     pub fn set_lead(self) {
-        TestWorkingGroup::set_lead(self.member_id, self.role_account);
+        TestWorkingGroup::set_lead(self.member_id, self.role_account, self.worker_id);
     }
-    pub fn set_lead_with_ids(member_id: u64, role_account: u64) {
+    pub fn set_lead_with_ids(member_id: u64, role_account: u64, worker_id: u64) {
         SetLeadFixture {
             member_id,
             role_account,
+            worker_id,
         }
         .set_lead();
     }

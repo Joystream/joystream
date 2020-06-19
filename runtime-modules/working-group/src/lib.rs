@@ -74,7 +74,7 @@ pub use types::{
 };
 
 /// Alias for the _Lead_ type
-pub type LeadOf<T> = Lead<MemberId<T>, <T as system::Trait>::AccountId>;
+pub type LeadOf<T> = Lead<MemberId<T>, <T as system::Trait>::AccountId, WorkerId<T>>;
 
 /// Stake identifier in staking module
 pub type StakeId<T> = <T as stake::Trait>::StakeId;
@@ -185,7 +185,8 @@ decl_event!(
         /// Params:
         /// - Member id of the leader.
         /// - Role account id of the leader.
-        LeaderSet(MemberId, AccountId),
+        /// - Worker id.
+        LeaderSet(MemberId, AccountId, WorkerId),
 
         /// Emits on un-setting the leader.
         /// Params:
@@ -898,7 +899,7 @@ decl_module! {
 
                 // Sets a leader on successful opening when opening is for leader.
                 if matches!(opening.opening_type, OpeningType::Leader) {
-                    Self::set_lead(worker.member_id, worker.role_account);
+                    Self::set_lead(worker.member_id, worker.role_account, new_worker_id);
                 }
             });
 
@@ -1056,7 +1057,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Ok(exit_origin)
     }
 
-    fn ensure_lead_is_set() -> Result<Lead<MemberId<T>, T::AccountId>, Error> {
+    fn ensure_lead_is_set() -> Result<LeadOf<T>, Error> {
         let lead = <CurrentLead<T, I>>::get();
 
         if let Some(lead) = lead {
@@ -1258,13 +1259,22 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Ok(())
     }
 
-    /// Returns all existing worker id list.
+    /// Returns all existing worker id list excluding the current leader worker id.
     pub fn get_regular_worker_ids() -> Vec<WorkerId<T>> {
-        <WorkerById<T, I>>::enumerate()
-            .map(|(worker_id, _)| worker_id)
-            .collect()
+        let lead = Self::current_lead();
 
-        //TODO not lead
+        <WorkerById<T, I>>::enumerate()
+            .filter_map(|(worker_id, _)| {
+                // Filter the leader worker id if the leader is set.
+                lead.clone().map_or(Some(worker_id), |lead| {
+                    if worker_id == lead.worker_id {
+                        None
+                    } else {
+                        Some(worker_id)
+                    }
+                })
+            })
+            .collect()
     }
 
     fn make_stake_opt_imbalance(
@@ -1365,18 +1375,23 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     // Introduce a lead.
-    pub(crate) fn set_lead(member_id: T::MemberId, role_account_id: T::AccountId) {
+    pub(crate) fn set_lead(
+        member_id: T::MemberId,
+        role_account_id: T::AccountId,
+        worker_id: WorkerId<T>,
+    ) {
         // Construct lead
         let new_lead = Lead {
             member_id,
             role_account_id: role_account_id.clone(),
+            worker_id,
         };
 
         // Update current lead
         <CurrentLead<T, I>>::put(new_lead);
 
         // Trigger an event
-        Self::deposit_event(RawEvent::LeaderSet(member_id, role_account_id));
+        Self::deposit_event(RawEvent::LeaderSet(member_id, role_account_id, worker_id));
     }
 
     // Evict the currently set lead.

@@ -6,6 +6,7 @@ use system::{self, EventRecord, Phase, RawOrigin};
 
 const DEFAULT_LEADER_ACCOUNT_ID: u64 = 1;
 const DEFAULT_LEADER_MEMBER_ID: u64 = 1;
+const DEFAULT_LEADER_WORKER_ID: u32 = 1;
 
 struct SetLeadFixture;
 impl SetLeadFixture {
@@ -14,6 +15,7 @@ impl SetLeadFixture {
         let new_lead = working_group::Lead {
             member_id: DEFAULT_LEADER_MEMBER_ID,
             role_account_id: DEFAULT_LEADER_ACCOUNT_ID,
+            worker_id: DEFAULT_LEADER_WORKER_ID,
         };
 
         // Update current lead

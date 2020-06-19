@@ -3,7 +3,7 @@ mod hiring_workflow;
 mod mock;
 
 use crate::types::{OpeningPolicyCommitment, OpeningType, RewardPolicy};
-use crate::{Error, Lead, RawEvent};
+use crate::{Error, RawEvent};
 use common::constraints::InputValidationLengthConstraint;
 use mock::{
     build_test_externalities, Test, TestWorkingGroup, TestWorkingGroupInstance,
@@ -24,11 +24,7 @@ fn hire_lead_succeeds() {
 
         HireLeadFixture::default().hire_lead();
 
-        let lead = Lead {
-            member_id: 1,
-            role_account_id: 1,
-        };
-        assert_eq!(TestWorkingGroup::current_lead(), Some(lead));
+        assert!(TestWorkingGroup::current_lead().is_some());
     });
 }
 
@@ -200,7 +196,7 @@ fn accept_worker_applications_fails_with_not_lead() {
         let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
         let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
 
-        SetLeadFixture::set_lead_with_ids(2, 2);
+        SetLeadFixture::set_lead_with_ids(2, 2, 2);
 
         let accept_worker_applications_fixture =
             AcceptWorkerApplicationsFixture::default_for_opening_id(opening_id);
@@ -597,7 +593,7 @@ fn begin_review_worker_applications_fails_with_not_a_lead() {
         let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
         let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
 
-        SetLeadFixture::set_lead_with_ids(2, 2);
+        SetLeadFixture::set_lead_with_ids(2, 2, 2);
 
         let begin_review_worker_applications_fixture =
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
@@ -768,7 +764,7 @@ fn fill_worker_opening_fails_with_not_a_lead() {
         let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
         let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
 
-        SetLeadFixture::set_lead_with_ids(2, 2);
+        SetLeadFixture::set_lead_with_ids(2, 2, 2);
 
         let fill_worker_opening_fixture =
             FillWorkerOpeningFixture::default_for_ids(opening_id, Vec::new());
@@ -1536,21 +1532,25 @@ fn slash_worker_stake_fails_with_not_set_lead() {
 #[test]
 fn get_all_worker_ids_succeeds() {
     build_test_externalities().execute_with(|| {
-        let worker_ids = TestWorkingGroup::get_all_worker_ids();
+        let worker_ids = TestWorkingGroup::get_regular_worker_ids();
         assert_eq!(worker_ids, Vec::new());
 
-        let worker_id1 = fill_worker_position(None, None, true, OpeningType::Worker, None);
+        let leader_worker_id = HireLeadFixture::default().hire_lead();
+
+        let worker_id1 = fill_worker_position(None, None, false, OpeningType::Worker, None);
         let worker_id2 = fill_worker_position(None, None, false, OpeningType::Worker, None);
 
         let mut expected_ids = vec![worker_id1, worker_id2];
         expected_ids.sort();
 
-        let mut worker_ids = TestWorkingGroup::get_all_worker_ids();
+        let mut worker_ids = TestWorkingGroup::get_regular_worker_ids();
         worker_ids.sort();
         assert_eq!(worker_ids, expected_ids);
 
+        assert!(!expected_ids.contains(&leader_worker_id));
+
         <crate::WorkerById<Test, TestWorkingGroupInstance>>::remove(worker_id1);
-        let worker_ids = TestWorkingGroup::get_all_worker_ids();
+        let worker_ids = TestWorkingGroup::get_regular_worker_ids();
         assert_eq!(worker_ids, vec![worker_id2]);
     });
 }
