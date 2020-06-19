@@ -1104,7 +1104,7 @@ decl_module! {
                             &class_properties, &entity_property_values_updated
                         );
 
-                        // Traverse all updated_values_for_existing_properties to ensure unique property satisfied (if required)
+                        // Traverse all updated_values_for_existing_properties to ensure unique option satisfied (if required)
                         Self::ensure_property_values_unique_option_satisfied(updated_values_for_existing_properties)?;
                         Some(entity_property_values_updated)
                     } else {
@@ -1282,7 +1282,7 @@ decl_module! {
             actor: Actor<T>,
             entity_id: T::EntityId,
             schema_id: SchemaId,
-            property_values: BTreeMap<PropertyId, PropertyValue<T>>
+            new_property_values: BTreeMap<PropertyId, PropertyValue<T>>
         ) -> dispatch::Result {
 
             // Retrieve Class, Entity and ensure given have access to the Entity under given entity_id
@@ -1292,7 +1292,7 @@ decl_module! {
             entity.ensure_schema_id_is_not_added(schema_id)?;
 
             // Ensure provided property_values are not added to the Entity values map yet
-            entity.ensure_property_values_are_not_added(&property_values)?;
+            entity.ensure_property_values_are_not_added(&new_property_values)?;
 
             // Ensure Class Schema under given index exist, return corresponding Schema
             let schema = class.ensure_schema_exists(schema_id)?.to_owned();
@@ -1301,10 +1301,10 @@ decl_module! {
             schema.ensure_is_active()?;
 
             // Ensure all provided property values are for properties in the given schema
-            schema.ensure_has_properties(&property_values)?;
+            schema.ensure_has_properties(&new_property_values)?;
 
             // Retrieve Schema property ids, which are not provided in property_values
-            let unused_schema_property_ids = Self::compute_unused_property_ids(&property_values, schema.get_properties());
+            let unused_schema_property_ids = Self::compute_unused_property_ids(&new_property_values, schema.get_properties());
             let class_properties = class.properties;
 
             // Perform checks to ensure all required property_values under provided unused_schema_property_ids provided
@@ -1313,26 +1313,18 @@ decl_module! {
             // Ensure all property_values under given Schema property ids are valid
             let entity_controller = entity.get_permissions_ref().get_controller();
 
-            // Create wrapper structure from provided property_values and their corresponding Class properties
-            let values_for_existing_properties = ValuesForExistingProperties::from(&class_properties, &property_values);
+            // Create wrapper structure from provided new_property_values and their corresponding Class properties
+            let new_values_for_existing_properties = ValuesForExistingProperties::from(&class_properties, &new_property_values);
 
-            // Validate all values, provided in values_for_existing_properties,
+            // Validate all values, provided in new_values_for_existing_properties,
             // against the type of its Property and check any additional constraints
-            Self::ensure_property_values_are_valid(&entity_controller, &values_for_existing_properties)?;
-
-            // Calculate entities reference counter side effects for current operation
-            let entities_inbound_rcs_delta = Self::calculate_entities_inbound_rcs_delta(
-                values_for_existing_properties, DeltaMode::Increment
-            );
-
-            // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
-            entities_inbound_rcs_delta.update_entities_rcs();
+            Self::ensure_property_values_are_valid(&entity_controller, &new_values_for_existing_properties)?;
 
             let entity_property_values = entity.get_values();
 
             // Compute updated entity values, after new schema support added
             let entity_values_updated = Self::make_updated_entity_property_values(
-                schema, entity_property_values, property_values
+                schema, entity_property_values, new_property_values.to_owned()
             );
 
             // Create wrapper structure from updated entity values and their corresponding Class properties
@@ -1340,7 +1332,7 @@ decl_module! {
                 &class_properties, &entity_values_updated
             );
 
-            // Traverse all updated_values_for_existing_properties to ensure unique property satisfied (if required)
+            // Traverse all updated_values_for_existing_properties to ensure unique option satisfied (if required)
             Self::ensure_property_values_unique_option_satisfied(
                 updated_values_for_existing_properties
             )?;
@@ -1349,6 +1341,14 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            // Calculate entities reference counter side effects for current operation
+            let entities_inbound_rcs_delta = Self::calculate_entities_inbound_rcs_delta(
+                new_values_for_existing_properties, DeltaMode::Increment
+            );
+
+            // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
+            entities_inbound_rcs_delta.update_entities_rcs();
 
             // Add schema support to `Entity` under given `entity_id`
             <EntityById<T>>::mutate(entity_id, |entity| {
@@ -1416,7 +1416,7 @@ decl_module! {
                         &class_properties, &new_property_values
                     );
 
-                    // Traverse all values_for_updated_properties to ensure unique property satisfied (if required)
+                    // Traverse all values_for_updated_properties to ensure unique option satisfied (if required)
                     Self::ensure_property_values_unique_option_satisfied(updated_values_for_existing_properties)?;
                     Some(entity_property_values_updated)
                 } else {
