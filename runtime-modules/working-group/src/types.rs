@@ -234,12 +234,14 @@ impl<
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum ExitInitiationOrigin {
-    /// Lead is origin.
+    /// Lead fires the worker.
     Lead,
 
-    /// The curator exiting is the origin.
+    /// Worker leaves the position.
     Worker,
-    //TODO council ?
+
+    /// Council fires the leader.
+    Sudo,
 }
 
 /// The recurring reward if any to be assigned to an actor when filling in the position.

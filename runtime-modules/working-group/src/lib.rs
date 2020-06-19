@@ -46,6 +46,7 @@
 // TODO: leave role - unset lead on success when the leader is leaving.
 // TODO: stakes - disallow zero stake.
 // TODO: check all that a leader can set only its own parameters as a worker.
+// TODO: get_all_worker_ids() - remove leader worker_id
 
 #[cfg(test)]
 mod tests;
@@ -197,6 +198,12 @@ decl_event!(
         /// - worker id.
         /// - termination rationale text
         TerminatedWorker(WorkerId, RationaleText),
+
+        /// Emits on terminating the leader.
+        /// Params:
+        /// - leader worker id.
+        /// - termination rationale text
+        TerminatedLeader(WorkerId, RationaleText),
 
         /// Emits on exiting the worker.
         /// Params:
@@ -460,14 +467,13 @@ decl_module! {
             worker_id: WorkerId<T>,
             rationale_text: Vec<u8>
         ) {
-
-            // Ensure lead is set and is origin signer
-            Self::ensure_origin_is_active_leader(origin)?;
-
-            // Ensuring worker actually exists
+            // Ensuring worker actually exists.
             let worker = Self::ensure_worker_exists(&worker_id)?;
 
-            // Ensure rationale text is valid
+            // Ensure lead is set or it is the council terminating the leader.
+            let exit_origin = Self::ensure_origin_for_leader(origin, worker.member_id)?;
+
+            // Ensure rationale text is valid.
             Self::ensure_worker_exit_rationale_text_is_valid(&rationale_text)?;
 
             //
@@ -477,7 +483,7 @@ decl_module! {
             Self::deactivate_worker(
                 &worker_id,
                 &worker,
-                &ExitInitiationOrigin::Lead,
+                &exit_origin,
                 &rationale_text
             )?;
         }
@@ -1014,31 +1020,9 @@ decl_module! {
     }
 }
 
+// ****************** Ensures **********************
+
 impl<T: Trait<I>, I: Instance> Module<T, I> {
-    /// Checks that provided lead account id belongs to the current working group leader
-    pub fn ensure_is_lead_account(lead_account_id: T::AccountId) -> Result<(), Error> {
-        let lead = <CurrentLead<T, I>>::get();
-
-        if let Some(lead) = lead {
-            if lead.role_account_id != lead_account_id {
-                return Err(Error::IsNotLeadAccount);
-            }
-        } else {
-            return Err(Error::CurrentLeadNotSet);
-        }
-
-        Ok(())
-    }
-
-    /// Returns all existing worker id list.
-    pub fn get_all_worker_ids() -> Vec<WorkerId<T>> {
-        <WorkerById<T, I>>::enumerate()
-            .map(|(worker_id, _)| worker_id)
-            .collect()
-
-        //TODO not lead
-    }
-
     fn ensure_origin_for_opening_type(
         origin: T::Origin,
         opening_type: OpeningType,
@@ -1053,6 +1037,23 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                 ensure_root(origin).map_err(|err| err.into())
             }
         }
+    }
+
+    fn ensure_origin_for_leader(
+        origin: T::Origin,
+        member_id: MemberId<T>,
+    ) -> Result<ExitInitiationOrigin, Error> {
+        let lead = Self::ensure_lead_is_set()?;
+
+        let (worker_opening_type, exit_origin) = if lead.member_id == member_id {
+            (OpeningType::Leader, ExitInitiationOrigin::Sudo)
+        } else {
+            (OpeningType::Worker, ExitInitiationOrigin::Lead)
+        };
+
+        Self::ensure_origin_for_opening_type(origin, worker_opening_type)?;
+
+        Ok(exit_origin)
     }
 
     fn ensure_lead_is_set() -> Result<Lead<MemberId<T>, T::AccountId>, Error> {
@@ -1094,26 +1095,6 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         let hiring_opening = hiring::OpeningById::<T>::get(opening.opening_id);
 
         Ok((opening, hiring_opening))
-    }
-
-    fn make_stake_opt_imbalance(
-        opt_balance: &Option<BalanceOf<T>>,
-        source_account: &T::AccountId,
-    ) -> Option<NegativeImbalance<T>> {
-        if let Some(balance) = opt_balance {
-            let withdraw_result = CurrencyOf::<T>::withdraw(
-                source_account,
-                *balance,
-                WithdrawReasons::all(),
-                ExistenceRequirement::AllowDeath,
-            );
-
-            assert!(withdraw_result.is_ok());
-
-            withdraw_result.ok()
-        } else {
-            None
-        }
     }
 
     fn ensure_member_has_no_active_application_on_opening(
@@ -1245,6 +1226,67 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         }
     }
 
+    fn ensure_worker_exit_rationale_text_is_valid(text: &[u8]) -> Result<(), Error> {
+        Self::worker_exit_rationale_text()
+            .ensure_valid(
+                text.len(),
+                Error::WorkerExitRationaleTextTooShort.into(),
+                Error::WorkerExitRationaleTextTooLong.into(),
+            )
+            .map_err(|e| e.into())
+    }
+}
+
+/// Creates default text constraint.
+pub fn default_text_constraint() -> InputValidationLengthConstraint {
+    InputValidationLengthConstraint::new(1, 1024)
+}
+
+impl<T: Trait<I>, I: Instance> Module<T, I> {
+    /// Checks that provided lead account id belongs to the current working group leader
+    pub fn ensure_is_lead_account(lead_account_id: T::AccountId) -> Result<(), Error> {
+        let lead = <CurrentLead<T, I>>::get();
+
+        if let Some(lead) = lead {
+            if lead.role_account_id != lead_account_id {
+                return Err(Error::IsNotLeadAccount);
+            }
+        } else {
+            return Err(Error::CurrentLeadNotSet);
+        }
+
+        Ok(())
+    }
+
+    /// Returns all existing worker id list.
+    pub fn get_regular_worker_ids() -> Vec<WorkerId<T>> {
+        <WorkerById<T, I>>::enumerate()
+            .map(|(worker_id, _)| worker_id)
+            .collect()
+
+        //TODO not lead
+    }
+
+    fn make_stake_opt_imbalance(
+        opt_balance: &Option<BalanceOf<T>>,
+        source_account: &T::AccountId,
+    ) -> Option<NegativeImbalance<T>> {
+        if let Some(balance) = opt_balance {
+            let withdraw_result = CurrencyOf::<T>::withdraw(
+                source_account,
+                *balance,
+                WithdrawReasons::all(),
+                ExistenceRequirement::AllowDeath,
+            );
+
+            assert!(withdraw_result.is_ok());
+
+            withdraw_result.ok()
+        } else {
+            None
+        }
+    }
+
     fn deactivate_worker(
         worker_id: &WorkerId<T>,
         worker: &WorkerOf<T>,
@@ -1264,6 +1306,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             // Determine unstaking period based on who initiated deactivation
             let unstaking_period = match exit_initiation_origin {
                 ExitInitiationOrigin::Lead => stake_profile.termination_unstaking_period,
+                ExitInitiationOrigin::Sudo => stake_profile.termination_unstaking_period,
                 ExitInitiationOrigin::Worker => stake_profile.exit_unstaking_period,
             };
 
@@ -1284,21 +1327,18 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             ExitInitiationOrigin::Worker => {
                 RawEvent::WorkerExited(*worker_id, rationale_text.to_vec())
             }
+            ExitInitiationOrigin::Sudo => {
+                RawEvent::TerminatedLeader(*worker_id, rationale_text.to_vec())
+            }
         };
+
+        if matches!(exit_initiation_origin, ExitInitiationOrigin::Sudo) {
+            Self::unset_lead();
+        }
 
         Self::deposit_event(event);
 
         Ok(())
-    }
-
-    fn ensure_worker_exit_rationale_text_is_valid(text: &[u8]) -> Result<(), Error> {
-        Self::worker_exit_rationale_text()
-            .ensure_valid(
-                text.len(),
-                Error::WorkerExitRationaleTextTooShort.into(),
-                Error::WorkerExitRationaleTextTooLong.into(),
-            )
-            .map_err(|e| e.into())
     }
 
     fn initialize_working_group(
@@ -1348,9 +1388,4 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             Self::deposit_event(RawEvent::LeaderUnset(lead.member_id, lead.role_account_id));
         }
     }
-}
-
-/// Creates default text constraint.
-pub fn default_text_constraint() -> InputValidationLengthConstraint {
-    InputValidationLengthConstraint::new(1, 1024)
 }

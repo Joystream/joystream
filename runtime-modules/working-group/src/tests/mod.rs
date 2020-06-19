@@ -860,41 +860,6 @@ fn fill_worker_opening_fails_with_invalid_reward_policy() {
     });
 }
 
-#[test] //TODO
-fn unset_lead_succeeds() {
-    build_test_externalities().execute_with(|| {
-        let lead_member_id = 1;
-
-        SetLeadFixture::default().set_lead();
-
-        let lead = Lead {
-            member_id: lead_member_id,
-            role_account_id: 1,
-        };
-        assert_eq!(TestWorkingGroup::current_lead(), Some(lead));
-
-        UnsetLeadFixture::unset_lead();
-
-        assert_eq!(TestWorkingGroup::current_lead(), None);
-
-        EventFixture::assert_last_crate_event(RawEvent::LeaderUnset(lead_member_id, 1));
-    });
-}
-
-#[test]
-fn unset_lead_fails_with_invalid_origin() {
-    build_test_externalities().execute_with(|| {
-        UnsetLeadFixture::call_and_assert(RawOrigin::None, Err(Error::RequireRootOrigin));
-    });
-}
-
-#[test]
-fn unset_lead_fails_with_no_lead() {
-    build_test_externalities().execute_with(|| {
-        UnsetLeadFixture::call_and_assert(RawOrigin::Root, Err(Error::CurrentLeadNotSet));
-    });
-}
-
 #[test]
 fn update_worker_role_account_succeeds() {
     build_test_externalities().execute_with(|| {
@@ -1200,7 +1165,22 @@ fn leave_worker_role_succeeds_with_stakes() {
 #[test]
 fn terminate_worker_role_succeeds_with_stakes() {
     build_test_externalities().execute_with(|| {
-        let worker_id = fill_worker_position_with_stake(100);
+        let worker_account_id = 2;
+        let worker_member_id = 2;
+        increase_total_balance_issuance_using_account_id(worker_account_id, 10000);
+
+        HireLeadFixture::default().hire_lead();
+
+        let worker_id = HiringWorkflow::default()
+            .disable_setup_environment()
+            .with_role_stake(Some(100))
+            .add_application_with_origin(
+                b"worker_handle".to_vec(),
+                RawOrigin::Signed(worker_account_id),
+                worker_member_id,
+            )
+            .execute()
+            .unwrap();
 
         let terminate_worker_role_fixture =
             TerminateWorkerRoleFixture::default_for_worker_id(worker_id);
@@ -1217,7 +1197,13 @@ fn terminate_worker_role_succeeds_with_stakes() {
 #[test]
 fn terminate_worker_role_succeeds() {
     build_test_externalities().execute_with(|| {
-        let worker_id = fill_default_worker_position();
+        HireLeadFixture::default().hire_lead();
+
+        let worker_id = HiringWorkflow::default()
+            .disable_setup_environment()
+            .add_application_with_origin(b"worker_handle".to_vec(), RawOrigin::Signed(2), 2)
+            .execute()
+            .unwrap();
 
         let terminate_worker_role_fixture =
             TerminateWorkerRoleFixture::default_for_worker_id(worker_id);
@@ -1232,9 +1218,35 @@ fn terminate_worker_role_succeeds() {
 }
 
 #[test]
+fn fire_leader_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = HireLeadFixture::default().hire_lead();
+
+        let terminate_worker_role_fixture =
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id)
+                .with_origin(RawOrigin::Root);
+
+        terminate_worker_role_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::TerminatedLeader(
+            worker_id,
+            b"rationale_text".to_vec(),
+        ));
+
+        assert_eq!(TestWorkingGroup::current_lead(), None);
+    });
+}
+
+#[test]
 fn terminate_worker_role_fails_with_invalid_text() {
     build_test_externalities().execute_with(|| {
-        let worker_id = fill_default_worker_position();
+        HireLeadFixture::default().hire_lead();
+
+        let worker_id = HiringWorkflow::default()
+            .disable_setup_environment()
+            .add_application_with_origin(b"worker_handle".to_vec(), RawOrigin::Signed(2), 2)
+            .execute()
+            .unwrap();
 
         let terminate_worker_role_fixture =
             TerminateWorkerRoleFixture::default_for_worker_id(worker_id).with_text(Vec::new());
@@ -1254,7 +1266,7 @@ fn terminate_worker_role_fails_with_unset_lead() {
     build_test_externalities().execute_with(|| {
         let worker_id = fill_default_worker_position();
 
-        UnsetLeadFixture::unset_lead();
+        SetLeadFixture::unset_lead();
 
         let terminate_worker_role_fixture =
             TerminateWorkerRoleFixture::default_for_worker_id(worker_id);
@@ -1266,10 +1278,32 @@ fn terminate_worker_role_fails_with_unset_lead() {
 #[test]
 fn terminate_worker_role_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let worker_id = HiringWorkflow::default()
+            .disable_setup_environment()
+            .add_application_with_origin(b"worker_handle".to_vec(), RawOrigin::Signed(2), 2)
+            .execute()
+            .unwrap();
+
         let terminate_worker_role_fixture =
-            TerminateWorkerRoleFixture::default_for_worker_id(1).with_origin(RawOrigin::None);
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id)
+                .with_origin(RawOrigin::None);
 
         terminate_worker_role_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
+    });
+}
+
+#[test]
+fn fire_leader_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = HireLeadFixture::default().hire_lead();
+
+        let terminate_worker_role_fixture =
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id)
+                .with_origin(RawOrigin::None);
+
+        terminate_worker_role_fixture.call_and_assert(Err(Error::RequireRootOrigin));
     });
 }
 

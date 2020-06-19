@@ -238,17 +238,6 @@ impl UpdateWorkerRoleAccountFixture {
     }
 }
 
-pub struct UnsetLeadFixture;
-impl UnsetLeadFixture {
-    pub fn unset_lead() {
-        TestWorkingGroup::unset_lead();
-    }
-
-    pub fn call_and_assert(origin: RawOrigin<u64>, expected_result: Result<(), Error>) {
-        TestWorkingGroup::unset_lead();
-    }
-}
-
 pub fn set_mint_id(mint_id: u64) {
     <crate::Mint<Test, TestWorkingGroupInstance>>::put(mint_id);
 }
@@ -587,6 +576,10 @@ impl Default for SetLeadFixture {
 }
 
 impl SetLeadFixture {
+    pub fn unset_lead() {
+        TestWorkingGroup::unset_lead();
+    }
+
     pub fn set_lead(self) {
         TestWorkingGroup::set_lead(self.member_id, self.role_account);
     }
@@ -611,13 +604,6 @@ impl Default for HireLeadFixture {
     }
 }
 impl HireLeadFixture {
-    pub fn disable_setup_environment(self) -> Self {
-        HireLeadFixture {
-            setup_environment: false,
-            ..self
-        }
-    }
-
     pub fn hire_lead(self) -> u64 {
         fill_worker_position(
             None,
