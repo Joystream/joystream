@@ -5,7 +5,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { UserInfo, PaidMembershipTerms, MemberId } from '@nicaea/types/lib/members';
 import { Mint, MintId } from '@nicaea/types/lib/mint';
 import { Lead, LeadId } from '@nicaea/types/lib/content-working-group';
-import { WorkerOpening, Worker, WorkerId } from '@nicaea/types/lib/bureaucracy';
+import { WorkerOpening, Worker, WorkerId, WorkerApplication, WorkerApplicationId } from '@nicaea/types/lib/bureaucracy';
 import { RoleParameters } from '@nicaea/types/lib/roles';
 import { Seat } from '@nicaea/types';
 import { Balance, EventRecord, AccountId, BlockNumber, BalanceOf } from '@polkadot/types/interfaces';
@@ -302,6 +302,10 @@ export class ApiWrapper {
 
   public estimateLeaveWorkerRoleFee(text: string): BN {
     return this.estimateTxFee(this.api.tx.forumBureaucracy.leaveWorkerRole(0, text));
+  }
+
+  public estimateWithdrawWorkerApplicationFee(): BN {
+    return this.estimateTxFee(this.api.tx.forumBureaucracy.withdrawWorkerApplication(0));
   }
 
   private applyForCouncilElection(account: KeyringPair, amount: BN): Promise<void> {
@@ -900,6 +904,19 @@ export class ApiWrapper {
     );
   }
 
+  public async withdrawWorkerApplication(account: KeyringPair, workerId: BN): Promise<void> {
+    return this.sender.signAndSend(this.api.tx.forumBureaucracy.withdrawWorkerApplication(workerId), account, false);
+  }
+
+  public async batchWithdrawWorkerApplication(accounts: KeyringPair[]): Promise<void[]> {
+    return Promise.all(
+      accounts.map(async keyPair => {
+        const applicationId = await this.getApplicationIdByRoleAccount(keyPair.address);
+        await this.withdrawWorkerApplication(keyPair, applicationId);
+      })
+    );
+  }
+
   public async getStorageRoleParameters(): Promise<RoleParameters> {
     return (await this.api.query.actors.parameters<Option<RoleParameters>>('StorageProvider')).unwrap();
   }
@@ -963,6 +980,17 @@ export class ApiWrapper {
     let index: number;
     workers.forEach((worker, i) => {
       if (worker.role_account.toString() === address) index = i;
+    });
+    return ids[index!];
+  }
+
+  public async getApplicationIdByRoleAccount(address: string): Promise<BN> {
+    const applicationsAndIds = await this.api.query.forumBureaucracy.workerApplicationById<Codec[]>();
+    const applications: WorkerApplication[] = (applicationsAndIds[1] as unknown) as WorkerApplication[];
+    const ids: WorkerApplicationId[] = (applicationsAndIds[0] as unknown) as WorkerApplicationId[];
+    let index: number;
+    applications.forEach((application, i) => {
+      if (application.role_account.toString() === address) index = i;
     });
     return ids[index!];
   }

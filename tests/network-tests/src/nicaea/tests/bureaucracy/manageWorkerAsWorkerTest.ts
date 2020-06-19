@@ -7,9 +7,17 @@ import { WsProvider, Keyring } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { setTestTimeout } from '../../utils/setTestTimeout';
 import { membershipTest } from '../impl/membershipCreation';
-import { workerApplicationHappyCase } from './impl/workerApplicationHappyCase';
+import {
+  addWorkerOpening,
+  applyForWorkerOpening,
+  beginApplicationReview,
+  fillWorkerOpening,
+  setLead,
+  increaseWorkerStake,
+  updateRewardAccount,
+  updateRoleAccount,
+} from './impl/workingGroupModule';
 import BN from 'bn.js';
-import { manageWorkerAsWorker } from './impl/manageWorkerAsWorker';
 
 tap.mocha.describe('Manage worker as worker scenario', async () => {
   initConfig();
@@ -25,16 +33,35 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const applicationStake: BN = new BN(process.env.WORKING_GROUP_APPLICATION_STAKE!);
   const roleStake: BN = new BN(process.env.WORKING_GROUP_ROLE_STAKE!);
-  const durationInBlocks: number = 100;
+  const durationInBlocks: number = 30;
 
   const provider = new WsProvider(nodeUrl);
   const apiWrapper: ApiWrapper = await ApiWrapper.create(provider);
+  const sudo: KeyringPair = keyring.addFromUri(sudoUri);
 
   setTestTimeout(apiWrapper, durationInBlocks);
   membershipTest(apiWrapper, nKeyPairs, keyring, N, paidTerms, sudoUri);
   membershipTest(apiWrapper, leadKeyPair, keyring, N, paidTerms, sudoUri);
-  workerApplicationHappyCase(apiWrapper, nKeyPairs, leadKeyPair, keyring, sudoUri, applicationStake, roleStake);
-  manageWorkerAsWorker(apiWrapper, nKeyPairs, keyring, sudoUri);
+
+  tap.test('Set lead', async () => setLead(apiWrapper, leadKeyPair[0], sudo));
+  let openignId: BN;
+  tap.test(
+    'Add worker opening',
+    async () =>
+      (openignId = await addWorkerOpening(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, applicationStake, roleStake))
+  );
+  tap.test(
+    'Apply for worker opening',
+    async () => await applyForWorkerOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, openignId)
+  );
+  tap.test('Begin application review', async () => beginApplicationReview(apiWrapper, leadKeyPair[0], sudo, openignId));
+  tap.test('Fill worker opening', async () =>
+    fillWorkerOpening(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, openignId)
+  );
+
+  tap.test('Increase worker stake', async () => increaseWorkerStake(apiWrapper, nKeyPairs, sudo));
+  tap.test('Update reward account', async () => updateRewardAccount(apiWrapper, nKeyPairs, keyring, sudo));
+  tap.test('Update role account', async () => updateRoleAccount(apiWrapper, nKeyPairs, keyring, sudo));
 
   closeApi(apiWrapper);
 });

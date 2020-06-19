@@ -46,12 +46,4 @@ export class Utils {
   public static readRuntimeFromFile(path: string): string {
     return '0x' + fs.readFileSync(path).toString('hex');
   }
-
-  public static getNextNIds(firstId: BN, n: number): BN[] {
-    const result: BN[] = new Array();
-    for (let i = 0; i < n; i++) {
-      result.push(firstId.addn(i));
-    }
-    return result;
-  }
 }

@@ -7,7 +7,13 @@ import { WsProvider, Keyring } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { setTestTimeout } from '../../utils/setTestTimeout';
 import { membershipTest } from '../impl/membershipCreation';
-import { workerApplicationHappyCase } from './impl/workerApplicationHappyCase';
+import {
+  addWorkerOpening,
+  applyForWorkerOpening,
+  beginApplicationReview,
+  fillWorkerOpening,
+  setLead,
+} from './impl/workingGroupModule';
 import BN from 'bn.js';
 
 tap.mocha.describe('Worker application happy case scenario', async () => {
@@ -24,15 +30,30 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const applicationStake: BN = new BN(process.env.WORKING_GROUP_APPLICATION_STAKE!);
   const roleStake: BN = new BN(process.env.WORKING_GROUP_ROLE_STAKE!);
-  const durationInBlocks: number = 21;
+  const durationInBlocks: number = 28;
 
   const provider = new WsProvider(nodeUrl);
   const apiWrapper: ApiWrapper = await ApiWrapper.create(provider);
+  const sudo: KeyringPair = keyring.addFromUri(sudoUri);
 
   setTestTimeout(apiWrapper, durationInBlocks);
   membershipTest(apiWrapper, nKeyPairs, keyring, N, paidTerms, sudoUri);
   membershipTest(apiWrapper, leadKeyPair, keyring, N, paidTerms, sudoUri);
-  workerApplicationHappyCase(apiWrapper, nKeyPairs, leadKeyPair, keyring, sudoUri, applicationStake, roleStake);
+
+  tap.test('Set lead', async () => setLead(apiWrapper, leadKeyPair[0], sudo));
+  let openignId: BN;
+  tap.test(
+    'Add worker opening',
+    async () =>
+      (openignId = await addWorkerOpening(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, applicationStake, roleStake))
+  );
+  tap.test('Apply for worker opening', async () =>
+    applyForWorkerOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, openignId)
+  );
+  tap.test('Begin application review', async () => beginApplicationReview(apiWrapper, leadKeyPair[0], sudo, openignId));
+  tap.test('Fill worker opening', async () =>
+    fillWorkerOpening(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, openignId)
+  );
 
   closeApi(apiWrapper);
 });
