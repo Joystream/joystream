@@ -47,6 +47,7 @@ type OuterProps = ValidationProps & {
   id?: PostId;
   struct?: Post;
   threadId: ThreadId;
+  quotedPost?: Post | null;
   onEditSuccess?: () => void;
   onEditCancel?: () => void;
 };
@@ -172,13 +173,24 @@ const InnerForm = (props: FormProps) => {
   );
 };
 
+const getQuotedPostString = (post: Post) => {
+  const lines = post.current_text.split('\n');
+  return lines.reduce((acc, line) => {
+    return `${acc}> ${line}\n`;
+  }, '');
+};
+
 const EditForm = withFormik<OuterProps, FormValues>({
 
   // Transform outer props into form values
   mapPropsToValues: props => {
-    const { struct } = props;
+    const { struct, quotedPost } = props;
     return {
-      text: (struct && struct.current_text) || ''
+      text: struct
+        ? struct.current_text
+        : quotedPost
+          ? getQuotedPostString(quotedPost)
+          : ''
     };
   },
 

@@ -131,15 +131,19 @@ type ViewThreadProps = ApiProps & InnerViewThreadProps & {
 function InnerViewThread (props: ViewThreadProps) {
   const [showModerateForm, setShowModerateForm] = useState(false);
   const [displayedPosts, setDisplayedPosts] = useState<Post[]>([]);
+  const [quotedPost, setQuotedPost] = useState<Post | null>(null);
+
   const postsRefs = useRef<Record<number, React.RefObject<HTMLDivElement>>>({});
-  const { category, thread, preview = false } = props;
   const replyFormRef = useRef<HTMLDivElement>(null);
+
   const [rawSelectedPostIdx, setSelectedPostIdx] = useQueryParam(ReplyIdxQueryParam);
   const [rawEditedPostId, setEditedPostId] = useQueryParam(ReplyEditIdQueryParam);
   const [currentPage, setCurrentPage] = usePagination();
 
   const parsedSelectedPostIdx = rawSelectedPostIdx ? parseInt(rawSelectedPostIdx) : null;
   const selectedPostIdx = (parsedSelectedPostIdx && !Number.isNaN(parsedSelectedPostIdx)) ? parsedSelectedPostIdx : null;
+
+  const { category, thread, preview = false } = props;
 
   const editedPostId = rawEditedPostId && new PostId(rawEditedPostId);
 
@@ -264,6 +268,7 @@ function InnerViewThread (props: ViewThreadProps) {
 
   const onThreadReplyClick = () => {
     clearEditedPost();
+    setQuotedPost(null);
     scrollToReplyForm();
   };
 
@@ -304,6 +309,11 @@ function InnerViewThread (props: ViewThreadProps) {
         scrollToReplyForm();
       };
 
+      const onReplyQuoteClick = () => {
+        setQuotedPost(reply);
+        scrollToReplyForm();
+      };
+
       return (
         <ViewReply
           ref={postsRefs.current[replyIdx]}
@@ -313,7 +323,7 @@ function InnerViewThread (props: ViewThreadProps) {
           reply={reply}
           selected={selectedPostIdx === replyIdx}
           onEdit={onReplyEditClick}
-          onQuote={() => {}}
+          onQuote={onReplyQuoteClick}
         />
       );
     });
@@ -398,7 +408,7 @@ function InnerViewThread (props: ViewThreadProps) {
         editedPostId ? (
           <EditReply id={editedPostId} key={editedPostId.toString()} onEditSuccess={onPostEditSuccess} onEditCancel={clearEditedPost} />
         ) : (
-          <NewReply threadId={thread.id} />
+          <NewReply threadId={thread.id} key={quotedPost?.id.toString()} quotedPost={quotedPost} />
         )
       }
     </ReplyEditContainer>

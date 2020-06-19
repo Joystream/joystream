@@ -15,6 +15,13 @@ import { TimeAgoDate, ReplyIdxQueryParam } from './utils';
 const HORIZONTAL_PADDING = '1em';
 const ReplyMarkdown = styled(ReactMarkdown)`
   font-size: 1.15rem;
+
+  blockquote {
+    color: rgba(78, 78, 78, 0.6);
+    margin-left: 15px;
+    padding-left: 15px;
+    border-left: 2px solid rgba(78, 78, 78, 0.6);
+  }
 `;
 const ReplyContainer = styled.div<{ selected?: boolean }>`
   && {
