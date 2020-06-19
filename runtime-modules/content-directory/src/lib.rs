@@ -1979,11 +1979,17 @@ impl<T: Trait> Module<T> {
             // Iterate over the PropertyId's
             .keys()
             // Filter provided values_for_existing_properties, leaving only `Reference`'s with `SameOwner` flag set
-            .filter(|&property_id| {
-                values_for_existing_properties[property_id]
-                    .get_property()
-                    .property_type
-                    .same_controller_status()
+            .filter(|property_id| {
+                if let Some(value_for_existing_property) =
+                    values_for_existing_properties.get(property_id)
+                {
+                    value_for_existing_property
+                        .get_property()
+                        .property_type
+                        .same_controller_status()
+                } else {
+                    false
+                }
             })
             .copied()
             .collect()
@@ -2072,8 +2078,9 @@ impl<T: Trait> Module<T> {
         unused_schema_property_ids: &BTreeSet<PropertyId>,
     ) -> dispatch::Result {
         for &unused_schema_property_id in unused_schema_property_ids {
-            // Indexing is safe, Class should always maintain such constistency
-            let class_property = &class_properties[unused_schema_property_id as usize];
+            let class_property = &class_properties
+                .get(unused_schema_property_id as usize)
+                .ok_or(ERROR_CLASS_PROP_NOT_FOUND)?;
 
             // All required property values should be provided
             ensure!(!class_property.required, ERROR_MISSING_REQUIRED_PROP);
