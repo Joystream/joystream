@@ -13,6 +13,7 @@ use srml_support::{StorageLinkedMap, StorageValue};
 use std::collections::BTreeMap;
 use system::RawOrigin;
 
+use crate::tests::hiring_workflow::HiringWorkflow;
 use fixtures::*;
 
 #[test]
@@ -32,13 +33,30 @@ fn hire_lead_succeeds() {
 }
 
 #[test]
-#[should_panic]
 fn hire_lead_fails_with_existing_lead() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
-        HireLeadFixture::default()
+
+        let hiring_workflow = HiringWorkflow::default()
             .disable_setup_environment()
-            .hire_lead();
+            .with_opening_type(OpeningType::Leader)
+            .add_application(b"leader_handle".to_vec())
+            .expect(Err(Error::CannotHireLeaderWhenLeaderExists));
+
+        hiring_workflow.execute();
+    });
+}
+
+#[test]
+fn hire_lead_fails_multiple_applications() {
+    build_test_externalities().execute_with(|| {
+        let hiring_workflow = HiringWorkflow::default()
+            .with_opening_type(OpeningType::Leader)
+            .add_application_with_origin(b"leader_handle".to_vec(), RawOrigin::Signed(1), 1)
+            .add_application_with_origin(b"leader_handle2".to_vec(), RawOrigin::Signed(2), 2)
+            .expect(Err(Error::CannotHireSeveralLeader));
+
+        hiring_workflow.execute();
     });
 }
 
@@ -296,7 +314,8 @@ fn apply_on_worker_opening_fails_with_invalid_role_stake() {
         let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
 
         let appy_on_worker_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id).with_role_stake(100);
+            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
+                .with_role_stake(Some(100));
         appy_on_worker_opening_fixture.call_and_assert(Err(Error::InsufficientBalanceToApply));
     });
 }
@@ -652,7 +671,8 @@ fn fill_worker_opening_succeeds() {
         let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
 
         let appy_on_worker_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id).with_role_stake(10);
+            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
+                .with_role_stake(Some(10));
         let application_id = appy_on_worker_opening_fixture.call_and_assert(Ok(()));
 
         let begin_review_worker_applications_fixture =
@@ -703,7 +723,8 @@ fn fill_worker_opening_fails_with_invalid_origin_for_opening_type() {
         let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
 
         let appy_on_worker_opening_fixture =
-            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id).with_role_stake(10);
+            ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
+                .with_role_stake(Some(10));
         let application_id = appy_on_worker_opening_fixture.call_and_assert(Ok(()));
 
         let begin_review_worker_applications_fixture =
@@ -1078,67 +1099,19 @@ fn fill_worker_position(
     opening_type: OpeningType,
     worker_handle: Option<Vec<u8>>,
 ) -> u64 {
-    let lead_account_id = 1;
+    let mut hiring_workflow = HiringWorkflow::default()
+        .with_role_stake(role_stake)
+        .with_setup_environment(setup_environment)
+        .with_opening_type(opening_type)
+        .with_reward_policy(reward_policy);
 
-    let origin = match opening_type {
-        OpeningType::Leader => RawOrigin::Root,
-        OpeningType::Worker => RawOrigin::Signed(lead_account_id),
+    hiring_workflow = if let Some(worker_handle) = worker_handle {
+        hiring_workflow.add_application(worker_handle)
+    } else {
+        hiring_workflow.add_default_application()
     };
 
-    if setup_environment {
-        if matches!(opening_type, OpeningType::Worker) {
-            SetLeadFixture::default().set_lead();
-        }
-        increase_total_balance_issuance_using_account_id(1, 10000);
-        setup_members(2);
-    }
-
-    let mut add_worker_opening_fixture = AddWorkerOpeningFixture::default()
-        .with_opening_type(opening_type)
-        .with_origin(origin.clone());
-    if let Some(stake) = role_stake.clone() {
-        add_worker_opening_fixture =
-            add_worker_opening_fixture.with_policy_commitment(OpeningPolicyCommitment {
-                role_staking_policy: Some(hiring::StakingPolicy {
-                    amount: stake,
-                    amount_mode: hiring::StakingAmountLimitMode::AtLeast,
-                    crowded_out_unstaking_period_length: None,
-                    review_period_expired_unstaking_period_length: None,
-                }),
-                ..OpeningPolicyCommitment::default()
-            });
-    }
-
-    let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
-
-    let application_text = worker_handle.unwrap_or(b"default worker handle".to_vec());
-
-    let mut appy_on_worker_opening_fixture =
-        ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id).with_text(application_text);
-    if let Some(stake) = role_stake.clone() {
-        appy_on_worker_opening_fixture = appy_on_worker_opening_fixture.with_role_stake(stake);
-    }
-    let application_id = appy_on_worker_opening_fixture.call_and_assert(Ok(()));
-
-    let begin_review_worker_applications_fixture =
-        BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id)
-            .with_origin(origin.clone());
-    begin_review_worker_applications_fixture.call_and_assert(Ok(()));
-
-    let mint_id = create_mint();
-    set_mint_id(mint_id);
-
-    let mut fill_worker_opening_fixture =
-        FillWorkerOpeningFixture::default_for_ids(opening_id, vec![application_id])
-            .with_origin(origin.clone());
-
-    if let Some(reward_policy) = reward_policy {
-        fill_worker_opening_fixture = fill_worker_opening_fixture.with_reward_policy(reward_policy);
-    }
-
-    let worker_id = fill_worker_opening_fixture.call_and_assert(Ok(()));
-
-    worker_id
+    hiring_workflow.execute().unwrap()
 }
 
 #[test]

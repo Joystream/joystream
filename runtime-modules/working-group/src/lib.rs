@@ -44,7 +44,6 @@
 // TODO: terminate role - add 'include slashing' parameter.
 // TODO: terminate role - unset lead on success when the leader is being fired.
 // TODO: leave role - unset lead on success when the leader is leaving.
-// TODO: fill_opening: single application winner.
 // TODO: stakes - disallow zero stake.
 // TODO: check all that a leader can set only its own parameters as a worker.
 

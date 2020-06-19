@@ -289,14 +289,21 @@ impl FillWorkerOpeningFixture {
         }
     }
 
-    pub fn call_and_assert(&self, expected_result: Result<(), Error>) -> u64 {
+    pub fn call(&self) -> Result<u64, Error> {
         let saved_worker_next_id = TestWorkingGroup::next_worker_id();
-        let actual_result = TestWorkingGroup::fill_opening(
+        TestWorkingGroup::fill_opening(
             self.origin.clone().into(),
             self.opening_id,
             self.successful_application_ids.clone(),
             self.reward_policy.clone(),
-        );
+        )?;
+
+        Ok(saved_worker_next_id)
+    }
+
+    pub fn call_and_assert(&self, expected_result: Result<(), Error>) -> u64 {
+        let saved_worker_next_id = TestWorkingGroup::next_worker_id();
+        let actual_result = self.call().map(|_| ());
         assert_eq!(actual_result.clone(), expected_result);
 
         if actual_result.is_ok() {
@@ -460,28 +467,36 @@ pub struct ApplyOnWorkerOpeningFixture {
 
 impl ApplyOnWorkerOpeningFixture {
     pub fn with_text(self, text: Vec<u8>) -> Self {
-        ApplyOnWorkerOpeningFixture {
+        Self {
             human_readable_text: text,
             ..self
         }
     }
 
-    pub fn with_role_stake(self, stake: u64) -> Self {
-        ApplyOnWorkerOpeningFixture {
-            opt_role_stake_balance: Some(stake),
+    pub fn with_origin(self, origin: RawOrigin<u64>, member_id: u64) -> Self {
+        Self {
+            origin,
+            member_id,
+            ..self
+        }
+    }
+
+    pub fn with_role_stake(self, stake: Option<u64>) -> Self {
+        Self {
+            opt_role_stake_balance: stake,
             ..self
         }
     }
 
     pub fn with_application_stake(self, stake: u64) -> Self {
-        ApplyOnWorkerOpeningFixture {
+        Self {
             opt_application_stake_balance: Some(stake),
             ..self
         }
     }
 
     pub fn default_for_opening_id(opening_id: u64) -> Self {
-        ApplyOnWorkerOpeningFixture {
+        Self {
             origin: RawOrigin::Signed(1),
             member_id: 1,
             worker_opening_id: opening_id,
