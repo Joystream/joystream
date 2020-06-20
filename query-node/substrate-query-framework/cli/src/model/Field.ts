@@ -1,3 +1,4 @@
+import { Relation } from '.';
 import { availableTypes } from './ScalarTypes';
 
 /**
@@ -20,6 +21,9 @@ export class Field {
   // Make field as a unique column on database
   unique?: boolean;
 
+  // Relation
+  relation?: Relation;
+
   constructor(name: string, type: string, nullable = true, isBuildinType = true, isList = false) {
     this.name = name;
     this.type = type;
@@ -29,6 +33,7 @@ export class Field {
   }
 
   columnType(): string {
+    if (this.relation) return this.relation?.type;
     return this.isBuildinType ? availableTypes[this.type] : this.type;
   }
 
@@ -41,10 +46,10 @@ export class Field {
   }
 
   isRelationType(): boolean {
-    return ['otm', 'mto', 'oto'].some(s => s === this.type);
+    return this.relation ? true : false;
   }
 
   isEnum(): boolean {
-    return !this.isBuildinType && !this.isRelationType();
+    return !this.isBuildinType && !this.relation;
   }
 }
