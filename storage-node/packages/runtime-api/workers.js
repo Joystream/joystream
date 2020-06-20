@@ -21,7 +21,7 @@
 const debug = require('debug')('joystream:runtime:roles')
 const { Null } = require('@polkadot/types')
 const { _ } = require('lodash')
-const { Worker } = require('@joystream/types/working-group')
+const { Worker } = require('@joystream/types/lib/working-group')
 /*
  * Add worker related functionality to the substrate API.
  */

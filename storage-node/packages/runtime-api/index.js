@@ -25,7 +25,7 @@ const { ApiPromise, WsProvider } = require('@polkadot/api');
 
 const { IdentitiesApi } = require('@joystream/runtime-api/identities');
 const { BalancesApi } = require('@joystream/runtime-api/balances');
-const { WrokersApi } = require('@joystream/runtime-api/workers');
+const { WorkersApi } = require('@joystream/runtime-api/workers');
 const { AssetsApi } = require('@joystream/runtime-api/assets');
 const { DiscoveryApi } = require('@joystream/runtime-api/discovery');
 const AsyncLock = require('async-lock');

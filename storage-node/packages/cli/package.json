@@ -30,7 +30,7 @@
     "lint": "eslint 'paths/**/*.js' 'lib/**/*.js'"
   },
   "bin": {
-    "joystream": "bin/cli.js"
+    "storage-cli": "bin/cli.js"
   },
   "devDependencies": {
     "chai": "^4.2.0",
