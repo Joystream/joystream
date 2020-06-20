@@ -7,8 +7,7 @@ export interface ObjectType {
   name: string;
   fields: Field[];
   isEntity: boolean;
-  // imports for relations
-  imports: Set<string>;
+  relatedEntityImports: Set<string>;
   // Description of the field will be shown in GrapqQL API
   description?: string;
   isInterface?: boolean;

@@ -20,11 +20,9 @@ import {
 import { InterfaceType } from 'type-graphql';
 {{/isInterface}}
 
-{{#fields}}
-  {{#is.refType}}
-  import { {{relClassName}} } from '{{{relPathForModel}}}'
-  {{/is.refType}}
-{{/fields}}
+{{#relatedEntityImports}} {{! import related entities }}
+  {{{ relatedEntityImports }}}
+{{/relatedEntityImports}}
 
 {{#enums}}
   import { {{name}} } from '../enums/enums';
@@ -62,7 +60,7 @@ export {{#isInterface}}abstract{{/isInterface}} class {{className}}
 
   {{#is.oto}}
     @OneToOne(() => {{relClassName}})
-    @JoinColumn()
+    {{#is.relation.joinColumn}}@JoinColumn(){{/is.relation.joinColumn}}
     {{camelName}}?: {{relClassName}};
   {{/is.oto}}
 

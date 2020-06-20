@@ -1,7 +1,6 @@
 import { GeneratorContext } from './SourcesGenerator';
 import { Field, ObjectType } from '../model';
 import * as util from './utils';
-import * as path from 'path';
 import { withRelativePathForEnum } from './enum-context';
 
 export const TYPE_FIELDS: { [key: string]: { [key: string]: string } } = {
@@ -67,13 +66,13 @@ const graphQLFieldTypes: { [key: string]: string } = {
 
 export function buildFieldContext(f: Field, entity: ObjectType): GeneratorContext {
   return {
+    relatedEntityImports: entity.imports,
     ...withFieldTypeGuardProps(f),
     ...withRequired(f),
     ...withUnique(f),
     ...withArrayCustomFieldConfig(f),
     ...withTsTypeAndDecorator(f),
     ...withDerivedNames(f, entity),
-    ...withRelativePathForModel(f, entity),
     ...withDescription(f),
   };
 }
@@ -84,8 +83,9 @@ export function withFieldTypeGuardProps(f: Field): GeneratorContext {
   is['scalar'] = f.isScalar();
   is['refType'] = f.isRelationType();
   is['enum'] = f.isEnum();
+  is['relation'] = f.relation;
 
-  ['mto', 'oto', 'otm'].map(s => (is[s] = f.type === s));
+  ['mto', 'oto', 'otm'].map(s => (is[s] = f.relation?.type === s));
   return {
     is: is,
   };
@@ -148,15 +148,6 @@ export function withDerivedNames(f: Field, entity: ObjectType): GeneratorContext
     ...util.names(single),
     relFieldName: util.camelCase(entity.name),
     relFieldNamePlural: util.camelPlural(entity.name),
-  };
-}
-
-// TODO: this should really be handled at the entity level with field types
-export function withRelativePathForModel(f: Field, entity: ObjectType): GeneratorContext {
-  const referenced = withDerivedNames(f, entity).relClassName as string;
-  const relPathForModel = path.join('..', util.kebabCase(referenced), `${util.kebabCase(referenced)}.model`);
-  return {
-    relPathForModel,
   };
 }
 

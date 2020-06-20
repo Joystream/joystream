@@ -95,6 +95,7 @@ export class WarthogModelBuilder {
       description: o.description?.value,
       isInterface: o.kind === 'InterfaceTypeDefinition',
       interfaces: o.kind === 'ObjectTypeDefinition' ? this.getInterfaces(o) : [],
+      relatedEntityImports: new Set<string>(),
     } as ObjectType;
   }
 
@@ -152,8 +153,23 @@ export class WarthogModelBuilder {
   generateSQLRelationships(): void {
     const additionalFields: { [key: string]: string | Field }[] = [];
 
-    this._model.types.forEach(({ name, fields }) => {
+    this._model.types.forEach(({ name, fields, relatedEntityImports }) => {
       for (const field of fields) {
+        // OneToOne  field
+        if (!field.isBuildinType && !field.isList) {
+          const relatedObject = this._model.lookupType(field.type);
+          const relatedField = relatedObject.fields.find(f => f.type === name);
+
+          if (relatedField) {
+            field.relation = { type: 'oto', columnType: field.type, joinColumn: true };
+            relatedEntityImports.add(relatedObject.name);
+
+            // Other side of the relation
+            relatedField.relation = { type: 'oto', columnType: relatedField.type };
+            relatedObject.relatedEntityImports.add(name);
+          }
+        }
+
         if (!field.isBuildinType && field.isList) {
           const typeName = field.type;
           field.name = field.type.toLowerCase().concat('s');
