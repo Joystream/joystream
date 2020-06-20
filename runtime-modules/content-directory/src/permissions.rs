@@ -60,6 +60,7 @@ pub trait ActorAuthenticator: system::Trait + Debug {
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool;
 }
 
+/// Ensure curator authorization performed succesfully
 pub fn ensure_curator_auth_success<T: ActorAuthenticator>(
     curator_id: &T::CuratorId,
     account_id: &T::AccountId,
@@ -71,6 +72,7 @@ pub fn ensure_curator_auth_success<T: ActorAuthenticator>(
     Ok(())
 }
 
+/// Ensure member authorization performed succesfully
 pub fn ensure_member_auth_success<T: ActorAuthenticator>(
     member_id: &T::MemberId,
     account_id: &T::AccountId,
@@ -82,6 +84,7 @@ pub fn ensure_member_auth_success<T: ActorAuthenticator>(
     Ok(())
 }
 
+/// Ensure lead authorization performed succesfully
 pub fn ensure_lead_auth_success<T: ActorAuthenticator>(
     account_id: &T::AccountId,
 ) -> dispatch::Result {
@@ -101,11 +104,16 @@ pub fn perform_curator_in_group_auth<T: Trait>(
     curator_group_id: &T::CuratorGroupId,
     account_id: &T::AccountId,
 ) -> dispatch::Result {
+    // Ensure curator authorization performed succesfully
     ensure_curator_auth_success::<T>(curator_id, account_id)?;
 
+    // Ensure CuratorGroup under given curator_group_id exists, retrieve corresponding one
     let curator_group = Module::<T>::ensure_curator_group_exists(curator_group_id)?;
 
+    // Ensure curator group is active
     ensure!(curator_group.is_active(), ERROR_CURATOR_GROUP_IS_NOT_ACTIVE);
+
+    // Ensure curator under given curator_id exists in CuratorGroup
     CuratorGroup::<T>::ensure_curator_in_group_exists(&curator_group, curator_id)?;
     Ok(())
 }
@@ -121,7 +129,7 @@ pub struct CuratorGroup<T: Trait> {
     active: bool,
 
     /// Used to count the number of `Class`(es), given curator group maintains
-    number_of_classes_maintained: ReferenceCounter,
+    number_of_classes_maintained: u32,
 }
 
 impl<T: Trait> Default for CuratorGroup<T> {
@@ -170,7 +178,7 @@ impl<T: Trait> CuratorGroup<T> {
         self.number_of_classes_maintained -= 1;
     }
 
-    /// Ensure curator group does not maintain any class
+    /// Ensure curator group does not maintain any `Class`
     pub fn ensure_curator_group_maintains_no_classes(&self) -> dispatch::Result {
         ensure!(
             self.number_of_classes_maintained == 0,
@@ -368,19 +376,22 @@ impl<T: Trait> ClassPermissions<T> {
         &self,
         account_id: &T::AccountId,
         actor: &Actor<T>,
-    ) -> Result<(), &'static str> {
+    ) -> dispatch::Result {
         let can_create = match &actor {
             Actor::Lead => {
+                // Ensure lead authorization performed succesfully
                 ensure_lead_auth_success::<T>(account_id)?;
                 true
             }
             Actor::Member(member_id) if self.any_member => {
+                // Ensure member authorization performed succesfully
                 ensure_member_auth_success::<T>(member_id, account_id)?;
                 true
             }
             Actor::Curator(curator_group_id, curator_id)
                 if self.maintainers.contains(curator_group_id) =>
             {
+                // Authorize curator, performing all checks to ensure curator can act
                 perform_curator_in_group_auth::<T>(curator_id, curator_group_id, account_id)?;
                 true
             }
@@ -396,22 +407,25 @@ impl<T: Trait> ClassPermissions<T> {
         Ok(())
     }
 
-    /// Ensure maintainer, associated with given `group_id` is already added to `maintainers` set
-    pub fn ensure_maintainer_exists(&self, group_id: &T::CuratorGroupId) -> dispatch::Result {
+    /// Ensure maintainer, associated with given `curator_group_id` is already added to `maintainers` set
+    pub fn ensure_maintainer_exists(
+        &self,
+        curator_group_id: &T::CuratorGroupId,
+    ) -> dispatch::Result {
         ensure!(
-            self.maintainers.contains(group_id),
+            self.maintainers.contains(curator_group_id),
             ERROR_MAINTAINER_DOES_NOT_EXIST
         );
         Ok(())
     }
 
-    /// Ensure maintainer, associated with given `group_id` is not yet added to `maintainers` set
+    /// Ensure maintainer, associated with given `curator_group_id` is not yet added to `maintainers` set
     pub fn ensure_maintainer_does_not_exist(
         &self,
-        group_id: &T::CuratorGroupId,
+        curator_group_id: &T::CuratorGroupId,
     ) -> dispatch::Result {
         ensure!(
-            !self.maintainers.contains(group_id),
+            !self.maintainers.contains(curator_group_id),
             ERROR_MAINTAINER_ALREADY_EXISTS
         );
         Ok(())
@@ -485,9 +499,9 @@ impl<T: Trait> EntityPermissions<T> {
         self.controller = controller
     }
 
-    /// Check if inner `controller` is equal to provided one
-    pub fn controller_is_equal_to(&self, entity_controller: &EntityController<T>) -> bool {
-        self.controller == *entity_controller
+    /// Check if inner `controller` is equal to the provided one
+    pub fn controller_is_equal_to(&self, new_entity_controller: &EntityController<T>) -> bool {
+        self.controller == *new_entity_controller
     }
 
     /// Set `frozen` flag as provided
@@ -518,6 +532,18 @@ impl<T: Trait> EntityPermissions<T> {
             _ => Err(ERROR_ENTITY_REMOVAL_ACCESS_DENIED),
         }
     }
+
+    /// Ensure provided new_entity_controller is not equal to current one
+    pub fn ensure_controllers_are_not_equal(
+        &self,
+        new_entity_controller: &EntityController<T>,
+    ) -> dispatch::Result {
+        ensure!(
+            self.controller_is_equal_to(new_entity_controller),
+            ERROR_PROVIDED_ENTITY_CONTROLLER_IS_EQUAL_TO_CURRENT_ONE
+        );
+        Ok(())
+    }
 }
 
 /// Type, derived from dispatchable call, identifies the caller
@@ -545,13 +571,16 @@ impl EntityAccessLevel {
         let controller = EntityController::<T>::from_actor(actor);
         match actor {
             Actor::Lead if entity_permissions.controller_is_equal_to(&controller) => {
+                // Ensure lead authorization performed succesfully
                 ensure_lead_auth_success::<T>(account_id).map(|_| Self::EntityController)
             }
             Actor::Member(member_id) if entity_permissions.controller_is_equal_to(&controller) => {
+                // Ensure member authorization performed succesfully
                 ensure_member_auth_success::<T>(member_id, account_id)
                     .map(|_| Self::EntityController)
             }
             Actor::Curator(curator_group_id, curator_id) => {
+                // Authorize curator, performing all checks to ensure curator can act
                 perform_curator_in_group_auth::<T>(curator_id, curator_group_id, account_id)?;
                 match (
                     entity_permissions.controller_is_equal_to(&controller),

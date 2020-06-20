@@ -62,10 +62,16 @@ pub const ERROR_PROP_NAME_NOT_UNIQUE_IN_A_CLASS: &str =
     "Property name is not unique within its class";
 pub const ERROR_MISSING_REQUIRED_PROP: &str =
     "Some required property was not found when adding schema support to entity";
-pub const ERROR_UNKNOWN_ENTITY_PROP_ID: &str = "Some of the provided property ids cannot be found on the current list of propery values of this entity";
+pub const ERROR_SCHEMA_DOES_NOT_CONTAIN_PROVIDED_PROPERTY_ID: &str =
+    "Schema under provided schema_id does not contain given property";
+pub const ERROR_UNKNOWN_ENTITY_PROP_ID: &str =
+    "Some of the provided property ids cannot be found on the current list of propery values of this entity";
+pub const ERROR_ENTITY_ALREADY_CONTAINS_GIVEN_PROPERTY_ID: &str =
+    "Entity already contains property under provided index";
 pub const ERROR_PROP_VALUE_TYPE_DOESNT_MATCH_INTERNAL_ENTITY_VECTOR_TYPE: &str =
     "Propery value type does not match internal entity vector type";
-pub const ERROR_PROP_DOES_NOT_MATCH_ITS_CLASS: &str = "Internal property does not match its class";
+pub const ERROR_REFERENCED_ENTITY_DOES_NOT_MATCH_ITS_CLASS: &str
+     = "Provided property references entity, which class_id is not equal to class_id, declared in corresponding property type";
 pub const ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO: &str =
     "Entity removal can`t be completed, as there are some property values pointing to given entity";
 pub const ERROR_ENTITY_INBOUND_SAME_OWNER_RC_DOES_NOT_EQUAL_TO_ZERO: &str =
@@ -73,7 +79,11 @@ pub const ERROR_ENTITY_INBOUND_SAME_OWNER_RC_DOES_NOT_EQUAL_TO_ZERO: &str =
 pub const ERROR_CLASS_PROP_NOT_FOUND: &str = "Class property under given index not found";
 pub const ERROR_CURATOR_GROUP_REMOVAL_FORBIDDEN: &str =
     "Curator group can`t be removed, as it currently maintains at least one class";
-
+pub const ERROR_PROVIDED_ENTITY_CONTROLLER_IS_EQUAL_TO_CURRENT_ONE: &str =
+    "Provided entity controller is equal to the current one";
+pub const ERROR_ALL_PROVIDED_PROPERTY_VALUES_MUST_BE_REFERENCES_WITH_SAME_OWNER_FLAG_SET: &str =
+    "Each property value should be a reference with same owner flag set 
+    (to substitute old ones after entity ownership transfer performed)";
 // Permission errors
 
 pub const ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL: &str =
@@ -100,7 +110,7 @@ pub const ERROR_ENTITY_ADD_SCHEMA_SUPPORT_ACCESS_DENIED: &str =
     "Add entity schema support access denied";
 pub const ERROR_CLASS_ACCESS_DENIED: &str = "Class access denied";
 pub const ERROR_ENTITY_ACCESS_DENIED: &str = "Entity access denied";
-pub const ERROR_ENTITY_CAN_NOT_BE_REFRENCED: &str = "Given entity can`t be referenced";
+pub const ERROR_ENTITY_CAN_NOT_BE_REFERENCED: &str = "Given entity can`t be referenced";
 pub const ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR: &str =
     "Given class property type is locked for updating";
 pub const ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED: &str =
