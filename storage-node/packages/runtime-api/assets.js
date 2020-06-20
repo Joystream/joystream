@@ -37,15 +37,15 @@ class AssetsApi
   /*
    * Create a data object.
    */
-  async createDataObject(accountId, contentId, doTypeId, size)
+  async createDataObject(accountId, memberId, contentId, doTypeId, size, ipfs_cid)
   {
     contentId = parseContentId(contentId)
-    const tx = this.base.api.tx.dataDirectory.addContent(contentId, doTypeId, size);
+    const tx = this.base.api.tx.dataDirectory.addContent(memberId, contentId, doTypeId, size, ipfs_cid);
     await this.base.signAndSend(accountId, tx);
 
     // If the data object constructed properly, we should now be able to return
     // the data object from the state.
-    return await this.getDataObject(contentId);
+    return this.getDataObject(contentId);
   }
 
   /*
@@ -66,7 +66,7 @@ class AssetsApi
    *
    * Each failure errors out, success returns the data object.
    */
-  async checkLiaisonForDataObject(accountId, contentId)
+  async checkLiaisonForDataObject(storageProviderId, contentId)
   {
     contentId = parseContentId(contentId)
 
@@ -77,7 +77,7 @@ class AssetsApi
     }
 
     const encoded = encodeAddress(obj.raw.liaison);
-    if (encoded != accountId) {
+    if (obj.raw.liaison.neq(storageProviderId)) {
       throw new Error(`This storage node is not liaison for the content ID: ${contentId}`);
     }
 
@@ -91,39 +91,39 @@ class AssetsApi
   /*
    * Changes a data object liaison judgement.
    */
-  async acceptContent(accountId, contentId)
+  async acceptContent(providerAccoundId, storageProviderId, contentId)
   {
     contentId = parseContentId(contentId)
-    const tx = this.base.api.tx.dataDirectory.acceptContent(contentId);
-    return await this.base.signAndSend(accountId, tx);
+    const tx = this.base.api.tx.dataDirectory.acceptContent(storageProviderId, contentId);
+    return await this.base.signAndSend(providerAccoundId, tx);
   }
 
   /*
    * Changes a data object liaison judgement.
    */
-  async rejectContent(accountId, contentId)
+  async rejectContent(providerAccountId, storageProviderId, contentId)
   {
     contentId = parseContentId(contentId)
-    const tx = this.base.api.tx.dataDirectory.rejectContent(contentId);
-    return await this.base.signAndSend(accountId, tx);
+    const tx = this.base.api.tx.dataDirectory.rejectContent(storageProviderId, contentId);
+    return await this.base.signAndSend(providerAccountId, tx);
   }
 
   /*
    * Create storage relationship
    */
-  async createStorageRelationship(accountId, contentId, callback)
+  async createStorageRelationship(providerAccountId, storageProviderId, contentId, callback)
   {
     contentId = parseContentId(contentId)
-    const tx = this.base.api.tx.dataObjectStorageRegistry.addRelationship(contentId);
+    const tx = this.base.api.tx.dataObjectStorageRegistry.addRelationship(storageProviderId, contentId);
 
     const subscribed = [['dataObjectStorageRegistry', 'DataObjectStorageRelationshipAdded']];
-    return await this.base.signAndSend(accountId, tx, 3, subscribed, callback);
+    return await this.base.signAndSend(providerAccountId, tx, 3, subscribed, callback);
   }
 
   /*
    * Get storage relationship for contentId
    */
-  async getStorageRelationshipAndId(accountId, contentId) {
+  async getStorageRelationshipAndId(storageProviderId, contentId) {
     contentId = parseContentId(contentId)
     let rids = await this.base.api.query.dataObjectStorageRegistry.relationshipsByContentId(contentId);
 
@@ -131,7 +131,7 @@ class AssetsApi
       const relationshipId = rids.shift();
       let relationship = await this.base.api.query.dataObjectStorageRegistry.relationships(relationshipId);
       relationship = relationship.unwrap();
-      if (relationship.storage_provider.eq(decodeAddress(accountId))) {
+      if (relationship.storage_provider.eq(storageProviderId)) {
         return ({ relationship, relationshipId });
       }
     }
@@ -139,12 +139,12 @@ class AssetsApi
     return {};
   }
 
-  async createAndReturnStorageRelationship(accountId, contentId)
+  async createAndReturnStorageRelationship(providerAccountId, storageProviderId, contentId)
   {
     contentId = parseContentId(contentId)
     return new Promise(async (resolve, reject) => {
       try {
-        await this.createStorageRelationship(accountId, contentId, (events) => {
+        await this.createStorageRelationship(providerAccountId, storageProviderId, contentId, (events) => {
           events.forEach((event) => {
             resolve(event[1].DataObjectStorageRelationshipId);
           });
@@ -158,12 +158,12 @@ class AssetsApi
   /*
    * Toggle ready state for DOSR.
    */
-  async toggleStorageRelationshipReady(accountId, dosrId, ready)
+  async toggleStorageRelationshipReady(providerAccountId, storageProviderId, dosrId, ready)
   {
     var tx = ready
-      ? this.base.api.tx.dataObjectStorageRegistry.setRelationshipReady(dosrId)
-      : this.base.api.tx.dataObjectStorageRegistry.unsetRelationshipReady(dosrId);
-    return await this.base.signAndSend(accountId, tx);
+      ? this.base.api.tx.dataObjectStorageRegistry.setRelationshipReady(storageProviderId, dosrId)
+      : this.base.api.tx.dataObjectStorageRegistry.unsetRelationshipReady(storageProviderId, dosrId);
+    return await this.base.signAndSend(providerAccountId, tx);
   }
 
   async getKnownContentIds() {

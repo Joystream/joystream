@@ -30,9 +30,9 @@ class DiscoveryApi
   /*
    * Get AccountInfo of an accountId
    */
-  async getAccountInfo(accountId) {
+  async getAccountInfo(storageProviderId) {
     const decoded = this.base.identities.keyring.decodeAddress(accountId, true)
-    const info = await this.base.api.query.discovery.accountInfoByAccountId(decoded)
+    const info = await this.base.api.query.discovery.accountInfoByAccountId(storageProviderId)
     // Not an Option so we use default value check to know if info was found
     return info.expires_at.eq(0) ? null : info
   }

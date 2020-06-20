@@ -25,7 +25,7 @@ const { ApiPromise, WsProvider } = require('@polkadot/api');
 
 const { IdentitiesApi } = require('@joystream/runtime-api/identities');
 const { BalancesApi } = require('@joystream/runtime-api/balances');
-const { RolesApi } = require('@joystream/runtime-api/roles');
+const { WrokersApi } = require('@joystream/runtime-api/workers');
 const { AssetsApi } = require('@joystream/runtime-api/assets');
 const { DiscoveryApi } = require('@joystream/runtime-api/discovery');
 const AsyncLock = require('async-lock');
@@ -68,7 +68,7 @@ class RuntimeApi
       canPromptForPassphrase: options.canPromptForPassphrase
     });
     this.balances = await BalancesApi.create(this);
-    this.roles = await RolesApi.create(this);
+    this.workers = await WorkersApi.create(this);
     this.assets = await AssetsApi.create(this);
     this.discovery = await DiscoveryApi.create(this);
   }
@@ -281,7 +281,7 @@ module.exports = {
 }
 
 function newExternallyControlledPromise () {
-  // externally controller promise
+  // externally controlled promise
   let resolve, reject;
   const promise = new Promise((res, rej) => {
     resolve = res;
