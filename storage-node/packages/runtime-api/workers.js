@@ -16,49 +16,52 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-'use strict';
+'use strict'
 
-const debug = require('debug')('joystream:runtime:roles');
-
-const { Null, u64 } = require('@polkadot/types');
-
-const { _ } = require('lodash');
-
+const debug = require('debug')('joystream:runtime:roles')
+const { Null } = require('@polkadot/types')
+const { _ } = require('lodash')
+const { Worker } = require('@joystream/types/working-group')
 /*
  * Add worker related functionality to the substrate API.
  */
-class WorkersApi
-{
-  static async create(base)
-  {
-    const ret = new WorkersApi();
-    ret.base = base;
-    await ret.init();
-    return ret;
+class WorkersApi {
+  static async create (base) {
+    const ret = new WorkersApi()
+    ret.base = base
+    await ret.init()
+    return ret
   }
 
-  async init()
-  {
-    debug('Init');
+  async init () {
+    debug('Init')
   }
-
 
   /*
-   * Check whether the given account and id is an active storage provider
+   * Check whether the given account and id represent an active storage provider
    */
-  async checkForRole(roleAccountId, storageProviderId)
-  {
-    const worker = await this.base.api.query.storageWorkingGroup.workerById(storageProviderId);
-
-    // FIXME: get single linked entry
-
-    if (_.isEqual(worker.raw, new Null())) {
-      return false
-    }
-
-    return worker.raw.role_account == roleAccountId
+  async isRoleAccountOfStorageProvider (storageProviderId, roleAccountId) {
+    const worker = await this.storageWorkerByProviderId(storageProviderId)
+    return worker && worker.role_account.eq(roleAccountId)
   }
 
+  async isStorageProvider (storageProviderId) {
+    const worker = await this.storageWorkerByProviderId(storageProviderId)
+    return worker !== null
+  }
+
+  async storageWorkerByProviderId (storageProviderId) {
+    // FIXME: single linked entry
+    const workerEntry = await this.base.api.query.storageWorkingGroup.workerById(storageProviderId)
+
+    // use .isEmpty instead ?
+    if (_.isEqual(workerEntry.raw, new Null())) {
+      return null
+    }
+
+    // return value
+    return new Worker(workerEntry[0])
+  }
 }
 
 module.exports = {

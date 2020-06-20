@@ -12,9 +12,9 @@ var activeDiscoveries = {};
 var accountInfoCache = {};
 const CACHE_TTL = 60 * 60 * 1000;
 
-async function getIpnsIdentity (actorAccountId, runtimeApi) {
-    // lookup ipns identity from chain corresponding to actorAccountId
-    const info = await runtimeApi.discovery.getAccountInfo(actorAccountId)
+async function getIpnsIdentity (storageProviderId, runtimeApi) {
+    // lookup ipns identity from chain corresponding to storageProviderId
+    const info = await runtimeApi.discovery.getAccountInfo(storageProviderId)
 
     if (info == null) {
         // no identity found on chain for account
@@ -24,8 +24,8 @@ async function getIpnsIdentity (actorAccountId, runtimeApi) {
     }
 }
 
-async function discover_over_ipfs_http_gateway(actorAccountId, runtimeApi, gateway) {
-    let isActor = await runtimeApi.identities.isActor(actorAccountId)
+async function discover_over_ipfs_http_gateway(storageProviderId, runtimeApi, gateway) {
+    let isActor = await runtimeApi.identities.isActor(storageProviderId)
 
     if (!isActor) {
         throw new Error('Cannot discover non actor account service info')

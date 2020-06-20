@@ -138,16 +138,6 @@ class IdentitiesApi
   }
 
   /*
-   * Return true if the account is an actor/role account
-   */
-  // async isActor(accountId) // change to is StorageWorkingGroup worker ?
-  // {
-  //   const decoded = this.keyring.decodeAddress(accountId);
-  //   const actor = await this.base.api.query.actors.actorByAccountId(decoded)
-  //   return actor.isSome
-  // }
-
-  /*
    * Return the member IDs of an account
    */
   async memberIdsOf(accountId)
@@ -165,35 +155,6 @@ class IdentitiesApi
     let ids = await this.base.api.query.members.memberIdsByRootAccountId(decoded);
     return ids[0]
   }
-
-  /*
-   * Create a new key for the given role *name*. If no name is given,
-   * default to 'storage'.
-   */
-  // async createRoleKey(accountId, role)
-  // {
-  //   role = role || 'storage';
-
-  //   // Generate new key pair
-  //   const keyPair = util_crypto.naclKeypairFromRandom();
-
-  //   // Encode to an address.
-  //   const addr = this.keyring.encodeAddress(keyPair.publicKey);
-  //   debug('Generated new key pair with address', addr);
-
-  //   // Add to key wring. We set the meta to identify the account as
-  //   // a role key.
-  //   const meta = {
-  //     name: `${role} role account for ${accountId}`,
-  //   };
-
-  //   const createPair = require('@polkadot/keyring/pair').default;
-  //   const pair = createPair('ed25519', keyPair, meta);
-
-  //   this.keyring.addPair(pair);
-
-  //   return pair;
-  // }
 
   /*
    * Export a key pair to JSON. Will ask for a passphrase.
