@@ -76,7 +76,6 @@ class AssetsApi
       throw new Error(`No DataObject created for content ID: ${contentId}`);
     }
 
-    const encoded = encodeAddress(obj.raw.liaison);
     if (obj.raw.liaison.neq(storageProviderId)) {
       throw new Error(`This storage node is not liaison for the content ID: ${contentId}`);
     }

@@ -19,9 +19,7 @@
 'use strict'
 
 const debug = require('debug')('joystream:runtime:roles')
-const { Null } = require('@polkadot/types')
-const { _ } = require('lodash')
-const { Worker } = require('@joystream/types/lib/working-group')
+const BN = require('bn.js')
 /*
  * Add worker related functionality to the substrate API.
  */
@@ -41,6 +39,8 @@ class WorkersApi {
    * Check whether the given account and id represent an active storage provider
    */
   async isRoleAccountOfStorageProvider (storageProviderId, roleAccountId) {
+    storageProviderId = new BN(storageProviderId)
+    roleAccountId = this.base.identities.keyring.decodeAddress(roleAccountId)
     const worker = await this.storageWorkerByProviderId(storageProviderId)
     return worker && worker.role_account.eq(roleAccountId)
   }
@@ -51,16 +51,24 @@ class WorkersApi {
   }
 
   async storageWorkerByProviderId (storageProviderId) {
-    // FIXME: single linked entry
-    const workerEntry = await this.base.api.query.storageWorkingGroup.workerById(storageProviderId)
+    storageProviderId = new BN(storageProviderId)
+    const nextWorkerId = await this.base.api.query.storageWorkingGroup.nextWorkerId()
 
-    // use .isEmpty instead ?
-    if (_.isEqual(workerEntry.raw, new Null())) {
+    if (storageProviderId.gte(nextWorkerId)) {
       return null
     }
 
-    // return value
-    return new Worker(workerEntry[0])
+    const workerEntry = await this.base.api.query.storageWorkingGroup.workerById(storageProviderId)
+    return workerEntry[0]
+  }
+
+  async storageProviderRoleAccount (storageProviderId) {
+    const worker = await this.storageWorkerByProviderId(storageProviderId)
+    if (worker == null) {
+      throw new Error('Storage Provider Does Not Exist')
+    } else {
+      return worker.role_account
+    }
   }
 }
 
