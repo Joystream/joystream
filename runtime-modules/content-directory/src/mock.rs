@@ -658,6 +658,29 @@ pub fn create_entity(
     TestModule::create_entity(Origin::signed(lead_origin), class_id, actor)
 }
 
+pub fn create_entity_with_default_permissions(class_id: ClassId) -> Entity<Runtime> {
+    Entity::new(
+        EntityController::Lead,
+        class_id,
+        BTreeSet::new(),
+        BTreeMap::new(),
+    )
+}
+
+pub fn update_entity_permissions(
+    lead_origin: u64,
+    entity_id: EntityId,
+    updated_frozen: Option<bool>,
+    updated_referenceable: Option<bool>,
+) -> Result<(), &'static str> {
+    TestModule::update_entity_permissions(
+        Origin::signed(lead_origin),
+        entity_id,
+        updated_frozen,
+        updated_referenceable,
+    )
+}
+
 // Assign back to type variables so we can make dispatched calls of these modules later.
 pub type System = system::Module<Runtime>;
 pub type TestModule = Module<Runtime>;

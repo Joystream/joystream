@@ -1004,7 +1004,7 @@ decl_module! {
         pub fn update_entity_permissions(
             origin,
             entity_id: T::EntityId,
-            updated_frozen_for_controller: Option<bool>,
+            updated_frozen: Option<bool>,
             updated_referenceable: Option<bool>
         ) -> dispatch::Result {
 
@@ -1022,7 +1022,7 @@ decl_module! {
             let entity_permissions = entity.get_permissions();
 
             let updated_entity_permissions =
-                Self::make_updated_entity_permissions(entity_permissions, updated_frozen_for_controller, updated_referenceable);
+                Self::make_updated_entity_permissions(entity_permissions, updated_frozen, updated_referenceable);
 
             // Update entity permissions under given entity id
             if let Some(updated_entity_permissions) = updated_entity_permissions {
@@ -1969,14 +1969,14 @@ impl<T: Trait> Module<T> {
     /// Returns updated `entity_permissions` if update performed
     pub fn make_updated_entity_permissions(
         entity_permissions: EntityPermissions<T>,
-        updated_frozen_for_controller: Option<bool>,
+        updated_frozen: Option<bool>,
         updated_referenceable: Option<bool>,
     ) -> Option<EntityPermissions<T>> {
         // Used to check if update performed
         let mut updated_entity_permissions = entity_permissions.clone();
 
-        if let Some(updated_frozen_for_controller) = updated_frozen_for_controller {
-            updated_entity_permissions.set_frozen(updated_frozen_for_controller);
+        if let Some(updated_frozen) = updated_frozen {
+            updated_entity_permissions.set_frozen(updated_frozen);
         }
 
         if let Some(updated_referenceable) = updated_referenceable {
