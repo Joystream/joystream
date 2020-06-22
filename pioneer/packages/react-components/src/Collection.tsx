@@ -9,6 +9,7 @@ import React from 'react';
 export interface CollectionProps extends I18nProps {
   banner?: React.ReactNode;
   buttons?: React.ReactNode;
+  topButtons?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
   headerText?: React.ReactNode;
@@ -19,7 +20,7 @@ export interface CollectionProps extends I18nProps {
 
 export interface CollectionState {
   isEmpty: boolean;
-  showHeader?: boolean;
+  showFullHeader?: boolean;
 }
 
 export const collectionStyles = `
@@ -32,6 +33,12 @@ export const collectionStyles = `
       flex: 1 1;
       margin: 0;
       text-transform: lowercase;
+    }
+
+    .ui--Collection-buttons {
+      flex: 1;
+      display: flex;
+      justify-content: space-between;
     }
   }
 
@@ -61,11 +68,11 @@ export default class Collection<P extends CollectionProps, S extends CollectionS
 
   public render (): React.ReactNode {
     const { banner, className } = this.props;
-    const { isEmpty, showHeader } = this.state;
+    const { isEmpty } = this.state;
 
     return (
       <div className={className}>
-        {showHeader && this.renderHeader()}
+        {this.renderHeader()}
         {banner}
         {isEmpty
           ? this.renderEmpty()
@@ -76,18 +83,24 @@ export default class Collection<P extends CollectionProps, S extends CollectionS
   }
 
   protected renderHeader (): React.ReactNode {
-    const { buttons, headerText } = this.props;
+    const { buttons, topButtons, headerText } = this.props;
+    const { showFullHeader } = this.state;
 
-    if (!headerText && !buttons) {
+    if (!headerText && !buttons && !topButtons) {
       return null;
     }
 
     return (
       <div className='ui--Collection-header'>
-        <h1>{headerText}</h1>
-        {buttons && (
+        {headerText && <h1>{headerText}</h1>}
+        {(buttons || topButtons) && (
           <div className='ui--Collection-buttons'>
-            {buttons}
+            <div>
+              {topButtons}
+            </div>
+            <div>
+              {showFullHeader && buttons}
+            </div>
           </div>
         )}
       </div>
