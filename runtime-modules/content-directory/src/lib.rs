@@ -1917,30 +1917,42 @@ impl<T: Trait> Module<T> {
             DeltaMode::Increment,
         );
 
-        let reference_counter_side_effects = match (
+        // Add up both net decremental_reference_counter_side_effects and incremental_reference_counter_side_effects
+        // to get one net sideffect per entity.
+        let reference_counter_side_effects = Self::calculate_updated_inbound_rcs_delta(
             decremental_reference_counter_side_effects,
             incremental_reference_counter_side_effects,
-        ) {
-            (
-                Some(decremental_reference_counter_side_effects),
-                Some(incremental_reference_counter_side_effects),
-            ) => {
-                // Add up both net decremental_reference_counter_side_effects and incremental_reference_counter_side_effects
-                // to get one net sideffect per entity.
-                let reference_counter_side_effects = decremental_reference_counter_side_effects
-                    .update(incremental_reference_counter_side_effects);
-                Some(reference_counter_side_effects)
-            }
-            (Some(decremental_reference_counter_side_effects), _) => {
-                Some(decremental_reference_counter_side_effects)
-            }
-            (_, Some(incremental_reference_counter_side_effects)) => {
-                Some(incremental_reference_counter_side_effects)
-            }
-            _ => None,
-        };
+        );
 
         Ok(reference_counter_side_effects)
+    }
+
+    // Add up both net first_reference_counter_side_effects and second_reference_counter_side_effects (if some)
+    // to get one net sideffect per entity.
+    pub fn calculate_updated_inbound_rcs_delta(
+        first_reference_counter_side_effects: Option<ReferenceCounterSideEffects<T>>,
+        second_reference_counter_side_effects: Option<ReferenceCounterSideEffects<T>>,
+    ) -> Option<ReferenceCounterSideEffects<T>> {
+        match (
+            first_reference_counter_side_effects,
+            second_reference_counter_side_effects,
+        ) {
+            (
+                Some(first_reference_counter_side_effects),
+                Some(second_reference_counter_side_effects),
+            ) => {
+                let reference_counter_side_effects = first_reference_counter_side_effects
+                    .update(second_reference_counter_side_effects);
+                Some(reference_counter_side_effects)
+            }
+            (Some(first_reference_counter_side_effects), _) => {
+                Some(first_reference_counter_side_effects)
+            }
+            (_, Some(second_reference_counter_side_effects)) => {
+                Some(second_reference_counter_side_effects)
+            }
+            _ => None,
+        }
     }
 
     /// Used to update `class_permissions` with parameters provided.
