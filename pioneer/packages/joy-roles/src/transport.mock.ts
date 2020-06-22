@@ -212,6 +212,7 @@ export class Transport extends TransportBase implements ITransport {
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async groupOpening (group: WorkingGroups, id: number): Promise<WorkingGroupOpening> {
     return this.simulateApiResponse<WorkingGroupOpening>(
       {
@@ -418,6 +419,7 @@ export class Transport extends TransportBase implements ITransport {
     }];
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async myRoles (address: string): Promise<ActiveRole[]> {
     return [
       {

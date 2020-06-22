@@ -684,7 +684,7 @@ export class Transport extends TransportBase implements ITransport {
         .toArray()
         // We need to associate worker ids with workers BEFORE filtering the array
         .map((worker, index) => ({ worker, id: workers.linked_keys[index] }))
-        .filter(({worker}) => worker.role_account.eq(roleKeyId) && worker.is_active)
+        .filter(({ worker }) => worker.role_account.eq(roleKeyId) && worker.is_active)
         .map(async workerWithId => {
           const { worker, id } = workerWithId;
 
@@ -710,9 +710,9 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   // All groups roles by key
-  async myRoles(roleKey: string): Promise<ActiveRole[]> {
+  async myRoles (roleKey: string): Promise<ActiveRole[]> {
     let roles: ActiveRole[] = [];
-    for (let group of AvailableGroups) {
+    for (const group of AvailableGroups) {
       roles = roles.concat(await this.myRolesByGroup(group, roleKey));
     }
 

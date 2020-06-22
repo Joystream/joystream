@@ -1,4 +1,4 @@
-import { WorkingGroups } from "./working_groups"
+import { WorkingGroups } from './working_groups';
 
 export type OpeningMetadata = {
   id: string;
