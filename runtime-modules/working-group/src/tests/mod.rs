@@ -1187,6 +1187,11 @@ fn terminate_worker_role_succeeds_with_stakes() {
             total_balance - stake_balance
         );
 
+        let stake_id = 0;
+        let old_stake = <stake::Module<Test>>::stakes(stake_id);
+
+        assert_eq!(get_stake_balance(old_stake), stake_balance);
+
         let terminate_worker_role_fixture =
             TerminateWorkerRoleFixture::default_for_worker_id(worker_id);
 
@@ -1195,6 +1200,16 @@ fn terminate_worker_role_succeeds_with_stakes() {
         EventFixture::assert_last_crate_event(RawEvent::TerminatedWorker(
             worker_id,
             b"rationale_text".to_vec(),
+        ));
+
+        // Balance was restored.
+
+        assert_eq!(get_balance(worker_account_id), total_balance);
+
+        let new_stake = <stake::Module<Test>>::stakes(stake_id);
+        assert!(matches!(
+            new_stake.staking_status,
+            stake::StakingStatus::NotStaked
         ));
     });
 }

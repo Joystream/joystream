@@ -56,8 +56,8 @@ use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 use rstd::vec::Vec;
 use sr_primitives::traits::{Bounded, One, Zero};
-use srml_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
-use srml_support::{decl_event, decl_module, decl_storage, ensure};
+use srml_support::traits::{Currency, ExistenceRequirement, Imbalance, WithdrawReasons};
+use srml_support::{decl_event, decl_module, decl_storage, ensure, print};
 use system::{ensure_root, ensure_signed};
 
 use crate::types::ExitInitiationOrigin;
@@ -109,6 +109,9 @@ pub type ApplicationIdToWorkerIdMap<T> = BTreeMap<ApplicationId<T>, WorkerId<T>>
 /// Type identifier for worker role, which must be same as membership actor identifier
 pub type WorkerId<T> = <T as membership::members::Trait>::ActorId;
 
+/// Alias for the application id from the hiring module.
+pub type HiringApplicationId<T> = <T as hiring::Trait>::ApplicationId;
+
 // Type simplification
 type OpeningInfo<T> = (
     Opening<
@@ -117,21 +120,12 @@ type OpeningInfo<T> = (
         BalanceOf<T>,
         ApplicationId<T>,
     >,
-    hiring::Opening<
-        BalanceOf<T>,
-        <T as system::Trait>::BlockNumber,
-        <T as hiring::Trait>::ApplicationId,
-    >,
+    hiring::Opening<BalanceOf<T>, <T as system::Trait>::BlockNumber, HiringApplicationId<T>>,
 );
 
 // Type simplification
 type ApplicationInfo<T> = (
-    Application<
-        <T as system::Trait>::AccountId,
-        OpeningId<T>,
-        MemberId<T>,
-        <T as hiring::Trait>::ApplicationId,
-    >,
+    Application<<T as system::Trait>::AccountId, OpeningId<T>, MemberId<T>, HiringApplicationId<T>>,
     ApplicationId<T>,
     Opening<
         <T as hiring::Trait>::OpeningId,
@@ -320,6 +314,11 @@ decl_storage! {
 
         /// Worker exit rationale text length limits.
         pub WorkerExitRationaleText get(worker_exit_rationale_text) : InputValidationLengthConstraint;
+
+        /// Map member id by hiring application id.
+        /// Required by StakingEventsHandler callback call to refund the balance on unstaking.
+        pub MemberIdByHiringApplicationId get(fn member_id_by_hiring_application_id):
+            map HiringApplicationId<T> =>  MemberId<T>;
     }
         add_extra_genesis {
         config(phantom): rstd::marker::PhantomData<I>;
@@ -628,23 +627,25 @@ decl_module! {
             let opt_application_stake_imbalance = Self::make_stake_opt_imbalance(&opt_application_stake_balance, &source_account);
 
             // Call hiring module to add application
-            let add_application_result = hiring::Module::<T>::add_application(
-                opening.opening_id,
-                opt_role_stake_imbalance,
-                opt_application_stake_imbalance,
-                human_readable_text
-            );
+            let add_application = ensure_on_wrapped_error!(
+                    hiring::Module::<T>::add_application(
+                    opening.opening_id,
+                    opt_role_stake_imbalance,
+                    opt_application_stake_imbalance,
+                    human_readable_text
+                )
+            )?;
 
-            // Has to hold
-            assert!(add_application_result.is_ok());
+            let hiring_application_id = add_application.application_id_added;
 
-            let application_id = add_application_result.unwrap().application_id_added;
+            // Save member id to refund the stakes. This piece of date should outlive the 'worker'.
+            <MemberIdByHiringApplicationId<T, I>>::insert(hiring_application_id, member_id);
 
             // Get id of new worker/lead application
             let new_application_id = NextApplicationId::<T, I>::get();
 
             // Make worker/lead application
-            let application = Application::new(&role_account, &opening_id, &member_id, &application_id);
+            let application = Application::new(&role_account, &opening_id, &member_id, &hiring_application_id);
 
             // Store application
             ApplicationById::<T, I>::insert(new_application_id, application);
@@ -1250,6 +1251,44 @@ pub fn default_text_constraint() -> InputValidationLengthConstraint {
 }
 
 impl<T: Trait<I>, I: Instance> Module<T, I> {
+    /// Callback from StakingEventsHandler. Refunds unstaked imbalance back to the source account.
+    pub fn refund_working_group_stake(
+        stake_id: StakeId<T>,
+        imbalance: NegativeImbalance<T>,
+    ) -> NegativeImbalance<T> {
+        if !hiring::ApplicationIdByStakingId::<T>::exists(stake_id) {
+            print("Working group broken invariant: no stake id in the hiring module.");
+            return imbalance;
+        }
+
+        let hiring_application_id = hiring::ApplicationIdByStakingId::<T>::get(stake_id);
+
+        if !MemberIdByHiringApplicationId::<T, I>::exists(hiring_application_id) {
+            // Stake is not related to the working group module.
+            return imbalance;
+        }
+
+        let member_id = Module::<T, I>::member_id_by_hiring_application_id(hiring_application_id);
+
+        if let Some(member_profile) = membership::members::MemberProfile::<T>::get(member_id) {
+            let refunding_result = CurrencyOf::<T>::resolve_into_existing(
+                &member_profile.controller_account,
+                imbalance,
+            );
+
+            if refunding_result.is_err() {
+                print("Working group broken invariant: cannot refund.");
+                // cannot return imbalance here, because of possible double spending.
+                return <NegativeImbalance<T>>::zero();
+            }
+        } else {
+            print("Working group broken invariant: no member profile.");
+            return imbalance;
+        }
+
+        <NegativeImbalance<T>>::zero()
+    }
+
     /// Checks that provided lead account id belongs to the current working group leader
     pub fn ensure_is_lead_account(lead_account_id: T::AccountId) -> Result<(), Error> {
         let lead = <CurrentLead<T, I>>::get();

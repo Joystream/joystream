@@ -1,4 +1,4 @@
-use crate::{Module, Trait};
+use crate::{BalanceOf, Module, NegativeImbalance, Trait};
 use common::constraints::InputValidationLengthConstraint;
 use primitives::H256;
 use sr_primitives::{
@@ -6,7 +6,10 @@ use sr_primitives::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use srml_support::{
+    impl_outer_event, impl_outer_origin, parameter_types, StorageLinkedMap, StorageMap,
+};
+use std::marker::PhantomData;
 
 impl_outer_origin! {
         pub enum Origin for Test {}
@@ -79,7 +82,7 @@ impl minting::Trait for Test {
 impl stake::Trait for Test {
     type Currency = Balances;
     type StakePoolId = StakePoolId;
-    type StakingEventsHandler = ();
+    type StakingEventsHandler = StakingEventsHandler<Test>;
     type StakeId = u64;
     type SlashId = u64;
 }
@@ -162,4 +165,48 @@ pub fn build_test_externalities() -> runtime_io::TestExternalities {
     .unwrap();
 
     t.into()
+}
+
+pub struct StakingEventsHandler<T> {
+    pub marker: PhantomData<T>,
+}
+
+impl<T: stake::Trait + crate::Trait<TestWorkingGroupInstance>> stake::StakingEventsHandler<T>
+    for StakingEventsHandler<T>
+{
+    /// Unstake remaining sum back to the source_account_id
+    fn unstaked(
+        stake_id: &<T as stake::Trait>::StakeId,
+        _unstaked_amount: BalanceOf<T>,
+        remaining_imbalance: NegativeImbalance<T>,
+    ) -> NegativeImbalance<T> {
+        // Stake not related to a staked role managed by the hiring module.
+        if !hiring::ApplicationIdByStakingId::<T>::exists(*stake_id) {
+            return remaining_imbalance;
+        }
+
+        let hiring_application_id = hiring::ApplicationIdByStakingId::<T>::get(*stake_id);
+
+        if crate::MemberIdByHiringApplicationId::<T, TestWorkingGroupInstance>::exists(
+            hiring_application_id,
+        ) {
+            return <crate::Module<T, TestWorkingGroupInstance>>::refund_working_group_stake(
+                *stake_id,
+                remaining_imbalance,
+            );
+        }
+
+        remaining_imbalance
+    }
+
+    /// Empty handler for slashing
+    fn slashed(
+        _: &<T as stake::Trait>::StakeId,
+        _: Option<<T as stake::Trait>::SlashId>,
+        _: BalanceOf<T>,
+        _: BalanceOf<T>,
+        remaining_imbalance: NegativeImbalance<T>,
+    ) -> NegativeImbalance<T> {
+        remaining_imbalance
+    }
 }
