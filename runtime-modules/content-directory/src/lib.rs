@@ -1594,7 +1594,7 @@ decl_module! {
                 let rc_delta = EntityReferenceCounterSideEffect::atomic(same_controller_status, DeltaMode::Decrement);
 
                 // Update InboundReferenceCounter of involved entity, based on previously calculated rc_delta
-                Self::update_entity_rc(&involved_entity_id, &rc_delta);
+                Self::update_entity_rc(involved_entity_id, rc_delta);
                 Some((involved_entity_id, rc_delta))
             } else {
                 None
@@ -1678,7 +1678,7 @@ decl_module! {
                 let rc_delta = EntityReferenceCounterSideEffect::atomic(same_controller_status, DeltaMode::Increment);
 
                 // Update InboundReferenceCounter of involved entity, based on previously calculated ReferenceCounterSideEffect
-                Self::update_entity_rc(&entity_rc_to_increment, &rc_delta);
+                Self::update_entity_rc(entity_rc_to_increment, rc_delta);
                 Some((entity_rc_to_increment, rc_delta))
             } else {
                 None
@@ -1770,8 +1770,8 @@ decl_module! {
 impl<T: Trait> Module<T> {
     /// Updates corresponding `Entity` `reference_counter` by `reference_counter_delta`.
     fn update_entity_rc(
-        entity_id: &T::EntityId,
-        reference_counter_delta: &EntityReferenceCounterSideEffect,
+        entity_id: T::EntityId,
+        reference_counter_delta: EntityReferenceCounterSideEffect,
     ) {
         // Update both `total` and `same owner` number of inbound references for the Entity instance under given `entity_id`
         <EntityById<T>>::mutate(entity_id, |entity| {

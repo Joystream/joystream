@@ -223,7 +223,7 @@ impl<T: Trait> ReferenceCounterSideEffects<T> {
     pub fn update_entities_rcs(&self) {
         self.iter()
             .for_each(|(entity_id, inbound_reference_counter_delta)| {
-                Module::<T>::update_entity_rc(entity_id, inbound_reference_counter_delta);
+                Module::<T>::update_entity_rc(*entity_id, *inbound_reference_counter_delta);
             });
     }
 }
