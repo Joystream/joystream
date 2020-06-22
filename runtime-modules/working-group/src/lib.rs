@@ -41,9 +41,6 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
-// TODO: slash_stake for a leader
-// TODO: decrease_stake for a leader
-// TODO: increase_stake for a leader
 // TODO: comments
 
 #[cfg(test)]
@@ -423,8 +420,8 @@ decl_module! {
             worker_id: WorkerId<T>,
             new_amount: BalanceOfMint<T>
         ) {
-            // Ensure lead is set and is origin signer
-            Self::ensure_origin_is_active_leader(origin)?;
+            // Ensure lead is set and is origin signer or it is the council.
+            Self::ensure_origin_for_leader(origin, worker_id)?;
 
             // Ensuring worker actually exists
             let worker = Self::ensure_worker_exists(&worker_id)?;
@@ -959,7 +956,8 @@ decl_module! {
         /// Decreases the worker/lead stake and returns the remainder to the worker role_account,
         /// demands a leader origin. Can be decreased to zero, no actions on zero stake.
         pub fn decrease_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
-            Self::ensure_origin_is_active_leader(origin)?;
+            // Ensure lead is set or it is the council terminating the leader.
+            Self::ensure_origin_for_leader(origin, worker_id)?;
 
             let worker = Self::ensure_worker_exists(&worker_id)?;
 

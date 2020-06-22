@@ -165,7 +165,7 @@ impl UpdateWorkerRewardAmountFixture {
     pub fn default_for_worker_id(worker_id: u64) -> Self {
         Self {
             worker_id,
-            amount: 100,
+            amount: 120,
             origin: RawOrigin::Signed(1),
         }
     }
@@ -174,14 +174,22 @@ impl UpdateWorkerRewardAmountFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
-        assert_eq!(
-            TestWorkingGroup::update_reward_amount(
-                self.origin.clone().into(),
-                self.worker_id,
-                self.amount
-            ),
-            expected_result
+        let actual_result = TestWorkingGroup::update_reward_amount(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.amount,
         );
+
+        assert_eq!(actual_result.clone(), expected_result);
+
+        if actual_result.is_ok() {
+            let worker = TestWorkingGroup::worker_by_id(self.worker_id);
+            let relationship_id = worker.reward_relationship.unwrap();
+
+            let relationship = recurringrewards::RewardRelationships::<Test>::get(relationship_id);
+
+            assert_eq!(relationship.amount_per_payout, self.amount);
+        }
     }
 }
 pub struct UpdateWorkerRewardAccountFixture {
@@ -203,14 +211,22 @@ impl UpdateWorkerRewardAccountFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
-        assert_eq!(
-            TestWorkingGroup::update_reward_account(
-                self.origin.clone().into(),
-                self.worker_id,
-                self.new_reward_account_id
-            ),
-            expected_result
+        let actual_result = TestWorkingGroup::update_reward_account(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.new_reward_account_id,
         );
+
+        assert_eq!(actual_result.clone(), expected_result);
+
+        if actual_result.is_ok() {
+            let worker = TestWorkingGroup::worker_by_id(self.worker_id);
+            let relationship_id = worker.reward_relationship.unwrap();
+
+            let relationship = recurringrewards::RewardRelationships::<Test>::get(relationship_id);
+
+            assert_eq!(relationship.account, self.new_reward_account_id);
+        }
     }
 }
 
@@ -611,20 +627,37 @@ impl SetLeadFixture {
 
 pub struct HireLeadFixture {
     setup_environment: bool,
+    stake: Option<u64>,
+    reward_policy: Option<RewardPolicy<u64, u64>>,
 }
 
 impl Default for HireLeadFixture {
     fn default() -> Self {
         Self {
             setup_environment: true,
+            stake: None,
+            reward_policy: None,
         }
     }
 }
 impl HireLeadFixture {
+    pub fn with_stake(self, stake: u64) -> Self {
+        Self {
+            stake: Some(stake),
+            ..self
+        }
+    }
+    pub fn with_reward_policy(self, reward_policy: RewardPolicy<u64, u64>) -> Self {
+        Self {
+            reward_policy: Some(reward_policy),
+            ..self
+        }
+    }
+
     pub fn hire_lead(self) -> u64 {
         fill_worker_position(
-            None,
-            None,
+            self.reward_policy,
+            self.stake,
             self.setup_environment,
             OpeningType::Leader,
             Some(b"leader".to_vec()),

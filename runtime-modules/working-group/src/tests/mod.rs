@@ -411,7 +411,7 @@ fn withdraw_worker_application_fails_invalid_origin() {
         let withdraw_application_fixture =
             WithdrawApplicationFixture::default_for_application_id(application_id)
                 .with_origin(RawOrigin::None);
-        withdraw_application_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
+        withdraw_application_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
     });
 }
 
@@ -515,7 +515,7 @@ fn terminate_worker_application_fails_invalid_origin() {
         let terminate_application_fixture =
             TerminateApplicationFixture::default_for_application_id(application_id)
                 .with_origin(RawOrigin::None);
-        terminate_application_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
+        terminate_application_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
     });
 }
 
@@ -642,8 +642,7 @@ fn begin_review_worker_applications_fails_with_invalid_origin() {
         let begin_review_worker_applications_fixture =
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id)
                 .with_origin(RawOrigin::None);
-        begin_review_worker_applications_fixture
-            .call_and_assert(Err(Error::Other("RequireSignedOrigin")));
+        begin_review_worker_applications_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
     });
 }
 
@@ -752,7 +751,7 @@ fn fill_worker_opening_fails_with_invalid_origin() {
         let fill_worker_opening_fixture =
             FillWorkerOpeningFixture::default_for_ids(opening_id, Vec::new())
                 .with_origin(RawOrigin::None);
-        fill_worker_opening_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
+        fill_worker_opening_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
     });
 }
 
@@ -920,7 +919,7 @@ fn update_worker_reward_account_succeeds() {
     build_test_externalities().execute_with(|| {
         let worker_id = fill_default_worker_position();
 
-        let new_role_account = 2;
+        let new_role_account = 22;
         let update_worker_account_fixture =
             UpdateWorkerRewardAccountFixture::default_with_ids(worker_id, new_role_account);
 
@@ -934,12 +933,31 @@ fn update_worker_reward_account_succeeds() {
 }
 
 #[test]
+fn update_worker_reward_account_succeeds_for_leader() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = HireLeadFixture::default()
+            .with_reward_policy(RewardPolicy {
+                amount_per_payout: 1000,
+                next_payment_at_block: 20,
+                payout_interval: None,
+            })
+            .hire_lead();
+
+        let new_reward_account = 22;
+        let update_worker_account_fixture =
+            UpdateWorkerRewardAccountFixture::default_with_ids(worker_id, new_reward_account);
+
+        update_worker_account_fixture.call_and_assert(Ok(()));
+    });
+}
+
+#[test]
 fn update_worker_reward_account_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
         let update_worker_account_fixture =
             UpdateWorkerRewardAccountFixture::default_with_ids(1, 1).with_origin(RawOrigin::None);
 
-        update_worker_account_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
+        update_worker_account_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
     });
 }
 
@@ -1003,12 +1021,49 @@ fn update_worker_reward_amount_succeeds() {
 }
 
 #[test]
+fn update_worker_reward_amount_succeeds_for_leader() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = HireLeadFixture::default()
+            .with_reward_policy(RewardPolicy {
+                amount_per_payout: 1000,
+                next_payment_at_block: 20,
+                payout_interval: None,
+            })
+            .hire_lead();
+
+        let update_worker_amount_fixture =
+            UpdateWorkerRewardAmountFixture::default_for_worker_id(worker_id)
+                .with_origin(RawOrigin::Root);
+
+        update_worker_amount_fixture.call_and_assert(Ok(()));
+    });
+}
+
+#[test]
 fn update_worker_reward_amount_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
-        let update_worker_amount_fixture =
-            UpdateWorkerRewardAmountFixture::default_for_worker_id(1).with_origin(RawOrigin::None);
+        HireLeadFixture::default().hire_lead();
 
-        update_worker_amount_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
+        let worker_id = 22; // random worker id
+
+        let update_worker_amount_fixture =
+            UpdateWorkerRewardAmountFixture::default_for_worker_id(worker_id)
+                .with_origin(RawOrigin::None);
+
+        update_worker_amount_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
+    });
+}
+
+#[test]
+fn update_worker_reward_amount_fails_with_invalid_origin_for_leader() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = HireLeadFixture::default().hire_lead();
+
+        let update_worker_amount_fixture =
+            UpdateWorkerRewardAmountFixture::default_for_worker_id(worker_id)
+                .with_origin(RawOrigin::None);
+
+        update_worker_amount_fixture.call_and_assert(Err(Error::RequireRootOrigin));
     });
 }
 
@@ -1028,7 +1083,7 @@ fn update_worker_reward_amount_fails_with_invalid_origin_signed_account() {
 #[test]
 fn update_worker_reward_amount_fails_with_invalid_worker_id() {
     build_test_externalities().execute_with(|| {
-        let invalid_worker_id = 1;
+        let invalid_worker_id = 12;
         fill_default_worker_position();
 
         let update_worker_amount_fixture =
@@ -1143,7 +1198,7 @@ fn leave_worker_role_fails_with_invalid_origin() {
         let leave_worker_role_fixture =
             LeaveWorkerRoleFixture::default_for_worker_id(1).with_origin(RawOrigin::None);
 
-        leave_worker_role_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
+        leave_worker_role_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
     });
 }
 
@@ -1415,7 +1470,7 @@ fn terminate_worker_role_fails_with_invalid_origin() {
             TerminateWorkerRoleFixture::default_for_worker_id(worker_id)
                 .with_origin(RawOrigin::None);
 
-        terminate_worker_role_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
+        terminate_worker_role_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
     });
 }
 
@@ -1446,13 +1501,24 @@ fn increase_worker_stake_succeeds() {
 }
 
 #[test]
+fn increase_worker_stake_succeeds_for_leader() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = HireLeadFixture::default().with_stake(100).hire_lead();
+
+        let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id);
+
+        increase_stake_fixture.call_and_assert(Ok(()));
+    });
+}
+
+#[test]
 fn increase_worker_stake_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
         let worker_id = 0;
         let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id)
             .with_origin(RawOrigin::None);
 
-        increase_stake_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
+        increase_stake_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
     });
 }
 
@@ -1518,13 +1584,38 @@ fn decrease_worker_stake_succeeds() {
 }
 
 #[test]
+fn decrease_worker_stake_succeeds_for_leader() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = HireLeadFixture::default().with_stake(100).hire_lead();
+
+        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_origin(RawOrigin::Root);
+
+        decrease_stake_fixture.call_and_assert(Ok(()));
+    });
+}
+
+#[test]
 fn decrease_worker_stake_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
-        let worker_id = 0;
+        HireLeadFixture::default().hire_lead();
+
+        let worker_id = 22; // random worker id
         let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
             .with_origin(RawOrigin::None);
 
-        decrease_stake_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
+        decrease_stake_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
+    });
+}
+
+#[test]
+fn decrease_worker_stake_fails_with_invalid_origin_for_leader() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = HireLeadFixture::default().hire_lead();
+        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_origin(RawOrigin::None);
+
+        decrease_stake_fixture.call_and_assert(Err(Error::RequireRootOrigin));
     });
 }
 
@@ -1629,7 +1720,7 @@ fn slash_worker_stake_fails_with_invalid_origin() {
         let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id)
             .with_origin(RawOrigin::None);
 
-        slash_stake_fixture.call_and_assert(Err(Error::Other("RequireSignedOrigin")));
+        slash_stake_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
     });
 }
 
