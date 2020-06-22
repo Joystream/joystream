@@ -1490,27 +1490,10 @@ decl_module! {
             //
 
             // Decrease reference counters of involved entities (if some)
-            let entities_inbound_rcs_delta = if let Some(entity_ids_to_decrease_rcs) =
-                property_value_vector.get_vec_value().get_involved_entities() {
+            let entities_inbound_rcs_delta = Self::make_side_effects_for_clear_property_vector_operation(&property_value_vector, property);
 
-                    // Calculate `ReferenceCounterSideEffects`, based on entity_ids involved, same_controller_status and chosen `DeltaMode`
-                    let same_controller_status = property.property_type.same_controller_status();
-                    let entities_inbound_rcs_delta = Self::perform_entities_inbound_rcs_delta_calculation(
-                        ReferenceCounterSideEffects::<T>::default(), entity_ids_to_decrease_rcs,
-                        same_controller_status, DeltaMode::Decrement
-                    );
-
-                    // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
-                    if !entities_inbound_rcs_delta.is_empty() {
-
-                        entities_inbound_rcs_delta.update_entities_rcs();
-                        Some(entities_inbound_rcs_delta)
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                };
+            // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
+            Self::update_entities_rcs(&entities_inbound_rcs_delta);
 
             // Clear property_value_vector.
             let empty_property_value_vector = Self::clear_property_vector(property_value_vector);
@@ -1811,6 +1794,36 @@ impl<T: Trait> Module<T> {
             .into_iter()
             .chain(non_required_property_values.into_iter())
             .collect()
+    }
+
+    /// Calculate side effects for clear_property_vector operation, based on `property_value_vector` provided and its respective `property`.
+    /// Returns calculated `ReferenceCounterSideEffects`
+    pub fn make_side_effects_for_clear_property_vector_operation(
+        property_value_vector: &VecPropertyValue<T>,
+        property: Property<T>,
+    ) -> Option<ReferenceCounterSideEffects<T>> {
+        if let Some(entity_ids_to_decrease_rcs) = property_value_vector
+            .get_vec_value()
+            .get_involved_entities()
+        {
+            // Calculate `ReferenceCounterSideEffects`, based on entity_ids involved, same_controller_status and chosen `DeltaMode`
+            let same_controller_status = property.property_type.same_controller_status();
+            let entities_inbound_rcs_delta = Self::perform_entities_inbound_rcs_delta_calculation(
+                ReferenceCounterSideEffects::<T>::default(),
+                entity_ids_to_decrease_rcs,
+                same_controller_status,
+                DeltaMode::Decrement,
+            );
+
+            // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
+            if !entities_inbound_rcs_delta.is_empty() {
+                Some(entities_inbound_rcs_delta)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 
     /// Update `inbound_rcs_delta`, based on `involved_entity_ids`, `same_controller_status` provided and chosen `DeltaMode`
