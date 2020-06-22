@@ -11,6 +11,8 @@ import { WarthogModel, Field, ObjectType } from '../model';
 import Debug from 'debug';
 import { ENTITY_DIRECTIVE, UNIQUE_DIRECTIVE } from './constant';
 import { FTSDirective, FULL_TEXT_SEARCHABLE_DIRECTIVE } from './FTSDirective';
+import * as DerivedFrom from './DerivedFromDirective';
+import { RelationshipGenerator } from '../generate/RelationshipGenerator';
 
 const debug = Debug('qnode-cli:model-generator');
 
@@ -141,57 +143,11 @@ export class WarthogModelBuilder {
       }
       field.description = fieldNode.description?.value;
       field.unique = this.isUnique(fieldNode);
+      DerivedFrom.addDerivedFromIfy(fieldNode, field);
       return field;
     });
     debug(`Read and parsed fields: ${JSON.stringify(fields, null, 2)}`);
     return fields;
-  }
-
-  /**
-   * Add SQL OneToOne and ManyToOne relationship to object types if there is
-   */
-  generateSQLRelationships(): void {
-    const additionalFields: { [key: string]: string | Field }[] = [];
-
-    this._model.types.forEach(({ name, fields, relatedEntityImports }) => {
-      for (const field of fields) {
-        // OneToOne  field
-        if (!field.isBuildinType && !field.isList) {
-          const relatedObject = this._model.lookupType(field.type);
-          const relatedField = relatedObject.fields.find(f => f.type === name);
-
-          if (relatedField) {
-            field.relation = { type: 'oto', columnType: field.type, joinColumn: true };
-            relatedEntityImports.add(relatedObject.name);
-
-            // Other side of the relation
-            relatedField.relation = { type: 'oto', columnType: relatedField.type };
-            relatedObject.relatedEntityImports.add(name);
-          }
-        }
-
-        if (!field.isBuildinType && field.isList) {
-          const typeName = field.type;
-          field.name = field.type.toLowerCase().concat('s');
-          field.type = 'otm'; // OneToMany
-
-          const newField = new Field(field.type, field.type);
-          newField.isBuildinType = false;
-          newField.nullable = false;
-          newField.type = 'mto'; // ManyToOne
-          newField.name = name.toLowerCase();
-          additionalFields.push({ field: newField, name: typeName });
-        }
-      }
-    });
-
-    for (const objType of this._model.types) {
-      for (const field of additionalFields) {
-        if (objType.name === field.name) {
-          objType.fields.push(field.field as Field);
-        }
-      }
-    }
   }
 
   private generateInterfaces() {
@@ -233,8 +189,10 @@ export class WarthogModelBuilder {
     this.generateEnums();
     this.generateInterfaces();
     this.generateObjectTypes();
-    this.generateSQLRelationships();
     this.genereateQueries();
+
+    DerivedFrom.validateDerivedFields(this._model); // Call it before generateSQLRelationships()
+    new RelationshipGenerator(this._model).generate();
 
     return this._model;
   }
