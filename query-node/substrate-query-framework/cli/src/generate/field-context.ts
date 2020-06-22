@@ -166,3 +166,15 @@ export function withImport(f: Field): GeneratorContext {
     ...withRelativePathForEnum(),
   };
 }
+
+export function withEntityRelationImports(entity: ObjectType): GeneratorContext {
+  return {
+    relatedEntityImports: entity.relatedEntityImports,
+  };
+}
+
+export function withRelation(f: Field): GeneratorContext {
+  return {
+    relation: f.relation,
+  };
+}
