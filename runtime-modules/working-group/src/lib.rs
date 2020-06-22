@@ -41,9 +41,9 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
-// TODO: terminate role - add 'include slashing' parameter.
 // TODO: leave role - unset lead on success when the leader is leaving.
 // TODO: check all that a leader can set only its own parameters as a worker.
+// TODO: coments
 
 #[cfg(test)]
 mod tests;
@@ -1372,6 +1372,15 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             ))?;
         }
 
+        // Unset lead if the leader is leaving.
+        let lead = <CurrentLead<T, I>>::get();
+        if let Some(lead) = lead {
+            if lead.worker_id == *worker_id {
+                Self::unset_lead();
+            }
+        }
+
+        // Remove the worker from the storage.
         WorkerById::<T, I>::remove(worker_id);
 
         // Trigger the event
@@ -1386,10 +1395,6 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                 RawEvent::TerminatedLeader(*worker_id, rationale_text.to_vec())
             }
         };
-
-        if matches!(exit_initiation_origin, ExitInitiationOrigin::Sudo) {
-            Self::unset_lead();
-        }
 
         Self::deposit_event(event);
 

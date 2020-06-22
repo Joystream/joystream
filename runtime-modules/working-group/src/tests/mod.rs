@@ -1092,6 +1092,23 @@ fn leave_worker_role_succeeds() {
 }
 
 #[test]
+fn leave_worker_role_by_leader_succeeds() {
+    build_test_externalities().execute_with(|| {
+        // Ensure that lead is default
+        assert_eq!(TestWorkingGroup::current_lead(), None);
+        let worker_id = HireLeadFixture::default().hire_lead();
+
+        assert!(TestWorkingGroup::current_lead().is_some());
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
+
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        assert_eq!(TestWorkingGroup::current_lead(), None);
+    });
+}
+
+#[test]
 fn leave_worker_role_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
         let leave_worker_role_fixture =
