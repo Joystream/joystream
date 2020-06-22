@@ -128,12 +128,13 @@ type OpeningInfo<T> = (
 type ApplicationInfo<T> = (
     Application<<T as system::Trait>::AccountId, OpeningId<T>, MemberId<T>, HiringApplicationId<T>>,
     ApplicationId<T>,
-    Opening<
-        <T as hiring::Trait>::OpeningId,
-        <T as system::Trait>::BlockNumber,
-        BalanceOf<T>,
-        ApplicationId<T>,
-    >,
+    OpeningOf<T>,
+);
+
+// Type simplification
+type RewardSettings<T> = (
+    <T as minting::Trait>::MintId,
+    RewardPolicy<BalanceOfMint<T>, <T as system::Trait>::BlockNumber>,
 );
 
 // Type simplification
@@ -143,6 +144,14 @@ type WorkerOf<T> = Worker<
     <T as stake::Trait>::StakeId,
     <T as system::Trait>::BlockNumber,
     MemberId<T>,
+>;
+
+// Type simplification
+type OpeningOf<T> = Opening<
+    <T as hiring::Trait>::OpeningId,
+    <T as system::Trait>::BlockNumber,
+    BalanceOf<T>,
+    ApplicationId<T>,
 >;
 
 /// The _Working group_ main _Trait_
@@ -293,7 +302,7 @@ decl_storage! {
         pub NextOpeningId get(next_opening_id): OpeningId<T>;
 
         /// Maps identifier to worker opening.
-        pub OpeningById get(opening_by_id): linked_map OpeningId<T> => Opening<T::OpeningId, T::BlockNumber, BalanceOf<T>, ApplicationId<T>>;
+        pub OpeningById get(opening_by_id): linked_map OpeningId<T> => OpeningOf<T>;
 
         /// Opening human readable text length limits
         pub OpeningHumanReadableText get(opening_human_readable_text): InputValidationLengthConstraint;
@@ -854,79 +863,12 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let mut application_id_to_worker_id = BTreeMap::new();
-
-            successful_iter
-            .clone()
-            .for_each(|(successful_application, id, _)| {
-                // Create a reward relationship.
-                let reward_relationship = if let Some((mint_id, checked_policy)) = create_reward_settings.clone() {
-
-                    // Create a new recipient for the new relationship.
-                    let recipient = <recurringrewards::Module<T>>::add_recipient();
-
-                    // Member must exist, since it was checked that it can enter the role.
-                    let member_profile = <membership::members::Module<T>>::member_profile(successful_application.member_id).unwrap();
-
-                    // Rewards are deposited in the member's root account.
-                    let reward_destination_account = member_profile.root_account;
-
-                    // Values have been checked so this should not fail!
-                    let relationship_id = <recurringrewards::Module<T>>::add_reward_relationship(
-                        mint_id,
-                        recipient,
-                        reward_destination_account,
-                        checked_policy.amount_per_payout,
-                        checked_policy.next_payment_at_block,
-                        checked_policy.payout_interval,
-                    ).expect("Failed to create reward relationship!");
-
-                    Some(relationship_id)
-                } else {
-                    None
-                };
-
-                // Get possible stake for role
-                let application = hiring::ApplicationById::<T>::get(successful_application.hiring_application_id);
-
-                // Staking profile for worker
-                let stake_profile =
-                    if let Some(ref stake_id) = application.active_role_staking_id {
-                        Some(
-                            RoleStakeProfile::new(
-                                stake_id,
-                                &opening.policy_commitment.terminate_role_stake_unstaking_period,
-                                &opening.policy_commitment.exit_role_stake_unstaking_period
-                            )
-                        )
-                    } else {
-                        None
-                    };
-
-                // Get worker id
-                let new_worker_id = <NextWorkerId<T, I>>::get();
-
-                // Construct worker
-                let worker = Worker::new(
-                    &successful_application.member_id,
-                    &successful_application.role_account,
-                    &reward_relationship,
-                    &stake_profile,
-                );
-
-                // Store a worker
-                <WorkerById<T, I>>::insert(new_worker_id, worker.clone());
-
-                // Update next worker id
-                <NextWorkerId<T, I>>::mutate(|id| *id += <WorkerId<T> as One>::one());
-
-                application_id_to_worker_id.insert(id, new_worker_id);
-
-                // Sets a leader on successful opening when opening is for leader.
-                if matches!(opening.opening_type, OpeningType::Leader) {
-                    Self::set_lead(worker.member_id, worker.role_account, new_worker_id);
-                }
-            });
+            // Process successful applications
+            let application_id_to_worker_id = Self::fulfill_successful_applications(
+                &opening,
+                create_reward_settings,
+                successful_iter.collect()
+            );
 
             // Trigger event
             Self::deposit_event(RawEvent::OpeningFilled(opening_id, application_id_to_worker_id));
@@ -1475,5 +1417,93 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
             Self::deposit_event(RawEvent::LeaderUnset(lead.member_id, lead.role_account_id));
         }
+    }
+
+    // Processes successful application during the fill_opening().
+    fn fulfill_successful_applications(
+        opening: &OpeningOf<T>,
+        reward_settings: Option<RewardSettings<T>>,
+        successful_applications_info: Vec<ApplicationInfo<T>>,
+    ) -> BTreeMap<ApplicationId<T>, WorkerId<T>> {
+        let mut application_id_to_worker_id = BTreeMap::new();
+
+        successful_applications_info
+            .iter()
+            .for_each(|(successful_application, id, _)| {
+                // Create a reward relationship.
+                let reward_relationship = if let Some((mint_id, checked_policy)) =
+                    reward_settings.clone()
+                {
+                    // Create a new recipient for the new relationship.
+                    let recipient = <recurringrewards::Module<T>>::add_recipient();
+
+                    // Member must exist, since it was checked that it can enter the role.
+                    let member_profile = <membership::members::Module<T>>::member_profile(
+                        successful_application.member_id,
+                    )
+                    .unwrap();
+
+                    // Rewards are deposited in the member's root account.
+                    let reward_destination_account = member_profile.root_account;
+
+                    // Values have been checked so this should not fail!
+                    let relationship_id = <recurringrewards::Module<T>>::add_reward_relationship(
+                        mint_id,
+                        recipient,
+                        reward_destination_account,
+                        checked_policy.amount_per_payout,
+                        checked_policy.next_payment_at_block,
+                        checked_policy.payout_interval,
+                    )
+                    .expect("Failed to create reward relationship!");
+
+                    Some(relationship_id)
+                } else {
+                    None
+                };
+
+                // Get possible stake for role
+                let application =
+                    hiring::ApplicationById::<T>::get(successful_application.hiring_application_id);
+
+                // Staking profile for worker
+                let stake_profile = if let Some(ref stake_id) = application.active_role_staking_id {
+                    Some(RoleStakeProfile::new(
+                        stake_id,
+                        &opening
+                            .policy_commitment
+                            .terminate_role_stake_unstaking_period,
+                        &opening.policy_commitment.exit_role_stake_unstaking_period,
+                    ))
+                } else {
+                    None
+                };
+
+                // Get worker id
+                let new_worker_id = <NextWorkerId<T, I>>::get();
+
+                // Construct worker
+                let worker = Worker::new(
+                    &successful_application.member_id,
+                    &successful_application.role_account,
+                    &reward_relationship,
+                    &stake_profile,
+                );
+
+                // Store a worker
+                <WorkerById<T, I>>::insert(new_worker_id, worker.clone());
+
+                // Update next worker id
+                <NextWorkerId<T, I>>::mutate(|id| *id += <WorkerId<T> as One>::one());
+
+                application_id_to_worker_id.insert(*id, new_worker_id);
+
+                // Sets a leader on successful opening when opening is for leader.
+                if matches!(opening.opening_type, OpeningType::Leader) {
+                    Self::set_lead(worker.member_id, worker.role_account, new_worker_id);
+                }
+            });
+
+        application_id_to_worker_id
     }
 }
