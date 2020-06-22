@@ -1127,18 +1127,14 @@ decl_module! {
                 let entities_inbound_rcs_delta =
                     Self::get_updated_inbound_rcs_delta(
                         class_properties, entity_property_values, &new_property_value_references_with_same_owner_flag_set
-                    )?
+                    )?;
 
-                    //
-                    // == MUTATION SAFE ==
-                    //
+                //
+                // == MUTATION SAFE ==
+                //
 
-                    .map(|entities_inbound_rcs_delta| {
-
-                        // Update InboundReferenceCounter, based on previously calculated ReferenceCounterSideEffects, for each Entity involved
-                        entities_inbound_rcs_delta.update_entities_rcs();
-                        entities_inbound_rcs_delta
-                    });
+                // Update InboundReferenceCounter, based on previously calculated ReferenceCounterSideEffects, for each Entity involved
+                Self::update_entities_rcs(&entities_inbound_rcs_delta);
 
                 <EntityById<T>>::mutate(entity_id, |entity| {
 
@@ -1355,7 +1351,6 @@ decl_module! {
                 updated_values_for_existing_properties
             )?;
 
-
             //
             // == MUTATION SAFE ==
             //
@@ -1363,12 +1358,10 @@ decl_module! {
             // Calculate entities reference counter side effects for current operation
             let entities_inbound_rcs_delta = Self::calculate_entities_inbound_rcs_delta(
                 new_values_for_existing_properties, DeltaMode::Increment
-            ).map(|entities_inbound_rcs_delta| {
+            );
 
-                // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
-                entities_inbound_rcs_delta.update_entities_rcs();
-                entities_inbound_rcs_delta
-            });
+            // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
+            Self::update_entities_rcs(&entities_inbound_rcs_delta);
 
             // Add schema support to `Entity` under given `entity_id`
             <EntityById<T>>::mutate(entity_id, |entity| {
@@ -1448,18 +1441,15 @@ decl_module! {
 
                 // Calculate entities reference counter side effects for current operation
                 let entities_inbound_rcs_delta =
-                    Self::get_updated_inbound_rcs_delta(class_properties, entity_property_values, &new_property_values)?
+                    Self::get_updated_inbound_rcs_delta(class_properties, entity_property_values, &new_property_values)?;
 
-                        //
-                        // == MUTATION SAFE ==
-                        //
+                //
+                // == MUTATION SAFE ==
+                //
 
-                        .map(|entities_inbound_rcs_delta| {
+                // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
+                Self::update_entities_rcs(&entities_inbound_rcs_delta);
 
-                            // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
-                            entities_inbound_rcs_delta.update_entities_rcs();
-                            entities_inbound_rcs_delta
-                        });
 
                 // Update entity property values
                 <EntityById<T>>::mutate(entity_id, |entity| {
@@ -2124,6 +2114,15 @@ impl<T: Trait> Module<T> {
             Some(entity_property_values_updated)
         } else {
             None
+        }
+    }
+
+    // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
+    pub fn update_entities_rcs(
+        entities_inbound_rcs_delta: &Option<ReferenceCounterSideEffects<T>>,
+    ) {
+        if let Some(entities_inbound_rcs_delta) = entities_inbound_rcs_delta {
+            entities_inbound_rcs_delta.update_entities_rcs();
         }
     }
 
