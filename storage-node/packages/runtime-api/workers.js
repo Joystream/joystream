@@ -20,6 +20,7 @@
 
 const debug = require('debug')('joystream:runtime:roles')
 const BN = require('bn.js')
+
 /*
  * Add worker related functionality to the substrate API.
  */
@@ -73,5 +74,5 @@ class WorkersApi {
 }
 
 module.exports = {
-  WorkersApi: WorkersApi
+  WorkersApi
 }
