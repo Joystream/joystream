@@ -15,7 +15,7 @@ module.exports = function(config, runtime)
         required: true,
         description: 'Actor accouuntId',
         schema: {
-          type: 'string',
+          type: 'string', // integer ?
         },
       },
     ],
@@ -23,7 +23,13 @@ module.exports = function(config, runtime)
     // Resolve Service Information
     get: async function(req, res)
     {
-        const id = req.params.id;
+        try {
+          var parsedId = parseInt(req.params.id);
+        } catch (err) {
+          return res.status(400).end();
+        }
+
+        const id = parsedId
         let cacheMaxAge = req.query.max_age;
 
         if (cacheMaxAge) {

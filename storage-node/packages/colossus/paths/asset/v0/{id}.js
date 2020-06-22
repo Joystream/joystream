@@ -83,15 +83,16 @@ module.exports = function(config, storage, runtime)
     // Put for uploads
     put: async function(req, res, _next)
     {
-      const id = req.params.id;
+      const id = req.params.id; // content id
 
       // First check if we're the liaison for the name, otherwise we can bail
       // out already.
       const role_addr = runtime.identities.key.address;
+      const providerId = runtime.storageProviderId;
       let dataObject;
       try {
         debug('calling checkLiaisonForDataObject')
-        dataObject = await runtime.assets.checkLiaisonForDataObject(role_addr, id);
+        dataObject = await runtime.assets.checkLiaisonForDataObject(providerId, id);
         debug('called checkLiaisonForDataObject')
       } catch (err) {
         error_handler(res, err, 403);
@@ -128,7 +129,7 @@ module.exports = function(config, storage, runtime)
               res.status(filter_result.code).send({ message: filter_result.message });
 
               // Reject the content
-              await runtime.assets.rejectContent(role_addr, id);
+              await runtime.assets.rejectContent(role_addr, providerId, id);
               return;
             }
             debug('Content accepted.');
@@ -155,20 +156,20 @@ module.exports = function(config, storage, runtime)
           try {
             if (hash !== dataObject.ipfs_content_id.toString()) {
               debug('Rejecting content. IPFS hash does not match value in objectId');
-              await runtime.assets.rejectContent(role_addr, id);
+              await runtime.assets.rejectContent(role_addr, providerId, id);
               res.status(400).send({ message: "Uploaded content doesn't match IPFS hash" });
               return;
             }
 
             debug('accepting Content')
-            await runtime.assets.acceptContent(role_addr, id);
+            await runtime.assets.acceptContent(role_addr, providerId, id);
 
             debug('creating storage relationship for newly uploaded content')
             // Create storage relationship and flip it to ready.
-            const dosr_id = await runtime.assets.createAndReturnStorageRelationship(role_addr, id);
+            const dosr_id = await runtime.assets.createAndReturnStorageRelationship(role_addr, providerId, id);
 
             debug('toggling storage relationship for newly uploaded content')
-            await runtime.assets.toggleStorageRelationshipReady(role_addr, dosr_id, true);
+            await runtime.assets.toggleStorageRelationshipReady(role_addr, providerId, dosr_id, true);
 
             debug('Sending OK response.');
             res.status(200).send({ message: 'Asset uploaded.' });

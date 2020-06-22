@@ -29,11 +29,12 @@ async function sync_callback(api, config, storage)
   // FIXME this isn't actually on chain yet, so we'll fake it.
   const knownContentIds = await api.assets.getKnownContentIds() || [];
 
-  const role_addr = api.identities.key.address;
+  const role_addr = api.identities.key.address
+  const providerId = api.storageProviderId
 
   // Iterate over all sync objects, and ensure they're synced.
   const allChecks = knownContentIds.map(async (content_id) => {
-    let { relationship, relationshipId } = await api.assets.getStorageRelationshipAndId(role_addr, content_id);
+    let { relationship, relationshipId } = await api.assets.getStorageRelationshipAndId(providerId, content_id);
 
     let fileLocal;
     try {
@@ -60,8 +61,8 @@ async function sync_callback(api, config, storage)
       // create relationship
       debug(`Creating new storage relationship for ${content_id.encode()}`);
       try {
-        relationshipId = await api.assets.createAndReturnStorageRelationship(role_addr, content_id);
-        await api.assets.toggleStorageRelationshipReady(role_addr, relationshipId, true);
+        relationshipId = await api.assets.createAndReturnStorageRelationship(role_addr, providerId, content_id);
+        await api.assets.toggleStorageRelationshipReady(role_addr, providerId, relationshipId, true);
       } catch (err) {
         debug(`Error creating new storage relationship ${content_id.encode()}: ${err.stack}`);
         return;
@@ -70,7 +71,7 @@ async function sync_callback(api, config, storage)
       debug(`Updating storage relationship to ready for ${content_id.encode()}`);
       // update to ready. (Why would there be a relationship set to ready: false?)
       try {
-        await api.assets.toggleStorageRelationshipReady(role_addr, relationshipId, true);
+        await api.assets.toggleStorageRelationshipReady(role_addr, providerId, relationshipId, true);
       } catch(err) {
         debug(`Error setting relationship ready ${content_id.encode()}: ${err.stack}`);
       }
