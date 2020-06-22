@@ -15,6 +15,7 @@ import { Sender } from './sender';
 import { Utils } from './utils';
 import { Stake, StakedState } from '@nicaea/types/lib/stake';
 import { RewardRelationship } from '@nicaea/types/lib/recurring-rewards';
+import { Application } from '@nicaea/types/lib/hiring';
 
 export class ApiWrapper {
   private readonly api: ApiPromise;
@@ -911,8 +912,8 @@ export class ApiWrapper {
   public async batchWithdrawWorkerApplication(accounts: KeyringPair[]): Promise<void[]> {
     return Promise.all(
       accounts.map(async keyPair => {
-        const applicationId = await this.getApplicationIdByRoleAccount(keyPair.address);
-        await this.withdrawWorkerApplication(keyPair, applicationId);
+        const applicationIds: BN[] = await this.getWorkerApplicationIdsByRoleAccount(keyPair.address);
+        await this.withdrawWorkerApplication(keyPair, applicationIds[0]);
       })
     );
   }
@@ -984,15 +985,37 @@ export class ApiWrapper {
     return ids[index!];
   }
 
-  public async getApplicationIdByRoleAccount(address: string): Promise<BN> {
+  public async getWorkerApplicationIdsByRoleAccount(address: string): Promise<BN[]> {
     const applicationsAndIds = await this.api.query.forumBureaucracy.workerApplicationById<Codec[]>();
     const applications: WorkerApplication[] = (applicationsAndIds[1] as unknown) as WorkerApplication[];
     const ids: WorkerApplicationId[] = (applicationsAndIds[0] as unknown) as WorkerApplicationId[];
-    let index: number;
-    applications.forEach((application, i) => {
-      if (application.role_account.toString() === address) index = i;
-    });
-    return ids[index!];
+    return applications
+      .map((application, index) => (application.role_account.toString() === address ? ids[index] : undefined))
+      .filter(index => index !== undefined) as BN[];
+  }
+
+  public async getApplicationById(id: BN): Promise<Application> {
+    return ((await this.api.query.hiring.applicationById<Codec[]>(id))[0] as unknown) as Application;
+  }
+
+  public async getActiveWorkerApplicationsIdsByRoleAccount(address: string): Promise<BN[]> {
+    const applicationsAndIds = await this.api.query.forumBureaucracy.workerApplicationById<Codec[]>();
+    const applications: WorkerApplication[] = (applicationsAndIds[1] as unknown) as WorkerApplication[];
+    const ids: WorkerApplicationId[] = (applicationsAndIds[0] as unknown) as WorkerApplicationId[];
+    return (
+      await Promise.all(
+        applications.map(async (application, index) => {
+          if (
+            application.role_account.toString() === address &&
+            (await this.getApplicationById(application.application_id)).stage.type === 'Active'
+          ) {
+            return ids[index];
+          } else {
+            return undefined;
+          }
+        })
+      )
+    ).filter(index => index !== undefined) as BN[];
   }
 
   public async getStake(id: BN): Promise<Stake> {

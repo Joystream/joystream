@@ -80,7 +80,15 @@ export async function withdrawWorkerApplicaiton(
   // Fee estimation and transfer
   const withdrawApplicaitonFee: BN = apiWrapper.estimateWithdrawWorkerApplicationFee();
   await apiWrapper.transferBalanceToAccounts(sudo, membersKeyPairs, withdrawApplicaitonFee);
+
+  // Application withdrawal
   await apiWrapper.batchWithdrawWorkerApplication(membersKeyPairs);
+
+  // Assertions
+  membersKeyPairs.forEach(async keyPair => {
+    const activeApplications: BN[] = await apiWrapper.getActiveWorkerApplicationsIdsByRoleAccount(keyPair.address);
+    assert(activeApplications.length === 0, `Unexpected active application found for ${keyPair.address}`);
+  });
 }
 
 export async function beginApplicationReview(
@@ -108,7 +116,7 @@ export async function fillWorkerOpening(
   const beginReviewFee: BN = apiWrapper.estimateBeginWorkerApplicantReviewFee();
   await apiWrapper.transferBalance(sudo, lead.address, beginReviewFee);
   const applicationIds: BN[] = await Promise.all(
-    membersKeyPairs.map(async keypair => apiWrapper.getApplicationIdByRoleAccount(keypair.address))
+    membersKeyPairs.map(async keypair => apiWrapper.getActiveWorkerApplicationsIdsByRoleAccount(keypair.address)).flat()
   );
 
   // Fill worker opening
@@ -123,8 +131,8 @@ export async function fillWorkerOpening(
 
   // Assertions
   const workerOpening: WorkerOpening = await apiWrapper.getWorkerOpening(workerOpeningId);
-  const openingWorkersAccounts: string[] = await Promise.all(
-    workerOpening.worker_applications.map(async id => (await apiWrapper.getWorker(id)).role_account.toString())
+  const openingWorkersAccounts: string[] = (await apiWrapper.getWorkers()).map(worker =>
+    worker.role_account.toString()
   );
   membersKeyPairs.forEach(keyPair =>
     assert(openingWorkersAccounts.includes(keyPair.address), `Account ${keyPair.address} is not worker`)

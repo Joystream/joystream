@@ -13,6 +13,7 @@ import {
   beginApplicationReview,
   fillWorkerOpening,
   setLead,
+  withdrawWorkerApplicaiton,
 } from './impl/workingGroupModule';
 import BN from 'bn.js';
 
@@ -47,6 +48,10 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
     async () =>
       (openignId = await addWorkerOpening(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, applicationStake, roleStake))
   );
+  tap.test('Apply for worker opening', async () =>
+    applyForWorkerOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, openignId)
+  );
+  tap.test('Withdraw worker application', async () => withdrawWorkerApplicaiton(apiWrapper, nKeyPairs, sudo));
   tap.test('Apply for worker opening', async () =>
     applyForWorkerOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, openignId)
   );
