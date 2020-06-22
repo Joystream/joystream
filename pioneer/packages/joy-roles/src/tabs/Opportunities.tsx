@@ -41,7 +41,7 @@ import {
 import { Loadable } from '@polkadot/joy-utils/index';
 import styled from 'styled-components';
 import _ from 'lodash';
-import { WorkingGroups, AvailableGroups } from '../working_groups';
+import { WorkingGroups, AvailableGroups, workerRoleNameByGroup } from '../working_groups';
 
 type OpeningStage = OpeningMetadataProps & {
   stage: OpeningStageClassification;
@@ -537,6 +537,8 @@ export const OpeningsView = Loadable<OpeningsViewProps>(
     const onFilterChange: DropdownProps['onChange'] = (e, data) => (
       data.value !== group && history.push(`/working-groups/opportunities/${data.value}`)
     );
+    // Can assert "props.openings!" because we're using "Loadable" which prevents them from beeing undefined
+    const filteredOpenings = props.openings!.filter(o => !group || o.meta.group === group);
 
     return (
       <Container>
@@ -552,9 +554,17 @@ export const OpeningsView = Loadable<OpeningsViewProps>(
             selection
           />
         </FilterOpportunities>
-        {props.openings && props.openings.filter(o => !group || o.meta.group === group).map((opening, key) => (
-          <OpeningView key={key} {...opening} block_time_in_seconds={props.block_time_in_seconds as number} member_id={props.member_id} />
-        ))}
+        { (
+          filteredOpenings.length
+            ? filteredOpenings.map((opening, key) => (
+              <OpeningView
+                key={key}
+                {...opening}
+                block_time_in_seconds={props.block_time_in_seconds as number}
+                member_id={props.member_id} />
+            ))
+            : (<h2>No openings{group ? ` for ${workerRoleNameByGroup[group]} role` : ''} are currently available!</h2>)
+        ) }
       </Container>
     );
   }

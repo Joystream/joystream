@@ -39,11 +39,12 @@ export function View<C extends Controller<S, any>, S> (args: ViewProps<C, S>): V
 
       useEffect(() => {
         controller.subscribe(onUpdate);
+        controller.dispatch(); // Dispatch on first subscription (in case there's was a re-render of the View)
 
         return () => {
           controller.unsubscribe(onUpdate);
         };
-      });
+      }, []);
 
       let context: Params;
       if (typeof props.params !== 'undefined') {
