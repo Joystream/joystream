@@ -2,6 +2,7 @@ import { GeneratorContext } from './SourcesGenerator';
 import { Field, ObjectType } from '../model';
 import * as util from './utils';
 import { withRelativePathForEnum } from './enum-context';
+import { fieldTypes } from '../helpers/tsTypes';
 
 export const TYPE_FIELDS: { [key: string]: { [key: string]: string } } = {
   bool: {
@@ -26,6 +27,14 @@ export const TYPE_FIELDS: { [key: string]: { [key: string]: string } } = {
   },
   otm: {
     decorator: 'OneToMany',
+    tsType: '---',
+  },
+  mto: {
+    decorator: 'ManyToOne',
+    tsType: '---',
+  },
+  mtm: {
+    decorator: 'ManyToMany',
     tsType: '---',
   },
   string: {
@@ -66,7 +75,6 @@ const graphQLFieldTypes: { [key: string]: string } = {
 
 export function buildFieldContext(f: Field, entity: ObjectType): GeneratorContext {
   return {
-    relatedEntityImports: entity.imports,
     ...withFieldTypeGuardProps(f),
     ...withRequired(f),
     ...withUnique(f),
@@ -83,9 +91,8 @@ export function withFieldTypeGuardProps(f: Field): GeneratorContext {
   is['scalar'] = f.isScalar();
   is['refType'] = f.isRelationType();
   is['enum'] = f.isEnum();
-  is['relation'] = f.relation;
 
-  ['mto', 'oto', 'otm'].map(s => (is[s] = f.relation?.type === s));
+  ['mto', 'oto', 'otm', 'mtm'].map(s => (is[s] = f.relation?.type === s));
   return {
     is: is,
   };
@@ -143,9 +150,8 @@ export function withArrayCustomFieldConfig(f: Field): GeneratorContext {
 }
 
 export function withDerivedNames(f: Field, entity: ObjectType): GeneratorContext {
-  const single = f.type === 'otm' ? f.name.slice(0, -1) : f.name; // strip s at the end if otm
   return {
-    ...util.names(single),
+    ...util.names(f.name),
     relFieldName: util.camelCase(entity.name),
     relFieldNamePlural: util.camelPlural(entity.name),
   };
