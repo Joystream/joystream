@@ -47,23 +47,23 @@ impl<'a, T: Trait> DerefMut for ValuesForExistingProperties<'a, T> {
 }
 
 impl<'a, T: Trait> ValuesForExistingProperties<'a, T> {
-    /// Create `ValuesForExistingProperties` helper structure from provided `property_values` and their corresponding `Class` properties
+    /// Create `ValuesForExistingProperties` helper structure from provided `property_values` and their corresponding `Class` properties.
+    /// Throws an error, when `Class` `Property` under `property_id`, corresponding to provided `property_value` not found
     pub fn from(
         properties: &'a [Property<T>],
         property_values: &'a BTreeMap<PropertyId, PropertyValue<T>>,
-    ) -> Self {
-        property_values.iter().fold(
-            ValuesForExistingProperties::<T>::default(),
-            |mut values_for_existing_properties, (&property_id, property_value)| {
-                // Indexing is safe, class should always maintain such constistency
-                let property = &properties[property_id as usize];
-                values_for_existing_properties.insert(
-                    property_id,
-                    ValueForExistingProperty::new(property, property_value),
-                );
-                values_for_existing_properties
-            },
-        )
+    ) -> Result<Self, &'static str> {
+        let mut values_for_existing_properties = ValuesForExistingProperties::<T>::default();
+        for (&property_id, property_value) in property_values {
+            let property = properties
+                .get(property_id as usize)
+                .ok_or(ERROR_CLASS_PROP_NOT_FOUND)?;
+            values_for_existing_properties.insert(
+                property_id,
+                ValueForExistingProperty::new(property, property_value),
+            );
+        }
+        Ok(values_for_existing_properties)
     }
 }
 
@@ -200,7 +200,7 @@ impl<T: Trait> Default for ReferenceCounterSideEffects<T> {
 
 impl<T: Trait> ReferenceCounterSideEffects<T> {
     /// Updates all the elements of `other` with `Self`
-    pub fn update(mut self, mut other: Self) -> Self {
+    pub fn update(mut self, other: Self) -> Self {
         // Make a set, that includes both self and other entity_id keys
         let entity_ids: BTreeSet<T::EntityId> = self.keys().chain(other.keys()).copied().collect();
 
@@ -208,15 +208,15 @@ impl<T: Trait> ReferenceCounterSideEffects<T> {
             // If `self` contains value under provided `entity_id`,
             // increase it on `EntityReferenceCounterSideEffect` value from `other` if exists,
             // otherwise update `self` entry under provided `entity_id` with `EntityReferenceCounterSideEffect` from `other`
-            *self
-                .entry(entity_id)
-                // Unwrap always safe here.
-                .or_insert_with(|| other.remove(&entity_id).unwrap()) +=
-                if let Some(entity_rc_side_effect) = other.remove(&entity_id) {
-                    entity_rc_side_effect
-                } else {
-                    EntityReferenceCounterSideEffect::default()
-                };
+            match (self.get_mut(&entity_id), other.get(&entity_id)) {
+                (Some(self_entity_rc_side_effect), Some(other_entity_rc_side_effect)) => {
+                    *self_entity_rc_side_effect += *other_entity_rc_side_effect
+                }
+                (_, Some(other_entity_rc_side_effect)) => {
+                    self.insert(entity_id, *other_entity_rc_side_effect);
+                }
+                _ => (),
+            }
         }
         self
     }
@@ -225,7 +225,7 @@ impl<T: Trait> ReferenceCounterSideEffects<T> {
     pub fn update_entities_rcs(&self) {
         self.iter()
             .for_each(|(entity_id, inbound_reference_counter_delta)| {
-                Module::<T>::update_entity_rc(entity_id, inbound_reference_counter_delta);
+                Module::<T>::update_entity_rc(*entity_id, *inbound_reference_counter_delta);
             });
     }
 }
