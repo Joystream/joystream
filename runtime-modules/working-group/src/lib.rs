@@ -16,7 +16,7 @@
 //! - [begin_applicant_review](./struct.Module.html#method.begin_applicant_review) - Begin reviewing worker/lead applications.
 //! - [fill_opening](./struct.Module.html#method.fill_opening) - Fill opening for worker/lead.
 //! - [withdraw_application](./struct.Module.html#method.withdraw_application) - Withdraw the worker/lead application.
-//! - [terminate_application](./struct.Module.html#method.terminate_application) - Terminate the worker/lead application.
+//! - [terminate_application](./struct.Module.html#method.terminate_application) - Terminate the worker application.
 //! - [apply_on_opening](./struct.Module.html#method.apply_on_opening) - Apply on a worker/lead opening.
 //!
 //! ### Roles lifecycle
@@ -41,9 +41,10 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
-// TODO: leave role - unset lead on success when the leader is leaving.
-// TODO: check all that a leader can set only its own parameters as a worker.
-// TODO: coments
+// TODO: slash_stake for a leader
+// TODO: decrease_stake for a leader
+// TODO: increase_stake for a leader
+// TODO: comments
 
 #[cfg(test)]
 mod tests;
@@ -369,6 +370,18 @@ decl_module! {
             WorkerById::<T, I>::mutate(worker_id, |worker| {
                 worker.role_account = new_role_account_id.clone()
             });
+
+            // Update lead data if it is necessary.
+            let lead = <CurrentLead::<T, I>>::get();
+            if let Some(lead) = lead {
+                if lead.worker_id == worker_id {
+                    let new_lead = Lead{
+                        role_account_id: new_role_account_id.clone(),
+                        ..lead
+                    };
+                    <CurrentLead::<T, I>>::put(new_lead);
+                }
+            }
 
             // Trigger event
             Self::deposit_event(RawEvent::WorkerRoleAccountUpdated(worker_id, new_role_account_id));

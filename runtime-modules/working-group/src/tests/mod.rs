@@ -3,7 +3,7 @@ mod hiring_workflow;
 mod mock;
 
 use crate::types::{OpeningPolicyCommitment, OpeningType, RewardPolicy};
-use crate::{Error, RawEvent};
+use crate::{Error, Lead, RawEvent};
 use common::constraints::InputValidationLengthConstraint;
 use mock::{
     build_test_externalities, Test, TestWorkingGroup, TestWorkingGroupInstance,
@@ -871,6 +871,35 @@ fn update_worker_role_account_succeeds() {
             worker_id,
             new_account_id,
         ));
+    });
+}
+
+#[test]
+fn update_worker_role_account_by_leader_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let new_account_id = 10;
+        let worker_id = HireLeadFixture::default().hire_lead();
+
+        // Default ids.
+        let mut lead = Lead {
+            member_id: 1,
+            role_account_id: 1,
+            worker_id: 0,
+        };
+
+        assert_eq!(TestWorkingGroup::current_lead(), Some(lead));
+
+        let update_worker_account_fixture =
+            UpdateWorkerRoleAccountFixture::default_with_ids(worker_id, new_account_id);
+
+        update_worker_account_fixture.call_and_assert(Ok(()));
+
+        lead = Lead {
+            role_account_id: new_account_id,
+            ..lead
+        };
+
+        assert_eq!(TestWorkingGroup::current_lead(), Some(lead));
     });
 }
 
