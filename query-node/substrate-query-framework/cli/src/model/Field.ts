@@ -1,6 +1,10 @@
 import { Relation } from '.';
 import { availableTypes } from './ScalarTypes';
 
+interface DerivedFrom {
+  argument: string;
+}
+
 /**
  * Reperenst GraphQL object type field
  * @constructor(name: string, type: string, nullable: boolean = true, isBuildinType: boolean = true, isList = false)
@@ -23,6 +27,8 @@ export class Field {
 
   // Relation
   relation?: Relation;
+
+  derivedFrom?: DerivedFrom;
 
   constructor(name: string, type: string, nullable = true, isBuildinType = true, isList = false) {
     this.name = name;
