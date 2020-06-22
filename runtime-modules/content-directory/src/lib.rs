@@ -1885,7 +1885,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Compute `ReferenceCounterSideEffects`, based on `PropertyValue` `Reference`'s involved into update process.
-    /// Returns computed `ReferenceCounterSideEffects`
+    /// Returns updated `ReferenceCounterSideEffects`
     pub fn get_updated_inbound_rcs_delta(
         class_properties: Vec<Property<T>>,
         entity_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
@@ -1927,8 +1927,9 @@ impl<T: Trait> Module<T> {
         Ok(reference_counter_side_effects)
     }
 
-    // Add up both net first_reference_counter_side_effects and second_reference_counter_side_effects (if some)
-    // to get one net sideffect per entity.
+    /// Add up both net first_reference_counter_side_effects and second_reference_counter_side_effects (if some)
+    /// to get one net sideffect per entity.
+    /// Returns updated `ReferenceCounterSideEffects`
     pub fn calculate_updated_inbound_rcs_delta(
         first_reference_counter_side_effects: Option<ReferenceCounterSideEffects<T>>,
         second_reference_counter_side_effects: Option<ReferenceCounterSideEffects<T>>,
