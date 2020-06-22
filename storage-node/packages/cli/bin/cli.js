@@ -58,6 +58,10 @@ const cli = meow(`
                       ID, as well as an output filename.
     head              Send a HEAD request for a file, and print headers.
                       Requires a storage node URL and a content ID.
+
+  Dev Commands:       Commands to run on a development chain.
+    dev-init          Setup chain with Alice as lead and provider.
+    dev-check         Check the chain is setup with Alice as lead and provider.
   `,
   { flags: FLAG_DEFINITIONS })
 
@@ -67,6 +71,17 @@ function assert_file (name, filename) {
 }
 
 const commands = {
+  // add Alice well known account as storage provider
+  'dev-init': async (runtime_api) => {
+    let dev = require('./dev')
+    return dev.init(runtime_api)
+  },
+  // Checks that the setup done by dev-init command was successful.
+  'dev-check': async (runtime_api) => {
+    let dev = require('./dev')
+    return dev.check(runtime_api)
+    // await runtime_api.assets.checkLiaisonForDataObject(providerId, '')
+  },
   'upload': async (runtime_api, url, filename, do_type_id) => {
     // Check parameters
     assert_file('file', filename)
