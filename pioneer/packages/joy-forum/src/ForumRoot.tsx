@@ -19,10 +19,10 @@ const ForumRoot: React.FC = () => {
   return (
     <>
       <CategoryCrumbs root />
+      <RecentActivity />
       <Section title="Top categories">
         <CategoryList />
       </Section>
-      <RecentActivity />
     </>
   );
 };
