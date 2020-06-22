@@ -1486,28 +1486,11 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            // Calculate side effects for clear_property_vector operation, based on property_value_vector provided and its respective property.
+            let entities_inbound_rcs_delta = Self::make_side_effects_for_clear_property_vector_operation(&property_value_vector, property);
+
             // Decrease reference counters of involved entities (if some)
-            let entities_inbound_rcs_delta = if let Some(entity_ids_to_decrease_rcs) =
-                property_value_vector.get_vec_value().get_involved_entities() {
-
-                    // Calculate `ReferenceCounterSideEffects`, based on entity_ids involved, same_controller_status and chosen `DeltaMode`
-                    let same_controller_status = property.property_type.same_controller_status();
-                    let entities_inbound_rcs_delta = Self::perform_entities_inbound_rcs_delta_calculation(
-                        ReferenceCounterSideEffects::<T>::default(), entity_ids_to_decrease_rcs,
-                        same_controller_status, DeltaMode::Decrement
-                    );
-
-                    // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
-                    if !entities_inbound_rcs_delta.is_empty() {
-
-                        entities_inbound_rcs_delta.update_entities_rcs();
-                        Some(entities_inbound_rcs_delta)
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                };
+            Self::update_entities_rcs(&entities_inbound_rcs_delta);
 
             // Clear property_value_vector.
             let empty_property_value_vector = Self::clear_property_vector(property_value_vector);
@@ -1810,6 +1793,36 @@ impl<T: Trait> Module<T> {
             .collect()
     }
 
+    /// Calculate side effects for clear_property_vector operation, based on `property_value_vector` provided and its respective `property`.
+    /// Returns calculated `ReferenceCounterSideEffects`
+    pub fn make_side_effects_for_clear_property_vector_operation(
+        property_value_vector: &VecPropertyValue<T>,
+        property: Property<T>,
+    ) -> Option<ReferenceCounterSideEffects<T>> {
+        let entity_ids_to_decrease_rc = property_value_vector
+            .get_vec_value()
+            .get_involved_entities();
+
+        if let Some(entity_ids_to_decrease_rcs) = entity_ids_to_decrease_rc {
+            // Calculate `ReferenceCounterSideEffects`, based on entity_ids involved, same_controller_status and chosen `DeltaMode`
+            let same_controller_status = property.property_type.same_controller_status();
+            let entities_inbound_rcs_delta = Self::perform_entities_inbound_rcs_delta_calculation(
+                ReferenceCounterSideEffects::<T>::default(),
+                entity_ids_to_decrease_rcs,
+                same_controller_status,
+                DeltaMode::Decrement,
+            );
+
+            if !entities_inbound_rcs_delta.is_empty() {
+                Some(entities_inbound_rcs_delta)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
     /// Update `inbound_rcs_delta`, based on `involved_entity_ids`, `same_controller_status` provided and chosen `DeltaMode`
     /// Returns updated `inbound_rcs_delta`
     fn perform_entities_inbound_rcs_delta_calculation(
@@ -1869,7 +1882,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Compute `ReferenceCounterSideEffects`, based on `PropertyValue` `Reference`'s involved into update process.
-    /// Returns computed `ReferenceCounterSideEffects`
+    /// Returns updated `ReferenceCounterSideEffects`
     pub fn get_updated_inbound_rcs_delta(
         class_properties: Vec<Property<T>>,
         entity_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
@@ -1901,30 +1914,43 @@ impl<T: Trait> Module<T> {
             DeltaMode::Increment,
         );
 
-        let reference_counter_side_effects = match (
+        // Add up both net decremental_reference_counter_side_effects and incremental_reference_counter_side_effects
+        // to get one net sideffect per entity.
+        let reference_counter_side_effects = Self::calculate_updated_inbound_rcs_delta(
             decremental_reference_counter_side_effects,
             incremental_reference_counter_side_effects,
-        ) {
-            (
-                Some(decremental_reference_counter_side_effects),
-                Some(incremental_reference_counter_side_effects),
-            ) => {
-                // Add up both net decremental_reference_counter_side_effects and incremental_reference_counter_side_effects
-                // to get one net sideffect per entity.
-                let reference_counter_side_effects = decremental_reference_counter_side_effects
-                    .update(incremental_reference_counter_side_effects);
-                Some(reference_counter_side_effects)
-            }
-            (Some(decremental_reference_counter_side_effects), _) => {
-                Some(decremental_reference_counter_side_effects)
-            }
-            (_, Some(incremental_reference_counter_side_effects)) => {
-                Some(incremental_reference_counter_side_effects)
-            }
-            _ => None,
-        };
+        );
 
         Ok(reference_counter_side_effects)
+    }
+
+    /// Add up both net first_reference_counter_side_effects and second_reference_counter_side_effects (if some)
+    /// to get one net sideffect per entity.
+    /// Returns updated `ReferenceCounterSideEffects`
+    pub fn calculate_updated_inbound_rcs_delta(
+        first_reference_counter_side_effects: Option<ReferenceCounterSideEffects<T>>,
+        second_reference_counter_side_effects: Option<ReferenceCounterSideEffects<T>>,
+    ) -> Option<ReferenceCounterSideEffects<T>> {
+        match (
+            first_reference_counter_side_effects,
+            second_reference_counter_side_effects,
+        ) {
+            (
+                Some(first_reference_counter_side_effects),
+                Some(second_reference_counter_side_effects),
+            ) => {
+                let reference_counter_side_effects = first_reference_counter_side_effects
+                    .update(second_reference_counter_side_effects);
+                Some(reference_counter_side_effects)
+            }
+            (Some(first_reference_counter_side_effects), _) => {
+                Some(first_reference_counter_side_effects)
+            }
+            (_, Some(second_reference_counter_side_effects)) => {
+                Some(second_reference_counter_side_effects)
+            }
+            _ => None,
+        }
     }
 
     /// Used to update `class_permissions` with parameters provided.
