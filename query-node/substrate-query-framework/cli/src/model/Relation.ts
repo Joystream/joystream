@@ -10,4 +10,6 @@ export interface Relation {
   joinColumn?: boolean;
 
   joinTable?: boolean;
+
+  relatedTsProp?: string;
 }
