@@ -592,7 +592,10 @@ impl stake::Trait for Runtime {
     type StakePoolId = StakePoolId;
     type StakingEventsHandler = (
         ContentWorkingGroupStakingEventHandler,
-        crate::integration::proposals::StakingEventsHandler<Self>,
+        (
+            crate::integration::proposals::StakingEventsHandler<Self>,
+            crate::integration::working_group::StakingEventsHandler<Self>,
+        ),
     );
     type StakeId = u64;
     type SlashId = u64;
