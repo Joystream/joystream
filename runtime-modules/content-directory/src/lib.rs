@@ -1489,7 +1489,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Calculate side effects for clear_property_vector operation, based on property_value_vector provided and its respective property. 
+            // Calculate side effects for clear_property_vector operation, based on property_value_vector provided and its respective property.
             let entities_inbound_rcs_delta = Self::make_side_effects_for_clear_property_vector_operation(&property_value_vector, property);
 
             // Decrease reference counters of involved entities (if some)
@@ -1802,10 +1802,11 @@ impl<T: Trait> Module<T> {
         property_value_vector: &VecPropertyValue<T>,
         property: Property<T>,
     ) -> Option<ReferenceCounterSideEffects<T>> {
-        if let Some(entity_ids_to_decrease_rcs) = property_value_vector
+        let entity_ids_to_decrease_rc = property_value_vector
             .get_vec_value()
-            .get_involved_entities()
-        {
+            .get_involved_entities();
+
+        if let Some(entity_ids_to_decrease_rcs) = entity_ids_to_decrease_rc {
             // Calculate `ReferenceCounterSideEffects`, based on entity_ids involved, same_controller_status and chosen `DeltaMode`
             let same_controller_status = property.property_type.same_controller_status();
             let entities_inbound_rcs_delta = Self::perform_entities_inbound_rcs_delta_calculation(
