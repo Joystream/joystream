@@ -1489,10 +1489,10 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Decrease reference counters of involved entities (if some)
+            // Calculate side effects for clear_property_vector operation, based on property_value_vector provided and its respective property. 
             let entities_inbound_rcs_delta = Self::make_side_effects_for_clear_property_vector_operation(&property_value_vector, property);
 
-            // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
+            // Decrease reference counters of involved entities (if some)
             Self::update_entities_rcs(&entities_inbound_rcs_delta);
 
             // Clear property_value_vector.
@@ -1815,7 +1815,6 @@ impl<T: Trait> Module<T> {
                 DeltaMode::Decrement,
             );
 
-            // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
             if !entities_inbound_rcs_delta.is_empty() {
                 Some(entities_inbound_rcs_delta)
             } else {
