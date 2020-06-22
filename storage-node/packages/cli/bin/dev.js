@@ -72,7 +72,7 @@ const init = async (api) => {
   } else { throw new Error('Setup Failed') }
 
   // set localhost colossus as discovery provider on default port
-  const bootstrapTx = api.discovery.setBootstrapEndpoints(['http://localhost:3001/'])
+  const bootstrapTx = api.discovery.setBootstrapEndpoints(['http://localhost:3000/'])
   await api.signAndSend(alice, bootstrapTx)
 }
 

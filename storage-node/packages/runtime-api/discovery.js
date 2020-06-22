@@ -34,24 +34,28 @@ class DiscoveryApi {
   }
 
   /*
-   * Set AccountInfo of an accountId
+   * Set AccountInfo of our storage provider
    */
-  async setAccountInfo (storageProviderId, ipnsId) {
+  async setAccountInfo (ipnsId) {
+    const roleAccountId = this.base.identities.key.address
+    const storageProviderId = this.base.storageProviderId
     const isProvider = await this.base.workers.isStorageProvider(storageProviderId)
     if (isProvider) {
       const tx = this.base.api.tx.discovery.setIpnsId(storageProviderId, ipnsId)
-      return this.base.signAndSend(this.base.identities.key.address, tx)
+      return this.base.signAndSend(roleAccountId, tx)
     } else {
       throw new Error('Cannot set AccountInfo, id is not a storage provider')
     }
   }
 
   /*
-   * Clear AccountInfo of an accountId
+   * Clear AccountInfo of our storage provider
    */
-  async unsetAccountInfo (storageProviderId) {
+  async unsetAccountInfo () {
+    const roleAccountId = this.base.identities.key.address
+    const storageProviderId = this.base.storageProviderId
     var tx = this.base.api.tx.discovery.unsetIpnsId(storageProviderId)
-    return this.base.signAndSend(this.base.identities.key.address, tx)
+    return this.base.signAndSend(roleAccountId, tx)
   }
 }
 

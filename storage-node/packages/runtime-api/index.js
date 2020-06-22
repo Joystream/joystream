@@ -58,6 +58,9 @@ class RuntimeApi {
     // Keep track locally of account nonces.
     this.nonces = {}
 
+    // The storage provider id to use
+    this.storageProviderId = parseInt(options.storageProviderId) // u64 instead ?
+
     // Ok, create individual APIs
     this.identities = await IdentitiesApi.create(this, {
       account_file: options.account_file,
