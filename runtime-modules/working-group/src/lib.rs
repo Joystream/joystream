@@ -5,8 +5,13 @@
 //! ## Overview
 //!
 //! The working group module provides working group workflow to use in different modules.
+//! It contains extrinsics for the hiring workers, their roles lifecycle and stake management.
+//! There is a possibility to hire a special worker - the leader of the working group.
+//! Some module operations like 'increase_stake' can be invoked by the worker, others
+//! like 'terminate_role' can be invoked by the leader only. The leader himself can be hired and
+//! managed only by the council via proposals.
+//!
 //! Exact working group (eg.: forum working group) should create an instance of the Working group module.
-//! The Working group module contains extrinsics for the hiring workflow and the roles lifecycle.
 //!
 //! ## Supported extrinsics
 //! ### Hiring flow
@@ -16,7 +21,7 @@
 //! - [begin_applicant_review](./struct.Module.html#method.begin_applicant_review) - Begin reviewing worker/lead applications.
 //! - [fill_opening](./struct.Module.html#method.fill_opening) - Fill opening for worker/lead.
 //! - [withdraw_application](./struct.Module.html#method.withdraw_application) - Withdraw the worker/lead application.
-//! - [terminate_application](./struct.Module.html#method.terminate_application) - Terminate the worker application.
+//! - [terminate_application](./struct.Module.html#method.terminate_application) - Terminate the worker/lead application.
 //! - [apply_on_opening](./struct.Module.html#method.apply_on_opening) - Apply on a worker/lead opening.
 //!
 //! ### Roles lifecycle
@@ -25,14 +30,14 @@
 //! - [update_reward_account](./struct.Module.html#method.update_reward_account) -  Update the reward account of the worker/lead.
 //! - [update_reward_amount](./struct.Module.html#method.update_reward_amount) -  Update the reward amount of the worker/lead.
 //! - [leave_role](./struct.Module.html#method.leave_role) - Leave the role by the active worker/lead.
-//! - [terminate_role](./struct.Module.html#method.terminate_role) - Terminate the worker role by the lead.
+//! - [terminate_role](./struct.Module.html#method.terminate_role) - Terminate the worker/lead role.
 //! - [set_mint_capacity](./struct.Module.html#method.set_mint_capacity) -  Sets the capacity to enable working group budget.
 //!
 //! ### Stakes
 //!
 //! - [slash_stake](./struct.Module.html#method.slash_stake) - Slashes the worker/lead stake.
 //! - [decrease_stake](./struct.Module.html#method.decrease_stake) - Decreases the worker/lead stake and returns the remainder to the worker _role_account_.
-//! - [increase_stake](./struct.Module.html#method.increase_stake) - Increases the worker stake, demands a worker origin.
+//! - [increase_stake](./struct.Module.html#method.increase_stake) - Increases the worker/lead stake.
 //!
 
 // Ensure we're `no_std` when compiling for Wasm.
@@ -40,8 +45,6 @@
 
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
-
-// TODO: comments
 
 #[cfg(test)]
 mod tests;
@@ -415,6 +418,7 @@ decl_module! {
         }
 
         /// Update the reward amount associated with a set reward relationship for the active worker.
+        /// Require signed leader origin or the root (to update leader reward amount).
         pub fn update_reward_amount(
             origin,
             worker_id: WorkerId<T>,
@@ -469,6 +473,7 @@ decl_module! {
         }
 
         /// Terminate the active worker by the lead.
+        /// Require signed leader origin or the root (to terminate the leader role).
         pub fn terminate_role(
             origin,
             worker_id: WorkerId<T>,
@@ -504,7 +509,8 @@ decl_module! {
 
         // ****************** Hiring flow **********************
 
-         /// Add an opening for a worker role.
+        /// Add an opening for a worker role.
+        /// Require signed leader origin or the root (to add opening for the leader position).
         pub fn add_opening(
             origin,
             activate_at: hiring::ActivateOpeningAt<T::BlockNumber>,
@@ -541,7 +547,7 @@ decl_module! {
 
             // Create and add worker opening.
             let new_opening_by_id = Opening::<OpeningId<T>, T::BlockNumber, BalanceOf<T>, ApplicationId<T>> {
-                opening_id,
+                hiring_opening_id: opening_id,
                 applications: BTreeSet::new(),
                 policy_commitment,
                 opening_type,
@@ -557,6 +563,7 @@ decl_module! {
         }
 
         /// Begin accepting worker applications to an opening that is active.
+        /// Require signed leader origin or the root (to accept applications for the leader position).
         pub fn accept_applications(origin, opening_id: OpeningId<T>)  {
             // Ensure opening exists in this working group
             // NB: Even though call to hiring module will have implicit check for
@@ -574,7 +581,7 @@ decl_module! {
             //
 
             ensure_on_wrapped_error!(
-                hiring::Module::<T>::begin_accepting_applications(opening.opening_id)
+                hiring::Module::<T>::begin_accepting_applications(opening.hiring_opening_id)
             )?;
 
 
@@ -611,15 +618,19 @@ decl_module! {
             // Ensure that there is sufficient balance to cover stake proposed
             Self::ensure_can_make_stake_imbalance(
                 vec![&opt_role_stake_balance, &opt_application_stake_balance],
-                &source_account)
-                .map_err(|_| Error::InsufficientBalanceToApply)?;
+                &source_account
+            )
+            .map_err(|_| Error::InsufficientBalanceToApply)?;
 
             // Ensure application text is valid
             Self::ensure_application_text_is_valid(&human_readable_text)?;
 
             // Ensure application can actually be added
             ensure_on_wrapped_error!(
-                hiring::Module::<T>::ensure_can_add_application(opening.opening_id, opt_role_stake_balance, opt_application_stake_balance)
+                hiring::Module::<T>::ensure_can_add_application(
+                    opening.hiring_opening_id,
+                    opt_role_stake_balance,
+                    opt_application_stake_balance)
             )?;
 
             // Ensure member does not have an active application to this opening
@@ -639,7 +650,7 @@ decl_module! {
             // Call hiring module to add application
             let add_application = ensure_on_wrapped_error!(
                     hiring::Module::<T>::add_application(
-                    opening.opening_id,
+                    opening.hiring_opening_id,
                     opt_role_stake_imbalance,
                     opt_application_stake_imbalance,
                     human_readable_text
@@ -698,11 +709,10 @@ decl_module! {
             ensure_on_wrapped_error!(
                 hiring::Module::<T>::deactive_application(
                     application.hiring_application_id,
-                    opening.policy_commitment.exit_worker_role_application_stake_unstaking_period,
-                    opening.policy_commitment.exit_worker_role_stake_unstaking_period
+                    opening.policy_commitment.exit_role_application_stake_unstaking_period,
+                    opening.policy_commitment.exit_role_stake_unstaking_period
                 )
             )?;
-
 
             // Trigger event
             Self::deposit_event(RawEvent::ApplicationWithdrawn(application_id));
@@ -720,13 +730,13 @@ decl_module! {
             // Ensuring worker application actually exists
             let (application, _, opening) = Self::ensure_application_exists(&application_id)?;
 
-            // Attempt to deactivate application
-            // NB: Combined ensure check and mutation in hiring module
+            // Attempt to deactivate application.
+            // NB: Combined ensure check and mutation in hiring module.
             ensure_on_wrapped_error!(
                 hiring::Module::<T>::deactive_application(
                     application.hiring_application_id,
                     opening.policy_commitment.terminate_application_stake_unstaking_period,
-                    opening.policy_commitment.terminate_worker_role_stake_unstaking_period
+                    opening.policy_commitment.terminate_role_stake_unstaking_period
                 )
             )?;
 
@@ -739,6 +749,7 @@ decl_module! {
         }
 
         /// Begin reviewing, and therefore not accepting new applications.
+        /// Require signed leader origin or the root (to begin review applications for the leader position).
         pub fn begin_applicant_review(origin, opening_id: OpeningId<T>) {
             // Ensure opening exists
             // NB: Even though call to hiring modul will have implicit check for
@@ -752,10 +763,10 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Attempt to begin review of applications
-            // NB: Combined ensure check and mutation in hiring module
+            // Attempt to begin review of applications.
+            // NB: Combined ensure check and mutation in hiring module.
             ensure_on_wrapped_error!(
-                hiring::Module::<T>::begin_review(opening.opening_id)
+                hiring::Module::<T>::begin_review(opening.hiring_opening_id)
                 )?;
 
             // Trigger event
@@ -763,6 +774,7 @@ decl_module! {
         }
 
         /// Fill opening for worker/lead.
+        /// Require signed leader origin or the root (to fill opening for the leader position).
         pub fn fill_opening(
             origin,
             opening_id: OpeningId<T>,
@@ -781,11 +793,9 @@ decl_module! {
 
             // Ensure a mint exists if lead is providing a reward for positions being filled
             let create_reward_settings = if let Some(policy) = reward_policy {
+
                 // A reward will need to be created so ensure our configured mint exists
                 let mint_id = Self::mint();
-
-                // Technically this is a bug-check and should not be here.
-                ensure!(<minting::Mints<T>>::exists(mint_id), Error::FillOpeningMintDoesNotExist);
 
                 // Make sure valid parameters are selected for next payment at block number
                 ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(),
@@ -832,7 +842,7 @@ decl_module! {
             // NB: Combined ensure check and mutation in hiring module
             ensure_on_wrapped_error!(
                 hiring::Module::<T>::fill_opening(
-                    opening.opening_id,
+                    opening.hiring_opening_id,
                     successful_application_ids,
                     opening.policy_commitment.fill_opening_successful_applicant_application_stake_unstaking_period,
                     opening.policy_commitment.fill_opening_failed_applicant_application_stake_unstaking_period,
@@ -849,19 +859,19 @@ decl_module! {
             successful_iter
             .clone()
             .for_each(|(successful_application, id, _)| {
-                // Create a reward relationship
+                // Create a reward relationship.
                 let reward_relationship = if let Some((mint_id, checked_policy)) = create_reward_settings.clone() {
 
-                    // Create a new recipient for the new relationship
+                    // Create a new recipient for the new relationship.
                     let recipient = <recurringrewards::Module<T>>::add_recipient();
 
-                    // member must exist, since it was checked that it can enter the role
+                    // Member must exist, since it was checked that it can enter the role.
                     let member_profile = <membership::members::Module<T>>::member_profile(successful_application.member_id).unwrap();
 
-                    // rewards are deposited in the member's root account
+                    // Rewards are deposited in the member's root account.
                     let reward_destination_account = member_profile.root_account;
 
-                    // values have been checked so this should not fail!
+                    // Values have been checked so this should not fail!
                     let relationship_id = <recurringrewards::Module<T>>::add_reward_relationship(
                         mint_id,
                         recipient,
@@ -885,8 +895,8 @@ decl_module! {
                         Some(
                             RoleStakeProfile::new(
                                 stake_id,
-                                &opening.policy_commitment.terminate_worker_role_stake_unstaking_period,
-                                &opening.policy_commitment.exit_worker_role_stake_unstaking_period
+                                &opening.policy_commitment.terminate_role_stake_unstaking_period,
+                                &opening.policy_commitment.exit_role_stake_unstaking_period
                             )
                         )
                     } else {
@@ -926,6 +936,7 @@ decl_module! {
 
         /// Slashes the worker stake, demands a leader origin. No limits, no actions on zero stake.
         /// If slashing balance greater than the existing stake - stake is slashed to zero.
+        /// Require signed leader origin or the root (to slash the leader stake).
         pub fn slash_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
             // Ensure lead is set or it is the council terminating the leader.
             Self::ensure_origin_for_leader(origin, worker_id)?;
@@ -953,8 +964,9 @@ decl_module! {
             Self::deposit_event(RawEvent::StakeSlashed(worker_id));
         }
 
-        /// Decreases the worker/lead stake and returns the remainder to the worker role_account,
-        /// demands a leader origin. Can be decreased to zero, no actions on zero stake.
+        /// Decreases the worker/lead stake and returns the remainder to the worker role_account.
+        /// Can be decreased to zero, no actions on zero stake.
+        /// Require signed leader origin or the root (to decrease the leader stake).
         pub fn decrease_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
             // Ensure lead is set or it is the council terminating the leader.
             Self::ensure_origin_for_leader(origin, worker_id)?;
@@ -1007,7 +1019,7 @@ decl_module! {
             Self::deposit_event(RawEvent::StakeIncreased(worker_id));
         }
 
-        /// Sets the capacity to enable working group budget.
+        /// Sets the capacity to enable working group budget. Requires root origin.
         pub fn set_mint_capacity(
             origin,
             new_capacity: minting::BalanceOf<T>
@@ -1095,7 +1107,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             .map_err(|e| e.into())
     }
 
-    // Ensures origin is signed by the leader.
+    /// Ensures origin is signed by the leader.
     pub fn ensure_origin_is_active_leader(origin: T::Origin) -> Result<(), Error> {
         // Ensure is signed
         let signer = ensure_signed(origin)?;
@@ -1111,7 +1123,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         let opening = OpeningById::<T, I>::get(opening_id);
 
-        let hiring_opening = hiring::OpeningById::<T>::get(opening.opening_id);
+        let hiring_opening = hiring::OpeningById::<T>::get(opening.hiring_opening_id);
 
         Ok((opening, hiring_opening))
     }
@@ -1149,7 +1161,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     // CRITICAL:
     // https://github.com/Joystream/substrate-runtime-joystream/issues/92
-    // This assumes that ensure_can_withdraw can be don
+    // This assumes that ensure_can_withdraw can be done
     // for a sum of balance that later will be actually withdrawn
     // using individual terms in that sum.
     // This needs to be fully checked across all possibly scenarios

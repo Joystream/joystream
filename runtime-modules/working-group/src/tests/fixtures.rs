@@ -338,10 +338,8 @@ impl FillWorkerOpeningFixture {
                     &stake_id,
                     &opening
                         .policy_commitment
-                        .terminate_worker_role_stake_unstaking_period,
-                    &opening
-                        .policy_commitment
-                        .exit_worker_role_stake_unstaking_period,
+                        .terminate_role_stake_unstaking_period,
+                    &opening.policy_commitment.exit_role_stake_unstaking_period,
                 ))
             } else {
                 None
@@ -716,7 +714,7 @@ impl AddWorkerOpeningFixture {
             let actual_opening = TestWorkingGroup::opening_by_id(opening_id);
 
             let expected_opening = Opening::<u64, u64, u64, u64> {
-                opening_id,
+                hiring_opening_id: opening_id,
                 applications: BTreeSet::new(),
                 policy_commitment: self.commitment.clone(),
                 opening_type: self.opening_type,

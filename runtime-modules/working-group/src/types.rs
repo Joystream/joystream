@@ -6,7 +6,7 @@ use rstd::collections::btree_set::BTreeSet;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-/// Terms for slashings applied to a given role.
+/// Terms for slashes applied to a given role.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq, Eq)]
 pub struct SlashableTerms {
@@ -28,7 +28,7 @@ pub enum SlashingTerms {
     Slashable(SlashableTerms),
 }
 
-/// Must be default constructible because it indirectly is a value in a storage map.
+/// Must be default constructable because it indirectly is a value in a storage map.
 /// ***SHOULD NEVER ACTUALLY GET CALLED, IS REQUIRED TO DUE BAD STORAGE MODEL IN SUBSTRATE***
 impl Default for SlashingTerms {
     fn default() -> Self {
@@ -69,14 +69,14 @@ pub struct OpeningPolicyCommitment<BlockNumber, Balance> {
     /// When terminating a worker: unstaking period for application stake.
     pub terminate_application_stake_unstaking_period: Option<BlockNumber>,
 
-    /// When terminating a worker: unstaking period for role stake.
-    pub terminate_worker_role_stake_unstaking_period: Option<BlockNumber>,
+    /// When terminating a worke/leadr: unstaking period for role stake.
+    pub terminate_role_stake_unstaking_period: Option<BlockNumber>,
 
-    /// When a worker exists: unstaking period for application stake.
-    pub exit_worker_role_application_stake_unstaking_period: Option<BlockNumber>,
+    /// When a worker/lead exists: unstaking period for application stake.
+    pub exit_role_application_stake_unstaking_period: Option<BlockNumber>,
 
-    /// When a worker exists: unstaking period for role stake.
-    pub exit_worker_role_stake_unstaking_period: Option<BlockNumber>,
+    /// When a worker/lead exists: unstaking period for role stake.
+    pub exit_role_stake_unstaking_period: Option<BlockNumber>,
 }
 
 /// An opening for a worker or lead role.
@@ -84,7 +84,7 @@ pub struct OpeningPolicyCommitment<BlockNumber, Balance> {
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Opening<OpeningId, BlockNumber, Balance, WorkerApplicationId: core::cmp::Ord> {
     /// Identifier for underlying opening in the hiring module.
-    pub opening_id: OpeningId,
+    pub hiring_opening_id: OpeningId,
 
     /// Set of identifiers for all worker applications ever added.
     pub applications: BTreeSet<WorkerApplicationId>,
@@ -115,7 +115,7 @@ impl Default for OpeningType {
     }
 }
 
-/// Working group lead: worker lead.
+/// Working group lead.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq, Copy)]
 pub struct Lead<MemberId, AccountId, WorkerId> {
@@ -129,7 +129,7 @@ pub struct Lead<MemberId, AccountId, WorkerId> {
     pub worker_id: WorkerId,
 }
 
-/// An application for the worker role.
+/// An application for the worker/lead role.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Application<AccountId, OpeningId, MemberId, ApplicationId> {
@@ -165,7 +165,7 @@ impl<AccountId: Clone, OpeningId: Clone, MemberId: Clone, ApplicationId: Clone>
     }
 }
 
-/// Role stake information for a worker/ledd.
+/// Role stake information for a worker/lead.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct RoleStakeProfile<StakeId, BlockNumber> {
@@ -180,7 +180,7 @@ pub struct RoleStakeProfile<StakeId, BlockNumber> {
 }
 
 impl<StakeId: Clone, BlockNumber: Clone> RoleStakeProfile<StakeId, BlockNumber> {
-    /// Creates a new worker role stake profile using stake parameters.
+    /// Creates a new worker/lead role stake profile using stake parameters.
     pub fn new(
         stake_id: &StakeId,
         termination_unstaking_period: &Option<BlockNumber>,
@@ -199,13 +199,16 @@ impl<StakeId: Clone, BlockNumber: Clone> RoleStakeProfile<StakeId, BlockNumber> 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Worker<AccountId, RewardRelationshipId, StakeId, BlockNumber, MemberId> {
-    /// Member id related to the worker
+    /// Member id related to the worker/lead.
     pub member_id: MemberId,
+
     /// Account used to authenticate in this role.
     pub role_account: AccountId,
+
     /// Whether the role has recurring reward, and if so an identifier for this.
     pub reward_relationship: Option<RewardRelationshipId>,
-    /// When set, describes role stake of worker.
+
+    /// When set, describes role stake of the worker/lead.
     pub role_stake_profile: Option<RoleStakeProfile<StakeId, BlockNumber>>,
 }
 
@@ -233,7 +236,7 @@ impl<
     }
 }
 
-/// Origin of exit initiation on behalf of a curator.'
+/// Origin of exit initiation.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum ExitInitiationOrigin {

@@ -319,7 +319,7 @@ impl transaction_payment::Trait for Runtime {
     type TransactionBaseFee = TransactionBaseFee;
     type TransactionByteFee = TransactionByteFee;
     type WeightToFee = ();
-    type FeeMultiplierUpdate = (); // FeeMultiplierUpdateHandler;
+    type FeeMultiplierUpdate = ();
 }
 
 impl sudo::Trait for Runtime {
@@ -593,7 +593,7 @@ impl members::Trait for Runtime {
  *
  * ForumUserRegistry could have been implemented directly on
  * the membership module, and likewise ForumUser on Profile,
- * however this approach is more loosley coupled.
+ * however this approach is more loosely coupled.
  *
  * Further exploration required to decide what the long
  * run convention should be.
