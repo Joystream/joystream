@@ -658,6 +658,14 @@ pub fn create_entity(
     TestModule::create_entity(Origin::signed(lead_origin), class_id, actor)
 }
 
+pub fn remove_entity(
+    origin: u64,
+    actor: Actor<Runtime>,
+    entity_id: EntityId,
+) -> Result<(), &'static str> {
+    TestModule::remove_entity(Origin::signed(origin), actor, entity_id)
+}
+
 pub fn create_entity_with_default_permissions(class_id: ClassId) -> Entity<Runtime> {
     Entity::new(
         EntityController::Lead,
