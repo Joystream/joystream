@@ -35,6 +35,9 @@ import {
 import { CancelledReason, OpeningStageClassification, OpeningState } from '../classifiers';
 import { OpeningMetadata } from '../OpeningMetadata';
 import { CuratorId } from '@joystream/types/content-working-group';
+import _ from 'lodash';
+import styled from 'styled-components';
+import { WorkingGroups } from '../working_groups';
 
 type CTACallback = (rationale: string) => void
 
@@ -102,9 +105,10 @@ function RoleName (props: NameAndURL) {
 }
 
 export interface ActiveRole extends NameAndURL {
-  curatorId: CuratorId;
+  workerId: CuratorId;
   reward: Balance;
   stake: Balance;
+  group: WorkingGroups;
 }
 
 export interface ActiveRoleWithCTAs extends ActiveRole {
@@ -379,6 +383,11 @@ function CancelButton (props: ApplicationProps) {
   );
 }
 
+const ApplicationLabel = styled(Label)`
+  margin-left: 1em !important;
+  border: 1px solid #999 !important;
+`;
+
 export function Application (props: ApplicationProps) {
   let countdown = null;
   if (props.stage.state === OpeningState.InReview) {
@@ -400,6 +409,7 @@ export function Application (props: ApplicationProps) {
         <Label.Detail className="right">
           {openingIcon(props.stage.state)}
           {openingDescription(props.stage.state)}
+          <ApplicationLabel>{_.startCase(props.meta.group)}</ApplicationLabel>
         </Label.Detail>
       </Label>
       <Grid columns="equal">

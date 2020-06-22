@@ -27,6 +27,7 @@ import { OpeningMetadata } from '../OpeningMetadata';
 
 import 'semantic-ui-css/semantic.min.css';
 import '@polkadot/joy-roles/index.sass';
+import { WorkingGroups } from '../working_groups';
 
 export default {
   title: 'Roles / Components / Opportunities groups tab',
@@ -153,7 +154,7 @@ export function OpportunitySandbox () {
 
   const meta: OpeningMetadata = {
     id: '1',
-    group: 'group-name'
+    group: WorkingGroups.ContentCurators
   };
 
   return (

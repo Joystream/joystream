@@ -34,18 +34,18 @@ export class MyRolesController extends Controller<State, ITransport> {
   }
 
   protected async updateApplications (myAddress: string) {
-    this.state.applications = await this.transport.openingApplications(myAddress);
+    this.state.applications = await this.transport.openingApplicationsByAddress(myAddress);
     this.dispatch();
   }
 
   protected async updateCurationGroupRoles (myAddress: string) {
-    const roles = await this.transport.myCurationGroupRoles(myAddress);
+    const roles = await this.transport.myRoles(myAddress);
     this.state.currentCurationRoles = roles.map(role => ({
       ...role,
       CTAs: [
         {
           title: 'Leave role',
-          callback: (rationale: string) => { this.leaveCurationRole(role, rationale); }
+          callback: (rationale: string) => { this.leaveRole(role, rationale); }
         }
       ]
     })
@@ -53,12 +53,12 @@ export class MyRolesController extends Controller<State, ITransport> {
     this.dispatch();
   }
 
-  leaveCurationRole (role: ActiveRole, rationale: string) {
-    this.transport.leaveCurationRole(this.state.myAddress, role.curatorId.toNumber(), rationale);
+  leaveRole (role: ActiveRole, rationale: string) {
+    this.transport.leaveRole(role.group, this.state.myAddress, role.workerId.toNumber(), rationale);
   }
 
   cancelApplication (application: OpeningApplication) {
-    this.transport.withdrawCuratorApplication(this.state.myAddress, application.id);
+    this.transport.withdrawApplication(application.meta.group, this.state.myAddress, application.id);
   }
 }
 

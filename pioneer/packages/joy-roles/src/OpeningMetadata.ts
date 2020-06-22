@@ -1,6 +1,8 @@
+import { WorkingGroups } from "./working_groups"
+
 export type OpeningMetadata = {
   id: string;
-  group: string;
+  group: WorkingGroups;
 }
 
 export type OpeningMetadataProps = {

@@ -484,7 +484,7 @@ export function ConfirmStakes2Up (props: ConfirmStakes2UpProps) {
   const [valid, setValid] = useState(true);
   const slotCount = props.slots.length;
   const [rank, setRank] = useState(1);
-  const minStake = props.slots[0];
+  const minStake = props.slots[0] || props.applications.requiredApplicationStake.hard.add(props.applications.requiredRoleStake.hard);
   const [combined, setCombined] = useState(new u128(0));
 
   const findRankValue = (newStake: Balance): number => {
