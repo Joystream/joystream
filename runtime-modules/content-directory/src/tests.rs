@@ -338,6 +338,14 @@ fn update_class_permissions_success() {
 
         // Runtime tested state before call
 
+        let mut class_permissions = ClassPermissions::default();
+
+        // Ensure class permissions of newly created Class are equal to default ones
+        assert_eq!(
+            class_by_id(FIRST_CLASS_ID).get_permissions(),
+            class_permissions
+        );
+
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
@@ -356,13 +364,14 @@ fn update_class_permissions_success() {
         // Runtime tested state after call
 
         // Ensure class permissions updated succesfully
-        let mut class = create_class_with_default_permissions();
-        let class_permissions = class.get_permissions_mut();
 
         *class_permissions.get_maintainers_mut() = maintainers;
         class_permissions.set_entity_creation_blocked(true);
 
-        assert_eq!(class_by_id(FIRST_CLASS_ID), class);
+        assert_eq!(
+            class_by_id(FIRST_CLASS_ID).get_permissions(),
+            class_permissions
+        );
 
         let class_permissions_updated_event =
             get_test_event(RawEvent::ClassPermissionsUpdated(FIRST_CLASS_ID));
