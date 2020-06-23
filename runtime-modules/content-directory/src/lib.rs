@@ -1508,7 +1508,7 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(
-                RawEvent::EntityPropertyValueVectorCleared(
+                RawEvent::VectorCleared(
                     actor, entity_id, in_class_schema_property_id, entities_inbound_rcs_delta
                 )
             );
@@ -2600,7 +2600,7 @@ decl_event!(
         EntityRemoved(Actor, EntityId),
         EntitySchemaSupportAdded(Actor, EntityId, SchemaId, SideEffects),
         EntityPropertyValuesUpdated(Actor, EntityId, SideEffects),
-        EntityPropertyValueVectorCleared(Actor, EntityId, PropertyId, SideEffects),
+        VectorCleared(Actor, EntityId, PropertyId, SideEffects),
         RemovedAtVectorIndex(Actor, EntityId, PropertyId, VecMaxLength, Nonce, SideEffect),
         InsertedAtVectorIndex(Actor, EntityId, PropertyId, VecMaxLength, Nonce, SideEffect),
         EntityOwnershipTransfered(EntityId, EntityController, SideEffects),

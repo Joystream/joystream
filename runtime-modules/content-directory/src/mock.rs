@@ -750,12 +750,32 @@ pub fn update_entity_property_values(
     )
 }
 
+pub fn clear_entity_property_vector(
+    origin: u64,
+    actor: Actor<Runtime>,
+    entity_id: EntityId,
+    in_class_schema_property_id: PropertyId,
+) -> Result<(), &'static str> {
+    TestModule::clear_entity_property_vector(
+        Origin::signed(origin),
+        actor,
+        entity_id,
+        in_class_schema_property_id,
+    )
+}
+
 impl From<InboundReferenceCounter> for EntityReferenceCounterSideEffect {
     fn from(inbound_rc: InboundReferenceCounter) -> Self {
         Self {
             total: inbound_rc.total as i32,
             same_owner: inbound_rc.same_owner as i32,
         }
+    }
+}
+
+impl EntityReferenceCounterSideEffect {
+    pub fn new(total: i32, same_owner: i32) -> Self {
+        Self { total, same_owner }
     }
 }
 
