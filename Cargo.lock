@@ -1614,7 +1614,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "6.17.0"
+version = "6.18.0"
 dependencies = [
  "parity-scale-codec",
  "safe-mix",
@@ -4579,7 +4579,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-common-module"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "parity-scale-codec",
  "serde",
@@ -5106,7 +5106,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-proposals-codex-module"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "num_enum",
  "parity-scale-codec",
@@ -5134,6 +5134,7 @@ dependencies = [
  "substrate-token-mint-module",
  "substrate-versioned-store",
  "substrate-versioned-store-permissions-module",
+ "substrate-working-group-module",
 ]
 
 [[package]]

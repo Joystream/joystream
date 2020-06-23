@@ -12,14 +12,21 @@
 //! module. For each proposal, [its crucial details](./enum.ProposalDetails.html) are saved to the
 //! `ProposalDetailsByProposalId` map.
 //!
-//! ### Supported extrinsics (proposal types)
+//! ### General proposals
 //! - [create_text_proposal](./struct.Module.html#method.create_text_proposal)
 //! - [create_runtime_upgrade_proposal](./struct.Module.html#method.create_runtime_upgrade_proposal)
-//! - [create_set_election_parameters_proposal](./struct.Module.html#method.create_set_election_parameters_proposal)
-//! - [create_set_content_working_group_mint_capacity_proposal](./struct.Module.html#method.create_set_content_working_group_mint_capacity_proposal)
-//! - [create_spending_proposal](./struct.Module.html#method.create_spending_proposal)
-//! - [create_set_lead_proposal](./struct.Module.html#method.create_set_lead_proposal)
 //! - [create_set_validator_count_proposal](./struct.Module.html#method.create_set_validator_count_proposal)
+//!
+//! ### Council and election proposals
+//! - [create_set_election_parameters_proposal](./struct.Module.html#method.create_set_election_parameters_proposal)
+//! - [create_spending_proposal](./struct.Module.html#method.create_spending_proposal)
+//!
+//! ### Content working group proposals
+//! - [create_set_lead_proposal](./struct.Module.html#method.create_set_lead_proposal)
+//! - [create_set_content_working_group_mint_capacity_proposal](./struct.Module.html#method.create_set_content_working_group_mint_capacity_proposal)
+//!
+//! ### Working group proposals
+//! - [create_add_working_group_leader_opening_proposal](./struct.Module.html#method.create_add_working_group_leader_opening_proposal)
 //!
 //! ### Proposal implementations of this module
 //! - execute_text_proposal - prints the proposal to the log
@@ -49,6 +56,10 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 // #![warn(missing_docs)]
 
+// TODO Working group proposals parameters & default
+// TODO Working group proposals validation limits
+// TODO module comments update.
+
 mod proposal_types;
 
 #[cfg(test)]
@@ -67,7 +78,7 @@ use srml_support::traits::{Currency, Get};
 use srml_support::{decl_error, decl_module, decl_storage, ensure, print};
 use system::ensure_root;
 
-pub use crate::proposal_types::ProposalsConfigParameters;
+pub use crate::proposal_types::{AddOpeningParameters, ProposalsConfigParameters};
 pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 
 // 'Set working group mint capacity' proposal limit
@@ -313,6 +324,12 @@ decl_storage! {
 
         /// Grace period for the 'spending' proposal
         pub SpendingProposalGracePeriod get(spending_proposal_grace_period) config(): T::BlockNumber;
+
+        /// Voting period for the 'add working group opening' proposal
+        pub AddWorkingGroupOpeningProposalVotingPeriod get(add_working_group_opening_proposal_voting_period) config(): T::BlockNumber;
+
+        /// Grace period for the 'add working group opening' proposal
+        pub AddWorkingGroupOpeningProposalGracePeriod get(add_working_group_opening_proposal_grace_period) config(): T::BlockNumber;
     }
 }
 
@@ -542,6 +559,36 @@ decl_module! {
             let proposal_parameters =
                 proposal_types::parameters::set_validator_count_proposal::<T>();
             let proposal_details = ProposalDetails::SetValidatorCount(new_validator_count);
+            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
+
+            Self::create_proposal(
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_code,
+                proposal_parameters,
+                proposal_details,
+            )?;
+        }
+
+        /// Create 'Add working group leader opening' proposal type.
+        /// This proposal uses `add_opening()` extrinsic from the Joystream `working group` module.
+        pub fn create_add_working_group_leader_opening_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            add_opening_parameters: AddOpeningParameters<T::BlockNumber, BalanceOfGovernanceCurrency<T>>,
+        ) {
+
+//TODO ensures
+
+            let proposal_parameters =
+                proposal_types::parameters::add_working_group_leader_opening_proposal::<T>();
+            let proposal_details = ProposalDetails::AddWorkingGroupLeaderOpening(add_opening_parameters);
             let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
 
             Self::create_proposal(

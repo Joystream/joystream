@@ -1,5 +1,7 @@
 use crate::{Call, Runtime};
+use common::working_group::WorkingGroup;
 use proposals_codex::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
+use working_group::OpeningType;
 
 use codec::Encode;
 use rstd::vec::Vec;
@@ -50,6 +52,20 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::SetStorageRoleParameters(_) => {
                 print("Error: Calling deprecated SetStorageRoleParameters encoding option.");
                 Vec::new()
+            }
+            ProposalDetails::AddWorkingGroupLeaderOpening(add_opening_params) => {
+                let call = match add_opening_params.working_group {
+                    WorkingGroup::Storage => {
+                        Call::StorageWorkingGroup(working_group::Call::add_opening(
+                            add_opening_params.activate_at,
+                            add_opening_params.commitment,
+                            add_opening_params.human_readable_text,
+                            OpeningType::Leader,
+                        ))
+                    }
+                };
+
+                call.encode()
             }
         }
     }

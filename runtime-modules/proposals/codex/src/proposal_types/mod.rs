@@ -8,6 +8,7 @@ use rstd::vec::Vec;
 use serde::{Deserialize, Serialize};
 
 use crate::ElectionParameters;
+use common::working_group::WorkingGroup;
 
 /// Encodes proposal using its details information.
 pub trait ProposalEncoder<T: crate::Trait> {
@@ -58,6 +59,9 @@ pub enum ProposalDetails<MintedBalance, CurrencyBalance, BlockNumber, AccountId,
     /// It is kept only for backward compatibility in the Pioneer. **********
     /// Role parameters for the `set storage role parameters` proposal
     SetStorageRoleParameters(RoleParameters<CurrencyBalance, BlockNumber>),
+
+    /// Add opening for the working group leader position.
+    AddWorkingGroupLeaderOpening(AddOpeningParameters<BlockNumber, CurrencyBalance>),
 }
 
 impl<MintedBalance, CurrencyBalance, BlockNumber, AccountId, MemberId> Default
@@ -66,6 +70,23 @@ impl<MintedBalance, CurrencyBalance, BlockNumber, AccountId, MemberId> Default
     fn default() -> Self {
         ProposalDetails::Text(b"invalid proposal details".to_vec())
     }
+}
+
+/// Parameters for the 'add opening for the leader position' proposal.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Debug)]
+pub struct AddOpeningParameters<BlockNumber, Balance> {
+    /// Activate opening at block.
+    pub activate_at: hiring::ActivateOpeningAt<BlockNumber>,
+
+    /// Opening conditions.
+    pub commitment: working_group::OpeningPolicyCommitment<BlockNumber, Balance>,
+
+    /// Opening description.
+    pub human_readable_text: Vec<u8>,
+
+    /// Defines working group with the open position.
+    pub working_group: WorkingGroup,
 }
 
 /// ********** Deprecated during the Nicaea release.
@@ -150,6 +171,12 @@ pub struct ProposalsConfigParameters {
 
     /// 'Spending' proposal grace period
     pub spending_proposal_grace_period: u32,
+
+    /// 'Add working group opening' proposal voting period
+    pub add_working_group_opening_proposal_voting_period: u32,
+
+    /// 'Add working group opening' proposal grace period
+    pub add_working_group_opening_proposal_grace_period: u32,
 }
 
 impl Default for ProposalsConfigParameters {
@@ -169,6 +196,8 @@ impl Default for ProposalsConfigParameters {
             set_lead_proposal_grace_period: 0u32,
             spending_proposal_voting_period: 72000u32,
             spending_proposal_grace_period: 14400u32,
+            add_working_group_opening_proposal_voting_period: 72000u32,
+            add_working_group_opening_proposal_grace_period: 14400u32,
         }
     }
 }
