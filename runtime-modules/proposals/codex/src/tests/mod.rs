@@ -868,20 +868,7 @@ fn create_add_working_group_leader_opening_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
         let add_opening_parameters = AddOpeningParameters {
             activate_at: ActivateOpeningAt::CurrentBlock,
-            commitment: OpeningPolicyCommitment {
-                application_rationing_policy: None,
-                max_review_period_length: 100,
-                application_staking_policy: None,
-                role_staking_policy: None,
-                role_slashing_terms: Default::default(),
-                fill_opening_successful_applicant_application_stake_unstaking_period: None,
-                fill_opening_failed_applicant_application_stake_unstaking_period: None,
-                fill_opening_failed_applicant_role_stake_unstaking_period: None,
-                terminate_application_stake_unstaking_period: None,
-                terminate_role_stake_unstaking_period: None,
-                exit_role_application_stake_unstaking_period: None,
-                exit_role_stake_unstaking_period: None
-            },
+            commitment: OpeningPolicyCommitment::default(),
             human_readable_text: b"some text".to_vec(),
             working_group: WorkingGroup::Storage,
         };

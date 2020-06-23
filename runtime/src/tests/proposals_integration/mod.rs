@@ -2,6 +2,8 @@
 
 #![cfg(test)]
 
+mod working_group_proposals;
+
 use crate::{BlockNumber, ElectionParameters, ProposalCancellationFee, Runtime};
 use codec::Encode;
 use governance::election::CouncilElected;
@@ -22,14 +24,14 @@ use super::initial_test_ext;
 
 use crate::CouncilManager;
 
-type Balances = balances::Module<Runtime>;
-type System = system::Module<Runtime>;
-type Membership = membership::members::Module<Runtime>;
-type ProposalsEngine = proposals_engine::Module<Runtime>;
-type Council = governance::council::Module<Runtime>;
-type Election = governance::election::Module<Runtime>;
-type ProposalCodex = proposals_codex::Module<Runtime>;
-type Mint = minting::Module<Runtime>;
+pub type Balances = balances::Module<Runtime>;
+pub type System = system::Module<Runtime>;
+pub type Membership = membership::members::Module<Runtime>;
+pub type ProposalsEngine = proposals_engine::Module<Runtime>;
+pub type Council = governance::council::Module<Runtime>;
+pub type Election = governance::election::Module<Runtime>;
+pub type ProposalCodex = proposals_codex::Module<Runtime>;
+pub type Mint = minting::Module<Runtime>;
 
 fn setup_members(count: u8) {
     let authority_account_id = <Runtime as system::Trait>::AccountId::default();
