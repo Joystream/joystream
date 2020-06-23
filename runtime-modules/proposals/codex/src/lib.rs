@@ -606,8 +606,6 @@ decl_module! {
             working_group: WorkingGroup,
         ) {
 
-//TODO ensures
-
             let proposal_details = ProposalDetails::AcceptWorkingGroupLeaderApplications(opening_id, working_group);
             let params = CreateProposalParameters{
                 origin,
