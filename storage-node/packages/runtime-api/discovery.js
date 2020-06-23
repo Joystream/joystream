@@ -40,7 +40,7 @@ class DiscoveryApi {
    * Get AccountInfo of a storage provider
    */
   async getAccountInfo (storageProviderId) {
-    const info = await this.base.api.query.discovery.accountInfoByAccountId(storageProviderId)
+    const info = await this.base.api.query.discovery.accountInfoByStorageProviderId(storageProviderId)
     // Not an Option so we use default value check to know if info was found
     return info.expires_at.eq(0) ? null : info
   }
