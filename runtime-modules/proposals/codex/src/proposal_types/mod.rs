@@ -23,12 +23,20 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
     <T as system::Trait>::BlockNumber,
     <T as system::Trait>::AccountId,
     crate::MemberId<T>,
+    working_group::OpeningId<T>,
 >;
 
 /// Proposal details provide voters the information required for the perceived voting.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug)]
-pub enum ProposalDetails<MintedBalance, CurrencyBalance, BlockNumber, AccountId, MemberId> {
+pub enum ProposalDetails<
+    MintedBalance,
+    CurrencyBalance,
+    BlockNumber,
+    AccountId,
+    MemberId,
+    OpeningId,
+> {
     /// The text of the `text` proposal
     Text(Vec<u8>),
 
@@ -62,10 +70,13 @@ pub enum ProposalDetails<MintedBalance, CurrencyBalance, BlockNumber, AccountId,
 
     /// Add opening for the working group leader position.
     AddWorkingGroupLeaderOpening(AddOpeningParameters<BlockNumber, CurrencyBalance>),
+
+    /// Accept applications for the working group leader position.
+    AcceptWorkingGroupLeaderApplications(OpeningId, WorkingGroup),
 }
 
-impl<MintedBalance, CurrencyBalance, BlockNumber, AccountId, MemberId> Default
-    for ProposalDetails<MintedBalance, CurrencyBalance, BlockNumber, AccountId, MemberId>
+impl<MintedBalance, CurrencyBalance, BlockNumber, AccountId, MemberId, OpeningId> Default
+    for ProposalDetails<MintedBalance, CurrencyBalance, BlockNumber, AccountId, MemberId, OpeningId>
 {
     fn default() -> Self {
         ProposalDetails::Text(b"invalid proposal details".to_vec())
@@ -177,6 +188,12 @@ pub struct ProposalsConfigParameters {
 
     /// 'Add working group opening' proposal grace period
     pub add_working_group_opening_proposal_grace_period: u32,
+
+    /// 'Accept working group leader applications' proposal voting period
+    pub accept_working_group_leader_applications_proposal_voting_period: u32,
+
+    /// 'Accept working group leader applications' proposal grace period
+    pub accept_working_group_leader_applications_proposal_grace_period: u32,
 }
 
 impl Default for ProposalsConfigParameters {
@@ -197,7 +214,9 @@ impl Default for ProposalsConfigParameters {
             spending_proposal_voting_period: 72000u32,
             spending_proposal_grace_period: 14400u32,
             add_working_group_opening_proposal_voting_period: 72000u32,
-            add_working_group_opening_proposal_grace_period: 14400u32,
+            add_working_group_opening_proposal_grace_period: 0u32,
+            accept_working_group_leader_applications_proposal_voting_period: 43200u32,
+            accept_working_group_leader_applications_proposal_grace_period: 0u32,
         }
     }
 }

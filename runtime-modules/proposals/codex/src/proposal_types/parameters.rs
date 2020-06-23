@@ -105,9 +105,24 @@ pub(crate) fn add_working_group_leader_opening_proposal<T: crate::Trait>(
         voting_period: <Module<T>>::add_working_group_opening_proposal_voting_period(),
         grace_period: <Module<T>>::add_working_group_opening_proposal_grace_period(),
         approval_quorum_percentage: 60,
+        approval_threshold_percentage: 80,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(<BalanceOf<T>>::from(100_000_u32)),
+    }
+}
+
+// Proposal parameters for the 'Accept working group leader applications' proposal
+pub(crate) fn accept_working_group_leader_applications_proposal<T: crate::Trait>(
+) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
+    ProposalParameters {
+        voting_period: <Module<T>>::accept_working_group_leader_applications_proposal_voting_period(
+        ),
+        grace_period: <Module<T>>::accept_working_group_leader_applications_proposal_grace_period(),
+        approval_quorum_percentage: 60,
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(<BalanceOf<T>>::from(50000u32)),
+        required_stake: Some(<BalanceOf<T>>::from(25000u32)),
     }
 }

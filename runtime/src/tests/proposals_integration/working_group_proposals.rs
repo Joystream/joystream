@@ -34,7 +34,7 @@ fn create_add_working_group_leader_opening_proposal_execution_succeeds() {
                     member_id as u64,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Runtime>>::from(50000u32)),
+                    Some(<BalanceOf<Runtime>>::from(100_000_u32)),
                     AddOpeningParameters {
                         activate_at: ActivateOpeningAt::CurrentBlock,
                         commitment: OpeningPolicyCommitment::default(),

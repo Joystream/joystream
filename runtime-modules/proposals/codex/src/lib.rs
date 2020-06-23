@@ -59,6 +59,7 @@ mod proposal_types;
 mod tests;
 
 use common::origin::ActorOriginValidator;
+use common::working_group::WorkingGroup;
 use governance::election_params::ElectionParameters;
 use proposal_engine::ProposalParameters;
 use rstd::clone::Clone;
@@ -330,6 +331,12 @@ decl_storage! {
 
         /// Grace period for the 'add working group opening' proposal
         pub AddWorkingGroupOpeningProposalGracePeriod get(add_working_group_opening_proposal_grace_period) config(): T::BlockNumber;
+
+        /// Voting period for the 'accept working group leader applications' proposal
+        pub AcceptWorkingGroupLeaderApplicationsProposalVotingPeriod get(accept_working_group_leader_applications_proposal_voting_period) config(): T::BlockNumber;
+
+        /// Grace period for the 'accept working group leader applications' proposal
+        pub AcceptWorkingGroupLeaderApplicationsProposalGracePeriod get(accept_working_group_leader_applications_proposal_grace_period) config(): T::BlockNumber;
     }
 }
 
@@ -358,8 +365,7 @@ decl_module! {
             ensure!(text.len() as u32 <=  T::TextProposalMaxLength::get(),
                 Error::TextProposalSizeExceeded);
 
-//TODO remove comment
-            let proposal_details = ProposalDetails::Text(text); //::<BalanceOfMint<T>, BalanceOfGovernanceCurrency<T>, T::BlockNumber, T::AccountId, MemberId<T>>
+            let proposal_details = ProposalDetails::Text(text);
             let params = CreateProposalParameters{
                 origin,
                 member_id,
@@ -588,6 +594,35 @@ decl_module! {
             Self::create_proposal(params)?;
         }
 
+        /// Create 'Accept working group leader applications' proposal type.
+        /// This proposal uses `accept_applications()` extrinsic from the Joystream `working group` module.
+        pub fn create_accept_working_group_leader_applications_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            opening_id: working_group::OpeningId<T>,
+            working_group: WorkingGroup,
+        ) {
+
+//TODO ensures
+
+            let proposal_details = ProposalDetails::AcceptWorkingGroupLeaderApplications(opening_id, working_group);
+            let params = CreateProposalParameters{
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::accept_working_group_leader_applications_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
+        }
+
 // *************** Extrinsic to execute
 
         /// Text proposal extrinsic. Should be used as callable object to pass to the `engine` module.
@@ -806,5 +841,17 @@ impl<T: Trait> Module<T> {
         <SpendingProposalGracePeriod<T>>::put(T::BlockNumber::from(
             p.spending_proposal_grace_period,
         ));
-    }
+        <AddWorkingGroupOpeningProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.add_working_group_opening_proposal_voting_period,
+        ));
+        <AddWorkingGroupOpeningProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.add_working_group_opening_proposal_grace_period,
+        ));
+        <AcceptWorkingGroupLeaderApplicationsProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.accept_working_group_leader_applications_proposal_voting_period,
+        ));
+        <AcceptWorkingGroupLeaderApplicationsProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.accept_working_group_leader_applications_proposal_grace_period,
+        ));
+    } //TODO set defaults for new proposals
 }
