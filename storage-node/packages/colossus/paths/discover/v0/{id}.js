@@ -4,7 +4,7 @@ const debug = require('debug')('joystream:api:discovery');
 const MAX_CACHE_AGE = 30 * 60 * 1000;
 const USE_CACHE = true;
 
-module.exports = function(config, runtime)
+module.exports = function(flags, runtime)
 {
   var doc = {
     // parameters for all operations in this path

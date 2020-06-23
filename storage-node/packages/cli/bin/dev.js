@@ -74,7 +74,9 @@ const init = async (api) => {
   } else { throw new Error('Setup Failed') }
 
   // set localhost colossus as discovery provider on default port
-  await api.discovery.setBootstrapEndpoints(alice, ['http://localhost:3000/'])
+  // assuming pioneer dev server is running on port 3000 we should run
+  // the storage dev server on port 3001
+  await api.discovery.setBootstrapEndpoints(alice, ['http://localhost:3001/'])
 }
 
 const check = async (api) => {

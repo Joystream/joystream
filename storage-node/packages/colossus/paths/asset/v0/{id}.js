@@ -35,7 +35,7 @@ function error_handler(response, err, code)
 }
 
 
-module.exports = function(config, storage, runtime)
+module.exports = function(flags, storage, runtime)
 {
   var doc = {
     // parameters for all operations in this path

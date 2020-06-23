@@ -33,7 +33,7 @@ const path = require('path');
 const validateResponses = require('./middleware/validate_responses');
 
 // Configure app
-function create_app(project_root, runtime, config)
+function create_app(project_root, runtime, flags)
 {
   const app = express();
   app.use(cors());
@@ -56,7 +56,7 @@ function create_app(project_root, runtime, config)
     },
     docsPath: '/swagger.json',
     dependencies: {
-      config: config,
+      flags: flags,
       runtime: runtime,
     },
   });

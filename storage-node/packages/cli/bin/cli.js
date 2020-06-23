@@ -78,7 +78,7 @@ function load_identity (api, filename, passphrase) {
     api.identities.loadUnlock(filename, passphrase)
   } else {
     console.log('Loading Alice as identity')
-    api.identities.useKeyPair(dev.aliceKeyPair())
+    api.identities.useKeyPair(dev.aliceKeyPair(api))
   }
 }
 

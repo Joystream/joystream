@@ -20,7 +20,7 @@
 
 const debug = require('debug')('joystream:sync');
 
-async function sync_callback(api, config, storage)
+async function sync_callback(api, storage)
 {
   debug('Starting sync run...');
 
@@ -87,21 +87,21 @@ async function sync_callback(api, config, storage)
 }
 
 
-async function sync_periodic(api, config, storage)
+async function sync_periodic(api, flags, storage)
 {
   try {
-    await sync_callback(api, config, storage);
+    await sync_callback(api, storage);
   } catch (err) {
     debug(`Error in sync_periodic ${err.stack}`);
   }
   // always try again
-  setTimeout(sync_periodic, config.get('syncPeriod'), api, config, storage);
+  setTimeout(sync_periodic, flags.syncPeriod, api, flags, storage);
 }
 
 
-function start_syncing(api, config, storage)
+function start_syncing(api, flags, storage)
 {
-  sync_periodic(api, config, storage);
+  sync_periodic(api, flags, storage);
 }
 
 module.exports = {
