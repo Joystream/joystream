@@ -122,7 +122,7 @@ module.exports = function(flags, storage, runtime)
             debug('Detected file info:', info);
 
             // Filter
-            const filter_result = filter(config, req.headers, info.mime_type);
+            const filter_result = filter(flags, req.headers, info.mime_type);
             if (200 != filter_result.code) {
               debug('Rejecting content', filter_result.message);
               stream.end();

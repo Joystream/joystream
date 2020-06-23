@@ -64,7 +64,9 @@ class AssetsApi {
       throw new Error(`No DataObject created for content ID: ${contentId}`)
     }
 
-    if (obj.liaison.neq(storageProviderId)) {
+    obj = obj.unwrap()
+
+    if (!obj.liaison.eq(storageProviderId)) {
       throw new Error(`This storage node is not liaison for the content ID: ${contentId}`)
     }
 
@@ -72,7 +74,7 @@ class AssetsApi {
       throw new Error(`Expected Pending judgement, but found: ${obj.liaison_judgement.type}`)
     }
 
-    return obj.unwrap()
+    return obj
   }
 
   /*
