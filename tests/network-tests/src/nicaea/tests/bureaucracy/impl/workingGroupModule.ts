@@ -2,7 +2,7 @@ import BN from 'bn.js';
 import { assert } from 'chai';
 import { ApiWrapper } from '../../../utils/apiWrapper';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { WorkerOpening } from '@nicaea/types/lib/bureaucracy';
+import { WorkerOpening } from '@nicaea/types/lib/working-group';
 import { Keyring } from '@polkadot/api';
 import { v4 as uuid } from 'uuid';
 
@@ -54,7 +54,7 @@ export async function addWorkerOpening(
     new BN(1),
     new BN(1),
     new BN(1),
-    ''
+    uuid().substring(0, 8)
   );
 
   return workerOpeningId;
@@ -96,7 +96,7 @@ export async function applyForWorkerOpening(
     workerOpeningId,
     roleStake,
     applicationStake,
-    '',
+    uuid().substring(0, 8),
     expectFailure
   );
 
@@ -146,9 +146,11 @@ export async function fillWorkerOpening(
   // Fee estimation and transfer
   const beginReviewFee: BN = apiWrapper.estimateBeginWorkerApplicantReviewFee();
   await apiWrapper.transferBalance(sudo, lead.address, beginReviewFee);
-  const applicationIds: BN[] = await Promise.all(
-    membersKeyPairs.map(async keypair => apiWrapper.getActiveWorkerApplicationsIdsByRoleAccount(keypair.address)).flat()
-  );
+  const applicationIds: BN[] = (
+    await Promise.all(
+      membersKeyPairs.map(async keypair => apiWrapper.getActiveWorkerApplicationsIdsByRoleAccount(keypair.address))
+    )
+  ).flat();
 
   // Fill worker opening
   await apiWrapper.fillWorkerOpening(
@@ -310,7 +312,7 @@ export async function terminateWorkerRole(
   const workerId: BN = await apiWrapper.getWorkerIdByRoleAccount(membersKeyPairs[0].address);
 
   // Slash worker
-  await apiWrapper.terminateWorkerRole(lead, workerId, '', expectFailure);
+  await apiWrapper.terminateWorkerRole(lead, workerId, uuid().substring(0, 8), expectFailure);
 
   // Assertions
   apiWrapper.getWorkerIdByRoleAccount(membersKeyPairs[0].address);

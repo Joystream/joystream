@@ -5,9 +5,15 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { UserInfo, PaidMembershipTerms, MemberId } from '@nicaea/types/lib/members';
 import { Mint, MintId } from '@nicaea/types/lib/mint';
 import { Lead, LeadId } from '@nicaea/types/lib/content-working-group';
-import { WorkerOpening, Worker, WorkerId, WorkerApplication, WorkerApplicationId } from '@nicaea/types/lib/bureaucracy';
+import {
+  WorkerOpening,
+  Worker,
+  WorkerId,
+  WorkerApplication,
+  WorkerApplicationId,
+} from '@nicaea/types/lib/working-group';
 import { RoleParameters } from '@nicaea/types/lib/roles';
-import { Seat } from '@nicaea/types';
+import { Seat } from '@nicaea/types/lib/council';
 import { Balance, EventRecord, AccountId, BlockNumber, BalanceOf } from '@polkadot/types/interfaces';
 import BN from 'bn.js';
 import { SubmittableExtrinsic } from '@polkadot/api/types';

@@ -1355,8 +1355,11 @@
     exec-sh "^0.3.2"
     minimist "^1.2.0"
 
-"@constantinople/types@./types", "@joystream/types@./types":
-  version "0.11.0"
+"@constantinople/types@npm:@joystream/types@^0.10.0", "@joystream/types@^0.10.0":
+  name "@constantinople/types"
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/@joystream/types/-/types-0.10.0.tgz#7e98ef221410b26a7d952cfc3d1c03d28395ad69"
+  integrity sha512-RDZizqGKWGYpLR5PnUWM4aGa7InpWNh2Txlr7Al3ROFYOHoyQf62/omPfEz29F6scwlFxysOdmEfQaLeVRaUxA==
   dependencies:
     "@polkadot/types" "^0.96.1"
     "@types/vfile" "^4.0.0"
@@ -1734,10 +1737,8 @@
     "@types/istanbul-reports" "^1.1.1"
     "@types/yargs" "^13.0.0"
 
-"@joystream/types@^0.10.0":
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/@joystream/types/-/types-0.10.0.tgz#7e98ef221410b26a7d952cfc3d1c03d28395ad69"
-  integrity sha512-RDZizqGKWGYpLR5PnUWM4aGa7InpWNh2Txlr7Al3ROFYOHoyQf62/omPfEz29F6scwlFxysOdmEfQaLeVRaUxA==
+"@joystream/types@./types", "@nicaea/types@./types":
+  version "0.11.0"
   dependencies:
     "@polkadot/types" "^0.96.1"
     "@types/vfile" "^4.0.0"
@@ -22380,10 +22381,15 @@ typescript-formatter@^7.2.2:
     commandpost "^1.0.0"
     editorconfig "^0.15.0"
 
-typescript@3.7.2, typescript@3.7.x, typescript@^3.0.3, typescript@^3.6.4, typescript@^3.7.2, typescript@^3.8.3:
+typescript@3.7.2, typescript@3.7.x, typescript@^3.0.3, typescript@^3.6.4, typescript@^3.7.2:
   version "3.7.2"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.7.2.tgz#27e489b95fa5909445e9fef5ee48d81697ad18fb"
   integrity sha512-ml7V7JfiN2Xwvcer+XAf2csGO1bPBdRbFCkYBczNZggrBZ9c7G3riSUeJmqEU5uOtXNPMhE3n+R4FA/3YOAWOQ==
+
+typescript@^3.8.3:
+  version "3.9.5"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.9.5.tgz#586f0dba300cde8be52dd1ac4f7e1009c1b13f36"
+  integrity sha512-hSAifV3k+i6lEoCJ2k6R2Z/rp/H3+8sdmcn5NrS3/3kE7+RyZXm9aqvxWqjEXHAd8b0pShatpcdMTvEdvAJltQ==
 
 u2f-api@0.2.7:
   version "0.2.7"
