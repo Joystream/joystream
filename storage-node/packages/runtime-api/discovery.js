@@ -25,6 +25,18 @@ class DiscoveryApi {
   }
 
   /*
+   * Set Bootstrap endpoints
+   */
+  async setBootstrapEndpoints (sudoAccount, endpoints) {
+    const tx = this.base.api.tx.discovery.setBootstrapEndpoints(endpoints)
+    // make sudo call
+    return this.base.signAndSend(
+      sudoAccount,
+      this.base.api.tx.sudo.sudo(tx)
+    )
+  }
+
+  /*
    * Get AccountInfo of a storage provider
    */
   async getAccountInfo (storageProviderId) {
