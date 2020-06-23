@@ -40,10 +40,6 @@ function App (props: Props) {
     !myAddress ? undefined : {
       name: `account/${myAddress}/channels`,
       text: t('My channels')
-    },
-    {
-      name: 'channels/new',
-      text: t('New channel')
     }
     // !myAddress ? undefined : {
     //   name: `account/${myAddress}/videos`,

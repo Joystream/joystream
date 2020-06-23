@@ -63,10 +63,6 @@ function AccountsApp ({ allAccounts = {}, basePath, location, onStatusChange, t 
               text: t('My accounts')
             },
             {
-              name: 'vanity',
-              text: t('Vanity address')
-            },
-            {
               name: 'memo',
               text: t('My memo')
             }

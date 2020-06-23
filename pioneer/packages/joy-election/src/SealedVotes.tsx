@@ -1,4 +1,6 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from 'semantic-ui-react';
 
 import { I18nProps } from '@polkadot/react-components/types';
 import { ApiProps } from '@polkadot/react-api/types';
@@ -42,11 +44,14 @@ class Comp extends React.PureComponent<Props> {
           ? <em>No votes by the current account found on the current browser.</em>
           : this.renderVotes(myVotes)
       }</Section>
-      <Section title={`Other votes (${otherVotes.length})`}>{
-        !otherVotes.length
-          ? <em>No votes submitted by other accounts yet.</em>
-          : this.renderVotes(otherVotes)
-      }</Section>
+      <Section title={`Other votes (${otherVotes.length})`}>
+        <Button primary as={Link} to="reveals">Reveal a vote</Button>
+        {
+          !otherVotes.length
+            ? <em>No votes submitted by other accounts yet.</em>
+            : this.renderVotes(otherVotes)
+        }
+      </Section>
     </>;
   }
 }
