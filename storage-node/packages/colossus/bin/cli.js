@@ -173,10 +173,14 @@ async function init_api_as_development_storage_provider () {
   })
 
   const dev = require('../../cli/bin/dev')
-  api.identities.useKeyPair(dev.aliceKeyPair(api))
+  api.identities.useKeyPair(dev.roleKeyPair(api))
+
+  console.log(`Using ${api.identities.key.address} as role account`)
 
   if (!await api.workers.isRoleAccountOfStorageProvider(api.storageProviderId, api.identities.key.address)) {
     throw new Error('Development chain not configured correctly')
+  } else {
+    console.log('== Running Development Server ==')
   }
 
   return api
