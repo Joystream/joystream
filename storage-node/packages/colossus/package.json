@@ -54,7 +54,6 @@
     "@joystream/util": "^0.1.0",
     "body-parser": "^1.19.0",
     "chalk": "^2.4.2",
-    "configstore": "^4.0.0",
     "cors": "^2.8.5",
     "express-openapi": "^4.6.1",
     "figlet": "^1.2.1",
