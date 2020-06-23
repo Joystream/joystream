@@ -1,6 +1,7 @@
 import { getTypeRegistry, bool, u16, u32, u64, Text, Option, Vec as Vector} from '@polkadot/types';
 import { AccountId, Moment, BlockNumber } from '@polkadot/types/interfaces';
 import { GenericAccountId } from '@polkadot/types';
+import moment from 'moment';
 
 import { JoyStruct } from './JoyStruct';
 
@@ -25,6 +26,23 @@ export class BlockchainTimestamp extends JoyStruct<BlockchainTimestampType> {
 
   get time (): Moment {
     return this.getField('time');
+  }
+
+  get momentDate (): moment.Moment {
+    const YEAR_2000_MILLISECONDS = 946684801000;
+
+    // overflowing in ~270,000 years
+    const timestamp = this.time.toNumber();
+
+    // TODO: remove once https://github.com/Joystream/joystream/issues/705 is resolved
+    // due to a bug, timestamp can be either in seconds or milliseconds
+    let timestampInMillis = timestamp;
+    if (timestamp < YEAR_2000_MILLISECONDS) {
+      // timestamp is in seconds
+      timestampInMillis = timestamp * 1000;
+    }
+
+    return moment(timestampInMillis);
   }
 
   static newEmpty (): BlockchainTimestamp {
