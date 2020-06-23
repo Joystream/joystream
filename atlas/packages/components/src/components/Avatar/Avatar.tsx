@@ -3,7 +3,7 @@ import { SerializedStyles } from "@emotion/core";
 import { makeStyles, AvatarStyleProps } from "./Avatar.style";
 
 export type AvatarProps = {
-	onClick?: (e: React.MouseEvent) => void;
+	onClick?: (e: React.MouseEvent<HTMLElement>) => void;
 	outerStyles?: SerializedStyles;
 } & AvatarStyleProps;
 

@@ -2,11 +2,12 @@ import { css } from "@emotion/core";
 import { typography, colors } from "./../../theme";
 
 export type VideoPreviewStyleProps = {
-	showChannel?: boolean;
-	poster?: string;
-	width?: number;
-	darken?: boolean;
-	height?: number;
+	showChannel: boolean;
+	poster: string;
+	width: number;
+	darken: boolean;
+	height: number;
+	fade: string;
 };
 
 export let makeStyles = ({
@@ -14,9 +15,9 @@ export let makeStyles = ({
 	width = 320,
 	height = 190,
 	poster = "",
-	darken = false,
-}: VideoPreviewStyleProps) => {
-	const withPoster = poster ? `url(${poster})` : `linear-gradient(${colors.gray[300]}, ${colors.gray[700]})`;
+	fade,
+}: Partial<VideoPreviewStyleProps>) => {
+	const withPoster = poster ? fade : `linear-gradient(${colors.gray[300]}, ${colors.gray[700]})`;
 
 	return {
 		container: css`
@@ -28,13 +29,12 @@ export let makeStyles = ({
 		coverContainer: css`
 			width: ${width}px;
 			height: ${height}px;
-			background-color: black;
 		`,
 		cover: css`
 			width: 100%;
 			height: 100%;
 			background-image: ${withPoster};
-			background-size: cover;
+			object-fit: cover;
 		`,
 		infoContainer: css`
 			display: grid;

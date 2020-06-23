@@ -1,8 +1,7 @@
-import React from "react";
-import { css } from "@emotion/core";
+import React, { useCallback, useEffect, useState } from "react";
+import { css, SerializedStyles } from "@emotion/core";
 
-import { VideoPreview, theme } from "@joystream/components";
-import Gallery from "./Gallery";
+import { VideoPreview, Gallery, theme } from "@joystream/components";
 
 type VideoGalleryProps = {
 	title: string;
@@ -98,10 +97,18 @@ const articleStyles = css`
 	margin: auto ${theme.spacing.m};
 `;
 
-export default function VideoGallery({ title = "", log = false }: VideoGalleryProps) {
+export default function VideoGallery({ title = "" }: VideoGalleryProps) {
 	const videos = videoPlaceholders.concat(videoPlaceholders).concat(videoPlaceholders);
+	const [controlsTop, setControlsTop] = useState<SerializedStyles>(css``);
+	const imgRef = useCallback((node: HTMLImageElement) => {
+		if (node != null) {
+			setControlsTop(css`
+				top: calc(${Math.round(node.clientHeight) / 2}px - 24px);
+			`);
+		}
+	}, []);
 	return (
-		<Gallery title={title} seeAll>
+		<Gallery title={title} action="See All" leftControlCss={controlsTop} rightControlCss={controlsTop}>
 			{videos.map((video, idx) => (
 				<article css={articleStyles} key={`${title}- ${video.title} - ${idx}`}>
 					<VideoPreview
@@ -110,6 +117,7 @@ export default function VideoGallery({ title = "", log = false }: VideoGalleryPr
 						showChannel={video.showChannel}
 						views={video.views}
 						time={video.time}
+						imgRef={idx === 0 ? imgRef : null}
 						poster={video.poster}
 					/>
 				</article>

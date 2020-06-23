@@ -33,7 +33,8 @@
 	},
 	"dependencies": {
 		"react-player": "^2.2.0",
-		"react-spring": "^8.0.27"
+		"react-spring": "^8.0.27",
+		"use-resize-observer": "^6.1.0"
 	},
 	"peerDependencies": {
 		"@babel/runtime": "^7.10.2",

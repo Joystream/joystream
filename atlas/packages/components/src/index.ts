@@ -19,4 +19,5 @@ export { default as VideoPreview } from "./components/VideoPreview"
 export { default as VideoPlayer } from "./components/VideoPlayer"
 export { default as SeriesPreview } from "./components/SeriesPreview"
 export { default as ChannelPreview } from "./components/ChannelPreview"
+export { default as Gallery } from "./components/Gallery"
 export { theme }

@@ -6,7 +6,7 @@ import ChevronLeftIcon from "../../../assets/chevron-left-big.svg";
 
 type NavButtonProps = {
 	direction: "right" | "left";
-	outerCss: SerializedStyles | SerializedStyles[];
+	outerCss: SerializedStyles | SerializedStyles[] | (SerializedStyles | undefined) | (SerializedStyles | undefined)[];
 	onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
 } & NavButtonStyleProps;
 

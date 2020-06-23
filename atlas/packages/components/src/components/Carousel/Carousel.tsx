@@ -1,125 +1,105 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import { css } from "@emotion/core";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { css, SerializedStyles } from "@emotion/core";
 import { animated, useSpring } from "react-spring";
+import useResizeObserver from "use-resize-observer";
 import { useCSS, CarouselStyleProps } from "./Carousel.style";
 import NavButton from "../NavButton";
 
 type CarouselProps = {
-	children: React.ReactNode[];
-	scrollAmount?: number;
-	log?: boolean;
+	children: React.ReactNode;
+	containerCss: SerializedStyles;
+	leftControlCss: SerializedStyles;
+	rightControlCss: SerializedStyles;
+	onScroll: (direction: "left" | "right") => void;
 } & CarouselStyleProps;
 
-export default function Carousel({ children, scrollAmount = 200, log, ...styleProps }: CarouselProps) {
-	let styles = useCSS(styleProps);
-	const containerRef = useRef<HTMLDivElement>(null);
-	const elementsRefs = useRef<(HTMLDivElement | null)[]>([]);
-	const [distance, setDistance] = useState(0);
-	const [maxDistance, setMaxDistance] = useState(Infinity);
-	const [props, set] = useSpring(() => ({
-		transform: `translateX(${distance}px)`,
+const Carousel: React.FC<Partial<CarouselProps>> = ({
+	children,
+	containerCss,
+	leftControlCss,
+	rightControlCss,
+	onScroll = () => {},
+}) => {
+	if (!Array.isArray(children)) {
+		return <>{children}</>;
+	}
+	let [props, set] = useSpring(() => ({
+		transform: `translateX(0px)`,
 	}));
-
+	const [x, setX] = useState(0);
+	const { width: containerWidth, ref: containerRef } = useResizeObserver<HTMLDivElement>();
+	const elementsRefs = useRef<(HTMLDivElement | null)[]>([]);
+	const [childrenLength, setChildrenLength] = useState(0);
 	useEffect(() => {
-		if (containerRef.current) {
-			elementsRefs.current = elementsRefs.current.slice(0, children.length);
-			const totalChildrensLength = elementsRefs.current.reduce(
-				(accWidth, el) => (el != null ? accWidth + el.clientWidth : accWidth),
-				0
-			);
-			const longestChildrenWidth = elementsRefs.current.reduce(
-				(longest, el) => (el != null && el.clientWidth > longest ? el.clientWidth : longest),
-				0
-			);
-			const containerWidth = containerRef.current.clientWidth;
-
-			setMaxDistance(totalChildrensLength - containerWidth + longestChildrenWidth);
-		}
+		elementsRefs.current = elementsRefs.current.slice(0, children.length);
+		const childrensLength = elementsRefs.current.reduce(
+			(accWidth, el) => (el != null ? accWidth + el.clientWidth : accWidth),
+			0
+		);
+		setChildrenLength(childrensLength);
 	}, [children.length]);
 
-	if (log) {
-		console.log({
-			totalChildrensLength: elementsRefs.current.reduce(
-				(accWidth, el) => (el != null ? accWidth + el.clientWidth : accWidth),
-				0
-			),
-			longestChildrenWidth: elementsRefs.current.reduce(
-				(longest, el) => (el != null && el.clientWidth > longest ? el.clientWidth : longest),
-				0
-			),
-			maxDistance,
-			childrens: children.length,
-			distance,
-		});
-	}
-	const MIN_DISTANCE = 0;
-	const MAX_DISTANCE = maxDistance;
-
-	function handleScroll(direction: "right" | "left") {
-		let newDist = NaN;
-
-		switch (direction) {
-			case "left": {
-				newDist = distance + scrollAmount <= MIN_DISTANCE ? distance + scrollAmount : distance;
-				break;
-			}
-			case "right": {
-				newDist = distance - scrollAmount > -MAX_DISTANCE ? distance - scrollAmount : distance;
-				break;
-			}
-		}
-		console.log("newDist", newDist);
-		setDistance(newDist);
-		set({
-			transform: `translateX(${newDist}px)`,
-		});
-
-		return newDist;
-	}
-
+	const styles = useMemo(() => useCSS({}), []);
 	return (
-		<div css={styles.container}>
-			<div css={styles.innerContainer} ref={containerRef}>
-				{children.map((item, idx) => (
+		<div css={[styles.container, containerCss]}>
+			<div css={styles.itemsContainer} ref={containerRef}>
+				{children.map((element, idx) => (
 					<animated.div
 						style={props}
 						key={`Carousel-${idx}`}
-						css={css`
-							&::after {
-								background-color: red;
-							}
-						`}
 						ref={(el) => {
 							elementsRefs.current[idx] = el;
 							return el;
 						}}
 					>
-						{item}
+						{element}
 					</animated.div>
 				))}
 			</div>
 			<NavButton
-				outerCss={[
-					styles.navLeft,
-					css`
-						opacity: ${distance === MIN_DISTANCE ? 0 : 1};
-					`,
-				]}
-				type="primary"
+				outerCss={[styles.navLeft, leftControlCss]}
 				direction="left"
-				onClick={() => handleScroll("left")}
+				onClick={() => {
+					handleScroll("left");
+				}}
 			/>
 			<NavButton
-				outerCss={[
-					styles.navRight,
-					css`
-						opacity: ${distance - scrollAmount < -MAX_DISTANCE ? 0 : 1};
-					`,
-				]}
-				type="primary"
+				outerCss={[styles.navRight, rightControlCss]}
 				direction="right"
-				onClick={() => handleScroll("right")}
+				onClick={() => {
+					handleScroll("right");
+				}}
 			/>
 		</div>
 	);
-}
+
+	function handleScroll(direction: "left" | "right") {
+		if (containerWidth == null) {
+			return;
+		}
+		let scrollAmount;
+		switch (direction) {
+			case "left": {
+				// Prevent overscroll on the left
+				scrollAmount = x + containerWidth >= 0 ? 0 : x + containerWidth;
+				onScroll("left");
+				break;
+			}
+			case "right": {
+				// Prevent overscroll on the right
+				scrollAmount =
+					x - containerWidth <= -(childrenLength - containerWidth)
+						? -(childrenLength - containerWidth)
+						: x - containerWidth;
+				onScroll("right");
+				break;
+			}
+		}
+		setX(scrollAmount);
+		set({
+			transform: `translateX(${scrollAmount}px)`,
+		});
+	}
+};
+
+export default Carousel;
