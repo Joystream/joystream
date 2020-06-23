@@ -39,6 +39,7 @@ type State = {
 
   // Data generated for transaction
   transactionDetails: Map<string, string>;
+  roleKeyNameBase: string;
   roleKeyName: string;
 
   // Error capture and display
@@ -52,6 +53,7 @@ const newEmptyState = (): State => {
     appDetails: {},
     hasError: false,
     transactionDetails: new Map<string, string>(),
+    roleKeyNameBase: '',
     roleKeyName: '',
     txKeyAddress: new AccountId(),
     activeStep: 0,
@@ -125,7 +127,7 @@ export class ApplyController extends Controller<State, ITransport> {
             ? ProgressSteps.ConfirmStakes
             : ProgressSteps.ApplicationDetails;
 
-          this.state.roleKeyName = hrt.job.title + ' role key';
+          this.state.roleKeyNameBase = hrt.job.title + ' role key';
 
           // When everything is collected, update the view
           this.dispatch();
@@ -198,10 +200,20 @@ export class ApplyController extends Controller<State, ITransport> {
     return true;
   }
 
+  private updateRoleKeyName () {
+    let roleKeyNamePrefix = 0;
+    do {
+      this.state.roleKeyName = `${this.state.roleKeyNameBase}${(++roleKeyNamePrefix > 1 ? ` ${roleKeyNamePrefix}` : '')}`;
+    } while (this.state.keypairs?.some(k => (
+      k.shortName.toLowerCase() === this.state.roleKeyName.toLowerCase()
+    )));
+  }
+
   async makeApplicationTransaction (): Promise<number> {
     if (!this.currentGroup || this.currentOpeningId < 0) {
       throw new Error('Trying to apply to unfetched opening');
     }
+    this.updateRoleKeyName();
     return this.transport.applyToOpening(
       this.currentGroup,
       this.currentOpeningId,
