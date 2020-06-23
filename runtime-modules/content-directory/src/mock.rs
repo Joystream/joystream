@@ -736,6 +736,20 @@ pub fn add_schema_support_to_entity(
     )
 }
 
+pub fn update_entity_property_values(
+    origin: u64,
+    actor: Actor<Runtime>,
+    entity_id: EntityId,
+    new_property_values: BTreeMap<PropertyId, PropertyValue<Runtime>>,
+) -> Result<(), &'static str> {
+    TestModule::update_entity_property_values(
+        Origin::signed(origin),
+        actor,
+        entity_id,
+        new_property_values,
+    )
+}
+
 impl From<InboundReferenceCounter> for EntityReferenceCounterSideEffect {
     fn from(inbound_rc: InboundReferenceCounter) -> Self {
         Self {

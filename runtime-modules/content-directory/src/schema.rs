@@ -607,7 +607,7 @@ impl<T: Trait> Property<T> {
     /// Ensure `Property` is unlocked from `Actor` with given `EntityAccessLevel`
     pub fn ensure_unlocked_from(&self, access_level: EntityAccessLevel) -> dispatch::Result {
         ensure!(
-            self.is_locked_from(access_level),
+            !self.is_locked_from(access_level),
             ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR
         );
         Ok(())
