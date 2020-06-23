@@ -291,18 +291,15 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
                 .then(unsubFunc => unsubscribe = unsubFunc)
                 .catch(e => reject(new ExtrinsicFailedError(`Cannot send the extrinsic: ${e.message ? e.message : JSON.stringify(e)}`)));
         });
-
     }
 
-    async buildAndSendExtrinsic(
+    async sendAndFollowExtrinsic(
         account: KeyringPair,
         module: string,
         method: string,
-        jsonArgs?: JSONArgsMapping, // Special JSON arguments (ie. human_readable_text of worker opening)
-        defaultValues?: ApiMethodInputArg[],
+        params: Codec[],
         warnOnly: boolean = false // If specified - only warning will be displayed (instead of error beeing thrown)
-    ): Promise<ApiMethodInputArg[]> {
-        const params = await this.promptForExtrinsicParams(module, method, jsonArgs, defaultValues);
+    ) {
         try {
             this.log(chalk.white(`\nSending ${ module }.${ method } extrinsic...`));
             await this.sendExtrinsic(account, module, method, params);
@@ -318,6 +315,18 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
                 throw e;
             }
         }
+    }
+
+    async buildAndSendExtrinsic(
+        account: KeyringPair,
+        module: string,
+        method: string,
+        jsonArgs?: JSONArgsMapping, // Special JSON arguments (ie. human_readable_text of worker opening)
+        defaultValues?: ApiMethodInputArg[],
+        warnOnly: boolean = false // If specified - only warning will be displayed (instead of error beeing thrown)
+    ): Promise<ApiMethodInputArg[]> {
+        const params = await this.promptForExtrinsicParams(module, method, jsonArgs, defaultValues);
+        await this.sendAndFollowExtrinsic(account, module, method, params, warnOnly);
 
         return params;
     }
