@@ -44,7 +44,7 @@ export class RelationshipGenerator {
 
   generate(): void {
     this.model.types.forEach(currentObject => {
-      for (const field of currentObject.fields) {
+      currentObject.fields.forEach(field => {
         if (this.visited.includes(field)) return;
 
         // ============= Case 0 =============
@@ -73,24 +73,19 @@ export class RelationshipGenerator {
 
           if (relatedFields.length === 0) {
             return this.addMany2One(field, currentObject, relatedObject);
-          } else if (relatedFields.length > 1) {
-            // Found multiple fields?
-            const derivedField = relatedFields.find(f => f.derivedFrom?.argument === field.name);
-
-            if (derivedField) {
-              return this.addOne2Many(field, derivedField, currentObject, relatedObject);
-            } else {
-              const relatedField = relatedFields.find(f => !f.isList);
-              if (relatedField) {
-                return this.addOne2One(field, relatedField, currentObject, relatedObject);
-              } else {
-                throw new Error(
-                  `Incorrect relationship detected! Between ${currentObject.name}<->${relatedObject.name}`
-                );
-              }
-            }
           } else {
-            return this.addOne2One(field, relatedFields[0], currentObject, relatedObject);
+            const derivedFields = relatedFields.filter(f => f.derivedFrom?.argument === field.name);
+            if (derivedFields.length === 0) {
+              throw new Error(
+                `Incorrect one to one relationship. '${relatedObject.name}' should have a derived field with @derivedFrom(field: "${field.name}") directive`
+              );
+            } else if (derivedFields.length === 1) {
+              return this.addOne2One(field, derivedFields[0], currentObject, relatedObject);
+            } else {
+              throw new Error(
+                `Found multiple derived fields with same argument -> @derivedField(field:"${field.name}")`
+              );
+            }
           }
         }
 
@@ -109,7 +104,7 @@ export class RelationshipGenerator {
           }
           return this.addMany2Many(field, relatedFields[0], currentObject, relatedObject);
         }
-      }
+      });
     });
   }
 }
