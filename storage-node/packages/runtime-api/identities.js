@@ -24,6 +24,7 @@ const fs = require('fs')
 
 const debug = require('debug')('joystream:runtime:identities')
 const { Keyring } = require('@polkadot/keyring')
+const util_crypto = require('@polkadot/util-crypto')
 
 /*
  * Add identity management to the substrate API.
@@ -190,6 +191,37 @@ class IdentitiesApi {
         reject(err)
       }
     })
+  }
+
+  useKeyPair (keyPair) {
+    this.key = this.keyring.addPair(keyPair)
+  }
+  /*
+ * Create a new role key. If no name is given,
+ * default to 'storage'.
+ */
+  async createNewRoleKey (name) {
+    name = name || 'storage-provider'
+
+    // Generate new key pair
+    const keyPair = util_crypto.naclKeypairFromRandom()
+
+    // Encode to an address.
+    const addr = this.keyring.encodeAddress(keyPair.publicKey)
+    debug('Generated new key pair with address', addr)
+
+    // Add to key wring. We set the meta to identify the account as
+    // a role key.
+    const meta = {
+      name: `${name} role account`
+    }
+
+    const createPair = require('@polkadot/keyring/pair').default
+    const pair = createPair('ed25519', keyPair, meta)
+
+    this.keyring.addPair(pair)
+
+    return pair
   }
 }
 

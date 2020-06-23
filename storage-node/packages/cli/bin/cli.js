@@ -37,6 +37,8 @@ const project_root = path.resolve(__dirname, '..')
 // Configuration (default)
 const pkg = require(path.resolve(project_root, 'package.json'))
 
+const dev = require('./dev')
+
 // Parse CLI
 const FLAG_DEFINITIONS = {
   // TODO
@@ -44,10 +46,10 @@ const FLAG_DEFINITIONS = {
 
 const cli = meow(`
   Usage:
-    $ joystream key_file command [options]
+    $ storage-cli command [arguments..] [key_file]
 
-  All commands require a key file holding the identity for interacting with the
-  runtime API.
+  Some commands require a key file as the last option holding the identity for
+  interacting with the runtime API.
 
   Commands:
     upload            Upload a file to a Colossus storage node. Requires a
@@ -60,8 +62,8 @@ const cli = meow(`
                       Requires a storage node URL and a content ID.
 
   Dev Commands:       Commands to run on a development chain.
-    dev-init          Setup chain with Alice as lead and provider.
-    dev-check         Check the chain is setup with Alice as lead and provider.
+    dev-init          Setup chain with Alice as lead and storage provider.
+    dev-check         Check the chain is setup with Alice as lead storage provider.
   `,
   { flags: FLAG_DEFINITIONS })
 
@@ -70,19 +72,30 @@ function assert_file (name, filename) {
   assert(fs.statSync(filename).isFile(), `Path "${filename}" is not a file, aborting!`)
 }
 
+function load_identity (api, filename, passphrase) {
+  if (filename) {
+    assert_file('keyfile', filename)
+    api.identities.loadUnlock(filename, passphrase)
+  } else {
+    console.log('Loading Alice as identity')
+    api.identities.useKeyPair(dev.aliceKeyPair())
+  }
+}
+
 const commands = {
   // add Alice well known account as storage provider
-  'dev-init': async (runtime_api) => {
+  'dev-init': async (api) => {
     let dev = require('./dev')
-    return dev.init(runtime_api)
+    return dev.init(api)
   },
   // Checks that the setup done by dev-init command was successful.
-  'dev-check': async (runtime_api) => {
+  'dev-check': async (api) => {
     let dev = require('./dev')
-    return dev.check(runtime_api)
-    // await runtime_api.assets.checkLiaisonForDataObject(providerId, '')
+    return dev.check(api)
+    // await api.assets.checkLiaisonForDataObject(providerId, '')
   },
-  'upload': async (runtime_api, url, filename, do_type_id) => {
+  'upload': async (api, url, filename, do_type_id, keyfile, passphrase) => {
+    load_identity(keyfile, passphrase)
     // Check parameters
     assert_file('file', filename)
 
@@ -104,8 +117,8 @@ const commands = {
     console.log('Generated content ID: ' + chalk.green(cid))
 
     // Create Data Object
-    const data_object = await runtime_api.assets.createDataObject(
-      runtime_api.identities.key.address, cid, do_type_id, size)
+    const data_object = await api.assets.createDataObject(
+      api.identities.key.address, cid, do_type_id, size)
     console.log('Data object created.')
 
     // TODO in future, optionally contact liaison here?
@@ -140,7 +153,7 @@ const commands = {
     })
   },
 
-  'download': async (runtime_api, url, content_id, filename) => {
+  'download': async (api, url, content_id, filename) => {
     const request = require('request')
     url = `${url}asset/v0/${content_id}`
     console.log('Downloading URL', chalk.green(url), 'to', chalk.green(filename))
@@ -176,7 +189,7 @@ const commands = {
     })
   },
 
-  'head': async (runtime_api, url, content_id) => {
+  'head': async (api, url, content_id) => {
     const request = require('request')
     url = `${url}asset/v0/${content_id}`
     console.log('Checking URL', chalk.green(url), '...')
@@ -208,23 +221,18 @@ const commands = {
 }
 
 async function main () {
-  // Key file is at the first instance.
-  const key_file = cli.input[0]
-  assert_file('key file', key_file)
-
-  // Create runtime API.
-  const runtime_api = await RuntimeApi.create({ account_file: key_file })
+  const api = await RuntimeApi.create()
 
   // Simple CLI commands
-  const command = cli.input[1]
+  const command = cli.input[0]
   if (!command) {
     throw new Error('Need a command to run!')
   }
 
   if (commands.hasOwnProperty(command)) {
     // Command recognized
-    const args = _.clone(cli.input).slice(2)
-    await commands[command](runtime_api, ...args)
+    const args = _.clone(cli.input).slice(1)
+    await commands[command](api, ...args)
   } else {
     throw new Error(`Command "${command}" not recognized, aborting!`)
   }
