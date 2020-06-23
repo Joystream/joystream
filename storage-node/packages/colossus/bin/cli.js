@@ -203,7 +203,7 @@ function get_service_information (publicUrl) {
 async function announce_public_url (api, publicUrl) {
   // re-announce in future
   const reannounce = function (timeoutMs) {
-    setTimeout(announce_public_url, timeoutMs, api)
+    setTimeout(announce_public_url, timeoutMs, api, publicUrl)
   }
 
   debug('announcing public url')
@@ -252,6 +252,8 @@ const commands = {
     if (!cli.flags.publicUrl) {
       throw new Error('Must specify a --public-url argument')
     }
+
+    // TODO: check valid url
 
     // Continue with server setup
     const store = get_storage(api)

@@ -36,7 +36,13 @@ async function discover_over_ipfs_http_gateway (storageProviderId, runtimeApi, g
 
   const identity = await getIpnsIdentity(storageProviderId, runtimeApi)
 
+  if (identity == null) {
+    // dont waste time trying to resolve if no identity was found
+    throw new Error('no identity to resolve')
+  }
+
   gateway = gateway || 'http://localhost:8080'
+  gateway = stripEndingSlash(gateway)
 
   const url = `${gateway}/ipns/${identity}`
 
@@ -84,10 +90,15 @@ async function discover_over_local_ipfs_node (storageProviderId, runtimeApi) {
   let isProvider = await runtimeApi.workers.isStorageProvider(storageProviderId)
 
   if (!isProvider) {
-    throw new Error('Cannot discover non actor account service info')
+    throw new Error('Cannot discover non storage providers')
   }
 
   const identity = await getIpnsIdentity(storageProviderId, runtimeApi)
+
+  if (identity == null) {
+    // dont waste time trying to resolve if no identity was found
+    throw new Error('no identity to resolve')
+  }
 
   const ipns_address = `/ipns/${identity}/`
 
@@ -163,6 +174,7 @@ async function _discover (storageProviderId, runtimeApi) {
     } else {
       result = await discover_over_local_ipfs_node(storageProviderId, runtimeApi)
     }
+
     debug(result)
     result = JSON.stringify(result)
     accountInfoCache[id] = {
@@ -174,10 +186,19 @@ async function _discover (storageProviderId, runtimeApi) {
     delete activeDiscoveries[id]
     return result
   } catch (err) {
+    // we catch the error so we can update all callers
+    // and throw again to inform the first caller.
     debug(err.message)
-    deferredDiscovery.reject(err)
     delete activeDiscoveries[id]
-    throw err
+    // deferredDiscovery.reject(err)
+    deferredDiscovery.resolve(null) // resolve to null until we figure out the issue below
+    // throw err // <-- throwing but this isn't being
+    // caught correctly in express server! Is it because there is an uncaught promise somewhere
+    // in the prior .reject() call ?
+    // I've only seen this behaviour when error is from ipfs-client
+    // ... is this unique to errors thrown from ipfs-client?
+    // Problem is its crashing the node so just return null for now
+    return null
   }
 }
 

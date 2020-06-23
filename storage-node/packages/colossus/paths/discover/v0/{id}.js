@@ -53,10 +53,9 @@ module.exports = function(flags, runtime)
           } else {
             res.status(200).send(info);
           }
-
         } catch (err) {
           debug(`${err}`);
-          res.status(400).end()
+          res.status(404).end()
         }
     }
   };
