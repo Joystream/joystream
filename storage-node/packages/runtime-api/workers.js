@@ -71,6 +71,11 @@ class WorkersApi {
       return worker.role_account
     }
   }
+
+  async getAllProviders () {
+    const workerEntries = await this.base.api.query.storageWorkingGroup.workerById()
+    return workerEntries[0] // keys
+  }
 }
 
 module.exports = {
