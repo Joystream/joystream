@@ -222,7 +222,7 @@ export class ApiWrapper {
 
   public estimateAddWorkerOpeningFee(): BN {
     return this.estimateTxFee(
-      this.api.tx.forumBureaucracy.addWorkerOpening(
+      this.api.tx.storageWorkingGroup.addWorkerOpening(
         'CurrentBlock',
         {
           application_rationing_policy: { max_active_applicants: '32' },
@@ -259,12 +259,12 @@ export class ApiWrapper {
   }
 
   public estimateAcceptWorkerApplicationsFee(): BN {
-    return this.estimateTxFee(this.api.tx.forumBureaucracy.acceptWorkerApplications(0));
+    return this.estimateTxFee(this.api.tx.storageWorkingGroup.acceptWorkerApplications(0));
   }
 
   public estimateApplyOnOpeningFee(account: KeyringPair): BN {
     return this.estimateTxFee(
-      this.api.tx.forumBureaucracy.applyOnWorkerOpening(
+      this.api.tx.storageWorkingGroup.applyOnWorkerOpening(
         0,
         0,
         account.address,
@@ -276,12 +276,12 @@ export class ApiWrapper {
   }
 
   public estimateBeginWorkerApplicantReviewFee(): BN {
-    return this.estimateTxFee(this.api.tx.forumBureaucracy.beginWorkerApplicantReview(0));
+    return this.estimateTxFee(this.api.tx.storageWorkingGroup.beginWorkerApplicantReview(0));
   }
 
   public estimateFillWorkerOpeningFee(): BN {
     return this.estimateTxFee(
-      this.api.tx.forumBureaucracy.fillWorkerOpening(0, [0], {
+      this.api.tx.storageWorkingGroup.fillWorkerOpening(0, [0], {
         amount_per_payout: 0,
         next_payment_at_block: 0,
         payout_interval: 0,
@@ -290,40 +290,40 @@ export class ApiWrapper {
   }
 
   public estimateIncreaseWorkerStakeFee(): BN {
-    return this.estimateTxFee(this.api.tx.forumBureaucracy.increaseWorkerStake(0, 0));
+    return this.estimateTxFee(this.api.tx.storageWorkingGroup.increaseWorkerStake(0, 0));
   }
 
   public estimateDecreaseWorkerStakeFee(): BN {
-    return this.estimateTxFee(this.api.tx.forumBureaucracy.decreaseWorkerStake(0, 0));
+    return this.estimateTxFee(this.api.tx.storageWorkingGroup.decreaseWorkerStake(0, 0));
   }
 
   public estimateUpdateRoleAccountFee(address: string): BN {
-    return this.estimateTxFee(this.api.tx.forumBureaucracy.updateWorkerRoleAccount(0, address));
+    return this.estimateTxFee(this.api.tx.storageWorkingGroup.updateWorkerRoleAccount(0, address));
   }
 
   public estimateUpdateRewardAccountFee(address: string): BN {
-    return this.estimateTxFee(this.api.tx.forumBureaucracy.updateWorkerRewardAccount(0, address));
+    return this.estimateTxFee(this.api.tx.storageWorkingGroup.updateWorkerRewardAccount(0, address));
   }
 
   public estimateLeaveWorkerRoleFee(text: string): BN {
-    return this.estimateTxFee(this.api.tx.forumBureaucracy.leaveWorkerRole(0, text));
+    return this.estimateTxFee(this.api.tx.storageWorkingGroup.leaveWorkerRole(0, text));
   }
 
   public estimateWithdrawWorkerApplicationFee(): BN {
-    return this.estimateTxFee(this.api.tx.forumBureaucracy.withdrawWorkerApplication(0));
+    return this.estimateTxFee(this.api.tx.storageWorkingGroup.withdrawWorkerApplication(0));
   }
 
   public estimateTerminateWorkerApplicationFee(): BN {
-    return this.estimateTxFee(this.api.tx.forumBureaucracy.terminateWorkerApplication(0));
+    return this.estimateTxFee(this.api.tx.storageWorkingGroup.terminateWorkerApplication(0));
   }
 
   public estimateSlashWorkerStakeFee(): BN {
-    return this.estimateTxFee(this.api.tx.forumBureaucracy.slashWorkerStake(0, 0));
+    return this.estimateTxFee(this.api.tx.storageWorkingGroup.slashWorkerStake(0, 0));
   }
 
   public estimateTerminateWorkerRoleFee(): BN {
     return this.estimateTxFee(
-      this.api.tx.forumBureaucracy.terminateWorkerRole(
+      this.api.tx.storageWorkingGroup.terminateWorkerRole(
         0,
         'Long justification text explaining why the worker role will be terminated'
       )
@@ -723,14 +723,14 @@ export class ApiWrapper {
   public async sudoSetLead(sudo: KeyringPair, lead: KeyringPair): Promise<void> {
     const leadMemberId: BN = (await this.getMemberIds(lead.address))[0].toBn();
     return this.sender.signAndSend(
-      this.api.tx.sudo.sudo(this.api.tx.forumBureaucracy.setLead(leadMemberId, lead.address)),
+      this.api.tx.sudo.sudo(this.api.tx.storageWorkingGroup.setLead(leadMemberId, lead.address)),
       sudo,
       false
     );
   }
 
   public async sudoUnsetLead(sudo: KeyringPair): Promise<void> {
-    return this.sender.signAndSend(this.api.tx.sudo.sudo(this.api.tx.forumBureaucracy.unsetLead()), sudo, false);
+    return this.sender.signAndSend(this.api.tx.sudo.sudo(this.api.tx.storageWorkingGroup.unsetLead()), sudo, false);
   }
 
   public async addWorkerOpening(
@@ -786,7 +786,7 @@ export class ApiWrapper {
       exit_curator_role_stake_unstaking_period: exitCuratorRoleStakeUnstakingPeriod,
     };
     await this.sender.signAndSend(
-      this.api.tx.forumBureaucracy.addWorkerOpening(activateAt, commitment, text),
+      this.api.tx.storageWorkingGroup.addWorkerOpening(activateAt, commitment, text),
       account,
       false
     );
@@ -794,7 +794,7 @@ export class ApiWrapper {
 
   public async acceptWorkerApplications(account: KeyringPair, workerOpeningId: BN): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx.forumBureaucracy.acceptWorkerApplications(workerOpeningId),
+      this.api.tx.storageWorkingGroup.acceptWorkerApplications(workerOpeningId),
       account,
       false
     );
@@ -802,7 +802,7 @@ export class ApiWrapper {
 
   public async beginWorkerApplicationReview(account: KeyringPair, workerOpeningId: BN): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx.forumBureaucracy.beginWorkerApplicantReview(workerOpeningId),
+      this.api.tx.storageWorkingGroup.beginWorkerApplicantReview(workerOpeningId),
       account,
       false
     );
@@ -818,7 +818,7 @@ export class ApiWrapper {
   ): Promise<void> {
     const memberId: BN = (await this.getMemberIds(account.address))[0];
     return this.sender.signAndSend(
-      this.api.tx.forumBureaucracy.applyOnWorkerOpening(
+      this.api.tx.storageWorkingGroup.applyOnWorkerOpening(
         memberId,
         workerOpeningId,
         account.address,
@@ -855,7 +855,7 @@ export class ApiWrapper {
     payoutInterval: BN
   ): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx.forumBureaucracy.fillWorkerOpening(workerOpeningId, applicationId, {
+      this.api.tx.storageWorkingGroup.fillWorkerOpening(workerOpeningId, applicationId, {
         amount_per_payout: amountPerPayout,
         next_payment_at_block: nextPaymentBlock,
         payout_interval: payoutInterval,
@@ -866,7 +866,11 @@ export class ApiWrapper {
   }
 
   public async increaseWorkerStake(account: KeyringPair, workerId: BN, stake: BN): Promise<void> {
-    return this.sender.signAndSend(this.api.tx.forumBureaucracy.increaseWorkerStake(workerId, stake), account, false);
+    return this.sender.signAndSend(
+      this.api.tx.storageWorkingGroup.increaseWorkerStake(workerId, stake),
+      account,
+      false
+    );
   }
 
   public async decreaseWorkerStake(
@@ -876,7 +880,7 @@ export class ApiWrapper {
     expectFailure: boolean
   ): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx.forumBureaucracy.decreaseWorkerStake(workerId, stake),
+      this.api.tx.storageWorkingGroup.decreaseWorkerStake(workerId, stake),
       account,
       expectFailure
     );
@@ -884,7 +888,7 @@ export class ApiWrapper {
 
   public async slashWorkerStake(account: KeyringPair, workerId: BN, stake: BN, expectFailure: boolean): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx.forumBureaucracy.slashWorkerStake(workerId, stake),
+      this.api.tx.storageWorkingGroup.slashWorkerStake(workerId, stake),
       account,
       expectFailure
     );
@@ -892,7 +896,7 @@ export class ApiWrapper {
 
   public async updateRoleAccount(account: KeyringPair, workerId: BN, newRoleAccount: string): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx.forumBureaucracy.updateWorkerRoleAccount(workerId, newRoleAccount),
+      this.api.tx.storageWorkingGroup.updateWorkerRoleAccount(workerId, newRoleAccount),
       account,
       false
     );
@@ -900,14 +904,14 @@ export class ApiWrapper {
 
   public async updateRewardAccount(account: KeyringPair, workerId: BN, newRewardAccount: string): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx.forumBureaucracy.updateWorkerRewardAccount(workerId, newRewardAccount),
+      this.api.tx.storageWorkingGroup.updateWorkerRewardAccount(workerId, newRewardAccount),
       account,
       false
     );
   }
 
   public async withdrawWorkerApplication(account: KeyringPair, workerId: BN): Promise<void> {
-    return this.sender.signAndSend(this.api.tx.forumBureaucracy.withdrawWorkerApplication(workerId), account, false);
+    return this.sender.signAndSend(this.api.tx.storageWorkingGroup.withdrawWorkerApplication(workerId), account, false);
   }
 
   public async batchWithdrawWorkerApplication(accounts: KeyringPair[]): Promise<void[]> {
@@ -921,7 +925,7 @@ export class ApiWrapper {
 
   public async terminateWorkerApplication(account: KeyringPair, applicationId: BN): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx.forumBureaucracy.terminateWorkerApplication(applicationId),
+      this.api.tx.storageWorkingGroup.terminateWorkerApplication(applicationId),
       account,
       false
     );
@@ -943,7 +947,7 @@ export class ApiWrapper {
     expectFailure: boolean
   ): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx.forumBureaucracy.terminateWorkerRole(applicationId, text),
+      this.api.tx.storageWorkingGroup.terminateWorkerRole(applicationId, text),
       account,
       expectFailure
     );
@@ -986,27 +990,27 @@ export class ApiWrapper {
   }
 
   public async getNextWorkerOpeningId(): Promise<BN> {
-    return this.api.query.forumBureaucracy.nextWorkerOpeningId<u32>();
+    return this.api.query.storageWorkingGroup.nextWorkerOpeningId<u32>();
   }
 
   public async getNextApplicationId(): Promise<BN> {
-    return this.api.query.forumBureaucracy.nextWorkerApplicationId<u32>();
+    return this.api.query.storageWorkingGroup.nextWorkerApplicationId<u32>();
   }
 
   public async getWorkerOpening(id: BN): Promise<WorkerOpening> {
-    return ((await this.api.query.forumBureaucracy.workerOpeningById<Codec[]>(id))[0] as unknown) as WorkerOpening;
+    return ((await this.api.query.storageWorkingGroup.workerOpeningById<Codec[]>(id))[0] as unknown) as WorkerOpening;
   }
 
   public async getWorkers(): Promise<Worker[]> {
-    return ((await this.api.query.forumBureaucracy.workerById<Codec[]>())[1] as unknown) as Worker[];
+    return ((await this.api.query.storageWorkingGroup.workerById<Codec[]>())[1] as unknown) as Worker[];
   }
 
   public async getWorker(id: BN): Promise<Worker> {
-    return ((await this.api.query.forumBureaucracy.workerById<Codec[]>(id))[0] as unknown) as Worker;
+    return ((await this.api.query.storageWorkingGroup.workerById<Codec[]>(id))[0] as unknown) as Worker;
   }
 
   public async getWorkerIdByRoleAccount(address: string): Promise<BN> {
-    const workersAndIds = await this.api.query.forumBureaucracy.workerById<Codec[]>();
+    const workersAndIds = await this.api.query.storageWorkingGroup.workerById<Codec[]>();
     const workers: Worker[] = (workersAndIds[1] as unknown) as Worker[];
     const ids: WorkerId[] = (workersAndIds[0] as unknown) as WorkerId[];
     let index: number;
@@ -1017,7 +1021,7 @@ export class ApiWrapper {
   }
 
   public async getWorkerApplicationsIdsByRoleAccount(address: string): Promise<BN[]> {
-    const applicationsAndIds = await this.api.query.forumBureaucracy.workerApplicationById<Codec[]>();
+    const applicationsAndIds = await this.api.query.storageWorkingGroup.workerApplicationById<Codec[]>();
     const applications: WorkerApplication[] = (applicationsAndIds[1] as unknown) as WorkerApplication[];
     const ids: WorkerApplicationId[] = (applicationsAndIds[0] as unknown) as WorkerApplicationId[];
     return applications
@@ -1030,7 +1034,7 @@ export class ApiWrapper {
   }
 
   public async getActiveWorkerApplicationsIdsByRoleAccount(address: string): Promise<BN[]> {
-    const applicationsAndIds = await this.api.query.forumBureaucracy.workerApplicationById<Codec[]>();
+    const applicationsAndIds = await this.api.query.storageWorkingGroup.workerApplicationById<Codec[]>();
     const applications: WorkerApplication[] = (applicationsAndIds[1] as unknown) as WorkerApplication[];
     const ids: WorkerApplicationId[] = (applicationsAndIds[0] as unknown) as WorkerApplicationId[];
     return (
