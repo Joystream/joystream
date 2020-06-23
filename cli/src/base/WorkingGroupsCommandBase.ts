@@ -1,7 +1,7 @@
 import ExitCodes from '../ExitCodes';
 import AccountsCommandBase from './AccountsCommandBase';
 import { flags } from '@oclif/command';
-import { WorkingGroups, AvailableGroups, NamedKeyringPair, GroupLeadWithProfile, GroupMember } from '../Types';
+import { WorkingGroups, AvailableGroups, NamedKeyringPair, GroupLeadWithProfile, GroupMember, GroupOpening, GroupApplication } from '../Types';
 import { apiModuleByGroup } from '../Api';
 import { CLIError } from '@oclif/errors';
 import inquirer from 'inquirer';
@@ -9,6 +9,7 @@ import { ApiMethodInputArg } from './ApiCommandBase';
 import fs from 'fs';
 import path from 'path';
 import _ from 'lodash';
+import { ApplicationStageKeys } from '@joystream/types/lib/hiring';
 
 const DEFAULT_GROUP = WorkingGroups.StorageProviders;
 const DRAFTS_FOLDER = '/opening-drafts';
@@ -71,6 +72,20 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
         }]);
 
         return groupMembers[choosenWorkerIndex];
+    }
+
+    async promptForApplicationsToAccept(opening: GroupOpening): Promise<number[]> {
+        const acceptableApplications = opening.applications.filter(a => a.stage === ApplicationStageKeys.Active);
+        const acceptedApplications = await this.simplePrompt({
+            message: 'Select succesful applicants',
+            type: 'checkbox',
+            choices: acceptableApplications.map(a => ({
+                name: ` ${a.workerApplicationId}: ${a.member?.handle.toString()}`,
+                value: a.workerApplicationId,
+            }))
+        });
+
+        return acceptedApplications;
     }
 
     async promptForNewOpeningDraftName() {

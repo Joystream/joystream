@@ -73,7 +73,6 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     // Prompt for Option<Codec> value
     async promptForOption(typeDef: TypeDef, defaultValue?: Option<Codec>): Promise<Option<Codec>> {
         const subtype = <TypeDef> typeDef.sub; // We assume that Opion always has a single subtype
-
         const confirmed = await this.simplePrompt({
             message: `Do you want to provide the optional ${ this.paramName(typeDef) } parameter?`,
             type: 'confirm',
@@ -81,7 +80,9 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         });
 
         if (confirmed) {
+            this.openIndentGroup();
             const value = await this.promptForParam(subtype.type, subtype.name, defaultValue?.unwrapOr(undefined));
+            this.closeIndentGroup();
             return new Option(subtype.type as any, value);
         }
 

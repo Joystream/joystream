@@ -5,8 +5,8 @@ import ExitCodes from '../../ExitCodes';
 import { apiModuleByGroup } from '../../Api';
 import { WorkerOpeningId } from '@joystream/types/lib/working-group';
 
-export default class WorkingGroupsStartAcceptingApplications extends WorkingGroupsCommandBase {
-    static description = 'Changes the status of pending opening to "Accepting applications". Requires lead access.';
+export default class WorkingGroupsStartReviewPeriod extends WorkingGroupsCommandBase {
+    static description = 'Changes the status of active opening to "In review". Requires lead access.';
     static args = [
         {
             name: 'workerOpeningId',
@@ -19,7 +19,7 @@ export default class WorkingGroupsStartAcceptingApplications extends WorkingGrou
     };
 
     async run() {
-        const { args } = this.parse(WorkingGroupsStartAcceptingApplications);
+        const { args } = this.parse(WorkingGroupsStartReviewPeriod);
 
         const account = await this.getRequiredSelectedAccount();
         // Lead-only gate
@@ -27,8 +27,8 @@ export default class WorkingGroupsStartAcceptingApplications extends WorkingGrou
 
         const opening = await this.getApi().groupOpening(this.group, parseInt(args.workerOpeningId));
 
-        if (opening.stage.status !== OpeningStatus.WaitingToBegin) {
-            this.error('This opening is not in "Waiting To Begin" stage!', { exit: ExitCodes.InvalidInput });
+        if (opening.stage.status !== OpeningStatus.AcceptingApplications) {
+            this.error('This opening is not in "Accepting Applications" stage!', { exit: ExitCodes.InvalidInput });
         }
 
         await this.requestAccountDecoding(account);
@@ -36,7 +36,7 @@ export default class WorkingGroupsStartAcceptingApplications extends WorkingGrou
         await this.sendAndFollowExtrinsic(
             account,
             apiModuleByGroup[this.group],
-            'acceptWorkerApplications',
+            'beginWorkerApplicantReview',
             [ new WorkerOpeningId(opening.workerOpeningId) ]
         );
     }
