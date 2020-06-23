@@ -23,8 +23,10 @@ import {
 {{/fields}}
 
 {{#enums}}
-  import { {{name}} } from '../enums/enum';
-  export { {{name}} }; {{! we need to re-export enums for type-GraphQL to resolve types correctly }}
+  import { {{name}} } from '../enums/enums';
+  {{#export}}
+  export { {{name}} }; {{! we need to re-export enums for type-GraphQL to resolve types correctly, but only once }}
+  {{/export}}
 {{/enums}}
 
 @Model()
@@ -62,8 +64,8 @@ export class {{className}} extends BaseModel {
   {{/is.scalar}}
 
   {{#is.enum}}
-    @EnumField('{{relClassName}}', {{relClassName}} {{^required}},{ nullable: true }{{/required}})
-    {{camelName}}{{#required}}!{{/required}}:{{tsType}} 
+    @EnumField('{{tsType}}', {{tsType}} {{^required}},{ nullable: true }{{/required}})
+    {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}:{{tsType}} 
   {{/is.enum}}
 {{/fields}}
 }

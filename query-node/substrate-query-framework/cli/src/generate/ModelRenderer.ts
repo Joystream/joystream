@@ -6,25 +6,34 @@ import * as utils from './utils';
 import { GraphQLEnumType } from 'graphql';
 import { withEnum } from './enum-context';
 import { AbstractRenderer } from './AbstractRenderer';
+import { EnumContextProvider } from './EnumContextProvider';
 
 const debug = Debug('qnode-cli:model-renderer');
 
 export class ModelRenderer extends AbstractRenderer {
   private objType: ObjectType;
+  private enumCtxProvider: EnumContextProvider;
 
-  constructor(model: WarthogModel, objType: ObjectType, context: GeneratorContext = {}) {
+  constructor(
+    model: WarthogModel,
+    objType: ObjectType,
+    enumContextProvider: EnumContextProvider,
+    context: GeneratorContext = {}
+  ) {
     super(model, context);
     this.objType = objType;
+    this.enumCtxProvider = enumContextProvider;
   }
 
   withEnums(): GeneratorContext {
+    // we need to have a state to render exports only once
     const referncedEnums = new Set<GraphQLEnumType>();
     this.objType.fields.map(f => {
       if (f.isEnum()) referncedEnums.add(this.model.lookupEnum(f.type));
     });
     const enums: GeneratorContext[] = [];
     for (const e of referncedEnums) {
-      enums.push(withEnum(e));
+      enums.push(this.enumCtxProvider.withEnum(e));
     }
     return {
       enums,

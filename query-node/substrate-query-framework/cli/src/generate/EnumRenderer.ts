@@ -13,7 +13,4 @@ export class EnumRenderer extends AbstractRenderer {
     };
   }
 
-  withEnum(enumType: string): GeneratorContext {
-    return withEnum(this.model.lookupEnum(enumType));
-  }
 }

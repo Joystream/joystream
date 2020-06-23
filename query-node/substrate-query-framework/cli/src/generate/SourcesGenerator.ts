@@ -9,6 +9,7 @@ import { ModelRenderer } from './ModelRenderer';
 import { EnumRenderer } from './EnumRenderer';
 import { kebabCase } from './utils';
 import { ConfigProvider } from './ConfigProvider';
+import { EnumContextProvider } from './EnumContextProvider';
 
 const debug = Debug('qnode-cli:sources-generator');
 
@@ -33,17 +34,19 @@ export class SourcesGenerator {
   }
 
   generate(): void {
+    this.generateEnums();
     this.generateModels();
     this.generateQueries();
-    this.generateEnums();
   }
 
   generateModels(): void {
     createDir(path.resolve(process.cwd(), 'src/modules'), false, true);
 
+    const enumContextProvider = new EnumContextProvider();
+
     this.model.types.map(objType => {
       const context = this.config.withGeneratedFolderRelPath(objType.name);
-      const modelRenderer = new ModelRenderer(this.model, objType, context);
+      const modelRenderer = new ModelRenderer(this.model, objType, enumContextProvider, context);
 
       const render = (template: string) => modelRenderer.render(template);
 
@@ -51,7 +54,11 @@ export class SourcesGenerator {
       createDir(path.resolve(process.cwd(), destFolder), false, true);
 
       ['model', 'resolver', 'service'].map(template => {
-        this.renderAndWrite(`entities/${template}.ts.mst`, path.join(destFolder, `${kebabCase(objType.name)}.${template}.ts`), render);
+        this.renderAndWrite(
+          `entities/${template}.ts.mst`,
+          path.join(destFolder, `${kebabCase(objType.name)}.${template}.ts`),
+          render
+        );
       });
     });
   }
@@ -76,7 +83,11 @@ export class SourcesGenerator {
       const filePrefix = kebabCase(query.name);
 
       // migration
-      this.renderAndWrite('textsearch/migration.ts.mst', path.join(migrationsDir, `${filePrefix}.migration.ts`), render);
+      this.renderAndWrite(
+        'textsearch/migration.ts.mst',
+        path.join(migrationsDir, `${filePrefix}.migration.ts`),
+        render
+      );
 
       // resolver
       this.renderAndWrite('textsearch/resolver.ts.mst', path.join(ftsDir, `${filePrefix}.resolver.ts`), render);
