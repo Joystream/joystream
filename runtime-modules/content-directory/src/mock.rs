@@ -606,6 +606,46 @@ pub fn class_exists(class_id: ClassId) -> bool {
     ClassById::<Runtime>::exists(class_id)
 }
 
+// Properties
+impl<T: Trait> Property<T> {
+    pub fn default_with_name(name_len: usize) -> Self {
+        let name = generate_text(name_len);
+        Self {
+            name,
+            ..Property::<T>::default()
+        }
+    }
+
+    pub fn with_name_and_type(name_len: usize, property_type: PropertyType<T>) -> Self {
+        let name = generate_text(name_len);
+        Self {
+            name,
+            property_type,
+            ..Property::<T>::default()
+        }
+    }
+}
+
+impl<T: Trait> PropertyType<T> {
+    pub fn vec_reference(
+        class_id: ClassId,
+        same_controller: bool,
+        max_length: VecMaxLength,
+    ) -> PropertyType<Runtime> {
+        let vec_type = Type::<Runtime>::Reference(class_id, same_controller);
+        let vec_reference = VecPropertyType::<Runtime>::new(vec_type, max_length);
+        PropertyType::<Runtime>::Vector(vec_reference)
+    }
+}
+
+impl<T: Trait> PropertyValue<T> {
+    pub fn vec_reference(entity_ids: Vec<EntityId>) -> PropertyValue<Runtime> {
+        let vec_value = VecValue::<Runtime>::Reference(entity_ids);
+        let vec_property_value = VecPropertyValue::<Runtime>::new(vec_value, 0);
+        PropertyValue::<Runtime>::Vector(vec_property_value)
+    }
+}
+
 // Vouchers
 
 pub fn update_entity_creation_voucher(
@@ -666,15 +706,6 @@ pub fn remove_entity(
     TestModule::remove_entity(Origin::signed(origin), actor, entity_id)
 }
 
-pub fn create_entity_with_default_permissions(class_id: ClassId) -> Entity<Runtime> {
-    Entity::new(
-        EntityController::Lead,
-        class_id,
-        BTreeSet::new(),
-        BTreeMap::new(),
-    )
-}
-
 pub fn update_entity_permissions(
     lead_origin: u64,
     entity_id: EntityId,
@@ -687,6 +718,31 @@ pub fn update_entity_permissions(
         updated_frozen,
         updated_referenceable,
     )
+}
+
+pub fn add_schema_support_to_entity(
+    origin: u64,
+    actor: Actor<Runtime>,
+    entity_id: EntityId,
+    schema_id: SchemaId,
+    new_property_values: BTreeMap<PropertyId, PropertyValue<Runtime>>,
+) -> Result<(), &'static str> {
+    TestModule::add_schema_support_to_entity(
+        Origin::signed(origin),
+        actor,
+        entity_id,
+        schema_id,
+        new_property_values,
+    )
+}
+
+impl From<InboundReferenceCounter> for EntityReferenceCounterSideEffect {
+    fn from(inbound_rc: InboundReferenceCounter) -> Self {
+        Self {
+            total: inbound_rc.total as i32,
+            same_owner: inbound_rc.same_owner as i32,
+        }
+    }
 }
 
 // Assign back to type variables so we can make dispatched calls of these modules later.

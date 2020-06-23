@@ -1835,11 +1835,15 @@ impl<T: Trait> Module<T> {
             // If inbound_rcs_delta already contains entry for the given involved_entity_id, increment it
             // with atomic EntityReferenceCounterSideEffect instance, based on same_owner flag provided and DeltaMode,
             // otherwise create new atomic EntityReferenceCounterSideEffect instance
-            *inbound_rcs_delta
-                .entry(involved_entity_id)
-                .or_insert_with(|| {
-                    EntityReferenceCounterSideEffect::atomic(same_controller_status, delta_mode)
-                }) += EntityReferenceCounterSideEffect::atomic(same_controller_status, delta_mode);
+            if let Some(inbound_rc_delta) = inbound_rcs_delta.get_mut(&involved_entity_id) {
+                *inbound_rc_delta +=
+                    EntityReferenceCounterSideEffect::atomic(same_controller_status, delta_mode);
+            } else {
+                inbound_rcs_delta.insert(
+                    involved_entity_id,
+                    EntityReferenceCounterSideEffect::atomic(same_controller_status, delta_mode),
+                );
+            }
         }
         inbound_rcs_delta
     }
@@ -2596,10 +2600,10 @@ decl_event!(
         EntityRemoved(Actor, EntityId),
         EntitySchemaSupportAdded(Actor, EntityId, SchemaId, SideEffects),
         EntityPropertyValuesUpdated(Actor, EntityId, SideEffects),
-        TransactionCompleted(Actor),
         EntityPropertyValueVectorCleared(Actor, EntityId, PropertyId, SideEffects),
         RemovedAtVectorIndex(Actor, EntityId, PropertyId, VecMaxLength, Nonce, SideEffect),
         InsertedAtVectorIndex(Actor, EntityId, PropertyId, VecMaxLength, Nonce, SideEffect),
         EntityOwnershipTransfered(EntityId, EntityController, SideEffects),
+        TransactionCompleted(Actor),
     }
 );

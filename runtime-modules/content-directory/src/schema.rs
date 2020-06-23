@@ -591,13 +591,6 @@ impl<T: Trait> Default for Property<T> {
 }
 
 impl<T: Trait> Property<T> {
-    pub fn default_with_name(name: Vec<u8>) -> Self {
-        Self {
-            name,
-            ..Property::<T>::default()
-        }
-    }
-
     /// Check if property is locked from actor with provided `EntityAccessLevel`
     pub fn is_locked_from(&self, access_level: EntityAccessLevel) -> bool {
         let is_locked_from_controller = self.locking_policy.is_locked_from_controller;
