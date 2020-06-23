@@ -43,9 +43,6 @@
 //! The module uses [ProposalEncoder](./trait.ProposalEncoder.html) to encode the proposal using
 //! its details. Encoded byte vector is passed to the _proposals engine_ as serialized executable code.
 
-// Clippy linter warning. TODO: refactor "this function has too many argument"
-#![allow(clippy::too_many_arguments)] // disable it because of possible API break
-
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -115,6 +112,19 @@ const ELECTION_PARAMETERS_ANNOUNCING_PERIOD_MAX_VALUE: u32 = 43200;
 const ELECTION_PARAMETERS_MIN_COUNCIL_STAKE_MIN_VALUE: u32 = 1;
 // min_council_stake max value for the 'set election parameters' proposal
 const ELECTION_PARAMETERS_MIN_COUNCIL_STAKE_MAX_VALUE: u32 = 100_000_u32;
+
+// Data container struct to fix linter warning 'too many arguments for the function' for the
+// create_proposal() function.
+struct CreateProposalParameters<T: Trait> {
+    pub origin: T::Origin,
+    pub member_id: MemberId<T>,
+    pub title: Vec<u8>,
+    pub description: Vec<u8>,
+    pub stake_balance: Option<BalanceOf<T>>,
+    pub proposal_code: Vec<u8>,
+    pub proposal_parameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>,
+    pub proposal_details: ProposalDetailsOf<T>,
+}
 
 /// 'Proposals codex' substrate module Trait
 pub trait Trait:
@@ -348,20 +358,20 @@ decl_module! {
             ensure!(text.len() as u32 <=  T::TextProposalMaxLength::get(),
                 Error::TextProposalSizeExceeded);
 
-            let proposal_parameters = proposal_types::parameters::text_proposal::<T>();
-            let proposal_details = ProposalDetails::<BalanceOfMint<T>, BalanceOfGovernanceCurrency<T>, T::BlockNumber, T::AccountId, MemberId<T>>::Text(text);
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
-
-            Self::create_proposal(
+//TODO remove comment
+            let proposal_details = ProposalDetails::Text(text); //::<BalanceOfMint<T>, BalanceOfGovernanceCurrency<T>, T::BlockNumber, T::AccountId, MemberId<T>>
+            let params = CreateProposalParameters{
                 origin,
                 member_id,
                 title,
                 description,
                 stake_balance,
-                proposal_code,
-                proposal_parameters,
-                proposal_details,
-            )?;
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::text_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
         }
 
         /// Create 'Runtime upgrade' proposal type. Runtime upgrade can be initiated only by
@@ -378,20 +388,19 @@ decl_module! {
             ensure!(wasm.len() as u32 <= T::RuntimeUpgradeWasmProposalMaxLength::get(),
                 Error::RuntimeProposalSizeExceeded);
 
-            let proposal_parameters = proposal_types::parameters::runtime_upgrade_proposal::<T>();
             let proposal_details = ProposalDetails::RuntimeUpgrade(wasm);
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
-
-            Self::create_proposal(
+            let params = CreateProposalParameters{
                 origin,
                 member_id,
                 title,
                 description,
                 stake_balance,
-                proposal_code,
-                proposal_parameters,
-                proposal_details,
-            )?;
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::runtime_upgrade_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
         }
 
         /// Create 'Set election parameters' proposal type. This proposal uses `set_election_parameters()`
@@ -409,20 +418,18 @@ decl_module! {
             Self::ensure_council_election_parameters_valid(&election_parameters)?;
 
             let proposal_details = ProposalDetails::SetElectionParameters(election_parameters);
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
-            let proposal_parameters =
-                proposal_types::parameters::set_election_parameters_proposal::<T>();
-
-            Self::create_proposal(
+            let params = CreateProposalParameters{
                 origin,
                 member_id,
                 title,
                 description,
                 stake_balance,
-                proposal_code,
-                proposal_parameters,
-                proposal_details,
-            )?;
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::set_election_parameters_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
         }
 
         /// Create 'Set content working group mint capacity' proposal type.
@@ -440,21 +447,19 @@ decl_module! {
                 Error::InvalidStorageWorkingGroupMintCapacity
             );
 
-            let proposal_parameters =
-                proposal_types::parameters::set_content_working_group_mint_capacity_proposal::<T>();
             let proposal_details = ProposalDetails::SetContentWorkingGroupMintCapacity(mint_balance);
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
-
-            Self::create_proposal(
+            let params = CreateProposalParameters{
                 origin,
                 member_id,
                 title,
                 description,
                 stake_balance,
-                proposal_code,
-                proposal_parameters,
-                proposal_details,
-            )?;
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::set_content_working_group_mint_capacity_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
         }
 
         /// Create 'Spending' proposal type.
@@ -474,21 +479,19 @@ decl_module! {
                 Error::InvalidSpendingProposalBalance
             );
 
-            let proposal_parameters =
-                proposal_types::parameters::spending_proposal::<T>();
             let proposal_details = ProposalDetails::Spending(balance, destination);
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
-
-            Self::create_proposal(
+            let params = CreateProposalParameters{
                 origin,
                 member_id,
                 title,
                 description,
                 stake_balance,
-                proposal_code,
-                proposal_parameters,
-                proposal_details,
-            )?;
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::spending_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
         }
 
         /// Create 'Set lead' proposal type.
@@ -508,22 +511,19 @@ decl_module! {
                     Error::InvalidSetLeadParameterCannotBeCouncilor
                 );
             }
-
-            let proposal_parameters =
-                proposal_types::parameters::set_lead_proposal::<T>();
             let proposal_details = ProposalDetails::SetLead(new_lead);
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
-
-            Self::create_proposal(
+            let params = CreateProposalParameters{
                 origin,
                 member_id,
                 title,
                 description,
                 stake_balance,
-                proposal_code,
-                proposal_parameters,
-                proposal_details,
-            )?;
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::set_lead_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
         }
 
         /// Create 'Evict storage provider' proposal type.
@@ -546,21 +546,19 @@ decl_module! {
                 Error::InvalidValidatorCount
             );
 
-            let proposal_parameters =
-                proposal_types::parameters::set_validator_count_proposal::<T>();
             let proposal_details = ProposalDetails::SetValidatorCount(new_validator_count);
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
-
-            Self::create_proposal(
+            let params = CreateProposalParameters{
                 origin,
                 member_id,
                 title,
                 description,
                 stake_balance,
-                proposal_code,
-                proposal_parameters,
-                proposal_details,
-            )?;
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::set_validator_count_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
         }
 
         /// Create 'Add working group leader opening' proposal type.
@@ -575,22 +573,19 @@ decl_module! {
         ) {
 
 //TODO ensures
-
-            let proposal_parameters =
-                proposal_types::parameters::add_working_group_leader_opening_proposal::<T>();
             let proposal_details = ProposalDetails::AddWorkingGroupLeaderOpening(add_opening_parameters);
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
-
-            Self::create_proposal(
+            let params = CreateProposalParameters{
                 origin,
                 member_id,
                 title,
                 description,
                 stake_balance,
-                proposal_code,
-                proposal_parameters,
-                proposal_details,
-            )?;
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::add_working_group_leader_opening_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
         }
 
 // *************** Extrinsic to execute
@@ -628,42 +623,39 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
     // Generic template proposal builder
-    fn create_proposal(
-        origin: T::Origin,
-        member_id: MemberId<T>,
-        title: Vec<u8>,
-        description: Vec<u8>,
-        stake_balance: Option<BalanceOf<T>>,
-        proposal_code: Vec<u8>,
-        proposal_parameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>,
-        proposal_details: ProposalDetailsOf<T>,
-    ) -> DispatchResult<Error> {
-        let account_id = T::MembershipOriginValidator::ensure_actor_origin(origin, member_id)?;
+    fn create_proposal(params: CreateProposalParameters<T>) -> DispatchResult<Error> {
+        let account_id =
+            T::MembershipOriginValidator::ensure_actor_origin(params.origin, params.member_id)?;
 
         <proposal_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
-            &proposal_parameters,
-            &title,
-            &description,
-            stake_balance,
+            &params.proposal_parameters,
+            &params.title,
+            &params.description,
+            params.stake_balance,
         )?;
 
-        <proposal_discussion::Module<T>>::ensure_can_create_thread(member_id, &title)?;
+        <proposal_discussion::Module<T>>::ensure_can_create_thread(
+            params.member_id,
+            &params.title,
+        )?;
 
-        let discussion_thread_id =
-            <proposal_discussion::Module<T>>::create_thread(member_id, title.clone())?;
+        let discussion_thread_id = <proposal_discussion::Module<T>>::create_thread(
+            params.member_id,
+            params.title.clone(),
+        )?;
 
         let proposal_id = <proposal_engine::Module<T>>::create_proposal(
             account_id,
-            member_id,
-            proposal_parameters,
-            title,
-            description,
-            stake_balance,
-            proposal_code,
+            params.member_id,
+            params.proposal_parameters,
+            params.title,
+            params.description,
+            params.stake_balance,
+            params.proposal_code,
         )?;
 
         <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
-        <ProposalDetailsByProposalId<T>>::insert(proposal_id, proposal_details);
+        <ProposalDetailsByProposalId<T>>::insert(proposal_id, params.proposal_details);
 
         Ok(())
     }
