@@ -43,10 +43,6 @@
 //! The module uses [ProposalEncoder](./trait.ProposalEncoder.html) to encode the proposal using
 //! its details. Encoded byte vector is passed to the _proposals engine_ as serialized executable code.
 
-// Clippy linter warning. TODO: remove after the Constaninople release
-#![allow(clippy::type_complexity)]
-// disable it because of possible frontend API break
-
 // Clippy linter warning. TODO: refactor "this function has too many argument"
 #![allow(clippy::too_many_arguments)] // disable it because of possible API break
 
@@ -265,13 +261,7 @@ decl_storage! {
 
         /// Map proposal id to proposal details
         pub ProposalDetailsByProposalId get(fn proposal_details_by_proposal_id):
-            map T::ProposalId => ProposalDetails<
-                BalanceOfMint<T>,
-                BalanceOfGovernanceCurrency<T>,
-                T::BlockNumber,
-                T::AccountId,
-                T::MemberId
-            >;
+            map T::ProposalId => ProposalDetailsOf<T>;
 
         /// Voting period for the 'set validator count' proposal
         pub SetValidatorCountProposalVotingPeriod get(set_validator_count_proposal_voting_period)
@@ -646,13 +636,7 @@ impl<T: Trait> Module<T> {
         stake_balance: Option<BalanceOf<T>>,
         proposal_code: Vec<u8>,
         proposal_parameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>,
-        proposal_details: ProposalDetails<
-            BalanceOfMint<T>,
-            BalanceOfGovernanceCurrency<T>,
-            T::BlockNumber,
-            T::AccountId,
-            T::MemberId,
-        >,
+        proposal_details: ProposalDetailsOf<T>,
     ) -> DispatchResult<Error> {
         let account_id = T::MembershipOriginValidator::ensure_actor_origin(origin, member_id)?;
 
