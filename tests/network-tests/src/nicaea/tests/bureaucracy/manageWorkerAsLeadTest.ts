@@ -13,9 +13,10 @@ import {
   beginApplicationReview,
   fillWorkerOpening,
   setLead,
-  increaseWorkerStake,
-  updateRewardAccount,
-  updateRoleAccount,
+  unsetLead,
+  decreaseWorkerStake,
+  slashWorker,
+  terminateWorkerRole,
 } from './impl/workingGroupModule';
 import BN from 'bn.js';
 
@@ -33,7 +34,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const applicationStake: BN = new BN(process.env.WORKING_GROUP_APPLICATION_STAKE!);
   const roleStake: BN = new BN(process.env.WORKING_GROUP_ROLE_STAKE!);
-  const durationInBlocks: number = 30;
+  const durationInBlocks: number = 40;
   const openingActivationDelay: BN = new BN(0);
 
   const provider = new WsProvider(nodeUrl);
@@ -68,9 +69,18 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
     fillWorkerOpening(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, openignId)
   );
 
-  tap.test('Increase worker stake', async () => increaseWorkerStake(apiWrapper, nKeyPairs, sudo));
-  tap.test('Update reward account', async () => updateRewardAccount(apiWrapper, nKeyPairs, keyring, sudo));
-  tap.test('Update role account', async () => updateRoleAccount(apiWrapper, nKeyPairs, keyring, sudo));
+  tap.test('Unset lead', async () => unsetLead(apiWrapper, sudo));
+  tap.test('Decrease worker stake, expect failure', async () =>
+    decreaseWorkerStake(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, true)
+  );
+  tap.test('Set lead', async () => setLead(apiWrapper, leadKeyPair[0], sudo));
+  tap.test('Decrease worker stake', async () =>
+    decreaseWorkerStake(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, false)
+  );
+  tap.test('Slash worker', async () => slashWorker(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, false));
+  tap.test('Terminate worker role', async () =>
+    terminateWorkerRole(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, false)
+  );
 
   closeApi(apiWrapper);
 });

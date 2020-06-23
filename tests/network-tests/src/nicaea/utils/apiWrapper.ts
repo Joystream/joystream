@@ -293,6 +293,10 @@ export class ApiWrapper {
     return this.estimateTxFee(this.api.tx.forumBureaucracy.increaseWorkerStake(0, 0));
   }
 
+  public estimateDecreaseWorkerStakeFee(): BN {
+    return this.estimateTxFee(this.api.tx.forumBureaucracy.decreaseWorkerStake(0, 0));
+  }
+
   public estimateUpdateRoleAccountFee(address: string): BN {
     return this.estimateTxFee(this.api.tx.forumBureaucracy.updateWorkerRoleAccount(0, address));
   }
@@ -307,6 +311,23 @@ export class ApiWrapper {
 
   public estimateWithdrawWorkerApplicationFee(): BN {
     return this.estimateTxFee(this.api.tx.forumBureaucracy.withdrawWorkerApplication(0));
+  }
+
+  public estimateTerminateWorkerApplicationFee(): BN {
+    return this.estimateTxFee(this.api.tx.forumBureaucracy.terminateWorkerApplication(0));
+  }
+
+  public estimateSlashWorkerStakeFee(): BN {
+    return this.estimateTxFee(this.api.tx.forumBureaucracy.slashWorkerStake(0, 0));
+  }
+
+  public estimateTerminateWorkerRoleFee(): BN {
+    return this.estimateTxFee(
+      this.api.tx.forumBureaucracy.terminateWorkerRole(
+        0,
+        'Long justification text explaining why the worker role will be terminated'
+      )
+    );
   }
 
   private applyForCouncilElection(account: KeyringPair, amount: BN): Promise<void> {
@@ -708,7 +729,12 @@ export class ApiWrapper {
     );
   }
 
+  public async sudoUnsetLead(sudo: KeyringPair): Promise<void> {
+    return this.sender.signAndSend(this.api.tx.sudo.sudo(this.api.tx.forumBureaucracy.unsetLead()), sudo, false);
+  }
+
   public async addWorkerOpening(
+    activateAtBlock: BN | undefined,
     account: KeyringPair,
     maxActiveApplicants: BN,
     maxReviewPeriodLength: BN,
@@ -729,6 +755,7 @@ export class ApiWrapper {
     exitCuratorRoleStakeUnstakingPeriod: BN,
     text: string
   ): Promise<void> {
+    const activateAt = activateAtBlock == undefined ? 'CurrentBlock' : { ExactBlock: activateAtBlock };
     const commitment = {
       application_rationing_policy: { max_active_applicants: maxActiveApplicants },
       max_review_period_length: maxReviewPeriodLength,
@@ -759,58 +786,9 @@ export class ApiWrapper {
       exit_curator_role_stake_unstaking_period: exitCuratorRoleStakeUnstakingPeriod,
     };
     await this.sender.signAndSend(
-      this.api.tx.forumBureaucracy.addWorkerOpening('CurrentBlock', commitment, text),
+      this.api.tx.forumBureaucracy.addWorkerOpening(activateAt, commitment, text),
       account,
       false
-    );
-  }
-
-  public async batchAddWorkerOpening(
-    lead: KeyringPair,
-    accounts: KeyringPair[],
-    maxActiveApplicants: BN,
-    maxReviewPeriodLength: BN,
-    applicationStakingPolicyAmount: BN,
-    applicationCrowdedOutUnstakingPeriodLength: BN,
-    applicationExpiredUnstakingPeriodLength: BN,
-    roleStakingPolicyAmount: BN,
-    roleCrowdedOutUnstakingPeriodLength: BN,
-    roleExpiredUnstakingPeriodLength: BN,
-    slashableMaxCount: BN,
-    slashableMaxPercentPtsPerTime: BN,
-    successfulApplicantApplicationStakeUnstakingPeriod: BN,
-    failedApplicantApplicationStakeUnstakingPeriod: BN,
-    failedApplicantRoleStakeUnstakingPeriod: BN,
-    terminateCuratorApplicationStakeUnstakingPeriod: BN,
-    terminateCuratorRoleStakeUnstakingPeriod: BN,
-    exitCuratorRoleApplicationStakeUnstakingPeriod: BN,
-    exitCuratorRoleStakeUnstakingPeriod: BN,
-    text: string
-  ): Promise<void[]> {
-    return Promise.all(
-      accounts.map(async () => {
-        await this.addWorkerOpening(
-          lead,
-          maxActiveApplicants,
-          maxReviewPeriodLength,
-          applicationStakingPolicyAmount,
-          applicationCrowdedOutUnstakingPeriodLength,
-          applicationExpiredUnstakingPeriodLength,
-          roleStakingPolicyAmount,
-          roleCrowdedOutUnstakingPeriodLength,
-          roleExpiredUnstakingPeriodLength,
-          slashableMaxCount,
-          slashableMaxPercentPtsPerTime,
-          successfulApplicantApplicationStakeUnstakingPeriod,
-          failedApplicantApplicationStakeUnstakingPeriod,
-          failedApplicantRoleStakeUnstakingPeriod,
-          terminateCuratorApplicationStakeUnstakingPeriod,
-          terminateCuratorRoleStakeUnstakingPeriod,
-          exitCuratorRoleApplicationStakeUnstakingPeriod,
-          exitCuratorRoleStakeUnstakingPeriod,
-          text
-        );
-      })
     );
   }
 
@@ -835,9 +813,10 @@ export class ApiWrapper {
     workerOpeningId: BN,
     roleStake: BN,
     applicantStake: BN,
-    text: string
+    text: string,
+    expectFailure: boolean
   ): Promise<void> {
-    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn();
+    const memberId: BN = (await this.getMemberIds(account.address))[0];
     return this.sender.signAndSend(
       this.api.tx.forumBureaucracy.applyOnWorkerOpening(
         memberId,
@@ -848,7 +827,7 @@ export class ApiWrapper {
         text
       ),
       account,
-      false
+      expectFailure
     );
   }
 
@@ -857,11 +836,12 @@ export class ApiWrapper {
     workerOpeningId: BN,
     roleStake: BN,
     applicantStake: BN,
-    text: string
+    text: string,
+    expectFailure: boolean
   ): Promise<void[]> {
     return Promise.all(
       accounts.map(async keyPair => {
-        await this.applyOnWorkerOpening(keyPair, workerOpeningId, roleStake, applicantStake, text);
+        await this.applyOnWorkerOpening(keyPair, workerOpeningId, roleStake, applicantStake, text, expectFailure);
       })
     );
   }
@@ -889,6 +869,27 @@ export class ApiWrapper {
     return this.sender.signAndSend(this.api.tx.forumBureaucracy.increaseWorkerStake(workerId, stake), account, false);
   }
 
+  public async decreaseWorkerStake(
+    account: KeyringPair,
+    workerId: BN,
+    stake: BN,
+    expectFailure: boolean
+  ): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx.forumBureaucracy.decreaseWorkerStake(workerId, stake),
+      account,
+      expectFailure
+    );
+  }
+
+  public async slashWorkerStake(account: KeyringPair, workerId: BN, stake: BN, expectFailure: boolean): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx.forumBureaucracy.slashWorkerStake(workerId, stake),
+      account,
+      expectFailure
+    );
+  }
+
   public async updateRoleAccount(account: KeyringPair, workerId: BN, newRoleAccount: string): Promise<void> {
     return this.sender.signAndSend(
       this.api.tx.forumBureaucracy.updateWorkerRoleAccount(workerId, newRoleAccount),
@@ -912,9 +913,39 @@ export class ApiWrapper {
   public async batchWithdrawWorkerApplication(accounts: KeyringPair[]): Promise<void[]> {
     return Promise.all(
       accounts.map(async keyPair => {
-        const applicationIds: BN[] = await this.getWorkerApplicationIdsByRoleAccount(keyPair.address);
+        const applicationIds: BN[] = await this.getWorkerApplicationsIdsByRoleAccount(keyPair.address);
         await this.withdrawWorkerApplication(keyPair, applicationIds[0]);
       })
+    );
+  }
+
+  public async terminateWorkerApplication(account: KeyringPair, applicationId: BN): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx.forumBureaucracy.terminateWorkerApplication(applicationId),
+      account,
+      false
+    );
+  }
+
+  public async batchTerminateWorkerApplication(account: KeyringPair, roleAccounts: KeyringPair[]): Promise<void[]> {
+    return Promise.all(
+      roleAccounts.map(async keyPair => {
+        const applicationIds: BN[] = await this.getActiveWorkerApplicationsIdsByRoleAccount(keyPair.address);
+        await this.terminateWorkerApplication(account, applicationIds[0]);
+      })
+    );
+  }
+
+  public async terminateWorkerRole(
+    account: KeyringPair,
+    applicationId: BN,
+    text: string,
+    expectFailure: boolean
+  ): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx.forumBureaucracy.terminateWorkerRole(applicationId, text),
+      account,
+      expectFailure
     );
   }
 
@@ -985,7 +1016,7 @@ export class ApiWrapper {
     return ids[index!];
   }
 
-  public async getWorkerApplicationIdsByRoleAccount(address: string): Promise<BN[]> {
+  public async getWorkerApplicationsIdsByRoleAccount(address: string): Promise<BN[]> {
     const applicationsAndIds = await this.api.query.forumBureaucracy.workerApplicationById<Codec[]>();
     const applications: WorkerApplication[] = (applicationsAndIds[1] as unknown) as WorkerApplication[];
     const ids: WorkerApplicationId[] = (applicationsAndIds[0] as unknown) as WorkerApplicationId[];

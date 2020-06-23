@@ -76,3 +76,11 @@ export function membershipTest(
       .then(membership => assert(membership.length > 0, 'Account A is a not member'));
   });
 }
+
+export function createKeyPairs(keyring: Keyring, N: number): KeyringPair[] {
+  const nKeyPairs: KeyringPair[] = new Array();
+  for (let i = 0; i < N; i++) {
+    nKeyPairs.push(keyring.addFromUri(i + uuid().substring(0, 8)));
+  }
+  return nKeyPairs;
+}

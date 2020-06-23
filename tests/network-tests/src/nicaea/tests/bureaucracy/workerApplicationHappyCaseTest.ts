@@ -32,6 +32,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   const applicationStake: BN = new BN(process.env.WORKING_GROUP_APPLICATION_STAKE!);
   const roleStake: BN = new BN(process.env.WORKING_GROUP_ROLE_STAKE!);
   const durationInBlocks: number = 28;
+  const openingActivationDelay: BN = new BN(0);
 
   const provider = new WsProvider(nodeUrl);
   const apiWrapper: ApiWrapper = await ApiWrapper.create(provider);
@@ -46,14 +47,22 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   tap.test(
     'Add worker opening',
     async () =>
-      (openignId = await addWorkerOpening(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, applicationStake, roleStake))
+      (openignId = await addWorkerOpening(
+        apiWrapper,
+        nKeyPairs,
+        leadKeyPair[0],
+        sudo,
+        applicationStake,
+        roleStake,
+        openingActivationDelay
+      ))
   );
   tap.test('Apply for worker opening', async () =>
-    applyForWorkerOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, openignId)
+    applyForWorkerOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, openignId, false)
   );
   tap.test('Withdraw worker application', async () => withdrawWorkerApplicaiton(apiWrapper, nKeyPairs, sudo));
   tap.test('Apply for worker opening', async () =>
-    applyForWorkerOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, openignId)
+    applyForWorkerOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, openignId, false)
   );
   tap.test('Begin application review', async () => beginApplicationReview(apiWrapper, leadKeyPair[0], sudo, openignId));
   tap.test('Fill worker opening', async () =>
