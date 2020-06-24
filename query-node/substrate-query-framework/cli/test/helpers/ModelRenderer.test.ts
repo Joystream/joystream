@@ -245,4 +245,47 @@ describe('ModelRenderer', () => {
     debug(`rendered B: ${JSON.stringify(rendered, null, 2)}`);
     expect(rendered).to.not.include('export { enum1 }', 'B should not export enum1');
   });
+
+  it('should extend interface type', function () {
+    const model = fromStringSchema(`
+        interface IEntity @entity {
+            field1: String
+        }
+        type A implements IEntity @entity {
+            field1: String
+            field2: String
+    }`);
+    generator = new ModelRenderer(model, model.lookupType('A'), enumCtxProvider);
+    const rendered = generator.render(modelTemplate);
+    expect(rendered).to.include('extends IEntity');
+    expect(rendered).to.include(`import { IEntity } from '../i-entity/i-entity'`, 'should import interface type');
+  });
+
+  it('should not include interface field', function () {
+    const model = fromStringSchema(`
+        interface IEntity @entity {
+            field1: String
+        }
+        type A implements IEntity @entity {
+            field1: String
+            field2: String
+    }`);
+    generator = new ModelRenderer(model, model.lookupType('A'), enumCtxProvider);
+    const rendered = generator.render(modelTemplate);
+    expect(rendered).to.not.include('field1');
+  });
+
+  it('should render interface', function () {
+    const model = fromStringSchema(`
+        interface IEntity @entity {
+            field1: String
+        }
+        type A implements IEntity @entity {
+            field1: String
+            field2: String
+    }`);
+    generator = new ModelRenderer(model, model.lookupInterface('IEntity'), enumCtxProvider);
+    const rendered = generator.render(modelTemplate);
+    expect(rendered).to.include('@InterfaceType');
+  });
 });

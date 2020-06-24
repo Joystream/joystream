@@ -52,6 +52,8 @@ describe('WarthogModel', () => {
         }`);
     expect(model.interfaces).length(1, 'Should add an interface');
     expect(model.lookupInterface('IEntity').name).eq('IEntity', 'Should lookup by name');
+    expect(model.lookupInterface('IEntity').isInterface).eq(true, 'Should be an interface');
+    
   });
 
   it('Should should ignore interfaces without @entity', () => {
