@@ -67,12 +67,9 @@ use errors::WrappedError;
 
 pub use errors::Error;
 pub use types::{
-    Application, Lead, Opening, OpeningPolicyCommitment, OpeningType, RewardPolicy,
-    RoleStakeProfile, Worker,
+    Application, Opening, OpeningPolicyCommitment, OpeningType, RewardPolicy, RoleStakeProfile,
+    Worker,
 };
-
-/// Alias for the _Lead_ type
-pub type LeadOf<T> = Lead<MemberId<T>, <T as system::Trait>::AccountId, WorkerId<T>>;
 
 /// Stake identifier in staking module
 pub type StakeId<T> = <T as stake::Trait>::StakeId;
@@ -171,7 +168,6 @@ decl_event!(
     /// _Working group_ events
     pub enum Event<T, I>
     where
-        MemberId = MemberId<T>,
         WorkerId = WorkerId<T>,
         <T as membership::members::Trait>::ActorId,
         <T as system::Trait>::AccountId,
@@ -184,16 +180,12 @@ decl_event!(
     {
         /// Emits on setting the leader.
         /// Params:
-        /// - Member id of the leader.
-        /// - Role account id of the leader.
         /// - Worker id.
-        LeaderSet(MemberId, AccountId, WorkerId),
+        LeaderSet(WorkerId),
 
         /// Emits on un-setting the leader.
         /// Params:
-        /// - Member id of the leader.
-        /// - Role account id of the leader.
-        LeaderUnset(MemberId, AccountId),
+        LeaderUnset(),
 
         /// Emits on terminating the worker.
         /// Params:
@@ -296,7 +288,7 @@ decl_storage! {
         pub Mint get(mint) : <T as minting::Trait>::MintId;
 
         /// The current lead.
-        pub CurrentLead get(current_lead) : Option<LeadOf<T>>;
+        pub CurrentLead get(current_lead) : Option<WorkerId<T>>;
 
         /// Next identifier value for new worker opening.
         pub NextOpeningId get(next_opening_id): OpeningId<T>;
@@ -308,7 +300,8 @@ decl_storage! {
         pub OpeningHumanReadableText get(opening_human_readable_text): InputValidationLengthConstraint;
 
         /// Maps identifier to worker application on opening.
-        pub ApplicationById get(application_by_id) : linked_map ApplicationId<T> => Application<T::AccountId, OpeningId<T>, T::MemberId, T::ApplicationId>;
+        pub ApplicationById get(application_by_id) : linked_map ApplicationId<T> =>
+            Application<T::AccountId, OpeningId<T>, T::MemberId, T::ApplicationId>;
 
         /// Next identifier value for new worker application.
         pub NextApplicationId get(next_application_id) : ApplicationId<T>;
@@ -377,20 +370,8 @@ decl_module! {
 
             // Update role account
             WorkerById::<T, I>::mutate(worker_id, |worker| {
-                worker.role_account = new_role_account_id.clone()
+                worker.role_account_id = new_role_account_id.clone()
             });
-
-            // Update lead data if it is necessary.
-            let lead = <CurrentLead::<T, I>>::get();
-            if let Some(lead) = lead {
-                if lead.worker_id == worker_id {
-                    let new_lead = Lead{
-                        role_account_id: new_role_account_id.clone(),
-                        ..lead
-                    };
-                    <CurrentLead::<T, I>>::put(new_lead);
-                }
-            }
 
             // Trigger event
             Self::deposit_event(RawEvent::WorkerRoleAccountUpdated(worker_id, new_role_account_id));
@@ -603,7 +584,7 @@ decl_module! {
             origin,
             member_id: T::MemberId,
             opening_id: OpeningId<T>,
-            role_account: T::AccountId,
+            role_account_id: T::AccountId,
             opt_role_stake_balance: Option<BalanceOf<T>>,
             opt_application_stake_balance: Option<BalanceOf<T>>,
             human_readable_text: Vec<u8>
@@ -675,7 +656,7 @@ decl_module! {
             let new_application_id = NextApplicationId::<T, I>::get();
 
             // Make worker/lead application
-            let application = Application::new(&role_account, &opening_id, &member_id, &hiring_application_id);
+            let application = Application::new(&role_account_id, &opening_id, &member_id, &hiring_application_id);
 
             // Store application
             ApplicationById::<T, I>::insert(new_application_id, application);
@@ -705,7 +686,7 @@ decl_module! {
 
             // Ensure that signer is applicant role account
             ensure!(
-                signer_account == application.role_account,
+                signer_account == application.role_account_id,
                 Error::OriginIsNotApplicant
             );
 
@@ -906,7 +887,7 @@ decl_module! {
             Self::deposit_event(RawEvent::StakeSlashed(worker_id));
         }
 
-        /// Decreases the worker/lead stake and returns the remainder to the worker role_account.
+        /// Decreases the worker/lead stake and returns the remainder to the worker role_account_id.
         /// Can be decreased to zero, no actions on zero stake.
         /// Require signed leader origin or the root (to decrease the leader stake).
         pub fn decrease_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
@@ -927,7 +908,7 @@ decl_module! {
             ensure_on_wrapped_error!(
                 <stake::Module<T>>::decrease_stake_to_account(
                     &stake_profile.stake_id,
-                    &worker.role_account,
+                    &worker.role_account_id,
                     balance
                 )
             )?;
@@ -936,7 +917,7 @@ decl_module! {
         }
 
         /// Increases the worker/lead stake, demands a worker origin. Transfers tokens from the worker
-        /// role_account to the stake. No limits on the stake.
+        /// role_account_id to the stake. No limits on the stake.
         pub fn increase_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
             // Checks worker origin, worker existence
             let worker = Self::ensure_worker_signed(origin, &worker_id)?;
@@ -953,7 +934,7 @@ decl_module! {
             ensure_on_wrapped_error!(
                 <stake::Module<T>>::increase_stake_from_account(
                     &stake_profile.stake_id,
-                    &worker.role_account,
+                    &worker.role_account_id,
                     balance
                 )
             )?;
@@ -1016,9 +997,9 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         origin: T::Origin,
         worker_id: WorkerId<T>,
     ) -> Result<ExitInitiationOrigin, Error> {
-        let lead = Self::ensure_lead_is_set()?;
+        let leader_worker_id = Self::ensure_lead_is_set()?;
 
-        let (worker_opening_type, exit_origin) = if lead.worker_id == worker_id {
+        let (worker_opening_type, exit_origin) = if leader_worker_id == worker_id {
             (OpeningType::Leader, ExitInitiationOrigin::Sudo)
         } else {
             (OpeningType::Worker, ExitInitiationOrigin::Lead)
@@ -1029,14 +1010,27 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Ok(exit_origin)
     }
 
-    fn ensure_lead_is_set() -> Result<LeadOf<T>, Error> {
-        let lead = <CurrentLead<T, I>>::get();
+    fn ensure_lead_is_set() -> Result<WorkerId<T>, Error> {
+        let leader_worker_id = Self::current_lead();
 
-        if let Some(lead) = lead {
-            Ok(lead)
+        if let Some(leader_worker_id) = leader_worker_id {
+            Ok(leader_worker_id)
         } else {
             Err(Error::CurrentLeadNotSet)
         }
+    }
+
+    // Checks that provided lead account id belongs to the current working group leader
+    fn ensure_is_lead_account(lead_account_id: T::AccountId) -> Result<(), Error> {
+        let leader_worker_id = Self::ensure_lead_is_set()?;
+
+        let leader = Self::worker_by_id(leader_worker_id);
+
+        if leader.role_account_id != lead_account_id {
+            return Err(Error::IsNotLeadAccount);
+        }
+
+        Ok(())
     }
 
     fn ensure_opening_human_readable_text_is_valid(text: &[u8]) -> Result<(), Error> {
@@ -1171,7 +1165,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         // Ensure that signer is actually role account of worker
         ensure!(
-            signer_account == worker.role_account,
+            signer_account == worker.role_account_id,
             Error::SignerIsNotWorkerRoleAccount
         );
 
@@ -1254,35 +1248,22 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         <NegativeImbalance<T>>::zero()
     }
 
-    // Checks that provided lead account id belongs to the current working group leader
-    fn ensure_is_lead_account(lead_account_id: T::AccountId) -> Result<(), Error> {
-        let lead = <CurrentLead<T, I>>::get();
-
-        if let Some(lead) = lead {
-            if lead.role_account_id != lead_account_id {
-                return Err(Error::IsNotLeadAccount);
-            }
-        } else {
-            return Err(Error::CurrentLeadNotSet);
-        }
-
-        Ok(())
-    }
-
     /// Returns all existing worker id list excluding the current leader worker id.
     pub fn get_regular_worker_ids() -> Vec<WorkerId<T>> {
-        let lead = Self::current_lead();
+        let lead_worker_id = Self::current_lead();
 
         <WorkerById<T, I>>::enumerate()
             .filter_map(|(worker_id, _)| {
                 // Filter the leader worker id if the leader is set.
-                lead.clone().map_or(Some(worker_id), |lead| {
-                    if worker_id == lead.worker_id {
-                        None
-                    } else {
-                        Some(worker_id)
-                    }
-                })
+                lead_worker_id
+                    .clone()
+                    .map_or(Some(worker_id), |lead_worker_id| {
+                        if worker_id == lead_worker_id {
+                            None
+                        } else {
+                            Some(worker_id)
+                        }
+                    })
             })
             .collect()
     }
@@ -1338,9 +1319,9 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         }
 
         // Unset lead if the leader is leaving.
-        let lead = <CurrentLead<T, I>>::get();
-        if let Some(lead) = lead {
-            if lead.worker_id == *worker_id {
+        let leader_worker_id = <CurrentLead<T, I>>::get();
+        if let Some(leader_worker_id) = leader_worker_id {
+            if leader_worker_id == *worker_id {
                 Self::unset_lead();
             }
         }
@@ -1389,33 +1370,22 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         <WorkerExitRationaleText<I>>::put(worker_exit_rationale_text_constraint);
     }
 
-    // Introduce a lead.
-    pub(crate) fn set_lead(
-        member_id: T::MemberId,
-        role_account_id: T::AccountId,
-        worker_id: WorkerId<T>,
-    ) {
-        // Construct lead
-        let new_lead = Lead {
-            member_id,
-            role_account_id: role_account_id.clone(),
-            worker_id,
-        };
-
+    // Set worker id as a leader id.
+    pub(crate) fn set_lead(worker_id: WorkerId<T>) {
         // Update current lead
-        <CurrentLead<T, I>>::put(new_lead);
+        <CurrentLead<T, I>>::put(worker_id);
 
         // Trigger an event
-        Self::deposit_event(RawEvent::LeaderSet(member_id, role_account_id, worker_id));
+        Self::deposit_event(RawEvent::LeaderSet(worker_id));
     }
 
     // Evict the currently set lead.
     pub(crate) fn unset_lead() {
-        if let Ok(lead) = Self::ensure_lead_is_set() {
+        if Self::ensure_lead_is_set().is_ok() {
             // Update current lead
             <CurrentLead<T, I>>::kill();
 
-            Self::deposit_event(RawEvent::LeaderUnset(lead.member_id, lead.role_account_id));
+            Self::deposit_event(RawEvent::LeaderUnset());
         }
     }
 
@@ -1485,13 +1455,13 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                 // Construct worker
                 let worker = Worker::new(
                     &successful_application.member_id,
-                    &successful_application.role_account,
+                    &successful_application.role_account_id,
                     &reward_relationship,
                     &stake_profile,
                 );
 
                 // Store a worker
-                <WorkerById<T, I>>::insert(new_worker_id, worker.clone());
+                <WorkerById<T, I>>::insert(new_worker_id, worker);
 
                 // Update next worker id
                 <NextWorkerId<T, I>>::mutate(|id| *id += <WorkerId<T> as One>::one());
@@ -1500,7 +1470,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
                 // Sets a leader on successful opening when opening is for leader.
                 if matches!(opening.opening_type, OpeningType::Leader) {
-                    Self::set_lead(worker.member_id, worker.role_account, new_worker_id);
+                    Self::set_lead(new_worker_id);
                 }
             });
 

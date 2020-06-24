@@ -115,26 +115,12 @@ impl Default for OpeningType {
     }
 }
 
-/// Working group lead.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Debug, Clone, PartialEq, Copy)]
-pub struct Lead<MemberId, AccountId, WorkerId> {
-    /// Member id of the leader.
-    pub member_id: MemberId,
-
-    /// Account used to authenticate in this role.
-    pub role_account_id: AccountId,
-
-    /// Leader worker id.
-    pub worker_id: WorkerId,
-}
-
 /// An application for the worker/lead role.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 pub struct Application<AccountId, OpeningId, MemberId, ApplicationId> {
     /// Account used to authenticate in this role.
-    pub role_account: AccountId,
+    pub role_account_id: AccountId,
 
     /// Opening on which this application applies.
     pub opening_id: OpeningId,
@@ -151,13 +137,13 @@ impl<AccountId: Clone, OpeningId: Clone, MemberId: Clone, ApplicationId: Clone>
 {
     /// Creates a new worker application using parameters.
     pub fn new(
-        role_account: &AccountId,
+        role_account_id: &AccountId,
         opening_id: &OpeningId,
         member_id: &MemberId,
         application_id: &ApplicationId,
     ) -> Self {
         Application {
-            role_account: role_account.clone(),
+            role_account_id: role_account_id.clone(),
             opening_id: opening_id.clone(),
             member_id: member_id.clone(),
             hiring_application_id: application_id.clone(),
@@ -203,7 +189,7 @@ pub struct Worker<AccountId, RewardRelationshipId, StakeId, BlockNumber, MemberI
     pub member_id: MemberId,
 
     /// Account used to authenticate in this role.
-    pub role_account: AccountId,
+    pub role_account_id: AccountId,
 
     /// Whether the role has recurring reward, and if so an identifier for this.
     pub reward_relationship: Option<RewardRelationshipId>,
@@ -223,13 +209,13 @@ impl<
     /// Creates a new _Worker_ using parameters.
     pub fn new(
         member_id: &MemberId,
-        role_account: &AccountId,
+        role_account_id: &AccountId,
         reward_relationship: &Option<RewardRelationshipId>,
         role_stake_profile: &Option<RoleStakeProfile<StakeId, BlockNumber>>,
     ) -> Self {
         Worker {
             member_id: member_id.clone(),
-            role_account: role_account.clone(),
+            role_account_id: role_account_id.clone(),
             reward_relationship: reward_relationship.clone(),
             role_stake_profile: role_stake_profile.clone(),
         }
