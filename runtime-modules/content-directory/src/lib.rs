@@ -631,7 +631,7 @@ decl_module! {
             curator_id: T::CuratorId,
         ) -> dispatch::Result {
 
-            // Ensure given origin is lead	
+            // Ensure given origin is lead
             ensure_is_lead::<T>(origin)?;
 
             // Ensure curator group under provided curator_group_id already exist, retrieve corresponding one
