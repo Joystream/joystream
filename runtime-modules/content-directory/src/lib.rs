@@ -1090,13 +1090,13 @@ decl_module! {
             Self::ensure_all_required_properties_provided(&class_properties, &unused_property_id_references_with_same_owner_flag_set)?;
 
             // Create wrapper structure from provided new_property_value_references_with_same_owner_flag_set and their corresponding Class properties
-            let values_for_existing_properties = ValuesForExistingProperties::from(
+            let new_values_for_existing_properties = ValuesForExistingProperties::from(
                 &class_properties, &new_property_value_references_with_same_owner_flag_set
             )?;
 
-            // Validate all values, provided in values_for_existing_properties,
+            // Validate all values, provided in new_values_for_existing_properties,
             // against the type of its Property and check any additional constraints
-            Self::ensure_property_values_are_valid(&new_controller, &values_for_existing_properties)?;
+            Self::ensure_property_values_are_valid(&new_controller, &new_values_for_existing_properties)?;
 
             // Make updated entity_property_values from parameters provided
             let entity_property_values_updated =

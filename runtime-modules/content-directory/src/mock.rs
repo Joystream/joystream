@@ -802,6 +802,23 @@ pub fn remove_at_entity_property_vector(
     )
 }
 
+pub fn transfer_entity_ownership(
+    origin: u64,
+    entity_id: EntityId,
+    new_controller: EntityController<Runtime>,
+    new_property_value_references_with_same_owner_flag_set: BTreeMap<
+        PropertyId,
+        PropertyValue<Runtime>,
+    >,
+) -> Result<(), &'static str> {
+    TestModule::transfer_entity_ownership(
+        Origin::signed(origin),
+        entity_id,
+        new_controller,
+        new_property_value_references_with_same_owner_flag_set,
+    )
+}
+
 impl From<InboundReferenceCounter> for EntityReferenceCounterSideEffect {
     fn from(inbound_rc: InboundReferenceCounter) -> Self {
         Self {

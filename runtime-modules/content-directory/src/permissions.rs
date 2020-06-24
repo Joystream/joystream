@@ -540,7 +540,7 @@ impl<T: Trait> EntityPermissions<T> {
         new_entity_controller: &EntityController<T>,
     ) -> dispatch::Result {
         ensure!(
-            self.controller_is_equal_to(new_entity_controller),
+            !self.controller_is_equal_to(new_entity_controller),
             ERROR_PROVIDED_ENTITY_CONTROLLER_IS_EQUAL_TO_CURRENT_ONE
         );
         Ok(())
