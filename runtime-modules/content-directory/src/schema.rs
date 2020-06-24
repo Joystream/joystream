@@ -103,7 +103,7 @@ impl<T: Trait> VecPropertyType<T> {
 /// `Type` enum wrapper
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
-pub struct SingleValuePropertyType<T: Trait>(Type<T>);
+pub struct SingleValuePropertyType<T: Trait>(pub Type<T>);
 
 impl<T: Trait> Default for SingleValuePropertyType<T> {
     fn default() -> Self {

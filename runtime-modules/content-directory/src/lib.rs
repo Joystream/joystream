@@ -1695,13 +1695,13 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // This Vec holds the T::EntityId of the entity created as a result of executing a `CreateEntity` `Operation`
-            let mut entity_created_in_operation = vec![];
+            // This BTreeMap holds the T::EntityId of the entity created as a result of executing a `CreateEntity` `Operation`
+            let mut entity_created_in_operation = BTreeMap::new();
 
             // Create raw origin
             let raw_origin = origin.into().map_err(|_| ERROR_ORIGIN_CANNOT_BE_MADE_INTO_RAW_ORIGIN)?;
 
-            for operation_type in operations.into_iter() {
+            for (index, operation_type) in operations.into_iter().enumerate() {
                 let origin = T::Origin::from(raw_origin.clone());
                 let actor = actor.clone();
                 match operation_type {
@@ -1710,16 +1710,7 @@ decl_module! {
 
                         // entity id of newly created entity
                         let entity_id = Self::next_entity_id() - T::EntityId::one();
-                        entity_created_in_operation.push(entity_id);
-                    },
-                    OperationType::UpdatePropertyValues(update_property_values_operation) => {
-                        let entity_id = operations::parametrized_entity_to_entity_id(
-                            &entity_created_in_operation, update_property_values_operation.entity_id
-                        )?;
-                        let property_values = operations::parametrized_property_values_to_property_values(
-                            &entity_created_in_operation, update_property_values_operation.new_parametrized_property_values
-                        )?;
-                        Self::update_entity_property_values(origin, actor, entity_id, property_values)?;
+                        entity_created_in_operation.insert(index, entity_id);
                     },
                     OperationType::AddSchemaSupportToEntity(add_schema_support_to_entity_operation) => {
                         let entity_id = operations::parametrized_entity_to_entity_id(
@@ -1730,7 +1721,16 @@ decl_module! {
                             &entity_created_in_operation, add_schema_support_to_entity_operation.parametrized_property_values
                         )?;
                         Self::add_schema_support_to_entity(origin, actor, entity_id, schema_id, property_values)?;
-                    }
+                    },
+                    OperationType::UpdatePropertyValues(update_property_values_operation) => {
+                        let entity_id = operations::parametrized_entity_to_entity_id(
+                            &entity_created_in_operation, update_property_values_operation.entity_id
+                        )?;
+                        let property_values = operations::parametrized_property_values_to_property_values(
+                            &entity_created_in_operation, update_property_values_operation.new_parametrized_property_values
+                        )?;
+                        Self::update_entity_property_values(origin, actor, entity_id, property_values)?;
+                    },
                 }
             }
 

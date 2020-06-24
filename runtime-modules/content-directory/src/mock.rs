@@ -819,6 +819,14 @@ pub fn transfer_entity_ownership(
     )
 }
 
+pub fn transaction(
+    origin: u64,
+    actor: Actor<Runtime>,
+    operations: Vec<OperationType<Runtime>>,
+) -> Result<(), &'static str> {
+    TestModule::transaction(Origin::signed(origin), actor, operations)
+}
+
 impl From<InboundReferenceCounter> for EntityReferenceCounterSideEffect {
     fn from(inbound_rc: InboundReferenceCounter) -> Self {
         Self {
