@@ -764,6 +764,26 @@ pub fn clear_entity_property_vector(
     )
 }
 
+pub fn insert_at_entity_property_vector(
+    origin: u64,
+    actor: Actor<Runtime>,
+    entity_id: EntityId,
+    in_class_schema_property_id: PropertyId,
+    index_in_property_vector: VecMaxLength,
+    property_value: SinglePropertyValue<Runtime>,
+    nonce: Nonce,
+) -> Result<(), &'static str> {
+    TestModule::insert_at_entity_property_vector(
+        Origin::signed(origin),
+        actor,
+        entity_id,
+        in_class_schema_property_id,
+        index_in_property_vector,
+        property_value,
+        nonce,
+    )
+}
+
 impl From<InboundReferenceCounter> for EntityReferenceCounterSideEffect {
     fn from(inbound_rc: InboundReferenceCounter) -> Self {
         Self {

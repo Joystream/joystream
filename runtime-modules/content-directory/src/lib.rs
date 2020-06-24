@@ -1589,7 +1589,8 @@ decl_module! {
             // Trigger event
             Self::deposit_event(
                 RawEvent::RemovedAtVectorIndex(
-                    actor, entity_id, in_class_schema_property_id, index_in_property_vector, nonce + T::Nonce::one(), involved_entity_and_side_effect
+                    actor, entity_id, in_class_schema_property_id, index_in_property_vector,
+                    nonce + T::Nonce::one(), involved_entity_and_side_effect
                 )
             );
 
@@ -1674,7 +1675,8 @@ decl_module! {
             // Trigger event
             Self::deposit_event(
                 RawEvent::InsertedAtVectorIndex(
-                    actor, entity_id, in_class_schema_property_id, index_in_property_vector, nonce + T::Nonce::one(), involved_entity_and_side_effect
+                    actor, entity_id, in_class_schema_property_id, index_in_property_vector,
+                    nonce + T::Nonce::one(), involved_entity_and_side_effect
                 )
             );
 
