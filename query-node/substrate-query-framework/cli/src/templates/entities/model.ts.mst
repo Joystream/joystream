@@ -11,7 +11,7 @@ import {
   {{#has.mto}}ManyToOne,{{/has.mto}}
   {{#has.mtm}}ManyToMany,{{/has.mtm}}
   {{#has.otm}}OneToMany,{{/has.otm}}
-  {{#has.oto}}OneToOne, JoinColumn,{{/has.oto}}
+  {{#has.oto}}OneToOne, OneToOneJoin,{{/has.oto}}
   {{#has.array}}CustomField,{{/has.array}}
   {{#has.enum}}EnumField,{{/has.enum}}
   StringField
@@ -63,9 +63,9 @@ export {{#isInterface}}abstract{{/isInterface}} class {{className}}
   {{/is.mto}}
 
   {{#is.oto}}
-    @OneToOne(() => {{relation.columnType}}, (param: {{relation.columnType}}) => param.{{relation.relatedTsProp}})
-    {{#relation.joinColumn}}@JoinColumn(){{/relation.joinColumn}}
-    {{camelName}}?: {{relation.columnType}};
+    {{^relation.joinColumn}}@OneToOne{{/relation.joinColumn}}{{#relation.joinColumn}}@OneToOneJoin{{/relation.joinColumn}}(() => {{relation.columnType}}
+      ,({{camelName}}: {{relation.columnType}}) => {{camelName}}.{{relation.relatedTsProp}})
+    {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{relation.columnType}};
   {{/is.oto}}
 
   {{#is.mtm}}
