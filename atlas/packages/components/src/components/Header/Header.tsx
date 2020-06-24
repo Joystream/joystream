@@ -3,36 +3,22 @@ import { SerializedStyles } from "@emotion/core";
 import { useCSS, HeaderStyleProps } from "./Header.style";
 
 type HeaderProps = {
-	text: string;
-	subtext: string;
-	img: string;
-	css: SerializedStyles;
-	cssTitle: SerializedStyles;
-	cssSubtitle: SerializedStyles;
+	title: string;
+	subtitle: string;
+	backgroundImg: string;
+	containerCss: SerializedStyles;
 	children: React.ReactNode;
 } & HeaderStyleProps;
 
-export default function Header({
-	text,
-	subtext = "",
-	children,
-	img,
-	css,
-	cssTitle,
-	cssSubtitle,
-	...styleProps
-}: Partial<HeaderProps>) {
-	const styles = useCSS({ ...styleProps });
+export default function Header({ title, subtitle, children, backgroundImg, containerCss }: Partial<HeaderProps>) {
+	const styles = useCSS({ backgroundImg });
 	return (
-		<div css={[styles.container, css]}>
+		<section css={[styles.container, containerCss]}>
 			<div css={styles.content}>
-				<h1 css={[styles.title, cssTitle]}>{text}</h1>
-				{subtext && <p css={[styles.subtitle, cssSubtitle]}>{subtext}</p>}
+				<h1 css={styles.title}>{title}</h1>
+				{subtitle && <p css={styles.subtitle}>{subtitle}</p>}
 				{children}
 			</div>
-			<div css={styles.imgContainer}>
-				<img src={img} css={styles.img} />
-			</div>
-		</div>
+		</section>
 	);
 }

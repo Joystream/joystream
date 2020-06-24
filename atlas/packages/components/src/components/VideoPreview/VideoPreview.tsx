@@ -34,7 +34,7 @@ const VideoPreview: React.FC<Partial<VideoPreviewProps>> = ({
 	return (
 		<div css={styles.container} onClick={onClick}>
 			<div css={styles.coverContainer}>
-				<img src={poster} ref={imgRef} css={styles.cover} alt={`${title} by ${title} thumbnail`} />
+				<img src={poster} ref={imgRef} css={styles.cover} alt={`${title} by ${channel} thumbnail`} />
 			</div>
 			<div css={styles.infoContainer}>
 				{showChannel && (

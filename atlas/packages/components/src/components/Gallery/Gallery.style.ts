@@ -14,7 +14,8 @@ const headingContainer: StyleFn = () => ({
 	alignItems: "baseline",
 	"& > h4": {
 		fontSize: typography.sizes.h4,
-		marginBlock: spacing.m
+		marginBlock: spacing.m,
+		marginLeft: spacing.m
 	}
 })
 

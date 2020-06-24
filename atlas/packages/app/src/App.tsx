@@ -10,11 +10,11 @@ const backgroundImg =
 
 export default function App() {
 	return (
-		<main className="main-section">
+		<main>
 			<Provider store={store}>
 				<Layout>
 					<Hero backgroundImg={backgroundImg} />
-					<VideoGallery title="Continue Watching" log />
+					<VideoGallery title="Continue Watching" />
 					<VideoGallery title="Top Trending Videos" />
 					<SeriesGallery title="Top Trending Series" />
 					<VideoGallery title="Featured Videos" />

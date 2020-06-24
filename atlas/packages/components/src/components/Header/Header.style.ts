@@ -5,22 +5,20 @@ export type HeaderStyleProps = {
 	backgroundImg?: string
 }
 
-const container: StyleFn = () => ({
+const container: StyleFn = (_, { backgroundImg }) => ({
 	textAlign: "left",
 	color: colors.white,
-	display: "flex",
 	lineHeight: 1.33,
-	padding: `0 144px`,
-	"& > *": {
-		flexBasis: `50%`
-	}
+	height: 584,
+	backgroundImage: `linear-gradient(0deg, black 0%, rgba(0,0,0,0) 100%), url(${backgroundImg})`,
+	backgroundSize: "cover",
+	backgroundPosition: "center",
+	display: "flex",
+	flexDirection: "column"
 })
 
 const content: StyleFn = () => ({
-	marginLeft: spacing.xxl,
-	marginBottom: 85,
-	maxWidth: breakpoints.medium,
-	overflowWrap: ""
+	marginLeft: spacing.xxl
 })
 
 const title: StyleFn = () => ({
@@ -30,8 +28,7 @@ const title: StyleFn = () => ({
 })
 
 const subtitle: StyleFn = () => ({
-	marginTop: `1rem`,
-	maxWidth: `32rem`
+	marginTop: spacing.m
 })
 
 const imgContainer: StyleFn = (_, { backgroundImg }) => ({
