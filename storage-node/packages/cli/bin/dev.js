@@ -1,4 +1,4 @@
-const assert = require('assert')
+const debug = require('debug')('joystream:storage-cli:dev')
 
 function aliceKeyPair (api) {
   return api.identities.keyring.addFromUri('//Alice', null, 'sr25519')
@@ -12,15 +12,17 @@ function roleKeyPair (api) {
 // just launched as the storage lead, and a storage provider using the same
 // key as the role key
 const init = async (api) => {
+  try {
+    return await check(api)
+  } catch (err) {
+    // setup is not correct we can try to run setup
+  }
+
   const alice = aliceKeyPair(api).address
   const roleAccount = roleKeyPair(api).address
   const providerId = 0 // first assignable id
 
-  // Check if setup already completed
-  if (await api.workers.isRoleAccountOfStorageProvider(providerId, roleAccount)) {
-    console.log('//Colossus already setup as a storage provider')
-    return
-  }
+  console.log(`Checking for dev chain...`)
 
   // make sure alice is sudo - indirectly checking this is a dev chain
   const sudo = await api.api.query.sudo.key()
@@ -29,17 +31,24 @@ const init = async (api) => {
     throw new Error('Setup requires Alice to be sudo. Are you sure you are running a devchain?')
   }
 
+  console.log('Setting up chain...')
+
+  debug('Transfering tokens to storage role account')
   // Give role account some tokens to work with
   api.balances.transfer(alice, roleAccount, 100000)
 
+  debug('Registering Alice as Member')
   // register alice as a member
-  console.log(`Registering Alice as a member`)
   const aliceMemberId = await api.identities.registerMember(alice, {
     handle: 'alice'
   })
 
+  // if (!aliceMemberId.eq(0)) {
+  //   // not first time script is running!
+  // }
+
   // Make alice the storage lead
-  console.log('Setting Alice as Lead')
+  debug('Setting Alice as Lead')
   // prepare set storage lead tx
   const setLeadTx = api.api.tx.storageWorkingGroup.setLead(aliceMemberId, alice)
   // make sudo call
@@ -53,7 +62,7 @@ const init = async (api) => {
   // first assignable id == 0
   // so we don't await each tx to finalize to get the ids. this allows us to
   // batch all the transactions into a single block.
-  console.log('Making //Colossus account a storage provider')
+  debug('Making //Colossus account a storage provider')
   const openTx = api.api.tx.storageWorkingGroup.addWorkerOpening('CurrentBlock', {
     application_rationing_policy: {
       'max_active_applicants': 1
@@ -77,13 +86,13 @@ const init = async (api) => {
 
   // wait for previous transactions to finalize so we can read correct state
   if (await api.workers.isRoleAccountOfStorageProvider(providerId, roleAccount)) {
-    console.log('Setup //Colossus successfully as storage provider')
+    console.log('Storage Role setup Completed Successfully')
   } else { throw new Error('Setup Failed') }
 
   // set localhost colossus as discovery provider on default port
   // assuming pioneer dev server is running on port 3000 we should run
   // the storage dev server on port 3001
-  console.log('Setting Local development node as bootstrap endpoint')
+  debug('Setting Local development node as bootstrap endpoint')
   await api.discovery.setBootstrapEndpoints(alice, ['http://localhost:3001/'])
 }
 
@@ -93,14 +102,22 @@ const check = async (api) => {
   const alice = aliceKeyPair(api).address
 
   if (await api.workers.isRoleAccountOfStorageProvider(providerId, roleAccountId)) {
-    console.log('//Colossus is correctly setup as a storage provider with providerId = 0')
-  } else { throw new Error('//Colossus is not setup as a storage provider') }
+    console.log(`
+      Chain is setup with Alice as a storage provider:
+      providerId = ${providerId}
+      roleAccount = "//Colossus"
+    `)
+  } else { throw new Error('Alice is not a storage provider') }
 
   const currentLead = await api.api.query.storageWorkingGroup.currentLead()
 
   if (currentLead.isSome && currentLead.unwrap().role_account_id.eq(alice)) {
-    console.log('Alice is correctly setup as the storage lead')
-  } else { throw new Error('Alice is not the storage lead') }
+    console.log(`
+      Alice is correctly setup as the storage lead
+    `)
+  } else {
+    throw new Error('Alice is not the storage lead!')
+  }
 }
 
 module.exports = {

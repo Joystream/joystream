@@ -13,7 +13,8 @@ docker-compose -f ${script_path}/compose/devchain-and-ipfs-node/docker-compose.y
 docker-compose -f ${script_path}/compose/devchain-and-ipfs-node/docker-compose.yaml up -d
 
 # configure the dev chain
-yarn storage-cli dev-init && yarn storage-cli dev-check
+DEBUG=joystream:storage-cli:dev yarn storage-cli dev-init
+DEBUG=joystream:storage-cli:dev yarn storage-cli dev-check
 
 # Run the server
 DEBUG=* yarn colossus dev-server

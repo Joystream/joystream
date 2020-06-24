@@ -23,7 +23,7 @@ const path = require('path');
 const file_type = require('file-type');
 const mime_types = require('mime-types');
 
-const debug = require('debug')('joystream:api:asset');
+const debug = require('debug')('joystream:colossus:api:asset');
 
 const util_ranges = require('@joystream/util/ranges');
 const filter = require('@joystream/storage/filter');

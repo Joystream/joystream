@@ -19,24 +19,13 @@
 
 'use strict'
 
-const path = require('path')
 const fs = require('fs')
 const assert = require('assert')
-
 const { RuntimeApi } = require('@joystream/runtime-api')
-
 const meow = require('meow')
 const chalk = require('chalk')
 const _ = require('lodash')
-
-const debug = require('debug')('joystream:cli')
-
-// Project root
-const project_root = path.resolve(__dirname, '..')
-
-// Configuration (default)
-const pkg = require(path.resolve(project_root, 'package.json'))
-
+const debug = require('debug')('joystream:storage-cli')
 const dev = require('./dev')
 
 // Parse CLI
@@ -46,7 +35,7 @@ const FLAG_DEFINITIONS = {
 
 const cli = meow(`
   Usage:
-    $ storage-cli command [arguments..] [key_file]
+    $ storage-cli command [arguments..] [key_file] [passphrase]
 
   Some commands require a key file as the last option holding the identity for
   interacting with the runtime API.
@@ -63,7 +52,7 @@ const cli = meow(`
 
   Dev Commands:       Commands to run on a development chain.
     dev-init          Setup chain with Alice as lead and storage provider.
-    dev-check         Check the chain is setup with Alice as lead storage provider.
+    dev-check         Check the chain is setup with Alice as lead and storage provider.
   `,
   { flags: FLAG_DEFINITIONS })
 
@@ -77,7 +66,7 @@ function load_identity (api, filename, passphrase) {
     assert_file('keyfile', filename)
     api.identities.loadUnlock(filename, passphrase)
   } else {
-    console.log('Loading Alice as identity')
+    debug('Loading Alice as identity')
     api.identities.useKeyPair(dev.aliceKeyPair(api))
   }
 }
@@ -100,13 +89,13 @@ const commands = {
     assert_file('file', filename)
 
     const size = fs.statSync(filename).size
-    console.log(`File "${filename}" is ` + chalk.green(size) + ' Bytes.')
+    debug(`File "${filename}" is ${chalk.green(size)} Bytes.`)
 
     if (!do_type_id) {
       do_type_id = 1
     }
 
-    console.log('Data Object Type ID is: ' + chalk.green(do_type_id))
+    debug('Data Object Type ID is: ' + chalk.green(do_type_id))
 
     // Generate content ID
     // FIXME this require path is like this because of
@@ -114,17 +103,17 @@ const commands = {
     const { ContentId } = require('@joystream/types/lib/media')
     var cid = ContentId.generate()
     cid = cid.encode().toString()
-    console.log('Generated content ID: ' + chalk.green(cid))
+    debug('Generated content ID: ' + chalk.green(cid))
 
     // Create Data Object
     const data_object = await api.assets.createDataObject(
       api.identities.key.address, cid, do_type_id, size)
-    console.log('Data object created.')
+    debug('Data object created.')
 
     // TODO in future, optionally contact liaison here?
     const request = require('request')
     url = `${url}asset/v0/${cid}`
-    console.log('Uploading to URL', chalk.green(url))
+    debug('Uploading to URL', chalk.green(url))
 
     const f = fs.createReadStream(filename)
     const opts = {
@@ -146,7 +135,7 @@ const commands = {
           reject(new Error(`${response.statusCode}: ${body.message || 'unknown reason'}`))
           return
         }
-        console.log('Upload successful:', body.message)
+        debug('Upload successful:', body.message)
         resolve()
       })
       f.pipe(r)
@@ -156,7 +145,7 @@ const commands = {
   'download': async (api, url, content_id, filename) => {
     const request = require('request')
     url = `${url}asset/v0/${content_id}`
-    console.log('Downloading URL', chalk.green(url), 'to', chalk.green(filename))
+    debug('Downloading URL', chalk.green(url), 'to', chalk.green(filename))
 
     const f = fs.createWriteStream(filename)
     const opts = {
@@ -170,7 +159,7 @@ const commands = {
           return
         }
 
-        console.log('Downloading', chalk.green(response.headers['content-type']), 'of size', chalk.green(response.headers['content-length']), '...')
+        debug('Downloading', chalk.green(response.headers['content-type']), 'of size', chalk.green(response.headers['content-length']), '...')
 
         f.on('error', (err) => {
           reject(err)
@@ -181,7 +170,7 @@ const commands = {
             reject(new Error(`${response.statusCode}: ${body.message || 'unknown reason'}`))
             return
           }
-          console.log('Download completed.')
+          debug('Download completed.')
           resolve()
         })
       })
@@ -192,7 +181,7 @@ const commands = {
   'head': async (api, url, content_id) => {
     const request = require('request')
     url = `${url}asset/v0/${content_id}`
-    console.log('Checking URL', chalk.green(url), '...')
+    debug('Checking URL', chalk.green(url), '...')
 
     const opts = {
       url: url,
@@ -211,7 +200,7 @@ const commands = {
         }
 
         for (var propname in response.headers) {
-          console.log(`  ${chalk.yellow(propname)}: ${response.headers[propname]}`)
+          debug(`  ${chalk.yellow(propname)}: ${response.headers[propname]}`)
         }
 
         resolve()
@@ -240,7 +229,7 @@ async function main () {
 
 main()
   .then(() => {
-    console.log('Process exiting gracefully.')
+    debug('Process exiting gracefully.')
     process.exit(0)
   })
   .catch((err) => {

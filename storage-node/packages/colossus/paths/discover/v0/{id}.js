@@ -1,5 +1,5 @@
 const { discover } = require('@joystream/discovery')
-const debug = require('debug')('joystream:api:discovery');
+const debug = require('debug')('joystream:colossus:api:discovery');
 
 const MAX_CACHE_AGE = 30 * 60 * 1000;
 const USE_CACHE = true;

@@ -10,7 +10,7 @@ const chalk = require('chalk')
 const figlet = require('figlet')
 const _ = require('lodash')
 
-const debug = require('debug')('joystream:cli')
+const debug = require('debug')('joystream:colossus')
 
 // Project root
 const PROJECT_ROOT = path.resolve(__dirname, '..')
