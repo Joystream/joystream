@@ -1,5 +1,5 @@
-# No need to include src in published package
-src/
+# keep src/ files, packages is compiled when installed
+# src/
 
 # old build artifacts
 lib/
