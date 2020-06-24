@@ -314,7 +314,7 @@ impl<T: Trait> VecPropertyValue<T> {
         }
     }
 
-    /// Clear current `vec_value`, increment `nonce`
+    /// Clear current `vec_value`
     pub fn clear(&mut self) {
         match &mut self.vec_value {
             VecValue::Bool(vec) => *vec = vec![],
@@ -327,8 +327,6 @@ impl<T: Trait> VecPropertyValue<T> {
             VecValue::Text(vec) => *vec = vec![],
             VecValue::Reference(vec) => *vec = vec![],
         }
-
-        self.increment_nonce();
     }
 
     /// Perform removal at given `index_in_property_vec`, increment `nonce`
@@ -461,7 +459,7 @@ impl<T: Trait> PropertyValue<T> {
             self.as_vec_property_value_mut(),
             new_value.as_vec_property_value_mut(),
         ) {
-            new_vec_property_value.nonce = vec_property_value.increment_nonce();
+            new_vec_property_value.nonce = vec_property_value.nonce;
         }
         *self = new_value
     }
