@@ -1,0 +1,2 @@
+# No need to include src in published package
+src/
