@@ -1,4 +1,4 @@
-import { ElectionStage } from '@joystream/types/lib/council';
+import { ElectionStage } from '@joystream/types/council';
 import { formatNumber, formatBalance } from '@polkadot/util';
 import { BlockNumber } from '@polkadot/types/interfaces';
 import { CouncilInfoObj, NameValueObj } from '../../Types';
