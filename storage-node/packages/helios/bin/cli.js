@@ -15,7 +15,7 @@ async function main () {
   const currentHeight = currentHeader.number.toBn()
 
   // get all providers
-  const storageProviders = await runtime.workers.getAllProviders()
+  const { ids: storageProviders } = await runtime.workers.getAllProviders()
   console.log(`Found ${storageProviders.length} staked providers`)
 
   const storageProviderAccountInfos = await Promise.all(storageProviders.map(async (providerId) => {
@@ -105,7 +105,7 @@ async function main () {
   endpoints.forEach(async ({ providerId, endpoint }) => {
     if (!endpoint) { return }
     const total = knownContentIds.length
-    let { found, missing } = await countContentAvailability(knownContentIds, endpoint)
+    let { found } = await countContentAvailability(knownContentIds, endpoint)
     console.log(`provider ${providerId}: has ${found} out of ${total}`)
   })
 }
@@ -114,14 +114,14 @@ function mapInfoToStatus (providers, currentHeight) {
   return providers.map(({providerId, info}) => {
     if (info) {
       return {
-        providerId: providerId.toNumber(),
+        providerId,
         identity: info.identity.toString(),
         expiresIn: info.expires_at.sub(currentHeight).toNumber(),
         expired: currentHeight.gte(info.expires_at)
       }
     } else {
       return {
-        providerId: providerId.toNumber(),
+        providerId,
         identity: null,
         status: 'down'
       }
