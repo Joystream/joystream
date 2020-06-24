@@ -1578,7 +1578,7 @@ decl_module! {
 
             // Insert updated propery value into entity_property_values mapping at in_class_schema_property_id.
             let entity_values_updated = Self::insert_at_in_class_schema_property_id(
-                entity.values, index_in_property_vector, property_value_vector_updated
+                entity.values, in_class_schema_property_id, property_value_vector_updated
             );
 
             // Update entity property values
