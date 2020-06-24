@@ -845,7 +845,7 @@ decl_module! {
 
             // Check for a single application for a leader.
             if matches!(opening.opening_type, OpeningType::Leader) {
-                ensure!(successful_application_ids.len() == 1, Error::CannotHireSeveralLeader);
+                ensure!(successful_application_ids.len() == 1, Error::CannotHireMultipleLeaders);
             }
 
             // NB: Combined ensure check and mutation in hiring module
@@ -1254,8 +1254,8 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         <NegativeImbalance<T>>::zero()
     }
 
-    /// Checks that provided lead account id belongs to the current working group leader
-    pub fn ensure_is_lead_account(lead_account_id: T::AccountId) -> Result<(), Error> {
+    // Checks that provided lead account id belongs to the current working group leader
+    fn ensure_is_lead_account(lead_account_id: T::AccountId) -> Result<(), Error> {
         let lead = <CurrentLead<T, I>>::get();
 
         if let Some(lead) = lead {

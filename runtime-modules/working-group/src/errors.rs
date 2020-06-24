@@ -17,8 +17,8 @@ decl_error! {
         /// There is leader already, cannot hire another one.
         CannotHireLeaderWhenLeaderExists,
 
-        /// Cannot fill opening with several applications.
-        CannotHireSeveralLeader,
+        /// Cannot fill opening with multiple applications.
+        CannotHireMultipleLeaders,
 
         /// Not a lead account.
         IsNotLeadAccount,

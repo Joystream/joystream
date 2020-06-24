@@ -50,7 +50,7 @@ fn hire_lead_fails_multiple_applications() {
             .with_opening_type(OpeningType::Leader)
             .add_application_with_origin(b"leader_handle".to_vec(), RawOrigin::Signed(1), 1)
             .add_application_with_origin(b"leader_handle2".to_vec(), RawOrigin::Signed(2), 2)
-            .expect(Err(Error::CannotHireSeveralLeader));
+            .expect(Err(Error::CannotHireMultipleLeaders));
 
         hiring_workflow.execute();
     });
