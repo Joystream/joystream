@@ -5,10 +5,12 @@
 		"packages/*"
 	],
 	"scripts": {
+		"start": "concurrently \"yarn dev\" \"yarn storybook\"",
 		"build": "lerna run build",
 		"dev": "lerna run --parallel dev",
-		"test": "jest",
-		"tdd": "jest --watch"
+		"storybook": "lerna run --scope @joystream/components --stream storybook",
+		"clean": "lerna clean && rm -rf node_modules",
+		"test": "jest"
 	},
 	"lint-staged": {
 		"*.{ts, tsx, js, jsx, json}": [
