@@ -1,7 +1,7 @@
 import { WarthogModel, Field, ObjectType } from '../model';
 
 export class RelationshipGenerator {
-  visited: Field[];
+  visited: string[];
   model: WarthogModel;
 
   constructor(model: WarthogModel) {
@@ -15,7 +15,8 @@ export class RelationshipGenerator {
 
     objType.relatedEntityImports.add(relatedObject.name);
     relatedObject.relatedEntityImports.add(objType.name);
-    this.visited.push(field, relatedField);
+    this.addToVisited(field, objType);
+    this.addToVisited(relatedField, relatedObject);
   }
 
   addOne2Many(field: Field, relatedField: Field, objType: ObjectType, relatedObject: ObjectType): void {
@@ -24,13 +25,14 @@ export class RelationshipGenerator {
 
     objType.relatedEntityImports.add(field.type);
     relatedObject.relatedEntityImports.add(objType.name);
-    this.visited.push(field, relatedField);
+    this.addToVisited(field, objType);
+    this.addToVisited(relatedField, relatedObject);
   }
 
   addMany2One(field: Field, currentObject: ObjectType, relatedObject: ObjectType): void {
     field.relation = { type: 'mto', columnType: field.type };
     currentObject.relatedEntityImports.add(relatedObject.name);
-    this.visited.push(field);
+    this.addToVisited(field, currentObject);
   }
 
   addOne2One(field: Field, relatedField: Field, objType: ObjectType, relatedObject: ObjectType): void {
@@ -39,21 +41,26 @@ export class RelationshipGenerator {
 
     objType.relatedEntityImports.add(relatedObject.name);
     relatedObject.relatedEntityImports.add(objType.name);
-    this.visited.push(field, relatedField);
+    this.addToVisited(field, objType);
+    this.addToVisited(relatedField, relatedObject);
+  }
+
+  addToVisited(f: Field, o: ObjectType): void {
+    this.visited.push(o.name.concat(f.name));
+  }
+
+  isVisited(f: Field, o: ObjectType): boolean {
+    return this.visited.includes(o.name.concat(f.name));
   }
 
   generate(): void {
     this.model.types.forEach(currentObject => {
       currentObject.fields.forEach(field => {
-        if (this.visited.includes(field)) return;
-
-        // ============= Case 0 =============
-        if (field.derivedFrom && !field.isList) return;
+        if (this.isVisited(field, currentObject)) return;
 
         // ============= Case 1 =============
-        if (!field.isBuildinType && field.derivedFrom && field.isList) {
+        if (!field.isBuildinType && field.derivedFrom) {
           const relatedObject = this.model.lookupType(field.type);
-          // if related field not found lookupField will throw error anyway
           const relatedField = this.model.lookupField(field.type, field.derivedFrom.argument);
 
           if (relatedField.derivedFrom) {
@@ -61,7 +68,8 @@ export class RelationshipGenerator {
               `${relatedObject.name}->${relatedField.name} derived field can not reference to another derived field!`
             );
           }
-          if (relatedField.isList) {
+
+          if (field.isList && relatedField.isList) {
             return this.addMany2Many(field, relatedField, currentObject, relatedObject);
           }
           return this.addOne2Many(field, relatedField, currentObject, relatedObject);
@@ -80,7 +88,11 @@ export class RelationshipGenerator {
                 `Incorrect one to one relationship. '${relatedObject.name}' should have a derived field with @derivedFrom(field: "${field.name}") directive`
               );
             } else if (derivedFields.length === 1) {
-              return this.addOne2One(field, derivedFields[0], currentObject, relatedObject);
+              if (!derivedFields[0].isList) {
+                return this.addOne2One(field, derivedFields[0], currentObject, relatedObject);
+              } else {
+                return this.addMany2One(field, currentObject, relatedObject);
+              }
             } else {
               throw new Error(
                 `Found multiple derived fields with same argument -> @derivedField(field:"${field.name}")`
