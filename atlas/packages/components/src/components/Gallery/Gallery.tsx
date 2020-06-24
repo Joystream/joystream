@@ -1,5 +1,5 @@
 import React from "react";
-import { SerializedStyles } from "@emotion/core";
+import { SerializedStyles, css } from "@emotion/core";
 import { useCSS } from "./Gallery.style";
 import Button from "../Button";
 import Carousel from "../Carousel";

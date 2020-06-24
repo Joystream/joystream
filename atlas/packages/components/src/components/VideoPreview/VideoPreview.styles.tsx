@@ -1,5 +1,5 @@
 import { css } from "@emotion/core";
-import { typography, colors } from "./../../theme";
+import { typography, colors, spacing } from "./../../theme";
 
 export type VideoPreviewStyleProps = {
 	showChannel: boolean;
@@ -37,17 +37,30 @@ export let makeStyles = ({
 			object-fit: cover;
 		`,
 		infoContainer: css`
-			display: grid;
-			grid-template: auto / ${showChannel ? "45px auto" : "auto"};
-			margin: 10px 0 0;
+			display: flex;
+			margin-top: ${spacing.s};
 		`,
 		avatar: css`
-			grid-column: 1 / 1;
 			width: 40px;
 			height: 40px;
 		`,
 		textContainer: css`
-			grid-column: ${showChannel ? "2 / 2" : "1 / 1"};
+			margin-left: ${spacing.xs};
+			line-height: 1.25;
+			& > h3 {
+				font-size: 1rem;
+				font-family: ${typography.fonts.headers};
+				margin: 0;
+			}
+			& > span {
+				font-size: 0.875rem;
+				line-height: 1.43;
+				margin: 0;
+			}
+
+			span:first-of-type {
+				margin-bottom: ${spacing.xs};
+			}
 		`,
 		title: css`
 			margin: 0;

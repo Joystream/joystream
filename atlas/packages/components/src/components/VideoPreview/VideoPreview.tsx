@@ -8,10 +8,10 @@ type VideoPreviewProps = {
 	channelImg: string;
 	showChannel: boolean;
 	showMeta: boolean;
-	time: string;
+	createdAt: string;
 	views: string;
 	poster: string;
-	onClick: any;
+	onClick: (e: React.MouseEvent<HTMLElement>) => void;
 	imgRef: React.Ref<HTMLImageElement>;
 	onChannelClick: (e: React.MouseEvent<HTMLElement>) => void;
 } & VideoPreviewStyleProps;
@@ -22,7 +22,7 @@ const VideoPreview: React.FC<Partial<VideoPreviewProps>> = ({
 	channelImg,
 	showChannel,
 	showMeta,
-	time,
+	createdAt,
 	views,
 	imgRef,
 	poster,
@@ -41,15 +41,7 @@ const VideoPreview: React.FC<Partial<VideoPreviewProps>> = ({
 					<Avatar size="small" img={channelImg} outerStyles={styles.avatar} onClick={onChannelClick} />
 				)}
 				<div css={styles.textContainer}>
-					<h3
-						css={styles.title}
-						onClick={(event) => {
-							event.stopPropagation();
-							onClick();
-						}}
-					>
-						{title}
-					</h3>
+					<h3 onClick={onClick}>{title}</h3>
 					{showChannel && (
 						<span css={styles.channel} onClick={onChannelClick}>
 							{channel}
@@ -57,7 +49,7 @@ const VideoPreview: React.FC<Partial<VideoPreviewProps>> = ({
 					)}
 					{showMeta && (
 						<span css={styles.meta}>
-							{time}・{views} views
+							{createdAt}・{views} views
 						</span>
 					)}
 				</div>

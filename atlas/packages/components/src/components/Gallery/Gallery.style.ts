@@ -2,8 +2,6 @@ import { colors, spacing, typography } from "../../theme"
 import { makeStyles, StyleFn } from "../../utils"
 
 const container: StyleFn = () => ({
-	marginBottom: spacing.xxl,
-	padding: spacing.m,
 	display: "flex",
 	flexDirection: "column"
 })
@@ -12,10 +10,14 @@ const headingContainer: StyleFn = () => ({
 	display: "flex",
 	justifyContent: "space-between",
 	alignItems: "baseline",
+	marginBottom: spacing.m,
 	"& > h4": {
-		fontSize: typography.sizes.h4,
-		marginBlock: spacing.m,
-		marginLeft: spacing.m
+		fontSize: "1.25rem",
+		margin: 0
+	},
+	"& > button": {
+		fontSize: "0.875rem",
+		padding: 0
 	}
 })
 

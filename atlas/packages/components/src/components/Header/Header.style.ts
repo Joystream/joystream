@@ -14,44 +14,33 @@ const container: StyleFn = (_, { backgroundImg }) => ({
 	backgroundSize: "cover",
 	backgroundPosition: "center",
 	display: "flex",
-	flexDirection: "column"
+	flexDirection: "column",
+	justifyContent: "flex-end"
 })
 
 const content: StyleFn = () => ({
-	marginLeft: spacing.xxl
+	marginLeft: spacing.xxl,
+	marginBottom: 85,
+	maxWidth: "39.25rem"
 })
 
 const title: StyleFn = () => ({
 	lineHeight: 1.05,
 	letterSpacing: "-0.01em",
-	fontWeight: "bold"
+	fontWeight: "bold",
+	margin: 0
 })
 
 const subtitle: StyleFn = () => ({
+	maxWidth: "34rem",
 	marginTop: spacing.m
-})
-
-const imgContainer: StyleFn = (_, { backgroundImg }) => ({
-	backgroundImage: `url(${backgroundImg})`,
-	backgroundRepeat: "repeat-y",
-	backgroundPosition: "bottom",
-	width: "100%",
-	maxWidth: breakpoints.large
-})
-
-const img: StyleFn = () => ({
-	width: `100%`,
-	minWidth: 500,
-	maxWidth: 800
 })
 
 export const useCSS = (props: HeaderStyleProps) => ({
 	container: makeStyles([container])(props),
 	content: makeStyles([content])(props),
 	title: makeStyles([title])(props),
-	subtitle: makeStyles([subtitle])(props),
-	imgContainer: makeStyles([imgContainer])(props),
-	img: makeStyles([img])(props)
+	subtitle: makeStyles([subtitle])(props)
 })
 // export let makeStyles = ({
 //   background = ""

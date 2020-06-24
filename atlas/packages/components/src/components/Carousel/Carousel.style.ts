@@ -9,8 +9,7 @@ const container: StyleFn = () => ({
 })
 const itemsContainer: StyleFn = () => ({
 	display: "flex",
-	overflow: "hidden",
-	padding: "1rem 0"
+	overflow: "hidden"
 })
 
 const navBase: StyleFn = () => ({
@@ -21,13 +20,13 @@ const navBase: StyleFn = () => ({
 	position: "absolute"
 })
 
-const navLeft: StyleFn = styles => ({
+const navLeft: StyleFn = (styles) => ({
 	...styles,
 	left: 0,
 	top: `calc(50% - ${Math.round((parseInt(spacing.xxxxl) + 1) / 2)}px)`
 })
 
-const navRight: StyleFn = styles => ({
+const navRight: StyleFn = (styles) => ({
 	...styles,
 	right: 0,
 	top: `calc(50% - ${Math.round((parseInt(spacing.xxxxl) + 1) / 2)}px)`

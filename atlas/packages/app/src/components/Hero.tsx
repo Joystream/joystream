@@ -24,6 +24,10 @@ const Hero: React.FC<Partial<HeroProps>> = ({ backgroundImg }) => {
 			<div
 				css={css`
 					display: flex;
+					margin-top: 40px;
+					& > * {
+						margin-right: 1rem;
+					}
 				`}
 			>
 				<Button>
