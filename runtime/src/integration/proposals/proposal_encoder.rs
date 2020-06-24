@@ -71,6 +71,18 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
 
                 call.encode()
             }
+            ProposalDetails::BeginReviewWorkingGroupLeaderApplications(
+                opening_id,
+                working_group,
+            ) => {
+                let call = match working_group {
+                    WorkingGroup::Storage => {
+                        Call::StorageWorkingGroup(create_begin_review_applications_call(opening_id))
+                    }
+                };
+
+                call.encode()
+            }
         }
     }
 }
@@ -95,4 +107,11 @@ fn create_accept_applications_call<T: working_group::Trait<I>, I: working_group:
     opening_id: working_group::OpeningId<T>,
 ) -> working_group::Call<T, I> {
     working_group::Call::<T, I>::accept_applications(opening_id)
+}
+
+// Generic call constructor for the begin review working group applications.
+fn create_begin_review_applications_call<T: working_group::Trait<I>, I: working_group::Instance>(
+    opening_id: working_group::OpeningId<T>,
+) -> working_group::Call<T, I> {
+    working_group::Call::<T, I>::begin_applicant_review(opening_id)
 }

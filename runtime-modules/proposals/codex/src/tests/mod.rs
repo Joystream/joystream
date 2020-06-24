@@ -986,3 +986,65 @@ fn create_accept_working_group_leader_applications_proposal_common_checks_succee
         proposal_fixture.check_all();
     });
 }
+
+#[test]
+fn create_begin_review_working_group_leader_applications_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        let opening_id = 1; // random opening id.
+
+        increase_total_balance_issuance_using_account_id(1, 500000);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_begin_review_working_group_leader_applications_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    opening_id,
+                    WorkingGroup::Storage
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_begin_review_working_group_leader_applications_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    opening_id,
+                    WorkingGroup::Storage
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_begin_review_working_group_leader_applications_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    opening_id,
+                    WorkingGroup::Storage
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_begin_review_working_group_leader_applications_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(25000u32)),
+                    opening_id,
+                    WorkingGroup::Storage
+                )
+            },
+            proposal_parameters: crate::proposal_types::parameters::begin_review_working_group_leader_applications_proposal::<
+                Test,
+            >(),
+            proposal_details: ProposalDetails::BeginReviewWorkingGroupLeaderApplications(opening_id,
+                WorkingGroup::Storage),
+        };
+        proposal_fixture.check_all();
+    });
+}

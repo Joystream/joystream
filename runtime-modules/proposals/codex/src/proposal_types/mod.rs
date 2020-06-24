@@ -73,6 +73,9 @@ pub enum ProposalDetails<
 
     /// Accept applications for the working group leader position.
     AcceptWorkingGroupLeaderApplications(OpeningId, WorkingGroup),
+
+    /// Begin review applications for the working group leader position.
+    BeginReviewWorkingGroupLeaderApplications(OpeningId, WorkingGroup),
 }
 
 impl<MintedBalance, CurrencyBalance, BlockNumber, AccountId, MemberId, OpeningId> Default
@@ -194,6 +197,12 @@ pub struct ProposalsConfigParameters {
 
     /// 'Accept working group leader applications' proposal grace period
     pub accept_working_group_leader_applications_proposal_grace_period: u32,
+
+    /// 'Begin review working group leader applications' proposal voting period
+    pub begin_review_working_group_leader_applications_proposal_voting_period: u32,
+
+    /// 'Begin review working group leader applications' proposal grace period
+    pub begin_review_working_group_leader_applications_proposal_grace_period: u32,
 }
 
 impl Default for ProposalsConfigParameters {
@@ -217,6 +226,8 @@ impl Default for ProposalsConfigParameters {
             add_working_group_opening_proposal_grace_period: 0u32,
             accept_working_group_leader_applications_proposal_voting_period: 43200u32,
             accept_working_group_leader_applications_proposal_grace_period: 0u32,
+            begin_review_working_group_leader_applications_proposal_voting_period: 43200u32,
+            begin_review_working_group_leader_applications_proposal_grace_period: 14400u32,
         }
     }
 }
