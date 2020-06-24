@@ -1,6 +1,6 @@
 import { AbstractRenderer } from './AbstractRenderer';
 import { GeneratorContext } from './SourcesGenerator';
-import { GraphQLInterfaceType } from 'graphql';
+import { ObjectType } from '../model';
 
 export class InterfacesRenderer extends AbstractRenderer {
   transform(): GeneratorContext {
@@ -13,7 +13,7 @@ export class InterfacesRenderer extends AbstractRenderer {
     };
   }
 
-  withInterface(i: GraphQLInterfaceType): GeneratorContext {
+  withInterface(i: ObjectType): GeneratorContext {
     return {}
   }
 }

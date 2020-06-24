@@ -16,6 +16,10 @@ import {
   StringField
 } from 'warthog';  {{! we don't need extra twists here }}
 
+{{#isInterface}}
+import { InterfaceType } from 'type-graphql';
+{{/isInterface}}
+
 {{#fields}}
   {{#is.refType}}
   import { {{relClassName}} } from '{{{relPathForModel}}}'
@@ -29,8 +33,19 @@ import {
   {{/export}}
 {{/enums}}
 
-@Model()
-export class {{className}} extends BaseModel {
+{{#interfaces}}
+  import { {{className}} } from '../{{kebabName}}/{{kebabName}}.model';
+{{/interfaces}}
+
+{{^isInterface}}
+@Model({{#interfaces}} { api: { implements: {{className}} }} {{/interfaces}}) {{! only a single interface can be here }}
+{{/isInterface}}
+{{#isInterface}}
+@InterfaceType()
+{{/isInterface}}
+export {{#isInterface}}abstract{{/isInterface}} class {{className}} 
+  extends {{^interfaces}}BaseModel{{/interfaces}} {{#interfaces}} {{className}} {{/interfaces}} {
+
 {{#fields}}
   {{#is.otm}}
     @OneToMany(() => {{relClassName}}, ({{relCamelName}}: {{relClassName}}) => {{relCamelName}}.{{relFieldName}})

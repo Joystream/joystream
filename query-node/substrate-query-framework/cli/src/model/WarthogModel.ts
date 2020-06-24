@@ -1,12 +1,12 @@
 import { FTSQuery } from './FTSQuery';
 import { Field } from './Field';
-import { GraphQLEnumType, GraphQLInterfaceType } from 'graphql';
+import { GraphQLEnumType } from 'graphql';
 
 export class WarthogModel {
   private _types: ObjectType[];
   private _ftsQueries: FTSQuery[];
   private _enums: GraphQLEnumType[] = [];
-  private _interfaces: GraphQLInterfaceType[] = [];
+  private _interfaces: ObjectType[] = [];
   private _name2query: { [key: string]: FTSQuery } = {};
   private _name2type: { [key: string]: ObjectType } = {};
 
@@ -29,7 +29,7 @@ export class WarthogModel {
     this._ftsQueries.push(query);
   }
 
-  addInterface(_interface: GraphQLInterfaceType): void {
+  addInterface(_interface: ObjectType): void {
     this._interfaces.push(_interface);
   }
 
@@ -86,7 +86,7 @@ export class WarthogModel {
     return this._enums;
   }
 
-  get interfaces(): GraphQLInterfaceType[] {
+  get interfaces(): ObjectType[] {
     return this._interfaces;
   }
 
@@ -96,7 +96,7 @@ export class WarthogModel {
     return e;
   }
 
-  lookupInterface(name: string): GraphQLInterfaceType {
+  lookupInterface(name: string): ObjectType {
     const e = this._interfaces.find(e => e.name === name);
     if (!e) throw new Error(`Cannot find interface with name ${name}`);
     return e;
@@ -149,5 +149,6 @@ export interface ObjectType {
   name: string;
   fields: Field[];
   isEntity: boolean;
-  interfaces?: GraphQLInterfaceType[]; //interface names
+  isInterface?: boolean;
+  interfaces?: ObjectType[]; //interface names
 }

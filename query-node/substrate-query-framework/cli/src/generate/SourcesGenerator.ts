@@ -3,7 +3,7 @@ import * as path from 'path';
 import { getTemplatePath, createFile, createDir } from '../utils/utils';
 
 import Debug from 'debug';
-import { WarthogModel } from '../model';
+import { WarthogModel, ObjectType } from '../model';
 import { FTSQueryRenderer } from './FTSQueryRenderer';
 import { ModelRenderer } from './ModelRenderer';
 import { EnumRenderer } from './EnumRenderer';
@@ -37,7 +37,7 @@ export class SourcesGenerator {
 
   generate(): void {
     this.generateEnums();
-    this.genearateInterfaces();
+    //this.genearateInterfaces();
     this.generateModels();
     this.generateQueries();
   }
@@ -47,7 +47,9 @@ export class SourcesGenerator {
 
     const enumContextProvider = new EnumContextProvider();
 
-    this.model.types.map(objType => {
+    const typesAndInterfaces: ObjectType[] = [...this.model.interfaces, ...this.model.types];
+
+    typesAndInterfaces.map(objType => {
       const context = this.config.withGeneratedFolderRelPath(objType.name);
       const modelRenderer = new ModelRenderer(this.model, objType, enumContextProvider, context);
 
@@ -56,7 +58,9 @@ export class SourcesGenerator {
       const destFolder = this.config.getDestFolder(objType.name);
       createDir(path.resolve(process.cwd(), destFolder), false, true);
 
-      ['model', 'resolver', 'service'].map(template => {
+      const toGenerate = objType.isInterface ? ['model'] : ['model', 'resolver', 'service'];
+
+      toGenerate.map(template => {
         this.renderAndWrite(
           `entities/${template}.ts.mst`,
           path.join(destFolder, `${kebabCase(objType.name)}.${template}.ts`),

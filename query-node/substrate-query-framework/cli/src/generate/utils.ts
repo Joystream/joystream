@@ -1,5 +1,7 @@
 import { upperFirst, kebabCase, camelCase } from 'lodash';
 import { GeneratorContext } from './SourcesGenerator';
+import { ObjectType, Field } from '../model';
+import _ from 'lodash';
 
 export { upperFirst, kebabCase, camelCase };
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -35,4 +37,24 @@ export function withNames(name: string): GeneratorContext {
   return {
     ...names(name),
   };
+}
+
+export function hasInterfaces(o: ObjectType): boolean {
+  if (o.interfaces == undefined) {
+    return false;
+  }
+  return o.interfaces.length > 0;
+}
+
+/**
+ * Return fields which are not definded in the interface
+ * @param o ObjecType definition
+ */
+export function ownFields(o: ObjectType): Field[] {
+  if (!hasInterfaces(o) || o.interfaces == undefined) {
+    return o.fields;
+  }
+
+  const intrFields = o.interfaces[0].fields || [];
+  return _.differenceBy(o.fields, intrFields, 'name');
 }

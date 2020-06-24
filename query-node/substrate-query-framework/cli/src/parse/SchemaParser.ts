@@ -9,6 +9,7 @@ import {
   DirectiveNode,
   GraphQLEnumType,
   GraphQLInterfaceType,
+  InterfaceTypeDefinitionNode,
 } from 'graphql';
 import * as fs from 'fs-extra';
 import Debug from 'debug';
@@ -139,7 +140,7 @@ export class GraphQLSchemaParser {
    * @param objDefinationNode ObjectTypeDefinitionNode
    */
   getFields(
-    objDefinationNode: ObjectTypeDefinitionNode
+    objDefinationNode: ObjectTypeDefinitionNode | InterfaceTypeDefinitionNode
   ): FieldDefinitionNode[] {
     if (objDefinationNode.fields) return [...objDefinationNode.fields];
     return [];

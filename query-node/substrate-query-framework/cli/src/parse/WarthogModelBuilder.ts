@@ -3,7 +3,6 @@ import {
   FieldDefinitionNode,
   ListTypeNode,
   NamedTypeNode,
-  GraphQLInterfaceType,
   TypeDefinitionNode,
   InterfaceTypeDefinitionNode,
 } from 'graphql';
@@ -11,7 +10,7 @@ import { GraphQLSchemaParser, Visitors, SchemaNode } from './SchemaParser';
 import { WarthogModel, Field, ObjectType } from '../model';
 import Debug from 'debug';
 import { ENTITY_DIRECTIVE } from './constant';
-import { FTSDirective } from './FTSDirective';
+import { FTSDirective, FULL_TEXT_SEARCHABLE_DIRECTIVE } from './FTSDirective';
 
 const debug = Debug('qnode-cli:model-generator');
 
@@ -83,20 +82,21 @@ export class WarthogModelBuilder {
    * Generate a new ObjectType from ObjectTypeDefinitionNode
    * @param o ObjectTypeDefinitionNode
    */
-  private generateTypeDefination(o: ObjectTypeDefinitionNode): ObjectType {
+  private generateTypeDefination(o: ObjectTypeDefinitionNode | InterfaceTypeDefinitionNode): ObjectType {
     return {
       name: o.name.value,
       fields: this.getFields(o),
       isEntity: this.isEntity(o),
-      interfaces: this.getInterfaces(o),
+      isInterface: o.kind === 'InterfaceTypeDefinition',
+      interfaces: o.kind === 'ObjectTypeDefinition' ? this.getInterfaces(o) : [],
     } as ObjectType;
   }
 
-  private getInterfaces(o: ObjectTypeDefinitionNode): GraphQLInterfaceType[] {
+  private getInterfaces(o: ObjectTypeDefinitionNode): ObjectType[] {
     if (!o.interfaces) {
       return [];
     }
-    const interfaces: GraphQLInterfaceType[] = [];
+    const interfaces: ObjectType[] = [];
     o.interfaces.map(nameNode => {
       if (nameNode.kind !== 'NamedType') {
         throw new Error(`Unrecognized interface type: ${JSON.stringify(nameNode, null, 2)}`);
@@ -111,7 +111,7 @@ export class WarthogModelBuilder {
     return interfaces;
   }
 
-  private getFields(o: ObjectTypeDefinitionNode): Field[] {
+  private getFields(o: ObjectTypeDefinitionNode | InterfaceTypeDefinitionNode): Field[] {
     const fields = this._schemaParser.getFields(o).map((fieldNode: FieldDefinitionNode) => {
       const typeNode = fieldNode.type;
       const fieldName = fieldNode.name.value;
@@ -170,8 +170,9 @@ export class WarthogModelBuilder {
 
   private generateInterfaces() {
     this._schemaParser.getInterfaceTypes().map(i => {
-      if (this.isEntity(i.astNode as InterfaceTypeDefinitionNode)) {
-        this._model.addInterface(i)
+      const astNode = i.astNode as InterfaceTypeDefinitionNode;
+      if (astNode && this.isEntity(astNode)) {
+        this._model.addInterface(this.generateTypeDefination(astNode));
       }
     });
   }
@@ -192,12 +193,11 @@ export class WarthogModelBuilder {
   private genereateQueries() {
     const fts = new FTSDirective();
     const visitors: Visitors = {
-      directives: {
-        FULL_TEXT_SEARCHABLE_DIRECITVE: {
-          visit: (path: SchemaNode[]) => fts.generate(path, this._model),
-        } 
-      }
+      directives: {}
     };
+    visitors.directives[FULL_TEXT_SEARCHABLE_DIRECTIVE] = {
+      visit: (path: SchemaNode[]) => fts.generate(path, this._model),
+    } 
     this._schemaParser.dfsTraversal(visitors);
   }
 

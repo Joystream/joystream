@@ -24,6 +24,21 @@ export class ModelRenderer extends AbstractRenderer {
     this.enumCtxProvider = enumContextProvider;
   }
 
+  withInterfaceProp(): GeneratorContext {
+    return {
+      isInterface: this.objType.isInterface
+    }
+  }
+
+  withInterfaces(): GeneratorContext {
+    if (utils.hasInterfaces(this.objType) && this.objType.interfaces !== undefined)  {
+      return {
+        interfaces: [utils.withNames(this.objType.interfaces[0].name)]
+      }
+    } 
+    return {}
+  }
+
   withEnums(): GeneratorContext {
     // we need to have a state to render exports only once
     const referncedEnums = new Set<GraphQLEnumType>();
@@ -41,7 +56,8 @@ export class ModelRenderer extends AbstractRenderer {
 
   withFields(): GeneratorContext {
     const fields: GeneratorContext[] = [];
-    this.objType.fields.map(f => fields.push(buildFieldContext(f, this.objType)));
+  
+    utils.ownFields(this.objType).map(f => fields.push(buildFieldContext(f, this.objType)));
     return {
       fields,
     };
@@ -67,6 +83,8 @@ export class ModelRenderer extends AbstractRenderer {
       ...this.context, //this.getGeneratedFolderRelativePath(objType.name),
       ...this.withFields(),
       ...this.withEnums(),
+      ...this.withInterfaces(),
+      ...this.withInterfaceProp(),
       ...this.withHasProps(),
       ...utils.withNames(this.objType.name),
     };
