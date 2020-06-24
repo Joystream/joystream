@@ -822,7 +822,7 @@ decl_event!(
     where
         <T as system::Trait>::AccountId,
         <T as Trait>::CategoryId,
-        <T as Trait>::ThreadId, 
+        <T as Trait>::ThreadId,
         <T as Trait>::PostId,
         <T as Trait>::ForumUserId,
         <T as Trait>::ModeratorId,

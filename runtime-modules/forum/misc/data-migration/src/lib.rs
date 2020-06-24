@@ -54,7 +54,7 @@ pub trait Trait:
 }
 
 decl_event!(
-    pub enum Event<T> 
+    pub enum Event<T>
     where
         <T as system::Trait>::BlockNumber,
     {
