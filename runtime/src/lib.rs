@@ -778,6 +778,7 @@ impl members::Trait for Runtime {
  * run convention should be.
  */
 
+/*
 /// Shim registry which will proxy ForumUserRegistry behaviour to the members module
 pub struct ShimMembershipRegistry {}
 
@@ -796,10 +797,10 @@ impl forum::ForumUserRegistry<AccountId> for ShimMembershipRegistry {
         }
     }
 }
-
+*/
 impl forum::Trait for Runtime {
     type Event = Event;
-    type MembershipRegistry = ShimMembershipRegistry;
+    //type MembershipRegistry = ShimMembershipRegistry;
     type ThreadId = ThreadId;
     type PostId = PostId;
 }

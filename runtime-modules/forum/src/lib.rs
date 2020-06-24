@@ -212,7 +212,6 @@
 use serde_derive::{Deserialize, Serialize};
 
 use codec::{Codec, Decode, Encode};
-pub use old_forum;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 pub use runtime_io::clear_prefix;
@@ -222,7 +221,7 @@ use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Para
 mod mock;
 mod tests;
 
-pub trait Trait: system::Trait + old_forum::Trait + timestamp::Trait + Sized {
+pub trait Trait: system::Trait + timestamp::Trait + Sized {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
     type ForumUserId: Parameter
         + Member
@@ -283,7 +282,19 @@ pub trait Trait: system::Trait + old_forum::Trait + timestamp::Trait + Sized {
         + PartialEq
         + From<u64>
         + Into<u64>;
+
+
+    // TODO: consider removing this
+    //type MembershipRegistry: ForumUserRegistry<Self::AccountId>;
 }
+/*
+// TODO: consider removing this
+/// Represents a regsitry of `ForumUser` instances.
+pub trait ForumUserRegistry<AccountId> {
+    fn get_forum_user(id: &AccountId) -> Option<ForumUser<AccountId>>;
+}
+*/
+
 
 /*
  * MOVE ALL OF THESE OUT TO COMMON LATER
