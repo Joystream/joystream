@@ -29,6 +29,7 @@
 //! - [create_add_working_group_leader_opening_proposal](./struct.Module.html#method.create_add_working_group_leader_opening_proposal)
 //! - [create_accept_working_group_leader_applications_proposal](./struct.Module.html#method.create_accept_working_group_leader_applications_proposal)
 //! - [create_begin_review_working_group_leader_applications_proposal](./struct.Module.html#method.create_begin_review_working_group_leader_applications_proposal)
+//! - [create_fill_working_group_leader_opening_proposal](./struct.Module.html#method.create_fill_working_group_leader_opening_proposal)
 //!
 //! ### Proposal implementations of this module
 //! - execute_text_proposal - prints the proposal to the log
@@ -74,7 +75,9 @@ use srml_support::traits::{Currency, Get};
 use srml_support::{decl_error, decl_module, decl_storage, ensure, print};
 use system::ensure_root;
 
-pub use crate::proposal_types::{AddOpeningParameters, ProposalsConfigParameters};
+pub use crate::proposal_types::{
+    AddOpeningParameters, FillOpeningParameters, ProposalsConfigParameters,
+};
 pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 
 // 'Set working group mint capacity' proposal limit
@@ -345,6 +348,12 @@ decl_storage! {
 
         /// Grace period for the 'begin review working group leader applications' proposal
         pub BeginReviewWorkingGroupLeaderApplicationsProposalGracePeriod get(begin_review_working_group_leader_applications_proposal_grace_period) config(): T::BlockNumber;
+
+        /// Voting period for the 'fill working group leader opening' proposal
+        pub FillWorkingGroupLeaderOpeningProposalVotingPeriod get(fill_working_group_leader_opening_proposal_voting_period) config(): T::BlockNumber;
+
+        /// Grace period for the 'fill working group leader opening' proposal
+        pub FillWorkingGroupLeaderOpeningProposalGracePeriod get(fill_working_group_leader_opening_proposal_grace_period) config(): T::BlockNumber;
     }
 }
 
@@ -628,7 +637,6 @@ decl_module! {
 
             Self::create_proposal(params)?;
         }
-
         /// Create 'Begin review working group leader applications' proposal type.
         /// This proposal uses `begin_applicant_review()` extrinsic from the Joystream `working group` module.
         pub fn create_begin_review_working_group_leader_applications_proposal(
@@ -655,6 +663,40 @@ decl_module! {
 
             Self::create_proposal(params)?;
         }
+
+        /// Create 'Fill working group leader opening' proposal type.
+        /// This proposal uses `fill_opening()` extrinsic from the Joystream `working group` module.
+        pub fn create_fill_working_group_leader_opening_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            params: FillOpeningParameters<
+                T::BlockNumber,
+                BalanceOfMint<T>,
+                working_group::OpeningId<T>,
+                working_group::ApplicationId<T>
+            >
+        ) {
+
+        // TODO ensures
+
+            let proposal_details = ProposalDetails::FillWorkingGroupLeaderOpening(params);
+            let params = CreateProposalParameters{
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::fill_working_group_leader_opening_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
+        }
+
 
 // *************** Extrinsic to execute
 
@@ -896,5 +938,11 @@ impl<T: Trait> Module<T> {
                 p.begin_review_working_group_leader_applications_proposal_grace_period,
             ),
         );
+        <FillWorkingGroupLeaderOpeningProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.fill_working_group_leader_opening_proposal_voting_period,
+        ));
+        <FillWorkingGroupLeaderOpeningProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.fill_working_group_leader_opening_proposal_grace_period,
+        ));
     } //TODO set defaults for new proposals
 }

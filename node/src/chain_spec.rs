@@ -343,6 +343,10 @@ pub fn testnet_genesis(
                 .begin_review_working_group_leader_applications_proposal_voting_period,
             begin_review_working_group_leader_applications_proposal_grace_period: cpcp
                 .begin_review_working_group_leader_applications_proposal_grace_period,
+            fill_working_group_leader_opening_proposal_voting_period: cpcp
+                .fill_working_group_leader_opening_proposal_voting_period,
+            fill_working_group_leader_opening_proposal_grace_period: cpcp
+                .fill_working_group_leader_opening_proposal_grace_period,
         }),
     }
 }

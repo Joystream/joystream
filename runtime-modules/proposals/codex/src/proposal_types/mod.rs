@@ -24,6 +24,7 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
     <T as system::Trait>::AccountId,
     crate::MemberId<T>,
     working_group::OpeningId<T>,
+    working_group::ApplicationId<T>,
 >;
 
 /// Proposal details provide voters the information required for the perceived voting.
@@ -36,6 +37,7 @@ pub enum ProposalDetails<
     AccountId,
     MemberId,
     OpeningId,
+    ApplicationId,
 > {
     /// The text of the `text` proposal
     Text(Vec<u8>),
@@ -76,14 +78,52 @@ pub enum ProposalDetails<
 
     /// Begin review applications for the working group leader position.
     BeginReviewWorkingGroupLeaderApplications(OpeningId, WorkingGroup),
+
+    /// Fill opening for the working group leader position.
+    FillWorkingGroupLeaderOpening(
+        FillOpeningParameters<BlockNumber, MintedBalance, OpeningId, ApplicationId>,
+    ),
 }
 
-impl<MintedBalance, CurrencyBalance, BlockNumber, AccountId, MemberId, OpeningId> Default
-    for ProposalDetails<MintedBalance, CurrencyBalance, BlockNumber, AccountId, MemberId, OpeningId>
+impl<
+        MintedBalance,
+        CurrencyBalance,
+        BlockNumber,
+        AccountId,
+        MemberId,
+        OpeningId,
+        ApplicationId,
+    > Default
+    for ProposalDetails<
+        MintedBalance,
+        CurrencyBalance,
+        BlockNumber,
+        AccountId,
+        MemberId,
+        OpeningId,
+        ApplicationId,
+    >
 {
     fn default() -> Self {
         ProposalDetails::Text(b"invalid proposal details".to_vec())
     }
+}
+
+/// Parameters for the 'fill opening for the leader position' proposal.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Debug)]
+pub struct FillOpeningParameters<BlockNumber, Balance, OpeningId, ApplicationId> {
+    /// Finalizing opening id.
+    pub opening_id: OpeningId,
+
+    /// Id of the selected application.
+    pub successful_application_id: ApplicationId,
+
+    /// Position reward policy.
+    pub reward_policy: Option<working_group::RewardPolicy<Balance, BlockNumber>>,
+
+    /// Defines working group with the open position.
+    pub working_group: WorkingGroup,
 }
 
 /// Parameters for the 'add opening for the leader position' proposal.
@@ -203,8 +243,13 @@ pub struct ProposalsConfigParameters {
 
     /// 'Begin review working group leader applications' proposal grace period
     pub begin_review_working_group_leader_applications_proposal_grace_period: u32,
-}
 
+    /// 'Fill working group leader opening' proposal voting period
+    pub fill_working_group_leader_opening_proposal_voting_period: u32,
+
+    /// 'Fill working group leader opening' proposal grace period
+    pub fill_working_group_leader_opening_proposal_grace_period: u32,
+}
 impl Default for ProposalsConfigParameters {
     fn default() -> Self {
         ProposalsConfigParameters {
@@ -228,6 +273,8 @@ impl Default for ProposalsConfigParameters {
             accept_working_group_leader_applications_proposal_grace_period: 0u32,
             begin_review_working_group_leader_applications_proposal_voting_period: 43200u32,
             begin_review_working_group_leader_applications_proposal_grace_period: 14400u32,
+            fill_working_group_leader_opening_proposal_voting_period: 43200u32,
+            fill_working_group_leader_opening_proposal_grace_period: 0u32,
         }
     }
 }

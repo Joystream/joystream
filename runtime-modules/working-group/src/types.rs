@@ -251,7 +251,8 @@ pub enum ExitInitiationOrigin {
 }
 
 /// The recurring reward if any to be assigned to an actor when filling in the position.
-#[derive(Encode, Decode, Clone, Eq, PartialEq, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Debug)]
 pub struct RewardPolicy<Balance, BlockNumber> {
     /// Balance per payout.
     pub amount_per_payout: Balance,
