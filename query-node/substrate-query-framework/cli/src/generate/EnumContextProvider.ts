@@ -1,4 +1,3 @@
-import { WarthogModel, ObjectType } from '../model';
 import { GeneratorContext } from './SourcesGenerator';
 import { withEnum } from './enum-context';
 import { GraphQLEnumType } from 'graphql';
@@ -8,8 +7,7 @@ const debug = Debug('qnode-cli:enum-ctx-provider');
 
 export class EnumContextProvider {
   readonly exported: { [key: string]: boolean } = {};
-  
-  
+
   withEnum(enumType: GraphQLEnumType): GeneratorContext {
     return {
       ...this.withExport(enumType.name),
@@ -25,6 +23,7 @@ export class EnumContextProvider {
         export: true,
       };
     }
+    debug(`Enum ${enumType} is already exported`);
     return {};
   }
 

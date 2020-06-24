@@ -4,7 +4,6 @@ import { GeneratorContext } from './SourcesGenerator';
 import { buildFieldContext, TYPE_FIELDS } from './field-context';
 import * as utils from './utils';
 import { GraphQLEnumType } from 'graphql';
-import { withEnum } from './enum-context';
 import { AbstractRenderer } from './AbstractRenderer';
 import { EnumContextProvider } from './EnumContextProvider';
 
