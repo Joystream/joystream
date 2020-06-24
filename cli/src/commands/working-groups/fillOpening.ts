@@ -5,6 +5,7 @@ import ExitCodes from '../../ExitCodes';
 import { apiModuleByGroup } from '../../Api';
 import { WorkerOpeningId, WorkerApplicationIdSet } from '@joystream/types/lib/working-group';
 import { RewardPolicy } from '@joystream/types/lib/content-working-group';
+import chalk from 'chalk';
 
 export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
     static description = 'Allows filling worker opening that\'s currently in review. Requires lead access.';
@@ -32,7 +33,7 @@ export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
             this.error('This opening is not in the Review stage!', { exit: ExitCodes.InvalidInput });
         }
 
-        const applications = await this.promptForApplicationsToAccept(opening);
+        const applicationIds = await this.promptForApplicationsToAccept(opening);
         const rewardPolicyOpt = await this.promptForParam(`Option<${RewardPolicy.name}>`, 'RewardPolicy');
 
         await this.requestAccountDecoding(account);
@@ -43,9 +44,15 @@ export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
             'fillWorkerOpening',
             [
                 new WorkerOpeningId(opening.workerOpeningId),
-                new WorkerApplicationIdSet(applications),
+                new WorkerApplicationIdSet(applicationIds),
                 rewardPolicyOpt
             ]
         );
+
+        this.log(chalk.green(`Opening ${chalk.white(opening.workerOpeningId)} succesfully filled!`));
+        this.log(
+            chalk.green('Accepted worker application IDs: ') +
+            chalk.white(applicationIds.length ? applicationIds.join(chalk.green(', ')) : 'NONE')
+        );
     }
-  }
+}

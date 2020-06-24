@@ -4,6 +4,7 @@ import { OpeningStatus } from '../../Types';
 import ExitCodes from '../../ExitCodes';
 import { apiModuleByGroup } from '../../Api';
 import { WorkerOpeningId } from '@joystream/types/lib/working-group';
+import chalk from 'chalk';
 
 export default class WorkingGroupsStartReviewPeriod extends WorkingGroupsCommandBase {
     static description = 'Changes the status of active opening to "In review". Requires lead access.';
@@ -39,5 +40,7 @@ export default class WorkingGroupsStartReviewPeriod extends WorkingGroupsCommand
             'beginWorkerApplicantReview',
             [ new WorkerOpeningId(opening.workerOpeningId) ]
         );
+
+        this.log(chalk.green(`Opening ${chalk.white(opening.workerOpeningId)} status changed to: ${ chalk.white('In Review') }`));
     }
-  }
+}

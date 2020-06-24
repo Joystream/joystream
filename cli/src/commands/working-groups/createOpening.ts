@@ -71,8 +71,10 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
                     true
                 );
 
+                this.log(chalk.green('Opening succesfully created!'));
+
                 saveDraft = await this.simplePrompt({
-                    message: 'Do you wish to save this opportunity as draft?',
+                    message: 'Do you wish to save this opening as draft?',
                     type: 'confirm'
                 });
             }
@@ -91,4 +93,4 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
             this.log(chalk.green('Opening succesfully created!'));
         }
     }
-  }
+}
