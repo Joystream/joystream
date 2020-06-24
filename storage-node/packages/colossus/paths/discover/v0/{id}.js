@@ -4,7 +4,7 @@ const debug = require('debug')('joystream:colossus:api:discovery');
 const MAX_CACHE_AGE = 30 * 60 * 1000;
 const USE_CACHE = true;
 
-module.exports = function(flags, runtime)
+module.exports = function(runtime)
 {
   var doc = {
     // parameters for all operations in this path

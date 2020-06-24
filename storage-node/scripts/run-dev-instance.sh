@@ -17,4 +17,4 @@ DEBUG=joystream:storage-cli:dev yarn storage-cli dev-init
 DEBUG=joystream:storage-cli:dev yarn storage-cli dev-check
 
 # Run the server
-DEBUG=* yarn colossus dev-server
+DEBUG=* yarn colossus --dev

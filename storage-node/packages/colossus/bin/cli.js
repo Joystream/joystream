@@ -15,6 +15,9 @@ const debug = require('debug')('joystream:colossus')
 // Project root
 const PROJECT_ROOT = path.resolve(__dirname, '..')
 
+// Number of milliseconds to wait between synchronization runs.
+const SYNC_PERIOD_MS = 300000 // 5min
+
 // Parse CLI
 const FLAG_DEFINITIONS = {
   port: {
@@ -22,16 +25,18 @@ const FLAG_DEFINITIONS = {
     alias: 'p',
     default: 3000
   },
-  syncPeriod: {
-    type: 'number',
-    default: 300000
-  },
   keyFile: {
-    type: 'string'
+    type: 'string',
+    isRequired: (flags, input) => {
+      return !flags.dev
+    }
   },
   publicUrl: {
     type: 'string',
-    alias: 'u'
+    alias: 'u',
+    isRequired: (flags, input) => {
+      return !flags.dev
+    }
   },
   passphrase: {
     type: 'string'
@@ -42,7 +47,10 @@ const FLAG_DEFINITIONS = {
   },
   providerId: {
     type: 'number',
-    alias: 'i'
+    alias: 'i',
+    isRequired: (flags, input) => {
+      return !flags.dev
+    }
   }
 }
 
@@ -51,21 +59,20 @@ const cli = meow(`
     $ colossus [command] [arguments]
 
   Commands:
-    server [default]  Run a server instance.
-    discovery         Run the discovery service only.
-    dev-server        Run a local development server for testing, listens on port 3001
+    server        Runs a production server instance. (discovery and storage services)
+                  This is the default command if not specified.
+    discovery     Run the discovery service only.
 
-  Arguments (required for server):
+  Arguments (required for server. Ignored if running server with --dev option):
     --provider-id ID, -i ID     StorageProviderId assigned to you in working group.
     --key-file FILE             JSON key export file to use as the storage provider (role account).
     --public-url=URL, -u URL    API Public URL to announce.
 
   Arguments (optional):
+    --dev                   Runs server with developer settings.
     --passphrase            Optional passphrase to use to decrypt the key-file.
     --port=PORT, -p PORT    Port number to listen on, defaults to 3000.
-    --sync-period           Number of milliseconds to wait between synchronization
-                            runs. Defaults to 300000ms (5min).
-    --ws-provider WSURL     Joystream Node websocket provider url, eg: 'ws://127.0.0.1:9944'
+    --ws-provider WS_URL    Joystream-node websocket provider, defaults to ws://localhost:9944
   `,
   { flags: FLAG_DEFINITIONS })
 
@@ -91,17 +98,16 @@ function start_express_app(app, port) {
     console.log('Starting API server...')
   })
 }
+
 // Start app
-function start_all_services (store, api) {
-  const app = require('../lib/app')(PROJECT_ROOT, store, api, cli.flags)
-  const port = cli.flags.port
+function start_all_services ({ store, api, port }) {
+  const app = require('../lib/app')(PROJECT_ROOT, store, api) // reduce falgs to only needed values
   return start_express_app(app, port)
 }
 
-// Start discovery service app
-function start_discovery_service (api) {
-  const app = require('../lib/discovery')(PROJECT_ROOT, api, cli.flags)
-  const port = cli.flags.port
+// Start discovery service app only
+function start_discovery_service ({ api, port }) {
+  const app = require('../lib/discovery')(PROJECT_ROOT, api) // reduce flags to only needed values
   return start_express_app(app, port)
 }
 
@@ -126,11 +132,9 @@ function get_storage (runtime_api) {
   return Storage.create(options)
 }
 
-async function init_api_as_storage_provider () {
+async function init_api_production ({ wsProvider, providerId, keyFile, passphrase }) {
   // Load key information
   const { RuntimeApi } = require('@joystream/runtime-api')
-  const keyFile = cli.flags.keyFile
-  const providerId = cli.flags.providerId
 
   if (!keyFile) {
     throw new Error('Must specify a --key-file argument for running a storage node.')
@@ -140,11 +144,9 @@ async function init_api_as_storage_provider () {
     throw new Error('Must specify a --provider-id argument for running a storage node')
   }
 
-  const wsProvider = cli.flags.wsProvider
-
   const api = await RuntimeApi.create({
     account_file: keyFile,
-    passphrase: cli.flags.passphrase,
+    passphrase,
     provider_url: wsProvider,
     storageProviderId: providerId
   })
@@ -160,7 +162,7 @@ async function init_api_as_storage_provider () {
   return api
 }
 
-async function init_api_as_development_storage_provider () {
+async function init_api_development () {
   // Load key information
   const { RuntimeApi } = require('@joystream/runtime-api')
   const providerId = 0
@@ -180,7 +182,7 @@ async function init_api_as_development_storage_provider () {
   if (!await api.workers.isRoleAccountOfStorageProvider(api.storageProviderId, api.identities.key.address)) {
     throw new Error('Development chain not configured correctly')
   } else {
-    console.log('== Running Development Server ==')
+    console.log('== Initialized runtime API for Development Server ==')
   }
 
   return api
@@ -241,56 +243,43 @@ if (!command) {
   command = 'server'
 }
 
+async function start_colossus ({ api, publicUrl, port, flags }) {
+  // TODO: check valid url, and valid port number
+  const store = get_storage(api)
+  banner()
+  const { start_syncing } = require('../lib/sync')
+  start_syncing(api, { syncPeriod: SYNC_PERIOD_MS }, store)
+  announce_public_url(api, publicUrl)
+  return start_all_services({ store, api, port, flags }) // dont pass all flags only required values
+}
+
 const commands = {
   'server': async () => {
-    // Load key information
-    const api = await init_api_as_storage_provider()
+    let publicUrl, port, api
 
-    console.log('Storage Provider identity initialized, proceeding.')
-
-    // A public URL is configured
-    if (!cli.flags.publicUrl) {
-      throw new Error('Must specify a --public-url argument')
+    if (cli.flags.dev) {
+      api = await init_api_development()
+      port = 3001
+      publicUrl = `http://localhost:${port}/`
+    } else {
+      api = await init_api_production(cli.flags)
+      publicUrl = cli.flags.publicUrl
+      port = cli.flags.port
     }
 
-    // TODO: check valid url
-
-    // Continue with server setup
-    const store = get_storage(api)
-    banner()
-
-    const { start_syncing } = require('../lib/sync')
-    start_syncing(api, cli.flags, store)
-
-    announce_public_url(api, cli.flags.publicUrl)
-    await start_all_services(store, api)
+    return start_colossus({ api, publicUrl, port })
   },
-  'down': async () => {
-    const api = await init_api_as_storage_provider()
-    await go_offline(api)
-  },
+  // 'down': async () => {
+  //   const api = await init_api_as_storage_provider()
+  //   await go_offline(api)
+  // },
   'discovery': async () => {
     debug('Starting Joystream Discovery Service')
     const { RuntimeApi } = require('@joystream/runtime-api')
     const wsProvider = cli.flags.wsProvider
     const api = await RuntimeApi.create({ provider_url: wsProvider })
-    await start_discovery_service(api)
-  },
-  'dev-server': async () => {
-    // Load key information
-    const api = await init_api_as_development_storage_provider()
-    console.log('Development Storage Provider identity initialized, proceeding.')
-
-    // Continue with server setup
-    const store = get_storage(api)
-    banner()
-
-    const { start_syncing } = require('../lib/sync')
-    start_syncing(api, cli.flags, store)
-    // force listening on port 3001, assuming pioneer dev server is running on 3000
-    cli.flags.port = 3001
-    announce_public_url(api, `http://localhost:${cli.flags.port}/`)
-    await start_all_services(store, api)
+    const port = cli.flags.port
+    await start_discovery_service({ api, port })
   }
 }
 

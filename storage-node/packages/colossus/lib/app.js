@@ -36,7 +36,7 @@ const pagination = require('@joystream/util/pagination');
 const storage = require('@joystream/storage');
 
 // Configure app
-function create_app(project_root, storage, runtime, flags)
+function create_app(project_root, storage, runtime)
 {
   const app = express();
   app.use(cors());
@@ -60,7 +60,6 @@ function create_app(project_root, storage, runtime, flags)
       'multipart/form-data': fileUploads
     },
     dependencies: {
-      flags: flags,
       storage: storage,
       runtime: runtime,
     },
