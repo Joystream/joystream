@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* es-lint disable*/
+
 'use strict'
 
 // Node requires
@@ -165,25 +167,18 @@ async function init_api_production ({ wsProvider, providerId, keyFile, passphras
 async function init_api_development () {
   // Load key information
   const { RuntimeApi } = require('@joystream/runtime-api')
-  const providerId = 0
 
   const wsProvider = 'ws://localhost:9944'
 
   const api = await RuntimeApi.create({
-    provider_url: wsProvider,
-    storageProviderId: providerId
+    provider_url: wsProvider
   })
 
   const dev = require('../../cli/bin/dev')
+
   api.identities.useKeyPair(dev.roleKeyPair(api))
 
-  console.log(`Using ${api.identities.key.address} as role account`)
-
-  if (!await api.workers.isRoleAccountOfStorageProvider(api.storageProviderId, api.identities.key.address)) {
-    throw new Error('Development chain not configured correctly')
-  } else {
-    console.log('== Initialized runtime API for Development Server ==')
-  }
+  api.storageProviderId = await dev.check(api)
 
   return api
 }

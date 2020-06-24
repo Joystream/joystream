@@ -34,6 +34,8 @@ class WorkersApi {
     return ret
   }
 
+
+  // eslint-disable-next-line class-methods-use-this, require-await
   async init () {
     debug('Init')
   }
@@ -42,10 +44,10 @@ class WorkersApi {
    * Check whether the given account and id represent an active storage provider
    */
   async isRoleAccountOfStorageProvider (storageProviderId, roleAccountId) {
-    storageProviderId = new BN(storageProviderId)
-    roleAccountId = this.base.identities.keyring.decodeAddress(roleAccountId)
-    const account = await this.storageProviderRoleAccount(storageProviderId)
-    return account && account.eq(roleAccountId)
+    const id = new BN(storageProviderId)
+    const roleAccount = this.base.identities.keyring.decodeAddress(roleAccountId)
+    const providerAccount = await this.storageProviderRoleAccount(id)
+    return providerAccount && providerAccount.eq(roleAccount)
   }
 
   async isStorageProvider (storageProviderId) {
@@ -61,9 +63,22 @@ class WorkersApi {
 
   // Returns a Worker instance or null if provider does not exist
   async storageWorkerByProviderId (storageProviderId) {
-    storageProviderId = new BN(storageProviderId)
+    const id = new BN(storageProviderId)
     const { providers } = await this.getAllProviders()
-    return providers[storageProviderId.toNumber()] || null
+    return providers[id.toNumber()] || null
+  }
+
+  async findProviderIdByRoleAccount (roleAccount) {
+    const { ids, providers } = await this.getAllProviders()
+
+    for (let i = 0; i < ids.length; i++) {
+      const id = ids[i]
+      if (providers[id].role_account.eq(roleAccount)) {
+        return id
+      }
+    }
+
+    return null
   }
 
   async getAllProviders () {
@@ -74,10 +89,11 @@ class WorkersApi {
     // So we iterate over possible ids which may or may not exist, by reading directly
     // from storage value
     const nextWorkerId = (await this.base.api.query.storageWorkingGroup.nextWorkerId()).toNumber()
-    let ids = []
-    let providers = {}
+    const ids = []
+    const providers = {}
     for (let id = 0; id < nextWorkerId; id++) {
       // We get back an Option. Will be None if value doesn't exist
+      // eslint-disable-next-line no-await-in-loop
       let value = await this.base.api.rpc.state.getStorage(
         this.base.api.query.storageWorkingGroup.workerById.key(id)
       )

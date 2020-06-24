@@ -1,3 +1,7 @@
+/* eslint-disable no-console */
+
+'use strict'
+
 const debug = require('debug')('joystream:storage-cli:dev')
 
 function aliceKeyPair (api) {
@@ -8,12 +12,31 @@ function roleKeyPair (api) {
   return api.identities.keyring.addFromUri('//Colossus', null, 'sr25519')
 }
 
-// Setup Alice account on a developement chain that was
-// just launched as the storage lead, and a storage provider using the same
-// key as the role key
+const check = async (api) => {
+  const roleAccountId = roleKeyPair(api).address
+  const providerId = await api.workers.findProviderIdByRoleAccount(roleAccountId)
+
+  if (providerId === null) {
+    throw new Error('Dev storage provider not found on chain!')
+  }
+
+  console.log(`
+  Chain is setup with Dev storage provider:
+    providerId = ${providerId}
+    roleAccountId = ${roleAccountId}
+    roleKey = '//Colossus'
+  `)
+
+  return providerId
+}
+
+// Setup Alice account on a developement chain as
+// a member, storage lead, and a storage provider using a deterministic
+// development key for the role account
 const init = async (api) => {
   try {
-    return await check(api)
+    await check(api)
+    return
   } catch (err) {
     // setup is not correct we can try to run setup
   }
@@ -22,7 +45,7 @@ const init = async (api) => {
   const roleAccount = roleKeyPair(api).address
   const providerId = 0 // first assignable id
 
-  console.log(`Checking for dev chain...`)
+  debug(`Checking for dev chain...`)
 
   // make sure alice is sudo - indirectly checking this is a dev chain
   const sudo = await api.api.query.sudo.key()
@@ -37,7 +60,7 @@ const init = async (api) => {
   // Give role account some tokens to work with
   api.balances.transfer(alice, roleAccount, 100000)
 
-  debug('Registering Alice as Member')
+  console.log('Registering Alice as Member')
   // register alice as a member
   const aliceMemberId = await api.identities.registerMember(alice, {
     handle: 'alice'
@@ -94,30 +117,6 @@ const init = async (api) => {
   // the storage dev server on port 3001
   debug('Setting Local development node as bootstrap endpoint')
   await api.discovery.setBootstrapEndpoints(alice, ['http://localhost:3001/'])
-}
-
-const check = async (api) => {
-  const providerId = 0 // the first provider id which would have been assigned in dev-init
-  const roleAccountId = roleKeyPair(api).address
-  const alice = aliceKeyPair(api).address
-
-  if (await api.workers.isRoleAccountOfStorageProvider(providerId, roleAccountId)) {
-    console.log(`
-      Chain is setup with Alice as a storage provider:
-      providerId = ${providerId}
-      roleAccount = "//Colossus"
-    `)
-  } else { throw new Error('Alice is not a storage provider') }
-
-  const currentLead = await api.api.query.storageWorkingGroup.currentLead()
-
-  if (currentLead.isSome && currentLead.unwrap().role_account_id.eq(alice)) {
-    console.log(`
-      Alice is correctly setup as the storage lead
-    `)
-  } else {
-    throw new Error('Alice is not the storage lead!')
-  }
 }
 
 module.exports = {
