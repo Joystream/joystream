@@ -44,4 +44,33 @@ describe('WarthogModel', () => {
     expect(model.enums).length(1, 'Should add an enum');
     expect(model.lookupEnum('Episode').name).eq('Episode', 'Should lookup by name');
   });
+
+  it('Should add interfaces', () => {
+    const model = fromStringSchema(`
+        interface IEntity @entity {
+            f: String
+        }`);
+    expect(model.interfaces).length(1, 'Should add an interface');
+    expect(model.lookupInterface('IEntity').name).eq('IEntity', 'Should lookup by name');
+  });
+
+  it('Should should ignore interfaces without @entity', () => {
+    const model = fromStringSchema(`
+        interface IEntity {
+            f: String
+        }`);
+    expect(model.interfaces).length(0, 'Should skip the non-annotated interface');
+  });
+
+  it('Should add interfaces to entities', () => {
+    const model = fromStringSchema(`
+        interface IEntity @entity {
+            field1: String
+        }
+        type A implements IEntity @entity {
+            field1: String
+            field2: String
+        }`);
+    expect(model.lookupType('A').interfaces).length(1, 'Should register the implemented interface');
+  });
 });

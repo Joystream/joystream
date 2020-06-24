@@ -86,6 +86,10 @@ export class WarthogModel {
     return this._enums;
   }
 
+  get interfaces(): GraphQLInterfaceType[] {
+    return this._interfaces;
+  }
+
   lookupEnum(name: string): GraphQLEnumType {
     const e = this._enums.find(e => e.name === name);
     if (!e) throw new Error(`Cannot find enum with name ${name}`);
