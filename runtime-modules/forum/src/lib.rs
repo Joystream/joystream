@@ -216,7 +216,6 @@ pub use old_forum;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 pub use runtime_io::clear_prefix;
-use runtime_primitives;
 use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
 
@@ -402,7 +401,6 @@ const ERROR_DATA_MIGRATION_NOT_DONE: &str = "data migration not done yet.";
 //#[cfg(any(feature = "std", test))]
 //use sr_primitives::{StorageOverlay, ChildrenStorageOverlay};
 
-use system;
 use system::{ensure_root, ensure_signed};
 
 /// Represents a user's information in this forum.
@@ -1321,7 +1319,7 @@ decl_module! {
             // Add moderation to thread
             thread.moderation = Some(ModerationAction {
                 moderated_at: Self::current_block_and_time(),
-                moderator_id: moderator_id,
+                moderator_id,
                 rationale: rationale.clone()
             });
 
@@ -1472,7 +1470,7 @@ decl_module! {
             // Update moderation action on post
             let moderation_action = ModerationAction{
                 moderated_at: Self::current_block_and_time(),
-                moderator_id: moderator_id,
+                moderator_id,
                 rationale: rationale.clone()
             };
 
@@ -1583,10 +1581,10 @@ impl<T: Trait> Module<T> {
         // Build a new thread
         let new_thread = Thread {
             title: title.clone(),
-            category_id: category_id,
+            category_id,
             moderation: None,
             created_at: Self::current_block_and_time(),
-            author_id: author_id,
+            author_id,
             poll: poll.clone(),
             nr_in_category: category.num_threads_created() + 1,
             num_unmoderated_posts: 0,
@@ -1642,12 +1640,12 @@ impl<T: Trait> Module<T> {
 
         // Build a post
         let new_post = Post {
-            thread_id: thread_id,
+            thread_id,
             current_text: text.clone(),
             moderation: None,
             text_change_history: vec![],
             created_at: Self::current_block_and_time(),
-            author_id: author_id,
+            author_id,
             nr_in_thread: thread.num_posts_ever_created(),
         };
 
@@ -1689,7 +1687,7 @@ impl<T: Trait> Module<T> {
             role_account: account_id.clone(),
             name: name.clone(),
             self_introduction: self_introduction.clone(),
-            post_footer: post_footer,
+            post_footer,
         };
 
         // Insert new user data for forum user
@@ -1722,8 +1720,8 @@ impl<T: Trait> Module<T> {
         // Create moderator data
         let new_moderator = Moderator {
             role_account: account_id.clone(),
-            name: name,
-            self_introduction: self_introduction,
+            name,
+            self_introduction,
         };
 
         // Insert moderator data into storage
@@ -2146,7 +2144,7 @@ impl<T: Trait> Module<T> {
                 return Ok(());
             }
         }
-        return Err(ERROR_MODERATOR_MODERATE_CATEGORY);
+        Err(ERROR_MODERATOR_MODERATE_CATEGORY)
     }
 
     /// Check the vote is valid
