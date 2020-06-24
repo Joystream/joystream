@@ -23,7 +23,6 @@ import { InterfaceType } from 'type-graphql';
 
 {{#has.mtm}}import { JoinTable } from 'typeorm';{{/has.mtm}}
 
-
 {{#relatedEntityImports}}
   {{{ . }}}
 {{/relatedEntityImports}}
@@ -50,12 +49,12 @@ export {{#isInterface}}abstract{{/isInterface}} class {{className}}
 
 {{#fields}}
   {{#is.otm}}
-    @OneToMany(() => {{relation.columnType}}, (param: {{relation.columnType}}) => param.{{relation.relatedTsProp}})
+    @OneToMany(() => {{relation.columnType}}, ({{camelName}}: {{relation.columnType}}) => {{camelName}}.{{relation.relatedTsProp}})
     {{camelName}}?: {{relation.columnType}}[];  
   {{/is.otm}}
 
   {{#is.mto}}
-    @ManyToOne(() => {{relation.columnType}}, {{#relation.relatedTsProp}}(param: {{relation.columnType}}) => param.{{relation.relatedTsProp}},{{/relation.relatedTsProp}} { 
+    @ManyToOne(() => {{relation.columnType}}, {{#relation.relatedTsProp}}({{camelName}}: {{relation.columnType}}) => {{camelName}}.{{relation.relatedTsProp}},{{/relation.relatedTsProp}} { 
       skipGraphQLField: true{{^required}},
       nullable: true{{/required}} 
     })
@@ -69,7 +68,7 @@ export {{#isInterface}}abstract{{/isInterface}} class {{className}}
   {{/is.oto}}
 
   {{#is.mtm}}
-    @ManyToMany(() => {{relation.columnType}}, (param: {{relation.columnType}}) => param.{{relation.relatedTsProp}})
+    @ManyToMany(() => {{relation.columnType}}, ({{camelName}}: {{relation.columnType}}) => {{camelName}}.{{relation.relatedTsProp}})
     {{#relation.joinTable}}@JoinTable(){{/relation.joinTable}}
     {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{relation.columnType}}[];
   {{/is.mtm}}
