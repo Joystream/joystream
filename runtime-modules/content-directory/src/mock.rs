@@ -50,10 +50,10 @@ pub const SECOND_CLASS_ID: ClassId = 2;
 pub const FIRST_ENTITY_ID: EntityId = 1;
 pub const SECOND_ENTITY_ID: EntityId = 2;
 
-pub const UNKNOWN_CLASS_ID: ClassId = 111;
-pub const UNKNOWN_ENTITY_ID: EntityId = 222;
-pub const UNKNOWN_PROPERTY_ID: PropertyId = 333;
-pub const UNKNOWN_SCHEMA_ID: SchemaId = 444;
+// pub const UNKNOWN_CLASS_ID: ClassId = 111;
+// pub const UNKNOWN_ENTITY_ID: EntityId = 222;
+// pub const UNKNOWN_PROPERTY_ID: PropertyId = 333;
+// pub const UNKNOWN_SCHEMA_ID: SchemaId = 444;
 
 pub const FIRST_SCHEMA_ID: SchemaId = 0;
 pub const SECOND_SCHEMA_ID: SchemaId = 1;
@@ -61,11 +61,11 @@ pub const SECOND_SCHEMA_ID: SchemaId = 1;
 pub const FIRST_PROPERTY_ID: SchemaId = 0;
 pub const SECOND_PROPERTY_ID: SchemaId = 1;
 
-/// Nonces
+// Nonces
 
-pub const ZERO_NONCE: Nonce = 0;
-pub const FIRST_NONCE: Nonce = 1;
-pub const SECOND_NONCE: Nonce = 2;
+// pub const ZERO_NONCE: Nonce = 0;
+// pub const FIRST_NONCE: Nonce = 1;
+// pub const SECOND_NONCE: Nonce = 2;
 
 impl_outer_origin! {
     pub enum Origin for Runtime {}
@@ -446,20 +446,20 @@ pub fn assert_event_success(tested_event: TestEvent, number_of_events_after_call
     ));
 }
 
-pub fn assert_failure(
-    call_result: Result<(), &str>,
-    expected_error: &str,
-    number_of_events_before_call: usize,
-) {
-    // Ensure  call result is equal to expected error
-    assert!(matches!(
-        call_result,
-        Err(call_result) if call_result == expected_error
-    ));
+// pub fn assert_failure(
+//     call_result: Result<(), &str>,
+//     expected_error: &str,
+//     number_of_events_before_call: usize,
+// ) {
+//     // Ensure  call result is equal to expected error
+//     assert!(matches!(
+//         call_result,
+//         Err(call_result) if call_result == expected_error
+//     ));
 
-    // Ensure  no other events emitted after call
-    assert_eq!(System::events().len(), number_of_events_before_call);
-}
+//     // Ensure  no other events emitted after call
+//     assert_eq!(System::events().len(), number_of_events_before_call);
+// }
 
 // Curator groups
 
@@ -604,46 +604,6 @@ pub fn class_by_id(class_id: ClassId) -> Class<Runtime> {
 
 pub fn class_exists(class_id: ClassId) -> bool {
     ClassById::<Runtime>::exists(class_id)
-}
-
-// Properties
-impl<T: Trait> Property<T> {
-    pub fn default_with_name(name_len: usize) -> Self {
-        let name = generate_text(name_len);
-        Self {
-            name,
-            ..Property::<T>::default()
-        }
-    }
-
-    pub fn with_name_and_type(name_len: usize, property_type: PropertyType<T>) -> Self {
-        let name = generate_text(name_len);
-        Self {
-            name,
-            property_type,
-            ..Property::<T>::default()
-        }
-    }
-}
-
-impl<T: Trait> PropertyType<T> {
-    pub fn vec_reference(
-        class_id: ClassId,
-        same_controller: bool,
-        max_length: VecMaxLength,
-    ) -> PropertyType<Runtime> {
-        let vec_type = Type::<Runtime>::Reference(class_id, same_controller);
-        let vec_reference = VecPropertyType::<Runtime>::new(vec_type, max_length);
-        PropertyType::<Runtime>::Vector(vec_reference)
-    }
-}
-
-impl<T: Trait> PropertyValue<T> {
-    pub fn vec_reference(entity_ids: Vec<EntityId>) -> PropertyValue<Runtime> {
-        let vec_value = VecValue::<Runtime>::Reference(entity_ids);
-        let vec_property_value = VecPropertyValue::<Runtime>::new(vec_value, 0);
-        PropertyValue::<Runtime>::Vector(vec_property_value)
-    }
 }
 
 // Vouchers
@@ -819,12 +779,53 @@ pub fn transfer_entity_ownership(
     )
 }
 
+// Transaction
+
 pub fn transaction(
     origin: u64,
     actor: Actor<Runtime>,
     operations: Vec<OperationType<Runtime>>,
 ) -> Result<(), &'static str> {
     TestModule::transaction(Origin::signed(origin), actor, operations)
+}
+
+impl<T: Trait> Property<T> {
+    pub fn default_with_name(name_len: usize) -> Self {
+        let name = generate_text(name_len);
+        Self {
+            name,
+            ..Property::<T>::default()
+        }
+    }
+
+    pub fn with_name_and_type(name_len: usize, property_type: PropertyType<T>) -> Self {
+        let name = generate_text(name_len);
+        Self {
+            name,
+            property_type,
+            ..Property::<T>::default()
+        }
+    }
+}
+
+impl<T: Trait> PropertyType<T> {
+    pub fn vec_reference(
+        class_id: ClassId,
+        same_controller: bool,
+        max_length: VecMaxLength,
+    ) -> PropertyType<Runtime> {
+        let vec_type = Type::<Runtime>::Reference(class_id, same_controller);
+        let vec_reference = VecPropertyType::<Runtime>::new(vec_type, max_length);
+        PropertyType::<Runtime>::Vector(vec_reference)
+    }
+}
+
+impl<T: Trait> PropertyValue<T> {
+    pub fn vec_reference(entity_ids: Vec<EntityId>) -> PropertyValue<Runtime> {
+        let vec_value = VecValue::<Runtime>::Reference(entity_ids);
+        let vec_property_value = VecPropertyValue::<Runtime>::new(vec_value, 0);
+        PropertyValue::<Runtime>::Vector(vec_property_value)
+    }
 }
 
 impl From<InboundReferenceCounter> for EntityReferenceCounterSideEffect {
