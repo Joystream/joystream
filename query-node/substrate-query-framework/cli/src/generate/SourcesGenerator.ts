@@ -10,11 +10,13 @@ import { EnumRenderer } from './EnumRenderer';
 import { kebabCase } from './utils';
 import { ConfigProvider } from './ConfigProvider';
 import { EnumContextProvider } from './EnumContextProvider';
+import { InterfacesRenderer } from './InterfacesRenderer';
 
 const debug = Debug('qnode-cli:sources-generator');
 
-export const FULL_TEXT_QUERIES_FOLDER = 'fulltextqueries';
+export const QUERIES_FOLDER = 'queries';
 export const ENUMS_FOLDER = 'enums';
+export const INTERFACES_FOLDER = 'interfaces';
 
 /**
  * additional context to be passed to the generator,
@@ -35,6 +37,7 @@ export class SourcesGenerator {
 
   generate(): void {
     this.generateEnums();
+    this.genearateInterfaces();
     this.generateModels();
     this.generateQueries();
   }
@@ -73,7 +76,7 @@ export class SourcesGenerator {
     createDir(path.resolve(process.cwd(), migrationsDir), false, true);
 
     // create dir if the textsearch module
-    const ftsDir = this.config.getDestFolder(FULL_TEXT_QUERIES_FOLDER);
+    const ftsDir = this.config.getDestFolder(QUERIES_FOLDER);
     createDir(path.resolve(process.cwd(), ftsDir), false, true);
 
     const queryRenderer = new FTSQueryRenderer();
@@ -95,6 +98,15 @@ export class SourcesGenerator {
       // service
       this.renderAndWrite('textsearch/service.ts.mst', path.join(ftsDir, `${filePrefix}.service.ts`), render);
     });
+  }
+
+  genearateInterfaces(): void {
+    const interfacesDir = this.config.getDestFolder(ENUMS_FOLDER);
+    createDir(path.resolve(process.cwd(), interfacesDir), false, true);
+
+    const interfacesRenderer = new InterfacesRenderer(this.model);
+    const render = (template: string) => interfacesRenderer.render(template);
+    this.renderAndWrite('entities/interfaces.ts.mst', path.join(interfacesDir, `interfaces.ts`), render);
   }
 
   generateEnums(): void {
