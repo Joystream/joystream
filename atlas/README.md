@@ -1,81 +1,54 @@
-# atlas
-
-## About
-
-The components package holds the React components used in Atlas and their stories, while the app package contains the Atlas App itself.
-Given how the code is organized, the first time you clone the repo, you need to build the components package.
-
 ## Getting Started
 
-After cloning the repo run:
+After cloning the repo, run:
 
 ```bash
 $ cd atlas
 $ yarn install
+$ yarn start
+```
+
+To start the app on `localhost:1234`, Storybook on `localhost:6006` and the bundler in watch mode.
+
+To build both the component package and the app together, run
+
+```bash
+$ yarn build
+```
+
+To run tests (Currently WIP) run
+
+```bash
+$ yarn test
+```
+
+## Packages
+
+This monorepo consists of two packages, `app` and `@joystream/components` (the components package).
+This repo is managed with [yarn workspaces](https://classic.yarnpkg.com/en/docs/workspaces/)
+
+To run a command in a workspace:
+
+```bash
+$ yarn workspace YOUR_WORKSPACE_NAME YOUR_COMMAND
+```
+
+For example, to add `react-spring` to `@joystream/components`:
+
+```bash
+$ yarn workspace @joystream/components add react-spring
 ```
 
 ### Components Package
 
-The components package is located under `./packages/components`, so every command that follows should be prefixed by
+The components package is located under `./packages/components` and can is usually referenced by `@joystream/components`.
+It is, as the name suggests, a component library and everything related to components and atomic parts of the UI belongs here.
 
-```bash
-$ cd packages/components
-```
+### App package
 
-To start storybook run
+The components package is located under `./packages/app` and is where the actual Atlas application lives.
+Business logic, full pages and data fetching should all reside here.
 
-```bash
-$ yarn storybook
-```
+## Deploy Previews
 
-To build the components package and use it elsewhere, for example inside the app package, you can run:
-
-```bash
-$ yarn build
-```
-
-When developing, you can run the bundler in watch mode with
-
-```bash
-$ yarn start
-```
-
-#### Populate `index.ts`
-
-Running
-
-```bash
-$ yarn index
-```
-
-will write import and exports from every file inside `src/components` to `src/index.ts`
-
-For the script to run properly make sure to follow the convention of naming a Component the same as the file is exported from.
-
-For example, exporting `Button` from `Button.tsx` will work while exporting `Cactus` from `Plant.tsx` will not.
-
-If you do not wish to follow this convention, you can just ignore the index script and run
-
-```bash
-$ yarn build
-```
-
-#### App package
-
-The components package is located under `./packages/app`, so every command that follows should be prefixed by
-
-```bash
-$ cd packages/app
-```
-
-Then run
-
-```bash
-$ yarn dev
-```
-
-To start the app on `localhost:1234`
-
-## Deploy Storybook as a static site
-
-To deploy storybook as a static site, a `now.json` file has been setup for deployment with [Zeit Now](https://now.sh).
+Each PR has deploy previews for both for Storybook and for the App on Chromia and Netlify respectively.
