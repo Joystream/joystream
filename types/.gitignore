@@ -2,3 +2,9 @@
 **/*.js
 **/*.d.ts
 hiring/schemas
+
+# from prior versions
+lib/
+
+# artifact of webpack when building pioneer?
+build/

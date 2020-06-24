@@ -1,2 +1,6 @@
 # No need to include src in published package
 src/
+
+# old build artifacts
+lib/
+build/
