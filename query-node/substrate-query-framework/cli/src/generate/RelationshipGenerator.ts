@@ -34,8 +34,8 @@ export class RelationshipGenerator {
   }
 
   addOne2One(field: Field, relatedField: Field, objType: ObjectType, relatedObject: ObjectType): void {
-    field.relation = { type: 'oto', columnType: field.type, joinColumn: true };
-    relatedField.relation = { type: 'oto', columnType: relatedField.type };
+    field.relation = { type: 'oto', columnType: field.type, joinColumn: true, relatedTsProp: relatedField.name };
+    relatedField.relation = { type: 'oto', columnType: relatedField.type, relatedTsProp: field.name };
 
     objType.relatedEntityImports.add(relatedObject.name);
     relatedObject.relatedEntityImports.add(objType.name);

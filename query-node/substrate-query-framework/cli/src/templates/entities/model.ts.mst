@@ -62,7 +62,7 @@ export {{#isInterface}}abstract{{/isInterface}} class {{className}}
   {{/is.mto}}
 
   {{#is.oto}}
-    @OneToOne(() => {{relation.columnType}})
+    @OneToOne(() => {{relation.columnType}}, (param: {{relation.columnType}}) => param.{{relation.relatedTsProp}})
     {{#relation.joinColumn}}@JoinColumn(){{/relation.joinColumn}}
     {{camelName}}?: {{relation.columnType}};
   {{/is.oto}}
