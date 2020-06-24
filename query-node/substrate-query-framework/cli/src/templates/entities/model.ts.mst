@@ -23,8 +23,9 @@ import { InterfaceType } from 'type-graphql';
 
 {{#has.mtm}}import { JoinTable } from 'typeorm';{{/has.mtm}}
 
+
 {{#relatedEntityImports}}
-  {{{ entityName }}}
+  {{{ . }}}
 {{/relatedEntityImports}}
 
 {{#enums}}
