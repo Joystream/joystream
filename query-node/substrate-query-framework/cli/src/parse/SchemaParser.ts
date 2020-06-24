@@ -8,6 +8,7 @@ import {
   FieldDefinitionNode,
   DirectiveNode,
   GraphQLEnumType,
+  GraphQLInterfaceType,
 } from 'graphql';
 import * as fs from 'fs-extra';
 import Debug from 'debug';
@@ -103,6 +104,14 @@ export class GraphQLSchemaParser {
         t => !t.name.startsWith('__') && t instanceof GraphQLEnumType
       ),
     ] as GraphQLEnumType[];
+  }
+
+  getInterfaceTypes(): GraphQLInterfaceType[] {
+    return [
+      ...Object.values(this.schema.getTypeMap()).filter(
+        t => !t.name.startsWith('__') && t instanceof GraphQLInterfaceType
+      ),
+    ] as GraphQLInterfaceType[];
   }
 
   /**

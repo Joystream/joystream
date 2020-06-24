@@ -3,16 +3,15 @@ import {
   FieldDefinitionNode,
   ListTypeNode,
   NamedTypeNode,
+  GraphQLInterfaceType,
+  TypeDefinitionNode,
+  InterfaceTypeDefinitionNode,
 } from 'graphql';
-import {
-  GraphQLSchemaParser,
-  Visitors,
-  SchemaNode,
-  DIRECTIVES,
-} from './SchemaParser';
+import { GraphQLSchemaParser, Visitors, SchemaNode } from './SchemaParser';
 import { WarthogModel, Field, ObjectType } from '../model';
 import Debug from 'debug';
 import { ENTITY_DIRECTIVE } from './constant';
+import { FTSDirective } from './FTSDirective';
 
 const debug = Debug('qnode-cli:model-generator');
 
@@ -75,10 +74,8 @@ export class WarthogModelBuilder {
    * Mark the object type as entity if '@entity' directive is used
    * @param o ObjectTypeDefinitionNode
    */
-  private isEntity(o: ObjectTypeDefinitionNode): boolean {
-    const entityDirective = o.directives?.find(
-      d => d.name.value === ENTITY_DIRECTIVE
-    );
+  private isEntity(o: TypeDefinitionNode): boolean {
+    const entityDirective = o.directives?.find(d => d.name.value === ENTITY_DIRECTIVE);
     return entityDirective ? true : false;
   }
 
@@ -87,38 +84,56 @@ export class WarthogModelBuilder {
    * @param o ObjectTypeDefinitionNode
    */
   private generateTypeDefination(o: ObjectTypeDefinitionNode): ObjectType {
-    const fields = this._schemaParser
-      .getFields(o)
-      .map((fieldNode: FieldDefinitionNode) => {
-        const typeNode = fieldNode.type;
-        const fieldName = fieldNode.name.value;
-
-        if (typeNode.kind === 'NamedType') {
-          return this._namedType(fieldName, typeNode);
-        } else if (typeNode.kind === 'NonNullType') {
-          const field =
-            typeNode.type.kind === 'NamedType'
-              ? this._namedType(fieldName, typeNode.type)
-              : this._listType(typeNode.type, fieldName);
-
-          field.nullable = false;
-          return field;
-        } else if (typeNode.kind === 'ListType') {
-          return this._listType(typeNode, fieldName);
-        } else {
-          throw new Error(
-            `Unrecognized type. ${JSON.stringify(typeNode, null, 2)}`
-          );
-        }
-      });
-
-    debug(`Read and parsed fields: ${JSON.stringify(fields, null, 2)}`);
-
     return {
       name: o.name.value,
-      fields: fields,
+      fields: this.getFields(o),
       isEntity: this.isEntity(o),
+      interfaces: this.getInterfaces(o),
     } as ObjectType;
+  }
+
+  private getInterfaces(o: ObjectTypeDefinitionNode): GraphQLInterfaceType[] {
+    if (!o.interfaces) {
+      return [];
+    }
+    const interfaces: GraphQLInterfaceType[] = [];
+    o.interfaces.map(nameNode => {
+      if (nameNode.kind !== 'NamedType') {
+        throw new Error(`Unrecognized interface type: ${JSON.stringify(nameNode, null, 2)}`);
+      }
+      const name = nameNode.name.value;
+      interfaces.push(this._model.lookupInterface(name));
+    });
+
+    if (interfaces.length > 1) {
+      throw new Error(`A type can implement at most one interface`);
+    }
+    return interfaces;
+  }
+
+  private getFields(o: ObjectTypeDefinitionNode): Field[] {
+    const fields = this._schemaParser.getFields(o).map((fieldNode: FieldDefinitionNode) => {
+      const typeNode = fieldNode.type;
+      const fieldName = fieldNode.name.value;
+
+      if (typeNode.kind === 'NamedType') {
+        return this._namedType(fieldName, typeNode);
+      } else if (typeNode.kind === 'NonNullType') {
+        const field =
+          typeNode.type.kind === 'NamedType'
+            ? this._namedType(fieldName, typeNode.type)
+            : this._listType(typeNode.type, fieldName);
+
+        field.nullable = false;
+        return field;
+      } else if (typeNode.kind === 'ListType') {
+        return this._listType(typeNode, fieldName);
+      } else {
+        throw new Error(`Unrecognized type. ${JSON.stringify(typeNode, null, 2)}`);
+      }
+    });
+    debug(`Read and parsed fields: ${JSON.stringify(fields, null, 2)}`);
+    return fields;
   }
 
   /**
@@ -153,28 +168,48 @@ export class WarthogModelBuilder {
     }
   }
 
-  buildWarthogModel(): WarthogModel {
-    this._model = new WarthogModel();
+  private generateInterfaces() {
+    this._schemaParser.getInterfaceTypes().map(i => {
+      if (this.isEntity(i.astNode as InterfaceTypeDefinitionNode)) {
+        this._model.addInterface(i)
+      }
+    });
+  }
 
+  private generateObjectTypes() {
     this._schemaParser.getObjectDefinations().map(o => {
       const objType = this.generateTypeDefination(o);
       this._model.addObjectType(objType);
     });
+  }
 
+  private generateEnums() {
     this._schemaParser.getEnumTypes().map(e => this._model.addEnum(e));
+  }
 
-    this.generateSQLRelationships();
-
+  // TODO: queries will be parsed from a top-level directive definition
+  // and this part is going to be deprecated
+  private genereateQueries() {
+    const fts = new FTSDirective();
     const visitors: Visitors = {
-      directives: {},
+      directives: {
+        FULL_TEXT_SEARCHABLE_DIRECITVE: {
+          visit: (path: SchemaNode[]) => fts.generate(path, this._model),
+        } 
+      }
     };
-    DIRECTIVES.map(d => {
-      visitors.directives[d.name] = {
-        visit: (path: SchemaNode[]) => d.generate(path, this._model),
-      };
-    });
     this._schemaParser.dfsTraversal(visitors);
+  }
 
+  buildWarthogModel(): WarthogModel {
+    this._model = new WarthogModel();
+    
+    this.generateEnums();
+    this.generateInterfaces();
+    this.generateObjectTypes();
+    this.generateSQLRelationships();
+    this.genereateQueries();
+  
     return this._model;
   }
 }
