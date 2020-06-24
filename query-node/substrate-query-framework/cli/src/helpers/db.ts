@@ -66,10 +66,11 @@ export async function resetLastProcessedEvent(): Promise<void> {
 
 export async function createSavedEntityEventTable(): Promise<void> {
   const query = `CREATE TABLE "saved_entity_event" (
-      "index" integer PRIMARY KEY,
+      "id" integer PRIMARY KEY DEFAULT 1,
+      "index" numeric,
       "eventName" character varying NOT NULL,
-      "blockNumber" integer NOT NULL,
-      "createdAt" TIMESTAMP NOT NULL DEFAULT now())`;
+      "blockNumber" numeric NOT NULL,
+      "updatedAt" TIMESTAMP NOT NULL DEFAULT now())`;
 
   await createConnection();
   // get a connection and create a new query runner

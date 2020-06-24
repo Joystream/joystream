@@ -9,6 +9,7 @@ import {
   ISubstrateQueryService,
   SavedEntityEvent,
   makeDatabaseManager,
+  QueryEvent,
 } from '.';
 
 const debug = require('debug')('index-builder:indexer');
@@ -17,6 +18,8 @@ export default class IndexBuilder {
   private _producer: QueryBlockProducer;
 
   private _processing_pack!: QueryEventProcessingPack;
+
+  private lastProcessedEvent!: SavedEntityEvent;
 
   private constructor(producer: QueryBlockProducer, processing_pack: QueryEventProcessingPack) {
     this._producer = producer;
@@ -39,12 +42,11 @@ export default class IndexBuilder {
 
     debug('Spawned worker.');
 
-    // Get the last processed event
-    // Should use db.get(SavedEntityEvent, {}) ???
-    const savedEntityEvent = await getRepository(SavedEntityEvent).findOne();
+    const lastProcessedEvent = await getRepository(SavedEntityEvent).findOne({ where: { id: 1 } });
 
-    if (savedEntityEvent !== undefined) {
-      await this._producer.start(savedEntityEvent.blockNumber);
+    if (lastProcessedEvent !== undefined) {
+      this.lastProcessedEvent = lastProcessedEvent;
+      await this._producer.start(this.lastProcessedEvent.blockNumber, this.lastProcessedEvent.index);
     } else {
       // Setup worker
       await this._producer.start();
@@ -58,7 +60,7 @@ export default class IndexBuilder {
   _onQueryEventBlock(query_event_block: QueryEventBlock): void {
     debug(`Yay, block producer at height: #${query_event_block.block_number}`);
 
-    query_event_block.query_events.forEach(async (query_event, index) => {
+    asyncForEach(query_event_block.query_events, async (query_event: QueryEvent) => {
       if (!this._processing_pack[query_event.event_method]) {
         debug(`Unrecognized: ` + query_event.event_name);
 
@@ -91,5 +93,11 @@ export default class IndexBuilder {
         }
       }
     });
+  }
+}
+
+async function asyncForEach(array: Array<any>, callback: Function) {
+  for (let index = 0; index < array.length; index++) {
+    await callback(array[index], index, array);
   }
 }

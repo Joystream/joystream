@@ -1,9 +1,5 @@
-type Membership @entity {
-  # Member's root account id
-  accountId: String!
-
-  # Member's id
-  memberId: Int!
+type Member @entity {
+  memberId: BigInt!
 
   # The unique handle chosen by member
   handle: String @fulltext(query: "handles")
@@ -13,4 +9,13 @@ type Membership @entity {
 
   # Short text chosen by member to share information about themselves
   about: String
+
+  # Blocknumber when member was registered
+  registeredAtBlock: BigInt!
+
+  # Member's controller account id.
+  controllerAccount: Bytes!
+
+  # Member's root account id
+  rootAccount: Bytes!
 }
