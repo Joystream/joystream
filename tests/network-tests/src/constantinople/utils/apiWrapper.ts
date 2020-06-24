@@ -6,7 +6,7 @@ import { UserInfo, PaidMembershipTerms, MemberId } from '@constantinople/types/l
 import { Mint, MintId } from '@constantinople/types/lib/mint';
 import { Lead, LeadId } from '@constantinople/types/lib/content-working-group';
 import { RoleParameters } from '@constantinople/types/lib/roles';
-import { Seat } from '@constantinople/types/lib/council';
+import { Seat } from '@constantinople/types';
 import { Balance, EventRecord, AccountId, BlockNumber, BalanceOf } from '@polkadot/types/interfaces';
 import BN from 'bn.js';
 import { SubmittableExtrinsic } from '@polkadot/api/types';

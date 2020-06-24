@@ -27,6 +27,7 @@ tap.mocha.describe('Update runtime scenario', async () => {
   const greaterStake: BN = new BN(+process.env.COUNCIL_STAKE_GREATER_AMOUNT!);
   const lesserStake: BN = new BN(+process.env.COUNCIL_STAKE_LESSER_AMOUNT!);
   const durationInBlocks: number = 54;
+  const runtimePath: string = process.env.RUNTIME_WASM_PATH!;
 
   const provider = new WsProvider(nodeUrl);
   const apiWrapper: ApiWrapper = await ApiWrapper.create(provider);
@@ -35,7 +36,6 @@ tap.mocha.describe('Update runtime scenario', async () => {
   membershipTest(apiWrapper, m1KeyPairs, keyring, N, paidTerms, sudoUri);
   membershipTest(apiWrapper, m2KeyPairs, keyring, N, paidTerms, sudoUri);
   councilTest(apiWrapper, m1KeyPairs, m2KeyPairs, keyring, K, sudoUri, greaterStake, lesserStake);
-  updateRuntimeTest(apiWrapper, m1KeyPairs, m2KeyPairs, keyring, sudoUri);
-  membershipTest(apiWrapper, new Array<KeyringPair>(), keyring, N, paidTerms, sudoUri);
+  updateRuntimeTest(apiWrapper, m1KeyPairs, m2KeyPairs, keyring, sudoUri, runtimePath);
   closeApi(apiWrapper);
 });

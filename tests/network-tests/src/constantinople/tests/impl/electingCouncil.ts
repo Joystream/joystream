@@ -2,7 +2,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { ApiWrapper } from '../../utils/apiWrapper';
 import { Keyring } from '@polkadot/api';
 import BN from 'bn.js';
-import { Seat } from '@constantinople/types/lib/council';
+import { Seat } from '@constantinople/types';
 import { assert } from 'chai';
 import { v4 as uuid } from 'uuid';
 import { Utils } from '../../utils/utils';

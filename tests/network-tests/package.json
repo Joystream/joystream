@@ -4,8 +4,9 @@
   "license": "GPL-3.0-only",
   "scripts": {
     "build": "tsc --build tsconfig.json",
-    "test": "tap --files ts-node/register src/constantinople/tests/proposals/*Test.ts --files ts-node/register src/nicaea/tests/bureaucracy/*Test.ts",
-    "test-migration": "tap --files src/rome/tests/romeRuntimeUpgradeTest.ts --files src/constantinople/tests/electingCouncilTest.ts",
+    "test": "tap --files ts-node/register src/nicaea/tests/proposals/*Test.ts --files ts-node/register src/nicaea/tests/bureaucracy/*Test.ts -T",
+    "test-migration-constantinople": "tap --files src/rome/tests/romeRuntimeUpgradeTest.ts --files src/constantinople/tests/electingCouncilTest.ts -T",
+    "test-migration-nicaea": "tap --files src/constantinople/tests/proposals/updateRuntimeTest.ts --files src/nicaea/tests/electingCouncilTest.ts -T",
     "debug": "tap --files src/nicaea/tests/bureaucracy/manageWorkerAsLeadTest.ts -T",
     "lint": "tslint --project tsconfig.json",
     "prettier": "prettier --write ./src"

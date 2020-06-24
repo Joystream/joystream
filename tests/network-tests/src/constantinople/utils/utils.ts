@@ -4,7 +4,7 @@ import { blake2AsHex } from '@polkadot/util-crypto';
 import BN from 'bn.js';
 import fs from 'fs';
 import { decodeAddress } from '@polkadot/keyring';
-import { Seat } from '@constantinople/types/lib/council';
+import { Seat } from '@constantinople/types';
 
 export class Utils {
   private static LENGTH_ADDRESS = 32 + 1; // publicKey + prefix
