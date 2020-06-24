@@ -34,6 +34,6 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - name: build
       run: |
-        yarn install --frozen-lockfile
+        yarn install --frozen-lockfile --network-timeout 120000
         yarn workspace @joystream/types build
         yarn workspace joystream-cli build
