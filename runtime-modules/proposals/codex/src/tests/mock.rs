@@ -123,7 +123,7 @@ impl governance::council::Trait for Test {
     type CouncilTermEnded = ();
 }
 
-impl common::origin_validator::ActorOriginValidator<Origin, u64, u64> for () {
+impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
     fn ensure_actor_origin(origin: Origin, _: u64) -> Result<u64, &'static str> {
         let account_id = system::ensure_signed(origin)?;
 

@@ -24,14 +24,14 @@ import {
 } from '@joystream/types/content-working-group';
 
 import {
-  WorkerApplication, WorkerApplicationId,
-  WorkerOpening, WorkerOpeningId,
+  Application as WGApplication,
+  Opening as WGOpening,
   Worker, WorkerId,
-  WorkerRoleStakeProfile,
+  RoleStakeProfile,
   Lead as LeadOf
 } from '@joystream/types/working-group';
 
-import { Application, Opening, OpeningId } from '@joystream/types/hiring';
+import { Application, Opening, OpeningId, ApplicationId } from '@joystream/types/hiring';
 import { Stake, StakeId } from '@joystream/types/stake';
 import { RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
 import { ActorInRole, Profile, MemberId, Role, RoleKeys, ActorId } from '@joystream/types/members';
@@ -72,13 +72,13 @@ type WGApiMethodType =
   | 'workerById';
 type WGApiMethodsMapping = { [key in WGApiMethodType]: string };
 
-type GroupApplication = CuratorApplication | WorkerApplication;
-type GroupApplicationId = CuratorApplicationId | WorkerApplicationId;
-type GroupOpening = CuratorOpening | WorkerOpening;
-type GroupOpeningId = CuratorOpeningId | WorkerOpeningId;
+type GroupApplication = CuratorApplication | WGApplication;
+type GroupApplicationId = CuratorApplicationId | ApplicationId;
+type GroupOpening = CuratorOpening | WGOpening;
+type GroupOpeningId = CuratorOpeningId | OpeningId;
 type GroupWorker = Worker | Curator;
 type GroupWorkerId = CuratorId | WorkerId;
-type GroupWorkerStakeProfile = WorkerRoleStakeProfile | CuratorRoleStakeProfile;
+type GroupWorkerStakeProfile = RoleStakeProfile | CuratorRoleStakeProfile;
 type GroupLead = Lead | LeadOf;
 type GroupLeadWithMemberId = {
   lead: GroupLead;
@@ -99,15 +99,15 @@ const workingGroupsApiMapping: WGApiMapping = {
   [WorkingGroups.StorageProviders]: {
     module: 'storageWorkingGroup',
     methods: {
-      nextOpeningId: 'nextWorkerOpeningId',
-      openingById: 'workerOpeningById',
-      nextApplicationId: 'nextWorkerApplicationId',
-      applicationById: 'workerApplicationById',
+      nextOpeningId: 'nextOpeningId',
+      openingById: 'openingById',
+      nextApplicationId: 'nextApplicationId',
+      applicationById: 'applicationById',
       nextWorkerId: 'nextWorkerId',
       workerById: 'workerById'
     },
-    openingType: WorkerOpening,
-    applicationType: WorkerApplication,
+    openingType: WGOpening,
+    applicationType: WGApplication,
     workerType: Worker
   },
   [WorkingGroups.ContentCurators]: {
@@ -210,7 +210,7 @@ export class Transport extends TransportBase implements ITransport {
     id: GroupWorkerId,
     worker: GroupWorker
   ): Promise<GroupMember> {
-    const roleAccount = worker.role_account;
+    const roleAccount = worker.role_account_id;
     const memberId = group === WorkingGroups.ContentCurators
       ? await this.memberIdFromCuratorId(id)
       : (worker as Worker).member_id;
@@ -255,7 +255,7 @@ export class Transport extends TransportBase implements ITransport {
     );
 
     for (let i = 0; i < groupOpenings.linked_values.length; i++) {
-      const opening = await this.opening(groupOpenings.linked_values[i].opening_id.toNumber());
+      const opening = await this.opening(groupOpenings.linked_values[i].hiring_opening_id.toNumber());
       if (opening.is_active) {
         return true;
       }
@@ -415,7 +415,7 @@ export class Transport extends TransportBase implements ITransport {
         await this.cachedApiMethodByGroup(group, 'applicationById')(i)
       );
 
-      if (cApplication.value.worker_opening_id.toNumber() !== groupOpeningId) {
+      if (cApplication.value.opening_id.toNumber() !== groupOpeningId) {
         continue;
       }
 
@@ -454,7 +454,7 @@ export class Transport extends TransportBase implements ITransport {
     );
 
     const opening = await this.opening(
-      groupOpening.value.opening_id.toNumber()
+      groupOpening.value.hiring_opening_id.toNumber()
     );
 
     const applications = await this.groupOpeningApplications(group, id);
