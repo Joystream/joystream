@@ -110,6 +110,11 @@ pub type ThreadId = u64;
 /// See the Note about ThreadId
 pub type PostId = u64;
 
+/// Forum identifiers for user, moderator and category
+pub type ForumUserId = u64;
+pub type ModeratorId = u64;
+pub type CategoryId = u64;
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -803,6 +808,10 @@ impl forum::Trait for Runtime {
     //type MembershipRegistry = ShimMembershipRegistry;
     type ThreadId = ThreadId;
     type PostId = PostId;
+    type ForumUserId = ForumUserId;
+    type ModeratorId = ModeratorId;
+    type CategoryId = u64;
+    type LabelId = u64;
 }
 
 impl migration::Trait for Runtime {

@@ -70,9 +70,9 @@ impl timestamp::Trait for Runtime {
     type MinimumPeriod = MinimumPeriod;
 }
 
+/*
 pub struct ShimMembershipRegistry {}
 
-/*
 impl old_forum::ForumUserRegistry<<Runtime as system::Trait>::AccountId>
     for ShimMembershipRegistry
 {

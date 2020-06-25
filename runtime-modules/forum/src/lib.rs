@@ -283,7 +283,6 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + From<u64>
         + Into<u64>;
 
-
     // TODO: consider removing this
     //type MembershipRegistry: ForumUserRegistry<Self::AccountId>;
 }
@@ -294,7 +293,6 @@ pub trait ForumUserRegistry<AccountId> {
     fn get_forum_user(id: &AccountId) -> Option<ForumUser<AccountId>>;
 }
 */
-
 
 /*
  * MOVE ALL OF THESE OUT TO COMMON LATER
