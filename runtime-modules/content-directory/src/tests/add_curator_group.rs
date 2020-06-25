@@ -37,3 +37,23 @@ fn add_curator_group_success() {
         );
     })
 }
+
+#[test]
+fn add_curator_group_lead_auth_failed() {
+    with_test_externalities(|| {
+        // Runtime tested state before call
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // An attemt to add curator group from non lead origin
+        let add_curator_group_result = add_curator_group(FIRST_MEMBER_ORIGIN);
+
+        // Failure checked
+        assert_failure(
+            add_curator_group_result,
+            ERROR_LEAD_AUTH_FAILED,
+            number_of_events_before_call,
+        );
+    })
+}
