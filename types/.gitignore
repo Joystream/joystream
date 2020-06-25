@@ -1,7 +1,9 @@
 # Don't track build artifacts
 **/*.js
 **/*.d.ts
-hiring/schemas
+
+# JSON files imported by hiring types
+hiring/schemas/role.schema.json
 
 # from prior versions
 lib/
