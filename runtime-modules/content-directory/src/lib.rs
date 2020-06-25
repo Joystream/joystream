@@ -2,6 +2,16 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 
+#[cfg(test)]
+mod tests;
+
+mod errors;
+mod helpers;
+mod mock;
+mod operations;
+mod permissions;
+mod schema;
+
 use core::fmt::Debug;
 use core::ops::AddAssign;
 use std::hash::Hash;
@@ -18,14 +28,6 @@ use system::ensure_signed;
 
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
-
-mod errors;
-mod helpers;
-mod mock;
-mod operations;
-mod permissions;
-mod schema;
-mod tests;
 
 pub use errors::*;
 pub use helpers::*;
