@@ -30,16 +30,23 @@ const Hero: React.FC<Partial<HeroProps>> = ({ backgroundImg }) => {
 					}
 				`}
 			>
-				<Button>
-					<span
-						css={css`
-							padding: 0 1rem;
-						`}
-					>
-						Play
-					</span>
+				<Button
+					containerCss={css`
+						width: 116px;
+						height: 48px;
+					`}
+				>
+					Play
 				</Button>
-				<Button type="secondary">Share</Button>
+				<Button
+					type="secondary"
+					containerCss={css`
+						width: 96px;
+						height: 48px;
+					`}
+				>
+					Share
+				</Button>
 			</div>
 		</Header>
 	);

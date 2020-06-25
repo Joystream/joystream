@@ -1,7 +1,7 @@
 export { default as Layout } from "./Layout"
 export { default as VideoGallery } from "./VideoGallery"
 export { default as Hero } from "./Hero"
-export { default as Tags } from "./Tags"
+export { default as TagsGallery } from "./TagsGallery"
 export { default as Main } from "./Main"
 export { default as SeriesGallery } from "./SeriesGallery"
 export { default as ChannelGallery } from "./ChannelGallery"

@@ -78,22 +78,24 @@ const channels = [
 ];
 
 type ChannelGalleryProps = {
-	title?: string;
+	title: string;
+	action: string;
 };
-export default function ChannelGallery({ title }: ChannelGalleryProps) {
-	return (
-		<Gallery title={title}>
-			{channels.map((chan) => (
-				<ChannelPreview
-					channel={chan.channel}
-					channelAvatar={chan.channelAvatar}
-					key={chan.channel}
-					views={chan.views}
-					outerCss={css`
-						margin: 1rem 1.5rem;
-					`}
-				/>
-			))}
-		</Gallery>
-	);
-}
+
+const ChannelGallery: React.FC<Partial<ChannelGalleryProps>> = ({ title, action }) => (
+	<Gallery title={title} action={action}>
+		{channels.map((chan) => (
+			<ChannelPreview
+				channel={chan.channel}
+				channelAvatar={chan.channelAvatar}
+				key={chan.channel}
+				views={chan.views}
+				outerCss={css`
+					margin: 1rem 1.5rem;
+				`}
+			/>
+		))}
+	</Gallery>
+);
+
+export default ChannelGallery;

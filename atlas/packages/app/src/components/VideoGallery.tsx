@@ -5,6 +5,7 @@ import { VideoPreview, Gallery, theme } from "@joystream/components";
 
 type VideoGalleryProps = {
 	title: string;
+	action: string;
 };
 
 const videoPlaceholders = [
@@ -96,7 +97,7 @@ const articleStyles = css`
 	margin-right: 1.25rem;
 `;
 
-export default function VideoGallery({ title = "" }: VideoGalleryProps) {
+const VideoGallery: React.FC<Partial<VideoGalleryProps>> = ({ title, action }) => {
 	const videos = videoPlaceholders.concat(videoPlaceholders).concat(videoPlaceholders);
 	const [controlsTop, setControlsTop] = useState<SerializedStyles>(css``);
 	const imgRef = useCallback((node: HTMLImageElement) => {
@@ -107,7 +108,7 @@ export default function VideoGallery({ title = "" }: VideoGalleryProps) {
 		}
 	}, []);
 	return (
-		<Gallery title={title} action="See All" leftControlCss={controlsTop} rightControlCss={controlsTop}>
+		<Gallery title={title} action={action} leftControlCss={controlsTop} rightControlCss={controlsTop}>
 			{videos.map((video, idx) => (
 				<article css={articleStyles} key={`${title}- ${video.title} - ${idx}`}>
 					<VideoPreview
@@ -124,4 +125,6 @@ export default function VideoGallery({ title = "" }: VideoGalleryProps) {
 			))}
 		</Gallery>
 	);
-}
+};
+
+export default VideoGallery;

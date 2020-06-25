@@ -21,15 +21,16 @@ const tags = [
 ];
 
 type TagsProps = {
-	title?: string;
+	title: string;
+	action: string;
 };
 
-export default function Tags({ title }: TagsProps) {
-	return (
-		<Gallery title={title}>
-			{tags.map((tag) => (
-				<TagButton key={tag}>{tag}</TagButton>
-			))}
-		</Gallery>
-	);
-}
+const TagsGallery: React.FC<Partial<TagsProps>> = ({ title, action }) => (
+	<Gallery title={title} action={action}>
+		{tags.map((tag) => (
+			<TagButton key={tag}>{tag}</TagButton>
+		))}
+	</Gallery>
+);
+
+export default TagsGallery;
