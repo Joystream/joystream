@@ -4,7 +4,7 @@ use super::*;
 fn update_class_schema_status_success() {
     with_test_externalities(|| {
         // Create simple class with default permissions
-        assert_ok!(create_simple_class_with_default_permissions(LEAD_ORIGIN));
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         // Runtime tested state before call
 

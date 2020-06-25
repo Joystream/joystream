@@ -841,9 +841,9 @@ decl_module! {
             // Ensure ClassDescriptionLengthConstraint conditions satisfied
             Self::ensure_class_description_is_valid(&description)?;
 
-            // Perform required checks to ensure classs_maintainers under provided class_permissions are valid
-            let classs_maintainers = class_permissions.get_maintainers();
-            Self::ensure_class_maintainers_are_valid(classs_maintainers)?;
+            // Perform required checks to ensure class_maintainers under provided class_permissions are valid
+            let class_maintainers = class_permissions.get_maintainers();
+            Self::ensure_class_maintainers_are_valid(class_maintainers)?;
 
             //
             // == MUTATION SAFE ==
@@ -883,7 +883,7 @@ decl_module! {
             // Ensure Class under given id exists, return corresponding one
             let class = Self::ensure_known_class_id(class_id)?;
 
-            // Perform required checks to ensure classs_maintainers are valid
+            // Perform required checks to ensure class_maintainers are valid
             if let Some(ref updated_maintainers) = updated_maintainers {
                 Self::ensure_class_maintainers_are_valid(updated_maintainers)?;
             }

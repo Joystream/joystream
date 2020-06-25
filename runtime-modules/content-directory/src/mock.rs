@@ -1,9 +1,8 @@
 #![cfg(test)]
 
-use crate::*;
-use std::cell::RefCell;
-
 use crate::InputValidationLengthConstraint;
+use crate::*;
+use core::iter::FromIterator;
 use primitives::H256;
 use runtime_primitives::{
     testing::Header,
@@ -12,6 +11,7 @@ use runtime_primitives::{
 };
 pub use srml_support::{assert_err, assert_ok};
 use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use std::cell::RefCell;
 
 /// Runtime Types
 
@@ -54,6 +54,8 @@ pub const SECOND_ENTITY_ID: EntityId = 2;
 // pub const UNKNOWN_ENTITY_ID: EntityId = 222;
 // pub const UNKNOWN_PROPERTY_ID: PropertyId = 333;
 // pub const UNKNOWN_SCHEMA_ID: SchemaId = 444;
+
+pub const UNKNOWN_CURATOR_GROUP_ID: CuratorGroupId = 555;
 
 pub const FIRST_SCHEMA_ID: SchemaId = 0;
 pub const SECOND_SCHEMA_ID: SchemaId = 1;
@@ -317,7 +319,7 @@ impl Default for ExtBuilder {
             class_name_constraint: InputValidationLengthConstraint::new(1, 49),
             class_description_constraint: InputValidationLengthConstraint::new(0, 500),
 
-            max_number_of_classes: 1000,
+            max_number_of_classes: 100,
             max_number_of_maintainers_per_class: 10,
             max_number_of_schemas_per_class: 20,
             max_number_of_properties_per_class: 40,
@@ -509,22 +511,67 @@ pub fn curator_group_exists(curator_group_id: CuratorGroupId) -> bool {
 
 // Classes
 
+pub enum ClassType {
+    Valid,
+    InvalidName,
+    InvalidDescription,
+    InvalidMaximumEntitiesCount,
+    InvalidDefaultVoucherUpperBound,
+    DefaultVoucherUpperBoundExceedsMaximumEntitiesCount,
+    MaintainersLimitReached,
+    CuratorGroupDoesNotExist,
+}
+
+pub fn create_simple_class(lead_origin: u64, class_type: ClassType) -> Result<(), &'static str> {
+    let mut class = create_class_with_default_permissions();
+    match class_type {
+        ClassType::Valid => (),
+        ClassType::InvalidName => {
+            class.name = generate_text(ClassNameLengthConstraint::get().max() as usize + 1);
+        }
+        ClassType::InvalidDescription => {
+            class.description =
+                generate_text(ClassDescriptionLengthConstraint::get().max() as usize + 1);
+        }
+        ClassType::InvalidMaximumEntitiesCount => {
+            class.maximum_entities_count = MaxNumberOfEntitiesPerClass::get() + 1;
+        }
+        ClassType::InvalidDefaultVoucherUpperBound => {
+            class.default_entity_creation_voucher_upper_bound =
+                IndividualEntitiesCreationLimit::get() + 1;
+        }
+        ClassType::DefaultVoucherUpperBoundExceedsMaximumEntitiesCount => {
+            class.default_entity_creation_voucher_upper_bound = 5;
+
+            class.maximum_entities_count = 3;
+        }
+        ClassType::MaintainersLimitReached => {
+            let mut maintainers = BTreeSet::new();
+            for curator_group_id in 1..=MaxNumberOfMaintainersPerClass::get() {
+                maintainers.insert(curator_group_id as CuratorGroupId);
+            }
+            class.get_permissions_mut().set_maintainers(maintainers);
+        }
+        ClassType::CuratorGroupDoesNotExist => {
+            let maintainers = BTreeSet::from_iter(vec![UNKNOWN_CURATOR_GROUP_ID].into_iter());
+            class.get_permissions_mut().set_maintainers(maintainers);
+        }
+    };
+    TestModule::create_class(
+        Origin::signed(lead_origin),
+        class.name,
+        class.description,
+        class.class_permissions,
+        class.maximum_entities_count,
+        class.default_entity_creation_voucher_upper_bound,
+    )
+}
+
 pub fn create_class_with_default_permissions() -> Class<Runtime> {
     Class::new(
         ClassPermissions::default(),
         generate_text(ClassNameLengthConstraint::get().max() as usize),
         generate_text(ClassDescriptionLengthConstraint::get().max() as usize),
-        MaxNumberOfEntitiesPerClass::get(),
-        IndividualEntitiesCreationLimit::get(),
-    )
-}
-
-pub fn create_simple_class_with_default_permissions(lead_origin: u64) -> Result<(), &'static str> {
-    TestModule::create_class(
-        Origin::signed(lead_origin),
-        generate_text(ClassNameLengthConstraint::get().max() as usize),
-        generate_text(ClassDescriptionLengthConstraint::get().max() as usize),
-        ClassPermissions::default(),
         MaxNumberOfEntitiesPerClass::get(),
         IndividualEntitiesCreationLimit::get(),
     )

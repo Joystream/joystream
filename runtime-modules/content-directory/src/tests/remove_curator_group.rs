@@ -81,7 +81,7 @@ fn curator_group_removal_forbidden() {
         // Runtime tested state before call
 
         // Create class
-        assert_ok!(create_simple_class_with_default_permissions(LEAD_ORIGIN));
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         // Add curator group
         assert_ok!(add_curator_group(LEAD_ORIGIN));

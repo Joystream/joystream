@@ -4,7 +4,7 @@ use super::*;
 fn remove_maintainer_from_class_success() {
     with_test_externalities(|| {
         // Create simple class with default permissions
-        assert_ok!(create_simple_class_with_default_permissions(LEAD_ORIGIN));
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         // Add first curator group
         assert_ok!(add_curator_group(LEAD_ORIGIN));
