@@ -207,6 +207,7 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::type_complexity)]
 
 #[cfg(feature = "std")]
 use serde_derive::{Deserialize, Serialize};
@@ -691,6 +692,11 @@ pub struct Label {
 type CategoryTreePath<CategoryId, ThreadId, BlockNumber, Moment> =
     Vec<Category<CategoryId, ThreadId, BlockNumber, Moment>>;
 
+// TODO: remove when this issue is solved https://github.com/rust-lang/rust-clippy/issues/3381
+// temporary type for functions argument
+type CategoryTreePathArg<CategoryId, ThreadId, BlockNumber, Moment> =
+    [Category<CategoryId, ThreadId, BlockNumber, Moment>];
+
 decl_storage! {
     trait Store for Module<T: Trait> as Forum_1_1 {
         /// Map forum user identifier to forum user information.
@@ -905,7 +911,7 @@ decl_module! {
              */
 
             // Hold on to old value
-            let old_forum_sudo = <ForumSudo<T>>::get().clone();
+            let old_forum_sudo = <ForumSudo<T>>::get();
 
             // Update forum sudo
             match new_forum_sudo.clone() {
@@ -979,8 +985,8 @@ decl_module! {
             // Create new category
             let new_category = Category {
                 id : next_category_id,
-                title : title.clone(),
-                description: description.clone(),
+                title,
+                description,
                 created_at : Self::current_block_and_time(),
                 deleted: false,
                 archived: false,
@@ -1229,7 +1235,7 @@ decl_module! {
             Self::ensure_vote_is_valid(&thread, index)?;
 
             // Store new poll alternative statistics
-            let poll = thread.poll.unwrap().clone();
+            let poll = thread.poll.unwrap();
             let new_poll_alternatives: Vec<PollAlternative> = poll.poll_alternatives
                 .iter()
                 .enumerate()
@@ -1296,7 +1302,7 @@ decl_module! {
             thread.moderation = Some(ModerationAction {
                 moderated_at: Self::current_block_and_time(),
                 moderator_id,
-                rationale: rationale.clone()
+                rationale,
             });
 
             // Insert new value into map
@@ -1447,7 +1453,7 @@ decl_module! {
             let moderation_action = ModerationAction{
                 moderated_at: Self::current_block_and_time(),
                 moderator_id,
-                rationale: rationale.clone()
+                rationale,
             };
 
             // Update post with moderation
@@ -1480,8 +1486,8 @@ decl_module! {
             Self::ensure_moderate_category(&who, &moderator_id, category_id)?;
 
             // Ensure all thread id valid and is under the category
-            for index in 0..stickied_ids.len() {
-                Self::ensure_thread_belongs_to_category(stickied_ids[index], category_id)?;
+            for item in &stickied_ids {
+                Self::ensure_thread_belongs_to_category(*item, category_id)?;
             }
 
             // Update category
@@ -1506,8 +1512,8 @@ impl<T: Trait> Module<T> {
     pub fn add_new_thread(
         category_id: T::CategoryId,
         author_id: T::ForumUserId,
-        title: &Vec<u8>,
-        text: &Vec<u8>,
+        title: &[u8],
+        text: &[u8],
         labels: &BTreeSet<T::LabelId>,
         poll: &Option<Poll<T::Moment>>,
     ) -> Result<
@@ -1549,14 +1555,14 @@ impl<T: Trait> Module<T> {
         let new_thread_id = <NextThreadId<T>>::get();
 
         // Add inital post to thread
-        let _ = Self::add_new_post(new_thread_id, &text, author_id);
+        let _ = Self::add_new_post(new_thread_id, &text.to_vec(), author_id);
 
         // Add labels to thread
         <ThreadLabels<T>>::mutate(new_thread_id, |value| *value = labels.clone());
 
         // Build a new thread
         let new_thread = Thread {
-            title: title.clone(),
+            title: title.to_vec(),
             category_id,
             moderation: None,
             created_at: Self::current_block_and_time(),
@@ -1589,7 +1595,7 @@ impl<T: Trait> Module<T> {
     // If other module call it, could set the forum user id as zero, which not used by forum module.
     pub fn add_new_post(
         thread_id: T::ThreadId,
-        text: &Vec<u8>,
+        text: &[u8],
         author_id: T::ForumUserId,
     ) -> Result<
         Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment>,
@@ -1617,7 +1623,7 @@ impl<T: Trait> Module<T> {
         // Build a post
         let new_post = Post {
             thread_id,
-            current_text: text.clone(),
+            current_text: text.to_vec(),
             moderation: None,
             text_change_history: vec![],
             created_at: Self::current_block_and_time(),
@@ -1660,9 +1666,9 @@ impl<T: Trait> Module<T> {
 
         // Create new forum user data
         let new_forum_user = ForumUser {
-            role_account: account_id.clone(),
-            name: name.clone(),
-            self_introduction: self_introduction.clone(),
+            role_account: account_id,
+            name,
+            self_introduction,
             post_footer,
         };
 
@@ -1695,7 +1701,7 @@ impl<T: Trait> Module<T> {
 
         // Create moderator data
         let new_moderator = Moderator {
-            role_account: account_id.clone(),
+            role_account: account_id,
             name,
             self_introduction,
         };
@@ -1724,12 +1730,8 @@ impl<T: Trait> Module<T> {
         let mut label_index = <NextLabelId<T>>::get();
 
         // Add lable one by one
-        for index in 0..labels.len() {
-            <LabelById<T>>::mutate(label_index, |value| {
-                *value = Label {
-                    text: labels[index].clone(),
-                }
-            });
+        for item in labels {
+            <LabelById<T>>::mutate(label_index, |value| *value = Label { text: item.clone() });
             label_index += One::one();
         }
 
@@ -1739,11 +1741,11 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn ensure_label_name_valid(labels: &Vec<Vec<u8>>) -> dispatch::Result {
+    fn ensure_label_name_valid(labels: &[Vec<u8>]) -> dispatch::Result {
         // Check all label text one by one
-        for index in 0..labels.len() {
+        for item in labels {
             LabelNameConstraint::get().ensure_valid(
-                labels[index].len(),
+                item.len(),
                 ERROR_LABEL_TOO_SHORT,
                 ERROR_LABEL_TOO_LONG,
             )?;
@@ -1783,20 +1785,20 @@ impl<T: Trait> Module<T> {
     }
 
     // Ensure all poll alternative valid
-    fn ensure_poll_alternatives_valid(alternatives: &Vec<PollAlternative>) -> dispatch::Result {
+    fn ensure_poll_alternatives_valid(alternatives: &[PollAlternative]) -> dispatch::Result {
         let len = alternatives.len();
         // Check alternative amount
         Self::ensure_poll_alternatives_length_is_valid(len)?;
 
         // Check each alternative's text one by one
-        for index in 0..len {
-            let desc_len = alternatives[index].alternative_text.len();
+        for item in alternatives {
+            let desc_len = item.alternative_text.len();
             Self::ensure_poll_desc_is_valid(desc_len)?;
         }
         Ok(())
     }
 
-    fn ensure_user_name_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    fn ensure_user_name_is_valid(text: &[u8]) -> dispatch::Result {
         UserNameConstraint::get().ensure_valid(
             text.len(),
             ERROR_USER_NAME_TOO_SHORT,
@@ -1804,7 +1806,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_user_self_introduction_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    fn ensure_user_self_introduction_is_valid(text: &[u8]) -> dispatch::Result {
         UserSelfIntroductionConstraint::get().ensure_valid(
             text.len(),
             ERROR_USER_SELF_DESC_TOO_SHORT,
@@ -1812,7 +1814,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_category_title_is_valid(title: &Vec<u8>) -> dispatch::Result {
+    fn ensure_category_title_is_valid(title: &[u8]) -> dispatch::Result {
         CategoryTitleConstraint::get().ensure_valid(
             title.len(),
             ERROR_CATEGORY_TITLE_TOO_SHORT,
@@ -1820,7 +1822,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_category_description_is_valid(description: &Vec<u8>) -> dispatch::Result {
+    fn ensure_category_description_is_valid(description: &[u8]) -> dispatch::Result {
         CategoryDescriptionConstraint::get().ensure_valid(
             description.len(),
             ERROR_CATEGORY_DESCRIPTION_TOO_SHORT,
@@ -1828,7 +1830,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_post_footer_is_valid(footer: &Vec<u8>) -> dispatch::Result {
+    fn ensure_post_footer_is_valid(footer: &[u8]) -> dispatch::Result {
         PostFooterConstraint::get().ensure_valid(
             footer.len(),
             ERROR_USER_POST_FOOTER_TOO_SHORT,
@@ -1836,7 +1838,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_thread_moderation_rationale_is_valid(rationale: &Vec<u8>) -> dispatch::Result {
+    fn ensure_thread_moderation_rationale_is_valid(rationale: &[u8]) -> dispatch::Result {
         ThreadModerationRationaleConstraint::get().ensure_valid(
             rationale.len(),
             ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT,
@@ -1844,7 +1846,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_thread_title_is_valid(title: &Vec<u8>) -> dispatch::Result {
+    fn ensure_thread_title_is_valid(title: &[u8]) -> dispatch::Result {
         ThreadTitleConstraint::get().ensure_valid(
             title.len(),
             ERROR_THREAD_TITLE_TOO_SHORT,
@@ -1852,7 +1854,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_post_text_is_valid(text: &Vec<u8>) -> dispatch::Result {
+    fn ensure_post_text_is_valid(text: &[u8]) -> dispatch::Result {
         PostTextConstraint::get().ensure_valid(
             text.len(),
             ERROR_POST_TEXT_TOO_SHORT,
@@ -1860,7 +1862,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_post_moderation_rationale_is_valid(rationale: &Vec<u8>) -> dispatch::Result {
+    fn ensure_post_moderation_rationale_is_valid(rationale: &[u8]) -> dispatch::Result {
         PostModerationRationaleConstraint::get().ensure_valid(
             rationale.len(),
             ERROR_POST_MODERATION_RATIONALE_TOO_SHORT,
@@ -2011,7 +2013,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_can_mutate_in_path_leaf(
-        category_tree_path: &CategoryTreePath<
+        category_tree_path: &CategoryTreePathArg<
             T::CategoryId,
             T::ThreadId,
             T::BlockNumber,
@@ -2031,7 +2033,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_can_add_subcategory_path_leaf(
-        category_tree_path: &CategoryTreePath<
+        category_tree_path: &CategoryTreePathArg<
             T::CategoryId,
             T::ThreadId,
             T::BlockNumber,
@@ -2064,7 +2066,7 @@ impl<T: Trait> Module<T> {
         // Get path from parent to root of category tree.
         let category_tree_path = Self::build_category_tree_path(category_id);
 
-        assert!(category_tree_path.len() > 0);
+        assert!(!category_tree_path.len() > 0);
 
         Ok(category_tree_path)
     }
@@ -2109,14 +2111,14 @@ impl<T: Trait> Module<T> {
         category_id: T::CategoryId,
     ) -> Result<(), &'static str> {
         // Get path from category to root
-        let category_tree_path = Self::build_category_tree_path(category_id.clone());
+        let category_tree_path = Self::build_category_tree_path(category_id);
 
         // Ensure moderator account registered before
         Self::ensure_is_moderator_with_correct_account(account_id, moderator_id)?;
 
         // Iterate path, check all ancient category
-        for i in 0..category_tree_path.len() {
-            if <CategoryByModerator<T>>::get(category_tree_path[i].id, moderator_id) == true {
+        for item in category_tree_path {
+            if <CategoryByModerator<T>>::get(item.id, moderator_id) {
                 return Ok(());
             }
         }
