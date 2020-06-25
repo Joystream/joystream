@@ -323,7 +323,7 @@ impl Default for ExtBuilder {
             max_number_of_properties_per_class: 40,
             max_number_of_entities_per_class: 400,
 
-            max_number_of_curators_per_group: 100,
+            max_number_of_curators_per_group: 50,
 
             max_number_of_operations_during_atomic_batching: 500,
 
