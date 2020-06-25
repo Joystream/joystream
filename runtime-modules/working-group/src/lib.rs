@@ -112,21 +112,12 @@ pub type HiringApplicationId<T> = <T as hiring::Trait>::ApplicationId;
 
 // Type simplification
 type OpeningInfo<T> = (
-    Opening<
-        <T as hiring::Trait>::OpeningId,
-        <T as system::Trait>::BlockNumber,
-        BalanceOf<T>,
-        ApplicationId<T>,
-    >,
+    OpeningOf<T>,
     hiring::Opening<BalanceOf<T>, <T as system::Trait>::BlockNumber, HiringApplicationId<T>>,
 );
 
 // Type simplification
-type ApplicationInfo<T> = (
-    Application<<T as system::Trait>::AccountId, OpeningId<T>, MemberId<T>, HiringApplicationId<T>>,
-    ApplicationId<T>,
-    OpeningOf<T>,
-);
+type ApplicationInfo<T> = (ApplicationOf<T>, ApplicationId<T>, OpeningOf<T>);
 
 // Type simplification
 type RewardSettings<T> = (
@@ -150,6 +141,10 @@ type OpeningOf<T> = Opening<
     BalanceOf<T>,
     ApplicationId<T>,
 >;
+
+// Type simplification
+type ApplicationOf<T> =
+    Application<<T as system::Trait>::AccountId, OpeningId<T>, MemberId<T>, HiringApplicationId<T>>;
 
 /// The _Working group_ main _Trait_
 pub trait Trait<I: Instance>:
@@ -300,8 +295,7 @@ decl_storage! {
         pub OpeningHumanReadableText get(opening_human_readable_text): InputValidationLengthConstraint;
 
         /// Maps identifier to worker application on opening.
-        pub ApplicationById get(application_by_id) : linked_map ApplicationId<T> =>
-            Application<T::AccountId, OpeningId<T>, T::MemberId, T::ApplicationId>;
+        pub ApplicationById get(application_by_id) : linked_map ApplicationId<T> => ApplicationOf<T>;
 
         /// Next identifier value for new worker application.
         pub NextApplicationId get(next_application_id) : ApplicationId<T>;
