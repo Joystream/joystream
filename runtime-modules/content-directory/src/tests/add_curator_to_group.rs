@@ -49,7 +49,7 @@ fn add_curator_to_group_lead_auth_failed() {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        // Add curator to group
+        // Make an attempt to add curator to group from non lead origin
         let add_curator_to_group_result = add_curator_to_group(
             FIRST_MEMBER_ORIGIN,
             FIRST_CURATOR_GROUP_ID,
@@ -73,7 +73,7 @@ fn add_curator_to_non_existent_group() {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        // Add curator to group
+        // Make an attempt to add curator to group that does not exist
         let add_curator_to_group_result =
             add_curator_to_group(LEAD_ORIGIN, FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID);
 

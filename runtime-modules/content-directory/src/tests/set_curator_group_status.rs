@@ -70,7 +70,7 @@ fn set_curator_group_status_for_non_existent_curator_group() {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        // An attemt to change curator group status for_non existent curator group
+        // An attemt to change curator group status for non existent curator group
         let set_curator_group_status_result =
             set_curator_group_status(LEAD_ORIGIN, FIRST_CURATOR_GROUP_ID, true);
 

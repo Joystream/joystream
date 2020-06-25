@@ -96,7 +96,7 @@ fn curator_group_removal_forbidden() {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        // An attemt to remove non existent curator group
+        // An attemt to remove curator group, that have classes maintained
         let remove_curator_group_result = remove_curator_group(LEAD_ORIGIN, FIRST_CURATOR_ID);
 
         // Failure checked
