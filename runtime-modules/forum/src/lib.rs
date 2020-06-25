@@ -282,17 +282,7 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + PartialEq
         + From<u64>
         + Into<u64>;
-
-    // TODO: consider removing this
-    //type MembershipRegistry: ForumUserRegistry<Self::AccountId>;
 }
-/*
-// TODO: consider removing this
-/// Represents a regsitry of `ForumUser` instances.
-pub trait ForumUserRegistry<AccountId> {
-    fn get_forum_user(id: &AccountId) -> Option<ForumUser<AccountId>>;
-}
-*/
 
 /*
  * MOVE ALL OF THESE OUT TO COMMON LATER
@@ -799,29 +789,6 @@ decl_storage! {
         /// If data migration is done, set as configible for unit test purpose
         pub DataMigrationDone get(data_migration_done) config(): bool;
     }
-    /*
-    JUST GIVING UP ON ALL THIS FOR NOW BECAUSE ITS TAKING TOO LONG
-    Review : https://github.com/paritytech/polkadot/blob/620b8610431e7b5fdd71ce3e94c3ee0177406dcc/runtime/src/parachains.rs#L123-L141
-
-    add_extra_genesis {
-
-        // Explain why we need to put this here.
-        config(initial_forum_sudo) : Option<T::AccountId>;
-
-        build(|
-            storage: &mut generator::StorageOverlay,
-            _: &mut generator::ChildrenStorageOverlay,
-            config: &GenesisConfig<T>
-            | {
-
-
-            if let Some(account_id) = &config.initial_forum_sudo {
-                println!("{}: <ForumSudo<T>>::put(account_id)", account_id);
-                <ForumSudo<T> as generator::StorageValue<_>>::put(&account_id, storage);
-            }
-        })
-    }
-    */
 }
 
 decl_event!(

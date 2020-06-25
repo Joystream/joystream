@@ -17,19 +17,12 @@ impl_outer_origin! {
     pub enum Origin for Runtime {}
 }
 
-/*
-mod old_forum_mod {
-    pub use old_forum::Event;
-}
-*/
-
 mod forum_mod {
     pub use crate::Event;
 }
 
 impl_outer_event! {
     pub enum TestEvent for Runtime {
-        //old_forum_mod<T>,
         forum_mod<T>,
     }
 }
@@ -69,26 +62,6 @@ impl timestamp::Trait for Runtime {
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
 }
-
-/*
-pub struct ShimMembershipRegistry {}
-
-impl old_forum::ForumUserRegistry<<Runtime as system::Trait>::AccountId>
-    for ShimMembershipRegistry
-{
-    fn get_forum_user(
-        _id: &<Runtime as system::Trait>::AccountId,
-    ) -> Option<old_forum::ForumUser<<Runtime as system::Trait>::AccountId>> {
-        None
-    }
-}
-
-
-impl old_forum::Trait for Runtime {
-    type Event = TestEvent;
-    type MembershipRegistry = ShimMembershipRegistry;
-}
-*/
 
 impl Trait for Runtime {
     type Event = TestEvent;
