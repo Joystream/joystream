@@ -11,30 +11,28 @@
 //! ## Supported extrinsics
 //! ### Hiring flow
 //!
-//! - [add_worker_opening](./struct.Module.html#method.add_worker_opening) - Add an opening for a worker role.
-//! - [accept_worker_applications](./struct.Module.html#method.accept_worker_applications)- Begin accepting worker applications.
-//! - [begin_worker_applicant_review](./struct.Module.html#method.begin_worker_applicant_review) - Begin reviewing worker applications.
-//! - [fill_worker_opening](./struct.Module.html#method.fill_worker_opening) - Fill opening for worker.
-//! - [withdraw_worker_application](./struct.Module.html#method.withdraw_worker_application) - Withdraw the worker application.
-//! - [terminate_worker_application](./struct.Module.html#method.terminate_worker_application) - Terminate the worker application.
-//! - [apply_on_worker_opening](./struct.Module.html#method.apply_on_worker_opening) - Apply on a worker opening.
+//! - [add_opening](./struct.Module.html#method.add_opening) - Add an opening for a worker/lead role.
+//! - [accept_applications](./struct.Module.html#method.accept_applications)- Begin accepting worker/lead applications.
+//! - [begin_applicant_review](./struct.Module.html#method.begin_applicant_review) - Begin reviewing worker/lead applications.
+//! - [fill_opening](./struct.Module.html#method.fill_opening) - Fill opening for worker/lead.
+//! - [withdraw_application](./struct.Module.html#method.withdraw_application) - Withdraw the worker/lead application.
+//! - [terminate_application](./struct.Module.html#method.terminate_application) - Terminate the worker/lead application.
+//! - [apply_on_opening](./struct.Module.html#method.apply_on_opening) - Apply on a worker/lead opening.
 //!
 //! ### Roles lifecycle
 //!
-//! - [update_worker_role_account](./struct.Module.html#method.update_worker_role_account) -  Update the role account of the worker.
-//! - [update_worker_reward_account](./struct.Module.html#method.update_worker_reward_account) -  Update the reward account of the worker.
-//! - [leave_worker_role](./struct.Module.html#method.leave_worker_role) - Leave the role by the active worker.
-//! - [terminate_worker_role](./struct.Module.html#method.terminate_worker_role) - Terminate the worker role by the lead.
-//! - [set_lead](./struct.Module.html#method.set_lead) - Set lead.
-//! - [unset_lead](./struct.Module.html#method.unset_lead) - Unset lead.
-//! - [unstake](./struct.Module.html#method.unstake) - Unstake.
+//! - [update_role_account](./struct.Module.html#method.update_role_account) -  Update the role account of the worker/lead.
+//! - [update_reward_account](./struct.Module.html#method.update_reward_account) -  Update the reward account of the worker/lead.
+//! - [update_reward_amount](./struct.Module.html#method.update_reward_amount) -  Update the reward amount of the worker/lead.
+//! - [leave_role](./struct.Module.html#method.leave_role) - Leave the role by the active worker/lead.
+//! - [terminate_role](./struct.Module.html#method.terminate_role) - Terminate the worker role by the lead.
 //! - [set_mint_capacity](./struct.Module.html#method.set_mint_capacity) -  Sets the capacity to enable working group budget.
 //!
-//! ### Worker stakes
+//! ### Stakes
 //!
-//! - [slash_worker_stake](./struct.Module.html#method.slash_worker_stake) - Slashes the worker stake.
-//! - [decrease_worker_stake](./struct.Module.html#method.decrease_worker_stake) - Decreases the worker stake and returns the remainder to the worker _role_account_.
-//! - [increase_worker_stake](./struct.Module.html#method.increase_worker_stake) - Increases the worker stake, demands a worker origin.
+//! - [slash_stake](./struct.Module.html#method.slash_stake) - Slashes the worker/lead stake.
+//! - [decrease_stake](./struct.Module.html#method.decrease_stake) - Decreases the worker/lead stake and returns the remainder to the worker _role_account_.
+//! - [increase_stake](./struct.Module.html#method.increase_stake) - Increases the worker stake, demands a worker origin.
 //!
 
 // Ensure we're `no_std` when compiling for Wasm.
@@ -58,14 +56,14 @@ use srml_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
 use srml_support::{decl_event, decl_module, decl_storage, ensure};
 use system::{ensure_root, ensure_signed};
 
-use crate::types::WorkerExitInitiationOrigin;
+use crate::types::ExitInitiationOrigin;
 use common::constraints::InputValidationLengthConstraint;
 use errors::WrappedError;
 
 pub use errors::Error;
 pub use types::{
-    Lead, OpeningPolicyCommitment, RewardPolicy, Worker, WorkerApplication, WorkerOpening,
-    WorkerRoleStakeProfile,
+    Application, Lead, Opening, OpeningPolicyCommitment, OpeningType, RewardPolicy,
+    RoleStakeProfile, Worker,
 };
 
 /// Alias for the _Lead_ type
@@ -78,17 +76,21 @@ pub type StakeId<T> = <T as stake::Trait>::StakeId;
 pub type MemberId<T> = <T as membership::members::Trait>::MemberId;
 
 /// Workaround for BTreeSet type
-pub type WorkerApplicationIdSet<T> = BTreeSet<WorkerApplicationId<T>>;
+pub type ApplicationIdSet<T> = BTreeSet<ApplicationId<T>>;
 
-/// Type for the identifier for an opening for a worker.
-pub type WorkerOpeningId<T> = <T as hiring::Trait>::OpeningId;
+/// Type for the identifier for an opening for a worker/lead.
+pub type OpeningId<T> = <T as hiring::Trait>::OpeningId;
 
-/// Type for the identifier for an application as a worker.
-pub type WorkerApplicationId<T> = <T as hiring::Trait>::ApplicationId;
+/// Type for the identifier for an application as a worker/lead.
+pub type ApplicationId<T> = <T as hiring::Trait>::ApplicationId;
 
 /// Balance type of runtime
 pub type BalanceOf<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+
+/// Balance type of runtime reward
+pub type BalanceOfMint<T> =
+    <<T as minting::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
 /// Balance type of runtime
 pub type CurrencyOf<T> = <T as stake::Trait>::Currency;
@@ -98,18 +100,18 @@ pub type NegativeImbalance<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
 
 /// Alias for the worker application id to the worker id dictionary
-pub type WorkerApplicationIdToWorkerIdMap<T> = BTreeMap<WorkerApplicationId<T>, WorkerId<T>>;
+pub type ApplicationIdToWorkerIdMap<T> = BTreeMap<ApplicationId<T>, WorkerId<T>>;
 
 /// Type identifier for worker role, which must be same as membership actor identifier
 pub type WorkerId<T> = <T as membership::members::Trait>::ActorId;
 
 // Type simplification
-type WorkerOpeningInfo<T> = (
-    WorkerOpening<
+type OpeningInfo<T> = (
+    Opening<
         <T as hiring::Trait>::OpeningId,
         <T as system::Trait>::BlockNumber,
         BalanceOf<T>,
-        WorkerApplicationId<T>,
+        ApplicationId<T>,
     >,
     hiring::Opening<
         BalanceOf<T>,
@@ -119,19 +121,19 @@ type WorkerOpeningInfo<T> = (
 );
 
 // Type simplification
-type WorkerApplicationInfo<T> = (
-    WorkerApplication<
+type ApplicationInfo<T> = (
+    Application<
         <T as system::Trait>::AccountId,
-        WorkerOpeningId<T>,
+        OpeningId<T>,
         MemberId<T>,
         <T as hiring::Trait>::ApplicationId,
     >,
-    WorkerApplicationId<T>,
-    WorkerOpening<
+    ApplicationId<T>,
+    Opening<
         <T as hiring::Trait>::OpeningId,
         <T as system::Trait>::BlockNumber,
         BalanceOf<T>,
-        WorkerApplicationId<T>,
+        ApplicationId<T>,
     >,
 );
 
@@ -165,9 +167,9 @@ decl_event!(
         WorkerId = WorkerId<T>,
         <T as membership::members::Trait>::ActorId,
         <T as system::Trait>::AccountId,
-        WorkerOpeningId = WorkerOpeningId<T>,
-        WorkerApplicationId = WorkerApplicationId<T>,
-        WorkerApplicationIdToWorkerIdMap = WorkerApplicationIdToWorkerIdMap<T>,
+        OpeningId = OpeningId<T>,
+        ApplicationId = ApplicationId<T>,
+        ApplicationIdToWorkerIdMap = ApplicationIdToWorkerIdMap<T>,
         RationaleText = Vec<u8>,
         MintBalanceOf = minting::BalanceOf<T>,
         <T as minting::Trait>::MintId,
@@ -208,57 +210,62 @@ decl_event!(
         /// - Reward account id of the worker.
         WorkerRewardAccountUpdated(ActorId, AccountId),
 
+        /// Emits on updating the reward amount of the worker.
+        /// Params:
+        /// - Member id of the worker.
+        WorkerRewardAmountUpdated(ActorId),
+
         /// Emits on adding new worker opening.
         /// Params:
-        /// - Worker opening id
-        WorkerOpeningAdded(WorkerOpeningId),
+        /// - Opening id
+        OpeningAdded(OpeningId),
 
         /// Emits on accepting application for the worker opening.
         /// Params:
-        /// - Worker opening id
-        AcceptedWorkerApplications(WorkerOpeningId),
+        /// - Opening id
+        AcceptedApplications(OpeningId),
 
         /// Emits on adding the application for the worker opening.
         /// Params:
-        /// - Worker opening id
-        /// - Worker application id
-        AppliedOnWorkerOpening(WorkerOpeningId, WorkerApplicationId),
+        /// - Opening id
+        /// - Application id
+        AppliedOnOpening(OpeningId, ApplicationId),
 
-        /// Emits on withdrawing the application for the worker opening.
+        /// Emits on withdrawing the application for the worker/lead opening.
         /// Params:
         /// - Worker application id
-        WorkerApplicationWithdrawn(WorkerApplicationId),
+        ApplicationWithdrawn(ApplicationId),
 
-        /// Emits on terminating the application for the worker opening.
+        /// Emits on terminating the application for the worker/lead opening.
         /// Params:
         /// - Worker application id
-        WorkerApplicationTerminated(WorkerApplicationId),
+        ApplicationTerminated(ApplicationId),
 
-        /// Emits on beginning the application review for the worker opening.
+        /// Emits on beginning the application review for the worker/lead opening.
         /// Params:
-        /// - Worker opening id
-        BeganWorkerApplicationReview(WorkerOpeningId),
+        /// - Opening id
+        BeganApplicationReview(OpeningId),
 
         /// Emits on filling the worker opening.
         /// Params:
         /// - Worker opening id
         /// - Worker application id to the worker id dictionary
-        WorkerOpeningFilled(WorkerOpeningId, WorkerApplicationIdToWorkerIdMap),
+        OpeningFilled(OpeningId, ApplicationIdToWorkerIdMap),
 
-        /// Emits on increasing the worker stake.
+        /// Emits on increasing the worker/lead stake.
         /// Params:
-        /// - worker id.
-        WorkerStakeIncreased(WorkerId),
+        /// - worker/lead id.
+        StakeIncreased(WorkerId),
 
-        /// Emits on decreasing the worker stake.
+        /// Emits on decreasing the worker/lead stake.
         /// Params:
-        /// - worker id.
-        WorkerStakeDecreased(WorkerId),
+        /// - worker/lead id.
+        StakeDecreased(WorkerId),
 
-        /// Emits on slashing the worker stake.
+        /// Emits on slashing the worker/lead stake.
         /// Params:
-        /// - worker id.
-        WorkerStakeSlashed(WorkerId),
+        /// - worker/lead id.
+        StakeSlashed(WorkerId),
 
         /// Emits on changing working group mint capacity.
         /// Params:
@@ -277,22 +284,22 @@ decl_storage! {
         pub CurrentLead get(current_lead) : Option<LeadOf<T>>;
 
         /// Next identifier value for new worker opening.
-        pub NextWorkerOpeningId get(next_worker_opening_id): WorkerOpeningId<T>;
+        pub NextOpeningId get(next_opening_id): OpeningId<T>;
 
         /// Maps identifier to worker opening.
-        pub WorkerOpeningById get(worker_opening_by_id): linked_map WorkerOpeningId<T> => WorkerOpening<T::OpeningId, T::BlockNumber, BalanceOf<T>, WorkerApplicationId<T>>;
+        pub OpeningById get(opening_by_id): linked_map OpeningId<T> => Opening<T::OpeningId, T::BlockNumber, BalanceOf<T>, ApplicationId<T>>;
 
         /// Opening human readable text length limits
         pub OpeningHumanReadableText get(opening_human_readable_text): InputValidationLengthConstraint;
 
         /// Maps identifier to worker application on opening.
-        pub WorkerApplicationById get(worker_application_by_id) : linked_map WorkerApplicationId<T> => WorkerApplication<T::AccountId, WorkerOpeningId<T>, T::MemberId, T::ApplicationId>;
+        pub ApplicationById get(application_by_id) : linked_map ApplicationId<T> => Application<T::AccountId, OpeningId<T>, T::MemberId, T::ApplicationId>;
 
         /// Next identifier value for new worker application.
-        pub NextWorkerApplicationId get(next_worker_application_id) : WorkerApplicationId<T>;
+        pub NextApplicationId get(next_application_id) : ApplicationId<T>;
 
         /// Worker application human readable text length limits
-        pub WorkerApplicationHumanReadableText get(worker_application_human_readable_text) : InputValidationLengthConstraint;
+        pub WorkerApplicationHumanReadableText get(application_human_readable_text) : InputValidationLengthConstraint;
 
         /// Maps identifier to corresponding worker.
         pub WorkerById get(worker_by_id) : linked_map WorkerId<T> => WorkerOf<T>;
@@ -365,8 +372,8 @@ decl_module! {
             Self::deposit_event(RawEvent::LeaderUnset(lead.member_id, lead.role_account_id));
         }
 
-        /// Update the associated role account of the active worker.
-        pub fn update_worker_role_account(
+        /// Update the associated role account of the active worker/lead.
+        pub fn update_role_account(
             origin,
             worker_id: WorkerId<T>,
             new_role_account_id: T::AccountId
@@ -393,7 +400,7 @@ decl_module! {
         }
 
         /// Update the reward account associated with a set reward relationship for the active worker.
-        pub fn update_worker_reward_account(
+        pub fn update_reward_account(
             origin,
             worker_id: WorkerId<T>,
             new_reward_account_id: T::AccountId
@@ -422,8 +429,41 @@ decl_module! {
             Self::deposit_event(RawEvent::WorkerRewardAccountUpdated(worker_id, new_reward_account_id));
         }
 
+        /// Update the reward amount associated with a set reward relationship for the active worker.
+        pub fn update_reward_amount(
+            origin,
+            worker_id: WorkerId<T>,
+            new_amount: BalanceOfMint<T>
+        ) {
+            // Ensure lead is set and is origin signer
+            Self::ensure_origin_is_active_leader(origin)?;
+
+            // Ensuring worker actually exists
+            let worker = Self::ensure_worker_exists(&worker_id)?;
+
+            // Ensure the worker actually has a recurring reward
+            let relationship_id = Self::ensure_worker_has_recurring_reward(&worker)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update only the reward account.
+            ensure_on_wrapped_error!(
+                recurringrewards::Module::<T>::set_reward_relationship(
+                    relationship_id,
+                    None, // new_account
+                    Some(new_amount), // new_payout
+                    None, //new_next_payment_at
+                    None) //new_payout_interval
+            )?;
+
+            // Trigger event
+            Self::deposit_event(RawEvent::WorkerRewardAmountUpdated(worker_id));
+        }
+
         /// Leave the role by the active worker.
-        pub fn leave_worker_role(
+        pub fn leave_role(
             origin,
             worker_id: WorkerId<T>,
             rationale_text: Vec<u8>
@@ -438,13 +478,13 @@ decl_module! {
             Self::deactivate_worker(
                 &worker_id,
                 &active_worker,
-                &WorkerExitInitiationOrigin::Worker,
+                &ExitInitiationOrigin::Worker,
                 &rationale_text
             )?;
         }
 
         /// Terminate the active worker by the lead.
-        pub fn terminate_worker_role(
+        pub fn terminate_role(
             origin,
             worker_id: WorkerId<T>,
             rationale_text: Vec<u8>
@@ -466,7 +506,7 @@ decl_module! {
             Self::deactivate_worker(
                 &worker_id,
                 &worker,
-                &WorkerExitInitiationOrigin::Lead,
+                &ExitInitiationOrigin::Lead,
                 &rationale_text
             )?;
         }
@@ -474,15 +514,15 @@ decl_module! {
         // ****************** Hiring flow **********************
 
          /// Add an opening for a worker role.
-        pub fn add_worker_opening(
+        pub fn add_opening(
             origin,
             activate_at: hiring::ActivateOpeningAt<T::BlockNumber>,
             commitment: OpeningPolicyCommitment<T::BlockNumber,
             BalanceOf<T>>,
-            human_readable_text: Vec<u8>
+            human_readable_text: Vec<u8>,
+            opening_type: OpeningType,
         ){
-            // Ensure lead is set and is origin signer
-            Self::ensure_origin_is_active_leader(origin)?;
+            Self::ensure_origin_for_opening_type(origin, opening_type)?;
 
             Self::ensure_opening_human_readable_text_is_valid(&human_readable_text)?;
 
@@ -506,35 +546,34 @@ decl_module! {
                     human_readable_text,
             ))?;
 
-            let new_worker_opening_id = NextWorkerOpeningId::<T, I>::get();
+            let new_opening_id = NextOpeningId::<T, I>::get();
 
             // Create and add worker opening.
-            let new_opening_by_id = WorkerOpening::<WorkerOpeningId<T>, T::BlockNumber, BalanceOf<T>, WorkerApplicationId<T>> {
+            let new_opening_by_id = Opening::<OpeningId<T>, T::BlockNumber, BalanceOf<T>, ApplicationId<T>> {
                 opening_id,
-                worker_applications: BTreeSet::new(),
-                policy_commitment
+                applications: BTreeSet::new(),
+                policy_commitment,
+                opening_type,
             };
 
-            WorkerOpeningById::<T, I>::insert(new_worker_opening_id, new_opening_by_id);
+            OpeningById::<T, I>::insert(new_opening_id, new_opening_by_id);
 
-            // Update NextWorkerOpeningId
-            NextWorkerOpeningId::<T, I>::mutate(|id| *id += <WorkerOpeningId<T> as One>::one());
+            // Update NextOpeningId
+            NextOpeningId::<T, I>::mutate(|id| *id += <OpeningId<T> as One>::one());
 
             // Trigger event
-            Self::deposit_event(RawEvent::WorkerOpeningAdded(new_worker_opening_id));
+            Self::deposit_event(RawEvent::OpeningAdded(new_opening_id));
         }
 
         /// Begin accepting worker applications to an opening that is active.
-        pub fn accept_worker_applications(origin, worker_opening_id: WorkerOpeningId<T>)  {
-
-            // Ensure lead is set and is origin signer
-            Self::ensure_origin_is_active_leader(origin)?;
-
+        pub fn accept_applications(origin, opening_id: OpeningId<T>)  {
             // Ensure opening exists in this working group
             // NB: Even though call to hiring module will have implicit check for
             // existence of opening as well, this check is to make sure that the opening is for
             // this working group, not something else.
-            let (worker_opening, _opening) = Self::ensure_worker_opening_exists(&worker_opening_id)?;
+            let (opening, _opening) = Self::ensure_opening_exists(&opening_id)?;
+
+            Self::ensure_origin_for_opening_type(origin, opening.opening_type)?;
 
             // Attempt to begin accepting applications
             // NB: Combined ensure check and mutation in hiring module
@@ -544,19 +583,19 @@ decl_module! {
             //
 
             ensure_on_wrapped_error!(
-                hiring::Module::<T>::begin_accepting_applications(worker_opening.opening_id)
+                hiring::Module::<T>::begin_accepting_applications(opening.opening_id)
             )?;
 
 
             // Trigger event
-            Self::deposit_event(RawEvent::AcceptedWorkerApplications(worker_opening_id));
+            Self::deposit_event(RawEvent::AcceptedApplications(opening_id));
         }
 
         /// Apply on a worker opening.
-        pub fn apply_on_worker_opening(
+        pub fn apply_on_opening(
             origin,
             member_id: T::MemberId,
-            worker_opening_id: WorkerOpeningId<T>,
+            opening_id: OpeningId<T>,
             role_account: T::AccountId,
             opt_role_stake_balance: Option<BalanceOf<T>>,
             opt_application_stake_balance: Option<BalanceOf<T>>,
@@ -576,7 +615,7 @@ decl_module! {
             );
 
             // Ensure worker opening exists
-            let (worker_opening, _opening) = Self::ensure_worker_opening_exists(&worker_opening_id)?;
+            let (opening, _opening) = Self::ensure_opening_exists(&opening_id)?;
 
             // Ensure that there is sufficient balance to cover stake proposed
             Self::ensure_can_make_stake_imbalance(
@@ -585,16 +624,16 @@ decl_module! {
                 .map_err(|_| Error::InsufficientBalanceToApply)?;
 
             // Ensure application text is valid
-            Self::ensure_worker_application_text_is_valid(&human_readable_text)?;
+            Self::ensure_application_text_is_valid(&human_readable_text)?;
 
             // Ensure application can actually be added
             ensure_on_wrapped_error!(
-                hiring::Module::<T>::ensure_can_add_application(worker_opening.opening_id, opt_role_stake_balance, opt_application_stake_balance)
+                hiring::Module::<T>::ensure_can_add_application(opening.opening_id, opt_role_stake_balance, opt_application_stake_balance)
             )?;
 
             // Ensure member does not have an active application to this opening
             Self::ensure_member_has_no_active_application_on_opening(
-                worker_opening.worker_applications,
+                opening.applications,
                 member_id
             )?;
 
@@ -608,7 +647,7 @@ decl_module! {
 
             // Call hiring module to add application
             let add_application_result = hiring::Module::<T>::add_application(
-                worker_opening.opening_id,
+                opening.opening_id,
                 opt_role_stake_imbalance,
                 opt_application_stake_imbalance,
                 human_readable_text
@@ -619,41 +658,41 @@ decl_module! {
 
             let application_id = add_application_result.unwrap().application_id_added;
 
-            // Get id of new worker application
-            let new_worker_application_id = NextWorkerApplicationId::<T, I>::get();
+            // Get id of new worker/lead application
+            let new_application_id = NextApplicationId::<T, I>::get();
 
-            // Make worker application
-            let worker_application = WorkerApplication::new(&role_account, &worker_opening_id, &member_id, &application_id);
+            // Make worker/lead application
+            let application = Application::new(&role_account, &opening_id, &member_id, &application_id);
 
             // Store application
-            WorkerApplicationById::<T, I>::insert(new_worker_application_id, worker_application);
+            ApplicationById::<T, I>::insert(new_application_id, application);
 
-            // Update next worker application identifier value
-            NextWorkerApplicationId::<T, I>::mutate(|id| *id += <WorkerApplicationId<T> as One>::one());
+            // Update next application identifier value
+            NextApplicationId::<T, I>::mutate(|id| *id += <ApplicationId<T> as One>::one());
 
             // Add application to set of application in worker opening
-            WorkerOpeningById::<T, I>::mutate(worker_opening_id, |worker_opening| {
-                worker_opening.worker_applications.insert(new_worker_application_id);
+            OpeningById::<T, I>::mutate(opening_id, |opening| {
+                opening.applications.insert(new_application_id);
             });
 
             // Trigger event
-            Self::deposit_event(RawEvent::AppliedOnWorkerOpening(worker_opening_id, new_worker_application_id));
+            Self::deposit_event(RawEvent::AppliedOnOpening(opening_id, new_application_id));
         }
 
         /// Withdraw the worker application. Can be done by the worker itself only.
-        pub fn withdraw_worker_application(
+        pub fn withdraw_application(
             origin,
-            worker_application_id: WorkerApplicationId<T>
+            application_id: ApplicationId<T>
         ) {
             // Ensuring worker application actually exists
-            let (worker_application, _, worker_opening) = Self::ensure_worker_application_exists(&worker_application_id)?;
+            let (application, _, opening) = Self::ensure_application_exists(&application_id)?;
 
             // Ensure that it is signed
             let signer_account = ensure_signed(origin)?;
 
             // Ensure that signer is applicant role account
             ensure!(
-                signer_account == worker_application.role_account,
+                signer_account == application.role_account,
                 Error::OriginIsNotApplicant
             );
 
@@ -665,36 +704,36 @@ decl_module! {
             // NB: Combined ensure check and mutation in hiring module
             ensure_on_wrapped_error!(
                 hiring::Module::<T>::deactive_application(
-                    worker_application.application_id,
-                    worker_opening.policy_commitment.exit_worker_role_application_stake_unstaking_period,
-                    worker_opening.policy_commitment.exit_worker_role_stake_unstaking_period
+                    application.hiring_application_id,
+                    opening.policy_commitment.exit_worker_role_application_stake_unstaking_period,
+                    opening.policy_commitment.exit_worker_role_stake_unstaking_period
                 )
             )?;
 
 
             // Trigger event
-            Self::deposit_event(RawEvent::WorkerApplicationWithdrawn(worker_application_id));
+            Self::deposit_event(RawEvent::ApplicationWithdrawn(application_id));
         }
 
         /// Terminate the worker application. Can be done by the lead only.
-        pub fn terminate_worker_application(
+        pub fn terminate_application(
             origin,
-            worker_application_id: WorkerApplicationId<T>
+            application_id: ApplicationId<T>
         ) {
 
             // Ensure lead is set and is origin signer
             Self::ensure_origin_is_active_leader(origin)?;
 
             // Ensuring worker application actually exists
-            let (worker_application, _, worker_opening) = Self::ensure_worker_application_exists(&worker_application_id)?;
+            let (application, _, opening) = Self::ensure_application_exists(&application_id)?;
 
             // Attempt to deactivate application
             // NB: Combined ensure check and mutation in hiring module
             ensure_on_wrapped_error!(
                 hiring::Module::<T>::deactive_application(
-                    worker_application.application_id,
-                    worker_opening.policy_commitment.terminate_worker_application_stake_unstaking_period,
-                    worker_opening.policy_commitment.terminate_worker_role_stake_unstaking_period
+                    application.hiring_application_id,
+                    opening.policy_commitment.terminate_application_stake_unstaking_period,
+                    opening.policy_commitment.terminate_worker_role_stake_unstaking_period
                 )
             )?;
 
@@ -703,20 +742,18 @@ decl_module! {
             //
 
             // Trigger event
-            Self::deposit_event(RawEvent::WorkerApplicationTerminated(worker_application_id));
+            Self::deposit_event(RawEvent::ApplicationTerminated(application_id));
         }
 
         /// Begin reviewing, and therefore not accepting new applications.
-        pub fn begin_worker_applicant_review(origin, worker_opening_id: WorkerOpeningId<T>) {
-
-            // Ensure lead is set and is origin signer
-            Self::ensure_origin_is_active_leader(origin)?;
-
+        pub fn begin_applicant_review(origin, opening_id: OpeningId<T>) {
             // Ensure opening exists
             // NB: Even though call to hiring modul will have implicit check for
             // existence of opening as well, this check is to make sure that the opening is for
             // this working group, not something else.
-            let (worker_opening, _opening) = Self::ensure_worker_opening_exists(&worker_opening_id)?;
+            let (opening, _opening) = Self::ensure_opening_exists(&opening_id)?;
+
+            Self::ensure_origin_for_opening_type(origin, opening.opening_type)?;
 
             //
             // == MUTATION SAFE ==
@@ -725,25 +762,24 @@ decl_module! {
             // Attempt to begin review of applications
             // NB: Combined ensure check and mutation in hiring module
             ensure_on_wrapped_error!(
-                hiring::Module::<T>::begin_review(worker_opening.opening_id)
+                hiring::Module::<T>::begin_review(opening.opening_id)
                 )?;
 
             // Trigger event
-            Self::deposit_event(RawEvent::BeganWorkerApplicationReview(worker_opening_id));
+            Self::deposit_event(RawEvent::BeganApplicationReview(opening_id));
         }
 
-        /// Fill opening for worker.
-        pub fn fill_worker_opening(
+        /// Fill opening for worker/lead.
+        pub fn fill_opening(
             origin,
-            worker_opening_id: WorkerOpeningId<T>,
-            successful_worker_application_ids: WorkerApplicationIdSet<T>,
+            opening_id: OpeningId<T>,
+            successful_application_ids: ApplicationIdSet<T>,
             reward_policy: Option<RewardPolicy<minting::BalanceOf<T>, T::BlockNumber>>
         ) {
-            // Ensure lead is set and is origin signer
-            Self::ensure_origin_is_active_leader(origin)?;
-
             // Ensure worker opening exists
-            let (worker_opening, _) = Self::ensure_worker_opening_exists(&worker_opening_id)?;
+            let (opening, _) = Self::ensure_opening_exists(&opening_id)?;
+
+            Self::ensure_origin_for_opening_type(origin, opening.opening_type)?;
 
             // Ensure a mint exists if lead is providing a reward for positions being filled
             let create_reward_settings = if let Some(policy) = reward_policy {
@@ -751,11 +787,11 @@ decl_module! {
                 let mint_id = Self::mint();
 
                 // Technically this is a bug-check and should not be here.
-                ensure!(<minting::Mints<T>>::exists(mint_id), Error::FillWorkerOpeningMintDoesNotExist);
+                ensure!(<minting::Mints<T>>::exists(mint_id), Error::FillOpeningMintDoesNotExist);
 
                 // Make sure valid parameters are selected for next payment at block number
                 ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(),
-                    Error::FillWorkerOpeningInvalidNextPaymentBlock);
+                    Error::FillOpeningInvalidNextPaymentBlock);
 
                 // The verified reward settings to use
                 Some((mint_id, policy))
@@ -764,15 +800,15 @@ decl_module! {
             };
 
             // Make iterator over successful worker application
-            let successful_iter = successful_worker_application_ids
+            let successful_iter = successful_application_ids
                                     .iter()
                                     // recover worker application from id
-                                    .map(|worker_application_id| { Self::ensure_worker_application_exists(worker_application_id)})
+                                    .map(|application_id| { Self::ensure_application_exists(application_id)})
                                     // remove Err cases, i.e. non-existing applications
                                     .filter_map(|result| result.ok());
 
             // Count number of successful workers provided
-            let num_provided_successful_worker_application_ids = successful_worker_application_ids.len();
+            let num_provided_successful_application_ids = successful_application_ids.len();
 
             // Ensure all worker applications exist
             let number_of_successful_applications = successful_iter
@@ -780,24 +816,24 @@ decl_module! {
                                                     .count();
 
             ensure!(
-                number_of_successful_applications == num_provided_successful_worker_application_ids,
+                number_of_successful_applications == num_provided_successful_application_ids,
                 Error::SuccessfulWorkerApplicationDoesNotExist
             );
 
             // Attempt to fill opening
             let successful_application_ids = successful_iter
                                             .clone()
-                                            .map(|(successful_worker_application, _, _)| successful_worker_application.application_id)
+                                            .map(|(successful_application, _, _)| successful_application.hiring_application_id)
                                             .collect::<BTreeSet<_>>();
 
             // NB: Combined ensure check and mutation in hiring module
             ensure_on_wrapped_error!(
                 hiring::Module::<T>::fill_opening(
-                    worker_opening.opening_id,
+                    opening.opening_id,
                     successful_application_ids,
-                    worker_opening.policy_commitment.fill_opening_successful_applicant_application_stake_unstaking_period,
-                    worker_opening.policy_commitment.fill_opening_failed_applicant_application_stake_unstaking_period,
-                    worker_opening.policy_commitment.fill_opening_failed_applicant_role_stake_unstaking_period
+                    opening.policy_commitment.fill_opening_successful_applicant_application_stake_unstaking_period,
+                    opening.policy_commitment.fill_opening_failed_applicant_application_stake_unstaking_period,
+                    opening.policy_commitment.fill_opening_failed_applicant_role_stake_unstaking_period
                 )
             )?;
 
@@ -805,11 +841,11 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let mut worker_application_id_to_worker_id = BTreeMap::new();
+            let mut application_id_to_worker_id = BTreeMap::new();
 
             successful_iter
             .clone()
-            .for_each(|(successful_worker_application, id, _)| {
+            .for_each(|(successful_application, id, _)| {
                 // Create a reward relationship
                 let reward_relationship = if let Some((mint_id, checked_policy)) = create_reward_settings.clone() {
 
@@ -817,7 +853,7 @@ decl_module! {
                     let recipient = <recurringrewards::Module<T>>::add_recipient();
 
                     // member must exist, since it was checked that it can enter the role
-                    let member_profile = <membership::members::Module<T>>::member_profile(successful_worker_application.member_id).unwrap();
+                    let member_profile = <membership::members::Module<T>>::member_profile(successful_application.member_id).unwrap();
 
                     // rewards are deposited in the member's root account
                     let reward_destination_account = member_profile.root_account;
@@ -838,16 +874,16 @@ decl_module! {
                 };
 
                 // Get possible stake for role
-                let application = hiring::ApplicationById::<T>::get(successful_worker_application.application_id);
+                let application = hiring::ApplicationById::<T>::get(successful_application.hiring_application_id);
 
                 // Staking profile for worker
                 let stake_profile =
                     if let Some(ref stake_id) = application.active_role_staking_id {
                         Some(
-                            WorkerRoleStakeProfile::new(
+                            RoleStakeProfile::new(
                                 stake_id,
-                                &worker_opening.policy_commitment.terminate_worker_role_stake_unstaking_period,
-                                &worker_opening.policy_commitment.exit_worker_role_stake_unstaking_period
+                                &opening.policy_commitment.terminate_worker_role_stake_unstaking_period,
+                                &opening.policy_commitment.exit_worker_role_stake_unstaking_period
                             )
                         )
                     } else {
@@ -859,30 +895,30 @@ decl_module! {
 
                 // Construct worker
                 let worker = Worker::new(
-                    &successful_worker_application.member_id,
-                    &successful_worker_application.role_account,
+                    &successful_application.member_id,
+                    &successful_application.role_account,
                     &reward_relationship,
                     &stake_profile,
                 );
 
-                // Store worker
+                // Store a worker
                 <WorkerById<T, I>>::insert(new_worker_id, worker);
 
                 // Update next worker id
                 <NextWorkerId<T, I>>::mutate(|id| *id += <WorkerId<T> as One>::one());
 
-                worker_application_id_to_worker_id.insert(id, new_worker_id);
+                application_id_to_worker_id.insert(id, new_worker_id);
             });
 
             // Trigger event
-            Self::deposit_event(RawEvent::WorkerOpeningFilled(worker_opening_id, worker_application_id_to_worker_id));
+            Self::deposit_event(RawEvent::OpeningFilled(opening_id, application_id_to_worker_id));
         }
 
-        // ****************** Worker stakes **********************
+        // ****************** Stakes **********************
 
         /// Slashes the worker stake, demands a leader origin. No limits, no actions on zero stake.
         /// If slashing balance greater than the existing stake - stake is slashed to zero.
-        pub fn slash_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
+        pub fn slash_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
             Self::ensure_origin_is_active_leader(origin)?;
 
             let worker = Self::ensure_worker_exists(&worker_id)?;
@@ -904,12 +940,12 @@ decl_module! {
                 )
             )?;
 
-            Self::deposit_event(RawEvent::WorkerStakeSlashed(worker_id));
+            Self::deposit_event(RawEvent::StakeSlashed(worker_id));
         }
 
-        /// Decreases the worker stake and returns the remainder to the worker role_account,
+        /// Decreases the worker/lead stake and returns the remainder to the worker role_account,
         /// demands a leader origin. Can be decreased to zero, no actions on zero stake.
-        pub fn decrease_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
+        pub fn decrease_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
             Self::ensure_origin_is_active_leader(origin)?;
 
             let worker = Self::ensure_worker_exists(&worker_id)?;
@@ -931,12 +967,12 @@ decl_module! {
                 )
             )?;
 
-            Self::deposit_event(RawEvent::WorkerStakeDecreased(worker_id));
+            Self::deposit_event(RawEvent::StakeDecreased(worker_id));
         }
 
-        /// Increases the worker stake, demands a worker origin. Transfers tokens from the worker
+        /// Increases the worker/lead stake, demands a worker origin. Transfers tokens from the worker
         /// role_account to the stake. No limits on the stake.
-        pub fn increase_worker_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
+        pub fn increase_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
             // Checks worker origin, worker existence
             let worker = Self::ensure_worker_signed(origin, &worker_id)?;
 
@@ -957,7 +993,7 @@ decl_module! {
                 )
             )?;
 
-            Self::deposit_event(RawEvent::WorkerStakeIncreased(worker_id));
+            Self::deposit_event(RawEvent::StakeIncreased(worker_id));
         }
 
         /// Sets the capacity to enable working group budget.
@@ -1013,6 +1049,24 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         <WorkerById<T, I>>::enumerate()
             .map(|(worker_id, _)| worker_id)
             .collect()
+
+        //TODO not lead
+    }
+
+    fn ensure_origin_for_opening_type(
+        origin: T::Origin,
+        opening_type: OpeningType,
+    ) -> Result<(), Error> {
+        match opening_type {
+            OpeningType::Worker => {
+                // Ensure lead is set and is origin signer.
+                Self::ensure_origin_is_active_leader(origin)
+            }
+            OpeningType::Leader => {
+                // Council proposal.
+                ensure_root(origin).map_err(|err| err.into())
+            }
+        }
     }
 
     fn ensure_lead_is_set() -> Result<Lead<MemberId<T>, T::AccountId>, Error> {
@@ -1043,19 +1097,17 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Self::ensure_is_lead_account(signer)
     }
 
-    fn ensure_worker_opening_exists(
-        worker_opening_id: &WorkerOpeningId<T>,
-    ) -> Result<WorkerOpeningInfo<T>, Error> {
+    fn ensure_opening_exists(opening_id: &OpeningId<T>) -> Result<OpeningInfo<T>, Error> {
         ensure!(
-            WorkerOpeningById::<T, I>::exists(worker_opening_id),
-            Error::WorkerOpeningDoesNotExist
+            OpeningById::<T, I>::exists(opening_id),
+            Error::OpeningDoesNotExist
         );
 
-        let worker_opening = WorkerOpeningById::<T, I>::get(worker_opening_id);
+        let opening = OpeningById::<T, I>::get(opening_id);
 
-        let opening = hiring::OpeningById::<T>::get(worker_opening.opening_id);
+        let hiring_opening = hiring::OpeningById::<T>::get(opening.opening_id);
 
-        Ok((worker_opening, opening))
+        Ok((opening, hiring_opening))
     }
 
     fn make_stake_opt_imbalance(
@@ -1079,17 +1131,17 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     fn ensure_member_has_no_active_application_on_opening(
-        worker_applications: WorkerApplicationIdSet<T>,
+        applications: ApplicationIdSet<T>,
         member_id: T::MemberId,
     ) -> Result<(), Error> {
-        for worker_application_id in worker_applications {
-            let worker_application = WorkerApplicationById::<T, I>::get(worker_application_id);
+        for application_id in applications {
+            let application = ApplicationById::<T, I>::get(application_id);
             // Look for application by the member for the opening
-            if worker_application.member_id != member_id {
+            if application.member_id != member_id {
                 continue;
             }
             // Get application details
-            let application = <hiring::ApplicationById<T>>::get(worker_application.application_id);
+            let application = <hiring::ApplicationById<T>>::get(application.hiring_application_id);
             // Return error if application is in active stage
             if application.stage == hiring::ApplicationStage::Active {
                 return Err(Error::MemberHasActiveApplicationOnOpening);
@@ -1099,7 +1151,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Ok(())
     }
 
-    fn ensure_worker_application_text_is_valid(text: &[u8]) -> Result<(), Error> {
+    fn ensure_application_text_is_valid(text: &[u8]) -> Result<(), Error> {
         <WorkerApplicationHumanReadableText<I>>::get()
             .ensure_valid(
                 text.len(),
@@ -1151,19 +1203,19 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         }
     }
 
-    fn ensure_worker_application_exists(
-        worker_application_id: &WorkerApplicationId<T>,
-    ) -> Result<WorkerApplicationInfo<T>, Error> {
+    fn ensure_application_exists(
+        application_id: &ApplicationId<T>,
+    ) -> Result<ApplicationInfo<T>, Error> {
         ensure!(
-            WorkerApplicationById::<T, I>::exists(worker_application_id),
+            ApplicationById::<T, I>::exists(application_id),
             Error::WorkerApplicationDoesNotExist
         );
 
-        let worker_application = WorkerApplicationById::<T, I>::get(worker_application_id);
+        let application = ApplicationById::<T, I>::get(application_id);
 
-        let worker_opening = WorkerOpeningById::<T, I>::get(worker_application.worker_opening_id);
+        let opening = OpeningById::<T, I>::get(application.opening_id);
 
-        Ok((worker_application, *worker_application_id, worker_opening))
+        Ok((application, *application_id, opening))
     }
 
     /// Ensures the origin contains signed account that belongs to existing worker.
@@ -1210,7 +1262,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     fn deactivate_worker(
         worker_id: &WorkerId<T>,
         worker: &WorkerOf<T>,
-        exit_initiation_origin: &WorkerExitInitiationOrigin,
+        exit_initiation_origin: &ExitInitiationOrigin,
         rationale_text: &[u8],
     ) -> Result<(), Error> {
         // Stop any possible recurring rewards
@@ -1225,8 +1277,8 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         if let Some(ref stake_profile) = worker.role_stake_profile {
             // Determine unstaking period based on who initiated deactivation
             let unstaking_period = match exit_initiation_origin {
-                WorkerExitInitiationOrigin::Lead => stake_profile.termination_unstaking_period,
-                WorkerExitInitiationOrigin::Worker => stake_profile.exit_unstaking_period,
+                ExitInitiationOrigin::Lead => stake_profile.termination_unstaking_period,
+                ExitInitiationOrigin::Worker => stake_profile.exit_unstaking_period,
             };
 
             // Unstake
@@ -1240,10 +1292,10 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         // Trigger the event
         let event = match exit_initiation_origin {
-            WorkerExitInitiationOrigin::Lead => {
+            ExitInitiationOrigin::Lead => {
                 RawEvent::TerminatedWorker(*worker_id, rationale_text.to_vec())
             }
-            WorkerExitInitiationOrigin::Worker => {
+            ExitInitiationOrigin::Worker => {
                 RawEvent::WorkerExited(*worker_id, rationale_text.to_vec())
             }
         };
