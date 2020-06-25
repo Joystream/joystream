@@ -1,11 +1,11 @@
 import BN from 'bn.js';
-import { ElectionStage, Seat } from '@joystream/types/lib/council';
+import { ElectionStage, Seat } from '@joystream/types/council';
 import { Option } from '@polkadot/types';
 import { BlockNumber, Balance, AccountId } from '@polkadot/types/interfaces';
 import { DerivedBalances } from '@polkadot/api-derive/types';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { WorkerId, Lead } from '@joystream/types/lib/working-group';
-import { Profile, MemberId } from '@joystream/types/lib/members';
+import { WorkerId, Lead } from '@joystream/types/working-group';
+import { Profile, MemberId } from '@joystream/types/members';
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
