@@ -12,7 +12,7 @@ export default class WorkingGroupsOpenings extends WorkingGroupsCommandBase {
         const openings = await this.getApi().openingsByGroup(this.group);
 
         const openingsRows = openings.map(o => ({
-            'Worker Opening ID': o.workerOpeningId,
+            'WG Opening ID': o.wgOpeningId,
             'Opening ID': o.openingId,
             'Stage': `${_.startCase(o.stage.status)}${o.stage.block ? ` (#${o.stage.block})` : ''}`,
             'Applications': o.applications.length

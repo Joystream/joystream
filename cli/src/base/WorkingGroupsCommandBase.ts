@@ -80,8 +80,8 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
             message: 'Select succesful applicants',
             type: 'checkbox',
             choices: acceptableApplications.map(a => ({
-                name: ` ${a.workerApplicationId}: ${a.member?.handle.toString()}`,
-                value: a.workerApplicationId,
+                name: ` ${a.wgApplicationId}: ${a.member?.handle.toString()}`,
+                value: a.wgApplicationId,
             }))
         });
 
@@ -139,7 +139,7 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
         const draftFilePath = this.getOpeningDraftPath(draftName);
         const params = this.extrinsicArgsFromDraft(
             apiModuleByGroup[this.group],
-            'addWorkerOpening',
+            'addOpening',
             draftFilePath
         );
 

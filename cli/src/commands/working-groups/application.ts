@@ -4,12 +4,12 @@ import _ from 'lodash';
 import chalk from 'chalk';
 
 export default class WorkingGroupsApplication extends WorkingGroupsCommandBase {
-    static description = 'Shows an overview of given application by Worker Application ID';
+    static description = 'Shows an overview of given application by Working Group Application ID';
     static args = [
         {
-            name: 'workerApplicationId',
+            name: 'wgApplicationId',
             required: true,
-            description: 'Worker Application ID'
+            description: 'Working Group Application ID'
         },
     ]
     static flags = {
@@ -19,14 +19,14 @@ export default class WorkingGroupsApplication extends WorkingGroupsCommandBase {
     async run() {
         const { args } = this.parse(WorkingGroupsApplication);
 
-        const application = await this.getApi().groupApplication(this.group, parseInt(args.workerApplicationId));
+        const application = await this.getApi().groupApplication(this.group, parseInt(args.wgApplicationId));
 
         displayHeader('Human readable text');
         this.jsonPrettyPrint(application.humanReadableText);
 
         displayHeader(`Details`);
         const applicationRow = {
-            'Worker application ID': application.workerApplicationId,
+            'WG application ID': application.wgApplicationId,
             'Application ID': application.applicationId,
             'Member handle': application.member?.handle.toString() || chalk.red('NONE'),
             'Role account': application.roleAccout.toString(),

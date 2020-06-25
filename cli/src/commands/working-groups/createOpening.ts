@@ -51,7 +51,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
 
         if (!flags.skipPrompts) {
             const module = apiModuleByGroup[this.group];
-            const method = 'addWorkerOpening';
+            const method = 'addOpening';
             const jsonArgsMapping = { 'human_readable_text': { struct: HRTStruct, schemaValidator } };
 
             let saveDraft = false, params: ApiMethodInputArg[];
@@ -89,7 +89,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
         else {
             await this.requestAccountDecoding(account); // Prompt for password
             this.log(chalk.white('Sending the extrinsic...'));
-            await this.sendExtrinsic(account, apiModuleByGroup[this.group], 'addWorkerOpening', defaultValues!);
+            await this.sendExtrinsic(account, apiModuleByGroup[this.group], 'addOpening', defaultValues!);
             this.log(chalk.green('Opening succesfully created!'));
         }
     }

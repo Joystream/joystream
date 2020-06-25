@@ -7,12 +7,12 @@ import { formatBalance } from '@polkadot/util';
 import chalk from 'chalk';
 
 export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
-    static description = 'Shows an overview of given working group opening by Worker Opening ID';
+    static description = 'Shows an overview of given working group opening by Working Group Opening ID';
     static args = [
         {
-            name: 'workerOpeningId',
+            name: 'wgOpeningId',
             required: true,
-            description: 'Worker Opening ID'
+            description: 'Working Group Opening ID'
         },
     ]
     static flags = {
@@ -49,14 +49,14 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
     async run() {
         const { args } = this.parse(WorkingGroupsOpening);
 
-        const opening = await this.getApi().groupOpening(this.group, parseInt(args.workerOpeningId));
+        const opening = await this.getApi().groupOpening(this.group, parseInt(args.wgOpeningId));
 
         displayHeader('Human readable text');
         this.jsonPrettyPrint(opening.opening.human_readable_text.toString());
 
         displayHeader('Opening details');
         const openingRow = {
-            'Worker Opening ID': opening.workerOpeningId,
+            'WG Opening ID': opening.wgOpeningId,
             'Opening ID': opening.openingId,
             ...this.stageColumns(opening.stage),
             ...this.stakeColumns(opening.stakes)
@@ -65,7 +65,7 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
 
         displayHeader(`Applications (${opening.applications.length})`);
         const applicationsRows = opening.applications.map(a => ({
-            'Worker appl. ID': a.workerApplicationId,
+            'WG appl. ID': a.wgApplicationId,
             'Appl. ID': a.applicationId,
             'Member': a.member?.handle.toString() || chalk.red('NONE'),
             'Stage': a.stage,

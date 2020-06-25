@@ -24,10 +24,10 @@ import { CLIError } from '@oclif/errors';
 import ExitCodes from './ExitCodes';
 import {
     Worker, WorkerId,
-    Lead as WorkerLead,
-    WorkerRoleStakeProfile,
-    WorkerOpening, WorkerOpeningId,
-    WorkerApplication, WorkerApplicationId
+    Lead as WGLead,
+    RoleStakeProfile,
+    Opening as WGOpening,
+    Application as WGApplication
 } from '@joystream/types/lib/working-group';
 import {
     Opening,
@@ -205,7 +205,7 @@ export default class Api {
     }
 
     async groupLead(group: WorkingGroups): Promise<GroupLeadWithProfile | null> {
-        const optLead = (await this.workingGroupApiQuery(group).currentLead()) as Option<WorkerLead>;
+        const optLead = (await this.workingGroupApiQuery(group).currentLead()) as Option<WGLead>;
 
         if (!optLead.isSome) {
             return null;
@@ -228,7 +228,7 @@ export default class Api {
         return stake.value;
     }
 
-    protected async workerStake(stakeProfile: WorkerRoleStakeProfile): Promise<Balance> {
+    protected async workerStake(stakeProfile: RoleStakeProfile): Promise<Balance> {
         return this.stakeValue(stakeProfile.stake_id);
     }
 
@@ -243,7 +243,7 @@ export default class Api {
         id: WorkerId,
         worker: Worker
     ): Promise<GroupMember> {
-        const roleAccount = worker.role_account;
+        const roleAccount = worker.role_account_id;
         const memberId = worker.member_id;
 
         const profile = await this.memberProfileById(memberId);
@@ -295,7 +295,7 @@ export default class Api {
 
     async openingsByGroup(group: WorkingGroups): Promise<GroupOpening[]> {
         const openings: GroupOpening[] = [];
-        const nextId = (await this.workingGroupApiQuery(group).nextWorkerOpeningId()) as WorkerOpeningId;
+        const nextId = (await this.workingGroupApiQuery(group).nextOpeningId()) as OpeningId;
 
         // This is chain specfic, but if next id is still 0, it means no openings have been added yet
         if (!nextId.eq(0)) {
@@ -318,29 +318,29 @@ export default class Api {
         return this.singleLinkageResult<Application>(result);
     }
 
-    async workerApplicationById(group: WorkingGroups, workerApplicationId: number): Promise<WorkerApplication> {
-        const nextAppId = await this.workingGroupApiQuery(group).nextWorkerApplicationId() as WorkerApplicationId;
+    async wgApplicationById(group: WorkingGroups, wgApplicationId: number): Promise<WGApplication> {
+        const nextAppId = await this.workingGroupApiQuery(group).nextApplicationId() as ApplicationId;
 
-        if (workerApplicationId < 0 || workerApplicationId >= nextAppId.toNumber()) {
-            throw new CLIError('Invalid worker application ID!');
+        if (wgApplicationId < 0 || wgApplicationId >= nextAppId.toNumber()) {
+            throw new CLIError('Invalid working group application ID!');
         }
 
-        return this.singleLinkageResult<WorkerApplication>(
-            await this.workingGroupApiQuery(group).workerApplicationById(workerApplicationId) as LinkageResult
+        return this.singleLinkageResult<WGApplication>(
+            await this.workingGroupApiQuery(group).applicationById(wgApplicationId) as LinkageResult
         );
     }
 
-    protected async parseApplication(workerApplicationId: number, workerApplication: WorkerApplication) {
-        const appId = workerApplication.application_id;
+    protected async parseApplication(wgApplicationId: number, wgApplication: WGApplication): Promise<GroupApplication> {
+        const appId = wgApplication.application_id;
         const application = await this.hiringApplicationById(appId);
 
         const { active_role_staking_id: roleStakingId, active_application_staking_id: appStakingId } = application;
 
         return {
-            workerApplicationId,
+            wgApplicationId,
             applicationId: appId.toNumber(),
-            member: await this.memberProfileById(workerApplication.member_id),
-            roleAccout: workerApplication.role_account,
+            member: await this.memberProfileById(wgApplication.member_id),
+            roleAccout: wgApplication.role_account_id,
             stakes: {
                 application: appStakingId.isSome ? (await this.stakeValue(appStakingId.unwrap())).toNumber() : 0,
                 role: roleStakingId.isSome ? (await this.stakeValue(roleStakingId.unwrap())).toNumber() : 0
@@ -350,41 +350,41 @@ export default class Api {
         };
     }
 
-    async groupApplication(group: WorkingGroups, workerApplicationId: number): Promise<GroupApplication> {
-        const workerApplication = await this.workerApplicationById(group, workerApplicationId);
-        return await this.parseApplication(workerApplicationId, workerApplication);
+    async groupApplication(group: WorkingGroups, wgApplicationId: number): Promise<GroupApplication> {
+        const wgApplication = await this.wgApplicationById(group, wgApplicationId);
+        return await this.parseApplication(wgApplicationId, wgApplication);
     }
 
-    protected async groupOpeningApplications(group: WorkingGroups, workerOpeningId: number): Promise<GroupApplication[]> {
+    protected async groupOpeningApplications(group: WorkingGroups, wgOpeningId: number): Promise<GroupApplication[]> {
         const applications: GroupApplication[] = [];
 
-        const nextAppId = await this.workingGroupApiQuery(group).nextWorkerApplicationId() as WorkerApplicationId;
+        const nextAppId = await this.workingGroupApiQuery(group).nextApplicationId() as ApplicationId;
         for (let i = 0; i < nextAppId.toNumber(); i++) {
-            const workerApplication = await this.workerApplicationById(group, i);
-            if (workerApplication.worker_opening_id.toNumber() !== workerOpeningId) {
+            const wgApplication = await this.wgApplicationById(group, i);
+            if (wgApplication.opening_id.toNumber() !== wgOpeningId) {
                 continue;
             }
-            applications.push(await this.parseApplication(i, workerApplication));
+            applications.push(await this.parseApplication(i, wgApplication));
         }
 
 
         return applications;
     }
 
-    async groupOpening(group: WorkingGroups, workerOpeningId: number): Promise<GroupOpening> {
-        const nextId = ((await this.workingGroupApiQuery(group).nextWorkerOpeningId()) as WorkerOpeningId).toNumber();
+    async groupOpening(group: WorkingGroups, wgOpeningId: number): Promise<GroupOpening> {
+        const nextId = ((await this.workingGroupApiQuery(group).nextOpeningId()) as OpeningId).toNumber();
 
-        if (workerOpeningId < 0 || workerOpeningId >= nextId) {
-            throw new CLIError('Invalid group opening ID!');
+        if (wgOpeningId < 0 || wgOpeningId >= nextId) {
+            throw new CLIError('Invalid working group opening ID!');
         }
 
-        const groupOpening = this.singleLinkageResult<WorkerOpening>(
-            await this.workingGroupApiQuery(group).workerOpeningById(workerOpeningId) as LinkageResult
+        const groupOpening = this.singleLinkageResult<WGOpening>(
+            await this.workingGroupApiQuery(group).openingById(wgOpeningId) as LinkageResult
         );
 
-        const openingId = groupOpening.opening_id.toNumber();
+        const openingId = groupOpening.hiring_opening_id.toNumber();
         const opening = await this.hiringOpeningById(openingId);
-        const applications = await this.groupOpeningApplications(group, workerOpeningId);
+        const applications = await this.groupOpeningApplications(group, wgOpeningId);
         const stage = await this.parseOpeningStage(opening.stage);
         const stakes = {
             application: opening.application_staking_policy.unwrapOr(undefined),
@@ -392,7 +392,7 @@ export default class Api {
         }
 
         return ({
-            workerOpeningId,
+            wgOpeningId,
             openingId,
             opening,
             stage,

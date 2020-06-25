@@ -108,7 +108,7 @@ export type GroupMember = {
 }
 
 export type GroupApplication = {
-    workerApplicationId: number;
+    wgApplicationId: number;
     applicationId: number;
     member: Profile | null;
     roleAccout: AccountId;
@@ -141,7 +141,7 @@ export type GroupOpeningStakes = {
 }
 
 export type GroupOpening = {
-    workerOpeningId: number;
+    wgOpeningId: number;
     openingId: number;
     stage: GroupOpeningStage;
     opening: Opening;
@@ -149,7 +149,7 @@ export type GroupOpening = {
     applications: GroupApplication[];
 }
 
-// Some helper structs for generating human_readable_text in worker opening extrinsic
+// Some helper structs for generating human_readable_text in working group opening extrinsic
 // Note those types are not part of the runtime etc., we just use them to simplify prompting for values
 // (since there exists functionality that handles that for substrate types like: Struct, Vec etc.)
 interface WithJSONable<T> {

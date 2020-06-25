@@ -322,7 +322,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         account: KeyringPair,
         module: string,
         method: string,
-        jsonArgs?: JSONArgsMapping, // Special JSON arguments (ie. human_readable_text of worker opening)
+        jsonArgs?: JSONArgsMapping, // Special JSON arguments (ie. human_readable_text of working group opening)
         defaultValues?: ApiMethodInputArg[],
         warnOnly: boolean = false // If specified - only warning will be displayed (instead of error beeing thrown)
     ): Promise<ApiMethodInputArg[]> {

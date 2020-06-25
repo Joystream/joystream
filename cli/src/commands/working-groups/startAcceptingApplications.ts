@@ -3,16 +3,16 @@ import _ from 'lodash';
 import { OpeningStatus } from '../../Types';
 import ExitCodes from '../../ExitCodes';
 import { apiModuleByGroup } from '../../Api';
-import { WorkerOpeningId } from '@joystream/types/lib/working-group';
+import { OpeningId } from '@joystream/types/lib/hiring';
 import chalk from 'chalk';
 
 export default class WorkingGroupsStartAcceptingApplications extends WorkingGroupsCommandBase {
     static description = 'Changes the status of pending opening to "Accepting applications". Requires lead access.';
     static args = [
         {
-            name: 'workerOpeningId',
+            name: 'wgOpeningId',
             required: true,
-            description: 'Worker Opening ID'
+            description: 'Working Group Opening ID'
         },
     ]
     static flags = {
@@ -26,7 +26,7 @@ export default class WorkingGroupsStartAcceptingApplications extends WorkingGrou
         // Lead-only gate
         await this.getRequiredLead();
 
-        const opening = await this.getApi().groupOpening(this.group, parseInt(args.workerOpeningId));
+        const opening = await this.getApi().groupOpening(this.group, parseInt(args.wgOpeningId));
 
         if (opening.stage.status !== OpeningStatus.WaitingToBegin) {
             this.error('This opening is not in "Waiting To Begin" stage!', { exit: ExitCodes.InvalidInput });
@@ -37,10 +37,10 @@ export default class WorkingGroupsStartAcceptingApplications extends WorkingGrou
         await this.sendAndFollowExtrinsic(
             account,
             apiModuleByGroup[this.group],
-            'acceptWorkerApplications',
-            [ new WorkerOpeningId(opening.workerOpeningId) ]
+            'acceptApplications',
+            [ new OpeningId(opening.wgOpeningId) ]
         );
 
-        this.log(chalk.green(`Opening ${chalk.white(opening.workerOpeningId)} status changed to: ${ chalk.white('Accepting Applications') }`));
+        this.log(chalk.green(`Opening ${chalk.white(opening.wgOpeningId)} status changed to: ${ chalk.white('Accepting Applications') }`));
     }
 }
