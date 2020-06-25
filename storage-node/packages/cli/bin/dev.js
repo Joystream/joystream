@@ -18,6 +18,10 @@ function roleKeyPair (api) {
   return api.identities.keyring.addFromUri(ROLE_ACCOUNT_URI, null, 'sr25519')
 }
 
+function developmentPort () {
+  return 3001
+}
+
 const check = async (api) => {
   const roleAccountId = roleKeyPair(api).address
   const providerId = await api.workers.findProviderIdByRoleAccount(roleAccountId)
@@ -61,11 +65,12 @@ const init = async (api) => {
 
   console.log('Running setup')
 
-  // set localhost colossus as discovery provider on default port
+  // set localhost colossus as discovery provider
   // assuming pioneer dev server is running on port 3000 we should run
-  // the storage dev server on port 3001
+  // the storage dev server on a different port than the default for colossus which is also
+  // 3000
   debug('Setting Local development node as bootstrap endpoint')
-  await api.discovery.setBootstrapEndpoints(alice, ['http://localhost:3001/'])
+  await api.discovery.setBootstrapEndpoints(alice, [`http://localhost:${developmentPort()}/`])
 
   debug('Transfering tokens to storage role account')
   // Give role account some tokens to work with
@@ -155,5 +160,6 @@ module.exports = {
   init,
   check,
   aliceKeyPair,
-  roleKeyPair
+  roleKeyPair,
+  developmentPort
 }

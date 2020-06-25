@@ -253,8 +253,9 @@ const commands = {
     let publicUrl, port, api
 
     if (cli.flags.dev) {
+      const dev = require('../../cli/bin/dev')
       api = await init_api_development()
-      port = 3001
+      port = dev.developmentPort()
       publicUrl = `http://localhost:${port}/`
     } else {
       api = await init_api_production(cli.flags)
@@ -264,10 +265,6 @@ const commands = {
 
     return start_colossus({ api, publicUrl, port })
   },
-  // 'down': async () => {
-  //   const api = await init_api_as_storage_provider()
-  //   await go_offline(api)
-  // },
   'discovery': async () => {
     debug('Starting Joystream Discovery Service')
     const { RuntimeApi } = require('@joystream/runtime-api')
