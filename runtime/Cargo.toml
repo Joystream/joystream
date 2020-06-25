@@ -1,11 +1,10 @@
-
 [package]
 authors = ['Joystream contributors']
 edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
-version = '6.16.0'
+version = '6.17.0'
 
 [features]
 default = ['std']
