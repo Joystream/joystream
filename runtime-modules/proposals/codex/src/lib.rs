@@ -27,7 +27,6 @@
 //!
 //! ### Working group proposals
 //! - [create_add_working_group_leader_opening_proposal](./struct.Module.html#method.create_add_working_group_leader_opening_proposal)
-//! - [create_accept_working_group_leader_applications_proposal](./struct.Module.html#method.create_accept_working_group_leader_applications_proposal)
 //! - [create_begin_review_working_group_leader_applications_proposal](./struct.Module.html#method.create_begin_review_working_group_leader_applications_proposal)
 //! - [create_fill_working_group_leader_opening_proposal](./struct.Module.html#method.create_fill_working_group_leader_opening_proposal)
 //!
@@ -337,12 +336,6 @@ decl_storage! {
         /// Grace period for the 'add working group opening' proposal
         pub AddWorkingGroupOpeningProposalGracePeriod get(add_working_group_opening_proposal_grace_period) config(): T::BlockNumber;
 
-        /// Voting period for the 'accept working group leader applications' proposal
-        pub AcceptWorkingGroupLeaderApplicationsProposalVotingPeriod get(accept_working_group_leader_applications_proposal_voting_period) config(): T::BlockNumber;
-
-        /// Grace period for the 'accept working group leader applications' proposal
-        pub AcceptWorkingGroupLeaderApplicationsProposalGracePeriod get(accept_working_group_leader_applications_proposal_grace_period) config(): T::BlockNumber;
-
         /// Voting period for the 'begin review working group leader applications' proposal
         pub BeginReviewWorkingGroupLeaderApplicationsProposalVotingPeriod get(begin_review_working_group_leader_applications_proposal_voting_period) config(): T::BlockNumber;
 
@@ -595,7 +588,6 @@ decl_module! {
             add_opening_parameters: AddOpeningParameters<T::BlockNumber, BalanceOfGovernanceCurrency<T>>,
         ) {
 
-//TODO ensures
             let proposal_details = ProposalDetails::AddWorkingGroupLeaderOpening(add_opening_parameters);
             let params = CreateProposalParameters{
                 origin,
@@ -611,32 +603,6 @@ decl_module! {
             Self::create_proposal(params)?;
         }
 
-        /// Create 'Accept working group leader applications' proposal type.
-        /// This proposal uses `accept_applications()` extrinsic from the Joystream `working group` module.
-        pub fn create_accept_working_group_leader_applications_proposal(
-            origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
-            opening_id: working_group::OpeningId<T>,
-            working_group: WorkingGroup,
-        ) {
-
-            let proposal_details = ProposalDetails::AcceptWorkingGroupLeaderApplications(opening_id, working_group);
-            let params = CreateProposalParameters{
-                origin,
-                member_id,
-                title,
-                description,
-                stake_balance,
-                proposal_details: proposal_details.clone(),
-                proposal_parameters: proposal_types::parameters::accept_working_group_leader_applications_proposal::<T>(),
-                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
-            };
-
-            Self::create_proposal(params)?;
-        }
         /// Create 'Begin review working group leader applications' proposal type.
         /// This proposal uses `begin_applicant_review()` extrinsic from the Joystream `working group` module.
         pub fn create_begin_review_working_group_leader_applications_proposal(
@@ -679,8 +645,6 @@ decl_module! {
                 working_group::ApplicationId<T>
             >
         ) {
-
-        // TODO ensures
 
             let proposal_details = ProposalDetails::FillWorkingGroupLeaderOpening(params);
             let params = CreateProposalParameters{
@@ -921,12 +885,6 @@ impl<T: Trait> Module<T> {
         ));
         <AddWorkingGroupOpeningProposalGracePeriod<T>>::put(T::BlockNumber::from(
             p.add_working_group_opening_proposal_grace_period,
-        ));
-        <AcceptWorkingGroupLeaderApplicationsProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.accept_working_group_leader_applications_proposal_voting_period,
-        ));
-        <AcceptWorkingGroupLeaderApplicationsProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.accept_working_group_leader_applications_proposal_grace_period,
         ));
         <BeginReviewWorkingGroupLeaderApplicationsProposalVotingPeriod<T>>::put(
             T::BlockNumber::from(

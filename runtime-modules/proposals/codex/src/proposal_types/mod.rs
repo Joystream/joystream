@@ -73,9 +73,6 @@ pub enum ProposalDetails<
     /// Add opening for the working group leader position.
     AddWorkingGroupLeaderOpening(AddOpeningParameters<BlockNumber, CurrencyBalance>),
 
-    /// Accept applications for the working group leader position.
-    AcceptWorkingGroupLeaderApplications(OpeningId, WorkingGroup),
-
     /// Begin review applications for the working group leader position.
     BeginReviewWorkingGroupLeaderApplications(OpeningId, WorkingGroup),
 
@@ -232,12 +229,6 @@ pub struct ProposalsConfigParameters {
     /// 'Add working group opening' proposal grace period
     pub add_working_group_opening_proposal_grace_period: u32,
 
-    /// 'Accept working group leader applications' proposal voting period
-    pub accept_working_group_leader_applications_proposal_voting_period: u32,
-
-    /// 'Accept working group leader applications' proposal grace period
-    pub accept_working_group_leader_applications_proposal_grace_period: u32,
-
     /// 'Begin review working group leader applications' proposal voting period
     pub begin_review_working_group_leader_applications_proposal_voting_period: u32,
 
@@ -269,8 +260,6 @@ impl Default for ProposalsConfigParameters {
             spending_proposal_grace_period: 14400u32,
             add_working_group_opening_proposal_voting_period: 72000u32,
             add_working_group_opening_proposal_grace_period: 0u32,
-            accept_working_group_leader_applications_proposal_voting_period: 43200u32,
-            accept_working_group_leader_applications_proposal_grace_period: 0u32,
             begin_review_working_group_leader_applications_proposal_voting_period: 43200u32,
             begin_review_working_group_leader_applications_proposal_grace_period: 14400u32,
             fill_working_group_leader_opening_proposal_voting_period: 43200u32,
