@@ -29,17 +29,17 @@ const Carousel: React.FC<Partial<CarouselProps>> = ({
 	const [x, setX] = useState(0);
 	const { width: containerWidth, ref: containerRef } = useResizeObserver<HTMLDivElement>();
 	const elementsRefs = useRef<(HTMLDivElement | null)[]>([]);
-	const [childrenLength, setChildrenLength] = useState(0);
+	const [childrensWidth, setChildrensWidth] = useState(0);
 	useEffect(() => {
 		elementsRefs.current = elementsRefs.current.slice(0, children.length);
-		const childrensLength = elementsRefs.current.reduce(
+		const childrensWidth = elementsRefs.current.reduce(
 			(accWidth, el) => (el != null ? accWidth + el.clientWidth : accWidth),
 			0
 		);
-		setChildrenLength(childrensLength);
+		setChildrensWidth(childrensWidth);
 	}, [children.length]);
 
-	const styles = useMemo(() => useCSS({}), []);
+	const styles = useCSS({});
 	return (
 		<div css={[styles.container, containerCss]}>
 			<div css={styles.itemsContainer} ref={containerRef}>
@@ -88,8 +88,8 @@ const Carousel: React.FC<Partial<CarouselProps>> = ({
 			case "right": {
 				// Prevent overscroll on the right
 				scrollAmount =
-					x - containerWidth <= -(childrenLength - containerWidth)
-						? -(childrenLength - containerWidth)
+					x - containerWidth <= -(childrensWidth - containerWidth)
+						? -(childrensWidth - containerWidth)
 						: x - containerWidth;
 				onScroll("right");
 				break;

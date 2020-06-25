@@ -15,7 +15,7 @@ const videoPlaceholders = [
 		views: "345k",
 		createdAt: "2 weeks ago",
 		poster:
-			"https://s3-alpha-sig.figma.com/img/57d7/47bd/e40e51d45107656c92b3c9d982e76c6e?Expires=1592784000&Signature=aJk1gbAXBZiLM9AJzmnVlIBumH-2CksuaJurQwg6RSjKRwtUYWFC1-A~4n8YlJ2b7elUpxfywTeQprP6Cp0i23RLGM-O0gYHVn0JS61NJ8r4BFf49~CehI0A30iAauYbY52itIvy~KFZnA-GucA1MihuJssT0oTqDNOQEL~Ux~Q3ArmKjqEe6EZgQ72lBRw74EIQ7dEeZZ2A5DiO4t6j0-lQBQ-ii4zeH3jYgDac1ulio-k0Jd9eMblTHcc9K3vwFjDvfq9r27iIiUEcNg1jpA6hgpVAOVo3471A~1ULl6yWYFNOFgyPn6007PECrROWj8k1WYQ-zjSbNI5zaDmBBA__&Key-Pair-Id=APKAINTVSUGEWH5XD5UA",
+			"https://s3-alpha-sig.figma.com/img/57d7/47bd/e40e51d45107656c92b3c9d982e76c6e?Expires=1593993600&Signature=Q34ageNdR3Y48K5lG8HW1KOgMGCi94qmWOK5yO~cK6XzgyO2nCJB6Pjoaa~gQX7zMVSHIkxlVt-9CHz~H9iXmA7r0LfTm90sNlTZ8ZspvU9TWgCGdPMj1A-SzTIAmeiDrZ0DrSzILQdJOMwaP-DeYKpFN6zvG6h56XHznX5lEiawRqeObL0g4SAHNG5tiO0Rdjwtckeuz~diwLVBOUqPaeDGOABlpUJQFoy~Dx7FxK65MyPXUZ7CtUVqjKkyl-jfnl0DwIpOiI9K2HJjtV7FlPbc28C4JeniafBr0nUkoWAjzcyyOr37v0xNw2EBy91mBc33kDUlwbqom9f-leRPZQ__&Key-Pair-Id=APKAINTVSUGEWH5XD5UA",
 	},
 	{
 		title: "Sample Video Title",

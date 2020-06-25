@@ -14,7 +14,7 @@
 	},
 	"lint-staged": {
 		"*.{ts, tsx, js, jsx, json}": [
-			"prettier --no-semi --trailing-comma none --write"
+			"prettier"
 		]
 	},
 	"devDependencies": {
