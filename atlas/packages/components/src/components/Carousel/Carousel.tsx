@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { css, SerializedStyles } from "@emotion/core";
+import { SerializedStyles } from "@emotion/core";
 import { animated, useSpring } from "react-spring";
 import useResizeObserver from "use-resize-observer";
 import { useCSS, CarouselStyleProps } from "./Carousel.style";
@@ -23,7 +23,7 @@ const Carousel: React.FC<Partial<CarouselProps>> = ({
 	if (!Array.isArray(children)) {
 		return <>{children}</>;
 	}
-	let [props, set] = useSpring(() => ({
+	const [scroll, setScroll] = useSpring(() => ({
 		transform: `translateX(0px)`,
 	}));
 	const [x, setX] = useState(0);
@@ -40,38 +40,6 @@ const Carousel: React.FC<Partial<CarouselProps>> = ({
 	}, [children.length]);
 
 	const styles = useCSS({});
-	return (
-		<div css={[styles.container, containerCss]}>
-			<div css={styles.itemsContainer} ref={containerRef}>
-				{children.map((element, idx) => (
-					<animated.div
-						style={props}
-						key={`Carousel-${idx}`}
-						ref={(el) => {
-							elementsRefs.current[idx] = el;
-							return el;
-						}}
-					>
-						{element}
-					</animated.div>
-				))}
-			</div>
-			<NavButton
-				outerCss={[styles.navLeft, leftControlCss]}
-				direction="left"
-				onClick={() => {
-					handleScroll("left");
-				}}
-			/>
-			<NavButton
-				outerCss={[styles.navRight, rightControlCss]}
-				direction="right"
-				onClick={() => {
-					handleScroll("right");
-				}}
-			/>
-		</div>
-	);
 
 	function handleScroll(direction: "left" | "right") {
 		if (containerWidth == null) {
@@ -96,10 +64,44 @@ const Carousel: React.FC<Partial<CarouselProps>> = ({
 			}
 		}
 		setX(scrollAmount);
-		set({
+		setScroll({
 			transform: `translateX(${scrollAmount}px)`,
 		});
 	}
+
+	return (
+		<div css={[styles.container, containerCss]}>
+			<div css={styles.outerItemsContainer} ref={containerRef}>
+				<animated.div style={scroll} css={styles.innerItemsContainer}>
+					{children.map((element, idx) => (
+						<div
+							key={`Carousel-${idx}`}
+							ref={(el) => {
+								elementsRefs.current[idx] = el;
+								return el;
+							}}
+						>
+							{element}
+						</div>
+					))}
+				</animated.div>
+			</div>
+			<NavButton
+				outerCss={[styles.navLeft, leftControlCss]}
+				direction="left"
+				onClick={() => {
+					handleScroll("left");
+				}}
+			/>
+			<NavButton
+				outerCss={[styles.navRight, rightControlCss]}
+				direction="right"
+				onClick={() => {
+					handleScroll("right");
+				}}
+			/>
+		</div>
+	);
 };
 
 export default Carousel;

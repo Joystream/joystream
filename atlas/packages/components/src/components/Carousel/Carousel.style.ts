@@ -7,9 +7,12 @@ const container: StyleFn = () => ({
 	position: "relative",
 	display: "flex"
 })
-const itemsContainer: StyleFn = () => ({
-	display: "flex",
+const outerItemsContainer: StyleFn = () => ({
 	overflow: "hidden"
+})
+
+const innerItemsContainer: StyleFn = () => ({
+	display: "flex"
 })
 
 const navBase: StyleFn = () => ({
@@ -34,7 +37,8 @@ const navRight: StyleFn = (styles) => ({
 
 export const useCSS = (props: CarouselStyleProps) => ({
 	container: makeStyles([container])(props),
-	itemsContainer: makeStyles([itemsContainer])(props),
+	outerItemsContainer: makeStyles([outerItemsContainer])(props),
+	innerItemsContainer: makeStyles([innerItemsContainer])(props),
 	navLeft: makeStyles([navBase, navLeft])(props),
 	navRight: makeStyles([navBase, navRight])(props)
 })
