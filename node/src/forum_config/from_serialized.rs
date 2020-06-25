@@ -26,7 +26,9 @@ struct ForumData {
 }
 
 fn parse_forum_json() -> Result<ForumData> {
-    let data = include_str!("../../res/forum_data_acropolis_serialized.json");
+    // TODO: remove temporary load of empty data by regular load of forum config in the new format
+    //let data = include_str!("../../res/forum_data_acropolis_serialized.json");
+    let data = include_str!("../../res/forum_data_empty.json");
     serde_json::from_str(data)
 }
 
