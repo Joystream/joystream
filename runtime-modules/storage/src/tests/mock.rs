@@ -169,7 +169,7 @@ impl crate::data_directory::StorageProviderHelper<Test> for () {
     }
 }
 
-impl common::origin_validator::ActorOriginValidator<Origin, u64, u64> for () {
+impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
     fn ensure_actor_origin(origin: Origin, _account_id: u64) -> Result<u64, &'static str> {
         let signed_account_id = system::ensure_signed(origin)?;
 
@@ -304,7 +304,7 @@ pub(crate) fn hire_storage_provider() -> (u64, u32) {
 
     let storage_provider = working_group::Worker {
         member_id: 1,
-        role_account: role_account_id,
+        role_account_id,
         reward_relationship: None,
         role_stake_profile: None,
     };

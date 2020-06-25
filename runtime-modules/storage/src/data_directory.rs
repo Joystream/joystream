@@ -27,7 +27,7 @@ use sr_primitives::traits::{MaybeSerialize, Member};
 use srml_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use system::{self, ensure_root};
 
-use common::origin_validator::ActorOriginValidator;
+use common::origin::ActorOriginValidator;
 pub(crate) use common::BlockAndTime;
 
 use crate::data_object_type_registry;

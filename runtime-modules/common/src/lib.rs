@@ -3,7 +3,7 @@
 
 pub mod constraints;
 pub mod currency;
-pub mod origin_validator;
+pub mod origin;
 
 use codec::{Decode, Encode};
 #[cfg(feature = "std")]
