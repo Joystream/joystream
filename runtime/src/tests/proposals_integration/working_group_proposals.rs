@@ -69,6 +69,34 @@ fn begin_review_applications(member_id: u8, account_id: [u8; 32], opening_id: u6
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 }
 
+fn fill_opening(
+    member_id: u8,
+    account_id: [u8; 32],
+    opening_id: u64,
+    successful_application_id: u64,
+) {
+    let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+        ProposalCodex::create_fill_working_group_leader_opening_proposal(
+            RawOrigin::Signed(account_id.clone().into()).into(),
+            member_id as u64,
+            b"title".to_vec(),
+            b"body".to_vec(),
+            Some(<BalanceOf<Runtime>>::from(50_000_u32)),
+            proposals_codex::FillOpeningParameters {
+                opening_id,
+                successful_application_id,
+                reward_policy: None,
+                working_group: WorkingGroup::Storage,
+            },
+        )
+    })
+    .disable_setup_enviroment()
+    .with_expected_proposal_id(3)
+    .with_run_to_block(4);
+
+    codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+}
+
 #[test]
 fn create_add_working_group_leader_opening_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
@@ -139,5 +167,43 @@ fn create_begin_review_working_group_leader_applications_proposal_execution_succ
                 deactivated_application_count: 0
             }
         );
+    });
+}
+
+#[test]
+fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 1;
+        let account_id: [u8; 32] = [member_id; 32];
+
+        let opening_id = add_opening(
+            member_id,
+            account_id.clone(),
+            ActivateOpeningAt::CurrentBlock,
+        );
+
+        let apply_result = StorageWorkingGroup::apply_on_opening(
+            RawOrigin::Signed(account_id.clone().into()).into(),
+            member_id as u64,
+            opening_id,
+            account_id.clone().into(),
+            None,
+            None,
+            Vec::new(),
+        );
+
+        assert_eq!(apply_result, Ok(()));
+
+        let expected_application_id = 0;
+
+        begin_review_applications(member_id, account_id, opening_id);
+
+        let lead = StorageWorkingGroup::current_lead();
+        assert!(lead.is_none());
+
+        fill_opening(member_id, account_id, opening_id, expected_application_id);
+
+        let lead = StorageWorkingGroup::current_lead();
+        assert!(lead.is_some());
     });
 }
