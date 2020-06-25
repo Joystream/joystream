@@ -114,9 +114,9 @@ const workingGroupsApiMapping: WGApiMapping = {
         workerById: 'workerById'
       },
       tx: {
-        applyOnOpening: 'applyOnWorkerOpening',
-        withdrawApplication: 'withdrawWorkerApplication',
-        leaveRole: 'leaveWorkerRole'
+        applyOnOpening: 'applyOnOpening',
+        withdrawApplication: 'withdrawApplication',
+        leaveRole: 'leaveRole'
       }
     },
     openingType: WGOpening,
@@ -609,8 +609,8 @@ export class Transport extends TransportBase implements ITransport {
       await this.cachedApiMethodByGroup(group, 'applicationById')()
     );
 
-    const myApps = applications.linked_values.filter(app => app.role_account.eq(roleKey));
-    const myAppIds = applications.linked_keys.filter((id, key) => applications.linked_values[key].role_account.eq(roleKey));
+    const myApps = applications.linked_values.filter(app => app.role_account_id.eq(roleKey));
+    const myAppIds = applications.linked_keys.filter((id, key) => applications.linked_values[key].role_account_id.eq(roleKey));
 
     const hiringAppPairs = await Promise.all(
       myApps.map(
@@ -630,14 +630,14 @@ export class Transport extends TransportBase implements ITransport {
     );
 
     const openings = await Promise.all(
-      myApps.map(opening => {
-        return this.groupOpening(group, opening.worker_opening_id.toNumber());
+      myApps.map(application => {
+        return this.groupOpening(group, application.opening_id.toNumber());
       })
     );
 
     const allAppsByOpening = (await Promise.all(
-      myApps.map(opening => {
-        return this.groupOpeningApplications(group, opening.worker_opening_id.toNumber());
+      myApps.map(application => {
+        return this.groupOpeningApplications(group, application.opening_id.toNumber());
       })
     ));
 
@@ -684,7 +684,7 @@ export class Transport extends TransportBase implements ITransport {
         .toArray()
         // We need to associate worker ids with workers BEFORE filtering the array
         .map((worker, index) => ({ worker, id: workers.linked_keys[index] }))
-        .filter(({ worker }) => worker.role_account.eq(roleKeyId) && worker.is_active)
+        .filter(({ worker }) => worker.role_account_id.eq(roleKeyId) && worker.is_active)
         .map(async workerWithId => {
           const { worker, id } = workerWithId;
 
