@@ -3,13 +3,19 @@
 'use strict'
 
 const debug = require('debug')('joystream:storage-cli:dev')
+const assert = require('assert')
+
+// Derivation path appended to well known development seed used on
+// development chains
+const ALICE_URI = '//Alice'
+const ROLE_ACCOUNT_URI = '//Colossus'
 
 function aliceKeyPair (api) {
-  return api.identities.keyring.addFromUri('//Alice', null, 'sr25519')
+  return api.identities.keyring.addFromUri(ALICE_URI, null, 'sr25519')
 }
 
 function roleKeyPair (api) {
-  return api.identities.keyring.addFromUri('//Colossus', null, 'sr25519')
+  return api.identities.keyring.addFromUri(ROLE_ACCOUNT_URI, null, 'sr25519')
 }
 
 const check = async (api) => {
@@ -24,7 +30,7 @@ const check = async (api) => {
   Chain is setup with Dev storage provider:
     providerId = ${providerId}
     roleAccountId = ${roleAccountId}
-    roleKey = '//Colossus'
+    roleKey = ${ROLE_ACCOUNT_URI}
   `)
 
   return providerId
@@ -38,14 +44,13 @@ const init = async (api) => {
     await check(api)
     return
   } catch (err) {
-    // setup is not correct we can try to run setup
+    // We didn't find a storage provider with expected role account
   }
 
   const alice = aliceKeyPair(api).address
   const roleAccount = roleKeyPair(api).address
-  const providerId = 0 // first assignable id
 
-  debug(`Checking for dev chain...`)
+  debug(`Ensuring Alice is sudo`)
 
   // make sure alice is sudo - indirectly checking this is a dev chain
   const sudo = await api.api.query.sudo.key()
@@ -54,21 +59,29 @@ const init = async (api) => {
     throw new Error('Setup requires Alice to be sudo. Are you sure you are running a devchain?')
   }
 
-  console.log('Setting up chain...')
+  console.log('Running setup')
+
+  // set localhost colossus as discovery provider on default port
+  // assuming pioneer dev server is running on port 3000 we should run
+  // the storage dev server on port 3001
+  debug('Setting Local development node as bootstrap endpoint')
+  await api.discovery.setBootstrapEndpoints(alice, ['http://localhost:3001/'])
 
   debug('Transfering tokens to storage role account')
   // Give role account some tokens to work with
   api.balances.transfer(alice, roleAccount, 100000)
 
-  console.log('Registering Alice as Member')
-  // register alice as a member
-  const aliceMemberId = await api.identities.registerMember(alice, {
-    handle: 'alice'
-  })
+  debug('Ensuring Alice is as member..')
+  let aliceMemberId = await api.identities.firstMemberIdOf(alice)
 
-  // if (!aliceMemberId.eq(0)) {
-  //   // not first time script is running!
-  // }
+  if (aliceMemberId === undefined) {
+    debug('Registering Alice as member..')
+    aliceMemberId = await api.identities.registerMember(alice, {
+      handle: 'alice'
+    })
+  } else {
+    debug('Alice is already a member')
+  }
 
   // Make alice the storage lead
   debug('Setting Alice as Lead')
@@ -81,42 +94,61 @@ const init = async (api) => {
   )
 
   // create an openinging, apply, start review, fill opening
-  // Assumption opening id and applicant id, provider id will all be the
-  // first assignable id == 0
-  // so we don't await each tx to finalize to get the ids. this allows us to
-  // batch all the transactions into a single block.
-  debug('Making //Colossus account a storage provider')
+  debug(`Making ${ROLE_ACCOUNT_URI} account a storage provider`)
+
   const openTx = api.api.tx.storageWorkingGroup.addWorkerOpening('CurrentBlock', {
     application_rationing_policy: {
       'max_active_applicants': 1
     },
     max_review_period_length: 1000
     // default values for everything else..
-  }, 'opening0')
-  api.signAndSend(alice, openTx)
-  const openingId = 0 // first assignable opening id
+  }, 'dev-opening')
+
+  const openingId = await api.signAndSendThenGetEventResult(alice, openTx, {
+    eventModule: 'storageWorkingGroup',
+    eventName: 'WorkerOpeningAdded',
+    eventProperty: 'WorkerOpeningId'
+  })
+  debug(`created new opening id ${openingId}`)
+
   const applyTx = api.api.tx.storageWorkingGroup.applyOnWorkerOpening(
     aliceMemberId, openingId, roleAccount, null, null, 'colossus'
   )
-  api.signAndSend(alice, applyTx)
-  const applicantId = 0 // first assignable applicant id
+  const applicationId = await api.signAndSendThenGetEventResult(alice, applyTx, {
+    eventModule: 'storageWorkingGroup',
+    eventName: 'AppliedOnWorkerOpening',
+    eventProperty: 'WorkerApplicationId'
+  })
+  debug(`created application id ${applicationId}`)
 
   const reviewTx = api.api.tx.storageWorkingGroup.beginWorkerApplicantReview(openingId)
   api.signAndSend(alice, reviewTx)
 
-  const fillTx = api.api.tx.storageWorkingGroup.fillWorkerOpening(openingId, [applicantId], null)
-  await api.signAndSend(alice, fillTx)
+  const fillTx = api.api.tx.storageWorkingGroup.fillWorkerOpening(openingId, [applicationId], null)
+  const filledMap = await api.signAndSendThenGetEventResult(alice, fillTx, {
+    eventModule: 'storageWorkingGroup',
+    eventName: 'WorkerOpeningFilled',
+    eventProperty: 'WorkerApplicationIdToWorkerIdMap'
+  })
 
-  // wait for previous transactions to finalize so we can read correct state
-  if (await api.workers.isRoleAccountOfStorageProvider(providerId, roleAccount)) {
-    console.log('Storage Role setup Completed Successfully')
-  } else { throw new Error('Setup Failed') }
+  if (filledMap.size !== 1) {
+    throw new Error('openening was not filled as expected')
+  }
 
-  // set localhost colossus as discovery provider on default port
-  // assuming pioneer dev server is running on port 3000 we should run
-  // the storage dev server on port 3001
-  debug('Setting Local development node as bootstrap endpoint')
-  await api.discovery.setBootstrapEndpoints(alice, ['http://localhost:3001/'])
+  // Having issues reading values from the BTreeMap!
+  // for (key in filledMap.keys()) {
+  //   console.log(key)
+  // }
+  // for (value in filledMap.values()) {
+  //   console.log(value)
+  // }
+  // if (!filledMap.has(applicationId)) {
+  //   throw new Error('openening was not filled without our application id')
+  // }
+  // const providerId = filledMap.get(applicationId)
+  // debug(`provider created: ${providerId}`)
+
+  return check(api)
 }
 
 module.exports = {

@@ -269,10 +269,27 @@ class RuntimeApi {
     // updates to know when the tx has been finalized
     return finalizedPromise.promise
   }
-}
 
-module.exports = {
-  RuntimeApi
+  // Sign and send a transaction expect event from
+  // module and return eventProperty from the event.
+  async signAndSendThenGetEventResult (senderAccountId, tx, { eventModule, eventName, eventProperty }) {
+    // event from a module,
+    const subscribed = [[eventModule, eventName]]
+    return new Promise(async (resolve, reject) => {
+      try {
+        await this.signAndSend(senderAccountId, tx, 1, subscribed, (events) => {
+          events.forEach((event) => {
+            // fix - we may not necessarily want the first event
+            // if there are multiple events emitted,
+            resolve(event[1][eventProperty])
+          })
+        })
+      } catch (err) {
+        reject(err)
+      }
+    })
+  }
+
 }
 
 function newExternallyControlledPromise () {
@@ -283,4 +300,8 @@ function newExternallyControlledPromise () {
     reject = rej
   })
   return ({resolve, reject, promise})
+}
+
+module.exports = {
+  RuntimeApi
 }

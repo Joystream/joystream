@@ -178,18 +178,12 @@ class IdentitiesApi {
   }
 
   async registerMember (accountId, userInfo) {
-    const subscribed = [['members', 'MemberRegistered']]
     const tx = this.base.api.tx.members.buyMembership(0, userInfo)
-    return new Promise(async (resolve, reject) => {
-      try {
-        await this.base.signAndSend(accountId, tx, 1, subscribed, (events) => {
-          events.forEach((event) => {
-            resolve(event[1].MemberId)
-          })
-        })
-      } catch (err) {
-        reject(err)
-      }
+
+    return this.base.signAndSendThenGetEventResult(accountId, tx, {
+      eventModule: 'members',
+      eventName: 'MemberRegistered',
+      eventProperty: 'MemberId'
     })
   }
 
