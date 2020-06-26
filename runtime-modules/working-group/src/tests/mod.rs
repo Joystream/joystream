@@ -1913,7 +1913,7 @@ fn active_worker_counter_works_successfully() {
 }
 
 #[test]
-fn adding_too_much_workers_fails() {
+fn adding_too_much_workers_fails_with_single_application_out_of_limit() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
@@ -1923,6 +1923,23 @@ fn adding_too_much_workers_fails() {
         let hiring_workflow = HiringWorkflow::default()
             .disable_setup_environment()
             .add_default_application()
+            .expect(Err(Error::MaxActiveWorkerNumberExceeded));
+
+        hiring_workflow.execute()
+    });
+}
+
+#[test]
+fn fill_opening_cannot_hire_more_workers_using_several_applicationst_han_allows_worker_limit() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        fill_worker_position(None, None, false, OpeningType::Worker, None);
+
+        let hiring_workflow = HiringWorkflow::default()
+            .disable_setup_environment()
+            .add_application_with_origin(b"Some1".to_vec(), RawOrigin::Signed(2), 2)
+            .add_application_with_origin(b"Some2".to_vec(), RawOrigin::Signed(3), 3)
             .expect(Err(Error::MaxActiveWorkerNumberExceeded));
 
         hiring_workflow.execute()

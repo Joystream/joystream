@@ -113,7 +113,7 @@ impl HiringWorkflow {
             SetLeadFixture::default().set_lead();
         }
         increase_total_balance_issuance_using_account_id(1, 10000);
-        setup_members(3);
+        setup_members(4);
         set_mint_id(create_mint());
     }
 

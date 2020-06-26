@@ -516,10 +516,6 @@ decl_module! {
 
             Self::ensure_opening_human_readable_text_is_valid(&human_readable_text)?;
 
-            ensure!(
-                (Self::active_worker_count()) < T::MaxWorkerNumberLimit::get(),
-                Error::MaxActiveWorkerNumberExceeded
-            );
 
             // Add opening
             // NB: This call can in principle fail, because the staking policies
@@ -783,6 +779,14 @@ decl_module! {
             let (opening, _) = Self::ensure_opening_exists(&opening_id)?;
 
             Self::ensure_origin_for_opening_type(origin, opening.opening_type)?;
+
+            let potential_worker_number =
+                Self::active_worker_count() + (successful_application_ids.len() as u32);
+
+            ensure!(
+                potential_worker_number <= T::MaxWorkerNumberLimit::get(),
+                Error::MaxActiveWorkerNumberExceeded
+            );
 
             // Cannot hire a lead when another leader exists.
             if matches!(opening.opening_type, OpeningType::Leader) {
