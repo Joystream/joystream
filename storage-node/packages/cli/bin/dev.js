@@ -72,7 +72,7 @@ const init = async (api) => {
   debug('Setting Local development node as bootstrap endpoint')
   await api.discovery.setBootstrapEndpoints(alice, [`http://localhost:${developmentPort()}/`])
 
-  debug('Transfering tokens to storage role account')
+  debug('Transferring tokens to storage role account')
   // Give role account some tokens to work with
   api.balances.transfer(alice, roleAccount, 100000)
 

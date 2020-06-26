@@ -145,9 +145,7 @@ async function countContentAvailability (contentIds, source) {
       // TODO: cross check against dataobject size
       found++
     } catch (err) {
-      // console.log(`${assetUrl} ${err.message}`)
       missing++
-      continue
     }
   }
 
