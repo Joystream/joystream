@@ -14,6 +14,12 @@ decl_error! {
         /// Current lead is not set.
         CurrentLeadNotSet,
 
+        /// There is leader already, cannot hire another one.
+        CannotHireLeaderWhenLeaderExists,
+
+        /// Cannot fill opening with multiple applications.
+        CannotHireMultipleLeaders,
+
         /// Not a lead account.
         IsNotLeadAccount,
 
@@ -235,6 +241,9 @@ decl_error! {
 
         /// Require root origin in extrinsics.
         RequireRootOrigin,
+
+        /// Require signed origin in extrinsics.
+        RequireSignedOrigin,
     }
 }
 
@@ -243,6 +252,7 @@ impl From<system::Error> for Error {
         match error {
             system::Error::Other(msg) => Error::Other(msg),
             system::Error::RequireRootOrigin => Error::RequireRootOrigin,
+            system::Error::RequireSignedOrigin => Error::RequireSignedOrigin,
             _ => Error::Other(error.into()),
         }
     }

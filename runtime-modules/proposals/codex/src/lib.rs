@@ -54,7 +54,7 @@ mod proposal_types;
 #[cfg(test)]
 mod tests;
 
-use common::origin_validator::ActorOriginValidator;
+use common::origin::ActorOriginValidator;
 use governance::election_params::ElectionParameters;
 use proposal_engine::ProposalParameters;
 use rstd::clone::Clone;
@@ -65,7 +65,7 @@ use sr_primitives::traits::Zero;
 use srml_support::dispatch::DispatchResult;
 use srml_support::traits::{Currency, Get};
 use srml_support::{decl_error, decl_module, decl_storage, ensure, print};
-use system::{ensure_root, RawOrigin};
+use system::ensure_root;
 
 pub use crate::proposal_types::ProposalsConfigParameters;
 pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
@@ -577,7 +577,7 @@ decl_module! {
             origin,
             wasm: Vec<u8>,
         ) {
-            let (cloned_origin1, cloned_origin2) =  Self::double_origin(origin);
+            let (cloned_origin1, cloned_origin2) = common::origin::double_origin::<T>(origin);
             ensure_root(cloned_origin1)?;
 
             print("Runtime upgrade proposal execution started.");
@@ -590,25 +590,6 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    // Multiplies the T::Origin.
-    // In our current substrate version system::Origin doesn't support clone(),
-    // but it will be supported in latest up-to-date substrate version.
-    // TODO: delete when T::Origin will support the clone()
-    fn double_origin(origin: T::Origin) -> (T::Origin, T::Origin) {
-        let coerced_origin = origin.into().ok().unwrap_or(RawOrigin::None);
-
-        let (cloned_origin1, cloned_origin2) = match coerced_origin {
-            RawOrigin::None => (RawOrigin::None, RawOrigin::None),
-            RawOrigin::Root => (RawOrigin::Root, RawOrigin::Root),
-            RawOrigin::Signed(account_id) => (
-                RawOrigin::Signed(account_id.clone()),
-                RawOrigin::Signed(account_id),
-            ),
-        };
-
-        (cloned_origin1.into(), cloned_origin2.into())
-    }
-
     // Generic template proposal builder
     fn create_proposal(
         origin: T::Origin,
