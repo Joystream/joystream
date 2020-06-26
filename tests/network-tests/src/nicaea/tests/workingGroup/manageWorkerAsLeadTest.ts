@@ -41,7 +41,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
   const firstRewardInterval: BN = new BN(process.env.LONG_REWARD_INTERWAL!);
   const rewardInterval: BN = new BN(process.env.LONG_REWARD_INTERWAL!);
   const payoutAmount: BN = new BN(process.env.PAYOUT_AMOUNT!);
-  const durationInBlocks: number = 40;
+  const durationInBlocks: number = 60;
   const openingActivationDelay: BN = new BN(0);
 
   const provider = new WsProvider(nodeUrl);
@@ -110,7 +110,28 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
   tap.test('Decrease worker stake, expect failure', async () =>
     decreaseStake(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, true)
   );
-  tap.test('Set lead', async () => setLead(apiWrapper, leadKeyPair[0], sudo));
+
+  tap.test(
+    'Add lead opening',
+    async () =>
+      (leadOpenignId = await addLeaderOpening(
+        apiWrapper,
+        nKeyPairs,
+        sudo,
+        applicationStake,
+        roleStake,
+        openingActivationDelay
+      ))
+  );
+  tap.test(
+    'Apply for lead opening',
+    async () => await applyForOpening(apiWrapper, leadKeyPair, sudo, applicationStake, roleStake, leadOpenignId, false)
+  );
+  tap.test('Begin lead application review', async () => beginLeaderApplicationReview(apiWrapper, sudo, leadOpenignId));
+  tap.test('Fill lead opening', async () =>
+    fillLeaderOpening(apiWrapper, leadKeyPair, sudo, leadOpenignId, firstRewardInterval, rewardInterval, payoutAmount)
+  );
+
   tap.test('Decrease worker stake', async () => decreaseStake(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, false));
   tap.test('Slash worker', async () => slash(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, false));
   tap.test('Terminate worker role', async () => terminateRole(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, false));

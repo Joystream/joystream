@@ -1022,7 +1022,7 @@ export class ApiWrapper {
     expectFailure: boolean
   ): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx.storageWorkingGroup.terminateRole(applicationId, text),
+      this.api.tx.storageWorkingGroup.terminateRole(applicationId, text, false),
       account,
       expectFailure
     );

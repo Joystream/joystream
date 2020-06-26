@@ -7,7 +7,7 @@
     "test": "tap --files ts-node/register src/nicaea/tests/proposals/*Test.ts --files ts-node/register src/nicaea/tests/workingGroup/*Test.ts -T",
     "test-migration-constantinople": "tap --files src/rome/tests/romeRuntimeUpgradeTest.ts --files src/constantinople/tests/electingCouncilTest.ts -T",
     "test-migration-nicaea": "tap --files src/constantinople/tests/proposals/updateRuntimeTest.ts --files src/nicaea/tests/electingCouncilTest.ts -T",
-    "debug": "tap --files src/nicaea/tests/workingGroup/workerPayout.ts -T",
+    "debug": "tap --files src/nicaea/tests/workingGroup/manageWorkerAsLeadTest.ts -T",
     "lint": "tslint --project tsconfig.json",
     "prettier": "prettier --write ./src"
   },
