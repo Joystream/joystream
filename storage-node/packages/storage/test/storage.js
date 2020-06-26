@@ -48,19 +48,15 @@ function write(store, content_id, contents, callback)
     });
 }
 
-function read_all(stream)
-{
-  const chunks = []
-  let chunk
-  do {
-    chunk = stream.read();
-    if (chunk) {
-        chunks.push(chunk)
-    }
-  } while (chunk);
-  return Buffer.concat(chunks);
+function read_all (stream) {
+  return new Promise((resolve, reject) => {
+    const chunks = []
+    stream.on('data', chunk => chunks.push(chunk))
+    stream.on('end', () => resolve(Buffer.concat(chunks)))
+    stream.on('error', err => reject(err))
+    stream.resume()
+  })
 }
-
 
 function create_known_object(content_id, contents, callback)
 {
@@ -111,6 +107,7 @@ describe('storage/storage', () => {
             stream.on('finish', () => {
               stream.commit();
             });
+
             stream.on('committed', (hash) => {
               // ... if file_info is not set here, there's an issue.
               expect(file_info).to.have.property('mime_type', 'application/xml');
@@ -133,8 +130,8 @@ describe('storage/storage', () => {
       const contents = 'test-for-reading';
       create_known_object('foobar', contents, (store, hash) => {
         store.open('foobar', 'r')
-          .then((stream) => {
-            const data = read_all(stream);
+          .then(async (stream) => {
+            const data = await read_all(stream);
             expect(Buffer.compare(data, Buffer.from(contents))).to.equal(0);
             done();
           })
@@ -144,16 +141,12 @@ describe('storage/storage', () => {
       });
     });
 
-    // Problems with this test. reading the stream is stalling, so we are
-    // not always able to read the full stream for the test to make sense
-    // Disabling for now. Look at readl_all() implementation.. maybe that
-    // is where the fault is?
-    xit('detects the MIME type of a read stream', (done) => {
+    it('detects the MIME type of a read stream', (done) => {
       const contents = fs.readFileSync('../../storage-node_new.svg');
       create_known_object('foobar', contents, (store, hash) => {
         store.open('foobar', 'r')
-          .then((stream) => {
-            const data = read_all(stream);
+          .then(async (stream) => {
+            const data = await read_all(stream);
             expect(contents.length).to.equal(data.length);
             expect(Buffer.compare(data, contents)).to.equal(0);
             expect(stream).to.have.property('file_info');
@@ -173,8 +166,8 @@ describe('storage/storage', () => {
       const contents = 'test-for-reading';
       create_known_object('foobar', contents, (store, hash) => {
         store.open('foobar', 'r')
-          .then((stream) => {
-            const data = read_all(stream);
+          .then(async (stream) => {
+            const data = await read_all(stream);
             expect(Buffer.compare(data, Buffer.from(contents))).to.equal(0);
 
             expect(stream.file_info).to.have.property('mime_type', 'application/octet-stream');
