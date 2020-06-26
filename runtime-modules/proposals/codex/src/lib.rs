@@ -29,6 +29,7 @@
 //! - [create_add_working_group_leader_opening_proposal](./struct.Module.html#method.create_add_working_group_leader_opening_proposal)
 //! - [create_begin_review_working_group_leader_applications_proposal](./struct.Module.html#method.create_begin_review_working_group_leader_applications_proposal)
 //! - [create_fill_working_group_leader_opening_proposal](./struct.Module.html#method.create_fill_working_group_leader_opening_proposal)
+//! - [create_set_working_group_mint_capacity_proposal](./struct.Module.html#method.create_set_working_group_mint_capacity_proposal)
 //!
 //! ### Proposal implementations of this module
 //! - execute_text_proposal - prints the proposal to the log
@@ -80,6 +81,8 @@ pub use crate::proposal_types::{
 pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 
 // 'Set working group mint capacity' proposal limit
+const WORKING_GROUP_MINT_CAPACITY_MAX_VALUE: u32 = 1_000_000;
+// 'Set content working group mint capacity' proposal limit
 const CONTENT_WORKING_GROUP_MINT_CAPACITY_MAX_VALUE: u32 = 1_000_000;
 // Max allowed value for 'spending' proposal
 const MAX_SPENDING_PROPOSAL_VALUE: u32 = 2_000_000_u32;
@@ -229,8 +232,11 @@ decl_error! {
         /// Invalid council election parameter - announcing_period
         InvalidCouncilElectionParameterAnnouncingPeriod,
 
+        /// Invalid content working group mint capacity parameter
+        InvalidContentWorkingGroupMintCapacity,
+
         /// Invalid working group mint capacity parameter
-        InvalidStorageWorkingGroupMintCapacity,
+        InvalidWorkingGroupMintCapacity,
 
         /// Invalid 'set lead proposal' parameter - proposed lead cannot be a councilor
         InvalidSetLeadParameterCannotBeCouncilor
@@ -347,6 +353,14 @@ decl_storage! {
 
         /// Grace period for the 'fill working group leader opening' proposal
         pub FillWorkingGroupLeaderOpeningProposalGracePeriod get(fill_working_group_leader_opening_proposal_grace_period) config(): T::BlockNumber;
+
+        /// Voting period for the 'set working group mint capacity' proposal
+        pub SetWorkingGroupMintCapacityProposalVotingPeriod get(set_working_group_mint_capacity_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'set working group mint capacity' proposal
+        pub SetWorkingGroupMintCapacityProposalGracePeriod get(set_working_group_mint_capacity_proposal_grace_period)
+            config(): T::BlockNumber;
     }
 }
 
@@ -460,7 +474,7 @@ decl_module! {
         ) {
             ensure!(
                 mint_balance <= <BalanceOfMint<T>>::from(CONTENT_WORKING_GROUP_MINT_CAPACITY_MAX_VALUE),
-                Error::InvalidStorageWorkingGroupMintCapacity
+                Error::InvalidContentWorkingGroupMintCapacity
             );
 
             let proposal_details = ProposalDetails::SetContentWorkingGroupMintCapacity(mint_balance);
@@ -655,6 +669,38 @@ decl_module! {
                 stake_balance,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::fill_working_group_leader_opening_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
+        }
+
+
+        /// Create 'Set working group mint capacity' proposal type.
+        /// This proposal uses `set_mint_capacity()` extrinsic from the `working-group`  module.
+        pub fn create_set_working_group_mint_capacity_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            mint_balance: BalanceOfMint<T>,
+            working_group: WorkingGroup,
+        ) {
+            ensure!(
+                mint_balance <= <BalanceOfMint<T>>::from(WORKING_GROUP_MINT_CAPACITY_MAX_VALUE),
+                Error::InvalidWorkingGroupMintCapacity
+            );
+
+            let proposal_details = ProposalDetails::SetWorkingGroupMintCapacity(mint_balance, working_group);
+            let params = CreateProposalParameters{
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::set_working_group_mint_capacity_proposal::<T>(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
             };
 
@@ -901,6 +947,12 @@ impl<T: Trait> Module<T> {
         ));
         <FillWorkingGroupLeaderOpeningProposalGracePeriod<T>>::put(T::BlockNumber::from(
             p.fill_working_group_leader_opening_proposal_grace_period,
+        ));
+        <SetWorkingGroupMintCapacityProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.set_working_group_mint_capacity_proposal_voting_period,
+        ));
+        <SetWorkingGroupMintCapacityProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.set_working_group_mint_capacity_proposal_grace_period,
         ));
     } //TODO set defaults for new proposals
 }

@@ -470,7 +470,7 @@ fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
 }
 
 #[test]
-fn create_working_group_mint_capacity_proposal_fails_with_invalid_parameters() {
+fn create_content_working_group_mint_capacity_proposal_fails_with_invalid_parameters() {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance_using_account_id(1, 500000);
 
@@ -483,7 +483,7 @@ fn create_working_group_mint_capacity_proposal_fails_with_invalid_parameters() {
                 Some(<BalanceOf<Test>>::from(50000u32)),
                 (crate::CONTENT_WORKING_GROUP_MINT_CAPACITY_MAX_VALUE + 1) as u64,
             ),
-            Err(Error::InvalidStorageWorkingGroupMintCapacity)
+            Err(Error::InvalidContentWorkingGroupMintCapacity)
         );
     });
 }
@@ -1046,6 +1046,88 @@ fn create_fill_working_group_leader_opening_proposal_common_checks_succeed() {
                 Test,
             >(),
             proposal_details: ProposalDetails::FillWorkingGroupLeaderOpening(fill_opening_parameters.clone()),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_working_group_mint_capacity_proposal_fails_with_invalid_parameters() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 500000);
+
+        assert_eq!(
+            ProposalCodex::create_set_working_group_mint_capacity_proposal(
+                RawOrigin::Signed(1).into(),
+                1,
+                b"title".to_vec(),
+                b"body".to_vec(),
+                Some(<BalanceOf<Test>>::from(50000u32)),
+                (crate::WORKING_GROUP_MINT_CAPACITY_MAX_VALUE + 1) as u64,
+                WorkingGroup::Storage,
+            ),
+            Err(Error::InvalidWorkingGroupMintCapacity)
+        );
+    });
+}
+
+#[test]
+fn create_set_working_group_mint_capacity_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_set_working_group_mint_capacity_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    0,
+                    WorkingGroup::Storage,
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_set_working_group_mint_capacity_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    0,
+                    WorkingGroup::Storage,
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_set_working_group_mint_capacity_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    0,
+                    WorkingGroup::Storage,
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_set_working_group_mint_capacity_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(50000u32)),
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            proposal_parameters:
+                crate::proposal_types::parameters::set_working_group_mint_capacity_proposal::<Test>(
+                ),
+            proposal_details: ProposalDetails::SetWorkingGroupMintCapacity(
+                10,
+                WorkingGroup::Storage,
+            ),
         };
         proposal_fixture.check_all();
     });

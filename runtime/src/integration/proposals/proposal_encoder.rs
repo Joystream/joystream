@@ -5,6 +5,7 @@ use working_group::OpeningType;
 
 use codec::Encode;
 use rstd::collections::btree_set::BTreeSet;
+use rstd::marker::PhantomData;
 use rstd::vec::Vec;
 use srml_support::print;
 
@@ -57,7 +58,7 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::AddWorkingGroupLeaderOpening(add_opening_params) => {
                 let call = match add_opening_params.working_group {
                     WorkingGroup::Storage => {
-                        Call::StorageWorkingGroup(create_add_opening_call(add_opening_params))
+                        Call::StorageWorkingGroup(Wg::create_add_opening_call(add_opening_params))
                     }
                 };
 
@@ -68,9 +69,9 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                 working_group,
             ) => {
                 let call = match working_group {
-                    WorkingGroup::Storage => {
-                        Call::StorageWorkingGroup(create_begin_review_applications_call(opening_id))
-                    }
+                    WorkingGroup::Storage => Call::StorageWorkingGroup(
+                        Wg::create_begin_review_applications_call(opening_id),
+                    ),
                 };
 
                 call.encode()
@@ -78,7 +79,16 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::FillWorkingGroupLeaderOpening(fill_opening_params) => {
                 let call = match fill_opening_params.working_group {
                     WorkingGroup::Storage => {
-                        Call::StorageWorkingGroup(create_fill_opening_call(fill_opening_params))
+                        Call::StorageWorkingGroup(Wg::create_fill_opening_call(fill_opening_params))
+                    }
+                };
+
+                call.encode()
+            }
+            ProposalDetails::SetWorkingGroupMintCapacity(mint_balance, working_group) => {
+                let call = match working_group {
+                    WorkingGroup::Storage => {
+                        Call::StorageWorkingGroup(Wg::create_set_mint_capacity_call(mint_balance))
                     }
                 };
 
@@ -88,43 +98,62 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
     }
 }
 
-// Generic call constructor for the add working group opening.
-fn create_add_opening_call<T: working_group::Trait<I>, I: working_group::Instance>(
-    add_opening_params: proposals_codex::AddOpeningParameters<
-        T::BlockNumber,
-        working_group::BalanceOf<T>,
-    >,
-) -> working_group::Call<T, I> {
-    working_group::Call::<T, I>::add_opening(
-        add_opening_params.activate_at,
-        add_opening_params.commitment,
-        add_opening_params.human_readable_text,
-        OpeningType::Leader,
-    )
+// Working group calls container. It helps to instantiate proper working group instance for calls.
+struct Wg<T, I> {
+    phantom_module: PhantomData<T>,
+    phantom_instance: PhantomData<I>,
 }
 
-// Generic call constructor for the begin review working group applications.
-fn create_begin_review_applications_call<T: working_group::Trait<I>, I: working_group::Instance>(
-    opening_id: working_group::OpeningId<T>,
-) -> working_group::Call<T, I> {
-    working_group::Call::<T, I>::begin_applicant_review(opening_id)
-}
+impl<T, I> Wg<T, I>
+where
+    T: working_group::Trait<I>,
+    I: working_group::Instance,
+{
+    // Generic call constructor for the add working group opening.
+    fn create_add_opening_call(
+        add_opening_params: proposals_codex::AddOpeningParameters<
+            T::BlockNumber,
+            working_group::BalanceOf<T>,
+        >,
+    ) -> working_group::Call<T, I> {
+        working_group::Call::<T, I>::add_opening(
+            add_opening_params.activate_at,
+            add_opening_params.commitment,
+            add_opening_params.human_readable_text,
+            OpeningType::Leader,
+        )
+    }
 
-// Generic call constructor for the add working group opening.
-fn create_fill_opening_call<T: working_group::Trait<I>, I: working_group::Instance>(
-    fill_opening_params: proposals_codex::FillOpeningParameters<
-        T::BlockNumber,
-        minting::BalanceOf<T>,
-        working_group::OpeningId<T>,
-        working_group::ApplicationId<T>,
-    >,
-) -> working_group::Call<T, I> {
-    let mut successful_application_ids = BTreeSet::new();
-    successful_application_ids.insert(fill_opening_params.successful_application_id);
+    // Generic call constructor for the begin review working group applications.
+    fn create_begin_review_applications_call(
+        opening_id: working_group::OpeningId<T>,
+    ) -> working_group::Call<T, I> {
+        working_group::Call::<T, I>::begin_applicant_review(opening_id)
+    }
 
-    working_group::Call::<T, I>::fill_opening(
-        fill_opening_params.opening_id,
-        successful_application_ids,
-        fill_opening_params.reward_policy,
-    )
+    // Generic call constructor for the add working group opening.
+    fn create_fill_opening_call(
+        fill_opening_params: proposals_codex::FillOpeningParameters<
+            T::BlockNumber,
+            minting::BalanceOf<T>,
+            working_group::OpeningId<T>,
+            working_group::ApplicationId<T>,
+        >,
+    ) -> working_group::Call<T, I> {
+        let mut successful_application_ids = BTreeSet::new();
+        successful_application_ids.insert(fill_opening_params.successful_application_id);
+
+        working_group::Call::<T, I>::fill_opening(
+            fill_opening_params.opening_id,
+            successful_application_ids,
+            fill_opening_params.reward_policy,
+        )
+    }
+
+    // Generic call constructor for the working group  'set mit capacity'.
+    fn create_set_mint_capacity_call(
+        mint_balance: working_group::BalanceOfMint<T>,
+    ) -> working_group::Call<T, I> {
+        working_group::Call::<T, I>::set_mint_capacity(mint_balance)
+    }
 }

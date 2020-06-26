@@ -80,6 +80,9 @@ pub enum ProposalDetails<
     FillWorkingGroupLeaderOpening(
         FillOpeningParameters<BlockNumber, MintedBalance, OpeningId, ApplicationId>,
     ),
+
+    /// Balance for the `set working group mint capacity` proposal
+    SetWorkingGroupMintCapacity(MintedBalance, WorkingGroup),
 }
 
 impl<
@@ -240,6 +243,12 @@ pub struct ProposalsConfigParameters {
 
     /// 'Fill working group leader opening' proposal grace period
     pub fill_working_group_leader_opening_proposal_grace_period: u32,
+
+    /// 'Set working group mint capacity' proposal voting period
+    pub set_working_group_mint_capacity_proposal_voting_period: u32,
+
+    /// 'Set working group mint capacity' proposal grace period
+    pub set_working_group_mint_capacity_proposal_grace_period: u32,
 }
 impl Default for ProposalsConfigParameters {
     fn default() -> Self {
@@ -264,6 +273,8 @@ impl Default for ProposalsConfigParameters {
             begin_review_working_group_leader_applications_proposal_grace_period: 14400u32,
             fill_working_group_leader_opening_proposal_voting_period: 43200u32,
             fill_working_group_leader_opening_proposal_grace_period: 0u32,
+            set_working_group_mint_capacity_proposal_voting_period: 43200u32,
+            set_working_group_mint_capacity_proposal_grace_period: 0u32,
         }
     }
 }
