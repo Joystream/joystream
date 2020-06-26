@@ -295,13 +295,18 @@ export class CuratorApplication extends JoyStruct<ICuratorApplication> {
     return this.getField<GenericAccountId>('role_account')
   }
 
+  // Helper for working-group compatibility
+  get role_account_id(): GenericAccountId {
+    return this.role_account;
+  }
+
   get curator_opening_id(): CuratorOpeningId {
     return this.getField<CuratorOpeningId>('curator_opening_id')
   }
 
   // Helper for working-group compatibility
   get opening_id(): CuratorOpeningId {
-    return this.opening_id;
+    return this.curator_opening_id;
   }
 
   get member_id(): MemberId {

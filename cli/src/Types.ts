@@ -7,7 +7,7 @@ import { u32 } from '@polkadot/types/primitive';
 import { BlockNumber, Balance, AccountId } from '@polkadot/types/interfaces';
 import { DerivedBalances } from '@polkadot/api-derive/types';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { WorkerId, Lead } from '@joystream/types/lib/working-group';
+import { WorkerId } from '@joystream/types/lib/working-group';
 import { Profile, MemberId } from '@joystream/types/lib/members';
 import {
     GenericJoyStreamRoleSchema,
@@ -93,11 +93,6 @@ export const AvailableGroups: readonly WorkingGroups[] = [
 ] as const;
 
 // Compound working group types
-export type GroupLeadWithProfile = {
-    lead: Lead;
-    profile: Profile;
-}
-
 export type GroupMember = {
     workerId: WorkerId;
     memberId: MemberId;

@@ -12,7 +12,6 @@ import {
     AccountSummary,
     CouncilInfoObj, CouncilInfoTuple, createCouncilInfoObj,
     WorkingGroups,
-    GroupLeadWithProfile,
     GroupMember,
     OpeningStatus,
     GroupOpeningStage,
@@ -24,7 +23,6 @@ import { CLIError } from '@oclif/errors';
 import ExitCodes from './ExitCodes';
 import {
     Worker, WorkerId,
-    Lead as WGLead,
     RoleStakeProfile,
     Opening as WGOpening,
     Application as WGApplication
@@ -204,21 +202,23 @@ export default class Api {
         return profile.unwrapOr(null);
     }
 
-    async groupLead(group: WorkingGroups): Promise<GroupLeadWithProfile | null> {
-        const optLead = (await this.workingGroupApiQuery(group).currentLead()) as Option<WGLead>;
+    async groupLead(group: WorkingGroups): Promise<GroupMember | null> {
+        const optLeadId = (await this.workingGroupApiQuery(group).currentLead()) as Option<WorkerId>;
 
-        if (!optLead.isSome) {
+        if (!optLeadId.isSome) {
             return null;
         }
 
-        const lead = optLead.unwrap();
-        const profile = await this.memberProfileById(lead.member_id);
+        const leadWorkerId = optLeadId.unwrap();
+        const leadWorker = this.singleLinkageResult<Worker>(
+            await this.workingGroupApiQuery(group).workerById(leadWorkerId) as LinkageResult
+        );
 
-        if (!profile) {
-            throw new Error(`Group lead profile not found! (member id: ${lead.member_id.toNumber()})`);
+        if (!leadWorker.is_active) {
+            return null;
         }
 
-        return { lead, profile };
+        return await this.groupMember(leadWorkerId, leadWorker);
     }
 
     protected async stakeValue(stakeId: StakeId): Promise<Balance> {
@@ -228,7 +228,7 @@ export default class Api {
         return stake.value;
     }
 
-    protected async workerStake(stakeProfile: RoleStakeProfile): Promise<Balance> {
+    protected async workerStake (stakeProfile: RoleStakeProfile): Promise<Balance> {
         return this.stakeValue(stakeProfile.stake_id);
     }
 
