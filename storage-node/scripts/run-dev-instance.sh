@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -e
 
+# Avoid pulling joystream/node from docker hub. It is most likely
+# not the version that we want to work with. Either you should
+# build it locally or pull it down manually if you that is what you want
+if ! docker inspect joystream/node:latest > /dev/null 2>&1;
+then
+  echo "Didn't find local joystream/node:latest docker image."
+  exit 1
+fi
+
 script_path="$(dirname "${BASH_SOURCE[0]}")"
 
 # stop prior run and clear volumes
