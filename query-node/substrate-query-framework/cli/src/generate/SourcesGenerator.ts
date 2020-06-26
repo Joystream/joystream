@@ -10,7 +10,6 @@ import { EnumRenderer } from './EnumRenderer';
 import { kebabCase } from './utils';
 import { ConfigProvider } from './ConfigProvider';
 import { EnumContextProvider } from './EnumContextProvider';
-import { InterfacesRenderer } from './InterfacesRenderer';
 
 const debug = Debug('qnode-cli:sources-generator');
 
@@ -52,20 +51,19 @@ export class SourcesGenerator {
     typesAndInterfaces.map(objType => {
       const context = this.config.withGeneratedFolderRelPath(objType.name);
       const modelRenderer = new ModelRenderer(this.model, objType, enumContextProvider, context);
-
-      const render = (template: string) => modelRenderer.render(template);
-
       const destFolder = this.config.getDestFolder(objType.name);
       createDir(path.resolve(process.cwd(), destFolder), false, true);
 
-      const toGenerate = objType.isInterface ? ['model'] : ['model', 'resolver', 'service'];
+      const tempateFile: { [key: string]: string } = {
+        model: 'entities/model.ts.mst',
+        resolver: objType.isInterface ? 'interfaces/resolver.ts.mst' : 'entities/resolver.ts.mst',
+        service: objType.isInterface ? 'interfaces/service.ts.mst' : 'entities/service.ts.mst',
+      };
 
-      toGenerate.map(template => {
-        this.renderAndWrite(
-          `entities/${template}.ts.mst`,
-          path.join(destFolder, `${kebabCase(objType.name)}.${template}.ts`),
-          render
-        );
+      ['model', 'resolver', 'service'].map(template => {
+        const rendered = modelRenderer.render(this.readTemplate(tempateFile[template]));
+        const destPath = path.join(destFolder, `${kebabCase(objType.name)}.${template}.ts`);
+        this.writeFile(destPath, rendered);
       });
     });
   }
@@ -86,31 +84,17 @@ export class SourcesGenerator {
     const queryRenderer = new FTSQueryRenderer();
 
     this.model.ftsQueries.map(query => {
-      const render = (template: string) => queryRenderer.generate(template, query);
-      const filePrefix = kebabCase(query.name);
+      //const render = (template: string) => queryRenderer.generate(template, query);
+      //const filePrefix = kebabCase(query.name);
 
-      // migration
-      this.renderAndWrite(
-        'textsearch/migration.ts.mst',
-        path.join(migrationsDir, `${filePrefix}.migration.ts`),
-        render
-      );
+      const tempateFile = (name: string) => this.readTemplate(`textsearch/${name}.ts.mst`);
+      const destPath = (name: string) => path.join(ftsDir, `${kebabCase(query.name)}.${name}.ts`);
 
-      // resolver
-      this.renderAndWrite('textsearch/resolver.ts.mst', path.join(ftsDir, `${filePrefix}.resolver.ts`), render);
-
-      // service
-      this.renderAndWrite('textsearch/service.ts.mst', path.join(ftsDir, `${filePrefix}.service.ts`), render);
+      ['migration', 'resolver', 'service'].map(name => {
+        const rendered = queryRenderer.generate(tempateFile(name), query);
+        this.writeFile(destPath(name), rendered);
+      });
     });
-  }
-
-  genearateInterfaces(): void {
-    const interfacesDir = this.config.getDestFolder(ENUMS_FOLDER);
-    createDir(path.resolve(process.cwd(), interfacesDir), false, true);
-
-    const interfacesRenderer = new InterfacesRenderer(this.model);
-    const render = (template: string) => interfacesRenderer.render(template);
-    this.renderAndWrite('entities/interfaces.ts.mst', path.join(interfacesDir, `interfaces.ts`), render);
   }
 
   generateEnums(): void {
@@ -118,8 +102,8 @@ export class SourcesGenerator {
     createDir(path.resolve(process.cwd(), enumsDir), false, true);
 
     const enumRenderer = new EnumRenderer(this.model);
-    const render = (template: string) => enumRenderer.render(template);
-    this.renderAndWrite('entities/enums.ts.mst', path.join(enumsDir, `enums.ts`), render);
+    const rendered = enumRenderer.render(this.readTemplate('entities/enums.ts.mst'));
+    this.writeFile(path.join(enumsDir, `enums.ts`), rendered);
   }
 
   /**
@@ -138,5 +122,17 @@ export class SourcesGenerator {
 
     debug(`Writing to: ${destFullPath}`);
     createFile(destFullPath, rendered, true);
+  }
+
+  private readTemplate(relPath: string) {
+    debug(`Reading template: ${relPath}`);
+    return fs.readFileSync(getTemplatePath(relPath), 'utf-8');
+  }
+
+  private writeFile(destPath: string, data: string) {
+    const destFullPath = path.resolve(process.cwd(), destPath);
+
+    debug(`Writing to: ${destFullPath}`);
+    createFile(destFullPath, data, true);
   }
 }

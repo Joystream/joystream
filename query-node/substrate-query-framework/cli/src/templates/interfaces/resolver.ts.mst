@@ -26,4 +26,5 @@ export class {{className}}Resolver {
     return this.service.find<{{className}}WhereInput>(where, orderBy, limit, offset, fields);
   }
 
+  
 }
