@@ -3,6 +3,14 @@ import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
 import { ActorInRole, IProfile, EntryMethod } from '@joystream/types/members';
 
+import {
+  AcceptingApplications,
+  ActiveOpeningStage,
+  OpeningStage,
+  ActiveOpeningStageVariant,
+  ApplicationId
+} from '@joystream/types/hiring';
+
 export function mockProfile (name: string, avatar_uri = ''): IProfile {
   return {
     handle: new Text(name),
@@ -18,3 +26,15 @@ export function mockProfile (name: string, avatar_uri = ''): IProfile {
     roles: new Vec<ActorInRole>(ActorInRole)
   };
 }
+
+export const mockStage = new OpeningStage({'Active': new ActiveOpeningStageVariant({
+  applications_added: new (Vec.with(ApplicationId))([]),
+  active_application_count: new u32(0),
+  unstaking_application_count: new u32(0),
+  deactivated_application_count: new u32(0),
+  stage: new ActiveOpeningStage({
+    'AcceptingApplications': new AcceptingApplications({
+      started_accepting_applicants_at_block: new u32(100)
+    })
+  })
+})});

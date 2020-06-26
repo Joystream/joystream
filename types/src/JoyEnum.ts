@@ -11,7 +11,7 @@ export interface ExtendedEnum<Types extends Record<string, Constructor>> extends
 export function JoyEnum<Types extends Record<string, Constructor>>(types: Types): EnumConstructor<ExtendedEnum<Types>>
 {
   return class extends Enum {
-    constructor(value?: InstanceType<Types[keyof Types]>, index?: number) {
+    constructor(value?: any, index?: number) {
       super(types, value, index);
     }
     public isOfType(typeKey: keyof Types) {

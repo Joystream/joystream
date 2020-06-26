@@ -9,8 +9,6 @@ import { ITransport } from './transport';
 import { Role, MemberId } from '@joystream/types/members';
 import {
   Opening,
-  AcceptingApplications,
-  ActiveOpeningStage,
   ApplicationRationingPolicy,
   StakingPolicy
 } from '@joystream/types/hiring';
@@ -26,7 +24,7 @@ import { tomorrow, yesterday, newMockHumanReadableText } from './tabs/Opportunit
 import { OpeningState } from './classifiers';
 
 import * as faker from 'faker';
-import { mockProfile } from './mocks';
+import { mockProfile, mockStage } from './mocks';
 import { WorkingGroups } from './working_groups';
 
 export class Transport extends TransportBase implements ITransport {
@@ -137,11 +135,7 @@ export class Transport extends TransportBase implements ITransport {
         {
           opening: new Opening({
             created: new u32(50000),
-            stage: new ActiveOpeningStage({
-              acceptingApplications: new AcceptingApplications({
-                started_accepting_applicants_at_block: new u32(100)
-              })
-            }),
+            stage: mockStage,
             max_review_period_length: new u32(100),
             application_rationing_policy: new Option(ApplicationRationingPolicy),
             application_staking_policy: new Option(StakingPolicy),
@@ -217,11 +211,7 @@ export class Transport extends TransportBase implements ITransport {
       {
         opening: new Opening({
           created: new u32(50000),
-          stage: new ActiveOpeningStage({
-            acceptingApplications: new AcceptingApplications({
-              started_accepting_applicants_at_block: new u32(100)
-            })
-          }),
+          stage: mockStage,
           max_review_period_length: new u32(100),
           application_rationing_policy: new Option(ApplicationRationingPolicy),
           application_staking_policy: new Option(StakingPolicy),
@@ -365,11 +355,7 @@ export class Transport extends TransportBase implements ITransport {
       },
       opening: new Opening({
         created: new u32(50000),
-        stage: new ActiveOpeningStage({
-          acceptingApplications: new AcceptingApplications({
-            started_accepting_applicants_at_block: new u32(100)
-          })
-        }),
+        stage: mockStage,
         max_review_period_length: new u32(100),
         application_rationing_policy: new Option(ApplicationRationingPolicy),
         application_staking_policy: new Option(StakingPolicy),
