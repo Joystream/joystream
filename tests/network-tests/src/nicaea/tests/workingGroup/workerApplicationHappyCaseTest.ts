@@ -9,11 +9,14 @@ import { setTestTimeout } from '../../utils/setTestTimeout';
 import { membershipTest } from '../impl/membershipCreation';
 import {
   addWorkerOpening,
-  applyForWorkerOpening,
+  applyForOpening,
   beginApplicationReview,
-  fillWorkerOpening,
-  setLead,
-  withdrawWorkerApplicaiton,
+  fillOpening,
+  withdrawApplicaiton,
+  addLeaderOpening,
+  beginLeaderApplicationReview,
+  fillLeaderOpening,
+  leaveRole,
 } from './impl/workingGroupModule';
 import BN from 'bn.js';
 
@@ -31,7 +34,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const applicationStake: BN = new BN(process.env.WORKING_GROUP_APPLICATION_STAKE!);
   const roleStake: BN = new BN(process.env.WORKING_GROUP_ROLE_STAKE!);
-  const durationInBlocks: number = 28;
+  const durationInBlocks: number = 48;
   const openingActivationDelay: BN = new BN(0);
 
   const provider = new WsProvider(nodeUrl);
@@ -40,14 +43,33 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
 
   setTestTimeout(apiWrapper, durationInBlocks);
   membershipTest(apiWrapper, nKeyPairs, keyring, N, paidTerms, sudoUri);
-  membershipTest(apiWrapper, leadKeyPair, keyring, N, paidTerms, sudoUri);
+  membershipTest(apiWrapper, leadKeyPair, keyring, 1, paidTerms, sudoUri);
 
-  tap.test('Set lead', async () => setLead(apiWrapper, leadKeyPair[0], sudo));
-  let openignId: BN;
+  let leadOpenignId: BN;
+  tap.test(
+    'Add lead opening',
+    async () =>
+      (leadOpenignId = await addLeaderOpening(
+        apiWrapper,
+        nKeyPairs,
+        sudo,
+        applicationStake,
+        roleStake,
+        openingActivationDelay
+      ))
+  );
+  tap.test(
+    'Apply for lead opening',
+    async () => await applyForOpening(apiWrapper, leadKeyPair, sudo, applicationStake, roleStake, leadOpenignId, false)
+  );
+  tap.test('Begin lead application review', async () => beginLeaderApplicationReview(apiWrapper, sudo, leadOpenignId));
+  tap.test('Fill lead opening', async () => fillLeaderOpening(apiWrapper, leadKeyPair, sudo, leadOpenignId));
+
+  let workerOpenignId: BN;
   tap.test(
     'Add worker opening',
     async () =>
-      (openignId = await addWorkerOpening(
+      (workerOpenignId = await addWorkerOpening(
         apiWrapper,
         nKeyPairs,
         leadKeyPair[0],
@@ -58,16 +80,19 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       ))
   );
   tap.test('Apply for worker opening', async () =>
-    applyForWorkerOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, openignId, false)
+    applyForOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, workerOpenignId, false)
   );
-  tap.test('Withdraw worker application', async () => withdrawWorkerApplicaiton(apiWrapper, nKeyPairs, sudo));
+  tap.test('Withdraw worker application', async () => withdrawApplicaiton(apiWrapper, nKeyPairs, sudo));
   tap.test('Apply for worker opening', async () =>
-    applyForWorkerOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, openignId, false)
+    applyForOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, workerOpenignId, false)
   );
-  tap.test('Begin application review', async () => beginApplicationReview(apiWrapper, leadKeyPair[0], sudo, openignId));
+  tap.test('Begin application review', async () =>
+    beginApplicationReview(apiWrapper, leadKeyPair[0], sudo, workerOpenignId)
+  );
   tap.test('Fill worker opening', async () =>
-    fillWorkerOpening(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, openignId)
+    fillOpening(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, workerOpenignId)
   );
+  tap.test('Leaving lead role', async () => leaveRole(apiWrapper, leadKeyPair, sudo));
 
   closeApi(apiWrapper);
 });

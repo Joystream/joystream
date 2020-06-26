@@ -2,7 +2,6 @@ import BN from 'bn.js';
 import { assert } from 'chai';
 import { ApiWrapper } from '../../../utils/apiWrapper';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { WorkerOpening } from '@nicaea/types/lib/working-group';
 import { Keyring } from '@polkadot/api';
 import { v4 as uuid } from 'uuid';
 
@@ -23,18 +22,18 @@ export async function addWorkerOpening(
   roleStake: BN,
   activationDelay: BN
 ): Promise<BN> {
-  let workerOpeningId: BN;
+  let openingId: BN;
 
   // Fee estimation and transfer
-  const addWorkerOpeningFee: BN = apiWrapper.estimateAddWorkerOpeningFee();
-  await apiWrapper.transferBalance(sudo, lead.address, addWorkerOpeningFee);
+  const addOpeningFee: BN = apiWrapper.estimateAddOpeningFee();
+  await apiWrapper.transferBalance(sudo, lead.address, addOpeningFee);
 
   // Worker opening creation
-  workerOpeningId = await apiWrapper.getNextWorkerOpeningId();
+  openingId = await apiWrapper.getNextOpeningId();
   const activateAtBlock: BN | undefined = activationDelay.eqn(0)
     ? undefined
     : (await apiWrapper.getBestBlock()).add(activationDelay);
-  await apiWrapper.addWorkerOpening(
+  await apiWrapper.addOpening(
     activateAtBlock,
     lead,
     new BN(membersKeyPairs.length),
@@ -54,33 +53,71 @@ export async function addWorkerOpening(
     new BN(1),
     new BN(1),
     new BN(1),
-    uuid().substring(0, 8)
+    uuid().substring(0, 8),
+    'Worker'
   );
 
-  return workerOpeningId;
+  return openingId;
 }
 
-export async function acceptWorkerApplications(
-  apiWrapper: ApiWrapper,
-  lead: KeyringPair,
-  sudo: KeyringPair,
-  workerOpeningId: BN
-) {
-  // Fee estimation and transfer
-  const acceptWorkerApplicationsFee = apiWrapper.estimateAcceptWorkerApplicationsFee();
-  await apiWrapper.transferBalance(sudo, lead.address, acceptWorkerApplicationsFee);
-
-  // Begin accepting applications
-  await apiWrapper.acceptWorkerApplications(lead, workerOpeningId);
-}
-
-export async function applyForWorkerOpening(
+export async function addLeaderOpening(
   apiWrapper: ApiWrapper,
   membersKeyPairs: KeyringPair[],
   sudo: KeyringPair,
   applicationStake: BN,
   roleStake: BN,
-  workerOpeningId: BN,
+  activationDelay: BN
+): Promise<BN> {
+  let openingId: BN;
+
+  // Leader opening creation
+  openingId = await apiWrapper.getNextOpeningId();
+  const activateAtBlock: BN | undefined = activationDelay.eqn(0)
+    ? undefined
+    : (await apiWrapper.getBestBlock()).add(activationDelay);
+  await apiWrapper.sudoAddOpening(
+    activateAtBlock,
+    sudo,
+    new BN(membersKeyPairs.length),
+    new BN(32),
+    new BN(applicationStake),
+    new BN(0),
+    new BN(0),
+    new BN(roleStake),
+    new BN(0),
+    new BN(0),
+    new BN(1),
+    new BN(100),
+    new BN(1),
+    new BN(1),
+    new BN(1),
+    new BN(1),
+    new BN(1),
+    new BN(1),
+    new BN(1),
+    uuid().substring(0, 8),
+    'Leader'
+  );
+
+  return openingId;
+}
+
+export async function acceptApplications(apiWrapper: ApiWrapper, lead: KeyringPair, sudo: KeyringPair, openingId: BN) {
+  // Fee estimation and transfer
+  const acceptApplicationsFee = apiWrapper.estimateAcceptApplicationsFee();
+  await apiWrapper.transferBalance(sudo, lead.address, acceptApplicationsFee);
+
+  // Begin accepting applications
+  await apiWrapper.acceptApplications(lead, openingId);
+}
+
+export async function applyForOpening(
+  apiWrapper: ApiWrapper,
+  membersKeyPairs: KeyringPair[],
+  sudo: KeyringPair,
+  applicationStake: BN,
+  roleStake: BN,
+  openingId: BN,
   expectFailure: boolean
 ): Promise<BN> {
   let nextApplicationId: BN;
@@ -91,9 +128,9 @@ export async function applyForWorkerOpening(
 
   // Applying for created worker opening
   nextApplicationId = await apiWrapper.getNextApplicationId();
-  await apiWrapper.batchApplyOnWorkerOpening(
+  await apiWrapper.batchApplyOnOpening(
     membersKeyPairs,
-    workerOpeningId,
+    openingId,
     roleStake,
     applicationStake,
     uuid().substring(0, 8),
@@ -103,21 +140,17 @@ export async function applyForWorkerOpening(
   return nextApplicationId;
 }
 
-export async function withdrawWorkerApplicaiton(
-  apiWrapper: ApiWrapper,
-  membersKeyPairs: KeyringPair[],
-  sudo: KeyringPair
-) {
+export async function withdrawApplicaiton(apiWrapper: ApiWrapper, membersKeyPairs: KeyringPair[], sudo: KeyringPair) {
   // Fee estimation and transfer
-  const withdrawApplicaitonFee: BN = apiWrapper.estimateWithdrawWorkerApplicationFee();
+  const withdrawApplicaitonFee: BN = apiWrapper.estimateWithdrawApplicationFee();
   await apiWrapper.transferBalanceToAccounts(sudo, membersKeyPairs, withdrawApplicaitonFee);
 
   // Application withdrawal
-  await apiWrapper.batchWithdrawWorkerApplication(membersKeyPairs);
+  await apiWrapper.batchWithdrawApplication(membersKeyPairs);
 
   // Assertions
   membersKeyPairs.forEach(async keyPair => {
-    const activeApplications: BN[] = await apiWrapper.getActiveWorkerApplicationsIdsByRoleAccount(keyPair.address);
+    const activeApplications: BN[] = await apiWrapper.getActiveApplicationsIdsByRoleAccount(keyPair.address);
     assert(activeApplications.length === 0, `Unexpected active application found for ${keyPair.address}`);
   });
 }
@@ -126,62 +159,83 @@ export async function beginApplicationReview(
   apiWrapper: ApiWrapper,
   lead: KeyringPair,
   sudo: KeyringPair,
-  workerOpeningId: BN
+  openingId: BN
 ) {
   // Fee estimation and transfer
-  const beginReviewFee: BN = apiWrapper.estimateBeginWorkerApplicantReviewFee();
+  const beginReviewFee: BN = apiWrapper.estimateBeginApplicantReviewFee();
   await apiWrapper.transferBalance(sudo, lead.address, beginReviewFee);
 
   // Begin application review
-  await apiWrapper.beginWorkerApplicationReview(lead, workerOpeningId);
+  await apiWrapper.beginApplicantReview(lead, openingId);
 }
 
-export async function fillWorkerOpening(
+export async function beginLeaderApplicationReview(apiWrapper: ApiWrapper, sudo: KeyringPair, openingId: BN) {
+  // Begin application review
+  await apiWrapper.sudoBeginApplicantReview(sudo, openingId);
+}
+
+export async function fillOpening(
   apiWrapper: ApiWrapper,
   membersKeyPairs: KeyringPair[],
   lead: KeyringPair,
   sudo: KeyringPair,
-  workerOpeningId: BN
+  openingId: BN
 ) {
   // Fee estimation and transfer
-  const beginReviewFee: BN = apiWrapper.estimateBeginWorkerApplicantReviewFee();
+  const beginReviewFee: BN = apiWrapper.estimateBeginApplicantReviewFee();
   await apiWrapper.transferBalance(sudo, lead.address, beginReviewFee);
   const applicationIds: BN[] = (
     await Promise.all(
-      membersKeyPairs.map(async keypair => apiWrapper.getActiveWorkerApplicationsIdsByRoleAccount(keypair.address))
+      membersKeyPairs.map(async keypair => apiWrapper.getActiveApplicationsIdsByRoleAccount(keypair.address))
     )
   ).flat();
 
   // Fill worker opening
-  await apiWrapper.fillWorkerOpening(
-    lead,
-    workerOpeningId,
-    applicationIds,
-    new BN(1),
-    new BN(99999999),
-    new BN(99999999)
-  );
+  await apiWrapper.fillOpening(lead, openingId, applicationIds, new BN(1), new BN(99999999), new BN(99999999));
 
   // Assertions
-  const workerOpening: WorkerOpening = await apiWrapper.getWorkerOpening(workerOpeningId);
   const openingWorkersAccounts: string[] = (await apiWrapper.getWorkers()).map(worker =>
-    worker.role_account.toString()
+    worker.role_account_id.toString()
   );
   membersKeyPairs.forEach(keyPair =>
     assert(openingWorkersAccounts.includes(keyPair.address), `Account ${keyPair.address} is not worker`)
   );
 }
 
-export async function increaseWorkerStake(apiWrapper: ApiWrapper, membersKeyPairs: KeyringPair[], sudo: KeyringPair) {
+export async function fillLeaderOpening(
+  apiWrapper: ApiWrapper,
+  membersKeyPairs: KeyringPair[],
+  sudo: KeyringPair,
+  openingId: BN
+) {
+  const applicationIds: BN[] = (
+    await Promise.all(
+      membersKeyPairs.map(async keypair => apiWrapper.getActiveApplicationsIdsByRoleAccount(keypair.address))
+    )
+  ).flat();
+
+  // Fill worker opening
+  await apiWrapper.sudoFillOpening(sudo, openingId, applicationIds, new BN(1), new BN(99999999), new BN(99999999));
+
+  // Assertions
+  const openingWorkersAccounts: string[] = (await apiWrapper.getWorkers()).map(worker =>
+    worker.role_account_id.toString()
+  );
+  membersKeyPairs.forEach(keyPair =>
+    assert(openingWorkersAccounts.includes(keyPair.address), `Account ${keyPair.address} is not leader`)
+  );
+}
+
+export async function increaseStake(apiWrapper: ApiWrapper, membersKeyPairs: KeyringPair[], sudo: KeyringPair) {
   // Fee estimation and transfer
-  const increaseStakeFee: BN = apiWrapper.estimateIncreaseWorkerStakeFee();
+  const increaseStakeFee: BN = apiWrapper.estimateIncreaseStakeFee();
   const stakeIncrement: BN = new BN(1);
   await apiWrapper.transferBalance(sudo, membersKeyPairs[0].address, increaseStakeFee.add(stakeIncrement));
   const workerId: BN = await apiWrapper.getWorkerIdByRoleAccount(membersKeyPairs[0].address);
 
   // Increase worker stake
   const increasedWorkerStake: BN = (await apiWrapper.getWorkerStakeAmount(workerId)).add(stakeIncrement);
-  await apiWrapper.increaseWorkerStake(membersKeyPairs[0], workerId, stakeIncrement);
+  await apiWrapper.increaseStake(membersKeyPairs[0], workerId, stakeIncrement);
   const newWorkerStake: BN = await apiWrapper.getWorkerStakeAmount(workerId);
   assert(
     increasedWorkerStake.eq(newWorkerStake),
@@ -224,7 +278,7 @@ export async function updateRoleAccount(
   // Update role account
   const createdAccount: KeyringPair = keyring.addFromUri(uuid().substring(0, 8));
   await apiWrapper.updateRoleAccount(membersKeyPairs[0], workerId, createdAccount.address);
-  const newRoleAccount: string = (await apiWrapper.getWorker(workerId)).role_account.toString();
+  const newRoleAccount: string = (await apiWrapper.getWorker(workerId)).role_account_id.toString();
   assert(
     newRoleAccount === createdAccount.address,
     `Unexpected role account ${newRoleAccount}, expected ${createdAccount.address}`
@@ -233,21 +287,21 @@ export async function updateRoleAccount(
   membersKeyPairs[0] = createdAccount;
 }
 
-export async function terminateWorkerApplications(
+export async function terminateApplications(
   apiWrapper: ApiWrapper,
   membersKeyPairs: KeyringPair[],
   lead: KeyringPair,
   sudo: KeyringPair
 ) {
   // Fee estimation and transfer
-  const terminateWorkerApplicationFee = apiWrapper.estimateTerminateWorkerApplicationFee();
-  await apiWrapper.transferBalance(sudo, lead.address, terminateWorkerApplicationFee.muln(membersKeyPairs.length));
+  const terminateApplicationFee = apiWrapper.estimateTerminateApplicationFee();
+  await apiWrapper.transferBalance(sudo, lead.address, terminateApplicationFee.muln(membersKeyPairs.length));
 
   // Terminate worker applications
-  await apiWrapper.batchTerminateWorkerApplication(lead, membersKeyPairs);
+  await apiWrapper.batchTerminateApplication(lead, membersKeyPairs);
 }
 
-export async function decreaseWorkerStake(
+export async function decreaseStake(
   apiWrapper: ApiWrapper,
   membersKeyPairs: KeyringPair[],
   lead: KeyringPair,
@@ -255,14 +309,14 @@ export async function decreaseWorkerStake(
   expectFailure: boolean
 ) {
   // Fee estimation and transfer
-  const decreaseWorkerStakeFee = apiWrapper.estimateDecreaseWorkerStakeFee();
-  await apiWrapper.transferBalance(sudo, lead.address, decreaseWorkerStakeFee);
+  const decreaseStakeFee = apiWrapper.estimateDecreaseStakeFee();
+  await apiWrapper.transferBalance(sudo, lead.address, decreaseStakeFee);
   const workerStakeDecrement = new BN(1);
   const workerId: BN = await apiWrapper.getWorkerIdByRoleAccount(membersKeyPairs[0].address);
 
   // Worker stake decrement
   const decreasedWorkerStake: BN = (await apiWrapper.getWorkerStakeAmount(workerId)).sub(workerStakeDecrement);
-  await apiWrapper.decreaseWorkerStake(lead, workerId, workerStakeDecrement, expectFailure);
+  await apiWrapper.decreaseStake(lead, workerId, workerStakeDecrement, expectFailure);
   const newWorkerStake: BN = await apiWrapper.getWorkerStakeAmount(workerId);
 
   // Assertions
@@ -274,7 +328,7 @@ export async function decreaseWorkerStake(
   }
 }
 
-export async function slashWorker(
+export async function slash(
   apiWrapper: ApiWrapper,
   membersKeyPairs: KeyringPair[],
   lead: KeyringPair,
@@ -282,24 +336,21 @@ export async function slashWorker(
   expectFailure: boolean
 ) {
   // Fee estimation and transfer
-  const slashWorkerStakeFee = apiWrapper.estimateSlashWorkerStakeFee();
-  await apiWrapper.transferBalance(sudo, lead.address, slashWorkerStakeFee);
+  const slashStakeFee = apiWrapper.estimateSlashStakeFee();
+  await apiWrapper.transferBalance(sudo, lead.address, slashStakeFee);
   const slashAmount = new BN(1);
   const workerId: BN = await apiWrapper.getWorkerIdByRoleAccount(membersKeyPairs[0].address);
 
   // Slash worker
-  const slashedWorkerStake: BN = (await apiWrapper.getWorkerStakeAmount(workerId)).sub(slashAmount);
-  await apiWrapper.slashWorkerStake(lead, workerId, slashAmount, expectFailure);
-  const newWorkerStake: BN = await apiWrapper.getWorkerStakeAmount(workerId);
+  const slashedStake: BN = (await apiWrapper.getWorkerStakeAmount(workerId)).sub(slashAmount);
+  await apiWrapper.slashStake(lead, workerId, slashAmount, expectFailure);
+  const newStake: BN = await apiWrapper.getWorkerStakeAmount(workerId);
 
   // Assertions
-  assert(
-    slashedWorkerStake.eq(newWorkerStake),
-    `Unexpected worker stake ${newWorkerStake}, expected ${slashedWorkerStake}`
-  );
+  assert(slashedStake.eq(newStake), `Unexpected worker stake ${newStake}, expected ${slashedStake}`);
 }
 
-export async function terminateWorkerRole(
+export async function terminateRole(
   apiWrapper: ApiWrapper,
   membersKeyPairs: KeyringPair[],
   lead: KeyringPair,
@@ -307,15 +358,23 @@ export async function terminateWorkerRole(
   expectFailure: boolean
 ) {
   // Fee estimation and transfer
-  const terminateWorkerRoleFee = apiWrapper.estimateTerminateWorkerRoleFee();
-  await apiWrapper.transferBalance(sudo, lead.address, terminateWorkerRoleFee);
+  const terminateRoleFee = apiWrapper.estimateTerminateRoleFee();
+  await apiWrapper.transferBalance(sudo, lead.address, terminateRoleFee);
   const workerId: BN = await apiWrapper.getWorkerIdByRoleAccount(membersKeyPairs[0].address);
 
   // Slash worker
-  await apiWrapper.terminateWorkerRole(lead, workerId, uuid().substring(0, 8), expectFailure);
+  await apiWrapper.terminateRole(lead, workerId, uuid().substring(0, 8), expectFailure);
 
   // Assertions
   apiWrapper.getWorkerIdByRoleAccount(membersKeyPairs[0].address);
   const newWorkerId = await apiWrapper.getWorkerIdByRoleAccount(membersKeyPairs[0].address);
   assert(newWorkerId === undefined, `Worker with account ${membersKeyPairs[0].address} is not terminated`);
+}
+
+export async function leaveRole(apiWrapper: ApiWrapper, membersKeyPairs: KeyringPair[], sudo: KeyringPair) {
+  // Fee estimation and transfer
+  const leaveRoleFee = apiWrapper.estimateLeaveRoleFee();
+  await apiWrapper.transferBalanceToAccounts(sudo, membersKeyPairs, leaveRoleFee);
+
+  await apiWrapper.batchLeaveRole(membersKeyPairs, uuid().substring(0, 8), false);
 }

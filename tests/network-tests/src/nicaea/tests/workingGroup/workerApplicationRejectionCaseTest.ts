@@ -9,11 +9,14 @@ import { setTestTimeout } from '../../utils/setTestTimeout';
 import { membershipTest, createKeyPairs } from '../impl/membershipCreation';
 import {
   addWorkerOpening,
-  applyForWorkerOpening,
-  setLead,
-  acceptWorkerApplications,
-  terminateWorkerApplications,
+  applyForOpening,
+  acceptApplications,
+  terminateApplications,
   unsetLead,
+  addLeaderOpening,
+  beginLeaderApplicationReview,
+  fillLeaderOpening,
+  leaveRole,
 } from './impl/workingGroupModule';
 import BN from 'bn.js';
 
@@ -43,7 +46,26 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   membershipTest(apiWrapper, nKeyPairs, keyring, N, paidTerms, sudoUri);
   membershipTest(apiWrapper, leadKeyPair, keyring, N, paidTerms, sudoUri);
 
-  tap.test('Set lead', async () => setLead(apiWrapper, leadKeyPair[0], sudo));
+  let leadOpenignId: BN;
+  tap.test(
+    'Add lead opening',
+    async () =>
+      (leadOpenignId = await addLeaderOpening(
+        apiWrapper,
+        nKeyPairs,
+        sudo,
+        applicationStake,
+        roleStake,
+        openingActivationDelay
+      ))
+  );
+  tap.test(
+    'Apply for lead opening',
+    async () => await applyForOpening(apiWrapper, leadKeyPair, sudo, applicationStake, roleStake, leadOpenignId, false)
+  );
+  tap.test('Begin lead application review', async () => beginLeaderApplicationReview(apiWrapper, sudo, leadOpenignId));
+  tap.test('Fill lead opening', async () => fillLeaderOpening(apiWrapper, leadKeyPair, sudo, leadOpenignId));
+
   let openignId: BN;
   tap.test(
     'Add worker opening',
@@ -59,21 +81,23 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       ))
   );
   tap.test('Apply for worker opening, expect failure', async () =>
-    applyForWorkerOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, openignId, true)
+    applyForOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, openignId, true)
   );
   tap.test('Begin accepting worker applications', async () =>
-    acceptWorkerApplications(apiWrapper, leadKeyPair[0], sudo, openignId)
+    acceptApplications(apiWrapper, leadKeyPair[0], sudo, openignId)
   );
   tap.test('Apply for worker opening as non-member, expect failure', async () =>
-    applyForWorkerOpening(apiWrapper, nonMemberKeyPairs, sudo, applicationStake, roleStake, openignId, true)
+    applyForOpening(apiWrapper, nonMemberKeyPairs, sudo, applicationStake, roleStake, openignId, true)
   );
   tap.test('Apply for worker opening as member', async () =>
-    applyForWorkerOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, openignId, false)
+    applyForOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, openignId, false)
   );
   tap.test('Terminate worker applicaitons', async () =>
-    terminateWorkerApplications(apiWrapper, nKeyPairs, leadKeyPair[0], sudo)
+    terminateApplications(apiWrapper, nKeyPairs, leadKeyPair[0], sudo)
   );
   tap.test('Unset lead', async () => unsetLead(apiWrapper, sudo));
+
+  tap.test('Leaving lead role', async () => leaveRole(apiWrapper, leadKeyPair, sudo));
 
   closeApi(apiWrapper);
 });
