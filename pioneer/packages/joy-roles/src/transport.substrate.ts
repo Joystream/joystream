@@ -304,7 +304,7 @@ export class Transport extends TransportBase implements ITransport {
     const leadWorker = leadWorkerLink.value;
 
     if (!leadWorker.is_active) {
-        return null;
+      return null;
     }
 
     return {
