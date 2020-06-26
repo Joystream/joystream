@@ -57,8 +57,8 @@ use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 use rstd::vec::Vec;
 use sr_primitives::traits::{Bounded, One, Zero};
-use srml_support::traits::{Currency, ExistenceRequirement, Imbalance, WithdrawReasons};
-use srml_support::{decl_event, decl_module, decl_storage, ensure, print};
+use srml_support::traits::{Currency, ExistenceRequirement, Get, Imbalance, WithdrawReasons};
+use srml_support::{decl_event, decl_module, decl_storage, ensure, print, StorageValue};
 use system::{ensure_root, ensure_signed};
 
 use crate::types::ExitInitiationOrigin;
@@ -157,6 +157,9 @@ pub trait Trait<I: Instance>:
 {
     /// _Working group_ event type.
     type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
+
+    /// Defines max workers number in the working group.
+    type MaxWorkerNumberLimit: Get<u32>;
 }
 
 decl_event!(
@@ -306,6 +309,9 @@ decl_storage! {
         /// Maps identifier to corresponding worker.
         pub WorkerById get(worker_by_id) : linked_map WorkerId<T> => WorkerOf<T>;
 
+        /// Count of active workers.
+        pub ActiveWorkerCount get(fn active_worker_count): u32;
+
         /// Next identifier for new worker.
         pub NextWorkerId get(next_worker_id) : WorkerId<T>;
 
@@ -341,6 +347,9 @@ decl_module! {
 
         /// Predefined errors
         type Error = Error;
+
+        /// Exports const -  max simultaneous active worker number.
+        const MaxWorkerNumberLimit: u32 = T::MaxWorkerNumberLimit::get();
 
         // ****************** Roles lifecycle **********************
 
@@ -506,6 +515,11 @@ decl_module! {
             Self::ensure_origin_for_opening_type(origin, opening_type)?;
 
             Self::ensure_opening_human_readable_text_is_valid(&human_readable_text)?;
+
+            ensure!(
+                (Self::active_worker_count()) < T::MaxWorkerNumberLimit::get(),
+                Error::MaxActiveWorkerNumberExceeded
+            );
 
             // Add opening
             // NB: This call can in principle fail, because the staking policies
@@ -1322,6 +1336,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         // Remove the worker from the storage.
         WorkerById::<T, I>::remove(worker_id);
+        Self::decrease_active_worker_counter();
 
         // Trigger the event
         let event = match exit_initiation_origin {
@@ -1456,6 +1471,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
                 // Store a worker
                 <WorkerById<T, I>>::insert(new_worker_id, worker);
+                Self::increase_active_worker_counter();
 
                 // Update next worker id
                 <NextWorkerId<T, I>>::mutate(|id| *id += <WorkerId<T> as One>::one());
@@ -1469,5 +1485,17 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             });
 
         application_id_to_worker_id
+    }
+
+    // Increases active worker counter (saturating).
+    fn increase_active_worker_counter() {
+        let next_active_worker_count_value = Self::active_worker_count().saturating_add(1);
+        <ActiveWorkerCount<I>>::put(next_active_worker_count_value);
+    }
+
+    // Decreases active worker counter (saturating).
+    fn decrease_active_worker_counter() {
+        let next_active_worker_count_value = Self::active_worker_count().saturating_sub(1);
+        <ActiveWorkerCount<I>>::put(next_active_worker_count_value);
     }
 }

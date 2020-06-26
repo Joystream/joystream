@@ -127,8 +127,13 @@ impl recurringrewards::Trait for Test {
 pub type Balances = balances::Module<Test>;
 pub type System = system::Module<Test>;
 
+parameter_types! {
+    pub const MaxWorkerNumberLimit: u32 = 3;
+}
+
 impl Trait<TestWorkingGroupInstance> for Test {
     type Event = TestEvent;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
 pub type Membership = membership::members::Module<Test>;
