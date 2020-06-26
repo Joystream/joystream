@@ -315,9 +315,9 @@ impl Default for ExtBuilder {
     fn default() -> Self {
         Self {
             property_name_constraint: InputValidationLengthConstraint::new(1, 49),
-            property_description_constraint: InputValidationLengthConstraint::new(0, 500),
+            property_description_constraint: InputValidationLengthConstraint::new(1, 500),
             class_name_constraint: InputValidationLengthConstraint::new(1, 49),
-            class_description_constraint: InputValidationLengthConstraint::new(0, 500),
+            class_description_constraint: InputValidationLengthConstraint::new(1, 500),
 
             max_number_of_classes: 100,
             max_number_of_maintainers_per_class: 10,
@@ -513,8 +513,10 @@ pub fn curator_group_exists(curator_group_id: CuratorGroupId) -> bool {
 
 pub enum ClassType {
     Valid,
-    InvalidName,
-    InvalidDescription,
+    NameTooLong,
+    NameTooShort,
+    DescriptionTooLong,
+    DescriptionTooShort,
     InvalidMaximumEntitiesCount,
     InvalidDefaultVoucherUpperBound,
     DefaultVoucherUpperBoundExceedsMaximumEntitiesCount,
@@ -526,12 +528,19 @@ pub fn create_simple_class(lead_origin: u64, class_type: ClassType) -> Result<()
     let mut class = create_class_with_default_permissions();
     match class_type {
         ClassType::Valid => (),
-        ClassType::InvalidName => {
+        ClassType::NameTooShort => {
+            class.name = generate_text(ClassNameLengthConstraint::get().min() as usize - 1);
+        }
+        ClassType::NameTooLong => {
             class.name = generate_text(ClassNameLengthConstraint::get().max() as usize + 1);
         }
-        ClassType::InvalidDescription => {
+        ClassType::DescriptionTooLong => {
             class.description =
                 generate_text(ClassDescriptionLengthConstraint::get().max() as usize + 1);
+        }
+        ClassType::DescriptionTooShort => {
+            class.description =
+                generate_text(ClassDescriptionLengthConstraint::get().min() as usize - 1);
         }
         ClassType::InvalidMaximumEntitiesCount => {
             class.maximum_entities_count = MaxNumberOfEntitiesPerClass::get() + 1;

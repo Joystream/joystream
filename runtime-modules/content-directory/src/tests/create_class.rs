@@ -85,12 +85,32 @@ fn create_class_name_is_too_long() {
         let number_of_events_before_call = System::events().len();
 
         // An attempt to create class with invalid name
-        let create_class_result = create_simple_class(LEAD_ORIGIN, ClassType::InvalidName);
+        let create_class_result = create_simple_class(LEAD_ORIGIN, ClassType::NameTooLong);
 
         // Failure checked
         assert_failure(
             create_class_result,
             ERROR_CLASS_NAME_TOO_LONG,
+            number_of_events_before_call,
+        );
+    })
+}
+
+#[test]
+fn create_class_name_is_too_short() {
+    with_test_externalities(|| {
+        // Runtime tested state before call
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // An attempt to create class with invalid name
+        let create_class_result = create_simple_class(LEAD_ORIGIN, ClassType::NameTooShort);
+
+        // Failure checked
+        assert_failure(
+            create_class_result,
+            ERROR_CLASS_NAME_TOO_SHORT,
             number_of_events_before_call,
         );
     })
@@ -105,12 +125,32 @@ fn create_class_description_is_too_long() {
         let number_of_events_before_call = System::events().len();
 
         // An attempt to create class with invalid description
-        let create_class_result = create_simple_class(LEAD_ORIGIN, ClassType::InvalidDescription);
+        let create_class_result = create_simple_class(LEAD_ORIGIN, ClassType::DescriptionTooLong);
 
         // Failure checked
         assert_failure(
             create_class_result,
             ERROR_CLASS_DESCRIPTION_TOO_LONG,
+            number_of_events_before_call,
+        );
+    })
+}
+
+#[test]
+fn create_class_description_is_too_short() {
+    with_test_externalities(|| {
+        // Runtime tested state before call
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // An attempt to create class with invalid description
+        let create_class_result = create_simple_class(LEAD_ORIGIN, ClassType::DescriptionTooShort);
+
+        // Failure checked
+        assert_failure(
+            create_class_result,
+            ERROR_CLASS_DESCRIPTION_TOO_SHORT,
             number_of_events_before_call,
         );
     })

@@ -91,6 +91,10 @@ impl InputValidationLengthConstraint {
         self.min + self.max_min_diff
     }
 
+    pub fn min(self) -> u16 {
+        self.min
+    }
+
     pub fn ensure_valid(
         self,
         len: usize,
