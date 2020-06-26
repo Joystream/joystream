@@ -136,22 +136,26 @@ const init = async (api) => {
     eventProperty: 'WorkerApplicationIdToWorkerIdMap'
   })
 
-  if (filledMap.size !== 1) {
-    throw new Error('openening was not filled as expected')
+  if (filledMap.size === 0) {
+    throw new Error('Expected opening to be filled!')
   }
 
-  // Having issues reading values from the BTreeMap!
-  // for (key in filledMap.keys()) {
-  //   console.log(key)
-  // }
-  // for (value in filledMap.values()) {
-  //   console.log(value)
-  // }
-  // if (!filledMap.has(applicationId)) {
-  //   throw new Error('openening was not filled without our application id')
-  // }
-  // const providerId = filledMap.get(applicationId)
-  // debug(`provider created: ${providerId}`)
+  let ourApplicationIdKey
+
+  for (let key of filledMap.keys()) {
+    if (key.eq(applicationId)) {
+      ourApplicationIdKey = key
+      break
+    }
+  }
+
+  if (!ourApplicationIdKey) {
+    throw new Error('Expected our application id to have been filled!')
+  }
+
+  const providerId = filledMap.get(ourApplicationIdKey)
+
+  debug(`Assigned storage provider id: ${providerId}`)
 
   return check(api)
 }
