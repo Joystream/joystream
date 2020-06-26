@@ -144,7 +144,9 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
                 default: defaultValue ? entries.length < defaultValue.length : false
             });
             const defaultEntryValue = defaultValue && defaultValue[entries.length];
-            if (addAnother) entries.push(await this.promptForParam(subtype.type, subtype.name, defaultEntryValue));
+            if (addAnother) {
+                entries.push(await this.promptForParam(subtype.type, subtype.name, defaultEntryValue));
+            }
         } while (addAnother);
         this.closeIndentGroup();
 
@@ -190,12 +192,24 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
             typeDef.name = forcedName;
         }
 
-        if (rawTypeDef.info === TypeDefInfo.Option) return await this.promptForOption(typeDef, defaultValue as Option<Codec>);
-        else if (rawTypeDef.info === TypeDefInfo.Tuple) return await this.promptForTuple(typeDef, defaultValue as Tuple);
-        else if (rawTypeDef.info === TypeDefInfo.Struct) return await this.promptForStruct(typeDef, defaultValue as Struct);
-        else if (rawTypeDef.info === TypeDefInfo.Enum) return await this.promptForEnum(typeDef, defaultValue as Enum);
-        else if (rawTypeDef.info === TypeDefInfo.Vec) return await this.promptForVec(typeDef, defaultValue as Vec<Codec>);
-        else return await this.promptForSimple(typeDef, defaultValue);
+        if (rawTypeDef.info === TypeDefInfo.Option) {
+            return await this.promptForOption(typeDef, defaultValue as Option<Codec>);
+        }
+        else if (rawTypeDef.info === TypeDefInfo.Tuple) {
+            return await this.promptForTuple(typeDef, defaultValue as Tuple);
+        }
+        else if (rawTypeDef.info === TypeDefInfo.Struct) {
+            return await this.promptForStruct(typeDef, defaultValue as Struct);
+        }
+        else if (rawTypeDef.info === TypeDefInfo.Enum) {
+            return await this.promptForEnum(typeDef, defaultValue as Enum);
+        }
+        else if (rawTypeDef.info === TypeDefInfo.Vec) {
+            return await this.promptForVec(typeDef, defaultValue as Vec<Codec>);
+        }
+        else {
+            return await this.promptForSimple(typeDef, defaultValue);
+        }
     }
 
     async promptForJsonBytes(

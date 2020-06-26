@@ -30,14 +30,7 @@ import {
 import {
     Opening,
     Application,
-    OpeningStage, OpeningStageKeys,
-    WaitingToBeingOpeningStageVariant,
-    ActiveOpeningStageVariant,
-    AcceptingApplications,
-    ActiveOpeningStageKeys,
-    ReviewPeriod,
-    Deactivated,
-    OpeningDeactivationCauseKeys,
+    OpeningStage,
     ApplicationStageKeys,
     ApplicationId,
     OpeningId
@@ -407,8 +400,8 @@ export default class Api {
             stageBlock: number | undefined,
             stageDate: Date | undefined;
 
-        if (stage.type === OpeningStageKeys.WaitingToBegin) {
-            const stageData = (stage.value as WaitingToBeingOpeningStageVariant);
+        if (stage.isOfType('WaitingToBegin')) {
+            const stageData = stage.asType('WaitingToBegin');
             const currentBlockNumber = (await this._api.derive.chain.bestNumber()).toNumber();
             const expectedBlockTime = (this._api.consts.babe.expectedBlockTime as Moment).toNumber();
             status = OpeningStatus.WaitingToBegin;
@@ -416,30 +409,32 @@ export default class Api {
             stageDate = new Date(Date.now() + (stageBlock - currentBlockNumber) * expectedBlockTime);
         }
 
-        if (stage.type === OpeningStageKeys.Active) {
-            const stageData = (stage.value as ActiveOpeningStageVariant);
+        if (stage.isOfType('Active')) {
+            const stageData = stage.asType('Active');
             const substage = stageData.stage;
-            if (substage.type === ActiveOpeningStageKeys.AcceptingApplications) {
+            if (substage.isOfType('AcceptingApplications')) {
                 status = OpeningStatus.AcceptingApplications;
-                stageBlock = (substage.value as AcceptingApplications).started_accepting_applicants_at_block.toNumber();
+                stageBlock = substage.asType('AcceptingApplications').started_accepting_applicants_at_block.toNumber();
             }
-            if (substage.type === ActiveOpeningStageKeys.ReviewPeriod) {
+            if (substage.isOfType('ReviewPeriod')) {
                 status = OpeningStatus.InReview;
-                stageBlock = (substage.value as ReviewPeriod).started_review_period_at_block.toNumber();
+                stageBlock = substage.asType('ReviewPeriod').started_review_period_at_block.toNumber();
             }
-            if (substage.type === ActiveOpeningStageKeys.Deactivated) {
-                status = (substage.value as Deactivated).cause.type === OpeningDeactivationCauseKeys.Filled
+            if (substage.isOfType('Deactivated')) {
+                status = substage.asType('Deactivated').cause.isOfType('Filled')
                     ? OpeningStatus.Complete
                     : OpeningStatus.Cancelled;
-                stageBlock = (substage.value as Deactivated).deactivated_at_block.toNumber();
+                stageBlock = substage.asType('Deactivated').deactivated_at_block.toNumber();
             }
-            if (stageBlock) stageDate = new Date(await this.blockTimestamp(stageBlock));
+            if (stageBlock) {
+                stageDate = new Date(await this.blockTimestamp(stageBlock));
+            }
         }
 
         return {
             status: status || OpeningStatus.Unknown,
             block: stageBlock,
             date: stageDate
-        }
+        };
     }
 }

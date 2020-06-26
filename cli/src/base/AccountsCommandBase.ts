@@ -11,7 +11,7 @@ import { NamedKeyringPair } from '../Types';
 import { DerivedBalances } from '@polkadot/api-derive/types';
 import { toFixedLength } from '../helpers/display';
 
-const ACCOUNTS_DIRNAME = '/accounts';
+const ACCOUNTS_DIRNAME = 'accounts';
 const SPECIAL_ACCOUNT_POSTFIX = '__DEV';
 
 /**

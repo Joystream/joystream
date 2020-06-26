@@ -12,7 +12,7 @@ import _ from 'lodash';
 import { ApplicationStageKeys } from '@joystream/types/hiring';
 
 const DEFAULT_GROUP = WorkingGroups.StorageProviders;
-const DRAFTS_FOLDER = '/opening-drafts';
+const DRAFTS_FOLDER = 'opening-drafts';
 
 /**
  * Abstract base class for commands related to working groups
