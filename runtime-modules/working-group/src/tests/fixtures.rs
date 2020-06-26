@@ -2,8 +2,8 @@ use super::mock::{
     Balances, Membership, System, Test, TestEvent, TestWorkingGroup, TestWorkingGroupInstance,
 };
 use crate::types::{
-    OpeningPolicyCommitment, RewardPolicy, Worker, WorkerApplication, WorkerOpening,
-    WorkerRoleStakeProfile,
+    Application, Opening, OpeningPolicyCommitment, OpeningType, RewardPolicy, RoleStakeProfile,
+    Worker,
 };
 use crate::Error;
 use crate::RawEvent;
@@ -41,7 +41,7 @@ impl IncreaseWorkerStakeFixture {
         let stake_id = 0;
         let old_stake = <stake::Module<Test>>::stakes(stake_id);
         let old_balance = Balances::free_balance(&self.account_id);
-        let actual_result = TestWorkingGroup::increase_worker_stake(
+        let actual_result = TestWorkingGroup::increase_stake(
             self.origin.clone().into(),
             self.worker_id,
             self.balance,
@@ -96,7 +96,7 @@ impl TerminateWorkerRoleFixture {
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
         <crate::WorkerExitRationaleText<TestWorkingGroupInstance>>::put(self.constraint.clone());
 
-        let actual_result = TestWorkingGroup::terminate_worker_role(
+        let actual_result = TestWorkingGroup::terminate_role(
             self.origin.clone().into(),
             self.worker_id,
             self.text.clone(),
@@ -131,7 +131,7 @@ impl LeaveWorkerRoleFixture {
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
         let rationale_text = b"rationale_text".to_vec();
-        let actual_result = TestWorkingGroup::leave_worker_role(
+        let actual_result = TestWorkingGroup::leave_role(
             self.origin.clone().into(),
             self.worker_id,
             rationale_text.clone(),
@@ -144,6 +144,35 @@ impl LeaveWorkerRoleFixture {
     }
 }
 
+pub struct UpdateWorkerRewardAmountFixture {
+    worker_id: u64,
+    amount: u64,
+    origin: RawOrigin<u64>,
+}
+
+impl UpdateWorkerRewardAmountFixture {
+    pub fn default_for_worker_id(worker_id: u64) -> Self {
+        UpdateWorkerRewardAmountFixture {
+            worker_id,
+            amount: 100,
+            origin: RawOrigin::Signed(1),
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        UpdateWorkerRewardAmountFixture { origin, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
+        assert_eq!(
+            TestWorkingGroup::update_reward_amount(
+                self.origin.clone().into(),
+                self.worker_id,
+                self.amount
+            ),
+            expected_result
+        );
+    }
+}
 pub struct UpdateWorkerRewardAccountFixture {
     worker_id: u64,
     new_role_account_id: u64,
@@ -164,7 +193,7 @@ impl UpdateWorkerRewardAccountFixture {
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
         assert_eq!(
-            TestWorkingGroup::update_worker_reward_account(
+            TestWorkingGroup::update_reward_account(
                 self.origin.clone().into(),
                 self.worker_id,
                 self.new_role_account_id
@@ -193,7 +222,7 @@ impl UpdateWorkerRoleAccountFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
-        let actual_result = TestWorkingGroup::update_worker_role_account(
+        let actual_result = TestWorkingGroup::update_role_account(
             self.origin.clone().into(),
             self.worker_id,
             self.new_role_account_id,
@@ -230,7 +259,7 @@ pub fn create_mint() -> u64 {
 pub struct FillWorkerOpeningFixture {
     origin: RawOrigin<u64>,
     opening_id: u64,
-    successful_worker_application_ids: BTreeSet<u64>,
+    successful_application_ids: BTreeSet<u64>,
     role_account: u64,
     reward_policy: Option<RewardPolicy<u64, u64>>,
 }
@@ -242,7 +271,7 @@ impl FillWorkerOpeningFixture {
         FillWorkerOpeningFixture {
             origin: RawOrigin::Signed(1),
             opening_id,
-            successful_worker_application_ids: application_ids,
+            successful_application_ids: application_ids,
             role_account: 1,
             reward_policy: None,
         }
@@ -261,10 +290,10 @@ impl FillWorkerOpeningFixture {
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) -> u64 {
         let saved_worker_next_id = TestWorkingGroup::next_worker_id();
-        let actual_result = TestWorkingGroup::fill_worker_opening(
+        let actual_result = TestWorkingGroup::fill_opening(
             self.origin.clone().into(),
             self.opening_id,
-            self.successful_worker_application_ids.clone(),
+            self.successful_application_ids.clone(),
             self.reward_policy.clone(),
         );
         assert_eq!(actual_result.clone(), expected_result);
@@ -273,7 +302,7 @@ impl FillWorkerOpeningFixture {
             assert_eq!(TestWorkingGroup::next_worker_id(), saved_worker_next_id + 1);
             let worker_id = saved_worker_next_id;
 
-            let opening = TestWorkingGroup::worker_opening_by_id(self.opening_id);
+            let opening = TestWorkingGroup::opening_by_id(self.opening_id);
 
             let role_stake_profile = if opening
                 .policy_commitment
@@ -282,7 +311,7 @@ impl FillWorkerOpeningFixture {
                 || opening.policy_commitment.role_staking_policy.is_some()
             {
                 let stake_id = 0;
-                Some(WorkerRoleStakeProfile::new(
+                Some(RoleStakeProfile::new(
                     &stake_id,
                     &opening
                         .policy_commitment
@@ -328,10 +357,8 @@ impl BeginReviewWorkerApplicationsFixture {
         BeginReviewWorkerApplicationsFixture { origin, ..self }
     }
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
-        let actual_result = TestWorkingGroup::begin_worker_applicant_review(
-            self.origin.clone().into(),
-            self.opening_id,
-        );
+        let actual_result =
+            TestWorkingGroup::begin_applicant_review(self.origin.clone().into(), self.opening_id);
         assert_eq!(actual_result, expected_result);
     }
 }
@@ -358,7 +385,7 @@ impl TerminateApplicationFixture {
         }
     }
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
-        let actual_result = TestWorkingGroup::terminate_worker_application(
+        let actual_result = TestWorkingGroup::terminate_application(
             self.origin.clone().into(),
             self.worker_application_id,
         );
@@ -387,7 +414,7 @@ impl WithdrawApplicationFixture {
         }
     }
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
-        let actual_result = TestWorkingGroup::withdraw_worker_application(
+        let actual_result = TestWorkingGroup::withdraw_application(
             self.origin.clone().into(),
             self.worker_application_id,
         );
@@ -465,8 +492,8 @@ impl ApplyOnWorkerOpeningFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) -> u64 {
-        let saved_application_next_id = TestWorkingGroup::next_worker_application_id();
-        let actual_result = TestWorkingGroup::apply_on_worker_opening(
+        let saved_application_next_id = TestWorkingGroup::next_application_id();
+        let actual_result = TestWorkingGroup::apply_on_opening(
             self.origin.clone().into(),
             self.member_id,
             self.worker_opening_id,
@@ -479,26 +506,24 @@ impl ApplyOnWorkerOpeningFixture {
 
         if actual_result.is_ok() {
             assert_eq!(
-                TestWorkingGroup::next_worker_application_id(),
+                TestWorkingGroup::next_application_id(),
                 saved_application_next_id + 1
             );
             let application_id = saved_application_next_id;
 
-            let actual_application = TestWorkingGroup::worker_application_by_id(application_id);
+            let actual_application = TestWorkingGroup::application_by_id(application_id);
 
-            let expected_application = WorkerApplication {
+            let expected_application = Application {
                 role_account: self.role_account,
-                worker_opening_id: self.worker_opening_id,
+                opening_id: self.worker_opening_id,
                 member_id: self.member_id,
-                application_id,
+                hiring_application_id: application_id,
             };
 
             assert_eq!(actual_application, expected_application);
 
-            let current_opening = TestWorkingGroup::worker_opening_by_id(self.worker_opening_id);
-            assert!(current_opening
-                .worker_applications
-                .contains(&application_id));
+            let current_opening = TestWorkingGroup::opening_by_id(self.worker_opening_id);
+            assert!(current_opening.applications.contains(&application_id));
         }
 
         saved_application_next_id
@@ -519,10 +544,8 @@ impl AcceptWorkerApplicationsFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
-        let actual_result = TestWorkingGroup::accept_worker_applications(
-            self.origin.clone().into(),
-            self.opening_id,
-        );
+        let actual_result =
+            TestWorkingGroup::accept_applications(self.origin.clone().into(), self.opening_id);
         assert_eq!(actual_result, expected_result);
     }
 }
@@ -554,6 +577,7 @@ pub struct AddWorkerOpeningFixture {
     activate_at: hiring::ActivateOpeningAt<u64>,
     commitment: OpeningPolicyCommitment<u64, u64>,
     human_readable_text: Vec<u8>,
+    opening_type: OpeningType,
 }
 
 impl Default for AddWorkerOpeningFixture {
@@ -563,6 +587,7 @@ impl Default for AddWorkerOpeningFixture {
             activate_at: hiring::ActivateOpeningAt::CurrentBlock,
             commitment: <OpeningPolicyCommitment<u64, u64>>::default(),
             human_readable_text: b"human_text".to_vec(),
+            opening_type: OpeningType::Worker,
         }
     }
 }
@@ -579,28 +604,30 @@ impl AddWorkerOpeningFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: Result<(), Error>) -> u64 {
-        let saved_opening_next_id = TestWorkingGroup::next_worker_opening_id();
-        let actual_result = TestWorkingGroup::add_worker_opening(
+        let saved_opening_next_id = TestWorkingGroup::next_opening_id();
+        let actual_result = TestWorkingGroup::add_opening(
             self.origin.clone().into(),
             self.activate_at.clone(),
             self.commitment.clone(),
             self.human_readable_text.clone(),
+            self.opening_type,
         );
         assert_eq!(actual_result.clone(), expected_result);
 
         if actual_result.is_ok() {
             assert_eq!(
-                TestWorkingGroup::next_worker_opening_id(),
+                TestWorkingGroup::next_opening_id(),
                 saved_opening_next_id + 1
             );
             let opening_id = saved_opening_next_id;
 
-            let actual_opening = TestWorkingGroup::worker_opening_by_id(opening_id);
+            let actual_opening = TestWorkingGroup::opening_by_id(opening_id);
 
-            let expected_opening = WorkerOpening::<u64, u64, u64, u64> {
+            let expected_opening = Opening::<u64, u64, u64, u64> {
                 opening_id,
-                worker_applications: BTreeSet::new(),
+                applications: BTreeSet::new(),
                 policy_commitment: self.commitment.clone(),
+                opening_type: self.opening_type,
             };
 
             assert_eq!(actual_opening, expected_opening);
@@ -614,6 +641,17 @@ impl AddWorkerOpeningFixture {
             human_readable_text: text,
             ..self
         }
+    }
+
+    pub fn with_opening_type(self, opening_type: OpeningType) -> Self {
+        AddWorkerOpeningFixture {
+            opening_type,
+            ..self
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        AddWorkerOpeningFixture { origin, ..self }
     }
 
     pub fn with_activate_at(self, activate_at: hiring::ActivateOpeningAt<u64>) -> Self {
@@ -723,7 +761,7 @@ impl DecreaseWorkerStakeFixture {
         let stake_id = 0;
         let old_balance = Balances::free_balance(&self.account_id);
         let old_stake = <stake::Module<Test>>::stakes(stake_id);
-        let actual_result = TestWorkingGroup::decrease_worker_stake(
+        let actual_result = TestWorkingGroup::decrease_stake(
             self.origin.clone().into(),
             self.worker_id,
             self.balance,
@@ -785,11 +823,8 @@ impl SlashWorkerStakeFixture {
         let stake_id = 0;
         let old_balance = Balances::free_balance(&self.account_id);
         let old_stake = <stake::Module<Test>>::stakes(stake_id);
-        let actual_result = TestWorkingGroup::slash_worker_stake(
-            self.origin.clone().into(),
-            self.worker_id,
-            self.balance,
-        );
+        let actual_result =
+            TestWorkingGroup::slash_stake(self.origin.clone().into(), self.worker_id, self.balance);
 
         assert_eq!(actual_result, expected_result);
 
