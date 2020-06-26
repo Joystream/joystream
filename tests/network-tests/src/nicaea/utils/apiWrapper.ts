@@ -416,6 +416,14 @@ export class ApiWrapper {
     );
   }
 
+  public sudoSetWorkingGroupMintCapacity(sudo: KeyringPair, capacity: BN): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx.sudo.sudo(this.api.tx.storageWorkingGroup.setMintCapacity(capacity)),
+      sudo,
+      false
+    );
+  }
+
   public getBestBlock(): Promise<BN> {
     return this.api.derive.chain.bestNumber();
   }

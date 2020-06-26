@@ -4,6 +4,9 @@ import { ApiWrapper } from '../../../utils/apiWrapper';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { Keyring } from '@polkadot/api';
 import { v4 as uuid } from 'uuid';
+import { RewardRelationship, IRewardRelationship } from '@nicaea/types/recurring-rewards';
+import { Worker } from '@nicaea/types/working-group';
+import { Utils } from '../../../utils/utils';
 
 export async function setLead(apiWrapper: ApiWrapper, lead: KeyringPair, sudo: KeyringPair) {
   await apiWrapper.sudoSetLead(sudo, lead);
@@ -179,7 +182,10 @@ export async function fillOpening(
   membersKeyPairs: KeyringPair[],
   lead: KeyringPair,
   sudo: KeyringPair,
-  openingId: BN
+  openingId: BN,
+  firstPayoutInterval: BN,
+  payoutInterval: BN,
+  amountPerPayout: BN
 ) {
   // Fee estimation and transfer
   const beginReviewFee: BN = apiWrapper.estimateBeginApplicantReviewFee();
@@ -191,7 +197,15 @@ export async function fillOpening(
   ).flat();
 
   // Fill worker opening
-  await apiWrapper.fillOpening(lead, openingId, applicationIds, new BN(1), new BN(99999999), new BN(99999999));
+  const now: BN = await apiWrapper.getBestBlock();
+  await apiWrapper.fillOpening(
+    lead,
+    openingId,
+    applicationIds,
+    amountPerPayout,
+    now.add(firstPayoutInterval),
+    payoutInterval
+  );
 
   // Assertions
   const openingWorkersAccounts: string[] = (await apiWrapper.getWorkers()).map(worker =>
@@ -206,7 +220,10 @@ export async function fillLeaderOpening(
   apiWrapper: ApiWrapper,
   membersKeyPairs: KeyringPair[],
   sudo: KeyringPair,
-  openingId: BN
+  openingId: BN,
+  firstPayoutInterval: BN,
+  payoutInterval: BN,
+  amountPerPayout: BN
 ) {
   const applicationIds: BN[] = (
     await Promise.all(
@@ -214,8 +231,16 @@ export async function fillLeaderOpening(
     )
   ).flat();
 
-  // Fill worker opening
-  await apiWrapper.sudoFillOpening(sudo, openingId, applicationIds, new BN(1), new BN(99999999), new BN(99999999));
+  // Fill leader opening
+  const now: BN = await apiWrapper.getBestBlock();
+  await apiWrapper.sudoFillOpening(
+    sudo,
+    openingId,
+    applicationIds,
+    amountPerPayout,
+    now.add(firstPayoutInterval),
+    payoutInterval
+  );
 
   // Assertions
   const openingWorkersAccounts: string[] = (await apiWrapper.getWorkers()).map(worker =>
@@ -377,4 +402,41 @@ export async function leaveRole(apiWrapper: ApiWrapper, membersKeyPairs: Keyring
   await apiWrapper.transferBalanceToAccounts(sudo, membersKeyPairs, leaveRoleFee);
 
   await apiWrapper.batchLeaveRole(membersKeyPairs, uuid().substring(0, 8), false);
+}
+
+export async function awaitPayout(apiWrapper: ApiWrapper, membersKeyPairs: KeyringPair[]) {
+  const workerId: BN = await apiWrapper.getWorkerIdByRoleAccount(membersKeyPairs[0].address);
+  const worker: Worker = await apiWrapper.getWorker(workerId);
+  const reward: RewardRelationship = await apiWrapper.getRewardRelationship(worker.reward_relationship.unwrap());
+  const now: BN = await apiWrapper.getBestBlock();
+  const nextPaymentBlock: BN = new BN(reward.getField('next_payment_at_block').toString());
+  const payoutInterval: BN = new BN(reward.getField('payout_interval').toString());
+  const amountPerPayout: BN = new BN(reward.getField('amount_per_payout').toString());
+
+  assert(now.lt(nextPaymentBlock), `Payout already happened in block ${nextPaymentBlock} now ${now}`);
+  const balance = await apiWrapper.getBalance(membersKeyPairs[0].address);
+
+  const firstPayoutWaitingPeriod = nextPaymentBlock.sub(now).addn(1);
+  await Utils.wait(apiWrapper.getBlockDuration().mul(firstPayoutWaitingPeriod).toNumber());
+
+  const balanceAfterFirstPayout = await apiWrapper.getBalance(membersKeyPairs[0].address);
+  const expectedBalanceFirst = balance.add(amountPerPayout);
+  assert(
+    balanceAfterFirstPayout.eq(expectedBalanceFirst),
+    `Unexpected balance, expected ${expectedBalanceFirst} got ${balanceAfterFirstPayout}`
+  );
+
+  const secondPayoutWaitingPeriod = payoutInterval.addn(1);
+  await Utils.wait(apiWrapper.getBlockDuration().mul(secondPayoutWaitingPeriod).toNumber());
+
+  const balanceAfterSecondPayout = await apiWrapper.getBalance(membersKeyPairs[0].address);
+  const expectedBalanceSecond = expectedBalanceFirst.add(amountPerPayout);
+  assert(
+    balanceAfterSecondPayout.eq(expectedBalanceSecond),
+    `Unexpected balance, expected ${expectedBalanceSecond} got ${balanceAfterSecondPayout}`
+  );
+}
+
+export async function setMintCapacity(apiWrapper: ApiWrapper, sudo: KeyringPair, capacity: BN) {
+  await apiWrapper.sudoSetWorkingGroupMintCapacity(sudo, capacity);
 }

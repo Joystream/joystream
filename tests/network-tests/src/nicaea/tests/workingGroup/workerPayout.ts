@@ -12,11 +12,12 @@ import {
   applyForOpening,
   beginApplicationReview,
   fillOpening,
-  withdrawApplicaiton,
   addLeaderOpening,
   beginLeaderApplicationReview,
   fillLeaderOpening,
   leaveRole,
+  awaitPayout,
+  setMintCapacity,
 } from './impl/workingGroupModule';
 import BN from 'bn.js';
 
@@ -34,9 +35,10 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const applicationStake: BN = new BN(process.env.WORKING_GROUP_APPLICATION_STAKE!);
   const roleStake: BN = new BN(process.env.WORKING_GROUP_ROLE_STAKE!);
-  const firstRewardInterval: BN = new BN(process.env.LONG_REWARD_INTERWAL!);
-  const rewardInterval: BN = new BN(process.env.LONG_REWARD_INTERWAL!);
+  const firstRewardInterval: BN = new BN(process.env.SHORT_FIRST_REWARD_INTERWAL!);
+  const rewardInterval: BN = new BN(process.env.SHORT_REWARD_INTERWAL!);
   const payoutAmount: BN = new BN(process.env.PAYOUT_AMOUNT!);
+  const mintCapacity: BN = new BN(process.env.STORAGE_WORKING_GROUP_MINTING_CAPACITY!);
   const durationInBlocks: number = 48;
   const openingActivationDelay: BN = new BN(0);
 
@@ -87,13 +89,10 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   tap.test('Apply for worker opening', async () =>
     applyForOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, workerOpenignId, false)
   );
-  tap.test('Withdraw worker application', async () => withdrawApplicaiton(apiWrapper, nKeyPairs, sudo));
-  tap.test('Apply for worker opening', async () =>
-    applyForOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, workerOpenignId, false)
-  );
   tap.test('Begin application review', async () =>
     beginApplicationReview(apiWrapper, leadKeyPair[0], sudo, workerOpenignId)
   );
+  tap.test('Set mint capacity', async () => setMintCapacity(apiWrapper, sudo, mintCapacity));
   tap.test('Fill worker opening', async () =>
     fillOpening(
       apiWrapper,
@@ -106,6 +105,8 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       payoutAmount
     )
   );
+
+  tap.test('Await worker payout', async () => awaitPayout(apiWrapper, nKeyPairs));
 
   tap.test('Leaving lead role', async () => leaveRole(apiWrapper, leadKeyPair, sudo));
 

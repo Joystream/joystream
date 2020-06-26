@@ -36,7 +36,10 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const applicationStake: BN = new BN(process.env.WORKING_GROUP_APPLICATION_STAKE!);
   const roleStake: BN = new BN(process.env.WORKING_GROUP_ROLE_STAKE!);
-  const durationInBlocks: number = 30;
+  const firstRewardInterval: BN = new BN(process.env.LONG_REWARD_INTERWAL!);
+  const rewardInterval: BN = new BN(process.env.LONG_REWARD_INTERWAL!);
+  const payoutAmount: BN = new BN(process.env.PAYOUT_AMOUNT!);
+  const durationInBlocks: number = 38;
   const openingActivationDelay: BN = new BN(0);
 
   const provider = new WsProvider(nodeUrl);
@@ -45,7 +48,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
 
   setTestTimeout(apiWrapper, durationInBlocks);
   membershipTest(apiWrapper, nKeyPairs, keyring, N, paidTerms, sudoUri);
-  membershipTest(apiWrapper, leadKeyPair, keyring, N, paidTerms, sudoUri);
+  membershipTest(apiWrapper, leadKeyPair, keyring, 1, paidTerms, sudoUri);
 
   let leadOpenignId: BN;
   tap.test(
@@ -65,7 +68,9 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
     async () => await applyForOpening(apiWrapper, leadKeyPair, sudo, applicationStake, roleStake, leadOpenignId, false)
   );
   tap.test('Begin lead application review', async () => beginLeaderApplicationReview(apiWrapper, sudo, leadOpenignId));
-  tap.test('Fill lead opening', async () => fillLeaderOpening(apiWrapper, leadKeyPair, sudo, leadOpenignId));
+  tap.test('Fill lead opening', async () =>
+    fillLeaderOpening(apiWrapper, leadKeyPair, sudo, leadOpenignId, firstRewardInterval, rewardInterval, payoutAmount)
+  );
 
   let openignId: BN;
   tap.test(
@@ -86,7 +91,18 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
     async () => await applyForOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, openignId, false)
   );
   tap.test('Begin application review', async () => beginApplicationReview(apiWrapper, leadKeyPair[0], sudo, openignId));
-  tap.test('Fill worker opening', async () => fillOpening(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, openignId));
+  tap.test('Fill worker opening', async () =>
+    fillOpening(
+      apiWrapper,
+      nKeyPairs,
+      leadKeyPair[0],
+      sudo,
+      openignId,
+      firstRewardInterval,
+      rewardInterval,
+      payoutAmount
+    )
+  );
 
   tap.test('Increase worker stake', async () => increaseStake(apiWrapper, nKeyPairs, sudo));
   tap.test('Update reward account', async () => updateRewardAccount(apiWrapper, nKeyPairs, keyring, sudo));

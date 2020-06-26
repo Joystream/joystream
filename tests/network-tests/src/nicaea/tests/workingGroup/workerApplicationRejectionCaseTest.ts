@@ -34,7 +34,10 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!;
   const applicationStake: BN = new BN(process.env.WORKING_GROUP_APPLICATION_STAKE!);
   const roleStake: BN = new BN(process.env.WORKING_GROUP_ROLE_STAKE!);
-  const durationInBlocks: number = 28;
+  const firstRewardInterval: BN = new BN(process.env.LONG_REWARD_INTERWAL!);
+  const rewardInterval: BN = new BN(process.env.LONG_REWARD_INTERWAL!);
+  const payoutAmount: BN = new BN(process.env.PAYOUT_AMOUNT!);
+  const durationInBlocks: number = 38;
   const openingActivationDelay: BN = new BN(100);
 
   const provider = new WsProvider(nodeUrl);
@@ -44,7 +47,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
 
   setTestTimeout(apiWrapper, durationInBlocks);
   membershipTest(apiWrapper, nKeyPairs, keyring, N, paidTerms, sudoUri);
-  membershipTest(apiWrapper, leadKeyPair, keyring, N, paidTerms, sudoUri);
+  membershipTest(apiWrapper, leadKeyPair, keyring, 1, paidTerms, sudoUri);
 
   let leadOpenignId: BN;
   tap.test(
@@ -64,7 +67,9 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
     async () => await applyForOpening(apiWrapper, leadKeyPair, sudo, applicationStake, roleStake, leadOpenignId, false)
   );
   tap.test('Begin lead application review', async () => beginLeaderApplicationReview(apiWrapper, sudo, leadOpenignId));
-  tap.test('Fill lead opening', async () => fillLeaderOpening(apiWrapper, leadKeyPair, sudo, leadOpenignId));
+  tap.test('Fill lead opening', async () =>
+    fillLeaderOpening(apiWrapper, leadKeyPair, sudo, leadOpenignId, firstRewardInterval, rewardInterval, payoutAmount)
+  );
 
   let openignId: BN;
   tap.test(
