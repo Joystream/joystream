@@ -98,7 +98,6 @@ fn remove_maintainer_from_class_lead_auth_failed() {
 #[test]
 fn remove_maintainer_from_non_existent_class() {
     with_test_externalities(|| {
-
         // Add curator group
         assert_ok!(add_curator_group(LEAD_ORIGIN));
 
@@ -108,11 +107,8 @@ fn remove_maintainer_from_non_existent_class() {
         let number_of_events_before_call = System::events().len();
 
         // Make an attempt to remove maintainer from non existent class
-        let remove_maintainer_from_class_result = remove_maintainer_from_class(
-            LEAD_ORIGIN,
-            UNKNOWN_CLASS_ID,
-            FIRST_CURATOR_GROUP_ID,
-        );
+        let remove_maintainer_from_class_result =
+            remove_maintainer_from_class(LEAD_ORIGIN, UNKNOWN_CLASS_ID, FIRST_CURATOR_GROUP_ID);
 
         // Failure checked
         assert_failure(
@@ -138,11 +134,8 @@ fn remove_maintainer_that_was_not_added_to_class_maintainers_set() {
         let number_of_events_before_call = System::events().len();
 
         // Make an attempt to remove curator group maintainer, that was not added to corresponding class maintainers set yet
-        let remove_maintainer_from_class_result = remove_maintainer_from_class(
-            LEAD_ORIGIN,
-            FIRST_CLASS_ID,
-            FIRST_CURATOR_GROUP_ID,
-        );
+        let remove_maintainer_from_class_result =
+            remove_maintainer_from_class(LEAD_ORIGIN, FIRST_CLASS_ID, FIRST_CURATOR_GROUP_ID);
 
         // Failure checked
         assert_failure(

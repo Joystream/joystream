@@ -2388,7 +2388,10 @@ impl<T: Trait> Module<T> {
         class_maintainers: &BTreeSet<T::CuratorGroupId>,
     ) -> dispatch::Result {
         // Ensure max number of maintainers per Class constraint satisfied
-        Self::ensure_maintainers_limit_not_reached(class_maintainers)?;
+        ensure!(
+            class_maintainers.len() <= T::MaxNumberOfMaintainersPerClass::get() as usize,
+            ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED
+        );
 
         // Ensure all curator groups provided are already exist in runtime
         Self::ensure_curator_groups_exist(class_maintainers)?;

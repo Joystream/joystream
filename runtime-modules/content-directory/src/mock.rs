@@ -556,7 +556,7 @@ pub fn create_simple_class(lead_origin: u64, class_type: ClassType) -> Result<()
         }
         ClassType::MaintainersLimitReached => {
             let mut maintainers = BTreeSet::new();
-            for curator_group_id in 1..=MaxNumberOfMaintainersPerClass::get() {
+            for curator_group_id in 1..=(MaxNumberOfMaintainersPerClass::get() + 1) {
                 maintainers.insert(curator_group_id as CuratorGroupId);
             }
             class.get_permissions_mut().set_maintainers(maintainers);
