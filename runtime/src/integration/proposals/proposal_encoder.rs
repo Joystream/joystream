@@ -94,6 +94,19 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
 
                 call.encode()
             }
+            ProposalDetails::DecreaseWorkingGroupLeaderStake(
+                worker_id,
+                decreasing_stake,
+                working_group,
+            ) => {
+                let call = match working_group {
+                    WorkingGroup::Storage => Call::StorageWorkingGroup(
+                        Wg::create_decrease_stake_call(worker_id, decreasing_stake),
+                    ),
+                };
+
+                call.encode()
+            }
         }
     }
 }
@@ -155,5 +168,13 @@ where
         mint_balance: working_group::BalanceOfMint<T>,
     ) -> working_group::Call<T, I> {
         working_group::Call::<T, I>::set_mint_capacity(mint_balance)
+    }
+
+    // Generic call constructor for the working group  'decrease stake'.
+    fn create_decrease_stake_call(
+        worker_id: working_group::WorkerId<T>,
+        decreasing_stake: working_group::BalanceOf<T>,
+    ) -> working_group::Call<T, I> {
+        working_group::Call::<T, I>::decrease_stake(worker_id, decreasing_stake)
     }
 }

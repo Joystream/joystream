@@ -25,6 +25,8 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
     crate::MemberId<T>,
     working_group::OpeningId<T>,
     working_group::ApplicationId<T>,
+    crate::BalanceOf<T>,
+    working_group::WorkerId<T>,
 >;
 
 /// Proposal details provide voters the information required for the perceived voting.
@@ -38,6 +40,8 @@ pub enum ProposalDetails<
     MemberId,
     OpeningId,
     ApplicationId,
+    StakeBalance,
+    WorkerId,
 > {
     /// The text of the `text` proposal
     Text(Vec<u8>),
@@ -83,6 +87,9 @@ pub enum ProposalDetails<
 
     /// Balance for the `set working group mint capacity` proposal
     SetWorkingGroupMintCapacity(MintedBalance, WorkingGroup),
+
+    /// Balance for the `decrease working group leader stake` proposal
+    DecreaseWorkingGroupLeaderStake(WorkerId, StakeBalance, WorkingGroup),
 }
 
 impl<
@@ -93,6 +100,8 @@ impl<
         MemberId,
         OpeningId,
         ApplicationId,
+        StakeBalance,
+        WorkerId,
     > Default
     for ProposalDetails<
         MintedBalance,
@@ -102,6 +111,8 @@ impl<
         MemberId,
         OpeningId,
         ApplicationId,
+        StakeBalance,
+        WorkerId,
     >
 {
     fn default() -> Self {
@@ -249,7 +260,14 @@ pub struct ProposalsConfigParameters {
 
     /// 'Set working group mint capacity' proposal grace period
     pub set_working_group_mint_capacity_proposal_grace_period: u32,
+
+    /// 'Decrease working group leader stake' proposal voting period
+    pub decrease_working_group_leader_stake_proposal_voting_period: u32,
+
+    /// 'Decrease working group leader stake' proposal grace period
+    pub decrease_working_group_leader_stake_proposal_grace_period: u32,
 }
+
 impl Default for ProposalsConfigParameters {
     fn default() -> Self {
         ProposalsConfigParameters {
@@ -275,6 +293,8 @@ impl Default for ProposalsConfigParameters {
             fill_working_group_leader_opening_proposal_grace_period: 0u32,
             set_working_group_mint_capacity_proposal_voting_period: 43200u32,
             set_working_group_mint_capacity_proposal_grace_period: 0u32,
+            decrease_working_group_leader_stake_proposal_voting_period: 43200u32,
+            decrease_working_group_leader_stake_proposal_grace_period: 0u32,
         }
     }
 }

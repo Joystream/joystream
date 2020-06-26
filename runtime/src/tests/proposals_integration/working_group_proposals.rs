@@ -10,7 +10,7 @@ use hiring::ActivateOpeningAt;
 use proposals_codex::AddOpeningParameters;
 use working_group::OpeningPolicyCommitment;
 
-use crate::StorageWorkingGroupInstance;
+use crate::{Balance, BlockNumber, StorageWorkingGroupInstance};
 use rstd::collections::btree_set::BTreeSet;
 
 type StorageWorkingGroup = working_group::Module<Runtime, StorageWorkingGroupInstance>;
@@ -20,7 +20,8 @@ type Hiring = hiring::Module<Runtime>;
 fn add_opening(
     member_id: u8,
     account_id: [u8; 32],
-    activate_at: hiring::ActivateOpeningAt<u32>,
+    activate_at: hiring::ActivateOpeningAt<BlockNumber>,
+    opening_policy_commitment: Option<OpeningPolicyCommitment<BlockNumber, u128>>,
 ) -> u64 {
     let opening_id = StorageWorkingGroup::next_opening_id();
 
@@ -38,7 +39,9 @@ fn add_opening(
             Some(<BalanceOf<Runtime>>::from(100_000_u32)),
             AddOpeningParameters {
                 activate_at: activate_at.clone(),
-                commitment: OpeningPolicyCommitment::default(),
+                commitment: opening_policy_commitment
+                    .clone()
+                    .unwrap_or(OpeningPolicyCommitment::default()),
                 human_readable_text: Vec::new(),
                 working_group: WorkingGroup::Storage,
             },
@@ -97,6 +100,31 @@ fn fill_opening(
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 }
 
+fn decrease_stake(
+    member_id: u8,
+    account_id: [u8; 32],
+    leader_worker_id: u64,
+    stake_amount: Balance,
+) {
+    let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+        ProposalCodex::create_decrease_working_group_leader_stake_proposal(
+            RawOrigin::Signed(account_id.clone().into()).into(),
+            member_id as u64,
+            b"title".to_vec(),
+            b"body".to_vec(),
+            Some(<BalanceOf<Runtime>>::from(50_000_u32)),
+            leader_worker_id,
+            stake_amount,
+            WorkingGroup::Storage,
+        )
+    })
+    .disable_setup_enviroment()
+    .with_expected_proposal_id(4)
+    .with_run_to_block(5);
+
+    codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+}
+
 #[test]
 fn create_add_working_group_leader_opening_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
@@ -110,7 +138,7 @@ fn create_add_working_group_leader_opening_proposal_execution_succeeds() {
             StorageWorkingGroupInstance,
         >>::exists(next_opening_id));
 
-        let opening_id = add_opening(member_id, account_id, ActivateOpeningAt::CurrentBlock);
+        let opening_id = add_opening(member_id, account_id, ActivateOpeningAt::CurrentBlock, None);
 
         // Check for expected opening id.
         assert_eq!(opening_id, next_opening_id);
@@ -133,6 +161,7 @@ fn create_begin_review_working_group_leader_applications_proposal_execution_succ
             member_id,
             account_id.clone(),
             ActivateOpeningAt::CurrentBlock,
+            None,
         );
 
         let opening = StorageWorkingGroup::opening_by_id(opening_id);
@@ -180,6 +209,7 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
             member_id,
             account_id.clone(),
             ActivateOpeningAt::CurrentBlock,
+            None,
         );
 
         let apply_result = StorageWorkingGroup::apply_on_opening(
@@ -206,4 +236,84 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
         let lead = StorageWorkingGroup::current_lead();
         assert!(lead.is_some());
     });
+}
+
+#[test]
+fn create_decrease_group_leader_leader_stake_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 1;
+        let account_id: [u8; 32] = [member_id; 32];
+        let stake_amount = 100;
+
+        let opening_policy_commitment = OpeningPolicyCommitment {
+            role_staking_policy: Some(hiring::StakingPolicy {
+                amount: 100,
+                amount_mode: hiring::StakingAmountLimitMode::AtLeast,
+                crowded_out_unstaking_period_length: None,
+                review_period_expired_unstaking_period_length: None,
+            }),
+            ..OpeningPolicyCommitment::default()
+        };
+
+        let opening_id = add_opening(
+            member_id,
+            account_id.clone(),
+            ActivateOpeningAt::CurrentBlock,
+            Some(opening_policy_commitment),
+        );
+
+        let apply_result = StorageWorkingGroup::apply_on_opening(
+            RawOrigin::Signed(account_id.clone().into()).into(),
+            member_id as u64,
+            opening_id,
+            account_id.clone().into(),
+            Some(stake_amount),
+            None,
+            Vec::new(),
+        );
+
+        assert_eq!(apply_result, Ok(()));
+
+        let expected_application_id = 0;
+
+        begin_review_applications(member_id, account_id, opening_id);
+
+        let lead = StorageWorkingGroup::current_lead();
+        assert!(lead.is_none());
+
+        fill_opening(member_id, account_id, opening_id, expected_application_id);
+
+        let leader_worker_id = StorageWorkingGroup::current_lead().unwrap().worker_id;
+
+        let stake_id = 1;
+        let old_balance = Balances::free_balance::<&AccountId32>(&account_id.into());
+        let old_stake = <stake::Module<Runtime>>::stakes(stake_id);
+
+        assert_eq!(get_stake_balance(old_stake), stake_amount);
+
+        let decreasing_stake_amount = 30;
+        decrease_stake(
+            member_id,
+            account_id,
+            leader_worker_id,
+            decreasing_stake_amount,
+        );
+
+        let new_balance = Balances::free_balance::<&AccountId32>(&account_id.into());
+        let new_stake = <stake::Module<Runtime>>::stakes(stake_id);
+
+        assert_eq!(
+            get_stake_balance(new_stake),
+            stake_amount - decreasing_stake_amount
+        );
+        assert_eq!(new_balance, old_balance + decreasing_stake_amount);
+    });
+}
+
+fn get_stake_balance(stake: stake::Stake<BlockNumber, Balance, u64>) -> Balance {
+    if let stake::StakingStatus::Staked(stake) = stake.staking_status {
+        return stake.staked_amount;
+    }
+
+    panic!("Not staked.");
 }

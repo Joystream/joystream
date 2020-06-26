@@ -347,6 +347,10 @@ pub fn testnet_genesis(
                 .set_content_working_group_mint_capacity_proposal_voting_period,
             set_working_group_mint_capacity_proposal_grace_period: cpcp
                 .set_content_working_group_mint_capacity_proposal_grace_period,
+            decrease_working_group_leader_stake_proposal_voting_period: cpcp
+                .decrease_working_group_leader_stake_proposal_voting_period,
+            decrease_working_group_leader_stake_proposal_grace_period: cpcp
+                .decrease_working_group_leader_stake_proposal_grace_period,
         }),
     }
 }

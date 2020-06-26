@@ -30,6 +30,7 @@
 //! - [create_begin_review_working_group_leader_applications_proposal](./struct.Module.html#method.create_begin_review_working_group_leader_applications_proposal)
 //! - [create_fill_working_group_leader_opening_proposal](./struct.Module.html#method.create_fill_working_group_leader_opening_proposal)
 //! - [create_set_working_group_mint_capacity_proposal](./struct.Module.html#method.create_set_working_group_mint_capacity_proposal)
+//! - [create_decrease_working_group_leader_stake_proposal](./struct.Module.html#method.create_decrease_working_group_leader_stake_proposal)
 //!
 //! ### Proposal implementations of this module
 //! - execute_text_proposal - prints the proposal to the log
@@ -48,6 +49,8 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+// Disable this lint warning because Substrate generates function without an alias for the ProposalDetailsOf type.
+#![allow(clippy::too_many_arguments)]
 
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 // #![warn(missing_docs)]
@@ -360,6 +363,14 @@ decl_storage! {
 
         /// Grace period for the 'set working group mint capacity' proposal
         pub SetWorkingGroupMintCapacityProposalGracePeriod get(set_working_group_mint_capacity_proposal_grace_period)
+            config(): T::BlockNumber;
+
+        /// Voting period for the 'decrease working group leader stake' proposal
+        pub DecreaseWorkingGroupLeaderStakeProposalVotingPeriod get(decrease_working_group_leader_stake_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'decrease working group leader stake' proposal
+        pub DecreaseWorkingGroupLeaderStakeProposalGracePeriod get(decrease_working_group_leader_stake_proposal_grace_period)
             config(): T::BlockNumber;
     }
 }
@@ -675,7 +686,6 @@ decl_module! {
             Self::create_proposal(params)?;
         }
 
-
         /// Create 'Set working group mint capacity' proposal type.
         /// This proposal uses `set_mint_capacity()` extrinsic from the `working-group`  module.
         pub fn create_set_working_group_mint_capacity_proposal(
@@ -701,6 +711,39 @@ decl_module! {
                 stake_balance,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::set_working_group_mint_capacity_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
+        }
+
+        /// Create 'decrease working group leader stake' proposal type.
+        /// This proposal uses `decrease_stake()` extrinsic from the `working-group`  module.
+        pub fn create_decrease_working_group_leader_stake_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            worker_id: working_group::WorkerId<T>,
+            decreasing_stake: BalanceOf<T>,
+            working_group: WorkingGroup,
+        ) {
+
+            let proposal_details = ProposalDetails::DecreaseWorkingGroupLeaderStake(
+                worker_id,
+                decreasing_stake,
+                working_group
+            );
+
+            let params = CreateProposalParameters{
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::decrease_working_group_leader_stake_proposal::<T>(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
             };
 
@@ -953,6 +996,12 @@ impl<T: Trait> Module<T> {
         ));
         <SetWorkingGroupMintCapacityProposalGracePeriod<T>>::put(T::BlockNumber::from(
             p.set_working_group_mint_capacity_proposal_grace_period,
+        ));
+        <DecreaseWorkingGroupLeaderStakeProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.decrease_working_group_leader_stake_proposal_voting_period,
+        ));
+        <DecreaseWorkingGroupLeaderStakeProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.decrease_working_group_leader_stake_proposal_grace_period,
         ));
     } //TODO set defaults for new proposals
 }

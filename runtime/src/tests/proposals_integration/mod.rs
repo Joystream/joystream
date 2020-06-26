@@ -446,13 +446,14 @@ where
     SuccessfulCall: Fn() -> DispatchResult<proposals_codex::Error>,
 {
     fn call_extrinsic_and_assert(&self) {
+        let account_id: [u8; 32] = [self.member_id as u8; 32];
+
         if self.setup_environment {
             setup_members(15);
             setup_council();
-        }
 
-        let account_id: [u8; 32] = [self.member_id as u8; 32];
-        increase_total_balance_issuance_using_account_id(account_id.clone().into(), 500000);
+            increase_total_balance_issuance_using_account_id(account_id.clone().into(), 500000);
+        }
 
         assert_eq!((self.successful_call)(), Ok(()));
 

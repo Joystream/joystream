@@ -41,7 +41,7 @@ where
     invalid_stake_call: InvalidStakeCall,
     successful_call: SuccessfulCall,
     proposal_parameters: ProposalParameters<u64, u64>,
-    proposal_details: ProposalDetails<u64, u64, u64, u64, u64, u64, u64>,
+    proposal_details: ProposalDetails<u64, u64, u64, u64, u64, u64, u64, u64, u64>,
 }
 
 impl<InsufficientRightsCall, EmptyStakeCall, InvalidStakeCall, SuccessfulCall>
@@ -1125,6 +1125,74 @@ fn create_set_working_group_mint_capacity_proposal_common_checks_succeed() {
                 crate::proposal_types::parameters::set_working_group_mint_capacity_proposal::<Test>(
                 ),
             proposal_details: ProposalDetails::SetWorkingGroupMintCapacity(
+                10,
+                WorkingGroup::Storage,
+            ),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_decrease_working_group_leader_stake_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_decrease_working_group_leader_stake_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    0,
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_decrease_working_group_leader_stake_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    0,
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_decrease_working_group_leader_stake_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    0,
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_decrease_working_group_leader_stake_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(50000u32)),
+                    10,
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            proposal_parameters:
+                crate::proposal_types::parameters::decrease_working_group_leader_stake_proposal::<
+                    Test,
+                >(),
+            proposal_details: ProposalDetails::DecreaseWorkingGroupLeaderStake(
+                10,
                 10,
                 WorkingGroup::Storage,
             ),
