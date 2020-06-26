@@ -49,27 +49,38 @@ export {{#isInterface}}abstract{{/isInterface}} class {{className}}
 
 {{#fields}}
   {{#is.otm}}
-    @OneToMany(() => {{relation.columnType}}, ({{camelName}}: {{relation.columnType}}) => {{camelName}}.{{relation.relatedTsProp}})
+    @OneToMany(() => {{relation.columnType}}, (param: {{relation.columnType}}) => param.{{relation.relatedTsProp}})
     {{camelName}}?: {{relation.columnType}}[];  
   {{/is.otm}}
 
   {{#is.mto}}
-    @ManyToOne(() => {{relation.columnType}}, {{#relation.relatedTsProp}}({{camelName}}: {{relation.columnType}}) => {{camelName}}.{{relation.relatedTsProp}},{{/relation.relatedTsProp}} { 
-      skipGraphQLField: true{{^required}},
-      nullable: true{{/required}} 
+    @ManyToOne(() => {{relation.columnType}},
+      {{#relation.relatedTsProp}}
+        (param: {{relation.columnType}}) => param.{{relation.relatedTsProp}},
+      {{/relation.relatedTsProp}}
+      { 
+        skipGraphQLField: true{{^required}},
+        nullable: true{{/required}} 
     })
     {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{relation.columnType}};
   {{/is.mto}}
 
   {{#is.oto}}
-    {{^relation.joinColumn}}@OneToOne{{/relation.joinColumn}}{{#relation.joinColumn}}@OneToOneJoin{{/relation.joinColumn}}(() => {{relation.columnType}}
-      ,({{camelName}}: {{relation.columnType}}) => {{camelName}}.{{relation.relatedTsProp}})
+    {{^relation.joinColumn}}@OneToOne{{/relation.joinColumn}}
+    {{#relation.joinColumn}}@OneToOneJoin{{/relation.joinColumn}}
+    (() => {{relation.columnType}},(param: {{relation.columnType}}) => param.{{relation.relatedTsProp}})
     {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{relation.columnType}};
   {{/is.oto}}
 
   {{#is.mtm}}
-    @ManyToMany(() => {{relation.columnType}}, ({{camelName}}: {{relation.columnType}}) => {{camelName}}.{{relation.relatedTsProp}})
-    {{#relation.joinTable}}@JoinTable(){{/relation.joinTable}}
+    @ManyToMany(() => {{relation.columnType}}, (param: {{relation.columnType}}) => param.{{relation.relatedTsProp}})
+    {{#relation.joinTable}}
+      @JoinTable({
+        name: '{{relation.joinTable.tableName}}',
+        joinColumn: {name: '{{relation.joinTable.joinColumn}}' },
+        inverseJoinColumn: {name: '{{relation.joinTable.inverseJoinColumn}}' }
+      })
+    {{/relation.joinTable}}
     {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{relation.columnType}}[];
   {{/is.mtm}}
   

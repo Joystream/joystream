@@ -1,4 +1,5 @@
 import { WarthogModel, Field, ObjectType } from '../model';
+import { generateJoinColumnName, generateJoinTableName } from './utils';
 
 export class RelationshipGenerator {
   visited: string[];
@@ -10,8 +11,21 @@ export class RelationshipGenerator {
   }
 
   addMany2Many(field: Field, relatedField: Field, objType: ObjectType, relatedObject: ObjectType): void {
-    field.relation = { type: 'mtm', columnType: field.type, joinTable: true, relatedTsProp: relatedField.name };
-    relatedField.relation = { type: 'mtm', columnType: relatedField.type, relatedTsProp: field.name };
+    field.relation = {
+      type: 'mtm',
+      columnType: field.type,
+      joinTable: {
+        tableName: generateJoinTableName(objType.name, relatedObject.name),
+        joinColumn: generateJoinColumnName(objType.name),
+        inverseJoinColumn: generateJoinColumnName(relatedObject.name),
+      },
+      relatedTsProp: relatedField.name,
+    };
+    relatedField.relation = {
+      type: 'mtm',
+      columnType: relatedField.type,
+      relatedTsProp: field.name,
+    };
 
     objType.relatedEntityImports.add(relatedObject.name);
     relatedObject.relatedEntityImports.add(objType.name);
@@ -20,8 +34,16 @@ export class RelationshipGenerator {
   }
 
   addOne2Many(field: Field, relatedField: Field, objType: ObjectType, relatedObject: ObjectType): void {
-    field.relation = { type: 'otm', columnType: field.type, relatedTsProp: relatedField.name };
-    relatedField.relation = { type: 'mto', columnType: relatedField.type, relatedTsProp: field.name };
+    field.relation = {
+      type: 'otm',
+      columnType: field.type,
+      relatedTsProp: relatedField.name,
+    };
+    relatedField.relation = {
+      type: 'mto',
+      columnType: relatedField.type,
+      relatedTsProp: field.name,
+    };
 
     objType.relatedEntityImports.add(field.type);
     relatedObject.relatedEntityImports.add(objType.name);
@@ -36,8 +58,17 @@ export class RelationshipGenerator {
   }
 
   addOne2One(field: Field, relatedField: Field, objType: ObjectType, relatedObject: ObjectType): void {
-    field.relation = { type: 'oto', columnType: field.type, joinColumn: true, relatedTsProp: relatedField.name };
-    relatedField.relation = { type: 'oto', columnType: relatedField.type, relatedTsProp: field.name };
+    field.relation = {
+      type: 'oto',
+      columnType: field.type,
+      joinColumn: true,
+      relatedTsProp: relatedField.name,
+    };
+    relatedField.relation = {
+      type: 'oto',
+      columnType: relatedField.type,
+      relatedTsProp: field.name,
+    };
 
     objType.relatedEntityImports.add(relatedObject.name);
     relatedObject.relatedEntityImports.add(objType.name);
@@ -85,7 +116,8 @@ export class RelationshipGenerator {
             const derivedFields = relatedFields.filter(f => f.derivedFrom?.argument === field.name);
             if (derivedFields.length === 0) {
               throw new Error(
-                `Incorrect one to one relationship. '${relatedObject.name}' should have a derived field with @derivedFrom(field: "${field.name}") directive`
+                `Incorrect one to one relationship. '${relatedObject.name}' should have a derived field 
+                with @derivedFrom(field: "${field.name}") directive`
               );
             } else if (derivedFields.length === 1) {
               if (!derivedFields[0].isList) {
