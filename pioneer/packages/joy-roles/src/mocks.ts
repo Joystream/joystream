@@ -27,14 +27,16 @@ export function mockProfile (name: string, avatar_uri = ''): IProfile {
   };
 }
 
-export const mockStage = new OpeningStage({'Active': new ActiveOpeningStageVariant({
-  applications_added: new (Vec.with(ApplicationId))([]),
-  active_application_count: new u32(0),
-  unstaking_application_count: new u32(0),
-  deactivated_application_count: new u32(0),
-  stage: new ActiveOpeningStage({
-    'AcceptingApplications': new AcceptingApplications({
-      started_accepting_applicants_at_block: new u32(100)
+export const mockStage = new OpeningStage({
+  Active: new ActiveOpeningStageVariant({
+    applications_added: new (Vec.with(ApplicationId))([]),
+    active_application_count: new u32(0),
+    unstaking_application_count: new u32(0),
+    deactivated_application_count: new u32(0),
+    stage: new ActiveOpeningStage({
+      AcceptingApplications: new AcceptingApplications({
+        started_accepting_applicants_at_block: new u32(100)
+      })
     })
   })
-})});
+});
