@@ -306,7 +306,7 @@ export class CuratorApplication extends JoyStruct<ICuratorApplication> {
 
   // Helper for working-group compatibility
   get opening_id(): CuratorOpeningId {
-    return this.opening_id;
+    return this.curator_opening_id;
   }
 
   get member_id(): MemberId {

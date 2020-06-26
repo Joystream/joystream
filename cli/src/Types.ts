@@ -75,11 +75,6 @@ export const AvailableGroups: readonly WorkingGroups[] = [
 ] as const;
 
 // Compound working group types
-export type GroupLeadWithProfile = {
-    lead: Lead;
-    profile: Profile;
-}
-
 export type GroupMember = {
     workerId: WorkerId;
     memberId: MemberId;
