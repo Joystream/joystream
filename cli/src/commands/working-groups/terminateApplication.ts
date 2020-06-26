@@ -2,7 +2,7 @@ import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase';
 import _ from 'lodash';
 import ExitCodes from '../../ExitCodes';
 import { apiModuleByGroup } from '../../Api';
-import { ApplicationStageKeys, ApplicationId } from '@joystream/types/lib/hiring';
+import { ApplicationStageKeys, ApplicationId } from '@joystream/types/hiring';
 import chalk from 'chalk';
 
 export default class WorkingGroupsTerminateApplication extends WorkingGroupsCommandBase {

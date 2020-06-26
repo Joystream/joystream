@@ -3,7 +3,7 @@ import _ from 'lodash';
 import { OpeningStatus } from '../../Types';
 import ExitCodes from '../../ExitCodes';
 import { apiModuleByGroup } from '../../Api';
-import { OpeningId } from '@joystream/types/lib/hiring';
+import { OpeningId } from '@joystream/types/hiring';
 import chalk from 'chalk';
 
 export default class WorkingGroupsStartAcceptingApplications extends WorkingGroupsCommandBase {

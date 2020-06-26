@@ -26,7 +26,7 @@ import {
     RoleStakeProfile,
     Opening as WGOpening,
     Application as WGApplication
-} from '@joystream/types/lib/working-group';
+} from '@joystream/types/working-group';
 import {
     Opening,
     Application,
@@ -41,10 +41,10 @@ import {
     ApplicationStageKeys,
     ApplicationId,
     OpeningId
-} from '@joystream/types/lib/hiring';
-import { MemberId, Profile } from '@joystream/types/lib/members';
-import { RewardRelationship, RewardRelationshipId } from '@joystream/types/lib/recurring-rewards';
-import { Stake, StakeId } from '@joystream/types/lib/stake';
+} from '@joystream/types/hiring';
+import { MemberId, Profile } from '@joystream/types/members';
+import { RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
+import { Stake, StakeId } from '@joystream/types/stake';
 import { LinkageResult } from '@polkadot/types/codec/Linkage';
 import { Moment } from '@polkadot/types/interfaces';
 

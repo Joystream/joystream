@@ -1,5 +1,5 @@
 import BN from 'bn.js';
-import { ElectionStage, Seat } from '@joystream/types/lib/council';
+import { ElectionStage, Seat } from '@joystream/types/council';
 import { Option, Text } from '@polkadot/types';
 import { Constructor } from '@polkadot/types/types';
 import { Struct, Vec } from '@polkadot/types/codec';
@@ -7,8 +7,8 @@ import { u32 } from '@polkadot/types/primitive';
 import { BlockNumber, Balance, AccountId } from '@polkadot/types/interfaces';
 import { DerivedBalances } from '@polkadot/api-derive/types';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { WorkerId } from '@joystream/types/lib/working-group';
-import { Profile, MemberId } from '@joystream/types/lib/members';
+import { WorkerId } from '@joystream/types/working-group';
+import { Profile, MemberId } from '@joystream/types/members';
 import {
     GenericJoyStreamRoleSchema,
     JobSpecifics,
@@ -21,9 +21,9 @@ import {
     HiringProcess,
     AdditionalRolehiringProcessDetails,
     CreatorDetails
-} from '@joystream/types/lib/hiring/schemas/role.schema.typings';
+} from '@joystream/types/hiring/schemas/role.schema.typings';
 import ajv from 'ajv';
-import { Opening, StakingPolicy, ApplicationStageKeys } from '@joystream/types/lib/hiring';
+import { Opening, StakingPolicy, ApplicationStageKeys } from '@joystream/types/hiring';
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.

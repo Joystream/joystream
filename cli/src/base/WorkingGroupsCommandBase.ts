@@ -9,7 +9,7 @@ import { ApiMethodInputArg } from './ApiCommandBase';
 import fs from 'fs';
 import path from 'path';
 import _ from 'lodash';
-import { ApplicationStageKeys } from '@joystream/types/lib/hiring';
+import { ApplicationStageKeys } from '@joystream/types/hiring';
 
 const DEFAULT_GROUP = WorkingGroups.StorageProviders;
 const DRAFTS_FOLDER = '/opening-drafts';

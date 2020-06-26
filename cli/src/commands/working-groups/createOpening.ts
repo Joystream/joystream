@@ -3,7 +3,7 @@ import { HRTStruct } from '../../Types';
 import chalk from 'chalk';
 import { flags } from '@oclif/command';
 import { ApiMethodInputArg } from '../../base/ApiCommandBase';
-import { schemaValidator } from '@joystream/types/lib/hiring';
+import { schemaValidator } from '@joystream/types/hiring';
 import { apiModuleByGroup } from '../../Api';
 
 export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase {

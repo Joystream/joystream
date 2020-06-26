@@ -3,9 +3,9 @@ import _ from 'lodash';
 import { OpeningStatus } from '../../Types';
 import ExitCodes from '../../ExitCodes';
 import { apiModuleByGroup } from '../../Api';
-import { OpeningId } from '@joystream/types/lib/hiring';
-import { ApplicationIdSet } from '@joystream/types/lib/working-group';
-import { RewardPolicy } from '@joystream/types/lib/content-working-group';
+import { OpeningId } from '@joystream/types/hiring';
+import { ApplicationIdSet } from '@joystream/types/working-group';
+import { RewardPolicy } from '@joystream/types/content-working-group';
 import chalk from 'chalk';
 
 export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
