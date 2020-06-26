@@ -6,7 +6,7 @@
     "build": "tsc --build tsconfig.json",
     "test": "tap --files ts-node/register src/constantinople/tests/proposals/*Test.ts --files ts-node/register src/nicaea/tests/bureaucracy/*Test.ts",
     "test-migration": "tap --files src/rome/tests/romeRuntimeUpgradeTest.ts --files src/constantinople/tests/electingCouncilTest.ts",
-    "debug": "tap --files src/nicaea/tests/bureaucracy/manageWorkerAsLeadTest.ts -T",
+    "debug": "tap --files src/nicaea/tests/bureaucracy/workerApplicationHappyCaseTest.ts -T",
     "lint": "tslint --project tsconfig.json",
     "prettier": "prettier --write ./src"
   },
