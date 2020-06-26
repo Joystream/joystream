@@ -31,13 +31,6 @@ describe('Identities', () => {
     api = await RuntimeApi.create({ canPromptForPassphrase: true });
   });
 
-  it('creates role keys', async () => {
-    const key = await api.identities.createRoleKey('foo', 'bar');
-    expect(key).to.have.property('type', 'ed25519');
-    expect(key.meta.name).to.include('foo');
-    expect(key.meta.name).to.include('bar');
-  });
-
   it('imports keys', async () => {
     // Unlocked keys can be imported without asking for a passphrase
     await api.identities.loadUnlock('test/data/edwards_unlocked.json');
