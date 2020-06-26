@@ -245,6 +245,11 @@ export class Curator extends JoyStruct<ICurator> {
     return this.getField<GenericAccountId>('role_account')
   }
 
+  // Helper for working-group compatibility
+  get role_account_id(): GenericAccountId {
+    return this.role_account;
+  }
+
   get reward_relationship(): Option<RewardRelationshipId> {
     return this.getField<Option<RewardRelationshipId>>('reward_relationship')
   }
@@ -290,12 +295,17 @@ export class CuratorApplication extends JoyStruct<ICuratorApplication> {
     return this.getField<GenericAccountId>('role_account')
   }
 
+  // Helper for working-group compatibility
+  get role_account_id(): GenericAccountId {
+    return this.role_account;
+  }
+
   get curator_opening_id(): CuratorOpeningId {
     return this.getField<CuratorOpeningId>('curator_opening_id')
   }
 
   // Helper for working-group compatibility
-  get worker_opening_id(): CuratorOpeningId {
+  get opening_id(): CuratorOpeningId {
     return this.curator_opening_id;
   }
 
@@ -430,6 +440,11 @@ export class CuratorOpening extends JoyStruct<ICuratorOpening> {
 
   get opening_id(): OpeningId {
     return this.getField<OpeningId>('opening_id')
+  }
+
+  // Helper for working-group compatibility
+  get hiring_opening_id(): OpeningId {
+    return this.opening_id;
   }
 };
 

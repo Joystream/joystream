@@ -1,7 +1,7 @@
 import ExitCodes from '../ExitCodes';
 import AccountsCommandBase from './AccountsCommandBase';
 import { flags } from '@oclif/command';
-import { WorkingGroups, AvailableGroups, NamedKeyringPair, GroupLeadWithProfile, GroupMember } from '../Types';
+import { WorkingGroups, AvailableGroups, NamedKeyringPair, GroupMember } from '../Types';
 import { CLIError } from '@oclif/errors';
 import inquirer from 'inquirer';
 
@@ -25,11 +25,11 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
     };
 
     // Use when lead access is required in given command
-    async getRequiredLead(): Promise<GroupLeadWithProfile> {
+    async getRequiredLead(): Promise<GroupMember> {
         let selectedAccount: NamedKeyringPair = await this.getRequiredSelectedAccount();
         let lead = await this.getApi().groupLead(this.group);
 
-        if (!lead || lead.lead.role_account_id.toString() !== selectedAccount.address) {
+        if (!lead || lead.roleAccount.toString() !== selectedAccount.address) {
             this.error('Lead access required for this command!', { exit: ExitCodes.AccessDenied });
         }
 

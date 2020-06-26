@@ -12,13 +12,12 @@ import {
     AccountSummary,
     CouncilInfoObj, CouncilInfoTuple, createCouncilInfoObj,
     WorkingGroups,
-    GroupLeadWithProfile,
     GroupMember,
 } from './Types';
 import { DerivedFees, DerivedBalances } from '@polkadot/api-derive/types';
 import { CLIError } from '@oclif/errors';
 import ExitCodes from './ExitCodes';
-import { Worker, Lead as WorkerLead, WorkerId, WorkerRoleStakeProfile } from '@joystream/types/working-group';
+import { Worker, WorkerId, RoleStakeProfile } from '@joystream/types/working-group';
 import { MemberId, Profile } from '@joystream/types/members';
 import { RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
 import { Stake, StakeId } from '@joystream/types/stake';
@@ -166,21 +165,23 @@ export default class Api {
         return profile.unwrapOr(null);
     }
 
-    async groupLead (group: WorkingGroups): Promise <GroupLeadWithProfile | null> {
-        const optLead = (await this.workingGroupApiQuery(group).currentLead()) as Option<WorkerLead>;
+    async groupLead(group: WorkingGroups): Promise<GroupMember | null> {
+        const optLeadId = (await this.workingGroupApiQuery(group).currentLead()) as Option<WorkerId>;
 
-        if (!optLead.isSome) {
-          return null;
+        if (!optLeadId.isSome) {
+            return null;
         }
 
-        const lead = optLead.unwrap();
-        const profile = await this.memberProfileById(lead.member_id);
+        const leadWorkerId = optLeadId.unwrap();
+        const leadWorker = this.singleLinkageResult<Worker>(
+            await this.workingGroupApiQuery(group).workerById(leadWorkerId) as LinkageResult
+        );
 
-        if (!profile) {
-            throw new Error(`Group lead profile not found! (member id: ${lead.member_id.toNumber()})`);
+        if (!leadWorker.is_active) {
+            return null;
         }
 
-        return { lead, profile };
+        return await this.groupMember(leadWorkerId, leadWorker);
     }
 
     protected async stakeValue (stakeId: StakeId): Promise<Balance> {
@@ -188,7 +189,7 @@ export default class Api {
         return stake.value;
     }
 
-    protected async workerStake (stakeProfile: WorkerRoleStakeProfile): Promise<Balance> {
+    protected async workerStake (stakeProfile: RoleStakeProfile): Promise<Balance> {
         return this.stakeValue(stakeProfile.stake_id);
     }
 
@@ -203,7 +204,7 @@ export default class Api {
         id: WorkerId,
         worker: Worker
       ): Promise<GroupMember> {
-        const roleAccount = worker.role_account;
+        const roleAccount = worker.role_account_id;
         const memberId = worker.member_id;
 
         const profile = await this.memberProfileById(memberId);
