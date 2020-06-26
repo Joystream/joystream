@@ -9,7 +9,7 @@ import { cli as warthogCli } from '../index';
 
 import { WarthogModelBuilder } from './../parse/WarthogModelBuilder';
 import { getTemplatePath } from '../utils/utils';
-import Debug from "debug";
+import Debug from 'debug';
 import { SourcesGenerator } from '../generate/SourcesGenerator';
 
 const debug = Debug('qnode-cli:warthog-wrapper');
@@ -17,13 +17,13 @@ const debug = Debug('qnode-cli:warthog-wrapper');
 export default class WarthogWrapper {
   private readonly command: Command;
   private readonly schemaPath: string;
-  
+
   constructor(command: Command, schemaPath: string) {
     this.command = command;
     this.schemaPath = schemaPath;
   }
 
-  async run():Promise<void> {
+  async run(): Promise<void> {
     // Order of calling functions is important!!!
     await this.newProject();
 
@@ -46,10 +46,9 @@ export default class WarthogWrapper {
     this.installDependencies();
     this.generateWarthogSources();
     this.codegen();
-  
   }
 
-  async newProject(projectName = 'query_node'):Promise<void> {
+  async newProject(projectName = 'query_node'): Promise<void> {
     await warthogCli.run(`new ${projectName}`);
 
     // Override warthog's index.ts file for custom naming strategy
@@ -58,59 +57,59 @@ export default class WarthogWrapper {
     this.updateDotenv();
   }
 
-  installDependencies():void {
+  installDependencies(): void {
     if (!fs.existsSync('package.json')) {
       this.command.error('Could not found package.json file in the current working directory');
     }
 
     // Temporary tslib fix
-    const pkgFile = JSON.parse(fs.readFileSync('package.json', 'utf8')) as Record<string, Record<string, unknown>>; 
+    const pkgFile = JSON.parse(fs.readFileSync('package.json', 'utf8')) as Record<string, Record<string, unknown>>;
     pkgFile.resolutions['tslib'] = '1.11.2';
     pkgFile.scripts['sync'] = 'SYNC=true WARTHOG_DB_SYNCHRONIZE=true ts-node-dev --type-check src/index.ts';
     fs.writeFileSync('package.json', JSON.stringify(pkgFile, null, 2));
 
     this.command.log('Installing graphql-server dependencies...');
-
+    execSync('yarn add lodash'); // add lodash dep
     execSync('yarn install');
 
     this.command.log('done...');
   }
 
-  async createDB():Promise<void> {
+  async createDB(): Promise<void> {
     await warthogCli.run('db:create');
   }
 
   /**
-   * Generate the warthog source files: 
+   * Generate the warthog source files:
    *   - model/resolver/service for entities
    *   - Fulltext search queries (migration/resolver/service)
    */
-  generateWarthogSources():void {
+  generateWarthogSources(): void {
     const schemaPath = path.resolve(process.cwd(), this.schemaPath);
 
     const modelBuilder = new WarthogModelBuilder(schemaPath);
     const model = modelBuilder.buildWarthogModel();
-    
+
     const sourcesGenerator = new SourcesGenerator(model);
     sourcesGenerator.generate();
   }
 
-  codegen():void {
+  codegen(): void {
     execSync('yarn warthog codegen && yarn dotenv:generate');
   }
 
-  createMigrations():void {
+  createMigrations(): void {
     execSync('yarn sync');
   }
 
-  runMigrations():void {
-      debug('performing migrations');
-      execSync('yarn db:migrate');
+  runMigrations(): void {
+    debug('performing migrations');
+    execSync('yarn db:migrate');
   }
 
-  updateDotenv():void {
-    // copy dotnenvi env.yml file 
-    debug("Creating graphql-server/env.yml")
+  updateDotenv(): void {
+    // copy dotnenvi env.yml file
+    debug('Creating graphql-server/env.yml');
     copyFileSync(getTemplatePath('warthog.env.yml'), path.resolve(process.cwd(), 'env.yml'));
     const envConfig = dotenv.parse(fs.readFileSync('.env'));
 
