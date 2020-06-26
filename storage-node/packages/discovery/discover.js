@@ -1,5 +1,5 @@
 const axios = require('axios')
-const debug = require('debug')('discovery::discover')
+const debug = require('debug')('joystream:discovery:discover')
 const stripEndingSlash = require('@joystream/util/stripEndingSlash')
 
 const ipfs = require('ipfs-http-client')('localhost', '5001', { protocol: 'http' })
