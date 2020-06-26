@@ -39,6 +39,17 @@ export class ModelRenderer extends AbstractRenderer {
     return {}
   }
 
+  withSubclasses(): GeneratorContext {
+    if (this.objType.isInterface !== true) {
+      return {}
+    }
+    const subclasses: GeneratorContext[] = [];
+    this.model.getSubclasses(this.objType.name).map(o => subclasses.push(utils.withNames(o.name)));
+    return {
+      subclasses
+    }
+  }
+
   withEnums(): GeneratorContext {
     // we need to have a state to render exports only once
     const referncedEnums = new Set<GraphQLEnumType>();
@@ -86,6 +97,7 @@ export class ModelRenderer extends AbstractRenderer {
       ...this.withInterfaces(),
       ...this.withInterfaceProp(),
       ...this.withHasProps(),
+      ...this.withSubclasses(),
       ...utils.withNames(this.objType.name),
     };
   }

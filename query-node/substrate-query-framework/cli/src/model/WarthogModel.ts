@@ -110,6 +110,15 @@ export class WarthogModel {
   }
 
   /**
+   * Get subclasses of a given interface
+   * 
+   * @param interfaceName Name of the interface
+   */
+  getSubclasses(interfaceName: string): ObjectType[] {
+    return this._types.filter(t => t.interfaces && t.interfaces.length > 0 && t.interfaces[0].name == interfaceName);
+  }
+
+  /**
    * Lookup Warthog's Field model object by it's ObjectType and name
    *
    * @param objTypeName Type name with the given field defined
