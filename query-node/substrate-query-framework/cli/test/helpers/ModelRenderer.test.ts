@@ -258,7 +258,7 @@ describe('ModelRenderer', () => {
     generator = new ModelRenderer(model, model.lookupType('A'), enumCtxProvider);
     const rendered = generator.render(modelTemplate);
     expect(rendered).to.include('extends IEntity');
-    expect(rendered).to.include(`import { IEntity } from '../i-entity/i-entity'`, 'should import interface type');
+    expect(rendered).to.include(`import { IEntity } from '../i-entity/i-entity.model'`, 'should import interface type');
   });
 
   it('should not include interface field', function () {
