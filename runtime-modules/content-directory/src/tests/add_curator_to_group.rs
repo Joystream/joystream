@@ -99,6 +99,7 @@ fn add_curator_to_group_curators_limit_reached() {
 
         let mut number_of_curators_added = 0;
 
+        // Adding curators to the same group until limit reached
         let add_curator_to_group_result = loop {
             // Add curator to group
             let add_curator_to_group_result = add_curator_to_group(

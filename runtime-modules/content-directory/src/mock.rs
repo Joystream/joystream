@@ -20,7 +20,7 @@ type EntityId = <Runtime as Trait>::EntityId;
 type Nonce = <Runtime as Trait>::Nonce;
 
 type CuratorId = <Runtime as ActorAuthenticator>::CuratorId;
-type CuratorGroupId = <Runtime as ActorAuthenticator>::CuratorGroupId;
+pub type CuratorGroupId = <Runtime as ActorAuthenticator>::CuratorGroupId;
 type MemberId = <Runtime as ActorAuthenticator>::MemberId;
 
 /// Origins
