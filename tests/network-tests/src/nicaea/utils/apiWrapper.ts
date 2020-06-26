@@ -327,7 +327,8 @@ export class ApiWrapper {
     return this.estimateTxFee(
       this.api.tx.storageWorkingGroup.terminateRole(
         0,
-        'Long justification text explaining why the worker role will be terminated'
+        'Long justification text explaining why the worker role will be terminated',
+        false
       )
     );
   }
