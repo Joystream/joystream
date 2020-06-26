@@ -4,7 +4,7 @@ import { Option } from '@polkadot/types';
 import { BlockNumber, Balance, AccountId } from '@polkadot/types/interfaces';
 import { DerivedBalances } from '@polkadot/api-derive/types';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { WorkerId, Lead } from '@joystream/types/working-group';
+import { WorkerId } from '@joystream/types/working-group';
 import { Profile, MemberId } from '@joystream/types/members';
 
 // KeyringPair type extended with mandatory "meta.name"
