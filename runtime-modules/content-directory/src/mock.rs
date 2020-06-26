@@ -845,16 +845,20 @@ pub fn transaction(
 impl<T: Trait> Property<T> {
     pub fn default_with_name(name_len: usize) -> Self {
         let name = generate_text(name_len);
+        let description = generate_text(PropertyDescriptionLengthConstraint::get().min() as usize);
         Self {
             name,
+            description,
             ..Property::<T>::default()
         }
     }
 
     pub fn with_name_and_type(name_len: usize, property_type: PropertyType<T>) -> Self {
         let name = generate_text(name_len);
+        let description = generate_text(PropertyDescriptionLengthConstraint::get().min() as usize);
         Self {
             name,
+            description,
             property_type,
             ..Property::<T>::default()
         }

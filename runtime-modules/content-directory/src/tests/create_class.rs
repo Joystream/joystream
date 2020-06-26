@@ -67,6 +67,12 @@ fn create_class_limit_reached() {
             }
         };
 
+        // Ensure number of classes created is equal to MaxNumberOfClasses runtime constraint
+        assert_eq!(
+            number_of_classes_created,
+            MaxNumberOfClasses::get() as usize
+        );
+
         // Failure checked
         assert_failure(
             create_class_result,

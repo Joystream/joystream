@@ -3,7 +3,7 @@
 
 pub const ERROR_PROPERTY_NAME_TOO_SHORT: &str = "Property name is too short";
 pub const ERROR_PROPERTY_NAME_TOO_LONG: &str = "Property name is too long";
-pub const ERROR_PROPERTY_DESCRIPTION_TOO_SHORT: &str = "Property description is too long";
+pub const ERROR_PROPERTY_DESCRIPTION_TOO_SHORT: &str = "Property description is too short";
 pub const ERROR_PROPERTY_DESCRIPTION_TOO_LONG: &str = "Property description is too long";
 
 pub const ERROR_CLASS_NAME_TOO_SHORT: &str = "Class name is too short";
