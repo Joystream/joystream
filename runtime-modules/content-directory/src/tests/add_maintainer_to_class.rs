@@ -102,7 +102,7 @@ fn add_maintainer_to_non_existent_class() {
 
         // Make an attempt to add maintainer to non existent class
         let add_maintainer_result =
-            add_maintainer_to_class(LEAD_ORIGIN, FIRST_CLASS_ID, FIRST_CURATOR_GROUP_ID);
+            add_maintainer_to_class(LEAD_ORIGIN, UNKNOWN_CLASS_ID, FIRST_CURATOR_GROUP_ID);
 
         // Failure checked
         assert_failure(
