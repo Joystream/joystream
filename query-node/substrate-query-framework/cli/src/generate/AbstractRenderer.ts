@@ -25,6 +25,7 @@ export abstract class AbstractRenderer {
     return prettier.format(rendered, {
       parser: 'typescript',
       singleQuote: true,
+      printWidth: 120,
     });
   }
 }
