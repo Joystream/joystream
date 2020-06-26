@@ -53,7 +53,7 @@ pub const SECOND_ENTITY_ID: EntityId = 2;
 pub const UNKNOWN_CLASS_ID: ClassId = 111;
 // pub const UNKNOWN_ENTITY_ID: EntityId = 222;
 // pub const UNKNOWN_PROPERTY_ID: PropertyId = 333;
-// pub const UNKNOWN_SCHEMA_ID: SchemaId = 444;
+pub const UNKNOWN_SCHEMA_ID: SchemaId = 444;
 
 pub const UNKNOWN_CURATOR_GROUP_ID: CuratorGroupId = 555;
 
