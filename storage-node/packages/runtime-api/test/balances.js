@@ -49,7 +49,4 @@ describe('Balances', () => {
     // >= 0 comparison works
     expect(fee.cmpn(0)).to.be.at.least(0);
   });
-
-  // TODO implemtable only with accounts with balance
-  it('can transfer funds');
 });
