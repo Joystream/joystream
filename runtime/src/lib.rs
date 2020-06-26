@@ -812,6 +812,10 @@ impl forum::Trait for Runtime {
     type ModeratorId = ModeratorId;
     type CategoryId = u64;
     type LabelId = u64;
+
+    fn is_lead(_account_id: &AccountId) -> bool {
+        true
+    }
 }
 
 impl migration::Trait for Runtime {

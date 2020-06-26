@@ -3,8 +3,7 @@
 use super::new_validation;
 use node_runtime::{
     forum::{Category, Post, Thread},
-    AccountId, BlockNumber, CategoryId, ForumConfig, ForumUserId, ModeratorId, Moment, PostId,
-    ThreadId,
+    BlockNumber, CategoryId, ForumConfig, ForumUserId, ModeratorId, Moment, PostId, ThreadId,
 };
 use serde::Deserialize;
 use serde_json::Result;
@@ -32,7 +31,7 @@ fn parse_forum_json() -> Result<ForumData> {
     serde_json::from_str(data)
 }
 
-pub fn create(forum_sudo: AccountId) -> ForumConfig {
+pub fn create() -> ForumConfig {
     let forum_data = parse_forum_json().expect("failed loading forum data");
 
     let next_category_id: CategoryId = forum_data
@@ -49,7 +48,6 @@ pub fn create(forum_sudo: AccountId) -> ForumConfig {
         next_category_id,
         next_thread_id,
         next_post_id,
-        forum_sudo,
         category_title_constraint: new_validation(10, 90),
         category_description_constraint: new_validation(10, 490),
         thread_title_constraint: new_validation(10, 90),

@@ -43,7 +43,7 @@ fn add_labels() {
 // test case for create a new forum user
 fn create_forum_user_account_id() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     build_test_externalities(config).execute_with(|| {
         create_forum_user_mock(
             forum_sudo,
@@ -67,7 +67,7 @@ fn create_forum_user_account_id() {
 // test case for check forum user name
 fn create_forum_user_name() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let names = vec![
         generate_text(config.user_name_constraint.min as usize),
         generate_text((config.user_name_constraint.min - 1) as usize),
@@ -96,7 +96,7 @@ fn create_forum_user_name() {
 // test case for check self introduction
 fn create_forum_user_self_introduction() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let introductions = vec![
         generate_text(config.user_self_introduction_constraint.min as usize),
         generate_text((config.user_self_introduction_constraint.min - 1) as usize),
@@ -125,7 +125,7 @@ fn create_forum_user_self_introduction() {
 // test case for check post footer
 fn create_forum_user_post_footer() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let post_footers = vec![
         Some(generate_text(config.post_footer_constraint.min as usize)),
         Some(generate_text(
@@ -161,7 +161,7 @@ fn create_forum_user_post_footer() {
 // test case for create a new moderator
 fn create_moderator_account_id() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     build_test_externalities(config).execute_with(|| {
         create_moderator_mock(
             forum_sudo,
@@ -183,7 +183,7 @@ fn create_moderator_account_id() {
 // test case for check moderator's name
 fn create_moderator_name() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let names = vec![
         generate_text(config.user_name_constraint.min as usize),
         generate_text((config.user_name_constraint.min - 1) as usize),
@@ -211,7 +211,7 @@ fn create_moderator_name() {
 // test case for check moderator's self introduction
 fn create_moderator_self_introduction() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let introductions = vec![
         generate_text(config.user_self_introduction_constraint.min as usize),
         generate_text((config.user_self_introduction_constraint.min - 1) as usize),
@@ -242,7 +242,7 @@ fn create_moderator_self_introduction() {
 // test set max category depth works
 fn set_max_category_depth() {
     let config = default_genesis_config();
-    let origin = OriginType::Signed(config.forum_sudo);
+    let origin = FORUM_SUDO_ORIGIN;
     build_test_externalities(config).execute_with(|| {
         set_max_category_depth_mock(NOT_FORUM_SUDO_ORIGIN, 1, Err(ERROR_ORIGIN_NOT_FORUM_SUDO));
         set_max_category_depth_mock(origin, 1, Ok(()));
@@ -256,7 +256,7 @@ fn set_max_category_depth() {
 // test case for check if origin is forum sudo
 fn set_moderator_category_origin() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
 
     build_test_externalities(config).execute_with(|| {
@@ -289,7 +289,7 @@ fn set_moderator_category_origin() {
 // test case for check whether category is existed.
 fn set_moderator_category_category() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
         let moderator_id = create_moderator_mock(
@@ -321,7 +321,7 @@ fn set_moderator_category_category() {
 // test case for check if account id registered as moderator
 fn set_moderator_category_account_id() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(default_genesis_config()).execute_with(|| {
         let category_id = create_category_mock(
@@ -360,31 +360,10 @@ fn set_moderator_category_account_id() {
     });
 }
 
-/*
- * set_forum_sudo
- */
-#[test]
-// test the blockchain sudo account can update forum sudo
-fn set_forum_sudo() {
-    let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
-    let origin = OriginType::Signed(forum_sudo);
-    build_test_externalities(config).execute_with(|| {
-        set_forum_sudo_mock(origin, Some(forum_sudo), Err(require_root_origin()));
-        set_forum_sudo_mock(OriginType::Root, Some(forum_sudo), Ok(()));
-    });
-}
-
-/*
- * set_forum_sudo
- */
 #[test]
 // test case for check if origin is forum sudo
 fn create_category_origin() {
-    let origins = vec![
-        OriginType::Signed(default_genesis_config().forum_sudo),
-        NOT_FORUM_SUDO_ORIGIN,
-    ];
+    let origins = vec![FORUM_SUDO_ORIGIN, NOT_FORUM_SUDO_ORIGIN];
     let results = vec![Ok(()), Err(ERROR_ORIGIN_NOT_FORUM_SUDO)];
     for index in 0..origins.len() {
         let config = default_genesis_config();
@@ -414,7 +393,7 @@ fn create_category_parent() {
 
     for index in 0..parents.len() {
         let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
+        let forum_sudo = FORUM_SUDO_ORIGIN_ID;
         let origin = OriginType::Signed(forum_sudo);
         build_test_externalities(config).execute_with(|| {
             create_category_mock(
@@ -459,7 +438,7 @@ fn create_category_parent() {
 // test case set category depth
 fn create_category_depth() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
         create_category_mock(
@@ -509,7 +488,7 @@ fn create_category_depth() {
 // test category title length
 fn create_category_title() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     let titles = vec![
         generate_text(config.category_title_constraint.min as usize),
@@ -540,7 +519,7 @@ fn create_category_title() {
 // test for category description text length
 fn create_category_description() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     let descriptions = vec![
         generate_text(config.category_description_constraint.min as usize),
@@ -570,8 +549,7 @@ fn create_category_description() {
 #[test]
 // test if category labels is valid
 fn create_category_labels() {
-    let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     let labels: Vec<BTreeSet<<Runtime as Trait>::LabelId>> = vec![
         {
@@ -623,15 +601,12 @@ fn create_category_labels() {
 #[test]
 // test if category updator is forum sudo
 fn update_category_origin() {
-    let origins = [
-        OriginType::Signed(default_genesis_config().forum_sudo),
-        NOT_FORUM_SUDO_ORIGIN,
-    ];
+    let origins = [FORUM_SUDO_ORIGIN, NOT_FORUM_SUDO_ORIGIN];
     let results = vec![Ok(()), Err(ERROR_ORIGIN_NOT_FORUM_SUDO)];
 
     for index in 0..origins.len() {
         let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
+        let forum_sudo = FORUM_SUDO_ORIGIN_ID;
         let origin = OriginType::Signed(forum_sudo);
         build_test_externalities(config).execute_with(|| {
             create_category_mock(
@@ -650,7 +625,7 @@ fn update_category_origin() {
 // test case for new setting actually not update category status
 fn update_category_without_updates() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
         create_category_mock(
@@ -668,7 +643,7 @@ fn update_category_without_updates() {
 // test case for new setting actually not update category status
 fn update_category_without_updates_two() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
         create_category_mock(
@@ -693,7 +668,7 @@ fn update_category_without_updates_two() {
 // test case for new setting actually not update category status
 fn update_category_without_updates_three() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
         create_category_mock(
@@ -719,7 +694,7 @@ fn update_category_without_updates_three() {
 // test unarchived not doable after category deleted
 fn update_category_deleted_then_unarchived() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
         create_category_mock(
@@ -777,7 +752,7 @@ fn update_category_labels() {
 
     for index in 0..labels.len() {
         let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
+        let forum_sudo = FORUM_SUDO_ORIGIN_ID;
         let origin = OriginType::Signed(forum_sudo);
         build_test_externalities(config).execute_with(|| {
             create_labels_mock();
@@ -810,7 +785,7 @@ fn update_category_labels() {
 // test setting category moderator
 fn update_category_labels_moderator() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
         create_labels_mock();
@@ -844,14 +819,11 @@ fn update_category_labels_moderator() {
 #[test]
 // test if thread creator is valid forum user
 fn create_thread_origin() {
-    let origins = [
-        OriginType::Signed(default_genesis_config().forum_sudo),
-        NOT_FORUM_SUDO_ORIGIN,
-    ];
+    let origins = [FORUM_SUDO_ORIGIN, NOT_FORUM_SUDO_ORIGIN];
     let results = vec![Ok(()), Err(ERROR_FORUM_USER_ID_NOT_MATCH_ACCOUNT)];
     for index in 0..origins.len() {
         let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
+        let forum_sudo = FORUM_SUDO_ORIGIN_ID;
         let origin = OriginType::Signed(forum_sudo);
 
         build_test_externalities(config).execute_with(|| {
@@ -900,7 +872,7 @@ fn create_thread_title() {
     ];
     for index in 0..titles.len() {
         let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
+        let forum_sudo = FORUM_SUDO_ORIGIN_ID;
         let origin = OriginType::Signed(forum_sudo);
 
         build_test_externalities(config).execute_with(|| {
@@ -950,7 +922,7 @@ fn create_thread_text() {
     ];
     for index in 0..texts.len() {
         let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
+        let forum_sudo = FORUM_SUDO_ORIGIN_ID;
         let origin = OriginType::Signed(forum_sudo);
 
         build_test_externalities(config).execute_with(|| {
@@ -994,7 +966,7 @@ fn create_thread_labels() {
     ];
     for index in 0..labels.len() {
         let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
+        let forum_sudo = FORUM_SUDO_ORIGIN_ID;
         let origin = OriginType::Signed(forum_sudo);
 
         build_test_externalities(config).execute_with(|| {
@@ -1038,7 +1010,7 @@ fn create_thread_poll_timestamp() {
     let results = vec![Ok(()), Err(ERROR_POLL_TIME_SETTING)];
     for index in 0..results.len() {
         let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
+        let forum_sudo = FORUM_SUDO_ORIGIN_ID;
         let origin = OriginType::Signed(forum_sudo);
 
         build_test_externalities(config).execute_with(|| {
@@ -1088,7 +1060,7 @@ fn update_thread_labels_by_author() {
     ];
     for index in 0..labels.len() {
         let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
+        let forum_sudo = FORUM_SUDO_ORIGIN_ID;
         let origin = OriginType::Signed(forum_sudo);
 
         build_test_externalities(config).execute_with(|| {
@@ -1144,7 +1116,7 @@ fn update_thread_labels_by_moderator() {
     ];
     for index in 0..labels.len() {
         let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
+        let forum_sudo = FORUM_SUDO_ORIGIN_ID;
         let origin = OriginType::Signed(forum_sudo);
 
         build_test_externalities(config).execute_with(|| {
@@ -1201,14 +1173,11 @@ fn update_thread_labels_by_moderator() {
 #[test]
 // test if poll submitter is a forum user
 fn vote_on_poll_origin() {
-    let origins = vec![
-        OriginType::Signed(default_genesis_config().forum_sudo),
-        NOT_FORUM_SUDO_ORIGIN,
-    ];
+    let origins = vec![FORUM_SUDO_ORIGIN, NOT_FORUM_SUDO_ORIGIN];
     let results = vec![Ok(()), Err(ERROR_FORUM_USER_ID_NOT_MATCH_ACCOUNT)];
     for index in 0..origins.len() {
         let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
+        let forum_sudo = FORUM_SUDO_ORIGIN_ID;
         let origin = OriginType::Signed(forum_sudo);
         build_test_externalities(config).execute_with(|| {
             let forum_user_id = create_forum_user_mock(
@@ -1252,7 +1221,7 @@ fn vote_on_poll_origin() {
 // test if poll metadata created
 fn vote_on_poll_exists() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
         let forum_user_id = create_forum_user_mock(
@@ -1294,7 +1263,7 @@ fn vote_on_poll_exists() {
 // test if forum reject poll submit after expiration
 fn vote_on_poll_expired() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
         let forum_user_id = create_forum_user_mock(
@@ -1336,7 +1305,7 @@ fn vote_on_poll_expired() {
 // test if thread moderator registered as valid moderator
 fn moderate_thread_origin_ok() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
         let forum_user_id = create_forum_user_mock(
@@ -1391,7 +1360,7 @@ fn moderate_thread_rationale() {
     ];
     for index in 0..rationales.len() {
         let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
+        let forum_sudo = FORUM_SUDO_ORIGIN_ID;
         let origin = OriginType::Signed(forum_sudo);
         build_test_externalities(config).execute_with(|| {
             let forum_user_id = create_forum_user_mock(
@@ -1444,14 +1413,11 @@ fn moderate_thread_rationale() {
 #[test]
 // test if post origin registered as forum user
 fn add_post_origin() {
-    let origins = vec![
-        OriginType::Signed(default_genesis_config().forum_sudo),
-        NOT_FORUM_SUDO_ORIGIN,
-    ];
+    let origins = vec![FORUM_SUDO_ORIGIN, NOT_FORUM_SUDO_ORIGIN];
     let results = vec![Ok(()), Err(ERROR_FORUM_USER_ID_NOT_MATCH_ACCOUNT)];
     for index in 0..origins.len() {
         let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
+        let forum_sudo = FORUM_SUDO_ORIGIN_ID;
         let origin = OriginType::Signed(forum_sudo);
         build_test_externalities(config).execute_with(|| {
             let forum_user_id = create_forum_user_mock(
@@ -1508,7 +1474,7 @@ fn add_post_text() {
     ];
     for index in 0..texts.len() {
         let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
+        let forum_sudo = FORUM_SUDO_ORIGIN_ID;
         let origin = OriginType::Signed(forum_sudo);
         build_test_externalities(config).execute_with(|| {
             let forum_user_id = create_forum_user_mock(
@@ -1565,7 +1531,7 @@ fn edit_post_text() {
     ];
     for index in 0..texts.len() {
         let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
+        let forum_sudo = FORUM_SUDO_ORIGIN_ID;
         let origin = OriginType::Signed(forum_sudo);
         build_test_externalities(config).execute_with(|| {
             let forum_user_id = create_forum_user_mock(
@@ -1628,8 +1594,8 @@ fn react_post() {
     ];
     for index in 0..new_values.len() {
         let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo.clone();
-        let origin = OriginType::Signed(config.forum_sudo);
+        let forum_sudo = FORUM_SUDO_ORIGIN_ID;
+        let origin = FORUM_SUDO_ORIGIN;
 
         build_test_externalities(config).execute_with(|| {
             let forum_user_id = create_forum_user_mock(
@@ -1690,14 +1656,11 @@ fn react_post() {
 #[test]
 // test if post moderator registered
 fn moderate_post_origin() {
-    let origins = vec![
-        OriginType::Signed(default_genesis_config().forum_sudo),
-        NOT_FORUM_SUDO_ORIGIN,
-    ];
+    let origins = vec![FORUM_SUDO_ORIGIN, NOT_FORUM_SUDO_ORIGIN];
     let results = vec![Ok(()), Err(ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT)];
     for index in 0..origins.len() {
         let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
+        let forum_sudo = FORUM_SUDO_ORIGIN_ID;
         let origin = OriginType::Signed(forum_sudo);
         build_test_externalities(config).execute_with(|| {
             let forum_user_id = create_forum_user_mock(
@@ -1768,7 +1731,7 @@ fn moderate_post_rationale() {
     ];
     for index in 0..rationales.len() {
         let config = default_genesis_config();
-        let forum_sudo = config.forum_sudo;
+        let forum_sudo = FORUM_SUDO_ORIGIN_ID;
         let origin = OriginType::Signed(forum_sudo);
         build_test_externalities(config).execute_with(|| {
             let forum_user_id = create_forum_user_mock(
@@ -1826,7 +1789,7 @@ fn moderate_post_rationale() {
 #[test]
 fn set_stickied_threads_ok() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
         let forum_user_id = create_forum_user_mock(
@@ -1868,7 +1831,7 @@ fn set_stickied_threads_ok() {
 #[test]
 fn set_stickied_threads_wrong_moderator() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
         let forum_user_id = create_forum_user_mock(
@@ -1916,7 +1879,7 @@ fn set_stickied_threads_wrong_moderator() {
 #[test]
 fn set_stickied_threads_thread_not_exists() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
         let forum_user_id = create_forum_user_mock(
@@ -1965,7 +1928,7 @@ fn set_stickied_threads_thread_not_exists() {
 #[test]
 fn set_stickied_threads_wrong_category() {
     let config = default_genesis_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
         let forum_user_id = create_forum_user_mock(
@@ -2031,7 +1994,7 @@ fn set_stickied_threads_wrong_category() {
 #[test]
 fn test_migration_not_done() {
     let config = migration_not_done_config();
-    let forum_sudo = config.forum_sudo;
+    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
         let forum_user_id = 1;

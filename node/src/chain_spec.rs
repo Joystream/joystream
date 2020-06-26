@@ -255,9 +255,7 @@ pub fn testnet_genesis(
             default_paid_membership_fee: 100u128,
             members: crate::members_config::initial_members(),
         }),
-        forum: Some(crate::forum_config::from_serialized::create(
-            endowed_accounts[0].clone(),
-        )),
+        forum: Some(crate::forum_config::from_serialized::create()),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {
             first_data_object_type_id: 1,
         }),

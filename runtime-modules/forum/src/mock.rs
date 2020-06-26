@@ -71,22 +71,28 @@ impl Trait for Runtime {
     type ThreadId = u64;
     type LabelId = u64;
     type PostId = u64;
+
+    fn is_lead(account_id: &<Self as system::Trait>::AccountId) -> bool {
+        *account_id == FORUM_SUDO_ORIGIN_ID
+    }
 }
 
 #[derive(Clone)]
 pub enum OriginType {
     Signed(<Runtime as system::Trait>::AccountId),
     //Inherent, <== did not find how to make such an origin yet
-    Root,
 }
 
 pub fn mock_origin(origin: OriginType) -> mock::Origin {
     match origin {
         OriginType::Signed(account_id) => Origin::signed(account_id),
         //OriginType::Inherent => Origin::inherent,
-        OriginType::Root => system::RawOrigin::Root.into(), //Origin::root
     }
 }
+
+pub const FORUM_SUDO_ORIGIN_ID: <Runtime as system::Trait>::AccountId = 110;
+
+pub const FORUM_SUDO_ORIGIN: OriginType = OriginType::Signed(FORUM_SUDO_ORIGIN_ID);
 
 pub const NOT_FORUM_SUDO_ORIGIN_ID: <Runtime as system::Trait>::AccountId = 111;
 
@@ -95,10 +101,6 @@ pub const NOT_FORUM_SUDO_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_SUDO_
 pub const INVLAID_CATEGORY_ID: <Runtime as Trait>::CategoryId = 333;
 
 pub const NOT_REGISTER_MODERATOR_ID: <Runtime as Trait>::ModeratorId = 666;
-
-pub fn require_root_origin() -> &'static str {
-    "RequireRootOrigin"
-}
 
 pub fn generate_text(len: usize) -> Vec<u8> {
     vec![b'x'; len]
@@ -430,27 +432,6 @@ pub fn add_labels_mock(labels: Vec<Vec<u8>>, result: Result<(), &'static str>) -
     labels.len()
 }
 
-pub fn set_forum_sudo_mock(
-    origin: OriginType,
-    new_forum_sudo: Option<<Runtime as system::Trait>::AccountId>,
-    result: Result<(), &'static str>,
-) {
-    let old_forum_sudo = TestForumModule::forum_sudo();
-
-    assert_eq!(
-        TestForumModule::set_forum_sudo(mock_origin(origin), new_forum_sudo),
-        result
-    );
-
-    if result.is_ok() {
-        assert_eq!(TestForumModule::forum_sudo(), new_forum_sudo);
-        assert_eq!(
-            System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ForumSudoSet(old_forum_sudo, new_forum_sudo,))
-        );
-    };
-}
-
 pub fn set_max_category_depth_mock(
     origin: OriginType,
     max_category_depth: u8,
@@ -768,7 +749,6 @@ pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime
         post_by_id: vec![],
         next_post_id: 1,
 
-        forum_sudo: 33,
         category_by_moderator: vec![],
         max_category_depth: 5,
         reaction_by_post: vec![],

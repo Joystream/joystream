@@ -283,6 +283,8 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + PartialEq
         + From<u64>
         + Into<u64>;
+
+    fn is_lead(account_id: &<Self as system::Trait>::AccountId) -> bool;
 }
 
 /*
@@ -327,7 +329,6 @@ impl InputValidationLengthConstraint {
 }
 
 /// Error about users
-const ERROR_FORUM_SUDO_NOT_SET: &str = "Forum sudo not set.";
 const ERROR_ORIGIN_NOT_FORUM_SUDO: &str = "Origin not forum sudo.";
 const ERROR_NOT_FORUM_USER: &str = "Not forum user.";
 const ERROR_NOT_MODERATOR_USER: &str = "Not moderator user.";
@@ -401,7 +402,7 @@ const ERROR_DATA_MIGRATION_NOT_DONE: &str = "data migration not done yet.";
 //#[cfg(any(feature = "std", test))]
 //use sr_primitives::{StorageOverlay, ChildrenStorageOverlay};
 
-use system::{ensure_root, ensure_signed};
+use system::ensure_signed;
 
 /// Represents a user's information in this forum.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
@@ -732,9 +733,6 @@ decl_storage! {
         /// Max depth of category.
         pub MaxCategoryDepth get(max_category_depth) config(): u8;
 
-        /// Account of forum sudo.
-        pub ForumSudo get(forum_sudo) config(): Option<T::AccountId>;
-
         /// Moderator set for each Category
         pub CategoryByModerator get(category_by_moderator) config(): double_map T::CategoryId, blake2_256(T::ModeratorId) => bool;
 
@@ -800,7 +798,6 @@ decl_storage! {
 decl_event!(
     pub enum Event<T>
     where
-        <T as system::Trait>::AccountId,
         <T as Trait>::CategoryId,
         <T as Trait>::ThreadId,
         <T as Trait>::PostId,
@@ -830,9 +827,6 @@ decl_event!(
         /// Post with given id had its text updated.
         /// The second argument reflects the number of total edits when the text update occurs.
         PostTextUpdated(PostId, u64),
-
-        /// Given account was set as forum sudo.
-        ForumSudoSet(Option<AccountId>, Option<AccountId>),
 
         /// Thumb up post
         PostReacted(ForumUserId, PostId, PostReaction),
@@ -871,8 +865,8 @@ decl_module! {
 
             // ensure category exists.
             ensure!(
-            <CategoryById<T>>::exists(&category_id),
-            ERROR_CATEGORY_DOES_NOT_EXIST
+                <CategoryById<T>>::exists(&category_id),
+                ERROR_CATEGORY_DOES_NOT_EXIST
             );
 
             // Get moderator id.
@@ -898,31 +892,6 @@ decl_module! {
             // Store event into runtime
             Self::deposit_event(RawEvent::MaxCategoryDepthUpdated(max_category_depth));
 
-            Ok(())
-        }
-
-        /// Set forum sudo.
-        fn set_forum_sudo(origin, new_forum_sudo: Option<T::AccountId>) -> dispatch::Result {
-            ensure_root(origin)?;
-
-            /*
-             * Question: when this routine is called by non sudo or with bad signature, what error is raised?
-             * Update ERror set in spec
-             */
-
-            // Hold on to old value
-            let old_forum_sudo = <ForumSudo<T>>::get();
-
-            // Update forum sudo
-            match new_forum_sudo.clone() {
-                Some(account_id) => <ForumSudo<T>>::mutate(|value| *value = Some(account_id)),
-                None => <ForumSudo<T>>::kill()
-            };
-
-            // Generate event
-            Self::deposit_event(RawEvent::ForumSudoSet(old_forum_sudo, new_forum_sudo));
-
-            // All good.
             Ok(())
         }
 
@@ -1957,20 +1926,10 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_forum_sudo_set() -> Result<T::AccountId, &'static str> {
-        match <ForumSudo<T>>::get() {
-            Some(account_id) => Ok(account_id),
-            None => Err(ERROR_FORUM_SUDO_NOT_SET),
-        }
-    }
-
     fn ensure_is_forum_sudo(account_id: &T::AccountId) -> dispatch::Result {
-        let forum_sudo_account = Self::ensure_forum_sudo_set()?;
+        let is_sudo = T::is_lead(account_id);
 
-        ensure!(
-            *account_id == forum_sudo_account,
-            ERROR_ORIGIN_NOT_FORUM_SUDO
-        );
+        ensure!(is_sudo, ERROR_ORIGIN_NOT_FORUM_SUDO);
         Ok(())
     }
 
