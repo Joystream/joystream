@@ -26,8 +26,7 @@ import {
   Application as WGApplication,
   Opening as WGOpening,
   Worker, WorkerId,
-  RoleStakeProfile,
-  Lead as LeadOf
+  RoleStakeProfile
 } from '@joystream/types/working-group';
 
 import { Application, Opening, OpeningId, ApplicationId } from '@joystream/types/hiring';
@@ -85,7 +84,7 @@ type GroupOpeningId = CuratorOpeningId | OpeningId;
 type GroupWorker = Worker | Curator;
 type GroupWorkerId = CuratorId | WorkerId;
 type GroupWorkerStakeProfile = RoleStakeProfile | CuratorRoleStakeProfile;
-type GroupLead = Lead | LeadOf;
+type GroupLead = Lead | Worker;
 type GroupLeadWithMemberId = {
   lead: GroupLead;
   memberId: MemberId;
@@ -313,15 +312,26 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   protected async currentStorageLead (): Promise <GroupLeadWithMemberId | null> {
-    const optLead = (await this.cachedApi.query.storageWorkingGroup.currentLead()) as Option<LeadOf>;
+    const optLeadId = (await this.cachedApi.query.storageWorkingGroup.currentLead()) as Option<WorkerId>;
 
-    if (!optLead.isSome) {
+    if (!optLeadId.isSome) {
+      return null;
+    }
+
+    const leadWorkerId = optLeadId.unwrap();
+    const leadWorkerLink = new SingleLinkedMapEntry(
+      Worker,
+      await this.cachedApi.query.storageWorkingGroup.workerById(leadWorkerId)
+    );
+    const leadWorker = leadWorkerLink.value;
+
+    if (!leadWorker.is_active) {
       return null;
     }
 
     return {
-      lead: optLead.unwrap(),
-      memberId: optLead.unwrap().member_id
+      lead: leadWorker,
+      memberId: leadWorker.member_id
     };
   }
 

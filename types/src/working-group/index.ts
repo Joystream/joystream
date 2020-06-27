@@ -7,31 +7,6 @@ import { RewardRelationshipId } from '../recurring-rewards';
 import { StakeId } from '../stake';
 import { ApplicationId, OpeningId, ApplicationRationingPolicy, StakingPolicy } from '../hiring';
 
-export type ILead = {
-  member_id: MemberId,
-  role_account_id: AccountId
-};
-
-// This type is also defined in /content-workig-group (and those are incosistent), but here
-// it is beeing registered as "LeadOf" (which is an alias used by the runtime working-group module),
-// so it shouldn't cause any conflicts
-export class Lead extends JoyStruct<ILead> {
-  constructor (value?: ILead) {
-    super({
-      member_id: MemberId,
-      role_account_id: "AccountId"
-    }, value);
-  }
-
-  get member_id(): MemberId {
-    return this.getField<MemberId>('member_id')
-  }
-
-  get role_account_id(): AccountId {
-    return this.getField<AccountId>('role_account_id')
-  }
-};
-
 export class RationaleText extends Bytes { };
 
 export type IApplication = {
@@ -269,16 +244,16 @@ export class WorkingGroupOpeningPolicyCommitment extends JoyStruct<IWorkingGroup
 };
 
 export enum OpeningTypeKeys {
-  Worker = 'Worker',
-  Leader = 'Leader'
+  Leader = 'Leader',
+  Worker = 'Worker'
 };
 
 export class OpeningType extends Enum {
   constructor (value?: any, index?: number) {
     super(
       {
-        Worker: Null,
         Leader: Null,
+        Worker: Null
       },
       value, index
     );
@@ -325,9 +300,6 @@ export class Opening extends JoyStruct<IOpening> {
 export function registerWorkingGroupTypes() {
   try {
     getTypeRegistry().register({
-      // Note that it actually HAS TO be "LeadOf" in the runtime,
-      // otherwise there would be conflicts with the current content-workig-group module
-      LeadOf: Lead,
       RationaleText,
       ApplicationOf: Application,
       ApplicationIdSet,
