@@ -10,6 +10,11 @@ export interface ExtendedEnum<Types extends Record<string, Constructor>> extends
 // Helper for creating extended Enum type with TS-compatible isOfType and asType helpers
 export function JoyEnum<Types extends Record<string, Constructor>>(types: Types): EnumConstructor<ExtendedEnum<Types>>
 {
+  // Unique values check
+  if (Object.values(types).some((val, i) => Object.values(types).indexOf(val, i + 1) !== -1)) {
+    throw new Error('Values passed to JoyEnum are not unique. Create an individual class for each value.');
+  }
+
   return class extends Enum {
     constructor(value?: any, index?: number) {
       super(types, value, index);
