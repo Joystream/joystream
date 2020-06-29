@@ -5,7 +5,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { UserInfo, PaidMembershipTerms, MemberId } from '@nicaea/types/members';
 import { Mint, MintId } from '@nicaea/types/mint';
 import { Lead, LeadId } from '@nicaea/types/content-working-group';
-import { Application, WorkerId, Worker } from '@nicaea/types/working-group';
+import { Application, WorkerId, Worker, ApplicationIdToWorkerIdMap, Opening } from '@nicaea/types/working-group';
 import { Application as HiringApplication } from '@nicaea/types/hiring';
 import { RoleParameters } from '@nicaea/types/roles';
 import { Seat } from '@nicaea/types/lib/council';
@@ -16,7 +16,7 @@ import { Sender } from './sender';
 import { Utils } from './utils';
 import { Stake, StakedState } from '@nicaea/types/stake';
 import { RewardRelationship } from '@nicaea/types/recurring-rewards';
-import { Opening, ApplicationId } from '@nicaea/types/hiring';
+import { Opening as HiringOpening, ApplicationId } from '@nicaea/types/hiring';
 
 export class ApiWrapper {
   private readonly api: ApiPromise;
@@ -685,6 +685,42 @@ export class ApiWrapper {
     });
   }
 
+  public expectOpeningFilled(): Promise<ApplicationIdToWorkerIdMap> {
+    return new Promise(async resolve => {
+      await this.api.query.system.events<Vec<EventRecord>>(events => {
+        events.forEach(record => {
+          if (record.event.method && record.event.method.toString() === 'OpeningFilled') {
+            resolve((record.event.data[1] as unknown) as ApplicationIdToWorkerIdMap);
+          }
+        });
+      });
+    });
+  }
+
+  public expectOpeningAdded(): Promise<BN> {
+    return new Promise(async resolve => {
+      await this.api.query.system.events<Vec<EventRecord>>(events => {
+        events.forEach(record => {
+          if (record.event.method && record.event.method.toString() === 'OpeningAdded') {
+            resolve((record.event.data as unknown) as BN);
+          }
+        });
+      });
+    });
+  }
+
+  public expectApplicationReviewBegan(): Promise<void> {
+    return new Promise(async resolve => {
+      await this.api.query.system.events<Vec<EventRecord>>(events => {
+        events.forEach(record => {
+          if (record.event.method && record.event.method.toString() === 'BeganApplicationReview') {
+            resolve();
+          }
+        });
+      });
+    });
+  }
+
   public getTotalIssuance(): Promise<BN> {
     return this.api.query.balances.totalIssuance<Balance>();
   }
@@ -1090,11 +1126,15 @@ export class ApiWrapper {
     return ((await this.api.query.storageWorkingGroup.openingById<Codec[]>(id))[0] as unknown) as Opening;
   }
 
+  public async getHiringOpening(id: BN): Promise<HiringOpening> {
+    return ((await this.api.query.hiring.openingById<Codec[]>(id))[0] as unknown) as HiringOpening;
+  }
+
   public async getWorkers(): Promise<Worker[]> {
     return ((await this.api.query.storageWorkingGroup.workerById<Codec[]>())[1] as unknown) as Worker[];
   }
 
-  public async getWorker(id: BN): Promise<Worker> {
+  public async getWorkerById(id: BN): Promise<Worker> {
     return ((await this.api.query.storageWorkingGroup.workerById<Codec[]>(id))[0] as unknown) as Worker;
   }
 
@@ -1118,8 +1158,12 @@ export class ApiWrapper {
       .filter(index => index !== undefined) as BN[];
   }
 
-  public async getApplicationById(id: BN): Promise<HiringApplication> {
+  public async getHiringApplicationById(id: BN): Promise<HiringApplication> {
     return ((await this.api.query.hiring.applicationById<Codec[]>(id))[0] as unknown) as HiringApplication;
+  }
+
+  public async getApplicationById(id: BN): Promise<Application> {
+    return ((await this.api.query.storageWorkingGroup.applicationById<Codec[]>(id))[0] as unknown) as Application;
   }
 
   public async getActiveApplicationsIdsByRoleAccount(address: string): Promise<BN[]> {
@@ -1131,7 +1175,7 @@ export class ApiWrapper {
         applications.map(async (application, index) => {
           if (
             application.role_account_id.toString() === address &&
-            (await this.getApplicationById(application.application_id)).stage.type === 'Active'
+            (await this.getHiringApplicationById(application.application_id)).stage.type === 'Active'
           ) {
             return ids[index];
           } else {
@@ -1147,7 +1191,7 @@ export class ApiWrapper {
   }
 
   public async getWorkerStakeAmount(workerId: BN): Promise<BN> {
-    let stakeId: BN = (await this.getWorker(workerId)).role_stake_profile.unwrap().stake_id;
+    let stakeId: BN = (await this.getWorkerById(workerId)).role_stake_profile.unwrap().stake_id;
     return (((await this.getStake(stakeId)).staking_status.value as unknown) as StakedState).staked_amount;
   }
 
@@ -1158,7 +1202,7 @@ export class ApiWrapper {
   }
 
   public async getWorkerRewardAccount(workerId: BN): Promise<string> {
-    let rewardRelationshipId: BN = (await this.getWorker(workerId)).reward_relationship.unwrap();
+    let rewardRelationshipId: BN = (await this.getWorkerById(workerId)).reward_relationship.unwrap();
     return (await this.getRewardRelationship(rewardRelationshipId)).getField('account').toString();
   }
 }

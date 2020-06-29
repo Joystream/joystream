@@ -12,8 +12,6 @@ import {
   applyForOpening,
   beginApplicationReview,
   fillOpening,
-  setLead,
-  unsetLead,
   decreaseStake,
   slash,
   terminateRole,

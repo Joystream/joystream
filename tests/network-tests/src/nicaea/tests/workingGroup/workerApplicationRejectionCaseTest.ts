@@ -12,7 +12,6 @@ import {
   applyForOpening,
   acceptApplications,
   terminateApplications,
-  unsetLead,
   addLeaderOpening,
   beginLeaderApplicationReview,
   fillLeaderOpening,
@@ -39,6 +38,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   const payoutAmount: BN = new BN(process.env.PAYOUT_AMOUNT!);
   const durationInBlocks: number = 38;
   const openingActivationDelay: BN = new BN(100);
+  const leadOpeningActivationDelay: BN = new BN(0);
 
   const provider = new WsProvider(nodeUrl);
   const apiWrapper: ApiWrapper = await ApiWrapper.create(provider);
@@ -59,7 +59,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
         sudo,
         applicationStake,
         roleStake,
-        openingActivationDelay
+        leadOpeningActivationDelay
       ))
   );
   tap.test(
@@ -100,7 +100,6 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   tap.test('Terminate worker applicaitons', async () =>
     terminateApplications(apiWrapper, nKeyPairs, leadKeyPair[0], sudo)
   );
-  tap.test('Unset lead', async () => unsetLead(apiWrapper, sudo));
 
   tap.test('Leaving lead role', async () => leaveRole(apiWrapper, leadKeyPair, sudo));
 
