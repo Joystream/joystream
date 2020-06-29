@@ -407,7 +407,7 @@ pub fn set_moderator_category_mock(
     );
     if result.is_ok() {
         assert_eq!(
-            TestForumModule::category_by_moderator(category_id, moderator_id),
+            <CategoryByModerator<Runtime>>::exists(category_id, moderator_id),
             new_value
         );
     };
