@@ -84,7 +84,7 @@ pub use crate::proposal_types::{
 pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 
 // 'Set working group mint capacity' proposal limit
-const WORKING_GROUP_MINT_CAPACITY_MAX_VALUE: u32 = 1_000_000;
+const WORKING_GROUP_MINT_CAPACITY_MAX_VALUE: u32 = 5_000_000;
 // 'Set content working group mint capacity' proposal limit
 const CONTENT_WORKING_GROUP_MINT_CAPACITY_MAX_VALUE: u32 = 1_000_000;
 // Max allowed value for 'spending' proposal
