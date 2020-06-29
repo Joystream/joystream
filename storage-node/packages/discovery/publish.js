@@ -3,7 +3,12 @@ const ipfs = ipfsClient('localhost', '5001', { protocol: 'http' })
 
 const debug = require('debug')('joystream:discovery:publish')
 
-const PUBLISH_KEY = 'self' // 'services'
+/**
+ * The name of the key used for publishing. We use same key used by the ipfs node
+ * for the network identitiy, to make it possible to identify the ipfs node of the storage
+ * provider and use `ipfs ping` to check on the uptime of a particular node.
+ */
+const PUBLISH_KEY = 'self'
 
 function bufferFrom (data) {
   return Buffer.from(JSON.stringify(data), 'utf-8')
@@ -44,7 +49,11 @@ async function publish (service_info) {
     // ttl:      // string - Time duration this record should be cached
   })
 
+  // The hash of the published service information file
   debug(published)
+
+  // Return the key id under which the content was published. Which is used
+  // to lookup the actual ipfs content id of the published service information
   return services_key.id
 }
 

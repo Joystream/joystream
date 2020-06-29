@@ -217,7 +217,9 @@ async function announce_public_url (api, publicUrl) {
 
 // >> sometimes after tx is finalized.. we are not reaching here!
 
-    // Reannounce before expiery
+    // Reannounce before expiery. Here we are concerned primarily
+    // with keeping the account information refreshed and 'available' in
+    // the ipfs network. our record on chain is valid for 24hr
     reannounce(50 * 60 * 1000) // in 50 minutes
   } catch (err) {
     debug(`announcing public url failed: ${err.stack}`)
