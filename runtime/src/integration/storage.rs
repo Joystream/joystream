@@ -8,7 +8,7 @@ pub struct StorageProviderHelper;
 
 impl storage::data_directory::StorageProviderHelper<Runtime> for StorageProviderHelper {
     fn get_random_storage_provider() -> Result<ActorId, &'static str> {
-        let ids = crate::StorageWorkingGroup::get_all_worker_ids();
+        let ids = crate::StorageWorkingGroup::get_regular_worker_ids();
 
         let live_ids: Vec<ActorId> = ids
             .into_iter()

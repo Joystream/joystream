@@ -56,7 +56,7 @@ use srml_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Pa
 use srml_support::traits::Get;
 use types::{DiscussionPost, DiscussionThread, ThreadCounter};
 
-use common::origin_validator::ActorOriginValidator;
+use common::origin::ActorOriginValidator;
 use srml_support::dispatch::DispatchResult;
 
 type MemberId<T> = <T as membership::members::Trait>::MemberId;

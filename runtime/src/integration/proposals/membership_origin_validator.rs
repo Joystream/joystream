@@ -2,7 +2,7 @@
 
 use rstd::marker::PhantomData;
 
-use common::origin_validator::ActorOriginValidator;
+use common::origin::ActorOriginValidator;
 use system::ensure_signed;
 
 /// Member of the Joystream organization
@@ -46,7 +46,7 @@ impl<T: crate::members::Trait>
 mod tests {
     use super::MembershipOriginValidator;
     use crate::Runtime;
-    use common::origin_validator::ActorOriginValidator;
+    use common::origin::ActorOriginValidator;
     use membership::members::UserInfo;
     use sr_primitives::AccountId32;
     use system::RawOrigin;
