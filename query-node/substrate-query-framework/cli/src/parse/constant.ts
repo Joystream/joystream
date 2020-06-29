@@ -3,7 +3,7 @@
  * Add additional scalar types and directives to the schema
  */
 export const SCHEMA_DEFINITIONS_PREAMBLE = `
-directive @entity on OBJECT  # Make type defination entity
+directive @entity on OBJECT | INTERFACE  # Mark both object types and interfaces
 scalar BigInt                # Arbitrarily large integers
 scalar BigDecimal            # is used to represent arbitrary precision decimals
 scalar Bytes                 # Byte array, represented as a hexadecimal string

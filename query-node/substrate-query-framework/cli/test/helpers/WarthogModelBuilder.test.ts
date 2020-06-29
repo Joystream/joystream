@@ -1,4 +1,4 @@
-import { WarthogModelBuilder } from './../../src/helpers/WarthogModelBuilder';
+import { WarthogModelBuilder } from './../../src/parse/WarthogModelBuilder';
 import { expect } from 'chai';
 
 describe('WarthogModelBuild', () => {

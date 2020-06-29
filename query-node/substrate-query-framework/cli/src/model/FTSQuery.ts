@@ -1,15 +1,15 @@
-import { Field, ObjectType } from './WarthogModel';
-
+import { ObjectType } from './WarthogModel';
+import { Field } from './Field';
 
 /**
- * FTSQueryClause represents a single entity/field which 
+ * FTSQueryClause represents a single entity/field which
  * corresponds to a text-based table column in the corresponding database schema.
- * 
+ *
  * The clauses are concatenated and stored in a separated db view;
  */
 export interface FTSQueryClause {
-    entity: ObjectType,
-    field: Field 
+  entity: ObjectType;
+  field: Field;
 }
 
 /**
@@ -17,7 +17,6 @@ export interface FTSQueryClause {
  *  fields in GraphGL  decorated FTSDirective directive
  */
 export interface FTSQuery {
-    name: string;
-    clauses: FTSQueryClause[];
+  name: string;
+  clauses: FTSQueryClause[];
 }
-

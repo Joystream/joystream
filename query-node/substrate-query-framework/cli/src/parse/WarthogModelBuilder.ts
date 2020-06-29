@@ -1,9 +1,16 @@
-import { ObjectTypeDefinitionNode, FieldDefinitionNode, ListTypeNode, NamedTypeNode } from 'graphql';
+import {
+  ObjectTypeDefinitionNode,
+  FieldDefinitionNode,
+  ListTypeNode,
+  NamedTypeNode,
+  TypeDefinitionNode,
+  InterfaceTypeDefinitionNode,
+} from 'graphql';
 import { GraphQLSchemaParser, Visitors, SchemaNode } from './SchemaParser';
 import { WarthogModel, Field, ObjectType } from '../model';
 import Debug from 'debug';
-import { DIRECTIVES } from './SchemaDirective';
 import { ENTITY_DIRECTIVE } from './constant';
+import { FTSDirective, FULL_TEXT_SEARCHABLE_DIRECTIVE } from './FTSDirective';
 
 const debug = Debug('qnode-cli:model-generator');
 
@@ -66,8 +73,8 @@ export class WarthogModelBuilder {
    * Mark the object type as entity if '@entity' directive is used
    * @param o ObjectTypeDefinitionNode
    */
-  private isEntity(o: ObjectTypeDefinitionNode): boolean {
-    const entityDirective = o.directives?.find((d) => d.name.value === ENTITY_DIRECTIVE);
+  private isEntity(o: TypeDefinitionNode): boolean {
+    const entityDirective = o.directives?.find(d => d.name.value === ENTITY_DIRECTIVE);
     return entityDirective ? true : false;
   }
 
@@ -75,7 +82,36 @@ export class WarthogModelBuilder {
    * Generate a new ObjectType from ObjectTypeDefinitionNode
    * @param o ObjectTypeDefinitionNode
    */
-  private generateTypeDefination(o: ObjectTypeDefinitionNode): ObjectType {
+  private generateTypeDefination(o: ObjectTypeDefinitionNode | InterfaceTypeDefinitionNode): ObjectType {
+    return {
+      name: o.name.value,
+      fields: this.getFields(o),
+      isEntity: this.isEntity(o),
+      isInterface: o.kind === 'InterfaceTypeDefinition',
+      interfaces: o.kind === 'ObjectTypeDefinition' ? this.getInterfaces(o) : [],
+    } as ObjectType;
+  }
+
+  private getInterfaces(o: ObjectTypeDefinitionNode): ObjectType[] {
+    if (!o.interfaces) {
+      return [];
+    }
+    const interfaces: ObjectType[] = [];
+    o.interfaces.map(nameNode => {
+      if (nameNode.kind !== 'NamedType') {
+        throw new Error(`Unrecognized interface type: ${JSON.stringify(nameNode, null, 2)}`);
+      }
+      const name = nameNode.name.value;
+      interfaces.push(this._model.lookupInterface(name));
+    });
+
+    if (interfaces.length > 1) {
+      throw new Error(`A type can implement at most one interface`);
+    }
+    return interfaces;
+  }
+
+  private getFields(o: ObjectTypeDefinitionNode | InterfaceTypeDefinitionNode): Field[] {
     const fields = this._schemaParser.getFields(o).map((fieldNode: FieldDefinitionNode) => {
       const typeNode = fieldNode.type;
       const fieldName = fieldNode.name.value;
@@ -96,10 +132,8 @@ export class WarthogModelBuilder {
         throw new Error(`Unrecognized type. ${JSON.stringify(typeNode, null, 2)}`);
       }
     });
-
     debug(`Read and parsed fields: ${JSON.stringify(fields, null, 2)}`);
-
-    return { name: o.name.value, fields: fields, isEntity: this.isEntity(o) } as ObjectType;
+    return fields;
   }
 
   /**
@@ -134,26 +168,48 @@ export class WarthogModelBuilder {
     }
   }
 
-  buildWarthogModel(): WarthogModel {
-    this._model = new WarthogModel();
+  private generateInterfaces() {
+    this._schemaParser.getInterfaceTypes().map(i => {
+      const astNode = i.astNode as InterfaceTypeDefinitionNode;
+      if (astNode && this.isEntity(astNode)) {
+        this._model.addInterface(this.generateTypeDefination(astNode));
+      }
+    });
+  }
 
-    this._schemaParser.getObjectDefinations().map((o) => {
+  private generateObjectTypes() {
+    this._schemaParser.getObjectDefinations().map(o => {
       const objType = this.generateTypeDefination(o);
       this._model.addObjectType(objType);
     });
+  }
 
-    this.generateSQLRelationships();
+  private generateEnums() {
+    this._schemaParser.getEnumTypes().map(e => this._model.addEnum(e));
+  }
 
+  // TODO: queries will be parsed from a top-level directive definition
+  // and this part is going to be deprecated
+  private genereateQueries() {
+    const fts = new FTSDirective();
     const visitors: Visitors = {
-      directives: {},
+      directives: {}
     };
-    DIRECTIVES.map((d) => {
-      visitors.directives[d.name] = {
-        visit: (path: SchemaNode[]) => d.generate(path, this._model),
-      };
-    });
+    visitors.directives[FULL_TEXT_SEARCHABLE_DIRECTIVE] = {
+      visit: (path: SchemaNode[]) => fts.generate(path, this._model),
+    } 
     this._schemaParser.dfsTraversal(visitors);
+  }
 
+  buildWarthogModel(): WarthogModel {
+    this._model = new WarthogModel();
+    
+    this.generateEnums();
+    this.generateInterfaces();
+    this.generateObjectTypes();
+    this.generateSQLRelationships();
+    this.genereateQueries();
+  
     return this._model;
   }
 }

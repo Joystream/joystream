@@ -5,7 +5,7 @@ import { WarthogModel, Field } from "../../src/model";
 
 import * as tmp from 'tmp';
 import * as fs from 'fs-extra';
-import { WarthogModelBuilder } from '../../src/helpers/WarthogModelBuilder';
+import { WarthogModelBuilder } from '../../src/parse/WarthogModelBuilder';
 
 const threadObjType = {
     name: "Thread",

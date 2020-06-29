@@ -1,6 +1,6 @@
-import { GraphQLSchemaParser, SchemaNode, Visitor } from './../../src/helpers/SchemaParser';
+import { GraphQLSchemaParser, SchemaNode, Visitor } from './../../src/parse/SchemaParser';
 import { expect } from 'chai';
-import { FULL_TEXT_SEARCHABLE_DIRECTIVE } from './../../src/helpers/SchemaDirective';
+import { FULL_TEXT_SEARCHABLE_DIRECTIVE } from '../../src/parse/SchemaDirective';
 
 describe('SchemaParser', () => {
     it('should fail on non-existent file', () => {

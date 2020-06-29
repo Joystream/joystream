@@ -1,5 +1,9 @@
 import { upperFirst, kebabCase, camelCase } from 'lodash';
+import { GeneratorContext } from './SourcesGenerator';
+import { ObjectType, Field } from '../model';
+import _ from 'lodash';
 
+export { upperFirst, kebabCase, camelCase };
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 export function supplant(str: string, obj: Record<string, unknown>): string {
@@ -17,34 +21,40 @@ export function camelPlural(str: string): string {
   return `${camelCase(str)}s`;
 }
 
-export function getTypesForArray(typeName: string): { [key: string]: string } {
-  const graphQLFieldTypes: { [key: string]: string } = {
-    bool: 'boolean',
-    int: 'integer',
-    string: 'string',
-    float: 'float',
-    date: 'date',
-    numeric: 'numeric',
-    decimal: 'numeric'
-  };
-  const apiType = graphQLFieldTypes[typeName];
-
-  let dbType = apiType;
-  if (dbType === 'string') {
-    dbType = 'text'; // postgres doesnt have 'string'
-  } else if (dbType === 'float') {
-    dbType = 'decimal'; // postgres doesnt have 'float'
-  }
-
-  return { dbType, apiType };
-}
-
 export function names(name: string): { [key: string]: string } {
   return {
     className: pascalCase(name),
     camelName: camelCase(name),
     kebabName: kebabCase(name),
+    relClassName: pascalCase(name),
+    relCamelName: camelCase(name),
     // Not proper pluralization, but good enough and easy to fix in generated code
-    camelNamePlural: camelPlural(name)
+    camelNamePlural: camelPlural(name),
+  };
+}
+
+export function withNames(name: string): GeneratorContext {
+  return {
+    ...names(name),
+  };
+}
+
+export function hasInterfaces(o: ObjectType): boolean {
+  if (o.interfaces == undefined) {
+    return false;
   }
+  return o.interfaces.length > 0;
+}
+
+/**
+ * Return fields which are not definded in the interface
+ * @param o ObjecType definition
+ */
+export function ownFields(o: ObjectType): Field[] {
+  if (!hasInterfaces(o) || o.interfaces == undefined) {
+    return o.fields;
+  }
+
+  const intrFields = o.interfaces[0].fields || [];
+  return _.differenceBy(o.fields, intrFields, 'name');
 }

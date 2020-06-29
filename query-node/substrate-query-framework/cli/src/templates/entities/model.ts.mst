@@ -12,8 +12,13 @@ import {
   {{#has.otm}}OneToMany,{{/has.otm}}
   {{#has.oto}}OneToOne, JoinColumn,{{/has.oto}}
   {{#has.array}}CustomField,{{/has.array}}
+  {{#has.enum}}EnumField,{{/has.enum}}
   StringField
 } from 'warthog';  {{! we don't need extra twists here }}
+
+{{#isInterface}}
+import { InterfaceType } from 'type-graphql';
+{{/isInterface}}
 
 {{#fields}}
   {{#is.refType}}
@@ -21,8 +26,26 @@ import {
   {{/is.refType}}
 {{/fields}}
 
-@Model()
-export class {{className}} extends BaseModel {
+{{#enums}}
+  import { {{name}} } from '../enums/enums';
+  {{#export}}
+  export { {{name}} }; {{! we need to re-export enums for type-GraphQL to resolve types correctly, but only once }}
+  {{/export}}
+{{/enums}}
+
+{{#interfaces}}
+  import { {{className}} } from '../{{kebabName}}/{{kebabName}}.model';
+{{/interfaces}}
+
+{{^isInterface}}
+@Model({{#interfaces}} { api: { implements: {{className}} }} {{/interfaces}}) {{! only a single interface can be here }}
+{{/isInterface}}
+{{#isInterface}}
+@InterfaceType()
+{{/isInterface}}
+export {{#isInterface}}abstract{{/isInterface}} class {{className}} 
+  extends {{^interfaces}}BaseModel{{/interfaces}} {{#interfaces}} {{className}} {{/interfaces}} {
+
 {{#fields}}
   {{#is.otm}}
     @OneToMany(() => {{relClassName}}, ({{relCamelName}}: {{relClassName}}) => {{relCamelName}}.{{relFieldName}})
@@ -55,5 +78,9 @@ export class {{className}} extends BaseModel {
     {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{tsType}};
   {{/is.scalar}}
 
+  {{#is.enum}}
+    @EnumField('{{tsType}}', {{tsType}} {{^required}},{ nullable: true }{{/required}})
+    {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}:{{tsType}} 
+  {{/is.enum}}
 {{/fields}}
 }
