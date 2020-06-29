@@ -1,13 +1,27 @@
 import React from "react";
 import { SerializedStyles } from "@emotion/core";
-import { makeStyles, AvatarStyleProps } from "./Avatar.style";
+import { useCSS, AvatarStyleProps } from "./Avatar.style";
 
 export type AvatarProps = {
-	onClick?: (e: React.MouseEvent<HTMLElement>) => void;
-	outerStyles?: SerializedStyles;
+	onClick: (e: React.MouseEvent<HTMLElement>) => void;
+	outerStyles: SerializedStyles;
+	img: string;
+	name: string;
 } & AvatarStyleProps;
 
-export default function Avatar({ onClick = () => {}, outerStyles, ...styleProps }: AvatarProps) {
-	let styles = makeStyles(styleProps);
-	return <div css={[styles, outerStyles]} onClick={onClick} />;
+function initialsFromName(name: string): string {
+	const vowels = ["a", "e", "i", "o", "u", "y"];
+	const [first = "", second = ""] = name.split("");
+	return vowels.includes(second) ? first : `${first}${second}`;
 }
+
+const Avatar: React.FC<Partial<AvatarProps>> = ({ img, outerStyles, onClick = () => {}, name, ...styleProps }) => {
+	const styles = useCSS({ ...styleProps });
+	return (
+		<div css={[styles.container, outerStyles]} onClick={onClick}>
+			{img ? <img src={img} css={styles.img} /> : <span>{initialsFromName(name || "")}</span>}
+		</div>
+	);
+};
+
+export default Avatar;

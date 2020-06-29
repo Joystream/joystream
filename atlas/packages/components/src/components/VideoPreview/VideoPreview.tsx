@@ -38,7 +38,13 @@ const VideoPreview: React.FC<Partial<VideoPreviewProps>> = ({
 			</div>
 			<div css={styles.infoContainer}>
 				{showChannel && (
-					<Avatar size="small" img={channelImg} outerStyles={styles.avatar} onClick={onChannelClick} />
+					<Avatar
+						size="small"
+						name={channel}
+						img={channelImg}
+						outerStyles={styles.avatar}
+						onClick={onChannelClick}
+					/>
 				)}
 				<div css={styles.textContainer}>
 					<h3 onClick={onClick}>{title}</h3>

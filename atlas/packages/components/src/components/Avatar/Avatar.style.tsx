@@ -1,19 +1,37 @@
-import { css } from "@emotion/core";
+import { makeStyles, StyleFn } from "../../utils";
 import { spacing, colors } from "../../theme";
 
 export type AvatarStyleProps = {
-	img?: string;
-	size?: "small" | "default" | "large";
+	size: "small" | "default" | "large";
 };
 
-export let makeStyles = ({ img, size = "default" }: AvatarStyleProps) => {
+const container: StyleFn = (_, { size = "default" }) => {
 	let width = size === "small" ? spacing.xs : size === "default" ? spacing.m : spacing.xl;
-	return css`
-		background-image: ${img ? `url(${img})` : `radial-gradient(${colors.gray[500]}, ${colors.gray[500]})`};
-		background-size: cover;
-		background-position: center;
-		border-radius: 999px;
-		min-width: ${width};
-		min-height: ${width};
-	`;
+	return {
+		borderRadius: 999,
+		minWidth: width,
+		backgroundColor: colors.gray[500],
+		color: colors.white,
+		display: "flex",
+		justifyContent: "center",
+		alignItems: "center",
+
+		"& > span": {
+			textTransform: "uppercase",
+			fontSize: "0.875rem",
+			lineHeight: 1.43,
+		},
+	};
 };
+
+const img: StyleFn = () => ({
+	width: "100%",
+	height: "100%",
+	objectFit: "cover",
+	borderRadius: 999,
+});
+
+export const useCSS = (props: Partial<AvatarStyleProps>) => ({
+	container: makeStyles([container])(props),
+	img: makeStyles([img])(props),
+});
