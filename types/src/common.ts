@@ -1,6 +1,7 @@
 import { Struct, Option, Text, bool, Vec, u16, u32, u64, getTypeRegistry } from "@polkadot/types";
 import { BlockNumber, Moment } from '@polkadot/types/interfaces';
 import { Codec } from "@polkadot/types/types";
+// we get 'moment' because it is a dependency of @polkadot/util, via @polkadot/keyring
 import moment from 'moment';
 import { JoyStruct } from './JoyStruct';
 export { JoyStruct } from './JoyStruct';
