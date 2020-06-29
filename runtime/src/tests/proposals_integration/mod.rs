@@ -6,7 +6,6 @@ mod working_group_proposals;
 
 use crate::{BlockNumber, ElectionParameters, ProposalCancellationFee, Runtime};
 use codec::Encode;
-use governance::election::CouncilElected;
 use membership::members;
 use proposals_engine::{
     ActiveStake, ApprovedProposalStatus, BalanceOf, Error, FinalizationData, Proposal,
@@ -91,9 +90,11 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(
 fn run_to_block(n: BlockNumber) {
     while System::block_number() < n {
         <System as OnFinalize<BlockNumber>>::on_finalize(System::block_number());
+        <Election as OnFinalize<BlockNumber>>::on_finalize(System::block_number());
         <ProposalsEngine as OnFinalize<BlockNumber>>::on_finalize(System::block_number());
         System::set_block_number(System::block_number() + 1);
         <System as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
+        <Election as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
         <ProposalsEngine as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
     }
 }
@@ -186,6 +187,16 @@ impl DummyProposalFixture {
 
     fn with_account_id(self, account_id: AccountId32) -> Self {
         DummyProposalFixture { account_id, ..self }
+    }
+
+    fn with_voting_period(self, voting_period: u32) -> Self {
+        DummyProposalFixture {
+            parameters: ProposalParameters {
+                voting_period,
+                ..self.parameters
+            },
+            ..self
+        }
     }
 
     fn with_stake(self, stake_balance: BalanceOf<Runtime>) -> Self {
@@ -341,7 +352,7 @@ fn proposal_reset_succeeds() {
         setup_members(4);
         setup_council();
         // create proposal
-        let dummy_proposal = DummyProposalFixture::default();
+        let dummy_proposal = DummyProposalFixture::default().with_voting_period(100);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         // create some votes
@@ -369,9 +380,17 @@ fn proposal_reset_succeeds() {
         // Ensure council was elected
         assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 6);
 
-        // Check proposals CouncilElected hook
-        // just trigger the election hook, we don't care about the parameters
-        <Runtime as governance::election::Trait>::CouncilElected::council_elected(Vec::new(), 10);
+        let voted_member_id = 2;
+        // Check for votes.
+        assert_eq!(
+            ProposalsEngine::vote_by_proposal_by_voter(proposal_id, voted_member_id),
+            VoteKind::Abstain
+        );
+
+        // Check proposals CouncilElected hook just trigger the election hook (empty council).
+        //<Runtime as governance::election::Trait>::CouncilElected::council_elected(Vec::new(), 10);
+
+        elect_single_councilor();
 
         let updated_proposal = ProposalsEngine::proposals(proposal_id);
 
@@ -385,9 +404,43 @@ fn proposal_reset_succeeds() {
             }
         );
 
-        // Check council CouncilElected hook. It should set current council. And we passed empty council.
-        assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 0);
+        // No votes could survive cleaning: should be default value.
+        assert_eq!(
+            ProposalsEngine::vote_by_proposal_by_voter(proposal_id, voted_member_id),
+            VoteKind::default()
+        );
+
+        // Check council CouncilElected hook. It should set current council. And we elected single councilor.
+        assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 1);
     });
+}
+
+fn elect_single_councilor() {
+    let res = Election::set_election_parameters(
+        RawOrigin::Root.into(),
+        ElectionParameters {
+            announcing_period: 1,
+            voting_period: 1,
+            revealing_period: 1,
+            council_size: 1,
+            candidacy_limit: 10,
+            new_term_duration: 2000000,
+            min_council_stake: 0,
+            min_voting_stake: 0,
+        },
+    );
+    assert_eq!(res, Ok(()));
+
+    let res = Election::force_start_election(RawOrigin::Root.into());
+    assert_eq!(res, Ok(()));
+
+    let councilor1: [u8; 32] = [1; 32];
+    increase_total_balance_issuance_using_account_id(councilor1.clone().into(), 1200000000);
+
+    let res = Election::apply(RawOrigin::Signed(councilor1.into()).into(), 0);
+    assert_eq!(res, Ok(()));
+
+    run_to_block(5);
 }
 
 struct CodexProposalTestFixture<SuccessfulCall>
