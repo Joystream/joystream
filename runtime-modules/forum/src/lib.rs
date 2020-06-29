@@ -405,27 +405,6 @@ const ERROR_DATA_MIGRATION_NOT_DONE: &str = "data migration not done yet.";
 
 use system::ensure_signed;
 
-/// Represents a user's information in this forum.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct ForumUser<AccountId> {
-    /// Forum user's account used for extrinsic
-    pub role_account: AccountId,
-    // In the future one could add things like
-    // - updating post count of a user
-    // - updating status (e.g. hero, new, etc.)
-
-    // TODO if we should add constraint of name's uniqueness.
-    /// Forum user's name
-    pub name: Vec<u8>,
-
-    /// Forum user's self introduction.
-    pub self_introduction: Vec<u8>,
-
-    /// Post footer shown at the end of post
-    pub post_footer: Option<Vec<u8>>,
-}
-
 /// Represents a moderator in this forum.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
@@ -828,9 +807,6 @@ decl_event!(
 
         /// Vote on poll
         VoteOnPoll(ThreadId, u32),
-
-        /// Forum user created
-        ForumUserCreated(ForumUserId),
 
         /// Moderator created
         ModeratorCreated(ModeratorId),
