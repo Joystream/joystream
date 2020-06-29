@@ -120,6 +120,20 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
 
                 call.encode()
             }
+            ProposalDetails::SetWorkingGroupLeaderReward(
+                worker_id,
+                reward_amount,
+                working_group,
+            ) => {
+                let call = match working_group {
+                    WorkingGroup::Storage => Call::StorageWorkingGroup(Wg::create_set_reward_call(
+                        worker_id,
+                        reward_amount,
+                    )),
+                };
+
+                call.encode()
+            }
         }
     }
 }
@@ -176,14 +190,14 @@ where
         )
     }
 
-    // Generic call constructor for the working group  'set mit capacity'.
+    // Generic call constructor for the working group 'set mit capacity'.
     fn create_set_mint_capacity_call(
         mint_balance: working_group::BalanceOfMint<T>,
     ) -> working_group::Call<T, I> {
         working_group::Call::<T, I>::set_mint_capacity(mint_balance)
     }
 
-    // Generic call constructor for the working group  'decrease stake'.
+    // Generic call constructor for the working group 'decrease stake'.
     fn create_decrease_stake_call(
         worker_id: working_group::WorkerId<T>,
         decreasing_stake: working_group::BalanceOf<T>,
@@ -191,11 +205,19 @@ where
         working_group::Call::<T, I>::decrease_stake(worker_id, decreasing_stake)
     }
 
-    // Generic call constructor for the working group  'slash stake'.
+    // Generic call constructor for the working group 'slash stake'.
     fn create_slash_stake_call(
         worker_id: working_group::WorkerId<T>,
         slashing_stake: working_group::BalanceOf<T>,
     ) -> working_group::Call<T, I> {
         working_group::Call::<T, I>::slash_stake(worker_id, slashing_stake)
+    }
+
+    // Generic call constructor for the working group 'update reward amount'.
+    fn create_set_reward_call(
+        worker_id: working_group::WorkerId<T>,
+        reward_amount: working_group::BalanceOfMint<T>,
+    ) -> working_group::Call<T, I> {
+        working_group::Call::<T, I>::update_reward_amount(worker_id, reward_amount)
     }
 }

@@ -1324,3 +1324,70 @@ fn decrease_stake_with_zero_staking_balance_fails() {
         );
     });
 }
+
+#[test]
+fn create_set_working_group_leader_reward_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_set_working_group_leader_reward_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    0,
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_set_working_group_leader_reward_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    0,
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_set_working_group_leader_reward_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    0,
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_set_working_group_leader_reward_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(50000u32)),
+                    10,
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            proposal_parameters:
+                crate::proposal_types::parameters::set_working_group_leader_reward_proposal::<Test>(
+                ),
+            proposal_details: ProposalDetails::SetWorkingGroupLeaderReward(
+                10,
+                10,
+                WorkingGroup::Storage,
+            ),
+        };
+        proposal_fixture.check_all();
+    });
+}

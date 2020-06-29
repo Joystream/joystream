@@ -32,6 +32,7 @@
 //! - [create_set_working_group_mint_capacity_proposal](./struct.Module.html#method.create_set_working_group_mint_capacity_proposal)
 //! - [create_decrease_working_group_leader_stake_proposal](./struct.Module.html#method.create_decrease_working_group_leader_stake_proposal)
 //! - [create_slash_working_group_leader_stake_proposal](./struct.Module.html#method.create_slash_working_group_leader_stake_proposal)
+//! - [create_set_working_group_leader_reward_proposal](./struct.Module.html#method.create_set_working_group_leader_reward_proposal)
 //!
 //! ### Proposal implementations of this module
 //! - execute_text_proposal - prints the proposal to the log
@@ -48,6 +49,8 @@
 //! The module uses [ProposalEncoder](./trait.ProposalEncoder.html) to encode the proposal using
 //! its details. Encoded byte vector is passed to the _proposals engine_ as serialized executable code.
 
+// `decl_module!` does a lot of recursion and requires us to increase the limit to 256.
+#![recursion_limit = "256"]
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 // Disable this lint warning because Substrate generates function without an alias for the ProposalDetailsOf type.
@@ -386,6 +389,14 @@ decl_storage! {
 
         /// Grace period for the 'slash working group leader stake' proposal
         pub SlashWorkingGroupLeaderStakeProposalGracePeriod get(slash_working_group_leader_stake_proposal_grace_period)
+            config(): T::BlockNumber;
+
+        /// Voting period for the 'set working group leader reward' proposal
+        pub SetWorkingGroupLeaderRewardProposalVotingPeriod get(set_working_group_leader_reward_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'set working group leader reward' proposal
+        pub SetWorkingGroupLeaderRewardProposalGracePeriod get(set_working_group_leader_reward_proposal_grace_period)
             config(): T::BlockNumber;
     }
 }
@@ -766,6 +777,7 @@ decl_module! {
 
             Self::create_proposal(params)?;
         }
+
         /// Create 'slash working group leader stake' proposal type.
         /// This proposal uses `slash_stake()` extrinsic from the `working-group`  module.
         pub fn create_slash_working_group_leader_stake_proposal(
@@ -795,6 +807,39 @@ decl_module! {
                 stake_balance,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::slash_working_group_leader_stake_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
+        }
+
+        /// Create 'set working group leader reward' proposal type.
+        /// This proposal uses `update_reward_amount()` extrinsic from the `working-group`  module.
+        pub fn create_set_working_group_leader_reward_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            worker_id: working_group::WorkerId<T>,
+            reward_amount: BalanceOfMint<T>,
+            working_group: WorkingGroup,
+        ) {
+
+            let proposal_details = ProposalDetails::SetWorkingGroupLeaderReward(
+                worker_id,
+                reward_amount,
+                working_group
+            );
+
+            let params = CreateProposalParameters{
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::set_working_group_leader_reward_proposal::<T>(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
             };
 
@@ -1059,6 +1104,12 @@ impl<T: Trait> Module<T> {
         ));
         <SlashWorkingGroupLeaderStakeProposalGracePeriod<T>>::put(T::BlockNumber::from(
             p.slash_working_group_leader_stake_proposal_grace_period,
+        ));
+        <SetWorkingGroupLeaderRewardProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.set_working_group_leader_reward_proposal_voting_period,
+        ));
+        <SetWorkingGroupLeaderRewardProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.set_working_group_leader_reward_proposal_grace_period,
         ));
     } //TODO set defaults for new proposals
 }
