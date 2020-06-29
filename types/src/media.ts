@@ -2,7 +2,7 @@ import { Enum, Struct, Option, Vec as Vector, H256 } from '@polkadot/types';
 import { getTypeRegistry, u64, bool, Text } from '@polkadot/types';
 import { BlockAndTime } from './common';
 import { MemberId } from './members';
-import { StorageProviderId } from './bureaucracy'; // this should be in discovery really
+import { StorageProviderId } from './working-group'; // this should be in discovery really
 
 import { randomAsU8a } from '@polkadot/util-crypto';
 import { encodeAddress, decodeAddress } from '@polkadot/keyring';

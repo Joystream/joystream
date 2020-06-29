@@ -19,7 +19,7 @@ struct ForumData {
 }
 
 fn parse_forum_json() -> Result<ForumData> {
-    let data = include_str!("../../res/forum_data_acropolis_serialized.json");
+    let data = include_str!("../../res/forum_data_empty.json");
     serde_json::from_str(data)
 }
 

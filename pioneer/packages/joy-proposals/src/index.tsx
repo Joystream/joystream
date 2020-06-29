@@ -1,8 +1,10 @@
 import React from 'react';
 import { Route, Switch } from 'react-router';
+import { Link } from 'react-router-dom';
+import styled from 'styled-components';
+import { Breadcrumb } from 'semantic-ui-react';
 
 import { AppProps, I18nProps } from '@polkadot/react-components/types';
-import Tabs, { TabItem } from '@polkadot/react-components/Tabs';
 import { TransportProvider } from '@polkadot/joy-utils/react/context';
 import { ProposalPreviewList, ProposalFromId, ChooseProposalType } from './Proposal';
 
@@ -24,27 +26,35 @@ import {
 
 interface Props extends AppProps, I18nProps {}
 
-function App (props: Props): React.ReactElement<Props> {
-  const { t, basePath } = props;
+const StyledHeader = styled.header`
+  text-align: left;
 
-  const tabs: TabItem[] = [
-    {
-      isRoot: true,
-      name: 'proposals',
-      text: t('Proposals')
-    },
-    {
-      name: 'new',
-      text: t('New Proposal')
-    }
-  ];
+  .ui.breadcrumb {
+    padding: 1.4rem 0 0 .4rem;
+    font-size: 1.4rem;
+  }
+`;
+
+function App (props: Props): React.ReactElement<Props> {
+  const { basePath } = props;
 
   return (
     <TransportProvider>
       <main className="proposal--App">
-        <header>
-          <Tabs basePath={basePath} items={tabs} />
-        </header>
+        <StyledHeader>
+          <Breadcrumb>
+            <Switch>
+              <Route path={`${basePath}/new`}>
+                <Breadcrumb.Section link as={Link} to={basePath}>Proposals</Breadcrumb.Section>
+                <Breadcrumb.Divider icon="right angle" />
+                <Breadcrumb.Section active>New proposal</Breadcrumb.Section>
+              </Route>
+              <Route>
+                <Breadcrumb.Section active>Proposals</Breadcrumb.Section>
+              </Route>
+            </Switch>
+          </Breadcrumb>
+        </StyledHeader>
         <Switch>
           <Route exact path={`${basePath}/new`} component={ChooseProposalType} />
           <Route exact path={`${basePath}/new/text`} component={SignalForm} />

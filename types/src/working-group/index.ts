@@ -13,7 +13,7 @@ export type ILead = {
 };
 
 // This type is also defined in /content-workig-group (and those are incosistent), but here
-// it is beeing registered as "LeadOf" (which is an alias used by the runtime bureaucracy module),
+// it is beeing registered as "LeadOf" (which is an alias used by the runtime working-group module),
 // so it shouldn't cause any conflicts)
 export class Lead extends JoyStruct<ILead> {
   constructor (value?: ILead) {
@@ -176,7 +176,7 @@ export class SlashingTerms extends Enum {
   }
 };
 
-export type IBureaucracyOpeningPolicyCommitment = {
+export type IWorkingGroupOpeningPolicyCommitment = {
   application_rationing_policy: Option<ApplicationRationingPolicy>,
   max_review_period_length: BlockNumber,
   application_staking_policy: Option<StakingPolicy>,
@@ -191,19 +191,19 @@ export type IBureaucracyOpeningPolicyCommitment = {
   exit_worker_role_stake_unstaking_period: Option<BlockNumber>,
 };
 
-// This type represents OpeningPolicyCommitment defined inside the runtime's bureaucracy module.
+// This type represents OpeningPolicyCommitment defined inside the runtime's working-grpup module.
 // The only difference between this and the one defined in /content-working-group is in the names of some fields.
 //
 // There is also a minor issue here:
-// Because api metadata still says that ie. the "commitment" argument of "forumBureaucracy.addWorkerOpening" extrinsic
-// is of type "OpeningPolicyCommitment" (not the "BureaucracyOpeningPolicyCommitment" defined here), the CWG's OpeningPolicyCommitment
+// Because api metadata still says that ie. the "commitment" argument of "storageWorkingGroup.addWorkerOpening" extrinsic
+// is of type "OpeningPolicyCommitment" (not the "WorkingGroupOpeningPolicyCommitment" defined here), the CWG's OpeningPolicyCommitment
 // type is used when sending this extrinsic (it has "terminate_curator_role_stake_unstaking_period" field insted
 // of "terminate_worker_role_stake_unstaking_period" etc.).
 // Since both those types are basically the same structs (only filed names are different) nothing seems to break, but it's
-// very fragile atm and any change to this type in bureaucracy module could result in "unsolvable" inconsistencies
-// (this won't be an issue after CWG gets refactored to use the bureaucracy module too)
-export class BureaucracyOpeningPolicyCommitment extends JoyStruct<IBureaucracyOpeningPolicyCommitment> {
-  constructor (value?: BureaucracyOpeningPolicyCommitment) {
+// very fragile atm and any change to this type in working-group module could result in "unsolvable" inconsistencies
+// (this won't be an issue after CWG gets refactored to use the working-grpup module too)
+export class WorkingGroupOpeningPolicyCommitment extends JoyStruct<IWorkingGroupOpeningPolicyCommitment> {
+  constructor (value?: WorkingGroupOpeningPolicyCommitment) {
     super({
       application_rationing_policy: Option.with(ApplicationRationingPolicy),
       max_review_period_length: "BlockNumber",
@@ -272,7 +272,7 @@ export class BureaucracyOpeningPolicyCommitment extends JoyStruct<IBureaucracyOp
 export type IWorkerOpening = {
   opening_id: OpeningId,
   worker_applications: BTreeSet<WorkerApplicationId>,
-  policy_commitment: BureaucracyOpeningPolicyCommitment,
+  policy_commitment: WorkingGroupOpeningPolicyCommitment,
 }
 
 export class WorkerOpening extends JoyStruct<IWorkerOpening> {
@@ -280,7 +280,7 @@ export class WorkerOpening extends JoyStruct<IWorkerOpening> {
     super({
       opening_id: OpeningId,
       worker_applications: BTreeSet.with(WorkerApplicationId),
-      policy_commitment: BureaucracyOpeningPolicyCommitment,
+      policy_commitment: WorkingGroupOpeningPolicyCommitment,
     }, value);
   }
 
@@ -292,12 +292,12 @@ export class WorkerOpening extends JoyStruct<IWorkerOpening> {
     return this.getField<BTreeSet<WorkerApplicationId>>('worker_applications');
   }
 
-  get policy_commitment(): BureaucracyOpeningPolicyCommitment {
-    return this.getField<BureaucracyOpeningPolicyCommitment>('policy_commitment');
+  get policy_commitment(): WorkingGroupOpeningPolicyCommitment {
+    return this.getField<WorkingGroupOpeningPolicyCommitment>('policy_commitment');
   }
 }
 
-export function registerBureaucracyTypes() {
+export function registerWorkingGroupTypes() {
   try {
     getTypeRegistry().register({
       // Note that it actually HAS TO be "LeadOf" in the runtime,
@@ -315,6 +315,6 @@ export function registerBureaucracyTypes() {
       StorageProviderId
     });
   } catch (err) {
-    console.error('Failed to register custom types of bureaucracy module', err);
+    console.error('Failed to register custom types of working-group module', err);
   }
 }

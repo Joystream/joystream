@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext, createContext } from 'react';
 import { Message } from 'semantic-ui-react';
 import axios, { CancelToken } from 'axios';
 
-import { StorageProviderId } from '@joystream/types/bureaucracy';
+import { StorageProviderId } from '@joystream/types/working-group';
 import { Vec } from '@polkadot/types';
 import { Url } from '@joystream/types/discovery';
 import ApiContext from '@polkadot/react-api/ApiContext';

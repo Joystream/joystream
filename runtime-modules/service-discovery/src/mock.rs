@@ -130,8 +130,13 @@ impl recurringrewards::Trait for Test {
     type RewardRelationshipId = u64;
 }
 
+parameter_types! {
+    pub const MaxWorkerNumberLimit: u32 = 3;
+}
+
 impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type Event = MetaEvent;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
 impl timestamp::Trait for Test {
@@ -158,7 +163,7 @@ pub(crate) fn hire_storage_provider() -> (u64, u64) {
 
     let storage_provider = working_group::Worker {
         member_id: 1,
-        role_account: role_account_id,
+        role_account_id,
         reward_relationship: None,
         role_stake_profile: None,
     };

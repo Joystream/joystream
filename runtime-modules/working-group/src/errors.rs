@@ -17,8 +17,8 @@ decl_error! {
         /// There is leader already, cannot hire another one.
         CannotHireLeaderWhenLeaderExists,
 
-        /// Cannot fill opening with several applications.
-        CannotHireSeveralLeader,
+        /// Cannot fill opening with multiple applications.
+        CannotHireMultipleLeaders,
 
         /// Not a lead account.
         IsNotLeadAccount,
@@ -244,6 +244,9 @@ decl_error! {
 
         /// Require signed origin in extrinsics.
         RequireSignedOrigin,
+
+        /// Working group size limit exceeded.
+        MaxActiveWorkerNumberExceeded,
     }
 }
 

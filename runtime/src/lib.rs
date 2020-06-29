@@ -631,8 +631,13 @@ impl migration::Trait for Runtime {
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
+parameter_types! {
+    pub const MaxWorkerNumberLimit: u32 = 100;
+}
+
 impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
     type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
 impl service_discovery::Trait for Runtime {

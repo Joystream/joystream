@@ -257,7 +257,7 @@ pub fn testnet_genesis(
         }),
         members: Some(MembersConfig {
             default_paid_membership_fee: 100u128,
-            members: crate::members_config::initial_members(),
+            members: vec![],
         }),
         forum: Some(crate::forum_config::from_serialized::create(
             endowed_accounts[0].clone(),

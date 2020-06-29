@@ -146,8 +146,13 @@ impl GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
 }
 
+parameter_types! {
+    pub const MaxWorkerNumberLimit: u32 = 3;
+}
+
 impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type Event = MetaEvent;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
 impl data_object_type_registry::Trait for Test {
@@ -304,7 +309,7 @@ pub(crate) fn hire_storage_provider() -> (u64, u32) {
 
     let storage_provider = working_group::Worker {
         member_id: 1,
-        role_account: role_account_id,
+        role_account_id,
         reward_relationship: None,
         role_stake_profile: None,
     };

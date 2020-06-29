@@ -3,6 +3,7 @@ use crate::tests::fixtures::{
     AddWorkerOpeningFixture, ApplyOnWorkerOpeningFixture, BeginReviewWorkerApplicationsFixture,
     FillWorkerOpeningFixture, SetLeadFixture,
 };
+use crate::tests::mock::TestWorkingGroup;
 use crate::Error;
 use crate::{OpeningPolicyCommitment, OpeningType, RewardPolicy};
 use system::RawOrigin;
@@ -112,7 +113,7 @@ impl HiringWorkflow {
             SetLeadFixture::default().set_lead();
         }
         increase_total_balance_issuance_using_account_id(1, 10000);
-        setup_members(3);
+        setup_members(4);
         set_mint_id(create_mint());
     }
 
@@ -131,11 +132,15 @@ impl HiringWorkflow {
     }
 
     fn fill_worker_position(&self) -> Result<u64, Error> {
-        let lead_account_id = SetLeadFixture::default().role_account;
-
         let origin = match self.opening_type {
             OpeningType::Leader => RawOrigin::Root,
-            OpeningType::Worker => RawOrigin::Signed(lead_account_id),
+            OpeningType::Worker => {
+                let leader_worker_id = TestWorkingGroup::current_lead().unwrap();
+                let leader = TestWorkingGroup::worker_by_id(leader_worker_id);
+                let lead_account_id = leader.role_account_id;
+
+                RawOrigin::Signed(lead_account_id)
+            }
         };
 
         // create the opening

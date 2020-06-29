@@ -18,10 +18,10 @@ import {
 import { DerivedFees, DerivedBalances } from '@polkadot/api-derive/types';
 import { CLIError } from '@oclif/errors';
 import ExitCodes from './ExitCodes';
-import { Worker, Lead as WorkerLead, WorkerId, WorkerRoleStakeProfile } from '@joystream/types/lib/bureaucracy';
-import { MemberId, Profile } from '@joystream/types/lib/members';
-import { RewardRelationship, RewardRelationshipId } from '@joystream/types/lib/recurring-rewards';
-import { Stake, StakeId } from '@joystream/types/lib/stake';
+import { Worker, Lead as WorkerLead, WorkerId, WorkerRoleStakeProfile } from '@joystream/types/working-group';
+import { MemberId, Profile } from '@joystream/types/members';
+import { RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
+import { Stake, StakeId } from '@joystream/types/stake';
 import { LinkageResult } from '@polkadot/types/codec/Linkage';
 
 export const DEFAULT_API_URI = 'wss://rome-rpc-endpoint.joystream.org:9944/';
@@ -29,7 +29,7 @@ const DEFAULT_DECIMALS = new u32(12);
 
 // Mapping of working group to api module
 const apiModuleByGroup: { [key in WorkingGroups]: string } = {
-    [WorkingGroups.StorageProviders]: 'storageBureaucracy'
+    [WorkingGroups.StorageProviders]: 'storageWorkingGroup'
 };
 
 // Api wrapper for handling most common api calls and allowing easy API implementation switch in the future

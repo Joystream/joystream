@@ -163,10 +163,12 @@ pub struct UpdateWorkerRewardAmountFixture {
 
 impl UpdateWorkerRewardAmountFixture {
     pub fn default_for_worker_id(worker_id: u64) -> Self {
+        let lead_account_id = get_current_lead_account_id();
+
         Self {
             worker_id,
             amount: 120,
-            origin: RawOrigin::Signed(1),
+            origin: RawOrigin::Signed(lead_account_id),
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
@@ -259,7 +261,7 @@ impl UpdateWorkerRoleAccountFixture {
         if actual_result.is_ok() {
             let worker = TestWorkingGroup::worker_by_id(self.worker_id);
 
-            assert_eq!(worker.role_account, self.new_role_account_id);
+            assert_eq!(worker.role_account_id, self.new_role_account_id);
         }
     }
 }
@@ -276,7 +278,7 @@ pub struct FillWorkerOpeningFixture {
     origin: RawOrigin<u64>,
     opening_id: u64,
     successful_application_ids: BTreeSet<u64>,
-    role_account: u64,
+    role_account_id: u64,
     reward_policy: Option<RewardPolicy<u64, u64>>,
 }
 
@@ -288,7 +290,7 @@ impl FillWorkerOpeningFixture {
             origin: RawOrigin::Signed(1),
             opening_id,
             successful_application_ids: application_ids,
-            role_account: 1,
+            role_account_id: 1,
             reward_policy: None,
         }
     }
@@ -348,7 +350,7 @@ impl FillWorkerOpeningFixture {
 
             let expected_worker = Worker {
                 member_id: 1,
-                role_account: self.role_account,
+                role_account_id: self.role_account_id,
                 reward_relationship,
                 role_stake_profile,
             };
@@ -476,7 +478,7 @@ pub struct ApplyOnWorkerOpeningFixture {
     origin: RawOrigin<u64>,
     member_id: u64,
     worker_opening_id: u64,
-    role_account: u64,
+    role_account_id: u64,
     opt_role_stake_balance: Option<u64>,
     opt_application_stake_balance: Option<u64>,
     human_readable_text: Vec<u8>,
@@ -517,7 +519,7 @@ impl ApplyOnWorkerOpeningFixture {
             origin: RawOrigin::Signed(1),
             member_id: 1,
             worker_opening_id: opening_id,
-            role_account: 1,
+            role_account_id: 1,
             opt_role_stake_balance: None,
             opt_application_stake_balance: None,
             human_readable_text: b"human_text".to_vec(),
@@ -530,7 +532,7 @@ impl ApplyOnWorkerOpeningFixture {
             self.origin.clone().into(),
             self.member_id,
             self.worker_opening_id,
-            self.role_account,
+            self.role_account_id,
             self.opt_role_stake_balance,
             self.opt_application_stake_balance,
             self.human_readable_text.clone(),
@@ -554,7 +556,7 @@ impl ApplyOnWorkerOpeningFixture {
             let actual_application = TestWorkingGroup::application_by_id(application_id);
 
             let expected_application = Application {
-                role_account: self.role_account,
+                role_account_id: self.role_account_id,
                 opening_id: self.worker_opening_id,
                 member_id: self.member_id,
                 hiring_application_id: application_id,
@@ -592,14 +594,14 @@ impl AcceptWorkerApplicationsFixture {
 
 pub struct SetLeadFixture {
     pub member_id: u64,
-    pub role_account: u64,
+    pub role_account_id: u64,
     pub worker_id: u64,
 }
 impl Default for SetLeadFixture {
     fn default() -> Self {
         SetLeadFixture {
             member_id: 1,
-            role_account: 1,
+            role_account_id: 1,
             worker_id: 1,
         }
     }
@@ -611,12 +613,12 @@ impl SetLeadFixture {
     }
 
     pub fn set_lead(self) {
-        TestWorkingGroup::set_lead(self.member_id, self.role_account, self.worker_id);
+        TestWorkingGroup::set_lead(self.worker_id);
     }
-    pub fn set_lead_with_ids(member_id: u64, role_account: u64, worker_id: u64) {
+    pub fn set_lead_with_ids(member_id: u64, role_account_id: u64, worker_id: u64) {
         Self {
             member_id,
-            role_account,
+            role_account_id,
             worker_id,
         }
         .set_lead();
@@ -774,7 +776,6 @@ impl EventFixture {
             u64,
             u64,
             u64,
-            u64,
             std::collections::BTreeMap<u64, u64>,
             Vec<u8>,
             u64,
@@ -808,8 +809,11 @@ pub struct DecreaseWorkerStakeFixture {
 impl DecreaseWorkerStakeFixture {
     pub fn default_for_worker_id(worker_id: u64) -> Self {
         let account_id = 1;
+
+        let lead_account_id = get_current_lead_account_id();
+
         Self {
-            origin: RawOrigin::Signed(account_id),
+            origin: RawOrigin::Signed(lead_account_id),
             worker_id,
             balance: 10,
             account_id,
@@ -860,6 +864,17 @@ pub(crate) fn get_stake_balance(stake: stake::Stake<u64, u64, u64>) -> u64 {
     panic!("Not staked.");
 }
 
+fn get_current_lead_account_id() -> u64 {
+    let leader_worker_id = TestWorkingGroup::current_lead();
+
+    if let Some(leader_worker_id) = leader_worker_id {
+        let leader = TestWorkingGroup::worker_by_id(leader_worker_id);
+        leader.role_account_id
+    } else {
+        0 // return invalid lead_account_id for testing
+    }
+}
+
 pub struct SlashWorkerStakeFixture {
     origin: RawOrigin<u64>,
     worker_id: u64,
@@ -870,8 +885,11 @@ pub struct SlashWorkerStakeFixture {
 impl SlashWorkerStakeFixture {
     pub fn default_for_worker_id(worker_id: u64) -> Self {
         let account_id = 1;
+
+        let lead_account_id = get_current_lead_account_id();
+
         Self {
-            origin: RawOrigin::Signed(account_id),
+            origin: RawOrigin::Signed(lead_account_id),
             worker_id,
             balance: 10,
             account_id,
