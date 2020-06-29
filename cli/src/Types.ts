@@ -92,6 +92,13 @@ export const AvailableGroups: readonly WorkingGroups[] = [
   WorkingGroups.StorageProviders
 ] as const;
 
+export type Reward = {
+    totalRecieved: Balance;
+    value: Balance;
+    interval: number; // 0 = reward is not really "recurring"
+    nextPaymentBlock: number; // 0 = no incoming payment
+}
+
 // Compound working group types
 export type GroupMember = {
     workerId: WorkerId;
@@ -99,7 +106,7 @@ export type GroupMember = {
     roleAccount: AccountId;
     profile: Profile;
     stake: Balance;
-    earned: Balance;
+    reward?: Reward;
 }
 
 export type GroupApplication = {

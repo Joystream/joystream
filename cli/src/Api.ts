@@ -12,6 +12,7 @@ import {
     AccountSummary,
     CouncilInfoObj, CouncilInfoTuple, createCouncilInfoObj,
     WorkingGroups,
+    Reward,
     GroupMember,
     OpeningStatus,
     GroupOpeningStage,
@@ -40,6 +41,7 @@ import { RewardRelationship, RewardRelationshipId } from '@joystream/types/recur
 import { Stake, StakeId } from '@joystream/types/stake';
 import { LinkageResult } from '@polkadot/types/codec/Linkage';
 import { Moment } from '@polkadot/types/interfaces';
+import { InputValidationLengthConstraint } from '@joystream/types/common';
 
 export const DEFAULT_API_URI = 'wss://rome-rpc-endpoint.joystream.org:9944/';
 const DEFAULT_DECIMALS = new u32(12);
@@ -203,15 +205,9 @@ export default class Api {
         }
 
         const leadWorkerId = optLeadId.unwrap();
-        const leadWorker = this.singleLinkageResult<Worker>(
-            await this.workingGroupApiQuery(group).workerById(leadWorkerId) as LinkageResult
-        );
+        const leadWorker = await this.workerByWorkerId(group, leadWorkerId.toNumber());
 
-        if (!leadWorker.is_active) {
-            return null;
-        }
-
-        return await this.groupMember(leadWorkerId, leadWorker);
+        return await this.parseGroupMember(leadWorkerId, leadWorker);
     }
 
     protected async stakeValue(stakeId: StakeId): Promise<Balance> {
@@ -225,14 +221,20 @@ export default class Api {
         return this.stakeValue(stakeProfile.stake_id);
     }
 
-    protected async workerTotalReward(relationshipId: RewardRelationshipId): Promise<Balance> {
-        const relationship = this.singleLinkageResult<RewardRelationship>(
+    protected async workerReward(relationshipId: RewardRelationshipId): Promise<Reward> {
+        const rewardRelationship = this.singleLinkageResult<RewardRelationship>(
             await this._api.query.recurringRewards.rewardRelationships(relationshipId) as LinkageResult
         );
-        return relationship.total_reward_received;
+
+        return {
+            totalRecieved: rewardRelationship.total_reward_received,
+            value: rewardRelationship.amount_per_payout,
+            interval: rewardRelationship.payout_interval.unwrapOr(new BN(0)).toNumber(),
+            nextPaymentBlock: rewardRelationship.next_payment_at_block.unwrapOr(new BN(0)).toNumber()
+        };
     }
 
-    protected async groupMember(
+    protected async parseGroupMember(
         id: WorkerId,
         worker: Worker
     ): Promise<GroupMember> {
@@ -245,14 +247,14 @@ export default class Api {
             throw new Error(`Group member profile not found! (member id: ${memberId.toNumber()})`);
         }
 
-        let stakeValue: Balance = this._api.createType("Balance", 0);
+        let stake: Balance = this._api.createType("Balance", 0);
         if (worker.role_stake_profile && worker.role_stake_profile.isSome) {
-            stakeValue = await this.workerStake(worker.role_stake_profile.unwrap());
+            stake = await this.workerStake(worker.role_stake_profile.unwrap());
         }
 
-        let earnedValue: Balance = this._api.createType("Balance", 0);
+        let reward: Reward | undefined;
         if (worker.reward_relationship && worker.reward_relationship.isSome) {
-            earnedValue = await this.workerTotalReward(worker.reward_relationship.unwrap());
+            reward = await this.workerReward(worker.reward_relationship.unwrap());
         }
 
         return ({
@@ -260,15 +262,39 @@ export default class Api {
             roleAccount,
             memberId,
             profile,
-            stake: stakeValue,
-            earned: earnedValue
+            stake,
+            reward
         });
+    }
+
+    async workerByWorkerId(group: WorkingGroups, workerId: number): Promise<Worker> {
+        const nextId = (await this.workingGroupApiQuery(group).nextWorkerId()) as WorkerId;
+
+        // This is chain specfic, but if next id is still 0, it means no workers have been added yet
+        if (workerId < 0 || workerId >= nextId.toNumber()) {
+            throw new CLIError('Invalid worker id!');
+        }
+
+        const worker = this.singleLinkageResult<Worker>(
+            (await this.workingGroupApiQuery(group).workerById(workerId)) as LinkageResult
+        );
+
+        if (!worker.is_active) {
+            throw new CLIError('This worker is not active anymore');
+        }
+
+        return worker;
+    }
+
+    async groupMember(group: WorkingGroups, workerId: number) {
+        const worker = await this.workerByWorkerId(group, workerId);
+        return await this.parseGroupMember(new WorkerId(workerId), worker);
     }
 
     async groupMembers(group: WorkingGroups): Promise<GroupMember[]> {
         const nextId = (await this.workingGroupApiQuery(group).nextWorkerId()) as WorkerId;
 
-        // This is chain specfic, but if next id is still 0, it means no curators have been added yet
+        // This is chain specfic, but if next id is still 0, it means no workers have been added yet
         if (nextId.eq(0)) {
             return [];
         }
@@ -280,7 +306,9 @@ export default class Api {
         let groupMembers: GroupMember[] = [];
         for (let [index, worker] of Object.entries(workers.toArray())) {
             const workerId = workerIds[parseInt(index)];
-            groupMembers.push(await this.groupMember(workerId, worker));
+            if (worker.is_active) {
+                groupMembers.push(await this.parseGroupMember(workerId, worker));
+            }
         }
 
         return groupMembers.reverse();
@@ -436,5 +464,14 @@ export default class Api {
             block: stageBlock,
             date: stageDate
         };
+    }
+
+    async getMemberIdsByControllerAccount(address: string): Promise<MemberId[]> {
+        const ids = await this._api.query.members.memberIdsByControllerAccountId(address) as Vec<MemberId>;
+        return ids.toArray();
+    }
+
+    async workerExitRationaleConstraint(group: WorkingGroups): Promise<InputValidationLengthConstraint> {
+        return await this.workingGroupApiQuery(group).workerExitRationaleText() as InputValidationLengthConstraint;
     }
 }

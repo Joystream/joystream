@@ -31,7 +31,7 @@ export default class WorkingGroupsOverview extends WorkingGroupsCommandBase {
             'Member id': m.memberId.toString(),
             'Member handle': m.profile.handle.toString(),
             'Stake': formatBalance(m.stake),
-            'Earned': formatBalance(m.earned)
+            'Earned': formatBalance(m.reward?.totalRecieved)
         }));
         displayTable(membersRows, 5);
     }

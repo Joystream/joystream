@@ -4,7 +4,6 @@ import { flags } from '@oclif/command';
 import { WorkingGroups, AvailableGroups, NamedKeyringPair, GroupMember, GroupOpening } from '../Types';
 import { apiModuleByGroup } from '../Api';
 import { CLIError } from '@oclif/errors';
-import inquirer from 'inquirer';
 import { ApiMethodInputArg } from './ApiCommandBase';
 import fs from 'fs';
 import path from 'path';
@@ -60,18 +59,38 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
         }
     }
 
+    // Use when member controller access is required, but one of the associated roles is expected to be selected
+    async getRequiredWorkerByMemberController(): Promise<GroupMember> {
+        const selectedAccount: NamedKeyringPair = await this.getRequiredSelectedAccount();
+        const memberIds = await this.getApi().getMemberIdsByControllerAccount(selectedAccount.address);
+        const controlledWorkers = (await this.getApi().groupMembers(this.group))
+            .filter(groupMember => memberIds.some(memberId => groupMember.memberId.eq(memberId)));
+
+        if (!controlledWorkers.length) {
+            this.error(
+                `Member controller account with some associated ${this.group} group roles needs to be selected!`,
+                { exit: ExitCodes.AccessDenied }
+            );
+        }
+        else if (controlledWorkers.length === 1) {
+            return controlledWorkers[0];
+        }
+        else {
+            return await this.promptForWorker(controlledWorkers);
+        }
+    }
+
     async promptForWorker(groupMembers: GroupMember[]): Promise<GroupMember> {
-        const { choosenWorkerIndex } = await inquirer.prompt([{
-            name: 'chosenWorkerIndex',
-            message: 'Choose the worker to execute the command as',
+        const chosenWorkerIndex = await this.simplePrompt({
+            message: 'Choose the intended worker context:',
             type: 'list',
             choices: groupMembers.map((groupMember, index) => ({
                 name: `Worker ID ${ groupMember.workerId.toString() }`,
                 value: index
             }))
-        }]);
+        });
 
-        return groupMembers[choosenWorkerIndex];
+        return groupMembers[chosenWorkerIndex];
     }
 
     async promptForApplicationsToAccept(opening: GroupOpening): Promise<number[]> {

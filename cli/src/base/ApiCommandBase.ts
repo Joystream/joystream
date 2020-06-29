@@ -61,11 +61,16 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     }
 
     // Prompt for simple/plain value (provided as string) of given type
-    async promptForSimple(typeDef: TypeDef, defaultValue?: Codec): Promise<Codec> {
+    async promptForSimple(
+        typeDef: TypeDef,
+        defaultValue?: Codec,
+        validateFunc?: (input: any) => string | boolean
+    ): Promise<Codec> {
         const providedValue = await this.simplePrompt({
             message: `Provide value for ${ this.paramName(typeDef) }`,
             type: 'input',
-            default: defaultValue?.toString()
+            default: defaultValue?.toString(),
+            validate: validateFunc
         });
         return createType(typeDef.type as any, providedValue);
     }
@@ -184,7 +189,12 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
     // Prompt for param based on "paramType" string (ie. Option<MemeberId>)
     // TODO: This may not yet work for all possible types
-    async promptForParam(paramType: string, forcedName?: string, defaultValue?: ApiMethodInputArg): Promise<ApiMethodInputArg> {
+    async promptForParam(
+        paramType: string,
+        forcedName?: string,
+        defaultValue?: ApiMethodInputArg,
+        validateFunc?: (input: any) => string | boolean // TODO: Currently only works with "promptForSimple"
+    ): Promise<ApiMethodInputArg> {
         const typeDef = getTypeDef(paramType);
         const rawTypeDef = this.getRawTypeDef(paramType);
 
@@ -208,7 +218,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
             return await this.promptForVec(typeDef, defaultValue as Vec<Codec>);
         }
         else {
-            return await this.promptForSimple(typeDef, defaultValue);
+            return await this.promptForSimple(typeDef, defaultValue, validateFunc);
         }
     }
 
