@@ -698,7 +698,7 @@ decl_storage! {
         pub MaxCategoryDepth get(max_category_depth) config(): u8;
 
         /// Moderator set for each Category
-        pub CategoryByModerator get(category_by_moderator) config(): double_map T::CategoryId, blake2_256(T::ModeratorId) => bool;
+        pub CategoryByModerator get(category_by_moderator) config(): double_map T::CategoryId, blake2_256(T::ModeratorId) => ();
 
         /// Each account 's reaction to a post.
         pub ReactionByPost get(reaction_by_post) config(): double_map T::PostId, blake2_256(T::ForumUserId) => PostReaction;
@@ -829,9 +829,12 @@ decl_module! {
             // Get moderator id.
             Self::ensure_is_moderator_with_correct_account(&who, &moderator_id)?;
 
-            // Put moderator into category by moderator map
-            <CategoryByModerator<T>>::mutate(category_id, moderator_id, |value|
-                *value = new_value);
+            if new_value {
+                <CategoryByModerator<T>>::insert(category_id, moderator_id, ());
+                return Ok(());
+            }
+
+            <CategoryByModerator<T>>::remove(category_id, moderator_id);
 
             Ok(())
         }
@@ -1925,7 +1928,7 @@ impl<T: Trait> Module<T> {
 
         // Iterate path, check all ancient category
         for item in category_tree_path {
-            if <CategoryByModerator<T>>::get(item.id, moderator_id) {
+            if <CategoryByModerator<T>>::exists(item.id, moderator_id) {
                 return Ok(());
             }
         }
