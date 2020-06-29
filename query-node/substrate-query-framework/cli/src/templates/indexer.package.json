@@ -1,0 +1,37 @@
+{
+    "name": "indexer",
+    "version": "1.0.0",
+    "main": "index.js",
+    "license": "MIT",
+    "scripts": {
+      "start": "ts-node index.ts",
+        "start:dev": "DEBUG=index-builder:* ts-node index.ts --bootstrap",
+        "bootstrap": "ts-node index.ts --no-start --bootstrap",
+        "bootstrap:dev": "DEBUG=index-builder:* ts-node index.ts --no-start --bootstrap",
+        "postinstall": "rm -rf node_modules/index-builder/node_modules"
+    },
+    "dependencies": {
+      "@joystream/types": "^0.8.0",
+      "@types/bn.js": "^4.11.6",
+      "@types/shortid": "^0.0.29",
+      "bn.js": "^5.1.1",
+      "chalk": "^4.0.0",
+      "dotenv": "^8.0.0",
+      "figlet": "^1.4.0",
+      "index-builder": "file:../../../substrate-query-framework/index-builder",
+      "lodash": "^4.17.15",
+      "log4js": "^6.2.1",
+      "pg": "^8.0.3",
+      "reflect-metadata": "^0.1.13",
+      "shortid": "^2.2.15",
+      "typeorm": "^0.2.24",
+      "typeorm-model-generator": "^0.4.2"
+    },
+    "resolutions": {
+      "tslib": "1.11.2"
+    },
+    "devDependencies": {
+      "@types/figlet": "^1.2.0"
+    }
+}
+  

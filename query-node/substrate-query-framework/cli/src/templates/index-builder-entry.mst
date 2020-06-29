@@ -1,0 +1,149 @@
+import "reflect-metadata";
+import * as dotenv from "dotenv";
+import * as chalk from 'chalk';
+import * as figlet from 'figlet';
+import { Command } from 'commander';
+import { configure, getLogger } from 'log4js';
+
+import { createConnection } from "typeorm";
+import { {{typeRegistrator}} } from '{{{packageName}}}';
+import {
+  QueryNodeManager,
+  BootstrapPack,
+  BootstrapFunc,
+  DatabaseManager,
+  SubstrateEvent
+} from "index-builder/lib";
+
+// Mappings use!
+export { DatabaseManager as DB, getLogger, SubstrateEvent };
+
+const logger = getLogger();
+
+function getProcessingPack() {
+  const handlers = require("../../mappings");
+
+  let processingPack: { [key: string]: any } = {};
+
+  Object.keys(handlers)
+    .filter(handler => handler.startsWith("handle"))
+    .map((handler: string) => {
+      let eventName = handler.replace("handle", "");
+      processingPack[eventName] = handlers[handler];
+    });
+  return processingPack;
+}
+
+function getBootstrapPack() {
+  const bootstrapPack: BootstrapPack = { pack: [] };
+  if (!process.env.BOOTSTRAP_PACK_LOCATION) {
+      // TODO: very basic, we should read form the config file
+      throw new Error(`No boostrap location found. 
+Please set BOOTSTRAP_FILE_LOCATION environment variable`)
+  }
+  let handlers: { [key: string]: BootstrapFunc } = {};
+  try {
+    handlers = require(process.env.BOOTSTRAP_PACK_LOCATION);
+  } catch (e) {
+    throw new Error(`Cannot load bootstrap mappings from ${process.env.BOOTSTRAP_FILE_LOCATION}: ${e}`);
+  }
+  
+
+  Object.keys(handlers)
+    .filter(handler => handler.startsWith("boot"))
+    .map((handler: string) => bootstrapPack.pack.push(handlers[handler]));
+
+  return bootstrapPack;
+}
+
+function banner():Command {
+    console.log(
+        chalk.green(
+          figlet.textSync('Joystream-Indexer')
+        )
+    );
+    const program = new Command();
+    const version = require('./package.json').version;
+
+    program
+        .version(version)
+        .description("Joystream Indexer")
+        .option('-b, --bootstrap', 'Load initial data using the boot* mappings')
+        .option('-l, --logging <file>', 'Path to log4js config', null)
+        .option('-h, --height <height>', 'Block height to start from', 0)
+        .option('-e, --env <file>', '.env file location', '../../.env')
+        .option('-n, --no-start', "Do not run the indexer");
+
+    
+    program.parse(process.argv);
+    
+    return program;
+}
+
+function setUp(opts: any) {
+      
+    const height:string = opts.height || '0';
+    process.env.BLOCK_HEIGHT = height;
+
+    if (opts.bootstrap) {
+        process.env.QUERY_NODE_BOOTSTRAP_DB = 'true'
+    }
+
+    // dotenv config
+    dotenv.config({ path: opts.env });
+
+    //log4js config
+    if (opts.logging) {
+        configure(opts.logging)
+    } else {
+        // log4js default: DEBUG to console output;
+        getLogger().level = 'debug';
+    }
+    
+}
+
+async function doBootstrap(node: QueryNodeManager) {
+    await node.bootstrap(
+        process.env.WS_PROVIDER_ENDPOINT_URI as string,
+        getBootstrapPack(),
+        {{typeRegistrator}}
+    );
+    logger.info("Bootstrap done");
+}
+
+async function main() {
+  const command = banner();  
+  setUp(command);
+  
+  const providerUri = process.env.WS_PROVIDER_ENDPOINT_URI;
+
+  if (!providerUri) {
+    throw new Error(
+      "WS_PROVIDER_ENDPOINT_URI environment variable is not set! Make sure you set it in your .env file or system wide."
+    );
+  }
+  
+  // Required for warthog models.
+  dotenv.config({ path: '../graphql-server/.env' });
+  await createConnection();
+
+  const node = new QueryNodeManager(process);
+
+  const bootstrap = process.env.QUERY_NODE_BOOTSTRAP_DB;
+  if (bootstrap) {
+    await doBootstrap(node) 
+  }
+
+  if (!command.start) {
+      logger.info("The --no-start flag was set to true, the indexer will not start");
+      process.exit(0);
+  }
+
+  node.start(providerUri, getProcessingPack(), {{typeRegistrator}});
+}
+
+main().catch((e) => {
+    console.error(e);
+    process.exit(1)
+});
+

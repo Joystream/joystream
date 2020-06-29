@@ -1,0 +1,46 @@
+import { ObjectType, Field, Float, Int, Arg, Query, Resolver, createUnionType } from 'type-graphql';
+import { Inject } from 'typedi';
+{{#entities}}  
+import { {{type}} } from '../{{model}}/{{model}}.model';
+{{/entities}}  
+import { {{query.typePrefix}}FTSService } from './{{query.name}}.service';
+
+@ObjectType()
+export class {{query.typePrefix}}FTSOutput {
+    @Field(type => {{query.typePrefix}}SearchItem)
+    item!: typeof {{query.typePrefix}}SearchItem
+
+    @Field(type => Float)
+    rank!: number
+
+    @Field(type => String)
+    isTypeOf!: string
+
+    @Field(type => String)
+    highlight!: string
+}
+
+export const {{query.typePrefix}}SearchItem = createUnionType({
+    name: "{{query.typePrefix}}SearchResult",
+    types: () => [
+    {{#entities}}  
+        {{type}},
+    {{/entities}}     
+    ],
+});
+
+
+@Resolver()
+export default class {{query.typePrefix}}FTSResolver {
+
+    constructor(@Inject('{{query.typePrefix}}FTSService') readonly service: {{query.typePrefix}}FTSService) {}
+
+    @Query(() => [{{query.typePrefix}}FTSOutput])
+    async {{query.name}}(
+        @Arg('text') query: string, 
+        @Arg('limit', () => Int, { defaultValue: 5 }) limit: number):Promise<Array<{{query.typePrefix}}FTSOutput>>{
+        
+        return this.service.search(query, limit);
+    }
+
+}

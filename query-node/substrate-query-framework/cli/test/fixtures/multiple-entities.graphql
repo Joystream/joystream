@@ -1,0 +1,19 @@
+type Category @entity {
+  id: ID!,
+  name: String! @fulltext(query: "search"),
+  parent_category: Category,
+}
+
+type Thread @entity {
+  id: ID!,
+  category: Category!,
+  title: String @fulltext(query: "search"),
+  initial_body_text: String @fulltext(query: "search")
+}
+
+type Post @entity {
+  id: ID!,
+  thread: Thread!,
+  index: Int!,
+  initial_body_text: String @fulltext(query: "search")
+}

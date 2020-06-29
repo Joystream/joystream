@@ -1,0 +1,95 @@
+{
+  "name": "cli",
+  "description": "Query node cli",
+  "version": "0.0.0",
+  "author": "metmirr @metmirr",
+  "bin": {
+    "cli": "./bin/run"
+  },
+  "bugs": "https://github.com/joystream/joystream/joystream-query-node/cli/issues",
+  "dependencies": {
+    "@oclif/command": "^1.5.20",
+    "@oclif/config": "^1",
+    "@oclif/plugin-help": "^2",
+    "@types/fs-extra": "^8.1.0",
+    "@types/graphql": "^14.5.0",
+    "@types/mustache": "^4.0.1",
+    "@types/node": "^12.12.30",
+    "fs-extra": "^9.0.0",
+    "gluegun": "^4.3.1",
+    "graphql": "^15.0.0",
+    "lodash": "^4.17.15",
+    "mustache": "^4.0.1",
+    "tslib": "1.11.2",
+    "typeorm-model-generator": "^0.4.2",
+    "warthog": "^2.9"
+  },
+  "devDependencies": {
+    "@oclif/dev-cli": "^1",
+    "@oclif/test": "^1",
+    "@types/chai": "^4",
+    "@types/mocha": "^7.0.2",
+    "@types/temp": "^0.8.34",
+    "@types/tmp": "^0.2.0",
+    "@typescript-eslint/eslint-plugin": "^3.0.2",
+    "@typescript-eslint/parser": "^3.0.2",
+    "chai": "^4",
+    "eslint": "^7.1.0",
+    "globby": "^10",
+    "husky": "^4.2.5",
+    "jest": "^26.0.1",
+    "lint-staged": "^10.2.6",
+    "mocha": "^5",
+    "mocha-chai-snapshot": "^1.0.0",
+    "nyc": "^14",
+    "prettier": "^2.0.5",
+    "spawn-command": "^0.0.2-1",
+    "temp": "^0.9.1",
+    "ts-node": "^8",
+    "typescript": "^3.9.3"
+  },
+  "engines": {
+    "node": ">=8.0.0"
+  },
+  "files": [
+    "/bin",
+    "/lib",
+    "/npm-shrinkwrap.json",
+    "/oclif.manifest.json"
+  ],
+  "homepage": "https://github.com/joystream/joystream/joystream-query-node/cli",
+  "keywords": [
+    "oclif"
+  ],
+  "license": "MIT",
+  "main": "lib/index.js",
+  "oclif": {
+    "commands": "./lib/src/commands",
+    "bin": "cli",
+    "plugins": [
+      "@oclif/plugin-help"
+    ]
+  },
+  "repository": "joystream/joystream/joystream-query-node/cli",
+  "scripts": {
+    "build": "rm -rf lib && tsc --build tsconfig.json",
+    "postpack": "rm -f oclif.manifest.json",
+    "lint": "eslint . --cache --ext .ts --config .eslintrc.js",
+    "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
+    "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
+    "version": "oclif-dev readme && git add README.md"
+  },
+  "types": "lib/index.d.ts",
+  "resolutions": {
+    "tslib": "1.11.2"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "yarn test"
+    }
+  },
+  "lint-staged": {
+    "*.ts": "yarn lint"
+  }
+}
