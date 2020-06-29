@@ -82,6 +82,10 @@ impl Trait for Runtime {
     ) -> bool {
         *account_id == FORUM_SUDO_ORIGIN_ID
     }
+
+    fn is_moderator(account_id: &Self::AccountId, moderator_id: &Self::ModeratorId) -> bool {
+        *account_id == FORUM_SUDO_ORIGIN_ID && *moderator_id != NOT_REGISTER_MODERATOR_ID
+    }
 }
 
 #[derive(Clone)]
@@ -111,14 +115,6 @@ pub const NOT_REGISTER_MODERATOR_ID: <Runtime as Trait>::ModeratorId = 666;
 
 pub fn generate_text(len: usize) -> Vec<u8> {
     vec![b'x'; len]
-}
-
-pub fn good_user_name() -> Vec<u8> {
-    b"good name".to_vec()
-}
-
-pub fn good_self_introduction() -> Vec<u8> {
-    b"good description".to_vec()
 }
 
 pub fn good_category_title() -> Vec<u8> {
@@ -235,33 +231,6 @@ pub fn generate_label_index_cases() -> Vec<BTreeSet<<Runtime as Trait>::ThreadId
             a
         },
     ]
-}
-
-pub fn create_moderator_mock(
-    account_id: <Runtime as system::Trait>::AccountId,
-    name: Vec<u8>,
-    self_introduction: Vec<u8>,
-    result: Result<(), &'static str>,
-) -> <Runtime as Trait>::ModeratorId {
-    let moderator_id = TestForumModule::next_moderator_id();
-    assert_eq!(
-        TestForumModule::create_moderator(account_id, name.clone(), self_introduction.clone(),),
-        result
-    );
-    if result.is_ok() {
-        let moderator = Moderator {
-            role_account: account_id,
-            name: name.clone(),
-            self_introduction: self_introduction.clone(),
-        };
-        assert_eq!(TestForumModule::moderator_by_id(moderator_id), moderator);
-        assert_eq!(TestForumModule::next_moderator_id(), moderator_id + 1);
-        assert_eq!(
-            System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ModeratorCreated(moderator_id))
-        );
-    };
-    moderator_id
 }
 
 pub fn create_labels_mock() {
@@ -706,8 +675,6 @@ pub fn migration_not_done_config() -> GenesisConfig<Runtime> {
 
 pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
-        moderator_by_id: vec![],
-        next_moderator_id: 1,
         category_by_id: vec![], // endowed_accounts.iter().cloned().map(|k|(k, 1 << 60)).collect(),
         next_category_id: 1,
         thread_by_id: vec![],

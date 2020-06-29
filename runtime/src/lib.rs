@@ -823,6 +823,10 @@ impl forum::Trait for Runtime {
     ) -> bool {
         true
     }
+
+    fn is_moderator(_account_id: &Self::AccountId, _moderator_id: &Self::ModeratorId) -> bool {
+        true
+    }
 }
 
 impl migration::Trait for Runtime {

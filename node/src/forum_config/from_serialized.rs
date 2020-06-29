@@ -56,8 +56,6 @@ pub fn create() -> ForumConfig {
         post_moderation_rationale_constraint: new_validation(10, 290),
 
         // TODO: get rid of mocks and setup valid values
-        moderator_by_id: Vec::new(),
-        next_moderator_id: 1,
         max_category_depth: 10,
         category_by_moderator: Vec::new(),
         reaction_by_post: Vec::new(),

@@ -37,87 +37,6 @@ fn add_labels() {
 }
 
 /*
- * create_moderator
- */
-#[test]
-// test case for create a new moderator
-fn create_moderator_account_id() {
-    let config = default_genesis_config();
-    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
-    build_test_externalities(config).execute_with(|| {
-        create_moderator_mock(
-            forum_sudo,
-            good_user_name(),
-            good_self_introduction(),
-            Ok(()),
-        );
-        // test use same account id to create multiple moderator
-        create_moderator_mock(
-            forum_sudo,
-            good_user_name(),
-            good_self_introduction(),
-            Ok(()),
-        );
-    });
-}
-
-#[test]
-// test case for check moderator's name
-fn create_moderator_name() {
-    let config = default_genesis_config();
-    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
-    let names = vec![
-        generate_text(config.user_name_constraint.min as usize),
-        generate_text((config.user_name_constraint.min - 1) as usize),
-        generate_text((config.user_name_constraint.max() + 1) as usize),
-    ];
-    let results = vec![
-        Ok(()),
-        Err(ERROR_USER_NAME_TOO_SHORT),
-        Err(ERROR_USER_NAME_TOO_LONG),
-    ];
-    for index in 0..names.len() {
-        let config = default_genesis_config();
-        build_test_externalities(config).execute_with(|| {
-            create_moderator_mock(
-                forum_sudo,
-                names[index].clone(),
-                good_self_introduction(),
-                results[index],
-            );
-        });
-    }
-}
-
-#[test]
-// test case for check moderator's self introduction
-fn create_moderator_self_introduction() {
-    let config = default_genesis_config();
-    let forum_sudo = FORUM_SUDO_ORIGIN_ID;
-    let introductions = vec![
-        generate_text(config.user_self_introduction_constraint.min as usize),
-        generate_text((config.user_self_introduction_constraint.min - 1) as usize),
-        generate_text((config.user_self_introduction_constraint.max() + 1) as usize),
-    ];
-    let results = vec![
-        Ok(()),
-        Err(ERROR_USER_SELF_DESC_TOO_SHORT),
-        Err(ERROR_USER_SELF_DESC_TOO_LONG),
-    ];
-    for index in 0..introductions.len() {
-        let config = default_genesis_config();
-        build_test_externalities(config).execute_with(|| {
-            create_moderator_mock(
-                forum_sudo,
-                good_user_name(),
-                introductions[index].clone(),
-                results[index],
-            );
-        });
-    }
-}
-
-/*
  * set_max_category_depth
  */
 #[test]
@@ -142,12 +61,7 @@ fn set_moderator_category_origin() {
     let origin = OriginType::Signed(forum_sudo);
 
     build_test_externalities(config).execute_with(|| {
-        let moderator_id = create_moderator_mock(
-            forum_sudo,
-            good_user_name(),
-            good_self_introduction(),
-            Ok(()),
-        );
+        let moderator_id = forum_sudo;
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -174,12 +88,7 @@ fn set_moderator_category_category() {
     let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
-        let moderator_id = create_moderator_mock(
-            forum_sudo,
-            good_user_name(),
-            good_self_introduction(),
-            Ok(()),
-        );
+        let moderator_id = forum_sudo;
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -219,17 +128,12 @@ fn set_moderator_category_account_id() {
             NOT_REGISTER_MODERATOR_ID,
             category_id,
             true,
-            Err(ERROR_NOT_MODERATOR_USER),
+            Err(ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT),
         );
     });
 
     build_test_externalities(config).execute_with(|| {
-        let moderator_id = create_moderator_mock(
-            forum_sudo,
-            good_user_name(),
-            good_self_introduction(),
-            Ok(()),
-        );
+        let moderator_id = forum_sudo;
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -638,12 +542,7 @@ fn update_category_labels() {
         let origin = OriginType::Signed(forum_sudo);
         build_test_externalities(config).execute_with(|| {
             create_labels_mock();
-            let moderator_id = create_moderator_mock(
-                forum_sudo,
-                good_user_name(),
-                good_self_introduction(),
-                Ok(()),
-            );
+            let moderator_id = forum_sudo;
             let category_id = create_category_mock(
                 origin.clone(),
                 None,
@@ -671,12 +570,7 @@ fn update_category_labels_moderator() {
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
         create_labels_mock();
-        let moderator_id = create_moderator_mock(
-            forum_sudo,
-            good_user_name(),
-            good_self_introduction(),
-            Ok(()),
-        );
+        let moderator_id = forum_sudo;
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -961,12 +855,7 @@ fn update_thread_labels_by_moderator() {
 
         build_test_externalities(config).execute_with(|| {
             create_labels_mock();
-            let moderator_id = create_moderator_mock(
-                forum_sudo,
-                good_user_name(),
-                good_self_introduction(),
-                Ok(()),
-            );
+            let moderator_id = forum_sudo;
             let category_id = create_category_mock(
                 origin.clone(),
                 None,
@@ -1120,12 +1009,7 @@ fn moderate_thread_origin_ok() {
     let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
-        let moderator_id = create_moderator_mock(
-            forum_sudo,
-            good_user_name(),
-            good_self_introduction(),
-            Ok(()),
-        );
+        let moderator_id = forum_sudo;
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -1168,12 +1052,7 @@ fn moderate_thread_rationale() {
         let forum_sudo = FORUM_SUDO_ORIGIN_ID;
         let origin = OriginType::Signed(forum_sudo);
         build_test_externalities(config).execute_with(|| {
-            let moderator_id = create_moderator_mock(
-                forum_sudo,
-                good_user_name(),
-                good_self_introduction(),
-                Ok(()),
-            );
+            let moderator_id = forum_sudo;
             let category_id = create_category_mock(
                 origin.clone(),
                 None,
@@ -1429,12 +1308,7 @@ fn moderate_post_origin() {
         let forum_sudo = FORUM_SUDO_ORIGIN_ID;
         let origin = OriginType::Signed(forum_sudo);
         build_test_externalities(config).execute_with(|| {
-            let moderator_id = create_moderator_mock(
-                forum_sudo,
-                good_user_name(),
-                good_self_introduction(),
-                Ok(()),
-            );
+            let moderator_id = forum_sudo;
 
             let category_id = create_category_mock(
                 origin.clone(),
@@ -1493,12 +1367,7 @@ fn moderate_post_rationale() {
         let forum_sudo = FORUM_SUDO_ORIGIN_ID;
         let origin = OriginType::Signed(forum_sudo);
         build_test_externalities(config).execute_with(|| {
-            let moderator_id = create_moderator_mock(
-                forum_sudo,
-                good_user_name(),
-                good_self_introduction(),
-                Ok(()),
-            );
+            let moderator_id = forum_sudo;
 
             let category_id = create_category_mock(
                 origin.clone(),
@@ -1544,12 +1413,7 @@ fn set_stickied_threads_ok() {
     let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
-        let moderator_id = create_moderator_mock(
-            forum_sudo,
-            good_user_name(),
-            good_self_introduction(),
-            Ok(()),
-        );
+        let moderator_id = forum_sudo;
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -1579,12 +1443,7 @@ fn set_stickied_threads_wrong_moderator() {
     let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
-        let moderator_id = create_moderator_mock(
-            forum_sudo,
-            good_user_name(),
-            good_self_introduction(),
-            Ok(()),
-        );
+        let moderator_id = forum_sudo;
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -1620,12 +1479,7 @@ fn set_stickied_threads_thread_not_exists() {
     let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
-        let moderator_id = create_moderator_mock(
-            forum_sudo,
-            good_user_name(),
-            good_self_introduction(),
-            Ok(()),
-        );
+        let moderator_id = forum_sudo;
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -1662,12 +1516,7 @@ fn set_stickied_threads_wrong_category() {
     let forum_sudo = FORUM_SUDO_ORIGIN_ID;
     let origin = OriginType::Signed(forum_sudo);
     build_test_externalities(config).execute_with(|| {
-        let moderator_id = create_moderator_mock(
-            forum_sudo,
-            good_user_name(),
-            good_self_introduction(),
-            Ok(()),
-        );
+        let moderator_id = forum_sudo;
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -1726,15 +1575,6 @@ fn test_migration_not_done() {
         let category_id = 1;
         let thread_id = 1;
         let post_id = 1;
-
-        assert_eq!(
-            TestForumModule::create_moderator(
-                forum_sudo,
-                good_user_name(),
-                good_self_introduction(),
-            ),
-            Err(ERROR_DATA_MIGRATION_NOT_DONE),
-        );
 
         assert_eq!(
             TestForumModule::create_category(

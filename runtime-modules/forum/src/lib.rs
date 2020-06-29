@@ -289,6 +289,7 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         account_id: &<Self as system::Trait>::AccountId,
         forum_user_id: &Self::ForumUserId,
     ) -> bool;
+    fn is_moderator(account_id: &Self::AccountId, moderator_id: &Self::ModeratorId) -> bool;
 }
 
 /*
@@ -334,11 +335,6 @@ impl InputValidationLengthConstraint {
 
 /// Error about users
 const ERROR_ORIGIN_NOT_FORUM_SUDO: &str = "Origin not forum sudo.";
-const ERROR_NOT_MODERATOR_USER: &str = "Not moderator user.";
-const ERROR_USER_NAME_TOO_SHORT: &str = "User Name too short.";
-const ERROR_USER_NAME_TOO_LONG: &str = "User Name too long.";
-const ERROR_USER_SELF_DESC_TOO_SHORT: &str = "User self introduction too short.";
-const ERROR_USER_SELF_DESC_TOO_LONG: &str = "User self introduction too long.";
 const ERROR_FORUM_USER_ID_NOT_MATCH_ACCOUNT: &str = "Forum user id not match its account.";
 const ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT: &str = "Moderator id not match its account.";
 const ERROR_FORUM_USER_NOT_THREAD_AUTHOR: &str = "Forum user is not thread author";
@@ -680,12 +676,6 @@ type CategoryTreePathArg<CategoryId, ThreadId, BlockNumber, Moment> =
 
 decl_storage! {
     trait Store for Module<T: Trait> as Forum_1_1 {
-        /// Map forum moderator identifier to moderator information.
-        pub ModeratorById get(moderator_by_id) config(): map T::ModeratorId => Moderator<T::AccountId>;
-
-        /// Forum moderator identifier value for next new moderator user.
-        pub NextModeratorId get(next_moderator_id) config(): T::ModeratorId;
-
         /// Map category identifier to corresponding category.
         pub CategoryById get(category_by_id) config(): map T::CategoryId => Category<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment>;
 
@@ -776,7 +766,6 @@ decl_event!(
         <T as Trait>::ThreadId,
         <T as Trait>::PostId,
         <T as Trait>::ForumUserId,
-        <T as Trait>::ModeratorId,
     {
         /// A category was introduced
         CategoryCreated(CategoryId),
@@ -807,9 +796,6 @@ decl_event!(
 
         /// Vote on poll
         VoteOnPoll(ThreadId, u32),
-
-        /// Moderator created
-        ModeratorCreated(ModeratorId),
 
         /// Max category depth updated
         MaxCategoryDepthUpdated(u8),
@@ -1583,40 +1569,6 @@ impl<T: Trait> Module<T> {
         Ok(new_post)
     }
 
-    // The method only called from other module to create a new moderator.
-    pub fn create_moderator(
-        account_id: T::AccountId,
-        name: Vec<u8>,
-        self_introduction: Vec<u8>,
-    ) -> dispatch::Result {
-        // Ensure data migration is done
-        Self::ensure_data_migration_done()?;
-
-        // Ensure user name is valid
-        Self::ensure_user_name_is_valid(&name)?;
-
-        // Ensure self introduction is valid
-        Self::ensure_user_self_introduction_is_valid(&self_introduction)?;
-
-        // Create moderator data
-        let new_moderator = Moderator {
-            role_account: account_id,
-            name,
-            self_introduction,
-        };
-
-        // Insert moderator data into storage
-        <ModeratorById<T>>::mutate(<NextModeratorId<T>>::get(), |value| *value = new_moderator);
-
-        // Store event to runtime
-        Self::deposit_event(RawEvent::ModeratorCreated(<NextModeratorId<T>>::get()));
-
-        // Update next moderate index
-        <NextModeratorId<T>>::mutate(|n| *n += One::one());
-
-        Ok(())
-    }
-
     // The method only called from other module to add some labels.
     pub fn add_labels(labels: Vec<Vec<u8>>) -> dispatch::Result {
         // Ensure data migration is done
@@ -1695,22 +1647,6 @@ impl<T: Trait> Module<T> {
             Self::ensure_poll_desc_is_valid(desc_len)?;
         }
         Ok(())
-    }
-
-    fn ensure_user_name_is_valid(text: &[u8]) -> dispatch::Result {
-        UserNameConstraint::get().ensure_valid(
-            text.len(),
-            ERROR_USER_NAME_TOO_SHORT,
-            ERROR_USER_NAME_TOO_LONG,
-        )
-    }
-
-    fn ensure_user_self_introduction_is_valid(text: &[u8]) -> dispatch::Result {
-        UserSelfIntroductionConstraint::get().ensure_valid(
-            text.len(),
-            ERROR_USER_SELF_DESC_TOO_SHORT,
-            ERROR_USER_SELF_DESC_TOO_LONG,
-        )
     }
 
     fn ensure_category_title_is_valid(title: &[u8]) -> dispatch::Result {
@@ -1863,7 +1799,6 @@ impl<T: Trait> Module<T> {
         let is_member = T::is_forum_member(account_id, forum_user_id);
 
         ensure!(is_member, ERROR_FORUM_USER_ID_NOT_MATCH_ACCOUNT);
-
         Ok(())
     }
 
@@ -1872,15 +1807,10 @@ impl<T: Trait> Module<T> {
         account_id: &T::AccountId,
         moderator_id: &T::ModeratorId,
     ) -> dispatch::Result {
-        if <ModeratorById<T>>::exists(moderator_id) {
-            if <ModeratorById<T>>::get(moderator_id).role_account == *account_id {
-                Ok(())
-            } else {
-                Err(ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT)
-            }
-        } else {
-            Err(ERROR_NOT_MODERATOR_USER)
-        }
+        let is_moderator = T::is_moderator(account_id, moderator_id);
+
+        ensure!(is_moderator, ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT);
+        Ok(())
     }
 
     fn ensure_catgory_is_mutable(category_id: T::CategoryId) -> dispatch::Result {
