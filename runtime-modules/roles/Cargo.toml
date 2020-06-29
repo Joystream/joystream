@@ -1,6 +1,6 @@
 [package]
 name = 'substrate-roles-module'
-version = '1.0.0'
+version = '1.0.1'
 authors = ['Joystream contributors']
 edition = '2018'
 

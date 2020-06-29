@@ -100,7 +100,7 @@ decl_module! {
                 expires_at: <system::Module<T>>::block_number() + ttl,
             });
 
-            Self::deposit_event(RawEvent::AccountInfoUpdated(sender.clone(), id.clone()));
+            Self::deposit_event(RawEvent::AccountInfoUpdated(sender, id));
         }
 
         pub fn unset_ipns_id(origin) {

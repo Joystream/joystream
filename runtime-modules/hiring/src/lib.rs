@@ -27,7 +27,6 @@ use mockall::*;
 use stake::{InitiateUnstakingError, Stake, StakeActionError, StakingError, Trait as StakeTrait};
 
 use codec::Codec;
-use system;
 
 use runtime_primitives::traits::Zero;
 use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
@@ -52,7 +51,6 @@ mod mock;
 mod test;
 
 pub use hiring::*;
-use stake;
 
 /// Main trait of hiring substrate module
 pub trait Trait: system::Trait + stake::Trait + Sized {
@@ -156,7 +154,7 @@ decl_module! {
                         hiring::ActiveOpeningStage::Deactivated {
                             cause: hiring::OpeningDeactivationCause::ReviewPeriodExpired,
                             deactivated_at_block: now,
-                            started_accepting_applicants_at_block: started_accepting_applicants_at_block,
+                            started_accepting_applicants_at_block,
                             started_review_period_at_block: Some(started_review_period_at_block),
                     });
 

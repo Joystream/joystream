@@ -1,0 +1,48 @@
+.ProposalType {
+  background: #fff !important;
+  box-shadow: 0 1px 3px 0 #d4d4d5, 0 0 0 1px #d4d4d5 !important;
+  padding: 1em !important;
+  border-radius: 0.3em !important;
+}
+.ProposalType .header {
+  font-size: 1.5em !important;
+  line-height: 1;
+}
+.ProposalType .description-text {
+  flex-grow: 1;
+}
+.ProposalType .actions {
+  margin: 0 2em;
+  padding-top: 1em;
+}
+.ProposalType .proposal-details {
+  display: flex;
+  margin: 0 -2em;
+}
+.ProposalType .proposal-detail {
+  margin: 1em 2em;
+}
+.ProposalType .detail-value {
+  font-size: 1.2em;
+  font-weight: 700;
+}
+
+@media only screen and (max-width: 1199px) {
+  .ProposalType .proposal-details {
+    flex-direction: column;
+    margin: 1em 0;
+  }
+  .ProposalType .proposal-detail {
+    display: flex;
+    justify-content: space-between;
+    margin: .5em 0;
+  }
+}
+
+@media only screen and (max-width: 767px) {
+  .ProposalType .actions {
+    padding: 0;
+    margin: 0;
+    text-align: right;
+  }
+}

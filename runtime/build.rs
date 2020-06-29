@@ -24,7 +24,7 @@ fn main() {
     }
 
     let file_name = "wasm_binary.rs";
-    let wasm_builder_source = WasmBuilderSource::Crates("1.0.8");
+    let wasm_builder_source = WasmBuilderSource::Crates("1.0.9");
     // This instructs LLD to export __heap_base as a global variable, which is used by the
     // external memory allocator.
     let default_rust_flags = "-Clink-arg=--export=__heap_base";
