@@ -244,6 +244,9 @@ decl_error! {
 
         /// Require signed origin in extrinsics.
         RequireSignedOrigin,
+
+        /// Working group size limit exceeded.
+        MaxActiveWorkerNumberExceeded,
     }
 }
 

@@ -146,8 +146,13 @@ impl GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
 }
 
+parameter_types! {
+    pub const MaxWorkerNumberLimit: u32 = 3;
+}
+
 impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type Event = MetaEvent;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
 impl data_object_type_registry::Trait for Test {
