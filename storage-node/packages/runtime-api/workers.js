@@ -112,6 +112,66 @@ class WorkersApi {
 
     return { ids, providers }
   }
+
+  // Helper methods below don't really belong in the colossus api, they are here
+  // mainly to be used by the dev-init command in the cli to setup a development environment
+
+  async dev_setLead(sudo, memberId, roleAccount) {
+    const setLeadTx = this.base.api.tx.storageWorkingGroup.setLead(memberId, roleAccount)
+    // make sudo call
+    return this.base.signAndSend(
+      sudo,
+      this.base.api.tx.sudo.sudo(setLeadTx)
+    )
+  }
+
+  async dev_addWorkerOpening(leadAccount) {
+    const openTx = this.base.api.tx.storageWorkingGroup.addWorkerOpening('CurrentBlock', {
+      application_rationing_policy: {
+        'max_active_applicants': 1
+      },
+      max_review_period_length: 1000
+      // default values for everything else..
+    }, 'dev-opening')
+
+    const openingId = await this.base.signAndSendThenGetEventResult(leadAccount, openTx, {
+      eventModule: 'storageWorkingGroup',
+      eventName: 'WorkerOpeningAdded',
+      eventProperty: 'WorkerOpeningId'
+    })
+
+    return openingId
+  }
+
+  async dev_applyOnOpening(openingId, memberId, memberAccount, roleAccount) {
+    const applyTx = this.base.api.tx.storageWorkingGroup.applyOnWorkerOpening(
+      memberId, openingId, roleAccount, null, null, `colossus-${memberId}`
+    )
+    const applicationId = await this.base.signAndSendThenGetEventResult(memberAccount, applyTx, {
+      eventModule: 'storageWorkingGroup',
+      eventName: 'AppliedOnWorkerOpening',
+      eventProperty: 'WorkerApplicationId'
+    })
+
+    return applicationId
+  }
+
+  async dev_beginOpeningReview(openingId, leadAccount) {
+    const reviewTx = this.base.api.tx.storageWorkingGroup.beginWorkerApplicantReview(openingId)
+    return this.base.signAndSend(leadAccount, reviewTx)
+  }
+
+  async dev_fillOpeningWithSingleApplication(openingId, leadAccount, applicationId) {
+    const fillTx = this.base.api.tx.storageWorkingGroup.fillWorkerOpening(openingId, [applicationId], null)
+
+    const filledMap = await this.base.signAndSendThenGetEventResult(leadAccount, fillTx, {
+      eventModule: 'storageWorkingGroup',
+      eventName: 'WorkerOpeningFilled',
+      eventProperty: 'WorkerApplicationIdToWorkerIdMap'
+    })
+
+    return filledMap
+  }
 }
 
 module.exports = {

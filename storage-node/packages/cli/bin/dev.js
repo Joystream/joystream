@@ -90,51 +90,20 @@ const init = async (api) => {
 
   // Make alice the storage lead
   debug('Setting Alice as Lead')
-  // prepare set storage lead tx
-  const setLeadTx = api.api.tx.storageWorkingGroup.setLead(aliceMemberId, alice)
-  // make sudo call
-  api.signAndSend(
-    alice,
-    api.api.tx.sudo.sudo(setLeadTx)
-  )
+  api.workers.dev_setLead(alice, aliceMemberId, alice)
 
   // create an openinging, apply, start review, fill opening
   debug(`Making ${ROLE_ACCOUNT_URI} account a storage provider`)
 
-  const openTx = api.api.tx.storageWorkingGroup.addWorkerOpening('CurrentBlock', {
-    application_rationing_policy: {
-      'max_active_applicants': 1
-    },
-    max_review_period_length: 1000
-    // default values for everything else..
-  }, 'dev-opening')
-
-  const openingId = await api.signAndSendThenGetEventResult(alice, openTx, {
-    eventModule: 'storageWorkingGroup',
-    eventName: 'WorkerOpeningAdded',
-    eventProperty: 'WorkerOpeningId'
-  })
+  const openingId = await api.workers.dev_addWorkerOpening(alice)
   debug(`created new opening id ${openingId}`)
 
-  const applyTx = api.api.tx.storageWorkingGroup.applyOnWorkerOpening(
-    aliceMemberId, openingId, roleAccount, null, null, 'colossus'
-  )
-  const applicationId = await api.signAndSendThenGetEventResult(alice, applyTx, {
-    eventModule: 'storageWorkingGroup',
-    eventName: 'AppliedOnWorkerOpening',
-    eventProperty: 'WorkerApplicationId'
-  })
+  const applicationId = await api.workers.dev_applyOnOpening(openingId, aliceMemberId, alice, roleAccount)
   debug(`created application id ${applicationId}`)
 
-  const reviewTx = api.api.tx.storageWorkingGroup.beginWorkerApplicantReview(openingId)
-  api.signAndSend(alice, reviewTx)
+  api.workers.dev_beginOpeningReview(openingId, alice)
 
-  const fillTx = api.api.tx.storageWorkingGroup.fillWorkerOpening(openingId, [applicationId], null)
-  const filledMap = await api.signAndSendThenGetEventResult(alice, fillTx, {
-    eventModule: 'storageWorkingGroup',
-    eventName: 'WorkerOpeningFilled',
-    eventProperty: 'WorkerApplicationIdToWorkerIdMap'
-  })
+  const filledMap = await api.workers.dev_fillOpeningWithSingleApplication(openingId, alice, applicationId)
 
   if (filledMap.size === 0) {
     throw new Error('Expected opening to be filled!')
