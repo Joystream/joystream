@@ -2,24 +2,33 @@
 
 use super::new_validation;
 use node_runtime::{
-    forum::{Category, CategoryId, Post, Thread},
-    AccountId, BlockNumber, ForumConfig, Moment, PostId, ThreadId,
+    forum::{Category, Post, Thread},
+    AccountId, BlockNumber, CategoryId, ForumConfig, ForumUserId, ModeratorId, Moment, PostId,
+    ThreadId,
 };
 use serde::Deserialize;
 use serde_json::Result;
 
 #[derive(Deserialize)]
 struct ForumData {
-    categories: Vec<(CategoryId, Category<BlockNumber, Moment, AccountId>)>,
+    categories: Vec<(
+        CategoryId,
+        Category<CategoryId, ThreadId, BlockNumber, Moment>,
+    )>,
     posts: Vec<(
         PostId,
-        Post<BlockNumber, Moment, AccountId, ThreadId, PostId>,
+        Post<ForumUserId, ModeratorId, ThreadId, BlockNumber, Moment>,
     )>,
-    threads: Vec<(ThreadId, Thread<BlockNumber, Moment, AccountId, ThreadId>)>,
+    threads: Vec<(
+        ThreadId,
+        Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment>,
+    )>,
 }
 
 fn parse_forum_json() -> Result<ForumData> {
-    let data = include_str!("../../res/forum_data_acropolis_serialized.json");
+    // TODO: remove temporary load of empty data by regular load of forum config in the new format
+    //let data = include_str!("../../res/forum_data_acropolis_serialized.json");
+    let data = include_str!("../../res/forum_data_empty.json");
     serde_json::from_str(data)
 }
 
@@ -47,5 +56,26 @@ pub fn create(forum_sudo: AccountId) -> ForumConfig {
         post_text_constraint: new_validation(10, 990),
         thread_moderation_rationale_constraint: new_validation(10, 290),
         post_moderation_rationale_constraint: new_validation(10, 290),
+
+        // TODO: get rid of mocks and setup valid values
+        forum_user_by_id: Vec::new(),
+        next_forum_user_id: 1,
+        moderator_by_id: Vec::new(),
+        next_moderator_id: 1,
+        max_category_depth: 10,
+        category_by_moderator: Vec::new(),
+        reaction_by_post: Vec::new(),
+        label_name_constraint: new_validation(10, 90),
+        poll_desc_constraint: new_validation(10, 90),
+        poll_items_constraint: new_validation(1, 10),
+        user_name_constraint: new_validation(10, 90),
+        user_self_introduction_constraint: new_validation(10, 90),
+        post_footer_constraint: new_validation(10, 90),
+        label_by_id: Vec::new(),
+        next_label_id: 1,
+        category_labels: Vec::new(),
+        thread_labels: Vec::new(),
+        max_applied_labels: 10,
+        data_migration_done: true,
     }
 }

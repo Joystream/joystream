@@ -1,7 +1,7 @@
 [package]
 name = 'substrate-forum-module'
-version = '1.1.1'
-authors = ['Joystream contributors']
+version = '1.1.0'
+authors = ['Bedeho Mender <bedeho.mender@protonmail.com>']
 edition = '2018'
 
 [dependencies]
@@ -15,8 +15,6 @@ srml-support-procedural = { package = 'srml-support-procedural', git = 'https://
 system = { package = 'srml-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
 balances = { package = 'srml-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
 codec = { package = 'parity-scale-codec', version = '1.0.0', default-features = false, features = ['derive'] }
-# https://users.rust-lang.org/t/failure-derive-compilation-error/39062
-quote = '<=1.0.2'
 
 [dependencies.timestamp]
 default_features = false
@@ -30,8 +28,14 @@ git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-io'
 rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
+# [dependencies.old-forum]
+# default_features = false
+# git = 'https://github.com/juniuszhou/substrate-forum-module'
+# package = 'substrate-forum-module'
+# rev = '2c664a211c129fa96b3b4923f73cf850d8177006'
+
 [dev-dependencies]
-runtime-io = { package = 'sr-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
+# runtime-io = { package = 'sr-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
 primitives = { package = 'substrate-primitives', git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
 
 [features]
@@ -47,4 +51,5 @@ std = [
 	'system/std',
   	'balances/std',
 	'timestamp/std',
+	# 'old-forum/std',
 ]
