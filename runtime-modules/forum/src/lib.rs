@@ -587,18 +587,6 @@ impl<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment>
     }
 }
 
-/// Represents child category position in parent.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct ChildPositionInParentCategory<CategoryId> {
-    /// Id of parent category
-    pub parent_id: CategoryId,
-
-    /// Nr of the child in the parent
-    /// Starts at 1
-    pub child_nr_in_parent_category: u32,
-}
-
 /// Represents a category
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
@@ -639,8 +627,8 @@ pub struct Category<CategoryId, ThreadId, BlockNumber, Moment> {
     pub num_direct_unmoderated_threads: u32,
     pub num_direct_moderated_threads: u32,
 
-    /// Position as child in parent, if present, otherwise this category is a root category
-    pub position_in_parent_category: Option<ChildPositionInParentCategory<CategoryId>>,
+    /// Parent category, if child of another category, otherwise this category is a root category
+    pub parent_category_id: Option<CategoryId>,
 
     /// Sticky threads list
     pub sticky_thread_ids: Vec<ThreadId>,
@@ -873,13 +861,13 @@ decl_module! {
             Self::ensure_label_valid(&labels)?;
 
             // Set a temporal mutable variable
-            let mut position_in_parent_category_field = None;
+            let parent_category_id = parent;
 
             // If not root, then check that we can create in parent category
-            if let Some(parent_category_id) = parent {
+            if let Some(tmp_parent_category_id) = parent {
 
                 // Get the path from parent category to root
-                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(parent_category_id)?;
+                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(tmp_parent_category_id)?;
 
                 // Check if max depth reached
                 if category_tree_path.len() >= MaxCategoryDepth::get() as usize {
@@ -891,17 +879,8 @@ decl_module! {
 
                 // Increment number of subcategories to reflect this new category being
                 // added as a child
-                <CategoryById<T>>::mutate(parent_category_id, |c| {
+                <CategoryById<T>>::mutate(tmp_parent_category_id, |c| {
                     c.num_direct_subcategories += 1;
-                });
-
-                // Set `position_in_parent_category_field`
-                let parent_category = category_tree_path.first().unwrap();
-
-                // Update the variable with real data
-                position_in_parent_category_field = Some(ChildPositionInParentCategory{
-                    parent_id: parent_category_id,
-                    child_nr_in_parent_category: parent_category.num_direct_subcategories
                 });
             }
 
@@ -919,7 +898,7 @@ decl_module! {
                 num_direct_subcategories: 0,
                 num_direct_unmoderated_threads: 0,
                 num_direct_moderated_threads: 0,
-                position_in_parent_category: position_in_parent_category_field,
+                parent_category_id,
                 sticky_thread_ids: vec![],
             };
 
@@ -962,11 +941,11 @@ decl_module! {
                 );
 
             // Get parent category
-            let parent_category = <CategoryById<T>>::get(&category_id).position_in_parent_category;
+            let parent_category_id = <CategoryById<T>>::get(&category_id).parent_category_id;
 
-            if let Some(unwrapped_parent_category) = parent_category {
+            if let Some(tmp_parent_category_id) = parent_category_id {
                 // Get path from parent to root of category tree.
-                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(unwrapped_parent_category.parent_id)?;
+                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(tmp_parent_category_id)?;
 
                 if Self::ensure_can_mutate_in_path_leaf(&category_tree_path).is_err() {
                     // if ancestor archived or deleted, no necessary to set child again.
@@ -1904,10 +1883,10 @@ impl<T: Trait> Module<T> {
         path.push(category.clone());
 
         // Make recursive call on parent if we are not at root
-        if let Some(parent) = category.position_in_parent_category {
-            assert!(<CategoryById<T>>::exists(parent.parent_id));
+        if let Some(parent_category_id) = category.parent_category_id {
+            assert!(<CategoryById<T>>::exists(parent_category_id));
 
-            Self::_build_category_tree_path(parent.parent_id, path);
+            Self::_build_category_tree_path(parent_category_id, path);
         }
     }
 
