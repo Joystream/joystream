@@ -16,9 +16,9 @@ export default class WorkingGroupsOverview extends WorkingGroupsCommandBase {
         displayHeader('Group lead');
         if (lead) {
             displayNameValueTable([
-                { name: 'Member id:', value: lead.lead.member_id.toString() },
+                { name: 'Member id:', value: lead.memberId.toString() },
                 { name: 'Member handle:', value: lead.profile.handle.toString() },
-                { name: 'Role account:', value: lead.lead.role_account_id.toString() },
+                { name: 'Role account:', value: lead.roleAccount.toString() },
             ]);
         }
         else {
