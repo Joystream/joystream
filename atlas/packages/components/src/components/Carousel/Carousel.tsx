@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { SerializedStyles } from "@emotion/core";
+import { css, SerializedStyles } from "@emotion/core";
 import { animated, useSpring } from "react-spring";
 import useResizeObserver from "use-resize-observer";
 import { useCSS, CarouselStyleProps } from "./Carousel.style";
@@ -27,7 +27,7 @@ const Carousel: React.FC<Partial<CarouselProps>> = ({
 		transform: `translateX(0px)`,
 	}));
 	const [x, setX] = useState(0);
-	const { width: containerWidth, ref: containerRef } = useResizeObserver<HTMLDivElement>();
+	const { width: containerWidth = NaN, ref: containerRef } = useResizeObserver<HTMLDivElement>();
 	const elementsRefs = useRef<(HTMLDivElement | null)[]>([]);
 	const [childrensWidth, setChildrensWidth] = useState(0);
 	useEffect(() => {
@@ -87,14 +87,26 @@ const Carousel: React.FC<Partial<CarouselProps>> = ({
 				</animated.div>
 			</div>
 			<NavButton
-				outerCss={[styles.navLeft, leftControlCss]}
+				outerCss={[
+					styles.navLeft,
+					css`
+						opacity: ${x === 0 ? 0 : 1};
+					`,
+					leftControlCss,
+				]}
 				direction="left"
 				onClick={() => {
 					handleScroll("left");
 				}}
 			/>
 			<NavButton
-				outerCss={[styles.navRight, rightControlCss]}
+				outerCss={[
+					styles.navRight,
+					css`
+						opacity: ${x === -(childrensWidth - containerWidth) ? 0 : 1};
+					`,
+					rightControlCss,
+				]}
 				direction="right"
 				onClick={() => {
 					handleScroll("right");
