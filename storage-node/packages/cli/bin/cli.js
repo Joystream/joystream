@@ -81,8 +81,11 @@ const commands = {
   'dev-check': async (api) => {
     let dev = require('./dev')
     return dev.check(api)
-    // await api.assets.checkLiaisonForDataObject(providerId, '')
   },
+  // The upload method is not correctly implemented
+  // needs to get the liaison after creating a data object,
+  // resolve the ipns id to the asset put api url of the storage-node
+  // before uploading..
   'upload': async (api, url, filename, do_type_id, keyfile, passphrase) => {
     load_identity(keyfile, passphrase)
     // Check parameters
@@ -141,7 +144,9 @@ const commands = {
       f.pipe(r)
     })
   },
-
+  // needs to be updated to take a content id and resolve it a potential set
+  // of providers that has it, and select one (possibly try more than one provider)
+  // to fetch it from the get api url of a provider..
   'download': async (api, url, content_id, filename) => {
     const request = require('request')
     url = `${url}asset/v0/${content_id}`
@@ -177,7 +182,7 @@ const commands = {
       r.pipe(f)
     })
   },
-
+  // similar to 'download' function
   'head': async (api, url, content_id) => {
     const request = require('request')
     url = `${url}asset/v0/${content_id}`
