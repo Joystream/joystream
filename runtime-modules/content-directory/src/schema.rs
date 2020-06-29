@@ -103,7 +103,7 @@ impl<T: Trait> VecPropertyType<T> {
 /// `Type` enum wrapper
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
-pub struct SingleValuePropertyType<T: Trait>(Type<T>);
+pub struct SingleValuePropertyType<T: Trait>(pub Type<T>);
 
 impl<T: Trait> Default for SingleValuePropertyType<T> {
     fn default() -> Self {
@@ -314,7 +314,7 @@ impl<T: Trait> VecPropertyValue<T> {
         }
     }
 
-    /// Clear current `vec_value`, increment `nonce`
+    /// Clear current `vec_value`
     pub fn clear(&mut self) {
         match &mut self.vec_value {
             VecValue::Bool(vec) => *vec = vec![],
@@ -327,8 +327,6 @@ impl<T: Trait> VecPropertyValue<T> {
             VecValue::Text(vec) => *vec = vec![],
             VecValue::Reference(vec) => *vec = vec![],
         }
-
-        self.increment_nonce();
     }
 
     /// Perform removal at given `index_in_property_vec`, increment `nonce`
@@ -461,7 +459,7 @@ impl<T: Trait> PropertyValue<T> {
             self.as_vec_property_value_mut(),
             new_value.as_vec_property_value_mut(),
         ) {
-            new_vec_property_value.nonce = vec_property_value.increment_nonce();
+            new_vec_property_value.nonce = vec_property_value.nonce;
         }
         *self = new_value
     }
@@ -565,7 +563,7 @@ impl Schema {
 
 /// `Property` representation, related to a given `Class`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct Property<T: Trait> {
     pub property_type: PropertyType<T>,
     /// If property value can be skipped, when adding entity schema support
@@ -575,6 +573,19 @@ pub struct Property<T: Trait> {
     pub name: Vec<u8>,
     pub description: Vec<u8>,
     pub locking_policy: PropertyLockingPolicy,
+}
+
+impl<T: Trait> Default for Property<T> {
+    fn default() -> Self {
+        Self {
+            property_type: PropertyType::<T>::default(),
+            required: false,
+            unique: false,
+            name: vec![],
+            description: vec![],
+            locking_policy: PropertyLockingPolicy::default(),
+        }
+    }
 }
 
 impl<T: Trait> Property<T> {
@@ -594,7 +605,7 @@ impl<T: Trait> Property<T> {
     /// Ensure `Property` is unlocked from `Actor` with given `EntityAccessLevel`
     pub fn ensure_unlocked_from(&self, access_level: EntityAccessLevel) -> dispatch::Result {
         ensure!(
-            self.is_locked_from(access_level),
+            !self.is_locked_from(access_level),
             ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR
         );
         Ok(())

@@ -122,7 +122,8 @@ impl Default for DeltaMode {
 }
 
 /// Representing delta on which respective `InboundReferenceCounter` should be changed.
-#[derive(Default, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, PartialEq, Eq, Debug)]
 pub struct EntityReferenceCounterSideEffect {
     /// Delta number of all inbound references from another entities
     pub total: i32,
@@ -171,7 +172,8 @@ impl AddAssign for EntityReferenceCounterSideEffect {
 }
 
 /// The net side effect on a set of entities from some operations.
-#[derive(PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct ReferenceCounterSideEffects<T: Trait>(
     BTreeMap<T::EntityId, EntityReferenceCounterSideEffect>,
 );

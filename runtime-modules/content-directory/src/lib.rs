@@ -2,6 +2,16 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 
+#[cfg(test)]
+mod tests;
+
+mod errors;
+mod helpers;
+mod mock;
+mod operations;
+mod permissions;
+mod schema;
+
 use core::fmt::Debug;
 use core::ops::AddAssign;
 use std::hash::Hash;
@@ -18,14 +28,6 @@ use system::ensure_signed;
 
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
-
-mod errors;
-mod helpers;
-mod mock;
-mod operations;
-mod permissions;
-mod schema;
-mod tests;
 
 pub use errors::*;
 pub use helpers::*;
@@ -111,7 +113,7 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
     type MaxNumberOfCuratorsPerGroup: Get<MaxNumber>;
 
     /// The maximum number of schemas per class constraint
-    type NumberOfSchemasPerClass: Get<MaxNumber>;
+    type MaxNumberOfSchemasPerClass: Get<MaxNumber>;
 
     /// The maximum number of properties per class constraint
     type MaxNumberOfPropertiesPerClass: Get<MaxNumber>;
@@ -266,7 +268,7 @@ impl<T: Trait> Class<T> {
     /// Ensure `Schema`s limit per `Class` not reached
     pub fn ensure_schemas_limit_not_reached(&self) -> dispatch::Result {
         ensure!(
-            T::NumberOfSchemasPerClass::get() < self.schemas.len() as MaxNumber,
+            (self.schemas.len() as MaxNumber) < T::MaxNumberOfSchemasPerClass::get(),
             ERROR_CLASS_SCHEMAS_LIMIT_REACHED
         );
         Ok(())
@@ -279,7 +281,7 @@ impl<T: Trait> Class<T> {
     ) -> dispatch::Result {
         ensure!(
             T::MaxNumberOfPropertiesPerClass::get()
-                <= (self.properties.len() + new_properties.len()) as MaxNumber,
+                >= (self.properties.len() + new_properties.len()) as MaxNumber,
             ERROR_CLASS_PROPERTIES_LIMIT_REACHED
         );
         Ok(())
@@ -509,22 +511,22 @@ impl<T: Trait> Entity<T> {
 decl_storage! {
     trait Store for Module<T: Trait> as ContentDirectory {
 
-        /// Map, representing  CuratorGroupId -> CuratorGroup relation
-        pub CuratorGroupById get(curator_group_by_id): map T::CuratorGroupId => CuratorGroup<T>;
-
         /// Map, representing ClassId -> Class relation
         pub ClassById get(class_by_id) config(): linked_map T::ClassId => Class<T>;
 
         /// Map, representing EntityId -> Entity relation
         pub EntityById get(entity_by_id) config(): map T::EntityId => Entity<T>;
 
-        /// Next runtime storage values used to maintain next id value, used on creation of respective curator groups, classes and entities
+        /// Map, representing  CuratorGroupId -> CuratorGroup relation
+        pub CuratorGroupById get(curator_group_by_id) config(): map T::CuratorGroupId => CuratorGroup<T>;
 
-        pub NextCuratorGroupId get(next_curator_group_id) config(): T::CuratorGroupId;
+        /// Next runtime storage values used to maintain next id value, used on creation of respective curator groups, classes and entities
 
         pub NextClassId get(next_class_id) config(): T::ClassId;
 
         pub NextEntityId get(next_entity_id) config(): T::EntityId;
+
+        pub NextCuratorGroupId get(next_curator_group_id) config(): T::CuratorGroupId;
 
         // The voucher associated with entity creation for a given class and controller.
         // Is updated whenever an entity is created in a given class by a given controller.
@@ -620,7 +622,7 @@ decl_module! {
             });
 
             // Trigger event
-            Self::deposit_event(RawEvent::CuratorGroupStatusSet(is_active));
+            Self::deposit_event(RawEvent::CuratorGroupStatusSet(curator_group_id, is_active));
             Ok(())
         }
 
@@ -1007,7 +1009,7 @@ decl_module! {
         pub fn update_entity_permissions(
             origin,
             entity_id: T::EntityId,
-            updated_frozen_for_controller: Option<bool>,
+            updated_frozen: Option<bool>,
             updated_referenceable: Option<bool>
         ) -> dispatch::Result {
 
@@ -1025,7 +1027,7 @@ decl_module! {
             let entity_permissions = entity.get_permissions();
 
             let updated_entity_permissions =
-                Self::make_updated_entity_permissions(entity_permissions, updated_frozen_for_controller, updated_referenceable);
+                Self::make_updated_entity_permissions(entity_permissions, updated_frozen, updated_referenceable);
 
             // Update entity permissions under given entity id
             if let Some(updated_entity_permissions) = updated_entity_permissions {
@@ -1090,13 +1092,13 @@ decl_module! {
             Self::ensure_all_required_properties_provided(&class_properties, &unused_property_id_references_with_same_owner_flag_set)?;
 
             // Create wrapper structure from provided new_property_value_references_with_same_owner_flag_set and their corresponding Class properties
-            let values_for_existing_properties = ValuesForExistingProperties::from(
+            let new_values_for_existing_properties = ValuesForExistingProperties::from(
                 &class_properties, &new_property_value_references_with_same_owner_flag_set
             )?;
 
-            // Validate all values, provided in values_for_existing_properties,
+            // Validate all values, provided in new_values_for_existing_properties,
             // against the type of its Property and check any additional constraints
-            Self::ensure_property_values_are_valid(&new_controller, &values_for_existing_properties)?;
+            Self::ensure_property_values_are_valid(&new_controller, &new_values_for_existing_properties)?;
 
             // Make updated entity_property_values from parameters provided
             let entity_property_values_updated =
@@ -1511,7 +1513,7 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(
-                RawEvent::EntityPropertyValueVectorCleared(
+                RawEvent::VectorCleared(
                     actor, entity_id, in_class_schema_property_id, entities_inbound_rcs_delta
                 )
             );
@@ -1581,7 +1583,7 @@ decl_module! {
 
             // Insert updated propery value into entity_property_values mapping at in_class_schema_property_id.
             let entity_values_updated = Self::insert_at_in_class_schema_property_id(
-                entity.values, index_in_property_vector, property_value_vector_updated
+                entity.values, in_class_schema_property_id, property_value_vector_updated
             );
 
             // Update entity property values
@@ -1592,7 +1594,8 @@ decl_module! {
             // Trigger event
             Self::deposit_event(
                 RawEvent::RemovedAtVectorIndex(
-                    actor, entity_id, in_class_schema_property_id, index_in_property_vector, nonce, involved_entity_and_side_effect
+                    actor, entity_id, in_class_schema_property_id, index_in_property_vector,
+                    nonce + T::Nonce::one(), involved_entity_and_side_effect
                 )
             );
 
@@ -1677,7 +1680,8 @@ decl_module! {
             // Trigger event
             Self::deposit_event(
                 RawEvent::InsertedAtVectorIndex(
-                    actor, entity_id, in_class_schema_property_id, index_in_property_vector, nonce, involved_entity_and_side_effect
+                    actor, entity_id, in_class_schema_property_id, index_in_property_vector,
+                    nonce + T::Nonce::one(), involved_entity_and_side_effect
                 )
             );
 
@@ -1693,13 +1697,13 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // This Vec holds the T::EntityId of the entity created as a result of executing a `CreateEntity` `Operation`
-            let mut entity_created_in_operation = vec![];
+            // This BTreeMap holds the T::EntityId of the entity created as a result of executing a `CreateEntity` `Operation`
+            let mut entity_created_in_operation = BTreeMap::new();
 
             // Create raw origin
             let raw_origin = origin.into().map_err(|_| ERROR_ORIGIN_CANNOT_BE_MADE_INTO_RAW_ORIGIN)?;
 
-            for operation_type in operations.into_iter() {
+            for (index, operation_type) in operations.into_iter().enumerate() {
                 let origin = T::Origin::from(raw_origin.clone());
                 let actor = actor.clone();
                 match operation_type {
@@ -1708,16 +1712,7 @@ decl_module! {
 
                         // entity id of newly created entity
                         let entity_id = Self::next_entity_id() - T::EntityId::one();
-                        entity_created_in_operation.push(entity_id);
-                    },
-                    OperationType::UpdatePropertyValues(update_property_values_operation) => {
-                        let entity_id = operations::parametrized_entity_to_entity_id(
-                            &entity_created_in_operation, update_property_values_operation.entity_id
-                        )?;
-                        let property_values = operations::parametrized_property_values_to_property_values(
-                            &entity_created_in_operation, update_property_values_operation.new_parametrized_property_values
-                        )?;
-                        Self::update_entity_property_values(origin, actor, entity_id, property_values)?;
+                        entity_created_in_operation.insert(index, entity_id);
                     },
                     OperationType::AddSchemaSupportToEntity(add_schema_support_to_entity_operation) => {
                         let entity_id = operations::parametrized_entity_to_entity_id(
@@ -1728,7 +1723,16 @@ decl_module! {
                             &entity_created_in_operation, add_schema_support_to_entity_operation.parametrized_property_values
                         )?;
                         Self::add_schema_support_to_entity(origin, actor, entity_id, schema_id, property_values)?;
-                    }
+                    },
+                    OperationType::UpdatePropertyValues(update_property_values_operation) => {
+                        let entity_id = operations::parametrized_entity_to_entity_id(
+                            &entity_created_in_operation, update_property_values_operation.entity_id
+                        )?;
+                        let property_values = operations::parametrized_property_values_to_property_values(
+                            &entity_created_in_operation, update_property_values_operation.new_parametrized_property_values
+                        )?;
+                        Self::update_entity_property_values(origin, actor, entity_id, property_values)?;
+                    },
                 }
             }
 
@@ -1838,11 +1842,15 @@ impl<T: Trait> Module<T> {
             // If inbound_rcs_delta already contains entry for the given involved_entity_id, increment it
             // with atomic EntityReferenceCounterSideEffect instance, based on same_owner flag provided and DeltaMode,
             // otherwise create new atomic EntityReferenceCounterSideEffect instance
-            *inbound_rcs_delta
-                .entry(involved_entity_id)
-                .or_insert_with(|| {
-                    EntityReferenceCounterSideEffect::atomic(same_controller_status, delta_mode)
-                }) += EntityReferenceCounterSideEffect::atomic(same_controller_status, delta_mode);
+            if let Some(inbound_rc_delta) = inbound_rcs_delta.get_mut(&involved_entity_id) {
+                *inbound_rc_delta +=
+                    EntityReferenceCounterSideEffect::atomic(same_controller_status, delta_mode);
+            } else {
+                inbound_rcs_delta.insert(
+                    involved_entity_id,
+                    EntityReferenceCounterSideEffect::atomic(same_controller_status, delta_mode),
+                );
+            }
         }
         inbound_rcs_delta
     }
@@ -1998,14 +2006,14 @@ impl<T: Trait> Module<T> {
     /// Returns updated `entity_permissions` if update performed
     pub fn make_updated_entity_permissions(
         entity_permissions: EntityPermissions<T>,
-        updated_frozen_for_controller: Option<bool>,
+        updated_frozen: Option<bool>,
         updated_referenceable: Option<bool>,
     ) -> Option<EntityPermissions<T>> {
         // Used to check if update performed
         let mut updated_entity_permissions = entity_permissions.clone();
 
-        if let Some(updated_frozen_for_controller) = updated_frozen_for_controller {
-            updated_entity_permissions.set_frozen(updated_frozen_for_controller);
+        if let Some(updated_frozen) = updated_frozen {
+            updated_entity_permissions.set_frozen(updated_frozen);
         }
 
         if let Some(updated_referenceable) = updated_referenceable {
@@ -2419,7 +2427,7 @@ impl<T: Trait> Module<T> {
     /// Ensure `MaxNumberOfClasses` constraint satisfied
     pub fn ensure_class_limit_not_reached() -> dispatch::Result {
         ensure!(
-            T::MaxNumberOfClasses::get() < <ClassById<T>>::enumerate().count() as MaxNumber,
+            (<ClassById<T>>::enumerate().count() as MaxNumber) < T::MaxNumberOfClasses::get(),
             ERROR_CLASS_LIMIT_REACHED
         );
         Ok(())
@@ -2430,7 +2438,7 @@ impl<T: Trait> Module<T> {
         maximum_entities_count: T::EntityId,
     ) -> dispatch::Result {
         ensure!(
-            maximum_entities_count < T::MaxNumberOfEntitiesPerClass::get(),
+            maximum_entities_count <= T::MaxNumberOfEntitiesPerClass::get(),
             ERROR_ENTITIES_NUMBER_PER_CLASS_CONSTRAINT_VIOLATED
         );
         Ok(())
@@ -2441,7 +2449,7 @@ impl<T: Trait> Module<T> {
         number_of_class_entities_per_actor: T::EntityId,
     ) -> dispatch::Result {
         ensure!(
-            number_of_class_entities_per_actor < T::IndividualEntitiesCreationLimit::get(),
+            number_of_class_entities_per_actor <= T::IndividualEntitiesCreationLimit::get(),
             ERROR_NUMBER_OF_CLASS_ENTITIES_PER_ACTOR_CONSTRAINT_VIOLATED
         );
         Ok(())
@@ -2583,7 +2591,7 @@ decl_event!(
     {
         CuratorGroupAdded(CuratorGroupId),
         CuratorGroupRemoved(CuratorGroupId),
-        CuratorGroupStatusSet(Status),
+        CuratorGroupStatusSet(CuratorGroupId, Status),
         CuratorAdded(CuratorGroupId, CuratorId),
         CuratorRemoved(CuratorGroupId, CuratorId),
         MaintainerAdded(ClassId, CuratorGroupId),
@@ -2599,10 +2607,10 @@ decl_event!(
         EntityRemoved(Actor, EntityId),
         EntitySchemaSupportAdded(Actor, EntityId, SchemaId, SideEffects),
         EntityPropertyValuesUpdated(Actor, EntityId, SideEffects),
-        TransactionCompleted(Actor),
-        EntityPropertyValueVectorCleared(Actor, EntityId, PropertyId, SideEffects),
+        VectorCleared(Actor, EntityId, PropertyId, SideEffects),
         RemovedAtVectorIndex(Actor, EntityId, PropertyId, VecMaxLength, Nonce, SideEffect),
         InsertedAtVectorIndex(Actor, EntityId, PropertyId, VecMaxLength, Nonce, SideEffect),
         EntityOwnershipTransfered(EntityId, EntityController, SideEffects),
+        TransactionCompleted(Actor),
     }
 );

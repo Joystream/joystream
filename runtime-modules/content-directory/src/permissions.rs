@@ -136,6 +136,7 @@ impl<T: Trait> Default for CuratorGroup<T> {
     fn default() -> Self {
         Self {
             curators: BTreeSet::new(),
+            // default curator group status right after creation
             active: false,
             number_of_classes_maintained: 0,
         }
@@ -403,7 +404,7 @@ impl<T: Trait> ClassPermissions<T> {
 
     /// Ensure entities creation is not blocked on `Class` level
     pub fn ensure_entity_creation_not_blocked(&self) -> dispatch::Result {
-        ensure!(self.entity_creation_blocked, ERROR_ENTITY_CREATION_BLOCKED);
+        ensure!(!self.entity_creation_blocked, ERROR_ENTITY_CREATION_BLOCKED);
         Ok(())
     }
 
@@ -539,7 +540,7 @@ impl<T: Trait> EntityPermissions<T> {
         new_entity_controller: &EntityController<T>,
     ) -> dispatch::Result {
         ensure!(
-            self.controller_is_equal_to(new_entity_controller),
+            !self.controller_is_equal_to(new_entity_controller),
             ERROR_PROVIDED_ENTITY_CONTROLLER_IS_EQUAL_TO_CURRENT_ONE
         );
         Ok(())
