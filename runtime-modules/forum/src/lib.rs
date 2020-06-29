@@ -285,6 +285,10 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + Into<u64>;
 
     fn is_lead(account_id: &<Self as system::Trait>::AccountId) -> bool;
+    fn is_forum_member(
+        account_id: &<Self as system::Trait>::AccountId,
+        forum_user_id: &Self::ForumUserId,
+    ) -> bool;
 }
 
 /*
@@ -330,7 +334,6 @@ impl InputValidationLengthConstraint {
 
 /// Error about users
 const ERROR_ORIGIN_NOT_FORUM_SUDO: &str = "Origin not forum sudo.";
-const ERROR_NOT_FORUM_USER: &str = "Not forum user.";
 const ERROR_NOT_MODERATOR_USER: &str = "Not moderator user.";
 const ERROR_USER_NAME_TOO_SHORT: &str = "User Name too short.";
 const ERROR_USER_NAME_TOO_LONG: &str = "User Name too long.";
@@ -339,8 +342,6 @@ const ERROR_USER_SELF_DESC_TOO_LONG: &str = "User self introduction too long.";
 const ERROR_FORUM_USER_ID_NOT_MATCH_ACCOUNT: &str = "Forum user id not match its account.";
 const ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT: &str = "Moderator id not match its account.";
 const ERROR_FORUM_USER_NOT_THREAD_AUTHOR: &str = "Forum user is not thread author";
-const ERROR_USER_POST_FOOTER_TOO_SHORT: &str = "User post footer too short.";
-const ERROR_USER_POST_FOOTER_TOO_LONG: &str = "User post footer too long.";
 
 // Errors about thread.
 const ERROR_THREAD_TITLE_TOO_SHORT: &str = "Thread title too short.";
@@ -700,12 +701,6 @@ type CategoryTreePathArg<CategoryId, ThreadId, BlockNumber, Moment> =
 
 decl_storage! {
     trait Store for Module<T: Trait> as Forum_1_1 {
-        /// Map forum user identifier to forum user information.
-        pub ForumUserById get(forum_user_by_id) config(): map T::ForumUserId  => ForumUser<T::AccountId>;
-
-        /// Forum user identifier value for next new forum user.
-        pub NextForumUserId get(next_forum_user_id) config(): T::ForumUserId;
-
         /// Map forum moderator identifier to moderator information.
         pub ModeratorById get(moderator_by_id) config(): map T::ModeratorId => Moderator<T::AccountId>;
 
@@ -1612,47 +1607,6 @@ impl<T: Trait> Module<T> {
         Ok(new_post)
     }
 
-    // The method only called from other module to create a forum user.
-    pub fn create_forum_user(
-        account_id: T::AccountId,
-        name: Vec<u8>,
-        self_introduction: Vec<u8>,
-        post_footer: Option<Vec<u8>>,
-    ) -> dispatch::Result {
-        // Ensure data migration is done
-        Self::ensure_data_migration_done()?;
-
-        // Ensure user name is valid
-        Self::ensure_user_name_is_valid(&name)?;
-
-        // Ensure self introduction is valid
-        Self::ensure_user_self_introduction_is_valid(&self_introduction)?;
-
-        // Ensure post footer is valid
-        if let Some(ref post_footer_raw) = post_footer {
-            Self::ensure_post_footer_is_valid(post_footer_raw)?;
-        }
-
-        // Create new forum user data
-        let new_forum_user = ForumUser {
-            role_account: account_id,
-            name,
-            self_introduction,
-            post_footer,
-        };
-
-        // Insert new user data for forum user
-        <ForumUserById<T>>::mutate(<NextForumUserId<T>>::get(), |value| *value = new_forum_user);
-
-        // Store event to runtime
-        Self::deposit_event(RawEvent::ForumUserCreated(<NextForumUserId<T>>::get()));
-
-        // Update forum user index
-        <NextForumUserId<T>>::mutate(|n| *n += One::one());
-
-        Ok(())
-    }
-
     // The method only called from other module to create a new moderator.
     pub fn create_moderator(
         account_id: T::AccountId,
@@ -1799,14 +1753,6 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_post_footer_is_valid(footer: &[u8]) -> dispatch::Result {
-        PostFooterConstraint::get().ensure_valid(
-            footer.len(),
-            ERROR_USER_POST_FOOTER_TOO_SHORT,
-            ERROR_USER_POST_FOOTER_TOO_LONG,
-        )
-    }
-
     fn ensure_thread_moderation_rationale_is_valid(rationale: &[u8]) -> dispatch::Result {
         ThreadModerationRationaleConstraint::get().ensure_valid(
             rationale.len(),
@@ -1938,15 +1884,11 @@ impl<T: Trait> Module<T> {
         account_id: &T::AccountId,
         forum_user_id: &T::ForumUserId,
     ) -> dispatch::Result {
-        if <ForumUserById<T>>::exists(forum_user_id) {
-            if <ForumUserById<T>>::get(forum_user_id).role_account == *account_id {
-                Ok(())
-            } else {
-                Err(ERROR_FORUM_USER_ID_NOT_MATCH_ACCOUNT)
-            }
-        } else {
-            Err(ERROR_NOT_FORUM_USER)
-        }
+        let is_member = T::is_forum_member(account_id, forum_user_id);
+
+        ensure!(is_member, ERROR_FORUM_USER_ID_NOT_MATCH_ACCOUNT);
+
+        Ok(())
     }
 
     /// Ensure moderator id registered and its accound id matched

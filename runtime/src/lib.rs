@@ -816,6 +816,13 @@ impl forum::Trait for Runtime {
     fn is_lead(_account_id: &AccountId) -> bool {
         true
     }
+
+    fn is_forum_member(
+        _account_id: &<Self as system::Trait>::AccountId,
+        _forum_user_id: &Self::ForumUserId,
+    ) -> bool {
+        true
+    }
 }
 
 impl migration::Trait for Runtime {

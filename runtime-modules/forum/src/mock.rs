@@ -75,6 +75,13 @@ impl Trait for Runtime {
     fn is_lead(account_id: &<Self as system::Trait>::AccountId) -> bool {
         *account_id == FORUM_SUDO_ORIGIN_ID
     }
+
+    fn is_forum_member(
+        account_id: &<Self as system::Trait>::AccountId,
+        _forum_user_id: &Self::ForumUserId,
+    ) -> bool {
+        *account_id == FORUM_SUDO_ORIGIN_ID
+    }
 }
 
 #[derive(Clone)]
@@ -112,10 +119,6 @@ pub fn good_user_name() -> Vec<u8> {
 
 pub fn good_self_introduction() -> Vec<u8> {
     b"good description".to_vec()
-}
-
-pub fn good_forum_user_footer() -> Option<Vec<u8>> {
-    Some(b"good forum user footer".to_vec())
 }
 
 pub fn good_category_title() -> Vec<u8> {
@@ -232,41 +235,6 @@ pub fn generate_label_index_cases() -> Vec<BTreeSet<<Runtime as Trait>::ThreadId
             a
         },
     ]
-}
-
-pub fn create_forum_user_mock(
-    account_id: <Runtime as system::Trait>::AccountId,
-    name: Vec<u8>,
-    self_introduction: Vec<u8>,
-    forum_user_footer: Option<Vec<u8>>,
-    result: Result<(), &'static str>,
-) -> <Runtime as Trait>::ForumUserId {
-    let forum_user_id = TestForumModule::next_forum_user_id();
-    assert_eq!(
-        TestForumModule::create_forum_user(
-            account_id,
-            name.clone(),
-            self_introduction.clone(),
-            forum_user_footer.clone(),
-        ),
-        result
-    );
-    if result.is_ok() {
-        let forum_user = ForumUser {
-            role_account: account_id,
-            name: name.clone(),
-            self_introduction: self_introduction.clone(),
-            post_footer: forum_user_footer.clone(),
-        };
-        assert_eq!(TestForumModule::forum_user_by_id(forum_user_id), forum_user,);
-        assert_eq!(TestForumModule::next_forum_user_id(), forum_user_id + 1);
-        assert_eq!(
-            System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ForumUserCreated(forum_user_id))
-        );
-    };
-
-    forum_user_id
 }
 
 pub fn create_moderator_mock(
@@ -738,8 +706,6 @@ pub fn migration_not_done_config() -> GenesisConfig<Runtime> {
 
 pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
-        forum_user_by_id: vec![],
-        next_forum_user_id: 1,
         moderator_by_id: vec![],
         next_moderator_id: 1,
         category_by_id: vec![], // endowed_accounts.iter().cloned().map(|k|(k, 1 << 60)).collect(),
