@@ -90,6 +90,9 @@ pub enum ProposalDetails<
 
     /// Balance for the `decrease working group leader stake` proposal
     DecreaseWorkingGroupLeaderStake(WorkerId, StakeBalance, WorkingGroup),
+
+    /// Balance for the `slash working group leader stake` proposal
+    SlashWorkingGroupLeaderStake(WorkerId, StakeBalance, WorkingGroup),
 }
 
 impl<
@@ -266,6 +269,12 @@ pub struct ProposalsConfigParameters {
 
     /// 'Decrease working group leader stake' proposal grace period
     pub decrease_working_group_leader_stake_proposal_grace_period: u32,
+
+    /// 'Slash working group leader stake' proposal voting period
+    pub slash_working_group_leader_stake_proposal_voting_period: u32,
+
+    /// 'Slash working group leader stake' proposal grace period
+    pub slash_working_group_leader_stake_proposal_grace_period: u32,
 }
 
 impl Default for ProposalsConfigParameters {
@@ -295,6 +304,8 @@ impl Default for ProposalsConfigParameters {
             set_working_group_mint_capacity_proposal_grace_period: 0u32,
             decrease_working_group_leader_stake_proposal_voting_period: 43200u32,
             decrease_working_group_leader_stake_proposal_grace_period: 0u32,
+            slash_working_group_leader_stake_proposal_voting_period: 43200u32,
+            slash_working_group_leader_stake_proposal_grace_period: 0u32,
         }
     }
 }

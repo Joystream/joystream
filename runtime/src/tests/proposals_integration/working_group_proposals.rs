@@ -100,6 +100,14 @@ fn fill_opening(
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 }
 
+fn get_stake_balance(stake: stake::Stake<BlockNumber, Balance, u64>) -> Balance {
+    if let stake::StakingStatus::Staked(stake) = stake.staking_status {
+        return stake.staked_amount;
+    }
+
+    panic!("Not staked.");
+}
+
 fn decrease_stake(
     member_id: u8,
     account_id: [u8; 32],
@@ -108,6 +116,26 @@ fn decrease_stake(
 ) {
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
         ProposalCodex::create_decrease_working_group_leader_stake_proposal(
+            RawOrigin::Signed(account_id.clone().into()).into(),
+            member_id as u64,
+            b"title".to_vec(),
+            b"body".to_vec(),
+            Some(<BalanceOf<Runtime>>::from(50_000_u32)),
+            leader_worker_id,
+            stake_amount,
+            WorkingGroup::Storage,
+        )
+    })
+    .disable_setup_enviroment()
+    .with_expected_proposal_id(4)
+    .with_run_to_block(5);
+
+    codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+}
+
+fn slash_stake(member_id: u8, account_id: [u8; 32], leader_worker_id: u64, stake_amount: Balance) {
+    let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+        ProposalCodex::create_slash_working_group_leader_stake_proposal(
             RawOrigin::Signed(account_id.clone().into()).into(),
             member_id as u64,
             b"title".to_vec(),
@@ -283,7 +311,7 @@ fn create_decrease_group_leader_leader_stake_proposal_execution_succeeds() {
 
         fill_opening(member_id, account_id, opening_id, expected_application_id);
 
-        let leader_worker_id = StorageWorkingGroup::current_lead().unwrap().worker_id;
+        let leader_worker_id = StorageWorkingGroup::current_lead().unwrap();
 
         let stake_id = 1;
         let old_balance = Balances::free_balance::<&AccountId32>(&account_id.into());
@@ -310,10 +338,74 @@ fn create_decrease_group_leader_leader_stake_proposal_execution_succeeds() {
     });
 }
 
-fn get_stake_balance(stake: stake::Stake<BlockNumber, Balance, u64>) -> Balance {
-    if let stake::StakingStatus::Staked(stake) = stake.staking_status {
-        return stake.staked_amount;
-    }
+#[test]
+fn create_slash_group_leader_leader_stake_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 1;
+        let account_id: [u8; 32] = [member_id; 32];
+        let stake_amount = 100;
 
-    panic!("Not staked.");
+        let opening_policy_commitment = OpeningPolicyCommitment {
+            role_staking_policy: Some(hiring::StakingPolicy {
+                amount: 100,
+                amount_mode: hiring::StakingAmountLimitMode::AtLeast,
+                crowded_out_unstaking_period_length: None,
+                review_period_expired_unstaking_period_length: None,
+            }),
+            ..OpeningPolicyCommitment::default()
+        };
+
+        let opening_id = add_opening(
+            member_id,
+            account_id.clone(),
+            ActivateOpeningAt::CurrentBlock,
+            Some(opening_policy_commitment),
+        );
+
+        let apply_result = StorageWorkingGroup::apply_on_opening(
+            RawOrigin::Signed(account_id.clone().into()).into(),
+            member_id as u64,
+            opening_id,
+            account_id.clone().into(),
+            Some(stake_amount),
+            None,
+            Vec::new(),
+        );
+
+        assert_eq!(apply_result, Ok(()));
+
+        let expected_application_id = 0;
+
+        begin_review_applications(member_id, account_id, opening_id);
+
+        let lead = StorageWorkingGroup::current_lead();
+        assert!(lead.is_none());
+
+        fill_opening(member_id, account_id, opening_id, expected_application_id);
+
+        let leader_worker_id = StorageWorkingGroup::current_lead().unwrap();
+
+        let stake_id = 1;
+        let old_balance = Balances::free_balance::<&AccountId32>(&account_id.into());
+        let old_stake = <stake::Module<Runtime>>::stakes(stake_id);
+
+        assert_eq!(get_stake_balance(old_stake), stake_amount);
+
+        let slashing_stake_amount = 30;
+        slash_stake(
+            member_id,
+            account_id,
+            leader_worker_id,
+            slashing_stake_amount,
+        );
+
+        let new_balance = Balances::free_balance::<&AccountId32>(&account_id.into());
+        let new_stake = <stake::Module<Runtime>>::stakes(stake_id);
+
+        assert_eq!(
+            get_stake_balance(new_stake),
+            stake_amount - slashing_stake_amount
+        );
+        assert_eq!(new_balance, old_balance);
+    });
 }

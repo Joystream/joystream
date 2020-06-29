@@ -31,6 +31,7 @@
 //! - [create_fill_working_group_leader_opening_proposal](./struct.Module.html#method.create_fill_working_group_leader_opening_proposal)
 //! - [create_set_working_group_mint_capacity_proposal](./struct.Module.html#method.create_set_working_group_mint_capacity_proposal)
 //! - [create_decrease_working_group_leader_stake_proposal](./struct.Module.html#method.create_decrease_working_group_leader_stake_proposal)
+//! - [create_slash_working_group_leader_stake_proposal](./struct.Module.html#method.create_slash_working_group_leader_stake_proposal)
 //!
 //! ### Proposal implementations of this module
 //! - execute_text_proposal - prints the proposal to the log
@@ -242,7 +243,13 @@ decl_error! {
         InvalidWorkingGroupMintCapacity,
 
         /// Invalid 'set lead proposal' parameter - proposed lead cannot be a councilor
-        InvalidSetLeadParameterCannotBeCouncilor
+        InvalidSetLeadParameterCannotBeCouncilor,
+
+        /// Invalid 'slash stake proposal' parameter - cannot slash by zero balance.
+        SlashingStakeIsZero,
+
+        /// Invalid 'decrease stake proposal' parameter - cannot decrease by zero balance.
+        DecreasingStakeIsZero,
     }
 }
 
@@ -371,6 +378,14 @@ decl_storage! {
 
         /// Grace period for the 'decrease working group leader stake' proposal
         pub DecreaseWorkingGroupLeaderStakeProposalGracePeriod get(decrease_working_group_leader_stake_proposal_grace_period)
+            config(): T::BlockNumber;
+
+        /// Voting period for the 'slash working group leader stake' proposal
+        pub SlashWorkingGroupLeaderStakeProposalVotingPeriod get(slash_working_group_leader_stake_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'slash working group leader stake' proposal
+        pub SlashWorkingGroupLeaderStakeProposalGracePeriod get(slash_working_group_leader_stake_proposal_grace_period)
             config(): T::BlockNumber;
     }
 }
@@ -730,6 +745,8 @@ decl_module! {
             working_group: WorkingGroup,
         ) {
 
+            ensure!(decreasing_stake != Zero::zero(), Error::DecreasingStakeIsZero);
+
             let proposal_details = ProposalDetails::DecreaseWorkingGroupLeaderStake(
                 worker_id,
                 decreasing_stake,
@@ -744,6 +761,40 @@ decl_module! {
                 stake_balance,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::decrease_working_group_leader_stake_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
+        }
+        /// Create 'slash working group leader stake' proposal type.
+        /// This proposal uses `slash_stake()` extrinsic from the `working-group`  module.
+        pub fn create_slash_working_group_leader_stake_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            worker_id: working_group::WorkerId<T>,
+            slashing_stake: BalanceOf<T>,
+            working_group: WorkingGroup,
+        ) {
+
+            ensure!(slashing_stake != Zero::zero(), Error::SlashingStakeIsZero);
+
+            let proposal_details = ProposalDetails::SlashWorkingGroupLeaderStake(
+                worker_id,
+                slashing_stake,
+                working_group
+            );
+
+            let params = CreateProposalParameters{
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::slash_working_group_leader_stake_proposal::<T>(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
             };
 
@@ -1002,6 +1053,12 @@ impl<T: Trait> Module<T> {
         ));
         <DecreaseWorkingGroupLeaderStakeProposalGracePeriod<T>>::put(T::BlockNumber::from(
             p.decrease_working_group_leader_stake_proposal_grace_period,
+        ));
+        <SlashWorkingGroupLeaderStakeProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.slash_working_group_leader_stake_proposal_voting_period,
+        ));
+        <SlashWorkingGroupLeaderStakeProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.slash_working_group_leader_stake_proposal_grace_period,
         ));
     } //TODO set defaults for new proposals
 }

@@ -107,6 +107,19 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
 
                 call.encode()
             }
+            ProposalDetails::SlashWorkingGroupLeaderStake(
+                worker_id,
+                slashing_stake,
+                working_group,
+            ) => {
+                let call = match working_group {
+                    WorkingGroup::Storage => Call::StorageWorkingGroup(
+                        Wg::create_slash_stake_call(worker_id, slashing_stake),
+                    ),
+                };
+
+                call.encode()
+            }
         }
     }
 }
@@ -176,5 +189,13 @@ where
         decreasing_stake: working_group::BalanceOf<T>,
     ) -> working_group::Call<T, I> {
         working_group::Call::<T, I>::decrease_stake(worker_id, decreasing_stake)
+    }
+
+    // Generic call constructor for the working group  'slash stake'.
+    fn create_slash_stake_call(
+        worker_id: working_group::WorkerId<T>,
+        slashing_stake: working_group::BalanceOf<T>,
+    ) -> working_group::Call<T, I> {
+        working_group::Call::<T, I>::slash_stake(worker_id, slashing_stake)
     }
 }
