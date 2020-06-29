@@ -7,23 +7,25 @@ type ChannelPreviewProps = {
 	views: string;
 	channel: string;
 	channelAvatar: string;
-	outerCss: SerializedStyles;
+	outerContainerCss: SerializedStyles;
 } & ChannelPreviewStyleProps;
 
 export default function ChannelPreview({
 	views,
 	channel,
 	channelAvatar,
-	outerCss,
+	outerContainerCss,
 	...styleProps
 }: Partial<ChannelPreviewProps>) {
 	const styles = useCSS({ ...styleProps });
 	return (
-		<article css={[styles.container, outerCss]}>
-			<Avatar outerStyles={styles.avatar} img={channelAvatar} />
-			<div css={styles.info}>
-				<h4>{channel}</h4>
-				<span>{views} views</span>
+		<article css={[styles.outerContainer, outerContainerCss]}>
+			<div css={styles.innerContainer}>
+				<Avatar outerStyles={styles.avatar} img={channelAvatar} />
+				<div css={styles.info}>
+					<h2>{channel}</h2>
+					<span>{views} views</span>
+				</div>
 			</div>
 		</article>
 	);
