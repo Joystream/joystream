@@ -10,22 +10,42 @@ const debug = require('debug')('joystream:discovery:publish')
  */
 const PUBLISH_KEY = 'self'
 
+/**
+ * Applies JSON serialization on the data object and converts the utf-8
+ * string to a Buffer.
+ * @param {object} data
+ * @returns {Buffer}
+ */
 function bufferFrom (data) {
   return Buffer.from(JSON.stringify(data), 'utf-8')
 }
 
+/**
+ * Encodes the service info into a standard format see. /storage-node/docs/json-signing.md
+ * To be able to add a signature over the json data. Signing is not currently implemented.
+ * @param {object} info - the service information
+ * @returns {Buffer}
+ */
 function encodeServiceInfo (info) {
   return bufferFrom({
     serialized: JSON.stringify(info)
-    // signature: ''
   })
 }
 
+/**
+ * Publishes the service information, encoded using the standard defined in encodeServiceInfo()
+ * to ipfs, using the local ipfs node's PUBLISH_KEY, and returns the key id used to publish.
+ * What we refer to as the ipns id.
+ * @param {object} service_info - the service information to publish
+ * @returns {string} - the ipns id
+ */
 async function publish (service_info) {
   const keys = await ipfs.key.list()
   let services_key = keys.find((key) => key.name === PUBLISH_KEY)
 
-  // generate a new services key if not found
+  // An ipfs node will always have the self key.
+  // If the publish key is specified as anything else and it doesn't exist
+  // we create it.
   if (PUBLISH_KEY !== 'self' && !services_key) {
     debug('generating ipns services key')
     services_key = await ipfs.key.gen(PUBLISH_KEY, {
@@ -49,7 +69,12 @@ async function publish (service_info) {
     // ttl:      // string - Time duration this record should be cached
   })
 
-  // The hash of the published service information file
+  // The name and ipfs hash of the published service information file, eg.
+  // {
+  //   name: 'QmUNQCkaU1TRnc1WGixqEP3Q3fazM8guSdFRsdnSJTN36A',
+  //   value: '/ipfs/QmcSjtVMfDSSNYCxNAb9PxNpEigCw7h1UZ77gip3ghfbnA'
+  // }
+  // .. The name is equivalent to the key id that was used.
   debug(published)
 
   // Return the key id under which the content was published. Which is used
