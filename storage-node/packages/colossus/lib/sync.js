@@ -20,10 +20,7 @@
 
 const debug = require('debug')('joystream:sync');
 
-async function sync_callback(api, storage)
-{
-  debug('Starting sync run...');
-
+async function sync_callback(api, storage) {
   // The first step is to gather all data objects from chain.
   // TODO: in future, limit to a configured tranche
   // FIXME this isn't actually on chain yet, so we'll fake it.
@@ -35,6 +32,10 @@ async function sync_callback(api, storage)
   // Iterate over all sync objects, and ensure they're synced.
   const allChecks = knownContentIds.map(async (content_id) => {
     let { relationship, relationshipId } = await api.assets.getStorageRelationshipAndId(providerId, content_id);
+
+    // get the data object
+    // make sure the data object was Accepted by the liaison,
+    // don't just blindly attempt to fetch them
 
     let fileLocal;
     try {
@@ -52,8 +53,11 @@ async function sync_callback(api, storage)
       try {
         await storage.synchronize(content_id);
       } catch (err) {
-        debug(err.message)
+        // duplicate logging
+        // debug(err.message)
+        return
       }
+      // why are we returning, if we synced the file
       return;
     }
 
@@ -82,15 +86,16 @@ async function sync_callback(api, storage)
   });
 
 
-  await Promise.all(allChecks);
-  debug('sync run complete');
+  return Promise.all(allChecks);
 }
 
 
 async function sync_periodic(api, flags, storage)
 {
   try {
-    await sync_callback(api, storage);
+    debug('Starting sync run...')
+    await sync_callback(api, storage)
+    debug('sync run complete')
   } catch (err) {
     debug(`Error in sync_periodic ${err.stack}`);
   }

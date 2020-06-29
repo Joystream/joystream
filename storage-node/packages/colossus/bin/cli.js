@@ -126,7 +126,7 @@ function get_storage (runtime_api) {
       if (!obj || obj.isNone) {
         return
       }
-
+      // if obj.liaison_judgement !== Accepted .. throw ?
       return obj.unwrap().ipfs_content_id.toString()
     }
   }

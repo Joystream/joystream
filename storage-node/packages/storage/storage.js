@@ -383,6 +383,8 @@ class Storage
   {
     const resolved = await this._resolve_content_id_with_timeout(this._timeout, content_id);
 
+    // validate resolved id is proper ipfs_cid, not null or empty string
+
     if (this.pins[resolved]) {
       return;
     }
@@ -396,6 +398,7 @@ class Storage
         delete this.pins[resolved];
       } else {
         debug(`Pinned ${resolved}`);
+        // why aren't we doing this.pins[resolved] = true
       }
     });
   }
