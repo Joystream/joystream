@@ -27,7 +27,7 @@ class AssetsApi {
   }
 
   /*
-   * Create a data object.
+   * Create and return a data object.
    */
   async createDataObject (accountId, memberId, contentId, doTypeId, size, ipfsCid) {
     contentId = parseContentId(contentId)
@@ -40,7 +40,7 @@ class AssetsApi {
   }
 
   /*
-   * Return the Data Object for a CID
+   * Return the Data Object for a contendId
    */
   async getDataObject (contentId) {
     contentId = parseContentId(contentId)
@@ -48,10 +48,10 @@ class AssetsApi {
   }
 
   /*
-   * Verify the liaison state for a DO:
-   * - Check the content ID has a DO
+   * Verify the liaison state for a DataObject:
+   * - Check the content ID has a DataObject
    * - Check the storageProviderId is the liaison
-   * - Check the liaison state is pending
+   * - Check the liaison state is Pending
    *
    * Each failure errors out, success returns the data object.
    */
@@ -78,7 +78,7 @@ class AssetsApi {
   }
 
   /*
-   * Changes a data object liaison judgement.
+   * Sets the data object liaison judgement to Accepted
    */
   async acceptContent (providerAccoundId, storageProviderId, contentId) {
     contentId = parseContentId(contentId)
@@ -87,7 +87,7 @@ class AssetsApi {
   }
 
   /*
-   * Changes a data object liaison judgement.
+   * Sets the data object liaison judgement to Rejected
    */
   async rejectContent (providerAccountId, storageProviderId, contentId) {
     contentId = parseContentId(contentId)
@@ -96,7 +96,7 @@ class AssetsApi {
   }
 
   /*
-   * Create storage relationship
+   * Creates storage relationship for a data object and provider
    */
   async createStorageRelationship (providerAccountId, storageProviderId, contentId, callback) {
     contentId = parseContentId(contentId)
@@ -107,7 +107,7 @@ class AssetsApi {
   }
 
   /*
-   * Get storage relationship for contentId
+   * Gets storage relationship for contentId for the given provider
    */
   async getStorageRelationshipAndId (storageProviderId, contentId) {
     contentId = parseContentId(contentId)
@@ -125,6 +125,9 @@ class AssetsApi {
     return {}
   }
 
+  /*
+   * Creates storage relationship for a data object and provider and returns the relationship id
+   */
   async createAndReturnStorageRelationship (providerAccountId, storageProviderId, contentId) {
     contentId = parseContentId(contentId)
     return new Promise(async (resolve, reject) => {
@@ -141,7 +144,7 @@ class AssetsApi {
   }
 
   /*
-   * Toggle ready state for DOSR.
+   * Set the ready state for a data object storage relationship to the new value
    */
   async toggleStorageRelationshipReady (providerAccountId, storageProviderId, dosrId, ready) {
     var tx = ready
@@ -150,6 +153,9 @@ class AssetsApi {
     return this.base.signAndSend(providerAccountId, tx)
   }
 
+  /*
+   * Returns array of know content ids
+   */
   async getKnownContentIds () {
     return this.base.api.query.dataDirectory.knownContentIds()
   }

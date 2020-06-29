@@ -4,6 +4,7 @@ const stripEndingSlash = require('@joystream/util/stripEndingSlash')
 
 const ipfs = require('ipfs-http-client')('localhost', '5001', { protocol: 'http' })
 const BN = require('bn.js')
+const { newExternallyControlledPromise } = require('@joystream/util/externalPromise')
 
 /**
  * Determines if code is running in a browser by testing for the global window object
@@ -210,20 +211,6 @@ async function discover (storageProviderId, runtimeApi, useCachedValue = false, 
 }
 
 /**
- * Returns an object that contains a Promise and exposes its handlers, ie. resolve and reject methods
- * so it can be fulfilled 'externally'. This is a bit of a hack, but most useful application is when
- * concurrent async operations are initiated that are all waiting on the same result value.
- */
-function createExternallyControlledPromise () {
-  let resolve, reject
-  const promise = new Promise((_resolve, _reject) => {
-    resolve = _resolve
-    reject = _reject
-  })
-  return ({ resolve, reject, promise })
-}
-
-/**
  * Internal method that handles concurrent discoveries and caching of results. Will
  * select the appropriate discovery protocol based on wether we are in a browser environemtn or not.
  * If not in a browser it expects a local ipfs node to be running.
@@ -242,7 +229,7 @@ async function _discover (storageProviderId, runtimeApi) {
   }
 
   debug('starting new discovery for', id)
-  const deferredDiscovery = createExternallyControlledPromise()
+  const deferredDiscovery = newExternallyControlledPromise()
   activeDiscoveries[id] = deferredDiscovery.promise
 
   let result

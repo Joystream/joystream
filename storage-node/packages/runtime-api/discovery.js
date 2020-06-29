@@ -25,7 +25,7 @@ class DiscoveryApi {
   }
 
   /*
-   * Set Bootstrap endpoints
+   * Set Bootstrap endpoints, requires the sudo account to be provided and unlocked
    */
   async setBootstrapEndpoints (sudoAccount, endpoints) {
     const tx = this.base.api.tx.discovery.setBootstrapEndpoints(endpoints)

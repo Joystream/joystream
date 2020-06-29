@@ -13,7 +13,7 @@ const PUBLISH_KEY = 'self'
 /**
  * Applies JSON serialization on the data object and converts the utf-8
  * string to a Buffer.
- * @param {object} data
+ * @param {object} data - json object
  * @returns {Buffer}
  */
 function bufferFrom (data) {
@@ -23,7 +23,7 @@ function bufferFrom (data) {
 /**
  * Encodes the service info into a standard format see. /storage-node/docs/json-signing.md
  * To be able to add a signature over the json data. Signing is not currently implemented.
- * @param {object} info - the service information
+ * @param {object} info - json object
  * @returns {Buffer}
  */
 function encodeServiceInfo (info) {

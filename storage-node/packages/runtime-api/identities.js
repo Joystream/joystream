@@ -119,7 +119,7 @@ class IdentitiesApi {
   }
 
   /*
-   * Return true if the account is a member
+   * Return true if the account is a root account of a member
    */
   async isMember (accountId) {
     const memberIds = await this.memberIdsOf(accountId) // return array of member ids
@@ -127,7 +127,7 @@ class IdentitiesApi {
   }
 
   /*
-   * Return the member IDs of an account
+   * Return all the member IDs of an account by the root account id
    */
   async memberIdsOf (accountId) {
     const decoded = this.keyring.decodeAddress(accountId)
@@ -135,7 +135,7 @@ class IdentitiesApi {
   }
 
   /*
-   * Return the first member ID of an account, or undefined if not a member.
+   * Return the first member ID of an account, or undefined if not a member root account.
    */
   async firstMemberIdOf (accountId) {
     const decoded = this.keyring.decodeAddress(accountId)
@@ -177,6 +177,10 @@ class IdentitiesApi {
     return filename
   }
 
+  /*
+   * Register account id with userInfo as a new member
+   * using default policy 0, returns new member id
+   */
   async registerMember (accountId, userInfo) {
     const tx = this.base.api.tx.members.buyMembership(0, userInfo)
 
@@ -187,13 +191,17 @@ class IdentitiesApi {
     })
   }
 
+  /*
+   * Injects a keypair and sets it as the default identity
+   */
   useKeyPair (keyPair) {
     this.key = this.keyring.addPair(keyPair)
   }
+
   /*
- * Create a new role key. If no name is given,
- * default to 'storage'.
- */
+   * Create a new role key. If no name is given,
+   * default to 'storage'.
+   */
   async createNewRoleKey (name) {
     name = name || 'storage-provider'
 

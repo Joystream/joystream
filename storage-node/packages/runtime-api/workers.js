@@ -20,7 +20,6 @@
 
 const debug = require('debug')('joystream:runtime:roles')
 const BN = require('bn.js')
-// const { createType } = require('@polkadot/types')
 const { Worker } = require('@joystream/types/lib/working-group')
 
 /*
@@ -41,7 +40,7 @@ class WorkersApi {
   }
 
   /*
-   * Check whether the given account and id represent an active storage provider
+   * Check whether the given account and id represent an enrolled storage provider
    */
   async isRoleAccountOfStorageProvider (storageProviderId, roleAccountId) {
     const id = new BN(storageProviderId)
@@ -50,24 +49,34 @@ class WorkersApi {
     return providerAccount && providerAccount.eq(roleAccount)
   }
 
+  /*
+   * Returns true if the provider id is enrolled
+   */
   async isStorageProvider (storageProviderId) {
     const worker = await this.storageWorkerByProviderId(storageProviderId)
     return worker !== null
   }
 
-  // Returns a provider's role account or null if provider doesn't exist
+  /*
+   * Returns a provider's role account or null if provider doesn't exist
+   */
   async storageProviderRoleAccount (storageProviderId) {
     const worker = await this.storageWorkerByProviderId(storageProviderId)
     return worker ? worker.role_account : null
   }
 
-  // Returns a Worker instance or null if provider does not exist
+  /*
+   * Returns a Worker instance or null if provider does not exist
+   */
   async storageWorkerByProviderId (storageProviderId) {
     const id = new BN(storageProviderId)
     const { providers } = await this.getAllProviders()
     return providers[id.toNumber()] || null
   }
 
+  /*
+   * Returns the the first found provider id with a role account or null if not found
+   */
   async findProviderIdByRoleAccount (roleAccount) {
     const { ids, providers } = await this.getAllProviders()
 
@@ -81,6 +90,9 @@ class WorkersApi {
     return null
   }
 
+  /*
+   * Returns the set of ids and Worker instances of providers enrolled on the network
+   */
   async getAllProviders () {
     // const workerEntries = await this.base.api.query.storageWorkingGroup.workerById()
     // can't rely on .isEmpty or isNone property to detect empty map
@@ -116,6 +128,9 @@ class WorkersApi {
   // Helper methods below don't really belong in the colossus api, they are here
   // mainly to be used by the dev-init command in the cli to setup a development environment
 
+  /*
+   * Sets the storage working group lead
+   */
   async dev_setLead(sudo, memberId, roleAccount) {
     const setLeadTx = this.base.api.tx.storageWorkingGroup.setLead(memberId, roleAccount)
     // make sudo call
@@ -125,6 +140,10 @@ class WorkersApi {
     )
   }
 
+  /*
+   * Add a new storage group worker opening using the lead account. Returns the
+   * new opening id.
+   */
   async dev_addWorkerOpening(leadAccount) {
     const openTx = this.base.api.tx.storageWorkingGroup.addWorkerOpening('CurrentBlock', {
       application_rationing_policy: {
@@ -143,6 +162,9 @@ class WorkersApi {
     return openingId
   }
 
+  /*
+   * Apply on an opening, returns the application id.
+   */
   async dev_applyOnOpening(openingId, memberId, memberAccount, roleAccount) {
     const applyTx = this.base.api.tx.storageWorkingGroup.applyOnWorkerOpening(
       memberId, openingId, roleAccount, null, null, `colossus-${memberId}`
@@ -156,11 +178,17 @@ class WorkersApi {
     return applicationId
   }
 
+  /*
+   * Move the opening into the review state
+   */
   async dev_beginOpeningReview(openingId, leadAccount) {
     const reviewTx = this.base.api.tx.storageWorkingGroup.beginWorkerApplicantReview(openingId)
     return this.base.signAndSend(leadAccount, reviewTx)
   }
 
+  /*
+   * Fill an opening, returns a map of the application id to their new assigned worker ids.
+   */
   async dev_fillOpeningWithSingleApplication(openingId, leadAccount, applicationId) {
     const fillTx = this.base.api.tx.storageWorkingGroup.fillWorkerOpening(openingId, [applicationId], null)
 

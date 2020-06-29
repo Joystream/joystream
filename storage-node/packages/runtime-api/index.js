@@ -29,6 +29,7 @@ const { WorkersApi } = require('@joystream/runtime-api/workers')
 const { AssetsApi } = require('@joystream/runtime-api/assets')
 const { DiscoveryApi } = require('@joystream/runtime-api/discovery')
 const AsyncLock = require('async-lock')
+const { newExternallyControlledPromise } = require('@joystream/util/externalPromise')
 
 /*
  * Initialize runtime (substrate) API and keyring.
@@ -270,8 +271,10 @@ class RuntimeApi {
     return finalizedPromise.promise
   }
 
-  // Sign and send a transaction expect event from
-  // module and return eventProperty from the event.
+  /*
+   * Sign and send a transaction expect event from
+   * module and return eventProperty from the event.
+   */
   async signAndSendThenGetEventResult (senderAccountId, tx, { eventModule, eventName, eventProperty }) {
     // event from a module,
     const subscribed = [[eventModule, eventName]]
@@ -290,16 +293,6 @@ class RuntimeApi {
     })
   }
 
-}
-
-function newExternallyControlledPromise () {
-  // externally controlled promise
-  let resolve, reject
-  const promise = new Promise((res, rej) => {
-    resolve = res
-    reject = rej
-  })
-  return ({resolve, reject, promise})
 }
 
 module.exports = {
