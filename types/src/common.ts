@@ -1,6 +1,7 @@
 import { Struct, Option, Text, bool, Vec, u16, u32, u64, getTypeRegistry } from "@polkadot/types";
 import { BlockNumber, Moment } from '@polkadot/types/interfaces';
 import { Codec } from "@polkadot/types/types";
+import moment from 'moment';
 import { JoyStruct } from './JoyStruct';
 export { JoyStruct } from './JoyStruct';
 
@@ -38,6 +39,23 @@ export class BlockAndTime extends Struct {
     static newEmpty (): BlockAndTime {
         return new BlockAndTime({} as BlockAndTime);
     }
+
+    get momentDate (): moment.Moment {
+        const YEAR_2000_MILLISECONDS = 946684801000;
+
+        // overflowing in ~270,000 years
+        const timestamp = this.time.toNumber();
+
+        // TODO: remove once https://github.com/Joystream/joystream/issues/705 is resolved
+        // due to a bug, timestamp can be either in seconds or milliseconds
+        let timestampInMillis = timestamp;
+        if (timestamp < YEAR_2000_MILLISECONDS) {
+          // timestamp is in seconds
+          timestampInMillis = timestamp * 1000;
+        }
+
+        return moment(timestampInMillis);
+      }
 }
 
 export function getTextPropAsString(struct: Struct, fieldName: string): string {
