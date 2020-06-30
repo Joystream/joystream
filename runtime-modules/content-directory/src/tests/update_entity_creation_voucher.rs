@@ -107,3 +107,91 @@ fn update_entity_creation_voucher_success() {
         );
     })
 }
+
+#[test]
+fn update_entity_creation_voucher_lead_auth_failed() {
+    with_test_externalities(|| {
+        // Create simple class with default permissions
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
+
+        // Runtime state before tested call
+
+        let entity_controller = EntityController::Member(FIRST_MEMBER_ID);
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // Make an attempt to create entities creation voucher for chosen controller under non lead origin
+        let update_entity_creation_voucher_result = update_entity_creation_voucher(
+            FIRST_MEMBER_ORIGIN,
+            FIRST_CLASS_ID,
+            entity_controller.clone(),
+            IndividualEntitiesCreationLimit::get(),
+        );
+
+        // Failure checked
+        assert_failure(
+            update_entity_creation_voucher_result,
+            ERROR_LEAD_AUTH_FAILED,
+            number_of_events_before_call,
+        );
+    })
+}
+
+#[test]
+fn update_entity_creation_voucher_class_does_not_exist() {
+    with_test_externalities(|| {
+        // Runtime state before tested call
+
+        let entity_controller = EntityController::Member(FIRST_MEMBER_ID);
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // Make an attempt to create entities creation voucher for chosen controller and non existent class
+        let update_entity_creation_voucher_result = update_entity_creation_voucher(
+            LEAD_ORIGIN,
+            UNKNOWN_CLASS_ID,
+            entity_controller.clone(),
+            IndividualEntitiesCreationLimit::get(),
+        );
+
+        // Failure checked
+        assert_failure(
+            update_entity_creation_voucher_result,
+            ERROR_CLASS_NOT_FOUND,
+            number_of_events_before_call,
+        );
+    })
+}
+
+#[test]
+fn update_entity_creation_voucher_individual_creation_limit_exceed() {
+    with_test_externalities(|| {
+        // Create simple class with default permissions
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
+
+        // Runtime state before tested call
+
+        let entity_controller = EntityController::Member(FIRST_MEMBER_ID);
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // Make an attempt to create entities creation voucher for chosen controller with maximum_entities_count
+        // value that exceeds IndividualEntitiesCreationLimit
+        let update_entity_creation_voucher_result = update_entity_creation_voucher(
+            LEAD_ORIGIN,
+            FIRST_CLASS_ID,
+            entity_controller.clone(),
+            IndividualEntitiesCreationLimit::get() + 1,
+        );
+
+        // Failure checked
+        assert_failure(
+            update_entity_creation_voucher_result,
+            ERROR_NUMBER_OF_CLASS_ENTITIES_PER_ACTOR_CONSTRAINT_VIOLATED,
+            number_of_events_before_call,
+        );
+    })
+}
