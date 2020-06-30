@@ -33,6 +33,7 @@
 //! - [create_decrease_working_group_leader_stake_proposal](./struct.Module.html#method.create_decrease_working_group_leader_stake_proposal)
 //! - [create_slash_working_group_leader_stake_proposal](./struct.Module.html#method.create_slash_working_group_leader_stake_proposal)
 //! - [create_set_working_group_leader_reward_proposal](./struct.Module.html#method.create_set_working_group_leader_reward_proposal)
+//! - [create_terminate_working_group_leader_role_proposal](./struct.Module.html#method.create_terminate_working_group_leader_role_proposal)
 //!
 //! ### Proposal implementations of this module
 //! - execute_text_proposal - prints the proposal to the log
@@ -83,7 +84,7 @@ use srml_support::{decl_error, decl_module, decl_storage, ensure, print};
 use system::ensure_root;
 
 pub use crate::proposal_types::{
-    AddOpeningParameters, FillOpeningParameters, ProposalsConfigParameters,
+    AddOpeningParameters, FillOpeningParameters, ProposalsConfigParameters, TerminateRoleParameters,
 };
 pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 
@@ -398,6 +399,14 @@ decl_storage! {
         /// Grace period for the 'set working group leader reward' proposal
         pub SetWorkingGroupLeaderRewardProposalGracePeriod get(set_working_group_leader_reward_proposal_grace_period)
             config(): T::BlockNumber;
+
+        /// Voting period for the 'terminate working group leader role' proposal
+        pub TerminateWorkingGroupLeaderRoleProposalVotingPeriod get(terminate_working_group_leader_role_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'terminate working group leader role' proposal
+        pub TerminateWorkingGroupLeaderRoleProposalGracePeriod get(terminate_working_group_leader_role_proposal_grace_period)
+            config(): T::BlockNumber;
     }
 }
 
@@ -689,7 +698,7 @@ decl_module! {
             title: Vec<u8>,
             description: Vec<u8>,
             stake_balance: Option<BalanceOf<T>>,
-            params: FillOpeningParameters<
+            fill_opening_parameters: FillOpeningParameters<
                 T::BlockNumber,
                 BalanceOfMint<T>,
                 working_group::OpeningId<T>,
@@ -697,7 +706,7 @@ decl_module! {
             >
         ) {
 
-            let proposal_details = ProposalDetails::FillWorkingGroupLeaderOpening(params);
+            let proposal_details = ProposalDetails::FillWorkingGroupLeaderOpening(fill_opening_parameters);
             let params = CreateProposalParameters{
                 origin,
                 member_id,
@@ -840,6 +849,32 @@ decl_module! {
                 stake_balance,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::set_working_group_leader_reward_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
+        }
+
+        /// Create 'terminate working group leader rolw' proposal type.
+        /// This proposal uses `terminate_role()` extrinsic from the `working-group`  module.
+        pub fn create_terminate_working_group_leader_role_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            terminate_role_parameters: TerminateRoleParameters<working_group::WorkerId<T>>,
+        ) {
+            let proposal_details = ProposalDetails::TerminateWorkingGroupLeaderRole(terminate_role_parameters);
+
+            let params = CreateProposalParameters{
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::terminate_working_group_leader_role_proposal::<T>(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
             };
 
@@ -1110,6 +1145,12 @@ impl<T: Trait> Module<T> {
         ));
         <SetWorkingGroupLeaderRewardProposalGracePeriod<T>>::put(T::BlockNumber::from(
             p.set_working_group_leader_reward_proposal_grace_period,
+        ));
+        <TerminateWorkingGroupLeaderRoleProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.terminate_working_group_leader_role_proposal_voting_period,
+        ));
+        <TerminateWorkingGroupLeaderRoleProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.terminate_working_group_leader_role_proposal_grace_period,
         ));
     } //TODO set defaults for new proposals
 }
