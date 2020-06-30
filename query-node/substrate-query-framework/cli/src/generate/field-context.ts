@@ -69,6 +69,7 @@ export function buildFieldContext(f: Field, entity: ObjectType): GeneratorContex
   return {
     ...withFieldTypeGuardProps(f),
     ...withRequired(f),
+    ...withUnique(f),
     ...withArrayCustomFieldConfig(f),
     ...withTsTypeAndDecorator(f),
     ...withDerivedNames(f, entity),
@@ -99,6 +100,12 @@ export function withRequired(f: Field): GeneratorContext {
 export function withDescription(f: Field): GeneratorContext {
   return {
     description: f.description,
+  };
+}
+
+export function withUnique(f: Field): GeneratorContext {
+  return {
+    unique: f.unique,
   };
 }
 

@@ -17,6 +17,8 @@ export class Field {
   isList: boolean;
   // Description of the field will be shown in GrapqQL API
   description?: string;
+  // Make field as a unique column on database
+  unique?: boolean;
 
   constructor(name: string, type: string, nullable = true, isBuildinType = true, isList = false) {
     this.name = name;

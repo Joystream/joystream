@@ -9,7 +9,7 @@ import {
 import { GraphQLSchemaParser, Visitors, SchemaNode } from './SchemaParser';
 import { WarthogModel, Field, ObjectType } from '../model';
 import Debug from 'debug';
-import { ENTITY_DIRECTIVE } from './constant';
+import { ENTITY_DIRECTIVE, UNIQUE_DIRECTIVE } from './constant';
 import { FTSDirective, FULL_TEXT_SEARCHABLE_DIRECTIVE } from './FTSDirective';
 
 const debug = Debug('qnode-cli:model-generator');
@@ -78,6 +78,11 @@ export class WarthogModelBuilder {
     return entityDirective ? true : false;
   }
 
+  private isUnique(field: FieldDefinitionNode): boolean {
+    const entityDirective = field.directives?.find(d => d.name.value === UNIQUE_DIRECTIVE);
+    return entityDirective ? true : false;
+  }
+
   /**
    * Generate a new ObjectType from ObjectTypeDefinitionNode
    * @param o ObjectTypeDefinitionNode
@@ -134,6 +139,7 @@ export class WarthogModelBuilder {
         throw new Error(`Unrecognized type. ${JSON.stringify(typeNode, null, 2)}`);
       }
       field.description = fieldNode.description?.value;
+      field.unique = this.isUnique(fieldNode);
       return field;
     });
     debug(`Read and parsed fields: ${JSON.stringify(fields, null, 2)}`);

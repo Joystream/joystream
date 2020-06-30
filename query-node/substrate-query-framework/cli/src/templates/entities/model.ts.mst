@@ -67,15 +67,21 @@ export {{#isInterface}}abstract{{/isInterface}} class {{className}}
   {{/is.oto}}
 
   {{#is.array}}
-    @CustomField({ db: { type: '{{dbType}}', array: true{{^required}}, nullable: true{{/required}} }, 
-        api: { type: '{{apiType}}',{{^required}}nullable: true,{{/required}}
-        {{#description}}description: `{{{description}}}`{{/description}} }})
+    @CustomField({
+      db: { type: '{{dbType}}', array: true,{{^required}}nullable: true,{{/required}} {{#unique}}unique: true,{{/unique}}}, 
+      api: { type: '{{apiType}}', {{^required}}nullable: true,{{/required}}
+        {{#description}}description: `{{{description}}}`{{/description}} }
+    })
     {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{tsType}}[];
   {{/is.array}}
 
   {{! TODO: add enums here }}
   {{#is.scalar}}
-    @{{decorator}}({ {{^required}}nullable: true,{{/required}} {{#description}}description: `{{{description}}}`{{/description}} })
+    @{{decorator}}({
+      {{^required}}nullable: true,{{/required}}
+      {{#description}}description: `{{{description}}}`,{{/description}}
+      {{#unique}}unique: true,{{/unique}}
+    })
     {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{tsType}};
   {{/is.scalar}}
 
