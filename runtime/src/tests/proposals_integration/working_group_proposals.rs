@@ -217,6 +217,7 @@ fn set_mint_capacity(
     account_id: [u8; 32],
     mint_capacity: Balance,
     sequence_number: u32, // action sequence number to align with other actions
+    setup_environment: bool,
 ) {
     let expected_proposal_id = sequence_number;
     let run_to_block = sequence_number + 1;
@@ -238,7 +239,7 @@ fn set_mint_capacity(
             WorkingGroup::Storage,
         )
     })
-    .disable_setup_enviroment()
+    .with_setup_enviroment(setup_environment)
     .with_expected_proposal_id(expected_proposal_id)
     .with_run_to_block(run_to_block);
 
@@ -536,6 +537,24 @@ fn create_slash_group_leader_stake_proposal_execution_succeeds() {
 }
 
 #[test]
+fn create_set_working_group_mint_capacity_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 1;
+        let account_id: [u8; 32] = [member_id; 32];
+
+        assert_eq!(StorageWorkingGroup::mint(), 0);
+
+        let mint_capacity = 999999;
+        set_mint_capacity(member_id, account_id, mint_capacity, 1, true);
+
+        let mint_id = StorageWorkingGroup::mint();
+        let mint = <minting::Module<Runtime>>::mints(mint_id);
+
+        assert_eq!(mint.capacity(), mint_capacity);
+    });
+}
+
+#[test]
 fn create_set_group_leader_reward_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
         let member_id = 1;
@@ -586,7 +605,7 @@ fn create_set_group_leader_reward_proposal_execution_succeeds() {
             payout_interval: None,
         });
 
-        set_mint_capacity(member_id, account_id, 999999, 3);
+        set_mint_capacity(member_id, account_id, 999999, 3, false);
 
         fill_opening(
             member_id,
