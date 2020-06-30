@@ -350,8 +350,6 @@ const ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED: &str = "Maximum valid category de
 const ERROR_CATEGORY_DOES_NOT_EXIST: &str = "Category does not exist.";
 
 // Errors about poll.
-const ERROR_POLL_DESC_TOO_SHORT: &str = "Poll description too short.";
-const ERROR_POLL_DESC_TOO_LONG: &str = "Poll description too long.";
 const ERROR_POLL_ALTERNATIVES_TOO_SHORT: &str = "Poll items number too short.";
 const ERROR_POLL_ALTERNATIVES_TOO_LONG: &str = "Poll items number too long.";
 const ERROR_POLL_NOT_EXIST: &str = "Poll not exist.";
@@ -446,9 +444,9 @@ impl Default for PostReaction {
 /// Represents all poll alternatives and vote count for each one
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct PollAlternative {
-    /// Alternative description
-    pub alternative_text: Vec<u8>,
+pub struct PollAlternative<Hash> {
+    /// Unique identifier
+    pub hash: Hash,
 
     /// Vote count for the alternative
     pub vote_count: u32,
@@ -457,9 +455,9 @@ pub struct PollAlternative {
 /// Represents a poll
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct Poll<Timestamp> {
-    /// description text for poll
-    pub poll_description: Vec<u8>,
+pub struct Poll<Timestamp, Hash> {
+    /// Unique identifier
+    pub hash: Hash,
 
     /// timestamp of poll start
     pub start_time: Timestamp,
@@ -468,7 +466,7 @@ pub struct Poll<Timestamp> {
     pub end_time: Timestamp,
 
     /// Alternative description and count
-    pub poll_alternatives: Vec<PollAlternative>,
+    pub poll_alternatives: Vec<PollAlternative<Hash>>,
 }
 
 /// Represents a thread post
@@ -521,7 +519,7 @@ pub struct Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment, Has
     pub author_id: ForumUserId,
 
     /// poll description.
-    pub poll: Option<Poll<Moment>>,
+    pub poll: Option<Poll<Moment, Hash>>,
 
     /// The thread number of this thread in its category, i.e. total number of thread added (including this)
     /// to a category when it was added.
@@ -921,7 +919,7 @@ decl_module! {
 
         /// Create new thread in category with poll
         fn create_thread(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, hash: T::Hash,
-            poll: Option<Poll<T::Moment>>,
+            poll: Option<Poll<T::Moment, T::Hash>>,
         ) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
@@ -963,12 +961,12 @@ decl_module! {
 
             // Store new poll alternative statistics
             let poll = thread.poll.unwrap();
-            let new_poll_alternatives: Vec<PollAlternative> = poll.poll_alternatives
+            let new_poll_alternatives: Vec<PollAlternative<T::Hash>> = poll.poll_alternatives
                 .iter()
                 .enumerate()
                 .map(|(old_index, old_value)| if index as usize == old_index
                     { PollAlternative {
-                        alternative_text: old_value.alternative_text.clone(),
+                        hash: old_value.hash,
                         vote_count: old_value.vote_count + 1,
                     }
                     } else {
@@ -1184,7 +1182,7 @@ impl<T: Trait> Module<T> {
         category_id: T::CategoryId,
         author_id: T::ForumUserId,
         hash: T::Hash,
-        poll: &Option<Poll<T::Moment>>,
+        poll: &Option<Poll<T::Moment, T::Hash>>,
     ) -> Result<
         Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment, T::Hash>,
         &'static str,
@@ -1295,7 +1293,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Ensure poll is valid
-    fn ensure_poll_is_valid(poll: &Poll<T::Moment>) -> dispatch::Result {
+    fn ensure_poll_is_valid(poll: &Poll<T::Moment, T::Hash>) -> dispatch::Result {
         // Poll end time must larger than now
         if poll.end_time < <timestamp::Module<T>>::now() {
             return Err(ERROR_POLL_TIME_SETTING);
@@ -1305,32 +1303,18 @@ impl<T: Trait> Module<T> {
             return Err(ERROR_POLL_TIME_SETTING);
         }
 
-        // Check poll description
-        Self::ensure_poll_desc_is_valid(poll.poll_description.len())?;
         Ok(())
     }
 
     // Ensure all poll alternative valid
-    fn ensure_poll_alternatives_valid(alternatives: &[PollAlternative]) -> dispatch::Result {
+    fn ensure_poll_alternatives_valid(
+        alternatives: &[PollAlternative<T::Hash>],
+    ) -> dispatch::Result {
         let len = alternatives.len();
         // Check alternative amount
         Self::ensure_poll_alternatives_length_is_valid(len)?;
 
-        // Check each alternative's text one by one
-        for item in alternatives {
-            let desc_len = item.alternative_text.len();
-            Self::ensure_poll_desc_is_valid(desc_len)?;
-        }
         Ok(())
-    }
-
-    // Ensure poll description text is valid
-    fn ensure_poll_desc_is_valid(len: usize) -> dispatch::Result {
-        PollDescConstraint::get().ensure_valid(
-            len,
-            ERROR_POLL_DESC_TOO_SHORT,
-            ERROR_POLL_DESC_TOO_LONG,
-        )
     }
 
     // Ensure poll alternative size is valid

@@ -112,16 +112,17 @@ pub const INVLAID_CATEGORY_ID: <Runtime as Trait>::CategoryId = 333;
 
 pub const NOT_REGISTER_MODERATOR_ID: <Runtime as Trait>::ModeratorId = 666;
 
-pub fn generate_poll() -> Poll<<Runtime as timestamp::Trait>::Moment> {
+pub fn generate_poll(
+) -> Poll<<Runtime as timestamp::Trait>::Moment, <Runtime as system::Trait>::Hash> {
     Poll {
-        poll_description: b"poll description".to_vec(),
+        hash: generate_hash(),
         start_time: Timestamp::now(),
         end_time: Timestamp::now() + 10,
         poll_alternatives: {
             let mut alternatives = vec![];
             for _ in 0..5 {
                 alternatives.push(PollAlternative {
-                    alternative_text: b"poll alternative".to_vec(),
+                    hash: generate_hash(),
                     vote_count: 0,
                 });
             }
@@ -130,17 +131,19 @@ pub fn generate_poll() -> Poll<<Runtime as timestamp::Trait>::Moment> {
     }
 }
 
-pub fn generate_poll_timestamp_cases(index: usize) -> Poll<<Runtime as timestamp::Trait>::Moment> {
+pub fn generate_poll_timestamp_cases(
+    index: usize,
+) -> Poll<<Runtime as timestamp::Trait>::Moment, <Runtime as system::Trait>::Hash> {
     let test_cases = vec![
         Poll {
-            poll_description: b"poll description".to_vec(),
+            hash: generate_hash(),
             start_time: Timestamp::now(),
             end_time: Timestamp::now() + 10,
             poll_alternatives: {
                 let mut alternatives = vec![];
                 for _ in 0..5 {
                     alternatives.push(PollAlternative {
-                        alternative_text: b"poll alternative".to_vec(),
+                        hash: generate_hash(),
                         vote_count: 0,
                     });
                 }
@@ -148,14 +151,14 @@ pub fn generate_poll_timestamp_cases(index: usize) -> Poll<<Runtime as timestamp
             },
         },
         Poll {
-            poll_description: b"poll description".to_vec(),
+            hash: generate_hash(),
             start_time: Timestamp::now() + 10,
             end_time: Timestamp::now(),
             poll_alternatives: {
                 let mut alternatives = vec![];
                 for _ in 0..5 {
                     alternatives.push(PollAlternative {
-                        alternative_text: b"poll alternative".to_vec(),
+                        hash: generate_hash(),
                         vote_count: 0,
                     });
                 }
@@ -192,7 +195,9 @@ pub fn create_thread_mock(
     forum_user_id: <Runtime as Trait>::ForumUserId,
     category_id: <Runtime as Trait>::CategoryId,
     hash: <Runtime as system::Trait>::Hash,
-    poll_data: Option<Poll<<Runtime as timestamp::Trait>::Moment>>,
+    poll_data: Option<
+        Poll<<Runtime as timestamp::Trait>::Moment, <Runtime as system::Trait>::Hash>,
+    >,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::ThreadId {
     let thread_id = TestForumModule::next_thread_id();

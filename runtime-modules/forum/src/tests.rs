@@ -688,20 +688,12 @@ fn test_migration_not_done() {
         );
 
         assert_eq!(
-            TestForumModule::moderate_thread(
-                mock_origin(origin.clone()),
-                moderator_id,
-                thread_id,
-            ),
+            TestForumModule::moderate_thread(mock_origin(origin.clone()), moderator_id, thread_id,),
             Err(ERROR_DATA_MIGRATION_NOT_DONE),
         );
 
         assert_eq!(
-            TestForumModule::moderate_post(
-                mock_origin(origin.clone()),
-                moderator_id,
-                post_id,
-            ),
+            TestForumModule::moderate_post(mock_origin(origin.clone()), moderator_id, post_id,),
             Err(ERROR_DATA_MIGRATION_NOT_DONE),
         );
     });
