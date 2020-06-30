@@ -71,3 +71,35 @@ fn transaction_success() {
         );
     })
 }
+
+#[test]
+fn transaction_limit_reached() {
+    with_test_externalities(|| {
+        // Create class with default permissions
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
+
+        let operation = OperationType::CreateEntity(CreateEntityOperation {
+            class_id: FIRST_CLASS_ID,
+        });
+
+        let operations =
+            vec![operation; MaxNumberOfOperationsDuringAtomicBatching::get() as usize + 1];
+
+        // Runtime state before tested call
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        let actor = Actor::Lead;
+
+        // make an attempt to complete transaction with operations, which total number exceeds MaxNumberOfOperationsDuringAtomicBatching runtime constraint
+        let transaction_result = transaction(LEAD_ORIGIN, actor.clone(), operations);
+
+        // Failure checked
+        assert_failure(
+            transaction_result,
+            ERROR_MAX_NUMBER_OF_OPERATIONS_DURING_ATOMIC_BATCHING_LIMIT_REACHED,
+            number_of_events_before_call,
+        );
+    })
+}
