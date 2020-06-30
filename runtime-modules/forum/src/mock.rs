@@ -116,26 +116,6 @@ pub fn generate_text(len: usize) -> Vec<u8> {
     vec![b'x'; len]
 }
 
-pub fn good_category_title() -> Vec<u8> {
-    b"Great new category".to_vec()
-}
-
-pub fn good_category_description() -> Vec<u8> {
-    b"This is a great new category for the forum".to_vec()
-}
-
-pub fn good_thread_title() -> Vec<u8> {
-    b"Great new thread".to_vec()
-}
-
-pub fn good_thread_text() -> Vec<u8> {
-    b"The first post in this thread".to_vec()
-}
-
-pub fn good_post_text() -> Vec<u8> {
-    b"A response in the thread".to_vec()
-}
-
 pub fn good_rationale() -> Vec<u8> {
     b"This post violates our community rules".to_vec()
 }
@@ -197,18 +177,12 @@ pub fn generate_poll_timestamp_cases(index: usize) -> Poll<<Runtime as timestamp
 pub fn create_category_mock(
     origin: OriginType,
     parent: Option<<Runtime as Trait>::CategoryId>,
-    title: Vec<u8>,
-    description: Vec<u8>,
+    hash: <Runtime as system::Trait>::Hash,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::CategoryId {
     let category_id = TestForumModule::next_category_id();
     assert_eq!(
-        TestForumModule::create_category(
-            mock_origin(origin),
-            parent,
-            title.clone(),
-            description.clone(),
-        ),
+        TestForumModule::create_category(mock_origin(origin), parent, hash,),
         result
     );
     if result.is_ok() {
@@ -225,8 +199,7 @@ pub fn create_thread_mock(
     origin: OriginType,
     forum_user_id: <Runtime as Trait>::ForumUserId,
     category_id: <Runtime as Trait>::CategoryId,
-    title: Vec<u8>,
-    text: Vec<u8>,
+    hash: <Runtime as system::Trait>::Hash,
     poll_data: Option<Poll<<Runtime as timestamp::Trait>::Moment>>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::ThreadId {
@@ -236,8 +209,7 @@ pub fn create_thread_mock(
             mock_origin(origin.clone()),
             forum_user_id,
             category_id,
-            title.clone(),
-            text.clone(),
+            hash,
             poll_data.clone(),
         ),
         result
@@ -256,17 +228,12 @@ pub fn create_post_mock(
     origin: OriginType,
     forum_user_id: <Runtime as Trait>::ForumUserId,
     thread_id: <Runtime as Trait>::ThreadId,
-    text: Vec<u8>,
+    hash: <Runtime as system::Trait>::Hash,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::PostId {
     let post_id = TestForumModule::next_post_id();
     assert_eq!(
-        TestForumModule::add_post(
-            mock_origin(origin.clone()),
-            forum_user_id,
-            thread_id,
-            text.clone(),
-        ),
+        TestForumModule::add_post(mock_origin(origin.clone()), forum_user_id, thread_id, hash,),
         result
     );
     if result.is_ok() {
@@ -433,47 +400,6 @@ pub fn moderate_post_mock(
     post_id
 }
 
-pub fn edit_post_text_mock(
-    origin: OriginType,
-    forum_user_id: <Runtime as Trait>::ForumUserId,
-    post_id: <Runtime as Trait>::PostId,
-    new_text: Vec<u8>,
-    result: Result<(), &'static str>,
-) -> <Runtime as Trait>::PostId {
-    let post = TestForumModule::post_by_id(post_id);
-    assert_eq!(
-        TestForumModule::edit_post_text(
-            mock_origin(origin),
-            forum_user_id,
-            post_id,
-            new_text.clone(),
-        ),
-        result
-    );
-    if result.is_ok() {
-        assert_eq!(
-            TestForumModule::post_by_id(post_id).current_text,
-            new_text.clone()
-        );
-        assert_eq!(
-            TestForumModule::post_by_id(post_id)
-                .text_change_history
-                .len(),
-            post.text_change_history.len() + 1
-        );
-        assert_eq!(
-            System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::PostTextUpdated(
-                post_id,
-                TestForumModule::post_by_id(post_id)
-                    .text_change_history
-                    .len() as u64,
-            ))
-        );
-    }
-    post_id
-}
-
 pub fn set_stickied_threads_mock(
     origin: OriginType,
     moderator_id: <Runtime as Trait>::ModeratorId,
@@ -512,6 +438,12 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
 
 pub fn migration_not_done_config() -> GenesisConfig<Runtime> {
     create_genesis_config(false)
+}
+
+pub fn generate_hash() -> <Runtime as system::Trait>::Hash {
+    let hash = <Runtime as system::Trait>::Hash::random();
+
+    hash
 }
 
 pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime> {

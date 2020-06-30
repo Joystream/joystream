@@ -29,16 +29,9 @@ fn set_moderator_category_origin() {
     let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-
     build_test_externalities(config).execute_with(|| {
         let moderator_id = forum_lead;
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
+        let category_id = create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
         set_moderator_category_mock(origin, moderator_id, category_id, true, Ok(()));
         set_moderator_category_mock(
             NOT_FORUM_LEAD_ORIGIN,
@@ -58,13 +51,7 @@ fn set_moderator_category_category() {
     let origin = OriginType::Signed(forum_lead);
     build_test_externalities(config).execute_with(|| {
         let moderator_id = forum_lead;
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
+        let category_id = create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
         set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
         set_moderator_category_mock(
             origin.clone(),
@@ -83,13 +70,7 @@ fn set_moderator_category_account_id() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
     build_test_externalities(default_genesis_config()).execute_with(|| {
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
+        let category_id = create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
         set_moderator_category_mock(
             origin.clone(),
             NOT_REGISTER_MODERATOR_ID,
@@ -101,13 +82,7 @@ fn set_moderator_category_account_id() {
 
     build_test_externalities(config).execute_with(|| {
         let moderator_id = forum_lead;
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
+        let category_id = create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
         set_moderator_category_mock(origin, moderator_id, category_id, true, Ok(()));
     });
 }
@@ -123,8 +98,7 @@ fn create_category_origin() {
             create_category_mock(
                 origins[index].clone(),
                 None,
-                good_category_title(),
-                good_category_description(),
+                generate_hash(),
                 results[index],
             );
         });
@@ -147,34 +121,15 @@ fn create_category_parent() {
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = OriginType::Signed(forum_lead);
         build_test_externalities(config).execute_with(|| {
-            create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
-            create_category_mock(
-                origin.clone(),
-                Some(1),
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
-            create_category_mock(
-                origin.clone(),
-                Some(2),
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
+            create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
+            create_category_mock(origin.clone(), Some(1), generate_hash(), Ok(()));
+            create_category_mock(origin.clone(), Some(2), generate_hash(), Ok(()));
             update_category_mock(origin.clone(), 3, Some(true), None, Ok(()));
             update_category_mock(origin.clone(), 2, None, Some(true), Ok(()));
             create_category_mock(
                 origin.clone(),
                 parents[index],
-                good_category_title(),
-                good_category_description(),
+                generate_hash(),
                 results[index],
             );
         });
@@ -188,102 +143,17 @@ fn create_category_depth() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
     build_test_externalities(config).execute_with(|| {
-        create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-        create_category_mock(
-            origin.clone(),
-            Some(1),
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-        create_category_mock(
-            origin.clone(),
-            Some(2),
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-        create_category_mock(
-            origin.clone(),
-            Some(3),
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
+        create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
+        create_category_mock(origin.clone(), Some(1), generate_hash(), Ok(()));
+        create_category_mock(origin.clone(), Some(2), generate_hash(), Ok(()));
+        create_category_mock(origin.clone(), Some(3), generate_hash(), Ok(()));
         create_category_mock(
             origin.clone(),
             Some(4),
-            good_category_title(),
-            good_category_description(),
+            generate_hash(),
             Err(ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED),
         );
     });
-}
-
-#[test]
-// test category title length
-fn create_category_title() {
-    let config = default_genesis_config();
-    let forum_lead = FORUM_LEAD_ORIGIN_ID;
-    let origin = OriginType::Signed(forum_lead);
-    let titles = vec![
-        generate_text(config.category_title_constraint.min as usize),
-        generate_text((config.category_title_constraint.min - 1) as usize),
-        generate_text((config.category_title_constraint.max() + 1) as usize),
-    ];
-    let results = vec![
-        Ok(()),
-        Err(ERROR_CATEGORY_TITLE_TOO_SHORT),
-        Err(ERROR_CATEGORY_TITLE_TOO_LONG),
-    ];
-    for index in 0..titles.len() {
-        let config = default_genesis_config();
-        build_test_externalities(config).execute_with(|| {
-            create_category_mock(
-                origin.clone(),
-                None,
-                titles[index].clone(),
-                good_category_description(),
-                results[index],
-            );
-        });
-    }
-}
-
-#[test]
-// test for category description text length
-fn create_category_description() {
-    let config = default_genesis_config();
-    let forum_lead = FORUM_LEAD_ORIGIN_ID;
-    let origin = OriginType::Signed(forum_lead);
-    let descriptions = vec![
-        generate_text(config.category_description_constraint.min as usize),
-        generate_text((config.category_description_constraint.min - 1) as usize),
-        generate_text((config.category_description_constraint.max() + 1) as usize),
-    ];
-    let results = vec![
-        Ok(()),
-        Err(ERROR_CATEGORY_DESCRIPTION_TOO_SHORT),
-        Err(ERROR_CATEGORY_DESCRIPTION_TOO_LONG),
-    ];
-    for index in 0..descriptions.len() {
-        let config = default_genesis_config();
-        build_test_externalities(config).execute_with(|| {
-            create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                descriptions[index].clone(),
-                results[index],
-            );
-        });
-    }
 }
 
 /*
@@ -300,13 +170,7 @@ fn update_category_origin() {
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = OriginType::Signed(forum_lead);
         build_test_externalities(config).execute_with(|| {
-            create_category_mock(
-                origin,
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
+            create_category_mock(origin, None, generate_hash(), Ok(()));
             update_category_mock(origins[index].clone(), 1, Some(true), None, results[index]);
         });
     }
@@ -318,13 +182,7 @@ fn update_category_without_updates() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
     build_test_externalities(config).execute_with(|| {
-        create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
+        create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
         update_category_mock(origin, 1, None, None, Err(ERROR_CATEGORY_NOT_BEING_UPDATED));
     });
 }
@@ -335,13 +193,7 @@ fn update_category_without_updates_two() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
     build_test_externalities(config).execute_with(|| {
-        create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
+        create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
         update_category_mock(
             origin,
             1,
@@ -359,13 +211,7 @@ fn update_category_without_updates_three() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
     build_test_externalities(config).execute_with(|| {
-        create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
+        create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
         update_category_mock(origin.clone(), 1, Some(false), Some(true), Ok(()));
         update_category_mock(
             origin.clone(),
@@ -384,13 +230,7 @@ fn update_category_deleted_then_unarchived() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
     build_test_externalities(config).execute_with(|| {
-        create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
+        create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
         update_category_mock(origin.clone(), 1, Some(true), Some(true), Ok(()));
         update_category_mock(
             origin.clone(),
@@ -414,102 +254,15 @@ fn create_thread_origin() {
         let config = default_genesis_config();
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = OriginType::Signed(forum_lead);
-
+        let hash_category = generate_hash();
+        let hash_thread = generate_hash();
         build_test_externalities(config).execute_with(|| {
-            let category_id = create_category_mock(
-                origin,
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
+            let category_id = create_category_mock(origin, None, hash_category, Ok(()));
             create_thread_mock(
                 origins[index].clone(),
                 forum_lead,
                 category_id,
-                good_thread_title(),
-                good_thread_text(),
-                None,
-                results[index],
-            );
-        });
-    }
-}
-
-#[test]
-// test thread title length
-fn create_thread_title() {
-    let constraint = default_genesis_config().thread_title_constraint;
-    let titles = [
-        generate_text(constraint.min as usize),
-        generate_text((constraint.min as usize) - 1),
-        generate_text((constraint.max() as usize) + 1),
-    ];
-    let results = vec![
-        Ok(()),
-        Err(ERROR_THREAD_TITLE_TOO_SHORT),
-        Err(ERROR_THREAD_TITLE_TOO_LONG),
-    ];
-    for index in 0..titles.len() {
-        let config = default_genesis_config();
-        let forum_lead = FORUM_LEAD_ORIGIN_ID;
-        let origin = OriginType::Signed(forum_lead);
-
-        build_test_externalities(config).execute_with(|| {
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
-            create_thread_mock(
-                origin.clone(),
-                forum_lead,
-                category_id,
-                titles[index].clone(),
-                good_thread_text(),
-                None,
-                results[index],
-            );
-        });
-    }
-}
-
-#[test]
-// test thread text length
-fn create_thread_text() {
-    let constraint = default_genesis_config().post_text_constraint;
-    let texts = [
-        generate_text(constraint.min as usize),
-        generate_text((constraint.min as usize) - 1),
-        generate_text((constraint.max() as usize) + 1),
-    ];
-
-    let results = vec![
-        Ok(()),
-        Err(ERROR_POST_TEXT_TOO_SHORT),
-        Err(ERROR_POST_TEXT_TOO_LONG),
-    ];
-    for index in 0..texts.len() {
-        let config = default_genesis_config();
-        let forum_lead = FORUM_LEAD_ORIGIN_ID;
-        let origin = OriginType::Signed(forum_lead);
-
-        build_test_externalities(config).execute_with(|| {
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
-            create_thread_mock(
-                origin.clone(),
-                forum_lead,
-                category_id,
-                good_thread_title(),
-                texts[index].clone(),
+                hash_thread,
                 None,
                 results[index],
             );
@@ -531,20 +284,13 @@ fn create_thread_poll_timestamp() {
         let origin = OriginType::Signed(forum_lead);
 
         build_test_externalities(config).execute_with(|| {
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
+            let category_id = create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
 
             create_thread_mock(
                 origin.clone(),
                 forum_lead,
                 category_id,
-                good_thread_title(),
-                good_thread_text(),
+                generate_hash(),
                 Some(generate_poll_timestamp_cases(index)),
                 results[index],
             );
@@ -565,19 +311,12 @@ fn vote_on_poll_origin() {
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = OriginType::Signed(forum_lead);
         build_test_externalities(config).execute_with(|| {
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
+            let category_id = create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
             let thread_id = create_thread_mock(
                 origin.clone(),
                 forum_lead,
                 category_id,
-                good_thread_title(),
-                good_thread_text(),
+                generate_hash(),
                 Some(generate_poll()),
                 Ok(()),
             );
@@ -600,19 +339,12 @@ fn vote_on_poll_exists() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
     build_test_externalities(config).execute_with(|| {
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
+        let category_id = create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
         let thread_id = create_thread_mock(
             origin.clone(),
             forum_lead,
             category_id,
-            good_thread_title(),
-            good_thread_text(),
+            generate_hash(),
             None,
             Ok(()),
         );
@@ -633,19 +365,12 @@ fn vote_on_poll_expired() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
     build_test_externalities(config).execute_with(|| {
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
+        let category_id = create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
         let thread_id = create_thread_mock(
             origin.clone(),
             forum_lead,
             category_id,
-            good_thread_title(),
-            good_thread_text(),
+            generate_hash(),
             Some(generate_poll()),
             Ok(()),
         );
@@ -667,20 +392,13 @@ fn moderate_thread_origin_ok() {
     let origin = OriginType::Signed(forum_lead);
     build_test_externalities(config).execute_with(|| {
         let moderator_id = forum_lead;
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
+        let category_id = create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
         set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
         let thread_id = create_thread_mock(
             origin.clone(),
             forum_lead,
             category_id,
-            good_thread_title(),
-            good_thread_text(),
+            generate_hash(),
             None,
             Ok(()),
         );
@@ -708,20 +426,13 @@ fn moderate_thread_rationale() {
         let origin = OriginType::Signed(forum_lead);
         build_test_externalities(config).execute_with(|| {
             let moderator_id = forum_lead;
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
+            let category_id = create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
             set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
             let thread_id = create_thread_mock(
                 origin.clone(),
                 forum_lead,
                 category_id,
-                good_thread_title(),
-                good_thread_text(),
+                generate_hash(),
                 None,
                 Ok(()),
             );
@@ -750,20 +461,13 @@ fn add_post_origin() {
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = OriginType::Signed(forum_lead);
         build_test_externalities(config).execute_with(|| {
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
+            let category_id = create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
 
             let thread_id = create_thread_mock(
                 origin.clone(),
                 forum_lead,
                 category_id,
-                good_thread_title(),
-                good_thread_text(),
+                generate_hash(),
                 None,
                 Ok(()),
             );
@@ -771,109 +475,7 @@ fn add_post_origin() {
                 origins[index].clone(),
                 forum_lead,
                 thread_id,
-                good_post_text(),
-                results[index],
-            );
-        });
-    }
-}
-
-#[test]
-// test post text's length
-fn add_post_text() {
-    let constraint = default_genesis_config().post_text_constraint;
-    let texts = vec![
-        generate_text(constraint.min as usize),
-        generate_text((constraint.min - 1) as usize),
-        generate_text((constraint.max() + 1) as usize),
-    ];
-    let results = vec![
-        Ok(()),
-        Err(ERROR_POST_TEXT_TOO_SHORT),
-        Err(ERROR_POST_TEXT_TOO_LONG),
-    ];
-    for index in 0..texts.len() {
-        let config = default_genesis_config();
-        let forum_lead = FORUM_LEAD_ORIGIN_ID;
-        let origin = OriginType::Signed(forum_lead);
-        build_test_externalities(config).execute_with(|| {
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
-
-            let thread_id = create_thread_mock(
-                origin.clone(),
-                forum_lead,
-                category_id,
-                good_thread_title(),
-                good_thread_text(),
-                None,
-                Ok(()),
-            );
-            create_post_mock(
-                origin.clone(),
-                forum_lead,
-                thread_id,
-                texts[index].clone(),
-                results[index],
-            );
-        });
-    }
-}
-
-#[test]
-// test post text's length
-fn edit_post_text() {
-    let constraint = default_genesis_config().post_text_constraint;
-    let texts = vec![
-        generate_text(constraint.min as usize),
-        generate_text((constraint.min - 1) as usize),
-        generate_text((constraint.max() + 1) as usize),
-    ];
-    let results = vec![
-        Ok(()),
-        Err(ERROR_POST_TEXT_TOO_SHORT),
-        Err(ERROR_POST_TEXT_TOO_LONG),
-    ];
-    for index in 0..texts.len() {
-        let config = default_genesis_config();
-        let forum_lead = FORUM_LEAD_ORIGIN_ID;
-        let origin = OriginType::Signed(forum_lead);
-        build_test_externalities(config).execute_with(|| {
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
-
-            let thread_id = create_thread_mock(
-                origin.clone(),
-                forum_lead,
-                category_id,
-                good_thread_title(),
-                good_thread_text(),
-                None,
-                Ok(()),
-            );
-            let post_id = create_post_mock(
-                origin.clone(),
-                forum_lead,
-                thread_id,
-                good_post_text(),
-                Ok(()),
-            );
-
-            edit_post_text_mock(
-                origin.clone(),
-                forum_lead,
-                post_id,
-                texts[index].clone(),
+                generate_hash(),
                 results[index],
             );
         });
@@ -898,20 +500,13 @@ fn react_post() {
         let origin = FORUM_LEAD_ORIGIN;
 
         build_test_externalities(config).execute_with(|| {
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
+            let category_id = create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
 
             let thread_id = create_thread_mock(
                 origin.clone(),
                 forum_lead,
                 category_id,
-                good_thread_title(),
-                good_thread_text(),
+                generate_hash(),
                 None,
                 Ok(()),
             );
@@ -919,7 +514,7 @@ fn react_post() {
                 origin.clone(),
                 forum_lead,
                 thread_id,
-                good_post_text(),
+                generate_hash(),
                 Ok(()),
             );
             assert_eq!(
@@ -955,21 +550,14 @@ fn moderate_post_origin() {
         build_test_externalities(config).execute_with(|| {
             let moderator_id = forum_lead;
 
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
+            let category_id = create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
             set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
 
             let thread_id = create_thread_mock(
                 origin.clone(),
                 forum_lead,
                 category_id,
-                good_thread_title(),
-                good_thread_text(),
+                generate_hash(),
                 None,
                 Ok(()),
             );
@@ -977,7 +565,7 @@ fn moderate_post_origin() {
                 origin.clone(),
                 forum_lead,
                 thread_id,
-                good_post_text(),
+                generate_hash(),
                 Ok(()),
             );
             moderate_post_mock(
@@ -1012,21 +600,14 @@ fn moderate_post_rationale() {
         build_test_externalities(config).execute_with(|| {
             let moderator_id = forum_lead;
 
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
+            let category_id = create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
 
             set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
             let thread_id = create_thread_mock(
                 origin.clone(),
                 forum_lead,
                 category_id,
-                good_thread_title(),
-                good_thread_text(),
+                generate_hash(),
                 None,
                 Ok(()),
             );
@@ -1034,7 +615,7 @@ fn moderate_post_rationale() {
                 origin.clone(),
                 forum_lead,
                 thread_id,
-                good_post_text(),
+                generate_hash(),
                 Ok(()),
             );
             moderate_post_mock(
@@ -1055,20 +636,13 @@ fn set_stickied_threads_ok() {
     let origin = OriginType::Signed(forum_lead);
     build_test_externalities(config).execute_with(|| {
         let moderator_id = forum_lead;
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
+        let category_id = create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
         set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
         let thread_id = create_thread_mock(
             origin.clone(),
             forum_lead,
             category_id,
-            good_thread_title(),
-            good_thread_text(),
+            generate_hash(),
             None,
             Ok(()),
         );
@@ -1083,20 +657,13 @@ fn set_stickied_threads_wrong_moderator() {
     let origin = OriginType::Signed(forum_lead);
     build_test_externalities(config).execute_with(|| {
         let moderator_id = forum_lead;
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
+        let category_id = create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
 
         let thread_id = create_thread_mock(
             origin.clone(),
             forum_lead,
             category_id,
-            good_thread_title(),
-            good_thread_text(),
+            generate_hash(),
             None,
             Ok(()),
         );
@@ -1117,20 +684,13 @@ fn set_stickied_threads_thread_not_exists() {
     let origin = OriginType::Signed(forum_lead);
     build_test_externalities(config).execute_with(|| {
         let moderator_id = forum_lead;
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
+        let category_id = create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
         set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
         let thread_id = create_thread_mock(
             origin.clone(),
             forum_lead,
             category_id,
-            good_thread_title(),
-            good_thread_text(),
+            generate_hash(),
             None,
             Ok(()),
         );
@@ -1152,36 +712,22 @@ fn set_stickied_threads_wrong_category() {
     let origin = OriginType::Signed(forum_lead);
     build_test_externalities(config).execute_with(|| {
         let moderator_id = forum_lead;
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
+        let category_id = create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
         set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
         let _ = create_thread_mock(
             origin.clone(),
             forum_lead,
             category_id,
-            good_thread_title(),
-            good_thread_text(),
+            generate_hash(),
             None,
             Ok(()),
         );
-        let category_id_2 = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
+        let category_id_2 = create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
         let thread_id = create_thread_mock(
             origin.clone(),
             forum_lead,
             category_id_2,
-            good_thread_title(),
-            good_thread_text(),
+            generate_hash(),
             None,
             Ok(()),
         );
@@ -1208,12 +754,7 @@ fn test_migration_not_done() {
         let post_id = 1;
 
         assert_eq!(
-            TestForumModule::create_category(
-                mock_origin(origin.clone()),
-                None,
-                good_category_title(),
-                good_category_description(),
-            ),
+            TestForumModule::create_category(mock_origin(origin.clone()), None, generate_hash(),),
             Err(ERROR_DATA_MIGRATION_NOT_DONE),
         );
 
@@ -1222,8 +763,7 @@ fn test_migration_not_done() {
                 mock_origin(origin.clone()),
                 forum_user_id,
                 category_id,
-                good_thread_title(),
-                good_thread_text(),
+                generate_hash(),
                 None,
             ),
             Err(ERROR_DATA_MIGRATION_NOT_DONE),
@@ -1234,7 +774,7 @@ fn test_migration_not_done() {
                 mock_origin(origin.clone()),
                 forum_user_id,
                 thread_id,
-                good_post_text(),
+                generate_hash(),
             ),
             Err(ERROR_DATA_MIGRATION_NOT_DONE),
         );

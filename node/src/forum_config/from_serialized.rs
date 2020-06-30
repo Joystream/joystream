@@ -3,7 +3,7 @@
 use super::new_validation;
 use node_runtime::{
     forum::{Category, Post, Thread},
-    BlockNumber, CategoryId, ForumConfig, ForumUserId, ModeratorId, Moment, PostId, ThreadId,
+    BlockNumber, CategoryId, ForumConfig, ForumUserId, Hash, ModeratorId, Moment, PostId, ThreadId,
 };
 use serde::Deserialize;
 use serde_json::Result;
@@ -12,15 +12,15 @@ use serde_json::Result;
 struct ForumData {
     categories: Vec<(
         CategoryId,
-        Category<CategoryId, ThreadId, BlockNumber, Moment>,
+        Category<CategoryId, ThreadId, BlockNumber, Moment, Hash>,
     )>,
     posts: Vec<(
         PostId,
-        Post<ForumUserId, ModeratorId, ThreadId, BlockNumber, Moment>,
+        Post<ForumUserId, ModeratorId, ThreadId, BlockNumber, Moment, Hash>,
     )>,
     threads: Vec<(
         ThreadId,
-        Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment>,
+        Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment, Hash>,
     )>,
 }
 

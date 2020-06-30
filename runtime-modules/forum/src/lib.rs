@@ -329,8 +329,6 @@ const ERROR_FORUM_USER_ID_NOT_MATCH_ACCOUNT: &str = "Forum user id not match its
 const ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT: &str = "Moderator id not match its account.";
 
 // Errors about thread.
-const ERROR_THREAD_TITLE_TOO_SHORT: &str = "Thread title too short.";
-const ERROR_THREAD_TITLE_TOO_LONG: &str = "Thread title too long.";
 const ERROR_THREAD_DOES_NOT_EXIST: &str = "Thread does not exist";
 const ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT: &str = "Thread moderation rationale too short.";
 const ERROR_THREAD_MODERATION_RATIONALE_TOO_LONG: &str = "Thread moderation rationale too long.";
@@ -340,12 +338,9 @@ const ERROR_THREAD_WITH_WRONG_CATEGORY_ID: &str = "thread and its category not m
 
 // Errors about post.
 const ERROR_POST_DOES_NOT_EXIST: &str = "Post does not exist.";
-const ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR: &str = "Account does not match post author.";
 const ERROR_POST_MODERATED: &str = "Post is moderated.";
 const ERROR_POST_MODERATION_RATIONALE_TOO_SHORT: &str = "Post moderation rationale too short.";
 const ERROR_POST_MODERATION_RATIONALE_TOO_LONG: &str = "Post moderation rationale too long.";
-const ERROR_POST_TEXT_TOO_SHORT: &str = "Post text too short.";
-const ERROR_POST_TEXT_TOO_LONG: &str = "Post too long.";
 
 // Errors about category.
 const ERROR_CATEGORY_NOT_BEING_UPDATED: &str = "Category not being updated.";
@@ -353,10 +348,6 @@ const ERROR_CATEGORY_CANNOT_BE_UNARCHIVED_WHEN_DELETED: &str =
     "Category cannot be unarchived when deleted.";
 const ERROR_MODERATOR_MODERATE_CATEGORY: &str = "Moderator can not moderate category.";
 const ERROR_EXCEED_MAX_CATEGORY_DEPTH: &str = "Category exceed max depth.";
-const ERROR_CATEGORY_TITLE_TOO_SHORT: &str = "Category title too short.";
-const ERROR_CATEGORY_TITLE_TOO_LONG: &str = "Category title too long.";
-const ERROR_CATEGORY_DESCRIPTION_TOO_SHORT: &str = "Category description too long.";
-const ERROR_CATEGORY_DESCRIPTION_TOO_LONG: &str = "Category description too long.";
 const ERROR_ANCESTOR_CATEGORY_IMMUTABLE: &str =
     "Ancestor category immutable, i.e. deleted or archived";
 const ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED: &str = "Maximum valid category depth exceeded.";
@@ -490,12 +481,12 @@ pub struct Poll<Timestamp> {
 /// Represents a thread post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Post<ForumUserId, ModeratorId, ThreadId, BlockNumber, Moment> {
+pub struct Post<ForumUserId, ModeratorId, ThreadId, BlockNumber, Moment, Hash> {
     /// Id of thread to which this post corresponds.
     pub thread_id: ThreadId,
 
-    /// Current text of post
-    pub current_text: Vec<u8>,
+    /// Unique identifier
+    pub hash: Hash,
 
     /// Possible moderation of this post
     pub moderation: Option<ModerationAction<ModeratorId, BlockNumber, Moment>>,
@@ -520,9 +511,9 @@ pub struct Post<ForumUserId, ModeratorId, ThreadId, BlockNumber, Moment> {
 /// Represents a thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment> {
-    /// Title
-    pub title: Vec<u8>,
+pub struct Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment, Hash> {
+    /// Unique identifier
+    pub hash: Hash,
 
     /// Category in which this thread lives
     pub category_id: CategoryId,
@@ -561,8 +552,8 @@ pub struct Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment> {
 }
 
 /// Implement total posts calculation for thread
-impl<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment>
-    Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment>
+impl<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment, Hash>
+    Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment, Hash>
 {
     /// How many posts created both unmoderated and moderated
     pub fn num_posts_ever_created(&self) -> u32 {
@@ -585,15 +576,12 @@ pub struct ChildPositionInParentCategory<CategoryId> {
 /// Represents a category
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Category<CategoryId, ThreadId, BlockNumber, Moment> {
+pub struct Category<CategoryId, ThreadId, BlockNumber, Moment, Hash> {
     /// Category identifier
     pub id: CategoryId,
 
-    /// Title
-    pub title: Vec<u8>,
-
-    /// Description
-    pub description: Vec<u8>,
+    /// Unique identifier
+    pub hash: Hash,
 
     /// When category was established.
     pub created_at: BlockchainTimestamp<BlockNumber, Moment>,
@@ -630,8 +618,8 @@ pub struct Category<CategoryId, ThreadId, BlockNumber, Moment> {
 }
 
 /// Implement total thread calcuation for category
-impl<CategoryId, ThreadId, BlockNumber, Moment>
-    Category<CategoryId, ThreadId, BlockNumber, Moment>
+impl<CategoryId, ThreadId, BlockNumber, Moment, Hash>
+    Category<CategoryId, ThreadId, BlockNumber, Moment, Hash>
 {
     /// How many threads created both moderated and unmoderated
     pub fn num_threads_created(&self) -> u32 {
@@ -641,30 +629,30 @@ impl<CategoryId, ThreadId, BlockNumber, Moment>
 
 /// Represents a sequence of categories which have child-parent relatioonship
 /// where last element is final ancestor, or root, in the context of the category tree.
-type CategoryTreePath<CategoryId, ThreadId, BlockNumber, Moment> =
-    Vec<Category<CategoryId, ThreadId, BlockNumber, Moment>>;
+type CategoryTreePath<CategoryId, ThreadId, BlockNumber, Moment, Hash> =
+    Vec<Category<CategoryId, ThreadId, BlockNumber, Moment, Hash>>;
 
 // TODO: remove when this issue is solved https://github.com/rust-lang/rust-clippy/issues/3381
 // temporary type for functions argument
-type CategoryTreePathArg<CategoryId, ThreadId, BlockNumber, Moment> =
-    [Category<CategoryId, ThreadId, BlockNumber, Moment>];
+type CategoryTreePathArg<CategoryId, ThreadId, BlockNumber, Moment, Hash> =
+    [Category<CategoryId, ThreadId, BlockNumber, Moment, Hash>];
 
 decl_storage! {
     trait Store for Module<T: Trait> as Forum_1_1 {
         /// Map category identifier to corresponding category.
-        pub CategoryById get(category_by_id) config(): map T::CategoryId => Category<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment>;
+        pub CategoryById get(category_by_id) config(): map T::CategoryId => Category<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment, T::Hash>;
 
         /// Category identifier value to be used for the next Category created.
         pub NextCategoryId get(next_category_id) config(): T::CategoryId;
 
         /// Map thread identifier to corresponding thread.
-        pub ThreadById get(thread_by_id) config(): map T::ThreadId => Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment>;
+        pub ThreadById get(thread_by_id) config(): map T::ThreadId => Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment, T::Hash>;
 
         /// Thread identifier value to be used for next Thread in threadById.
         pub NextThreadId get(next_thread_id) config(): T::ThreadId;
 
         /// Map post identifier to corresponding post.
-        pub PostById get(post_by_id) config(): map T::PostId => Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment>;
+        pub PostById get(post_by_id) config(): map T::PostId => Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment, T::Hash>;
 
         /// Post identifier value to be used for for next post created.
         pub NextPostId get(next_post_id) config(): T::PostId;
@@ -810,7 +798,7 @@ decl_module! {
         }
 
         /// Add a new category.
-        fn create_category(origin, parent: Option<T::CategoryId>, title: Vec<u8>, description: Vec<u8>) -> dispatch::Result {
+        fn create_category(origin, parent: Option<T::CategoryId>, hash: T::Hash) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -819,12 +807,6 @@ decl_module! {
 
             // Not signed by forum LEAD
             Self::ensure_is_forum_lead(&who)?;
-
-            // Validate title
-            Self::ensure_category_title_is_valid(&title)?;
-
-            // Validate description
-            Self::ensure_category_description_is_valid(&description)?;
 
             // Set a temporal mutable variable
             let mut position_in_parent_category_field = None;
@@ -865,8 +847,7 @@ decl_module! {
             // Create new category
             let new_category = Category {
                 id : next_category_id,
-                title,
-                description,
+                hash,
                 created_at : Self::current_block_and_time(),
                 deleted: false,
                 archived: false,
@@ -964,7 +945,7 @@ decl_module! {
         }
 
         /// Create new thread in category with poll
-        fn create_thread(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, title: Vec<u8>, text: Vec<u8>,
+        fn create_thread(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, hash: T::Hash,
             poll: Option<Poll<T::Moment>>,
         ) -> dispatch::Result {
             // Ensure data migration is done
@@ -980,7 +961,7 @@ decl_module! {
             let next_thread_id = <NextThreadId<T>>::get();
 
             // Create a new thread
-            Self::add_new_thread(category_id, forum_user_id, &title, &text, &poll)?;
+            Self::add_new_thread(category_id, forum_user_id, hash, &poll)?;
 
             // Generate event
             Self::deposit_event(RawEvent::ThreadCreated(next_thread_id));
@@ -1092,7 +1073,7 @@ decl_module! {
         }
 
         /// Edit post text
-        fn add_post(origin, forum_user_id: T::ForumUserId, thread_id: T::ThreadId, text: Vec<u8>) -> dispatch::Result {
+        fn add_post(origin, forum_user_id: T::ForumUserId, thread_id: T::ThreadId, hash: T::Hash) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -1110,7 +1091,7 @@ decl_module! {
             let next_post_id = <NextPostId<T>>::get();
 
             // Add new post
-            Self::add_new_post(thread_id, &text, forum_user_id)?;
+            Self::add_new_post(thread_id, hash, forum_user_id)?;
 
             // Generate event
             Self::deposit_event(RawEvent::PostAdded(next_post_id));
@@ -1145,55 +1126,6 @@ decl_module! {
                 <ReactionByPost::<T>>::mutate(post_id, forum_user_id, |value| *value = react);
                 Self::deposit_event(RawEvent::PostReacted(forum_user_id, post_id, react));
             }
-
-            Ok(())
-        }
-
-        /// Edit post text
-        fn edit_post_text(origin, forum_user_id: T::ForumUserId, post_id: T::PostId, new_text: Vec<u8>) -> dispatch::Result {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
-            /* Edit spec.
-              - forum member guard missing
-              - check that both post and thread and category are mutable
-            */
-
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
-            // Check that account is forum member
-            Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
-
-            // Validate post text
-            Self::ensure_post_text_is_valid(&new_text)?;
-
-            // Make sure there exists a mutable post with post id `post_id`
-            let post = Self::ensure_post_is_mutable(&post_id)?;
-
-            // Signer does not match creator of post with identifier postId
-            ensure!(post.author_id == forum_user_id, ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR);
-
-            // Update post text and record update history
-            <PostById<T>>::mutate(post_id, |p| {
-
-                let expired_post_text = PostTextChange {
-                    expired_at: Self::current_block_and_time(),
-                    text: post.current_text.clone()
-                };
-
-                // Set current text to new text
-                p.current_text = new_text;
-
-                // Copy current text to history of expired texts
-                p.text_change_history.push(expired_post_text);
-            });
-
-            // Get text change history length
-            let text_change_history_len = <PostById<T>>::get(post_id).text_change_history.len() as u64;
-
-            // Generate event
-            Self::deposit_event(RawEvent::PostTextUpdated(post_id, text_change_history_len));
 
             Ok(())
         }
@@ -1283,11 +1215,10 @@ impl<T: Trait> Module<T> {
     pub fn add_new_thread(
         category_id: T::CategoryId,
         author_id: T::ForumUserId,
-        title: &[u8],
-        text: &[u8],
+        hash: T::Hash,
         poll: &Option<Poll<T::Moment>>,
     ) -> Result<
-        Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment>,
+        Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment, T::Hash>,
         &'static str,
     > {
         // Ensure data migration is done
@@ -1299,12 +1230,6 @@ impl<T: Trait> Module<T> {
 
         // No ancestor is blocking us doing mutation in this category
         Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
-
-        // Validate title
-        Self::ensure_thread_title_is_valid(&title)?;
-
-        // Validate post text
-        Self::ensure_post_text_is_valid(&text)?;
 
         // Unwrap poll
         if let Some(data) = poll {
@@ -1322,12 +1247,12 @@ impl<T: Trait> Module<T> {
         let new_thread_id = <NextThreadId<T>>::get();
 
         // Add inital post to thread
-        let _ = Self::add_new_post(new_thread_id, &text.to_vec(), author_id);
+        let _ = Self::add_new_post(new_thread_id, hash, author_id);
 
         // Build a new thread
         let new_thread = Thread {
-            title: title.to_vec(),
             category_id,
+            hash,
             moderation: None,
             created_at: Self::current_block_and_time(),
             author_id,
@@ -1356,17 +1281,14 @@ impl<T: Trait> Module<T> {
     // If other module call it, could set the forum user id as zero, which not used by forum module.
     pub fn add_new_post(
         thread_id: T::ThreadId,
-        text: &[u8],
+        hash: T::Hash,
         author_id: T::ForumUserId,
     ) -> Result<
-        Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment>,
+        Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment, T::Hash>,
         &'static str,
     > {
         // Ensure data migration is done
         Self::ensure_data_migration_done()?;
-
-        // Validate post text
-        Self::ensure_post_text_is_valid(text)?;
 
         // Make sure thread exists and is mutable
         let thread = Self::ensure_thread_is_mutable(&thread_id)?;
@@ -1384,7 +1306,7 @@ impl<T: Trait> Module<T> {
         // Build a post
         let new_post = Post {
             thread_id,
-            current_text: text.to_vec(),
+            hash,
             moderation: None,
             text_change_history: vec![],
             created_at: Self::current_block_and_time(),
@@ -1434,43 +1356,11 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn ensure_category_title_is_valid(title: &[u8]) -> dispatch::Result {
-        CategoryTitleConstraint::get().ensure_valid(
-            title.len(),
-            ERROR_CATEGORY_TITLE_TOO_SHORT,
-            ERROR_CATEGORY_TITLE_TOO_LONG,
-        )
-    }
-
-    fn ensure_category_description_is_valid(description: &[u8]) -> dispatch::Result {
-        CategoryDescriptionConstraint::get().ensure_valid(
-            description.len(),
-            ERROR_CATEGORY_DESCRIPTION_TOO_SHORT,
-            ERROR_CATEGORY_DESCRIPTION_TOO_LONG,
-        )
-    }
-
     fn ensure_thread_moderation_rationale_is_valid(rationale: &[u8]) -> dispatch::Result {
         ThreadModerationRationaleConstraint::get().ensure_valid(
             rationale.len(),
             ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT,
             ERROR_THREAD_MODERATION_RATIONALE_TOO_LONG,
-        )
-    }
-
-    fn ensure_thread_title_is_valid(title: &[u8]) -> dispatch::Result {
-        ThreadTitleConstraint::get().ensure_valid(
-            title.len(),
-            ERROR_THREAD_TITLE_TOO_SHORT,
-            ERROR_THREAD_TITLE_TOO_LONG,
-        )
-    }
-
-    fn ensure_post_text_is_valid(text: &[u8]) -> dispatch::Result {
-        PostTextConstraint::get().ensure_valid(
-            text.len(),
-            ERROR_POST_TEXT_TOO_SHORT,
-            ERROR_POST_TEXT_TOO_LONG,
         )
     }
 
@@ -1510,7 +1400,7 @@ impl<T: Trait> Module<T> {
     fn ensure_post_is_mutable(
         post_id: &T::PostId,
     ) -> Result<
-        Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment>,
+        Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment, T::Hash>,
         &'static str,
     > {
         // Make sure post exists
@@ -1528,7 +1418,7 @@ impl<T: Trait> Module<T> {
     fn ensure_post_exists(
         post_id: &T::PostId,
     ) -> Result<
-        Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment>,
+        Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment, T::Hash>,
         &'static str,
     > {
         if <PostById<T>>::exists(post_id) {
@@ -1541,7 +1431,7 @@ impl<T: Trait> Module<T> {
     fn ensure_thread_is_mutable(
         thread_id: &T::ThreadId,
     ) -> Result<
-        Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment>,
+        Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment, T::Hash>,
         &'static str,
     > {
         // Make sure thread exists
@@ -1559,7 +1449,7 @@ impl<T: Trait> Module<T> {
     fn ensure_thread_exists(
         thread_id: &T::ThreadId,
     ) -> Result<
-        Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment>,
+        Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment, T::Hash>,
         &'static str,
     > {
         if <ThreadById<T>>::exists(thread_id) {
@@ -1610,12 +1500,14 @@ impl<T: Trait> Module<T> {
             T::ThreadId,
             T::BlockNumber,
             T::Moment,
+            T::Hash,
         >,
     ) -> dispatch::Result {
         // Is parent category directly or indirectly deleted or archived category
         ensure!(
             !category_tree_path.iter().any(
-                |c: &Category<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment>| c.deleted
+                |c: &Category<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment, T::Hash>| c
+                    .deleted
                     || c.archived
             ),
             ERROR_ANCESTOR_CATEGORY_IMMUTABLE
@@ -1630,6 +1522,7 @@ impl<T: Trait> Module<T> {
             T::ThreadId,
             T::BlockNumber,
             T::Moment,
+            T::Hash,
         >,
     ) -> dispatch::Result {
         Self::ensure_can_mutate_in_path_leaf(category_tree_path)?;
@@ -1648,8 +1541,10 @@ impl<T: Trait> Module<T> {
     /// Build category tree path and validate them
     fn ensure_valid_category_and_build_category_tree_path(
         category_id: T::CategoryId,
-    ) -> Result<CategoryTreePath<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment>, &'static str>
-    {
+    ) -> Result<
+        CategoryTreePath<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment, T::Hash>,
+        &'static str,
+    > {
         ensure!(
             <CategoryById<T>>::exists(&category_id),
             ERROR_CATEGORY_DOES_NOT_EXIST
@@ -1667,7 +1562,7 @@ impl<T: Trait> Module<T> {
     /// Requires that `category_id` is valid
     fn build_category_tree_path(
         category_id: T::CategoryId,
-    ) -> CategoryTreePath<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment> {
+    ) -> CategoryTreePath<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment, T::Hash> {
         // Get path from parent to root of category tree.
         let mut category_tree_path = vec![];
 
@@ -1680,7 +1575,7 @@ impl<T: Trait> Module<T> {
     /// Requires that `category_id` is valid
     fn _build_category_tree_path(
         category_id: T::CategoryId,
-        path: &mut CategoryTreePath<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment>,
+        path: &mut CategoryTreePath<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment, T::Hash>,
     ) {
         // Grab category
         let category = <CategoryById<T>>::get(category_id);
@@ -1719,7 +1614,14 @@ impl<T: Trait> Module<T> {
 
     /// Check the vote is valid
     fn ensure_vote_is_valid(
-        thread: &Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment>,
+        thread: &Thread<
+            T::ForumUserId,
+            T::ModeratorId,
+            T::CategoryId,
+            T::BlockNumber,
+            T::Moment,
+            T::Hash,
+        >,
         index: u32,
     ) -> Result<(), &'static str> {
         // Poll not existed
