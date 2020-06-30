@@ -31,11 +31,14 @@ export default class WorkingGroupsEvictWorker extends WorkingGroupsCommandBase {
         const groupMember = await this.getApi().groupMember(this.group, workerId);
 
         const rationale = await this.promptForParam('Bytes', 'rationale');  // TODO: Terminate worker text limits? (minMaxStr)
-        const shouldSlash = await this.simplePrompt({
-            message: `Should the worker stake (${formatBalance(groupMember.stake)}) be slashed?`,
-            type: 'confirm',
-            default: false
-        });
+        const shouldSlash = groupMember.stake
+            ?
+                await this.simplePrompt({
+                    message: `Should the worker stake (${formatBalance(groupMember.stake)}) be slashed?`,
+                    type: 'confirm',
+                    default: false
+                })
+            : false;
 
         await this.requestAccountDecoding(account);
 

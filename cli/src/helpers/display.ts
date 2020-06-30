@@ -1,6 +1,7 @@
 import { cli, Table } from 'cli-ux';
 import chalk from 'chalk';
 import { NameValueObj } from '../Types';
+import { AccountId } from '@polkadot/types/interfaces';
 
 export function displayHeader(caption: string, placeholderSign: string = '_', size: number = 50) {
     let singsPerSide: number = Math.floor((size - (caption.length + 2)) / 2);
@@ -64,4 +65,8 @@ export function toFixedLength(text: string, length: number, spacesOnLeft = false
     while(text.length < length) { spacesOnLeft ? text = ' '+text : text += ' ' };
 
     return text;
+}
+
+export function shortAddress(address: AccountId | string): string {
+    return address.toString().substr(0, 6) + '...' + address.toString().substr(-6);
 }

@@ -105,7 +105,7 @@ export type GroupMember = {
     memberId: MemberId;
     roleAccount: AccountId;
     profile: Profile;
-    stake: Balance;
+    stake?: Balance;
     reward?: Reward;
 }
 

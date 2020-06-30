@@ -247,7 +247,7 @@ export default class Api {
             throw new Error(`Group member profile not found! (member id: ${memberId.toNumber()})`);
         }
 
-        let stake: Balance = this._api.createType("Balance", 0);
+        let stake: Balance | undefined;
         if (worker.role_stake_profile && worker.role_stake_profile.isSome) {
             stake = await this.workerStake(worker.role_stake_profile.unwrap());
         }

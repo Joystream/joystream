@@ -8,8 +8,10 @@ import { minMaxInt } from '../../validators/common';
 import chalk from 'chalk';
 import ExitCodes from '../../ExitCodes';
 
-export default class WorkingGroupsSlashWorker extends WorkingGroupsCommandBase {
-    static description = 'Slashes given worker stake. Requires lead access.';
+export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsCommandBase {
+    static description =
+        'Decreases given worker stake by an amount that will be returned to the worker role account. ' +
+        'Requires lead access.';
     static args = [
         {
             name: 'workerId',
@@ -22,7 +24,7 @@ export default class WorkingGroupsSlashWorker extends WorkingGroupsCommandBase {
     };
 
     async run() {
-        const { args } = this.parse(WorkingGroupsSlashWorker);
+        const { args } = this.parse(WorkingGroupsDecreaseWorkerStake);
 
         const account = await this.getRequiredSelectedAccount();
         // Lead-only gate
@@ -45,13 +47,16 @@ export default class WorkingGroupsSlashWorker extends WorkingGroupsCommandBase {
         await this.sendAndFollowExtrinsic(
             account,
             apiModuleByGroup[this.group],
-            'slashStake',
+            'decreaseStake',
             [
                 new WorkerId(workerId),
                 balance
             ]
         );
 
-        this.log(chalk.green(`${chalk.white(formatBalance(balance))} from worker ${chalk.white(workerId)} stake has been succesfully slashed!`));
+        this.log(chalk.green(
+            `${chalk.white(formatBalance(balance))} from worker ${chalk.white(workerId)} stake `+
+            `has been returned to worker's role account (${chalk.white(groupMember.roleAccount.toString())})!`
+        ));
     }
 }

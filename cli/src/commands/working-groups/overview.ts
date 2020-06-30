@@ -1,6 +1,7 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase';
 import { displayHeader, displayNameValueTable, displayTable } from '../../helpers/display';
 import { formatBalance } from '@polkadot/util';
+import { shortAddress } from '../../helpers/display';
 import chalk from 'chalk';
 
 export default class WorkingGroupsOverview extends WorkingGroupsCommandBase {
@@ -31,7 +32,8 @@ export default class WorkingGroupsOverview extends WorkingGroupsCommandBase {
             'Member id': m.memberId.toString(),
             'Member handle': m.profile.handle.toString(),
             'Stake': formatBalance(m.stake),
-            'Earned': formatBalance(m.reward?.totalRecieved)
+            'Earned': formatBalance(m.reward?.totalRecieved),
+            'Role account': shortAddress(m.roleAccount)
         }));
         displayTable(membersRows, 5);
     }
