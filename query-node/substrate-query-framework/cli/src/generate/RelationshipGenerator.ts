@@ -102,8 +102,10 @@ export class RelationshipGenerator {
 
           if (field.isList && relatedField.isList) {
             return this.addMany2Many(field, relatedField, currentObject, relatedObject);
+          } else if (field.isList && !relatedField.isList) {
+            return this.addOne2Many(field, relatedField, currentObject, relatedObject);
           }
-          return this.addOne2Many(field, relatedField, currentObject, relatedObject);
+          return this.addOne2One(field, relatedField, currentObject, relatedObject);
         }
 
         if (!field.isBuildinType && !field.isList && !field.derivedFrom) {
