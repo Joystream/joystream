@@ -479,29 +479,6 @@ pub struct Thread<ForumUserId, ModeratorId, CategoryId, Moment, Hash> {
 
     /// poll description.
     pub poll: Option<Poll<Moment, Hash>>,
-
-    /// Number of unmoderated and moderated posts in this thread.
-    /// The sum of these two only increases, and former is incremented
-    /// for each new post added to this thread. A new post is added
-    /// with a `nr_in_thread` equal to this sum
-    ///
-    /// When there is a moderation
-    /// of a post, the variables are incremented and decremented, respectively.
-    ///
-    /// These values are vital for light clients, in order to validate that they are
-    /// not being censored from posts in a thread.
-    pub num_unmoderated_posts: u32,
-    pub num_moderated_posts: u32,
-}
-
-/// Implement total posts calculation for thread
-impl<ForumUserId, ModeratorId, CategoryId, Moment, Hash>
-    Thread<ForumUserId, ModeratorId, CategoryId, Moment, Hash>
-{
-    /// How many posts created both unmoderated and moderated
-    pub fn num_posts_ever_created(&self) -> u32 {
-        self.num_unmoderated_posts + self.num_moderated_posts
-    }
 }
 
 /// Represents child category position in parent.
@@ -547,22 +524,15 @@ pub struct Category<CategoryId, ThreadId, Hash> {
     /// These values are vital for light clients, in order to validate that they are
     /// not being censored from subcategories or threads in a category.
     pub num_direct_subcategories: u32,
-    pub num_direct_unmoderated_threads: u32,
-    pub num_direct_moderated_threads: u32,
+
+    // Number of threads in category
+    pub num_direct_threads: u32,
 
     /// Position as child in parent, if present, otherwise this category is a root category
     pub position_in_parent_category: Option<ChildPositionInParentCategory<CategoryId>>,
 
     /// Sticky threads list
     pub sticky_thread_ids: Vec<ThreadId>,
-}
-
-/// Implement total thread calcuation for category
-impl<CategoryId, ThreadId, Hash> Category<CategoryId, ThreadId, Hash> {
-    /// How many threads created both moderated and unmoderated
-    pub fn num_threads_created(&self) -> u32 {
-        self.num_direct_unmoderated_threads + self.num_direct_moderated_threads
-    }
 }
 
 /// Represents a sequence of categories which have child-parent relatioonship
@@ -769,8 +739,7 @@ decl_module! {
                 deleted: false,
                 archived: false,
                 num_direct_subcategories: 0,
-                num_direct_unmoderated_threads: 0,
-                num_direct_moderated_threads: 0,
+                num_direct_threads: 0,
                 position_in_parent_category: position_in_parent_category_field,
                 sticky_thread_ids: vec![],
             };
@@ -972,12 +941,6 @@ decl_module! {
             // Insert new value into map
             <ThreadById<T>>::mutate(thread_id, |value| *value = thread.clone());
 
-            // Update moderation/umoderation count of corresponding category
-            <CategoryById<T>>::mutate(thread.category_id, |category| {
-                category.num_direct_unmoderated_threads -= 1;
-                category.num_direct_moderated_threads += 1;
-            });
-
             // Generate event
             Self::deposit_event(RawEvent::ThreadModerated(thread_id));
 
@@ -1070,12 +1033,6 @@ decl_module! {
             // Update post with moderation
             <PostById<T>>::mutate(post_id, |p| p.moderation = Some(moderation_action));
 
-            // Update moderated and unmoderated post count of corresponding thread
-            <ThreadById<T>>::mutate(post.thread_id, |t| {
-                t.num_unmoderated_posts -= 1;
-                t.num_moderated_posts += 1;
-            });
-
             // Generate event
             Self::deposit_event(RawEvent::PostModerated(post_id));
 
@@ -1161,8 +1118,6 @@ impl<T: Trait> Module<T> {
             moderation: None,
             author_id,
             poll: poll.clone(),
-            num_unmoderated_posts: 0,
-            num_moderated_posts: 0,
         };
 
         // Store thread
@@ -1171,8 +1126,8 @@ impl<T: Trait> Module<T> {
         // Update next thread id
         <NextThreadId<T>>::mutate(|n| *n += One::one());
 
-        // Update unmoderated thread count in corresponding category
-        <CategoryById<T>>::mutate(category_id, |c| c.num_direct_unmoderated_threads += 1);
+        // Update category's thread counter
+        <CategoryById<T>>::mutate(category_id, |c| c.num_direct_threads += 1);
 
         Ok(new_thread)
     }
@@ -1216,9 +1171,6 @@ impl<T: Trait> Module<T> {
 
         // Update next post id
         <NextPostId<T>>::mutate(|n| *n += One::one());
-
-        // Update unmoderated post count of thread
-        <ThreadById<T>>::mutate(thread_id, |t| t.num_unmoderated_posts += 1);
 
         Ok(new_post)
     }
