@@ -92,12 +92,12 @@ fn update_entity_permissions_of_non_existent_entity() {
 
         // Make an attempt to update entity permissions for chosen entity under non lead origin
         let update_entity_permissions_result =
-            update_entity_permissions(FIRST_MEMBER_ORIGIN, UNKNOWN_ENTITY_ID, None, Some(false));
+            update_entity_permissions(LEAD_ORIGIN, UNKNOWN_ENTITY_ID, None, Some(false));
 
         // Failure checked
         assert_failure(
             update_entity_permissions_result,
-            ERROR_LEAD_AUTH_FAILED,
+            ERROR_ENTITY_NOT_FOUND,
             number_of_events_before_call,
         );
     })
