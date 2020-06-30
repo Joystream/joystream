@@ -7,36 +7,6 @@ use crate::mock::*;
 /// second layer is each parameter of the specific method.
 
 /*
- * add labels
- */
-
-#[test]
-// test labels' text length
-fn add_labels() {
-    let config = default_genesis_config();
-    let labels = vec![
-        vec![generate_text(config.label_name_constraint.min as usize)],
-        vec![generate_text(
-            (config.label_name_constraint.min - 1) as usize,
-        )],
-        vec![generate_text(
-            (config.label_name_constraint.max() + 1) as usize,
-        )],
-    ];
-    let results = vec![
-        Ok(()),
-        Err(ERROR_LABEL_TOO_SHORT),
-        Err(ERROR_LABEL_TOO_LONG),
-    ];
-    for index in 0..labels.len() {
-        let config = default_genesis_config();
-        build_test_externalities(config).execute_with(|| {
-            add_labels_mock(labels[index].clone(), results[index]);
-        })
-    }
-}
-
-/*
  * set_max_category_depth
  */
 #[test]
@@ -67,7 +37,6 @@ fn set_moderator_category_origin() {
             None,
             good_category_title(),
             good_category_description(),
-            &BTreeSet::new(),
             Ok(()),
         );
         set_moderator_category_mock(origin, moderator_id, category_id, true, Ok(()));
@@ -94,7 +63,6 @@ fn set_moderator_category_category() {
             None,
             good_category_title(),
             good_category_description(),
-            &BTreeSet::new(),
             Ok(()),
         );
         set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
@@ -120,7 +88,6 @@ fn set_moderator_category_account_id() {
             None,
             good_category_title(),
             good_category_description(),
-            &BTreeSet::new(),
             Ok(()),
         );
         set_moderator_category_mock(
@@ -139,7 +106,6 @@ fn set_moderator_category_account_id() {
             None,
             good_category_title(),
             good_category_description(),
-            &BTreeSet::new(),
             Ok(()),
         );
         set_moderator_category_mock(origin, moderator_id, category_id, true, Ok(()));
@@ -159,7 +125,6 @@ fn create_category_origin() {
                 None,
                 good_category_title(),
                 good_category_description(),
-                &BTreeSet::new(),
                 results[index],
             );
         });
@@ -187,7 +152,6 @@ fn create_category_parent() {
                 None,
                 good_category_title(),
                 good_category_description(),
-                &BTreeSet::new(),
                 Ok(()),
             );
             create_category_mock(
@@ -195,7 +159,6 @@ fn create_category_parent() {
                 Some(1),
                 good_category_title(),
                 good_category_description(),
-                &BTreeSet::new(),
                 Ok(()),
             );
             create_category_mock(
@@ -203,7 +166,6 @@ fn create_category_parent() {
                 Some(2),
                 good_category_title(),
                 good_category_description(),
-                &BTreeSet::new(),
                 Ok(()),
             );
             update_category_mock(origin.clone(), 3, Some(true), None, Ok(()));
@@ -213,7 +175,6 @@ fn create_category_parent() {
                 parents[index],
                 good_category_title(),
                 good_category_description(),
-                &BTreeSet::new(),
                 results[index],
             );
         });
@@ -232,7 +193,6 @@ fn create_category_depth() {
             None,
             good_category_title(),
             good_category_description(),
-            &BTreeSet::new(),
             Ok(()),
         );
         create_category_mock(
@@ -240,7 +200,6 @@ fn create_category_depth() {
             Some(1),
             good_category_title(),
             good_category_description(),
-            &BTreeSet::new(),
             Ok(()),
         );
         create_category_mock(
@@ -248,7 +207,6 @@ fn create_category_depth() {
             Some(2),
             good_category_title(),
             good_category_description(),
-            &BTreeSet::new(),
             Ok(()),
         );
         create_category_mock(
@@ -256,7 +214,6 @@ fn create_category_depth() {
             Some(3),
             good_category_title(),
             good_category_description(),
-            &BTreeSet::new(),
             Ok(()),
         );
         create_category_mock(
@@ -264,7 +221,6 @@ fn create_category_depth() {
             Some(4),
             good_category_title(),
             good_category_description(),
-            &BTreeSet::new(),
             Err(ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED),
         );
     });
@@ -294,7 +250,6 @@ fn create_category_title() {
                 None,
                 titles[index].clone(),
                 good_category_description(),
-                &BTreeSet::new(),
                 results[index],
             );
         });
@@ -325,56 +280,6 @@ fn create_category_description() {
                 None,
                 good_category_title(),
                 descriptions[index].clone(),
-                &BTreeSet::new(),
-                results[index],
-            );
-        });
-    }
-}
-
-#[test]
-// test if category labels is valid
-fn create_category_labels() {
-    let forum_lead = FORUM_LEAD_ORIGIN_ID;
-    let origin = OriginType::Signed(forum_lead);
-    let labels: Vec<BTreeSet<<Runtime as Trait>::LabelId>> = vec![
-        {
-            let mut a = BTreeSet::<<Runtime as Trait>::LabelId>::new();
-            a.insert(1);
-            a
-        },
-        {
-            let mut a = BTreeSet::<<Runtime as Trait>::LabelId>::new();
-            a.insert(1);
-            a.insert(2);
-            a.insert(3);
-            a.insert(4);
-            a.insert(5);
-            a.insert(6);
-            a
-        },
-        {
-            let mut a = BTreeSet::<<Runtime as Trait>::LabelId>::new();
-            a.insert(100);
-            a
-        },
-    ];
-    let results = vec![
-        Ok(()),
-        Err(ERROR_TOO_MUCH_LABELS),
-        Err(ERROR_LABEL_INDEX_IS_WRONG),
-    ];
-
-    for index in 0..labels.len() {
-        let config = default_genesis_config();
-        build_test_externalities(config).execute_with(|| {
-            create_labels_mock();
-            create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                &labels[index],
                 results[index],
             );
         });
@@ -400,7 +305,6 @@ fn update_category_origin() {
                 None,
                 good_category_title(),
                 good_category_description(),
-                &BTreeSet::new(),
                 Ok(()),
             );
             update_category_mock(origins[index].clone(), 1, Some(true), None, results[index]);
@@ -419,7 +323,6 @@ fn update_category_without_updates() {
             None,
             good_category_title(),
             good_category_description(),
-            &BTreeSet::new(),
             Ok(()),
         );
         update_category_mock(origin, 1, None, None, Err(ERROR_CATEGORY_NOT_BEING_UPDATED));
@@ -437,7 +340,6 @@ fn update_category_without_updates_two() {
             None,
             good_category_title(),
             good_category_description(),
-            &BTreeSet::new(),
             Ok(()),
         );
         update_category_mock(
@@ -462,7 +364,6 @@ fn update_category_without_updates_three() {
             None,
             good_category_title(),
             good_category_description(),
-            &BTreeSet::new(),
             Ok(()),
         );
         update_category_mock(origin.clone(), 1, Some(false), Some(true), Ok(()));
@@ -488,7 +389,6 @@ fn update_category_deleted_then_unarchived() {
             None,
             good_category_title(),
             good_category_description(),
-            &BTreeSet::new(),
             Ok(()),
         );
         update_category_mock(origin.clone(), 1, Some(true), Some(true), Ok(()));
@@ -498,93 +398,6 @@ fn update_category_deleted_then_unarchived() {
             Some(false),
             None,
             Err(ERROR_CATEGORY_CANNOT_BE_UNARCHIVED_WHEN_DELETED),
-        );
-    });
-}
-
-/*
- ** update_category_labels
- */
-#[test]
-// test category labels is valid
-fn update_category_labels() {
-    let labels: Vec<BTreeSet<<Runtime as Trait>::ThreadId>> = vec![
-        {
-            let mut a = BTreeSet::<<Runtime as Trait>::ThreadId>::new();
-            a.insert(1);
-            a
-        },
-        {
-            let mut a = BTreeSet::<<Runtime as Trait>::ThreadId>::new();
-            a.insert(1);
-            a.insert(2);
-            a.insert(3);
-            a.insert(4);
-            a.insert(5);
-            a.insert(6);
-            a
-        },
-        {
-            let mut a = BTreeSet::<<Runtime as Trait>::ThreadId>::new();
-            a.insert(100);
-            a
-        },
-    ];
-    let results = vec![
-        Ok(()),
-        Err(ERROR_TOO_MUCH_LABELS),
-        Err(ERROR_LABEL_INDEX_IS_WRONG),
-    ];
-
-    for index in 0..labels.len() {
-        let config = default_genesis_config();
-        let forum_lead = FORUM_LEAD_ORIGIN_ID;
-        let origin = OriginType::Signed(forum_lead);
-        build_test_externalities(config).execute_with(|| {
-            create_labels_mock();
-            let moderator_id = forum_lead;
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                &BTreeSet::new(),
-                Ok(()),
-            );
-            update_category_labels_mock(
-                origin.clone(),
-                moderator_id,
-                category_id,
-                labels[index].clone(),
-                results[index],
-            );
-        });
-    }
-}
-
-#[test]
-// test setting category moderator
-fn update_category_labels_moderator() {
-    let config = default_genesis_config();
-    let forum_lead = FORUM_LEAD_ORIGIN_ID;
-    let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
-        create_labels_mock();
-        let moderator_id = forum_lead;
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            &BTreeSet::new(),
-            Ok(()),
-        );
-        update_category_labels_mock(
-            origin.clone(),
-            moderator_id,
-            category_id,
-            BTreeSet::new(),
-            Ok(()),
         );
     });
 }
@@ -608,7 +421,6 @@ fn create_thread_origin() {
                 None,
                 good_category_title(),
                 good_category_description(),
-                &BTreeSet::new(),
                 Ok(()),
             );
             create_thread_mock(
@@ -617,7 +429,6 @@ fn create_thread_origin() {
                 category_id,
                 good_thread_title(),
                 good_thread_text(),
-                &BTreeSet::new(),
                 None,
                 results[index],
             );
@@ -650,7 +461,6 @@ fn create_thread_title() {
                 None,
                 good_category_title(),
                 good_category_description(),
-                &BTreeSet::new(),
                 Ok(()),
             );
             create_thread_mock(
@@ -659,7 +469,6 @@ fn create_thread_title() {
                 category_id,
                 titles[index].clone(),
                 good_thread_text(),
-                &BTreeSet::new(),
                 None,
                 results[index],
             );
@@ -693,7 +502,6 @@ fn create_thread_text() {
                 None,
                 good_category_title(),
                 good_category_description(),
-                &BTreeSet::new(),
                 Ok(()),
             );
             create_thread_mock(
@@ -702,45 +510,6 @@ fn create_thread_text() {
                 category_id,
                 good_thread_title(),
                 texts[index].clone(),
-                &BTreeSet::new(),
-                None,
-                results[index],
-            );
-        });
-    }
-}
-
-#[test]
-// test thread label setting is valid
-fn create_thread_labels() {
-    let labels = generate_label_index_cases();
-    let results = vec![
-        Ok(()),
-        Err(ERROR_TOO_MUCH_LABELS),
-        Err(ERROR_LABEL_INDEX_IS_WRONG),
-    ];
-    for index in 0..labels.len() {
-        let config = default_genesis_config();
-        let forum_lead = FORUM_LEAD_ORIGIN_ID;
-        let origin = OriginType::Signed(forum_lead);
-
-        build_test_externalities(config).execute_with(|| {
-            create_labels_mock();
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                &BTreeSet::new(),
-                Ok(()),
-            );
-            create_thread_mock(
-                origin.clone(),
-                forum_lead,
-                category_id,
-                good_thread_title(),
-                good_thread_text(),
-                &labels[index],
                 None,
                 results[index],
             );
@@ -762,13 +531,11 @@ fn create_thread_poll_timestamp() {
         let origin = OriginType::Signed(forum_lead);
 
         build_test_externalities(config).execute_with(|| {
-            create_labels_mock();
             let category_id = create_category_mock(
                 origin.clone(),
                 None,
                 good_category_title(),
                 good_category_description(),
-                &BTreeSet::new(),
                 Ok(()),
             );
 
@@ -778,111 +545,7 @@ fn create_thread_poll_timestamp() {
                 category_id,
                 good_thread_title(),
                 good_thread_text(),
-                &BTreeSet::new(),
                 Some(generate_poll_timestamp_cases(index)),
-                results[index],
-            );
-        });
-    }
-}
-
-/*
- ** update_thread_labels_by_author
- */
-
-#[test]
-// test if thread labels are valid
-fn update_thread_labels_by_author() {
-    let labels = generate_label_index_cases();
-    let results = vec![
-        Ok(()),
-        Err(ERROR_TOO_MUCH_LABELS),
-        Err(ERROR_LABEL_INDEX_IS_WRONG),
-    ];
-    for index in 0..labels.len() {
-        let config = default_genesis_config();
-        let forum_lead = FORUM_LEAD_ORIGIN_ID;
-        let origin = OriginType::Signed(forum_lead);
-
-        build_test_externalities(config).execute_with(|| {
-            create_labels_mock();
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                &BTreeSet::new(),
-                Ok(()),
-            );
-            let thread_id = create_thread_mock(
-                origin.clone(),
-                forum_lead,
-                category_id,
-                good_thread_title(),
-                good_thread_text(),
-                &BTreeSet::new(),
-                None,
-                Ok(()),
-            );
-            update_thread_labels_by_author_mock(
-                origin.clone(),
-                forum_lead,
-                thread_id,
-                labels[index].clone(),
-                results[index],
-            );
-        });
-    }
-}
-
-/*
- ** update_thread_labels_by_moderator
- */
-
-#[test]
-// test if thread labels are valid
-fn update_thread_labels_by_moderator() {
-    let labels = generate_label_index_cases();
-    let results = vec![
-        Ok(()),
-        Err(ERROR_TOO_MUCH_LABELS),
-        Err(ERROR_LABEL_INDEX_IS_WRONG),
-    ];
-    for index in 0..labels.len() {
-        let config = default_genesis_config();
-        let forum_lead = FORUM_LEAD_ORIGIN_ID;
-        let origin = OriginType::Signed(forum_lead);
-
-        build_test_externalities(config).execute_with(|| {
-            create_labels_mock();
-            let moderator_id = forum_lead;
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                &BTreeSet::new(),
-                Ok(()),
-            );
-
-            set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
-
-            let thread_id = create_thread_mock(
-                origin.clone(),
-                forum_lead,
-                category_id,
-                good_thread_title(),
-                good_thread_text(),
-                &BTreeSet::new(),
-                None,
-                Ok(()),
-            );
-
-            update_thread_labels_by_moderator_mock(
-                origin.clone(),
-                moderator_id,
-                thread_id,
-                labels[index].clone(),
                 results[index],
             );
         });
@@ -907,7 +570,6 @@ fn vote_on_poll_origin() {
                 None,
                 good_category_title(),
                 good_category_description(),
-                &BTreeSet::new(),
                 Ok(()),
             );
             let thread_id = create_thread_mock(
@@ -916,7 +578,6 @@ fn vote_on_poll_origin() {
                 category_id,
                 good_thread_title(),
                 good_thread_text(),
-                &BTreeSet::new(),
                 Some(generate_poll()),
                 Ok(()),
             );
@@ -944,7 +605,6 @@ fn vote_on_poll_exists() {
             None,
             good_category_title(),
             good_category_description(),
-            &BTreeSet::new(),
             Ok(()),
         );
         let thread_id = create_thread_mock(
@@ -953,7 +613,6 @@ fn vote_on_poll_exists() {
             category_id,
             good_thread_title(),
             good_thread_text(),
-            &BTreeSet::new(),
             None,
             Ok(()),
         );
@@ -979,7 +638,6 @@ fn vote_on_poll_expired() {
             None,
             good_category_title(),
             good_category_description(),
-            &BTreeSet::new(),
             Ok(()),
         );
         let thread_id = create_thread_mock(
@@ -988,7 +646,6 @@ fn vote_on_poll_expired() {
             category_id,
             good_thread_title(),
             good_thread_text(),
-            &BTreeSet::new(),
             Some(generate_poll()),
             Ok(()),
         );
@@ -1015,7 +672,6 @@ fn moderate_thread_origin_ok() {
             None,
             good_category_title(),
             good_category_description(),
-            &BTreeSet::new(),
             Ok(()),
         );
         set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
@@ -1025,7 +681,6 @@ fn moderate_thread_origin_ok() {
             category_id,
             good_thread_title(),
             good_thread_text(),
-            &BTreeSet::new(),
             None,
             Ok(()),
         );
@@ -1058,7 +713,6 @@ fn moderate_thread_rationale() {
                 None,
                 good_category_title(),
                 good_category_description(),
-                &BTreeSet::new(),
                 Ok(()),
             );
             set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
@@ -1068,7 +722,6 @@ fn moderate_thread_rationale() {
                 category_id,
                 good_thread_title(),
                 good_thread_text(),
-                &BTreeSet::new(),
                 None,
                 Ok(()),
             );
@@ -1102,7 +755,6 @@ fn add_post_origin() {
                 None,
                 good_category_title(),
                 good_category_description(),
-                &BTreeSet::new(),
                 Ok(()),
             );
 
@@ -1112,7 +764,6 @@ fn add_post_origin() {
                 category_id,
                 good_thread_title(),
                 good_thread_text(),
-                &BTreeSet::new(),
                 None,
                 Ok(()),
             );
@@ -1151,7 +802,6 @@ fn add_post_text() {
                 None,
                 good_category_title(),
                 good_category_description(),
-                &BTreeSet::new(),
                 Ok(()),
             );
 
@@ -1161,7 +811,6 @@ fn add_post_text() {
                 category_id,
                 good_thread_title(),
                 good_thread_text(),
-                &BTreeSet::new(),
                 None,
                 Ok(()),
             );
@@ -1200,7 +849,6 @@ fn edit_post_text() {
                 None,
                 good_category_title(),
                 good_category_description(),
-                &BTreeSet::new(),
                 Ok(()),
             );
 
@@ -1210,7 +858,6 @@ fn edit_post_text() {
                 category_id,
                 good_thread_title(),
                 good_thread_text(),
-                &BTreeSet::new(),
                 None,
                 Ok(()),
             );
@@ -1256,7 +903,6 @@ fn react_post() {
                 None,
                 good_category_title(),
                 good_category_description(),
-                &BTreeSet::new(),
                 Ok(()),
             );
 
@@ -1266,7 +912,6 @@ fn react_post() {
                 category_id,
                 good_thread_title(),
                 good_thread_text(),
-                &BTreeSet::new(),
                 None,
                 Ok(()),
             );
@@ -1315,7 +960,6 @@ fn moderate_post_origin() {
                 None,
                 good_category_title(),
                 good_category_description(),
-                &BTreeSet::new(),
                 Ok(()),
             );
             set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
@@ -1326,7 +970,6 @@ fn moderate_post_origin() {
                 category_id,
                 good_thread_title(),
                 good_thread_text(),
-                &BTreeSet::new(),
                 None,
                 Ok(()),
             );
@@ -1374,7 +1017,6 @@ fn moderate_post_rationale() {
                 None,
                 good_category_title(),
                 good_category_description(),
-                &BTreeSet::new(),
                 Ok(()),
             );
 
@@ -1385,7 +1027,6 @@ fn moderate_post_rationale() {
                 category_id,
                 good_thread_title(),
                 good_thread_text(),
-                &BTreeSet::new(),
                 None,
                 Ok(()),
             );
@@ -1419,7 +1060,6 @@ fn set_stickied_threads_ok() {
             None,
             good_category_title(),
             good_category_description(),
-            &BTreeSet::new(),
             Ok(()),
         );
         set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
@@ -1429,7 +1069,6 @@ fn set_stickied_threads_ok() {
             category_id,
             good_thread_title(),
             good_thread_text(),
-            &BTreeSet::new(),
             None,
             Ok(()),
         );
@@ -1449,7 +1088,6 @@ fn set_stickied_threads_wrong_moderator() {
             None,
             good_category_title(),
             good_category_description(),
-            &BTreeSet::new(),
             Ok(()),
         );
 
@@ -1459,7 +1097,6 @@ fn set_stickied_threads_wrong_moderator() {
             category_id,
             good_thread_title(),
             good_thread_text(),
-            &BTreeSet::new(),
             None,
             Ok(()),
         );
@@ -1485,7 +1122,6 @@ fn set_stickied_threads_thread_not_exists() {
             None,
             good_category_title(),
             good_category_description(),
-            &BTreeSet::new(),
             Ok(()),
         );
         set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
@@ -1495,7 +1131,6 @@ fn set_stickied_threads_thread_not_exists() {
             category_id,
             good_thread_title(),
             good_thread_text(),
-            &BTreeSet::new(),
             None,
             Ok(()),
         );
@@ -1522,7 +1157,6 @@ fn set_stickied_threads_wrong_category() {
             None,
             good_category_title(),
             good_category_description(),
-            &BTreeSet::new(),
             Ok(()),
         );
         set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
@@ -1532,7 +1166,6 @@ fn set_stickied_threads_wrong_category() {
             category_id,
             good_thread_title(),
             good_thread_text(),
-            &BTreeSet::new(),
             None,
             Ok(()),
         );
@@ -1541,7 +1174,6 @@ fn set_stickied_threads_wrong_category() {
             None,
             good_category_title(),
             good_category_description(),
-            &BTreeSet::new(),
             Ok(()),
         );
         let thread_id = create_thread_mock(
@@ -1550,7 +1182,6 @@ fn set_stickied_threads_wrong_category() {
             category_id_2,
             good_thread_title(),
             good_thread_text(),
-            &BTreeSet::new(),
             None,
             Ok(()),
         );
@@ -1582,7 +1213,6 @@ fn test_migration_not_done() {
                 None,
                 good_category_title(),
                 good_category_description(),
-                BTreeSet::new(),
             ),
             Err(ERROR_DATA_MIGRATION_NOT_DONE),
         );
@@ -1594,7 +1224,6 @@ fn test_migration_not_done() {
                 category_id,
                 good_thread_title(),
                 good_thread_text(),
-                BTreeSet::new(),
                 None,
             ),
             Err(ERROR_DATA_MIGRATION_NOT_DONE),

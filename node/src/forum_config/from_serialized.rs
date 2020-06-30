@@ -59,17 +59,11 @@ pub fn create() -> ForumConfig {
         max_category_depth: 10,
         category_by_moderator: Vec::new(),
         reaction_by_post: Vec::new(),
-        label_name_constraint: new_validation(10, 90),
         poll_desc_constraint: new_validation(10, 90),
         poll_items_constraint: new_validation(1, 10),
         user_name_constraint: new_validation(10, 90),
         user_self_introduction_constraint: new_validation(10, 90),
         post_footer_constraint: new_validation(10, 90),
-        label_by_id: Vec::new(),
-        next_label_id: 1,
-        category_labels: Vec::new(),
-        thread_labels: Vec::new(),
-        max_applied_labels: 10,
         data_migration_done: true,
     }
 }

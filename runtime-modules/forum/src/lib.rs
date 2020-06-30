@@ -213,7 +213,6 @@
 use serde_derive::{Deserialize, Serialize};
 
 use codec::{Codec, Decode, Encode};
-use rstd::collections::btree_set::BTreeSet;
 use rstd::prelude::*;
 pub use runtime_io::clear_prefix;
 use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
@@ -263,15 +262,6 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + PartialEq
         + From<u64>
         + Into<u64>;
-
-    type LabelId: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
 
     type PostId: Parameter
         + Member
@@ -337,7 +327,6 @@ impl InputValidationLengthConstraint {
 const ERROR_ORIGIN_NOT_FORUM_LEAD: &str = "Origin not forum lead.";
 const ERROR_FORUM_USER_ID_NOT_MATCH_ACCOUNT: &str = "Forum user id not match its account.";
 const ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT: &str = "Moderator id not match its account.";
-const ERROR_FORUM_USER_NOT_THREAD_AUTHOR: &str = "Forum user is not thread author";
 
 // Errors about thread.
 const ERROR_THREAD_TITLE_TOO_SHORT: &str = "Thread title too short.";
@@ -382,12 +371,6 @@ const ERROR_POLL_NOT_EXIST: &str = "Poll not exist.";
 const ERROR_POLL_TIME_SETTING: &str = "Poll date setting is wrong.";
 const ERROR_POLL_DATA: &str = "Poll data committed is wrong.";
 const ERROR_POLL_COMMIT_EXPIRED: &str = "Poll data committed after poll expired.";
-
-// Error about label
-const ERROR_LABEL_TOO_SHORT: &str = "Label name too short.";
-const ERROR_LABEL_TOO_LONG: &str = "Label name too long.";
-const ERROR_TOO_MUCH_LABELS: &str = "labels number exceed max allowed.";
-const ERROR_LABEL_INDEX_IS_WRONG: &str = "label index is wrong.";
 
 // Error data migration
 const ERROR_DATA_MIGRATION_NOT_DONE: &str = "data migration not done yet.";
@@ -656,14 +639,6 @@ impl<CategoryId, ThreadId, BlockNumber, Moment>
     }
 }
 
-/// Represents a label
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Label {
-    /// Label's text
-    pub text: Vec<u8>,
-}
-
 /// Represents a sequence of categories which have child-parent relatioonship
 /// where last element is final ancestor, or root, in the context of the category tree.
 type CategoryTreePath<CategoryId, ThreadId, BlockNumber, Moment> =
@@ -721,9 +696,6 @@ decl_storage! {
         /// Input constraints for description text of moderation post rationale.
         pub PostModerationRationaleConstraint get(post_moderation_rationale_constraint) config(): InputValidationLengthConstraint;
 
-        /// Input constraints for label name.
-        pub LabelNameConstraint get(label_name_constraint) config(): InputValidationLengthConstraint;
-
         /// Input constraints for description text of each item in poll.
         pub PollDescConstraint get(poll_desc_constraint) config(): InputValidationLengthConstraint;
 
@@ -738,21 +710,6 @@ decl_storage! {
 
         /// Input constraints for post footer.
         pub PostFooterConstraint get(post_footer_constraint) config(): InputValidationLengthConstraint;
-
-        /// Labels could be applied to category and thread
-        pub LabelById get(label_by_id) config(): map T::LabelId => Label;
-
-        /// Next label identifier
-        pub NextLabelId get(next_label_id) config(): T::LabelId;
-
-        /// All labels applied to a category
-        pub CategoryLabels get(category_labels) config(): map T::CategoryId => BTreeSet<T::LabelId>;
-
-        /// All labels applied to a thread
-        pub ThreadLabels get(thread_labels) config(): map T::ThreadId => BTreeSet<T::LabelId>;
-
-        /// Max applied labels for a category or thread
-        pub MaxAppliedLabels get(max_applied_labels) config(): u32;
 
         /// If data migration is done, set as configible for unit test purpose
         pub DataMigrationDone get(data_migration_done) config(): bool;
@@ -853,7 +810,7 @@ decl_module! {
         }
 
         /// Add a new category.
-        fn create_category(origin, parent: Option<T::CategoryId>, title: Vec<u8>, description: Vec<u8>, labels: BTreeSet<T::LabelId>) -> dispatch::Result {
+        fn create_category(origin, parent: Option<T::CategoryId>, title: Vec<u8>, description: Vec<u8>) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -868,9 +825,6 @@ decl_module! {
 
             // Validate description
             Self::ensure_category_description_is_valid(&description)?;
-
-            // Validate labels
-            Self::ensure_label_valid(&labels)?;
 
             // Set a temporal mutable variable
             let mut position_in_parent_category_field = None;
@@ -925,9 +879,6 @@ decl_module! {
 
             // Insert category in map
             <CategoryById<T>>::mutate(next_category_id, |value| *value = new_category);
-
-            // Add labels to category
-            <CategoryLabels<T>>::mutate(next_category_id, |value| *value = labels);
 
             // Update other next category id
             <NextCategoryId<T>>::mutate(|value| *value += One::one());
@@ -1012,43 +963,8 @@ decl_module! {
             Ok(())
         }
 
-        /// Update category
-        fn update_category_labels(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, new_labels: BTreeSet<T::LabelId>) -> dispatch::Result {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
-            // Validate labels
-            Self::ensure_label_valid(&new_labels)?;
-
-            // Get path from parent to root of category tree.
-            let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
-
-            // Ensure category is mutable.
-            Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
-
-            // Update by lead or moderator
-            if Self::ensure_is_forum_lead(&who).is_ok() {
-                // Update labels to category
-                <CategoryLabels<T>>::mutate(category_id, |value| *value = new_labels);
-            } else {
-                // is moderator
-                Self::ensure_is_moderator_with_correct_account(&who, &moderator_id)?;
-
-                // ensure origin can moderate category
-                Self::ensure_moderate_category(&who, &moderator_id, category_id)?;
-
-                // Update labels to category
-                <CategoryLabels<T>>::mutate(category_id, |value| *value = new_labels);
-            }
-
-            Ok(())
-        }
-
         /// Create new thread in category with poll
-        fn create_thread(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, title: Vec<u8>, text: Vec<u8>, labels: BTreeSet<T::LabelId>,
+        fn create_thread(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, title: Vec<u8>, text: Vec<u8>,
             poll: Option<Poll<T::Moment>>,
         ) -> dispatch::Result {
             // Ensure data migration is done
@@ -1064,81 +980,10 @@ decl_module! {
             let next_thread_id = <NextThreadId<T>>::get();
 
             // Create a new thread
-            Self::add_new_thread(category_id, forum_user_id, &title, &text, &labels, &poll)?;
+            Self::add_new_thread(category_id, forum_user_id, &title, &text, &poll)?;
 
             // Generate event
             Self::deposit_event(RawEvent::ThreadCreated(next_thread_id));
-
-            Ok(())
-        }
-
-        /// Update category
-        fn update_thread_labels_by_author(origin, forum_user_id: T::ForumUserId, thread_id: T::ThreadId, new_labels: BTreeSet<T::LabelId>) -> dispatch::Result {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
-            // Get thread
-            let thread = Self::ensure_thread_exists(&thread_id)?;
-
-            // Check is forum use is thread author
-            if forum_user_id != thread.author_id {
-                return Err(ERROR_FORUM_USER_NOT_THREAD_AUTHOR);
-            }
-
-            // Can mutate in corresponding category
-            let path = Self::build_category_tree_path(thread.category_id);
-
-            // Path must be non-empty, as category id is from thread in state
-            assert!(!path.is_empty());
-
-            // Path can be updated
-            Self::ensure_can_mutate_in_path_leaf(&path)?;
-
-            // Validate labels
-            Self::ensure_label_valid(&new_labels)?;
-
-            // Ensure author is forum member
-            Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
-
-            // Update labels to thread
-            <ThreadLabels<T>>::mutate(thread_id, |value| *value = new_labels);
-
-            Ok(())
-        }
-
-        fn update_thread_labels_by_moderator(origin, moderator_id: T::ModeratorId, thread_id: T::ThreadId, new_labels: BTreeSet<T::LabelId>) -> dispatch::Result {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
-            // Get thread
-            let thread = Self::ensure_thread_exists(&thread_id)?;
-
-            // Can mutate in corresponding category
-            let path = Self::build_category_tree_path(thread.category_id);
-
-            // Path must be non-empty, as category id is from thread in state
-            assert!(!path.is_empty());
-
-            // Path can be updated
-            Self::ensure_can_mutate_in_path_leaf(&path)?;
-
-            // Validate labels
-            Self::ensure_label_valid(&new_labels)?;
-
-            // Ensure moderator is registered
-            Self::ensure_is_moderator_with_correct_account(&who, &moderator_id)?;
-
-            // Ensure the moderator can moderate the category
-            Self::ensure_moderate_category(&who, &moderator_id, thread.category_id)?;
-
-            // Update labels to thread
-            <ThreadLabels<T>>::mutate(thread_id, |value| *value = new_labels);
 
             Ok(())
         }
@@ -1440,7 +1285,6 @@ impl<T: Trait> Module<T> {
         author_id: T::ForumUserId,
         title: &[u8],
         text: &[u8],
-        labels: &BTreeSet<T::LabelId>,
         poll: &Option<Poll<T::Moment>>,
     ) -> Result<
         Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment>,
@@ -1462,9 +1306,6 @@ impl<T: Trait> Module<T> {
         // Validate post text
         Self::ensure_post_text_is_valid(&text)?;
 
-        // Validate labels
-        Self::ensure_label_valid(&labels)?;
-
         // Unwrap poll
         if let Some(data) = poll {
             // Check all poll alternatives
@@ -1483,9 +1324,6 @@ impl<T: Trait> Module<T> {
         // Add inital post to thread
         let _ = Self::add_new_post(new_thread_id, &text.to_vec(), author_id);
 
-        // Add labels to thread
-        <ThreadLabels<T>>::mutate(new_thread_id, |value| *value = labels.clone());
-
         // Build a new thread
         let new_thread = Thread {
             title: title.to_vec(),
@@ -1501,9 +1339,6 @@ impl<T: Trait> Module<T> {
 
         // Store thread
         <ThreadById<T>>::mutate(new_thread_id, |value| *value = new_thread.clone());
-
-        // Store labels
-        <ThreadLabels<T>>::mutate(new_thread_id, |value| *value = labels.clone());
 
         // Update next thread id
         <NextThreadId<T>>::mutate(|n| *n += One::one());
@@ -1567,56 +1402,6 @@ impl<T: Trait> Module<T> {
         <ThreadById<T>>::mutate(thread_id, |t| t.num_unmoderated_posts += 1);
 
         Ok(new_post)
-    }
-
-    // The method only called from other module to add some labels.
-    pub fn add_labels(labels: Vec<Vec<u8>>) -> dispatch::Result {
-        // Ensure data migration is done
-        Self::ensure_data_migration_done()?;
-
-        // Check label name length
-        Self::ensure_label_name_valid(&labels)?;
-
-        // Get next lable id
-        let mut label_index = <NextLabelId<T>>::get();
-
-        // Add lable one by one
-        for item in labels {
-            <LabelById<T>>::mutate(label_index, |value| *value = Label { text: item.clone() });
-            label_index += One::one();
-        }
-
-        // Update next lable id
-        <NextLabelId<T>>::mutate(|n| *n = label_index);
-
-        Ok(())
-    }
-
-    fn ensure_label_name_valid(labels: &[Vec<u8>]) -> dispatch::Result {
-        // Check all label text one by one
-        for item in labels {
-            LabelNameConstraint::get().ensure_valid(
-                item.len(),
-                ERROR_LABEL_TOO_SHORT,
-                ERROR_LABEL_TOO_LONG,
-            )?;
-        }
-        Ok(())
-    }
-
-    fn ensure_label_valid(labels: &BTreeSet<T::LabelId>) -> dispatch::Result {
-        // Check all label index
-        let invalid = labels
-            .iter()
-            .any(|label_id| *label_id >= <NextLabelId<T>>::get());
-        if invalid {
-            Err(ERROR_LABEL_INDEX_IS_WRONG)
-        } else if labels.len() > MaxAppliedLabels::get() as usize {
-            // Validate label's amount
-            Err(ERROR_TOO_MUCH_LABELS)
-        } else {
-            Ok(())
-        }
     }
 
     // Ensure poll is valid
