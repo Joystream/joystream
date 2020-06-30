@@ -135,7 +135,7 @@ fn remove_maintainer_that_was_not_added_to_class_maintainers_set() {
 
         // Make an attempt to remove curator group maintainer, that was not added to corresponding class maintainers set yet
         let remove_maintainer_from_class_result =
-            remove_maintainer_from_class(LEAD_ORIGIN, FIRST_CLASS_ID, FIRST_CURATOR_GROUP_ID);
+            remove_maintainer_from_class(LEAD_ORIGIN, FIRST_CLASS_ID, UNKNOWN_CURATOR_GROUP_ID);
 
         // Failure checked
         assert_failure(

@@ -14,7 +14,7 @@ pub const ERROR_CLASS_DESCRIPTION_TOO_LONG: &str = "Class description is too lon
 pub const ERROR_CLASS_LIMIT_REACHED: &str = "Maximum number of classes limit reached";
 pub const ERROR_CLASS_SCHEMAS_LIMIT_REACHED: &str =
     "Maximum number of given class schemas limit reached";
-pub const ERROR_CLASS_PROPERTIES_LIMIT_REACHED: &str =
+pub const ERROR_SCHEMA_PROPERTIES_LIMIT_REACHED: &str =
     "Maximum number of properties in schema limit reached";
 pub const ERROR_PER_CONTROLLER_ENTITIES_CREATION_LIMIT_EXCEEDS_OVERALL_LIMIT: &str =
     "Entities creation limit per controller should be less than overall entities creation limit";

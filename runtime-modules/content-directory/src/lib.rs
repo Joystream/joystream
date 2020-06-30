@@ -116,7 +116,7 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
     type MaxNumberOfSchemasPerClass: Get<MaxNumber>;
 
     /// The maximum number of properties per class constraint
-    type MaxNumberOfPropertiesPerClass: Get<MaxNumber>;
+    type MaxNumberOfPropertiesPerSchema: Get<MaxNumber>;
 
     /// The maximum number of operations during single invocation of `transaction`
     type MaxNumberOfOperationsDuringAtomicBatching: Get<MaxNumber>;
@@ -274,15 +274,15 @@ impl<T: Trait> Class<T> {
         Ok(())
     }
 
-    /// Ensure properties limit per `Class` not reached
+    /// Ensure properties limit per `Schema` not reached
     pub fn ensure_properties_limit_not_reached(
         &self,
         new_properties: &[Property<T>],
     ) -> dispatch::Result {
         ensure!(
-            T::MaxNumberOfPropertiesPerClass::get()
+            T::MaxNumberOfPropertiesPerSchema::get()
                 >= (self.properties.len() + new_properties.len()) as MaxNumber,
-            ERROR_CLASS_PROPERTIES_LIMIT_REACHED
+            ERROR_SCHEMA_PROPERTIES_LIMIT_REACHED
         );
         Ok(())
     }
@@ -935,7 +935,7 @@ decl_module! {
             // Ensure both existing and new properties for future Schema are not empty
             Self::ensure_non_empty_schema(&existing_properties, &new_properties)?;
 
-            // Ensure max number of properties per Class limit not reached
+            // Ensure max number of properties per Schema limit not reached
             class.ensure_properties_limit_not_reached(&new_properties)?;
 
             // Complete all checks to ensure all provided new_properties are valid

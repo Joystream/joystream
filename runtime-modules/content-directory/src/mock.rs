@@ -52,7 +52,7 @@ pub const SECOND_ENTITY_ID: EntityId = 2;
 
 pub const UNKNOWN_CLASS_ID: ClassId = 111;
 // pub const UNKNOWN_ENTITY_ID: EntityId = 222;
-// pub const UNKNOWN_PROPERTY_ID: PropertyId = 333;
+pub const UNKNOWN_PROPERTY_ID: PropertyId = 333;
 pub const UNKNOWN_SCHEMA_ID: SchemaId = 444;
 
 pub const UNKNOWN_CURATOR_GROUP_ID: CuratorGroupId = 555;
@@ -162,8 +162,8 @@ impl Get<MaxNumber> for MaxNumberOfSchemasPerClass {
     }
 }
 
-pub struct MaxNumberOfPropertiesPerClass;
-impl Get<MaxNumber> for MaxNumberOfPropertiesPerClass {
+pub struct MaxNumberOfPropertiesPerSchema;
+impl Get<MaxNumber> for MaxNumberOfPropertiesPerSchema {
     fn get() -> MaxNumber {
         MAX_NUMBER_OF_PROPERTIES_PER_CLASS.with(|v| *v.borrow())
     }
@@ -248,7 +248,7 @@ impl Trait for Runtime {
     type MaxNumberOfClasses = MaxNumberOfClasses;
     type MaxNumberOfMaintainersPerClass = MaxNumberOfMaintainersPerClass;
     type MaxNumberOfSchemasPerClass = MaxNumberOfSchemasPerClass;
-    type MaxNumberOfPropertiesPerClass = MaxNumberOfPropertiesPerClass;
+    type MaxNumberOfPropertiesPerSchema = MaxNumberOfPropertiesPerSchema;
     type MaxNumberOfEntitiesPerClass = MaxNumberOfEntitiesPerClass;
 
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
@@ -842,6 +842,15 @@ pub fn transaction(
     TestModule::transaction(Origin::signed(origin), actor, operations)
 }
 
+pub enum InvalidPropertyType {
+    NameTooLong,
+    NameTooShort,
+    DescriptionTooLong,
+    DescriptionTooShort,
+    TextIsTooLong,
+    VecIsTooLong,
+}
+
 impl<T: Trait> Property<T> {
     pub fn default_with_name(name_len: usize) -> Self {
         let name = generate_text(name_len);
@@ -863,6 +872,42 @@ impl<T: Trait> Property<T> {
             ..Property::<T>::default()
         }
     }
+
+    pub fn invalid(invalid_property_type: InvalidPropertyType) -> Property<Runtime> {
+        let mut default_property = Property::<Runtime>::default_with_name(
+            PropertyNameLengthConstraint::get().min() as usize,
+        );
+        match invalid_property_type {
+            InvalidPropertyType::NameTooLong => {
+                default_property.name =
+                    generate_text(PropertyNameLengthConstraint::get().max() as usize + 1);
+            }
+            InvalidPropertyType::NameTooShort => {
+                default_property.name =
+                    generate_text(PropertyNameLengthConstraint::get().min() as usize - 1);
+            }
+            InvalidPropertyType::DescriptionTooLong => {
+                default_property.description =
+                    generate_text(PropertyDescriptionLengthConstraint::get().max() as usize + 1);
+            }
+            InvalidPropertyType::DescriptionTooShort => {
+                default_property.description =
+                    generate_text(PropertyDescriptionLengthConstraint::get().min() as usize - 1);
+            }
+            InvalidPropertyType::TextIsTooLong => {
+                default_property.property_type =
+                    PropertyType::<Runtime>::single_text(TextMaxLengthConstraint::get() + 1);
+            }
+            InvalidPropertyType::VecIsTooLong => {
+                default_property.property_type = PropertyType::<Runtime>::vec_reference(
+                    FIRST_CLASS_ID,
+                    true,
+                    VecMaxLengthConstraint::get() + 1,
+                );
+            }
+        };
+        default_property
+    }
 }
 
 impl<T: Trait> PropertyType<T> {
@@ -874,6 +919,11 @@ impl<T: Trait> PropertyType<T> {
         let vec_type = Type::<Runtime>::Reference(class_id, same_controller);
         let vec_reference = VecPropertyType::<Runtime>::new(vec_type, max_length);
         PropertyType::<Runtime>::Vector(vec_reference)
+    }
+
+    pub fn single_text(text_max_len: TextMaxLength) -> PropertyType<Runtime> {
+        let text_type = SingleValuePropertyType(Type::<Runtime>::Text(text_max_len));
+        PropertyType::<Runtime>::Single(text_type)
     }
 }
 
