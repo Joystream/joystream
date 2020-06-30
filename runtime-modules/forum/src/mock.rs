@@ -321,26 +321,16 @@ pub fn update_category_mock(
     origin: OriginType,
     category_id: <Runtime as Trait>::CategoryId,
     new_archival_status: Option<bool>,
-    new_deletion_status: Option<bool>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::CategoryId {
     assert_eq!(
-        TestForumModule::update_category(
-            mock_origin(origin),
-            category_id,
-            new_archival_status,
-            new_deletion_status
-        ),
+        TestForumModule::update_category(mock_origin(origin), category_id, new_archival_status,),
         result
     );
     if result.is_ok() {
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::CategoryUpdated(
-                category_id,
-                new_archival_status,
-                new_deletion_status
-            ))
+            TestEvent::forum_mod(RawEvent::CategoryUpdated(category_id, new_archival_status,))
         );
     };
     category_id

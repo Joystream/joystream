@@ -340,8 +340,6 @@ const ERROR_POST_MODERATED: &str = "Post is moderated.";
 
 // Errors about category.
 const ERROR_CATEGORY_NOT_BEING_UPDATED: &str = "Category not being updated.";
-const ERROR_CATEGORY_CANNOT_BE_UNARCHIVED_WHEN_DELETED: &str =
-    "Category cannot be unarchived when deleted.";
 const ERROR_MODERATOR_MODERATE_CATEGORY: &str = "Moderator can not moderate category.";
 const ERROR_EXCEED_MAX_CATEGORY_DEPTH: &str = "Category exceed max depth.";
 const ERROR_ANCESTOR_CATEGORY_IMMUTABLE: &str =
@@ -503,26 +501,10 @@ pub struct Category<CategoryId, ThreadId, Hash> {
     /// Unique identifier
     pub hash: Hash,
 
-    /// Whether category is deleted.
-    pub deleted: bool,
-
     /// Whether category is archived.
     pub archived: bool,
 
-    /// Number of subcategories (deleted, archived or neither),
-    /// unmoderated threads and moderated threads, _directly_ in this category.
-    ///
-    /// As noted, the first is unaffected by any change in state of direct subcategory.
-    ///
-    /// The sum of the latter two only increases, and former is incremented
-    /// for each new thread added to this category. A new thread is added
-    /// with a `nr_in_category` equal to this sum.
-    ///
-    /// When there is a moderation
-    /// of a thread, the variables are incremented and decremented, respectively.
-    ///
-    /// These values are vital for light clients, in order to validate that they are
-    /// not being censored from subcategories or threads in a category.
+    /// Number of subcategories
     pub num_direct_subcategories: u32,
 
     // Number of threads in category
@@ -605,8 +587,7 @@ decl_event!(
 
         /// A category with given id was updated.
         /// The second argument reflects the new archival status of the category, if changed.
-        /// The third argument reflects the new deletion status of the category, if changed.
-        CategoryUpdated(CategoryId, Option<bool>, Option<bool>),
+        CategoryUpdated(CategoryId, Option<bool>),
 
         /// A thread with given id was created.
         ThreadCreated(ThreadId),
@@ -736,7 +717,6 @@ decl_module! {
             let new_category = Category {
                 id : next_category_id,
                 hash,
-                deleted: false,
                 archived: false,
                 num_direct_subcategories: 0,
                 num_direct_threads: 0,
@@ -757,7 +737,7 @@ decl_module! {
         }
 
         /// Update category
-        fn update_category(origin, category_id: T::CategoryId, new_archival_status: Option<bool>, new_deletion_status: Option<bool>) -> dispatch::Result {
+        fn update_category(origin, category_id: T::CategoryId, new_archival_status: Option<bool>) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -769,7 +749,7 @@ decl_module! {
 
             // Make sure something is actually being changed
             ensure!(
-                new_archival_status.is_some() || new_deletion_status.is_some(),
+                new_archival_status.is_some(),
                 ERROR_CATEGORY_NOT_BEING_UPDATED
             );
 
@@ -788,7 +768,7 @@ decl_module! {
 
                 if Self::ensure_can_mutate_in_path_leaf(&category_tree_path).is_err() {
                     // if ancestor archived or deleted, no necessary to set child again.
-                    if new_archival_status == Some(true) || new_deletion_status == Some(true) {
+                    if new_archival_status == Some(true) {
                         return Ok(())
                     }
                 };
@@ -797,18 +777,11 @@ decl_module! {
             // Get the category
             let category = <CategoryById<T>>::get(category_id);
 
-            // Can not unarchive if category already deleted
-            ensure!(
-                !category.deleted || (new_deletion_status == Some(false)),
-                ERROR_CATEGORY_CANNOT_BE_UNARCHIVED_WHEN_DELETED
-            );
-
             // no any change then return Ok, no update and no event.
-            let deletion_unchanged = new_deletion_status == None || new_deletion_status == Some(category.deleted);
             let archive_unchanged = new_archival_status == None || new_archival_status == Some(category.archived);
 
             // No any change, invalid transaction
-            if deletion_unchanged && archive_unchanged {
+            if archive_unchanged {
                 return Err(ERROR_CATEGORY_NOT_BEING_UPDATED)
             }
 
@@ -818,14 +791,10 @@ decl_module! {
                 if let Some(archived) = new_archival_status {
                     c.archived = archived;
                 }
-
-                if let Some(deleted) = new_deletion_status {
-                    c.deleted = deleted;
-                }
             });
 
             // Generate event
-            Self::deposit_event(RawEvent::CategoryUpdated(category_id, new_archival_status, new_deletion_status));
+            Self::deposit_event(RawEvent::CategoryUpdated(category_id, new_archival_status));
 
             Ok(())
         }
@@ -1307,7 +1276,7 @@ impl<T: Trait> Module<T> {
         ensure!(
             !category_tree_path
                 .iter()
-                .any(|c: &Category<T::CategoryId, T::ThreadId, T::Hash>| c.deleted || c.archived),
+                .any(|c: &Category<T::CategoryId, T::ThreadId, T::Hash>| c.archived),
             ERROR_ANCESTOR_CATEGORY_IMMUTABLE
         );
 
