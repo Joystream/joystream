@@ -56,6 +56,7 @@ pub const UNKNOWN_PROPERTY_ID: PropertyId = 333;
 pub const UNKNOWN_SCHEMA_ID: SchemaId = 444;
 
 pub const UNKNOWN_CURATOR_GROUP_ID: CuratorGroupId = 555;
+pub const UNKNOWN_CURATOR_ID: CuratorGroupId = 555;
 
 pub const FIRST_SCHEMA_ID: SchemaId = 0;
 pub const SECOND_SCHEMA_ID: SchemaId = 1;

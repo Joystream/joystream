@@ -79,7 +79,7 @@ fn add_non_existent_maintainer_to_class() {
 
         // Make an attempt to add non existent maintainer curator group to class
         let add_maintainer_result =
-            add_maintainer_to_class(LEAD_ORIGIN, FIRST_CLASS_ID, FIRST_CURATOR_GROUP_ID);
+            add_maintainer_to_class(LEAD_ORIGIN, FIRST_CLASS_ID, UNKNOWN_CURATOR_GROUP_ID);
 
         // Failure checked
         assert_failure(

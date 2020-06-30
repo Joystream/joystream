@@ -44,7 +44,7 @@ fn remove_curator_group_lead_auth_failed() {
 
         // An attemt to remove curator group from non lead origin
         let remove_curator_group_result =
-            remove_curator_group(FIRST_MEMBER_ORIGIN, FIRST_CURATOR_ID);
+            remove_curator_group(FIRST_MEMBER_ORIGIN, FIRST_CURATOR_GROUP_ID);
 
         // Failure checked
         assert_failure(
@@ -64,7 +64,7 @@ fn remove_non_existent_curator_group() {
         let number_of_events_before_call = System::events().len();
 
         // An attemt to remove non existent curator group
-        let remove_curator_group_result = remove_curator_group(LEAD_ORIGIN, FIRST_CURATOR_ID);
+        let remove_curator_group_result = remove_curator_group(LEAD_ORIGIN, UNKNOWN_CURATOR_GROUP_ID);
 
         // Failure checked
         assert_failure(

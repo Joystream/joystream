@@ -98,7 +98,7 @@ fn remove_curator_from_group_curator_is_not_a_member() {
 
         // Make an attempt to remove curator that does not added to the provided curator group
         let remove_curator_from_group_result =
-            remove_curator_from_group(LEAD_ORIGIN, FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID);
+            remove_curator_from_group(LEAD_ORIGIN, FIRST_CURATOR_GROUP_ID, UNKNOWN_CURATOR_ID);
 
         // Failure checked
         assert_failure(
@@ -119,7 +119,7 @@ fn remove_curator_from_non_existent_group() {
 
         // Make an attempt to remove curator from group using non lead origin
         let remove_curator_from_group_result =
-            remove_curator_from_group(LEAD_ORIGIN, FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID);
+            remove_curator_from_group(LEAD_ORIGIN, UNKNOWN_CURATOR_GROUP_ID, FIRST_CURATOR_ID);
 
         // Failure checked
         assert_failure(
