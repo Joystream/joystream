@@ -35,6 +35,7 @@ import {
 import { CancelledReason, OpeningStageClassification, OpeningState } from '../classifiers';
 import { OpeningMetadata } from '../OpeningMetadata';
 import { CuratorId } from '@joystream/types/content-working-group';
+import { WorkerId } from '@joystream/types/working-group';
 import _ from 'lodash';
 import styled from 'styled-components';
 import { WorkingGroups } from '../working_groups';
@@ -105,7 +106,7 @@ function RoleName (props: NameAndURL) {
 }
 
 export interface ActiveRole extends NameAndURL {
-  workerId: CuratorId;
+  workerId: CuratorId | WorkerId;
   reward: Balance;
   stake: Balance;
   group: WorkingGroups;

@@ -2,7 +2,7 @@ import { map, switchMap } from 'rxjs/operators';
 
 import ApiPromise from '@polkadot/api/promise';
 import { Balance } from '@polkadot/types/interfaces';
-import { GenericAccountId, Option, u32, u128, Vec } from '@polkadot/types';
+import { GenericAccountId, Option, u128, Vec } from '@polkadot/types';
 import { Constructor } from '@polkadot/types/types';
 import { Moment } from '@polkadot/types/interfaces/runtime';
 import { QueueTxExtrinsicAdd } from '@polkadot/react-components/Status/types';
@@ -469,7 +469,7 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   async groupOpening (group: WorkingGroups, id: number): Promise<WorkingGroupOpening> {
-    const nextId = (await this.cachedApiMethodByGroup(group, 'nextOpeningId')() as u32).toNumber();
+    const nextId = (await this.cachedApiMethodByGroup(group, 'nextOpeningId')() as GroupOpeningId).toNumber();
     if (id < 0 || id >= nextId) {
       throw new Error('invalid id');
     }
@@ -762,8 +762,9 @@ export class Transport extends TransportBase implements ITransport {
           }
           const tx = this.apiExtrinsicByGroup(group, 'applyOnOpening')(
             membershipIds[0], // Member id
-            new u32(id), // Worker/Curator opening id
-            new GenericAccountId(roleAccount as string), // Role account
+            id, // Worker/Curator opening id
+            roleAccount, // Role account
+            // TODO: Will need to be adjusted if AtLeast Zero stakes become possible
             roleStake.eq(Zero) ? null : roleStake, // Role stake
             appStake.eq(Zero) ? null : appStake, // Application stake
             applicationText // Human readable text

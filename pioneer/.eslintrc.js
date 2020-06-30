@@ -15,6 +15,7 @@ module.exports = {
     '@typescript-eslint/camelcase': 'off',
     'react/prop-types': 'off',
     'new-cap': 'off',
-    '@typescript-eslint/interface-name-prefix': 'off'
+    '@typescript-eslint/interface-name-prefix': 'off',
+    '@typescript-eslint/ban-ts-comment': 'error'
   }
 };
