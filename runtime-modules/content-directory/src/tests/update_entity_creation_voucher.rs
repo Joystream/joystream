@@ -55,7 +55,7 @@ fn update_entity_creation_voucher_success() {
 
         let actor = Actor::Member(FIRST_MEMBER_ID);
 
-        // Update class permissions to force any maintainer be available to create entities
+        // Update class permissions to force any member be available to create entities
         assert_ok!(update_class_permissions(
             LEAD_ORIGIN,
             FIRST_CLASS_ID,

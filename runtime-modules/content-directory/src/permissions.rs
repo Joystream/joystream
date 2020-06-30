@@ -107,8 +107,8 @@ pub fn perform_curator_in_group_auth<T: Trait>(
     // Ensure curator authorization performed succesfully
     ensure_curator_auth_success::<T>(curator_id, account_id)?;
 
-    // Ensure CuratorGroup under given curator_group_id exists, retrieve corresponding one
-    let curator_group = Module::<T>::ensure_curator_group_exists(curator_group_id)?;
+    // Retrieve corresponding curator group
+    let curator_group = Module::<T>::curator_group_by_id(curator_group_id);
 
     // Ensure curator group is active
     ensure!(curator_group.is_active(), ERROR_CURATOR_GROUP_IS_NOT_ACTIVE);

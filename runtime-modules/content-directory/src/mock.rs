@@ -32,6 +32,7 @@ pub const SECOND_CURATOR_ORIGIN: u64 = 3;
 
 pub const FIRST_MEMBER_ORIGIN: u64 = 4;
 pub const SECOND_MEMBER_ORIGIN: u64 = 5;
+pub const UNKNOWN_ORIGIN: u64 = 7777;
 
 /// Runtime Id's
 
@@ -57,6 +58,7 @@ pub const UNKNOWN_SCHEMA_ID: SchemaId = 444;
 
 pub const UNKNOWN_CURATOR_GROUP_ID: CuratorGroupId = 555;
 pub const UNKNOWN_CURATOR_ID: CuratorGroupId = 555;
+pub const UNKNOWN_MEMBER_ID: CuratorGroupId = 777;
 
 pub const FIRST_SCHEMA_ID: SchemaId = 0;
 pub const SECOND_SCHEMA_ID: SchemaId = 1;
@@ -282,11 +284,8 @@ impl ActorAuthenticator for Runtime {
             || (second_curator_account_id == *account_id && SECOND_CURATOR_ID == *curator_id)
     }
 
-    fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool {
-        let first_member_account_id = ensure_signed(Origin::signed(FIRST_MEMBER_ORIGIN)).unwrap();
-        let second_member_account_id = ensure_signed(Origin::signed(SECOND_MEMBER_ORIGIN)).unwrap();
-        (first_member_account_id == *account_id && FIRST_MEMBER_ID == *member_id)
-            || (second_member_account_id == *account_id && SECOND_MEMBER_ID == *member_id)
+    fn is_member(member_id: &Self::MemberId, _account_id: &Self::AccountId) -> bool {
+        *member_id < MaxNumberOfEntitiesPerClass::get()
     }
 }
 
@@ -705,11 +704,11 @@ pub fn next_entity_id() -> EntityId {
 }
 
 pub fn create_entity(
-    lead_origin: u64,
+    origin: u64,
     class_id: ClassId,
     actor: Actor<Runtime>,
 ) -> Result<(), &'static str> {
-    TestModule::create_entity(Origin::signed(lead_origin), class_id, actor)
+    TestModule::create_entity(Origin::signed(origin), class_id, actor)
 }
 
 pub fn remove_entity(
