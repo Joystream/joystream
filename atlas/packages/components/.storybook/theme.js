@@ -1,8 +1,6 @@
 import { create } from "@storybook/theming/create";
-/* Can't import the theme directly here because it is written in TS.
-Any workaround?
+
 import { colors } from "../src/theme";
-*/
 
 export default create({
 	base: "dark",
@@ -11,7 +9,7 @@ export default create({
 	colorSecondary: "deepskyblue",
 
 	// UI
-	appBg: "black",
+	appBg: colors.black,
 	appContentBg: "#272D33",
 	inputBg: "black",
 	appBorderColor: "#424E57",

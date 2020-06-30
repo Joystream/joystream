@@ -20,9 +20,6 @@ const Carousel: React.FC<Partial<CarouselProps>> = ({
 	rightControlCss,
 	onScroll = () => {},
 }) => {
-	if (!Array.isArray(children)) {
-		return <>{children}</>;
-	}
 	const [scroll, setScroll] = useSpring(() => ({
 		transform: `translateX(0px)`,
 	}));
@@ -31,14 +28,15 @@ const Carousel: React.FC<Partial<CarouselProps>> = ({
 	const elementsRefs = useRef<(HTMLDivElement | null)[]>([]);
 	const [childrensWidth, setChildrensWidth] = useState(0);
 	useEffect(() => {
-		elementsRefs.current = elementsRefs.current.slice(0, children.length);
-		const childrensWidth = elementsRefs.current.reduce(
-			(accWidth, el) => (el != null ? accWidth + el.clientWidth : accWidth),
-			0
-		);
-		setChildrensWidth(childrensWidth);
-	}, [children.length]);
-
+		if (Array.isArray(children)) {
+			elementsRefs.current = elementsRefs.current.slice(0, children.length);
+			const childrensWidth = elementsRefs.current.reduce(
+				(accWidth, el) => (el != null ? accWidth + el.clientWidth : accWidth),
+				0
+			);
+			setChildrensWidth(childrensWidth);
+		}
+	}, [children]);
 	const styles = useCSS({});
 
 	function handleScroll(direction: "left" | "right") {
@@ -69,6 +67,9 @@ const Carousel: React.FC<Partial<CarouselProps>> = ({
 		});
 	}
 
+	if (!Array.isArray(children)) {
+		return <>{children}</>;
+	}
 	return (
 		<div css={[styles.container, containerCss]}>
 			<div css={styles.outerItemsContainer} ref={containerRef}>

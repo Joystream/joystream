@@ -42,26 +42,3 @@ export const useCSS = (props: HeaderStyleProps) => ({
 	title: makeStyles([title])(props),
 	subtitle: makeStyles([subtitle])(props)
 })
-// export let makeStyles = ({
-//   background = ""
-// }: HeaderStyleProps) => {
-//   return css`
-//     background-color: ${colors.black};
-//     text-align: left;
-//     cursor: default;
-//     color: ${colors.white};
-//     font-family: ${typography.fonts.base};
-//     height: 600px;
-//     display: flex;
-//     align-content: center;
-//     align-items: center;
-//     background-image: url(${background});
-//     background-repeat: no-repeat;
-//     background-position: center right;
-//     background-size: contain;
-
-//     div#content {
-//       margin: 0 100px;
-//     }
-//   `
-// }

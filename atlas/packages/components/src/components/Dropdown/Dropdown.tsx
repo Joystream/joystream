@@ -29,7 +29,7 @@ export default function Dropdown({
 	const inputRef = useRef(null);
 	const [isActive, setIsActive] = useState(!!value);
 	const [inputTextValue, setInputTextValue] = useState(
-		!!value ? options.find(({ value: optionValue = NaN }) => optionValue === value)?.text : ""
+		!!value ? options.find(({ value: optionValue = "" }) => optionValue === value)?.text : ""
 	);
 	const [showOptions, setShowOptions] = useState(false);
 	const styles = useCSS({ isActive, disabled, ...styleProps });
