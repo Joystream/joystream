@@ -330,8 +330,6 @@ const ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT: &str = "Moderator id not match its a
 
 // Errors about thread.
 const ERROR_THREAD_DOES_NOT_EXIST: &str = "Thread does not exist";
-const ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT: &str = "Thread moderation rationale too short.";
-const ERROR_THREAD_MODERATION_RATIONALE_TOO_LONG: &str = "Thread moderation rationale too long.";
 const ERROR_THREAD_ALREADY_MODERATED: &str = "Thread already moderated.";
 const ERROR_THREAD_MODERATED: &str = "Thread is moderated.";
 const ERROR_THREAD_WITH_WRONG_CATEGORY_ID: &str = "thread and its category not match.";
@@ -339,8 +337,6 @@ const ERROR_THREAD_WITH_WRONG_CATEGORY_ID: &str = "thread and its category not m
 // Errors about post.
 const ERROR_POST_DOES_NOT_EXIST: &str = "Post does not exist.";
 const ERROR_POST_MODERATED: &str = "Post is moderated.";
-const ERROR_POST_MODERATION_RATIONALE_TOO_SHORT: &str = "Post moderation rationale too short.";
-const ERROR_POST_MODERATION_RATIONALE_TOO_LONG: &str = "Post moderation rationale too long.";
 
 // Errors about category.
 const ERROR_CATEGORY_NOT_BEING_UPDATED: &str = "Category not being updated.";
@@ -409,9 +405,6 @@ pub struct ModerationAction<ModeratorId, BlockNumber, Moment> {
 
     /// Account forum lead which acted.
     pub moderator_id: ModeratorId,
-
-    /// Moderation rationale
-    pub rationale: Vec<u8>,
 }
 
 /// Represents a revision of the text of a Post
@@ -665,24 +658,6 @@ decl_storage! {
 
         /// Each account 's reaction to a post.
         pub ReactionByPost get(reaction_by_post) config(): double_map T::PostId, blake2_256(T::ForumUserId) => PostReaction;
-
-        /// Input constraints for description text of category title.
-        pub CategoryTitleConstraint get(category_title_constraint) config(): InputValidationLengthConstraint;
-
-        /// Input constraints for description text of category description.
-        pub CategoryDescriptionConstraint get(category_description_constraint) config(): InputValidationLengthConstraint;
-
-        /// Input constraints for description text of thread title.
-        pub ThreadTitleConstraint get(thread_title_constraint) config(): InputValidationLengthConstraint;
-
-        /// Input constraints for description text of post.
-        pub PostTextConstraint get(post_text_constraint) config(): InputValidationLengthConstraint;
-
-        /// Input constraints for description text of moderation thread rationale.
-        pub ThreadModerationRationaleConstraint get(thread_moderation_rationale_constraint) config(): InputValidationLengthConstraint;
-
-        /// Input constraints for description text of moderation post rationale.
-        pub PostModerationRationaleConstraint get(post_moderation_rationale_constraint) config(): InputValidationLengthConstraint;
 
         /// Input constraints for description text of each item in poll.
         pub PollDescConstraint get(poll_desc_constraint) config(): InputValidationLengthConstraint;
@@ -1019,7 +994,7 @@ decl_module! {
         }
 
         /// Moderate thread
-        fn moderate_thread(origin, moderator_id: T::ModeratorId, thread_id: T::ThreadId, rationale: Vec<u8>) -> dispatch::Result {
+        fn moderate_thread(origin, moderator_id: T::ModeratorId, thread_id: T::ThreadId) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -1034,9 +1009,6 @@ decl_module! {
 
             // Thread is not already moderated
             ensure!(thread.moderation.is_none(), ERROR_THREAD_ALREADY_MODERATED);
-
-            // Rationale valid
-            Self::ensure_thread_moderation_rationale_is_valid(&rationale)?;
 
             // ensure origin can moderate category
             Self::ensure_moderate_category(&who, &moderator_id, thread.category_id)?;
@@ -1054,7 +1026,6 @@ decl_module! {
             thread.moderation = Some(ModerationAction {
                 moderated_at: Self::current_block_and_time(),
                 moderator_id,
-                rationale,
             });
 
             // Insert new value into map
@@ -1131,7 +1102,7 @@ decl_module! {
         }
 
         /// Moderate post
-        fn moderate_post(origin, moderator_id: T::ModeratorId, post_id: T::PostId, rationale: Vec<u8>) -> dispatch::Result {
+        fn moderate_post(origin, moderator_id: T::ModeratorId, post_id: T::PostId) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -1144,8 +1115,6 @@ decl_module! {
             // Make sure post exists and is mutable
             let post = Self::ensure_post_is_mutable(&post_id)?;
 
-            Self::ensure_post_moderation_rationale_is_valid(&rationale)?;
-
             // make sure origin can moderate the category
             let thread = Self::ensure_thread_exists(&post.thread_id)?;
 
@@ -1156,7 +1125,6 @@ decl_module! {
             let moderation_action = ModerationAction{
                 moderated_at: Self::current_block_and_time(),
                 moderator_id,
-                rationale,
             };
 
             // Update post with moderation
@@ -1354,22 +1322,6 @@ impl<T: Trait> Module<T> {
             Self::ensure_poll_desc_is_valid(desc_len)?;
         }
         Ok(())
-    }
-
-    fn ensure_thread_moderation_rationale_is_valid(rationale: &[u8]) -> dispatch::Result {
-        ThreadModerationRationaleConstraint::get().ensure_valid(
-            rationale.len(),
-            ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT,
-            ERROR_THREAD_MODERATION_RATIONALE_TOO_LONG,
-        )
-    }
-
-    fn ensure_post_moderation_rationale_is_valid(rationale: &[u8]) -> dispatch::Result {
-        PostModerationRationaleConstraint::get().ensure_valid(
-            rationale.len(),
-            ERROR_POST_MODERATION_RATIONALE_TOO_SHORT,
-            ERROR_POST_MODERATION_RATIONALE_TOO_LONG,
-        )
     }
 
     // Ensure poll description text is valid

@@ -48,12 +48,6 @@ pub fn create() -> ForumConfig {
         next_category_id,
         next_thread_id,
         next_post_id,
-        category_title_constraint: new_validation(10, 90),
-        category_description_constraint: new_validation(10, 490),
-        thread_title_constraint: new_validation(10, 90),
-        post_text_constraint: new_validation(10, 990),
-        thread_moderation_rationale_constraint: new_validation(10, 290),
-        post_moderation_rationale_constraint: new_validation(10, 290),
 
         // TODO: get rid of mocks and setup valid values
         max_category_depth: 10,

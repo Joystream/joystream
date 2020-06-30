@@ -402,49 +402,8 @@ fn moderate_thread_origin_ok() {
             None,
             Ok(()),
         );
-        moderate_thread_mock(origin, moderator_id, thread_id, good_rationale(), Ok(()));
+        moderate_thread_mock(origin, moderator_id, thread_id, Ok(()));
     });
-}
-
-#[test]
-// test thread moderate rationale's length
-fn moderate_thread_rationale() {
-    let constraint = default_genesis_config().thread_moderation_rationale_constraint;
-    let rationales = vec![
-        generate_text(constraint.min as usize),
-        generate_text((constraint.min - 1) as usize),
-        generate_text((constraint.max() + 1) as usize),
-    ];
-    let results = vec![
-        Ok(()),
-        Err(ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT),
-        Err(ERROR_THREAD_MODERATION_RATIONALE_TOO_LONG),
-    ];
-    for index in 0..rationales.len() {
-        let config = default_genesis_config();
-        let forum_lead = FORUM_LEAD_ORIGIN_ID;
-        let origin = OriginType::Signed(forum_lead);
-        build_test_externalities(config).execute_with(|| {
-            let moderator_id = forum_lead;
-            let category_id = create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
-            set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
-            let thread_id = create_thread_mock(
-                origin.clone(),
-                forum_lead,
-                category_id,
-                generate_hash(),
-                None,
-                Ok(()),
-            );
-            moderate_thread_mock(
-                origin.clone(),
-                moderator_id,
-                thread_id,
-                rationales[index].clone(),
-                results[index],
-            );
-        });
-    }
 }
 
 /*
@@ -572,57 +531,6 @@ fn moderate_post_origin() {
                 origins[index].clone(),
                 moderator_id,
                 post_id,
-                good_rationale(),
-                results[index],
-            );
-        });
-    }
-}
-
-#[test]
-// test post rationale text's length
-fn moderate_post_rationale() {
-    let constraint = default_genesis_config().post_moderation_rationale_constraint;
-    let rationales = vec![
-        generate_text(constraint.min as usize),
-        generate_text((constraint.min - 1) as usize),
-        generate_text((constraint.max() + 1) as usize),
-    ];
-    let results = vec![
-        Ok(()),
-        Err(ERROR_POST_MODERATION_RATIONALE_TOO_SHORT),
-        Err(ERROR_POST_MODERATION_RATIONALE_TOO_LONG),
-    ];
-    for index in 0..rationales.len() {
-        let config = default_genesis_config();
-        let forum_lead = FORUM_LEAD_ORIGIN_ID;
-        let origin = OriginType::Signed(forum_lead);
-        build_test_externalities(config).execute_with(|| {
-            let moderator_id = forum_lead;
-
-            let category_id = create_category_mock(origin.clone(), None, generate_hash(), Ok(()));
-
-            set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
-            let thread_id = create_thread_mock(
-                origin.clone(),
-                forum_lead,
-                category_id,
-                generate_hash(),
-                None,
-                Ok(()),
-            );
-            let post_id = create_post_mock(
-                origin.clone(),
-                forum_lead,
-                thread_id,
-                generate_hash(),
-                Ok(()),
-            );
-            moderate_post_mock(
-                origin.clone(),
-                moderator_id,
-                post_id,
-                rationales[index].clone(),
                 results[index],
             );
         });
@@ -784,7 +692,6 @@ fn test_migration_not_done() {
                 mock_origin(origin.clone()),
                 moderator_id,
                 thread_id,
-                good_rationale(),
             ),
             Err(ERROR_DATA_MIGRATION_NOT_DONE),
         );
@@ -794,7 +701,6 @@ fn test_migration_not_done() {
                 mock_origin(origin.clone()),
                 moderator_id,
                 post_id,
-                good_rationale(),
             ),
             Err(ERROR_DATA_MIGRATION_NOT_DONE),
         );

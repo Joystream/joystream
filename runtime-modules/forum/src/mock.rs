@@ -112,14 +112,6 @@ pub const INVLAID_CATEGORY_ID: <Runtime as Trait>::CategoryId = 333;
 
 pub const NOT_REGISTER_MODERATOR_ID: <Runtime as Trait>::ModeratorId = 666;
 
-pub fn generate_text(len: usize) -> Vec<u8> {
-    vec![b'x'; len]
-}
-
-pub fn good_rationale() -> Vec<u8> {
-    b"This post violates our community rules".to_vec()
-}
-
 pub fn generate_poll() -> Poll<<Runtime as timestamp::Trait>::Moment> {
     Poll {
         poll_description: b"poll description".to_vec(),
@@ -353,11 +345,10 @@ pub fn moderate_thread_mock(
     origin: OriginType,
     moderator_id: <Runtime as Trait>::ModeratorId,
     thread_id: <Runtime as Trait>::ThreadId,
-    rationale: Vec<u8>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::ThreadId {
     assert_eq!(
-        TestForumModule::moderate_thread(mock_origin(origin), moderator_id, thread_id, rationale),
+        TestForumModule::moderate_thread(mock_origin(origin), moderator_id, thread_id),
         result
     );
     if result.is_ok() {
@@ -379,11 +370,10 @@ pub fn moderate_post_mock(
     origin: OriginType,
     moderator_id: <Runtime as Trait>::ModeratorId,
     post_id: <Runtime as Trait>::PostId,
-    rationale: Vec<u8>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::PostId {
     assert_eq!(
-        TestForumModule::moderate_post(mock_origin(origin), moderator_id, post_id, rationale),
+        TestForumModule::moderate_post(mock_origin(origin), moderator_id, post_id),
         result
     );
     if result.is_ok() {
@@ -459,35 +449,6 @@ pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime
         max_category_depth: 5,
         reaction_by_post: vec![],
 
-        category_title_constraint: InputValidationLengthConstraint {
-            min: 10,
-            max_min_diff: 140,
-        },
-
-        category_description_constraint: InputValidationLengthConstraint {
-            min: 10,
-            max_min_diff: 140,
-        },
-
-        thread_title_constraint: InputValidationLengthConstraint {
-            min: 3,
-            max_min_diff: 43,
-        },
-
-        post_text_constraint: InputValidationLengthConstraint {
-            min: 1,
-            max_min_diff: 1001,
-        },
-
-        thread_moderation_rationale_constraint: InputValidationLengthConstraint {
-            min: 10,
-            max_min_diff: 2000,
-        },
-
-        post_moderation_rationale_constraint: InputValidationLengthConstraint {
-            min: 10,
-            max_min_diff: 2000,
-        }, // JUST GIVING UP ON ALL THIS FOR NOW BECAUSE ITS TAKING TOO LONG
         poll_desc_constraint: InputValidationLengthConstraint {
             min: 10,
             max_min_diff: 200,
