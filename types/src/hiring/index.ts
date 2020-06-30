@@ -99,7 +99,7 @@ export class ApplicationStage extends Enum {
   constructor(value?: any, index?: number) {
     super(
       {
-        [ApplicationStageKeys.Active]: Null,
+        [ApplicationStageKeys.Active]: ActiveApplicationStage,
         [ApplicationStageKeys.Unstaking]: UnstakingApplicationStage,
         [ApplicationStageKeys.Inactive]: InactiveApplicationStage,
       },

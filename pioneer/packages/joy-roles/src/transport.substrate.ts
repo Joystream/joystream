@@ -29,7 +29,7 @@ import {
   RoleStakeProfile
 } from '@joystream/types/working-group';
 
-import { Application, Opening, OpeningId, ApplicationId } from '@joystream/types/hiring';
+import { Application, Opening, OpeningId, ApplicationId, ActiveApplicationStage } from '@joystream/types/hiring';
 import { Stake, StakeId } from '@joystream/types/stake';
 import { RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
 import { ActorInRole, Profile, MemberId, Role, RoleKeys, ActorId } from '@joystream/types/members';
@@ -522,9 +522,10 @@ export class Transport extends TransportBase implements ITransport {
     const applications = await this.groupOpeningApplications(group, openingId);
     return Sort(
       (await Promise.all(
-        applications.map(application => this.openingApplicationTotalStake(application.hiringModule))
+        applications
+          .filter(a => a.hiringModule.stage.value instanceof ActiveApplicationStage)
+          .map(application => this.openingApplicationTotalStake(application.hiringModule))
       ))
-        .filter((b) => !b.eq(Zero))
     );
   }
 
@@ -588,11 +589,12 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   protected async myApplicationRank (myApp: Application, applications: Array<Application>): Promise<number> {
+    const activeApplications = applications.filter(app => app.stage.value instanceof ActiveApplicationStage);
     const stakes = await Promise.all(
-      applications.map(app => this.openingApplicationTotalStake(app))
+      activeApplications.map(app => this.openingApplicationTotalStake(app))
     );
 
-    const appvalues = applications.map((app, key) => {
+    const appvalues = activeApplications.map((app, key) => {
       return {
         app: app,
         value: stakes[key]
