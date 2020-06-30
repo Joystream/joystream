@@ -49,3 +49,56 @@ fn update_entity_permissions_success() {
         );
     })
 }
+
+#[test]
+fn update_entity_permissions_lead_auth_failed() {
+    with_test_externalities(|| {
+        // Create simple class with default permissions
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
+
+        let actor = Actor::Lead;
+
+        // Create entity
+        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor));
+
+        // Runtime state before tested call
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // Make an attempt to update entity permissions for chosen entity under non lead origin
+        let update_entity_permissions_result =
+            update_entity_permissions(FIRST_MEMBER_ORIGIN, FIRST_ENTITY_ID, None, Some(false));
+
+        // Failure checked
+        assert_failure(
+            update_entity_permissions_result,
+            ERROR_LEAD_AUTH_FAILED,
+            number_of_events_before_call,
+        );
+    })
+}
+
+#[test]
+fn update_entity_permissions_of_non_existent_entity() {
+    with_test_externalities(|| {
+        // Create simple class with default permissions
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
+
+        // Runtime state before tested call
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // Make an attempt to update entity permissions for chosen entity under non lead origin
+        let update_entity_permissions_result =
+            update_entity_permissions(FIRST_MEMBER_ORIGIN, UNKNOWN_ENTITY_ID, None, Some(false));
+
+        // Failure checked
+        assert_failure(
+            update_entity_permissions_result,
+            ERROR_LEAD_AUTH_FAILED,
+            number_of_events_before_call,
+        );
+    })
+}
