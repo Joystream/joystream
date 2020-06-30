@@ -459,13 +459,6 @@ pub struct Post<ForumUserId, ModeratorId, ThreadId, Hash> {
 
     /// Author of post.
     pub author_id: ForumUserId,
-
-    /// The post number of this post in its thread, i.e. total number of posts added (including this)
-    /// to a thread when it was added.
-    /// Is needed to give light clients assurance about getting all posts in a given range,
-    // `created_at` is not sufficient.
-    /// Starts at 1 for first post in thread.
-    pub nr_in_thread: u32,
 }
 
 /// Represents a thread
@@ -486,13 +479,6 @@ pub struct Thread<ForumUserId, ModeratorId, CategoryId, Moment, Hash> {
 
     /// poll description.
     pub poll: Option<Poll<Moment, Hash>>,
-
-    /// The thread number of this thread in its category, i.e. total number of thread added (including this)
-    /// to a category when it was added.
-    /// Is needed to give light clients assurance about getting all threads in a given range,
-    /// `created_at` is not sufficient.
-    /// Starts at 1 for first thread in category.
-    pub nr_in_category: u32,
 
     /// Number of unmoderated and moderated posts in this thread.
     /// The sum of these two only increases, and former is incremented
@@ -1162,9 +1148,6 @@ impl<T: Trait> Module<T> {
             Self::ensure_poll_is_valid(&data)?;
         }
 
-        // Get the category
-        let category = <CategoryById<T>>::get(category_id);
-
         // Create and add new thread
         let new_thread_id = <NextThreadId<T>>::get();
 
@@ -1178,7 +1161,6 @@ impl<T: Trait> Module<T> {
             moderation: None,
             author_id,
             poll: poll.clone(),
-            nr_in_category: category.num_threads_created() + 1,
             num_unmoderated_posts: 0,
             num_moderated_posts: 0,
         };
@@ -1227,7 +1209,6 @@ impl<T: Trait> Module<T> {
             hash,
             moderation: None,
             author_id,
-            nr_in_thread: thread.num_posts_ever_created(),
         };
 
         // Store post
