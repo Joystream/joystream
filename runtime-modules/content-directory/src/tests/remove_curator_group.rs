@@ -64,7 +64,8 @@ fn remove_non_existent_curator_group() {
         let number_of_events_before_call = System::events().len();
 
         // An attemt to remove non existent curator group
-        let remove_curator_group_result = remove_curator_group(LEAD_ORIGIN, UNKNOWN_CURATOR_GROUP_ID);
+        let remove_curator_group_result =
+            remove_curator_group(LEAD_ORIGIN, UNKNOWN_CURATOR_GROUP_ID);
 
         // Failure checked
         assert_failure(
