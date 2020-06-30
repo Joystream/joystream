@@ -354,7 +354,7 @@ decl_module! {
             // mutation
 
             <Proposals<T>>::insert(proposal_id, proposal);
-            <VoteExistsByProposalByVoter<T>>::insert( proposal_id, voter_id, vote.clone());
+            <VoteExistsByProposalByVoter<T>>::insert(proposal_id, voter_id, vote.clone());
             Self::deposit_event(RawEvent::Voted(voter_id, proposal_id, vote));
         }
 

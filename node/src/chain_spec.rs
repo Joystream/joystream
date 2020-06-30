@@ -331,6 +331,34 @@ pub fn testnet_genesis(
             set_lead_proposal_grace_period: cpcp.set_lead_proposal_voting_period,
             spending_proposal_voting_period: cpcp.spending_proposal_voting_period,
             spending_proposal_grace_period: cpcp.spending_proposal_grace_period,
+            add_working_group_opening_proposal_voting_period: cpcp
+                .add_working_group_opening_proposal_voting_period,
+            add_working_group_opening_proposal_grace_period: cpcp
+                .add_working_group_opening_proposal_grace_period,
+            begin_review_working_group_leader_applications_proposal_voting_period: cpcp
+                .begin_review_working_group_leader_applications_proposal_voting_period,
+            begin_review_working_group_leader_applications_proposal_grace_period: cpcp
+                .begin_review_working_group_leader_applications_proposal_grace_period,
+            fill_working_group_leader_opening_proposal_voting_period: cpcp
+                .fill_working_group_leader_opening_proposal_voting_period,
+            fill_working_group_leader_opening_proposal_grace_period: cpcp
+                .fill_working_group_leader_opening_proposal_grace_period,
+            set_working_group_mint_capacity_proposal_voting_period: cpcp
+                .set_content_working_group_mint_capacity_proposal_voting_period,
+            set_working_group_mint_capacity_proposal_grace_period: cpcp
+                .set_content_working_group_mint_capacity_proposal_grace_period,
+            decrease_working_group_leader_stake_proposal_voting_period: cpcp
+                .decrease_working_group_leader_stake_proposal_voting_period,
+            decrease_working_group_leader_stake_proposal_grace_period: cpcp
+                .decrease_working_group_leader_stake_proposal_grace_period,
+            slash_working_group_leader_stake_proposal_voting_period: cpcp
+                .slash_working_group_leader_stake_proposal_voting_period,
+            slash_working_group_leader_stake_proposal_grace_period: cpcp
+                .slash_working_group_leader_stake_proposal_grace_period,
+            set_working_group_leader_reward_proposal_voting_period: cpcp
+                .set_working_group_leader_reward_proposal_voting_period,
+            set_working_group_leader_reward_proposal_grace_period: cpcp
+                .set_working_group_leader_reward_proposal_grace_period,
         }),
     }
 }

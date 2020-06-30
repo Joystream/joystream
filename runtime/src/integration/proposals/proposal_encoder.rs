@@ -1,7 +1,11 @@
 use crate::{Call, Runtime};
+use common::working_group::WorkingGroup;
 use proposals_codex::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
+use working_group::OpeningType;
 
 use codec::Encode;
+use rstd::collections::btree_set::BTreeSet;
+use rstd::marker::PhantomData;
 use rstd::vec::Vec;
 use srml_support::print;
 
@@ -51,6 +55,169 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                 print("Error: Calling deprecated SetStorageRoleParameters encoding option.");
                 Vec::new()
             }
+            ProposalDetails::AddWorkingGroupLeaderOpening(add_opening_params) => {
+                let call = match add_opening_params.working_group {
+                    WorkingGroup::Storage => {
+                        Call::StorageWorkingGroup(Wg::create_add_opening_call(add_opening_params))
+                    }
+                };
+
+                call.encode()
+            }
+            ProposalDetails::BeginReviewWorkingGroupLeaderApplications(
+                opening_id,
+                working_group,
+            ) => {
+                let call = match working_group {
+                    WorkingGroup::Storage => Call::StorageWorkingGroup(
+                        Wg::create_begin_review_applications_call(opening_id),
+                    ),
+                };
+
+                call.encode()
+            }
+            ProposalDetails::FillWorkingGroupLeaderOpening(fill_opening_params) => {
+                let call = match fill_opening_params.working_group {
+                    WorkingGroup::Storage => {
+                        Call::StorageWorkingGroup(Wg::create_fill_opening_call(fill_opening_params))
+                    }
+                };
+
+                call.encode()
+            }
+            ProposalDetails::SetWorkingGroupMintCapacity(mint_balance, working_group) => {
+                let call = match working_group {
+                    WorkingGroup::Storage => {
+                        Call::StorageWorkingGroup(Wg::create_set_mint_capacity_call(mint_balance))
+                    }
+                };
+
+                call.encode()
+            }
+            ProposalDetails::DecreaseWorkingGroupLeaderStake(
+                worker_id,
+                decreasing_stake,
+                working_group,
+            ) => {
+                let call = match working_group {
+                    WorkingGroup::Storage => Call::StorageWorkingGroup(
+                        Wg::create_decrease_stake_call(worker_id, decreasing_stake),
+                    ),
+                };
+
+                call.encode()
+            }
+            ProposalDetails::SlashWorkingGroupLeaderStake(
+                worker_id,
+                slashing_stake,
+                working_group,
+            ) => {
+                let call = match working_group {
+                    WorkingGroup::Storage => Call::StorageWorkingGroup(
+                        Wg::create_slash_stake_call(worker_id, slashing_stake),
+                    ),
+                };
+
+                call.encode()
+            }
+            ProposalDetails::SetWorkingGroupLeaderReward(
+                worker_id,
+                reward_amount,
+                working_group,
+            ) => {
+                let call = match working_group {
+                    WorkingGroup::Storage => Call::StorageWorkingGroup(Wg::create_set_reward_call(
+                        worker_id,
+                        reward_amount,
+                    )),
+                };
+
+                call.encode()
+            }
         }
+    }
+}
+
+// Working group calls container. It helps to instantiate proper working group instance for calls.
+struct Wg<T, I> {
+    phantom_module: PhantomData<T>,
+    phantom_instance: PhantomData<I>,
+}
+
+impl<T, I> Wg<T, I>
+where
+    T: working_group::Trait<I>,
+    I: working_group::Instance,
+{
+    // Generic call constructor for the add working group opening.
+    fn create_add_opening_call(
+        add_opening_params: proposals_codex::AddOpeningParameters<
+            T::BlockNumber,
+            working_group::BalanceOf<T>,
+        >,
+    ) -> working_group::Call<T, I> {
+        working_group::Call::<T, I>::add_opening(
+            add_opening_params.activate_at,
+            add_opening_params.commitment,
+            add_opening_params.human_readable_text,
+            OpeningType::Leader,
+        )
+    }
+
+    // Generic call constructor for the begin review working group applications.
+    fn create_begin_review_applications_call(
+        opening_id: working_group::OpeningId<T>,
+    ) -> working_group::Call<T, I> {
+        working_group::Call::<T, I>::begin_applicant_review(opening_id)
+    }
+
+    // Generic call constructor for the add working group opening.
+    fn create_fill_opening_call(
+        fill_opening_params: proposals_codex::FillOpeningParameters<
+            T::BlockNumber,
+            minting::BalanceOf<T>,
+            working_group::OpeningId<T>,
+            working_group::ApplicationId<T>,
+        >,
+    ) -> working_group::Call<T, I> {
+        let mut successful_application_ids = BTreeSet::new();
+        successful_application_ids.insert(fill_opening_params.successful_application_id);
+
+        working_group::Call::<T, I>::fill_opening(
+            fill_opening_params.opening_id,
+            successful_application_ids,
+            fill_opening_params.reward_policy,
+        )
+    }
+
+    // Generic call constructor for the working group 'set mit capacity'.
+    fn create_set_mint_capacity_call(
+        mint_balance: working_group::BalanceOfMint<T>,
+    ) -> working_group::Call<T, I> {
+        working_group::Call::<T, I>::set_mint_capacity(mint_balance)
+    }
+
+    // Generic call constructor for the working group 'decrease stake'.
+    fn create_decrease_stake_call(
+        worker_id: working_group::WorkerId<T>,
+        decreasing_stake: working_group::BalanceOf<T>,
+    ) -> working_group::Call<T, I> {
+        working_group::Call::<T, I>::decrease_stake(worker_id, decreasing_stake)
+    }
+
+    // Generic call constructor for the working group 'slash stake'.
+    fn create_slash_stake_call(
+        worker_id: working_group::WorkerId<T>,
+        slashing_stake: working_group::BalanceOf<T>,
+    ) -> working_group::Call<T, I> {
+        working_group::Call::<T, I>::slash_stake(worker_id, slashing_stake)
+    }
+
+    // Generic call constructor for the working group 'update reward amount'.
+    fn create_set_reward_call(
+        worker_id: working_group::WorkerId<T>,
+        reward_amount: working_group::BalanceOfMint<T>,
+    ) -> working_group::Call<T, I> {
+        working_group::Call::<T, I>::update_reward_amount(worker_id, reward_amount)
     }
 }

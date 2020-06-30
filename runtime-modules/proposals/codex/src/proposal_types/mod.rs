@@ -8,6 +8,7 @@ use rstd::vec::Vec;
 use serde::{Deserialize, Serialize};
 
 use crate::ElectionParameters;
+use common::working_group::WorkingGroup;
 
 /// Encodes proposal using its details information.
 pub trait ProposalEncoder<T: crate::Trait> {
@@ -22,12 +23,26 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
     <T as system::Trait>::BlockNumber,
     <T as system::Trait>::AccountId,
     crate::MemberId<T>,
+    working_group::OpeningId<T>,
+    working_group::ApplicationId<T>,
+    crate::BalanceOf<T>,
+    working_group::WorkerId<T>,
 >;
 
 /// Proposal details provide voters the information required for the perceived voting.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug)]
-pub enum ProposalDetails<MintedBalance, CurrencyBalance, BlockNumber, AccountId, MemberId> {
+pub enum ProposalDetails<
+    MintedBalance,
+    CurrencyBalance,
+    BlockNumber,
+    AccountId,
+    MemberId,
+    OpeningId,
+    ApplicationId,
+    StakeBalance,
+    WorkerId,
+> {
     /// The text of the `text` proposal
     Text(Vec<u8>),
 
@@ -58,14 +73,91 @@ pub enum ProposalDetails<MintedBalance, CurrencyBalance, BlockNumber, AccountId,
     /// It is kept only for backward compatibility in the Pioneer. **********
     /// Role parameters for the `set storage role parameters` proposal
     SetStorageRoleParameters(RoleParameters<CurrencyBalance, BlockNumber>),
+
+    /// Add opening for the working group leader position.
+    AddWorkingGroupLeaderOpening(AddOpeningParameters<BlockNumber, CurrencyBalance>),
+
+    /// Begin review applications for the working group leader position.
+    BeginReviewWorkingGroupLeaderApplications(OpeningId, WorkingGroup),
+
+    /// Fill opening for the working group leader position.
+    FillWorkingGroupLeaderOpening(
+        FillOpeningParameters<BlockNumber, MintedBalance, OpeningId, ApplicationId>,
+    ),
+
+    /// Balance for the `set working group mint capacity` proposal
+    SetWorkingGroupMintCapacity(MintedBalance, WorkingGroup),
+
+    /// Balance for the `decrease working group leader stake` proposal
+    DecreaseWorkingGroupLeaderStake(WorkerId, StakeBalance, WorkingGroup),
+
+    /// Balance for the `slash working group leader stake` proposal
+    SlashWorkingGroupLeaderStake(WorkerId, StakeBalance, WorkingGroup),
+
+    /// Balance for the `set working group leader reward` proposal
+    SetWorkingGroupLeaderReward(WorkerId, MintedBalance, WorkingGroup),
 }
 
-impl<MintedBalance, CurrencyBalance, BlockNumber, AccountId, MemberId> Default
-    for ProposalDetails<MintedBalance, CurrencyBalance, BlockNumber, AccountId, MemberId>
+impl<
+        MintedBalance,
+        CurrencyBalance,
+        BlockNumber,
+        AccountId,
+        MemberId,
+        OpeningId,
+        ApplicationId,
+        StakeBalance,
+        WorkerId,
+    > Default
+    for ProposalDetails<
+        MintedBalance,
+        CurrencyBalance,
+        BlockNumber,
+        AccountId,
+        MemberId,
+        OpeningId,
+        ApplicationId,
+        StakeBalance,
+        WorkerId,
+    >
 {
     fn default() -> Self {
         ProposalDetails::Text(b"invalid proposal details".to_vec())
     }
+}
+
+/// Parameters for the 'fill opening for the leader position' proposal.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Debug)]
+pub struct FillOpeningParameters<BlockNumber, Balance, OpeningId, ApplicationId> {
+    /// Finalizing opening id.
+    pub opening_id: OpeningId,
+
+    /// Id of the selected application.
+    pub successful_application_id: ApplicationId,
+
+    /// Position reward policy.
+    pub reward_policy: Option<working_group::RewardPolicy<Balance, BlockNumber>>,
+
+    /// Defines working group with the open position.
+    pub working_group: WorkingGroup,
+}
+
+/// Parameters for the 'add opening for the leader position' proposal.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Debug)]
+pub struct AddOpeningParameters<BlockNumber, Balance> {
+    /// Activate opening at block.
+    pub activate_at: hiring::ActivateOpeningAt<BlockNumber>,
+
+    /// Opening conditions.
+    pub commitment: working_group::OpeningPolicyCommitment<BlockNumber, Balance>,
+
+    /// Opening description.
+    pub human_readable_text: Vec<u8>,
+
+    /// Defines working group with the open position.
+    pub working_group: WorkingGroup,
 }
 
 /// ********** Deprecated during the Nicaea release.
@@ -150,6 +242,48 @@ pub struct ProposalsConfigParameters {
 
     /// 'Spending' proposal grace period
     pub spending_proposal_grace_period: u32,
+
+    /// 'Add working group opening' proposal voting period
+    pub add_working_group_opening_proposal_voting_period: u32,
+
+    /// 'Add working group opening' proposal grace period
+    pub add_working_group_opening_proposal_grace_period: u32,
+
+    /// 'Begin review working group leader applications' proposal voting period
+    pub begin_review_working_group_leader_applications_proposal_voting_period: u32,
+
+    /// 'Begin review working group leader applications' proposal grace period
+    pub begin_review_working_group_leader_applications_proposal_grace_period: u32,
+
+    /// 'Fill working group leader opening' proposal voting period
+    pub fill_working_group_leader_opening_proposal_voting_period: u32,
+
+    /// 'Fill working group leader opening' proposal grace period
+    pub fill_working_group_leader_opening_proposal_grace_period: u32,
+
+    /// 'Set working group mint capacity' proposal voting period
+    pub set_working_group_mint_capacity_proposal_voting_period: u32,
+
+    /// 'Set working group mint capacity' proposal grace period
+    pub set_working_group_mint_capacity_proposal_grace_period: u32,
+
+    /// 'Decrease working group leader stake' proposal voting period
+    pub decrease_working_group_leader_stake_proposal_voting_period: u32,
+
+    /// 'Decrease working group leader stake' proposal grace period
+    pub decrease_working_group_leader_stake_proposal_grace_period: u32,
+
+    /// 'Slash working group leader stake' proposal voting period
+    pub slash_working_group_leader_stake_proposal_voting_period: u32,
+
+    /// 'Slash working group leader stake' proposal grace period
+    pub slash_working_group_leader_stake_proposal_grace_period: u32,
+
+    /// 'Set working group leader reward' proposal voting period
+    pub set_working_group_leader_reward_proposal_voting_period: u32,
+
+    /// 'Set working group leader reward' proposal grace period
+    pub set_working_group_leader_reward_proposal_grace_period: u32,
 }
 
 impl Default for ProposalsConfigParameters {
@@ -169,6 +303,20 @@ impl Default for ProposalsConfigParameters {
             set_lead_proposal_grace_period: 0u32,
             spending_proposal_voting_period: 72000u32,
             spending_proposal_grace_period: 14400u32,
+            add_working_group_opening_proposal_voting_period: 72000u32,
+            add_working_group_opening_proposal_grace_period: 0u32,
+            begin_review_working_group_leader_applications_proposal_voting_period: 43200u32,
+            begin_review_working_group_leader_applications_proposal_grace_period: 14400u32,
+            fill_working_group_leader_opening_proposal_voting_period: 43200u32,
+            fill_working_group_leader_opening_proposal_grace_period: 0u32,
+            set_working_group_mint_capacity_proposal_voting_period: 43200u32,
+            set_working_group_mint_capacity_proposal_grace_period: 0u32,
+            decrease_working_group_leader_stake_proposal_voting_period: 43200u32,
+            decrease_working_group_leader_stake_proposal_grace_period: 0u32,
+            slash_working_group_leader_stake_proposal_voting_period: 43200u32,
+            slash_working_group_leader_stake_proposal_grace_period: 0u32,
+            set_working_group_leader_reward_proposal_voting_period: 43200u32,
+            set_working_group_leader_reward_proposal_grace_period: 0u32,
         }
     }
 }
