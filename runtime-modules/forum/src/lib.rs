@@ -405,17 +405,6 @@ pub struct ModerationAction<ModeratorId, BlockNumber, Moment> {
     pub moderator_id: ModeratorId,
 }
 
-/// Represents a revision of the text of a Post
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct PostTextChange<BlockNumber, Moment> {
-    /// When this expiration occured
-    pub expired_at: BlockchainTimestamp<BlockNumber, Moment>,
-
-    /// Text that expired
-    pub text: Vec<u8>,
-}
-
 /// Represents a reaction to a post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Copy, Debug)]
@@ -481,9 +470,6 @@ pub struct Post<ForumUserId, ModeratorId, ThreadId, BlockNumber, Moment, Hash> {
 
     /// Possible moderation of this post
     pub moderation: Option<ModerationAction<ModeratorId, BlockNumber, Moment>>,
-
-    /// Edits of post ordered chronologically by edit time.
-    pub text_change_history: Vec<PostTextChange<BlockNumber, Moment>>,
 
     /// When post was submitted.
     pub created_at: BlockchainTimestamp<BlockNumber, Moment>,
@@ -1274,7 +1260,6 @@ impl<T: Trait> Module<T> {
             thread_id,
             hash,
             moderation: None,
-            text_change_history: vec![],
             created_at: Self::current_block_and_time(),
             author_id,
             nr_in_thread: thread.num_posts_ever_created(),
