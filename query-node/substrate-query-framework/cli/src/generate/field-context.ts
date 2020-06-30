@@ -73,6 +73,7 @@ export function buildFieldContext(f: Field, entity: ObjectType): GeneratorContex
     ...withTsTypeAndDecorator(f),
     ...withDerivedNames(f, entity),
     ...withRelativePathForModel(f, entity),
+    ...withDescription(f),
   };
 }
 
@@ -92,6 +93,12 @@ export function withFieldTypeGuardProps(f: Field): GeneratorContext {
 export function withRequired(f: Field): GeneratorContext {
   return {
     required: !f.nullable,
+  };
+}
+
+export function withDescription(f: Field): GeneratorContext {
+  return {
+    description: f.description,
   };
 }
 

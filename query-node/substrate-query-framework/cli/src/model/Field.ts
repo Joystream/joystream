@@ -15,14 +15,10 @@ export class Field {
   nullable: boolean;
   // Is field a list. eg: post: [Post]
   isList: boolean;
+  // Description of the field will be shown in GrapqQL API
+  description?: string;
 
-  constructor(
-    name: string,
-    type: string,
-    nullable = true,
-    isBuildinType = true,
-    isList = false
-  ) {
+  constructor(name: string, type: string, nullable = true, isBuildinType = true, isList = false) {
     this.name = name;
     this.type = type;
     this.nullable = nullable;
@@ -43,7 +39,7 @@ export class Field {
   }
 
   isRelationType(): boolean {
-    return ['otm', 'mto', 'oto'].some((s) => s === this.type);
+    return ['otm', 'mto', 'oto'].some(s => s === this.type);
   }
 
   isEnum(): boolean {
