@@ -73,18 +73,18 @@ impl Trait for Runtime {
     type PostId = u64;
 
     fn is_lead(account_id: &<Self as system::Trait>::AccountId) -> bool {
-        *account_id == FORUM_SUDO_ORIGIN_ID
+        *account_id == FORUM_LEAD_ORIGIN_ID
     }
 
     fn is_forum_member(
         account_id: &<Self as system::Trait>::AccountId,
         _forum_user_id: &Self::ForumUserId,
     ) -> bool {
-        *account_id == FORUM_SUDO_ORIGIN_ID
+        *account_id == FORUM_LEAD_ORIGIN_ID
     }
 
     fn is_moderator(account_id: &Self::AccountId, moderator_id: &Self::ModeratorId) -> bool {
-        *account_id == FORUM_SUDO_ORIGIN_ID && *moderator_id != NOT_REGISTER_MODERATOR_ID
+        *account_id == FORUM_LEAD_ORIGIN_ID && *moderator_id != NOT_REGISTER_MODERATOR_ID
     }
 }
 
@@ -101,13 +101,13 @@ pub fn mock_origin(origin: OriginType) -> mock::Origin {
     }
 }
 
-pub const FORUM_SUDO_ORIGIN_ID: <Runtime as system::Trait>::AccountId = 110;
+pub const FORUM_LEAD_ORIGIN_ID: <Runtime as system::Trait>::AccountId = 110;
 
-pub const FORUM_SUDO_ORIGIN: OriginType = OriginType::Signed(FORUM_SUDO_ORIGIN_ID);
+pub const FORUM_LEAD_ORIGIN: OriginType = OriginType::Signed(FORUM_LEAD_ORIGIN_ID);
 
-pub const NOT_FORUM_SUDO_ORIGIN_ID: <Runtime as system::Trait>::AccountId = 111;
+pub const NOT_FORUM_LEAD_ORIGIN_ID: <Runtime as system::Trait>::AccountId = 111;
 
-pub const NOT_FORUM_SUDO_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_SUDO_ORIGIN_ID);
+pub const NOT_FORUM_LEAD_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_LEAD_ORIGIN_ID);
 
 pub const INVLAID_CATEGORY_ID: <Runtime as Trait>::CategoryId = 333;
 

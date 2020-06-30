@@ -334,7 +334,7 @@ impl InputValidationLengthConstraint {
 }
 
 /// Error about users
-const ERROR_ORIGIN_NOT_FORUM_SUDO: &str = "Origin not forum sudo.";
+const ERROR_ORIGIN_NOT_FORUM_LEAD: &str = "Origin not forum lead.";
 const ERROR_FORUM_USER_ID_NOT_MATCH_ACCOUNT: &str = "Forum user id not match its account.";
 const ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT: &str = "Moderator id not match its account.";
 const ERROR_FORUM_USER_NOT_THREAD_AUTHOR: &str = "Forum user is not thread author";
@@ -433,7 +433,7 @@ pub struct ModerationAction<ModeratorId, BlockNumber, Moment> {
     /// When action occured.
     pub moderated_at: BlockchainTimestamp<BlockNumber, Moment>,
 
-    /// Account forum sudo which acted.
+    /// Account forum lead which acted.
     pub moderator_id: ModeratorId,
 
     /// Moderation rationale
@@ -817,8 +817,8 @@ decl_module! {
 
             let who = ensure_signed(origin)?;
 
-            // Not signed by forum SUDO
-            Self::ensure_is_forum_sudo(&who)?;
+            // Not signed by forum LEAD
+            Self::ensure_is_forum_lead(&who)?;
 
             // ensure category exists.
             ensure!(
@@ -840,8 +840,8 @@ decl_module! {
         fn set_max_category_depth(origin, max_category_depth: u8) -> dispatch::Result {
             let who = ensure_signed(origin)?;
 
-            // Not signed by forum SUDO
-            Self::ensure_is_forum_sudo(&who)?;
+            // Not signed by forum LEAD
+            Self::ensure_is_forum_lead(&who)?;
 
             // Store new value into runtime
             MaxCategoryDepth::mutate(|value| *value = max_category_depth );
@@ -860,8 +860,8 @@ decl_module! {
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
-            // Not signed by forum SUDO
-            Self::ensure_is_forum_sudo(&who)?;
+            // Not signed by forum LEAD
+            Self::ensure_is_forum_lead(&who)?;
 
             // Validate title
             Self::ensure_category_title_is_valid(&title)?;
@@ -946,8 +946,8 @@ decl_module! {
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
 
-            // Not signed by forum SUDO
-            Self::ensure_is_forum_sudo(&who)?;
+            // Not signed by forum LEAD
+            Self::ensure_is_forum_lead(&who)?;
 
             // Make sure something is actually being changed
             ensure!(
@@ -1029,8 +1029,8 @@ decl_module! {
             // Ensure category is mutable.
             Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
 
-            // Update by sudo or moderator
-            if Self::ensure_is_forum_sudo(&who).is_ok() {
+            // Update by lead or moderator
+            if Self::ensure_is_forum_lead(&who).is_ok() {
                 // Update labels to category
                 <CategoryLabels<T>>::mutate(category_id, |value| *value = new_labels);
             } else {
@@ -1784,10 +1784,10 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_is_forum_sudo(account_id: &T::AccountId) -> dispatch::Result {
-        let is_sudo = T::is_lead(account_id);
+    fn ensure_is_forum_lead(account_id: &T::AccountId) -> dispatch::Result {
+        let is_lead = T::is_lead(account_id);
 
-        ensure!(is_sudo, ERROR_ORIGIN_NOT_FORUM_SUDO);
+        ensure!(is_lead, ERROR_ORIGIN_NOT_FORUM_LEAD);
         Ok(())
     }
 
