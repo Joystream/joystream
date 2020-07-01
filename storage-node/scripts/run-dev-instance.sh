@@ -25,7 +25,7 @@ docker-compose -f ${SCRIPT_PATH}/compose/devchain-and-ipfs-node/docker-compose.y
 DEBUG=joystream:storage-cli:dev yarn storage-cli dev-init
 
 # Run the tests
-yarn workspace @joystream/storage-node test
+yarn workspace storage-node test
 
 # Run the server in background
 # DEBUG=joystream:storage* yarn colossus --dev > ${SCRIPT_PATH}/colossus.log 2>&1 &

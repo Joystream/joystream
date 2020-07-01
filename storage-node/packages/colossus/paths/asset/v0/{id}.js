@@ -23,7 +23,7 @@ const path = require('path');
 const debug = require('debug')('joystream:colossus:api:asset');
 
 const util_ranges = require('@joystream/storage-utils/ranges');
-const filter = require('@joystream/storage/filter');
+const filter = require('@joystream/storage-node-backend/filter');
 
 function error_handler(response, err, code)
 {
