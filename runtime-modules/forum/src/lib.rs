@@ -280,6 +280,8 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         forum_user_id: &Self::ForumUserId,
     ) -> bool;
     fn is_moderator(account_id: &Self::AccountId, moderator_id: &Self::ModeratorId) -> bool;
+
+    fn calculate_hash(text: &[u8]) -> Self::Hash;
 }
 
 /*
@@ -432,8 +434,8 @@ impl Default for PostReaction {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct PollAlternative<Hash> {
-    /// Unique identifier
-    pub hash: Hash,
+    /// hash of alternative description
+    pub alternative_text_hash: Hash,
 
     /// Vote count for the alternative
     pub vote_count: u32,
@@ -443,8 +445,8 @@ pub struct PollAlternative<Hash> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct Poll<Timestamp, Hash> {
-    /// Unique identifier
-    pub hash: Hash,
+    /// hash of description
+    pub description_hash: Hash,
 
     /// timestamp of poll start
     pub start_time: Timestamp,
@@ -463,8 +465,8 @@ pub struct Post<ForumUserId, ModeratorId, ThreadId, BlockNumber, Moment, Hash> {
     /// Id of thread to which this post corresponds.
     pub thread_id: ThreadId,
 
-    /// Unique identifier
-    pub hash: Hash,
+    /// Hash of current text
+    pub text_hash: Hash,
 
     /// Possible moderation of this post
     pub moderation: Option<ModerationAction<ModeratorId, BlockNumber, Moment>>,
@@ -490,8 +492,8 @@ pub struct Post<ForumUserId, ModeratorId, ThreadId, BlockNumber, Moment, Hash> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment, Hash> {
-    /// Unique identifier
-    pub hash: Hash,
+    /// Title hash
+    pub title_hash: Hash,
 
     /// Category in which this thread lives
     pub category_id: CategoryId,
@@ -546,8 +548,11 @@ pub struct Category<CategoryId, ThreadId, BlockNumber, Moment, Hash> {
     /// Category identifier
     pub id: CategoryId,
 
-    /// Unique identifier
-    pub hash: Hash,
+    /// Title
+    pub title_hash: Hash,
+
+    /// Description
+    pub description_hash: Hash,
 
     /// When category was established.
     pub created_at: BlockchainTimestamp<BlockNumber, Moment>,
@@ -745,7 +750,7 @@ decl_module! {
         }
 
         /// Add a new category.
-        fn create_category(origin, parent: Option<T::CategoryId>, hash: T::Hash) -> dispatch::Result {
+        fn create_category(origin, parent: Option<T::CategoryId>, title: Vec<u8>, description: Vec<u8>) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -782,7 +787,8 @@ decl_module! {
             // Create new category
             let new_category = Category {
                 id : next_category_id,
-                hash,
+                title_hash: T::calculate_hash(title.as_slice()),
+                description_hash: T::calculate_hash(description.as_slice()),
                 created_at : Self::current_block_and_time(),
                 deleted: false,
                 archived: false,
@@ -877,7 +883,7 @@ decl_module! {
         }
 
         /// Create new thread in category with poll
-        fn create_thread(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, hash: T::Hash,
+        fn create_thread(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, title: Vec<u8>, text: Vec<u8>,
             poll: Option<Poll<T::Moment, T::Hash>>,
         ) -> dispatch::Result {
             // Ensure data migration is done
@@ -890,7 +896,7 @@ decl_module! {
             let next_thread_id = <NextThreadId<T>>::get();
 
             // Create a new thread
-            Self::add_new_thread(category_id, forum_user_id, hash, &poll)?;
+            Self::add_new_thread(category_id, forum_user_id, title.as_slice(), text.as_slice(), &poll)?;
 
             // Generate event
             Self::deposit_event(RawEvent::ThreadCreated(next_thread_id));
@@ -919,7 +925,7 @@ decl_module! {
                 .enumerate()
                 .map(|(old_index, old_value)| if index as usize == old_index
                     { PollAlternative {
-                        hash: old_value.hash,
+                        alternative_text_hash: old_value.alternative_text_hash,
                         vote_count: old_value.vote_count + 1,
                     }
                     } else {
@@ -992,7 +998,7 @@ decl_module! {
         }
 
         /// Edit post text
-        fn add_post(origin, forum_user_id: T::ForumUserId, thread_id: T::ThreadId, hash: T::Hash) -> dispatch::Result {
+        fn add_post(origin, forum_user_id: T::ForumUserId, thread_id: T::ThreadId, text: Vec<u8>) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -1007,7 +1013,7 @@ decl_module! {
             let next_post_id = <NextPostId<T>>::get();
 
             // Add new post
-            Self::add_new_post(thread_id, hash, forum_user_id)?;
+            Self::add_new_post(thread_id, text.as_slice(), forum_user_id)?;
 
             // Generate event
             Self::deposit_event(RawEvent::PostAdded(next_post_id));
@@ -1044,7 +1050,7 @@ decl_module! {
         }
 
         /// Edit post text
-        fn edit_post_text(origin, forum_user_id: T::ForumUserId, post_id: T::PostId, hash: T::Hash) -> dispatch::Result {
+        fn edit_post_text(origin, forum_user_id: T::ForumUserId, post_id: T::PostId, new_text: Vec<u8>) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -1067,11 +1073,11 @@ decl_module! {
 
                 let expired_post_text = PostTextChange {
                     expired_at: Self::current_block_and_time(),
-                    text: vec![], // TODO: will be reworked in upcomming commits
+                    text: new_text.clone(),
                 };
 
                 // Set current text to new text
-                p.hash = hash;
+                p.text_hash = T::calculate_hash(&new_text);
 
                 // Copy current text to history of expired texts
                 p.text_change_history.push(expired_post_text);
@@ -1162,7 +1168,8 @@ impl<T: Trait> Module<T> {
     pub fn add_new_thread(
         category_id: T::CategoryId,
         author_id: T::ForumUserId,
-        hash: T::Hash,
+        title: &[u8],
+        text: &[u8],
         poll: &Option<Poll<T::Moment, T::Hash>>,
     ) -> Result<
         Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment, T::Hash>,
@@ -1194,12 +1201,12 @@ impl<T: Trait> Module<T> {
         let new_thread_id = <NextThreadId<T>>::get();
 
         // Add inital post to thread
-        let _ = Self::add_new_post(new_thread_id, hash, author_id);
+        let _ = Self::add_new_post(new_thread_id, text, author_id);
 
         // Build a new thread
         let new_thread = Thread {
             category_id,
-            hash,
+            title_hash: T::calculate_hash(title),
             moderation: None,
             created_at: Self::current_block_and_time(),
             author_id,
@@ -1228,7 +1235,7 @@ impl<T: Trait> Module<T> {
     // If other module call it, could set the forum user id as zero, which not used by forum module.
     pub fn add_new_post(
         thread_id: T::ThreadId,
-        hash: T::Hash,
+        text: &[u8],
         author_id: T::ForumUserId,
     ) -> Result<
         Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment, T::Hash>,
@@ -1253,7 +1260,7 @@ impl<T: Trait> Module<T> {
         // Build a post
         let new_post = Post {
             thread_id,
-            hash,
+            text_hash: T::calculate_hash(text),
             moderation: None,
             text_change_history: vec![],
             created_at: Self::current_block_and_time(),
