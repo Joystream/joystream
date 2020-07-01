@@ -60,10 +60,6 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 // #![warn(missing_docs)]
 
-// TODO Working group proposals parameters & default
-// TODO Working group proposals validation limits
-// TODO module comments update.
-
 mod proposal_types;
 
 #[cfg(test)]
@@ -1152,5 +1148,5 @@ impl<T: Trait> Module<T> {
         <TerminateWorkingGroupLeaderRoleProposalGracePeriod<T>>::put(T::BlockNumber::from(
             p.terminate_working_group_leader_role_proposal_grace_period,
         ));
-    } //TODO set defaults for new proposals
+    }
 }
