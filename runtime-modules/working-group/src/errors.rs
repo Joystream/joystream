@@ -247,6 +247,18 @@ decl_error! {
 
         /// Working group size limit exceeded.
         MaxActiveWorkerNumberExceeded,
+
+        /// Invalid OpeningPolicyCommitment parameter:
+        /// fill_opening_failed_applicant_application_stake_unstaking_period should be non-zero.
+        FillOpeningFailedApplicantApplicationStakeUnstakingPeriodIsZero,
+
+        /// Invalid OpeningPolicyCommitment parameter:
+        /// fill_opening_failed_applicant_role_stake_unstaking_period should be non-zero.
+        FillOpeningFailedApplicantRoleStakeUnstakingPeriodIsZero,
+
+        /// Invalid OpeningPolicyCommitment parameter:
+        /// fill_opening_successful_applicant_application_stake_unstaking_period should be non-zero.
+        FillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriodIsZero,
     }
 }
 
