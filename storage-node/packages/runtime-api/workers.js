@@ -125,6 +125,16 @@ class WorkersApi {
     return { ids, providers }
   }
 
+  async getLeadRoleAccount() {
+    const currentLead = await this.base.api.query.storageWorkingGroup.currentLead()
+    if (currentLead.isSome) {
+      const leadWorkerId = currentLead.unwrap()
+      const worker = await this.base.api.query.storageWorkingGroup.workerById(leadWorkerId)
+      return worker[0].role_account_id
+    }
+    return null
+  }
+
   // Helper methods below don't really belong in the colossus runtime api library.
   // They are only used by the dev-init command in the cli to setup a development environment
 
@@ -132,26 +142,26 @@ class WorkersApi {
    * Add a new storage group opening using the lead account. Returns the
    * new opening id.
    */
-  async dev_addStorageOpening(leadAccount) {
+  async dev_addStorageOpening() {
     const openTx = this.dev_makeAddOpeningTx('Worker')
-    return this.dev_submitAddOpeningTx(openTx, leadAccount)
+    return this.dev_submitAddOpeningTx(openTx, await this.getLeadRoleAccount())
   }
 
   /*
    * Add a new storage working group lead opening using sudo account. Returns the
    * new opening id.
    */
-  async dev_addStorageLeadOpening(sudoAccount) {
+  async dev_addStorageLeadOpening() {
     const openTx = this.dev_makeAddOpeningTx('Leader')
     const sudoTx = this.base.api.tx.sudo.sudo(openTx)
-    return this.dev_submitAddOpeningTx(sudoTx, sudoAccount)
+    return this.dev_submitAddOpeningTx(sudoTx, await this.base.identities.getSudoAccount())
   }
 
   /*
    * Constructs an addOpening tx of openingType
    */
   dev_makeAddOpeningTx(openingType) {
-    const openTx = this.base.api.tx.storageWorkingGroup.addOpening(
+    return this.base.api.tx.storageWorkingGroup.addOpening(
       'CurrentBlock',
       {
         application_rationing_policy: {
@@ -163,8 +173,6 @@ class WorkersApi {
       'dev-opening',
       openingType
     )
-
-    return openTx
   }
 
   /*
@@ -172,13 +180,11 @@ class WorkersApi {
    * the OpeningId from the resulting event.
    */
   async dev_submitAddOpeningTx(tx, senderAccount) {
-    const openingId = await this.base.signAndSendThenGetEventResult(senderAccount, tx, {
+    return this.base.signAndSendThenGetEventResult(senderAccount, tx, {
       eventModule: 'storageWorkingGroup',
       eventName: 'OpeningAdded',
       eventProperty: 'OpeningId'
     })
-
-    return openingId
   }
 
   /*
@@ -188,30 +194,29 @@ class WorkersApi {
     const applyTx = this.base.api.tx.storageWorkingGroup.applyOnOpening(
       memberId, openingId, roleAccount, null, null, `colossus-${memberId}`
     )
-    const applicationId = await this.base.signAndSendThenGetEventResult(memberAccount, applyTx, {
+
+    return this.base.signAndSendThenGetEventResult(memberAccount, applyTx, {
       eventModule: 'storageWorkingGroup',
       eventName: 'AppliedOnOpening',
       eventProperty: 'ApplicationId'
     })
-
-    return applicationId
   }
 
   /*
    * Move lead opening to review state using sudo account
    */
-  async dev_beginLeadOpeningReview(openingId, sudoAccount) {
+  async dev_beginLeadOpeningReview(openingId) {
     const beginReviewTx = this.dev_makeBeginOpeningReviewTx(openingId)
     const sudoTx = this.base.api.tx.sudo.sudo(beginReviewTx)
-    return this.base.signAndSend(sudoAccount, sudoTx)
+    return this.base.signAndSend(await this.base.identities.getSudoAccount(), sudoTx)
   }
 
   /*
    * Move a storage opening to review state using lead account
    */
-  async dev_beginStorageOpeningReview(openingId, leadAccount) {
+  async dev_beginStorageOpeningReview(openingId) {
     const beginReviewTx = this.dev_makeBeginOpeningReviewTx(openingId)
-    return this.base.signAndSend(leadAccount, beginReviewTx)
+    return this.base.signAndSend(await this.getLeadRoleAccount(), beginReviewTx)
   }
 
   /*
@@ -224,19 +229,20 @@ class WorkersApi {
   /*
    * Fill a lead opening, return the assigned worker id, using the sudo account
    */
-  async dev_fillLeadOpening(openingId, applicationId, sudoAccount) {
+  async dev_fillLeadOpening(openingId, applicationId) {
     const fillTx = this.dev_makeFillOpeningTx(openingId, applicationId)
     const sudoTx = this.base.api.tx.sudo.sudo(fillTx)
-    const filled = await this.dev_submitFillOpeningTx(sudoAccount, sudoTx)
+    const filled = await this.dev_submitFillOpeningTx(
+      await this.base.identities.getSudoAccount(), sudoTx)
     return getWorkerIdFromApplicationIdToWorkerIdMap(filled, applicationId)
   }
 
   /*
    * Fill a storage opening, return the assigned worker id, using the lead account
    */
-  async dev_fillStorageOpening(openingId, applicationId, leadAccount) {
+  async dev_fillStorageOpening(openingId, applicationId) {
     const fillTx = this.dev_makeFillOpeningTx(openingId, applicationId)
-    const filled = await this.dev_submitFillOpeningTx(leadAccount, fillTx)
+    const filled = await this.dev_submitFillOpeningTx(await this.getLeadRoleAccount(), fillTx)
     return getWorkerIdFromApplicationIdToWorkerIdMap(filled, applicationId)
   }
 
@@ -244,21 +250,18 @@ class WorkersApi {
    * Constructs a FillOpening transaction
    */
   dev_makeFillOpeningTx(openingId, applicationId) {
-    const fillTx = this.base.api.tx.storageWorkingGroup.fillOpening(openingId, [applicationId], null)
-    return fillTx
+    return this.base.api.tx.storageWorkingGroup.fillOpening(openingId, [applicationId], null)
   }
 
   /*
    * Dispatches a fill opening tx and returns a map of the application id to their new assigned worker ids.
    */
   async dev_submitFillOpeningTx(senderAccount, tx) {
-    const filledMap = await this.base.signAndSendThenGetEventResult(senderAccount, tx, {
+    return this.base.signAndSendThenGetEventResult(senderAccount, tx, {
       eventModule: 'storageWorkingGroup',
       eventName: 'OpeningFilled',
       eventProperty: 'ApplicationIdToWorkerIdMap'
     })
-
-    return filledMap
   }
 }
 

@@ -57,7 +57,7 @@ const init = async (api) => {
   debug(`Ensuring Alice is sudo`)
 
   // make sure alice is sudo - indirectly checking this is a dev chain
-  const sudo = await api.api.query.sudo.key()
+  const sudo = await api.identities.getSudoAccount()
 
   if (!sudo.eq(alice)) {
     throw new Error('Setup requires Alice to be sudo. Are you sure you are running a devchain?')
@@ -90,24 +90,29 @@ const init = async (api) => {
 
   // Make alice the storage lead
   debug('Making Alice the storage Lead')
-  const leadOpeningId = await api.workers.dev_addStorageLeadOpening(alice)
+  const leadOpeningId = await api.workers.dev_addStorageLeadOpening()
   const leadApplicationId = await api.workers.dev_applyOnOpening(leadOpeningId, aliceMemberId, alice, alice)
-  api.workers.dev_beginLeadOpeningReview(leadOpeningId, alice)
-  api.workers.dev_fillLeadOpening(leadOpeningId, leadApplicationId, alice)
+  api.workers.dev_beginLeadOpeningReview(leadOpeningId)
+  await api.workers.dev_fillLeadOpening(leadOpeningId, leadApplicationId)
+
+  const leadAccount = await api.workers.getLeadRoleAccount()
+  if (!leadAccount.eq(alice)) {
+    throw new Error('Setting alice as lead failed')
+  }
 
   // Create a storage openinging, apply, start review, and fill opening
   debug(`Making ${ROLE_ACCOUNT_URI} account a storage provider`)
 
-  const openingId = await api.workers.dev_addStorageOpening(alice)
-  debug(`created new opening id ${openingId}`)
+  const openingId = await api.workers.dev_addStorageOpening()
+  debug(`created new storage opening: ${openingId}`)
 
   const applicationId = await api.workers.dev_applyOnOpening(openingId, aliceMemberId, alice, roleAccount)
-  debug(`created application id ${applicationId}`)
+  debug(`applied with application id: ${applicationId}`)
 
-  api.workers.dev_beginStorageOpeningReview(openingId, alice)
+  api.workers.dev_beginStorageOpeningReview(openingId)
 
   debug(`filling storage opening`)
-  const providerId = await api.workers.dev_fillStorageOpening(openingId, applicationId, alice)
+  const providerId = await api.workers.dev_fillStorageOpening(openingId, applicationId)
 
   debug(`Assigned storage provider id: ${providerId}`)
 

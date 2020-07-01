@@ -225,6 +225,10 @@ class IdentitiesApi {
 
     return pair
   }
+
+  getSudoAccount() {
+    return this.base.api.query.sudo.key()
+  }
 }
 
 module.exports = {

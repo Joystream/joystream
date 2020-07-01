@@ -157,9 +157,10 @@ class RuntimeApi {
    * callback is invoked with matching events.
    */
   async signAndSend (accountId, tx, attempts, subscribed, callback) {
-    // Prepare key
-    const from_key = this.identities.keyring.getPair(accountId)
+    accountId = this.identities.keyring.encodeAddress(accountId)
 
+    // Key must be unlocked
+    const from_key = this.identities.keyring.getPair(accountId)
     if (from_key.isLocked) {
       throw new Error('Must unlock key before using it to sign!')
     }

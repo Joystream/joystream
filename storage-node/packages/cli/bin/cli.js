@@ -74,11 +74,15 @@ function load_identity (api, filename, passphrase) {
 const commands = {
   // add Alice well known account as storage provider
   'dev-init': async (api) => {
+    // dev accounts are automatically loaded, no need to add explicitly to keyring
+    // load_identity(api)
     let dev = require('./dev')
     return dev.init(api)
   },
   // Checks that the setup done by dev-init command was successful.
   'dev-check': async (api) => {
+    // dev accounts are automatically loaded, no need to add explicitly to keyring
+    // load_identity(api)
     let dev = require('./dev')
     return dev.check(api)
   },
