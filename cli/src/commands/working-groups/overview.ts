@@ -28,6 +28,7 @@ export default class WorkingGroupsOverview extends WorkingGroupsCommandBase {
 
         displayHeader('Members');
         const membersRows = members.map(m => ({
+            '': lead?.workerId.eq(m.workerId) ? "\u{2B50}" : '', // A nice star for the lead
             'Worker id': m.workerId.toString(),
             'Member id': m.memberId.toString(),
             'Member handle': m.profile.handle.toString(),

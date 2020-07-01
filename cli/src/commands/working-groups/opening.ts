@@ -58,6 +58,7 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
         const openingRow = {
             'WG Opening ID': opening.wgOpeningId,
             'Opening ID': opening.openingId,
+            'Type': opening.type.type,
             ...this.stageColumns(opening.stage),
             ...this.stakeColumns(opening.stakes)
         };

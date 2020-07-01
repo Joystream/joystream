@@ -7,6 +7,7 @@ import chalk from 'chalk';
 import { Reward } from '../../Types';
 import { positiveInt } from '../../validators/common';
 import { createParamOptions } from '../../helpers/promptOptions';
+import ExitCodes from '../../ExitCodes';
 
 export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsCommandBase {
     static description = 'Change given worker\'s reward (amount only). Requires lead access.';
@@ -40,9 +41,14 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
 
         const workerId = parseInt(args.workerId);
         // This will also make sure the worker is valid
-        const groupMember = await this.getApi().groupMember(this.group, workerId);
+        const groupMember = await this.getWorkerForLeadAction(workerId);
 
         const { reward } = groupMember;
+
+        if (!reward) {
+            this.error('There is no reward relationship associated with this worker!', { exit: ExitCodes.InvalidInput });
+        }
+
         console.log(chalk.white(`Current worker reward: ${this.formatReward(reward)}`));
 
         const newRewardValue = await this.promptForParam('BalanceOfMint', createParamOptions('new_amount', undefined, positiveInt()));

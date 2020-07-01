@@ -1,7 +1,7 @@
 import ExitCodes from '../ExitCodes';
 import AccountsCommandBase from './AccountsCommandBase';
 import { flags } from '@oclif/command';
-import { WorkingGroups, AvailableGroups, NamedKeyringPair, GroupMember, GroupOpening, ApiMethodArg, ApiMethodNamedArgs } from '../Types';
+import { WorkingGroups, AvailableGroups, NamedKeyringPair, GroupMember, GroupOpening, ApiMethodArg, ApiMethodNamedArgs, OpeningStatus, GroupApplication } from '../Types';
 import { apiModuleByGroup } from '../Api';
 import { CLIError } from '@oclif/errors';
 import fs from 'fs';
@@ -151,6 +151,64 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
         });
 
         return selectedDraftName;
+    }
+
+    async getOpeningForLeadAction(id: number, requiredStatus?: OpeningStatus): Promise<GroupOpening> {
+        const opening = await this.getApi().groupOpening(this.group, id);
+
+        if (!opening.type.isOfType('Worker')) {
+            this.error('A lead can only manage Worker openings!',  { exit: ExitCodes.AccessDenied });
+        }
+
+        if (requiredStatus && opening.stage.status !== requiredStatus) {
+            this.error(
+                `The opening needs to be in "${_.startCase(requiredStatus)}" stage! ` +
+                `This one is: "${_.startCase(opening.stage.status)}"`,
+                { exit: ExitCodes.InvalidInput }
+            );
+        }
+
+        return opening;
+    }
+
+    async getApplicationForLeadAction(id: number, requiredStatus?: ApplicationStageKeys): Promise<GroupApplication> {
+        const application = await this.getApi().groupApplication(this.group, id);
+        const opening = await this.getApi().groupOpening(this.group, application.wgOpeningId);
+
+        if (!opening.type.isOfType('Worker')) {
+            this.error('A lead can only manage Worker opening applications!',  { exit: ExitCodes.AccessDenied });
+        }
+
+        if (requiredStatus && application.stage !== requiredStatus) {
+            this.error(
+                `The application needs to have "${_.startCase(requiredStatus)}" status! ` +
+                `This one has: "${_.startCase(application.stage)}"`,
+                { exit: ExitCodes.InvalidInput }
+            );
+        }
+
+        return application;
+    }
+
+    async getWorkerForLeadAction(id: number, requireStakeProfile: boolean = false) {
+        const groupMember = await this.getApi().groupMember(this.group, id);
+        const groupLead = await this.getApi().groupLead(this.group);
+
+        if (groupLead?.workerId.eq(groupMember.workerId)) {
+            this.error('A lead cannot manage his own role this way!', { exit: ExitCodes.AccessDenied });
+        }
+
+        if (requireStakeProfile && !groupMember.stake) {
+            this.error('This worker has no associated role stake profile!', { exit: ExitCodes.InvalidInput });
+        }
+
+        return groupMember;
+    }
+
+    // Helper for better TS handling.
+    // We could also use some magic with conditional types instead, but those don't seem be very well supported yet.
+    async getWorkerWithStakeForLeadAction(id: number) {
+        return (await this.getWorkerForLeadAction(id, true)) as (GroupMember & Required<Pick<GroupMember, 'stake'>>);
     }
 
     loadOpeningDraftParams(draftName: string): ApiMethodNamedArgs {

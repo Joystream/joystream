@@ -6,7 +6,7 @@ import chalk from 'chalk';
 import { createParamOptions } from '../../helpers/promptOptions';
 
 export default class WorkingGroupsLeaveRole extends WorkingGroupsCommandBase {
-    static description = 'Leave the role associated with currently selected account.';
+    static description = 'Leave the worker or lead role associated with currently selected account.';
     static flags = {
         ...WorkingGroupsCommandBase.flags,
     };

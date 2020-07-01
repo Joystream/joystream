@@ -1,7 +1,6 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase';
 import _ from 'lodash';
 import { OpeningStatus } from '../../Types';
-import ExitCodes from '../../ExitCodes';
 import { apiModuleByGroup } from '../../Api';
 import { OpeningId } from '@joystream/types/hiring';
 import { ApplicationIdSet } from '@joystream/types/working-group';
@@ -29,11 +28,8 @@ export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
         // Lead-only gate
         await this.getRequiredLead();
 
-        const opening = await this.getApi().groupOpening(this.group, parseInt(args.wgOpeningId));
-
-        if (opening.stage.status !== OpeningStatus.InReview) {
-            this.error('This opening is not in the Review stage!', { exit: ExitCodes.InvalidInput });
-        }
+        const openingId = parseInt(args.wgOpeningId);
+        const opening = await this.getOpeningForLeadAction(openingId, OpeningStatus.InReview);
 
         const applicationIds = await this.promptForApplicationsToAccept(opening);
         const rewardPolicyOpt = await this.promptForParam(`Option<${RewardPolicy.name}>`, createParamOptions('RewardPolicy'));
@@ -45,13 +41,13 @@ export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
             apiModuleByGroup[this.group],
             'fillOpening',
             [
-                new OpeningId(opening.wgOpeningId),
+                new OpeningId(openingId),
                 new ApplicationIdSet(applicationIds),
                 rewardPolicyOpt
             ]
         );
 
-        this.log(chalk.green(`Opening ${chalk.white(opening.wgOpeningId)} succesfully filled!`));
+        this.log(chalk.green(`Opening ${chalk.white(openingId)} succesfully filled!`));
         this.log(
             chalk.green('Accepted working group application IDs: ') +
             chalk.white(applicationIds.length ? applicationIds.join(chalk.green(', ')) : 'NONE')

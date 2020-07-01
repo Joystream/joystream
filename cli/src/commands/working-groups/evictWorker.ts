@@ -29,9 +29,10 @@ export default class WorkingGroupsEvictWorker extends WorkingGroupsCommandBase {
 
         const workerId = parseInt(args.workerId);
         // This will also make sure the worker is valid
-        const groupMember = await this.getApi().groupMember(this.group, workerId);
+        const groupMember = await this.getWorkerForLeadAction(workerId);
 
-        const rationale = await this.promptForParam('Bytes', createParamOptions('rationale'));  // TODO: Terminate worker text limits? (minMaxStr)
+        // TODO: Terminate worker text limits? (minMaxStr)
+        const rationale = await this.promptForParam('Bytes', createParamOptions('rationale'));
         const shouldSlash = groupMember.stake
             ?
                 await this.simplePrompt({

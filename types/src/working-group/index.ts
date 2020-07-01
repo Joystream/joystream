@@ -1,4 +1,4 @@
-import { getTypeRegistry, Bytes, BTreeMap, Option, Enum } from '@polkadot/types';
+import { getTypeRegistry, Bytes, BTreeMap, Option} from '@polkadot/types';
 import { u16, Null } from '@polkadot/types/primitive';
 import { AccountId, BlockNumber } from '@polkadot/types/interfaces';
 import { BTreeSet, JoyStruct } from '../common';
@@ -240,22 +240,13 @@ export class WorkingGroupOpeningPolicyCommitment extends JoyStruct<IWorkingGroup
   }
 };
 
-export enum OpeningTypeKeys {
-  Leader = 'Leader',
-  Worker = 'Worker'
-};
 
-export class OpeningType extends Enum {
-  constructor (value?: any, index?: number) {
-    super(
-      {
-        Leader: Null,
-        Worker: Null
-      },
-      value, index
-    );
-  }
-};
+export class OpeningType_Leader extends Null { };
+export class OpeningType_Worker extends Null { };
+export class OpeningType extends JoyEnum({
+  Leader: OpeningType_Leader,
+  Worker: OpeningType_Worker
+} as const) { };
 
 export type IOpening = {
   hiring_opening_id: OpeningId,

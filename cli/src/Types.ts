@@ -7,7 +7,7 @@ import { u32 } from '@polkadot/types/primitive';
 import { BlockNumber, Balance, AccountId } from '@polkadot/types/interfaces';
 import { DerivedBalances } from '@polkadot/api-derive/types';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { WorkerId } from '@joystream/types/working-group';
+import { WorkerId, OpeningType } from '@joystream/types/working-group';
 import { Profile, MemberId } from '@joystream/types/members';
 import {
     GenericJoyStreamRoleSchema,
@@ -113,6 +113,7 @@ export type GroupMember = {
 export type GroupApplication = {
     wgApplicationId: number;
     applicationId: number;
+    wgOpeningId: number;
     member: Profile | null;
     roleAccout: AccountId;
     stakes: {
@@ -150,6 +151,7 @@ export type GroupOpening = {
     opening: Opening;
     stakes: GroupOpeningStakes;
     applications: GroupApplication[];
+    type: OpeningType;
 }
 
 // Some helper structs for generating human_readable_text in working group opening extrinsic

@@ -10,7 +10,7 @@ import { createParamOptions } from '../../helpers/promptOptions';
 
 export default class WorkingGroupsIncreaseStake extends WorkingGroupsCommandBase {
     static description =
-        'Increases role (lead/worker) stake. Requires active role account to be selected.';
+        'Increases current role (lead/worker) stake. Requires active role account to be selected.';
     static flags = {
         ...WorkingGroupsCommandBase.flags,
     };

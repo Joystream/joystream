@@ -1,5 +1,5 @@
 import { ApiParamsOptions, ApiParamOptions, HRTStruct } from '../Types';
-import { OpeningType, OpeningTypeKeys, SlashingTerms, UnslashableTerms } from '@joystream/types/working-group';
+import { OpeningType, SlashingTerms, UnslashableTerms, OpeningType_Worker } from '@joystream/types/working-group';
 import { Bytes } from '@polkadot/types';
 import { schemaValidator } from '@joystream/types/hiring';
 import { WorkingGroupOpeningPolicyCommitment } from '@joystream/types/working-group';
@@ -19,7 +19,7 @@ class AddWrokerOpeningOptions implements ApiParamsOptions {
     // Lock value for opening_type
     public opening_type: ApiParamOptions<OpeningType> = {
         value: {
-            default: new OpeningType(OpeningTypeKeys.Worker), // TODO: Use JoyEnum
+            default: OpeningType.create('Worker', new OpeningType_Worker()),
             locked: true
         }
     };

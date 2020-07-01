@@ -32,12 +32,7 @@ export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsComma
         await this.getRequiredLead();
 
         const workerId = parseInt(args.workerId);
-        // This will also make sure the worker is valid
-        const groupMember = await this.getApi().groupMember(this.group, workerId);
-
-        if (!groupMember.stake) {
-            this.error('This worker has no associated role stake profile!', { exit: ExitCodes.InvalidInput });
-        }
+        const groupMember = await this.getWorkerWithStakeForLeadAction(workerId);
 
         this.log(chalk.white('Current worker stake: ', formatBalance(groupMember.stake)));
         const balanceValidator = minMaxInt(1, groupMember.stake.toNumber());

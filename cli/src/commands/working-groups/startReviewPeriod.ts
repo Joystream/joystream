@@ -1,7 +1,6 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase';
 import _ from 'lodash';
 import { OpeningStatus } from '../../Types';
-import ExitCodes from '../../ExitCodes';
 import { apiModuleByGroup } from '../../Api';
 import { OpeningId } from '@joystream/types/hiring';
 import chalk from 'chalk';
@@ -26,11 +25,9 @@ export default class WorkingGroupsStartReviewPeriod extends WorkingGroupsCommand
         // Lead-only gate
         await this.getRequiredLead();
 
-        const opening = await this.getApi().groupOpening(this.group, parseInt(args.wgOpeningId));
-
-        if (opening.stage.status !== OpeningStatus.AcceptingApplications) {
-            this.error('This opening is not in "Accepting Applications" stage!', { exit: ExitCodes.InvalidInput });
-        }
+        const openingId = parseInt(args.wgOpeningId);
+        // We don't need the actual opening here, so this is just for validation purposes
+        await this.getOpeningForLeadAction(openingId, OpeningStatus.AcceptingApplications);
 
         await this.requestAccountDecoding(account);
 
@@ -38,9 +35,9 @@ export default class WorkingGroupsStartReviewPeriod extends WorkingGroupsCommand
             account,
             apiModuleByGroup[this.group],
             'beginApplicantReview',
-            [ new OpeningId(opening.wgOpeningId) ]
+            [ new OpeningId(openingId) ]
         );
 
-        this.log(chalk.green(`Opening ${chalk.white(opening.wgOpeningId)} status changed to: ${ chalk.white('In Review') }`));
+        this.log(chalk.green(`Opening ${chalk.white(openingId)} status changed to: ${ chalk.white('In Review') }`));
     }
 }

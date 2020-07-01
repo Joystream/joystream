@@ -360,6 +360,7 @@ export default class Api {
         return {
             wgApplicationId,
             applicationId: appId.toNumber(),
+            wgOpeningId: wgApplication.opening_id.toNumber(),
             member: await this.memberProfileById(wgApplication.member_id),
             roleAccout: wgApplication.role_account_id,
             stakes: {
@@ -407,6 +408,7 @@ export default class Api {
         const opening = await this.hiringOpeningById(openingId);
         const applications = await this.groupOpeningApplications(group, wgOpeningId);
         const stage = await this.parseOpeningStage(opening.stage);
+        const type = groupOpening.opening_type;
         const stakes = {
             application: opening.application_staking_policy.unwrapOr(undefined),
             role: opening.role_staking_policy.unwrapOr(undefined)
@@ -418,7 +420,8 @@ export default class Api {
             opening,
             stage,
             stakes,
-            applications
+            applications,
+            type
         });
     }
 
