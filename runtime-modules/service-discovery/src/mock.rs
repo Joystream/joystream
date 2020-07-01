@@ -130,8 +130,13 @@ impl recurringrewards::Trait for Test {
     type RewardRelationshipId = u64;
 }
 
+parameter_types! {
+    pub const MaxWorkerNumberLimit: u32 = 3;
+}
+
 impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type Event = MetaEvent;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
 impl timestamp::Trait for Test {

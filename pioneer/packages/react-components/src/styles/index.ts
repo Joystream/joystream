@@ -124,10 +124,7 @@ export default createGlobalStyle`
     font-weight: 100;
   }
 
-  h1 {
-    text-transform: lowercase;
-
-    em {
+  h1 em {
       font-style: normal;
       text-transform: none;
     }
