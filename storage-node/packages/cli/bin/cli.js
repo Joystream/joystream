@@ -103,7 +103,7 @@ const commands = {
     // Generate content ID
     // FIXME this require path is like this because of
     // https://github.com/Joystream/apps/issues/207
-    const { ContentId } = require('@joystream/types/lib/media')
+    const { ContentId } = require('@joystream/types/media')
     var cid = ContentId.generate()
     cid = cid.encode().toString()
     debug('Generated content ID: ' + chalk.green(cid))
@@ -234,7 +234,6 @@ async function main () {
 
 main()
   .then(() => {
-    debug('Process exiting gracefully.')
     process.exit(0)
   })
   .catch((err) => {

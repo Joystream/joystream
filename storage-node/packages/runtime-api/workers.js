@@ -20,7 +20,7 @@
 
 const debug = require('debug')('joystream:runtime:roles')
 const BN = require('bn.js')
-const { Worker } = require('@joystream/types/lib/working-group')
+const { Worker } = require('@joystream/types/working-group')
 
 /*
  * Add worker related functionality to the substrate API.
@@ -62,7 +62,7 @@ class WorkersApi {
    */
   async storageProviderRoleAccount (storageProviderId) {
     const worker = await this.storageWorkerByProviderId(storageProviderId)
-    return worker ? worker.role_account : null
+    return worker ? worker.role_account_id : null
   }
 
   /*
@@ -82,7 +82,7 @@ class WorkersApi {
 
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i]
-      if (providers[id].role_account.eq(roleAccount)) {
+      if (providers[id].role_account_id.eq(roleAccount)) {
         return id
       }
     }
@@ -125,38 +125,57 @@ class WorkersApi {
     return { ids, providers }
   }
 
-  // Helper methods below don't really belong in the colossus api, they are here
-  // mainly to be used by the dev-init command in the cli to setup a development environment
+  // Helper methods below don't really belong in the colossus runtime api library.
+  // They are only used by the dev-init command in the cli to setup a development environment
 
   /*
-   * Sets the storage working group lead
+   * Add a new storage group opening using the lead account. Returns the
+   * new opening id.
    */
-  async dev_setLead(sudo, memberId, roleAccount) {
-    const setLeadTx = this.base.api.tx.storageWorkingGroup.setLead(memberId, roleAccount)
-    // make sudo call
-    return this.base.signAndSend(
-      sudo,
-      this.base.api.tx.sudo.sudo(setLeadTx)
-    )
+  async dev_addStorageOpening(leadAccount) {
+    const openTx = this.dev_makeAddOpeningTx('Worker')
+    return this.dev_submitAddOpeningTx(openTx, leadAccount)
   }
 
   /*
-   * Add a new storage group worker opening using the lead account. Returns the
+   * Add a new storage working group lead opening using sudo account. Returns the
    * new opening id.
    */
-  async dev_addWorkerOpening(leadAccount) {
-    const openTx = this.base.api.tx.storageWorkingGroup.addWorkerOpening('CurrentBlock', {
-      application_rationing_policy: {
-        'max_active_applicants': 1
-      },
-      max_review_period_length: 1000
-      // default values for everything else..
-    }, 'dev-opening')
+  async dev_addStorageLeadOpening(sudoAccount) {
+    const openTx = this.dev_makeAddOpeningTx('Leader')
+    const sudoTx = this.base.api.tx.sudo.sudo(openTx)
+    return this.dev_submitAddOpeningTx(sudoTx, sudoAccount)
+  }
 
-    const openingId = await this.base.signAndSendThenGetEventResult(leadAccount, openTx, {
+  /*
+   * Constructs an addOpening tx of openingType
+   */
+  dev_makeAddOpeningTx(openingType) {
+    const openTx = this.base.api.tx.storageWorkingGroup.addOpening(
+      'CurrentBlock',
+      {
+        application_rationing_policy: {
+          'max_active_applicants': 1
+        },
+        max_review_period_length: 1000
+        // default values for everything else..
+      },
+      'dev-opening',
+      openingType
+    )
+
+    return openTx
+  }
+
+  /*
+   * Submits a tx (expecting it to dispatch storageWorkingGroup.addOpening) and returns
+   * the OpeningId from the resulting event.
+   */
+  async dev_submitAddOpeningTx(tx, senderAccount) {
+    const openingId = await this.base.signAndSendThenGetEventResult(senderAccount, tx, {
       eventModule: 'storageWorkingGroup',
-      eventName: 'WorkerOpeningAdded',
-      eventProperty: 'WorkerOpeningId'
+      eventName: 'OpeningAdded',
+      eventProperty: 'OpeningId'
     })
 
     return openingId
@@ -166,40 +185,109 @@ class WorkersApi {
    * Apply on an opening, returns the application id.
    */
   async dev_applyOnOpening(openingId, memberId, memberAccount, roleAccount) {
-    const applyTx = this.base.api.tx.storageWorkingGroup.applyOnWorkerOpening(
+    const applyTx = this.base.api.tx.storageWorkingGroup.applyOnOpening(
       memberId, openingId, roleAccount, null, null, `colossus-${memberId}`
     )
     const applicationId = await this.base.signAndSendThenGetEventResult(memberAccount, applyTx, {
       eventModule: 'storageWorkingGroup',
-      eventName: 'AppliedOnWorkerOpening',
-      eventProperty: 'WorkerApplicationId'
+      eventName: 'AppliedOnOpening',
+      eventProperty: 'ApplicationId'
     })
 
     return applicationId
   }
 
   /*
-   * Move the opening into the review state
+   * Move lead opening to review state using sudo account
    */
-  async dev_beginOpeningReview(openingId, leadAccount) {
-    const reviewTx = this.base.api.tx.storageWorkingGroup.beginWorkerApplicantReview(openingId)
-    return this.base.signAndSend(leadAccount, reviewTx)
+  async dev_beginLeadOpeningReview(openingId, sudoAccount) {
+    const beginReviewTx = this.dev_makeBeginOpeningReviewTx(openingId)
+    const sudoTx = this.base.api.tx.sudo.sudo(beginReviewTx)
+    return this.base.signAndSend(sudoAccount, sudoTx)
   }
 
   /*
-   * Fill an opening, returns a map of the application id to their new assigned worker ids.
+   * Move a storage opening to review state using lead account
    */
-  async dev_fillOpeningWithSingleApplication(openingId, leadAccount, applicationId) {
-    const fillTx = this.base.api.tx.storageWorkingGroup.fillWorkerOpening(openingId, [applicationId], null)
+  async dev_beginStorageOpeningReview(openingId, leadAccount) {
+    const beginReviewTx = this.dev_makeBeginOpeningReviewTx(openingId)
+    return this.base.signAndSend(leadAccount, beginReviewTx)
+  }
 
-    const filledMap = await this.base.signAndSendThenGetEventResult(leadAccount, fillTx, {
+  /*
+   * Constructs a beingApplicantReview tx for openingId, which puts an opening into the review state
+   */
+  dev_makeBeginOpeningReviewTx(openingId) {
+    return this.base.api.tx.storageWorkingGroup.beginApplicantReview(openingId)
+  }
+
+  /*
+   * Fill a lead opening, return the assigned worker id, using the sudo account
+   */
+  async dev_fillLeadOpening(openingId, applicationId, sudoAccount) {
+    const fillTx = this.dev_makeFillOpeningTx(openingId, applicationId)
+    const sudoTx = this.base.api.tx.sudo.sudo(fillTx)
+    const filled = await this.dev_submitFillOpeningTx(sudoAccount, sudoTx)
+    return getWorkerIdFromApplicationIdToWorkerIdMap(filled, applicationId)
+  }
+
+  /*
+   * Fill a storage opening, return the assigned worker id, using the lead account
+   */
+  async dev_fillStorageOpening(openingId, applicationId, leadAccount) {
+    const fillTx = this.dev_makeFillOpeningTx(openingId, applicationId)
+    const filled = await this.dev_submitFillOpeningTx(leadAccount, fillTx)
+    return getWorkerIdFromApplicationIdToWorkerIdMap(filled, applicationId)
+  }
+
+  /*
+   * Constructs a FillOpening transaction
+   */
+  dev_makeFillOpeningTx(openingId, applicationId) {
+    const fillTx = this.base.api.tx.storageWorkingGroup.fillOpening(openingId, [applicationId], null)
+    return fillTx
+  }
+
+  /*
+   * Dispatches a fill opening tx and returns a map of the application id to their new assigned worker ids.
+   */
+  async dev_submitFillOpeningTx(senderAccount, tx) {
+    const filledMap = await this.base.signAndSendThenGetEventResult(senderAccount, tx, {
       eventModule: 'storageWorkingGroup',
-      eventName: 'WorkerOpeningFilled',
-      eventProperty: 'WorkerApplicationIdToWorkerIdMap'
+      eventName: 'OpeningFilled',
+      eventProperty: 'ApplicationIdToWorkerIdMap'
     })
 
     return filledMap
   }
+}
+
+/*
+ * Finds assigned worker id corresponding to the application id from the resulting
+ * ApplicationIdToWorkerIdMap map in the OpeningFilled event. Expects map to
+ * contain at least one entry.
+ */
+function getWorkerIdFromApplicationIdToWorkerIdMap (filledMap, applicationId) {
+  if (filledMap.size === 0) {
+    throw new Error('Expected opening to be filled!')
+  }
+
+  let ourApplicationIdKey
+
+  for (let key of filledMap.keys()) {
+    if (key.eq(applicationId)) {
+      ourApplicationIdKey = key
+      break
+    }
+  }
+
+  if (!ourApplicationIdKey) {
+    throw new Error('Expected application id to have been filled!')
+  }
+
+  const workerId = filledMap.get(ourApplicationIdKey)
+
+  return workerId
 }
 
 module.exports = {

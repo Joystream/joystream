@@ -89,40 +89,25 @@ const init = async (api) => {
   }
 
   // Make alice the storage lead
-  debug('Setting Alice as Lead')
-  api.workers.dev_setLead(alice, aliceMemberId, alice)
+  debug('Making Alice the storage Lead')
+  const leadOpeningId = await api.workers.dev_addStorageLeadOpening(alice)
+  const leadApplicationId = await api.workers.dev_applyOnOpening(leadOpeningId, aliceMemberId, alice, alice)
+  api.workers.dev_beginLeadOpeningReview(leadOpeningId, alice)
+  api.workers.dev_fillLeadOpening(leadOpeningId, leadApplicationId, alice)
 
-  // create an openinging, apply, start review, fill opening
+  // Create a storage openinging, apply, start review, and fill opening
   debug(`Making ${ROLE_ACCOUNT_URI} account a storage provider`)
 
-  const openingId = await api.workers.dev_addWorkerOpening(alice)
+  const openingId = await api.workers.dev_addStorageOpening(alice)
   debug(`created new opening id ${openingId}`)
 
   const applicationId = await api.workers.dev_applyOnOpening(openingId, aliceMemberId, alice, roleAccount)
   debug(`created application id ${applicationId}`)
 
-  api.workers.dev_beginOpeningReview(openingId, alice)
+  api.workers.dev_beginStorageOpeningReview(openingId, alice)
 
-  const filledMap = await api.workers.dev_fillOpeningWithSingleApplication(openingId, alice, applicationId)
-
-  if (filledMap.size === 0) {
-    throw new Error('Expected opening to be filled!')
-  }
-
-  let ourApplicationIdKey
-
-  for (let key of filledMap.keys()) {
-    if (key.eq(applicationId)) {
-      ourApplicationIdKey = key
-      break
-    }
-  }
-
-  if (!ourApplicationIdKey) {
-    throw new Error('Expected our application id to have been filled!')
-  }
-
-  const providerId = filledMap.get(ourApplicationIdKey)
+  debug(`filling storage opening`)
+  const providerId = await api.workers.dev_fillStorageOpening(openingId, applicationId, alice)
 
   debug(`Assigned storage provider id: ${providerId}`)
 

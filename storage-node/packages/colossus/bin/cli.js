@@ -294,6 +294,9 @@ async function main () {
 }
 
 main()
+  .then(() => {
+    process.exit(0)
+  })
   .catch((err) => {
     console.error(chalk.red(err.stack))
     process.exit(-1)
