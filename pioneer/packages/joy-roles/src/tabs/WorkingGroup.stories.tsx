@@ -75,6 +75,6 @@ export function ContentCuratorsSection () {
   ];
 
   return (
-    <ContentCurators members={members} rolesAvailable={boolean('Roles available', true)} />
+    <ContentCurators workers={members} rolesAvailable={boolean('Roles available', true)} />
   );
 }

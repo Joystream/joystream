@@ -52,10 +52,11 @@ export class Transport extends TransportBase implements ITransport {
     });
   }
 
-  curationGroup (): Promise<WorkingGroupMembership> {
+  async curationGroup (): Promise<WorkingGroupMembership> {
     return this.simulateApiResponse<WorkingGroupMembership>({
+      leadStatus: await this.groupLeadStatus(),
       rolesAvailable: true,
-      members: [
+      workers: [
         {
           memberId: new MemberId(1),
           roleAccount: new GenericAccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
@@ -112,10 +113,11 @@ export class Transport extends TransportBase implements ITransport {
     });
   }
 
-  storageGroup (): Promise<WorkingGroupMembership> {
+  async storageGroup (): Promise<WorkingGroupMembership> {
     return this.simulateApiResponse<WorkingGroupMembership>({
+      leadStatus: await this.groupLeadStatus(),
       rolesAvailable: true,
-      members: [
+      workers: [
         {
           memberId: new MemberId(1),
           roleAccount: new GenericAccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),

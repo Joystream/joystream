@@ -88,6 +88,7 @@ type GroupLead = Lead | Worker;
 type GroupLeadWithMemberId = {
   lead: GroupLead;
   memberId: MemberId;
+  workerId?: WorkerId; // Only when it's `working-groups` module lead
 }
 
 type WGApiMapping = {
@@ -331,7 +332,8 @@ export class Transport extends TransportBase implements ITransport {
 
     return {
       lead: leadWorker,
-      memberId: leadWorker.member_id
+      memberId: leadWorker.member_id,
+      workerId: leadWorkerId
     };
   }
 
@@ -350,6 +352,7 @@ export class Transport extends TransportBase implements ITransport {
       return {
         lead: {
           memberId: currentLead.memberId,
+          workerId: currentLead.workerId,
           roleAccount: currentLead.lead.role_account_id,
           profile: profile.unwrap(),
           title: _.startCase(group) + ' Lead',
@@ -366,29 +369,30 @@ export class Transport extends TransportBase implements ITransport {
 
   async groupOverview (group: WorkingGroups): Promise<WorkingGroupMembership> {
     const rolesAvailable = await this.areAnyGroupRolesOpen(group);
+    const leadStatus = await this.groupLeadStatus(group);
 
     const nextId = await this.cachedApiMethodByGroup(group, 'nextWorkerId')() as GroupWorkerId;
 
-    // This is chain specfic, but if next id is still 0, it means no curators have been added yet
-    if (nextId.eq(0)) {
-      return {
-        members: [],
-        rolesAvailable
-      };
+    let workersWithIds: { worker: GroupWorker; id: GroupWorkerId }[] = [];
+    // This is chain specfic, but if next id is still 0, it means no workers have been added yet
+    if (!nextId.eq(0)) {
+      const values = new MultipleLinkedMapEntry<GroupWorkerId, GroupWorker>(
+        ActorId,
+        workingGroupsApiMapping[group].workerType,
+        await this.cachedApiMethodByGroup(group, 'workerById')() as GroupWorker
+      );
+
+      workersWithIds = values.linked_values
+        // First bind workers with ids
+        .map((worker, i) => ({ worker, id: values.linked_keys[i] }))
+        // Filter by: active and "not lead"
+        .filter(({ worker, id }) => worker.is_active && (!leadStatus.lead?.workerId || !id.eq(leadStatus.lead.workerId)));
     }
 
-    const values = new MultipleLinkedMapEntry<GroupWorkerId, GroupWorker>(
-      ActorId,
-      workingGroupsApiMapping[group].workerType,
-      await this.cachedApiMethodByGroup(group, 'workerById')() as GroupWorker
-    );
-
-    const workers = values.linked_values.filter(value => value.is_active).reverse();
-    const workerIds = values.linked_keys.filter((v, k) => values.linked_values[k].is_active).reverse();
-
     return {
-      members: await Promise.all(
-        workers.map((worker, k) => this.groupMember(group, workerIds[k], worker))
+      leadStatus,
+      workers: await Promise.all(
+        workersWithIds.map(({ worker, id }) => this.groupMember(group, id, worker))
       ),
       rolesAvailable
     };

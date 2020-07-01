@@ -10,7 +10,8 @@ import styled from 'styled-components';
 import _ from 'lodash';
 
 export type WorkingGroupMembership = {
-  members: GroupMember[];
+  leadStatus: GroupLeadStatus;
+  workers: GroupMember[];
   rolesAvailable: boolean;
 }
 
@@ -69,11 +70,11 @@ type GroupOverviewProps = GroupOverviewOuterProps & {
 }
 
 const GroupOverview = Loadable<GroupOverviewProps>(
-  ['members', 'leadStatus'],
+  ['workers', 'leadStatus'],
   ({
     group,
     description,
-    members,
+    workers,
     leadStatus,
     rolesAvailable,
     customGroupName,
@@ -88,8 +89,8 @@ const GroupOverview = Loadable<GroupOverviewProps>(
         <h2>{ groupName }</h2>
         <p>{ description }</p>
         <Card.Group>
-          { members!.map((member, key) => (
-            <GroupMemberView key={key} {...member} />
+          { workers!.map((worker, key) => (
+            <GroupMemberView key={key} {...worker} />
           )) }
         </Card.Group>
         { rolesAvailable
