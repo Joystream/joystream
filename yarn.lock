@@ -1358,11 +1358,13 @@
 "@constantinople/types@./types", "@joystream/types@./types":
   version "0.11.0"
   dependencies:
+    "@polkadot/keyring" "^1.7.0-beta.5"
     "@polkadot/types" "^0.96.1"
     "@types/lodash" "^4.14.157"
     "@types/vfile" "^4.0.0"
     ajv "^6.11.0"
     lodash "^4.17.15"
+    moment "^2.24.0"
 
 "@csstools/convert-colors@^1.4.0":
   version "1.4.0"
