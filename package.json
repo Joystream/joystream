@@ -16,7 +16,7 @@
 		"types",
 		"pioneer",
 		"pioneer/packages/*",
-		"storage-node/",
+		"storage-node",
 		"storage-node/packages/*"
 	],
 	"resolutions": {
