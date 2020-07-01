@@ -25,7 +25,7 @@ const mime_types = require('mime-types');
 
 const debug = require('debug')('joystream:colossus:api:asset');
 
-const util_ranges = require('@joystream/util/ranges');
+const util_ranges = require('@joystream/storage-utils/ranges');
 const filter = require('@joystream/storage/filter');
 
 function error_handler(response, err, code)

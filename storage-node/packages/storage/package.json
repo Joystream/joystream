@@ -1,5 +1,5 @@
 {
-  "name": "@joystream/storage",
+  "name": "@joystream/storage-node-backend",
   "version": "0.1.0",
   "description": "Storage management code for Joystream Storage Node",
   "author": "Joystream",

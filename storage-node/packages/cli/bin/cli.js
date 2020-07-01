@@ -21,7 +21,7 @@
 
 const fs = require('fs')
 const assert = require('assert')
-const { RuntimeApi } = require('@joystream/runtime-api')
+const { RuntimeApi } = require('@joystream/storage-runtime-api')
 const meow = require('meow')
 const chalk = require('chalk')
 const _ = require('lodash')

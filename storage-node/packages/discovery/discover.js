@@ -1,10 +1,10 @@
 const axios = require('axios')
 const debug = require('debug')('joystream:discovery:discover')
-const stripEndingSlash = require('@joystream/util/stripEndingSlash')
+const stripEndingSlash = require('@joystream/storage-utils/stripEndingSlash')
 
 const ipfs = require('ipfs-http-client')('localhost', '5001', { protocol: 'http' })
 const BN = require('bn.js')
-const { newExternallyControlledPromise } = require('@joystream/util/externalPromise')
+const { newExternallyControlledPromise } = require('@joystream/storage-utils/externalPromise')
 
 /**
  * Determines if code is running in a browser by testing for the global window object

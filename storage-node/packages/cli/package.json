@@ -39,7 +39,7 @@
     "temp": "^0.9.0"
   },
   "dependencies": {
-    "@joystream/runtime-api": "^0.1.0",
+    "@joystream/storage-runtime-api": "^0.1.0",
     "chalk": "^2.4.2",
     "lodash": "^4.17.11",
     "meow": "^5.0.0",

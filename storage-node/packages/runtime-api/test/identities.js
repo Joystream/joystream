@@ -23,7 +23,7 @@ const expect = require('chai').expect;
 const sinon = require('sinon');
 const temp = require('temp').track();
 
-const { RuntimeApi } = require('@joystream/runtime-api');
+const { RuntimeApi } = require('@joystream/storage-runtime-api');
 
 describe('Identities', () => {
   var api;

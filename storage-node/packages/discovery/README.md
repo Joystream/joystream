@@ -1,6 +1,6 @@
 # Discovery
 
-The `@joystream/discovery` package provides an API for role services to publish
+The `@joystream/service-discovery` package provides an API for role services to publish
 discovery information about themselves, and for consumers to resolve this
 information.
 

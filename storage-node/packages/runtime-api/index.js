@@ -23,13 +23,13 @@ const debug = require('debug')('joystream:runtime:base')
 const { registerJoystreamTypes } = require('@joystream/types')
 const { ApiPromise, WsProvider } = require('@polkadot/api')
 
-const { IdentitiesApi } = require('@joystream/runtime-api/identities')
-const { BalancesApi } = require('@joystream/runtime-api/balances')
-const { WorkersApi } = require('@joystream/runtime-api/workers')
-const { AssetsApi } = require('@joystream/runtime-api/assets')
-const { DiscoveryApi } = require('@joystream/runtime-api/discovery')
+const { IdentitiesApi } = require('@joystream/storage-runtime-api/identities')
+const { BalancesApi } = require('@joystream/storage-runtime-api/balances')
+const { WorkersApi } = require('@joystream/storage-runtime-api/workers')
+const { AssetsApi } = require('@joystream/storage-runtime-api/assets')
+const { DiscoveryApi } = require('@joystream/storage-runtime-api/discovery')
 const AsyncLock = require('async-lock')
-const { newExternallyControlledPromise } = require('@joystream/util/externalPromise')
+const { newExternallyControlledPromise } = require('@joystream/storage-utils/externalPromise')
 
 /*
  * Initialize runtime (substrate) API and keyring.

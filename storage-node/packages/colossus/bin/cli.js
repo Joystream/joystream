@@ -117,7 +117,7 @@ function start_discovery_service ({ api, port }) {
 function get_storage (runtime_api) {
   // TODO at some point, we can figure out what backend-specific connection
   // options make sense. For now, just don't use any configuration.
-  const { Storage } = require('@joystream/storage')
+  const { Storage } = require('@joystream/storage-node-backend')
 
   const options = {
     resolve_content_id: async (content_id) => {
@@ -136,7 +136,7 @@ function get_storage (runtime_api) {
 
 async function init_api_production ({ wsProvider, providerId, keyFile, passphrase }) {
   // Load key information
-  const { RuntimeApi } = require('@joystream/runtime-api')
+  const { RuntimeApi } = require('@joystream/storage-runtime-api')
 
   if (!keyFile) {
     throw new Error('Must specify a --key-file argument for running a storage node.')
@@ -166,7 +166,7 @@ async function init_api_production ({ wsProvider, providerId, keyFile, passphras
 
 async function init_api_development () {
   // Load key information
-  const { RuntimeApi } = require('@joystream/runtime-api')
+  const { RuntimeApi } = require('@joystream/storage-runtime-api')
 
   const wsProvider = 'ws://localhost:9944'
 
@@ -204,7 +204,7 @@ async function announce_public_url (api, publicUrl) {
   }
 
   debug('announcing public url')
-  const { publish } = require('@joystream/discovery')
+  const { publish } = require('@joystream/service-discovery')
 
   try {
     const serviceInformation = get_service_information(publicUrl)
@@ -269,7 +269,7 @@ const commands = {
   },
   'discovery': async () => {
     debug('Starting Joystream Discovery Service')
-    const { RuntimeApi } = require('@joystream/runtime-api')
+    const { RuntimeApi } = require('@joystream/storage-runtime-api')
     const wsProvider = cli.flags.wsProvider
     const api = await RuntimeApi.create({ provider_url: wsProvider })
     const port = cli.flags.port

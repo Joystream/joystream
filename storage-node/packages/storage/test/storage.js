@@ -26,7 +26,7 @@ const expect = chai.expect;
 
 const fs = require('fs');
 
-const { Storage } = require('@joystream/storage');
+const { Storage } = require('@joystream/storage-node-backend');
 
 const IPFS_CID_REGEX = /^Qm[1-9A-HJ-NP-Za-km-z]{44}$/;
 

@@ -32,8 +32,8 @@ const yaml = require('js-yaml');
 // Project requires
 const validateResponses = require('./middleware/validate_responses');
 const fileUploads = require('./middleware/file_uploads');
-const pagination = require('@joystream/util/pagination');
-const storage = require('@joystream/storage');
+const pagination = require('@joystream/storage-utils/pagination');
+const storage = require('@joystream/storage-node-backend');
 
 // Configure app
 function create_app(project_root, storage, runtime)

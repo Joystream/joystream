@@ -1,4 +1,4 @@
-const { RuntimeApi } = require('@joystream/runtime-api')
+const { RuntimeApi } = require('@joystream/storage-runtime-api')
 
 const { discover, publish } = require('./')
 

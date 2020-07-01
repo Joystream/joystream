@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-const { RuntimeApi } = require('@joystream/runtime-api')
+const { RuntimeApi } = require('@joystream/storage-runtime-api')
 const { encodeAddress } = require('@polkadot/keyring')
-const { discover } = require('@joystream/discovery')
+const { discover } = require('@joystream/service-discovery')
 const axios = require('axios')
-const stripEndingSlash = require('@joystream/util/stripEndingSlash')
+const stripEndingSlash = require('@joystream/storage-utils/stripEndingSlash')
 
 async function main () {
   const runtime = await RuntimeApi.create()
