@@ -9,6 +9,20 @@ use rstd::marker::PhantomData;
 use rstd::vec::Vec;
 use srml_support::print;
 
+// The macro binds working group outer-level Call with the provided inner-level working group
+// extrinsic call. Outer-call is defined by the provided WorkingGroup param expression.
+
+//Params:
+// - $working_group: expression returning the 'common::working_group::WorkingGroup' enum
+// - $working_group_instance_call: expression returning the exact working group instance extrinsic call
+macro_rules! wrap_working_group_call {
+    ($working_group:expr, $working_group_instance_call:expr) => {{
+        match $working_group {
+            WorkingGroup::Storage => Call::StorageWorkingGroup($working_group_instance_call),
+        }
+    }};
+}
+
 /// _ProposalEncoder_ implementation. It encodes extrinsics with proposal details parameters
 /// using Runtime Call and parity codec.
 pub struct ExtrinsicProposalEncoder;
@@ -51,69 +65,59 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                 return Vec::new();
             }
             ProposalDetails::AddWorkingGroupLeaderOpening(add_opening_params) => {
-                match add_opening_params.working_group {
-                    WorkingGroup::Storage => {
-                        Call::StorageWorkingGroup(Wg::create_add_opening_call(add_opening_params))
-                    }
-                }
+                wrap_working_group_call!(
+                    add_opening_params.working_group,
+                    Wg::create_add_opening_call(add_opening_params)
+                )
             }
             ProposalDetails::BeginReviewWorkingGroupLeaderApplications(
                 opening_id,
                 working_group,
-            ) => match working_group {
-                WorkingGroup::Storage => {
-                    Call::StorageWorkingGroup(Wg::create_begin_review_applications_call(opening_id))
-                }
-            },
+            ) => wrap_working_group_call!(
+                working_group,
+                Wg::create_begin_review_applications_call(opening_id)
+            ),
             ProposalDetails::FillWorkingGroupLeaderOpening(fill_opening_params) => {
-                match fill_opening_params.working_group {
-                    WorkingGroup::Storage => {
-                        Call::StorageWorkingGroup(Wg::create_fill_opening_call(fill_opening_params))
-                    }
-                }
+                wrap_working_group_call!(
+                    fill_opening_params.working_group,
+                    Wg::create_fill_opening_call(fill_opening_params)
+                )
             }
             ProposalDetails::SetWorkingGroupMintCapacity(mint_balance, working_group) => {
-                match working_group {
-                    WorkingGroup::Storage => {
-                        Call::StorageWorkingGroup(Wg::create_set_mint_capacity_call(mint_balance))
-                    }
-                }
+                wrap_working_group_call!(
+                    working_group,
+                    Wg::create_set_mint_capacity_call(mint_balance)
+                )
             }
             ProposalDetails::DecreaseWorkingGroupLeaderStake(
                 worker_id,
                 decreasing_stake,
                 working_group,
-            ) => match working_group {
-                WorkingGroup::Storage => Call::StorageWorkingGroup(Wg::create_decrease_stake_call(
-                    worker_id,
-                    decreasing_stake,
-                )),
-            },
+            ) => wrap_working_group_call!(
+                working_group,
+                Wg::create_decrease_stake_call(worker_id, decreasing_stake)
+            ),
             ProposalDetails::SlashWorkingGroupLeaderStake(
                 worker_id,
                 slashing_stake,
                 working_group,
-            ) => match working_group {
-                WorkingGroup::Storage => Call::StorageWorkingGroup(Wg::create_slash_stake_call(
-                    worker_id,
-                    slashing_stake,
-                )),
-            },
+            ) => wrap_working_group_call!(
+                working_group,
+                Wg::create_slash_stake_call(worker_id, slashing_stake,)
+            ),
             ProposalDetails::SetWorkingGroupLeaderReward(
                 worker_id,
                 reward_amount,
                 working_group,
-            ) => match working_group {
-                WorkingGroup::Storage => {
-                    Call::StorageWorkingGroup(Wg::create_set_reward_call(worker_id, reward_amount))
-                }
-            },
+            ) => wrap_working_group_call!(
+                working_group,
+                Wg::create_set_reward_call(worker_id, reward_amount)
+            ),
             ProposalDetails::TerminateWorkingGroupLeaderRole(terminate_role_params) => {
-                match terminate_role_params.working_group {
-                    WorkingGroup::Storage => {
-                        Call::StorageWorkingGroup(Wg::terminate_role_call(terminate_role_params))
-                    }
-                }
+                wrap_working_group_call!(
+                    terminate_role_params.working_group,
+                    Wg::terminate_role_call(terminate_role_params)
+                )
             }
         };
 
