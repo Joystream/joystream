@@ -7,6 +7,7 @@ import { OpeningId } from '@joystream/types/hiring';
 import { ApplicationIdSet } from '@joystream/types/working-group';
 import { RewardPolicy } from '@joystream/types/content-working-group';
 import chalk from 'chalk';
+import { createParamOptions } from '../../helpers/promptOptions';
 
 export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
     static description = 'Allows filling working group opening that\'s currently in review. Requires lead access.';
@@ -35,7 +36,7 @@ export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
         }
 
         const applicationIds = await this.promptForApplicationsToAccept(opening);
-        const rewardPolicyOpt = await this.promptForParam(`Option<${RewardPolicy.name}>`, 'RewardPolicy');
+        const rewardPolicyOpt = await this.promptForParam(`Option<${RewardPolicy.name}>`, createParamOptions('RewardPolicy'));
 
         await this.requestAccountDecoding(account);
 

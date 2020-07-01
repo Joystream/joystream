@@ -7,15 +7,22 @@ export interface ExtendedEnum<Types extends Record<string, Constructor>> extends
   asType<TypeKey extends keyof Types>(type: TypeKey): InstanceType<Types[TypeKey]>;
 };
 
+export interface ExtendedEnumConstructor<Types extends Record<string, Constructor>> extends EnumConstructor<ExtendedEnum<Types>> {
+  create<TypeKey extends keyof Types>(typeKey: keyof Types, value: InstanceType<Types[TypeKey]>): ExtendedEnum<Types>;
+}
+
 // Helper for creating extended Enum type with TS-compatible isOfType and asType helpers
-export function JoyEnum<Types extends Record<string, Constructor>>(types: Types): EnumConstructor<ExtendedEnum<Types>>
+export function JoyEnum<Types extends Record<string, Constructor>>(types: Types): ExtendedEnumConstructor<Types>
 {
   // Unique values check
   if (Object.values(types).some((val, i) => Object.values(types).indexOf(val, i + 1) !== -1)) {
     throw new Error('Values passed to JoyEnum are not unique. Create an individual class for each value.');
   }
 
-  return class extends Enum {
+  return class JoyEnumObject extends Enum {
+    public static create<TypeKey extends keyof Types>(typeKey: keyof Types, value: InstanceType<Types[TypeKey]>) {
+      return new JoyEnumObject({ [typeKey]: value });
+    }
     constructor(value?: any, index?: number) {
       super(types, value, index);
     }

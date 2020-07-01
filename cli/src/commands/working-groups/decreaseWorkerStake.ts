@@ -7,6 +7,7 @@ import { formatBalance } from '@polkadot/util';
 import { minMaxInt } from '../../validators/common';
 import chalk from 'chalk';
 import ExitCodes from '../../ExitCodes';
+import { createParamOptions } from '../../helpers/promptOptions';
 
 export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsCommandBase {
     static description =
@@ -40,7 +41,7 @@ export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsComma
 
         this.log(chalk.white('Current worker stake: ', formatBalance(groupMember.stake)));
         const balanceValidator = minMaxInt(1, groupMember.stake.toNumber());
-        const balance = await this.promptForParam('Balance', 'amount', undefined, balanceValidator) as Balance;
+        const balance = await this.promptForParam('Balance', createParamOptions('amount', undefined, balanceValidator)) as Balance;
 
         await this.requestAccountDecoding(account);
 

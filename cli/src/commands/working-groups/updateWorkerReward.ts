@@ -6,6 +6,7 @@ import { formatBalance } from '@polkadot/util';
 import chalk from 'chalk';
 import { Reward } from '../../Types';
 import { positiveInt } from '../../validators/common';
+import { createParamOptions } from '../../helpers/promptOptions';
 
 export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsCommandBase {
     static description = 'Change given worker\'s reward (amount only). Requires lead access.';
@@ -44,7 +45,7 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
         const { reward } = groupMember;
         console.log(chalk.white(`Current worker reward: ${this.formatReward(reward)}`));
 
-        const newRewardValue = await this.promptForParam('BalanceOfMint', 'new_amount', undefined, positiveInt());
+        const newRewardValue = await this.promptForParam('BalanceOfMint', createParamOptions('new_amount', undefined, positiveInt()));
 
         await this.requestAccountDecoding(account);
 

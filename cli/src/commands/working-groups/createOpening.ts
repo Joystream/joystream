@@ -1,10 +1,10 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase';
-import { HRTStruct } from '../../Types';
+import { ApiMethodArg, ApiMethodNamedArgs } from '../../Types';
 import chalk from 'chalk';
 import { flags } from '@oclif/command';
-import { ApiMethodInputArg } from '../../base/ApiCommandBase';
-import { schemaValidator } from '@joystream/types/hiring';
 import { apiModuleByGroup } from '../../Api';
+import WorkerOpeningOptions from '../../promptOptions/addWorkerOpening';
+import { setDefaults } from '../../helpers/promptOptions';
 
 export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase {
     static description = 'Create working group opening (requires lead access)';
@@ -43,35 +43,25 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
 
         const { flags } = this.parse(WorkingGroupsCreateOpening);
 
-        let defaultValues: ApiMethodInputArg[] | undefined = undefined;
+        let promptOptions = new WorkerOpeningOptions(), defaultValues: ApiMethodNamedArgs | undefined;
         if (flags.useDraft) {
             const draftName = flags.draftName || await this.promptForOpeningDraft();
-            defaultValues =  await this.loadOpeningDraftParams(draftName);
+            defaultValues = await this.loadOpeningDraftParams(draftName);
+            setDefaults(promptOptions, defaultValues);
         }
 
         if (!flags.skipPrompts) {
             const module = apiModuleByGroup[this.group];
             const method = 'addOpening';
-            const jsonArgsMapping = { 'human_readable_text': { struct: HRTStruct, schemaValidator } };
 
-            let saveDraft = false, params: ApiMethodInputArg[];
+            let saveDraft = false, params: ApiMethodArg[];
             if (flags.createDraftOnly) {
-                params = await this.promptForExtrinsicParams(module, method, jsonArgsMapping, defaultValues);
+                params = await this.promptForExtrinsicParams(module, method, promptOptions);
                 saveDraft = true;
             }
             else {
                 await this.requestAccountDecoding(account); // Prompt for password
-
-                params = await this.buildAndSendExtrinsic(
-                    account,
-                    module,
-                    method,
-                    jsonArgsMapping,
-                    defaultValues,
-                    true
-                );
-
-                this.log(chalk.green('Opening succesfully created!'));
+                params = await this.buildAndSendExtrinsic(account, module, method, promptOptions, true);
 
                 saveDraft = await this.simplePrompt({
                     message: 'Do you wish to save this opening as draft?',
@@ -89,7 +79,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
         else {
             await this.requestAccountDecoding(account); // Prompt for password
             this.log(chalk.white('Sending the extrinsic...'));
-            await this.sendExtrinsic(account, apiModuleByGroup[this.group], 'addOpening', defaultValues!);
+            await this.sendExtrinsic(account, apiModuleByGroup[this.group], 'addOpening', Object.values(defaultValues!));
             this.log(chalk.green('Opening succesfully created!'));
         }
     }

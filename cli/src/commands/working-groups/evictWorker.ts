@@ -5,6 +5,7 @@ import { WorkerId } from '@joystream/types/lib/working-group';
 import { bool } from '@polkadot/types/primitive';
 import { formatBalance } from '@polkadot/util';
 import chalk from 'chalk';
+import { createParamOptions } from '../../helpers/promptOptions';
 
 export default class WorkingGroupsEvictWorker extends WorkingGroupsCommandBase {
     static description = 'Evicts given worker. Requires lead access.';
@@ -30,7 +31,7 @@ export default class WorkingGroupsEvictWorker extends WorkingGroupsCommandBase {
         // This will also make sure the worker is valid
         const groupMember = await this.getApi().groupMember(this.group, workerId);
 
-        const rationale = await this.promptForParam('Bytes', 'rationale');  // TODO: Terminate worker text limits? (minMaxStr)
+        const rationale = await this.promptForParam('Bytes', createParamOptions('rationale'));  // TODO: Terminate worker text limits? (minMaxStr)
         const shouldSlash = groupMember.stake
             ?
                 await this.simplePrompt({

@@ -6,6 +6,7 @@ import { MemberId, ActorId } from '../members';
 import { RewardRelationshipId } from '../recurring-rewards';
 import { StakeId } from '../stake';
 import { ApplicationId, OpeningId, ApplicationRationingPolicy, StakingPolicy } from '../hiring';
+import { JoyEnum } from '../JoyEnum';
 
 export class RationaleText extends Bytes { };
 
@@ -138,17 +139,13 @@ export class SlashableTerms extends JoyStruct<ISlashableTerms> {
   }
 };
 
+export class UnslashableTerms extends Null { };
+
 // This type is also defined in /content-working-group (as above)
-export class SlashingTerms extends Enum {
-  constructor (value?: any, index?: number) {
-    super(
-      {
-        Unslashable: Null,
-        Slashable: SlashableTerms,
-      },
-      value, index);
-  }
-};
+export class SlashingTerms extends JoyEnum({
+  Unslashable: UnslashableTerms,
+  Slashable: SlashableTerms
+} as const) { };
 
 export type IWorkingGroupOpeningPolicyCommitment = {
   application_rationing_policy: Option<ApplicationRationingPolicy>,

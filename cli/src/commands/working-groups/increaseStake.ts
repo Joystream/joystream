@@ -6,6 +6,7 @@ import { formatBalance } from '@polkadot/util';
 import { positiveInt } from '../../validators/common';
 import chalk from 'chalk';
 import ExitCodes from '../../ExitCodes';
+import { createParamOptions } from '../../helpers/promptOptions';
 
 export default class WorkingGroupsIncreaseStake extends WorkingGroupsCommandBase {
     static description =
@@ -24,7 +25,7 @@ export default class WorkingGroupsIncreaseStake extends WorkingGroupsCommandBase
         }
 
         this.log(chalk.white('Current stake: ', formatBalance(worker.stake)));
-        const balance = await this.promptForParam('Balance', 'amount', undefined, positiveInt()) as Balance;
+        const balance = await this.promptForParam('Balance', createParamOptions('amount', undefined, positiveInt())) as Balance;
 
         await this.requestAccountDecoding(account);
 

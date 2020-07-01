@@ -7,8 +7,8 @@ import { Codec } from '@polkadot/types/types';
 import { ConstantCodec } from '@polkadot/api-metadata/consts/types';
 import ExitCodes from '../../ExitCodes';
 import chalk from 'chalk';
-import { NameValueObj } from '../../Types';
-import ApiCommandBase, { ApiMethodInputArg } from '../../base/ApiCommandBase';
+import { NameValueObj, ApiMethodArg } from '../../Types';
+import ApiCommandBase from '../../base/ApiCommandBase';
 
 // Command flags type
 type ApiInspectFlags = {
@@ -148,8 +148,8 @@ export default class ApiInspect extends ApiCommandBase {
     }
 
     // Request values for params using array of param types (strings)
-    async requestParamsValues(paramTypes: string[]): Promise<ApiMethodInputArg[]> {
-        let result: ApiMethodInputArg[] = [];
+    async requestParamsValues(paramTypes: string[]): Promise<ApiMethodArg[]> {
+        let result: ApiMethodArg[] = [];
         for (let [key, paramType] of Object.entries(paramTypes)) {
             this.log(chalk.bold.white(`Parameter no. ${ parseInt(key)+1 } (${ paramType }):`));
             let paramValue = await this.promptForParam(paramType);
@@ -177,7 +177,7 @@ export default class ApiInspect extends ApiCommandBase {
 
             if (apiType === 'query') {
                 // Api query - call with (or without) arguments
-                let args: (string | ApiMethodInputArg)[] = flags.callArgs ? flags.callArgs.split(',') : [];
+                let args: (string | ApiMethodArg)[] = flags.callArgs ? flags.callArgs.split(',') : [];
                 const paramsTypes: string[] = this.getQueryMethodParamsTypes(apiModule, apiMethod);
                 if (args.length < paramsTypes.length) {
                     this.warn('Some parameters are missing! Please, provide the missing parameters:');

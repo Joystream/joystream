@@ -1,10 +1,9 @@
 import ExitCodes from '../ExitCodes';
 import AccountsCommandBase from './AccountsCommandBase';
 import { flags } from '@oclif/command';
-import { WorkingGroups, AvailableGroups, NamedKeyringPair, GroupMember, GroupOpening } from '../Types';
+import { WorkingGroups, AvailableGroups, NamedKeyringPair, GroupMember, GroupOpening, ApiMethodArg, ApiMethodNamedArgs } from '../Types';
 import { apiModuleByGroup } from '../Api';
 import { CLIError } from '@oclif/errors';
-import { ApiMethodInputArg } from './ApiCommandBase';
 import fs from 'fs';
 import path from 'path';
 import _ from 'lodash';
@@ -154,7 +153,7 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
         return selectedDraftName;
     }
 
-    loadOpeningDraftParams(draftName: string) {
+    loadOpeningDraftParams(draftName: string): ApiMethodNamedArgs {
         const draftFilePath = this.getOpeningDraftPath(draftName);
         const params = this.extrinsicArgsFromDraft(
             apiModuleByGroup[this.group],
@@ -173,7 +172,7 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
         return path.join(this.getOpeingDraftsPath(), _.snakeCase(draftName)+'.json');
     }
 
-    saveOpeningDraft(draftName: string, params: ApiMethodInputArg[]) {
+    saveOpeningDraft(draftName: string, params: ApiMethodArg[]) {
         const paramsJson = JSON.stringify(
             params.map(p => p.toJSON()),
             null,
