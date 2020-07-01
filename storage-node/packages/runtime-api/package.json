@@ -1,5 +1,6 @@
 {
   "name": "@joystream/storage-runtime-api",
+  "private": true,
   "version": "0.1.0",
   "description": "Runtime API abstraction for Joystream Storage Node",
   "author": "Joystream",

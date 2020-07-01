@@ -1,5 +1,6 @@
 {
   "name": "@joystream/helios",
+  "private": true,
   "version": "0.1.0",
   "bin": {
     "helios": "bin/cli.js"

@@ -1,5 +1,6 @@
 {
   "name": "@joystream/service-discovery",
+  "private": true,
   "version": "0.1.0",
   "description": "Service Discovery - Joystream Storage Node",
   "author": "Joystream",

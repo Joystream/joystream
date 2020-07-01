@@ -1,5 +1,6 @@
 {
   "name": "@joystream/storage-cli",
+  "private": true,
   "version": "0.1.0",
   "description": "Joystream tool for uploading and downloading files to the network",
   "author": "Joystream",

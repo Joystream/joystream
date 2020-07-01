@@ -1,5 +1,6 @@
 {
   "name": "@joystream/colossus",
+  "private": true,
   "version": "0.2.0",
   "description": "Colossus - Joystream Storage Node",
   "author": "Joystream",
