@@ -2038,7 +2038,7 @@ impl<T: Trait> Module<T> {
         // Ensure Entity under given id exists, retrieve corresponding one
         let entity = Self::ensure_known_entity_id(entity_id)?;
 
-        // Ensure Class under given id exists, retrieve corresponding one
+        // Retrieve corresponding Class
         let class = Self::class_by_id(entity.class_id);
 
         // Derive EntityAccessLevel for the actor, attempting to act.

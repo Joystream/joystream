@@ -284,8 +284,9 @@ impl ActorAuthenticator for Runtime {
             || (second_curator_account_id == *account_id && SECOND_CURATOR_ID == *curator_id)
     }
 
-    fn is_member(member_id: &Self::MemberId, _account_id: &Self::AccountId) -> bool {
-        *member_id < MaxNumberOfEntitiesPerClass::get()
+    fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool {
+        let unknown_member_account_id = ensure_signed(Origin::signed(UNKNOWN_ORIGIN)).unwrap();
+        *member_id < MaxNumberOfEntitiesPerClass::get() && unknown_member_account_id != *account_id
     }
 }
 

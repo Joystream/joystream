@@ -426,8 +426,7 @@ fn create_entity_voucher_limit_reached() {
 
         // Create entities until individual creation limit reached
         let create_entity_result = loop {
-            let create_entity_result =
-                create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone());
+            let create_entity_result = create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone());
             if create_entity_result.is_err() {
                 break create_entity_result;
             } else {
