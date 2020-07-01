@@ -1,14 +1,29 @@
 name: Atlas
-on: [pull_request, push]
+on:
+  push:
+    paths:
+      - "atlas/**"
+  pull_request:
+    paths:
+      - "atlas/**"
 
 jobs:
-  atlas_storybook:
-    name: Build Storybook
+  atlas_build:
+    name: Atlas Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node-version: [12.x, 14.x]
+      fail-fast: true
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v1
+      - name: Use Node.js ${{matrix.node-version}}
+        uses: actions/setup-node@v1
         with:
-          fetch-depth: 0
-      - uses: chromaui/action@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-         projectToken: qq8aetz26u
+          node-version: ${{matrix.node-version}}
+      - name: build
+        working-directory: ./atlas
+        run: |
+          yarn install --frozen-lockfile
+          yarn build
