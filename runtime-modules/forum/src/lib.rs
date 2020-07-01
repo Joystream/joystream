@@ -336,6 +336,7 @@ const ERROR_THREAD_WITH_WRONG_CATEGORY_ID: &str = "thread and its category not m
 
 // Errors about post.
 const ERROR_POST_DOES_NOT_EXIST: &str = "Post does not exist.";
+const ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR: &str = "Account does not match post author.";
 const ERROR_POST_MODERATED: &str = "Post is moderated.";
 
 // Errors about category.
@@ -368,20 +369,6 @@ const ERROR_DATA_MIGRATION_NOT_DONE: &str = "data migration not done yet.";
 //use sr_primitives::{StorageOverlay, ChildrenStorageOverlay};
 
 use system::ensure_signed;
-
-/// Represents a moderator in this forum.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Moderator<AccountId> {
-    /// Moderator's account used for extrinsic
-    pub role_account: AccountId,
-
-    /// Moderator's name
-    pub name: Vec<u8>,
-
-    /// Moderator's self introduction.
-    pub self_introduction: Vec<u8>,
-}
 
 /// Convenient composite time stamp
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
@@ -552,18 +539,6 @@ impl<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment, Hash>
     }
 }
 
-/// Represents child category position in parent.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct ChildPositionInParentCategory<CategoryId> {
-    /// Id of parent category
-    pub parent_id: CategoryId,
-
-    /// Nr of the child in the parent
-    /// Starts at 1
-    pub child_nr_in_parent_category: u32,
-}
-
 /// Represents a category
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
@@ -601,8 +576,8 @@ pub struct Category<CategoryId, ThreadId, BlockNumber, Moment, Hash> {
     pub num_direct_unmoderated_threads: u32,
     pub num_direct_moderated_threads: u32,
 
-    /// Position as child in parent, if present, otherwise this category is a root category
-    pub position_in_parent_category: Option<ChildPositionInParentCategory<CategoryId>>,
+    /// Parent category, if child of another category, otherwise this category is a root category
+    pub parent_category_id: Option<CategoryId>,
 
     /// Sticky threads list
     pub sticky_thread_ids: Vec<ThreadId>,
@@ -652,7 +627,7 @@ decl_storage! {
         pub MaxCategoryDepth get(max_category_depth) config(): u8;
 
         /// Moderator set for each Category
-        pub CategoryByModerator get(category_by_moderator) config(): double_map T::CategoryId, blake2_256(T::ModeratorId) => bool;
+        pub CategoryByModerator get(category_by_moderator) config(): double_map T::CategoryId, blake2_256(T::ModeratorId) => ();
 
         /// Each account 's reaction to a post.
         pub ReactionByPost get(reaction_by_post) config(): double_map T::PostId, blake2_256(T::ForumUserId) => PostReaction;
@@ -733,10 +708,8 @@ decl_module! {
             Self::ensure_data_migration_done()?;
             clear_prefix(b"Forum ForumUserById");
 
-            let who = ensure_signed(origin)?;
-
             // Not signed by forum LEAD
-            Self::ensure_is_forum_lead(&who)?;
+            let who = Self::ensure_is_forum_lead(origin)?;
 
             // ensure category exists.
             ensure!(
@@ -745,21 +718,22 @@ decl_module! {
             );
 
             // Get moderator id.
-            Self::ensure_is_moderator_with_correct_account(&who, &moderator_id)?;
+            Self::ensure_is_moderator_account(&who, &moderator_id)?;
 
-            // Put moderator into category by moderator map
-            <CategoryByModerator<T>>::mutate(category_id, moderator_id, |value|
-                *value = new_value);
+            if new_value {
+                <CategoryByModerator<T>>::insert(category_id, moderator_id, ());
+                return Ok(());
+            }
+
+            <CategoryByModerator<T>>::remove(category_id, moderator_id);
 
             Ok(())
         }
 
         /// Set max category depth.
         fn set_max_category_depth(origin, max_category_depth: u8) -> dispatch::Result {
-            let who = ensure_signed(origin)?;
-
             // Not signed by forum LEAD
-            Self::ensure_is_forum_lead(&who)?;
+            Self::ensure_is_forum_lead(origin)?;
 
             // Store new value into runtime
             MaxCategoryDepth::mutate(|value| *value = max_category_depth );
@@ -775,20 +749,17 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
             // Not signed by forum LEAD
-            Self::ensure_is_forum_lead(&who)?;
+            Self::ensure_is_forum_lead(origin)?;
 
             // Set a temporal mutable variable
-            let mut position_in_parent_category_field = None;
+            let parent_category_id = parent;
 
             // If not root, then check that we can create in parent category
-            if let Some(parent_category_id) = parent {
+            if let Some(tmp_parent_category_id) = parent {
 
                 // Get the path from parent category to root
-                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(parent_category_id)?;
+                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(tmp_parent_category_id)?;
 
                 // Check if max depth reached
                 if category_tree_path.len() >= MaxCategoryDepth::get() as usize {
@@ -800,17 +771,8 @@ decl_module! {
 
                 // Increment number of subcategories to reflect this new category being
                 // added as a child
-                <CategoryById<T>>::mutate(parent_category_id, |c| {
+                <CategoryById<T>>::mutate(tmp_parent_category_id, |c| {
                     c.num_direct_subcategories += 1;
-                });
-
-                // Set `position_in_parent_category_field`
-                let parent_category = category_tree_path.first().unwrap();
-
-                // Update the variable with real data
-                position_in_parent_category_field = Some(ChildPositionInParentCategory{
-                    parent_id: parent_category_id,
-                    child_nr_in_parent_category: parent_category.num_direct_subcategories
                 });
             }
 
@@ -827,7 +789,7 @@ decl_module! {
                 num_direct_subcategories: 0,
                 num_direct_unmoderated_threads: 0,
                 num_direct_moderated_threads: 0,
-                position_in_parent_category: position_in_parent_category_field,
+                parent_category_id,
                 sticky_thread_ids: vec![],
             };
 
@@ -848,11 +810,8 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
             // Not signed by forum LEAD
-            Self::ensure_is_forum_lead(&who)?;
+            Self::ensure_is_forum_lead(origin)?;
 
             // Make sure something is actually being changed
             ensure!(
@@ -867,11 +826,11 @@ decl_module! {
                 );
 
             // Get parent category
-            let parent_category = <CategoryById<T>>::get(&category_id).position_in_parent_category;
+            let parent_category_id = <CategoryById<T>>::get(&category_id).parent_category_id;
 
-            if let Some(unwrapped_parent_category) = parent_category {
+            if let Some(tmp_parent_category_id) = parent_category_id {
                 // Get path from parent to root of category tree.
-                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(unwrapped_parent_category.parent_id)?;
+                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(tmp_parent_category_id)?;
 
                 if Self::ensure_can_mutate_in_path_leaf(&category_tree_path).is_err() {
                     // if ancestor archived or deleted, no necessary to set child again.
@@ -924,11 +883,8 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
             // Check that account is forum member
-            Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
+            Self::ensure_is_forum_user(origin, &forum_user_id)?;
 
             // Keep next thread id
             let next_thread_id = <NextThreadId<T>>::get();
@@ -947,11 +903,8 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
             // get forum user id.
-            Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
+            Self::ensure_is_forum_user(origin, &forum_user_id)?;
 
             // Get thread
             let thread = Self::ensure_thread_exists(&thread_id)?;
@@ -996,11 +949,8 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
             // Ensure origin is medorator
-            Self::ensure_is_moderator_with_correct_account(&who, &moderator_id)?;
+            let who = Self::ensure_is_moderator(origin, &moderator_id)?;
 
             // Get thread
             let mut thread = Self::ensure_thread_exists(&thread_id)?;
@@ -1050,11 +1000,8 @@ decl_module! {
              * Update SPEC with new errors,
              */
 
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
             // Check that account is forum member
-            Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
+            Self::ensure_is_forum_user(origin, &forum_user_id)?;
 
             // Keep next post id
             let next_post_id = <NextPostId<T>>::get();
@@ -1073,11 +1020,8 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
             // Check that account is forum member
-            Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
+            Self::ensure_is_forum_user(origin, &forum_user_id)?;
 
             // Make sure there exists a mutable post with post id `post_id`
             let _ = Self::ensure_post_is_mutable(&post_id)?;
@@ -1099,16 +1043,56 @@ decl_module! {
             Ok(())
         }
 
+        /// Edit post text
+        fn edit_post_text(origin, forum_user_id: T::ForumUserId, post_id: T::PostId, hash: T::Hash) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
+            /* Edit spec.
+              - forum member guard missing
+              - check that both post and thread and category are mutable
+            */
+
+            // Check that account is forum member
+            Self::ensure_is_forum_user(origin, &forum_user_id)?;
+
+            // Make sure there exists a mutable post with post id `post_id`
+            let post = Self::ensure_post_is_mutable(&post_id)?;
+
+            // Signer does not match creator of post with identifier postId
+            ensure!(post.author_id == forum_user_id, ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR);
+
+            // Update post text and record update history
+            <PostById<T>>::mutate(post_id, |p| {
+
+                let expired_post_text = PostTextChange {
+                    expired_at: Self::current_block_and_time(),
+                    text: vec![], // TODO: will be reworked in upcomming commits
+                };
+
+                // Set current text to new text
+                p.hash = hash;
+
+                // Copy current text to history of expired texts
+                p.text_change_history.push(expired_post_text);
+            });
+
+            // Get text change history length
+            let text_change_history_len = <PostById<T>>::get(post_id).text_change_history.len() as u64;
+
+            // Generate event
+            Self::deposit_event(RawEvent::PostTextUpdated(post_id, text_change_history_len));
+
+            Ok(())
+        }
+
         /// Moderate post
         fn moderate_post(origin, moderator_id: T::ModeratorId, post_id: T::PostId) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
             // Get moderator id.
-            Self::ensure_is_moderator_with_correct_account(&who, &moderator_id)?;
+            let who = Self::ensure_is_moderator(origin, &moderator_id)?;
 
             // Make sure post exists and is mutable
             let post = Self::ensure_post_is_mutable(&post_id)?;
@@ -1145,11 +1129,8 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
             // Get moderator id.
-            Self::ensure_is_moderator_with_correct_account(&who, &moderator_id)?;
+            let who = Self::ensure_is_moderator(origin, &moderator_id)?;
 
             // ensure the moderator can moderate the category
             Self::ensure_moderate_category(&who, &moderator_id, category_id)?;
@@ -1395,7 +1376,17 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_is_forum_lead(account_id: &T::AccountId) -> dispatch::Result {
+    /// Ensure forum user is lead
+    fn ensure_is_forum_lead(origin: T::Origin) -> Result<T::AccountId, &'static str> {
+        let who = ensure_signed(origin)?;
+
+        Self::ensure_is_forum_lead_account(&who)?;
+
+        Ok(who)
+    }
+
+    // Ensure forum user is lead - check via account
+    fn ensure_is_forum_lead_account(account_id: &T::AccountId) -> dispatch::Result {
         let is_lead = T::is_lead(account_id);
 
         ensure!(is_lead, ERROR_ORIGIN_NOT_FORUM_LEAD);
@@ -1403,22 +1394,36 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure forum user id registered and its account id matched
-    fn ensure_is_forum_member_with_correct_account(
-        account_id: &T::AccountId,
+    fn ensure_is_forum_user(
+        origin: T::Origin,
         forum_user_id: &T::ForumUserId,
-    ) -> dispatch::Result {
-        let is_member = T::is_forum_member(account_id, forum_user_id);
+    ) -> Result<T::AccountId, &'static str> {
+        let who = ensure_signed(origin)?;
+
+        let is_member = T::is_forum_member(&who, forum_user_id);
 
         ensure!(is_member, ERROR_FORUM_USER_ID_NOT_MATCH_ACCOUNT);
-        Ok(())
+        Ok(who)
     }
 
     /// Ensure moderator id registered and its accound id matched
-    fn ensure_is_moderator_with_correct_account(
+    fn ensure_is_moderator(
+        origin: T::Origin,
+        moderator_id: &T::ModeratorId,
+    ) -> Result<T::AccountId, &'static str> {
+        let who = ensure_signed(origin)?;
+
+        Self::ensure_is_moderator_account(&who, &moderator_id)?;
+
+        Ok(who)
+    }
+
+    /// Ensure moderator id registered and its accound id matched - check via account
+    fn ensure_is_moderator_account(
         account_id: &T::AccountId,
         moderator_id: &T::ModeratorId,
     ) -> dispatch::Result {
-        let is_moderator = T::is_moderator(account_id, moderator_id);
+        let is_moderator = T::is_moderator(&account_id, moderator_id);
 
         ensure!(is_moderator, ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT);
         Ok(())
@@ -1520,10 +1525,10 @@ impl<T: Trait> Module<T> {
         path.push(category.clone());
 
         // Make recursive call on parent if we are not at root
-        if let Some(parent) = category.position_in_parent_category {
-            assert!(<CategoryById<T>>::exists(parent.parent_id));
+        if let Some(parent_category_id) = category.parent_category_id {
+            assert!(<CategoryById<T>>::exists(parent_category_id));
 
-            Self::_build_category_tree_path(parent.parent_id, path);
+            Self::_build_category_tree_path(parent_category_id, path);
         }
     }
 
@@ -1537,11 +1542,11 @@ impl<T: Trait> Module<T> {
         let category_tree_path = Self::build_category_tree_path(category_id);
 
         // Ensure moderator account registered before
-        Self::ensure_is_moderator_with_correct_account(account_id, moderator_id)?;
+        Self::ensure_is_moderator_account(account_id, moderator_id)?;
 
         // Iterate path, check all ancient category
         for item in category_tree_path {
-            if <CategoryByModerator<T>>::get(item.id, moderator_id) {
+            if <CategoryByModerator<T>>::exists(item.id, moderator_id) {
                 return Ok(());
             }
         }
