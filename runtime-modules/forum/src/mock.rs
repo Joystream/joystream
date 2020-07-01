@@ -69,7 +69,6 @@ impl Trait for Runtime {
     type ModeratorId = u64;
     type CategoryId = u64;
     type ThreadId = u64;
-    type LabelId = u64;
     type PostId = u64;
 
     fn is_lead(account_id: &<Self as system::Trait>::AccountId) -> bool {
@@ -195,71 +194,11 @@ pub fn generate_poll_timestamp_cases(index: usize) -> Poll<<Runtime as timestamp
     test_cases[index].clone()
 }
 
-pub fn good_labels() -> Vec<Vec<u8>> {
-    vec![
-        b"label item A".to_vec(),
-        b"label item B".to_vec(),
-        b"label item C".to_vec(),
-        b"label item D".to_vec(),
-        b"label item E".to_vec(),
-        b"label item F".to_vec(),
-        b"label item G".to_vec(),
-        b"label item H".to_vec(),
-    ]
-}
-
-pub fn generate_label_index_cases() -> Vec<BTreeSet<<Runtime as Trait>::ThreadId>> {
-    vec![
-        {
-            let mut a = BTreeSet::<<Runtime as Trait>::ThreadId>::new();
-            a.insert(1);
-            a
-        },
-        {
-            let mut a = BTreeSet::<<Runtime as Trait>::ThreadId>::new();
-            a.insert(1);
-            a.insert(2);
-            a.insert(3);
-            a.insert(4);
-            a.insert(5);
-            a.insert(6);
-            a
-        },
-        {
-            let mut a = BTreeSet::<<Runtime as Trait>::ThreadId>::new();
-            a.insert(100);
-            a
-        },
-    ]
-}
-
-pub fn create_labels_mock() {
-    let labels: Vec<Label> = good_labels()
-        .iter()
-        .map(|label| Label {
-            text: label.clone(),
-        })
-        .collect();
-    let last_index = TestForumModule::next_label_id();
-    assert_eq!(TestForumModule::add_labels(good_labels()), Ok(()));
-    for index in 0..labels.len() {
-        assert_eq!(
-            TestForumModule::label_by_id(last_index + index as u64),
-            labels[index]
-        );
-    }
-    assert_eq!(
-        TestForumModule::next_label_id(),
-        last_index as u64 + labels.len() as u64
-    );
-}
-
 pub fn create_category_mock(
     origin: OriginType,
     parent: Option<<Runtime as Trait>::CategoryId>,
     title: Vec<u8>,
     description: Vec<u8>,
-    labels: &BTreeSet<<Runtime as Trait>::LabelId>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::CategoryId {
     let category_id = TestForumModule::next_category_id();
@@ -269,7 +208,6 @@ pub fn create_category_mock(
             parent,
             title.clone(),
             description.clone(),
-            labels.clone(),
         ),
         result
     );
@@ -289,7 +227,6 @@ pub fn create_thread_mock(
     category_id: <Runtime as Trait>::CategoryId,
     title: Vec<u8>,
     text: Vec<u8>,
-    labels: &BTreeSet<<Runtime as Trait>::LabelId>,
     poll_data: Option<Poll<<Runtime as timestamp::Trait>::Moment>>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::ThreadId {
@@ -301,7 +238,6 @@ pub fn create_thread_mock(
             category_id,
             title.clone(),
             text.clone(),
-            labels.clone(),
             poll_data.clone(),
         ),
         result
@@ -341,32 +277,6 @@ pub fn create_post_mock(
         );
     };
     post_id
-}
-
-pub fn add_labels_mock(labels: Vec<Vec<u8>>, result: Result<(), &'static str>) -> usize {
-    let last_index = TestForumModule::next_label_id();
-
-    assert_eq!(TestForumModule::add_labels(labels.clone()), result);
-    if result.is_ok() {
-        let label_list: Vec<Label> = labels
-            .iter()
-            .map(|label| Label {
-                text: label.clone(),
-            })
-            .collect();
-
-        for index in 0..label_list.len() {
-            assert_eq!(
-                TestForumModule::label_by_id(last_index + index as u64),
-                label_list[index]
-            );
-        }
-        assert_eq!(
-            TestForumModule::next_label_id(),
-            last_index as u64 + label_list.len() as u64
-        );
-    };
-    labels.len()
 }
 
 pub fn set_max_category_depth_mock(
@@ -523,75 +433,6 @@ pub fn moderate_post_mock(
     post_id
 }
 
-pub fn update_category_labels_mock(
-    origin: OriginType,
-    moderator_id: <Runtime as Trait>::ModeratorId,
-    category_id: <Runtime as Trait>::CategoryId,
-    labels: BTreeSet<<Runtime as Trait>::LabelId>,
-    result: Result<(), &'static str>,
-) -> <Runtime as Trait>::CategoryId {
-    assert_eq!(
-        TestForumModule::update_category_labels(
-            mock_origin(origin),
-            moderator_id,
-            category_id,
-            labels.clone(),
-        ),
-        result
-    );
-    if result.is_ok() {
-        assert_eq!(
-            TestForumModule::category_labels(category_id),
-            labels.clone()
-        );
-    }
-    category_id
-}
-
-pub fn update_thread_labels_by_author_mock(
-    origin: OriginType,
-    forum_user_id: <Runtime as Trait>::ForumUserId,
-    thread_id: <Runtime as Trait>::ThreadId,
-    labels: BTreeSet<<Runtime as Trait>::LabelId>,
-    result: Result<(), &'static str>,
-) -> <Runtime as Trait>::ThreadId {
-    assert_eq!(
-        TestForumModule::update_thread_labels_by_author(
-            mock_origin(origin),
-            forum_user_id,
-            thread_id,
-            labels.clone(),
-        ),
-        result
-    );
-    if result.is_ok() {
-        assert_eq!(TestForumModule::thread_labels(thread_id), labels.clone());
-    };
-    thread_id
-}
-
-pub fn update_thread_labels_by_moderator_mock(
-    origin: OriginType,
-    moderator_id: <Runtime as Trait>::ModeratorId,
-    thread_id: <Runtime as Trait>::ThreadId,
-    labels: BTreeSet<<Runtime as Trait>::LabelId>,
-    result: Result<(), &'static str>,
-) -> <Runtime as Trait>::ThreadId {
-    assert_eq!(
-        TestForumModule::update_thread_labels_by_moderator(
-            mock_origin(origin),
-            moderator_id,
-            thread_id,
-            labels.clone(),
-        ),
-        result
-    );
-    if result.is_ok() {
-        assert_eq!(TestForumModule::thread_labels(thread_id), labels.clone());
-    };
-    thread_id
-}
-
 pub fn edit_post_text_mock(
     origin: OriginType,
     forum_user_id: <Runtime as Trait>::ForumUserId,
@@ -715,10 +556,6 @@ pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime
             min: 10,
             max_min_diff: 2000,
         }, // JUST GIVING UP ON ALL THIS FOR NOW BECAUSE ITS TAKING TOO LONG
-        label_name_constraint: InputValidationLengthConstraint {
-            min: 10,
-            max_min_diff: 20,
-        },
         poll_desc_constraint: InputValidationLengthConstraint {
             min: 10,
             max_min_diff: 200,
@@ -739,12 +576,6 @@ pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime
             min: 10,
             max_min_diff: 140,
         },
-
-        label_by_id: vec![],
-        next_label_id: 1,
-        category_labels: vec![],
-        thread_labels: vec![],
-        max_applied_labels: 5,
 
         // data migration part
         data_migration_done: data_migration_done,
