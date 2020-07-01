@@ -153,7 +153,7 @@ where
     pub(crate) fn ensure_can_add_opening(
         current_block_height: BlockNumber,
         activate_at: ActivateOpeningAt<BlockNumber>,
-        runtime_minimum_balance: Balance,
+        minimum_stake_balance: Balance,
         application_rationing_policy: Option<ApplicationRationingPolicy>,
         application_staking_policy: Option<StakingPolicy<Balance, BlockNumber>>,
         role_staking_policy: Option<StakingPolicy<Balance, BlockNumber>>,
@@ -177,15 +177,15 @@ where
         // Check that staking amounts clear minimum balance required.
         StakingPolicy::ensure_amount_valid_in_opt_staking_policy(
             application_staking_policy,
-            runtime_minimum_balance.clone(),
-            AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(StakePurpose::Application),
+            minimum_stake_balance.clone(),
+            AddOpeningError::StakeAmountLessThanMinimumStakeBalance(StakePurpose::Application),
         )?;
 
         // Check that staking amounts clear minimum balance required.
         StakingPolicy::ensure_amount_valid_in_opt_staking_policy(
             role_staking_policy,
-            runtime_minimum_balance,
-            AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(StakePurpose::Role),
+            minimum_stake_balance,
+            AddOpeningError::StakeAmountLessThanMinimumStakeBalance(StakePurpose::Role),
         )?;
 
         Ok(())

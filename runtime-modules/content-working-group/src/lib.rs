@@ -836,7 +836,7 @@ impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for &str {
             hiring::AddOpeningError::OpeningMustActivateInTheFuture => {
                 MSG_ADD_CURATOR_OPENING_ACTIVATES_IN_THE_PAST
             }
-            hiring::AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(purpose) => {
+            hiring::AddOpeningError::StakeAmountLessThanMinimumStakeBalance(purpose) => {
                 match purpose {
                     hiring::StakePurpose::Role => {
                         MSG_ADD_CURATOR_OPENING_ROLE_STAKE_LESS_THAN_MINIMUM

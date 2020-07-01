@@ -162,6 +162,9 @@ impl stake::Trait for Test {
     type SlashId = TestSlashId;
 }
 
+parameter_types! {
+    pub const MinimumStakeBalance: u64 = 1; // just non-zero
+}
 type TestOpeningId = u64;
 type TestApplicationId = u64;
 impl hiring::Trait for Test {
@@ -169,6 +172,7 @@ impl hiring::Trait for Test {
     type ApplicationId = TestApplicationId;
     type ApplicationDeactivatedHandler = ();
     type StakeHandlerProvider = hiring::Module<Self>;
+    type MinimumStakeBalance = MinimumStakeBalance;
 }
 
 impl versioned_store::Trait for Test {

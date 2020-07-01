@@ -31,7 +31,7 @@ use codec::Codec;
 use runtime_primitives::traits::Zero;
 use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
 
-use srml_support::traits::Currency;
+use srml_support::traits::{Currency, Get};
 use srml_support::{decl_module, decl_storage, ensure, Parameter};
 
 use rstd::collections::btree_map::BTreeMap;
@@ -79,6 +79,9 @@ pub trait Trait: system::Trait + stake::Trait + Sized {
 
     /// Marker type for Stake module handler. Indicates that hiring module uses stake module mock.
     type StakeHandlerProvider: StakeHandlerProvider<Self>;
+
+    /// Defines min application or role stake balance.
+    type MinimumStakeBalance: Get<stake::BalanceOf<Self>>;
 }
 
 decl_storage! {
@@ -104,6 +107,9 @@ decl_storage! {
 decl_module! {
     /// Main hiring module definition
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+
+        /// Exports const - min application or role stake balance.
+        const MinimumStakeBalance: stake::BalanceOf<T> = T::MinimumStakeBalance::get();
 
         fn on_finalize(now: T::BlockNumber) {
 
@@ -187,7 +193,7 @@ impl<T: Trait> Module<T> {
         Opening::<BalanceOf<T>, T::BlockNumber, T::ApplicationId>::ensure_can_add_opening(
             current_block_height,
             activate_at.clone(),
-            T::Currency::minimum_balance(),
+            T::MinimumStakeBalance::get(),
             application_rationing_policy.clone(),
             application_staking_policy.clone(),
             role_staking_policy.clone(),

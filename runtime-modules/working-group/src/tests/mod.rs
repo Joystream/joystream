@@ -57,13 +57,13 @@ fn hire_lead_fails_multiple_applications() {
 }
 
 #[test]
-fn add_worker_opening_succeeds() {
+fn add_opening_succeeds() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
 
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
         EventFixture::assert_last_crate_event(RawEvent::OpeningAdded(opening_id));
     });
@@ -74,10 +74,10 @@ fn add_leader_opening_succeeds_fails_with_incorrect_origin_for_opening_type() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture =
+        let add_opening_fixture =
             AddWorkerOpeningFixture::default().with_opening_type(OpeningType::Leader);
 
-        add_worker_opening_fixture.call_and_assert(Err(Error::RequireRootOrigin));
+        add_opening_fixture.call_and_assert(Err(Error::RequireRootOrigin));
     });
 }
 
@@ -86,25 +86,25 @@ fn add_leader_opening_succeeds() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default()
+        let add_opening_fixture = AddWorkerOpeningFixture::default()
             .with_opening_type(OpeningType::Leader)
             .with_origin(RawOrigin::Root);
 
-        add_worker_opening_fixture.call_and_assert(Ok(()));
+        add_opening_fixture.call_and_assert(Ok(()));
     });
 }
 
 #[test]
-fn add_worker_opening_fails_with_lead_is_not_set() {
+fn add_opening_fails_with_lead_is_not_set() {
     build_test_externalities().execute_with(|| {
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
 
-        add_worker_opening_fixture.call_and_assert(Err(Error::CurrentLeadNotSet));
+        add_opening_fixture.call_and_assert(Err(Error::CurrentLeadNotSet));
     });
 }
 
 #[test]
-fn add_worker_opening_fails_with_invalid_human_readable_text() {
+fn add_opening_fails_with_invalid_human_readable_text() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
@@ -115,119 +115,119 @@ fn add_worker_opening_fails_with_invalid_human_readable_text() {
             },
         );
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default().with_text(Vec::new());
+        let add_opening_fixture = AddWorkerOpeningFixture::default().with_text(Vec::new());
 
-        add_worker_opening_fixture.call_and_assert(Err(Error::Other("OpeningTextTooShort")));
+        add_opening_fixture.call_and_assert(Err(Error::Other("OpeningTextTooShort")));
 
-        let add_worker_opening_fixture =
+        let add_opening_fixture =
             AddWorkerOpeningFixture::default().with_text(b"Long text".to_vec());
 
-        add_worker_opening_fixture.call_and_assert(Err(Error::Other("OpeningTextTooLong")));
+        add_opening_fixture.call_and_assert(Err(Error::Other("OpeningTextTooLong")));
     });
 }
 
 #[test]
-fn add_worker_opening_fails_with_hiring_error() {
+fn add_opening_fails_with_hiring_error() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default()
+        let add_opening_fixture = AddWorkerOpeningFixture::default()
             .with_activate_at(hiring::ActivateOpeningAt::ExactBlock(0));
 
-        add_worker_opening_fixture.call_and_assert(Err(Error::AddWorkerOpeningActivatesInThePast));
+        add_opening_fixture.call_and_assert(Err(Error::AddWorkerOpeningActivatesInThePast));
     });
 }
 
 #[test]
-fn accept_worker_applications_succeeds() {
+fn accept_applications_succeeds() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default()
+        let add_opening_fixture = AddWorkerOpeningFixture::default()
             .with_activate_at(hiring::ActivateOpeningAt::ExactBlock(5));
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let accept_worker_applications_fixture =
+        let accept_applications_fixture =
             AcceptWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        accept_worker_applications_fixture.call_and_assert(Ok(()));
+        accept_applications_fixture.call_and_assert(Ok(()));
 
         EventFixture::assert_last_crate_event(RawEvent::AcceptedApplications(opening_id));
     });
 }
 
 #[test]
-fn accept_worker_applications_fails_for_invalid_opening_type() {
+fn accept_applications_fails_for_invalid_opening_type() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default()
+        let add_opening_fixture = AddWorkerOpeningFixture::default()
             .with_origin(RawOrigin::Root)
             .with_opening_type(OpeningType::Leader)
             .with_activate_at(hiring::ActivateOpeningAt::ExactBlock(5));
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let accept_worker_applications_fixture =
+        let accept_applications_fixture =
             AcceptWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        accept_worker_applications_fixture.call_and_assert(Err(Error::RequireRootOrigin));
+        accept_applications_fixture.call_and_assert(Err(Error::RequireRootOrigin));
     });
 }
 
 #[test]
-fn accept_worker_applications_fails_with_hiring_error() {
+fn accept_applications_fails_with_hiring_error() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let accept_worker_applications_fixture =
+        let accept_applications_fixture =
             AcceptWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        accept_worker_applications_fixture.call_and_assert(Err(
+        accept_applications_fixture.call_and_assert(Err(
             Error::AcceptWorkerApplicationsOpeningIsNotWaitingToBegin,
         ));
     });
 }
 
 #[test]
-fn accept_worker_applications_fails_with_not_lead() {
+fn accept_applications_fails_with_not_lead() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
         SetLeadFixture::set_lead_with_ids(2, 2, 2);
 
-        let accept_worker_applications_fixture =
+        let accept_applications_fixture =
             AcceptWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        accept_worker_applications_fixture.call_and_assert(Err(Error::IsNotLeadAccount));
+        accept_applications_fixture.call_and_assert(Err(Error::IsNotLeadAccount));
     });
 }
 
 #[test]
-fn accept_worker_applications_fails_with_no_opening() {
+fn accept_applications_fails_with_no_opening() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
         let opening_id = 55; // random opening id
 
-        let accept_worker_applications_fixture =
+        let accept_applications_fixture =
             AcceptWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        accept_worker_applications_fixture.call_and_assert(Err(Error::OpeningDoesNotExist));
+        accept_applications_fixture.call_and_assert(Err(Error::OpeningDoesNotExist));
     });
 }
 
 #[test]
-fn apply_on_worker_opening_succeeds() {
+fn apply_on_opening_succeeds() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let appy_on_worker_opening_fixture =
+        let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        let application_id = appy_on_worker_opening_fixture.call_and_assert(Ok(()));
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
         EventFixture::assert_last_crate_event(RawEvent::AppliedOnOpening(
             opening_id,
@@ -237,59 +237,58 @@ fn apply_on_worker_opening_succeeds() {
 }
 
 #[test]
-fn apply_on_worker_opening_fails_with_no_opening() {
+fn apply_on_opening_fails_with_no_opening() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
         let opening_id = 123; // random opening id
 
-        let appy_on_worker_opening_fixture =
+        let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        appy_on_worker_opening_fixture.call_and_assert(Err(Error::OpeningDoesNotExist));
+        apply_on_opening_fixture.call_and_assert(Err(Error::OpeningDoesNotExist));
     });
 }
 
 #[test]
-fn apply_on_worker_opening_fails_with_not_set_members() {
+fn apply_on_opening_fails_with_not_set_members() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let appy_on_worker_opening_fixture =
+        let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
                 .with_origin(RawOrigin::Signed(55), 55);
-        appy_on_worker_opening_fixture
-            .call_and_assert(Err(Error::OriginIsNeitherMemberControllerOrRoot));
+        apply_on_opening_fixture.call_and_assert(Err(Error::OriginIsNeitherMemberControllerOrRoot));
     });
 }
 
 #[test]
-fn apply_on_worker_opening_fails_with_hiring_error() {
+fn apply_on_opening_fails_with_hiring_error() {
     build_test_externalities().execute_with(|| {
         increase_total_balance_issuance_using_account_id(1, 500000);
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let appy_on_worker_opening_fixture =
+        let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
                 .with_application_stake(100);
-        appy_on_worker_opening_fixture
+        apply_on_opening_fixture
             .call_and_assert(Err(Error::AddWorkerOpeningStakeProvidedWhenRedundant));
     });
 }
 
 #[test]
-fn apply_on_worker_opening_fails_with_invalid_application_stake() {
+fn apply_on_opening_fails_with_invalid_application_stake() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
         let stake = 100;
 
-        let add_worker_opening_fixture =
+        let add_opening_fixture =
             AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
                 application_staking_policy: Some(hiring::StakingPolicy {
                     amount: stake,
@@ -297,24 +296,45 @@ fn apply_on_worker_opening_fails_with_invalid_application_stake() {
                 }),
                 ..OpeningPolicyCommitment::default()
             });
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let appy_on_worker_opening_fixture =
+        let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
                 .with_origin(RawOrigin::Signed(2), 2)
                 .with_application_stake(stake);
-        appy_on_worker_opening_fixture.call_and_assert(Err(Error::InsufficientBalanceToApply));
+        apply_on_opening_fixture.call_and_assert(Err(Error::InsufficientBalanceToApply));
     });
 }
 
 #[test]
-fn apply_on_worker_opening_fails_with_invalid_role_stake() {
+fn add_opening_fails_with_invalid_zero_application_stake() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let zero_stake = 0;
+
+        let add_opening_fixture =
+            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
+                application_staking_policy: Some(hiring::StakingPolicy {
+                    amount: zero_stake,
+                    amount_mode: hiring::StakingAmountLimitMode::AtLeast,
+                    ..hiring::StakingPolicy::default()
+                }),
+                ..OpeningPolicyCommitment::default()
+            });
+        add_opening_fixture
+            .call_and_assert(Err(Error::AddWorkerOpeningAppliicationStakeLessThanMinimum));
+    });
+}
+
+#[test]
+fn apply_on_opening_fails_with_invalid_role_stake() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
         let stake = 100;
 
-        let add_worker_opening_fixture =
+        let add_opening_fixture =
             AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
                 role_staking_policy: Some(hiring::StakingPolicy {
                     amount: stake,
@@ -322,23 +342,23 @@ fn apply_on_worker_opening_fails_with_invalid_role_stake() {
                 }),
                 ..OpeningPolicyCommitment::default()
             });
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let appy_on_worker_opening_fixture =
+        let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
                 .with_role_stake(Some(stake))
                 .with_origin(RawOrigin::Signed(2), 2);
-        appy_on_worker_opening_fixture.call_and_assert(Err(Error::InsufficientBalanceToApply));
+        apply_on_opening_fixture.call_and_assert(Err(Error::InsufficientBalanceToApply));
     });
 }
 
 #[test]
-fn apply_on_worker_opening_fails_with_invalid_text() {
+fn apply_on_opening_fails_with_invalid_text() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
         <crate::WorkerApplicationHumanReadableText<TestWorkingGroupInstance>>::put(
             InputValidationLengthConstraint {
@@ -347,33 +367,31 @@ fn apply_on_worker_opening_fails_with_invalid_text() {
             },
         );
 
-        let appy_on_worker_opening_fixture =
+        let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id).with_text(Vec::new());
-        appy_on_worker_opening_fixture
+        apply_on_opening_fixture
             .call_and_assert(Err(Error::Other("WorkerApplicationTextTooShort")));
 
-        let appy_on_worker_opening_fixture =
+        let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
                 .with_text(b"Long text".to_vec());
-        appy_on_worker_opening_fixture
-            .call_and_assert(Err(Error::Other("WorkerApplicationTextTooLong")));
+        apply_on_opening_fixture.call_and_assert(Err(Error::Other("WorkerApplicationTextTooLong")));
     });
 }
 
 #[test]
-fn apply_on_worker_opening_fails_with_already_active_application() {
+fn apply_on_opening_fails_with_already_active_application() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let appy_on_worker_opening_fixture =
+        let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        appy_on_worker_opening_fixture.call_and_assert(Ok(()));
+        apply_on_opening_fixture.call_and_assert(Ok(()));
 
-        appy_on_worker_opening_fixture
-            .call_and_assert(Err(Error::MemberHasActiveApplicationOnOpening));
+        apply_on_opening_fixture.call_and_assert(Err(Error::MemberHasActiveApplicationOnOpening));
     });
 }
 
@@ -382,12 +400,12 @@ fn withdraw_worker_application_succeeds() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let appy_on_worker_opening_fixture =
+        let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        let application_id = appy_on_worker_opening_fixture.call_and_assert(Ok(()));
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
         let withdraw_application_fixture =
             WithdrawApplicationFixture::default_for_application_id(application_id);
@@ -413,12 +431,12 @@ fn withdraw_worker_application_fails_invalid_origin() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let appy_on_worker_opening_fixture =
+        let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        let application_id = appy_on_worker_opening_fixture.call_and_assert(Ok(()));
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
         let withdraw_application_fixture =
             WithdrawApplicationFixture::default_for_application_id(application_id)
@@ -432,12 +450,12 @@ fn withdraw_worker_application_fails_with_invalid_application_author() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let appy_on_worker_opening_fixture =
+        let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        let application_id = appy_on_worker_opening_fixture.call_and_assert(Ok(()));
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
         let invalid_author_account_id = 55;
         let withdraw_application_fixture =
@@ -452,12 +470,12 @@ fn withdraw_worker_application_fails_with_hiring_error() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let appy_on_worker_opening_fixture =
+        let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        let application_id = appy_on_worker_opening_fixture.call_and_assert(Ok(()));
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
         let withdraw_application_fixture =
             WithdrawApplicationFixture::default_for_application_id(application_id);
@@ -472,12 +490,12 @@ fn terminate_worker_application_succeeds() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let appy_on_worker_opening_fixture =
+        let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        let application_id = appy_on_worker_opening_fixture.call_and_assert(Ok(()));
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
         let terminate_application_fixture =
             TerminateApplicationFixture::default_for_application_id(application_id);
@@ -492,12 +510,12 @@ fn terminate_worker_application_fails_with_invalid_application_author() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let appy_on_worker_opening_fixture =
+        let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        let application_id = appy_on_worker_opening_fixture.call_and_assert(Ok(()));
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
         let invalid_author_account_id = 55;
         let terminate_application_fixture =
@@ -512,12 +530,12 @@ fn terminate_worker_application_fails_invalid_origin() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let appy_on_worker_opening_fixture =
+        let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        let application_id = appy_on_worker_opening_fixture.call_and_assert(Ok(()));
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
         let terminate_application_fixture =
             TerminateApplicationFixture::default_for_application_id(application_id)
@@ -544,12 +562,12 @@ fn terminate_worker_application_fails_with_hiring_error() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let appy_on_worker_opening_fixture =
+        let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        let application_id = appy_on_worker_opening_fixture.call_and_assert(Ok(()));
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
         let terminate_application_fixture =
             TerminateApplicationFixture::default_for_application_id(application_id);
@@ -564,8 +582,8 @@ fn begin_review_worker_applications_succeeds() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
         let begin_review_worker_applications_fixture =
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
@@ -580,10 +598,10 @@ fn begin_review_worker_applications_fails_with_invalid_origin_for_opening_type()
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default()
+        let add_opening_fixture = AddWorkerOpeningFixture::default()
             .with_origin(RawOrigin::Root)
             .with_opening_type(OpeningType::Leader);
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
         let begin_review_worker_applications_fixture =
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
@@ -596,8 +614,8 @@ fn begin_review_worker_applications_fails_with_not_a_lead() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
         SetLeadFixture::set_lead_with_ids(2, 2, 2);
 
@@ -625,8 +643,8 @@ fn begin_review_worker_applications_with_hiring_error() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
         let begin_review_worker_applications_fixture =
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
@@ -642,8 +660,8 @@ fn begin_review_worker_applications_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
         let begin_review_worker_applications_fixture =
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id)
@@ -653,12 +671,12 @@ fn begin_review_worker_applications_fails_with_invalid_origin() {
 }
 
 #[test]
-fn fill_worker_opening_succeeds() {
+fn fill_opening_succeeds() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
         increase_total_balance_issuance_using_account_id(1, 10000);
 
-        let add_worker_opening_fixture =
+        let add_opening_fixture =
             AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
                 role_staking_policy: Some(hiring::StakingPolicy {
                     amount: 10,
@@ -668,12 +686,12 @@ fn fill_worker_opening_succeeds() {
                 }),
                 ..OpeningPolicyCommitment::default()
             });
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let appy_on_worker_opening_fixture =
+        let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
                 .with_role_stake(Some(10));
-        let application_id = appy_on_worker_opening_fixture.call_and_assert(Ok(()));
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
         let begin_review_worker_applications_fixture =
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
@@ -682,14 +700,14 @@ fn fill_worker_opening_succeeds() {
         let mint_id = create_mint();
         set_mint_id(mint_id);
 
-        let fill_worker_opening_fixture =
+        let fill_opening_fixture =
             FillWorkerOpeningFixture::default_for_ids(opening_id, vec![application_id])
                 .with_reward_policy(RewardPolicy {
                     amount_per_payout: 1000,
                     next_payment_at_block: 20,
                     payout_interval: None,
                 });
-        let worker_id = fill_worker_opening_fixture.call_and_assert(Ok(()));
+        let worker_id = fill_opening_fixture.call_and_assert(Ok(()));
 
         let mut worker_application_dictionary = BTreeMap::new();
         worker_application_dictionary.insert(application_id, worker_id);
@@ -702,12 +720,12 @@ fn fill_worker_opening_succeeds() {
 }
 
 #[test]
-fn fill_worker_opening_fails_with_invalid_origin_for_opening_type() {
+fn fill_opening_fails_with_invalid_origin_for_opening_type() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
         increase_total_balance_issuance_using_account_id(1, 10000);
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default()
+        let add_opening_fixture = AddWorkerOpeningFixture::default()
             .with_policy_commitment(OpeningPolicyCommitment {
                 role_staking_policy: Some(hiring::StakingPolicy {
                     amount: 10,
@@ -719,12 +737,12 @@ fn fill_worker_opening_fails_with_invalid_origin_for_opening_type() {
             })
             .with_opening_type(OpeningType::Leader)
             .with_origin(RawOrigin::Root);
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let appy_on_worker_opening_fixture =
+        let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
                 .with_role_stake(Some(10));
-        let application_id = appy_on_worker_opening_fixture.call_and_assert(Ok(()));
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
         let begin_review_worker_applications_fixture =
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id)
@@ -733,119 +751,118 @@ fn fill_worker_opening_fails_with_invalid_origin_for_opening_type() {
 
         set_mint_id(create_mint());
 
-        let fill_worker_opening_fixture =
+        let fill_opening_fixture =
             FillWorkerOpeningFixture::default_for_ids(opening_id, vec![application_id])
                 .with_reward_policy(RewardPolicy {
                     amount_per_payout: 1000,
                     next_payment_at_block: 20,
                     payout_interval: None,
                 });
-        fill_worker_opening_fixture.call_and_assert(Err(Error::RequireRootOrigin));
+        fill_opening_fixture.call_and_assert(Err(Error::RequireRootOrigin));
     });
 }
 
 #[test]
-fn fill_worker_opening_fails_with_invalid_origin() {
+fn fill_opening_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let fill_worker_opening_fixture =
+        let fill_opening_fixture =
             FillWorkerOpeningFixture::default_for_ids(opening_id, Vec::new())
                 .with_origin(RawOrigin::None);
-        fill_worker_opening_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
+        fill_opening_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
     });
 }
 
 #[test]
-fn fill_worker_opening_fails_with_not_a_lead() {
+fn fill_opening_fails_with_not_a_lead() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
         SetLeadFixture::set_lead_with_ids(2, 2, 2);
 
-        let fill_worker_opening_fixture =
+        let fill_opening_fixture =
             FillWorkerOpeningFixture::default_for_ids(opening_id, Vec::new());
-        fill_worker_opening_fixture.call_and_assert(Err(Error::IsNotLeadAccount));
+        fill_opening_fixture.call_and_assert(Err(Error::IsNotLeadAccount));
     });
 }
 
 #[test]
-fn fill_worker_opening_fails_with_invalid_opening() {
+fn fill_opening_fails_with_invalid_opening() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
         let invalid_opening_id = 6;
 
-        let fill_worker_opening_fixture =
+        let fill_opening_fixture =
             FillWorkerOpeningFixture::default_for_ids(invalid_opening_id, Vec::new());
-        fill_worker_opening_fixture.call_and_assert(Err(Error::OpeningDoesNotExist));
+        fill_opening_fixture.call_and_assert(Err(Error::OpeningDoesNotExist));
     });
 }
 
 #[test]
-fn fill_worker_opening_fails_with_invalid_application_list() {
+fn fill_opening_fails_with_invalid_application_list() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let appy_on_worker_opening_fixture =
+        let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        let application_id = appy_on_worker_opening_fixture.call_and_assert(Ok(()));
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
         let begin_review_worker_applications_fixture =
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
         begin_review_worker_applications_fixture.call_and_assert(Ok(()));
 
         let invalid_application_id = 66;
-        let fill_worker_opening_fixture = FillWorkerOpeningFixture::default_for_ids(
+        let fill_opening_fixture = FillWorkerOpeningFixture::default_for_ids(
             opening_id,
             vec![application_id, invalid_application_id],
         );
-        fill_worker_opening_fixture
-            .call_and_assert(Err(Error::SuccessfulWorkerApplicationDoesNotExist));
+        fill_opening_fixture.call_and_assert(Err(Error::SuccessfulWorkerApplicationDoesNotExist));
     });
 }
 
 #[test]
-fn fill_worker_opening_fails_with_invalid_application_with_hiring_error() {
+fn fill_opening_fails_with_invalid_application_with_hiring_error() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let fill_worker_opening_fixture =
+        let fill_opening_fixture =
             FillWorkerOpeningFixture::default_for_ids(opening_id, Vec::new());
-        fill_worker_opening_fixture
+        fill_opening_fixture
             .call_and_assert(Err(Error::FullWorkerOpeningOpeningNotInReviewPeriodStage));
     });
 }
 
 #[test]
-fn fill_worker_opening_fails_with_invalid_reward_policy() {
+fn fill_opening_fails_with_invalid_reward_policy() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_worker_opening_fixture = AddWorkerOpeningFixture::default();
-        let opening_id = add_worker_opening_fixture.call_and_assert(Ok(()));
+        let add_opening_fixture = AddWorkerOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
-        let appy_on_worker_opening_fixture =
+        let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        let application_id = appy_on_worker_opening_fixture.call_and_assert(Ok(()));
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
         let begin_review_worker_applications_fixture =
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
         begin_review_worker_applications_fixture.call_and_assert(Ok(()));
 
-        let fill_worker_opening_fixture =
+        let fill_opening_fixture =
             FillWorkerOpeningFixture::default_for_ids(opening_id, vec![application_id])
                 .with_reward_policy(RewardPolicy {
                     amount_per_payout: 10000,
@@ -853,7 +870,7 @@ fn fill_worker_opening_fails_with_invalid_reward_policy() {
                     next_payment_at_block: 0,
                     payout_interval: None,
                 });
-        fill_worker_opening_fixture
+        fill_opening_fixture
     });
 }
 

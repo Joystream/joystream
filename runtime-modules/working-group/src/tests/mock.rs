@@ -67,11 +67,16 @@ impl system::Trait for Test {
     type Version = ();
 }
 
+parameter_types! {
+    pub const MinimumStakeBalance: u64 = 1; // just non-zero
+}
+
 impl hiring::Trait for Test {
     type OpeningId = u64;
     type ApplicationId = u64;
     type ApplicationDeactivatedHandler = ();
     type StakeHandlerProvider = hiring::Module<Self>;
+    type MinimumStakeBalance = MinimumStakeBalance;
 }
 
 impl minting::Trait for Test {

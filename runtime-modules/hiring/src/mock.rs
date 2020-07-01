@@ -79,6 +79,10 @@ impl balances::Trait for Test {
     type CreationFee = CreationFee;
 }
 
+parameter_types! {
+    pub const MinimumStakeBalance: u64 = 1; // just non-zero
+}
+
 impl Trait for Test {
     type OpeningId = u64;
 
@@ -87,6 +91,7 @@ impl Trait for Test {
     type ApplicationDeactivatedHandler = TestApplicationDeactivatedHandler;
 
     type StakeHandlerProvider = TestStakeHandlerProvider;
+    type MinimumStakeBalance = MinimumStakeBalance;
 }
 
 impl stake::Trait for Test {

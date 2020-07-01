@@ -294,7 +294,7 @@ impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for Error {
             hiring::AddOpeningError::OpeningMustActivateInTheFuture => {
                 Error::AddWorkerOpeningActivatesInThePast
             }
-            hiring::AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(purpose) => {
+            hiring::AddOpeningError::StakeAmountLessThanMinimumStakeBalance(purpose) => {
                 match purpose {
                     hiring::StakePurpose::Role => Error::AddWorkerOpeningRoleStakeLessThanMinimum,
                     hiring::StakePurpose::Application => {

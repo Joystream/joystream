@@ -145,14 +145,14 @@ fn add_opening_succeeds_or_fails_due_to_application_staking_policy() {
 
         //Invalid stake amount
         opening_data.application_staking_policy = Some(StakingPolicy {
-            amount: 1,
+            amount: 0,
             amount_mode: Exact,
             crowded_out_unstaking_period_length: None,
             review_period_expired_unstaking_period_length: None,
         });
 
         opening_data.call_and_assert(Err(
-            AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(StakePurpose::Application),
+            AddOpeningError::StakeAmountLessThanMinimumStakeBalance(StakePurpose::Application),
         ));
     });
 }
@@ -173,14 +173,14 @@ fn add_opening_succeeds_or_fails_due_to_role_staking_policy() {
 
         //Invalid stake amount
         opening_data.role_staking_policy = Some(StakingPolicy {
-            amount: 1,
+            amount: 0,
             amount_mode: Exact,
             crowded_out_unstaking_period_length: None,
             review_period_expired_unstaking_period_length: None,
         });
 
         opening_data.call_and_assert(Err(
-            AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(StakePurpose::Role),
+            AddOpeningError::StakeAmountLessThanMinimumStakeBalance(StakePurpose::Role),
         ));
     });
 }
