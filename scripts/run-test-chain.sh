@@ -7,8 +7,6 @@ perl -i -pe's/"setElectionParametersProposalGracePeriod":.*/"setElectionParamete
 perl -i -pe's/"textProposalGracePeriod":.*/"textProposalGracePeriod": 0,/' .tmp/chainspec.json
 perl -i -pe's/"setContentWorkingGroupMintCapacityProposalGracePeriod":.*/"setContentWorkingGroupMintCapacityProposalGracePeriod": 0,/' .tmp/chainspec.json
 perl -i -pe's/"setLeadProposalGracePeriod":.*/"setLeadProposalGracePeriod": 0,/' .tmp/chainspec.json
-perl -i -pe's/"spendingProposalGracePeriod":.*/"spendingProposalGracePeriod": 0,/' .tmp/chainspec.json
-perl -i -pe's/"evictStorageProviderProposalGracePeriod":.*/"evictStorageProviderProposalGracePeriod": 0,/' .tmp/chainspec.json
-perl -i -pe's/"setStorageRoleParametersProposalGracePeriod":.*/"setStorageRoleParametersProposalGracePeriod": 0/' .tmp/chainspec.json
+perl -i -pe's/"spendingProposalGracePeriod":.*/"spendingProposalGracePeriod": 0/' .tmp/chainspec.json
 yes | cargo run --release -p joystream-node -- purge-chain --dev
 cargo run --release -p joystream-node -- --chain=.tmp/chainspec.json --alice --validator

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 /// Policy for staking
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone)]
+#[derive(Encode, Decode, Debug, Eq, PartialEq, Clone, Default)]
 pub struct StakingPolicy<Balance, BlockNumber> {
     /// Staking amount
     pub amount: Balance,
@@ -76,4 +76,10 @@ pub enum StakingAmountLimitMode {
 
     /// Stake should be equal to provided value
     Exact,
+}
+
+impl Default for StakingAmountLimitMode {
+    fn default() -> Self {
+        StakingAmountLimitMode::Exact
+    }
 }

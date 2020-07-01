@@ -1,21 +1,33 @@
 #![cfg(test)]
 
 use super::mock::*;
-use crate::StorageWorkingGroup;
+use srml_support::{StorageLinkedMap, StorageValue};
 use system::{self, EventRecord, Phase, RawOrigin};
 
 const DEFAULT_LEADER_ACCOUNT_ID: u64 = 1;
 const DEFAULT_LEADER_MEMBER_ID: u64 = 1;
+const DEFAULT_LEADER_WORKER_ID: u32 = 1;
 
 struct SetLeadFixture;
 impl SetLeadFixture {
     fn set_default_lead() {
-        let set_lead_result = <StorageWorkingGroup<Test>>::set_lead(
-            RawOrigin::Root.into(),
-            DEFAULT_LEADER_MEMBER_ID,
-            DEFAULT_LEADER_ACCOUNT_ID,
+        let worker = working_group::Worker {
+            member_id: DEFAULT_LEADER_MEMBER_ID,
+            role_account_id: DEFAULT_LEADER_ACCOUNT_ID,
+            reward_relationship: None,
+            role_stake_profile: None,
+        };
+
+        // Create the worker.
+        <working_group::WorkerById<Test, StorageWorkingGroupInstance>>::insert(
+            DEFAULT_LEADER_WORKER_ID,
+            worker,
         );
-        assert!(set_lead_result.is_ok());
+
+        // Update current lead.
+        <working_group::CurrentLead<Test, StorageWorkingGroupInstance>>::put(
+            DEFAULT_LEADER_WORKER_ID,
+        );
     }
 }
 

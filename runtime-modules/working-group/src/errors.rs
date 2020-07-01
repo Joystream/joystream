@@ -14,6 +14,12 @@ decl_error! {
         /// Current lead is not set.
         CurrentLeadNotSet,
 
+        /// There is leader already, cannot hire another one.
+        CannotHireLeaderWhenLeaderExists,
+
+        /// Cannot fill opening with multiple applications.
+        CannotHireMultipleLeaders,
+
         /// Not a lead account.
         IsNotLeadAccount,
 
@@ -23,8 +29,8 @@ decl_error! {
         /// Opening text too long.
         OpeningTextTooLong,
 
-        /// Worker opening does not exist.
-        WorkerOpeningDoesNotExist,
+        /// Opening does not exist.
+        OpeningDoesNotExist,
 
         /// Insufficient balance to apply.
         InsufficientBalanceToApply,
@@ -63,10 +69,10 @@ decl_error! {
         SuccessfulWorkerApplicationDoesNotExist,
 
         /// Reward policy has invalid next payment block number.
-        FillWorkerOpeningInvalidNextPaymentBlock,
+        FillOpeningInvalidNextPaymentBlock,
 
         /// Working group mint does not exist.
-        FillWorkerOpeningMintDoesNotExist,
+        FillOpeningMintDoesNotExist,
 
         ///Relationship must exist.
         RelationshipMustExist,
@@ -235,6 +241,12 @@ decl_error! {
 
         /// Require root origin in extrinsics.
         RequireRootOrigin,
+
+        /// Require signed origin in extrinsics.
+        RequireSignedOrigin,
+
+        /// Working group size limit exceeded.
+        MaxActiveWorkerNumberExceeded,
     }
 }
 
@@ -243,6 +255,7 @@ impl From<system::Error> for Error {
         match error {
             system::Error::Other(msg) => Error::Other(msg),
             system::Error::RequireRootOrigin => Error::RequireRootOrigin,
+            system::Error::RequireSignedOrigin => Error::RequireSignedOrigin,
             _ => Error::Other(error.into()),
         }
     }
@@ -324,10 +337,10 @@ impl<T: hiring::Trait> rstd::convert::From<WrappedError<hiring::FillOpeningError
             ) => match stake_purpose {
                 hiring::StakePurpose::Application => match outcome_in_filled_opening {
                     hiring::ApplicationOutcomeInFilledOpening::Success => {
-                        Error::FullWorkerOpeningUnsuccessfulApplicationStakeUnstakingPeriodTooShort
+                        Error::FullWorkerOpeningSuccessfulApplicationStakeUnstakingPeriodTooShort
                     }
                     hiring::ApplicationOutcomeInFilledOpening::Failure => {
-                        Error::FullWorkerOpeningSuccessfulApplicationStakeUnstakingPeriodTooShort
+                        Error::FullWorkerOpeningUnsuccessfulApplicationStakeUnstakingPeriodTooShort
                     }
                 },
                 hiring::StakePurpose::Role => match outcome_in_filled_opening {
