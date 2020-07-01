@@ -1,5 +1,6 @@
 import { WarthogModel, Field, ObjectType } from '../model';
 import { generateJoinColumnName, generateJoinTableName } from './utils';
+import { camelCase } from 'lodash';
 
 export class RelationshipGenerator {
   visited: string[];
@@ -54,6 +55,19 @@ export class RelationshipGenerator {
   addMany2One(field: Field, currentObject: ObjectType, relatedObject: ObjectType): void {
     field.relation = { type: 'mto', columnType: field.type };
     currentObject.relatedEntityImports.add(relatedObject.name);
+
+    // A virtual additinal field for field resolver
+    const fname = camelCase(currentObject.name).concat('s');
+    const additionalField = new Field(fname, relatedObject.name, field.nullable, false, true);
+    additionalField.relation = { type: 'otm', columnType: currentObject.name, relatedTsProp: field.name };
+    relatedObject.fields.push(additionalField);
+
+    field.relation.relatedTsProp = additionalField.name;
+
+    currentObject.relatedEntityImports.add(relatedObject.name);
+    relatedObject.relatedEntityImports.add(currentObject.name);
+
+    this.addToVisited(additionalField, relatedObject);
     this.addToVisited(field, currentObject);
   }
 
