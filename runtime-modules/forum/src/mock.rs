@@ -71,49 +71,50 @@ impl Trait for Runtime {
     type ThreadId = u64;
     type LabelId = u64;
     type PostId = u64;
+
+    fn is_lead(account_id: &<Self as system::Trait>::AccountId) -> bool {
+        *account_id == FORUM_LEAD_ORIGIN_ID
+    }
+
+    fn is_forum_member(
+        account_id: &<Self as system::Trait>::AccountId,
+        _forum_user_id: &Self::ForumUserId,
+    ) -> bool {
+        *account_id == FORUM_LEAD_ORIGIN_ID
+    }
+
+    fn is_moderator(account_id: &Self::AccountId, moderator_id: &Self::ModeratorId) -> bool {
+        *account_id == FORUM_LEAD_ORIGIN_ID && *moderator_id != NOT_REGISTER_MODERATOR_ID
+    }
 }
 
 #[derive(Clone)]
 pub enum OriginType {
     Signed(<Runtime as system::Trait>::AccountId),
     //Inherent, <== did not find how to make such an origin yet
-    Root,
 }
 
 pub fn mock_origin(origin: OriginType) -> mock::Origin {
     match origin {
         OriginType::Signed(account_id) => Origin::signed(account_id),
         //OriginType::Inherent => Origin::inherent,
-        OriginType::Root => system::RawOrigin::Root.into(), //Origin::root
     }
 }
 
-pub const NOT_FORUM_SUDO_ORIGIN_ID: <Runtime as system::Trait>::AccountId = 111;
+pub const FORUM_LEAD_ORIGIN_ID: <Runtime as system::Trait>::AccountId = 110;
 
-pub const NOT_FORUM_SUDO_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_SUDO_ORIGIN_ID);
+pub const FORUM_LEAD_ORIGIN: OriginType = OriginType::Signed(FORUM_LEAD_ORIGIN_ID);
+
+pub const NOT_FORUM_LEAD_ORIGIN_ID: <Runtime as system::Trait>::AccountId = 111;
+
+pub const NOT_FORUM_LEAD_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_LEAD_ORIGIN_ID);
 
 pub const INVLAID_CATEGORY_ID: <Runtime as Trait>::CategoryId = 333;
 
 pub const NOT_REGISTER_MODERATOR_ID: <Runtime as Trait>::ModeratorId = 666;
 
-pub fn require_root_origin() -> &'static str {
-    "RequireRootOrigin"
-}
-
 pub fn generate_text(len: usize) -> Vec<u8> {
     vec![b'x'; len]
-}
-
-pub fn good_user_name() -> Vec<u8> {
-    b"good name".to_vec()
-}
-
-pub fn good_self_introduction() -> Vec<u8> {
-    b"good description".to_vec()
-}
-
-pub fn good_forum_user_footer() -> Option<Vec<u8>> {
-    Some(b"good forum user footer".to_vec())
 }
 
 pub fn good_category_title() -> Vec<u8> {
@@ -230,68 +231,6 @@ pub fn generate_label_index_cases() -> Vec<BTreeSet<<Runtime as Trait>::ThreadId
             a
         },
     ]
-}
-
-pub fn create_forum_user_mock(
-    account_id: <Runtime as system::Trait>::AccountId,
-    name: Vec<u8>,
-    self_introduction: Vec<u8>,
-    forum_user_footer: Option<Vec<u8>>,
-    result: Result<(), &'static str>,
-) -> <Runtime as Trait>::ForumUserId {
-    let forum_user_id = TestForumModule::next_forum_user_id();
-    assert_eq!(
-        TestForumModule::create_forum_user(
-            account_id,
-            name.clone(),
-            self_introduction.clone(),
-            forum_user_footer.clone(),
-        ),
-        result
-    );
-    if result.is_ok() {
-        let forum_user = ForumUser {
-            role_account: account_id,
-            name: name.clone(),
-            self_introduction: self_introduction.clone(),
-            post_footer: forum_user_footer.clone(),
-        };
-        assert_eq!(TestForumModule::forum_user_by_id(forum_user_id), forum_user,);
-        assert_eq!(TestForumModule::next_forum_user_id(), forum_user_id + 1);
-        assert_eq!(
-            System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ForumUserCreated(forum_user_id))
-        );
-    };
-
-    forum_user_id
-}
-
-pub fn create_moderator_mock(
-    account_id: <Runtime as system::Trait>::AccountId,
-    name: Vec<u8>,
-    self_introduction: Vec<u8>,
-    result: Result<(), &'static str>,
-) -> <Runtime as Trait>::ModeratorId {
-    let moderator_id = TestForumModule::next_moderator_id();
-    assert_eq!(
-        TestForumModule::create_moderator(account_id, name.clone(), self_introduction.clone(),),
-        result
-    );
-    if result.is_ok() {
-        let moderator = Moderator {
-            role_account: account_id,
-            name: name.clone(),
-            self_introduction: self_introduction.clone(),
-        };
-        assert_eq!(TestForumModule::moderator_by_id(moderator_id), moderator);
-        assert_eq!(TestForumModule::next_moderator_id(), moderator_id + 1);
-        assert_eq!(
-            System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ModeratorCreated(moderator_id))
-        );
-    };
-    moderator_id
 }
 
 pub fn create_labels_mock() {
@@ -428,27 +367,6 @@ pub fn add_labels_mock(labels: Vec<Vec<u8>>, result: Result<(), &'static str>) -
         );
     };
     labels.len()
-}
-
-pub fn set_forum_sudo_mock(
-    origin: OriginType,
-    new_forum_sudo: Option<<Runtime as system::Trait>::AccountId>,
-    result: Result<(), &'static str>,
-) {
-    let old_forum_sudo = TestForumModule::forum_sudo();
-
-    assert_eq!(
-        TestForumModule::set_forum_sudo(mock_origin(origin), new_forum_sudo),
-        result
-    );
-
-    if result.is_ok() {
-        assert_eq!(TestForumModule::forum_sudo(), new_forum_sudo);
-        assert_eq!(
-            System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ForumSudoSet(old_forum_sudo, new_forum_sudo,))
-        );
-    };
 }
 
 pub fn set_max_category_depth_mock(
@@ -757,10 +675,6 @@ pub fn migration_not_done_config() -> GenesisConfig<Runtime> {
 
 pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
-        forum_user_by_id: vec![],
-        next_forum_user_id: 1,
-        moderator_by_id: vec![],
-        next_moderator_id: 1,
         category_by_id: vec![], // endowed_accounts.iter().cloned().map(|k|(k, 1 << 60)).collect(),
         next_category_id: 1,
         thread_by_id: vec![],
@@ -768,7 +682,6 @@ pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime
         post_by_id: vec![],
         next_post_id: 1,
 
-        forum_sudo: 33,
         category_by_moderator: vec![],
         max_category_depth: 5,
         reaction_by_post: vec![],

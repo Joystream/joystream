@@ -10,7 +10,7 @@ fn data_migration_test() {
         // set configuration
         set_migration_config_mock(0, 10, 10, 10);
         // create data for old forum
-        create_migration_data_mock(FORUM_SUDO, 10, 10, b"Default text".to_vec());
+        create_migration_data_mock(FORUM_LEAD, 10, 10, b"Default text".to_vec());
         // need four iteration to migrate category, thread and post.
         for index in 0..3 {
             on_initialize_mock(index, false);

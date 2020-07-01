@@ -283,6 +283,13 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + PartialEq
         + From<u64>
         + Into<u64>;
+
+    fn is_lead(account_id: &<Self as system::Trait>::AccountId) -> bool;
+    fn is_forum_member(
+        account_id: &<Self as system::Trait>::AccountId,
+        forum_user_id: &Self::ForumUserId,
+    ) -> bool;
+    fn is_moderator(account_id: &Self::AccountId, moderator_id: &Self::ModeratorId) -> bool;
 }
 
 /*
@@ -327,19 +334,10 @@ impl InputValidationLengthConstraint {
 }
 
 /// Error about users
-const ERROR_FORUM_SUDO_NOT_SET: &str = "Forum sudo not set.";
-const ERROR_ORIGIN_NOT_FORUM_SUDO: &str = "Origin not forum sudo.";
-const ERROR_NOT_FORUM_USER: &str = "Not forum user.";
-const ERROR_NOT_MODERATOR_USER: &str = "Not moderator user.";
-const ERROR_USER_NAME_TOO_SHORT: &str = "User Name too short.";
-const ERROR_USER_NAME_TOO_LONG: &str = "User Name too long.";
-const ERROR_USER_SELF_DESC_TOO_SHORT: &str = "User self introduction too short.";
-const ERROR_USER_SELF_DESC_TOO_LONG: &str = "User self introduction too long.";
+const ERROR_ORIGIN_NOT_FORUM_LEAD: &str = "Origin not forum lead.";
 const ERROR_FORUM_USER_ID_NOT_MATCH_ACCOUNT: &str = "Forum user id not match its account.";
 const ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT: &str = "Moderator id not match its account.";
 const ERROR_FORUM_USER_NOT_THREAD_AUTHOR: &str = "Forum user is not thread author";
-const ERROR_USER_POST_FOOTER_TOO_SHORT: &str = "User post footer too short.";
-const ERROR_USER_POST_FOOTER_TOO_LONG: &str = "User post footer too long.";
 
 // Errors about thread.
 const ERROR_THREAD_TITLE_TOO_SHORT: &str = "Thread title too short.";
@@ -401,42 +399,7 @@ const ERROR_DATA_MIGRATION_NOT_DONE: &str = "data migration not done yet.";
 //#[cfg(any(feature = "std", test))]
 //use sr_primitives::{StorageOverlay, ChildrenStorageOverlay};
 
-use system::{ensure_root, ensure_signed};
-
-/// Represents a user's information in this forum.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct ForumUser<AccountId> {
-    /// Forum user's account used for extrinsic
-    pub role_account: AccountId,
-    // In the future one could add things like
-    // - updating post count of a user
-    // - updating status (e.g. hero, new, etc.)
-
-    // TODO if we should add constraint of name's uniqueness.
-    /// Forum user's name
-    pub name: Vec<u8>,
-
-    /// Forum user's self introduction.
-    pub self_introduction: Vec<u8>,
-
-    /// Post footer shown at the end of post
-    pub post_footer: Option<Vec<u8>>,
-}
-
-/// Represents a moderator in this forum.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Moderator<AccountId> {
-    /// Moderator's account used for extrinsic
-    pub role_account: AccountId,
-
-    /// Moderator's name
-    pub name: Vec<u8>,
-
-    /// Moderator's self introduction.
-    pub self_introduction: Vec<u8>,
-}
+use system::ensure_signed;
 
 /// Convenient composite time stamp
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
@@ -456,7 +419,7 @@ pub struct ModerationAction<ModeratorId, BlockNumber, Moment> {
     /// When action occured.
     pub moderated_at: BlockchainTimestamp<BlockNumber, Moment>,
 
-    /// Account forum sudo which acted.
+    /// Account forum lead which acted.
     pub moderator_id: ModeratorId,
 
     /// Moderation rationale
@@ -699,18 +662,6 @@ type CategoryTreePathArg<CategoryId, ThreadId, BlockNumber, Moment> =
 
 decl_storage! {
     trait Store for Module<T: Trait> as Forum_1_1 {
-        /// Map forum user identifier to forum user information.
-        pub ForumUserById get(forum_user_by_id) config(): map T::ForumUserId  => ForumUser<T::AccountId>;
-
-        /// Forum user identifier value for next new forum user.
-        pub NextForumUserId get(next_forum_user_id) config(): T::ForumUserId;
-
-        /// Map forum moderator identifier to moderator information.
-        pub ModeratorById get(moderator_by_id) config(): map T::ModeratorId => Moderator<T::AccountId>;
-
-        /// Forum moderator identifier value for next new moderator user.
-        pub NextModeratorId get(next_moderator_id) config(): T::ModeratorId;
-
         /// Map category identifier to corresponding category.
         pub CategoryById get(category_by_id) config(): map T::CategoryId => Category<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment>;
 
@@ -731,9 +682,6 @@ decl_storage! {
 
         /// Max depth of category.
         pub MaxCategoryDepth get(max_category_depth) config(): u8;
-
-        /// Account of forum sudo.
-        pub ForumSudo get(forum_sudo) config(): Option<T::AccountId>;
 
         /// Moderator set for each Category
         pub CategoryByModerator get(category_by_moderator) config(): double_map T::CategoryId, blake2_256(T::ModeratorId) => bool;
@@ -800,12 +748,10 @@ decl_storage! {
 decl_event!(
     pub enum Event<T>
     where
-        <T as system::Trait>::AccountId,
         <T as Trait>::CategoryId,
         <T as Trait>::ThreadId,
         <T as Trait>::PostId,
         <T as Trait>::ForumUserId,
-        <T as Trait>::ModeratorId,
     {
         /// A category was introduced
         CategoryCreated(CategoryId),
@@ -831,20 +777,11 @@ decl_event!(
         /// The second argument reflects the number of total edits when the text update occurs.
         PostTextUpdated(PostId, u64),
 
-        /// Given account was set as forum sudo.
-        ForumSudoSet(Option<AccountId>, Option<AccountId>),
-
         /// Thumb up post
         PostReacted(ForumUserId, PostId, PostReaction),
 
         /// Vote on poll
         VoteOnPoll(ThreadId, u32),
-
-        /// Forum user created
-        ForumUserCreated(ForumUserId),
-
-        /// Moderator created
-        ModeratorCreated(ModeratorId),
 
         /// Max category depth updated
         MaxCategoryDepthUpdated(u8),
@@ -864,19 +801,17 @@ decl_module! {
             Self::ensure_data_migration_done()?;
             clear_prefix(b"Forum ForumUserById");
 
-            let who = ensure_signed(origin)?;
-
-            // Not signed by forum SUDO
-            Self::ensure_is_forum_sudo(&who)?;
+            // Not signed by forum LEAD
+            let who = Self::ensure_is_forum_lead(origin)?;
 
             // ensure category exists.
             ensure!(
-            <CategoryById<T>>::exists(&category_id),
-            ERROR_CATEGORY_DOES_NOT_EXIST
+                <CategoryById<T>>::exists(&category_id),
+                ERROR_CATEGORY_DOES_NOT_EXIST
             );
 
             // Get moderator id.
-            Self::ensure_is_moderator_with_correct_account(&who, &moderator_id)?;
+            Self::ensure_is_moderator_account(&who, &moderator_id)?;
 
             // Put moderator into category by moderator map
             <CategoryByModerator<T>>::mutate(category_id, moderator_id, |value|
@@ -887,10 +822,8 @@ decl_module! {
 
         /// Set max category depth.
         fn set_max_category_depth(origin, max_category_depth: u8) -> dispatch::Result {
-            let who = ensure_signed(origin)?;
-
-            // Not signed by forum SUDO
-            Self::ensure_is_forum_sudo(&who)?;
+            // Not signed by forum LEAD
+            Self::ensure_is_forum_lead(origin)?;
 
             // Store new value into runtime
             MaxCategoryDepth::mutate(|value| *value = max_category_depth );
@@ -901,41 +834,13 @@ decl_module! {
             Ok(())
         }
 
-        /// Set forum sudo.
-        fn set_forum_sudo(origin, new_forum_sudo: Option<T::AccountId>) -> dispatch::Result {
-            ensure_root(origin)?;
-
-            /*
-             * Question: when this routine is called by non sudo or with bad signature, what error is raised?
-             * Update ERror set in spec
-             */
-
-            // Hold on to old value
-            let old_forum_sudo = <ForumSudo<T>>::get();
-
-            // Update forum sudo
-            match new_forum_sudo.clone() {
-                Some(account_id) => <ForumSudo<T>>::mutate(|value| *value = Some(account_id)),
-                None => <ForumSudo<T>>::kill()
-            };
-
-            // Generate event
-            Self::deposit_event(RawEvent::ForumSudoSet(old_forum_sudo, new_forum_sudo));
-
-            // All good.
-            Ok(())
-        }
-
         /// Add a new category.
         fn create_category(origin, parent: Option<T::CategoryId>, title: Vec<u8>, description: Vec<u8>, labels: BTreeSet<T::LabelId>) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
-            // Not signed by forum SUDO
-            Self::ensure_is_forum_sudo(&who)?;
+            // Not signed by forum LEAD
+            Self::ensure_is_forum_lead(origin)?;
 
             // Validate title
             Self::ensure_category_title_is_valid(&title)?;
@@ -1017,11 +922,8 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
-            // Not signed by forum SUDO
-            Self::ensure_is_forum_sudo(&who)?;
+            // Not signed by forum LEAD
+            Self::ensure_is_forum_lead(origin)?;
 
             // Make sure something is actually being changed
             ensure!(
@@ -1103,13 +1005,13 @@ decl_module! {
             // Ensure category is mutable.
             Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
 
-            // Update by sudo or moderator
-            if Self::ensure_is_forum_sudo(&who).is_ok() {
+            // Update by lead or moderator
+            if Self::ensure_is_forum_lead_account(&who).is_ok() {
                 // Update labels to category
                 <CategoryLabels<T>>::mutate(category_id, |value| *value = new_labels);
             } else {
                 // is moderator
-                Self::ensure_is_moderator_with_correct_account(&who, &moderator_id)?;
+                Self::ensure_is_moderator_account(&who, &moderator_id)?;
 
                 // ensure origin can moderate category
                 Self::ensure_moderate_category(&who, &moderator_id, category_id)?;
@@ -1128,11 +1030,8 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
             // Check that account is forum member
-            Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
+            Self::ensure_is_forum_user(origin, &forum_user_id)?;
 
             // Keep next thread id
             let next_thread_id = <NextThreadId<T>>::get();
@@ -1150,9 +1049,6 @@ decl_module! {
         fn update_thread_labels_by_author(origin, forum_user_id: T::ForumUserId, thread_id: T::ThreadId, new_labels: BTreeSet<T::LabelId>) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
-
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
 
             // Get thread
             let thread = Self::ensure_thread_exists(&thread_id)?;
@@ -1175,7 +1071,7 @@ decl_module! {
             Self::ensure_label_valid(&new_labels)?;
 
             // Ensure author is forum member
-            Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
+            Self::ensure_is_forum_user(origin, &forum_user_id)?;
 
             // Update labels to thread
             <ThreadLabels<T>>::mutate(thread_id, |value| *value = new_labels);
@@ -1186,9 +1082,6 @@ decl_module! {
         fn update_thread_labels_by_moderator(origin, moderator_id: T::ModeratorId, thread_id: T::ThreadId, new_labels: BTreeSet<T::LabelId>) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
-
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
 
             // Get thread
             let thread = Self::ensure_thread_exists(&thread_id)?;
@@ -1206,7 +1099,7 @@ decl_module! {
             Self::ensure_label_valid(&new_labels)?;
 
             // Ensure moderator is registered
-            Self::ensure_is_moderator_with_correct_account(&who, &moderator_id)?;
+            let who = Self::ensure_is_moderator(origin, &moderator_id)?;
 
             // Ensure the moderator can moderate the category
             Self::ensure_moderate_category(&who, &moderator_id, thread.category_id)?;
@@ -1222,11 +1115,8 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
             // get forum user id.
-            Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
+            Self::ensure_is_forum_user(origin, &forum_user_id)?;
 
             // Get thread
             let thread = Self::ensure_thread_exists(&thread_id)?;
@@ -1271,11 +1161,8 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
             // Ensure origin is medorator
-            Self::ensure_is_moderator_with_correct_account(&who, &moderator_id)?;
+            let who = Self::ensure_is_moderator(origin, &moderator_id)?;
 
             // Get thread
             let mut thread = Self::ensure_thread_exists(&thread_id)?;
@@ -1329,11 +1216,8 @@ decl_module! {
              * Update SPEC with new errors,
              */
 
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
             // Check that account is forum member
-            Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
+            Self::ensure_is_forum_user(origin, &forum_user_id)?;
 
             // Keep next post id
             let next_post_id = <NextPostId<T>>::get();
@@ -1352,11 +1236,8 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
             // Check that account is forum member
-            Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
+            Self::ensure_is_forum_user(origin, &forum_user_id)?;
 
             // Make sure there exists a mutable post with post id `post_id`
             let _ = Self::ensure_post_is_mutable(&post_id)?;
@@ -1388,11 +1269,8 @@ decl_module! {
               - check that both post and thread and category are mutable
             */
 
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
             // Check that account is forum member
-            Self::ensure_is_forum_member_with_correct_account(&who, &forum_user_id)?;
+            Self::ensure_is_forum_user(origin, &forum_user_id)?;
 
             // Validate post text
             Self::ensure_post_text_is_valid(&new_text)?;
@@ -1432,11 +1310,8 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
             // Get moderator id.
-            Self::ensure_is_moderator_with_correct_account(&who, &moderator_id)?;
+            let who = Self::ensure_is_moderator(origin, &moderator_id)?;
 
             // Make sure post exists and is mutable
             let post = Self::ensure_post_is_mutable(&post_id)?;
@@ -1476,11 +1351,8 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Check that its a valid signature
-            let who = ensure_signed(origin)?;
-
             // Get moderator id.
-            Self::ensure_is_moderator_with_correct_account(&who, &moderator_id)?;
+            let who = Self::ensure_is_moderator(origin, &moderator_id)?;
 
             // ensure the moderator can moderate the category
             Self::ensure_moderate_category(&who, &moderator_id, category_id)?;
@@ -1643,81 +1515,6 @@ impl<T: Trait> Module<T> {
         Ok(new_post)
     }
 
-    // The method only called from other module to create a forum user.
-    pub fn create_forum_user(
-        account_id: T::AccountId,
-        name: Vec<u8>,
-        self_introduction: Vec<u8>,
-        post_footer: Option<Vec<u8>>,
-    ) -> dispatch::Result {
-        // Ensure data migration is done
-        Self::ensure_data_migration_done()?;
-
-        // Ensure user name is valid
-        Self::ensure_user_name_is_valid(&name)?;
-
-        // Ensure self introduction is valid
-        Self::ensure_user_self_introduction_is_valid(&self_introduction)?;
-
-        // Ensure post footer is valid
-        if let Some(ref post_footer_raw) = post_footer {
-            Self::ensure_post_footer_is_valid(post_footer_raw)?;
-        }
-
-        // Create new forum user data
-        let new_forum_user = ForumUser {
-            role_account: account_id,
-            name,
-            self_introduction,
-            post_footer,
-        };
-
-        // Insert new user data for forum user
-        <ForumUserById<T>>::mutate(<NextForumUserId<T>>::get(), |value| *value = new_forum_user);
-
-        // Store event to runtime
-        Self::deposit_event(RawEvent::ForumUserCreated(<NextForumUserId<T>>::get()));
-
-        // Update forum user index
-        <NextForumUserId<T>>::mutate(|n| *n += One::one());
-
-        Ok(())
-    }
-
-    // The method only called from other module to create a new moderator.
-    pub fn create_moderator(
-        account_id: T::AccountId,
-        name: Vec<u8>,
-        self_introduction: Vec<u8>,
-    ) -> dispatch::Result {
-        // Ensure data migration is done
-        Self::ensure_data_migration_done()?;
-
-        // Ensure user name is valid
-        Self::ensure_user_name_is_valid(&name)?;
-
-        // Ensure self introduction is valid
-        Self::ensure_user_self_introduction_is_valid(&self_introduction)?;
-
-        // Create moderator data
-        let new_moderator = Moderator {
-            role_account: account_id,
-            name,
-            self_introduction,
-        };
-
-        // Insert moderator data into storage
-        <ModeratorById<T>>::mutate(<NextModeratorId<T>>::get(), |value| *value = new_moderator);
-
-        // Store event to runtime
-        Self::deposit_event(RawEvent::ModeratorCreated(<NextModeratorId<T>>::get()));
-
-        // Update next moderate index
-        <NextModeratorId<T>>::mutate(|n| *n += One::one());
-
-        Ok(())
-    }
-
     // The method only called from other module to add some labels.
     pub fn add_labels(labels: Vec<Vec<u8>>) -> dispatch::Result {
         // Ensure data migration is done
@@ -1798,22 +1595,6 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn ensure_user_name_is_valid(text: &[u8]) -> dispatch::Result {
-        UserNameConstraint::get().ensure_valid(
-            text.len(),
-            ERROR_USER_NAME_TOO_SHORT,
-            ERROR_USER_NAME_TOO_LONG,
-        )
-    }
-
-    fn ensure_user_self_introduction_is_valid(text: &[u8]) -> dispatch::Result {
-        UserSelfIntroductionConstraint::get().ensure_valid(
-            text.len(),
-            ERROR_USER_SELF_DESC_TOO_SHORT,
-            ERROR_USER_SELF_DESC_TOO_LONG,
-        )
-    }
-
     fn ensure_category_title_is_valid(title: &[u8]) -> dispatch::Result {
         CategoryTitleConstraint::get().ensure_valid(
             title.len(),
@@ -1827,14 +1608,6 @@ impl<T: Trait> Module<T> {
             description.len(),
             ERROR_CATEGORY_DESCRIPTION_TOO_SHORT,
             ERROR_CATEGORY_DESCRIPTION_TOO_LONG,
-        )
-    }
-
-    fn ensure_post_footer_is_valid(footer: &[u8]) -> dispatch::Result {
-        PostFooterConstraint::get().ensure_valid(
-            footer.len(),
-            ERROR_USER_POST_FOOTER_TOO_SHORT,
-            ERROR_USER_POST_FOOTER_TOO_LONG,
         )
     }
 
@@ -1957,53 +1730,57 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_forum_sudo_set() -> Result<T::AccountId, &'static str> {
-        match <ForumSudo<T>>::get() {
-            Some(account_id) => Ok(account_id),
-            None => Err(ERROR_FORUM_SUDO_NOT_SET),
-        }
+    /// Ensure forum user is lead
+    fn ensure_is_forum_lead(origin: T::Origin) -> Result<T::AccountId, &'static str> {
+        let who = ensure_signed(origin)?;
+
+        Self::ensure_is_forum_lead_account(&who)?;
+
+        Ok(who)
     }
 
-    fn ensure_is_forum_sudo(account_id: &T::AccountId) -> dispatch::Result {
-        let forum_sudo_account = Self::ensure_forum_sudo_set()?;
+    // Ensure forum user is lead - check via account
+    fn ensure_is_forum_lead_account(account_id: &T::AccountId) -> dispatch::Result {
+        let is_lead = T::is_lead(account_id);
 
-        ensure!(
-            *account_id == forum_sudo_account,
-            ERROR_ORIGIN_NOT_FORUM_SUDO
-        );
+        ensure!(is_lead, ERROR_ORIGIN_NOT_FORUM_LEAD);
         Ok(())
     }
 
     /// Ensure forum user id registered and its account id matched
-    fn ensure_is_forum_member_with_correct_account(
-        account_id: &T::AccountId,
+    fn ensure_is_forum_user(
+        origin: T::Origin,
         forum_user_id: &T::ForumUserId,
-    ) -> dispatch::Result {
-        if <ForumUserById<T>>::exists(forum_user_id) {
-            if <ForumUserById<T>>::get(forum_user_id).role_account == *account_id {
-                Ok(())
-            } else {
-                Err(ERROR_FORUM_USER_ID_NOT_MATCH_ACCOUNT)
-            }
-        } else {
-            Err(ERROR_NOT_FORUM_USER)
-        }
+    ) -> Result<T::AccountId, &'static str> {
+        let who = ensure_signed(origin)?;
+
+        let is_member = T::is_forum_member(&who, forum_user_id);
+
+        ensure!(is_member, ERROR_FORUM_USER_ID_NOT_MATCH_ACCOUNT);
+        Ok(who)
     }
 
     /// Ensure moderator id registered and its accound id matched
-    fn ensure_is_moderator_with_correct_account(
+    fn ensure_is_moderator(
+        origin: T::Origin,
+        moderator_id: &T::ModeratorId,
+    ) -> Result<T::AccountId, &'static str> {
+        let who = ensure_signed(origin)?;
+
+        Self::ensure_is_moderator_account(&who, &moderator_id)?;
+
+        Ok(who)
+    }
+
+    /// Ensure moderator id registered and its accound id matched - check via account
+    fn ensure_is_moderator_account(
         account_id: &T::AccountId,
         moderator_id: &T::ModeratorId,
     ) -> dispatch::Result {
-        if <ModeratorById<T>>::exists(moderator_id) {
-            if <ModeratorById<T>>::get(moderator_id).role_account == *account_id {
-                Ok(())
-            } else {
-                Err(ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT)
-            }
-        } else {
-            Err(ERROR_NOT_MODERATOR_USER)
-        }
+        let is_moderator = T::is_moderator(&account_id, moderator_id);
+
+        ensure!(is_moderator, ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT);
+        Ok(())
     }
 
     fn ensure_catgory_is_mutable(category_id: T::CategoryId) -> dispatch::Result {
@@ -2114,7 +1891,7 @@ impl<T: Trait> Module<T> {
         let category_tree_path = Self::build_category_tree_path(category_id);
 
         // Ensure moderator account registered before
-        Self::ensure_is_moderator_with_correct_account(account_id, moderator_id)?;
+        Self::ensure_is_moderator_account(account_id, moderator_id)?;
 
         // Iterate path, check all ancient category
         for item in category_tree_path {

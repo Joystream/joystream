@@ -28,7 +28,8 @@ mod migration_mod {
     pub use substrate_forum_data_migration::Event;
 }
 
-pub const FORUM_SUDO: <Runtime as system::Trait>::AccountId = 33;
+// forum *lead* was called *sudo* in old version of forum
+pub const FORUM_LEAD: <Runtime as system::Trait>::AccountId = 33;
 
 impl_outer_event! {
     pub enum TestEvent for Runtime {
@@ -155,7 +156,7 @@ pub type TestModule = Module<Runtime>;
 
 fn data_migration_test(n: u32) {
     build_test_externalities().execute_with(|| {
-        create_migration_data_mock(FORUM_SUDO, n, n, b"Default text for bench test.".to_vec());
+        create_migration_data_mock(FORUM_LEAD, n, n, b"Default text for bench test.".to_vec());
         let n_as_u64 = n as u64;
         set_migration_config_mock(0, n_as_u64, n_as_u64, n_as_u64);
         for index in 0..4 {

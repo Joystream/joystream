@@ -27,7 +27,7 @@ mod migration_mod {
     pub use crate::Event;
 }
 
-pub const FORUM_SUDO: <Runtime as system::Trait>::AccountId = 33;
+pub const FORUM_LEAD: <Runtime as system::Trait>::AccountId = 33;
 
 impl_outer_event! {
     pub enum TestEvent for Runtime {
