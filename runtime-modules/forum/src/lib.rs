@@ -401,20 +401,6 @@ const ERROR_DATA_MIGRATION_NOT_DONE: &str = "data migration not done yet.";
 
 use system::ensure_signed;
 
-/// Represents a moderator in this forum.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Moderator<AccountId> {
-    /// Moderator's account used for extrinsic
-    pub role_account: AccountId,
-
-    /// Moderator's name
-    pub name: Vec<u8>,
-
-    /// Moderator's self introduction.
-    pub self_introduction: Vec<u8>,
-}
-
 /// Convenient composite time stamp
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
