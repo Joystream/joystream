@@ -136,17 +136,27 @@ pub fn good_post_text() -> Vec<u8> {
     b"A response in the thread".to_vec()
 }
 
+pub fn good_poll_description() -> Vec<u8> {
+    b"poll description".to_vec()
+}
+
+pub fn good_poll_alternative_text() -> Vec<u8> {
+    b"poll alternative".to_vec()
+}
+
 pub fn generate_poll(
 ) -> Poll<<Runtime as timestamp::Trait>::Moment, <Runtime as system::Trait>::Hash> {
     Poll {
-        description_hash: generate_hash(),
+        description_hash: Runtime::calculate_hash(good_poll_description().as_slice()),
         start_time: Timestamp::now(),
         end_time: Timestamp::now() + 10,
         poll_alternatives: {
             let mut alternatives = vec![];
             for _ in 0..5 {
                 alternatives.push(PollAlternative {
-                    alternative_text_hash: generate_hash(),
+                    alternative_text_hash: Runtime::calculate_hash(
+                        good_poll_alternative_text().as_slice(),
+                    ),
                     vote_count: 0,
                 });
             }
@@ -160,14 +170,16 @@ pub fn generate_poll_timestamp_cases(
 ) -> Poll<<Runtime as timestamp::Trait>::Moment, <Runtime as system::Trait>::Hash> {
     let test_cases = vec![
         Poll {
-            description_hash: generate_hash(),
+            description_hash: Runtime::calculate_hash(good_poll_description().as_slice()),
             start_time: Timestamp::now(),
             end_time: Timestamp::now() + 10,
             poll_alternatives: {
                 let mut alternatives = vec![];
                 for _ in 0..5 {
                     alternatives.push(PollAlternative {
-                        alternative_text_hash: generate_hash(),
+                        alternative_text_hash: Runtime::calculate_hash(
+                            good_poll_alternative_text().as_slice(),
+                        ),
                         vote_count: 0,
                     });
                 }
@@ -175,14 +187,16 @@ pub fn generate_poll_timestamp_cases(
             },
         },
         Poll {
-            description_hash: generate_hash(),
+            description_hash: Runtime::calculate_hash(good_poll_description().as_slice()),
             start_time: Timestamp::now() + 10,
             end_time: Timestamp::now(),
             poll_alternatives: {
                 let mut alternatives = vec![];
                 for _ in 0..5 {
                     alternatives.push(PollAlternative {
-                        alternative_text_hash: generate_hash(),
+                        alternative_text_hash: Runtime::calculate_hash(
+                            good_poll_alternative_text().as_slice(),
+                        ),
                         vote_count: 0,
                     });
                 }
@@ -465,12 +479,6 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
 
 pub fn migration_not_done_config() -> GenesisConfig<Runtime> {
     create_genesis_config(false)
-}
-
-pub fn generate_hash() -> <Runtime as system::Trait>::Hash {
-    let hash = <Runtime as system::Trait>::Hash::random();
-
-    hash
 }
 
 pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime> {
