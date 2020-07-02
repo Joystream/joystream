@@ -162,11 +162,12 @@ describe('ModelRenderer', () => {
     // this will be generated in ../enums/enum.ts
     //expect(rendered).to.include(`NEWHOPE = 'NEWHOPE'`, 'Should render enum values');
     expect(rendered).to.include(`@EnumField`, 'Should decorate with @EnumField');
-    expect(rendered).to.include(`'Episode', Episode, { nullable: true }`, 'Should add enum decorator options');
+    expect(rendered).to.include(`'Episode', Episode`);
+    expect(rendered).to.include(`nullable: true`, 'Should add enum decorator options');
     expect(rendered).to.include(`episode?:`, 'Should add nullable');
   });
 
-  it('should decorate field with the right enum type', function () {
+  it('should decorate field with the correct enum type', function () {
     const model = fromStringSchema(`
       enum episode_Camel_Case {
         NEWHOPE
@@ -187,9 +188,14 @@ describe('ModelRenderer', () => {
     // this will be generated in ../enums/enum.ts
     //expect(rendered).to.include(`NEWHOPE = 'NEWHOPE'`, 'Should render enum values');
     expect(rendered).to.include(
-      `'episode_Camel_Case', episode_Camel_Case, { nullable: true }`,
+      `'episode_Camel_Case', episode_Camel_Case,`,
       'Should add enum decorator options'
     );
+    expect(rendered).to.include(
+      `nullable: true`,
+      'Should add enum decorator options'
+    );
+
     expect(rendered).to.include(`episode?: episode_Camel_Case`, 'Should camelCase type');
   });
 
