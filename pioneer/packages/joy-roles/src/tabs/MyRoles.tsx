@@ -35,7 +35,7 @@ import {
 import { CancelledReason, OpeningStageClassification, OpeningState } from '../classifiers';
 import { OpeningMetadata } from '../OpeningMetadata';
 import { CuratorId } from '@joystream/types/content-working-group';
-import { WorkerId } from '@joystream/types/working-group';
+import { WorkerId, OpeningTypeKeys } from '@joystream/types/working-group';
 import _ from 'lodash';
 import styled from 'styled-components';
 import { WorkingGroups } from '../working_groups';
@@ -397,6 +397,8 @@ export function Application (props: ApplicationProps) {
 
   const application = props.opening.parse_human_readable_text() as GenericJoyStreamRoleSchema;
   const appState = applicationState(props);
+  // TODO: Use JoyEnum here
+  const isLeadApplication = props.meta.type?.type === OpeningTypeKeys.Leader;
 
   let CTA = null;
   if (appState === ApplicationState.Positive && props.stage.state !== OpeningState.Complete) {
@@ -410,7 +412,9 @@ export function Application (props: ApplicationProps) {
         <Label.Detail className="right">
           {openingIcon(props.stage.state)}
           {openingDescription(props.stage.state)}
-          <ApplicationLabel>{_.startCase(props.meta.group)}</ApplicationLabel>
+          <ApplicationLabel>
+            {_.startCase(props.meta.group) + (isLeadApplication ? ' Lead' : '')}
+          </ApplicationLabel>
         </Label.Detail>
       </Label>
       <Grid columns="equal">

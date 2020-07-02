@@ -26,7 +26,8 @@ import {
   Application as WGApplication,
   Opening as WGOpening,
   Worker, WorkerId,
-  RoleStakeProfile
+  RoleStakeProfile,
+  OpeningTypeKeys
 } from '@joystream/types/working-group';
 
 import { Application, Opening, OpeningId, ApplicationId, ActiveApplicationStage } from '@joystream/types/hiring';
@@ -267,7 +268,7 @@ export class Transport extends TransportBase implements ITransport {
     });
   }
 
-  protected async areAnyGroupRolesOpen (group: WorkingGroups): Promise<boolean> {
+  protected async areGroupRolesOpen (group: WorkingGroups, lead: boolean = false): Promise<boolean> {
     const nextId = await this.cachedApiMethodByGroup(group, 'nextOpeningId')() as GroupOpeningId;
 
     // This is chain specfic, but if next id is still 0, it means no openings have been added yet
@@ -281,9 +282,17 @@ export class Transport extends TransportBase implements ITransport {
       await this.cachedApiMethodByGroup(group, 'openingById')()
     );
 
-    for (let i = 0; i < groupOpenings.linked_values.length; i++) {
-      const opening = await this.opening(groupOpenings.linked_values[i].hiring_opening_id.toNumber());
-      if (opening.is_active) {
+    for (const groupOpening of groupOpenings.linked_values) {
+      const opening = await this.opening(groupOpening.hiring_opening_id.toNumber());
+      if (
+        opening.is_active &&
+        (
+          groupOpening instanceof WGOpening
+            // TODO: Use JoyEnum for that later
+            ? (lead === (groupOpening.opening_type.type === OpeningTypeKeys.Leader))
+            : !lead // Lead opening are never available for content working group currently
+        )
+      ) {
         return true;
       }
     }
@@ -368,7 +377,8 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   async groupOverview (group: WorkingGroups): Promise<WorkingGroupMembership> {
-    const rolesAvailable = await this.areAnyGroupRolesOpen(group);
+    const workerRolesAvailable = await this.areGroupRolesOpen(group);
+    const leadRolesAvailable = await this.areGroupRolesOpen(group, true);
     const leadStatus = await this.groupLeadStatus(group);
 
     const nextId = await this.cachedApiMethodByGroup(group, 'nextWorkerId')() as GroupWorkerId;
@@ -394,7 +404,8 @@ export class Transport extends TransportBase implements ITransport {
       workers: await Promise.all(
         workersWithIds.map(({ worker, id }) => this.groupMember(group, id, worker))
       ),
-      rolesAvailable
+      workerRolesAvailable,
+      leadRolesAvailable
     };
   }
 
@@ -695,6 +706,8 @@ export class Transport extends TransportBase implements ITransport {
       await this.cachedApiMethodByGroup(group, 'workerById')()
     );
 
+    const groupLead = (await this.groupLeadStatus(group)).lead;
+
     return Promise.all(
       workers
         .linked_values
@@ -717,7 +730,9 @@ export class Transport extends TransportBase implements ITransport {
 
           return {
             workerId: id,
-            name: workerRoleNameByGroup[group],
+            name: (groupLead?.workerId && groupLead.workerId.eq(id))
+              ? _.startCase(group) + ' Lead'
+              : workerRoleNameByGroup[group],
             reward: earnedValue,
             stake: stakeValue,
             group

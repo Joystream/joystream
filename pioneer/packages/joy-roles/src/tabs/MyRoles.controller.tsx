@@ -10,14 +10,14 @@ import {
 
 type State = {
   applications: OpeningApplication[];
-  currentCurationRoles: ActiveRoleWithCTAs[];
+  currentRoles: ActiveRoleWithCTAs[];
   myAddress: string;
 }
 
 const newEmptyState = (): State => {
   return {
     applications: [],
-    currentCurationRoles: [],
+    currentRoles: [],
     myAddress: ''
   };
 };
@@ -40,7 +40,7 @@ export class MyRolesController extends Controller<State, ITransport> {
 
   protected async updateCurationGroupRoles (myAddress: string) {
     const roles = await this.transport.myRoles(myAddress);
-    this.state.currentCurationRoles = roles.map(role => ({
+    this.state.currentRoles = roles.map(role => ({
       ...role,
       CTAs: [
         {
@@ -65,7 +65,7 @@ export class MyRolesController extends Controller<State, ITransport> {
 export const MyRolesView = View<MyRolesController, State>(
   (state, controller) => (
     <Container className="my-roles">
-      <CurrentRoles currentRoles={state.currentCurationRoles} />
+      <CurrentRoles currentRoles={state.currentRoles} />
       <Applications applications={state.applications} cancelCallback={(a) => controller.cancelApplication(a)} />
     </Container>
   )

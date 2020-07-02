@@ -12,11 +12,12 @@ import _ from 'lodash';
 export type WorkingGroupMembership = {
   leadStatus: GroupLeadStatus;
   workers: GroupMember[];
-  rolesAvailable: boolean;
+  workerRolesAvailable: boolean;
+  leadRolesAvailable: boolean;
 }
 
 const NoRolesAvailable = () => (
-  <Message>
+  <Message info>
     <Message.Header>No open roles at the moment</Message.Header>
     <p>The team is full at the moment, but we intend to expand. Check back for open roles soon!</p>
   </Message>
@@ -26,13 +27,14 @@ type JoinRoleProps = {
   group: WorkingGroups;
   title: string;
   description: string;
+  lead?: boolean;
 };
 
-const JoinRole = ({ group, title, description }: JoinRoleProps) => (
+const JoinRole = ({ group, lead = false, title, description }: JoinRoleProps) => (
   <Message positive>
     <Message.Header>{title}</Message.Header>
     <p>{description}</p>
-    <Link to={`/working-groups/opportunities/${group}`}>
+    <Link to={`/working-groups/opportunities/${group}${lead?'/lead':''}`}>
       <Button icon labelPosition="right" color="green" positive>
         Find out more
         <Icon name={'right arrow' as SemanticICONS} />
@@ -67,6 +69,8 @@ type GroupOverviewProps = GroupOverviewOuterProps & {
   customGroupName?: string;
   customJoinTitle?: string;
   customJoinDesc?: string;
+  customBecomeLeadTitle?: string;
+  customBecomeLeadDesc?: string;
 }
 
 const GroupOverview = Loadable<GroupOverviewProps>(
@@ -76,14 +80,19 @@ const GroupOverview = Loadable<GroupOverviewProps>(
     description,
     workers,
     leadStatus,
-    rolesAvailable,
+    workerRolesAvailable,
+    leadRolesAvailable,
     customGroupName,
     customJoinTitle,
-    customJoinDesc
+    customJoinDesc,
+    customBecomeLeadTitle,
+    customBecomeLeadDesc
   }: GroupOverviewProps) => {
     const groupName = customGroupName || _.startCase(group);
     const joinTitle = customJoinTitle || `Join the ${groupName} group!`;
     const joinDesc = customJoinDesc || `There are openings for new ${groupName}. This is a great way to support Joystream!`;
+    const becomeLeadTitle = customBecomeLeadTitle || `Become ${groupName} Lead!`;
+    const becomeLeadDesc = customBecomeLeadDesc || `An opportunity to become ${groupName} Leader is currently available! This is a great way to support Joystream!`;
     return (
       <GroupOverviewSection>
         <h2>{ groupName }</h2>
@@ -93,10 +102,11 @@ const GroupOverview = Loadable<GroupOverviewProps>(
             <GroupMemberView key={key} {...worker} />
           )) }
         </Card.Group>
-        { rolesAvailable
+        { workerRolesAvailable
           ? <JoinRole group={group} title={joinTitle} description={joinDesc} />
           : <NoRolesAvailable /> }
         { leadStatus && <CurrentLead groupName={groupName} {...leadStatus}/> }
+        { leadRolesAvailable && <JoinRole group={group} lead title={becomeLeadTitle} description={becomeLeadDesc} /> }
       </GroupOverviewSection>
     );
   }
@@ -143,7 +153,7 @@ export const CurrentLead = Loadable<CurrentLeadProps>(
     const leadDesc = customLeadDesc || `This role is responsible for hiring ${groupName}.`;
     return (
       <LeadSection>
-        <Message positive>
+        <Message>
           <Message.Header>{ groupName } Lead</Message.Header>
           <p>{ leadDesc }</p>
           {lead

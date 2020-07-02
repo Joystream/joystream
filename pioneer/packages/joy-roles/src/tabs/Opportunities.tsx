@@ -484,12 +484,16 @@ export const OpeningView = Loadable<OpeningViewProps>(
     }
 
     const text = hrt;
+    // TODO: This will be handled with JoyEnum later
+    const isLeadOpening = props.meta.type?.type === OpeningTypeKeys.Leader;
 
     return (
       <Container className={'opening ' + openingClass(props.stage.state)}>
         <OpeningTitle>
           {text.job.title}
-          <OpeningLabel>{ _.startCase(props.meta.group) }</OpeningLabel>
+          <OpeningLabel>
+            { _.startCase(props.meta.group) }{ isLeadOpening ? ' Lead' : '' }
+          </OpeningLabel>
         </OpeningTitle>
         <Card fluid className="container">
           <Card.Content className="header">
@@ -550,7 +554,7 @@ export const OpeningsView = Loadable<OpeningsViewProps>(
     const filteredOpenings = props.openings!.filter(o =>
       (!group || o.meta.group === group) &&
       // TODO: Adjust to use JoyEnum later
-      (!o.meta.type || (lead ? o.meta.type.type === OpeningTypeKeys.Leader : o.meta.type.type === OpeningTypeKeys.Worker))
+      (!group || !o.meta.type || (lead === (o.meta.type.type === OpeningTypeKeys.Leader)))
     );
 
     return (
@@ -580,7 +584,7 @@ export const OpeningsView = Loadable<OpeningsViewProps>(
             ))
             : (
               <h2>
-                No openings{group ? ` for ${workerRoleNameByGroup[group]}${lead ? ' (Lead)' : ''} role` : ''}
+                No openings{group ? ` for ${workerRoleNameByGroup[group]}${lead ? ' Lead' : ''} role ` : ' '}
                 are currently available!
               </h2>
             )
