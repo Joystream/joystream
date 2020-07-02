@@ -1,6 +1,6 @@
 [package]
 name = 'substrate-proposals-codex-module'
-version = '2.0.0'
+version = '2.1.0'
 authors = ['Joystream contributors']
 edition = '2018'
 
@@ -26,6 +26,8 @@ std = [
     'mint/std',
     'common/std',
     'content_working_group/std',
+    'working_group/std',
+    'hiring/std',
 ]
 
 
@@ -132,7 +134,12 @@ default_features = false
 package = 'substrate-content-working-group-module'
 path = '../../content-working-group'
 
-[dev-dependencies.hiring]
+[dependencies.working_group]
+default_features = false
+package = 'substrate-working-group-module'
+path = '../../working-group'
+
+[dependencies.hiring]
 default_features = false
 package = 'substrate-hiring-module'
 path = '../../hiring'
