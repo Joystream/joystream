@@ -342,7 +342,6 @@ const ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR: &str = "Account does not match p
 const ERROR_POST_MODERATED: &str = "Post is moderated.";
 
 // Errors about category.
-const ERROR_CATEGORY_NOT_BEING_UPDATED: &str = "Category not being updated.";
 const ERROR_MODERATOR_MODERATE_CATEGORY: &str = "Moderator can not moderate category.";
 const ERROR_EXCEED_MAX_CATEGORY_DEPTH: &str = "Category exceed max depth.";
 const ERROR_ANCESTOR_CATEGORY_IMMUTABLE: &str =
@@ -484,10 +483,10 @@ pub struct Category<CategoryId, ThreadId, Hash> {
     /// Whether category is archived.
     pub archived: bool,
 
-    /// Number of subcategories
+    /// Number of subcategories, needed for emptiness checks when trying to delete category
     pub num_direct_subcategories: u32,
 
-    // Number of threads in category
+    // Number of threads in category, needed for emptiness checks when trying to delete category
     pub num_direct_threads: u32,
 
     /// Parent category, if child of another category, otherwise this category is a root category
@@ -565,9 +564,8 @@ decl_event!(
         /// A category was introduced
         CategoryCreated(CategoryId),
 
-        /// A category with given id was updated.
-        /// The second argument reflects the new archival status of the category, if changed.
-        CategoryUpdated(CategoryId, Option<bool>),
+        /// A category with given id was archived.
+        CategoryArchived(CategoryId),
 
         /// A thread with given id was created.
         ThreadCreated(ThreadId),
@@ -705,24 +703,18 @@ decl_module! {
         }
 
         /// Update category
-        fn update_category(origin, category_id: T::CategoryId, new_archival_status: Option<bool>) -> dispatch::Result {
+        fn update_category_archival_status(origin, category_id: T::CategoryId) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
             // Not signed by forum LEAD
             Self::ensure_is_forum_lead(origin)?;
 
-            // Make sure something is actually being changed
-            ensure!(
-                new_archival_status.is_some(),
-                ERROR_CATEGORY_NOT_BEING_UPDATED
-            );
-
             // Make sure category existed.
             ensure!(
                 <CategoryById<T>>::exists(&category_id),
                 ERROR_CATEGORY_DOES_NOT_EXIST
-                );
+            );
 
             // Get parent category
             let parent_category_id = <CategoryById<T>>::get(&category_id).parent_category_id;
@@ -732,34 +724,15 @@ decl_module! {
                 let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(tmp_parent_category_id)?;
 
                 if Self::ensure_can_mutate_in_path_leaf(&category_tree_path).is_err() {
-                    // if ancestor archived or deleted, no necessary to set child again.
-                    if new_archival_status == Some(true) {
-                        return Ok(())
-                    }
+                    return Ok(())
                 };
             };
 
-            // Get the category
-            let category = <CategoryById<T>>::get(category_id);
-
-            // no any change then return Ok, no update and no event.
-            let archive_unchanged = new_archival_status == None || new_archival_status == Some(category.archived);
-
-            // No any change, invalid transaction
-            if archive_unchanged {
-                return Err(ERROR_CATEGORY_NOT_BEING_UPDATED)
-            }
-
             // Mutate category, and set possible new change parameters
-            <CategoryById<T>>::mutate(category_id, |c| {
-
-                if let Some(archived) = new_archival_status {
-                    c.archived = archived;
-                }
-            });
+            <CategoryById<T>>::mutate(category_id, |c| c.archived = true);
 
             // Generate event
-            Self::deposit_event(RawEvent::CategoryUpdated(category_id, new_archival_status));
+            Self::deposit_event(RawEvent::CategoryArchived(category_id));
 
             Ok(())
         }

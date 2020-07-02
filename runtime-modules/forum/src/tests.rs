@@ -159,7 +159,7 @@ fn create_category_parent() {
                 good_category_description(),
                 Ok(()),
             );
-            update_category_mock(origin.clone(), 2, Some(true), Ok(()));
+            update_category_archival_status_mock(origin.clone(), 2, Ok(()));
 
             create_category_mock(
                 origin.clone(),
@@ -222,7 +222,7 @@ fn create_category_depth() {
  */
 #[test]
 // test if category updator is forum lead
-fn update_category_origin() {
+fn update_category_archival_status_origin() {
     let origins = [FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
     let results = vec![Ok(()), Err(ERROR_ORIGIN_NOT_FORUM_LEAD)];
 
@@ -238,13 +238,13 @@ fn update_category_origin() {
                 good_category_description(),
                 Ok(()),
             );
-            update_category_mock(origins[index].clone(), 1, Some(true), results[index]);
+            update_category_archival_status_mock(origins[index].clone(), 1, results[index]);
         });
     }
 }
 #[test]
 // test case for new setting actually not update category status
-fn update_category_without_updates() {
+fn update_category_archival_status_category_exists() {
     let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
@@ -256,29 +256,8 @@ fn update_category_without_updates() {
             good_category_description(),
             Ok(()),
         );
-        update_category_mock(origin, 1, None, Err(ERROR_CATEGORY_NOT_BEING_UPDATED));
-    });
-}
-#[test]
-// test case for new setting actually not update category status
-fn update_category_without_updates_two() {
-    let config = default_genesis_config();
-    let forum_lead = FORUM_LEAD_ORIGIN_ID;
-    let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
-        create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-        update_category_mock(
-            origin,
-            1,
-            Some(false),
-            Err(ERROR_CATEGORY_NOT_BEING_UPDATED),
-        );
+        update_category_archival_status_mock(origin.clone(), 1, Ok(()));
+        update_category_archival_status_mock(origin.clone(), 2, Err(ERROR_CATEGORY_DOES_NOT_EXIST));
     });
 }
 
