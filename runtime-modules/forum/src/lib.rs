@@ -367,6 +367,14 @@ const ERROR_DATA_MIGRATION_NOT_DONE: &str = "data migration not done yet.";
 
 use system::ensure_signed;
 
+/// Represents a revision of the text of a Post
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct PostTextChange<Hash> {
+    /// Text that expired
+    pub text_hash: Hash,
+}
+
 /// Represents a reaction to a post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Copy, Debug)]
@@ -426,6 +434,9 @@ pub struct Post<ForumUserId, ThreadId, Hash> {
 
     /// Hash of current text
     pub text_hash: Hash,
+
+    // Edits of post ordered chronologically by edit time.
+    pub text_change_history: Vec<PostTextChange<Hash>>,
 
     /// Author of post.
     pub author_id: ForumUserId,
@@ -881,11 +892,6 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            /* Edit spec.
-              - forum member guard missing
-              - check that both post and thread and category are mutable
-            */
-
             // Check that account is forum member
             Self::ensure_is_forum_user(origin, &forum_user_id)?;
 
@@ -894,6 +900,26 @@ decl_module! {
 
             // Signer does not match creator of post with identifier postId
             ensure!(post.author_id == forum_user_id, ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR);
+
+            // Update post text and record update history
+            <PostById<T>>::mutate(post_id, |p| {
+                let text_hash = T::calculate_hash(&new_text);
+                let expired_post_text = PostTextChange {
+                    text_hash,
+                };
+
+                // Set current text to new text
+                p.text_hash = text_hash;
+
+                // Copy current text to history of expired texts
+                p.text_change_history.push(expired_post_text);
+            });
+
+            // Get text change history length
+            let text_change_history_len = <PostById<T>>::get(post_id).text_change_history.len() as u64;
+
+            // Generate event
+            Self::deposit_event(RawEvent::PostTextUpdated(post_id, text_change_history_len));
 
             Ok(())
         }
@@ -1038,6 +1064,7 @@ impl<T: Trait> Module<T> {
         let new_post = Post {
             thread_id,
             text_hash: T::calculate_hash(text),
+            text_change_history: vec![],
             author_id,
         };
 

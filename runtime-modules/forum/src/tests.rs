@@ -547,6 +547,57 @@ fn add_post_origin() {
     }
 }
 
+#[test]
+// test if post text can be edited by author can edit it's post thread
+fn edit_post_text() {
+    let config = default_genesis_config();
+    let author = NOT_FORUM_LEAD_ORIGIN_ID;
+    let not_author = FORUM_LEAD_ORIGIN_ID;
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+
+    build_test_externalities(config).execute_with(|| {
+        // prepare category and thread
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        // create post by author
+        let post_id = create_post_mock(origin.clone(), author, thread_id, good_post_text(), Ok(()));
+
+        // check author can edit text
+        edit_post_text_mock(
+            origin.clone(),
+            author,
+            post_id,
+            good_post_new_text(),
+            Ok(()),
+        );
+
+        // check non-author is forbidden from editing text
+        edit_post_text_mock(
+            origin.clone(),
+            not_author,
+            post_id,
+            good_post_new_text(),
+            Err(ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR),
+        );
+    });
+}
+
 /*
  ** react_post
  */

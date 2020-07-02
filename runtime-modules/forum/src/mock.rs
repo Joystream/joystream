@@ -136,6 +136,10 @@ pub fn good_post_text() -> Vec<u8> {
     b"A response in the thread".to_vec()
 }
 
+pub fn good_post_new_text() -> Vec<u8> {
+    b"Changed post's text".to_vec()
+}
+
 pub fn good_poll_description() -> Vec<u8> {
     b"poll description".to_vec()
 }
@@ -252,6 +256,47 @@ pub fn create_post_mock(
             TestEvent::forum_mod(RawEvent::PostAdded(post_id))
         );
     };
+    post_id
+}
+
+pub fn edit_post_text_mock(
+    origin: OriginType,
+    forum_user_id: <Runtime as Trait>::ForumUserId,
+    post_id: <Runtime as Trait>::PostId,
+    new_text: Vec<u8>,
+    result: Result<(), &'static str>,
+) -> <Runtime as Trait>::PostId {
+    let post = TestForumModule::post_by_id(post_id);
+    assert_eq!(
+        TestForumModule::edit_post_text(
+            mock_origin(origin),
+            forum_user_id,
+            post_id,
+            new_text.clone(),
+        ),
+        result
+    );
+    if result.is_ok() {
+        assert_eq!(
+            TestForumModule::post_by_id(post_id).text_hash,
+            Runtime::calculate_hash(new_text.as_slice()),
+        );
+        assert_eq!(
+            TestForumModule::post_by_id(post_id)
+                .text_change_history
+                .len(),
+            post.text_change_history.len() + 1
+        );
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::PostTextUpdated(
+                post_id,
+                TestForumModule::post_by_id(post_id)
+                    .text_change_history
+                    .len() as u64,
+            ))
+        );
+    }
     post_id
 }
 
