@@ -52,22 +52,28 @@ export class RelationshipGenerator {
     this.addToVisited(relatedField, relatedObject);
   }
 
-  addMany2One(field: Field, currentObject: ObjectType, relatedObject: ObjectType): void {
+  addMany2One(field: Field, currentObject: ObjectType, relatedObject: ObjectType, relatedField: Field): void {
     field.relation = { type: 'mto', columnType: field.type };
     currentObject.relatedEntityImports.add(relatedObject.name);
 
-    // A virtual additinal field for field resolver
-    const fname = camelCase(currentObject.name).concat('s');
-    const additionalField = new Field(fname, relatedObject.name, field.nullable, false, true);
-    additionalField.relation = { type: 'otm', columnType: currentObject.name, relatedTsProp: field.name };
-    relatedObject.fields.push(additionalField);
+    if (!relatedField) {
+      // A virtual additinal field for field resolver
+      const fname = camelCase(currentObject.name).concat('s');
+      const additionalField = new Field(fname, relatedObject.name, field.nullable, false, true);
+      additionalField.relation = { type: 'otm', columnType: currentObject.name, relatedTsProp: field.name };
+      relatedObject.fields.push(additionalField);
 
-    field.relation.relatedTsProp = additionalField.name;
+      field.relation.relatedTsProp = additionalField.name;
+      this.addToVisited(additionalField, relatedObject);
+    } else {
+      relatedField.relation = { type: 'otm', columnType: currentObject.name, relatedTsProp: field.name };
+      field.relation.relatedTsProp = relatedField.name;
+      this.addToVisited(relatedField, relatedObject);
+    }
 
     currentObject.relatedEntityImports.add(relatedObject.name);
     relatedObject.relatedEntityImports.add(currentObject.name);
 
-    this.addToVisited(additionalField, relatedObject);
     this.addToVisited(field, currentObject);
   }
 
@@ -127,7 +133,7 @@ export class RelationshipGenerator {
           const relatedFields = relatedObject.fields.filter(f => f.type === currentObject.name);
 
           if (relatedFields.length === 0) {
-            return this.addMany2One(field, currentObject, relatedObject);
+            return this.addMany2One(field, currentObject, relatedObject, {} as Field);
           } else {
             const derivedFields = relatedFields.filter(f => f.derivedFrom?.argument === field.name);
             if (derivedFields.length === 0) {
@@ -139,7 +145,7 @@ export class RelationshipGenerator {
               if (!derivedFields[0].isList) {
                 return this.addOne2One(field, derivedFields[0], currentObject, relatedObject);
               } else {
-                return this.addMany2One(field, currentObject, relatedObject);
+                return this.addMany2One(field, currentObject, relatedObject, derivedFields[0]);
               }
             } else {
               throw new Error(

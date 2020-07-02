@@ -2,7 +2,6 @@ import { GeneratorContext } from './SourcesGenerator';
 import { Field, ObjectType } from '../model';
 import * as util from './utils';
 import { withRelativePathForEnum } from './enum-context';
-import { fieldTypes } from '../helpers/tsTypes';
 
 export const TYPE_FIELDS: { [key: string]: { [key: string]: string } } = {
   bool: {
@@ -78,6 +77,7 @@ export function buildFieldContext(f: Field, entity: ObjectType): GeneratorContex
     ...withFieldTypeGuardProps(f),
     ...withRequired(f),
     ...withUnique(f),
+    ...withRelation(f),
     ...withArrayCustomFieldConfig(f),
     ...withTsTypeAndDecorator(f),
     ...withDerivedNames(f, entity),
