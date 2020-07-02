@@ -35,6 +35,11 @@
     "lint": "wsrun --serial lint"
   },
   "devDependencies": {
+    "eslint-config-esnext": "^4.1.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-babel": "^5.3.1",
+    "eslint-plugin-prettier": "^3.1.4",
+    "prettier": "^2.0.5",
     "wsrun": "^3.6.5"
   }
 }
