@@ -323,7 +323,7 @@ impl Default for ExtBuilder {
             max_number_of_properties_per_class: 40,
             max_number_of_entities_per_class: 400,
 
-            max_number_of_curators_per_group: 100,
+            max_number_of_curators_per_group: 50,
 
             max_number_of_operations_during_atomic_batching: 500,
 
@@ -446,20 +446,17 @@ pub fn assert_event_success(tested_event: TestEvent, number_of_events_after_call
     ));
 }
 
-// pub fn assert_failure(
-//     call_result: Result<(), &str>,
-//     expected_error: &str,
-//     number_of_events_before_call: usize,
-// ) {
-//     // Ensure  call result is equal to expected error
-//     assert!(matches!(
-//         call_result,
-//         Err(call_result) if call_result == expected_error
-//     ));
+pub fn assert_failure(
+    call_result: Result<(), &str>,
+    expected_error: &str,
+    number_of_events_before_call: usize,
+) {
+    // Ensure  call result is equal to expected error
+    assert_err!(call_result, expected_error);
 
-//     // Ensure  no other events emitted after call
-//     assert_eq!(System::events().len(), number_of_events_before_call);
-// }
+    // Ensure  no other events emitted after call
+    assert_eq!(System::events().len(), number_of_events_before_call);
+}
 
 // Curator groups
 
