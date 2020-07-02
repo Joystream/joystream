@@ -826,6 +826,10 @@ impl forum::Trait for Runtime {
     fn is_moderator(_account_id: &Self::AccountId, _moderator_id: &Self::ModeratorId) -> bool {
         true
     }
+
+    fn calculate_hash(text: &[u8]) -> Self::Hash {
+        Self::Hash::from_slice(text)
+    }
 }
 
 impl migration::Trait for Runtime {

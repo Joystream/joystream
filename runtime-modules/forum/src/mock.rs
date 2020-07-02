@@ -8,7 +8,7 @@ use crate::{GenesisConfig, Module, Trait};
 
 use runtime_primitives::{
     testing::Header,
-    traits::{BlakeTwo256, IdentityLookup},
+    traits::{BlakeTwo256, Hash, IdentityLookup},
     Perbill,
 };
 use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
@@ -85,6 +85,10 @@ impl Trait for Runtime {
     fn is_moderator(account_id: &Self::AccountId, moderator_id: &Self::ModeratorId) -> bool {
         *account_id == FORUM_LEAD_ORIGIN_ID && *moderator_id != NOT_REGISTER_MODERATOR_ID
     }
+
+    fn calculate_hash(text: &[u8]) -> Self::Hash {
+        Self::Hashing::hash(text)
+    }
 }
 
 #[derive(Clone)]
@@ -112,10 +116,6 @@ pub const INVLAID_CATEGORY_ID: <Runtime as Trait>::CategoryId = 333;
 
 pub const NOT_REGISTER_MODERATOR_ID: <Runtime as Trait>::ModeratorId = 666;
 
-pub fn generate_text(len: usize) -> Vec<u8> {
-    vec![b'x'; len]
-}
-
 pub fn good_category_title() -> Vec<u8> {
     b"Great new category".to_vec()
 }
@@ -136,20 +136,27 @@ pub fn good_post_text() -> Vec<u8> {
     b"A response in the thread".to_vec()
 }
 
-pub fn good_rationale() -> Vec<u8> {
-    b"This post violates our community rules".to_vec()
+pub fn good_poll_description() -> Vec<u8> {
+    b"poll description".to_vec()
 }
 
-pub fn generate_poll() -> Poll<<Runtime as timestamp::Trait>::Moment> {
+pub fn good_poll_alternative_text() -> Vec<u8> {
+    b"poll alternative".to_vec()
+}
+
+pub fn generate_poll(
+) -> Poll<<Runtime as timestamp::Trait>::Moment, <Runtime as system::Trait>::Hash> {
     Poll {
-        poll_description: b"poll description".to_vec(),
+        description_hash: Runtime::calculate_hash(good_poll_description().as_slice()),
         start_time: Timestamp::now(),
         end_time: Timestamp::now() + 10,
         poll_alternatives: {
             let mut alternatives = vec![];
             for _ in 0..5 {
                 alternatives.push(PollAlternative {
-                    alternative_text: b"poll alternative".to_vec(),
+                    alternative_text_hash: Runtime::calculate_hash(
+                        good_poll_alternative_text().as_slice(),
+                    ),
                     vote_count: 0,
                 });
             }
@@ -158,17 +165,21 @@ pub fn generate_poll() -> Poll<<Runtime as timestamp::Trait>::Moment> {
     }
 }
 
-pub fn generate_poll_timestamp_cases(index: usize) -> Poll<<Runtime as timestamp::Trait>::Moment> {
+pub fn generate_poll_timestamp_cases(
+    index: usize,
+) -> Poll<<Runtime as timestamp::Trait>::Moment, <Runtime as system::Trait>::Hash> {
     let test_cases = vec![
         Poll {
-            poll_description: b"poll description".to_vec(),
+            description_hash: Runtime::calculate_hash(good_poll_description().as_slice()),
             start_time: Timestamp::now(),
             end_time: Timestamp::now() + 10,
             poll_alternatives: {
                 let mut alternatives = vec![];
                 for _ in 0..5 {
                     alternatives.push(PollAlternative {
-                        alternative_text: b"poll alternative".to_vec(),
+                        alternative_text_hash: Runtime::calculate_hash(
+                            good_poll_alternative_text().as_slice(),
+                        ),
                         vote_count: 0,
                     });
                 }
@@ -176,14 +187,16 @@ pub fn generate_poll_timestamp_cases(index: usize) -> Poll<<Runtime as timestamp
             },
         },
         Poll {
-            poll_description: b"poll description".to_vec(),
+            description_hash: Runtime::calculate_hash(good_poll_description().as_slice()),
             start_time: Timestamp::now() + 10,
             end_time: Timestamp::now(),
             poll_alternatives: {
                 let mut alternatives = vec![];
                 for _ in 0..5 {
                     alternatives.push(PollAlternative {
-                        alternative_text: b"poll alternative".to_vec(),
+                        alternative_text_hash: Runtime::calculate_hash(
+                            good_poll_alternative_text().as_slice(),
+                        ),
                         vote_count: 0,
                     });
                 }
@@ -227,7 +240,9 @@ pub fn create_thread_mock(
     category_id: <Runtime as Trait>::CategoryId,
     title: Vec<u8>,
     text: Vec<u8>,
-    poll_data: Option<Poll<<Runtime as timestamp::Trait>::Moment>>,
+    poll_data: Option<
+        Poll<<Runtime as timestamp::Trait>::Moment, <Runtime as system::Trait>::Hash>,
+    >,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::ThreadId {
     let thread_id = TestForumModule::next_thread_id();
@@ -236,8 +251,8 @@ pub fn create_thread_mock(
             mock_origin(origin.clone()),
             forum_user_id,
             category_id,
-            title.clone(),
-            text.clone(),
+            title,
+            text,
             poll_data.clone(),
         ),
         result
@@ -261,12 +276,7 @@ pub fn create_post_mock(
 ) -> <Runtime as Trait>::PostId {
     let post_id = TestForumModule::next_post_id();
     assert_eq!(
-        TestForumModule::add_post(
-            mock_origin(origin.clone()),
-            forum_user_id,
-            thread_id,
-            text.clone(),
-        ),
+        TestForumModule::add_post(mock_origin(origin.clone()), forum_user_id, thread_id, text),
         result
     );
     if result.is_ok() {
@@ -386,11 +396,10 @@ pub fn moderate_thread_mock(
     origin: OriginType,
     moderator_id: <Runtime as Trait>::ModeratorId,
     thread_id: <Runtime as Trait>::ThreadId,
-    rationale: Vec<u8>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::ThreadId {
     assert_eq!(
-        TestForumModule::moderate_thread(mock_origin(origin), moderator_id, thread_id, rationale),
+        TestForumModule::moderate_thread(mock_origin(origin), moderator_id, thread_id),
         result
     );
     if result.is_ok() {
@@ -412,11 +421,10 @@ pub fn moderate_post_mock(
     origin: OriginType,
     moderator_id: <Runtime as Trait>::ModeratorId,
     post_id: <Runtime as Trait>::PostId,
-    rationale: Vec<u8>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::PostId {
     assert_eq!(
-        TestForumModule::moderate_post(mock_origin(origin), moderator_id, post_id, rationale),
+        TestForumModule::moderate_post(mock_origin(origin), moderator_id, post_id),
         result
     );
     if result.is_ok() {
@@ -430,47 +438,6 @@ pub fn moderate_post_mock(
         );
     }
 
-    post_id
-}
-
-pub fn edit_post_text_mock(
-    origin: OriginType,
-    forum_user_id: <Runtime as Trait>::ForumUserId,
-    post_id: <Runtime as Trait>::PostId,
-    new_text: Vec<u8>,
-    result: Result<(), &'static str>,
-) -> <Runtime as Trait>::PostId {
-    let post = TestForumModule::post_by_id(post_id);
-    assert_eq!(
-        TestForumModule::edit_post_text(
-            mock_origin(origin),
-            forum_user_id,
-            post_id,
-            new_text.clone(),
-        ),
-        result
-    );
-    if result.is_ok() {
-        assert_eq!(
-            TestForumModule::post_by_id(post_id).current_text,
-            new_text.clone()
-        );
-        assert_eq!(
-            TestForumModule::post_by_id(post_id)
-                .text_change_history
-                .len(),
-            post.text_change_history.len() + 1
-        );
-        assert_eq!(
-            System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::PostTextUpdated(
-                post_id,
-                TestForumModule::post_by_id(post_id)
-                    .text_change_history
-                    .len() as u64,
-            ))
-        );
-    }
     post_id
 }
 
@@ -527,35 +494,6 @@ pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime
         max_category_depth: 5,
         reaction_by_post: vec![],
 
-        category_title_constraint: InputValidationLengthConstraint {
-            min: 10,
-            max_min_diff: 140,
-        },
-
-        category_description_constraint: InputValidationLengthConstraint {
-            min: 10,
-            max_min_diff: 140,
-        },
-
-        thread_title_constraint: InputValidationLengthConstraint {
-            min: 3,
-            max_min_diff: 43,
-        },
-
-        post_text_constraint: InputValidationLengthConstraint {
-            min: 1,
-            max_min_diff: 1001,
-        },
-
-        thread_moderation_rationale_constraint: InputValidationLengthConstraint {
-            min: 10,
-            max_min_diff: 2000,
-        },
-
-        post_moderation_rationale_constraint: InputValidationLengthConstraint {
-            min: 10,
-            max_min_diff: 2000,
-        }, // JUST GIVING UP ON ALL THIS FOR NOW BECAUSE ITS TAKING TOO LONG
         poll_desc_constraint: InputValidationLengthConstraint {
             min: 10,
             max_min_diff: 200,

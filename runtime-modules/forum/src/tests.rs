@@ -29,7 +29,6 @@ fn set_moderator_category_origin() {
     let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-
     build_test_externalities(config).execute_with(|| {
         let moderator_id = forum_lead;
         let category_id = create_category_mock(
@@ -226,66 +225,6 @@ fn create_category_depth() {
     });
 }
 
-#[test]
-// test category title length
-fn create_category_title() {
-    let config = default_genesis_config();
-    let forum_lead = FORUM_LEAD_ORIGIN_ID;
-    let origin = OriginType::Signed(forum_lead);
-    let titles = vec![
-        generate_text(config.category_title_constraint.min as usize),
-        generate_text((config.category_title_constraint.min - 1) as usize),
-        generate_text((config.category_title_constraint.max() + 1) as usize),
-    ];
-    let results = vec![
-        Ok(()),
-        Err(ERROR_CATEGORY_TITLE_TOO_SHORT),
-        Err(ERROR_CATEGORY_TITLE_TOO_LONG),
-    ];
-    for index in 0..titles.len() {
-        let config = default_genesis_config();
-        build_test_externalities(config).execute_with(|| {
-            create_category_mock(
-                origin.clone(),
-                None,
-                titles[index].clone(),
-                good_category_description(),
-                results[index],
-            );
-        });
-    }
-}
-
-#[test]
-// test for category description text length
-fn create_category_description() {
-    let config = default_genesis_config();
-    let forum_lead = FORUM_LEAD_ORIGIN_ID;
-    let origin = OriginType::Signed(forum_lead);
-    let descriptions = vec![
-        generate_text(config.category_description_constraint.min as usize),
-        generate_text((config.category_description_constraint.min - 1) as usize),
-        generate_text((config.category_description_constraint.max() + 1) as usize),
-    ];
-    let results = vec![
-        Ok(()),
-        Err(ERROR_CATEGORY_DESCRIPTION_TOO_SHORT),
-        Err(ERROR_CATEGORY_DESCRIPTION_TOO_LONG),
-    ];
-    for index in 0..descriptions.len() {
-        let config = default_genesis_config();
-        build_test_externalities(config).execute_with(|| {
-            create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                descriptions[index].clone(),
-                results[index],
-            );
-        });
-    }
-}
-
 /*
  ** update_category
  */
@@ -414,7 +353,6 @@ fn create_thread_origin() {
         let config = default_genesis_config();
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = OriginType::Signed(forum_lead);
-
         build_test_externalities(config).execute_with(|| {
             let category_id = create_category_mock(
                 origin,
@@ -429,87 +367,6 @@ fn create_thread_origin() {
                 category_id,
                 good_thread_title(),
                 good_thread_text(),
-                None,
-                results[index],
-            );
-        });
-    }
-}
-
-#[test]
-// test thread title length
-fn create_thread_title() {
-    let constraint = default_genesis_config().thread_title_constraint;
-    let titles = [
-        generate_text(constraint.min as usize),
-        generate_text((constraint.min as usize) - 1),
-        generate_text((constraint.max() as usize) + 1),
-    ];
-    let results = vec![
-        Ok(()),
-        Err(ERROR_THREAD_TITLE_TOO_SHORT),
-        Err(ERROR_THREAD_TITLE_TOO_LONG),
-    ];
-    for index in 0..titles.len() {
-        let config = default_genesis_config();
-        let forum_lead = FORUM_LEAD_ORIGIN_ID;
-        let origin = OriginType::Signed(forum_lead);
-
-        build_test_externalities(config).execute_with(|| {
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
-            create_thread_mock(
-                origin.clone(),
-                forum_lead,
-                category_id,
-                titles[index].clone(),
-                good_thread_text(),
-                None,
-                results[index],
-            );
-        });
-    }
-}
-
-#[test]
-// test thread text length
-fn create_thread_text() {
-    let constraint = default_genesis_config().post_text_constraint;
-    let texts = [
-        generate_text(constraint.min as usize),
-        generate_text((constraint.min as usize) - 1),
-        generate_text((constraint.max() as usize) + 1),
-    ];
-
-    let results = vec![
-        Ok(()),
-        Err(ERROR_POST_TEXT_TOO_SHORT),
-        Err(ERROR_POST_TEXT_TOO_LONG),
-    ];
-    for index in 0..texts.len() {
-        let config = default_genesis_config();
-        let forum_lead = FORUM_LEAD_ORIGIN_ID;
-        let origin = OriginType::Signed(forum_lead);
-
-        build_test_externalities(config).execute_with(|| {
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
-            create_thread_mock(
-                origin.clone(),
-                forum_lead,
-                category_id,
-                good_thread_title(),
-                texts[index].clone(),
                 None,
                 results[index],
             );
@@ -684,56 +541,8 @@ fn moderate_thread_origin_ok() {
             None,
             Ok(()),
         );
-        moderate_thread_mock(origin, moderator_id, thread_id, good_rationale(), Ok(()));
+        moderate_thread_mock(origin, moderator_id, thread_id, Ok(()));
     });
-}
-
-#[test]
-// test thread moderate rationale's length
-fn moderate_thread_rationale() {
-    let constraint = default_genesis_config().thread_moderation_rationale_constraint;
-    let rationales = vec![
-        generate_text(constraint.min as usize),
-        generate_text((constraint.min - 1) as usize),
-        generate_text((constraint.max() + 1) as usize),
-    ];
-    let results = vec![
-        Ok(()),
-        Err(ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT),
-        Err(ERROR_THREAD_MODERATION_RATIONALE_TOO_LONG),
-    ];
-    for index in 0..rationales.len() {
-        let config = default_genesis_config();
-        let forum_lead = FORUM_LEAD_ORIGIN_ID;
-        let origin = OriginType::Signed(forum_lead);
-        build_test_externalities(config).execute_with(|| {
-            let moderator_id = forum_lead;
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
-            set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
-            let thread_id = create_thread_mock(
-                origin.clone(),
-                forum_lead,
-                category_id,
-                good_thread_title(),
-                good_thread_text(),
-                None,
-                Ok(()),
-            );
-            moderate_thread_mock(
-                origin.clone(),
-                moderator_id,
-                thread_id,
-                rationales[index].clone(),
-                results[index],
-            );
-        });
-    }
 }
 
 /*
@@ -772,108 +581,6 @@ fn add_post_origin() {
                 forum_lead,
                 thread_id,
                 good_post_text(),
-                results[index],
-            );
-        });
-    }
-}
-
-#[test]
-// test post text's length
-fn add_post_text() {
-    let constraint = default_genesis_config().post_text_constraint;
-    let texts = vec![
-        generate_text(constraint.min as usize),
-        generate_text((constraint.min - 1) as usize),
-        generate_text((constraint.max() + 1) as usize),
-    ];
-    let results = vec![
-        Ok(()),
-        Err(ERROR_POST_TEXT_TOO_SHORT),
-        Err(ERROR_POST_TEXT_TOO_LONG),
-    ];
-    for index in 0..texts.len() {
-        let config = default_genesis_config();
-        let forum_lead = FORUM_LEAD_ORIGIN_ID;
-        let origin = OriginType::Signed(forum_lead);
-        build_test_externalities(config).execute_with(|| {
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
-
-            let thread_id = create_thread_mock(
-                origin.clone(),
-                forum_lead,
-                category_id,
-                good_thread_title(),
-                good_thread_text(),
-                None,
-                Ok(()),
-            );
-            create_post_mock(
-                origin.clone(),
-                forum_lead,
-                thread_id,
-                texts[index].clone(),
-                results[index],
-            );
-        });
-    }
-}
-
-#[test]
-// test post text's length
-fn edit_post_text() {
-    let constraint = default_genesis_config().post_text_constraint;
-    let texts = vec![
-        generate_text(constraint.min as usize),
-        generate_text((constraint.min - 1) as usize),
-        generate_text((constraint.max() + 1) as usize),
-    ];
-    let results = vec![
-        Ok(()),
-        Err(ERROR_POST_TEXT_TOO_SHORT),
-        Err(ERROR_POST_TEXT_TOO_LONG),
-    ];
-    for index in 0..texts.len() {
-        let config = default_genesis_config();
-        let forum_lead = FORUM_LEAD_ORIGIN_ID;
-        let origin = OriginType::Signed(forum_lead);
-        build_test_externalities(config).execute_with(|| {
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
-
-            let thread_id = create_thread_mock(
-                origin.clone(),
-                forum_lead,
-                category_id,
-                good_thread_title(),
-                good_thread_text(),
-                None,
-                Ok(()),
-            );
-            let post_id = create_post_mock(
-                origin.clone(),
-                forum_lead,
-                thread_id,
-                good_post_text(),
-                Ok(()),
-            );
-
-            edit_post_text_mock(
-                origin.clone(),
-                forum_lead,
-                post_id,
-                texts[index].clone(),
                 results[index],
             );
         });
@@ -984,64 +691,6 @@ fn moderate_post_origin() {
                 origins[index].clone(),
                 moderator_id,
                 post_id,
-                good_rationale(),
-                results[index],
-            );
-        });
-    }
-}
-
-#[test]
-// test post rationale text's length
-fn moderate_post_rationale() {
-    let constraint = default_genesis_config().post_moderation_rationale_constraint;
-    let rationales = vec![
-        generate_text(constraint.min as usize),
-        generate_text((constraint.min - 1) as usize),
-        generate_text((constraint.max() + 1) as usize),
-    ];
-    let results = vec![
-        Ok(()),
-        Err(ERROR_POST_MODERATION_RATIONALE_TOO_SHORT),
-        Err(ERROR_POST_MODERATION_RATIONALE_TOO_LONG),
-    ];
-    for index in 0..rationales.len() {
-        let config = default_genesis_config();
-        let forum_lead = FORUM_LEAD_ORIGIN_ID;
-        let origin = OriginType::Signed(forum_lead);
-        build_test_externalities(config).execute_with(|| {
-            let moderator_id = forum_lead;
-
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
-
-            set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
-            let thread_id = create_thread_mock(
-                origin.clone(),
-                forum_lead,
-                category_id,
-                good_thread_title(),
-                good_thread_text(),
-                None,
-                Ok(()),
-            );
-            let post_id = create_post_mock(
-                origin.clone(),
-                forum_lead,
-                thread_id,
-                good_post_text(),
-                Ok(()),
-            );
-            moderate_post_mock(
-                origin.clone(),
-                moderator_id,
-                post_id,
-                rationales[index].clone(),
                 results[index],
             );
         });
@@ -1212,7 +861,7 @@ fn test_migration_not_done() {
                 mock_origin(origin.clone()),
                 None,
                 good_category_title(),
-                good_category_description(),
+                good_category_description()
             ),
             Err(ERROR_DATA_MIGRATION_NOT_DONE),
         );
@@ -1240,22 +889,12 @@ fn test_migration_not_done() {
         );
 
         assert_eq!(
-            TestForumModule::moderate_thread(
-                mock_origin(origin.clone()),
-                moderator_id,
-                thread_id,
-                good_rationale(),
-            ),
+            TestForumModule::moderate_thread(mock_origin(origin.clone()), moderator_id, thread_id,),
             Err(ERROR_DATA_MIGRATION_NOT_DONE),
         );
 
         assert_eq!(
-            TestForumModule::moderate_post(
-                mock_origin(origin.clone()),
-                moderator_id,
-                post_id,
-                good_rationale(),
-            ),
+            TestForumModule::moderate_post(mock_origin(origin.clone()), moderator_id, post_id,),
             Err(ERROR_DATA_MIGRATION_NOT_DONE),
         );
     });
