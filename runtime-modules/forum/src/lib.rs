@@ -342,6 +342,7 @@ const ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR: &str = "Account does not match p
 const ERROR_POST_MODERATED: &str = "Post is moderated.";
 
 // Errors about category.
+const ERROR_CATEGORY_NOT_BEING_UPDATED: &str = "Category not being updated.";
 const ERROR_MODERATOR_MODERATE_CATEGORY: &str = "Moderator can not moderate category.";
 const ERROR_EXCEED_MAX_CATEGORY_DEPTH: &str = "Category exceed max depth.";
 const ERROR_ANCESTOR_CATEGORY_IMMUTABLE: &str =
@@ -564,8 +565,9 @@ decl_event!(
         /// A category was introduced
         CategoryCreated(CategoryId),
 
-        /// A category with given id was archived.
-        CategoryArchived(CategoryId),
+        /// A category with given id was updated.
+        /// The second argument reflects the new archival status of the category.
+        CategoryUpdated(CategoryId, bool),
 
         /// A thread with given id was created.
         ThreadCreated(ThreadId),
@@ -703,7 +705,7 @@ decl_module! {
         }
 
         /// Update category
-        fn update_category_archival_status(origin, category_id: T::CategoryId) -> dispatch::Result {
+        fn update_category_archival_status(origin, category_id: T::CategoryId, new_archival_status: bool) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -723,16 +725,24 @@ decl_module! {
                 // Get path from parent to root of category tree.
                 let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(tmp_parent_category_id)?;
 
-                if Self::ensure_can_mutate_in_path_leaf(&category_tree_path).is_err() {
+                if new_archival_status && Self::ensure_can_mutate_in_path_leaf(&category_tree_path).is_err() {
                     return Ok(())
-                };
-            };
+                }
+            }
+
+            // Get the category
+            let category = <CategoryById<T>>::get(category_id);
+
+            // No change, invalid transaction
+            if new_archival_status == category.archived {
+                return Err(ERROR_CATEGORY_NOT_BEING_UPDATED)
+            }
 
             // Mutate category, and set possible new change parameters
-            <CategoryById<T>>::mutate(category_id, |c| c.archived = true);
+            <CategoryById<T>>::mutate(category_id, |c| c.archived = new_archival_status);
 
             // Generate event
-            Self::deposit_event(RawEvent::CategoryArchived(category_id));
+            Self::deposit_event(RawEvent::CategoryUpdated(category_id, new_archival_status));
 
             Ok(())
         }

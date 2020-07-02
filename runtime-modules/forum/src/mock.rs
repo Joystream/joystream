@@ -366,16 +366,21 @@ pub fn vote_on_poll_mock(
 pub fn update_category_archival_status_mock(
     origin: OriginType,
     category_id: <Runtime as Trait>::CategoryId,
+    new_archival_status: bool,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::CategoryId {
     assert_eq!(
-        TestForumModule::update_category_archival_status(mock_origin(origin), category_id),
+        TestForumModule::update_category_archival_status(
+            mock_origin(origin),
+            category_id,
+            new_archival_status
+        ),
         result
     );
     if result.is_ok() {
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::CategoryArchived(category_id))
+            TestEvent::forum_mod(RawEvent::CategoryUpdated(category_id, new_archival_status))
         );
     };
     category_id
