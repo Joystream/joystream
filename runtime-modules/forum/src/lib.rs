@@ -410,9 +410,6 @@ pub struct Poll<Timestamp, Hash> {
     /// hash of description
     pub description_hash: Hash,
 
-    /// timestamp of poll start
-    pub start_time: Timestamp,
-
     /// timestamp of poll end
     pub end_time: Timestamp,
 
@@ -1057,10 +1054,6 @@ impl<T: Trait> Module<T> {
     fn ensure_poll_is_valid(poll: &Poll<T::Moment, T::Hash>) -> dispatch::Result {
         // Poll end time must larger than now
         if poll.end_time < <timestamp::Module<T>>::now() {
-            return Err(ERROR_POLL_TIME_SETTING);
-        }
-        // Check the timestamp setting
-        if poll.start_time > poll.end_time {
             return Err(ERROR_POLL_TIME_SETTING);
         }
 

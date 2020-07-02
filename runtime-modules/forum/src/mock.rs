@@ -145,11 +145,11 @@ pub fn good_poll_alternative_text() -> Vec<u8> {
 }
 
 pub fn generate_poll(
+    expiration_diff: u64,
 ) -> Poll<<Runtime as timestamp::Trait>::Moment, <Runtime as system::Trait>::Hash> {
     Poll {
         description_hash: Runtime::calculate_hash(good_poll_description().as_slice()),
-        start_time: Timestamp::now(),
-        end_time: Timestamp::now() + 10,
+        end_time: Timestamp::now() + expiration_diff,
         poll_alternatives: {
             let mut alternatives = vec![];
             for _ in 0..5 {
@@ -167,43 +167,9 @@ pub fn generate_poll(
 
 pub fn generate_poll_timestamp_cases(
     index: usize,
+    expiration_diff: u64,
 ) -> Poll<<Runtime as timestamp::Trait>::Moment, <Runtime as system::Trait>::Hash> {
-    let test_cases = vec![
-        Poll {
-            description_hash: Runtime::calculate_hash(good_poll_description().as_slice()),
-            start_time: Timestamp::now(),
-            end_time: Timestamp::now() + 10,
-            poll_alternatives: {
-                let mut alternatives = vec![];
-                for _ in 0..5 {
-                    alternatives.push(PollAlternative {
-                        alternative_text_hash: Runtime::calculate_hash(
-                            good_poll_alternative_text().as_slice(),
-                        ),
-                        vote_count: 0,
-                    });
-                }
-                alternatives
-            },
-        },
-        Poll {
-            description_hash: Runtime::calculate_hash(good_poll_description().as_slice()),
-            start_time: Timestamp::now() + 10,
-            end_time: Timestamp::now(),
-            poll_alternatives: {
-                let mut alternatives = vec![];
-                for _ in 0..5 {
-                    alternatives.push(PollAlternative {
-                        alternative_text_hash: Runtime::calculate_hash(
-                            good_poll_alternative_text().as_slice(),
-                        ),
-                        vote_count: 0,
-                    });
-                }
-                alternatives
-            },
-        },
-    ];
+    let test_cases = vec![generate_poll(expiration_diff), generate_poll(1)];
     test_cases[index].clone()
 }
 
@@ -287,6 +253,10 @@ pub fn create_post_mock(
         );
     };
     post_id
+}
+
+pub fn change_current_time(diff: u64) -> () {
+    Timestamp::set_timestamp(Timestamp::now() + diff);
 }
 
 pub fn set_max_category_depth_mock(
