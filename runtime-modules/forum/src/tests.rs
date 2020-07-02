@@ -326,17 +326,19 @@ fn create_thread_origin() {
 #[test]
 // test if timestamp of poll start time and end time are valid
 fn create_thread_poll_timestamp() {
-    // there is other test case as start timestamp is now, and end timestamp as minus
-    // but it can not be implemented since the Timestamp::now() return value is zero.
-    // then minus become a very large number.
-
+    let expiration_diff = 10;
     let results = vec![Ok(()), Err(ERROR_POLL_TIME_SETTING)];
+
     for index in 0..results.len() {
         let config = default_genesis_config();
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = OriginType::Signed(forum_lead);
 
         build_test_externalities(config).execute_with(|| {
+            change_current_time(1);
+            let poll = generate_poll_timestamp_cases(index, expiration_diff);
+            change_current_time(index as u64 * expiration_diff + 1);
+
             let category_id = create_category_mock(
                 origin.clone(),
                 None,
@@ -351,7 +353,7 @@ fn create_thread_poll_timestamp() {
                 category_id,
                 good_thread_title(),
                 good_thread_text(),
-                Some(generate_poll_timestamp_cases(index)),
+                Some(poll),
                 results[index],
             );
         });
@@ -366,6 +368,8 @@ fn create_thread_poll_timestamp() {
 fn vote_on_poll_origin() {
     let origins = vec![FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
     let results = vec![Ok(()), Err(ERROR_FORUM_USER_ID_NOT_MATCH_ACCOUNT)];
+    let expiration_diff = 10;
+
     for index in 0..origins.len() {
         let config = default_genesis_config();
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
@@ -384,7 +388,7 @@ fn vote_on_poll_origin() {
                 category_id,
                 good_thread_title(),
                 good_thread_text(),
-                Some(generate_poll()),
+                Some(generate_poll(expiration_diff)),
                 Ok(()),
             );
 
@@ -438,6 +442,8 @@ fn vote_on_poll_expired() {
     let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
+    let expiration_diff = 10;
+
     build_test_externalities(config).execute_with(|| {
         let category_id = create_category_mock(
             origin.clone(),
@@ -452,12 +458,17 @@ fn vote_on_poll_expired() {
             category_id,
             good_thread_title(),
             good_thread_text(),
-            Some(generate_poll()),
+            Some(generate_poll(expiration_diff)),
             Ok(()),
         );
-        // std::thread::sleep(std::time::Duration::new(12, 0));
-        // vote_on_poll_mock(origin.clone(), thread_id, 1, Err(ERROR_POLL_COMMIT_EXPIRED));
-        vote_on_poll_mock(origin.clone(), forum_lead, thread_id, 1, Ok(()));
+        change_current_time(expiration_diff + 1);
+        vote_on_poll_mock(
+            origin.clone(),
+            forum_lead,
+            thread_id,
+            1,
+            Err(ERROR_POLL_COMMIT_EXPIRED),
+        );
     });
 }
 
