@@ -8,7 +8,7 @@ use crate::{GenesisConfig, Module, Trait};
 
 use runtime_primitives::{
     testing::Header,
-    traits::{BlakeTwo256, IdentityLookup},
+    traits::{BlakeTwo256, Hash, IdentityLookup},
     Perbill,
 };
 use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
@@ -85,6 +85,10 @@ impl Trait for Runtime {
     fn is_moderator(account_id: &Self::AccountId, moderator_id: &Self::ModeratorId) -> bool {
         *account_id == FORUM_LEAD_ORIGIN_ID && *moderator_id != NOT_REGISTER_MODERATOR_ID
     }
+
+    fn calculate_hash(text: &[u8]) -> Self::Hash {
+        Self::Hashing::hash(text)
+    }
 }
 
 #[derive(Clone)]
@@ -112,17 +116,47 @@ pub const INVLAID_CATEGORY_ID: <Runtime as Trait>::CategoryId = 333;
 
 pub const NOT_REGISTER_MODERATOR_ID: <Runtime as Trait>::ModeratorId = 666;
 
+pub fn good_category_title() -> Vec<u8> {
+    b"Great new category".to_vec()
+}
+
+pub fn good_category_description() -> Vec<u8> {
+    b"This is a great new category for the forum".to_vec()
+}
+
+pub fn good_thread_title() -> Vec<u8> {
+    b"Great new thread".to_vec()
+}
+
+pub fn good_thread_text() -> Vec<u8> {
+    b"The first post in this thread".to_vec()
+}
+
+pub fn good_post_text() -> Vec<u8> {
+    b"A response in the thread".to_vec()
+}
+
+pub fn good_poll_description() -> Vec<u8> {
+    b"poll description".to_vec()
+}
+
+pub fn good_poll_alternative_text() -> Vec<u8> {
+    b"poll alternative".to_vec()
+}
+
 pub fn generate_poll(
 ) -> Poll<<Runtime as timestamp::Trait>::Moment, <Runtime as system::Trait>::Hash> {
     Poll {
-        hash: generate_hash(),
+        description_hash: Runtime::calculate_hash(good_poll_description().as_slice()),
         start_time: Timestamp::now(),
         end_time: Timestamp::now() + 10,
         poll_alternatives: {
             let mut alternatives = vec![];
             for _ in 0..5 {
                 alternatives.push(PollAlternative {
-                    hash: generate_hash(),
+                    alternative_text_hash: Runtime::calculate_hash(
+                        good_poll_alternative_text().as_slice(),
+                    ),
                     vote_count: 0,
                 });
             }
@@ -136,14 +170,16 @@ pub fn generate_poll_timestamp_cases(
 ) -> Poll<<Runtime as timestamp::Trait>::Moment, <Runtime as system::Trait>::Hash> {
     let test_cases = vec![
         Poll {
-            hash: generate_hash(),
+            description_hash: Runtime::calculate_hash(good_poll_description().as_slice()),
             start_time: Timestamp::now(),
             end_time: Timestamp::now() + 10,
             poll_alternatives: {
                 let mut alternatives = vec![];
                 for _ in 0..5 {
                     alternatives.push(PollAlternative {
-                        hash: generate_hash(),
+                        alternative_text_hash: Runtime::calculate_hash(
+                            good_poll_alternative_text().as_slice(),
+                        ),
                         vote_count: 0,
                     });
                 }
@@ -151,14 +187,16 @@ pub fn generate_poll_timestamp_cases(
             },
         },
         Poll {
-            hash: generate_hash(),
+            description_hash: Runtime::calculate_hash(good_poll_description().as_slice()),
             start_time: Timestamp::now() + 10,
             end_time: Timestamp::now(),
             poll_alternatives: {
                 let mut alternatives = vec![];
                 for _ in 0..5 {
                     alternatives.push(PollAlternative {
-                        hash: generate_hash(),
+                        alternative_text_hash: Runtime::calculate_hash(
+                            good_poll_alternative_text().as_slice(),
+                        ),
                         vote_count: 0,
                     });
                 }
@@ -172,12 +210,18 @@ pub fn generate_poll_timestamp_cases(
 pub fn create_category_mock(
     origin: OriginType,
     parent: Option<<Runtime as Trait>::CategoryId>,
-    hash: <Runtime as system::Trait>::Hash,
+    title: Vec<u8>,
+    description: Vec<u8>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::CategoryId {
     let category_id = TestForumModule::next_category_id();
     assert_eq!(
-        TestForumModule::create_category(mock_origin(origin), parent, hash,),
+        TestForumModule::create_category(
+            mock_origin(origin),
+            parent,
+            title.clone(),
+            description.clone(),
+        ),
         result
     );
     if result.is_ok() {
@@ -194,7 +238,8 @@ pub fn create_thread_mock(
     origin: OriginType,
     forum_user_id: <Runtime as Trait>::ForumUserId,
     category_id: <Runtime as Trait>::CategoryId,
-    hash: <Runtime as system::Trait>::Hash,
+    title: Vec<u8>,
+    text: Vec<u8>,
     poll_data: Option<
         Poll<<Runtime as timestamp::Trait>::Moment, <Runtime as system::Trait>::Hash>,
     >,
@@ -206,7 +251,8 @@ pub fn create_thread_mock(
             mock_origin(origin.clone()),
             forum_user_id,
             category_id,
-            hash,
+            title,
+            text,
             poll_data.clone(),
         ),
         result
@@ -225,12 +271,12 @@ pub fn create_post_mock(
     origin: OriginType,
     forum_user_id: <Runtime as Trait>::ForumUserId,
     thread_id: <Runtime as Trait>::ThreadId,
-    hash: <Runtime as system::Trait>::Hash,
+    text: Vec<u8>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::PostId {
     let post_id = TestForumModule::next_post_id();
     assert_eq!(
-        TestForumModule::add_post(mock_origin(origin.clone()), forum_user_id, thread_id, hash,),
+        TestForumModule::add_post(mock_origin(origin.clone()), forum_user_id, thread_id, text),
         result
     );
     if result.is_ok() {
@@ -281,7 +327,7 @@ pub fn set_moderator_category_mock(
     );
     if result.is_ok() {
         assert_eq!(
-            TestForumModule::category_by_moderator(category_id, moderator_id),
+            <CategoryByModerator<Runtime>>::exists(category_id, moderator_id),
             new_value
         );
     };
@@ -423,12 +469,6 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
 
 pub fn migration_not_done_config() -> GenesisConfig<Runtime> {
     create_genesis_config(false)
-}
-
-pub fn generate_hash() -> <Runtime as system::Trait>::Hash {
-    let hash = <Runtime as system::Trait>::Hash::random();
-
-    hash
 }
 
 pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime> {
