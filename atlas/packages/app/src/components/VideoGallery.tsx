@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { css, SerializedStyles } from "@emotion/core";
 
-import { VideoPreview, Gallery, theme } from "@joystream/components";
+import { Gallery, VideoPreview } from "@joystream/components";
 
 type VideoGalleryProps = {
 	title: string;

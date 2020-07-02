@@ -11,7 +11,6 @@ export default create({
 	// UI
 	appBg: colors.black,
 	appContentBg: "#272D33",
-	inputBg: "black",
 	appBorderColor: "#424E57",
 	appBorderRadius: 4,
 
@@ -32,7 +31,7 @@ export default create({
 	// Form colors
 	inputBg: "white",
 	inputBorder: "#272D33",
-	inputTextColor: "white",
+	inputTextColor: "black",
 	inputBorderRadius: 4,
 
 	brandTitle: "@joystream/components",
