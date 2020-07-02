@@ -436,9 +436,6 @@ pub struct Post<ForumUserId, ThreadId, Hash> {
     /// Hash of current text
     pub text_hash: Hash,
 
-    // Edits of post ordered chronologically by edit time.
-    pub text_change_history: Vec<PostTextChange<Hash>>,
-
     /// Author of post.
     pub author_id: ForumUserId,
 }
@@ -578,7 +575,7 @@ decl_event!(
 
         /// Post with given id had its text updated.
         /// The second argument reflects the number of total edits when the text update occurs.
-        PostTextUpdated(PostId, u64),
+        PostTextUpdated(PostId),
 
         /// Thumb up post
         PostReacted(ForumUserId, PostId, PostReaction),
@@ -777,7 +774,7 @@ decl_module! {
             // Store the event
             Self::deposit_event(RawEvent::ThreadTitleUpdated(thread_id));
 
-            // Update post text and record update history
+            // Update post text
             <ThreadById<T>>::mutate(thread_id, |thread| {
                 let title_hash = T::calculate_hash(&new_title);
 
@@ -929,25 +926,16 @@ decl_module! {
             // Signer does not match creator of post with identifier postId
             ensure!(post.author_id == forum_user_id, ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR);
 
-            // Update post text and record update history
+            // Update post text
             <PostById<T>>::mutate(post_id, |p| {
                 let text_hash = T::calculate_hash(&new_text);
-                let expired_post_text = PostTextChange {
-                    text_hash,
-                };
 
                 // Set current text to new text
                 p.text_hash = text_hash;
-
-                // Copy current text to history of expired texts
-                p.text_change_history.push(expired_post_text);
             });
 
-            // Get text change history length
-            let text_change_history_len = <PostById<T>>::get(post_id).text_change_history.len() as u64;
-
             // Generate event
-            Self::deposit_event(RawEvent::PostTextUpdated(post_id, text_change_history_len));
+            Self::deposit_event(RawEvent::PostTextUpdated(post_id));
 
             Ok(())
         }
@@ -1092,7 +1080,6 @@ impl<T: Trait> Module<T> {
         let new_post = Post {
             thread_id,
             text_hash: T::calculate_hash(text),
-            text_change_history: vec![],
             author_id,
         };
 

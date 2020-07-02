@@ -325,19 +325,8 @@ pub fn edit_post_text_mock(
             Runtime::calculate_hash(new_text.as_slice()),
         );
         assert_eq!(
-            TestForumModule::post_by_id(post_id)
-                .text_change_history
-                .len(),
-            post.text_change_history.len() + 1
-        );
-        assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::PostTextUpdated(
-                post_id,
-                TestForumModule::post_by_id(post_id)
-                    .text_change_history
-                    .len() as u64,
-            ))
+            TestEvent::forum_mod(RawEvent::PostTextUpdated(post_id))
         );
     }
     post_id
