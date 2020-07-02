@@ -22,6 +22,7 @@
 //#![warn(missing_docs)]
 
 use codec::{Decode, Encode};
+use rstd::collections::btree_map::BTreeMap;
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member};
 use srml_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
@@ -75,6 +76,9 @@ decl_error! {
 
         /// Require root origin in extrinsics.
         RequireRootOrigin,
+
+        /// DataObject Injection Failed. Invalid Input
+        DataObjectsInjectionFailed
     }
 }
 
@@ -116,23 +120,32 @@ impl Default for LiaisonJudgement {
     }
 }
 
+/// Alias for DataObjectInternal
+pub type DataObject<T> = DataObjectInternal<
+    MemberId<T>,
+    <T as system::Trait>::BlockNumber,
+    <T as timestamp::Trait>::Moment,
+    <T as data_object_type_registry::Trait>::DataObjectTypeId,
+    StorageProviderId<T>,
+>;
+
 /// Manages content ids, type and storage provider decision about it.
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
-pub struct DataObject<T: Trait> {
+pub struct DataObjectInternal<MemberId, BlockNumber, Moment, DataObjectTypeId, StorageProviderId> {
     /// Content owner.
-    pub owner: MemberId<T>,
+    pub owner: MemberId,
 
     /// Content added at.
-    pub added_at: BlockAndTime<T::BlockNumber, T::Moment>,
+    pub added_at: BlockAndTime<BlockNumber, Moment>,
 
     /// Content type id.
-    pub type_id: <T as data_object_type_registry::Trait>::DataObjectTypeId,
+    pub type_id: DataObjectTypeId,
 
     /// Content size in bytes.
     pub size: u64,
 
     /// Storage provider id of the liaison.
-    pub liaison: StorageProviderId<T>,
+    pub liaison: StorageProviderId,
 
     /// Storage provider as liaison judgment.
     pub liaison_judgement: LiaisonJudgement,
@@ -140,6 +153,9 @@ pub struct DataObject<T: Trait> {
     /// IPFS content id.
     pub ipfs_content_id: Vec<u8>,
 }
+
+/// A map collection of unique DataObjects keyed by the ContentId
+pub type DataObjectsMap<T> = BTreeMap<<T as Trait>::ContentId, DataObject<T>>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as DataDirectory {
@@ -213,7 +229,7 @@ decl_module! {
             let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
             // Let's create the entry then
-            let data: DataObject<T> = DataObject {
+            let data: DataObject<T> = DataObjectInternal {
                 type_id,
                 size,
                 added_at: common::current_block_time::<T>(),
@@ -277,6 +293,34 @@ decl_module! {
                 .filter(|&id| id != content_id)
                 .collect();
             <KnownContentIds<T>>::put(upd_content_ids);
+        }
+
+        /// Injects a set of data objects and their corresponding content id into the directory.
+        /// The operation is "silent" - no events will be emitted as objects are added.
+        /// The number of objects that can be added per call is limited to prevent the dispatch
+        /// from causing the block production to fail if it takes too much time to process.
+        /// Existing data objects will be overwritten.
+        fn inject_data_objects(origin, objects: DataObjectsMap<T>) {
+            ensure_root(origin)?;
+
+            // limit size - do some benchmarking to test how much we can allow per call.
+            const MAX_OBJECTS: usize = 20;
+
+            // Must provide something to inject
+            ensure!(objects.len() <= MAX_OBJECTS, Error::DataObjectsInjectionFailed);
+
+            for (id, object) in objects.into_iter() {
+                // append to known content ids
+                // duplicates will be removed at the end
+                <KnownContentIds<T>>::mutate(|ids| ids.push(id));
+                <DataObjectByContentId<T>>::insert(id, object);
+            }
+
+            // remove duplicate ids
+            <KnownContentIds<T>>::mutate(|ids| {
+                ids.sort();
+                ids.dedup();
+            });
         }
     }
 }

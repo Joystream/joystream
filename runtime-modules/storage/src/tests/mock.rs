@@ -63,7 +63,7 @@ impl ContentIdExists<Test> for MockContent {
         which: &<Test as data_directory::Trait>::ContentId,
     ) -> Result<data_directory::DataObject<Test>, &'static str> {
         match *which {
-            TEST_MOCK_EXISTING_CID => Ok(data_directory::DataObject {
+            TEST_MOCK_EXISTING_CID => Ok(data_directory::DataObjectInternal {
                 type_id: 1,
                 size: 1234,
                 added_at: data_directory::BlockAndTime {
