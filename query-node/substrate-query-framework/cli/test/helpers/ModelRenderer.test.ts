@@ -41,9 +41,10 @@ describe('ModelRenderer', () => {
   });
 
   it('should render ClassName', function () {
-    warthogModel.addObjectType({
+    warthogModel.addEntity({
       name: `some_randomEntity`,
       isEntity: true,
+      isVariant: false,
       fields: [new Field('a', 'String')],
     } as ObjectType);
 

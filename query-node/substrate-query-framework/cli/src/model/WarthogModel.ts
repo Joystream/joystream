@@ -1,6 +1,9 @@
 import { FTSQuery } from './FTSQuery';
 import { Field } from './Field';
 import { GraphQLEnumType } from 'graphql';
+import Debug from 'debug';
+
+const debug = Debug('qnode-cli:model');
 
 export class WarthogModel {
   private _types: ObjectType[];
@@ -15,8 +18,11 @@ export class WarthogModel {
     this._ftsQueries = [];
   }
 
-  addObjectType(type: ObjectType): void {
-    if (!type.isEntity) return;
+  addEntity(type: ObjectType): void {
+    if (!type.isEntity) {
+      debug(`${type.name} is not an Entity`);
+      return;
+    }
 
     this._types.push(type);
     this._name2type[type.name] = type;
@@ -158,6 +164,7 @@ export interface ObjectType {
   name: string;
   fields: Field[];
   isEntity: boolean;
+  isVariant: boolean;
   // Description of the field will be shown in GrapqQL API
   description?: string;
   isInterface?: boolean;

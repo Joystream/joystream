@@ -10,6 +10,7 @@ import { WarthogModelBuilder } from '../../src/parse/WarthogModelBuilder';
 const threadObjType = {
     name: "Thread",
     isEntity: true,
+    isVariant: false,
     fields: [new Field("initial_body_text", "String"),  
         new Field("title", "String"), 
         new Field("id", "ID")]
@@ -18,6 +19,7 @@ const threadObjType = {
 const postObjType = {
     name: "Post",
     isEntity: true,
+    isVariant: false,
     fields: [new Field("initial_body_text", "String"), 
         new Field("title", "String"), 
         new Field("id", "ID")]
@@ -25,8 +27,8 @@ const postObjType = {
 
 const createModel = ():WarthogModel => {
     const warthogModel = new WarthogModel();
-    warthogModel.addObjectType(threadObjType);
-    warthogModel.addObjectType(postObjType);
+    warthogModel.addEntity(threadObjType);
+    warthogModel.addEntity(postObjType);
     return warthogModel;
 }
 
