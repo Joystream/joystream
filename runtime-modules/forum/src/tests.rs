@@ -131,12 +131,11 @@ fn create_category_origin() {
 }
 
 #[test]
-// test case for check if parent category is archived, deleted , not existed.
+// test case for check if parent category is archived or not existing.
 fn create_category_parent() {
-    let parents = vec![Some(1), Some(2), Some(3), Some(4)];
+    let parents = vec![Some(1), Some(2), Some(3)];
     let results = vec![
         Ok(()),
-        Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE),
         Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE),
         Err(ERROR_CATEGORY_DOES_NOT_EXIST),
     ];
@@ -160,15 +159,8 @@ fn create_category_parent() {
                 good_category_description(),
                 Ok(()),
             );
-            create_category_mock(
-                origin.clone(),
-                Some(2),
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
-            update_category_mock(origin.clone(), 3, Some(true), None, Ok(()));
-            update_category_mock(origin.clone(), 2, None, Some(true), Ok(()));
+            update_category_archival_status_mock(origin.clone(), 2, true, Ok(()));
+
             create_category_mock(
                 origin.clone(),
                 parents[index],
@@ -230,7 +222,7 @@ fn create_category_depth() {
  */
 #[test]
 // test if category updator is forum lead
-fn update_category_origin() {
+fn update_category_archival_status_origin() {
     let origins = [FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
     let results = vec![Ok(()), Err(ERROR_ORIGIN_NOT_FORUM_LEAD)];
 
@@ -246,13 +238,14 @@ fn update_category_origin() {
                 good_category_description(),
                 Ok(()),
             );
-            update_category_mock(origins[index].clone(), 1, Some(true), None, results[index]);
+            update_category_archival_status_mock(origins[index].clone(), 1, true, results[index]);
         });
     }
 }
+
 #[test]
 // test case for new setting actually not update category status
-fn update_category_without_updates() {
+fn update_category_archival_status_no_change() {
     let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
@@ -264,36 +257,18 @@ fn update_category_without_updates() {
             good_category_description(),
             Ok(()),
         );
-        update_category_mock(origin, 1, None, None, Err(ERROR_CATEGORY_NOT_BEING_UPDATED));
-    });
-}
-#[test]
-// test case for new setting actually not update category status
-fn update_category_without_updates_two() {
-    let config = default_genesis_config();
-    let forum_lead = FORUM_LEAD_ORIGIN_ID;
-    let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
-        create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-        update_category_mock(
+        update_category_archival_status_mock(
             origin,
             1,
-            Some(false),
-            Some(false),
+            false,
             Err(ERROR_CATEGORY_NOT_BEING_UPDATED),
         );
     });
 }
 
 #[test]
-// test case for new setting actually not update category status
-fn update_category_without_updates_three() {
+// test case for editing nonexistent category
+fn update_category_archival_status_category_exists() {
     let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
@@ -305,38 +280,12 @@ fn update_category_without_updates_three() {
             good_category_description(),
             Ok(()),
         );
-        update_category_mock(origin.clone(), 1, Some(false), Some(true), Ok(()));
-        update_category_mock(
+        update_category_archival_status_mock(origin.clone(), 1, true, Ok(()));
+        update_category_archival_status_mock(
             origin.clone(),
-            1,
-            Some(false),
-            Some(true),
-            Err(ERROR_CATEGORY_CANNOT_BE_UNARCHIVED_WHEN_DELETED),
-        );
-    });
-}
-
-#[test]
-// test unarchived not doable after category deleted
-fn update_category_deleted_then_unarchived() {
-    let config = default_genesis_config();
-    let forum_lead = FORUM_LEAD_ORIGIN_ID;
-    let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
-        create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-        update_category_mock(origin.clone(), 1, Some(true), Some(true), Ok(()));
-        update_category_mock(
-            origin.clone(),
-            1,
-            Some(false),
-            None,
-            Err(ERROR_CATEGORY_CANNOT_BE_UNARCHIVED_WHEN_DELETED),
+            2,
+            true,
+            Err(ERROR_CATEGORY_DOES_NOT_EXIST),
         );
     });
 }

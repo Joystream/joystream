@@ -343,8 +343,6 @@ const ERROR_POST_MODERATED: &str = "Post is moderated.";
 
 // Errors about category.
 const ERROR_CATEGORY_NOT_BEING_UPDATED: &str = "Category not being updated.";
-const ERROR_CATEGORY_CANNOT_BE_UNARCHIVED_WHEN_DELETED: &str =
-    "Category cannot be unarchived when deleted.";
 const ERROR_MODERATOR_MODERATE_CATEGORY: &str = "Moderator can not moderate category.";
 const ERROR_EXCEED_MAX_CATEGORY_DEPTH: &str = "Category exceed max depth.";
 const ERROR_ANCESTOR_CATEGORY_IMMUTABLE: &str =
@@ -448,13 +446,6 @@ pub struct Post<ForumUserId, ModeratorId, ThreadId, Hash> {
 
     /// Author of post.
     pub author_id: ForumUserId,
-
-    /// The post number of this post in its thread, i.e. total number of posts added (including this)
-    /// to a thread when it was added.
-    /// Is needed to give light clients assurance about getting all posts in a given range,
-    // `created_at` is not sufficient.
-    /// Starts at 1 for first post in thread.
-    pub nr_in_thread: u32,
 }
 
 /// Represents a thread
@@ -475,36 +466,6 @@ pub struct Thread<ForumUserId, ModeratorId, CategoryId, Moment, Hash> {
 
     /// poll description.
     pub poll: Option<Poll<Moment, Hash>>,
-
-    /// The thread number of this thread in its category, i.e. total number of thread added (including this)
-    /// to a category when it was added.
-    /// Is needed to give light clients assurance about getting all threads in a given range,
-    /// `created_at` is not sufficient.
-    /// Starts at 1 for first thread in category.
-    pub nr_in_category: u32,
-
-    /// Number of unmoderated and moderated posts in this thread.
-    /// The sum of these two only increases, and former is incremented
-    /// for each new post added to this thread. A new post is added
-    /// with a `nr_in_thread` equal to this sum
-    ///
-    /// When there is a moderation
-    /// of a post, the variables are incremented and decremented, respectively.
-    ///
-    /// These values are vital for light clients, in order to validate that they are
-    /// not being censored from posts in a thread.
-    pub num_unmoderated_posts: u32,
-    pub num_moderated_posts: u32,
-}
-
-/// Implement total posts calculation for thread
-impl<ForumUserId, ModeratorId, CategoryId, Moment, Hash>
-    Thread<ForumUserId, ModeratorId, CategoryId, Moment, Hash>
-{
-    /// How many posts created both unmoderated and moderated
-    pub fn num_posts_ever_created(&self) -> u32 {
-        self.num_unmoderated_posts + self.num_moderated_posts
-    }
 }
 
 /// Represents a category
@@ -520,43 +481,20 @@ pub struct Category<CategoryId, ThreadId, Hash> {
     /// Description
     pub description_hash: Hash,
 
-    /// Whether category is deleted.
-    pub deleted: bool,
-
     /// Whether category is archived.
     pub archived: bool,
 
-    /// Number of subcategories (deleted, archived or neither),
-    /// unmoderated threads and moderated threads, _directly_ in this category.
-    ///
-    /// As noted, the first is unaffected by any change in state of direct subcategory.
-    ///
-    /// The sum of the latter two only increases, and former is incremented
-    /// for each new thread added to this category. A new thread is added
-    /// with a `nr_in_category` equal to this sum.
-    ///
-    /// When there is a moderation
-    /// of a thread, the variables are incremented and decremented, respectively.
-    ///
-    /// These values are vital for light clients, in order to validate that they are
-    /// not being censored from subcategories or threads in a category.
+    /// Number of subcategories, needed for emptiness checks when trying to delete category
     pub num_direct_subcategories: u32,
-    pub num_direct_unmoderated_threads: u32,
-    pub num_direct_moderated_threads: u32,
+
+    // Number of threads in category, needed for emptiness checks when trying to delete category
+    pub num_direct_threads: u32,
 
     /// Parent category, if child of another category, otherwise this category is a root category
     pub parent_category_id: Option<CategoryId>,
 
     /// Sticky threads list
     pub sticky_thread_ids: Vec<ThreadId>,
-}
-
-/// Implement total thread calcuation for category
-impl<CategoryId, ThreadId, Hash> Category<CategoryId, ThreadId, Hash> {
-    /// How many threads created both moderated and unmoderated
-    pub fn num_threads_created(&self) -> u32 {
-        self.num_direct_unmoderated_threads + self.num_direct_moderated_threads
-    }
 }
 
 /// Represents a sequence of categories which have child-parent relatioonship
@@ -628,9 +566,8 @@ decl_event!(
         CategoryCreated(CategoryId),
 
         /// A category with given id was updated.
-        /// The second argument reflects the new archival status of the category, if changed.
-        /// The third argument reflects the new deletion status of the category, if changed.
-        CategoryUpdated(CategoryId, Option<bool>, Option<bool>),
+        /// The second argument reflects the new archival status of the category.
+        CategoryUpdated(CategoryId, bool),
 
         /// A thread with given id was created.
         ThreadCreated(ThreadId),
@@ -748,11 +685,9 @@ decl_module! {
                 id : next_category_id,
                 title_hash: T::calculate_hash(title.as_slice()),
                 description_hash: T::calculate_hash(description.as_slice()),
-                deleted: false,
                 archived: false,
                 num_direct_subcategories: 0,
-                num_direct_unmoderated_threads: 0,
-                num_direct_moderated_threads: 0,
+                num_direct_threads: 0,
                 parent_category_id,
                 sticky_thread_ids: vec![],
             };
@@ -770,24 +705,18 @@ decl_module! {
         }
 
         /// Update category
-        fn update_category(origin, category_id: T::CategoryId, new_archival_status: Option<bool>, new_deletion_status: Option<bool>) -> dispatch::Result {
+        fn update_category_archival_status(origin, category_id: T::CategoryId, new_archival_status: bool) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
             // Not signed by forum LEAD
             Self::ensure_is_forum_lead(origin)?;
 
-            // Make sure something is actually being changed
-            ensure!(
-                new_archival_status.is_some() || new_deletion_status.is_some(),
-                ERROR_CATEGORY_NOT_BEING_UPDATED
-            );
-
             // Make sure category existed.
             ensure!(
                 <CategoryById<T>>::exists(&category_id),
                 ERROR_CATEGORY_DOES_NOT_EXIST
-                );
+            );
 
             // Get parent category
             let parent_category_id = <CategoryById<T>>::get(&category_id).parent_category_id;
@@ -796,46 +725,24 @@ decl_module! {
                 // Get path from parent to root of category tree.
                 let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(tmp_parent_category_id)?;
 
-                if Self::ensure_can_mutate_in_path_leaf(&category_tree_path).is_err() {
-                    // if ancestor archived or deleted, no necessary to set child again.
-                    if new_archival_status == Some(true) || new_deletion_status == Some(true) {
-                        return Ok(())
-                    }
-                };
-            };
+                if new_archival_status && Self::ensure_can_mutate_in_path_leaf(&category_tree_path).is_err() {
+                    return Ok(())
+                }
+            }
 
             // Get the category
             let category = <CategoryById<T>>::get(category_id);
 
-            // Can not unarchive if category already deleted
-            ensure!(
-                !category.deleted || (new_deletion_status == Some(false)),
-                ERROR_CATEGORY_CANNOT_BE_UNARCHIVED_WHEN_DELETED
-            );
-
-            // no any change then return Ok, no update and no event.
-            let deletion_unchanged = new_deletion_status == None || new_deletion_status == Some(category.deleted);
-            let archive_unchanged = new_archival_status == None || new_archival_status == Some(category.archived);
-
-            // No any change, invalid transaction
-            if deletion_unchanged && archive_unchanged {
+            // No change, invalid transaction
+            if new_archival_status == category.archived {
                 return Err(ERROR_CATEGORY_NOT_BEING_UPDATED)
             }
 
             // Mutate category, and set possible new change parameters
-            <CategoryById<T>>::mutate(category_id, |c| {
-
-                if let Some(archived) = new_archival_status {
-                    c.archived = archived;
-                }
-
-                if let Some(deleted) = new_deletion_status {
-                    c.deleted = deleted;
-                }
-            });
+            <CategoryById<T>>::mutate(category_id, |c| c.archived = new_archival_status);
 
             // Generate event
-            Self::deposit_event(RawEvent::CategoryUpdated(category_id, new_archival_status, new_deletion_status));
+            Self::deposit_event(RawEvent::CategoryUpdated(category_id, new_archival_status));
 
             Ok(())
         }
@@ -942,12 +849,6 @@ decl_module! {
             // Insert new value into map
             <ThreadById<T>>::mutate(thread_id, |value| *value = thread.clone());
 
-            // Update moderation/umoderation count of corresponding category
-            <CategoryById<T>>::mutate(thread.category_id, |category| {
-                category.num_direct_unmoderated_threads -= 1;
-                category.num_direct_moderated_threads += 1;
-            });
-
             // Generate event
             Self::deposit_event(RawEvent::ThreadModerated(thread_id));
 
@@ -1053,12 +954,6 @@ decl_module! {
             // Update post with moderation
             <PostById<T>>::mutate(post_id, |p| p.moderation = Some(moderation_action));
 
-            // Update moderated and unmoderated post count of corresponding thread
-            <ThreadById<T>>::mutate(post.thread_id, |t| {
-                t.num_unmoderated_posts -= 1;
-                t.num_moderated_posts += 1;
-            });
-
             // Generate event
             Self::deposit_event(RawEvent::PostModerated(post_id));
 
@@ -1129,9 +1024,6 @@ impl<T: Trait> Module<T> {
             Self::ensure_poll_is_valid(&data)?;
         }
 
-        // Get the category
-        let category = <CategoryById<T>>::get(category_id);
-
         // Create and add new thread
         let new_thread_id = <NextThreadId<T>>::get();
 
@@ -1145,9 +1037,6 @@ impl<T: Trait> Module<T> {
             moderation: None,
             author_id,
             poll: poll.clone(),
-            nr_in_category: category.num_threads_created() + 1,
-            num_unmoderated_posts: 0,
-            num_moderated_posts: 0,
         };
 
         // Store thread
@@ -1156,8 +1045,8 @@ impl<T: Trait> Module<T> {
         // Update next thread id
         <NextThreadId<T>>::mutate(|n| *n += One::one());
 
-        // Update unmoderated thread count in corresponding category
-        <CategoryById<T>>::mutate(category_id, |c| c.num_direct_unmoderated_threads += 1);
+        // Update category's thread counter
+        <CategoryById<T>>::mutate(category_id, |c| c.num_direct_threads += 1);
 
         Ok(new_thread)
     }
@@ -1194,7 +1083,6 @@ impl<T: Trait> Module<T> {
             text_hash: T::calculate_hash(text),
             moderation: None,
             author_id,
-            nr_in_thread: thread.num_posts_ever_created(),
         };
 
         // Store post
@@ -1202,9 +1090,6 @@ impl<T: Trait> Module<T> {
 
         // Update next post id
         <NextPostId<T>>::mutate(|n| *n += One::one());
-
-        // Update unmoderated post count of thread
-        <ThreadById<T>>::mutate(thread_id, |t| t.num_unmoderated_posts += 1);
 
         Ok(new_post)
     }
@@ -1365,7 +1250,7 @@ impl<T: Trait> Module<T> {
         ensure!(
             !category_tree_path
                 .iter()
-                .any(|c: &Category<T::CategoryId, T::ThreadId, T::Hash>| c.deleted || c.archived),
+                .any(|c: &Category<T::CategoryId, T::ThreadId, T::Hash>| c.archived),
             ERROR_ANCESTOR_CATEGORY_IMMUTABLE
         );
 
