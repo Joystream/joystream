@@ -20,13 +20,10 @@
 
 const path = require('path');
 
-const file_type = require('file-type');
-const mime_types = require('mime-types');
+const debug = require('debug')('joystream:colossus:api:asset');
 
-const debug = require('debug')('joystream:api:asset');
-
-const util_ranges = require('@joystream/util/ranges');
-const filter = require('@joystream/storage/filter');
+const util_ranges = require('@joystream/storage-utils/ranges');
+const filter = require('@joystream/storage-node-backend/filter');
 
 function error_handler(response, err, code)
 {
@@ -35,7 +32,7 @@ function error_handler(response, err, code)
 }
 
 
-module.exports = function(config, storage, runtime)
+module.exports = function(storage, runtime)
 {
   var doc = {
     // parameters for all operations in this path
@@ -83,15 +80,16 @@ module.exports = function(config, storage, runtime)
     // Put for uploads
     put: async function(req, res, _next)
     {
-      const id = req.params.id;
+      const id = req.params.id; // content id
 
       // First check if we're the liaison for the name, otherwise we can bail
       // out already.
       const role_addr = runtime.identities.key.address;
+      const providerId = runtime.storageProviderId;
       let dataObject;
       try {
         debug('calling checkLiaisonForDataObject')
-        dataObject = await runtime.assets.checkLiaisonForDataObject(role_addr, id);
+        dataObject = await runtime.assets.checkLiaisonForDataObject(providerId, id);
         debug('called checkLiaisonForDataObject')
       } catch (err) {
         error_handler(res, err, 403);
@@ -121,14 +119,14 @@ module.exports = function(config, storage, runtime)
             debug('Detected file info:', info);
 
             // Filter
-            const filter_result = filter(config, req.headers, info.mime_type);
+            const filter_result = filter({}, req.headers, info.mime_type);
             if (200 != filter_result.code) {
               debug('Rejecting content', filter_result.message);
               stream.end();
               res.status(filter_result.code).send({ message: filter_result.message });
 
               // Reject the content
-              await runtime.assets.rejectContent(role_addr, id);
+              await runtime.assets.rejectContent(role_addr, providerId, id);
               return;
             }
             debug('Content accepted.');
@@ -155,20 +153,20 @@ module.exports = function(config, storage, runtime)
           try {
             if (hash !== dataObject.ipfs_content_id.toString()) {
               debug('Rejecting content. IPFS hash does not match value in objectId');
-              await runtime.assets.rejectContent(role_addr, id);
+              await runtime.assets.rejectContent(role_addr, providerId, id);
               res.status(400).send({ message: "Uploaded content doesn't match IPFS hash" });
               return;
             }
 
             debug('accepting Content')
-            await runtime.assets.acceptContent(role_addr, id);
+            await runtime.assets.acceptContent(role_addr, providerId, id);
 
             debug('creating storage relationship for newly uploaded content')
             // Create storage relationship and flip it to ready.
-            const dosr_id = await runtime.assets.createAndReturnStorageRelationship(role_addr, id);
+            const dosr_id = await runtime.assets.createAndReturnStorageRelationship(role_addr, providerId, id);
 
             debug('toggling storage relationship for newly uploaded content')
-            await runtime.assets.toggleStorageRelationshipReady(role_addr, dosr_id, true);
+            await runtime.assets.toggleStorageRelationshipReady(role_addr, providerId, dosr_id, true);
 
             debug('Sending OK response.');
             res.status(200).send({ message: 'Asset uploaded.' });

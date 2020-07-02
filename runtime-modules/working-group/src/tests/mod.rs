@@ -57,6 +57,40 @@ fn hire_lead_fails_multiple_applications() {
 }
 
 #[test]
+fn add_opening_fails_with_incorrect_unstaking_periods() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let add_opening_fixture =
+            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
+                fill_opening_failed_applicant_role_stake_unstaking_period: Some(0),
+                ..OpeningPolicyCommitment::default()
+            });
+        add_opening_fixture.call_and_assert(Err(
+            Error::FillOpeningFailedApplicantRoleStakeUnstakingPeriodIsZero,
+        ));
+
+        let add_opening_fixture =
+            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
+                fill_opening_failed_applicant_application_stake_unstaking_period: Some(0),
+                ..OpeningPolicyCommitment::default()
+            });
+        add_opening_fixture.call_and_assert(Err(
+            Error::FillOpeningFailedApplicantApplicationStakeUnstakingPeriodIsZero,
+        ));
+
+        let add_opening_fixture =
+            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
+                fill_opening_successful_applicant_application_stake_unstaking_period: Some(0),
+                ..OpeningPolicyCommitment::default()
+            });
+        add_opening_fixture.call_and_assert(Err(
+            Error::FillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriodIsZero,
+        ));
+    });
+}
+
+#[test]
 fn add_opening_succeeds() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();

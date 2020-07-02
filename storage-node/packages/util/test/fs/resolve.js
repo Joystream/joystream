@@ -22,7 +22,7 @@ const mocha = require('mocha');
 const expect = require('chai').expect;
 const path = require('path');
 
-const resolve = require('@joystream/util/fs/resolve');
+const resolve = require('@joystream/storage-utils/fs/resolve');
 
 function tests(base)
 {

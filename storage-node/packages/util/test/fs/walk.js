@@ -25,7 +25,7 @@ const temp = require('temp').track();
 const fs = require('fs');
 const path = require('path');
 
-const fswalk = require('@joystream/util/fs/walk');
+const fswalk = require('@joystream/storage-utils/fs/walk');
 
 function walktest(archive, base, done)
 {

@@ -22,7 +22,7 @@ const mocha = require('mocha');
 const expect = require('chai').expect;
 const sinon = require('sinon');
 
-const { RuntimeApi } = require('@joystream/runtime-api');
+const { RuntimeApi } = require('@joystream/storage-runtime-api');
 
 describe('Balances', () => {
   var api;
@@ -49,7 +49,4 @@ describe('Balances', () => {
     // >= 0 comparison works
     expect(fee.cmpn(0)).to.be.at.least(0);
   });
-
-  // TODO implemtable only with accounts with balance
-  it('can transfer funds');
 });

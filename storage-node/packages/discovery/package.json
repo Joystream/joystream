@@ -1,5 +1,6 @@
 {
-  "name": "@joystream/discovery",
+  "name": "@joystream/service-discovery",
+  "private": true,
   "version": "0.1.0",
   "description": "Service Discovery - Joystream Storage Node",
   "author": "Joystream",
@@ -43,8 +44,8 @@
     "temp": "^0.9.0"
   },
   "dependencies": {
-    "@joystream/runtime-api": "^0.1.0",
-    "@joystream/util": "^0.1.0",
+    "@joystream/storage-runtime-api": "^0.1.0",
+    "@joystream/storage-utils": "^0.1.0",
     "async-lock": "^1.2.0",
     "axios": "^0.18.0",
     "chalk": "^2.4.2",

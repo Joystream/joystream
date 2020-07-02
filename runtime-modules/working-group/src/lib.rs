@@ -507,14 +507,15 @@ decl_module! {
         pub fn add_opening(
             origin,
             activate_at: hiring::ActivateOpeningAt<T::BlockNumber>,
-            commitment: OpeningPolicyCommitment<T::BlockNumber,
-            BalanceOf<T>>,
+            commitment: OpeningPolicyCommitment<T::BlockNumber, BalanceOf<T>>,
             human_readable_text: Vec<u8>,
             opening_type: OpeningType,
         ){
             Self::ensure_origin_for_opening_type(origin, opening_type)?;
 
             Self::ensure_opening_human_readable_text_is_valid(&human_readable_text)?;
+
+            Self::ensure_opening_policy_commitment_is_valid(&commitment)?;
 
 
             // Add opening
@@ -989,6 +990,41 @@ decl_module! {
 // ****************** Ensures **********************
 
 impl<T: Trait<I>, I: Instance> Module<T, I> {
+    fn ensure_opening_policy_commitment_is_valid(
+        policy_commitment: &OpeningPolicyCommitment<T::BlockNumber, BalanceOf<T>>,
+    ) -> Result<(), Error> {
+        // check fill_opening unstaking periods
+
+        if let Some(unstaking_period) =
+            policy_commitment.fill_opening_failed_applicant_application_stake_unstaking_period
+        {
+            ensure!(
+                unstaking_period != Zero::zero(),
+                Error::FillOpeningFailedApplicantApplicationStakeUnstakingPeriodIsZero
+            );
+        }
+
+        if let Some(unstaking_period) =
+            policy_commitment.fill_opening_failed_applicant_role_stake_unstaking_period
+        {
+            ensure!(
+                unstaking_period != Zero::zero(),
+                Error::FillOpeningFailedApplicantRoleStakeUnstakingPeriodIsZero
+            );
+        }
+
+        if let Some(unstaking_period) =
+            policy_commitment.fill_opening_successful_applicant_application_stake_unstaking_period
+        {
+            ensure!(
+                unstaking_period != Zero::zero(),
+                Error::FillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriodIsZero
+            );
+        }
+
+        Ok(())
+    }
+
     fn ensure_origin_for_opening_type(
         origin: T::Origin,
         opening_type: OpeningType,

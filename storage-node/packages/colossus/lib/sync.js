@@ -20,20 +20,22 @@
 
 const debug = require('debug')('joystream:sync');
 
-async function sync_callback(api, config, storage)
-{
-  debug('Starting sync run...');
-
+async function sync_callback(api, storage) {
   // The first step is to gather all data objects from chain.
   // TODO: in future, limit to a configured tranche
   // FIXME this isn't actually on chain yet, so we'll fake it.
   const knownContentIds = await api.assets.getKnownContentIds() || [];
 
-  const role_addr = api.identities.key.address;
+  const role_addr = api.identities.key.address
+  const providerId = api.storageProviderId
 
   // Iterate over all sync objects, and ensure they're synced.
   const allChecks = knownContentIds.map(async (content_id) => {
-    let { relationship, relationshipId } = await api.assets.getStorageRelationshipAndId(role_addr, content_id);
+    let { relationship, relationshipId } = await api.assets.getStorageRelationshipAndId(providerId, content_id);
+
+    // get the data object
+    // make sure the data object was Accepted by the liaison,
+    // don't just blindly attempt to fetch them
 
     let fileLocal;
     try {
@@ -51,8 +53,11 @@ async function sync_callback(api, config, storage)
       try {
         await storage.synchronize(content_id);
       } catch (err) {
-        debug(err.message)
+        // duplicate logging
+        // debug(err.message)
+        return
       }
+      // why are we returning, if we synced the file
       return;
     }
 
@@ -60,8 +65,8 @@ async function sync_callback(api, config, storage)
       // create relationship
       debug(`Creating new storage relationship for ${content_id.encode()}`);
       try {
-        relationshipId = await api.assets.createAndReturnStorageRelationship(role_addr, content_id);
-        await api.assets.toggleStorageRelationshipReady(role_addr, relationshipId, true);
+        relationshipId = await api.assets.createAndReturnStorageRelationship(role_addr, providerId, content_id);
+        await api.assets.toggleStorageRelationshipReady(role_addr, providerId, relationshipId, true);
       } catch (err) {
         debug(`Error creating new storage relationship ${content_id.encode()}: ${err.stack}`);
         return;
@@ -70,7 +75,7 @@ async function sync_callback(api, config, storage)
       debug(`Updating storage relationship to ready for ${content_id.encode()}`);
       // update to ready. (Why would there be a relationship set to ready: false?)
       try {
-        await api.assets.toggleStorageRelationshipReady(role_addr, relationshipId, true);
+        await api.assets.toggleStorageRelationshipReady(role_addr, providerId, relationshipId, true);
       } catch(err) {
         debug(`Error setting relationship ready ${content_id.encode()}: ${err.stack}`);
       }
@@ -81,26 +86,27 @@ async function sync_callback(api, config, storage)
   });
 
 
-  await Promise.all(allChecks);
-  debug('sync run complete');
+  return Promise.all(allChecks);
 }
 
 
-async function sync_periodic(api, config, storage)
+async function sync_periodic(api, flags, storage)
 {
   try {
-    await sync_callback(api, config, storage);
+    debug('Starting sync run...')
+    await sync_callback(api, storage)
+    debug('sync run complete')
   } catch (err) {
     debug(`Error in sync_periodic ${err.stack}`);
   }
   // always try again
-  setTimeout(sync_periodic, config.get('syncPeriod'), api, config, storage);
+  setTimeout(sync_periodic, flags.syncPeriod, api, flags, storage);
 }
 
 
-function start_syncing(api, config, storage)
+function start_syncing(api, flags, storage)
 {
-  sync_periodic(api, config, storage);
+  sync_periodic(api, flags, storage);
 }
 
 module.exports = {

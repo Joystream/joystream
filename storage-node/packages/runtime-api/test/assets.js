@@ -22,7 +22,7 @@ const mocha = require('mocha');
 const expect = require('chai').expect;
 const sinon = require('sinon');
 
-const { RuntimeApi } = require('@joystream/runtime-api');
+const { RuntimeApi } = require('@joystream/storage-runtime-api');
 
 describe('Assets', () => {
   var api;
@@ -47,6 +47,5 @@ describe('Assets', () => {
   it('can accept content');
   it('can reject content');
   it('can create a storage relationship for content');
-  it('can create a storage relationship for content and return it');
   it('can toggle a storage relatsionship to ready state');
 });

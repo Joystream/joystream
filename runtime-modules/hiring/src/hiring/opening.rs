@@ -377,20 +377,21 @@ pub enum OpeningDeactivationCause {
     /// Opening was cancelled during accepting application stage
     CancelledInReviewPeriod,
 
-    /// Opening was cancelled after review period exprired
+    /// Opening was cancelled after review period expired.
     ReviewPeriodExpired,
 
-    /// Opening was filled
+    /// Opening was filled.
     Filled,
 }
 
-/// Safe and explict way of chosing
+/// Defines the moment of the opening activation.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub enum ActivateOpeningAt<BlockNumber> {
-    /// Activate opening now (current block)
+    /// Activate opening now (current block).
     CurrentBlock,
 
-    /// Activate opening at block number
+    /// Activate opening at block number.
     ExactBlock(BlockNumber),
 }
 

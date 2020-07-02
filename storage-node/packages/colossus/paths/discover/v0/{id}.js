@@ -1,10 +1,10 @@
-const { discover } = require('@joystream/discovery')
-const debug = require('debug')('joystream:api:discovery');
+const { discover } = require('@joystream/service-discovery')
+const debug = require('debug')('joystream:colossus:api:discovery');
 
 const MAX_CACHE_AGE = 30 * 60 * 1000;
 const USE_CACHE = true;
 
-module.exports = function(config, runtime)
+module.exports = function(runtime)
 {
   var doc = {
     // parameters for all operations in this path
@@ -15,7 +15,7 @@ module.exports = function(config, runtime)
         required: true,
         description: 'Actor accouuntId',
         schema: {
-          type: 'string',
+          type: 'string', // integer ?
         },
       },
     ],
@@ -23,7 +23,13 @@ module.exports = function(config, runtime)
     // Resolve Service Information
     get: async function(req, res)
     {
-        const id = req.params.id;
+        try {
+          var parsedId = parseInt(req.params.id);
+        } catch (err) {
+          return res.status(400).end();
+        }
+
+        const id = parsedId
         let cacheMaxAge = req.query.max_age;
 
         if (cacheMaxAge) {
@@ -47,10 +53,9 @@ module.exports = function(config, runtime)
           } else {
             res.status(200).send(info);
           }
-
         } catch (err) {
           debug(`${err}`);
-          res.status(400).end()
+          res.status(404).end()
         }
     }
   };
