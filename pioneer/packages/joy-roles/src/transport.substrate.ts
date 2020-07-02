@@ -481,10 +481,10 @@ export class Transport extends TransportBase implements ITransport {
     const groupOpening = new SingleLinkedMapEntry<GroupOpening>(
       workingGroupsApiMapping[group].openingType,
       await this.cachedApiMethodByGroup(group, 'openingById')(id)
-    );
+    ).value;
 
     const opening = await this.opening(
-      groupOpening.value.hiring_opening_id.toNumber()
+      groupOpening.hiring_opening_id.toNumber()
     );
 
     const applications = await this.groupOpeningApplications(group, id);
@@ -494,7 +494,8 @@ export class Transport extends TransportBase implements ITransport {
       opening: opening,
       meta: {
         id: id.toString(),
-        group
+        group,
+        type: groupOpening instanceof WGOpening ? groupOpening.opening_type : undefined
       },
       stage: await classifyOpeningStage(this, opening),
       applications: {
