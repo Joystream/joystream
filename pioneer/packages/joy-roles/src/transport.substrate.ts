@@ -268,7 +268,7 @@ export class Transport extends TransportBase implements ITransport {
     });
   }
 
-  protected async areGroupRolesOpen (group: WorkingGroups, lead: boolean = false): Promise<boolean> {
+  protected async areGroupRolesOpen (group: WorkingGroups, lead = false): Promise<boolean> {
     const nextId = await this.cachedApiMethodByGroup(group, 'nextOpeningId')() as GroupOpeningId;
 
     // This is chain specfic, but if next id is still 0, it means no openings have been added yet

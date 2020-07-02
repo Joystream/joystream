@@ -55,7 +55,8 @@ export class Transport extends TransportBase implements ITransport {
   async curationGroup (): Promise<WorkingGroupMembership> {
     return this.simulateApiResponse<WorkingGroupMembership>({
       leadStatus: await this.groupLeadStatus(),
-      rolesAvailable: true,
+      workerRolesAvailable: true,
+      leadRolesAvailable: false,
       workers: [
         {
           memberId: new MemberId(1),
@@ -116,7 +117,8 @@ export class Transport extends TransportBase implements ITransport {
   async storageGroup (): Promise<WorkingGroupMembership> {
     return this.simulateApiResponse<WorkingGroupMembership>({
       leadStatus: await this.groupLeadStatus(),
-      rolesAvailable: true,
+      workerRolesAvailable: true,
+      leadRolesAvailable: true,
       workers: [
         {
           memberId: new MemberId(1),

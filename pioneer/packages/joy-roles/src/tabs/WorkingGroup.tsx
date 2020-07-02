@@ -34,7 +34,7 @@ const JoinRole = ({ group, lead = false, title, description }: JoinRoleProps) =>
   <Message positive>
     <Message.Header>{title}</Message.Header>
     <p>{description}</p>
-    <Link to={`/working-groups/opportunities/${group}${lead?'/lead':''}`}>
+    <Link to={`/working-groups/opportunities/${group}${lead ? '/lead' : ''}`}>
       <Button icon labelPosition="right" color="green" positive>
         Find out more
         <Icon name={'right arrow' as SemanticICONS} />
