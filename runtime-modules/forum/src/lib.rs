@@ -807,7 +807,7 @@ decl_module! {
             let thread = Self::ensure_thread_exists(&thread_id)?;
 
             // ensure origin can moderate category
-            Self::ensure_moderate_category(&who, &moderator_id, thread.category_id)?;
+            Self::ensure_can_moderate_category(&who, &moderator_id, thread.category_id)?;
 
             // Can mutate in corresponding category
             let path = Self::build_category_tree_path(thread.category_id);
@@ -913,7 +913,7 @@ decl_module! {
             let thread = Self::ensure_thread_exists(&post.thread_id)?;
 
             // ensure the moderator can moderate the category
-            Self::ensure_moderate_category(&who, &moderator_id, thread.category_id)?;
+            Self::ensure_can_moderate_category(&who, &moderator_id, thread.category_id)?;
 
             // Generate event
             Self::deposit_event(RawEvent::PostModerated(post_id));
@@ -930,7 +930,7 @@ decl_module! {
             let who = Self::ensure_is_moderator(origin, &moderator_id)?;
 
             // ensure the moderator can moderate the category
-            Self::ensure_moderate_category(&who, &moderator_id, category_id)?;
+            Self::ensure_can_moderate_category(&who, &moderator_id, category_id)?;
 
             // Ensure all thread id valid and is under the category
             for item in &stickied_ids {
@@ -1264,7 +1264,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// check if an account can moderate a category.
-    fn ensure_moderate_category(
+    fn ensure_can_moderate_category(
         account_id: &T::AccountId,
         moderator_id: &T::ModeratorId,
         category_id: T::CategoryId,
