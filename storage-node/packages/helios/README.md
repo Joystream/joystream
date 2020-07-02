@@ -6,7 +6,6 @@ A basic tool to scan the joystream storage network to get a birds eye view of th
 ## Scanning
 
 ```
-yarn
-yarn run helios
+yarn helios
 ```
 

@@ -5,25 +5,19 @@ discovery information about themselves, and for consumers to resolve this
 information.
 
 In the Joystream network, services are provided by having members stake for a
-role. The role is identified by a unique actor key. Resolving service information
-associated with the actor key is the main purpose of this module.
+role. The role is identified by a worker id. Resolving service information
+associated with the worker id is the main purpose of this module.
 
 This implementation is based on [IPNS](https://docs.ipfs.io/guides/concepts/ipns/)
 as well as runtime information.
 
 ## Discovery Workflow
 
-The discovery workflow provides an actor public key to the `discover()` function, which
+The discovery workflow provides worker id to the `discover()` function, which
 will eventually return structured data.
 
-Clients can verify that the structured data has been signed by the identifying
-actor. This is normally done automatically, unless a `verify: false` option is
-passed to `discover()`. Then, a separate `verify()` call can be used for
-verification.
-
-Under the hood, `discover()` uses any known participating node in the discovery
-network. If no other nodes are known, the bootstrap nodes from the runtime are
-used.
+Under the hood, `discover()` the bootstrap nodes from the runtime are
+used in a browser environment, or the local ipfs node otherwise.
 
 There is a distinction in the discovery workflow:
 
@@ -31,8 +25,8 @@ There is a distinction in the discovery workflow:
   is performed to discover nodes.
 2. If run in a node.js process, instead:
   - A trusted (local) IPFS node must be configured.
-  - The chain is queried to resolve an actor key to an IPNS peer ID.
-  - The trusted IPFS node is used to resolve the IPNS peer ID to an IPFS
+  - The chain is queried to resolve a worker id to an IPNS id.
+  - The trusted IPFS node is used to resolve the IPNS id to an IPFS
     file.
   - The IPFS file is fetched; this contains the structured data.
 
@@ -45,11 +39,10 @@ The publishing workflow is a little more involved, and requires more interaction
 with the runtime and the trusted IPFS node.
 
 1. A service information file is created.
-1. The file is signed with the actor key (see below).
-1. The file is published on IPFS.
+1. The file is published on IPFS, using the IPNS self key of the local node.
 1. The IPNS name of the trusted IPFS node is updated to refer to the published
    file.
-1. The runtime mapping from the actor ID to the IPNS name is updated.
+1. The runtime mapping from the worker ID to the IPNS name is updated.
 
 ## Published Information
 
@@ -57,10 +50,7 @@ Any JSON data can theoretically be published with this system; however, the
 following structure is currently imposed:
 
 - The JSON must be an Object at the top-level, not an Array.
-- Each key must correspond to a service spec (below).
-
-The data is signed using the [@joystream/json-signing](../json-signing/README.md)
-package.
+- Each key must correspond to a [service spec](../../docs/json-signing/README.md).
 
 ## Service Info Specifications
 
