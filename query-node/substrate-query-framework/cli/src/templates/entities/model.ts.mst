@@ -38,10 +38,10 @@ import { InterfaceType } from 'type-graphql';
 {{/interfaces}}
 
 {{^isInterface}}
-@Model({{#interfaces}} { api: { implements: {{className}} }} {{/interfaces}}) {{! only a single interface can be here }}
+@Model({ api: { {{#interfaces}}implements: {{className}},{{/interfaces}} {{#description}} description: `{{{description}}}`{{/description}} }}) {{! only a single interface can be here }}
 {{/isInterface}}
 {{#isInterface}}
-@InterfaceType()
+@InterfaceType({{#description}} { description: `{{{description}}}` } {{/description}})
 {{/isInterface}}
 export {{#isInterface}}abstract{{/isInterface}} class {{className}} 
   extends {{^interfaces}}BaseModel{{/interfaces}} {{#interfaces}} {{className}} {{/interfaces}} {
@@ -67,19 +67,28 @@ export {{#isInterface}}abstract{{/isInterface}} class {{className}}
   {{/is.oto}}
 
   {{#is.array}}
-    @CustomField({ db: { type: '{{dbType}}', array: true{{^required}}, nullable: true{{/required}} }, 
-        api: { type: '{{apiType}}'{{^required}}, nullable: true{{/required}} }})
+    @CustomField({
+      db: { type: '{{dbType}}', array: true,{{^required}}nullable: true,{{/required}} {{#unique}}unique: true,{{/unique}}}, 
+      api: { type: '{{apiType}}', {{^required}}nullable: true,{{/required}}
+        {{#description}}description: `{{{description}}}`{{/description}} }
+    })
     {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{tsType}}[];
   {{/is.array}}
 
   {{! TODO: add enums here }}
   {{#is.scalar}}
-    @{{decorator}}({{^required}}{ nullable: true }{{/required}})
+    @{{decorator}}({
+      {{^required}}nullable: true,{{/required}}
+      {{#description}}description: `{{{description}}}`,{{/description}}
+      {{#unique}}unique: true,{{/unique}}
+    })
     {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{tsType}};
   {{/is.scalar}}
 
   {{#is.enum}}
-    @EnumField('{{tsType}}', {{tsType}} {{^required}},{ nullable: true }{{/required}})
+    @EnumField('{{tsType}}', {{tsType}}, { 
+      {{^required}}nullable: true,{{/required}} 
+      {{#description}}description: `{{{description}}}`{{/description}} })
     {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}:{{tsType}} 
   {{/is.enum}}
 {{/fields}}
