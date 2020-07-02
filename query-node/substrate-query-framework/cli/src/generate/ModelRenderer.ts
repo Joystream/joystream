@@ -76,7 +76,7 @@ export class ModelRenderer extends AbstractRenderer {
 
   withDescription(): GeneratorContext {
     return {
-      description: this.objType.description,
+      description: this.objType.description || undefined,
     };
   }
 
