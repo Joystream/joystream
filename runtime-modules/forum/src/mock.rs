@@ -77,9 +77,15 @@ impl Trait for Runtime {
 
     fn is_forum_member(
         account_id: &<Self as system::Trait>::AccountId,
-        _forum_user_id: &Self::ForumUserId,
+        forum_user_id: &Self::ForumUserId,
     ) -> bool {
-        *account_id == FORUM_LEAD_ORIGIN_ID
+        let allowed_accounts = [
+            FORUM_LEAD_ORIGIN_ID,
+            NOT_FORUM_LEAD_ORIGIN_ID,
+            NOT_FORUM_LEAD_2_ORIGIN_ID,
+        ];
+
+        allowed_accounts.contains(account_id) && account_id == forum_user_id
     }
 
     fn is_moderator(account_id: &Self::AccountId, moderator_id: &Self::ModeratorId) -> bool {
@@ -112,6 +118,10 @@ pub const NOT_FORUM_LEAD_ORIGIN_ID: <Runtime as system::Trait>::AccountId = 111;
 
 pub const NOT_FORUM_LEAD_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_LEAD_ORIGIN_ID);
 
+pub const NOT_FORUM_LEAD_2_ORIGIN_ID: <Runtime as system::Trait>::AccountId = 112;
+
+pub const NOT_FORUM_LEAD_2_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_LEAD_2_ORIGIN_ID);
+
 pub const INVLAID_CATEGORY_ID: <Runtime as Trait>::CategoryId = 333;
 
 pub const NOT_REGISTER_MODERATOR_ID: <Runtime as Trait>::ModeratorId = 666;
@@ -130,6 +140,10 @@ pub fn good_thread_title() -> Vec<u8> {
 
 pub fn good_thread_text() -> Vec<u8> {
     b"The first post in this thread".to_vec()
+}
+
+pub fn good_thread_new_title() -> Vec<u8> {
+    b"Brand new thread title".to_vec()
 }
 
 pub fn good_post_text() -> Vec<u8> {
@@ -232,6 +246,35 @@ pub fn create_thread_mock(
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ThreadCreated(thread_id))
+        );
+    }
+    thread_id
+}
+
+pub fn edit_thread_title_mock(
+    origin: OriginType,
+    forum_user_id: <Runtime as Trait>::ForumUserId,
+    thread_id: <Runtime as Trait>::PostId,
+    new_title: Vec<u8>,
+    result: Result<(), &'static str>,
+) -> <Runtime as Trait>::PostId {
+    assert_eq!(
+        TestForumModule::edit_thread_title(
+            mock_origin(origin),
+            forum_user_id,
+            thread_id,
+            new_title.clone(),
+        ),
+        result
+    );
+    if result.is_ok() {
+        assert_eq!(
+            TestForumModule::thread_by_id(thread_id).title_hash,
+            Runtime::calculate_hash(new_title.as_slice()),
+        );
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::ThreadTitleUpdated(thread_id,))
         );
     }
     thread_id

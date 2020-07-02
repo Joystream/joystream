@@ -296,7 +296,8 @@ fn update_category_archival_status_category_exists() {
 #[test]
 // test if thread creator is valid forum user
 fn create_thread_origin() {
-    let origins = [FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
+    let origins = [NOT_FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_2_ORIGIN];
+    let forum_user_id = NOT_FORUM_LEAD_ORIGIN_ID;
     let results = vec![Ok(()), Err(ERROR_FORUM_USER_ID_NOT_MATCH_ACCOUNT)];
     for index in 0..origins.len() {
         let config = default_genesis_config();
@@ -312,7 +313,7 @@ fn create_thread_origin() {
             );
             create_thread_mock(
                 origins[index].clone(),
-                forum_lead,
+                forum_user_id,
                 category_id,
                 good_thread_title(),
                 good_thread_text(),
@@ -358,6 +359,54 @@ fn create_thread_poll_timestamp() {
             );
         });
     }
+}
+
+#[test]
+// test if author can edit thread's title
+fn edit_thread_title() {
+    let forum_users = [NOT_FORUM_LEAD_ORIGIN_ID, NOT_FORUM_LEAD_2_ORIGIN_ID];
+    let origins = [NOT_FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_2_ORIGIN];
+
+    let config = default_genesis_config();
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    build_test_externalities(config).execute_with(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        // create thread by author
+        let thread_id = create_thread_mock(
+            origins[0].clone(),
+            forum_users[0],
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        // check author can edit text
+        edit_thread_title_mock(
+            origins[0].clone(),
+            forum_users[0],
+            thread_id,
+            good_thread_new_title(),
+            Ok(()),
+        );
+
+        // check non-author is forbidden from editing text
+        edit_thread_title_mock(
+            origins[1].clone(),
+            forum_users[1],
+            thread_id,
+            good_thread_new_title(),
+            Err(ERROR_ACCOUNT_DOES_NOT_MATCH_THREAD_AUTHOR),
+        );
+    });
 }
 
 /*
@@ -548,11 +597,12 @@ fn add_post_origin() {
 }
 
 #[test]
-// test if post text can be edited by author can edit it's post thread
+// test if post text can be edited by author
 fn edit_post_text() {
     let config = default_genesis_config();
-    let author = NOT_FORUM_LEAD_ORIGIN_ID;
-    let not_author = FORUM_LEAD_ORIGIN_ID;
+    let forum_users = [NOT_FORUM_LEAD_ORIGIN_ID, NOT_FORUM_LEAD_2_ORIGIN_ID];
+    let origins = [NOT_FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_2_ORIGIN];
+
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
 
@@ -576,12 +626,18 @@ fn edit_post_text() {
         );
 
         // create post by author
-        let post_id = create_post_mock(origin.clone(), author, thread_id, good_post_text(), Ok(()));
+        let post_id = create_post_mock(
+            origins[0].clone(),
+            forum_users[0],
+            thread_id,
+            good_post_text(),
+            Ok(()),
+        );
 
         // check author can edit text
         edit_post_text_mock(
-            origin.clone(),
-            author,
+            origins[0].clone(),
+            forum_users[0],
             post_id,
             good_post_new_text(),
             Ok(()),
@@ -589,8 +645,8 @@ fn edit_post_text() {
 
         // check non-author is forbidden from editing text
         edit_post_text_mock(
-            origin.clone(),
-            not_author,
+            origins[1].clone(),
+            forum_users[1],
             post_id,
             good_post_new_text(),
             Err(ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR),
