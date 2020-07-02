@@ -323,7 +323,7 @@ fn add_opening_fails_with_invalid_zero_application_stake() {
                 ..OpeningPolicyCommitment::default()
             });
         add_opening_fixture
-            .call_and_assert(Err(Error::AddWorkerOpeningAppliicationStakeLessThanMinimum));
+            .call_and_assert(Err(Error::AddWorkerOpeningApplicationStakeCannotBeZero));
     });
 }
 

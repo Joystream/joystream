@@ -6,7 +6,6 @@ use rstd::vec::Vec;
 use codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use srml_support::ensure;
 
 use crate::hiring;
 use crate::hiring::*;
@@ -147,48 +146,6 @@ where
         } else {
             panic!("stage MUST be active")
         }
-    }
-
-    /// Performs all necessary check before adding an opening
-    pub(crate) fn ensure_can_add_opening(
-        current_block_height: BlockNumber,
-        activate_at: ActivateOpeningAt<BlockNumber>,
-        minimum_stake_balance: Balance,
-        application_rationing_policy: Option<ApplicationRationingPolicy>,
-        application_staking_policy: Option<StakingPolicy<Balance, BlockNumber>>,
-        role_staking_policy: Option<StakingPolicy<Balance, BlockNumber>>,
-    ) -> Result<(), AddOpeningError> {
-        // Check that exact activation is actually in the future
-        ensure!(
-            match activate_at {
-                ActivateOpeningAt::ExactBlock(block_number) => block_number > current_block_height,
-                _ => true,
-            },
-            AddOpeningError::OpeningMustActivateInTheFuture
-        );
-
-        if let Some(app_rationing_policy) = application_rationing_policy {
-            ensure!(
-                app_rationing_policy.max_active_applicants > 0,
-                AddOpeningError::ApplicationRationingZeroMaxApplicants
-            );
-        }
-
-        // Check that staking amounts clear minimum balance required.
-        StakingPolicy::ensure_amount_valid_in_opt_staking_policy(
-            application_staking_policy,
-            minimum_stake_balance.clone(),
-            AddOpeningError::StakeAmountLessThanMinimumStakeBalance(StakePurpose::Application),
-        )?;
-
-        // Check that staking amounts clear minimum balance required.
-        StakingPolicy::ensure_amount_valid_in_opt_staking_policy(
-            role_staking_policy,
-            minimum_stake_balance,
-            AddOpeningError::StakeAmountLessThanMinimumStakeBalance(StakePurpose::Role),
-        )?;
-
-        Ok(())
     }
 }
 

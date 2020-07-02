@@ -4694,7 +4694,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-content-working-group-module"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "parity-scale-codec",
  "serde",
@@ -4857,7 +4857,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-hiring-module"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "hex-literal 0.1.4",
  "mockall",
@@ -5567,7 +5567,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-working-group-module"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "parity-scale-codec",
  "serde",

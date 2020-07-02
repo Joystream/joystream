@@ -502,16 +502,11 @@ impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
     }
 }
 
-parameter_types! {
-    pub const MinimumStakeBalance: Balance = 1; // just non-zero
-}
-
 impl hiring::Trait for Runtime {
     type OpeningId = u64;
     type ApplicationId = u64;
     type ApplicationDeactivatedHandler = (); // TODO - what needs to happen?
     type StakeHandlerProvider = hiring::Module<Self>;
-    type MinimumStakeBalance = MinimumStakeBalance;
 }
 
 impl minting::Trait for Runtime {

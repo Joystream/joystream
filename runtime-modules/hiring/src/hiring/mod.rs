@@ -154,4 +154,7 @@ pub enum AddOpeningError {
     /// It is not possible to provide application rationing policy with zero
     /// 'max_active_applicants' parameter.
     ApplicationRationingZeroMaxApplicants,
+
+    /// It is not possible to stake zero.
+    StakeAmountCannotBeZero(StakePurpose),
 }

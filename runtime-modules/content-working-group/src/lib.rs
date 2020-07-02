@@ -239,6 +239,10 @@ pub static MSG_ORIGIN_IS_NIETHER_MEMBER_CONTROLLER_OR_ROOT: &str =
     "Origin must be controller or root account of member";
 pub static MSG_MEMBER_HAS_ACTIVE_APPLICATION_ON_OPENING: &str =
     "Member already has an active application on the opening";
+pub static MSG_ADD_CURATOR_OPENING_ROLE_STAKE_CANNOT_BE_ZERO: &str =
+    "Add curator opening role stake cannot be zero";
+pub static MSG_ADD_CURATOR_OPENING_APPLICATION_STAKE_CANNOT_BE_ZERO: &str =
+    "Add curator opening application stake cannot be zero";
 
 /// The exit stage of a lead involvement in the working group.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -849,6 +853,12 @@ impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for &str {
             hiring::AddOpeningError::ApplicationRationingZeroMaxApplicants => {
                 MSG_ADD_CURATOR_OPENING_ZERO_MAX_APPLICANT_COUNT
             }
+            hiring::AddOpeningError::StakeAmountCannotBeZero(purpose) => match purpose {
+                hiring::StakePurpose::Role => MSG_ADD_CURATOR_OPENING_ROLE_STAKE_CANNOT_BE_ZERO,
+                hiring::StakePurpose::Application => {
+                    MSG_ADD_CURATOR_OPENING_APPLICATION_STAKE_CANNOT_BE_ZERO
+                }
+            },
         }
     }
 }

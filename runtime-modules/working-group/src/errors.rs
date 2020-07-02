@@ -247,6 +247,12 @@ decl_error! {
 
         /// Working group size limit exceeded.
         MaxActiveWorkerNumberExceeded,
+
+        /// Add worker opening role stake cannot be zero.
+        AddWorkerOpeningRoleStakeCannotBeZero,
+
+        /// Add worker opening application stake cannot be zero.
+        AddWorkerOpeningApplicationStakeCannotBeZero,
     }
 }
 
@@ -305,6 +311,12 @@ impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for Error {
             hiring::AddOpeningError::ApplicationRationingZeroMaxApplicants => {
                 Error::AddWorkerOpeningZeroMaxApplicantCount
             }
+            hiring::AddOpeningError::StakeAmountCannotBeZero(purpose) => match purpose {
+                hiring::StakePurpose::Role => Error::AddWorkerOpeningRoleStakeCannotBeZero,
+                hiring::StakePurpose::Application => {
+                    Error::AddWorkerOpeningApplicationStakeCannotBeZero
+                }
+            },
         }
     }
 }
