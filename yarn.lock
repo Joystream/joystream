@@ -1737,7 +1737,7 @@
     "@types/istanbul-reports" "^1.1.1"
     "@types/yargs" "^13.0.0"
 
-"@joystream/types@./types", "@nicaea/types@./types":
+"@joystream/types@./types":
   version "0.11.0"
   dependencies:
     "@polkadot/keyring" "^1.7.0-beta.5"
@@ -1746,6 +1746,7 @@
     "@types/vfile" "^4.0.0"
     ajv "^6.11.0"
     lodash "^4.17.15"
+    moment "^2.24.0"
 
 "@ledgerhq/devices@^4.78.0":
   version "4.78.0"
@@ -2491,6 +2492,17 @@
   dependencies:
     call-me-maybe "^1.0.1"
     glob-to-regexp "^0.3.0"
+
+"@nicaea/types@link:types":
+  version "0.11.0"
+  dependencies:
+    "@polkadot/keyring" "^1.7.0-beta.5"
+    "@polkadot/types" "^0.96.1"
+    "@types/lodash" "^4.14.157"
+    "@types/vfile" "^4.0.0"
+    ajv "^6.11.0"
+    lodash "^4.17.15"
+    moment "^2.24.0"
 
 "@nodelib/fs.scandir@2.1.3":
   version "2.1.3"
@@ -22388,15 +22400,10 @@ typescript-formatter@^7.2.2:
     commandpost "^1.0.0"
     editorconfig "^0.15.0"
 
-typescript@3.7.2, typescript@3.7.x, typescript@^3.0.3, typescript@^3.6.4, typescript@^3.7.2:
+typescript@3.7.2, typescript@3.7.x, typescript@^3.0.3, typescript@^3.6.4, typescript@^3.7.2, typescript@^3.8.3:
   version "3.7.2"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.7.2.tgz#27e489b95fa5909445e9fef5ee48d81697ad18fb"
   integrity sha512-ml7V7JfiN2Xwvcer+XAf2csGO1bPBdRbFCkYBczNZggrBZ9c7G3riSUeJmqEU5uOtXNPMhE3n+R4FA/3YOAWOQ==
-
-typescript@^3.8.3:
-  version "3.9.5"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.9.5.tgz#586f0dba300cde8be52dd1ac4f7e1009c1b13f36"
-  integrity sha512-hSAifV3k+i6lEoCJ2k6R2Z/rp/H3+8sdmcn5NrS3/3kE7+RyZXm9aqvxWqjEXHAd8b0pShatpcdMTvEdvAJltQ==
 
 u2f-api@0.2.7:
   version "0.2.7"

@@ -17,6 +17,11 @@ import { Utils } from './utils';
 import { Stake, StakedState } from '@nicaea/types/stake';
 import { RewardRelationship } from '@nicaea/types/recurring-rewards';
 import { Opening as HiringOpening, ApplicationId } from '@nicaea/types/hiring';
+import { WorkingGroupOpening } from '../dto/workingGroupOpening';
+
+export enum WorkingGroups {
+  storageWorkingGroup = 'storageWorkingGroup',
+}
 
 export class ApiWrapper {
   private readonly api: ApiPromise;
@@ -221,52 +226,24 @@ export class ApiWrapper {
     return this.estimateTxFee(this.api.tx.proposalsEngine.vote(0, 0, 'Approve'));
   }
 
-  public estimateAddOpeningFee(): BN {
+  public estimateAddOpeningFee(opening: WorkingGroupOpening, module: WorkingGroups): BN {
     return this.estimateTxFee(
-      this.api.tx.storageWorkingGroup.addOpening(
-        'CurrentBlock',
-        {
-          application_rationing_policy: { max_active_applicants: '32' },
-          max_review_period_length: 32,
-          application_staking_policy: {
-            amount: 0,
-            amount_mode: 'AtLeast',
-            crowded_out_unstaking_period_length: 0,
-            review_period_expired_unstaking_period_length: 0,
-          },
-          role_staking_policy: {
-            amount: 0,
-            amount_mode: 'AtLeast',
-            crowded_out_unstaking_period_length: 0,
-            review_period_expired_unstaking_period_length: 0,
-          },
-          role_slashing_terms: {
-            Slashable: {
-              max_count: 0,
-              max_percent_pts_per_time: 0,
-            },
-          },
-          fill_opening_successful_applicant_application_stake_unstaking_period: 0,
-          fill_opening_failed_applicant_application_stake_unstaking_period: 0,
-          fill_opening_failed_applicant_role_stake_unstaking_period: 0,
-          terminate_curator_application_stake_unstaking_period: 0,
-          terminate_curator_role_stake_unstaking_period: 0,
-          exit_curator_role_application_stake_unstaking_period: 0,
-          exit_curator_role_stake_unstaking_period: 0,
-        },
-        'Opening readable text',
-        'Worker'
+      this.api.tx[module].addOpening(
+        opening.getActivateAt(),
+        opening.getCommitment(),
+        opening.getText(),
+        opening.getOpeningType()
       )
     );
   }
 
-  public estimateAcceptApplicationsFee(): BN {
-    return this.estimateTxFee(this.api.tx.storageWorkingGroup.acceptApplications(0));
+  public estimateAcceptApplicationsFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].acceptApplications(0));
   }
 
-  public estimateApplyOnOpeningFee(account: KeyringPair): BN {
+  public estimateApplyOnOpeningFee(account: KeyringPair, module: WorkingGroups): BN {
     return this.estimateTxFee(
-      this.api.tx.storageWorkingGroup.applyOnOpening(
+      this.api.tx[module].applyOnOpening(
         0,
         0,
         account.address,
@@ -277,13 +254,13 @@ export class ApiWrapper {
     );
   }
 
-  public estimateBeginApplicantReviewFee(): BN {
-    return this.estimateTxFee(this.api.tx.storageWorkingGroup.beginApplicantReview(0));
+  public estimateBeginApplicantReviewFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].beginApplicantReview(0));
   }
 
-  public estimateFillOpeningFee(): BN {
+  public estimateFillOpeningFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      this.api.tx.storageWorkingGroup.fillOpening(0, [0], {
+      this.api.tx[module].fillOpening(0, [0], {
         amount_per_payout: 0,
         next_payment_at_block: 0,
         payout_interval: 0,
@@ -291,41 +268,41 @@ export class ApiWrapper {
     );
   }
 
-  public estimateIncreaseStakeFee(): BN {
-    return this.estimateTxFee(this.api.tx.storageWorkingGroup.increaseStake(0, 0));
+  public estimateIncreaseStakeFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].increaseStake(0, 0));
   }
 
-  public estimateDecreaseStakeFee(): BN {
-    return this.estimateTxFee(this.api.tx.storageWorkingGroup.decreaseStake(0, 0));
+  public estimateDecreaseStakeFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].decreaseStake(0, 0));
   }
 
-  public estimateUpdateRoleAccountFee(address: string): BN {
-    return this.estimateTxFee(this.api.tx.storageWorkingGroup.updateRoleAccount(0, address));
+  public estimateUpdateRoleAccountFee(address: string, module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].updateRoleAccount(0, address));
   }
 
-  public estimateUpdateRewardAccountFee(address: string): BN {
-    return this.estimateTxFee(this.api.tx.storageWorkingGroup.updateRewardAccount(0, address));
+  public estimateUpdateRewardAccountFee(address: string, module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].updateRewardAccount(0, address));
   }
 
-  public estimateLeaveRoleFee(): BN {
-    return this.estimateTxFee(this.api.tx.storageWorkingGroup.leaveRole(0, 'Long justification text'));
+  public estimateLeaveRoleFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].leaveRole(0, 'Long justification text'));
   }
 
-  public estimateWithdrawApplicationFee(): BN {
-    return this.estimateTxFee(this.api.tx.storageWorkingGroup.withdrawApplication(0));
+  public estimateWithdrawApplicationFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].withdrawApplication(0));
   }
 
-  public estimateTerminateApplicationFee(): BN {
-    return this.estimateTxFee(this.api.tx.storageWorkingGroup.terminateApplication(0));
+  public estimateTerminateApplicationFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].terminateApplication(0));
   }
 
-  public estimateSlashStakeFee(): BN {
-    return this.estimateTxFee(this.api.tx.storageWorkingGroup.slashStake(0, 0));
+  public estimateSlashStakeFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].slashStake(0, 0));
   }
 
-  public estimateTerminateRoleFee(): BN {
+  public estimateTerminateRoleFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      this.api.tx.storageWorkingGroup.terminateRole(
+      this.api.tx[module].terminateRole(
         0,
         'Long justification text explaining why the worker role will be terminated',
         false
@@ -417,12 +394,8 @@ export class ApiWrapper {
     );
   }
 
-  public sudoSetWorkingGroupMintCapacity(sudo: KeyringPair, capacity: BN): Promise<void> {
-    return this.sender.signAndSend(
-      this.api.tx.sudo.sudo(this.api.tx.storageWorkingGroup.setMintCapacity(capacity)),
-      sudo,
-      false
-    );
+  public sudoSetWorkingGroupMintCapacity(sudo: KeyringPair, capacity: BN, module: WorkingGroups): Promise<void> {
+    return this.sender.signAndSend(this.api.tx.sudo.sudo(this.api.tx[module].setMintCapacity(capacity)), sudo, false);
   }
 
   public getBestBlock(): Promise<BN> {
@@ -764,153 +737,45 @@ export class ApiWrapper {
     const storageProviders: Vec<AccountId> = await this.api.query.actors.accountIdsByRole<Vec<AccountId>>(
       'StorageProvider'
     );
-    return storageProviders.map(accountId => accountId.toString()).includes(address);
+    const accountWorkers: BN = await this.getWorkerIdByRoleAccount(address, WorkingGroups.storageWorkingGroup);
+    return accountWorkers !== undefined;
   }
 
-  public async sudoSetLead(sudo: KeyringPair, lead: KeyringPair): Promise<void> {
-    const leadMemberId: BN = (await this.getMemberIds(lead.address))[0].toBn();
-    return this.sender.signAndSend(
-      this.api.tx.sudo.sudo(this.api.tx.storageWorkingGroup.setLead(leadMemberId, lead.address)),
+  public async addOpening(leader: KeyringPair, opening: WorkingGroupOpening, module: WorkingGroups): Promise<void> {
+    await this.sender.signAndSend(this.createAddOpeningTransaction(opening, module), leader, false);
+  }
+
+  public async sudoAddOpening(sudo: KeyringPair, opening: WorkingGroupOpening, module: WorkingGroups): Promise<void> {
+    await this.sender.signAndSend(
+      this.api.tx.sudo.sudo(this.createAddOpeningTransaction(opening, module)),
       sudo,
       false
     );
   }
 
-  public async sudoUnsetLead(sudo: KeyringPair): Promise<void> {
-    return this.sender.signAndSend(this.api.tx.sudo.sudo(this.api.tx.storageWorkingGroup.unsetLead()), sudo, false);
-  }
-
-  public async addOpening(
-    activateAtBlock: BN | undefined,
-    account: KeyringPair,
-    maxActiveApplicants: BN,
-    maxReviewPeriodLength: BN,
-    applicationStakingPolicyAmount: BN,
-    applicationCrowdedOutUnstakingPeriodLength: BN,
-    applicationExpiredUnstakingPeriodLength: BN,
-    roleStakingPolicyAmount: BN,
-    roleCrowdedOutUnstakingPeriodLength: BN,
-    roleExpiredUnstakingPeriodLength: BN,
-    slashableMaxCount: BN,
-    slashableMaxPercentPtsPerTime: BN,
-    successfulApplicantApplicationStakeUnstakingPeriod: BN,
-    failedApplicantApplicationStakeUnstakingPeriod: BN,
-    failedApplicantRoleStakeUnstakingPeriod: BN,
-    terminateCuratorApplicationStakeUnstakingPeriod: BN,
-    terminateCuratorRoleStakeUnstakingPeriod: BN,
-    exitCuratorRoleApplicationStakeUnstakingPeriod: BN,
-    exitCuratorRoleStakeUnstakingPeriod: BN,
-    text: string,
-    openingType: string
-  ): Promise<void> {
-    const activateAt = activateAtBlock == undefined ? 'CurrentBlock' : { ExactBlock: activateAtBlock };
-    const commitment = {
-      application_rationing_policy: { max_active_applicants: maxActiveApplicants },
-      max_review_period_length: maxReviewPeriodLength,
-      application_staking_policy: {
-        amount: applicationStakingPolicyAmount,
-        amount_mode: 'AtLeast',
-        crowded_out_unstaking_period_length: applicationCrowdedOutUnstakingPeriodLength,
-        review_period_expired_unstaking_period_length: applicationExpiredUnstakingPeriodLength,
-      },
-      role_staking_policy: {
-        amount: roleStakingPolicyAmount,
-        amount_mode: 'AtLeast',
-        crowded_out_unstaking_period_length: roleCrowdedOutUnstakingPeriodLength,
-        review_period_expired_unstaking_period_length: roleExpiredUnstakingPeriodLength,
-      },
-      role_slashing_terms: {
-        Slashable: {
-          max_count: slashableMaxCount,
-          max_percent_pts_per_time: slashableMaxPercentPtsPerTime,
-        },
-      },
-      fill_opening_successful_applicant_application_stake_unstaking_period: successfulApplicantApplicationStakeUnstakingPeriod,
-      fill_opening_failed_applicant_application_stake_unstaking_period: failedApplicantApplicationStakeUnstakingPeriod,
-      fill_opening_failed_applicant_role_stake_unstaking_period: failedApplicantRoleStakeUnstakingPeriod,
-      terminate_curator_application_stake_unstaking_period: terminateCuratorApplicationStakeUnstakingPeriod,
-      terminate_curator_role_stake_unstaking_period: terminateCuratorRoleStakeUnstakingPeriod,
-      exit_curator_role_application_stake_unstaking_period: exitCuratorRoleApplicationStakeUnstakingPeriod,
-      exit_curator_role_stake_unstaking_period: exitCuratorRoleStakeUnstakingPeriod,
-    };
-    await this.sender.signAndSend(
-      this.api.tx.storageWorkingGroup.addOpening(activateAt, commitment, text, openingType),
-      account,
-      false
+  private createAddOpeningTransaction(
+    opening: WorkingGroupOpening,
+    module: WorkingGroups
+  ): SubmittableExtrinsic<'promise'> {
+    return this.api.tx[module].addOpening(
+      opening.getActivateAt(),
+      opening.getCommitment(),
+      opening.getText(),
+      opening.getOpeningType()
     );
   }
 
-  public async sudoAddOpening(
-    activateAtBlock: BN | undefined,
-    sudo: KeyringPair,
-    maxActiveApplicants: BN,
-    maxReviewPeriodLength: BN,
-    applicationStakingPolicyAmount: BN,
-    applicationCrowdedOutUnstakingPeriodLength: BN,
-    applicationExpiredUnstakingPeriodLength: BN,
-    roleStakingPolicyAmount: BN,
-    roleCrowdedOutUnstakingPeriodLength: BN,
-    roleExpiredUnstakingPeriodLength: BN,
-    slashableMaxCount: BN,
-    slashableMaxPercentPtsPerTime: BN,
-    successfulApplicantApplicationStakeUnstakingPeriod: BN,
-    failedApplicantApplicationStakeUnstakingPeriod: BN,
-    failedApplicantRoleStakeUnstakingPeriod: BN,
-    terminateCuratorApplicationStakeUnstakingPeriod: BN,
-    terminateCuratorRoleStakeUnstakingPeriod: BN,
-    exitCuratorRoleApplicationStakeUnstakingPeriod: BN,
-    exitCuratorRoleStakeUnstakingPeriod: BN,
-    text: string,
-    openingType: string
-  ): Promise<void> {
-    const activateAt = activateAtBlock == undefined ? 'CurrentBlock' : { ExactBlock: activateAtBlock };
-    const commitment = {
-      application_rationing_policy: { max_active_applicants: maxActiveApplicants },
-      max_review_period_length: maxReviewPeriodLength,
-      application_staking_policy: {
-        amount: applicationStakingPolicyAmount,
-        amount_mode: 'AtLeast',
-        crowded_out_unstaking_period_length: applicationCrowdedOutUnstakingPeriodLength,
-        review_period_expired_unstaking_period_length: applicationExpiredUnstakingPeriodLength,
-      },
-      role_staking_policy: {
-        amount: roleStakingPolicyAmount,
-        amount_mode: 'AtLeast',
-        crowded_out_unstaking_period_length: roleCrowdedOutUnstakingPeriodLength,
-        review_period_expired_unstaking_period_length: roleExpiredUnstakingPeriodLength,
-      },
-      role_slashing_terms: {
-        Slashable: {
-          max_count: slashableMaxCount,
-          max_percent_pts_per_time: slashableMaxPercentPtsPerTime,
-        },
-      },
-      fill_opening_successful_applicant_application_stake_unstaking_period: successfulApplicantApplicationStakeUnstakingPeriod,
-      fill_opening_failed_applicant_application_stake_unstaking_period: failedApplicantApplicationStakeUnstakingPeriod,
-      fill_opening_failed_applicant_role_stake_unstaking_period: failedApplicantRoleStakeUnstakingPeriod,
-      terminate_curator_application_stake_unstaking_period: terminateCuratorApplicationStakeUnstakingPeriod,
-      terminate_curator_role_stake_unstaking_period: terminateCuratorRoleStakeUnstakingPeriod,
-      exit_curator_role_application_stake_unstaking_period: exitCuratorRoleApplicationStakeUnstakingPeriod,
-      exit_curator_role_stake_unstaking_period: exitCuratorRoleStakeUnstakingPeriod,
-    };
-    await this.sender.signAndSend(
-      this.api.tx.sudo.sudo(this.api.tx.storageWorkingGroup.addOpening(activateAt, commitment, text, openingType)),
-      sudo,
-      false
-    );
+  public async acceptApplications(leader: KeyringPair, openingId: BN, module: WorkingGroups): Promise<void> {
+    return this.sender.signAndSend(this.api.tx[module].acceptApplications(openingId), leader, false);
   }
 
-  public async acceptApplications(account: KeyringPair, openingId: BN): Promise<void> {
-    return this.sender.signAndSend(this.api.tx.storageWorkingGroup.acceptApplications(openingId), account, false);
+  public async beginApplicantReview(leader: KeyringPair, openingId: BN, module: WorkingGroups): Promise<void> {
+    return this.sender.signAndSend(this.api.tx[module].beginApplicantReview(openingId), leader, false);
   }
 
-  public async beginApplicantReview(account: KeyringPair, openingId: BN): Promise<void> {
-    return this.sender.signAndSend(this.api.tx.storageWorkingGroup.beginApplicantReview(openingId), account, false);
-  }
-
-  public async sudoBeginApplicantReview(sudo: KeyringPair, openingId: BN): Promise<void> {
+  public async sudoBeginApplicantReview(sudo: KeyringPair, openingId: BN, module: WorkingGroups): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx.sudo.sudo(this.api.tx.storageWorkingGroup.beginApplicantReview(openingId)),
+      this.api.tx.sudo.sudo(this.api.tx[module].beginApplicantReview(openingId)),
       sudo,
       false
     );
@@ -918,22 +783,17 @@ export class ApiWrapper {
 
   public async applyOnOpening(
     account: KeyringPair,
+    roleAccountAddress: string,
     openingId: BN,
     roleStake: BN,
     applicantStake: BN,
     text: string,
-    expectFailure: boolean
+    expectFailure: boolean,
+    module: WorkingGroups
   ): Promise<void> {
     const memberId: BN = (await this.getMemberIds(account.address))[0];
     return this.sender.signAndSend(
-      this.api.tx.storageWorkingGroup.applyOnOpening(
-        memberId,
-        openingId,
-        account.address,
-        roleStake,
-        applicantStake,
-        text
-      ),
+      this.api.tx[module].applyOnOpening(memberId, openingId, roleAccountAddress, roleStake, applicantStake, text),
       account,
       expectFailure
     );
@@ -945,30 +805,41 @@ export class ApiWrapper {
     roleStake: BN,
     applicantStake: BN,
     text: string,
+    module: WorkingGroups,
     expectFailure: boolean
   ): Promise<void[]> {
     return Promise.all(
       accounts.map(async keyPair => {
-        await this.applyOnOpening(keyPair, openingId, roleStake, applicantStake, text, expectFailure);
+        await this.applyOnOpening(
+          keyPair,
+          keyPair.address,
+          openingId,
+          roleStake,
+          applicantStake,
+          text,
+          expectFailure,
+          module
+        );
       })
     );
   }
 
   public async fillOpening(
-    account: KeyringPair,
+    leader: KeyringPair,
     openingId: BN,
     applicationId: BN[],
     amountPerPayout: BN,
     nextPaymentBlock: BN,
-    payoutInterval: BN
+    payoutInterval: BN,
+    module: WorkingGroups
   ): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx.storageWorkingGroup.fillOpening(openingId, applicationId, {
+      this.api.tx[module].fillOpening(openingId, applicationId, {
         amount_per_payout: amountPerPayout,
         next_payment_at_block: nextPaymentBlock,
         payout_interval: payoutInterval,
       }),
-      account,
+      leader,
       false
     );
   }
@@ -979,11 +850,12 @@ export class ApiWrapper {
     applicationId: BN[],
     amountPerPayout: BN,
     nextPaymentBlock: BN,
-    payoutInterval: BN
+    payoutInterval: BN,
+    module: WorkingGroups
   ): Promise<void> {
     return this.sender.signAndSend(
       this.api.tx.sudo.sudo(
-        this.api.tx.storageWorkingGroup.fillOpening(openingId, applicationId, {
+        this.api.tx[module].fillOpening(openingId, applicationId, {
           amount_per_payout: amountPerPayout,
           next_payment_at_block: nextPaymentBlock,
           payout_interval: payoutInterval,
@@ -994,86 +866,111 @@ export class ApiWrapper {
     );
   }
 
-  public async increaseStake(account: KeyringPair, workerId: BN, stake: BN): Promise<void> {
-    return this.sender.signAndSend(this.api.tx.storageWorkingGroup.increaseStake(workerId, stake), account, false);
+  public async increaseStake(worker: KeyringPair, workerId: BN, stake: BN, module: WorkingGroups): Promise<void> {
+    return this.sender.signAndSend(this.api.tx[module].increaseStake(workerId, stake), worker, false);
   }
 
-  public async decreaseStake(account: KeyringPair, workerId: BN, stake: BN, expectFailure: boolean): Promise<void> {
-    return this.sender.signAndSend(
-      this.api.tx.storageWorkingGroup.decreaseStake(workerId, stake),
-      account,
-      expectFailure
-    );
+  public async decreaseStake(
+    leader: KeyringPair,
+    workerId: BN,
+    stake: BN,
+    module: WorkingGroups,
+    expectFailure: boolean
+  ): Promise<void> {
+    return this.sender.signAndSend(this.api.tx[module].decreaseStake(workerId, stake), leader, expectFailure);
   }
 
-  public async slashStake(account: KeyringPair, workerId: BN, stake: BN, expectFailure: boolean): Promise<void> {
-    return this.sender.signAndSend(this.api.tx.storageWorkingGroup.slashStake(workerId, stake), account, expectFailure);
+  public async slashStake(
+    leader: KeyringPair,
+    workerId: BN,
+    stake: BN,
+    module: WorkingGroups,
+    expectFailure: boolean
+  ): Promise<void> {
+    return this.sender.signAndSend(this.api.tx[module].slashStake(workerId, stake), leader, expectFailure);
   }
 
-  public async updateRoleAccount(account: KeyringPair, workerId: BN, newRoleAccount: string): Promise<void> {
-    return this.sender.signAndSend(
-      this.api.tx.storageWorkingGroup.updateRoleAccount(workerId, newRoleAccount),
-      account,
-      false
-    );
+  public async updateRoleAccount(
+    worker: KeyringPair,
+    workerId: BN,
+    newRoleAccount: string,
+    module: WorkingGroups
+  ): Promise<void> {
+    return this.sender.signAndSend(this.api.tx[module].updateRoleAccount(workerId, newRoleAccount), worker, false);
   }
 
-  public async updateRewardAccount(account: KeyringPair, workerId: BN, newRewardAccount: string): Promise<void> {
-    return this.sender.signAndSend(
-      this.api.tx.storageWorkingGroup.updateRewardAccount(workerId, newRewardAccount),
-      account,
-      false
-    );
+  public async updateRewardAccount(
+    worker: KeyringPair,
+    workerId: BN,
+    newRewardAccount: string,
+    module: WorkingGroups
+  ): Promise<void> {
+    return this.sender.signAndSend(this.api.tx[module].updateRewardAccount(workerId, newRewardAccount), worker, false);
   }
 
-  public async withdrawApplication(account: KeyringPair, workerId: BN): Promise<void> {
-    return this.sender.signAndSend(this.api.tx.storageWorkingGroup.withdrawApplication(workerId), account, false);
+  public async withdrawApplication(account: KeyringPair, workerId: BN, module: WorkingGroups): Promise<void> {
+    return this.sender.signAndSend(this.api.tx[module].withdrawApplication(workerId), account, false);
   }
 
-  public async batchWithdrawApplication(accounts: KeyringPair[]): Promise<void[]> {
+  public async batchWithdrawApplication(accounts: KeyringPair[], module: WorkingGroups): Promise<void[]> {
     return Promise.all(
       accounts.map(async keyPair => {
-        const applicationIds: BN[] = await this.getApplicationsIdsByRoleAccount(keyPair.address);
-        await this.withdrawApplication(keyPair, applicationIds[0]);
+        const applicationIds: BN[] = await this.getApplicationsIdsByRoleAccount(keyPair.address, module);
+        await this.withdrawApplication(keyPair, applicationIds[0], module);
       })
     );
   }
 
-  public async terminateApplication(account: KeyringPair, applicationId: BN): Promise<void> {
-    return this.sender.signAndSend(this.api.tx.storageWorkingGroup.terminateApplication(applicationId), account, false);
+  public async terminateApplication(leader: KeyringPair, applicationId: BN, module: WorkingGroups): Promise<void> {
+    return this.sender.signAndSend(this.api.tx[module].terminateApplication(applicationId), leader, false);
   }
 
-  public async batchTerminateApplication(account: KeyringPair, roleAccounts: KeyringPair[]): Promise<void[]> {
+  public async batchTerminateApplication(
+    leader: KeyringPair,
+    roleAccounts: KeyringPair[],
+    module: WorkingGroups
+  ): Promise<void[]> {
     return Promise.all(
       roleAccounts.map(async keyPair => {
-        const applicationIds: BN[] = await this.getActiveApplicationsIdsByRoleAccount(keyPair.address);
-        await this.terminateApplication(account, applicationIds[0]);
+        const applicationIds: BN[] = await this.getActiveApplicationsIdsByRoleAccount(keyPair.address, module);
+        await this.terminateApplication(leader, applicationIds[0], module);
       })
     );
   }
 
   public async terminateRole(
-    account: KeyringPair,
+    leader: KeyringPair,
     applicationId: BN,
     text: string,
+    module: WorkingGroups,
     expectFailure: boolean
   ): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx.storageWorkingGroup.terminateRole(applicationId, text, false),
-      account,
+      this.api.tx[module].terminateRole(applicationId, text, false),
+      leader,
       expectFailure
     );
   }
 
-  public async leaveRole(account: KeyringPair, text: string, expectFailure: boolean): Promise<void> {
-    const workerId: BN = await this.getWorkerIdByRoleAccount(account.address);
-    return this.sender.signAndSend(this.api.tx.storageWorkingGroup.leaveRole(workerId, text), account, expectFailure);
+  public async leaveRole(
+    account: KeyringPair,
+    text: string,
+    expectFailure: boolean,
+    module: WorkingGroups
+  ): Promise<void> {
+    const workerId: BN = await this.getWorkerIdByRoleAccount(account.address, module);
+    return this.sender.signAndSend(this.api.tx[module].leaveRole(workerId, text), account, expectFailure);
   }
 
-  public async batchLeaveRole(roleAccounts: KeyringPair[], text: string, expectFailure: boolean): Promise<void[]> {
+  public async batchLeaveRole(
+    roleAccounts: KeyringPair[],
+    text: string,
+    expectFailure: boolean,
+    module: WorkingGroups
+  ): Promise<void[]> {
     return Promise.all(
       roleAccounts.map(async keyPair => {
-        await this.leaveRole(keyPair, text, expectFailure);
+        await this.leaveRole(keyPair, text, expectFailure, module);
       })
     );
   }
@@ -1114,60 +1011,57 @@ export class ApiWrapper {
     return this.api.query.councilElection.minVotingStake<BalanceOf>();
   }
 
-  public async getNextOpeningId(): Promise<BN> {
-    return this.api.query.storageWorkingGroup.nextOpeningId<u32>();
+  public async getNextOpeningId(module: WorkingGroups): Promise<BN> {
+    return this.api.query[module].nextOpeningId<u32>();
   }
 
-  public async getNextApplicationId(): Promise<BN> {
-    return this.api.query.storageWorkingGroup.nextApplicationId<u32>();
+  public async getNextApplicationId(module: WorkingGroups): Promise<BN> {
+    return this.api.query[module].nextApplicationId<u32>();
   }
 
-  public async getOpening(id: BN): Promise<Opening> {
-    return ((await this.api.query.storageWorkingGroup.openingById<Codec[]>(id))[0] as unknown) as Opening;
+  public async getOpening(id: BN, module: WorkingGroups): Promise<Opening> {
+    return ((await this.api.query[module].openingById<Codec[]>(id))[0] as unknown) as Opening;
   }
 
   public async getHiringOpening(id: BN): Promise<HiringOpening> {
     return ((await this.api.query.hiring.openingById<Codec[]>(id))[0] as unknown) as HiringOpening;
   }
 
-  public async getWorkers(): Promise<Worker[]> {
-    return ((await this.api.query.storageWorkingGroup.workerById<Codec[]>())[1] as unknown) as Worker[];
+  public async getWorkers(module: WorkingGroups): Promise<Worker[]> {
+    return ((await this.api.query[module].workerById<Codec[]>())[1] as unknown) as Worker[];
   }
 
-  public async getWorkerById(id: BN): Promise<Worker> {
-    return ((await this.api.query.storageWorkingGroup.workerById<Codec[]>(id))[0] as unknown) as Worker;
+  public async getWorkerById(id: BN, module: WorkingGroups): Promise<Worker> {
+    return ((await this.api.query[module].workerById<Codec[]>(id))[0] as unknown) as Worker;
   }
 
-  public async getWorkerIdByRoleAccount(address: string): Promise<BN> {
-    const workersAndIds = await this.api.query.storageWorkingGroup.workerById<Codec[]>();
+  public async getWorkerIdByRoleAccount(address: string, module: WorkingGroups): Promise<BN> {
+    const workersAndIds = await this.api.query[module].workerById<Codec[]>();
     const workers: Worker[] = (workersAndIds[1] as unknown) as Worker[];
     const ids: WorkerId[] = (workersAndIds[0] as unknown) as WorkerId[];
-    let index: number;
-    workers.forEach((worker, i) => {
-      if (worker.role_account_id.toString() === address) index = i;
-    });
-    return ids[index!];
+    const index: number = workers.findIndex(worker => worker.role_account_id.toString() === address);
+    return ids[index];
   }
 
-  public async getApplicationsIdsByRoleAccount(address: string): Promise<BN[]> {
-    const applicationsAndIds = await this.api.query.storageWorkingGroup.applicationById<Codec[]>();
+  public async getApplicationsIdsByRoleAccount(address: string, module: WorkingGroups): Promise<BN[]> {
+    const applicationsAndIds = await this.api.query[module].applicationById<Codec[]>();
     const applications: Application[] = (applicationsAndIds[1] as unknown) as Application[];
     const ids: ApplicationId[] = (applicationsAndIds[0] as unknown) as ApplicationId[];
     return applications
       .map((application, index) => (application.role_account_id.toString() === address ? ids[index] : undefined))
-      .filter(index => index !== undefined) as BN[];
+      .filter(id => id !== undefined) as BN[];
   }
 
   public async getHiringApplicationById(id: BN): Promise<HiringApplication> {
     return ((await this.api.query.hiring.applicationById<Codec[]>(id))[0] as unknown) as HiringApplication;
   }
 
-  public async getApplicationById(id: BN): Promise<Application> {
-    return ((await this.api.query.storageWorkingGroup.applicationById<Codec[]>(id))[0] as unknown) as Application;
+  public async getApplicationById(id: BN, module: WorkingGroups): Promise<Application> {
+    return ((await this.api.query[module].applicationById<Codec[]>(id))[0] as unknown) as Application;
   }
 
-  public async getActiveApplicationsIdsByRoleAccount(address: string): Promise<BN[]> {
-    const applicationsAndIds = await this.api.query.storageWorkingGroup.applicationById<Codec[]>();
+  public async getActiveApplicationsIdsByRoleAccount(address: string, module: WorkingGroups): Promise<BN[]> {
+    const applicationsAndIds = await this.api.query[module].applicationById<Codec[]>();
     const applications: Application[] = (applicationsAndIds[1] as unknown) as Application[];
     const ids: ApplicationId[] = (applicationsAndIds[0] as unknown) as ApplicationId[];
     return (
@@ -1190,8 +1084,8 @@ export class ApiWrapper {
     return ((await this.api.query.stake.stakes<Codec[]>(id))[0] as unknown) as Stake;
   }
 
-  public async getWorkerStakeAmount(workerId: BN): Promise<BN> {
-    let stakeId: BN = (await this.getWorkerById(workerId)).role_stake_profile.unwrap().stake_id;
+  public async getWorkerStakeAmount(workerId: BN, module: WorkingGroups): Promise<BN> {
+    let stakeId: BN = (await this.getWorkerById(workerId, module)).role_stake_profile.unwrap().stake_id;
     return (((await this.getStake(stakeId)).staking_status.value as unknown) as StakedState).staked_amount;
   }
 
@@ -1201,8 +1095,8 @@ export class ApiWrapper {
     )[0] as unknown) as RewardRelationship;
   }
 
-  public async getWorkerRewardAccount(workerId: BN): Promise<string> {
-    let rewardRelationshipId: BN = (await this.getWorkerById(workerId)).reward_relationship.unwrap();
+  public async getWorkerRewardAccount(workerId: BN, module: WorkingGroups): Promise<string> {
+    let rewardRelationshipId: BN = (await this.getWorkerById(workerId, module)).reward_relationship.unwrap();
     return (await this.getRewardRelationship(rewardRelationshipId)).getField('account').toString();
   }
 }

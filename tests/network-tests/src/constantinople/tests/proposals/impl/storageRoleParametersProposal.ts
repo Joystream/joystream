@@ -4,7 +4,7 @@ import { ApiWrapper } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN from 'bn.js';
 import { assert } from 'chai';
-import { RoleParameters } from '@constantinople/types/roles';
+import { RoleParameters } from '@constantinople/types/lib/roles';
 import tap from 'tap';
 
 export function storageRoleParametersProposalTest(

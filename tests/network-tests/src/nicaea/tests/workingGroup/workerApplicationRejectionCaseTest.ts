@@ -2,7 +2,7 @@ import tap from 'tap';
 import { initConfig } from '../../utils/config';
 import { registerJoystreamTypes } from '@nicaea/types';
 import { closeApi } from '../impl/closeApi';
-import { ApiWrapper } from '../../utils/apiWrapper';
+import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper';
 import { WsProvider, Keyring } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { setTestTimeout } from '../../utils/setTestTimeout';
@@ -59,16 +59,38 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
         sudo,
         applicationStake,
         roleStake,
-        leadOpeningActivationDelay
+        leadOpeningActivationDelay,
+        WorkingGroups.storageWorkingGroup
       ))
   );
   tap.test(
     'Apply for lead opening',
-    async () => await applyForOpening(apiWrapper, leadKeyPair, sudo, applicationStake, roleStake, leadOpenignId, false)
+    async () =>
+      await applyForOpening(
+        apiWrapper,
+        leadKeyPair,
+        sudo,
+        applicationStake,
+        roleStake,
+        leadOpenignId,
+        WorkingGroups.storageWorkingGroup,
+        false
+      )
   );
-  tap.test('Begin lead application review', async () => beginLeaderApplicationReview(apiWrapper, sudo, leadOpenignId));
+  tap.test('Begin lead application review', async () =>
+    beginLeaderApplicationReview(apiWrapper, sudo, leadOpenignId, WorkingGroups.storageWorkingGroup)
+  );
   tap.test('Fill lead opening', async () =>
-    fillLeaderOpening(apiWrapper, leadKeyPair, sudo, leadOpenignId, firstRewardInterval, rewardInterval, payoutAmount)
+    fillLeaderOpening(
+      apiWrapper,
+      leadKeyPair,
+      sudo,
+      leadOpenignId,
+      firstRewardInterval,
+      rewardInterval,
+      payoutAmount,
+      WorkingGroups.storageWorkingGroup
+    )
   );
 
   let openignId: BN;
@@ -82,26 +104,56 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
         sudo,
         applicationStake,
         roleStake,
-        openingActivationDelay
+        openingActivationDelay,
+        WorkingGroups.storageWorkingGroup
       ))
   );
   tap.test('Apply for worker opening, expect failure', async () =>
-    applyForOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, openignId, true)
+    applyForOpening(
+      apiWrapper,
+      nKeyPairs,
+      sudo,
+      applicationStake,
+      roleStake,
+      openignId,
+      WorkingGroups.storageWorkingGroup,
+      true
+    )
   );
   tap.test('Begin accepting worker applications', async () =>
-    acceptApplications(apiWrapper, leadKeyPair[0], sudo, openignId)
+    acceptApplications(apiWrapper, leadKeyPair[0], sudo, openignId, WorkingGroups.storageWorkingGroup)
   );
   tap.test('Apply for worker opening as non-member, expect failure', async () =>
-    applyForOpening(apiWrapper, nonMemberKeyPairs, sudo, applicationStake, roleStake, openignId, true)
+    applyForOpening(
+      apiWrapper,
+      nonMemberKeyPairs,
+      sudo,
+      applicationStake,
+      roleStake,
+      openignId,
+      WorkingGroups.storageWorkingGroup,
+      true
+    )
   );
   tap.test('Apply for worker opening as member', async () =>
-    applyForOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, openignId, false)
+    applyForOpening(
+      apiWrapper,
+      nKeyPairs,
+      sudo,
+      applicationStake,
+      roleStake,
+      openignId,
+      WorkingGroups.storageWorkingGroup,
+      false
+    )
   );
   tap.test('Terminate worker applicaitons', async () =>
-    terminateApplications(apiWrapper, nKeyPairs, leadKeyPair[0], sudo)
+    terminateApplications(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, WorkingGroups.storageWorkingGroup)
   );
 
-  tap.test('Leaving lead role', async () => leaveRole(apiWrapper, leadKeyPair, sudo));
+  tap.test('Leaving lead role', async () =>
+    leaveRole(apiWrapper, leadKeyPair, sudo, WorkingGroups.storageWorkingGroup)
+  );
 
   closeApi(apiWrapper);
 });
