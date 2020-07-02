@@ -108,9 +108,11 @@ export class InputValidationLengthConstraint extends JoyStruct<InputValidationLe
 }
 
 // TODO: Replace with JoyEnum
-export class WorkingGroup extends Enum.with({
+export const WorkingGroupDef = {
   Storage: Null
-}) { };
+} as const;
+export type WorkingGroupKeys = keyof typeof WorkingGroupDef;
+export class WorkingGroup extends Enum.with(WorkingGroupDef) { };
 
 export function registerCommonTypes() {
     const typeRegistry = getTypeRegistry();
