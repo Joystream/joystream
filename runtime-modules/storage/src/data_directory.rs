@@ -278,15 +278,6 @@ decl_module! {
                 .collect();
             <KnownContentIds<T>>::put(upd_content_ids);
         }
-
-        /// Sets the content id from the list of known content ids. Requires root privileges.
-        fn set_known_content_id(origin, content_ids: Vec<T::ContentId>) {
-            ensure_root(origin)?;
-
-            // == MUTATION SAFE ==
-
-            <KnownContentIds<T>>::put(content_ids);
-        }
     }
 }
 
