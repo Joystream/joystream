@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { ObjectType, WarthogModel } from '../model';
+import { ObjectType, WarthogModel, FieldResolver } from '../model';
 import Debug from 'debug';
 import { GeneratorContext } from './SourcesGenerator';
 import { buildFieldContext, TYPE_FIELDS } from './field-context';
@@ -112,6 +112,32 @@ export class ModelRenderer extends AbstractRenderer {
     };
   }
 
+  withFieldResolvers(): GeneratorContext {
+    const fieldResolvers: FieldResolver[] = [];
+    const fieldResolverImports: Set<string> = new Set();
+    const entityName = this.objType.name;
+
+    for (const f of this.objType.fields) {
+      if (!f.relation) continue;
+      const returnTypeFunc = f.relation.columnType;
+      fieldResolvers.push({
+        returnTypeFunc,
+        rootArgType: entityName,
+        fieldName: f.name,
+        rootArgName: utils.camelCase(entityName),
+        returnType: utils.generateResolverReturnType(returnTypeFunc, f.isList),
+      });
+      fieldResolverImports.add(utils.generateEntityImport(returnTypeFunc));
+    }
+    const imports = Array.from(fieldResolverImports.values());
+    // If there is at least one field resolver then add typeorm to imports
+    imports.length ? imports.push(`import { getConnection } from 'typeorm';`) : null;
+    return {
+      fieldResolvers,
+      fieldResolverImports: imports,
+    };
+  }
+
   transform(): GeneratorContext {
     return {
       ...this.context, //this.getGeneratedFolderRelativePath(objType.name),
@@ -123,6 +149,7 @@ export class ModelRenderer extends AbstractRenderer {
       ...this.withSubclasses(),
       ...this.withDescription(),
       ...this.withImportProps(),
+      ...this.withFieldResolvers(),
       ...utils.withNames(this.objType.name),
     };
   }
