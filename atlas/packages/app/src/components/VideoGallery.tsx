@@ -100,10 +100,12 @@ const articleStyles = css`
 const VideoGallery: React.FC<Partial<VideoGalleryProps>> = ({ title, action }) => {
 	const videos = videoPlaceholders.concat(videoPlaceholders).concat(videoPlaceholders);
 	const [controlsTop, setControlsTop] = useState<SerializedStyles>(css``);
+
+	const CAROUSEL_WHEEL_HEIGHT = 48;
 	const imgRef = useCallback((node: HTMLImageElement) => {
 		if (node != null) {
 			setControlsTop(css`
-				top: calc(${Math.round(node.clientHeight) / 2}px - 24px);
+				top: calc(${Math.round(node.clientHeight) / 2}px - ${CAROUSEL_WHEEL_HEIGHT / 2}px);
 			`);
 		}
 	}, []);

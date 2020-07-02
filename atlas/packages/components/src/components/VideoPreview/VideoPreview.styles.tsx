@@ -4,19 +4,11 @@ import { typography, colors, spacing } from "./../../theme";
 export type VideoPreviewStyleProps = {
 	showChannel: boolean;
 	poster: string;
-	width: number;
 	darken: boolean;
-	height: number;
 	fade: string;
 };
 
-export let makeStyles = ({
-	showChannel = false,
-	width = 320,
-	height = 190,
-	poster = "",
-	fade,
-}: Partial<VideoPreviewStyleProps>) => {
+export let makeStyles = ({ showChannel = false, poster = "", fade }: Partial<VideoPreviewStyleProps>) => {
 	const withPoster = poster ? fade : `linear-gradient(${colors.gray[300]}, ${colors.gray[700]})`;
 
 	return {
@@ -27,8 +19,8 @@ export let makeStyles = ({
 			text-decoration: none;
 		`,
 		coverContainer: css`
-			width: ${width}px;
-			height: ${height}px;
+			width: 320px;
+			height: 190px;
 		`,
 		cover: css`
 			width: 100%;

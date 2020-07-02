@@ -1,6 +1,7 @@
 import React from "react";
 import { css } from "@emotion/core";
 import { Provider } from "react-redux";
+import { Router } from "@reach/router";
 
 import store from "./store";
 import { Layout, VideoGallery, Hero, TagsGallery, SeriesGallery, ChannelGallery, Main } from "./components";
@@ -12,26 +13,28 @@ export default function App() {
 	return (
 		<main>
 			<Provider store={store}>
-				<Layout>
-					<Hero backgroundImg={backgroundImg} />
-					<Main
-						containerCss={css`
-							margin: 1rem 0;
-							& > * {
-								margin-bottom: 3rem;
-							}
-						`}
-					>
-						<VideoGallery title="Continue Watching" />
-						<VideoGallery title="Top Trending Videos" action="See All" />
-						<SeriesGallery title="Top Trending Series" />
-						<VideoGallery title="Featured Videos" action="See All" />
-						<TagsGallery title="Top Categories" />
-						<ChannelGallery title="Trending Channels" />
-						<VideoGallery title="Top Trending Playlist" />
-						<VideoGallery title="Newest Videos" action="See All" />
-					</Main>
-				</Layout>
+				<Router primary={false}>
+					<Layout>
+						<Hero backgroundImg={backgroundImg} />
+						<Main
+							containerCss={css`
+								margin: 1rem 0;
+								& > * {
+									margin-bottom: 3rem;
+								}
+							`}
+						>
+							<VideoGallery title="Continue Watching" />
+							<VideoGallery title="Top Trending Videos" action="See All" />
+							<SeriesGallery title="Top Trending Series" />
+							<VideoGallery title="Featured Videos" action="See All" />
+							<TagsGallery title="Top Categories" />
+							<ChannelGallery title="Trending Channels" />
+							<VideoGallery title="Top Trending Playlist" />
+							<VideoGallery title="Newest Videos" action="See All" />
+						</Main>
+					</Layout>
+				</Router>
 			</Provider>
 		</main>
 	);
