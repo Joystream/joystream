@@ -398,12 +398,6 @@ pub fn moderate_thread_mock(
     );
     if result.is_ok() {
         assert_eq!(
-            TestForumModule::thread_by_id(thread_id)
-                .moderation
-                .is_some(),
-            true
-        );
-        assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ThreadModerated(thread_id,))
         );
@@ -422,10 +416,6 @@ pub fn moderate_post_mock(
         result
     );
     if result.is_ok() {
-        assert_eq!(
-            TestForumModule::post_by_id(post_id).moderation.is_some(),
-            true
-        );
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::PostModerated(post_id,))
