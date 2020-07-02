@@ -3,8 +3,8 @@
 
 	"compilerOptions": {
 		"module": "esnext",
-		"lib": ["ES2019"],
-		"rootDirs": ["src", "stories"],
+		"lib": ["DOM", "ES2019"],
+		"moduleResolution": "node",
 		"baseUrl": ".",
 		"paths": {
 			"*": ["*", "./src/*"],

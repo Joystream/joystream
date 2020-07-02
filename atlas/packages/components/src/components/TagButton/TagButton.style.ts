@@ -1,9 +1,9 @@
-import { StyleFn, makeStyles } from "./../../utils/style-reducer";
-import { typography, colors } from "../../theme";
+import { StyleFn, makeStyles } from "./../../utils/style-reducer"
+import { typography, colors } from "../../theme"
 
 export type TagButtonStyleProps = {
-	selected?: boolean;
-};
+	selected?: boolean
+}
 
 const baseStyles: StyleFn = () => ({
 	border: `1px solid ${colors.blue[500]}`,
@@ -16,6 +16,8 @@ const baseStyles: StyleFn = () => ({
 	fontFamily: typography.fonts.base,
 	fontWeight: typography.weights.medium,
 	fontSize: typography.sizes.button.large,
+	textTransform: "capitalize",
+	whiteSpace: "nowrap",
 	margin: "0 15px 0 0",
 	lineHeight: typography.sizes.button.large,
 
@@ -24,17 +26,17 @@ const baseStyles: StyleFn = () => ({
 		fontSize: typography.sizes.icon.xxlarge,
 		fontWeight: typography.weights.regular,
 		lineHeight: 0,
-		verticalAlign: "sub",
+		verticalAlign: "sub"
 	},
 
 	"&::selection": {
-		background: "transparent",
-	},
-});
+		background: "transparent"
+	}
+})
 
 const shadowFromProps: StyleFn = (styles, { selected = false }) => ({
 	...styles,
-	boxShadow: selected ? `3px 3px ${colors.blue[500]}` : "none",
-});
+	boxShadow: selected ? `3px 3px ${colors.blue[500]}` : "none"
+})
 
-export const useCSS = (props: TagButtonStyleProps) => makeStyles([baseStyles, shadowFromProps])(props);
+export const useCSS = (props: TagButtonStyleProps) => makeStyles([baseStyles, shadowFromProps])(props)

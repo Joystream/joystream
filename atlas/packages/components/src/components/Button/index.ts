@@ -1,3 +1,2 @@
-import { memo } from "react";
 import Button from "./Button";
-export default memo(Button);
+export default Button;

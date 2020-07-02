@@ -1,38 +1,44 @@
-import { css } from "@emotion/core";
-import { StyleFn, makeStyles } from "../../utils";
+import { StyleFn, makeStyles } from "../../utils"
+import { spacing, breakpoints } from "../../theme"
 
-export type CarouselStyleProps = {
-	navTopPosition?: string;
-};
+export type CarouselStyleProps = {}
 
-const wrapper: StyleFn = () => ({
-	position: "relative",
-});
 const container: StyleFn = () => ({
-	display: "flex",
-	width: "100%",
-	overflow: "hidden",
-});
+	position: "relative",
+	display: "flex"
+})
+const outerItemsContainer: StyleFn = () => ({
+	overflow: "hidden"
+})
 
-const item: StyleFn = () => ({
-	display: "inline-block",
-});
-const navLeft: StyleFn = (_, { navTopPosition = 0 }) => ({
-	position: "absolute",
+const innerItemsContainer: StyleFn = () => ({
+	display: "flex"
+})
+
+const navBase: StyleFn = () => ({
+	minWidth: spacing.xxxxl,
+	minHeight: spacing.xxxxl,
+	width: spacing.xxxxl,
+	height: spacing.xxxxl,
+	position: "absolute"
+})
+
+const navLeft: StyleFn = (styles) => ({
+	...styles,
 	left: 0,
-	top: `${navTopPosition}`,
-});
+	top: `calc(50% - ${Math.round((parseInt(spacing.xxxxl) + 1) / 2)}px)`
+})
 
-const navRight: StyleFn = (_, { navTopPosition = 0 }) => ({
-	position: "absolute",
+const navRight: StyleFn = (styles) => ({
+	...styles,
 	right: 0,
-	top: `${navTopPosition}`,
-});
+	top: `calc(50% - ${Math.round((parseInt(spacing.xxxxl) + 1) / 2)}px)`
+})
 
 export const useCSS = (props: CarouselStyleProps) => ({
-	wrapper: makeStyles([wrapper])(props),
 	container: makeStyles([container])(props),
-	item: makeStyles([item])(props),
-	navLeft: makeStyles([navLeft])(props),
-	navRight: makeStyles([navRight])(props),
-});
+	outerItemsContainer: makeStyles([outerItemsContainer])(props),
+	innerItemsContainer: makeStyles([innerItemsContainer])(props),
+	navLeft: makeStyles([navBase, navLeft])(props),
+	navRight: makeStyles([navBase, navRight])(props)
+})

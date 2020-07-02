@@ -14,10 +14,6 @@ const baseStyles: StyleFn = () => ({
 	fontFamily: typography.fonts.base,
 	fontWeight: typography.weights.medium,
 	fontSize: typography.sizes.subtitle1,
-	margin: "1px",
-	padding: 0,
-	width: "50px",
-	height: "50px",
 	lineHeight: "50px",
 	"&:hover": {
 		borderColor: colors.blue[700]

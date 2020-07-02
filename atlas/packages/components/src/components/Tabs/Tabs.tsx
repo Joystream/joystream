@@ -6,7 +6,7 @@ type TabsProps = {
 	onChange?: (tab: string) => void;
 } & TabsStyleProps;
 
-export default function Tabs({ children, onChange, ...styleProps }: TabsProps) {
+export default function Tabs({ children, onChange = () => {}, ...styleProps }: TabsProps) {
 	const [activeTab, setActiveTab] = useState(0);
 
 	function onTabChange(tab: any): void {

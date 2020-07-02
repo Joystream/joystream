@@ -1,13 +1,9 @@
 {
-  "extends": "../../tsconfig.json",
+	"extends": "../../tsconfig.json",
 
-  "compilerOptions": {
-    "jsx": "react",
-    "declaration": true,
-    "declarationDir": "dist",
-    "lib": [
-      "ES2019",
-      "ES2019.Array"
-    ]
-  }
+	"compilerOptions": {
+		"declaration": true,
+		"declarationDir": "dist",
+		"lib": ["DOM", "ES2019"]
+	}
 }

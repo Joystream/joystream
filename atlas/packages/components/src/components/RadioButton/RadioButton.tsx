@@ -10,13 +10,13 @@ export default function RadioButton({
 	label = "",
 	position = "end",
 	disabled = false,
-	onClick,
+	onClick = () => {},
 	...styleProps
 }: RadioButtonProps) {
 	const styles = useCSS({ disabled, position, ...styleProps });
 
 	return (
-		<div css={styles.container} onClick={disabled ? null : onClick}>
+		<div css={styles.container} onClick={disabled ? () => {} : onClick}>
 			{(position === "start" || position === "top") && <label css={styles.label}>{label}</label>}
 			<div css={styles.outterDot}>
 				<div css={styles.dot}></div>

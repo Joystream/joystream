@@ -11,21 +11,22 @@ export function log(styles: StyleObj, props: any) {
 	return styles
 }
 
-export function dimensionsFromProps(styles: StyleObj, { full }: { full: boolean }) {
+export const dimensionsFromProps: StyleFn = (styles = {}, { full }: { full: boolean }) => {
 	let display: string
 	if (styles.display == null) {
 		display = "block"
 	}
 	display = styles.display as string
 
-	return {
+	const finalStyles: StyleObj = {
 		...styles,
 		display: full && display.includes("inline") ? stripInline(display) : display,
 		width: full ? "100%" : styles.width || ""
 	}
+	return finalStyles
 }
 
-export function disabled(styles: StyleObj, { disabled }: { disabled: boolean }): StyleObj {
+export const disabled: StyleFn = (styles = {}, { disabled }: { disabled: boolean }) => {
 	if (!disabled) {
 		return styles
 	}

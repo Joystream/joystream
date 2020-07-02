@@ -8,7 +8,7 @@ type TextFieldProps = {
 	label: string;
 	helper?: string;
 	value?: string;
-	icon?: IconProp;
+	icon?: IconProp | undefined;
 	onChange?: (e: React.ChangeEvent) => void;
 } & TextFieldStyleProps;
 
@@ -16,21 +16,23 @@ export default function TextField({
 	label,
 	helper = "",
 	value = "",
-	icon = null,
+	icon,
 	disabled = false,
 	onChange,
 	...styleProps
 }: TextFieldProps) {
-	const inputRef = useRef(null);
+	const inputRef = useRef<HTMLInputElement>(null);
 	const [isActive, setIsActive] = useState(!!value);
 	const [inputTextValue, setInputTextValue] = useState(value);
 	const styles = useCSS({ isActive, disabled, ...styleProps });
 
 	useEffect(() => {
-		if (isActive) {
-			inputRef.current.focus();
-		} else {
-			inputRef.current.blur();
+		if (inputRef.current != null) {
+			if (isActive) {
+				inputRef.current.focus();
+			} else {
+				inputRef.current.blur();
+			}
 		}
 	}, [isActive, inputRef]);
 
@@ -73,10 +75,11 @@ export default function TextField({
 						ref={inputRef}
 						type="text"
 						value={inputTextValue}
-						onChange={disabled ? null : onInputTextChange}
+						onChange={onInputTextChange}
 						onBlur={onInputTextBlur}
+						disabled={disabled}
 					/>
-					{!!icon && <FontAwesomeIcon icon={icon} css={styles.icon} />}
+					{!!icon && <FontAwesomeIcon icon={icon || "check"} css={styles.icon} />}
 				</div>
 			</div>
 			{!!helper && <p css={styles.helper}>{helper}</p>}

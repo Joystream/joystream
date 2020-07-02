@@ -1,3 +1,2 @@
-import { memo } from "react"
-import Grid from "./Grid"
-export default memo(Grid)
+import Grid from "./Grid";
+export default Grid;

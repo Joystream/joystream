@@ -1,4 +1,4 @@
-import Checkbox from "./components/Checkbox"
+import * as theme from "./theme"
 
 export { default as Button } from "./components/Button"
 export { default as Carousel } from "./components/Carousel"
@@ -15,3 +15,9 @@ export { default as Tab } from "./components/Tabs/Tab"
 export { default as Tag } from "./components/Tag"
 export { default as TextField } from "./components/TextField"
 export { default as Typography } from "./components/Typography"
+export { default as VideoPreview } from "./components/VideoPreview"
+export { default as VideoPlayer } from "./components/VideoPlayer"
+export { default as SeriesPreview } from "./components/SeriesPreview"
+export { default as ChannelPreview } from "./components/ChannelPreview"
+export { default as Gallery } from "./components/Gallery"
+export { theme }

@@ -1,10 +1,10 @@
 import { typography, colors } from "../../theme"
 import { makeStyles, StyleFn } from "../../utils"
-import { disabled, dimensionsFromProps, log } from "../../theme/fragments"
+import { disabled, dimensionsFromProps } from "../../theme/fragments"
 
 export type ButtonStyleProps = {
 	text?: string
-	type?: "primary" | "secondary"
+	type?: "primary" | "secondary" | "tertiary"
 	full?: boolean
 	size?: "regular" | "small" | "smaller"
 	children?: React.ReactNode
@@ -14,7 +14,7 @@ export type ButtonStyleProps = {
 const baseStyles: StyleFn = () => ({
 	borderWidth: "1px",
 	borderStyle: "solid",
-	fontFamily: typography.fonts.base,
+	fontFamily: typography.fonts.headers,
 	fontWeight: typography.weights.medium,
 	display: "inline-flex",
 	justifyContent: "center",
@@ -24,7 +24,7 @@ const baseStyles: StyleFn = () => ({
 		background: "transparent"
 	}
 })
-const colorFromType: StyleFn = (styles, { type }: ButtonStyleProps) => {
+const colorFromType: StyleFn = (styles = {}, { type }: ButtonStyleProps) => {
 	switch (type) {
 		case "primary":
 			return {
@@ -47,7 +47,6 @@ const colorFromType: StyleFn = (styles, { type }: ButtonStyleProps) => {
 		case "secondary":
 			return {
 				...styles,
-				color: colors.blue[500],
 				backgroundColor: colors.black,
 				borderColor: colors.blue[500],
 
@@ -61,6 +60,23 @@ const colorFromType: StyleFn = (styles, { type }: ButtonStyleProps) => {
 					color: colors.blue[700]
 				}
 			}
+
+		case "tertiary":
+			return {
+				...styles,
+				backgroundColor: "transparent",
+				borderColor: "transparent",
+				color: colors.blue[500],
+				"&:hover": {
+					color: colors.blue[300]
+				},
+				"&:active": {
+					color: colors.blue[700]
+				}
+			}
+
+		default:
+			return { ...styles }
 	}
 }
 const paddingFromType: StyleFn = (
@@ -68,20 +84,19 @@ const paddingFromType: StyleFn = (
 	{
 		size = "regular",
 		children,
-		full
+		full = false
 	}: { size: "regular" | "small" | "smaller"; children?: React.ReactNode; full: boolean }
 ) => {
 	const buttonHeight = size === "regular" ? "20px" : size === "small" ? "15px" : "10px"
 	return {
 		...styles,
-		margin: `0 ${full ? "0" : "15px"} 0 0`,
 		padding:
 			size === "regular"
-				? !!children
-					? "14px 17px"
+				? children
+					? "14px 20px"
 					: "14px"
 				: size === "small"
-				? !!children
+				? children
 					? "12px 14px"
 					: "12px"
 				: "10px",
@@ -90,10 +105,7 @@ const paddingFromType: StyleFn = (
 				? typography.sizes.button.large
 				: size === "small"
 				? typography.sizes.button.medium
-				: typography.sizes.button.small,
-
-		height: buttonHeight,
-		maxHeight: buttonHeight
+				: typography.sizes.button.small
 	}
 }
 
@@ -119,139 +131,3 @@ export const useCSS = (props: ButtonStyleProps) => ({
 	container: makeStyles([baseStyles, colorFromType, dimensionsFromProps, paddingFromType, disabled])(props),
 	icon: makeStyles([iconStyles])(props)
 })
-
-// 	text,
-// 	type = "primary",
-// 	width = "normal",
-// 	size = "regular",
-// 	disabled = false,
-// }: ButtonStyleProps) => {
-//
-
-// 	const primaryButton = {
-// 		container: css`
-// 			border: 1px solid ${colors.blue[500]};
-// 			color: ${colors.white};
-// 			background-color: ${colors.blue[500]};
-
-// 			padding: ${size === "regular"
-// 				? !!text
-// 					? "14px 17px"
-// 					: "14px"
-// 				: size === "small"
-// 				? !!text
-// 					? "12px 14px"
-// 					: "12px"
-// 				: "10px"};
-// 			font-size: ${size === "regular"
-// 				? typography.sizes.button.large
-// 				: size === "small"
-// 				? typography.sizes.button.medium
-// 				: typography.sizes.button.small};
-//
-//
-// 		`,
-// 	};
-
-// 	const secondaryButton = {
-// 		container: css`
-// 			border: 1px solid ${colors.blue[500]};
-
-// 			background-color: ${colors.black};
-// 			justify-content: center;
-// 			padding: ${size === "regular"
-// 				? !!text
-// 					? "14px 17px"
-// 					: "14px"
-// 				: size === "small"
-// 				? !!text
-// 					? "12px 14px"
-// 					: "12px"
-// 				: "10px"};
-// 			font-size: ${size === "regular"
-// 				? typography.sizes.button.large
-// 				: size === "small"
-// 				? typography.sizes.button.medium
-// 				: typography.sizes.button.small};
-// 			margin: 0 ${width === "normal" ? "15px" : "0"} 0 0;
-// 			height: ${buttonHeight};
-// 			max-height: ${buttonHeight};
-
-// 			&:hover {
-// 				background-color: ${colors.black};
-// 				border-color: ${colors.blue[700]};
-// 				color: ${colors.blue[300]};
-// 			}
-
-// 			&:active {
-// 				background-color: ${colors.black};
-// 				border-color: ${colors.blue[700]};
-// 				color: ${colors.blue[700]};
-// 			}
-// 		`,
-// 	};
-
-// 	const disabledButton = {
-// 		container: css`
-// 			border: 1px solid ${colors.white};
-// 			color: ${colors.white};
-// 			background-color: ${colors.gray[100]};
-// 			justify-content: center;
-// 			padding: ${size === "regular"
-// 				? !!text
-// 					? "14px 17px"
-// 					: "14px"
-// 				: size === "small"
-// 				? !!text
-// 					? "12px 14px"
-// 					: "12px"
-// 				: "10px"};
-// 			display: ${width === "normal" ? "inline-flex" : "flex"};
-// 			align-items: center;
-// 			cursor: ${disabled ? "not-allowed" : "default"};
-// 			font-family: ${typography.fonts.base};
-// 			font-weight: ${typography.weights.medium};
-// 			font-size: ${size === "regular"
-// 				? typography.sizes.button.large
-// 				: size === "small"
-// 				? typography.sizes.button.medium
-// 				: typography.sizes.button.small};
-// 			margin: 0 ${width === "normal" ? "15px" : "0"} 0 0;
-// 			height: ${buttonHeight};
-// 			max-height: ${buttonHeight};
-
-// 			&:hover {
-// 				background-color: ${colors.gray[100]};
-// 				border-color: ${colors.white};
-// 				color: ${colors.white};
-// 			}
-
-// 			&:active {
-// 				background-color: ${colors.gray[100]};
-// 				border-color: ${colors.white};
-// 				color: ${colors.white};
-// 			}
-
-// 			&::selection {
-// 				background: transparent;
-// 			}
-// 		`,
-// 	};
-
-// 	const icon = css`
-// 		margin-right: ${!!text ? "10px" : "0"};
-// 		font-size: ${size === "regular"
-// 			? typography.sizes.icon.large
-// 			: size === "small"
-// 			? typography.sizes.icon.medium
-// 			: typography.sizes.icon.small};
-
-// 		& > path:nth-of-type(1) {
-// 			color: inherit;
-// 			flex-shrink: 0;
-// 		}
-// 	`;
-
-// 	const result = disabled ? disabledButton : type === "primary" ? primaryButton : secondaryButton;
-// 	return { icon, ...result };
-// };

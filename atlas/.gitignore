@@ -39,8 +39,8 @@ pids
 lib-cov
 
 # Coverage directory used by tools like istanbul
-coverage
-
+.coverage
+.jest-cache
 # nyc test coverage
 .nyc_output
 
@@ -76,6 +76,7 @@ typings/
 *.tgz
 
 # cache and distribution folders
+.parcel-cache
 .cache/
 .now
 dist/
@@ -87,5 +88,7 @@ dist/
 yarn-error.log
 .pnp/
 .pnp.js
+.yarn
+.yarnrc.yml
 # Yarn Integrity file
 .yarn-integrity
