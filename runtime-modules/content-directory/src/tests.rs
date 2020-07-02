@@ -1,8 +1,8 @@
 mod add_class_schema;
 mod add_curator_group;
 mod add_curator_to_group;
-mod add_entity_schema_support;
 mod add_maintainer_to_class;
+mod add_schema_support_to_entity;
 mod clear_entity_property_vector;
 mod create_class;
 mod create_entity;

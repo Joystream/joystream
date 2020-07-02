@@ -1303,7 +1303,7 @@ decl_module! {
             // Retrieve Class, Entity and ensure given have access to the Entity under given entity_id
             let (class, entity, _) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
-            // Ensure Class Schema under given index exist, return corresponding Schema
+            // Ensure Class Schema under given index exists, return corresponding Schema
             let schema = class.ensure_schema_exists(schema_id)?.to_owned();
 
             let class_properties = class.properties;

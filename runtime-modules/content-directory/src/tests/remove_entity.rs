@@ -124,7 +124,7 @@ fn remove_entity_member_auth_failed() {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        // Make an attempt to remove entity under non lead origin
+        // Make an attempt to remove entity using unknown origin and member actor, which is current Entity controller
         let remove_entity_result = remove_entity(UNKNOWN_ORIGIN, actor.clone(), FIRST_ENTITY_ID);
 
         // Failure checked
@@ -187,7 +187,7 @@ fn create_entity_curator_group_is_not_active() {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        // Make an attempt to remove entity under non lead origin
+        // Make an attempt to remove entity using curator group, which is not active as actor
         let remove_entity_result =
             remove_entity(FIRST_CURATOR_ORIGIN, actor.clone(), FIRST_ENTITY_ID);
 
@@ -244,7 +244,7 @@ fn remove_entity_curator_auth_failed() {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        // Make an attempt to remove entity under unknown origin and curator actor
+        // Make an attempt to remove entity under unknown origin and curator actor, which corresponding group is current entity controller
         let remove_entity_result = remove_entity(UNKNOWN_ORIGIN, actor.clone(), FIRST_ENTITY_ID);
 
         // Failure checked
@@ -296,7 +296,8 @@ fn remove_entity_curator_not_found_in_curator_group() {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        // Make an attempt to remove entity, using actor, which corresponding origin
+        // Make an attempt to remove entity, using actor in group,
+        // which curator id was not added to corresponding group set
         let remove_entity_result = remove_entity(
             SECOND_CURATOR_ORIGIN,
             Actor::Curator(FIRST_CURATOR_GROUP_ID, SECOND_CURATOR_ID),
@@ -338,7 +339,7 @@ fn remove_entity_access_denied() {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        // Make an attempt to remove entity, using actor, which is neither entity maintainer, nor controller.
+        // Make an attempt to remove entity, using origin, which corresponding actor is neither entity maintainer, nor controller.
         let remove_entity_result = remove_entity(SECOND_MEMBER_ORIGIN, actor, FIRST_ENTITY_ID);
 
         // Failure checked
@@ -390,7 +391,7 @@ fn remove_entity_removal_access_denied() {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        // Make an attempt to remove entity, using actor, which corresponding origin
+        // Make an attempt to remove entity, using origin, which corresponding actor is not an entity controller
         let remove_entity_result = remove_entity(FIRST_CURATOR_ORIGIN, actor, FIRST_ENTITY_ID);
 
         // Failure checked
