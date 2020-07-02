@@ -18,3 +18,11 @@ export interface Relation {
 
   relatedTsProp?: string;
 }
+
+export function makeRelation(type: string, columnType: string, relatedTsProp: string): Relation {
+  return {
+    type,
+    columnType,
+    relatedTsProp,
+  };
+}

@@ -1,113 +1,80 @@
-import { WarthogModel, Field, ObjectType } from '../model';
+import { WarthogModel, Field, ObjectType, makeRelation } from '../model';
 import { generateJoinColumnName, generateJoinTableName } from './utils';
 import { camelCase } from 'lodash';
 
 export class RelationshipGenerator {
-  visited: string[];
+  private _visited: string[];
   model: WarthogModel;
 
   constructor(model: WarthogModel) {
     this.model = model;
-    this.visited = [];
+    this._visited = [];
   }
 
-  addMany2Many(field: Field, relatedField: Field, objType: ObjectType, relatedObject: ObjectType): void {
-    field.relation = {
-      type: 'mtm',
-      columnType: field.type,
-      joinTable: {
-        tableName: generateJoinTableName(objType.name, relatedObject.name),
-        joinColumn: generateJoinColumnName(objType.name),
-        inverseJoinColumn: generateJoinColumnName(relatedObject.name),
-      },
-      relatedTsProp: relatedField.name,
+  addMany2Many(field: Field, relatedField: Field, currentObject: ObjectType, relatedObject: ObjectType): void {
+    field.relation = makeRelation('mtm', field.type, relatedField.name);
+    field.relation.joinTable = {
+      tableName: generateJoinTableName(currentObject.name, relatedObject.name),
+      joinColumn: generateJoinColumnName(currentObject.name),
+      inverseJoinColumn: generateJoinColumnName(relatedObject.name),
     };
-    relatedField.relation = {
-      type: 'mtm',
-      columnType: relatedField.type,
-      relatedTsProp: field.name,
-    };
+    relatedField.relation = makeRelation('mtm', relatedField.type, field.name);
 
-    objType.relatedEntityImports.add(relatedObject.name);
-    relatedObject.relatedEntityImports.add(objType.name);
-    this.addToVisited(field, objType);
-    this.addToVisited(relatedField, relatedObject);
+    this.addRelatedImport(currentObject, relatedObject);
+    this.addToVisited(...[currentObject.name.concat(field.name), relatedObject.name.concat(relatedField.name)]);
   }
 
-  addOne2Many(field: Field, relatedField: Field, objType: ObjectType, relatedObject: ObjectType): void {
-    field.relation = {
-      type: 'otm',
-      columnType: field.type,
-      relatedTsProp: relatedField.name,
-    };
-    relatedField.relation = {
-      type: 'mto',
-      columnType: relatedField.type,
-      relatedTsProp: field.name,
-    };
+  addOne2Many(field: Field, relatedField: Field, currentObject: ObjectType, relatedObject: ObjectType): void {
+    field.relation = makeRelation('otm', field.type, relatedField.name);
+    relatedField.relation = makeRelation('mto', relatedField.type, field.name);
 
-    objType.relatedEntityImports.add(field.type);
-    relatedObject.relatedEntityImports.add(objType.name);
-    this.addToVisited(field, objType);
-    this.addToVisited(relatedField, relatedObject);
+    this.addRelatedImport(currentObject, relatedObject);
+    this.addToVisited(...[currentObject.name.concat(field.name), relatedObject.name.concat(relatedField.name)]);
   }
 
   addMany2One(field: Field, currentObject: ObjectType, relatedObject: ObjectType, relatedField: Field): void {
-    field.relation = { type: 'mto', columnType: field.type };
-    currentObject.relatedEntityImports.add(relatedObject.name);
-
-    if (!relatedField) {
-      // A virtual additinal field for field resolver
+    if (!relatedField.type) {
+      // Additinal field for field resolver
       const fname = camelCase(currentObject.name).concat('s');
-      const additionalField = new Field(fname, relatedObject.name, field.nullable, false, true);
-      additionalField.relation = { type: 'otm', columnType: currentObject.name, relatedTsProp: field.name };
-      relatedObject.fields.push(additionalField);
-
-      field.relation.relatedTsProp = additionalField.name;
-      this.addToVisited(additionalField, relatedObject);
+      relatedField = new Field(fname, relatedObject.name, field.nullable, false, true);
+      relatedField.relation = makeRelation('otm', currentObject.name, field.name);
+      relatedObject.fields.push(relatedField);
     } else {
-      relatedField.relation = { type: 'otm', columnType: currentObject.name, relatedTsProp: field.name };
-      field.relation.relatedTsProp = relatedField.name;
-      this.addToVisited(relatedField, relatedObject);
+      relatedField.relation = makeRelation('otm', currentObject.name, field.name);
     }
 
-    currentObject.relatedEntityImports.add(relatedObject.name);
-    relatedObject.relatedEntityImports.add(currentObject.name);
+    field.relation = makeRelation('mto', field.type, relatedField.name);
 
-    this.addToVisited(field, currentObject);
+    this.addRelatedImport(currentObject, relatedObject);
+    this.addToVisited(...[currentObject.name.concat(field.name), relatedObject.name.concat(relatedField.name)]);
   }
 
-  addOne2One(field: Field, relatedField: Field, objType: ObjectType, relatedObject: ObjectType): void {
-    field.relation = {
-      type: 'oto',
-      columnType: field.type,
-      joinColumn: true,
-      relatedTsProp: relatedField.name,
-    };
-    relatedField.relation = {
-      type: 'oto',
-      columnType: relatedField.type,
-      relatedTsProp: field.name,
-    };
+  addOne2One(field: Field, relatedField: Field, currentObject: ObjectType, relatedObject: ObjectType): void {
+    field.relation = makeRelation('oto', field.type, relatedField.name);
+    field.relation.joinColumn = true;
+    relatedField.relation = makeRelation('oto', relatedField.type, field.name);
 
-    objType.relatedEntityImports.add(relatedObject.name);
-    relatedObject.relatedEntityImports.add(objType.name);
-    this.addToVisited(field, objType);
-    this.addToVisited(relatedField, relatedObject);
+    this.addRelatedImport(currentObject, relatedObject);
+    this.addToVisited(...[currentObject.name.concat(field.name), relatedObject.name.concat(relatedField.name)]);
   }
 
-  addToVisited(f: Field, o: ObjectType): void {
-    this.visited.push(o.name.concat(f.name));
+  addToVisited(...args: string[]): void {
+    this._visited.push(...args);
   }
 
   isVisited(f: Field, o: ObjectType): boolean {
-    return this.visited.includes(o.name.concat(f.name));
+    return this._visited.includes(o.name.concat(f.name));
+  }
+
+  addRelatedImport(o1: ObjectType, o2: ObjectType): void {
+    o1.relatedEntityImports.add(o2.name);
+    o2.relatedEntityImports.add(o1.name);
   }
 
   generate(): void {
     this.model.types.forEach(currentObject => {
-      currentObject.fields.forEach(field => {
-        if (this.isVisited(field, currentObject)) return;
+      for (const field of currentObject.fields) {
+        if (this.isVisited(field, currentObject)) continue;
 
         // ============= Case 1 =============
         if (!field.isBuildinType && field.derivedFrom) {
@@ -128,7 +95,7 @@ export class RelationshipGenerator {
           return this.addOne2One(field, relatedField, currentObject, relatedObject);
         }
 
-        if (!field.isBuildinType && !field.isList && !field.derivedFrom) {
+        if (!field.isScalar() && !field.derivedFrom) {
           const relatedObject = this.model.lookupType(field.type);
           const relatedFields = relatedObject.fields.filter(f => f.type === currentObject.name);
 
@@ -166,11 +133,11 @@ export class RelationshipGenerator {
           }
           if (!relatedFields[0].derivedFrom) {
             throw new Error(`Incorrect ManyToMany relationship detected! @derived directive
-            for ${relatedObject.name}->${relatedFields[0].name} could not found`);
+            for ${relatedObject.name}->${relatedFields[0].name} not found`);
           }
           return this.addMany2Many(field, relatedFields[0], currentObject, relatedObject);
         }
-      });
+      }
     });
   }
 }
