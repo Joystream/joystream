@@ -4,7 +4,7 @@ use super::*;
 fn update_entity_permissions_success() {
     with_test_externalities(|| {
         // Create simple class with default permissions
-        assert_ok!(create_simple_class_with_default_permissions(LEAD_ORIGIN));
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         let actor = Actor::Lead;
 

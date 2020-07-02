@@ -4,7 +4,7 @@ use super::*;
 fn create_entity_creation_voucher_success() {
     with_test_externalities(|| {
         // Create simple class with default permissions
-        assert_ok!(create_simple_class_with_default_permissions(LEAD_ORIGIN));
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         // Runtime state before tested call
 
@@ -51,7 +51,7 @@ fn create_entity_creation_voucher_success() {
 fn update_entity_creation_voucher_success() {
     with_test_externalities(|| {
         // Create simple class with default permissions
-        assert_ok!(create_simple_class_with_default_permissions(LEAD_ORIGIN));
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         let actor = Actor::Member(FIRST_MEMBER_ID);
 

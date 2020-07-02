@@ -1,9 +1,8 @@
 #![cfg(test)]
 
-use crate::*;
-use std::cell::RefCell;
-
 use crate::InputValidationLengthConstraint;
+use crate::*;
+use core::iter::FromIterator;
 use primitives::H256;
 use runtime_primitives::{
     testing::Header,
@@ -12,6 +11,7 @@ use runtime_primitives::{
 };
 pub use srml_support::{assert_err, assert_ok};
 use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use std::cell::RefCell;
 
 /// Runtime Types
 
@@ -20,7 +20,7 @@ type EntityId = <Runtime as Trait>::EntityId;
 type Nonce = <Runtime as Trait>::Nonce;
 
 type CuratorId = <Runtime as ActorAuthenticator>::CuratorId;
-type CuratorGroupId = <Runtime as ActorAuthenticator>::CuratorGroupId;
+pub type CuratorGroupId = <Runtime as ActorAuthenticator>::CuratorGroupId;
 type MemberId = <Runtime as ActorAuthenticator>::MemberId;
 
 /// Origins
@@ -50,10 +50,13 @@ pub const SECOND_CLASS_ID: ClassId = 2;
 pub const FIRST_ENTITY_ID: EntityId = 1;
 pub const SECOND_ENTITY_ID: EntityId = 2;
 
-// pub const UNKNOWN_CLASS_ID: ClassId = 111;
+pub const UNKNOWN_CLASS_ID: ClassId = 111;
 // pub const UNKNOWN_ENTITY_ID: EntityId = 222;
-// pub const UNKNOWN_PROPERTY_ID: PropertyId = 333;
-// pub const UNKNOWN_SCHEMA_ID: SchemaId = 444;
+pub const UNKNOWN_PROPERTY_ID: PropertyId = 333;
+pub const UNKNOWN_SCHEMA_ID: SchemaId = 444;
+
+pub const UNKNOWN_CURATOR_GROUP_ID: CuratorGroupId = 555;
+pub const UNKNOWN_CURATOR_ID: CuratorGroupId = 555;
 
 pub const FIRST_SCHEMA_ID: SchemaId = 0;
 pub const SECOND_SCHEMA_ID: SchemaId = 1;
@@ -160,8 +163,8 @@ impl Get<MaxNumber> for MaxNumberOfSchemasPerClass {
     }
 }
 
-pub struct MaxNumberOfPropertiesPerClass;
-impl Get<MaxNumber> for MaxNumberOfPropertiesPerClass {
+pub struct MaxNumberOfPropertiesPerSchema;
+impl Get<MaxNumber> for MaxNumberOfPropertiesPerSchema {
     fn get() -> MaxNumber {
         MAX_NUMBER_OF_PROPERTIES_PER_CLASS.with(|v| *v.borrow())
     }
@@ -246,7 +249,7 @@ impl Trait for Runtime {
     type MaxNumberOfClasses = MaxNumberOfClasses;
     type MaxNumberOfMaintainersPerClass = MaxNumberOfMaintainersPerClass;
     type MaxNumberOfSchemasPerClass = MaxNumberOfSchemasPerClass;
-    type MaxNumberOfPropertiesPerClass = MaxNumberOfPropertiesPerClass;
+    type MaxNumberOfPropertiesPerSchema = MaxNumberOfPropertiesPerSchema;
     type MaxNumberOfEntitiesPerClass = MaxNumberOfEntitiesPerClass;
 
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
@@ -313,11 +316,11 @@ impl Default for ExtBuilder {
     fn default() -> Self {
         Self {
             property_name_constraint: InputValidationLengthConstraint::new(1, 49),
-            property_description_constraint: InputValidationLengthConstraint::new(0, 500),
+            property_description_constraint: InputValidationLengthConstraint::new(1, 500),
             class_name_constraint: InputValidationLengthConstraint::new(1, 49),
-            class_description_constraint: InputValidationLengthConstraint::new(0, 500),
+            class_description_constraint: InputValidationLengthConstraint::new(1, 500),
 
-            max_number_of_classes: 1000,
+            max_number_of_classes: 100,
             max_number_of_maintainers_per_class: 10,
             max_number_of_schemas_per_class: 20,
             max_number_of_properties_per_class: 40,
@@ -509,22 +512,76 @@ pub fn curator_group_exists(curator_group_id: CuratorGroupId) -> bool {
 
 // Classes
 
+pub enum ClassType {
+    Valid,
+    NameTooLong,
+    NameTooShort,
+    DescriptionTooLong,
+    DescriptionTooShort,
+    InvalidMaximumEntitiesCount,
+    InvalidDefaultVoucherUpperBound,
+    DefaultVoucherUpperBoundExceedsMaximumEntitiesCount,
+    MaintainersLimitReached,
+    CuratorGroupDoesNotExist,
+}
+
+pub fn create_simple_class(lead_origin: u64, class_type: ClassType) -> Result<(), &'static str> {
+    let mut class = create_class_with_default_permissions();
+    match class_type {
+        ClassType::Valid => (),
+        ClassType::NameTooShort => {
+            class.name = generate_text(ClassNameLengthConstraint::get().min() as usize - 1);
+        }
+        ClassType::NameTooLong => {
+            class.name = generate_text(ClassNameLengthConstraint::get().max() as usize + 1);
+        }
+        ClassType::DescriptionTooLong => {
+            class.description =
+                generate_text(ClassDescriptionLengthConstraint::get().max() as usize + 1);
+        }
+        ClassType::DescriptionTooShort => {
+            class.description =
+                generate_text(ClassDescriptionLengthConstraint::get().min() as usize - 1);
+        }
+        ClassType::InvalidMaximumEntitiesCount => {
+            class.maximum_entities_count = MaxNumberOfEntitiesPerClass::get() + 1;
+        }
+        ClassType::InvalidDefaultVoucherUpperBound => {
+            class.default_entity_creation_voucher_upper_bound =
+                IndividualEntitiesCreationLimit::get() + 1;
+        }
+        ClassType::DefaultVoucherUpperBoundExceedsMaximumEntitiesCount => {
+            class.default_entity_creation_voucher_upper_bound = 5;
+
+            class.maximum_entities_count = 3;
+        }
+        ClassType::MaintainersLimitReached => {
+            let mut maintainers = BTreeSet::new();
+            for curator_group_id in 1..=(MaxNumberOfMaintainersPerClass::get() + 1) {
+                maintainers.insert(curator_group_id as CuratorGroupId);
+            }
+            class.get_permissions_mut().set_maintainers(maintainers);
+        }
+        ClassType::CuratorGroupDoesNotExist => {
+            let maintainers = BTreeSet::from_iter(vec![UNKNOWN_CURATOR_GROUP_ID].into_iter());
+            class.get_permissions_mut().set_maintainers(maintainers);
+        }
+    };
+    TestModule::create_class(
+        Origin::signed(lead_origin),
+        class.name,
+        class.description,
+        class.class_permissions,
+        class.maximum_entities_count,
+        class.default_entity_creation_voucher_upper_bound,
+    )
+}
+
 pub fn create_class_with_default_permissions() -> Class<Runtime> {
     Class::new(
         ClassPermissions::default(),
         generate_text(ClassNameLengthConstraint::get().max() as usize),
         generate_text(ClassDescriptionLengthConstraint::get().max() as usize),
-        MaxNumberOfEntitiesPerClass::get(),
-        IndividualEntitiesCreationLimit::get(),
-    )
-}
-
-pub fn create_simple_class_with_default_permissions(lead_origin: u64) -> Result<(), &'static str> {
-    TestModule::create_class(
-        Origin::signed(lead_origin),
-        generate_text(ClassNameLengthConstraint::get().max() as usize),
-        generate_text(ClassDescriptionLengthConstraint::get().max() as usize),
-        ClassPermissions::default(),
         MaxNumberOfEntitiesPerClass::get(),
         IndividualEntitiesCreationLimit::get(),
     )
@@ -786,22 +843,71 @@ pub fn transaction(
     TestModule::transaction(Origin::signed(origin), actor, operations)
 }
 
+pub enum InvalidPropertyType {
+    NameTooLong,
+    NameTooShort,
+    DescriptionTooLong,
+    DescriptionTooShort,
+    TextIsTooLong,
+    VecIsTooLong,
+}
+
 impl<T: Trait> Property<T> {
     pub fn default_with_name(name_len: usize) -> Self {
         let name = generate_text(name_len);
+        let description = generate_text(PropertyDescriptionLengthConstraint::get().min() as usize);
         Self {
             name,
+            description,
             ..Property::<T>::default()
         }
     }
 
     pub fn with_name_and_type(name_len: usize, property_type: PropertyType<T>) -> Self {
         let name = generate_text(name_len);
+        let description = generate_text(PropertyDescriptionLengthConstraint::get().min() as usize);
         Self {
             name,
+            description,
             property_type,
             ..Property::<T>::default()
         }
+    }
+
+    pub fn invalid(invalid_property_type: InvalidPropertyType) -> Property<Runtime> {
+        let mut default_property = Property::<Runtime>::default_with_name(
+            PropertyNameLengthConstraint::get().min() as usize,
+        );
+        match invalid_property_type {
+            InvalidPropertyType::NameTooLong => {
+                default_property.name =
+                    generate_text(PropertyNameLengthConstraint::get().max() as usize + 1);
+            }
+            InvalidPropertyType::NameTooShort => {
+                default_property.name =
+                    generate_text(PropertyNameLengthConstraint::get().min() as usize - 1);
+            }
+            InvalidPropertyType::DescriptionTooLong => {
+                default_property.description =
+                    generate_text(PropertyDescriptionLengthConstraint::get().max() as usize + 1);
+            }
+            InvalidPropertyType::DescriptionTooShort => {
+                default_property.description =
+                    generate_text(PropertyDescriptionLengthConstraint::get().min() as usize - 1);
+            }
+            InvalidPropertyType::TextIsTooLong => {
+                default_property.property_type =
+                    PropertyType::<Runtime>::single_text(TextMaxLengthConstraint::get() + 1);
+            }
+            InvalidPropertyType::VecIsTooLong => {
+                default_property.property_type = PropertyType::<Runtime>::vec_reference(
+                    FIRST_CLASS_ID,
+                    true,
+                    VecMaxLengthConstraint::get() + 1,
+                );
+            }
+        };
+        default_property
     }
 }
 
@@ -814,6 +920,11 @@ impl<T: Trait> PropertyType<T> {
         let vec_type = Type::<Runtime>::Reference(class_id, same_controller);
         let vec_reference = VecPropertyType::<Runtime>::new(vec_type, max_length);
         PropertyType::<Runtime>::Vector(vec_reference)
+    }
+
+    pub fn single_text(text_max_len: TextMaxLength) -> PropertyType<Runtime> {
+        let text_type = SingleValuePropertyType(Type::<Runtime>::Text(text_max_len));
+        PropertyType::<Runtime>::Single(text_type)
     }
 }
 

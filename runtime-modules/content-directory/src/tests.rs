@@ -27,10 +27,10 @@ use core::iter::FromIterator;
 
 pub fn add_entity_schemas_support() -> (Entity<Runtime>, Entity<Runtime>) {
     // Create first class with default permissions
-    assert_ok!(create_simple_class_with_default_permissions(LEAD_ORIGIN));
+    assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
     // Create second class with default permissions
-    assert_ok!(create_simple_class_with_default_permissions(LEAD_ORIGIN));
+    assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
     let actor = Actor::Lead;
 

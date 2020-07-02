@@ -4,7 +4,7 @@ use super::*;
 fn transaction_success() {
     with_test_externalities(|| {
         // Create class with default permissions
-        assert_ok!(create_simple_class_with_default_permissions(LEAD_ORIGIN));
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         // Create single reference property
         let property_type_reference =

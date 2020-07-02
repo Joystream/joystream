@@ -75,7 +75,7 @@ fn add_curator_to_non_existent_group() {
 
         // Make an attempt to add curator to group that does not exist
         let add_curator_to_group_result =
-            add_curator_to_group(LEAD_ORIGIN, FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID);
+            add_curator_to_group(LEAD_ORIGIN, UNKNOWN_CURATOR_GROUP_ID, FIRST_CURATOR_ID);
 
         // Failure checked
         assert_failure(
@@ -99,6 +99,7 @@ fn add_curator_to_group_curators_limit_reached() {
 
         let mut number_of_curators_added = 0;
 
+        // Adding curators to the same group until limit reached
         let add_curator_to_group_result = loop {
             // Add curator to group
             let add_curator_to_group_result = add_curator_to_group(
