@@ -372,24 +372,10 @@ const ERROR_DATA_MIGRATION_NOT_DONE: &str = "data migration not done yet.";
 
 use system::ensure_signed;
 
-/// Convenient composite time stamp
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct BlockchainTimestamp<BlockNumber, Moment> {
-    /// Current block number
-    pub block: BlockNumber,
-
-    /// Time of block created
-    pub time: Moment,
-}
-
 /// Represents a moderation outcome applied to a post or a thread.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct ModerationAction<ModeratorId, BlockNumber, Moment> {
-    /// When action occured.
-    pub moderated_at: BlockchainTimestamp<BlockNumber, Moment>,
-
+pub struct ModerationAction<ModeratorId> {
     /// Account forum lead which acted.
     pub moderator_id: ModeratorId,
 }
@@ -450,7 +436,7 @@ pub struct Poll<Timestamp, Hash> {
 /// Represents a thread post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Post<ForumUserId, ModeratorId, ThreadId, BlockNumber, Moment, Hash> {
+pub struct Post<ForumUserId, ModeratorId, ThreadId, Hash> {
     /// Id of thread to which this post corresponds.
     pub thread_id: ThreadId,
 
@@ -458,10 +444,7 @@ pub struct Post<ForumUserId, ModeratorId, ThreadId, BlockNumber, Moment, Hash> {
     pub text_hash: Hash,
 
     /// Possible moderation of this post
-    pub moderation: Option<ModerationAction<ModeratorId, BlockNumber, Moment>>,
-
-    /// When post was submitted.
-    pub created_at: BlockchainTimestamp<BlockNumber, Moment>,
+    pub moderation: Option<ModerationAction<ModeratorId>>,
 
     /// Author of post.
     pub author_id: ForumUserId,
@@ -477,7 +460,7 @@ pub struct Post<ForumUserId, ModeratorId, ThreadId, BlockNumber, Moment, Hash> {
 /// Represents a thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment, Hash> {
+pub struct Thread<ForumUserId, ModeratorId, CategoryId, Moment, Hash> {
     /// Title hash
     pub title_hash: Hash,
 
@@ -485,10 +468,7 @@ pub struct Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment, Has
     pub category_id: CategoryId,
 
     /// Possible moderation of this thread
-    pub moderation: Option<ModerationAction<ModeratorId, BlockNumber, Moment>>,
-
-    /// When thread was established.
-    pub created_at: BlockchainTimestamp<BlockNumber, Moment>,
+    pub moderation: Option<ModerationAction<ModeratorId>>,
 
     /// Author of post.
     pub author_id: ForumUserId,
@@ -518,8 +498,8 @@ pub struct Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment, Has
 }
 
 /// Implement total posts calculation for thread
-impl<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment, Hash>
-    Thread<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment, Hash>
+impl<ForumUserId, ModeratorId, CategoryId, Moment, Hash>
+    Thread<ForumUserId, ModeratorId, CategoryId, Moment, Hash>
 {
     /// How many posts created both unmoderated and moderated
     pub fn num_posts_ever_created(&self) -> u32 {
@@ -530,7 +510,7 @@ impl<ForumUserId, ModeratorId, CategoryId, BlockNumber, Moment, Hash>
 /// Represents a category
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Category<CategoryId, ThreadId, BlockNumber, Moment, Hash> {
+pub struct Category<CategoryId, ThreadId, Hash> {
     /// Category identifier
     pub id: CategoryId,
 
@@ -539,9 +519,6 @@ pub struct Category<CategoryId, ThreadId, BlockNumber, Moment, Hash> {
 
     /// Description
     pub description_hash: Hash,
-
-    /// When category was established.
-    pub created_at: BlockchainTimestamp<BlockNumber, Moment>,
 
     /// Whether category is deleted.
     pub deleted: bool,
@@ -575,9 +552,7 @@ pub struct Category<CategoryId, ThreadId, BlockNumber, Moment, Hash> {
 }
 
 /// Implement total thread calcuation for category
-impl<CategoryId, ThreadId, BlockNumber, Moment, Hash>
-    Category<CategoryId, ThreadId, BlockNumber, Moment, Hash>
-{
+impl<CategoryId, ThreadId, Hash> Category<CategoryId, ThreadId, Hash> {
     /// How many threads created both moderated and unmoderated
     pub fn num_threads_created(&self) -> u32 {
         self.num_direct_unmoderated_threads + self.num_direct_moderated_threads
@@ -586,30 +561,28 @@ impl<CategoryId, ThreadId, BlockNumber, Moment, Hash>
 
 /// Represents a sequence of categories which have child-parent relatioonship
 /// where last element is final ancestor, or root, in the context of the category tree.
-type CategoryTreePath<CategoryId, ThreadId, BlockNumber, Moment, Hash> =
-    Vec<Category<CategoryId, ThreadId, BlockNumber, Moment, Hash>>;
+type CategoryTreePath<CategoryId, ThreadId, Hash> = Vec<Category<CategoryId, ThreadId, Hash>>;
 
 // TODO: remove when this issue is solved https://github.com/rust-lang/rust-clippy/issues/3381
 // temporary type for functions argument
-type CategoryTreePathArg<CategoryId, ThreadId, BlockNumber, Moment, Hash> =
-    [Category<CategoryId, ThreadId, BlockNumber, Moment, Hash>];
+type CategoryTreePathArg<CategoryId, ThreadId, Hash> = [Category<CategoryId, ThreadId, Hash>];
 
 decl_storage! {
     trait Store for Module<T: Trait> as Forum_1_1 {
         /// Map category identifier to corresponding category.
-        pub CategoryById get(category_by_id) config(): map T::CategoryId => Category<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment, T::Hash>;
+        pub CategoryById get(category_by_id) config(): map T::CategoryId => Category<T::CategoryId, T::ThreadId, T::Hash>;
 
         /// Category identifier value to be used for the next Category created.
         pub NextCategoryId get(next_category_id) config(): T::CategoryId;
 
         /// Map thread identifier to corresponding thread.
-        pub ThreadById get(thread_by_id) config(): map T::ThreadId => Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment, T::Hash>;
+        pub ThreadById get(thread_by_id) config(): map T::ThreadId => Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::Moment, T::Hash>;
 
         /// Thread identifier value to be used for next Thread in threadById.
         pub NextThreadId get(next_thread_id) config(): T::ThreadId;
 
         /// Map post identifier to corresponding post.
-        pub PostById get(post_by_id) config(): map T::PostId => Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment, T::Hash>;
+        pub PostById get(post_by_id) config(): map T::PostId => Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::Hash>;
 
         /// Post identifier value to be used for for next post created.
         pub NextPostId get(next_post_id) config(): T::PostId;
@@ -775,7 +748,6 @@ decl_module! {
                 id : next_category_id,
                 title_hash: T::calculate_hash(title.as_slice()),
                 description_hash: T::calculate_hash(description.as_slice()),
-                created_at : Self::current_block_and_time(),
                 deleted: false,
                 archived: false,
                 num_direct_subcategories: 0,
@@ -964,7 +936,6 @@ decl_module! {
 
             // Add moderation to thread
             thread.moderation = Some(ModerationAction {
-                moderated_at: Self::current_block_and_time(),
                 moderator_id,
             });
 
@@ -1054,27 +1025,6 @@ decl_module! {
             // Signer does not match creator of post with identifier postId
             ensure!(post.author_id == forum_user_id, ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR);
 
-            // Update post text and record update history
-            <PostById<T>>::mutate(post_id, |p| {
-
-                let expired_post_text = PostTextChange {
-                    expired_at: Self::current_block_and_time(),
-                    text: new_text.clone(),
-                };
-
-                // Set current text to new text
-                p.text_hash = T::calculate_hash(&new_text);
-
-                // Copy current text to history of expired texts
-                p.text_change_history.push(expired_post_text);
-            });
-
-            // Get text change history length
-            let text_change_history_len = <PostById<T>>::get(post_id).text_change_history.len() as u64;
-
-            // Generate event
-            Self::deposit_event(RawEvent::PostTextUpdated(post_id, text_change_history_len));
-
             Ok(())
         }
 
@@ -1097,7 +1047,6 @@ decl_module! {
 
             // Update moderation action on post
             let moderation_action = ModerationAction{
-                moderated_at: Self::current_block_and_time(),
                 moderator_id,
             };
 
@@ -1158,7 +1107,7 @@ impl<T: Trait> Module<T> {
         text: &[u8],
         poll: &Option<Poll<T::Moment, T::Hash>>,
     ) -> Result<
-        Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment, T::Hash>,
+        Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::Moment, T::Hash>,
         &'static str,
     > {
         // Ensure data migration is done
@@ -1194,7 +1143,6 @@ impl<T: Trait> Module<T> {
             category_id,
             title_hash: T::calculate_hash(title),
             moderation: None,
-            created_at: Self::current_block_and_time(),
             author_id,
             poll: poll.clone(),
             nr_in_category: category.num_threads_created() + 1,
@@ -1223,10 +1171,7 @@ impl<T: Trait> Module<T> {
         thread_id: T::ThreadId,
         text: &[u8],
         author_id: T::ForumUserId,
-    ) -> Result<
-        Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment, T::Hash>,
-        &'static str,
-    > {
+    ) -> Result<Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::Hash>, &'static str> {
         // Ensure data migration is done
         Self::ensure_data_migration_done()?;
 
@@ -1248,7 +1193,6 @@ impl<T: Trait> Module<T> {
             thread_id,
             text_hash: T::calculate_hash(text),
             moderation: None,
-            created_at: Self::current_block_and_time(),
             author_id,
             nr_in_thread: thread.num_posts_ever_created(),
         };
@@ -1299,19 +1243,9 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn current_block_and_time() -> BlockchainTimestamp<T::BlockNumber, T::Moment> {
-        BlockchainTimestamp {
-            block: <system::Module<T>>::block_number(),
-            time: <timestamp::Module<T>>::now(),
-        }
-    }
-
     fn ensure_post_is_mutable(
         post_id: &T::PostId,
-    ) -> Result<
-        Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment, T::Hash>,
-        &'static str,
-    > {
+    ) -> Result<Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::Hash>, &'static str> {
         // Make sure post exists
         let post = Self::ensure_post_exists(post_id)?;
 
@@ -1326,10 +1260,7 @@ impl<T: Trait> Module<T> {
 
     fn ensure_post_exists(
         post_id: &T::PostId,
-    ) -> Result<
-        Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::BlockNumber, T::Moment, T::Hash>,
-        &'static str,
-    > {
+    ) -> Result<Post<T::ForumUserId, T::ModeratorId, T::ThreadId, T::Hash>, &'static str> {
         if <PostById<T>>::exists(post_id) {
             Ok(<PostById<T>>::get(post_id))
         } else {
@@ -1340,7 +1271,7 @@ impl<T: Trait> Module<T> {
     fn ensure_thread_is_mutable(
         thread_id: &T::ThreadId,
     ) -> Result<
-        Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment, T::Hash>,
+        Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::Moment, T::Hash>,
         &'static str,
     > {
         // Make sure thread exists
@@ -1358,7 +1289,7 @@ impl<T: Trait> Module<T> {
     fn ensure_thread_exists(
         thread_id: &T::ThreadId,
     ) -> Result<
-        Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::BlockNumber, T::Moment, T::Hash>,
+        Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::Moment, T::Hash>,
         &'static str,
     > {
         if <ThreadById<T>>::exists(thread_id) {
@@ -1428,21 +1359,13 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_can_mutate_in_path_leaf(
-        category_tree_path: &CategoryTreePathArg<
-            T::CategoryId,
-            T::ThreadId,
-            T::BlockNumber,
-            T::Moment,
-            T::Hash,
-        >,
+        category_tree_path: &CategoryTreePathArg<T::CategoryId, T::ThreadId, T::Hash>,
     ) -> dispatch::Result {
         // Is parent category directly or indirectly deleted or archived category
         ensure!(
-            !category_tree_path.iter().any(
-                |c: &Category<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment, T::Hash>| c
-                    .deleted
-                    || c.archived
-            ),
+            !category_tree_path
+                .iter()
+                .any(|c: &Category<T::CategoryId, T::ThreadId, T::Hash>| c.deleted || c.archived),
             ERROR_ANCESTOR_CATEGORY_IMMUTABLE
         );
 
@@ -1450,13 +1373,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_can_add_subcategory_path_leaf(
-        category_tree_path: &CategoryTreePathArg<
-            T::CategoryId,
-            T::ThreadId,
-            T::BlockNumber,
-            T::Moment,
-            T::Hash,
-        >,
+        category_tree_path: &CategoryTreePathArg<T::CategoryId, T::ThreadId, T::Hash>,
     ) -> dispatch::Result {
         Self::ensure_can_mutate_in_path_leaf(category_tree_path)?;
 
@@ -1474,10 +1391,7 @@ impl<T: Trait> Module<T> {
     /// Build category tree path and validate them
     fn ensure_valid_category_and_build_category_tree_path(
         category_id: T::CategoryId,
-    ) -> Result<
-        CategoryTreePath<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment, T::Hash>,
-        &'static str,
-    > {
+    ) -> Result<CategoryTreePath<T::CategoryId, T::ThreadId, T::Hash>, &'static str> {
         ensure!(
             <CategoryById<T>>::exists(&category_id),
             ERROR_CATEGORY_DOES_NOT_EXIST
@@ -1495,7 +1409,7 @@ impl<T: Trait> Module<T> {
     /// Requires that `category_id` is valid
     fn build_category_tree_path(
         category_id: T::CategoryId,
-    ) -> CategoryTreePath<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment, T::Hash> {
+    ) -> CategoryTreePath<T::CategoryId, T::ThreadId, T::Hash> {
         // Get path from parent to root of category tree.
         let mut category_tree_path = vec![];
 
@@ -1508,7 +1422,7 @@ impl<T: Trait> Module<T> {
     /// Requires that `category_id` is valid
     fn _build_category_tree_path(
         category_id: T::CategoryId,
-        path: &mut CategoryTreePath<T::CategoryId, T::ThreadId, T::BlockNumber, T::Moment, T::Hash>,
+        path: &mut CategoryTreePath<T::CategoryId, T::ThreadId, T::Hash>,
     ) {
         // Grab category
         let category = <CategoryById<T>>::get(category_id);
@@ -1547,14 +1461,7 @@ impl<T: Trait> Module<T> {
 
     /// Check the vote is valid
     fn ensure_vote_is_valid(
-        thread: &Thread<
-            T::ForumUserId,
-            T::ModeratorId,
-            T::CategoryId,
-            T::BlockNumber,
-            T::Moment,
-            T::Hash,
-        >,
+        thread: &Thread<T::ForumUserId, T::ModeratorId, T::CategoryId, T::Moment, T::Hash>,
         index: u32,
     ) -> Result<(), &'static str> {
         // Poll not existed
