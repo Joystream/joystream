@@ -16,61 +16,59 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-'use strict';
+'use strict'
 
 // Node requires
-const fs = require('fs');
-const path = require('path');
+const fs = require('fs')
+const path = require('path')
 
 // npm requires
-const express = require('express');
-const openapi = require('express-openapi');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const yaml = require('js-yaml');
+const express = require('express')
+const openapi = require('express-openapi')
+const bodyParser = require('body-parser')
+const cors = require('cors')
+const yaml = require('js-yaml')
 
 // Project requires
-const validateResponses = require('./middleware/validate_responses');
-const fileUploads = require('./middleware/file_uploads');
-const pagination = require('@joystream/storage-utils/pagination');
+const validateResponses = require('./middleware/validate_responses')
+const fileUploads = require('./middleware/file_uploads')
+const pagination = require('@joystream/storage-utils/pagination')
 
 // Configure app
-function create_app(project_root, storage, runtime)
-{
-  const app = express();
-  app.use(cors());
-  app.use(bodyParser.json());
-  // FIXME app.use(bodyParser.urlencoded({ extended: true }));
+function create_app(project_root, storage, runtime) {
+	const app = express()
+	app.use(cors())
+	app.use(bodyParser.json())
+	// FIXME app.use(bodyParser.urlencoded({ extended: true }));
 
-  // Load & extend/configure API docs
-  var api = yaml.safeLoad(fs.readFileSync(
-    path.resolve(project_root, 'api-base.yml')));
-  api['x-express-openapi-additional-middleware'] = [validateResponses];
-  api['x-express-openapi-validation-strict'] = true;
+	// Load & extend/configure API docs
+	let api = yaml.safeLoad(fs.readFileSync(path.resolve(project_root, 'api-base.yml')))
+	api['x-express-openapi-additional-middleware'] = [validateResponses]
+	api['x-express-openapi-validation-strict'] = true
 
-  api = pagination.openapi(api);
+	api = pagination.openapi(api)
 
-  openapi.initialize({
-    apiDoc: api,
-    app: app,
-    paths: path.resolve(project_root, 'paths'),
-    docsPath: '/swagger.json',
-    consumesMiddleware: {
-      'multipart/form-data': fileUploads
-    },
-    dependencies: {
-      storage: storage,
-      runtime: runtime,
-    },
-  });
+	openapi.initialize({
+		apiDoc: api,
+		app,
+		paths: path.resolve(project_root, 'paths'),
+		docsPath: '/swagger.json',
+		consumesMiddleware: {
+			'multipart/form-data': fileUploads,
+		},
+		dependencies: {
+			storage,
+			runtime,
+		},
+	})
 
-  // If no other handler gets triggered (errors), respond with the
-  // error serialized to JSON.
-  app.use(function(err, req, res, next) {
-    res.status(err.status).json(err);
-  });
+	// If no other handler gets triggered (errors), respond with the
+	// error serialized to JSON.
+	app.use(function (err, req, res, next) {
+		res.status(err.status).json(err)
+	})
 
-  return app;
+	return app
 }
 
-module.exports = create_app;
+module.exports = create_app

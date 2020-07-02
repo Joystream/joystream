@@ -16,59 +16,59 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-'use strict';
+'use strict'
 
-const debug = require('debug')('joystream:middleware:pagination');
+const debug = require('debug')('joystream:middleware:pagination')
 
 // Pagination definitions
 const _api_defs = {
-  parameters: {
-    paginationLimit: {
-      name: 'limit',
-      in: 'query',
-      description: 'Number of items per page.',
-      required: false,
-      schema: {
-        type: 'integer',
-        minimum: 1,
-        maximum: 50,
-        default: 20,
-      },
-    },
-    paginationOffset: {
-      name: 'offset',
-      in: 'query',
-      description: 'Page number (offset)',
-      schema: {
-        type: 'integer',
-        minimum: 0,
-      },
-    },
-  },
-  schemas: {
-    PaginationInfo: {
-      type: 'object',
-      required: ['self'],
-      properties: {
-        'self': {
-          type: 'string',
-        },
-        next: {
-          type: 'string',
-        },
-        prev: {
-          type: 'string',
-        },
-        first: {
-          type: 'string',
-        },
-        last: {
-          type: 'string',
-        },
-      },
-    },
-  },
-};
+	parameters: {
+		paginationLimit: {
+			name: 'limit',
+			in: 'query',
+			description: 'Number of items per page.',
+			required: false,
+			schema: {
+				type: 'integer',
+				minimum: 1,
+				maximum: 50,
+				default: 20,
+			},
+		},
+		paginationOffset: {
+			name: 'offset',
+			in: 'query',
+			description: 'Page number (offset)',
+			schema: {
+				type: 'integer',
+				minimum: 0,
+			},
+		},
+	},
+	schemas: {
+		PaginationInfo: {
+			type: 'object',
+			required: ['self'],
+			properties: {
+				self: {
+					type: 'string',
+				},
+				next: {
+					type: 'string',
+				},
+				prev: {
+					type: 'string',
+				},
+				first: {
+					type: 'string',
+				},
+				last: {
+					type: 'string',
+				},
+			},
+		},
+	},
+}
 
 /**
  * Silly pagination because it's faster than getting other modules to work.
@@ -83,81 +83,76 @@ const _api_defs = {
  *      If last_offset is given, create a last link with that offset
  **/
 module.exports = {
+	// Add pagination parameters and pagination info responses.
+	parameters: [
+		{ $ref: '#/components/parameters/paginationLimit' },
+		{ $ref: '#/components/parameters/paginationOffset' },
+	],
 
-  // Add pagination parameters and pagination info responses.
-  parameters: [
-    { '$ref': '#/components/parameters/paginationLimit' },
-    { '$ref': '#/components/parameters/paginationOffset' },
+	response: {
+		$ref: '#/components/schema/PaginationInfo',
+	},
 
-  ],
+	// Update swagger/openapi specs with our own parameters and definitions
+	openapi(api) {
+		api.components = api.components || {}
+		api.components.parameters = { ...(api.components.parameters || {}), ..._api_defs.parameters }
+		api.components.schemas = { ...(api.components.schemas || {}), ..._api_defs.schemas }
+		return api
+	},
 
-  response: {
-    '$ref': '#/components/schema/PaginationInfo'
-  },
+	// Pagination function
+	paginate(req, res, last_offset) {
+		// Skip if the response is not an object.
+		if (Object.prototype.toString.call(res) != '[object Object]') {
+			debug('Cannot paginate non-objects.')
+			return res
+		}
 
-  // Update swagger/openapi specs with our own parameters and definitions
-  openapi: function(api)
-  {
-    api.components = api.components || {};
-    api.components.parameters = { ...api.components.parameters || {} , ..._api_defs.parameters };
-    api.components.schemas = { ...api.components.schemas || {}, ..._api_defs.schemas };
-    return api;
-  },
+		// Defaults for parameters
+		const offset = req.query.offset || 0
+		const limit = req.query.limit || 20
+		debug('Create pagination links from offset=' + offset, 'limit=' + limit)
 
-  // Pagination function
-  paginate: function(req, res, last_offset)
-  {
-    // Skip if the response is not an object.
-    if (Object.prototype.toString.call(res) != "[object Object]") {
-      debug('Cannot paginate non-objects.');
-      return res;
-    }
+		// Parse current url
+		const url = require('url')
+		const req_url = url.parse(req.protocol + '://' + req.get('host') + req.originalUrl)
+		const params = new url.URLSearchParams(req_url.query)
 
-    // Defaults for parameters
-    var offset = req.query.offset || 0;
-    var limit = req.query.limit || 20;
-    debug('Create pagination links from offset=' + offset, 'limit=' + limit);
+		// Pagination object
+		const pagination = {
+			self: req_url.href,
+		}
 
-    // Parse current url
-    const url = require('url');
-    var req_url = url.parse(req.protocol + '://' + req.get('host') + req.originalUrl);
-    var params = new url.URLSearchParams(req_url.query);
+		const prev = offset - limit
+		if (prev >= 0) {
+			params.set('offset', prev)
+			req_url.search = params.toString()
+			pagination.prev = url.format(req_url)
+		}
 
-    // Pagination object
-    var pagination = {
-      'self': req_url.href,
-    }
+		const next = offset + limit
+		if (next >= 0) {
+			params.set('offset', next)
+			req_url.search = params.toString()
+			pagination.next = url.format(req_url)
+		}
 
-    var prev = offset - limit;
-    if (prev >= 0) {
-      params.set('offset', prev);
-      req_url.search = params.toString();
-      pagination['prev'] = url.format(req_url);
+		if (last_offset) {
+			params.set('offset', last_offset)
+			req_url.search = params.toString()
+			pagination.last = url.format(req_url)
+		}
 
-    }
+		// First
+		params.set('offset', 0)
+		req_url.search = params.toString()
+		pagination.first = url.format(req_url)
 
-    var next = offset + limit;
-    if (next >= 0) {
-      params.set('offset', next);
-      req_url.search = params.toString();
-      pagination['next'] = url.format(req_url);
-    }
+		debug('pagination', pagination)
 
-    if (last_offset) {
-      params.set('offset', last_offset);
-      req_url.search = params.toString();
-      pagination['last'] = url.format(req_url);
-    }
-
-    // First
-    params.set('offset', 0);
-    req_url.search = params.toString();
-    pagination['first'] = url.format(req_url);
-
-    debug('pagination', pagination);
-
-    // Now set pagination values in response.
-    res.pagination = pagination;
-    return res;
-  },
-};
+		// Now set pagination values in response.
+		res.pagination = pagination
+		return res
+	},
+}

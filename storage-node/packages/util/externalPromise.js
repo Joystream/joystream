@@ -3,17 +3,17 @@
  * so it can be fulfilled 'externally'. This is a bit of a hack, but most useful application is when
  * concurrent async operations are initiated that are all waiting on the same result value.
  */
-function newExternallyControlledPromise () {
-    let resolve, reject
+function newExternallyControlledPromise() {
+	let resolve, reject
 
-    const promise = new Promise((res, rej) => {
-      resolve = res
-      reject = rej
-    })
+	const promise = new Promise((res, rej) => {
+		resolve = res
+		reject = rej
+	})
 
-    return ({ resolve, reject, promise })
+	return { resolve, reject, promise }
 }
 
 module.exports = {
-    newExternallyControlledPromise
+	newExternallyControlledPromise,
 }
