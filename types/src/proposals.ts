@@ -1,11 +1,14 @@
 import { Text, u32, Enum, getTypeRegistry, Tuple, GenericAccountId, u8, Vec, Option, Struct, Null, Bytes } from "@polkadot/types";
+import { bool } from "@polkadot/types/primitive";
 import { BlockNumber, Balance } from "@polkadot/types/interfaces";
 import AccountId from "@polkadot/types/primitive/Generic/AccountId";
-import { ThreadId, JoyStruct } from "./common";
+import { ThreadId, JoyStruct, WorkingGroup } from "./common";
 import { MemberId } from "./members";
 import { RoleParameters } from "./roles";
 import { StakeId } from "./stake";
 import { ElectionParameters } from "./council";
+import { ActivateOpeningAt, OpeningId, ApplicationId } from "./hiring";
+import { WorkingGroupOpeningPolicyCommitment, WorkerId, RewardPolicy } from "./working-group";
 
 export type IVotingResults = {
   abstensions: u32;
@@ -284,7 +287,15 @@ export class ProposalDetails extends Enum {
         SetContentWorkingGroupMintCapacity: "Balance",
         EvictStorageProvider: "AccountId",
         SetValidatorCount: "u32",
-        SetStorageRoleParameters: RoleParameters
+        SetStorageRoleParameters: RoleParameters,
+        AddWorkingGroupLeaderOpening: AddOpeningParameters,
+        BeginReviewWorkingGroupLeaderApplication: Tuple.with([OpeningId, WorkingGroup]),
+        FillWorkingGroupLeaderOpening: FillOpeningParameters,
+        SetWorkingGroupMintCapacity: Tuple.with(["Balance", WorkingGroup]),
+        DecreaseWorkingGroupLeaderStake: Tuple.with([WorkerId, "Balance", WorkingGroup]),
+        SlashWorkingGroupLeaderStake: Tuple.with([WorkerId, "Balance", WorkingGroup]),
+        SetWorkingGroupLeaderReward: Tuple.with([WorkerId, "Balance", WorkingGroup]),
+        TerminateWorkingGroupLeaderRole: TerminateRoleParameters,
       },
       value,
       index
@@ -440,6 +451,117 @@ export class DiscussionPost extends Struct {
   }
 }
 
+export type IAddOpeningParameters = {
+  activate_at: ActivateOpeningAt;
+  commitment: WorkingGroupOpeningPolicyCommitment;
+  human_readable_text: Bytes;
+  working_group: WorkingGroup;
+};
+
+export class AddOpeningParameters extends JoyStruct<IAddOpeningParameters> {
+  constructor(value?: IAddOpeningParameters) {
+    super(
+      {
+        activate_at: ActivateOpeningAt,
+        commitment: WorkingGroupOpeningPolicyCommitment,
+        human_readable_text: Bytes,
+        working_group: WorkingGroup
+      },
+      value
+    );
+  }
+
+  get activate_at(): ActivateOpeningAt {
+    return this.getField<ActivateOpeningAt>('activate_at');
+  }
+
+  get commitment(): WorkingGroupOpeningPolicyCommitment {
+    return this.getField<WorkingGroupOpeningPolicyCommitment>('commitment');
+  }
+
+  get human_readable_text(): Bytes {
+    return this.getField<Bytes>('human_readable_text');
+  }
+
+  get working_group(): WorkingGroup {
+    return this.getField<WorkingGroup>('working_group');
+  }
+}
+
+export type IFillOpeningParameters = {
+  opening_id: OpeningId;
+  successful_application_id: ApplicationId;
+  reward_policy: Option<RewardPolicy>;
+  working_group: WorkingGroup;
+}
+
+export class FillOpeningParameters extends JoyStruct<IFillOpeningParameters> {
+  constructor(value?: IFillOpeningParameters) {
+    super(
+      {
+        opening_id: OpeningId,
+        successful_application_id: ApplicationId,
+        reward_policy: Option.with(RewardPolicy),
+        working_group: WorkingGroup,
+      },
+      value
+    );
+  }
+
+  get opening_id(): OpeningId {
+    return this.getField<OpeningId>('opening_id');
+  }
+
+  get successful_application_id(): ApplicationId {
+    return this.getField<ApplicationId>('successful_application_id');
+  }
+
+  get reward_policy(): Option<RewardPolicy> {
+    return this.getField<Option<RewardPolicy>>('reward_policy');
+  }
+
+  get working_group(): WorkingGroup {
+    return this.getField<WorkingGroup>('working_group');
+  }
+}
+
+export type ITerminateRoleParameters = {
+  worker_id: WorkerId;
+  rationale: Bytes;
+  slash: bool;
+  working_group: WorkingGroup;
+}
+
+export class TerminateRoleParameters extends JoyStruct<ITerminateRoleParameters> {
+  constructor(value?: ITerminateRoleParameters) {
+    super(
+      {
+        worker_id: WorkerId,
+        rationale: Bytes,
+        slash: bool,
+        working_group: WorkingGroup,
+      },
+      value
+    );
+  }
+
+  get worker_id(): WorkerId {
+    return this.getField<WorkerId>('worker_id');
+  }
+
+  get rationale(): Bytes {
+    return this.getField<Bytes>('rationale');
+  }
+
+  get slash(): bool {
+    return this.getField<bool>('slash');
+  }
+
+  get working_group(): WorkingGroup {
+    return this.getField<WorkingGroup>('working_group');
+  }
+}
+
 // export default proposalTypes;
 export function registerProposalTypes() {
   try {
@@ -448,12 +570,16 @@ export function registerProposalTypes() {
       ProposalStatus,
       ProposalOf: Proposal,
       ProposalDetails,
+      ProposalDetailsOf: ProposalDetails, // Runtime alias
       VotingResults,
       ProposalParameters,
       VoteKind,
       ThreadCounter,
       DiscussionThread,
-      DiscussionPost
+      DiscussionPost,
+      AddOpeningParameters,
+      FillOpeningParameters,
+      TerminateRoleParameters
     });
   } catch (err) {
     console.error("Failed to register custom types of proposals module", err);

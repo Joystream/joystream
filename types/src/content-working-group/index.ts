@@ -1,5 +1,5 @@
-import { getTypeRegistry, BTreeMap, Enum, bool, u8, u32, u128, Text, GenericAccountId, Null , Option, Vec, u16 } from '@polkadot/types';
-import { BlockNumber, AccountId, Balance } from '@polkadot/types/interfaces';
+import { getTypeRegistry, BTreeMap, Enum, bool, u8, u32, Text, GenericAccountId, Null , Option, Vec, u16 } from '@polkadot/types';
+import { BlockNumber, AccountId } from '@polkadot/types/interfaces';
 import { BTreeSet, JoyStruct, OptionText, Credential } from '../common';
 import { ActorId, MemberId } from '../members';
 import { StakeId } from '../stake';
@@ -526,21 +526,6 @@ export class CuratorApplicationIdToCuratorIdMap extends BTreeMap<ApplicationId, 
   }
 }
 
-export type IRewardPolicy = {
-  amount_per_payout: Balance,
-  next_payment_at_block: BlockNumber,
-  payout_interval: Option<BlockNumber>,
-};
-export class RewardPolicy extends JoyStruct<IRewardPolicy> {
-  constructor (value?: IRewardPolicy) {
-    super({
-      amount_per_payout: u128,
-      next_payment_at_block: u32,
-      payout_interval: Option.with(u32),
-    }, value);
-  }
-};
-
 export function registerContentWorkingGroupTypes () {
   try {
     getTypeRegistry().register({
@@ -564,8 +549,7 @@ export function registerContentWorkingGroupTypes () {
       Principal,
       WorkingGroupUnstaker,
       CuratorApplicationIdToCuratorIdMap,
-      CuratorApplicationIdSet: Vec.with(CuratorApplicationId),
-      RewardPolicy,
+      CuratorApplicationIdSet: Vec.with(CuratorApplicationId)
     });
   } catch (err) {
     console.error('Failed to register custom types of content working group module', err);
