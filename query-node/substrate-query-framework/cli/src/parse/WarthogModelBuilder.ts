@@ -9,7 +9,7 @@ import {
 import { GraphQLSchemaParser, Visitors, SchemaNode } from './SchemaParser';
 import { WarthogModel, Field, ObjectType } from '../model';
 import Debug from 'debug';
-import { ENTITY_DIRECTIVE, UNIQUE_DIRECTIVE } from './constant';
+import { ENTITY_DIRECTIVE, UNIQUE_DIRECTIVE, VARIANT_DIRECTIVE } from './constant';
 import { FTSDirective, FULL_TEXT_SEARCHABLE_DIRECTIVE } from './FTSDirective';
 
 const debug = Debug('qnode-cli:model-generator');
@@ -78,6 +78,22 @@ export class WarthogModelBuilder {
     return entityDirective ? true : false;
   }
 
+  private isVariant(o: TypeDefinitionNode): boolean {
+    if (o.directives == undefined) {
+      return false;
+    }
+
+    if (this.isEntity(o)) {
+      throw new Error('An entity cannot be marked as a variant type');
+    }
+
+    if (o.kind !== 'ObjectTypeDefinition') {
+      throw new Error('Only Object Types can be marked as a variant type');
+    }
+
+    return o.directives.findIndex(d => d.name.value === VARIANT_DIRECTIVE) >= 0;
+  }
+
   private isUnique(field: FieldDefinitionNode): boolean {
     const entityDirective = field.directives?.find(d => d.name.value === UNIQUE_DIRECTIVE);
     return entityDirective ? true : false;
@@ -92,6 +108,7 @@ export class WarthogModelBuilder {
       name: o.name.value,
       fields: this.getFields(o),
       isEntity: this.isEntity(o),
+      isVariant: this.isVariant(o),
       description: o.description?.value,
       isInterface: o.kind === 'InterfaceTypeDefinition',
       interfaces: o.kind === 'ObjectTypeDefinition' ? this.getInterfaces(o) : [],
@@ -187,10 +204,10 @@ export class WarthogModelBuilder {
     });
   }
 
-  private generateObjectTypes() {
+  private generateEntities() {
     this._schemaParser.getObjectDefinations().map(o => {
       const objType = this.generateTypeDefination(o);
-      this._model.addObjectType(objType);
+      this._model.addEntity(objType);
     });
   }
 
@@ -216,7 +233,7 @@ export class WarthogModelBuilder {
 
     this.generateEnums();
     this.generateInterfaces();
-    this.generateObjectTypes();
+    this.generateEntities();
     this.generateSQLRelationships();
     this.genereateQueries();
 
