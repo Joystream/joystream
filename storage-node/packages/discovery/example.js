@@ -1,14 +1,18 @@
-const { RuntimeApi } = require('@joystream/runtime-api')
+const { RuntimeApi } = require('@joystream/storage-runtime-api')
 
 const { discover, publish } = require('./')
 
 async function main() {
+    // The assigned storage-provider id
+    const provider_id = 0
+
     const runtimeApi = await RuntimeApi.create({
-        account_file: "/Users/mokhtar/Downloads/5Gn9n7SDJ7VgHqHQWYzkSA4vX6DCmS5TFWdHxikTXp9b4L32.json"
+        // Path to the role account key file of the provider
+        account_file: "/path/to/role_account_key_file.json",
+        storageProviderId: provider_id
     })
 
-    let published = await publish.publish(
-        "5Gn9n7SDJ7VgHqHQWYzkSA4vX6DCmS5TFWdHxikTXp9b4L32",
+    let ipns_id = await publish.publish(
         {
             asset: {
                 version: 1,
@@ -18,11 +22,13 @@ async function main() {
         runtimeApi
     )
 
-    console.log(published)
+    console.log(ipns_id)
 
-    // let serviceInfo = await discover('5Gn9n7SDJ7VgHqHQWYzkSA4vX6DCmS5TFWdHxikTXp9b4L32', { runtimeApi })
+    // register ipns_id on chain
+    await runtimeApi.setAccountInfo(ipfs_id)
+
     let serviceInfo = await discover.discover(
-        '5Gn9n7SDJ7VgHqHQWYzkSA4vX6DCmS5TFWdHxikTXp9b4L32',
+        provider_id,
         runtimeApi
     )
 

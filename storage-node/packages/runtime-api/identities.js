@@ -8,7 +8,7 @@
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * but WITHOUT ANY WARRANTY without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
@@ -16,220 +16,221 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-'use strict';
+'use strict'
 
-const path = require('path');
-const fs = require('fs');
-// const readline = require('readline');
+const path = require('path')
+const fs = require('fs')
+// const readline = require('readline')
 
-const debug = require('debug')('joystream:runtime:identities');
-
-const { Keyring } = require('@polkadot/keyring');
-// const { Null } = require('@polkadot/types/primitive');
-const util_crypto = require('@polkadot/util-crypto');
-
-// const { _ } = require('lodash');
+const debug = require('debug')('joystream:runtime:identities')
+const { Keyring } = require('@polkadot/keyring')
+const util_crypto = require('@polkadot/util-crypto')
 
 /*
  * Add identity management to the substrate API.
  *
  * This loosely groups: accounts, key management, and membership.
  */
-class IdentitiesApi
-{
-  static async create(base, {account_file, passphrase, canPromptForPassphrase})
-  {
-    const ret = new IdentitiesApi();
-    ret.base = base;
-    await ret.init(account_file, passphrase, canPromptForPassphrase);
-    return ret;
+class IdentitiesApi {
+  static async create (base, {account_file, passphrase, canPromptForPassphrase}) {
+    const ret = new IdentitiesApi()
+    ret.base = base
+    await ret.init(account_file, passphrase, canPromptForPassphrase)
+    return ret
   }
 
-  async init(account_file, passphrase, canPromptForPassphrase)
-  {
-    debug('Init');
+  async init (account_file, passphrase, canPromptForPassphrase) {
+    debug('Init')
 
     // Creatre keyring
-    this.keyring = new Keyring();
+    this.keyring = new Keyring()
 
-    this.canPromptForPassphrase = canPromptForPassphrase || false;
+    this.canPromptForPassphrase = canPromptForPassphrase || false
 
     // Load account file, if possible.
     try {
-      this.key = await this.loadUnlock(account_file, passphrase);
+      this.key = await this.loadUnlock(account_file, passphrase)
     } catch (err) {
-      debug('Error loading account file:', err.message);
+      debug('Error loading account file:', err.message)
     }
   }
 
   /*
    * Load a key file and unlock it if necessary.
    */
-  async loadUnlock(account_file, passphrase)
-  {
-    const fullname = path.resolve(account_file);
-    debug('Initializing key from', fullname);
-    const key = this.keyring.addFromJson(require(fullname));
-    await this.tryUnlock(key, passphrase);
-    debug('Successfully initialized with address', key.address);
-    return key;
+  async loadUnlock (account_file, passphrase) {
+    const fullname = path.resolve(account_file)
+    debug('Initializing key from', fullname)
+    const key = this.keyring.addFromJson(require(fullname))
+    await this.tryUnlock(key, passphrase)
+    debug('Successfully initialized with address', key.address)
+    return key
   }
 
   /*
    * Try to unlock a key if it isn't already unlocked.
    * passphrase should be supplied as argument.
    */
-  async tryUnlock(key, passphrase)
-  {
+  async tryUnlock (key, passphrase) {
     if (!key.isLocked) {
       debug('Key is not locked, not attempting to unlock')
-      return;
+      return
     }
 
     // First try with an empty passphrase - for convenience
     try {
-      key.decodePkcs8('');
+      key.decodePkcs8('')
 
       if (passphrase) {
-        debug('Key was not encrypted, supplied passphrase was ignored');
+        debug('Key was not encrypted, supplied passphrase was ignored')
       }
 
-      return;
+      return
     } catch (err) {
       // pass
     }
 
     // Then with supplied passphrase
     try {
-      debug('Decrypting with supplied passphrase');
-      key.decodePkcs8(passphrase);
-      return;
+      debug('Decrypting with supplied passphrase')
+      key.decodePkcs8(passphrase)
+      return
     } catch (err) {
       // pass
     }
 
     // If that didn't work, ask for a passphrase if appropriate
     if (this.canPromptForPassphrase) {
-      passphrase = await this.askForPassphrase(key.address);
-      key.decodePkcs8(passphrase);
+      passphrase = await this.askForPassphrase(key.address)
+      key.decodePkcs8(passphrase)
       return
     }
 
-    throw new Error('invalid passphrase supplied');
+    throw new Error('invalid passphrase supplied')
   }
 
   /*
    * Ask for a passphrase
    */
-  askForPassphrase(address)
-  {
+  askForPassphrase (address) {
     // Query for passphrase
-    const prompt = require('password-prompt');
-    return prompt(`Enter passphrase for ${address}: `, { required: false });
+    const prompt = require('password-prompt')
+    return prompt(`Enter passphrase for ${address}: `, { required: false })
   }
 
   /*
-   * Return true if the account is a member
+   * Return true if the account is a root account of a member
    */
-  async isMember(accountId)
-  {
-    const memberIds = await this.memberIdsOf(accountId); // return array of member ids
+  async isMember (accountId) {
+    const memberIds = await this.memberIdsOf(accountId) // return array of member ids
     return memberIds.length > 0 // true if at least one member id exists for the acccount
   }
 
   /*
-   * Return true if the account is an actor/role account
+   * Return all the member IDs of an account by the root account id
    */
-  async isActor(accountId)
-  {
-    const decoded = this.keyring.decodeAddress(accountId);
-    const actor = await this.base.api.query.actors.actorByAccountId(decoded)
-    return actor.isSome
+  async memberIdsOf (accountId) {
+    const decoded = this.keyring.decodeAddress(accountId)
+    return this.base.api.query.members.memberIdsByRootAccountId(decoded)
   }
 
   /*
-   * Return the member IDs of an account
+   * Return the first member ID of an account, or undefined if not a member root account.
    */
-  async memberIdsOf(accountId)
-  {
-    const decoded = this.keyring.decodeAddress(accountId);
-    return await this.base.api.query.members.memberIdsByRootAccountId(decoded);
-  }
-
-  /*
-   * Return the first member ID of an account, or undefined if not a member.
-   */
-  async firstMemberIdOf(accountId)
-  {
-    const decoded = this.keyring.decodeAddress(accountId);
-    let ids = await this.base.api.query.members.memberIdsByRootAccountId(decoded);
+  async firstMemberIdOf (accountId) {
+    const decoded = this.keyring.decodeAddress(accountId)
+    let ids = await this.base.api.query.members.memberIdsByRootAccountId(decoded)
     return ids[0]
-  }
-
-  /*
-   * Create a new key for the given role *name*. If no name is given,
-   * default to 'storage'.
-   */
-  async createRoleKey(accountId, role)
-  {
-    role = role || 'storage';
-
-    // Generate new key pair
-    const keyPair = util_crypto.naclKeypairFromRandom();
-
-    // Encode to an address.
-    const addr = this.keyring.encodeAddress(keyPair.publicKey);
-    debug('Generated new key pair with address', addr);
-
-    // Add to key wring. We set the meta to identify the account as
-    // a role key.
-    const meta = {
-      name: `${role} role account for ${accountId}`,
-    };
-
-    const createPair = require('@polkadot/keyring/pair').default;
-    const pair = createPair('ed25519', keyPair, meta);
-
-    this.keyring.addPair(pair);
-
-    return pair;
   }
 
   /*
    * Export a key pair to JSON. Will ask for a passphrase.
    */
-  async exportKeyPair(accountId)
-  {
-    const passphrase = await this.askForPassphrase(accountId);
+  async exportKeyPair (accountId) {
+    const passphrase = await this.askForPassphrase(accountId)
 
     // Produce JSON output
-    return this.keyring.toJson(accountId, passphrase);
+    return this.keyring.toJson(accountId, passphrase)
   }
 
   /*
    * Export a key pair and write it to a JSON file with the account ID as the
    * name.
    */
-  async writeKeyPairExport(accountId, prefix)
-  {
+  async writeKeyPairExport (accountId, prefix) {
     // Generate JSON
-    const data = await this.exportKeyPair(accountId);
+    const data = await this.exportKeyPair(accountId)
 
     // Write JSON
-    var filename = `${data.address}.json`;
+    var filename = `${data.address}.json`
+
     if (prefix) {
-      const path = require('path');
-      filename = path.resolve(prefix, filename);
+      const path = require('path')
+      filename = path.resolve(prefix, filename)
     }
+
     fs.writeFileSync(filename, JSON.stringify(data), {
       encoding: 'utf8',
-      mode: 0o600,
-    });
+      mode: 0o600
+    })
 
-    return filename;
+    return filename
+  }
+
+  /*
+   * Register account id with userInfo as a new member
+   * using default policy 0, returns new member id
+   */
+  async registerMember (accountId, userInfo) {
+    const tx = this.base.api.tx.members.buyMembership(0, userInfo)
+
+    return this.base.signAndSendThenGetEventResult(accountId, tx, {
+      eventModule: 'members',
+      eventName: 'MemberRegistered',
+      eventProperty: 'MemberId'
+    })
+  }
+
+  /*
+   * Injects a keypair and sets it as the default identity
+   */
+  useKeyPair (keyPair) {
+    this.key = this.keyring.addPair(keyPair)
+  }
+
+  /*
+   * Create a new role key. If no name is given,
+   * default to 'storage'.
+   */
+  async createNewRoleKey (name) {
+    name = name || 'storage-provider'
+
+    // Generate new key pair
+    const keyPair = util_crypto.naclKeypairFromRandom()
+
+    // Encode to an address.
+    const addr = this.keyring.encodeAddress(keyPair.publicKey)
+    debug('Generated new key pair with address', addr)
+
+    // Add to key wring. We set the meta to identify the account as
+    // a role key.
+    const meta = {
+      name: `${name} role account`
+    }
+
+    const createPair = require('@polkadot/keyring/pair').default
+    const pair = createPair('ed25519', keyPair, meta)
+
+    this.keyring.addPair(pair)
+
+    return pair
+  }
+
+  getSudoAccount() {
+    return this.base.api.query.sudo.key()
   }
 }
 
 module.exports = {
-  IdentitiesApi: IdentitiesApi,
+  IdentitiesApi
 }

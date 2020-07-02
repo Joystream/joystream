@@ -1,5 +1,6 @@
 {
-  "name": "@joystream/util",
+  "name": "@joystream/storage-utils",
+  "private": true,
   "version": "0.1.0",
   "description": "Utility code for Joystream Storage Node",
   "author": "Joystream",

@@ -26,7 +26,7 @@ const expect = chai.expect;
 
 const fs = require('fs');
 
-const { Storage } = require('@joystream/storage');
+const { Storage } = require('@joystream/storage-node-backend');
 
 const IPFS_CID_REGEX = /^Qm[1-9A-HJ-NP-Za-km-z]{44}$/;
 
@@ -40,27 +40,26 @@ function write(store, content_id, contents, callback)
       });
       stream.on('committed', callback);
 
-      stream.write(contents);
-      stream.end();
+      if (!stream.write(contents)) {
+        stream.once('drain', () => stream.end())
+      } else {
+        process.nextTick(() => stream.end())
+      }
     })
     .catch((err) => {
       expect.fail(err);
     });
 }
 
-function read_all(stream)
-{
-  const chunks = []
-  let chunk
-  do {
-    chunk = stream.read();
-    if (chunk) {
-        chunks.push(chunk)
-    }
-  } while (chunk);
-  return Buffer.concat(chunks);
+function read_all (stream) {
+  return new Promise((resolve, reject) => {
+    const chunks = []
+    stream.on('data', chunk => chunks.push(chunk))
+    stream.on('end', () => resolve(Buffer.concat(chunks)))
+    stream.on('error', err => reject(err))
+    stream.resume()
+  })
 }
-
 
 function create_known_object(content_id, contents, callback)
 {
@@ -96,45 +95,43 @@ describe('storage/storage', () => {
 
     it('detects the MIME type of a write stream', (done) => {
       const contents = fs.readFileSync('../../storage-node_new.svg');
-
-      create_known_object('foobar', contents, (store, hash) => {
-        var file_info;
-        store.open('mime-test', 'w')
-          .then((stream) => {
-
-            stream.on('file_info', (info) => {
-              // Could filter & abort here now, but we're just going to set this,
-              // and expect it to be set later...
-              file_info = info;
-            });
-
-            stream.on('finish', () => {
-              stream.commit();
-            });
-            stream.on('committed', (hash) => {
-              // ... if file_info is not set here, there's an issue.
-              expect(file_info).to.have.property('mime_type', 'application/xml');
-              expect(file_info).to.have.property('ext', 'xml');
-
-              done();
-            });
-
-            stream.write(contents);
-            stream.end();
-          })
-          .catch((err) => {
-            expect.fail(err);
+      storage.open('mime-test', 'w')
+        .then((stream) => {
+          var file_info;
+          stream.on('file_info', (info) => {
+            // Could filter & abort here now, but we're just going to set this,
+            // and expect it to be set later...
+            file_info = info;
           });
-      });
 
+          stream.on('finish', () => {
+            stream.commit();
+          });
+
+          stream.on('committed', (hash) => {
+            // ... if file_info is not set here, there's an issue.
+            expect(file_info).to.have.property('mime_type', 'application/xml');
+            expect(file_info).to.have.property('ext', 'xml');
+            done();
+          });
+
+          if (!stream.write(contents)) {
+            stream.once('drain', () => stream.end())
+          } else {
+            process.nextTick(() => stream.end())
+          }
+        })
+        .catch((err) => {
+          expect.fail(err);
+        });
     });
 
     it('can read a stream', (done) => {
       const contents = 'test-for-reading';
       create_known_object('foobar', contents, (store, hash) => {
         store.open('foobar', 'r')
-          .then((stream) => {
-            const data = read_all(stream);
+          .then(async (stream) => {
+            const data = await read_all(stream);
             expect(Buffer.compare(data, Buffer.from(contents))).to.equal(0);
             done();
           })
@@ -144,16 +141,12 @@ describe('storage/storage', () => {
       });
     });
 
-    // Problems with this test. reading the stream is stalling, so we are
-    // not always able to read the full stream for the test to make sense
-    // Disabling for now. Look at readl_all() implementation.. maybe that
-    // is where the fault is?
-    xit('detects the MIME type of a read stream', (done) => {
+    it('detects the MIME type of a read stream', (done) => {
       const contents = fs.readFileSync('../../storage-node_new.svg');
       create_known_object('foobar', contents, (store, hash) => {
         store.open('foobar', 'r')
-          .then((stream) => {
-            const data = read_all(stream);
+          .then(async (stream) => {
+            const data = await read_all(stream);
             expect(contents.length).to.equal(data.length);
             expect(Buffer.compare(data, contents)).to.equal(0);
             expect(stream).to.have.property('file_info');
@@ -173,8 +166,8 @@ describe('storage/storage', () => {
       const contents = 'test-for-reading';
       create_known_object('foobar', contents, (store, hash) => {
         store.open('foobar', 'r')
-          .then((stream) => {
-            const data = read_all(stream);
+          .then(async (stream) => {
+            const data = await read_all(stream);
             expect(Buffer.compare(data, Buffer.from(contents))).to.equal(0);
 
             expect(stream.file_info).to.have.property('mime_type', 'application/octet-stream');
@@ -203,7 +196,7 @@ describe('storage/storage', () => {
     it('returns stats for a known object', (done) => {
       const content = 'stat-test';
       const expected_size = content.length;
-      create_known_object('foobar', 'stat-test', (store, hash) => {
+      create_known_object('foobar', content, (store, hash) => {
         expect(store.stat(hash)).to.eventually.have.property('size', expected_size);
         done();
       });

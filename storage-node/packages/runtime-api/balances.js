@@ -20,7 +20,7 @@
 
 const debug = require('debug')('joystream:runtime:balances');
 
-const { IdentitiesApi } = require('@joystream/runtime-api/identities');
+const { IdentitiesApi } = require('@joystream/storage-runtime-api/identities');
 
 /*
  * Bundle API calls related to account balances.
