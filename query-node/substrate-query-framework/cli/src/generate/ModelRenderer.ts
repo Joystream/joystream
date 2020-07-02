@@ -26,28 +26,28 @@ export class ModelRenderer extends AbstractRenderer {
 
   withInterfaceProp(): GeneratorContext {
     return {
-      isInterface: this.objType.isInterface
-    }
+      isInterface: this.objType.isInterface,
+    };
   }
 
   withInterfaces(): GeneratorContext {
-    if (utils.hasInterfaces(this.objType) && this.objType.interfaces !== undefined)  {
+    if (utils.hasInterfaces(this.objType) && this.objType.interfaces !== undefined) {
       return {
-        interfaces: [utils.withNames(this.objType.interfaces[0].name)]
-      }
-    } 
-    return {}
+        interfaces: [utils.withNames(this.objType.interfaces[0].name)],
+      };
+    }
+    return {};
   }
 
   withSubclasses(): GeneratorContext {
     if (this.objType.isInterface !== true) {
-      return {}
+      return {};
     }
     const subclasses: GeneratorContext[] = [];
     this.model.getSubclasses(this.objType.name).map(o => subclasses.push(utils.withNames(o.name)));
     return {
-      subclasses
-    }
+      subclasses,
+    };
   }
 
   withEnums(): GeneratorContext {
@@ -67,10 +67,16 @@ export class ModelRenderer extends AbstractRenderer {
 
   withFields(): GeneratorContext {
     const fields: GeneratorContext[] = [];
-  
+
     utils.ownFields(this.objType).map(f => fields.push(buildFieldContext(f, this.objType)));
     return {
       fields,
+    };
+  }
+
+  withDescription(): GeneratorContext {
+    return {
+      description: this.objType.description,
     };
   }
 
@@ -98,6 +104,7 @@ export class ModelRenderer extends AbstractRenderer {
       ...this.withInterfaceProp(),
       ...this.withHasProps(),
       ...this.withSubclasses(),
+      ...this.withDescription(),
       ...utils.withNames(this.objType.name),
     };
   }

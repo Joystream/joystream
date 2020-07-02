@@ -111,7 +111,7 @@ export class WarthogModel {
 
   /**
    * Get subclasses of a given interface
-   * 
+   *
    * @param interfaceName Name of the interface
    */
   getSubclasses(interfaceName: string): ObjectType[] {
@@ -158,6 +158,8 @@ export interface ObjectType {
   name: string;
   fields: Field[];
   isEntity: boolean;
+  // Description of the field will be shown in GrapqQL API
+  description?: string;
   isInterface?: boolean;
   interfaces?: ObjectType[]; //interface names
 }

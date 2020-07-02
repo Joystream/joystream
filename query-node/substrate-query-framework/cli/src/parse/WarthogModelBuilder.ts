@@ -9,7 +9,7 @@ import {
 import { GraphQLSchemaParser, Visitors, SchemaNode } from './SchemaParser';
 import { WarthogModel, Field, ObjectType } from '../model';
 import Debug from 'debug';
-import { ENTITY_DIRECTIVE } from './constant';
+import { ENTITY_DIRECTIVE, UNIQUE_DIRECTIVE } from './constant';
 import { FTSDirective, FULL_TEXT_SEARCHABLE_DIRECTIVE } from './FTSDirective';
 
 const debug = Debug('qnode-cli:model-generator');
@@ -78,6 +78,11 @@ export class WarthogModelBuilder {
     return entityDirective ? true : false;
   }
 
+  private isUnique(field: FieldDefinitionNode): boolean {
+    const entityDirective = field.directives?.find(d => d.name.value === UNIQUE_DIRECTIVE);
+    return entityDirective ? true : false;
+  }
+
   /**
    * Generate a new ObjectType from ObjectTypeDefinitionNode
    * @param o ObjectTypeDefinitionNode
@@ -87,6 +92,7 @@ export class WarthogModelBuilder {
       name: o.name.value,
       fields: this.getFields(o),
       isEntity: this.isEntity(o),
+      description: o.description?.value,
       isInterface: o.kind === 'InterfaceTypeDefinition',
       interfaces: o.kind === 'ObjectTypeDefinition' ? this.getInterfaces(o) : [],
     } as ObjectType;
@@ -116,21 +122,25 @@ export class WarthogModelBuilder {
       const typeNode = fieldNode.type;
       const fieldName = fieldNode.name.value;
 
+      let field: Field;
+
       if (typeNode.kind === 'NamedType') {
-        return this._namedType(fieldName, typeNode);
+        field = this._namedType(fieldName, typeNode);
       } else if (typeNode.kind === 'NonNullType') {
-        const field =
+        field =
           typeNode.type.kind === 'NamedType'
             ? this._namedType(fieldName, typeNode.type)
             : this._listType(typeNode.type, fieldName);
 
         field.nullable = false;
-        return field;
       } else if (typeNode.kind === 'ListType') {
-        return this._listType(typeNode, fieldName);
+        field = this._listType(typeNode, fieldName);
       } else {
         throw new Error(`Unrecognized type. ${JSON.stringify(typeNode, null, 2)}`);
       }
+      field.description = fieldNode.description?.value;
+      field.unique = this.isUnique(fieldNode);
+      return field;
     });
     debug(`Read and parsed fields: ${JSON.stringify(fields, null, 2)}`);
     return fields;
@@ -193,23 +203,23 @@ export class WarthogModelBuilder {
   private genereateQueries() {
     const fts = new FTSDirective();
     const visitors: Visitors = {
-      directives: {}
+      directives: {},
     };
     visitors.directives[FULL_TEXT_SEARCHABLE_DIRECTIVE] = {
       visit: (path: SchemaNode[]) => fts.generate(path, this._model),
-    } 
+    };
     this._schemaParser.dfsTraversal(visitors);
   }
 
   buildWarthogModel(): WarthogModel {
     this._model = new WarthogModel();
-    
+
     this.generateEnums();
     this.generateInterfaces();
     this.generateObjectTypes();
     this.generateSQLRelationships();
     this.genereateQueries();
-  
+
     return this._model;
   }
 }

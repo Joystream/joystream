@@ -4,12 +4,14 @@
  */
 export const SCHEMA_DEFINITIONS_PREAMBLE = `
 directive @entity on OBJECT | INTERFACE  # Mark both object types and interfaces
+directive @unique on FIELD_DEFINITION
 scalar BigInt                # Arbitrarily large integers
 scalar BigDecimal            # is used to represent arbitrary precision decimals
 scalar Bytes                 # Byte array, represented as a hexadecimal string
 type Query {
     _dummy: String           # empty queries are not allowed
 }
-`
+`;
 
-export const ENTITY_DIRECTIVE = 'entity'
+export const ENTITY_DIRECTIVE = 'entity';
+export const UNIQUE_DIRECTIVE = 'unique';
