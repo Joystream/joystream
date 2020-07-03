@@ -301,12 +301,14 @@ pub fn delete_thread_mock(
     thread_id: <Runtime as Trait>::PostId,
     result: Result<(), &'static str>,
 ) {
+    let category_id = <CategoryByThread<Runtime>>::get(thread_id);
     assert_eq!(
         TestForumModule::delete_thread(mock_origin(origin.clone()), moderator_id, thread_id,),
         result
     );
     if result.is_ok() {
         assert!(!<CategoryByThread<Runtime>>::exists(thread_id));
+        assert!(!<ThreadById<Runtime>>::exists(category_id, thread_id));
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ThreadDeleted(thread_id))
