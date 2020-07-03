@@ -41,7 +41,6 @@ pub fn create() -> ForumConfig {
         next_post_id,
 
         // TODO: get rid of mocks and setup valid values
-        max_category_depth: 10,
         category_by_moderator: Vec::new(),
         reaction_by_post: Vec::new(),
         poll_desc_constraint: new_validation(10, 90),

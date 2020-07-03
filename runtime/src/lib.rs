@@ -811,6 +811,7 @@ impl forum::Trait for Runtime {
     type ForumUserId = ForumUserId;
     type ModeratorId = ModeratorId;
     type CategoryId = u64;
+    type MaxCategoryDepth = u64;
 
     fn is_lead(_account_id: &AccountId) -> bool {
         true
@@ -829,6 +830,10 @@ impl forum::Trait for Runtime {
 
     fn calculate_hash(text: &[u8]) -> Self::Hash {
         Self::Hash::from_slice(text)
+    }
+
+    fn get_max_category_depth() -> Self::MaxCategoryDepth {
+        5
     }
 }
 
