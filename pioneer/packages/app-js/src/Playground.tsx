@@ -41,8 +41,8 @@ interface Injected {
   util: typeof util;
   window: null;
   joy: {
-    types: typeof joy_types
-  }
+    types: typeof joy_types;
+  };
 }
 
 interface Props extends AppProps, I18nProps, RouteComponentProps<{}> {
