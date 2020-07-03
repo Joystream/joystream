@@ -260,6 +260,51 @@ export class ApiWrapper {
     );
   }
 
+  public estimateProposeCreateWorkingGroupLeaderOpening(): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
+        0,
+        'some long title for the purpose of testing',
+        'some long description for the purpose of testing',
+        0,
+        {
+          activate_at: 'CurrentBlock',
+          commitment: {
+            application_rationing_policy: { max_active_applicants: '32' },
+            max_review_period_length: 32,
+            application_staking_policy: {
+              amount: 0,
+              amount_mode: 'AtLeast',
+              crowded_out_unstaking_period_length: 0,
+              review_period_expired_unstaking_period_length: 0,
+            },
+            role_staking_policy: {
+              amount: 0,
+              amount_mode: 'AtLeast',
+              crowded_out_unstaking_period_length: 0,
+              review_period_expired_unstaking_period_length: 0,
+            },
+            role_slashing_terms: {
+              Slashable: {
+                max_count: 0,
+                max_percent_pts_per_time: 0,
+              },
+            },
+            fill_opening_successful_applicant_application_stake_unstaking_period: 0,
+            fill_opening_failed_applicant_application_stake_unstaking_period: 0,
+            fill_opening_failed_applicant_role_stake_unstaking_period: 0,
+            terminate_curator_application_stake_unstaking_period: 0,
+            terminate_curator_role_stake_unstaking_period: 0,
+            exit_curator_role_application_stake_unstaking_period: 0,
+            exit_curator_role_stake_unstaking_period: 0,
+          },
+          human_readable_text: 'Opening readable text',
+          working_group: 'Storage',
+        }
+      )
+    );
+  }
+
   public estimateAcceptApplicationsFee(): BN {
     return this.estimateTxFee(this.api.tx.storageWorkingGroup.acceptApplications(0));
   }
@@ -896,6 +941,79 @@ export class ApiWrapper {
     await this.sender.signAndSend(
       this.api.tx.sudo.sudo(this.api.tx.storageWorkingGroup.addOpening(activateAt, commitment, text, openingType)),
       sudo,
+      false
+    );
+  }
+
+  public async proposeCreateWorkingGroupLeaderOpening(
+    account: KeyringPair,
+    title: string,
+    description: string,
+    proposalStake: BN,
+    activateAtBlock: BN,
+    maxActiveApplicants: BN,
+    maxReviewPeriodLength: BN,
+    applicationStakingPolicyAmount: BN,
+    applicationCrowdedOutUnstakingPeriodLength: BN,
+    applicationExpiredUnstakingPeriodLength: BN,
+    roleStakingPolicyAmount: BN,
+    roleCrowdedOutUnstakingPeriodLength: BN,
+    roleExpiredUnstakingPeriodLength: BN,
+    slashableMaxCount: BN,
+    slashableMaxPercentPtsPerTime: BN,
+    successfulApplicantApplicationStakeUnstakingPeriod: BN,
+    failedApplicantApplicationStakeUnstakingPeriod: BN,
+    failedApplicantRoleStakeUnstakingPeriod: BN,
+    terminateCuratorApplicationStakeUnstakingPeriod: BN,
+    terminateCuratorRoleStakeUnstakingPeriod: BN,
+    exitCuratorRoleApplicationStakeUnstakingPeriod: BN,
+    exitCuratorRoleStakeUnstakingPeriod: BN,
+    text: string
+  ): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0];
+    const commitment = {
+      application_rationing_policy: { max_active_applicants: maxActiveApplicants },
+      max_review_period_length: maxReviewPeriodLength,
+      application_staking_policy: {
+        amount: applicationStakingPolicyAmount,
+        amount_mode: 'AtLeast',
+        crowded_out_unstaking_period_length: applicationCrowdedOutUnstakingPeriodLength,
+        review_period_expired_unstaking_period_length: applicationExpiredUnstakingPeriodLength,
+      },
+      role_staking_policy: {
+        amount: roleStakingPolicyAmount,
+        amount_mode: 'AtLeast',
+        crowded_out_unstaking_period_length: roleCrowdedOutUnstakingPeriodLength,
+        review_period_expired_unstaking_period_length: roleExpiredUnstakingPeriodLength,
+      },
+      role_slashing_terms: {
+        Slashable: {
+          max_count: slashableMaxCount,
+          max_percent_pts_per_time: slashableMaxPercentPtsPerTime,
+        },
+      },
+      fill_opening_successful_applicant_application_stake_unstaking_period: successfulApplicantApplicationStakeUnstakingPeriod,
+      fill_opening_failed_applicant_application_stake_unstaking_period: failedApplicantApplicationStakeUnstakingPeriod,
+      fill_opening_failed_applicant_role_stake_unstaking_period: failedApplicantRoleStakeUnstakingPeriod,
+      terminate_curator_application_stake_unstaking_period: terminateCuratorApplicationStakeUnstakingPeriod,
+      terminate_curator_role_stake_unstaking_period: terminateCuratorRoleStakeUnstakingPeriod,
+      exit_curator_role_application_stake_unstaking_period: exitCuratorRoleApplicationStakeUnstakingPeriod,
+      exit_curator_role_stake_unstaking_period: exitCuratorRoleStakeUnstakingPeriod,
+    };
+    await this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
+        memberId,
+        title,
+        description,
+        proposalStake,
+        {
+          activate_at: 'CurrentBlock',
+          commitment: commitment,
+          human_readable_text: text,
+          working_group: 'Storage',
+        }
+      ),
+      account,
       false
     );
   }
