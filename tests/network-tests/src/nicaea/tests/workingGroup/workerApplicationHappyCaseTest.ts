@@ -37,6 +37,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   const firstRewardInterval: BN = new BN(process.env.LONG_REWARD_INTERWAL!);
   const rewardInterval: BN = new BN(process.env.LONG_REWARD_INTERWAL!);
   const payoutAmount: BN = new BN(process.env.PAYOUT_AMOUNT!);
+  const unstakingPeriod: BN = new BN(process.env.STORAGE_WORKING_GROUP_UNSTAKING_PERIOD!);
   const durationInBlocks: number = 48;
   const openingActivationDelay: BN = new BN(0);
 
@@ -104,7 +105,9 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
         applicationStake,
         roleStake,
         openingActivationDelay,
-        WorkingGroups.storageWorkingGroup
+        unstakingPeriod,
+        WorkingGroups.storageWorkingGroup,
+        false
       ))
   );
   tap.test('Apply for worker opening', async () =>

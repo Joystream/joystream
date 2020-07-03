@@ -741,8 +741,13 @@ export class ApiWrapper {
     return accountWorkers !== undefined;
   }
 
-  public async addOpening(leader: KeyringPair, opening: WorkingGroupOpening, module: WorkingGroups): Promise<void> {
-    await this.sender.signAndSend(this.createAddOpeningTransaction(opening, module), leader, false);
+  public async addOpening(
+    leader: KeyringPair,
+    opening: WorkingGroupOpening,
+    module: WorkingGroups,
+    expectFailure: boolean
+  ): Promise<void> {
+    await this.sender.signAndSend(this.createAddOpeningTransaction(opening, module), leader, expectFailure);
   }
 
   public async sudoAddOpening(sudo: KeyringPair, opening: WorkingGroupOpening, module: WorkingGroups): Promise<void> {

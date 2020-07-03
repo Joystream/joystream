@@ -1,4 +1,4 @@
-import tap = require('tap');
+import tap from 'tap';
 import { initConfig } from '../../utils/config';
 import { registerJoystreamTypes } from '@nicaea/types';
 import { closeApi } from '../impl/closeApi';
@@ -10,11 +10,6 @@ import { membershipTest } from '../impl/membershipCreation';
 import {
   addWorkerOpening,
   applyForOpening,
-  beginApplicationReview,
-  fillOpening,
-  increaseStake,
-  updateRewardAccount,
-  updateRoleAccount,
   addLeaderOpening,
   beginLeaderApplicationReview,
   fillLeaderOpening,
@@ -22,7 +17,7 @@ import {
 } from './impl/workingGroupModule';
 import BN from 'bn.js';
 
-tap.mocha.describe('Manage worker as worker scenario', async () => {
+tap.mocha.describe('Worker application happy case scenario', async () => {
   initConfig();
   registerJoystreamTypes();
 
@@ -40,7 +35,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
   const rewardInterval: BN = new BN(process.env.LONG_REWARD_INTERWAL!);
   const payoutAmount: BN = new BN(process.env.PAYOUT_AMOUNT!);
   const unstakingPeriod: BN = new BN(process.env.STORAGE_WORKING_GROUP_UNSTAKING_PERIOD!);
-  const durationInBlocks: number = 38;
+  const durationInBlocks: number = 48;
   const openingActivationDelay: BN = new BN(0);
 
   const provider = new WsProvider(nodeUrl);
@@ -95,17 +90,17 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
     )
   );
 
-  let openignId: BN;
+  let workerOpenignId: BN;
   tap.test(
-    'Add worker opening',
+    'Add worker opening with 0 stake, expect failure',
     async () =>
-      (openignId = await addWorkerOpening(
+      (workerOpenignId = await addWorkerOpening(
         apiWrapper,
         nKeyPairs,
         leadKeyPair[0],
         sudo,
-        applicationStake,
-        roleStake,
+        new BN(0),
+        new BN(0),
         openingActivationDelay,
         unstakingPeriod,
         WorkingGroups.storageWorkingGroup,
@@ -113,44 +108,20 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
       ))
   );
   tap.test(
-    'Apply for worker opening',
+    'Add worker opening with 0 unstaking period, expect failure',
     async () =>
-      await applyForOpening(
+      (workerOpenignId = await addWorkerOpening(
         apiWrapper,
         nKeyPairs,
+        leadKeyPair[0],
         sudo,
         applicationStake,
         roleStake,
-        openignId,
+        openingActivationDelay,
+        new BN(0),
         WorkingGroups.storageWorkingGroup,
         false
-      )
-  );
-  tap.test('Begin application review', async () =>
-    beginApplicationReview(apiWrapper, leadKeyPair[0], sudo, openignId, WorkingGroups.storageWorkingGroup)
-  );
-  tap.test('Fill worker opening', async () =>
-    fillOpening(
-      apiWrapper,
-      nKeyPairs,
-      leadKeyPair[0],
-      sudo,
-      openignId,
-      firstRewardInterval,
-      rewardInterval,
-      payoutAmount,
-      WorkingGroups.storageWorkingGroup
-    )
-  );
-
-  tap.test('Increase worker stake', async () =>
-    increaseStake(apiWrapper, nKeyPairs, sudo, WorkingGroups.storageWorkingGroup)
-  );
-  tap.test('Update reward account', async () =>
-    updateRewardAccount(apiWrapper, nKeyPairs, keyring, sudo, WorkingGroups.storageWorkingGroup)
-  );
-  tap.test('Update role account', async () =>
-    updateRoleAccount(apiWrapper, nKeyPairs, keyring, sudo, WorkingGroups.storageWorkingGroup)
+      ))
   );
 
   tap.test('Leaving lead role', async () =>

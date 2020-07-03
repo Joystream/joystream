@@ -18,7 +18,9 @@ export async function addWorkerOpening(
   applicationStake: BN,
   roleStake: BN,
   activationDelay: BN,
-  module: WorkingGroups
+  unstakingPeriod: BN,
+  module: WorkingGroups,
+  expectFailure: boolean
 ): Promise<BN> {
   // Worker opening construction
   let opening = new WorkingGroupOpening();
@@ -36,13 +38,13 @@ export async function addWorkerOpening(
   opening.setRoleExpiredUnstakingPeriodLength(new BN(0));
   opening.setSlashableMaxCount(new BN(1));
   opening.setSlashableMaxPercentPtsPerTime(new BN(100));
-  opening.setSuccessfulApplicantApplicationStakeUnstakingPeriod(new BN(1));
-  opening.setFailedApplicantApplicationStakeUnstakingPeriod(new BN(1));
-  opening.setFailedApplicantRoleStakeUnstakingPeriod(new BN(1));
-  opening.setTerminateCuratorApplicationStakeUnstakingPeriod(new BN(1));
-  opening.setTerminateCuratorRoleStakeUnstakingPeriod(new BN(1));
-  opening.setExitCuratorRoleApplicationStakeUnstakingPeriod(new BN(1));
-  opening.setExitCuratorRoleStakeUnstakingPeriod(new BN(1));
+  opening.setSuccessfulApplicantApplicationStakeUnstakingPeriod(unstakingPeriod);
+  opening.setFailedApplicantApplicationStakeUnstakingPeriod(unstakingPeriod);
+  opening.setFailedApplicantRoleStakeUnstakingPeriod(unstakingPeriod);
+  opening.setTerminateCuratorApplicationStakeUnstakingPeriod(unstakingPeriod);
+  opening.setTerminateCuratorRoleStakeUnstakingPeriod(unstakingPeriod);
+  opening.setExitCuratorRoleApplicationStakeUnstakingPeriod(unstakingPeriod);
+  opening.setExitCuratorRoleStakeUnstakingPeriod(unstakingPeriod);
   opening.setText(uuid().substring(0, 8));
   opening.setOpeningType('Worker');
 
@@ -52,7 +54,7 @@ export async function addWorkerOpening(
 
   // Worker opening creation
   const addOpeningPromise: Promise<BN> = apiWrapper.expectOpeningAdded();
-  await apiWrapper.addOpening(lead, opening, module);
+  await apiWrapper.addOpening(lead, opening, module, expectFailure);
   const openingId: BN = await addOpeningPromise;
 
   return openingId;
