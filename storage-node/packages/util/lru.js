@@ -89,7 +89,7 @@ class LRUCache {
 
 		const sorted = Array.from(this.access.entries())
 		sorted.sort((first, second) => {
-			if (first[1] == second[1]) {
+			if (first[1] === second[1]) {
 				return 0
 			}
 			return first[1] < second[1] ? -1 : 1

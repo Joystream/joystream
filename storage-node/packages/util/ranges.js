@@ -31,7 +31,7 @@ const debug = require('debug')('joystream:util:ranges')
  * Parse a range string, e.g. '0-100' or '-100' or '0-'. Return the values
  * in an array of int or undefined (if not provided).
  */
-function _parse_range(range) {
+function parseRange(range) {
 	const matches = range.match(/^(\d+-\d+|\d+-|-\d+|\*)$/u)
 	if (!matches) {
 		throw new Error(`Not a valid range: ${range}`)
@@ -69,7 +69,7 @@ function parse(rangeStr) {
 	// Parse individual ranges
 	const ranges = []
 	res.rangeStr.split(',').forEach((range) => {
-		ranges.push(_parse_range(range))
+		ranges.push(parseRange(range))
 	})
 
 	// Merge ranges into result.
@@ -78,21 +78,21 @@ function parse(rangeStr) {
 
 		let isMerged = false
 		for (const i in res.ranges) {
-			const old_range = res.ranges[i]
+			const oldRange = res.ranges[i]
 
 			// Skip if the new range is fully separate from the old range.
-			if (old_range[1] + 1 < newRange[0] || newRange[1] + 1 < old_range[0]) {
-				debug('Range does not overlap with', old_range)
+			if (oldRange[1] + 1 < newRange[0] || newRange[1] + 1 < oldRange[0]) {
+				debug('Range does not overlap with', oldRange)
 				continue
 			}
 
 			// If we know they're adjacent or overlapping, we construct the
 			// merged range from the lower start and the higher end of both
 			// ranges.
-			const merged = [Math.min(old_range[0], newRange[0]), Math.max(old_range[1], newRange[1])]
+			const merged = [Math.min(oldRange[0], newRange[0]), Math.max(oldRange[1], newRange[1])]
 			res.ranges[i] = merged
 			isMerged = true
-			debug('Merged', newRange, 'into', old_range, 'as', merged)
+			debug('Merged', newRange, 'into', oldRange, 'as', merged)
 		}
 
 		if (!isMerged) {
@@ -142,7 +142,7 @@ function parseAsync(rangeStr, cb) {
  * future.
  */
 class RangeSender {
-	constructor(response, stream, opts, end_callback) {
+	constructor(response, stream, opts, endCallback) {
 		// Options
 		this.name = opts.name || 'content.bin'
 		this.type = opts.type || 'application/octet-stream'
@@ -151,9 +151,9 @@ class RangeSender {
 		this.download = opts.download || false
 
 		// Range handling related state.
-		this.read_offset = 0 // Nothing read so far
+		this.readOffset = 0 // Nothing read so far
 		this.rangeIndex = -1 // No range index yet.
-		this.range_boundary = undefined // Generate boundary when needed.
+		this.rangeBoundary = undefined // Generate boundary when needed.
 
 		// Event handlers & state
 		this.handlers = {}
@@ -168,10 +168,10 @@ class RangeSender {
 		this.response = response
 		this.stream = stream
 		this.opts = opts
-		this.end_callback = end_callback
+		this.endCallback = endCallback
 	}
 
-	on_error(err) {
+	onError(err) {
 		// Assume hiding the actual error is best, and default to 404.
 		debug('Error:', err)
 		if (!this.response.headersSent) {
@@ -179,21 +179,21 @@ class RangeSender {
 				message: err.message || `File not found: ${this.name}`,
 			})
 		}
-		if (this.end_callback) {
-			this.end_callback(err)
+		if (this.endCallback) {
+			this.endCallback(err)
 		}
 	}
 
-	on_end() {
+	onEnd() {
 		debug('End of stream.')
 		this.response.end()
-		if (this.end_callback) {
-			this.end_callback()
+		if (this.endCallback) {
+			this.endCallback()
 		}
 	}
 
 	// **** No ranges
-	on_open_no_range() {
+	onOpenNoRange() {
 		// File got opened, so we can set headers/status
 		debug('Open succeeded:', this.name, this.type)
 		this.opened = true
@@ -214,7 +214,7 @@ class RangeSender {
 		}
 	}
 
-	on_data_no_range(chunk) {
+	onDataNoRange(chunk) {
 		if (!this.opened) {
 			this.handlers.open()
 		}
@@ -247,9 +247,9 @@ class RangeSender {
 			}
 		}
 
-		let send_size
+		let sendSize
 		if (typeof range[0] !== 'undefined' && typeof range[1] !== 'undefined') {
-			send_size = range[1] - range[0] + 1
+			sendSize = range[1] - range[0] + 1
 		}
 
 		// Write headers, but since we may be in a multipart situation, write them
@@ -257,25 +257,25 @@ class RangeSender {
 		const start = typeof range[0] === 'undefined' ? '' : `${range[0]}`
 		const end = typeof range[1] === 'undefined' ? '' : `${range[1]}`
 
-		let size_str
+		let sizeStr
 		if (totalSize) {
-			size_str = `${totalSize}`
+			sizeStr = `${totalSize}`
 		} else {
-			size_str = '*'
+			sizeStr = '*'
 		}
 
 		const ret = {
-			'Content-Range': `bytes ${start}-${end}/${size_str}`,
+			'Content-Range': `bytes ${start}-${end}/${sizeStr}`,
 			'Content-Type': `${this.type}`,
 		}
-		if (send_size) {
-			ret['Content-Length'] = `${send_size}`
+		if (sendSize) {
+			ret['Content-Length'] = `${sendSize}`
 		}
 		return ret
 	}
 
-	next_range() {
-		if (this.ranges.ranges.length == 1) {
+	nextRange() {
+		if (this.ranges.ranges.length === 1) {
 			debug('Cannot start new range; only one requested.')
 			this.stream.off('data', this.handlers.data)
 			return false
@@ -284,28 +284,28 @@ class RangeSender {
 		const headers = this.nextRangeHeaders()
 
 		if (headers) {
-			const header_buf = new streamBuf.WritableStreamBuffer()
+			const onDataRanges = new streamBuf.WritableStreamBuffer()
 			// We start a range with a boundary.
-			header_buf.write(`\r\n--${this.range_boundary}\r\n`)
+			onDataRanges.write(`\r\n--${this.rangeBoundary}\r\n`)
 
 			// The we write the range headers.
 			for (const header in headers) {
-				header_buf.write(`${header}: ${headers[header]}\r\n`)
+				onDataRanges.write(`${header}: ${headers[header]}\r\n`)
 			}
-			header_buf.write('\r\n')
-			this.response.write(header_buf.getContents())
+			onDataRanges.write('\r\n')
+			this.response.write(onDataRanges.getContents())
 			debug('New range started.')
 			return true
 		}
 
 		// No headers means we're finishing the last range.
-		this.response.write(`\r\n--${this.range_boundary}--\r\n`)
+		this.response.write(`\r\n--${this.rangeBoundary}--\r\n`)
 		debug('End of ranges sent.')
 		this.stream.off('data', this.handlers.data)
 		return false
 	}
 
-	on_open_ranges() {
+	onOpenRanges() {
 		// File got opened, so we can set headers/status
 		debug('Open succeeded:', this.name, this.type)
 		this.opened = true
@@ -320,19 +320,19 @@ class RangeSender {
 		//
 		// Similarly, the type is different whether or not there is more than
 		// one range.
-		if (this.ranges.ranges.length == 1) {
+		if (this.ranges.ranges.length === 1) {
 			this.response.writeHead(206, 'Partial Content', this.nextRangeHeaders())
 		} else {
-			this.range_boundary = uuid.v4()
+			this.rangeBoundary = uuid.v4()
 			const headers = {
-				'Content-Type': `multipart/byteranges; boundary=${this.range_boundary}`,
+				'Content-Type': `multipart/byteranges; boundary=${this.rangeBoundary}`,
 			}
 			this.response.writeHead(206, 'Partial Content', headers)
-			this.next_range()
+			this.nextRange()
 		}
 	}
 
-	on_data_ranges(chunk) {
+	onDataRanges(chunk) {
 		if (!this.opened) {
 			this.handlers.open()
 		}
@@ -346,33 +346,33 @@ class RangeSender {
 		//
 		// The simplest optimization would be at ever range start to seek() to the
 		// start.
-		const chunk_range = [this.read_offset, this.read_offset + chunk.length - 1]
-		debug('= Got chunk with byte range', chunk_range)
+		const chunkRange = [this.readOffset, this.readOffset + chunk.length - 1]
+		debug('= Got chunk with byte range', chunkRange)
 		while (true) {
-			let req_range = this.ranges.ranges[this.rangeIndex]
-			if (!req_range) {
+			let reqRange = this.ranges.ranges[this.rangeIndex]
+			if (!reqRange) {
 				break
 			}
-			debug('Current requested range is', req_range)
-			if (!req_range[1]) {
-				req_range = [req_range[0], Number.MAX_SAFE_INTEGER]
-				debug('Treating as', req_range)
+			debug('Current requested range is', reqRange)
+			if (!reqRange[1]) {
+				reqRange = [reqRange[0], Number.MAX_SAFE_INTEGER]
+				debug('Treating as', reqRange)
 			}
 
 			// No overlap in the chunk and requested range; don't write.
-			if (chunk_range[1] < req_range[0] || chunk_range[0] > req_range[1]) {
+			if (chunkRange[1] < reqRange[0] || chunkRange[0] > reqRange[1]) {
 				debug('Ignoring chunk; it is out of range.')
 				break
 			}
 
 			// Since there is overlap, find the segment that's entirely within the
 			// chunk.
-			const segment = [Math.max(chunk_range[0], req_range[0]), Math.min(chunk_range[1], req_range[1])]
+			const segment = [Math.max(chunkRange[0], reqRange[0]), Math.min(chunkRange[1], reqRange[1])]
 			debug('Segment to send within chunk is', segment)
 
 			// Normalize the segment to a chunk offset
-			const start = segment[0] - this.read_offset
-			const end = segment[1] - this.read_offset
+			const start = segment[0] - this.readOffset
+			const end = segment[1] - this.readOffset
 			const len = end - start + 1
 			debug('Offsets into buffer are', [start, end], 'with length', len)
 
@@ -384,21 +384,21 @@ class RangeSender {
 			this.response.write(Buffer.from(buf.buffer, buf.byteOffset + start, len))
 
 			// If the requested range is finished, we should start the next one.
-			if (req_range[1] > chunk_range[1]) {
+			if (reqRange[1] > chunkRange[1]) {
 				debug('Chunk is finished, but the requested range is missing bytes.')
 				break
 			}
 
-			if (req_range[1] <= chunk_range[1]) {
+			if (reqRange[1] <= chunkRange[1]) {
 				debug('Range is finished.')
-				if (!this.next_range(segment)) {
+				if (!this.nextRange(segment)) {
 					break
 				}
 			}
 		}
 
 		// Update read offset when chunk is finished.
-		this.read_offset += chunk.length
+		this.readOffset += chunk.length
 	}
 
 	start() {
@@ -420,17 +420,17 @@ class RangeSender {
 
 		// Register callbacks. Store them in a handlers object so we can
 		// keep the bound version around for stopping to listen to events.
-		this.handlers.error = this.on_error.bind(this)
-		this.handlers.end = this.on_end.bind(this)
+		this.handlers.error = this.onError.bind(this)
+		this.handlers.end = this.onEnd.bind(this)
 
 		if (this.ranges) {
 			debug('Preparing to handle ranges.')
-			this.handlers.open = this.on_open_ranges.bind(this)
-			this.handlers.data = this.on_data_ranges.bind(this)
+			this.handlers.open = this.onOpenRanges.bind(this)
+			this.handlers.data = this.onDataRanges.bind(this)
 		} else {
 			debug('No ranges, just send the whole file.')
-			this.handlers.open = this.on_open_no_range.bind(this)
-			this.handlers.data = this.on_data_no_range.bind(this)
+			this.handlers.open = this.onOpenNoRange.bind(this)
+			this.handlers.data = this.onDataNoRange.bind(this)
 		}
 
 		for (const handler in this.handlers) {
@@ -439,8 +439,8 @@ class RangeSender {
 	}
 }
 
-function send(response, stream, opts, end_callback) {
-	const sender = new RangeSender(response, stream, opts, end_callback)
+function send(response, stream, opts, endCallback) {
+	const sender = new RangeSender(response, stream, opts, endCallback)
 	sender.start()
 }
 

@@ -104,7 +104,7 @@ module.exports = {
 	// Pagination function
 	paginate(req, res, last_offset) {
 		// Skip if the response is not an object.
-		if (Object.prototype.toString.call(res) != '[object Object]') {
+		if (Object.prototype.toString.call(res) !== '[object Object]') {
 			debug('Cannot paginate non-objects.')
 			return res
 		}
