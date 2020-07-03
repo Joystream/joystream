@@ -1,6 +1,7 @@
 {
 	"private": true,
 	"name": "joystream",
+	"version": "1.0.0",
 	"license": "GPL-3.0-only",
 	"scripts": {
 		"test": "yarn && yarn workspaces run test",
@@ -15,7 +16,7 @@
 		"types",
 		"pioneer",
 		"pioneer/packages/*",
-		"storage-node/",
+		"storage-node",
 		"storage-node/packages/*"
 	],
 	"resolutions": {

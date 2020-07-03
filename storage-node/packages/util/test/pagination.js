@@ -22,7 +22,7 @@ const mocha = require('mocha');
 const expect = require('chai').expect;
 const mock_http = require('node-mocks-http');
 
-const pagination = require('@joystream/util/pagination');
+const pagination = require('@joystream/storage-utils/pagination');
 
 describe('util/pagination', function()
 {

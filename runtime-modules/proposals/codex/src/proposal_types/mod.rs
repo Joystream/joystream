@@ -85,17 +85,20 @@ pub enum ProposalDetails<
         FillOpeningParameters<BlockNumber, MintedBalance, OpeningId, ApplicationId>,
     ),
 
-    /// Balance for the `set working group mint capacity` proposal
+    /// Set working group mint capacity.
     SetWorkingGroupMintCapacity(MintedBalance, WorkingGroup),
 
-    /// Balance for the `decrease working group leader stake` proposal
+    /// Decrease the working group leader stake.
     DecreaseWorkingGroupLeaderStake(WorkerId, StakeBalance, WorkingGroup),
 
-    /// Balance for the `slash working group leader stake` proposal
+    /// Slash the working group leader stake.
     SlashWorkingGroupLeaderStake(WorkerId, StakeBalance, WorkingGroup),
 
-    /// Balance for the `set working group leader reward` proposal
+    /// Set working group leader reward balance.
     SetWorkingGroupLeaderReward(WorkerId, MintedBalance, WorkingGroup),
+
+    /// Fire the working group leader with possible slashing.
+    TerminateWorkingGroupLeaderRole(TerminateRoleParameters<WorkerId>),
 }
 
 impl<
@@ -124,6 +127,23 @@ impl<
     fn default() -> Self {
         ProposalDetails::Text(b"invalid proposal details".to_vec())
     }
+}
+
+/// Parameters for the 'terminate the leader position' proposal.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Debug)]
+pub struct TerminateRoleParameters<WorkerId> {
+    /// Leader worker id to fire.
+    pub worker_id: WorkerId,
+
+    /// Terminate role rationale.
+    pub rationale: Vec<u8>,
+
+    /// Slash the leader stake on terminating.
+    pub slash: bool,
+
+    /// Defines working group with the open position.
+    pub working_group: WorkingGroup,
 }
 
 /// Parameters for the 'fill opening for the leader position' proposal.
@@ -284,6 +304,12 @@ pub struct ProposalsConfigParameters {
 
     /// 'Set working group leader reward' proposal grace period
     pub set_working_group_leader_reward_proposal_grace_period: u32,
+
+    /// 'Terminate working group leader role' proposal voting period
+    pub terminate_working_group_leader_role_proposal_voting_period: u32,
+
+    /// 'Terminate working group leader role' proposal grace period
+    pub terminate_working_group_leader_role_proposal_grace_period: u32,
 }
 
 impl Default for ProposalsConfigParameters {
@@ -317,6 +343,8 @@ impl Default for ProposalsConfigParameters {
             slash_working_group_leader_stake_proposal_grace_period: 0u32,
             set_working_group_leader_reward_proposal_voting_period: 43200u32,
             set_working_group_leader_reward_proposal_grace_period: 0u32,
+            terminate_working_group_leader_role_proposal_voting_period: 72200u32,
+            terminate_working_group_leader_role_proposal_grace_period: 0u32,
         }
     }
 }

@@ -474,6 +474,12 @@ where
             ..self
         }
     }
+    fn with_setup_enviroment(self, setup_environment: bool) -> Self {
+        Self {
+            setup_environment,
+            ..self
+        }
+    }
 
     fn with_member_id(self, member_id: u64) -> Self {
         Self { member_id, ..self }

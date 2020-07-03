@@ -20,7 +20,11 @@ fn add_opening(
     account_id: [u8; 32],
     activate_at: hiring::ActivateOpeningAt<BlockNumber>,
     opening_policy_commitment: Option<OpeningPolicyCommitment<BlockNumber, u128>>,
+    sequence_number: u32, // action sequence number to align with other actions
 ) -> u64 {
+    let expected_proposal_id = sequence_number;
+    let run_to_block = sequence_number + 1;
+
     let opening_id = StorageWorkingGroup::next_opening_id();
 
     assert!(!<working_group::OpeningById<
@@ -44,14 +48,24 @@ fn add_opening(
                 working_group: WorkingGroup::Storage,
             },
         )
-    });
+    })
+    .with_expected_proposal_id(expected_proposal_id)
+    .with_run_to_block(run_to_block);
 
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
     opening_id
 }
 
-fn begin_review_applications(member_id: u8, account_id: [u8; 32], opening_id: u64) {
+fn begin_review_applications(
+    member_id: u8,
+    account_id: [u8; 32],
+    opening_id: u64,
+    sequence_number: u32, // action sequence number to align with other actions
+) {
+    let expected_proposal_id = sequence_number;
+    let run_to_block = sequence_number + 1;
+
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
         ProposalCodex::create_begin_review_working_group_leader_applications_proposal(
             RawOrigin::Signed(account_id.clone().into()).into(),
@@ -64,8 +78,8 @@ fn begin_review_applications(member_id: u8, account_id: [u8; 32], opening_id: u6
         )
     })
     .disable_setup_enviroment()
-    .with_expected_proposal_id(2)
-    .with_run_to_block(3);
+    .with_expected_proposal_id(expected_proposal_id)
+    .with_run_to_block(run_to_block);
 
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 }
@@ -76,15 +90,10 @@ fn fill_opening(
     opening_id: u64,
     successful_application_id: u64,
     reward_policy: Option<RewardPolicy<Balance, BlockNumber>>,
+    sequence_number: u32, // action sequence number to align with other actions
 ) {
-    let mut expected_proposal_id = 3;
-    let mut run_to_block = 4;
-    if reward_policy.is_some() {
-        set_mint_capacity(member_id, account_id, 999999);
-
-        expected_proposal_id = 4;
-        run_to_block = 5;
-    }
+    let expected_proposal_id = sequence_number;
+    let run_to_block = sequence_number + 1;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
         ProposalCodex::create_fill_working_group_leader_opening_proposal(
@@ -121,7 +130,11 @@ fn decrease_stake(
     account_id: [u8; 32],
     leader_worker_id: u64,
     stake_amount: Balance,
+    sequence_number: u32, // action sequence number to align with other actions
 ) {
+    let expected_proposal_id = sequence_number;
+    let run_to_block = sequence_number + 1;
+
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
         ProposalCodex::create_decrease_working_group_leader_stake_proposal(
             RawOrigin::Signed(account_id.clone().into()).into(),
@@ -135,13 +148,22 @@ fn decrease_stake(
         )
     })
     .disable_setup_enviroment()
-    .with_expected_proposal_id(4)
-    .with_run_to_block(5);
+    .with_expected_proposal_id(expected_proposal_id)
+    .with_run_to_block(run_to_block);
 
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 }
 
-fn slash_stake(member_id: u8, account_id: [u8; 32], leader_worker_id: u64, stake_amount: Balance) {
+fn slash_stake(
+    member_id: u8,
+    account_id: [u8; 32],
+    leader_worker_id: u64,
+    stake_amount: Balance,
+    sequence_number: u32, // action sequence number to align with other actions
+) {
+    let expected_proposal_id = sequence_number;
+    let run_to_block = sequence_number + 1;
+
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
         ProposalCodex::create_slash_working_group_leader_stake_proposal(
             RawOrigin::Signed(account_id.clone().into()).into(),
@@ -155,13 +177,22 @@ fn slash_stake(member_id: u8, account_id: [u8; 32], leader_worker_id: u64, stake
         )
     })
     .disable_setup_enviroment()
-    .with_expected_proposal_id(4)
-    .with_run_to_block(5);
+    .with_expected_proposal_id(expected_proposal_id)
+    .with_run_to_block(run_to_block);
 
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 }
 
-fn set_reward(member_id: u8, account_id: [u8; 32], leader_worker_id: u64, reward_amount: Balance) {
+fn set_reward(
+    member_id: u8,
+    account_id: [u8; 32],
+    leader_worker_id: u64,
+    reward_amount: Balance,
+    sequence_number: u32, // action sequence number to align with other actions
+) {
+    let expected_proposal_id = sequence_number;
+    let run_to_block = sequence_number + 1;
+
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
         ProposalCodex::create_set_working_group_leader_reward_proposal(
             RawOrigin::Signed(account_id.clone().into()).into(),
@@ -175,13 +206,22 @@ fn set_reward(member_id: u8, account_id: [u8; 32], leader_worker_id: u64, reward
         )
     })
     .disable_setup_enviroment()
-    .with_expected_proposal_id(5)
-    .with_run_to_block(6);
+    .with_expected_proposal_id(expected_proposal_id)
+    .with_run_to_block(run_to_block);
 
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 }
 
-fn set_mint_capacity(member_id: u8, account_id: [u8; 32], mint_capacity: Balance) {
+fn set_mint_capacity(
+    member_id: u8,
+    account_id: [u8; 32],
+    mint_capacity: Balance,
+    sequence_number: u32, // action sequence number to align with other actions
+    setup_environment: bool,
+) {
+    let expected_proposal_id = sequence_number;
+    let run_to_block = sequence_number + 1;
+
     let mint_id_result = <minting::Module<Runtime>>::add_mint(0, None);
 
     if let Ok(mint_id) = mint_id_result {
@@ -199,9 +239,41 @@ fn set_mint_capacity(member_id: u8, account_id: [u8; 32], mint_capacity: Balance
             WorkingGroup::Storage,
         )
     })
+    .with_setup_enviroment(setup_environment)
+    .with_expected_proposal_id(expected_proposal_id)
+    .with_run_to_block(run_to_block);
+
+    codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+}
+
+fn terminate_role(
+    member_id: u8,
+    account_id: [u8; 32],
+    leader_worker_id: u64,
+    slash: bool,
+    sequence_number: u32, // action sequence number to align with other actions
+) {
+    let expected_proposal_id = sequence_number;
+    let run_to_block = sequence_number + 1;
+
+    let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+        ProposalCodex::create_terminate_working_group_leader_role_proposal(
+            RawOrigin::Signed(account_id.clone().into()).into(),
+            member_id as u64,
+            b"title".to_vec(),
+            b"body".to_vec(),
+            Some(<BalanceOf<Runtime>>::from(100_000_u32)),
+            proposals_codex::TerminateRoleParameters {
+                worker_id: leader_worker_id,
+                rationale: Vec::new(),
+                slash,
+                working_group: WorkingGroup::Storage,
+            },
+        )
+    })
     .disable_setup_enviroment()
-    .with_expected_proposal_id(3)
-    .with_run_to_block(4);
+    .with_expected_proposal_id(expected_proposal_id)
+    .with_run_to_block(run_to_block);
 
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 }
@@ -219,7 +291,13 @@ fn create_add_working_group_leader_opening_proposal_execution_succeeds() {
             StorageWorkingGroupInstance,
         >>::exists(next_opening_id));
 
-        let opening_id = add_opening(member_id, account_id, ActivateOpeningAt::CurrentBlock, None);
+        let opening_id = add_opening(
+            member_id,
+            account_id,
+            ActivateOpeningAt::CurrentBlock,
+            None,
+            1,
+        );
 
         // Check for expected opening id.
         assert_eq!(opening_id, next_opening_id);
@@ -243,6 +321,7 @@ fn create_begin_review_working_group_leader_applications_proposal_execution_succ
             account_id.clone(),
             ActivateOpeningAt::CurrentBlock,
             None,
+            1,
         );
 
         let opening = StorageWorkingGroup::opening_by_id(opening_id);
@@ -261,7 +340,7 @@ fn create_begin_review_working_group_leader_applications_proposal_execution_succ
             }
         );
 
-        begin_review_applications(member_id, account_id, opening_id);
+        begin_review_applications(member_id, account_id, opening_id, 2);
 
         let hiring_opening = Hiring::opening_by_id(opening.hiring_opening_id);
         assert_eq!(
@@ -291,6 +370,7 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
             account_id.clone(),
             ActivateOpeningAt::CurrentBlock,
             None,
+            1,
         );
 
         let apply_result = StorageWorkingGroup::apply_on_opening(
@@ -307,7 +387,7 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
 
         let expected_application_id = 0;
 
-        begin_review_applications(member_id, account_id, opening_id);
+        begin_review_applications(member_id, account_id, opening_id, 2);
 
         let lead = StorageWorkingGroup::current_lead();
         assert!(lead.is_none());
@@ -318,6 +398,7 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
             opening_id,
             expected_application_id,
             None,
+            3,
         );
 
         let lead = StorageWorkingGroup::current_lead();
@@ -347,6 +428,7 @@ fn create_decrease_group_leader_stake_proposal_execution_succeeds() {
             account_id.clone(),
             ActivateOpeningAt::CurrentBlock,
             Some(opening_policy_commitment),
+            1,
         );
 
         let apply_result = StorageWorkingGroup::apply_on_opening(
@@ -363,7 +445,7 @@ fn create_decrease_group_leader_stake_proposal_execution_succeeds() {
 
         let expected_application_id = 0;
 
-        begin_review_applications(member_id, account_id, opening_id);
+        begin_review_applications(member_id, account_id, opening_id, 2);
 
         let lead = StorageWorkingGroup::current_lead();
         assert!(lead.is_none());
@@ -374,6 +456,7 @@ fn create_decrease_group_leader_stake_proposal_execution_succeeds() {
             opening_id,
             expected_application_id,
             None,
+            3,
         );
 
         let leader_worker_id = StorageWorkingGroup::current_lead().unwrap();
@@ -390,6 +473,7 @@ fn create_decrease_group_leader_stake_proposal_execution_succeeds() {
             account_id,
             leader_worker_id,
             decreasing_stake_amount,
+            4,
         );
 
         let new_balance = Balances::free_balance::<&AccountId32>(&account_id.into());
@@ -425,6 +509,7 @@ fn create_slash_group_leader_stake_proposal_execution_succeeds() {
             account_id.clone(),
             ActivateOpeningAt::CurrentBlock,
             Some(opening_policy_commitment),
+            1,
         );
 
         let apply_result = StorageWorkingGroup::apply_on_opening(
@@ -441,7 +526,7 @@ fn create_slash_group_leader_stake_proposal_execution_succeeds() {
 
         let expected_application_id = 0;
 
-        begin_review_applications(member_id, account_id, opening_id);
+        begin_review_applications(member_id, account_id, opening_id, 2);
 
         let lead = StorageWorkingGroup::current_lead();
         assert!(lead.is_none());
@@ -452,6 +537,7 @@ fn create_slash_group_leader_stake_proposal_execution_succeeds() {
             opening_id,
             expected_application_id,
             None,
+            3,
         );
 
         let leader_worker_id = StorageWorkingGroup::current_lead().unwrap();
@@ -468,6 +554,7 @@ fn create_slash_group_leader_stake_proposal_execution_succeeds() {
             account_id,
             leader_worker_id,
             slashing_stake_amount,
+            4,
         );
 
         let new_balance = Balances::free_balance::<&AccountId32>(&account_id.into());
@@ -478,6 +565,24 @@ fn create_slash_group_leader_stake_proposal_execution_succeeds() {
             stake_amount - slashing_stake_amount
         );
         assert_eq!(new_balance, old_balance);
+    });
+}
+
+#[test]
+fn create_set_working_group_mint_capacity_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 1;
+        let account_id: [u8; 32] = [member_id; 32];
+
+        assert_eq!(StorageWorkingGroup::mint(), 0);
+
+        let mint_capacity = 999999;
+        set_mint_capacity(member_id, account_id, mint_capacity, 1, true);
+
+        let mint_id = StorageWorkingGroup::mint();
+        let mint = <minting::Module<Runtime>>::mints(mint_id);
+
+        assert_eq!(mint.capacity(), mint_capacity);
     });
 }
 
@@ -503,6 +608,7 @@ fn create_set_group_leader_reward_proposal_execution_succeeds() {
             account_id.clone(),
             ActivateOpeningAt::CurrentBlock,
             Some(opening_policy_commitment),
+            1,
         );
 
         let apply_result = StorageWorkingGroup::apply_on_opening(
@@ -519,7 +625,7 @@ fn create_set_group_leader_reward_proposal_execution_succeeds() {
 
         let expected_application_id = 0;
 
-        begin_review_applications(member_id, account_id, opening_id);
+        begin_review_applications(member_id, account_id, opening_id, 2);
 
         let lead = StorageWorkingGroup::current_lead();
         assert!(lead.is_none());
@@ -531,12 +637,15 @@ fn create_set_group_leader_reward_proposal_execution_succeeds() {
             payout_interval: None,
         });
 
+        set_mint_capacity(member_id, account_id, 999999, 3, false);
+
         fill_opening(
             member_id,
             account_id,
             opening_id,
             expected_application_id,
             reward_policy,
+            4,
         );
 
         let leader_worker_id = StorageWorkingGroup::current_lead().unwrap();
@@ -548,9 +657,179 @@ fn create_set_group_leader_reward_proposal_execution_succeeds() {
         assert_eq!(relationship.amount_per_payout, old_reward_amount);
 
         let new_reward_amount = 999;
-        set_reward(member_id, account_id, leader_worker_id, new_reward_amount);
+        set_reward(
+            member_id,
+            account_id,
+            leader_worker_id,
+            new_reward_amount,
+            5,
+        );
 
         let relationship = recurringrewards::RewardRelationships::<Runtime>::get(relationship_id);
         assert_eq!(relationship.amount_per_payout, new_reward_amount);
+    });
+}
+
+#[test]
+fn create_terminate_group_leader_role_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 1;
+        let account_id: [u8; 32] = [member_id; 32];
+        let stake_amount = 100;
+
+        let opening_policy_commitment = OpeningPolicyCommitment {
+            role_staking_policy: Some(hiring::StakingPolicy {
+                amount: 100,
+                amount_mode: hiring::StakingAmountLimitMode::AtLeast,
+                crowded_out_unstaking_period_length: None,
+                review_period_expired_unstaking_period_length: None,
+            }),
+            ..OpeningPolicyCommitment::default()
+        };
+
+        let opening_id = add_opening(
+            member_id,
+            account_id.clone(),
+            ActivateOpeningAt::CurrentBlock,
+            Some(opening_policy_commitment),
+            1,
+        );
+
+        let apply_result = StorageWorkingGroup::apply_on_opening(
+            RawOrigin::Signed(account_id.clone().into()).into(),
+            member_id as u64,
+            opening_id,
+            account_id.clone().into(),
+            Some(stake_amount),
+            None,
+            Vec::new(),
+        );
+
+        assert_eq!(apply_result, Ok(()));
+
+        let expected_application_id = 0;
+
+        begin_review_applications(member_id, account_id, opening_id, 2);
+
+        let lead = StorageWorkingGroup::current_lead();
+        assert!(lead.is_none());
+
+        let old_reward_amount = 100;
+        let reward_policy = Some(RewardPolicy {
+            amount_per_payout: old_reward_amount,
+            next_payment_at_block: 9999,
+            payout_interval: None,
+        });
+
+        set_mint_capacity(member_id, account_id, 999999, 3, false);
+
+        fill_opening(
+            member_id,
+            account_id,
+            opening_id,
+            expected_application_id,
+            reward_policy,
+            4,
+        );
+
+        let leader_worker_id = StorageWorkingGroup::current_lead().unwrap();
+
+        let stake_id = 1;
+        let old_balance = Balances::free_balance::<&AccountId32>(&account_id.into());
+        let old_stake = <stake::Module<Runtime>>::stakes(stake_id);
+
+        assert_eq!(get_stake_balance(old_stake), stake_amount);
+
+        terminate_role(member_id, account_id, leader_worker_id, false, 5);
+
+        assert!(StorageWorkingGroup::current_lead().is_none());
+
+        let new_balance = Balances::free_balance::<&AccountId32>(&account_id.into());
+        let new_stake = <stake::Module<Runtime>>::stakes(stake_id);
+
+        assert_eq!(new_stake.staking_status, stake::StakingStatus::NotStaked);
+        assert_eq!(new_balance, old_balance + stake_amount);
+    });
+}
+
+#[test]
+fn create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 1;
+        let account_id: [u8; 32] = [member_id; 32];
+        let stake_amount = 100;
+
+        let opening_policy_commitment = OpeningPolicyCommitment {
+            role_staking_policy: Some(hiring::StakingPolicy {
+                amount: 100,
+                amount_mode: hiring::StakingAmountLimitMode::AtLeast,
+                crowded_out_unstaking_period_length: None,
+                review_period_expired_unstaking_period_length: None,
+            }),
+            ..OpeningPolicyCommitment::default()
+        };
+
+        let opening_id = add_opening(
+            member_id,
+            account_id.clone(),
+            ActivateOpeningAt::CurrentBlock,
+            Some(opening_policy_commitment),
+            1,
+        );
+
+        let apply_result = StorageWorkingGroup::apply_on_opening(
+            RawOrigin::Signed(account_id.clone().into()).into(),
+            member_id as u64,
+            opening_id,
+            account_id.clone().into(),
+            Some(stake_amount),
+            None,
+            Vec::new(),
+        );
+
+        assert_eq!(apply_result, Ok(()));
+
+        let expected_application_id = 0;
+
+        begin_review_applications(member_id, account_id, opening_id, 2);
+
+        let lead = StorageWorkingGroup::current_lead();
+        assert!(lead.is_none());
+
+        let old_reward_amount = 100;
+        let reward_policy = Some(RewardPolicy {
+            amount_per_payout: old_reward_amount,
+            next_payment_at_block: 9999,
+            payout_interval: None,
+        });
+
+        set_mint_capacity(member_id, account_id, 999999, 3, false);
+
+        fill_opening(
+            member_id,
+            account_id,
+            opening_id,
+            expected_application_id,
+            reward_policy,
+            4,
+        );
+
+        let leader_worker_id = StorageWorkingGroup::current_lead().unwrap();
+
+        let stake_id = 1;
+        let old_balance = Balances::free_balance::<&AccountId32>(&account_id.into());
+        let old_stake = <stake::Module<Runtime>>::stakes(stake_id);
+
+        assert_eq!(get_stake_balance(old_stake), stake_amount);
+
+        terminate_role(member_id, account_id, leader_worker_id, true, 5);
+
+        assert!(StorageWorkingGroup::current_lead().is_none());
+
+        let new_balance = Balances::free_balance::<&AccountId32>(&account_id.into());
+        let new_stake = <stake::Module<Runtime>>::stakes(stake_id);
+
+        assert_eq!(new_stake.staking_status, stake::StakingStatus::NotStaked);
+        assert_eq!(new_balance, old_balance);
     });
 }

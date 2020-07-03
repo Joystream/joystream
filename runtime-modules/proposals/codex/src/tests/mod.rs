@@ -70,7 +70,7 @@ where
 
     fn check_for_successful_call(&self) {
         let account_id = 1;
-        let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&account_id, 50000);
+        let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&account_id, 150000);
 
         assert_eq!((self.successful_call)(), Ok(()));
 
@@ -1328,8 +1328,6 @@ fn decrease_stake_with_zero_staking_balance_fails() {
 #[test]
 fn create_set_working_group_leader_reward_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance(500000);
-
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_set_working_group_leader_reward_proposal(
@@ -1386,6 +1384,71 @@ fn create_set_working_group_leader_reward_proposal_common_checks_succeed() {
                 10,
                 10,
                 WorkingGroup::Storage,
+            ),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_terminate_working_group_leader_role_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
+        let terminate_role_parameters = TerminateRoleParameters {
+            worker_id: 10,
+            rationale: Vec::new(),
+            slash: false,
+            working_group: WorkingGroup::Storage,
+        };
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_terminate_working_group_leader_role_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    terminate_role_parameters.clone(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_terminate_working_group_leader_role_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    terminate_role_parameters.clone(),
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_terminate_working_group_leader_role_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    terminate_role_parameters.clone(),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_terminate_working_group_leader_role_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(100_000_u32)),
+                    terminate_role_parameters.clone(),
+                )
+            },
+            proposal_parameters:
+                crate::proposal_types::parameters::terminate_working_group_leader_role_proposal::<
+                    Test,
+                >(),
+            proposal_details: ProposalDetails::TerminateWorkingGroupLeaderRole(
+                terminate_role_parameters.clone(),
             ),
         };
         proposal_fixture.check_all();
