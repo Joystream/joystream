@@ -184,7 +184,6 @@ fn create_category_depth() {
     let origin = OriginType::Signed(forum_lead);
     build_test_externalities(config).execute_with(|| {
         let max_depth = <Runtime as Trait>::get_max_category_depth();
-        println!("{:?}", max_depth);
         for i in 0..(max_depth + 1) {
             let parent_category_id = match i {
                 0 => None,
@@ -195,11 +194,7 @@ fn create_category_depth() {
                 _ => Ok(()),
             };
 
-            if let Some(tmp_parent_category_id) = parent_category_id {
-                let tree_path = TestForumModule::build_category_tree_path(&tmp_parent_category_id);
-            }
-
-            let tmp = create_category_mock(
+            create_category_mock(
                 origin.clone(),
                 parent_category_id,
                 good_category_title(),
