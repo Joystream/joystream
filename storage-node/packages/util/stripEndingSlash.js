@@ -1,10 +1,9 @@
 // return url with last `/` removed
 function removeEndingForwardSlash(url) {
-	const st = new String(url)
-	if (st.endsWith('/')) {
-		return st.substring(0, st.length - 1)
+	if (url.endsWith('/')) {
+		return url.substring(0, url.length - 1)
 	}
-	return st.toString()
+	return url.toString()
 }
 
 module.exports = removeEndingForwardSlash

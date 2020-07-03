@@ -19,6 +19,8 @@
 'use strict'
 
 const expect = require('chai').expect
+// Disabling the rule because of the 'temp' package API.
+// eslint-disable-next-line no-unused-vars
 const temp = require('temp').track()
 
 const fs = require('fs')

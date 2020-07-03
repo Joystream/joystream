@@ -30,8 +30,8 @@ async function sync_callback(api, storage) {
 	const providerId = api.storageProviderId
 
 	// Iterate over all sync objects, and ensure they're synced.
-	const allChecks = knownContentIds.map(async (content_id) => {
-		let { relationship, relationshipId } = await api.assets.getStorageRelationshipAndId(providerId, content_id)
+	const allChecks = knownContentIds.map(async (contentId) => {
+		let { relationship, relationshipId } = await api.assets.getStorageRelationshipAndId(providerId, contentId)
 
 		// get the data object
 		// make sure the data object was Accepted by the liaison,
@@ -40,7 +40,7 @@ async function sync_callback(api, storage) {
 		let fileLocal
 		try {
 			// check if we have content or not
-			const stats = await storage.stat(content_id)
+			const stats = await storage.stat(contentId)
 			fileLocal = stats.local
 		} catch (err) {
 			// on error stating or timeout
@@ -51,7 +51,7 @@ async function sync_callback(api, storage) {
 
 		if (!fileLocal) {
 			try {
-				await storage.synchronize(content_id)
+				await storage.synchronize(contentId)
 			} catch (err) {
 				// duplicate logging
 				// debug(err.message)
@@ -63,25 +63,25 @@ async function sync_callback(api, storage) {
 
 		if (!relationship) {
 			// create relationship
-			debug(`Creating new storage relationship for ${content_id.encode()}`)
+			debug(`Creating new storage relationship for ${contentId.encode()}`)
 			try {
-				relationshipId = await api.assets.createAndReturnStorageRelationship(role_addr, providerId, content_id)
+				relationshipId = await api.assets.createAndReturnStorageRelationship(role_addr, providerId, contentId)
 				await api.assets.toggleStorageRelationshipReady(role_addr, providerId, relationshipId, true)
 			} catch (err) {
-				debug(`Error creating new storage relationship ${content_id.encode()}: ${err.stack}`)
+				debug(`Error creating new storage relationship ${contentId.encode()}: ${err.stack}`)
 				return
 			}
 		} else if (!relationship.ready) {
-			debug(`Updating storage relationship to ready for ${content_id.encode()}`)
+			debug(`Updating storage relationship to ready for ${contentId.encode()}`)
 			// update to ready. (Why would there be a relationship set to ready: false?)
 			try {
 				await api.assets.toggleStorageRelationshipReady(role_addr, providerId, relationshipId, true)
 			} catch (err) {
-				debug(`Error setting relationship ready ${content_id.encode()}: ${err.stack}`)
+				debug(`Error setting relationship ready ${contentId.encode()}: ${err.stack}`)
 			}
 		} else {
 			// we already have content and a ready relationship set. No need to do anything
-			// debug(`content already stored locally ${content_id.encode()}`);
+			// debug(`content already stored locally ${contentId.encode()}`);
 		}
 	})
 

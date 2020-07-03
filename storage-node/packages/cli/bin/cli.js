@@ -152,9 +152,9 @@ const commands = {
 	// needs to be updated to take a content id and resolve it a potential set
 	// of providers that has it, and select one (possibly try more than one provider)
 	// to fetch it from the get api url of a provider..
-	download: async (api, url, content_id, filename) => {
+	download: async (api, url, contentId, filename) => {
 		const request = require('request')
-		url = `${url}asset/v0/${content_id}`
+		url = `${url}asset/v0/${contentId}`
 		debug('Downloading URL', chalk.green(url), 'to', chalk.green(filename))
 
 		const f = fs.createWriteStream(filename)
@@ -194,9 +194,9 @@ const commands = {
 		})
 	},
 	// similar to 'download' function
-	head: async (api, url, content_id) => {
+	head: async (api, url, contentId) => {
 		const request = require('request')
-		url = `${url}asset/v0/${content_id}`
+		url = `${url}asset/v0/${contentId}`
 		debug('Checking URL', chalk.green(url), '...')
 
 		const opts = {

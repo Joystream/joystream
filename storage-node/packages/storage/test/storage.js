@@ -31,9 +31,9 @@ const { Storage } = require('@joystream/storage-node-backend')
 
 const IPFS_CID_REGEX = /^Qm[1-9A-HJ-NP-Za-km-z]{44}$/
 
-function write(store, content_id, contents, callback) {
+function write(store, contentId, contents, callback) {
 	store
-		.open(content_id, 'w')
+		.open(contentId, 'w')
 		.then((stream) => {
 			stream.on('finish', () => {
 				stream.commit()
@@ -61,7 +61,7 @@ function read_all(stream) {
 	})
 }
 
-function create_known_object(content_id, contents, callback) {
+function create_known_object(contentId, contents, callback) {
 	let hash
 	const store = Storage.create({
 		resolve_content_id: () => {
@@ -69,7 +69,7 @@ function create_known_object(content_id, contents, callback) {
 		},
 	})
 
-	write(store, content_id, contents, (the_hash) => {
+	write(store, contentId, contents, (the_hash) => {
 		hash = the_hash
 
 		callback(store, hash)

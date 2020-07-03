@@ -21,9 +21,9 @@ module.exports = function (runtime) {
 
 		// Resolve Service Information
 		async get(req, res) {
-			let parsedId;
+			let parsedId
 			try {
-				parsedId = parseInt(req.params.id);
+				parsedId = parseInt(req.params.id)
 			} catch (err) {
 				return res.status(400).end()
 			}

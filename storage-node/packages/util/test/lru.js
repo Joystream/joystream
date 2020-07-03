@@ -138,7 +138,7 @@ describe('util/lru', function () {
 
 			// 'foo' is older than 'bar' right now, so should be pruned first. But
 			// if we get 'foo', it would be 'bar' that has to go.
-			const _ = cache.get('foo')
+			cache.get('foo')
 
 			// Makes debugging a bit more obvious
 			await sleep()

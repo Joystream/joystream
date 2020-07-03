@@ -36,7 +36,7 @@ function resolve(base, name) {
 
 	// In a firs step, we strip leading slashes from the name, because they're
 	// just saying "relative to the base" in our use case.
-	let res = name.replace(/^\/+/, '');
+	let res = name.replace(/^\/+/, '')
 	debug('Stripped', res)
 
 	// At this point resolving the path should stay within the base we specify.
@@ -57,7 +57,7 @@ function resolve(base, name) {
 	debug('Relative', res)
 
 	// Finally we can join this relative name to the requested base.
-	res = path.join(base, res);
+	res = path.join(base, res)
 	debug('Result', res)
 	return res
 }

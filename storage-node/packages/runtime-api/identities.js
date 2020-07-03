@@ -20,8 +20,6 @@
 
 const path = require('path')
 const fs = require('fs')
-// const readline = require('readline')
-
 const debug = require('debug')('joystream:runtime:identities')
 const { Keyring } = require('@polkadot/keyring')
 const util_crypto = require('@polkadot/util-crypto')

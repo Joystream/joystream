@@ -244,10 +244,10 @@ class Storage {
 	/*
 	 * Resolve content ID with timeout.
 	 */
-	async _resolve_content_id_with_timeout(timeout, content_id) {
+	async _resolve_content_id_with_timeout(timeout, contentId) {
 		return await this._with_specified_timeout(timeout, async (resolve, reject) => {
 			try {
-				resolve(await this._resolve_content_id(content_id))
+				resolve(await this._resolve_content_id(contentId))
 			} catch (err) {
 				reject(err)
 			}
@@ -257,8 +257,8 @@ class Storage {
 	/*
 	 * Stat a content ID.
 	 */
-	async stat(content_id, timeout) {
-		const resolved = await this._resolve_content_id_with_timeout(timeout, content_id)
+	async stat(contentId, timeout) {
+		const resolved = await this._resolve_content_id_with_timeout(timeout, contentId)
 
 		return await this._with_specified_timeout(timeout, (resolve, reject) => {
 			this.ipfs.files.stat(`/ipfs/${resolved}`, { withLocal: true }, (err, res) => {
@@ -274,8 +274,8 @@ class Storage {
 	/*
 	 * Return the size of a content ID.
 	 */
-	async size(content_id, timeout) {
-		const stat = await this.stat(content_id, timeout)
+	async size(contentId, timeout) {
+		const stat = await this.stat(contentId, timeout)
 		return stat.size
 	}
 
@@ -301,21 +301,21 @@ class Storage {
 	 * an explicit `cleanup()` function that removes temporary files as well,
 	 * in case comitting is not desired.
 	 */
-	async open(content_id, mode, timeout) {
+	async open(contentId, mode, timeout) {
 		if (mode != 'r' && mode != 'w') {
 			throw Error('The only supported modes are "r", "w" and "a".')
 		}
 
 		// Write stream
 		if (mode === 'w') {
-			return await this._create_write_stream(content_id, timeout)
+			return await this._create_write_stream(contentId, timeout)
 		}
 
 		// Read stream - with file type detection
-		return await this._create_read_stream(content_id, timeout)
+		return await this._create_read_stream(contentId, timeout)
 	}
 
-	async _create_write_stream(content_id) {
+	async _create_write_stream(contentId) {
 		// IPFS wants us to just dump a stream into its storage, then returns a
 		// content ID (of its own).
 		// We need to instead return a stream immediately, that we eventually
@@ -326,8 +326,8 @@ class Storage {
 		})
 	}
 
-	async _create_read_stream(content_id, timeout) {
-		const resolved = await this._resolve_content_id_with_timeout(timeout, content_id)
+	async _create_read_stream(contentId, timeout) {
+		const resolved = await this._resolve_content_id_with_timeout(timeout, contentId)
 
 		let found = false
 		return await this._with_specified_timeout(timeout, (resolve, reject) => {
@@ -347,7 +347,7 @@ class Storage {
 			})
 			ls.on('end', () => {
 				if (!found) {
-					const err = new Error('No matching content found for', content_id)
+					const err = new Error('No matching content found for', contentId)
 					debug(err)
 					reject(err)
 				}
@@ -359,8 +359,8 @@ class Storage {
 	/*
 	 * Synchronize the given content ID
 	 */
-	async synchronize(content_id) {
-		const resolved = await this._resolve_content_id_with_timeout(this._timeout, content_id)
+	async synchronize(contentId) {
+		const resolved = await this._resolve_content_id_with_timeout(this._timeout, contentId)
 
 		// validate resolved id is proper ipfs_cid, not null or empty string
 

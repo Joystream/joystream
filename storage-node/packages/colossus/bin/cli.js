@@ -122,9 +122,9 @@ function get_storage(runtime_api) {
 	const { Storage } = require('@joystream/storage-node-backend')
 
 	const options = {
-		resolve_content_id: async (content_id) => {
+		resolve_content_id: async (contentId) => {
 			// Resolve via API
-			const obj = await runtime_api.assets.getDataObject(content_id)
+			const obj = await runtime_api.assets.getDataObject(contentId)
 			if (!obj || obj.isNone) {
 				return
 			}
