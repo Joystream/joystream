@@ -9,7 +9,7 @@ export type TransferableStake = {
     backing: Balance;
 };
 
-export type Stake = {
+export type ElectionStake = {
     new: Balance;
     transferred: Balance;
 };
@@ -65,7 +65,7 @@ export class Seats extends Vec.with(Seat) {}
 export type SealedVote = {
     voter: AccountId;
     commitment: Hash;
-    stake: Stake;
+    stake: ElectionStake;
     vote: Option<AccountId>;
 };
 

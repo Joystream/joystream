@@ -18,6 +18,23 @@ import { registerDiscoveryTypes } from "./discovery";
 import { registerMediaTypes } from "./media";
 import { registerProposalTypes } from "./proposals";
 
+export * from "./common";
+export * from "./members";
+export * from "./council";
+export * from "./roles";
+export * from "./forum";
+export * from "./stake";
+export * from "./mint";
+export * from "./recurring-rewards";
+// export * from "./hiring"; // name clashes with working-group
+export * from "./versioned-store";
+export * from "./versioned-store/permissions";
+// export * from "./content-working-group"; // clashes with content-working-group
+export * from "./working-group";
+export * from "./discovery";
+export * from "./media";
+export * from "./proposals";
+
 export function registerJoystreamTypes() {
   const typeRegistry = getTypeRegistry();
 
