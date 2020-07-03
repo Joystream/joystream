@@ -608,19 +608,13 @@ decl_module! {
             clear_prefix(b"Forum ForumUserById");
 
             // Not signed by forum LEAD
-            let who = Self::ensure_is_forum_lead(origin)?;
+            Self::ensure_is_forum_lead(origin)?;
 
             // ensure category exists.
             ensure!(
                 <CategoryById<T>>::exists(&category_id),
                 ERROR_CATEGORY_DOES_NOT_EXIST
             );
-
-            // TODO: fix this:
-            // &who belongs to the lead that originated transaction
-            // moderator_id is separate account with no way to recover its accountId; yet required by runtime's `is_moderator`
-            // Get moderator id.
-            Self::ensure_is_moderator_account(&who, &moderator_id)?;
 
             if new_value {
                 <CategoryByModerator<T>>::insert(category_id, moderator_id, ());
