@@ -446,7 +446,7 @@ fn delete_thread() {
         );
 
         let post_id = create_post_mock(
-            origins[index].clone(),
+            origin.clone(),
             forum_lead,
             thread_id,
             good_post_text(),
