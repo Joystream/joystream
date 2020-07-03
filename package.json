@@ -14,7 +14,8 @@
 		"cli",
 		"types",
 		"pioneer",
-		"pioneer/packages/*"
+		"pioneer/packages/*",
+		"eslint-config"
 	],
 	"resolutions": {
 		"@polkadot/api": "^0.96.1",
