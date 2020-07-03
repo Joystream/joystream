@@ -331,6 +331,7 @@ const ERROR_FORUM_USER_ID_NOT_MATCH_ACCOUNT: &str = "Forum user id not match its
 const ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT: &str = "Moderator id not match its account.";
 
 // Errors about thread.
+const ERROR_ACCOUNT_DOES_NOT_MATCH_THREAD_AUTHOR: &str = "Thread not authored by the given user.";
 const ERROR_THREAD_DOES_NOT_EXIST: &str = "Thread does not exist";
 const ERROR_THREAD_WITH_WRONG_CATEGORY_ID: &str = "thread and its category not match.";
 
@@ -366,6 +367,14 @@ const ERROR_DATA_MIGRATION_NOT_DONE: &str = "data migration not done yet.";
 //use sr_primitives::{StorageOverlay, ChildrenStorageOverlay};
 
 use system::ensure_signed;
+
+/// Represents a revision of the text of a Post
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct PostTextChange<Hash> {
+    /// Text that expired
+    pub text_hash: Hash,
+}
 
 /// Represents a reaction to a post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -555,6 +564,9 @@ decl_event!(
         /// A thread with given id was moderated.
         ThreadModerated(ThreadId),
 
+        /// A thread with given id was moderated.
+        ThreadTitleUpdated(ThreadId),
+
         /// Post with given id was created.
         PostAdded(PostId),
 
@@ -563,7 +575,7 @@ decl_event!(
 
         /// Post with given id had its text updated.
         /// The second argument reflects the number of total edits when the text update occurs.
-        PostTextUpdated(PostId, u64),
+        PostTextUpdated(PostId),
 
         /// Thumb up post
         PostReacted(ForumUserId, PostId, PostReaction),
@@ -749,6 +761,26 @@ decl_module! {
             Ok(())
         }
 
+        fn edit_thread_title(origin, forum_user_id: T::ForumUserId, thread_id: T::ThreadId, new_title: Vec<u8>) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
+            // Check that account is forum member
+            Self::ensure_is_forum_user(origin, &forum_user_id)?;
+
+            // Ensure forum user is author of the thread
+            Self::ensure_is_thread_author(&thread_id, &forum_user_id)?;
+
+            // Store the event
+            Self::deposit_event(RawEvent::ThreadTitleUpdated(thread_id));
+
+            // Update thread title
+            let title_hash = T::calculate_hash(&new_title);
+            <ThreadById<T>>::mutate(thread_id, |thread| thread.title_hash = title_hash);
+
+            Ok(())
+        }
+
         /// submit a poll
         fn vote_on_poll(origin, forum_user_id: T::ForumUserId, thread_id: T::ThreadId, index: u32) -> dispatch::Result {
             // Ensure data migration is done
@@ -881,11 +913,6 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            /* Edit spec.
-              - forum member guard missing
-              - check that both post and thread and category are mutable
-            */
-
             // Check that account is forum member
             Self::ensure_is_forum_user(origin, &forum_user_id)?;
 
@@ -894,6 +921,13 @@ decl_module! {
 
             // Signer does not match creator of post with identifier postId
             ensure!(post.author_id == forum_user_id, ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR);
+
+            // Update post text
+            let text_hash = T::calculate_hash(&new_text);
+            <PostById<T>>::mutate(post_id, |p| p.text_hash = text_hash);
+
+            // Generate event
+            Self::deposit_event(RawEvent::PostTextUpdated(post_id));
 
             Ok(())
         }
@@ -1122,6 +1156,19 @@ impl<T: Trait> Module<T> {
         } else {
             Err(ERROR_THREAD_DOES_NOT_EXIST)
         }
+    }
+
+    fn ensure_is_thread_author(
+        thread_id: &T::ThreadId,
+        forum_user_id: &T::ForumUserId,
+    ) -> Result<(), &'static str> {
+        let thread = Self::ensure_thread_exists(&thread_id)?;
+
+        if thread.author_id != *forum_user_id {
+            return Err(ERROR_ACCOUNT_DOES_NOT_MATCH_THREAD_AUTHOR);
+        }
+
+        Ok(())
     }
 
     /// Ensure forum user is lead
