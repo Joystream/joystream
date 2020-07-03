@@ -20,8 +20,6 @@
 
 const debug = require('debug')('joystream:runtime:balances')
 
-const { IdentitiesApi } = require('@joystream/storage-runtime-api/identities')
-
 /*
  * Bundle API calls related to account balances.
  */
@@ -29,11 +27,11 @@ class BalancesApi {
 	static async create(base) {
 		const ret = new BalancesApi()
 		ret.base = base
-		await ret.init()
+		await BalancesApi.init()
 		return ret
 	}
 
-	async init(account_file) {
+	static async init() {
 		debug('Init')
 	}
 
@@ -69,9 +67,9 @@ class BalancesApi {
 	 */
 	async transfer(from, to, amount) {
 		const decode = require('@polkadot/keyring').decodeAddress
-		const to_decoded = decode(to, true)
+		const toDecoded = decode(to, true)
 
-		const tx = this.base.api.tx.balances.transfer(to_decoded, amount)
+		const tx = this.base.api.tx.balances.transfer(toDecoded, amount)
 		return this.base.signAndSend(from, tx)
 	}
 }

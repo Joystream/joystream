@@ -18,11 +18,11 @@ class AssetsApi {
 	static async create(base) {
 		const ret = new AssetsApi()
 		ret.base = base
-		await ret.init()
+		await AssetsApi.init()
 		return ret
 	}
 
-	async init() {
+	static async init() {
 		debug('Init')
 	}
 

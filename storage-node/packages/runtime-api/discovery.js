@@ -9,11 +9,11 @@ class DiscoveryApi {
 	static async create(base) {
 		const ret = new DiscoveryApi()
 		ret.base = base
-		await ret.init()
+		await DiscoveryApi.init()
 		return ret
 	}
 
-	async init() {
+	static async init() {
 		debug('Init')
 	}
 

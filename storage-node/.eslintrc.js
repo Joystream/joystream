@@ -28,6 +28,8 @@ module.exports = {
 				"**/test/fs/walk.js",
 				"**/test/storage.js",
 				"**/test/identities.js",
+				"**/test/balances.js",
+				"**/test/assets.js",
 			],
 			"rules": {
 				// Disabling Rules because of used chai lib:

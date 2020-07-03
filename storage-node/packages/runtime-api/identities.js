@@ -22,7 +22,7 @@ const path = require('path')
 const fs = require('fs')
 const debug = require('debug')('joystream:runtime:identities')
 const { Keyring } = require('@polkadot/keyring')
-const util_crypto = require('@polkadot/util-crypto')
+const utilCrypto = require('@polkadot/util-crypto')
 
 /*
  * Add identity management to the substrate API.
@@ -30,14 +30,14 @@ const util_crypto = require('@polkadot/util-crypto')
  * This loosely groups: accounts, key management, and membership.
  */
 class IdentitiesApi {
-	static async create(base, { account_file, passphrase, canPromptForPassphrase }) {
+	static async create(base, { accountFile, passphrase, canPromptForPassphrase }) {
 		const ret = new IdentitiesApi()
 		ret.base = base
-		await ret.init(account_file, passphrase, canPromptForPassphrase)
+		await ret.init(accountFile, passphrase, canPromptForPassphrase)
 		return ret
 	}
 
-	async init(account_file, passphrase, canPromptForPassphrase) {
+	async init(accountFile, passphrase, canPromptForPassphrase) {
 		debug('Init')
 
 		// Creatre keyring
@@ -47,7 +47,7 @@ class IdentitiesApi {
 
 		// Load account file, if possible.
 		try {
-			this.key = await this.loadUnlock(account_file, passphrase)
+			this.key = await this.loadUnlock(accountFile, passphrase)
 		} catch (err) {
 			debug('Error loading account file:', err.message)
 		}
@@ -56,8 +56,8 @@ class IdentitiesApi {
 	/*
 	 * Load a key file and unlock it if necessary.
 	 */
-	async loadUnlock(account_file, passphrase) {
-		const fullname = path.resolve(account_file)
+	async loadUnlock(accountFile, passphrase) {
+		const fullname = path.resolve(accountFile)
 		debug('Initializing key from', fullname)
 		const key = this.keyring.addFromJson(require(fullname))
 		await this.tryUnlock(key, passphrase)
@@ -204,7 +204,7 @@ class IdentitiesApi {
 		name = name || 'storage-provider'
 
 		// Generate new key pair
-		const keyPair = util_crypto.naclKeypairFromRandom()
+		const keyPair = utilCrypto.naclKeypairFromRandom()
 
 		// Encode to an address.
 		const addr = this.keyring.encodeAddress(keyPair.publicKey)

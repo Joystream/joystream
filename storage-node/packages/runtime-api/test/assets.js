@@ -18,18 +18,15 @@
 
 'use strict'
 
-const mocha = require('mocha')
 const expect = require('chai').expect
-const sinon = require('sinon')
 
 const { RuntimeApi } = require('@joystream/storage-runtime-api')
 
 describe('Assets', () => {
 	let api
-	let key
 	before(async () => {
 		api = await RuntimeApi.create()
-		key = await api.identities.loadUnlock('test/data/edwards_unlocked.json')
+		await api.identities.loadUnlock('test/data/edwards_unlocked.json')
 	})
 
 	it('returns DataObjects for a content ID', async () => {
@@ -38,7 +35,7 @@ describe('Assets', () => {
 	})
 
 	it('can check the liaison for a DataObject', async () => {
-		expect(async (_) => {
+		expect(async () => {
 			await api.assets.checkLiaisonForDataObject('foo', 'bar')
 		}).to.throw
 	})
@@ -47,5 +44,5 @@ describe('Assets', () => {
 	it('can accept content')
 	it('can reject content')
 	it('can create a storage relationship for content')
-	it('can toggle a storage relatsionship to ready state')
+	it('can toggle a storage relationship to ready state')
 })

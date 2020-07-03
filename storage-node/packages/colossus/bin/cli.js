@@ -116,7 +116,7 @@ function start_discovery_service({ api, port }) {
 }
 
 // Get an initialized storage instance
-function get_storage(runtime_api) {
+function get_storage(runtimeApi) {
 	// TODO at some point, we can figure out what backend-specific connection
 	// options make sense. For now, just don't use any configuration.
 	const { Storage } = require('@joystream/storage-node-backend')
@@ -124,7 +124,7 @@ function get_storage(runtime_api) {
 	const options = {
 		resolve_content_id: async (contentId) => {
 			// Resolve via API
-			const obj = await runtime_api.assets.getDataObject(contentId)
+			const obj = await runtimeApi.assets.getDataObject(contentId)
 			if (!obj || obj.isNone) {
 				return
 			}

@@ -36,9 +36,9 @@ const { newExternallyControlledPromise } = require('@joystream/storage-utils/ext
  */
 class RuntimeApi {
 	static async create(options) {
-		const runtime_api = new RuntimeApi()
-		await runtime_api.init(options || {})
-		return runtime_api
+		const runtimeApi = new RuntimeApi()
+		await runtimeApi.init(options || {})
+		return runtimeApi
 	}
 
 	async init(options) {
@@ -78,8 +78,8 @@ class RuntimeApi {
 		this.api.disconnect()
 	}
 
-	executeWithAccountLock(account_id, func) {
-		return this.asyncLock.acquire(`${account_id}`, func)
+	executeWithAccountLock(accountId, func) {
+		return this.asyncLock.acquire(`${accountId}`, func)
 	}
 
 	/*
@@ -93,7 +93,7 @@ class RuntimeApi {
 		return this.waitForEvents([[module, name]])
 	}
 
-	_matchingEvents(subscribed, events) {
+	static matchingEvents(subscribed, events) {
 		debug(`Number of events: ${events.length} subscribed to ${subscribed}`)
 
 		const filtered = events.filter((record) => {
@@ -122,8 +122,8 @@ class RuntimeApi {
 				payload[types[index].type] = data
 			})
 
-			const full_name = `${event.section}.${event.method}`
-			return [full_name, payload]
+			const fullName = `${event.section}.${event.method}`
+			return [fullName, payload]
 		})
 		debug('Mapped', mapped)
 
@@ -138,9 +138,9 @@ class RuntimeApi {
 	 * Returns the first matched event *only*.
 	 */
 	async waitForEvents(subscribed) {
-		return new Promise((resolve, reject) => {
+		return new Promise((resolve) => {
 			this.api.query.system.events((events) => {
-				const matches = this._matchingEvents(subscribed, events)
+				const matches = RuntimeApi.matchingEvents(subscribed, events)
 				if (matches && matches.length) {
 					resolve(matches)
 				}
@@ -160,20 +160,22 @@ class RuntimeApi {
 		accountId = this.identities.keyring.encodeAddress(accountId)
 
 		// Key must be unlocked
-		const from_key = this.identities.keyring.getPair(accountId)
-		if (from_key.isLocked) {
+		const fromKey = this.identities.keyring.getPair(accountId)
+		if (fromKey.isLocked) {
 			throw new Error('Must unlock key before using it to sign!')
 		}
 
 		const finalizedPromise = newExternallyControlledPromise()
 
-		const unsubscribe = await this.executeWithAccountLock(accountId, async () => {
+		await this.executeWithAccountLock(accountId, async () => {
 			// Try to get the next nonce to use
 			let nonce = this.nonces[accountId]
 
 			let incrementNonce = () => {
 				// only increment once
-				incrementNonce = () => {} // turn it into a no-op
+				incrementNonce = () => {
+					/* turn it into a no-op */
+				}
 				nonce = nonce.addn(1)
 				this.nonces[accountId] = nonce
 			}
@@ -189,7 +191,7 @@ class RuntimeApi {
 				debug('Signing and sending tx')
 				// send(statusUpdates) returns a function for unsubscribing from status updates
 				const unsubscribe = tx
-					.sign(from_key, { nonce })
+					.sign(fromKey, { nonce })
 					.send(({ events = [], status }) => {
 						debug(`TX status: ${status.type}`)
 
@@ -197,7 +199,7 @@ class RuntimeApi {
 						// It is critical that this event handling doesn't prevent
 						try {
 							if (subscribed && callback) {
-								const matched = this._matchingEvents(subscribed, events)
+								const matched = RuntimeApi.matchingEvents(subscribed, events)
 								debug('Matching events:', matched)
 								if (matched.length) {
 									callback(matched)
