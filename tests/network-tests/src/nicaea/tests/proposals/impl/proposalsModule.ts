@@ -16,7 +16,7 @@ export async function createWorkingGroupLeaderOpening(
   const description: string = 'Testing working group lead opening proposal ' + uuid().substring(0, 8);
 
   // Proposal stake calculation
-  const proposalStake: BN = new BN(50000);
+  const proposalStake: BN = new BN(100000);
   const proposalFee: BN = apiWrapper.estimateProposeCreateWorkingGroupLeaderOpening();
   await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake));
 

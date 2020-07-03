@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@constantinople/types@npm:@joystream/types": "^0.10.0",
-    "@nicaea/types": "./types",
+    "@nicaea/types": "link:../../types",
     "@polkadot/api": "^0.96.1",
     "@polkadot/keyring": "^1.7.0-beta.5",
     "@rome/types@npm:@joystream/types": "^0.7.0",
