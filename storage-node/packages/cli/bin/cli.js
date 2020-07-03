@@ -58,14 +58,14 @@ const cli = meow(
 	{ flags: FLAG_DEFINITIONS }
 )
 
-function assert_file(name, filename) {
+function assertFile(name, filename) {
 	assert(filename, `Need a ${name} parameter to proceed!`)
 	assert(fs.statSync(filename).isFile(), `Path "${filename}" is not a file, aborting!`)
 }
 
 function load_identity(api, filename, passphrase) {
 	if (filename) {
-		assert_file('keyfile', filename)
+		assertFile('keyfile', filename)
 		api.identities.loadUnlock(filename, passphrase)
 	} else {
 		debug('Loading Alice as identity')
@@ -92,19 +92,19 @@ const commands = {
 	// needs to get the liaison after creating a data object,
 	// resolve the ipns id to the asset put api url of the storage-node
 	// before uploading..
-	upload: async (api, url, filename, do_type_id, keyfile, passphrase) => {
+	upload: async (api, url, filename, doTypeId, keyfile, passphrase) => {
 		load_identity(keyfile, passphrase)
 		// Check parameters
-		assert_file('file', filename)
+		assertFile('file', filename)
 
 		const size = fs.statSync(filename).size
 		debug(`File "${filename}" is ${chalk.green(size)} Bytes.`)
 
-		if (!do_type_id) {
-			do_type_id = 1
+		if (!doTypeId) {
+			doTypeId = 1
 		}
 
-		debug('Data Object Type ID is: ' + chalk.green(do_type_id))
+		debug('Data Object Type ID is: ' + chalk.green(doTypeId))
 
 		// Generate content ID
 		// FIXME this require path is like this because of
@@ -115,7 +115,7 @@ const commands = {
 		debug('Generated content ID: ' + chalk.green(cid))
 
 		// Create Data Object
-		const data_object = await api.assets.createDataObject(api.identities.key.address, cid, do_type_id, size)
+		await api.assets.createDataObject(api.identities.key.address, cid, doTypeId, size)
 		debug('Data object created.')
 
 		// TODO in future, optionally contact liaison here?
@@ -204,7 +204,7 @@ const commands = {
 			json: true,
 		}
 		return new Promise((resolve, reject) => {
-			const r = request.head(opts, (error, response, body) => {
+			request.head(opts, (error, response, body) => {
 				if (error) {
 					reject(error)
 					return

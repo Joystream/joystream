@@ -15,7 +15,7 @@ const PUBLISH_KEY = 'self'
  * Applies JSON serialization on the data object and converts the utf-8
  * string to a Buffer.
  * @param {object} data - json object
- * @returns {Buffer}
+ * @returns {Buffer} returns buffer from UTF-8 json
  */
 function bufferFrom(data) {
 	return Buffer.from(JSON.stringify(data), 'utf-8')
@@ -25,7 +25,7 @@ function bufferFrom(data) {
  * Encodes the service info into a standard format see. /storage-node/docs/json-signing.md
  * To be able to add a signature over the json data. Signing is not currently implemented.
  * @param {object} info - json object
- * @returns {Buffer}
+ * @returns {Buffer} return buffer.
  */
 function encodeServiceInfo(info) {
 	return bufferFrom({
@@ -37,30 +37,30 @@ function encodeServiceInfo(info) {
  * Publishes the service information, encoded using the standard defined in encodeServiceInfo()
  * to ipfs, using the local ipfs node's PUBLISH_KEY, and returns the key id used to publish.
  * What we refer to as the ipns id.
- * @param {object} service_info - the service information to publish
+ * @param {object} serviceInfo - the service information to publish
  * @returns {string} - the ipns id
  */
-async function publish(service_info) {
+async function publish(serviceInfo) {
 	const keys = await ipfs.key.list()
-	let services_key = keys.find((key) => key.name === PUBLISH_KEY)
+	let servicesKey = keys.find((key) => key.name === PUBLISH_KEY)
 
 	// An ipfs node will always have the self key.
 	// If the publish key is specified as anything else and it doesn't exist
 	// we create it.
-	if (PUBLISH_KEY !== 'self' && !services_key) {
+	if (PUBLISH_KEY !== 'self' && !servicesKey) {
 		debug('generating ipns services key')
-		services_key = await ipfs.key.gen(PUBLISH_KEY, {
+		servicesKey = await ipfs.key.gen(PUBLISH_KEY, {
 			type: 'rsa',
 			size: 2048,
 		})
 	}
 
-	if (!services_key) {
+	if (!servicesKey) {
 		throw new Error('No IPFS publishing key available!')
 	}
 
 	debug('adding service info file to node')
-	const files = await ipfs.add(encodeServiceInfo(service_info))
+	const files = await ipfs.add(encodeServiceInfo(serviceInfo))
 
 	debug('publishing...')
 	const published = await ipfs.name.publish(files[0].hash, {
@@ -80,7 +80,7 @@ async function publish(service_info) {
 
 	// Return the key id under which the content was published. Which is used
 	// to lookup the actual ipfs content id of the published service information
-	return services_key.id
+	return servicesKey.id
 }
 
 module.exports = {

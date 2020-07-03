@@ -26,11 +26,12 @@ async function sync_callback(api, storage) {
 	// FIXME this isn't actually on chain yet, so we'll fake it.
 	const knownContentIds = (await api.assets.getKnownContentIds()) || []
 
-	const role_addr = api.identities.key.address
+	const roleAddress = api.identities.key.address
 	const providerId = api.storageProviderId
 
 	// Iterate over all sync objects, and ensure they're synced.
 	const allChecks = knownContentIds.map(async (contentId) => {
+		/* eslint-disable prefer-const */
 		let { relationship, relationshipId } = await api.assets.getStorageRelationshipAndId(providerId, contentId)
 
 		// get the data object
@@ -65,8 +66,8 @@ async function sync_callback(api, storage) {
 			// create relationship
 			debug(`Creating new storage relationship for ${contentId.encode()}`)
 			try {
-				relationshipId = await api.assets.createAndReturnStorageRelationship(role_addr, providerId, contentId)
-				await api.assets.toggleStorageRelationshipReady(role_addr, providerId, relationshipId, true)
+				relationshipId = await api.assets.createAndReturnStorageRelationship(roleAddress, providerId, contentId)
+				await api.assets.toggleStorageRelationshipReady(roleAddress, providerId, relationshipId, true)
 			} catch (err) {
 				debug(`Error creating new storage relationship ${contentId.encode()}: ${err.stack}`)
 				return
@@ -75,7 +76,7 @@ async function sync_callback(api, storage) {
 			debug(`Updating storage relationship to ready for ${contentId.encode()}`)
 			// update to ready. (Why would there be a relationship set to ready: false?)
 			try {
-				await api.assets.toggleStorageRelationshipReady(role_addr, providerId, relationshipId, true)
+				await api.assets.toggleStorageRelationshipReady(roleAddress, providerId, relationshipId, true)
 			} catch (err) {
 				debug(`Error setting relationship ready ${contentId.encode()}: ${err.stack}`)
 			}

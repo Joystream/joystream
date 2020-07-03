@@ -29,14 +29,14 @@ const FLAG_DEFINITIONS = {
 	},
 	keyFile: {
 		type: 'string',
-		isRequired: (flags, input) => {
+		isRequired: (flags) => {
 			return !flags.dev
 		},
 	},
 	publicUrl: {
 		type: 'string',
 		alias: 'u',
-		isRequired: (flags, input) => {
+		isRequired: (flags) => {
 			return !flags.dev
 		},
 	},
@@ -50,7 +50,7 @@ const FLAG_DEFINITIONS = {
 	providerId: {
 		type: 'number',
 		alias: 'i',
-		isRequired: (flags, input) => {
+		isRequired: (flags) => {
 			return !flags.dev
 		},
 	},
@@ -85,7 +85,7 @@ function banner() {
 	console.log(chalk.blue(figlet.textSync('joystream', 'Speed')))
 }
 
-function start_express_app(app, port) {
+function startExpressApp(app, port) {
 	const http = require('http')
 	const server = http.createServer(app)
 
@@ -106,13 +106,13 @@ function start_express_app(app, port) {
 // Start app
 function start_all_services({ store, api, port }) {
 	const app = require('../lib/app')(PROJECT_ROOT, store, api) // reduce falgs to only needed values
-	return start_express_app(app, port)
+	return startExpressApp(app, port)
 }
 
 // Start discovery service app only
 function start_discovery_service({ api, port }) {
 	const app = require('../lib/discovery')(PROJECT_ROOT, api) // reduce flags to only needed values
-	return start_express_app(app, port)
+	return startExpressApp(app, port)
 }
 
 // Get an initialized storage instance
@@ -230,10 +230,6 @@ async function announce_public_url(api, publicUrl) {
 		debug(`announcing failed, retrying in: 2 minutes`)
 		reannounce(120 * 1000)
 	}
-}
-
-function go_offline(api) {
-	return api.discovery.unsetAccountInfo()
 }
 
 // Simple CLI commands

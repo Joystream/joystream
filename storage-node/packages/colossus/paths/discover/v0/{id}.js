@@ -46,7 +46,7 @@ module.exports = function (runtime) {
 			try {
 				debug(`resolving ${id}`)
 				const info = await discover.discover(id, runtime, USE_CACHE, cacheMaxAge)
-				if (info == null) {
+				if (info === null) {
 					debug('info not found')
 					res.status(404).end()
 				} else {

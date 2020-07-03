@@ -22,10 +22,10 @@ const path = require('path')
 
 const debug = require('debug')('joystream:colossus:api:asset')
 
-const util_ranges = require('@joystream/storage-utils/ranges')
+const utilRanges = require('@joystream/storage-utils/ranges')
 const filter = require('@joystream/storage-node-backend/filter')
 
-function error_handler(response, err, code) {
+function errorHandler(response, err, code) {
 	debug(err)
 	response.status(err.code || code || 500).send({ message: err.toString() })
 }
@@ -46,7 +46,7 @@ module.exports = function (storage, runtime) {
 		],
 
 		// Head: report that ranges are OK
-		async head(req, res, _next) {
+		async head(req, res) {
 			const id = req.params.id
 
 			// Open file
@@ -69,17 +69,17 @@ module.exports = function (storage, runtime) {
 				}
 				res.send()
 			} catch (err) {
-				error_handler(res, err, err.code)
+				errorHandler(res, err, err.code)
 			}
 		},
 
 		// Put for uploads
-		async put(req, res, _next) {
+		async put(req, res) {
 			const id = req.params.id // content id
 
 			// First check if we're the liaison for the name, otherwise we can bail
 			// out already.
-			const role_addr = runtime.identities.key.address
+			const roleAddress = runtime.identities.key.address
 			const providerId = runtime.storageProviderId
 			let dataObject
 			try {
@@ -87,7 +87,7 @@ module.exports = function (storage, runtime) {
 				dataObject = await runtime.assets.checkLiaisonForDataObject(providerId, id)
 				debug('called checkLiaisonForDataObject')
 			} catch (err) {
-				error_handler(res, err, 403)
+				errorHandler(res, err, 403)
 				return
 			}
 
@@ -101,7 +101,7 @@ module.exports = function (storage, runtime) {
 				// stream was finished, and can only commit if both passed.
 				let finished = false
 				let accepted = false
-				const possibly_commit = () => {
+				const possiblyCommit = () => {
 					if (finished && accepted) {
 						debug('Stream is finished and passed filters; committing.')
 						stream.commit()
@@ -113,32 +113,32 @@ module.exports = function (storage, runtime) {
 						debug('Detected file info:', info)
 
 						// Filter
-						const filter_result = filter({}, req.headers, info.mimeType)
-						if (200 != filter_result.code) {
-							debug('Rejecting content', filter_result.message)
+						const filterResult = filter({}, req.headers, info.mimeType)
+						if (200 !== filterResult.code) {
+							debug('Rejecting content', filterResult.message)
 							stream.end()
-							res.status(filter_result.code).send({ message: filter_result.message })
+							res.status(filterResult.code).send({ message: filterResult.message })
 
 							// Reject the content
-							await runtime.assets.rejectContent(role_addr, providerId, id)
+							await runtime.assets.rejectContent(roleAddress, providerId, id)
 							return
 						}
 						debug('Content accepted.')
 						accepted = true
 
 						// We may have to commit the stream.
-						possibly_commit()
+						possiblyCommit()
 					} catch (err) {
-						error_handler(res, err)
+						errorHandler(res, err)
 					}
 				})
 
 				stream.on('finish', () => {
 					try {
 						finished = true
-						possibly_commit()
+						possiblyCommit()
 					} catch (err) {
-						error_handler(res, err)
+						errorHandler(res, err)
 					}
 				})
 
@@ -147,43 +147,43 @@ module.exports = function (storage, runtime) {
 					try {
 						if (hash !== dataObject.ipfs_content_id.toString()) {
 							debug('Rejecting content. IPFS hash does not match value in objectId')
-							await runtime.assets.rejectContent(role_addr, providerId, id)
+							await runtime.assets.rejectContent(roleAddress, providerId, id)
 							res.status(400).send({ message: "Uploaded content doesn't match IPFS hash" })
 							return
 						}
 
 						debug('accepting Content')
-						await runtime.assets.acceptContent(role_addr, providerId, id)
+						await runtime.assets.acceptContent(roleAddress, providerId, id)
 
 						debug('creating storage relationship for newly uploaded content')
 						// Create storage relationship and flip it to ready.
-						const dosr_id = await runtime.assets.createAndReturnStorageRelationship(
-							role_addr,
+						const dosrId = await runtime.assets.createAndReturnStorageRelationship(
+							roleAddress,
 							providerId,
 							id
 						)
 
 						debug('toggling storage relationship for newly uploaded content')
-						await runtime.assets.toggleStorageRelationshipReady(role_addr, providerId, dosr_id, true)
+						await runtime.assets.toggleStorageRelationshipReady(roleAddress, providerId, dosrId, true)
 
 						debug('Sending OK response.')
 						res.status(200).send({ message: 'Asset uploaded.' })
 					} catch (err) {
 						debug(`${err.message}`)
-						error_handler(res, err)
+						errorHandler(res, err)
 					}
 				})
 
-				stream.on('error', (err) => error_handler(res, err))
+				stream.on('error', (err) => errorHandler(res, err))
 				req.pipe(stream)
 			} catch (err) {
-				error_handler(res, err)
+				errorHandler(res, err)
 				return
 			}
 		},
 
 		// Get content
-		async get(req, res, _next) {
+		async get(req, res) {
 			const id = req.params.id
 			const download = req.query.download
 
@@ -191,13 +191,13 @@ module.exports = function (storage, runtime) {
 			let ranges
 			if (!download) {
 				try {
-					const range_header = req.headers.range
-					ranges = util_ranges.parse(range_header)
+					const rangeHeader = req.headers.range
+					ranges = utilRanges.parse(rangeHeader)
 				} catch (err) {
 					// Do nothing; it's ok to ignore malformed ranges and respond with the
 					// full content according to https://www.rfc-editor.org/rfc/rfc7233.txt
 				}
-				if (ranges && ranges.unit != 'bytes') {
+				if (ranges && ranges.unit !== 'bytes') {
 					// Ignore ranges that are not byte units.
 					ranges = undefined
 				}
@@ -211,28 +211,28 @@ module.exports = function (storage, runtime) {
 
 				// Add a file extension to download requests if necessary. If the file
 				// already contains an extension, don't add one.
-				let send_name = id
+				let sendName = id
 				const type = stream.fileInfo.mimeType
 				if (download) {
-					let ext = path.extname(send_name)
+					let ext = path.extname(sendName)
 					if (!ext) {
 						ext = stream.fileInfo.ext
 						if (ext) {
-							send_name = `${send_name}.${ext}`
+							sendName = `${sendName}.${ext}`
 						}
 					}
 				}
 
 				const opts = {
-					name: send_name,
+					name: sendName,
 					type,
 					size,
 					ranges,
 					download,
 				}
-				util_ranges.send(res, stream, opts)
+				utilRanges.send(res, stream, opts)
 			} catch (err) {
-				error_handler(res, err, err.code)
+				errorHandler(res, err, err.code)
 			}
 		},
 	}

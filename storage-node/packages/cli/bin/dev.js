@@ -3,7 +3,6 @@
 'use strict'
 
 const debug = require('debug')('joystream:storage-cli:dev')
-const assert = require('assert')
 
 // Derivation path appended to well known development seed used on
 // development chains

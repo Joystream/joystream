@@ -34,7 +34,7 @@ async function main() {
 	})
 
 	const downProviders = storageProviderAccountInfos.filter(({ info }) => {
-		return info == null
+		return info === null
 	})
 
 	const expiredTtlProviders = storageProviderAccountInfos.filter(({ info }) => {
@@ -63,7 +63,7 @@ async function main() {
 			try {
 				const serviceInfo = await discover.discover_over_joystream_discovery_service(providerId, runtime)
 
-				if (serviceInfo == null) {
+				if (serviceInfo === null) {
 					console.log(`provider ${providerId} has not published service information`)
 					return { providerId, endpoint: null }
 				}

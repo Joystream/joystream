@@ -35,14 +35,14 @@ const fileUploads = require('./middleware/file_uploads')
 const pagination = require('@joystream/storage-utils/pagination')
 
 // Configure app
-function create_app(project_root, storage, runtime) {
+function create_app(projectRoot, storage, runtime) {
 	const app = express()
 	app.use(cors())
 	app.use(bodyParser.json())
 	// FIXME app.use(bodyParser.urlencoded({ extended: true }));
 
 	// Load & extend/configure API docs
-	let api = yaml.safeLoad(fs.readFileSync(path.resolve(project_root, 'api-base.yml')))
+	let api = yaml.safeLoad(fs.readFileSync(path.resolve(projectRoot, 'api-base.yml')))
 	api['x-express-openapi-additional-middleware'] = [validateResponses]
 	api['x-express-openapi-validation-strict'] = true
 
@@ -51,7 +51,7 @@ function create_app(project_root, storage, runtime) {
 	openapi.initialize({
 		apiDoc: api,
 		app,
-		paths: path.resolve(project_root, 'paths'),
+		paths: path.resolve(projectRoot, 'paths'),
 		docsPath: '/swagger.json',
 		consumesMiddleware: {
 			'multipart/form-data': fileUploads,
@@ -64,7 +64,7 @@ function create_app(project_root, storage, runtime) {
 
 	// If no other handler gets triggered (errors), respond with the
 	// error serialized to JSON.
-	app.use(function (err, req, res, next) {
+	app.use(function (err, req, res) {
 		res.status(err.status).json(err)
 	})
 

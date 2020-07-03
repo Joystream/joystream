@@ -7,7 +7,8 @@ const BN = require('bn.js')
 const { newExternallyControlledPromise } = require('@joystream/storage-utils/externalPromise')
 
 /**
- * Determines if code is running in a browser by testing for the global window object
+ * Determines if code is running in a browser by testing for the global window object.
+ * @return {boolean} returns result check.
  */
 function inBrowser() {
 	return typeof window !== 'undefined'
@@ -43,7 +44,7 @@ async function getIpnsIdentity(storageProviderId, runtimeApi) {
 	// lookup ipns identity from chain corresponding to storageProviderId
 	const info = await runtimeApi.discovery.getAccountInfo(storageProviderId)
 
-	if (info == null) {
+	if (info === null) {
 		// no identity found on chain for account
 		return null
 	}
@@ -70,7 +71,7 @@ async function discover_over_ipfs_http_gateway(storageProviderId, runtimeApi, ga
 
 	const identity = await getIpnsIdentity(storageProviderId, runtimeApi)
 
-	if (identity == null) {
+	if (identity === null) {
 		// dont waste time trying to resolve if no identity was found
 		throw new Error('no identity to resolve')
 	}
@@ -105,7 +106,7 @@ async function discover_over_joystream_discovery_service(storageProviderId, runt
 	const identity = await getIpnsIdentity(storageProviderId, runtimeApi)
 
 	// dont waste time trying to resolve if no identity was found
-	if (identity == null) {
+	if (identity === null) {
 		throw new Error('no identity to resolve')
 	}
 
@@ -146,7 +147,7 @@ async function discover_over_local_ipfs_node(storageProviderId, runtimeApi) {
 
 	const identity = await getIpnsIdentity(storageProviderId, runtimeApi)
 
-	if (identity == null) {
+	if (identity === null) {
 		// dont waste time trying to resolve if no identity was found
 		throw new Error('no identity to resolve')
 	}
@@ -208,9 +209,9 @@ async function discover(storageProviderId, runtimeApi, useCachedValue = false, m
 
 /**
  * Internal method that handles concurrent discoveries and caching of results. Will
- * select the appropriate discovery protocol based on wether we are in a browser environemtn or not.
+ * select the appropriate discovery protocol based on whether we are in a browser environment or not.
  * If not in a browser it expects a local ipfs node to be running.
- * @param {number | BN | u64} storageProviderId
+ * @param {number | BN | u64} storageProviderId - ID of the storage provider
  * @param {RuntimeApi} runtimeApi - api instance for querying the chain
  * @returns { Promise<object | null> } - the published service information
  */
