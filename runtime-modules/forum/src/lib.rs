@@ -774,13 +774,9 @@ decl_module! {
             // Store the event
             Self::deposit_event(RawEvent::ThreadTitleUpdated(thread_id));
 
-            // Update post text
-            <ThreadById<T>>::mutate(thread_id, |thread| {
-                let title_hash = T::calculate_hash(&new_title);
-
-                // Set current text to new text
-                thread.title_hash = title_hash;
-            });
+            // Update thread title
+            let title_hash = T::calculate_hash(&new_title);
+            <ThreadById<T>>::mutate(thread_id, |thread| thread.title_hash = title_hash);
 
             Ok(())
         }
@@ -927,12 +923,8 @@ decl_module! {
             ensure!(post.author_id == forum_user_id, ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR);
 
             // Update post text
-            <PostById<T>>::mutate(post_id, |p| {
-                let text_hash = T::calculate_hash(&new_text);
-
-                // Set current text to new text
-                p.text_hash = text_hash;
-            });
+            let text_hash = T::calculate_hash(&new_text);
+            <PostById<T>>::mutate(post_id, |p| p.text_hash = text_hash);
 
             // Generate event
             Self::deposit_event(RawEvent::PostTextUpdated(post_id));
