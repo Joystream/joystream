@@ -341,6 +341,7 @@ pub fn create_post_mock(
 pub fn edit_post_text_mock(
     origin: OriginType,
     forum_user_id: <Runtime as Trait>::ForumUserId,
+    thread_id: <Runtime as Trait>::ThreadId,
     post_id: <Runtime as Trait>::PostId,
     new_text: Vec<u8>,
     result: Result<(), &'static str>,
@@ -356,7 +357,7 @@ pub fn edit_post_text_mock(
     );
     if result.is_ok() {
         assert_eq!(
-            TestForumModule::post_by_id(post_id).text_hash,
+            TestForumModule::post_by_id(thread_id, post_id).text_hash,
             Runtime::calculate_hash(new_text.as_slice()),
         );
         assert_eq!(
@@ -556,6 +557,7 @@ pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime
         category_by_thread: vec![],
         next_thread_id: 1,
         post_by_id: vec![],
+        thread_by_post: vec![],
         next_post_id: 1,
 
         category_by_moderator: vec![],

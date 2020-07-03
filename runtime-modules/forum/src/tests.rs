@@ -475,7 +475,8 @@ fn delete_thread() {
         delete_thread_mock(origins[0].clone(), moderators[0], thread_id, Ok(()));
 
         // check thread's post was deleted
-        assert!(!<PostById<Runtime>>::exists(post_id));
+        assert!(!<PostById<Runtime>>::exists(thread_id, post_id));
+        assert!(!<ThreadByPost<Runtime>>::exists(post_id));
     });
 }
 
@@ -708,6 +709,7 @@ fn edit_post_text() {
         edit_post_text_mock(
             origins[0].clone(),
             forum_users[0],
+            thread_id,
             post_id,
             good_post_new_text(),
             Ok(()),
@@ -717,6 +719,7 @@ fn edit_post_text() {
         edit_post_text_mock(
             origins[1].clone(),
             forum_users[1],
+            thread_id,
             post_id,
             good_post_new_text(),
             Err(ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR),

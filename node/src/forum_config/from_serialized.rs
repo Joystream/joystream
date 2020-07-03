@@ -11,7 +11,7 @@ use serde_json::Result;
 #[derive(Deserialize)]
 struct ForumData {
     categories: Vec<(CategoryId, Category<CategoryId, ThreadId, Hash>)>,
-    posts: Vec<(PostId, Post<ForumUserId, ThreadId, Hash>)>,
+    posts: Vec<(ThreadId, PostId, Post<ForumUserId, ThreadId, Hash>)>,
     threads: Vec<(
         CategoryId,
         ThreadId,
@@ -41,12 +41,19 @@ pub fn create() -> ForumConfig {
         .iter()
         .map(|(category_id, thread_id, _thread)| (*thread_id, *category_id))
         .collect();
+    let thread_by_post = forum_data
+        .posts
+        .iter()
+        .map(|(thread_id, post_id, _thread)| (*thread_id, *post_id))
+        .collect();
+
 
     ForumConfig {
         category_by_id: forum_data.categories,
         thread_by_id: forum_data.threads,
         category_by_thread,
         post_by_id: forum_data.posts,
+        thread_by_post,
         next_category_id,
         next_thread_id,
         next_post_id,

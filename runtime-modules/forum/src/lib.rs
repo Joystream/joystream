@@ -512,7 +512,10 @@ decl_storage! {
         pub NextThreadId get(next_thread_id) config(): T::ThreadId;
 
         /// Map post identifier to corresponding post.
-        pub PostById get(post_by_id) config(): map T::PostId => Post<T::ForumUserId, T::ThreadId, T::Hash>;
+        pub PostById get(post_by_id) config(): double_map T::ThreadId, blake2_256(T::PostId) => Post<T::ForumUserId, T::ThreadId, T::Hash>;
+
+        // Map thread to post. Enables searching for posts in PostById without knowing to which thread post belongs to.
+        pub ThreadByPost get(thread_by_post) config(): map T::PostId => T::ThreadId;
 
         /// Post identifier value to be used for for next post created.
         pub NextPostId get(next_post_id) config(): T::PostId;
@@ -794,6 +797,10 @@ decl_module! {
             <ThreadById<T>>::remove(thread.category_id, thread_id);
             <CategoryByThread<T>>::remove(thread_id);
 
+            // Delete posts
+            <PostById<T>>::iter_prefix_values(thread_id).map(|post_id| <ThreadByPost<T>>::remove(post_id));
+            <PostById<T>>::remove_prefix(thread_id);
+
             // Store the event
             Self::deposit_event(RawEvent::ThreadDeleted(thread_id));
 
@@ -943,7 +950,7 @@ decl_module! {
 
             // Update post text
             let text_hash = T::calculate_hash(&new_text);
-            <PostById<T>>::mutate(post_id, |p| p.text_hash = text_hash);
+            <PostById<T>>::mutate(post.thread_id, post_id, |p| p.text_hash = text_hash);
 
             // Generate event
             Self::deposit_event(RawEvent::PostTextUpdated(post_id));
@@ -1098,7 +1105,8 @@ impl<T: Trait> Module<T> {
         };
 
         // Store post
-        <PostById<T>>::mutate(new_post_id, |value| *value = new_post.clone());
+        <PostById<T>>::mutate(thread_id, new_post_id, |value| *value = new_post.clone());
+        <ThreadByPost<T>>::mutate(new_post_id, |value| *value = thread_id);
 
         // Update next post id
         <NextPostId<T>>::mutate(|n| *n += One::one());
@@ -1151,11 +1159,13 @@ impl<T: Trait> Module<T> {
     fn ensure_post_exists(
         post_id: &T::PostId,
     ) -> Result<Post<T::ForumUserId, T::ThreadId, T::Hash>, &'static str> {
-        if <PostById<T>>::exists(post_id) {
-            Ok(<PostById<T>>::get(post_id))
-        } else {
-            Err(ERROR_POST_DOES_NOT_EXIST)
+        if !<ThreadByPost<T>>::exists(post_id) {
+            return Err(ERROR_POST_DOES_NOT_EXIST);
         }
+
+        let thread_id = <ThreadByPost<T>>::get(post_id);
+
+        Ok(<PostById<T>>::get(thread_id, post_id))
     }
 
     fn ensure_thread_is_mutable(
