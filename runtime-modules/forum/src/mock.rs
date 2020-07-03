@@ -89,7 +89,13 @@ impl Trait for Runtime {
     }
 
     fn is_moderator(account_id: &Self::AccountId, moderator_id: &Self::ModeratorId) -> bool {
-        *account_id == FORUM_LEAD_ORIGIN_ID && *moderator_id != NOT_REGISTER_MODERATOR_ID
+        let allowed_accounts = [
+            FORUM_LEAD_ORIGIN_ID,
+            FORUM_MODERATOR_ORIGIN_ID,
+            FORUM_MODERATOR_2_ORIGIN_ID,
+        ];
+
+        allowed_accounts.contains(account_id) && account_id == moderator_id
     }
 
     fn calculate_hash(text: &[u8]) -> Self::Hash {
@@ -123,6 +129,14 @@ pub const NOT_FORUM_LEAD_2_ORIGIN_ID: <Runtime as system::Trait>::AccountId = 11
 pub const NOT_FORUM_LEAD_2_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_LEAD_2_ORIGIN_ID);
 
 pub const INVLAID_CATEGORY_ID: <Runtime as Trait>::CategoryId = 333;
+
+pub const FORUM_MODERATOR_ORIGIN_ID: <Runtime as system::Trait>::AccountId = 123;
+
+pub const FORUM_MODERATOR_ORIGIN: OriginType = OriginType::Signed(FORUM_MODERATOR_ORIGIN_ID);
+
+pub const FORUM_MODERATOR_2_ORIGIN_ID: <Runtime as system::Trait>::AccountId = 124;
+
+pub const FORUM_MODERATOR_2_ORIGIN: OriginType = OriginType::Signed(FORUM_MODERATOR_2_ORIGIN_ID);
 
 pub const NOT_REGISTER_MODERATOR_ID: <Runtime as Trait>::ModeratorId = 666;
 
@@ -279,6 +293,25 @@ pub fn edit_thread_title_mock(
         );
     }
     thread_id
+}
+
+pub fn delete_thread_mock(
+    origin: OriginType,
+    moderator_id: <Runtime as Trait>::ModeratorId,
+    thread_id: <Runtime as Trait>::PostId,
+    result: Result<(), &'static str>,
+) {
+    assert_eq!(
+        TestForumModule::delete_thread(mock_origin(origin.clone()), moderator_id, thread_id,),
+        result
+    );
+    if result.is_ok() {
+        assert!(!<CategoryByThread<Runtime>>::exists(thread_id));
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::ThreadDeleted(thread_id))
+        );
+    }
 }
 
 pub fn create_post_mock(

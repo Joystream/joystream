@@ -409,6 +409,76 @@ fn edit_thread_title() {
     });
 }
 
+#[test]
+// test if moderator can delete thread
+fn delete_thread() {
+    let moderators = [
+        FORUM_MODERATOR_ORIGIN_ID,
+        FORUM_MODERATOR_2_ORIGIN_ID,
+        NOT_FORUM_LEAD_ORIGIN_ID,
+    ];
+    let origins = [
+        FORUM_MODERATOR_ORIGIN,
+        FORUM_MODERATOR_2_ORIGIN,
+        NOT_FORUM_LEAD_ORIGIN,
+    ];
+
+    let config = default_genesis_config();
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    build_test_externalities(config).execute_with(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        let post_id = create_post_mock(
+            origins[index].clone(),
+            forum_lead,
+            thread_id,
+            good_post_text(),
+            Ok(()),
+        );
+
+        set_moderator_category_mock(origin.clone(), moderators[0], category_id, true, Ok(()));
+
+        // regular user will fail to delete the thread
+        delete_thread_mock(
+            origins[2].clone(),
+            moderators[2],
+            thread_id,
+            Err(ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT),
+        );
+
+        // moderator not associated with thread will fail to delete it
+        delete_thread_mock(
+            origins[1].clone(),
+            moderators[1],
+            thread_id,
+            Err(ERROR_MODERATOR_MODERATE_CATEGORY),
+        );
+
+        // moderator will delete thread
+        delete_thread_mock(origins[0].clone(), moderators[0], thread_id, Ok(()));
+
+        // check thread's post was deleted
+        assert!(!<PostById<Runtime>>::exists(post_id));
+    });
+}
+
 /*
  ** vote_on_poll
  */

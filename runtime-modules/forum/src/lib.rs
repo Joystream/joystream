@@ -570,6 +570,9 @@ decl_event!(
         /// A thread with given id was moderated.
         ThreadTitleUpdated(ThreadId),
 
+        // A thread was deleted.
+        ThreadDeleted(ThreadId),
+
         /// Post with given id was created.
         PostAdded(PostId),
 
@@ -613,6 +616,9 @@ decl_module! {
                 ERROR_CATEGORY_DOES_NOT_EXIST
             );
 
+            // TODO: fix this:
+            // &who belongs to the lead that originated transaction
+            // moderator_id is separate account with no way to recover its accountId; yet required by runtime's `is_moderator`
             // Get moderator id.
             Self::ensure_is_moderator_account(&who, &moderator_id)?;
 
@@ -780,6 +786,22 @@ decl_module! {
             // Update thread title
             let title_hash = T::calculate_hash(&new_title);
             <ThreadById<T>>::mutate(thread.category_id, thread_id, |thread| thread.title_hash = title_hash);
+
+            Ok(())
+        }
+
+        fn delete_thread(origin, moderator_id: T::ModeratorId, thread_id: T::ThreadId) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
+            let thread = Self::ensure_is_thread_moderator(origin, &moderator_id, &thread_id)?;
+
+            // Delete thread
+            <ThreadById<T>>::remove(thread.category_id, thread_id);
+            <CategoryByThread<T>>::remove(thread_id);
+
+            // Store the event
+            Self::deposit_event(RawEvent::ThreadDeleted(thread_id));
 
             Ok(())
         }
@@ -1230,6 +1252,22 @@ impl<T: Trait> Module<T> {
 
         ensure!(is_moderator, ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT);
         Ok(())
+    }
+
+    // Ensure moderator can manipulate thread.
+    fn ensure_is_thread_moderator(
+        origin: T::Origin,
+        moderator_id: &T::ModeratorId,
+        thread_id: &T::ThreadId,
+    ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>, &'static str> {
+        // Check that account is forum member
+        let who = Self::ensure_is_moderator(origin, &moderator_id)?;
+
+        let thread = Self::ensure_thread_exists(thread_id)?;
+
+        Self::ensure_can_moderate_category(&who, moderator_id, thread.category_id)?;
+
+        Ok(thread)
     }
 
     fn ensure_catgory_is_mutable(category_id: T::CategoryId) -> dispatch::Result {
