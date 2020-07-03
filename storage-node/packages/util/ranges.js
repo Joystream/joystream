@@ -50,38 +50,38 @@ function _parse_range(range) {
 
 /*
  * Parse a range header value, e.g. unit=ranges, where ranges
- * are a comman separated list of individual ranges, and unit is any
+ * are a comma separated list of individual ranges, and unit is any
  * custom unit string. If the unit (and equal sign) are not given, assume
  * 'bytes'.
  */
-function parse(range_str) {
+function parse(rangeStr) {
 	const res = {}
-	debug('Parse range header value:', range_str)
-	const matches = range_str.match(/^(([^\s]+)=)?((?:(?:\d+-\d+|-\d+|\d+-),?)+)$/u)
+	debug('Parse range header value:', rangeStr)
+	const matches = rangeStr.match(/^(([^\s]+)=)?((?:(?:\d+-\d+|-\d+|\d+-),?)+)$/u)
 	if (!matches) {
-		throw new Error(`Not a valid range header: ${range_str}`)
+		throw new Error(`Not a valid range header: ${rangeStr}`)
 	}
 
 	res.unit = matches[2] || 'bytes'
-	res.range_str = matches[3]
+	res.rangeStr = matches[3]
 	res.ranges = []
 
 	// Parse individual ranges
 	const ranges = []
-	res.range_str.split(',').forEach((range) => {
+	res.rangeStr.split(',').forEach((range) => {
 		ranges.push(_parse_range(range))
 	})
 
 	// Merge ranges into result.
-	ranges.forEach((new_range) => {
-		debug('Found range:', new_range)
+	ranges.forEach((newRange) => {
+		debug('Found range:', newRange)
 
-		let is_merged = false
+		let isMerged = false
 		for (const i in res.ranges) {
 			const old_range = res.ranges[i]
 
 			// Skip if the new range is fully separate from the old range.
-			if (old_range[1] + 1 < new_range[0] || new_range[1] + 1 < old_range[0]) {
+			if (old_range[1] + 1 < newRange[0] || newRange[1] + 1 < old_range[0]) {
 				debug('Range does not overlap with', old_range)
 				continue
 			}
@@ -89,15 +89,15 @@ function parse(range_str) {
 			// If we know they're adjacent or overlapping, we construct the
 			// merged range from the lower start and the higher end of both
 			// ranges.
-			const merged = [Math.min(old_range[0], new_range[0]), Math.max(old_range[1], new_range[1])]
+			const merged = [Math.min(old_range[0], newRange[0]), Math.max(old_range[1], newRange[1])]
 			res.ranges[i] = merged
-			is_merged = true
-			debug('Merged', new_range, 'into', old_range, 'as', merged)
+			isMerged = true
+			debug('Merged', newRange, 'into', old_range, 'as', merged)
 		}
 
-		if (!is_merged) {
+		if (!isMerged) {
 			debug('Non-overlapping range!')
-			res.ranges.push(new_range)
+			res.ranges.push(newRange)
 		}
 	})
 
@@ -117,9 +117,9 @@ function parse(range_str) {
 /*
  * Async version of parse().
  */
-function parseAsync(range_str, cb) {
+function parseAsync(rangeStr, cb) {
 	try {
-		return cb(parse(range_str))
+		return cb(parse(rangeStr))
 	} catch (err) {
 		return cb(null, err)
 	}

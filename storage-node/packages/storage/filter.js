@@ -57,7 +57,7 @@ function mime_matches(acceptable, provided) {
 function mime_matches_any(accept, reject, provided) {
 	// Pass accept
 	let accepted = false
-	for (var item of accept) {
+	for (let item of accept) {
 		if (mime_matches(item, provided)) {
 			debug('Content type matches', item, 'which is acceptable.')
 			accepted = true
@@ -69,7 +69,7 @@ function mime_matches_any(accept, reject, provided) {
 	}
 
 	// Don't pass reject
-	for (var item of reject) {
+	for (let item of reject) {
 		if (mime_matches(item, provided)) {
 			debug('Content type matches', item, 'which is unacceptable.')
 			return false

@@ -18,9 +18,8 @@
 
 'use strict'
 
-const mocha = require('mocha')
 const expect = require('chai').expect
-const mock_http = require('node-mocks-http')
+const mockHttp = require('node-mocks-http')
 
 const pagination = require('@joystream/storage-utils/pagination')
 
@@ -65,7 +64,7 @@ describe('util/pagination', function () {
 
 	describe('paginate()', function () {
 		it('should add pagination links to a response object', function () {
-			const req = mock_http.createRequest({
+			const req = mockHttp.createRequest({
 				method: 'GET',
 				url: '/foo?limit=10',
 				query: {
@@ -87,7 +86,7 @@ describe('util/pagination', function () {
 		})
 
 		it('should add a last pagination link when requested', function () {
-			const req = mock_http.createRequest({
+			const req = mockHttp.createRequest({
 				method: 'GET',
 				url: '/foo?limit=10&offset=15',
 				query: {
