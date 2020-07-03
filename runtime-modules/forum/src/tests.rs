@@ -21,11 +21,11 @@ fn set_max_category_depth() {
 }
 
 /*
- * set_moderator_category_origin
+ * update_category_membership_of_moderator_origin
  */
 #[test]
 // test case for check if origin is forum lead
-fn set_moderator_category_origin() {
+fn update_category_membership_of_moderator_origin() {
     let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
@@ -38,8 +38,14 @@ fn set_moderator_category_origin() {
             good_category_description(),
             Ok(()),
         );
-        set_moderator_category_mock(origin, moderator_id, category_id, true, Ok(()));
-        set_moderator_category_mock(
+        update_category_membership_of_moderator_mock(
+            origin,
+            moderator_id,
+            category_id,
+            true,
+            Ok(()),
+        );
+        update_category_membership_of_moderator_mock(
             NOT_FORUM_LEAD_ORIGIN,
             moderator_id,
             category_id,
@@ -51,7 +57,7 @@ fn set_moderator_category_origin() {
 
 #[test]
 // test case for check whether category is existed.
-fn set_moderator_category_category() {
+fn update_category_membership_of_moderator_category() {
     let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
@@ -64,8 +70,14 @@ fn set_moderator_category_category() {
             good_category_description(),
             Ok(()),
         );
-        set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
-        set_moderator_category_mock(
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderator_id,
+            category_id,
+            true,
+            Ok(()),
+        );
+        update_category_membership_of_moderator_mock(
             origin.clone(),
             moderator_id,
             INVLAID_CATEGORY_ID,
@@ -77,7 +89,7 @@ fn set_moderator_category_category() {
 
 #[test]
 // test case for check if account id registered as moderator
-fn set_moderator_category_account_id() {
+fn update_category_membership_of_moderator_account_id() {
     let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
@@ -89,7 +101,7 @@ fn set_moderator_category_account_id() {
             good_category_description(),
             Ok(()),
         );
-        set_moderator_category_mock(
+        update_category_membership_of_moderator_mock(
             origin.clone(),
             NOT_REGISTER_MODERATOR_ID,
             category_id,
@@ -107,7 +119,13 @@ fn set_moderator_category_account_id() {
             good_category_description(),
             Ok(()),
         );
-        set_moderator_category_mock(origin, moderator_id, category_id, true, Ok(()));
+        update_category_membership_of_moderator_mock(
+            origin,
+            moderator_id,
+            category_id,
+            true,
+            Ok(()),
+        );
     });
 }
 
@@ -540,7 +558,13 @@ fn moderate_thread_origin_ok() {
             good_category_description(),
             Ok(()),
         );
-        set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderator_id,
+            category_id,
+            true,
+            Ok(()),
+        );
         let thread_id = create_thread_mock(
             origin.clone(),
             forum_lead,
@@ -736,7 +760,13 @@ fn moderate_post_origin() {
                 good_category_description(),
                 Ok(()),
             );
-            set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
+            update_category_membership_of_moderator_mock(
+                origin.clone(),
+                moderator_id,
+                category_id,
+                true,
+                Ok(()),
+            );
 
             let thread_id = create_thread_mock(
                 origin.clone(),
@@ -778,7 +808,13 @@ fn set_stickied_threads_ok() {
             good_category_description(),
             Ok(()),
         );
-        set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderator_id,
+            category_id,
+            true,
+            Ok(()),
+        );
         let thread_id = create_thread_mock(
             origin.clone(),
             forum_lead,
@@ -840,7 +876,13 @@ fn set_stickied_threads_thread_not_exists() {
             good_category_description(),
             Ok(()),
         );
-        set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderator_id,
+            category_id,
+            true,
+            Ok(()),
+        );
         let thread_id = create_thread_mock(
             origin.clone(),
             forum_lead,
@@ -875,7 +917,13 @@ fn set_stickied_threads_wrong_category() {
             good_category_description(),
             Ok(()),
         );
-        set_moderator_category_mock(origin.clone(), moderator_id, category_id, true, Ok(()));
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderator_id,
+            category_id,
+            true,
+            Ok(()),
+        );
         let _ = create_thread_mock(
             origin.clone(),
             forum_lead,

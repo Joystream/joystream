@@ -356,7 +356,7 @@ pub fn set_max_category_depth_mock(
     max_category_depth
 }
 
-pub fn set_moderator_category_mock(
+pub fn update_category_membership_of_moderator_mock(
     origin: OriginType,
     moderator_id: <Runtime as Trait>::ModeratorId,
     category_id: <Runtime as Trait>::CategoryId,
@@ -364,7 +364,7 @@ pub fn set_moderator_category_mock(
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::CategoryId {
     assert_eq!(
-        TestForumModule::set_moderator_category(
+        TestForumModule::update_category_membership_of_moderator(
             mock_origin(origin),
             moderator_id,
             category_id,
