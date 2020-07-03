@@ -55,9 +55,11 @@ export async function addWorkerOpening(
   // Worker opening creation
   const addOpeningPromise: Promise<BN> = apiWrapper.expectOpeningAdded();
   await apiWrapper.addOpening(lead, opening, module, expectFailure);
-  const openingId: BN = await addOpeningPromise;
-
-  return openingId;
+  if (!expectFailure) {
+    const openingId: BN = await addOpeningPromise;
+    return openingId;
+  }
+  return new BN(-1);
 }
 
 export async function addLeaderOpening(
