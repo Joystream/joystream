@@ -104,7 +104,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
         openingActivationDelay,
         unstakingPeriod,
         WorkingGroups.storageWorkingGroup,
-        false
+        true
       ))
   );
   tap.test(
@@ -120,7 +120,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
         openingActivationDelay,
         new BN(0),
         WorkingGroups.storageWorkingGroup,
-        false
+        true
       ))
   );
 
