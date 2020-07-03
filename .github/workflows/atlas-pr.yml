@@ -8,22 +8,43 @@ on:
       - "atlas/**"
 
 jobs:
-  atlas_build:
-    name: Atlas Build
+  atlas_tests:
+    name: Atlas Tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
         node-version: [12.x]
       fail-fast: true
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - name: Use Node.js ${{matrix.node-version}}
         uses: actions/setup-node@v1
         with:
           node-version: ${{matrix.node-version}}
-      - name: build
+      - name: Install modules
         working-directory: ./atlas
-        run: |
-          yarn install --frozen-lockfile
-          yarn build
+        run: yarn install --frozen-lockfile
+      - name: Run Tests
+        working-directory: ./atlas
+        run: yarn test
+  atlas_lint:
+    name: Atlas Lint
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        node-version: [12.x]
+      fail-fast: true
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{matrix.node-version}}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{matrix.node-version}}
+      - name: Install modules
+        working-directory: ./atlas
+        run: yarn install --frozen-lockfile
+      - name: Run ESLint
+        working-directory: ./atlas
+        run: yarn run eslint . --ext .js,.jsx,.ts,.tsx
