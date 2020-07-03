@@ -19,7 +19,7 @@
 'use strict'
 
 const uuid = require('uuid')
-const stream_buf = require('stream-buffers')
+const streamBuf = require('stream-buffers')
 
 const debug = require('debug')('joystream:util:ranges')
 
@@ -152,7 +152,7 @@ class RangeSender {
 
 		// Range handling related state.
 		this.read_offset = 0 // Nothing read so far
-		this.range_index = -1 // No range index yet.
+		this.rangeIndex = -1 // No range index yet.
 		this.range_boundary = undefined // Generate boundary when needed.
 
 		// Event handlers & state
@@ -224,26 +224,26 @@ class RangeSender {
 	}
 
 	// *** With ranges
-	next_range_headers() {
+	nextRangeHeaders() {
 		// Next range
-		this.range_index += 1
-		if (this.range_index >= this.ranges.ranges.length) {
+		this.rangeIndex += 1
+		if (this.rangeIndex >= this.ranges.ranges.length) {
 			debug('Cannot advance range index; we are done.')
 			return undefined
 		}
 
 		// Calculate this range's size.
-		const range = this.ranges.ranges[this.range_index]
-		let total_size
+		const range = this.ranges.ranges[this.rangeIndex]
+		let totalSize
 		if (this.size) {
-			total_size = this.size
+			totalSize = this.size
 		}
 		if (typeof range[0] === 'undefined') {
 			range[0] = 0
 		}
 		if (typeof range[1] === 'undefined') {
 			if (this.size) {
-				range[1] = total_size - 1
+				range[1] = totalSize - 1
 			}
 		}
 
@@ -258,8 +258,8 @@ class RangeSender {
 		const end = typeof range[1] === 'undefined' ? '' : `${range[1]}`
 
 		let size_str
-		if (total_size) {
-			size_str = `${total_size}`
+		if (totalSize) {
+			size_str = `${totalSize}`
 		} else {
 			size_str = '*'
 		}
@@ -281,10 +281,10 @@ class RangeSender {
 			return false
 		}
 
-		const headers = this.next_range_headers()
+		const headers = this.nextRangeHeaders()
 
 		if (headers) {
-			const header_buf = new stream_buf.WritableStreamBuffer()
+			const header_buf = new streamBuf.WritableStreamBuffer()
 			// We start a range with a boundary.
 			header_buf.write(`\r\n--${this.range_boundary}\r\n`)
 
@@ -321,7 +321,7 @@ class RangeSender {
 		// Similarly, the type is different whether or not there is more than
 		// one range.
 		if (this.ranges.ranges.length == 1) {
-			this.response.writeHead(206, 'Partial Content', this.next_range_headers())
+			this.response.writeHead(206, 'Partial Content', this.nextRangeHeaders())
 		} else {
 			this.range_boundary = uuid.v4()
 			const headers = {
@@ -349,7 +349,7 @@ class RangeSender {
 		const chunk_range = [this.read_offset, this.read_offset + chunk.length - 1]
 		debug('= Got chunk with byte range', chunk_range)
 		while (true) {
-			let req_range = this.ranges.ranges[this.range_index]
+			let req_range = this.ranges.ranges[this.rangeIndex]
 			if (!req_range) {
 				break
 			}
