@@ -2,6 +2,7 @@
 
 use super::mock::*;
 use crate::data_directory::Error;
+use rstd::collections::btree_map::BTreeMap;
 use system::RawOrigin;
 
 #[test]
@@ -167,5 +168,133 @@ fn reject_content_as_liaison() {
             content_id,
         );
         assert_eq!(res, Ok(()));
+    });
+}
+
+#[test]
+fn data_object_injection_works() {
+    with_default_mock_builder(|| {
+        // No objects in directory before injection
+        assert_eq!(TestDataDirectory::known_content_ids(), vec![]);
+
+        // new objects to inject into the directory
+        let mut objects = BTreeMap::new();
+
+        let object = data_directory::DataObjectInternal {
+            type_id: 1,
+            size: 1234,
+            added_at: data_directory::BlockAndTime {
+                block: 10,
+                time: 1024,
+            },
+            owner: 1,
+            liaison: TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID,
+            liaison_judgement: data_directory::LiaisonJudgement::Pending,
+            ipfs_content_id: vec![],
+        };
+
+        let content_id_1 = 1;
+        objects.insert(content_id_1, object.clone());
+
+        let content_id_2 = 2;
+        objects.insert(content_id_2, object.clone());
+
+        let res = TestDataDirectory::inject_data_objects(Origin::ROOT, objects);
+        assert!(res.is_ok());
+
+        assert_eq!(
+            TestDataDirectory::known_content_ids(),
+            vec![content_id_1, content_id_2]
+        );
+
+        assert_eq!(
+            TestDataDirectory::data_object_by_content_id(content_id_1),
+            Some(object.clone())
+        );
+
+        assert_eq!(
+            TestDataDirectory::data_object_by_content_id(content_id_2),
+            Some(object)
+        );
+    });
+}
+
+#[test]
+fn data_object_injection_overwrites_and_removes_duplicate_ids() {
+    with_default_mock_builder(|| {
+        let sender = 1u64;
+        let member_id = 1u64;
+        let content_id_1 = 1;
+        let content_id_2 = 2;
+
+        // Start with some existing objects in directory which will be
+        // overwritten
+        let res = TestDataDirectory::add_content(
+            Origin::signed(sender),
+            member_id,
+            content_id_1,
+            1,
+            10,
+            vec![8, 8, 8, 8],
+        );
+        assert!(res.is_ok());
+        let res = TestDataDirectory::add_content(
+            Origin::signed(sender),
+            member_id,
+            content_id_2,
+            2,
+            20,
+            vec![9, 9, 9, 9],
+        );
+        assert!(res.is_ok());
+
+        let mut objects = BTreeMap::new();
+
+        let object1 = data_directory::DataObjectInternal {
+            type_id: 1,
+            size: 6666,
+            added_at: data_directory::BlockAndTime {
+                block: 10,
+                time: 1000,
+            },
+            owner: 5,
+            liaison: TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID,
+            liaison_judgement: data_directory::LiaisonJudgement::Pending,
+            ipfs_content_id: vec![5, 6, 7],
+        };
+
+        let object2 = data_directory::DataObjectInternal {
+            type_id: 1,
+            size: 7777,
+            added_at: data_directory::BlockAndTime {
+                block: 20,
+                time: 2000,
+            },
+            owner: 6,
+            liaison: TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID,
+            liaison_judgement: data_directory::LiaisonJudgement::Pending,
+            ipfs_content_id: vec![5, 6, 7],
+        };
+
+        objects.insert(content_id_1, object1.clone());
+        objects.insert(content_id_2, object2.clone());
+
+        let res = TestDataDirectory::inject_data_objects(Origin::ROOT, objects);
+        assert!(res.is_ok());
+
+        assert_eq!(
+            TestDataDirectory::known_content_ids(),
+            vec![content_id_1, content_id_2]
+        );
+
+        assert_eq!(
+            TestDataDirectory::data_object_by_content_id(content_id_1),
+            Some(object1.clone())
+        );
+
+        assert_eq!(
+            TestDataDirectory::data_object_by_content_id(content_id_2),
+            Some(object2)
+        );
     });
 }

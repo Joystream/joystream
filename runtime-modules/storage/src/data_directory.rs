@@ -300,7 +300,7 @@ decl_module! {
         /// The number of objects that can be added per call is limited to prevent the dispatch
         /// from causing the block production to fail if it takes too much time to process.
         /// Existing data objects will be overwritten.
-        fn inject_data_objects(origin, objects: DataObjectsMap<T>) {
+        pub(crate) fn inject_data_objects(origin, objects: DataObjectsMap<T>) {
             ensure_root(origin)?;
 
             // limit size - do some benchmarking to test how much we can allow per call.
