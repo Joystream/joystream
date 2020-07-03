@@ -3,8 +3,8 @@ import { css } from "@emotion/core";
 import { addDecorator, addParameters } from "@storybook/react";
 import { withKnobs } from "@storybook/addon-knobs";
 import { jsxDecorator } from "storybook-addon-jsx";
-import { Layout } from "app/src/components";
 import theme from "./theme";
+import GlobalStyle from "../src/components/GlobalStyle";
 
 const wrapperStyle = css`
 	padding: 10px;
@@ -12,7 +12,8 @@ const wrapperStyle = css`
 
 const stylesWrapperDecorator = (styleFn) => (
 	<div css={wrapperStyle}>
-		<Layout>{styleFn()}</Layout>
+		<GlobalStyle />
+		{styleFn()}
 	</div>
 );
 
