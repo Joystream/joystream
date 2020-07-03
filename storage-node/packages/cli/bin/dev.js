@@ -90,10 +90,10 @@ const init = async (api) => {
 
 	// Make alice the storage lead
 	debug('Making Alice the storage Lead')
-	const leadOpeningId = await api.workers.dev_addStorageLeadOpening()
-	const leadApplicationId = await api.workers.dev_applyOnOpening(leadOpeningId, aliceMemberId, alice, alice)
-	api.workers.dev_beginLeadOpeningReview(leadOpeningId)
-	await api.workers.dev_fillLeadOpening(leadOpeningId, leadApplicationId)
+	const leadOpeningId = await api.workers.devAddStorageLeadOpening()
+	const leadApplicationId = await api.workers.devApplyOnOpening(leadOpeningId, aliceMemberId, alice, alice)
+	api.workers.devBeginLeadOpeningReview(leadOpeningId)
+	await api.workers.devFillLeadOpening(leadOpeningId, leadApplicationId)
 
 	const leadAccount = await api.workers.getLeadRoleAccount()
 	if (!leadAccount.eq(alice)) {
@@ -103,16 +103,16 @@ const init = async (api) => {
 	// Create a storage openinging, apply, start review, and fill opening
 	debug(`Making ${ROLE_ACCOUNT_URI} account a storage provider`)
 
-	const openingId = await api.workers.dev_addStorageOpening()
+	const openingId = await api.workers.devAddStorageOpening()
 	debug(`created new storage opening: ${openingId}`)
 
-	const applicationId = await api.workers.dev_applyOnOpening(openingId, aliceMemberId, alice, roleAccount)
+	const applicationId = await api.workers.devApplyOnOpening(openingId, aliceMemberId, alice, roleAccount)
 	debug(`applied with application id: ${applicationId}`)
 
-	api.workers.dev_beginStorageOpeningReview(openingId)
+	api.workers.devBeginStorageOpeningReview(openingId)
 
 	debug(`filling storage opening`)
-	const providerId = await api.workers.dev_fillStorageOpening(openingId, applicationId)
+	const providerId = await api.workers.devFillStorageOpening(openingId, applicationId)
 
 	debug(`Assigned storage provider id: ${providerId}`)
 

@@ -18,9 +18,6 @@
 
 'use strict'
 
-const mocha = require('mocha')
-const expect = require('chai').expect
-
 const { RuntimeApi } = require('@joystream/storage-runtime-api')
 
 describe('RuntimeApi', () => {

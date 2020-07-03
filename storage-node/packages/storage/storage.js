@@ -29,8 +29,8 @@ Promise.config({
 	cancellation: true,
 })
 
-const file_type = require('file-type')
-const ipfs_client = require('ipfs-http-client')
+const fileType = require('file-type')
+const ipfsClient = require('ipfs-http-client')
 const temp = require('temp').track()
 const _ = require('lodash')
 
@@ -46,31 +46,31 @@ const DEFAULT_RESOLVE_CONTENT_ID = async (original) => {
 
 // Default file info if nothing could be detected.
 const DEFAULT_FILE_INFO = {
-	mime_type: 'application/octet-stream',
+	mimeType: 'application/octet-stream',
 	ext: 'bin',
 }
 
 /*
  * fileType is a weird name, because we're really looking at MIME types.
  * Also, the type field includes extension info, so we're going to call
- * it file_info { mime_type, ext } instead.
+ * it fileInfo { mimeType, ext } instead.
  * Nitpicking, but it also means we can add our default type if things
  * go wrong.
  */
-function fix_file_info(info) {
+function fixFileInfo(info) {
 	if (!info) {
 		info = DEFAULT_FILE_INFO
 	} else {
-		info.mime_type = info.mime
+		info.mimeType = info.mime
 		delete info.mime
 	}
 	return info
 }
 
-function fix_file_info_on_stream(stream) {
-	const info = fix_file_info(stream.fileType)
+function fixFileInfoOnStream(stream) {
+	const info = fixFileInfo(stream.fileType)
 	delete stream.fileType
-	stream.file_info = info
+	stream.fileInfo = info
 	return stream
 }
 
@@ -102,15 +102,15 @@ class StorageWriteStream extends Transform {
 		this.temp.write(chunk)
 
 		// Try to detect file type during streaming.
-		if (!this.file_info && this.buf < file_type.minimumBytes) {
+		if (!this.fileInfo && this.buf < fileType.minimumBytes) {
 			this.buf = Buffer.concat([this.buf, chunk])
 
-			if (this.buf >= file_type.minimumBytes) {
-				const info = file_type(this.buf)
+			if (this.buf >= fileType.minimumBytes) {
+				const info = fileType(this.buf)
 				// No info? We can try again at the end of the stream.
 				if (info) {
-					this.file_info = fix_file_info(info)
-					this.emit('file_info', this.file_info)
+					this.fileInfo = fixFileInfo(info)
+					this.emit('fileInfo', this.fileInfo)
 				}
 			}
 		}
@@ -123,13 +123,13 @@ class StorageWriteStream extends Transform {
 		this.temp.end()
 
 		// Since we're finished, we can try to detect the file type again.
-		if (!this.file_info) {
+		if (!this.fileInfo) {
 			const read = fs.createReadStream(this.temp.path)
-			file_type
+			fileType
 				.stream(read)
 				.then((stream) => {
-					this.file_info = fix_file_info_on_stream(stream).file_info
-					this.emit('file_info', this.file_info)
+					this.fileInfo = fixFileInfoOnStream(stream).fileInfo
+					this.emit('fileInfo', this.fileInfo)
 				})
 				.catch((err) => {
 					debug('Error trying to detect file type at end-of-stream:', err)
@@ -168,7 +168,9 @@ class StorageWriteStream extends Transform {
 	 */
 	cleanup() {
 		debug('Cleaning up temporary file: ', this.temp.path)
-		fs.unlink(this.temp.path, () => {}) // Ignore errors
+		fs.unlink(this.temp.path, () => {
+			/* Ignore errors.*/
+		})
 		delete this.temp
 	}
 }
@@ -213,7 +215,7 @@ class Storage {
 		this._timeout = this.options.timeout || DEFAULT_TIMEOUT
 		this._resolve_content_id = this.options.resolve_content_id || DEFAULT_RESOLVE_CONTENT_ID
 
-		this.ipfs = ipfs_client(this.options.ipfs.connect_options)
+		this.ipfs = ipfsClient(this.options.ipfs.connect_options)
 
 		this.pins = {}
 
@@ -231,7 +233,7 @@ class Storage {
 	 * the given timeout interval, and tries to execute the given operation within
 	 * that time.
 	 */
-	async _with_specified_timeout(timeout, operation) {
+	async withSpecifiedTimeout(timeout, operation) {
 		return new Promise(async (resolve, reject) => {
 			try {
 				resolve(await new Promise(operation))
@@ -244,8 +246,8 @@ class Storage {
 	/*
 	 * Resolve content ID with timeout.
 	 */
-	async _resolve_content_id_with_timeout(timeout, contentId) {
-		return await this._with_specified_timeout(timeout, async (resolve, reject) => {
+	async resolveContentIdWithTimeout(timeout, contentId) {
+		return await this.withSpecifiedTimeout(timeout, async (resolve, reject) => {
 			try {
 				resolve(await this._resolve_content_id(contentId))
 			} catch (err) {
@@ -258,9 +260,9 @@ class Storage {
 	 * Stat a content ID.
 	 */
 	async stat(contentId, timeout) {
-		const resolved = await this._resolve_content_id_with_timeout(timeout, contentId)
+		const resolved = await this.resolveContentIdWithTimeout(timeout, contentId)
 
-		return await this._with_specified_timeout(timeout, (resolve, reject) => {
+		return await this.withSpecifiedTimeout(timeout, (resolve, reject) => {
 			this.ipfs.files.stat(`/ipfs/${resolved}`, { withLocal: true }, (err, res) => {
 				if (err) {
 					reject(err)
@@ -283,8 +285,8 @@ class Storage {
 	 * Opens the specified content in read or write mode, and returns a Promise
 	 * with the stream.
 	 *
-	 * Read streams will contain a file_info property, with:
-	 *  - a `mime_type` field providing the file's MIME type, or a default.
+	 * Read streams will contain a fileInfo property, with:
+	 *  - a `mimeType` field providing the file's MIME type, or a default.
 	 *  - an `ext` property, providing a file extension suggestion, or a default.
 	 *
 	 * Write streams have a slightly different flow, in order to allow for MIME
@@ -295,49 +297,49 @@ class Storage {
 	 * When the commit has finished, a `committed` event is emitted, which
 	 * contains the IPFS backend's content ID.
 	 *
-	 * Write streams also emit a `file_info` event during writing. It is passed
-	 * the `file_info` field as described above. Event listeners may now opt to
+	 * Write streams also emit a `fileInfo` event during writing. It is passed
+	 * the `fileInfo` field as described above. Event listeners may now opt to
 	 * abort the write or continue and eventually `commit()` the file. There is
 	 * an explicit `cleanup()` function that removes temporary files as well,
 	 * in case comitting is not desired.
 	 */
 	async open(contentId, mode, timeout) {
-		if (mode != 'r' && mode != 'w') {
+		if (mode !== 'r' && mode !== 'w') {
 			throw Error('The only supported modes are "r", "w" and "a".')
 		}
 
 		// Write stream
 		if (mode === 'w') {
-			return await this._create_write_stream(contentId, timeout)
+			return await this.createWriteStream(contentId, timeout)
 		}
 
 		// Read stream - with file type detection
-		return await this._create_read_stream(contentId, timeout)
+		return await this.createReadStream(contentId, timeout)
 	}
 
-	async _create_write_stream(contentId) {
+	async createWriteStream() {
 		// IPFS wants us to just dump a stream into its storage, then returns a
 		// content ID (of its own).
 		// We need to instead return a stream immediately, that we eventually
 		// decorate with the content ID when that's available.
-		return new Promise((resolve, reject) => {
+		return new Promise((resolve) => {
 			const stream = new StorageWriteStream(this)
 			resolve(stream)
 		})
 	}
 
-	async _create_read_stream(contentId, timeout) {
-		const resolved = await this._resolve_content_id_with_timeout(timeout, contentId)
+	async createReadStream(contentId, timeout) {
+		const resolved = await this.resolveContentIdWithTimeout(timeout, contentId)
 
 		let found = false
-		return await this._with_specified_timeout(timeout, (resolve, reject) => {
+		return await this.withSpecifiedTimeout(timeout, (resolve, reject) => {
 			const ls = this.ipfs.getReadableStream(resolved)
 			ls.on('data', async (result) => {
 				if (result.path === resolved) {
 					found = true
 
-					const ft_stream = await file_type.stream(result.content)
-					resolve(fix_file_info_on_stream(ft_stream))
+					const ftStream = await fileType.stream(result.content)
+					resolve(fixFileInfoOnStream(ftStream))
 				}
 			})
 			ls.on('error', (err) => {
@@ -360,7 +362,7 @@ class Storage {
 	 * Synchronize the given content ID
 	 */
 	async synchronize(contentId) {
-		const resolved = await this._resolve_content_id_with_timeout(this._timeout, contentId)
+		const resolved = await this.resolveContentIdWithTimeout(this._timeout, contentId)
 
 		// validate resolved id is proper ipfs_cid, not null or empty string
 
@@ -370,8 +372,8 @@ class Storage {
 
 		debug(`Pinning ${resolved}`)
 
-		// This call blocks until file is retreived..
-		this.ipfs.pin.add(resolved, { quiet: true, pin: true }, (err, res) => {
+		// This call blocks until file is retrieved..
+		this.ipfs.pin.add(resolved, { quiet: true, pin: true }, (err) => {
 			if (err) {
 				debug(`Error Pinning: ${resolved}`)
 				delete this.pins[resolved]

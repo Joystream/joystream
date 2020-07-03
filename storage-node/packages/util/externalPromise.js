@@ -1,5 +1,6 @@
 /**
- * Returns an object that contains a Promise and exposes its handlers, ie. resolve and reject methods
+ * Creates a new promise.
+ * @return { object} Returns an object that contains a Promise and exposes its handlers, ie. resolve and reject methods
  * so it can be fulfilled 'externally'. This is a bit of a hack, but most useful application is when
  * concurrent async operations are initiated that are all waiting on the same result value.
  */

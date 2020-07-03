@@ -22,7 +22,13 @@ module.exports = {
 	},
 	"overrides": [
 		{
-			"files": ["**/test/ranges.js", "**/test/lru.js", "**/test/fs/walk.js"],
+			"files": [
+				"**/test/ranges.js",
+				"**/test/lru.js",
+				"**/test/fs/walk.js",
+				"**/test/storage.js",
+				"**/test/identities.js",
+			],
 			"rules": {
 				// Disabling Rules because of used chai lib:
 				// https://stackoverflow.com/questions/45079454/no-unused-expressions-in-mocha-chai-unit-test-using-standardjs

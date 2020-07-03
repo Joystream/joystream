@@ -21,7 +21,7 @@
 const debug = require('debug')('joystream:middleware:pagination')
 
 // Pagination definitions
-const _api_defs = {
+const apiDefs = {
 	parameters: {
 		paginationLimit: {
 			name: 'limit',
@@ -78,9 +78,9 @@ const _api_defs = {
  *   -> Validates pagination parameters
  * - apiDoc.responses.200.schema.pagination = pagination.response
  *   -> Generates pagination info on response
- * - paginate(req, res, [last_offset])
+ * - paginate(req, res, [lastOffset])
  *   -> add (valid) pagination fields to response object
- *      If last_offset is given, create a last link with that offset
+ *      If lastOffset is given, create a last link with that offset
  **/
 module.exports = {
 	// Add pagination parameters and pagination info responses.
@@ -96,13 +96,13 @@ module.exports = {
 	// Update swagger/openapi specs with our own parameters and definitions
 	openapi(api) {
 		api.components = api.components || {}
-		api.components.parameters = { ...(api.components.parameters || {}), ..._api_defs.parameters }
-		api.components.schemas = { ...(api.components.schemas || {}), ..._api_defs.schemas }
+		api.components.parameters = { ...(api.components.parameters || {}), ...apiDefs.parameters }
+		api.components.schemas = { ...(api.components.schemas || {}), ...apiDefs.schemas }
 		return api
 	},
 
 	// Pagination function
-	paginate(req, res, last_offset) {
+	paginate(req, res, lastOffset) {
 		// Skip if the response is not an object.
 		if (Object.prototype.toString.call(res) !== '[object Object]') {
 			debug('Cannot paginate non-objects.')
@@ -116,38 +116,38 @@ module.exports = {
 
 		// Parse current url
 		const url = require('url')
-		const req_url = url.parse(req.protocol + '://' + req.get('host') + req.originalUrl)
-		const params = new url.URLSearchParams(req_url.query)
+		const reqUrl = url.parse(req.protocol + '://' + req.get('host') + req.originalUrl)
+		const params = new url.URLSearchParams(reqUrl.query)
 
 		// Pagination object
 		const pagination = {
-			self: req_url.href,
+			self: reqUrl.href,
 		}
 
 		const prev = offset - limit
 		if (prev >= 0) {
 			params.set('offset', prev)
-			req_url.search = params.toString()
-			pagination.prev = url.format(req_url)
+			reqUrl.search = params.toString()
+			pagination.prev = url.format(reqUrl)
 		}
 
 		const next = offset + limit
 		if (next >= 0) {
 			params.set('offset', next)
-			req_url.search = params.toString()
-			pagination.next = url.format(req_url)
+			reqUrl.search = params.toString()
+			pagination.next = url.format(reqUrl)
 		}
 
-		if (last_offset) {
-			params.set('offset', last_offset)
-			req_url.search = params.toString()
-			pagination.last = url.format(req_url)
+		if (lastOffset) {
+			params.set('offset', lastOffset)
+			reqUrl.search = params.toString()
+			pagination.last = url.format(reqUrl)
 		}
 
 		// First
 		params.set('offset', 0)
-		req_url.search = params.toString()
-		pagination.first = url.format(req_url)
+		reqUrl.search = params.toString()
+		pagination.first = url.format(reqUrl)
 
 		debug('pagination', pagination)
 

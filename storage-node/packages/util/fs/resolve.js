@@ -42,18 +42,18 @@ function resolve(base, name) {
 	// At this point resolving the path should stay within the base we specify.
 	// We do specify a base other than the file system root, because the file
 	// everything is always relative to the file system root.
-	const test_base = path.join(path.sep, 'test-base')
-	debug('Test base is', test_base)
-	res = path.resolve(test_base, res)
+	const testBase = path.join(path.sep, 'test-base')
+	debug('Test base is', testBase)
+	res = path.resolve(testBase, res)
 	debug('Resolved', res)
 
 	// Ok, we can check for violations now.
-	if (res.slice(0, test_base.length) != test_base) {
+	if (res.slice(0, testBase.length) !== testBase) {
 		throw Error(`Name "${name}" cannot be resolved to a repo relative path, aborting!`)
 	}
 
 	// If we strip the base now, we have the relative name resolved.
-	res = res.slice(test_base.length + 1)
+	res = res.slice(testBase.length + 1)
 	debug('Relative', res)
 
 	// Finally we can join this relative name to the requested base.

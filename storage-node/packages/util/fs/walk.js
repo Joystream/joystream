@@ -28,7 +28,7 @@ class Walker {
 		this.archive = archive
 		this.base = base
 		this.slice_offset = this.base.length
-		if (this.base[this.slice_offset - 1] != '/') {
+		if (this.base[this.slice_offset - 1] !== '/') {
 			this.slice_offset += 1
 		}
 		this.cb = cb
@@ -38,7 +38,7 @@ class Walker {
 	/*
 	 * Check pending
 	 */
-	check_pending(name) {
+	checkPending(name) {
 		// Decrease pending count again.
 		this.pending -= 1
 		debug('Finishing', name, 'decreases pending to', this.pending)
@@ -51,7 +51,7 @@ class Walker {
 	/*
 	 * Helper function for walk; split out because it's used in two places.
 	 */
-	report_and_recurse(relname, fname, lstat, linktarget) {
+	reportAndRecurse(relname, fname, lstat, linktarget) {
 		// First report the value
 		this.cb(null, relname, lstat, linktarget)
 
@@ -60,7 +60,7 @@ class Walker {
 			this.walk(fname)
 		}
 
-		this.check_pending(fname)
+		this.checkPending(fname)
 	}
 
 	walk(dir) {
@@ -102,15 +102,15 @@ class Walker {
 								return
 							}
 
-							this.report_and_recurse(relname, fname, lstat, linktarget)
+							this.reportAndRecurse(relname, fname, lstat, linktarget)
 						})
 					} else {
-						this.report_and_recurse(relname, fname, lstat)
+						this.reportAndRecurse(relname, fname, lstat)
 					}
 				})
 			})
 
-			this.check_pending(dir)
+			this.checkPending(dir)
 		})
 	}
 }

@@ -25,11 +25,11 @@ const DEFAULT_ACCEPT_TYPES = ['video/*', 'audio/*', 'image/*']
 const DEFAULT_REJECT_TYPES = []
 
 // Configuration defaults
-function config_defaults(config) {
+function configDefaults(config) {
 	const filter = config.filter || {}
 
 	// We accept zero as switching this check off.
-	if (typeof filter.max_size === 'undefined' || typeof filter.max_size === 'null') {
+	if (typeof filter.max_size === 'undefined') {
 		filter.max_size = DEFAULT_MAX_FILE_SIZE
 	}
 
@@ -42,7 +42,7 @@ function config_defaults(config) {
 }
 
 // Mime type matching
-function mime_matches(acceptable, provided) {
+function mimeMatches(acceptable, provided) {
 	if (acceptable.endsWith('*')) {
 		// Wildcard match
 		const prefix = acceptable.slice(0, acceptable.length - 1)
@@ -51,14 +51,14 @@ function mime_matches(acceptable, provided) {
 	}
 	// Exact match
 	debug('exact matching', provided, 'against', acceptable)
-	return provided == acceptable
+	return provided === acceptable
 }
 
-function mime_matches_any(accept, reject, provided) {
+function mimeMatchesAny(accept, reject, provided) {
 	// Pass accept
 	let accepted = false
 	for (const item of accept) {
-		if (mime_matches(item, provided)) {
+		if (mimeMatches(item, provided)) {
 			debug('Content type matches', item, 'which is acceptable.')
 			accepted = true
 			break
@@ -70,7 +70,7 @@ function mime_matches_any(accept, reject, provided) {
 
 	// Don't pass reject
 	for (const item of reject) {
-		if (mime_matches(item, provided)) {
+		if (mimeMatches(item, provided)) {
 			debug('Content type matches', item, 'which is unacceptable.')
 			return false
 		}
@@ -86,9 +86,13 @@ function mime_matches_any(accept, reject, provided) {
  * This is a straightforward implementation of
  * https://github.com/Joystream/storage-node-joystream/issues/14 - but should
  * most likely be improved on in future.
+ * @param {object} config - configuration
+ * @param {object} headers - required headers
+ * @param {string} mimeType - expected MIME type
+ * @return {object} HTTP status code and error message.
  **/
-function filter_func(config, headers, mime_type) {
-	const filter = config_defaults(config)
+function filter_func(config, headers, mimeType) {
+	const filter = configDefaults(config)
 
 	// Enforce maximum file upload size
 	if (filter.max_size) {
@@ -109,7 +113,7 @@ function filter_func(config, headers, mime_type) {
 	}
 
 	// Enforce mime type based filtering
-	if (!mime_matches_any(filter.mime.accept, filter.mime.reject, mime_type)) {
+	if (!mimeMatchesAny(filter.mime.accept, filter.mime.reject, mimeType)) {
 		return {
 			code: 415,
 			message: 'Content has an unacceptable MIME type.',

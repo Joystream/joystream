@@ -18,11 +18,10 @@
 
 'use strict'
 
-const mocha = require('mocha')
 const chai = require('chai')
-const chai_as_promised = require('chai-as-promised')
+const chaiAsPromised = require('chai-as-promised')
 
-chai.use(chai_as_promised)
+chai.use(chaiAsPromised)
 const expect = chai.expect
 
 const fs = require('fs')
@@ -51,7 +50,7 @@ function write(store, contentId, contents, callback) {
 		})
 }
 
-function read_all(stream) {
+function readAll(stream) {
 	return new Promise((resolve, reject) => {
 		const chunks = []
 		stream.on('data', (chunk) => chunks.push(chunk))
@@ -61,7 +60,7 @@ function read_all(stream) {
 	})
 }
 
-function create_known_object(contentId, contents, callback) {
+function createKnownObject(contentId, contents, callback) {
 	let hash
 	const store = Storage.create({
 		resolve_content_id: () => {
@@ -69,8 +68,8 @@ function create_known_object(contentId, contents, callback) {
 		},
 	})
 
-	write(store, contentId, contents, (the_hash) => {
-		hash = the_hash
+	write(store, contentId, contents, (theHash) => {
+		hash = theHash
 
 		callback(store, hash)
 	})
@@ -96,21 +95,21 @@ describe('storage/storage', () => {
 			storage
 				.open('mime-test', 'w')
 				.then((stream) => {
-					let file_info
-					stream.on('file_info', (info) => {
+					let fileInfo
+					stream.on('fileInfo', (info) => {
 						// Could filter & abort here now, but we're just going to set this,
 						// and expect it to be set later...
-						file_info = info
+						fileInfo = info
 					})
 
 					stream.on('finish', () => {
 						stream.commit()
 					})
 
-					stream.on('committed', (hash) => {
-						// ... if file_info is not set here, there's an issue.
-						expect(file_info).to.have.property('mime_type', 'application/xml')
-						expect(file_info).to.have.property('ext', 'xml')
+					stream.on('committed', () => {
+						// ... if fileInfo is not set here, there's an issue.
+						expect(fileInfo).to.have.property('mimeType', 'application/xml')
+						expect(fileInfo).to.have.property('ext', 'xml')
 						done()
 					})
 
@@ -127,11 +126,11 @@ describe('storage/storage', () => {
 
 		it('can read a stream', (done) => {
 			const contents = 'test-for-reading'
-			create_known_object('foobar', contents, (store, hash) => {
+			createKnownObject('foobar', contents, (store) => {
 				store
 					.open('foobar', 'r')
 					.then(async (stream) => {
-						const data = await read_all(stream)
+						const data = await readAll(stream)
 						expect(Buffer.compare(data, Buffer.from(contents))).to.equal(0)
 						done()
 					})
@@ -143,18 +142,18 @@ describe('storage/storage', () => {
 
 		it('detects the MIME type of a read stream', (done) => {
 			const contents = fs.readFileSync('../../storage-node_new.svg')
-			create_known_object('foobar', contents, (store, hash) => {
+			createKnownObject('foobar', contents, (store) => {
 				store
 					.open('foobar', 'r')
 					.then(async (stream) => {
-						const data = await read_all(stream)
+						const data = await readAll(stream)
 						expect(contents.length).to.equal(data.length)
 						expect(Buffer.compare(data, contents)).to.equal(0)
-						expect(stream).to.have.property('file_info')
+						expect(stream).to.have.property('fileInfo')
 
 						// application/xml+svg would be better, but this is good-ish.
-						expect(stream.file_info).to.have.property('mime_type', 'application/xml')
-						expect(stream.file_info).to.have.property('ext', 'xml')
+						expect(stream.fileInfo).to.have.property('mimeType', 'application/xml')
+						expect(stream.fileInfo).to.have.property('ext', 'xml')
 						done()
 					})
 					.catch((err) => {
@@ -165,15 +164,15 @@ describe('storage/storage', () => {
 
 		it('provides default MIME type for read streams', (done) => {
 			const contents = 'test-for-reading'
-			create_known_object('foobar', contents, (store, hash) => {
+			createKnownObject('foobar', contents, (store) => {
 				store
 					.open('foobar', 'r')
 					.then(async (stream) => {
-						const data = await read_all(stream)
+						const data = await readAll(stream)
 						expect(Buffer.compare(data, Buffer.from(contents))).to.equal(0)
 
-						expect(stream.file_info).to.have.property('mime_type', 'application/octet-stream')
-						expect(stream.file_info).to.have.property('ext', 'bin')
+						expect(stream.fileInfo).to.have.property('mimeType', 'application/octet-stream')
+						expect(stream.fileInfo).to.have.property('ext', 'bin')
 						done()
 					})
 					.catch((err) => {
@@ -195,9 +194,9 @@ describe('storage/storage', () => {
 
 		it('returns stats for a known object', (done) => {
 			const content = 'stat-test'
-			const expected_size = content.length
-			create_known_object('foobar', content, (store, hash) => {
-				expect(store.stat(hash)).to.eventually.have.property('size', expected_size)
+			const expectedSize = content.length
+			createKnownObject('foobar', content, (store, hash) => {
+				expect(store.stat(hash)).to.eventually.have.property('size', expectedSize)
 				done()
 			})
 		})
@@ -214,7 +213,7 @@ describe('storage/storage', () => {
 		})
 
 		it('returns the size of a known object', (done) => {
-			create_known_object('foobar', 'stat-test', (store, hash) => {
+			createKnownObject('foobar', 'stat-test', (store, hash) => {
 				expect(store.size(hash)).to.eventually.equal(15)
 				done()
 			})

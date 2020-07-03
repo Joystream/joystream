@@ -141,25 +141,25 @@ class WorkersApi {
 	 * Add a new storage group opening using the lead account. Returns the
 	 * new opening id.
 	 */
-	async dev_addStorageOpening() {
-		const openTx = this.dev_makeAddOpeningTx('Worker')
-		return this.dev_submitAddOpeningTx(openTx, await this.getLeadRoleAccount())
+	async devAddStorageOpening() {
+		const openTx = this.devMakeAddOpeningTx('Worker')
+		return this.devSubmitAddOpeningTx(openTx, await this.getLeadRoleAccount())
 	}
 
 	/*
 	 * Add a new storage working group lead opening using sudo account. Returns the
 	 * new opening id.
 	 */
-	async dev_addStorageLeadOpening() {
-		const openTx = this.dev_makeAddOpeningTx('Leader')
+	async devAddStorageLeadOpening() {
+		const openTx = this.devMakeAddOpeningTx('Leader')
 		const sudoTx = this.base.api.tx.sudo.sudo(openTx)
-		return this.dev_submitAddOpeningTx(sudoTx, await this.base.identities.getSudoAccount())
+		return this.devSubmitAddOpeningTx(sudoTx, await this.base.identities.getSudoAccount())
 	}
 
 	/*
 	 * Constructs an addOpening tx of openingType
 	 */
-	dev_makeAddOpeningTx(openingType) {
+	devMakeAddOpeningTx(openingType) {
 		return this.base.api.tx.storageWorkingGroup.addOpening(
 			'CurrentBlock',
 			{
@@ -178,7 +178,7 @@ class WorkersApi {
 	 * Submits a tx (expecting it to dispatch storageWorkingGroup.addOpening) and returns
 	 * the OpeningId from the resulting event.
 	 */
-	async dev_submitAddOpeningTx(tx, senderAccount) {
+	async devSubmitAddOpeningTx(tx, senderAccount) {
 		return this.base.signAndSendThenGetEventResult(senderAccount, tx, {
 			eventModule: 'storageWorkingGroup',
 			eventName: 'OpeningAdded',
@@ -189,7 +189,7 @@ class WorkersApi {
 	/*
 	 * Apply on an opening, returns the application id.
 	 */
-	async dev_applyOnOpening(openingId, memberId, memberAccount, roleAccount) {
+	async devApplyOnOpening(openingId, memberId, memberAccount, roleAccount) {
 		const applyTx = this.base.api.tx.storageWorkingGroup.applyOnOpening(
 			memberId,
 			openingId,
@@ -209,8 +209,8 @@ class WorkersApi {
 	/*
 	 * Move lead opening to review state using sudo account
 	 */
-	async dev_beginLeadOpeningReview(openingId) {
-		const beginReviewTx = this.dev_makeBeginOpeningReviewTx(openingId)
+	async devBeginLeadOpeningReview(openingId) {
+		const beginReviewTx = this.devMakeBeginOpeningReviewTx(openingId)
 		const sudoTx = this.base.api.tx.sudo.sudo(beginReviewTx)
 		return this.base.signAndSend(await this.base.identities.getSudoAccount(), sudoTx)
 	}
@@ -218,48 +218,48 @@ class WorkersApi {
 	/*
 	 * Move a storage opening to review state using lead account
 	 */
-	async dev_beginStorageOpeningReview(openingId) {
-		const beginReviewTx = this.dev_makeBeginOpeningReviewTx(openingId)
+	async devBeginStorageOpeningReview(openingId) {
+		const beginReviewTx = this.devMakeBeginOpeningReviewTx(openingId)
 		return this.base.signAndSend(await this.getLeadRoleAccount(), beginReviewTx)
 	}
 
 	/*
 	 * Constructs a beingApplicantReview tx for openingId, which puts an opening into the review state
 	 */
-	dev_makeBeginOpeningReviewTx(openingId) {
+	devMakeBeginOpeningReviewTx(openingId) {
 		return this.base.api.tx.storageWorkingGroup.beginApplicantReview(openingId)
 	}
 
 	/*
 	 * Fill a lead opening, return the assigned worker id, using the sudo account
 	 */
-	async dev_fillLeadOpening(openingId, applicationId) {
-		const fillTx = this.dev_makeFillOpeningTx(openingId, applicationId)
+	async devFillLeadOpening(openingId, applicationId) {
+		const fillTx = this.devMakeFillOpeningTx(openingId, applicationId)
 		const sudoTx = this.base.api.tx.sudo.sudo(fillTx)
-		const filled = await this.dev_submitFillOpeningTx(await this.base.identities.getSudoAccount(), sudoTx)
+		const filled = await this.devSubmitFillOpeningTx(await this.base.identities.getSudoAccount(), sudoTx)
 		return getWorkerIdFromApplicationIdToWorkerIdMap(filled, applicationId)
 	}
 
 	/*
 	 * Fill a storage opening, return the assigned worker id, using the lead account
 	 */
-	async dev_fillStorageOpening(openingId, applicationId) {
-		const fillTx = this.dev_makeFillOpeningTx(openingId, applicationId)
-		const filled = await this.dev_submitFillOpeningTx(await this.getLeadRoleAccount(), fillTx)
+	async devFillStorageOpening(openingId, applicationId) {
+		const fillTx = this.devMakeFillOpeningTx(openingId, applicationId)
+		const filled = await this.devSubmitFillOpeningTx(await this.getLeadRoleAccount(), fillTx)
 		return getWorkerIdFromApplicationIdToWorkerIdMap(filled, applicationId)
 	}
 
 	/*
 	 * Constructs a FillOpening transaction
 	 */
-	dev_makeFillOpeningTx(openingId, applicationId) {
+	devMakeFillOpeningTx(openingId, applicationId) {
 		return this.base.api.tx.storageWorkingGroup.fillOpening(openingId, [applicationId], null)
 	}
 
 	/*
 	 * Dispatches a fill opening tx and returns a map of the application id to their new assigned worker ids.
 	 */
-	async dev_submitFillOpeningTx(senderAccount, tx) {
+	async devSubmitFillOpeningTx(senderAccount, tx) {
 		return this.base.signAndSendThenGetEventResult(senderAccount, tx, {
 			eventModule: 'storageWorkingGroup',
 			eventName: 'OpeningFilled',

@@ -98,13 +98,13 @@ class LRUCache {
 
 		debug('Have to prune', this.store.size - this.capacity, 'items.')
 		let idx = 0
-		const to_prune = []
-		while (idx < sorted.length && to_prune.length < this.store.size - this.capacity) {
-			to_prune.push(sorted[idx][0])
+		const toPrune = []
+		while (idx < sorted.length && toPrune.length < this.store.size - this.capacity) {
+			toPrune.push(sorted[idx][0])
 			++idx
 		}
 
-		to_prune.forEach((key) => {
+		toPrune.forEach((key) => {
 			this.store.delete(key)
 			this.access.delete(key)
 		})

@@ -53,7 +53,7 @@ module.exports = function (storage, runtime) {
 			try {
 				const size = await storage.size(id)
 				const stream = await storage.open(id, 'r')
-				const type = stream.file_info.mime_type
+				const type = stream.fileInfo.mimeType
 
 				// Close the stream; we don't need to fetch the file (if we haven't
 				// already). Then return result.
@@ -108,12 +108,12 @@ module.exports = function (storage, runtime) {
 					}
 				}
 
-				stream.on('file_info', async (info) => {
+				stream.on('fileInfo', async (info) => {
 					try {
 						debug('Detected file info:', info)
 
 						// Filter
-						const filter_result = filter({}, req.headers, info.mime_type)
+						const filter_result = filter({}, req.headers, info.mimeType)
 						if (200 != filter_result.code) {
 							debug('Rejecting content', filter_result.message)
 							stream.end()
@@ -212,11 +212,11 @@ module.exports = function (storage, runtime) {
 				// Add a file extension to download requests if necessary. If the file
 				// already contains an extension, don't add one.
 				let send_name = id
-				const type = stream.file_info.mime_type
+				const type = stream.fileInfo.mimeType
 				if (download) {
 					let ext = path.extname(send_name)
 					if (!ext) {
-						ext = stream.file_info.ext
+						ext = stream.fileInfo.ext
 						if (ext) {
 							send_name = `${send_name}.${ext}`
 						}
