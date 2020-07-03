@@ -6,10 +6,10 @@ pub trait ActorOriginValidator<Origin, ActorId, AccountId> {
     fn ensure_actor_origin(origin: Origin, actor_id: ActorId) -> Result<AccountId, &'static str>;
 }
 
-// Multiplies the T::Origin.
-// In our current substrate version system::Origin doesn't support clone(),
-// but it will be supported in latest up-to-date substrate version.
 // TODO: delete when T::Origin will support the clone()
+/// Multiplies the T::Origin.
+/// In our current substrate version system::Origin doesn't support clone(),
+/// but it will be supported in latest up-to-date substrate version.
 pub fn double_origin<T: system::Trait>(origin: T::Origin) -> (T::Origin, T::Origin) {
     let coerced_origin = origin.into().ok().unwrap_or(RawOrigin::None);
 

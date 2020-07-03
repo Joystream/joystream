@@ -4,6 +4,7 @@
 pub mod constraints;
 pub mod currency;
 pub mod origin;
+pub mod working_group;
 
 use codec::{Decode, Encode};
 #[cfg(feature = "std")]

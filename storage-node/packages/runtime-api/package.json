@@ -1,5 +1,6 @@
 {
-  "name": "@joystream/runtime-api",
+  "name": "@joystream/storage-runtime-api",
+  "private": true,
   "version": "0.1.0",
   "description": "Runtime API abstraction for Joystream Storage Node",
   "author": "Joystream",
@@ -44,7 +45,7 @@
     "temp": "^0.9.0"
   },
   "dependencies": {
-    "@joystream/types": "^0.10.0",
+    "@joystream/types": "^0.11.0",
     "@polkadot/api": "^0.96.1",
     "async-lock": "^1.2.0",
     "lodash": "^4.17.11",

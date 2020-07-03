@@ -25,3 +25,5 @@ node_modules/
 
 # Ignore nvm config file
 .nvmrc
+
+yarn.lock
