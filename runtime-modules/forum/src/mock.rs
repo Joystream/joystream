@@ -319,6 +319,32 @@ pub fn delete_thread_mock(
     }
 }
 
+pub fn move_thread_mock(
+    origin: OriginType,
+    moderator_id: <Runtime as Trait>::ModeratorId,
+    thread_id: <Runtime as Trait>::PostId,
+    new_category_id: <Runtime as Trait>::CategoryId,
+    result: Result<(), &'static str>,
+) {
+    assert_eq!(
+        TestForumModule::move_thread_to_category(
+            mock_origin(origin.clone()),
+            moderator_id,
+            thread_id,
+            new_category_id,
+        ),
+        result
+    );
+    if result.is_ok() {
+        assert_eq!(<CategoryByThread<Runtime>>::get(thread_id), new_category_id,);
+        assert!(<ThreadById<Runtime>>::exists(new_category_id, thread_id),);
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::ThreadMoved(thread_id, new_category_id))
+        );
+    }
+}
+
 pub fn create_post_mock(
     origin: OriginType,
     forum_user_id: <Runtime as Trait>::ForumUserId,

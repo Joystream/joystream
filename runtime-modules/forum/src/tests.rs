@@ -484,6 +484,89 @@ fn delete_thread() {
     });
 }
 
+#[test]
+// test if moderator can move thread between two categories he moderates
+fn move_thread() {
+    let moderators = [FORUM_MODERATOR_ORIGIN_ID, FORUM_MODERATOR_2_ORIGIN_ID];
+    let origins = [FORUM_MODERATOR_ORIGIN, FORUM_MODERATOR_2_ORIGIN];
+
+    let config = default_genesis_config();
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    build_test_externalities(config).execute_with(|| {
+        let category_id_1 = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        let category_id_2 = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        // sanity check
+        assert_ne!(category_id_1, category_id_2);
+
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id_1,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        // moderator not associated with any category will fail to move thread
+        move_thread_mock(
+            origins[0].clone(),
+            moderators[0],
+            thread_id,
+            category_id_2,
+            Err(ERROR_MODERATOR_MODERATE_ORIGIN_CATEGORY),
+        );
+
+        // set incomplete permissions
+        set_moderator_category_mock(origin.clone(), moderators[0], category_id_1, true, Ok(()));
+        set_moderator_category_mock(origin.clone(), moderators[1], category_id_2, true, Ok(()));
+
+        // moderator associated only with the first category will fail to move thread
+        move_thread_mock(
+            origins[1].clone(),
+            moderators[1],
+            thread_id,
+            category_id_2,
+            Err(ERROR_MODERATOR_MODERATE_ORIGIN_CATEGORY),
+        );
+
+        // moderator associated only with the second category will fail to move thread
+        move_thread_mock(
+            origins[0].clone(),
+            moderators[0],
+            thread_id,
+            category_id_2,
+            Err(ERROR_MODERATOR_MODERATE_DESTINATION_CATEGORY),
+        );
+
+        // give the rest of necessary permissions to the first moderator
+        set_moderator_category_mock(origin.clone(), moderators[0], category_id_2, true, Ok(()));
+
+        // moderator associated only with the first category will fail to move thread
+        move_thread_mock(
+            origins[1].clone(),
+            moderators[1],
+            thread_id,
+            category_id_2,
+            Ok(()),
+        );
+    });
+}
+
 /*
  ** vote_on_poll
  */
