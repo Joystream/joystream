@@ -41,9 +41,8 @@ interface Injected {
   util: typeof util;
   window: null;
   joy: {
-    types: typeof joy_types,
-  },
-  decodeAddress: typeof uiKeyring.keyring.decodeAddress
+    types: typeof joy_types
+  }
 }
 
 interface Props extends AppProps, I18nProps, RouteComponentProps<{}> {
@@ -203,8 +202,7 @@ function Playground ({ className, history, match: { params: { base64 } }, t }: P
       window: null,
       joy: {
         types: joy_types
-      },
-      decodeAddress: uiKeyring.keyring.decodeAddress
+      }
     };
 
     await injectedRef.current.api.isReady;
