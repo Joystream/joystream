@@ -268,8 +268,9 @@ pub fn edit_thread_title_mock(
         result
     );
     if result.is_ok() {
+        let category_id = TestForumModule::category_by_thread(thread_id);
         assert_eq!(
-            TestForumModule::thread_by_id(thread_id).title_hash,
+            TestForumModule::thread_by_id(category_id, thread_id).title_hash,
             Runtime::calculate_hash(new_title.as_slice()),
         );
         assert_eq!(
@@ -309,7 +310,6 @@ pub fn edit_post_text_mock(
     new_text: Vec<u8>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::PostId {
-    let post = TestForumModule::post_by_id(post_id);
     assert_eq!(
         TestForumModule::edit_post_text(
             mock_origin(origin),
@@ -388,14 +388,15 @@ pub fn vote_on_poll_mock(
     index: u32,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::ThreadId {
-    let thread = TestForumModule::thread_by_id(thread_id);
+    let category_id = TestForumModule::category_by_thread(thread_id);
+    let thread = TestForumModule::thread_by_id(category_id, thread_id);
     assert_eq!(
         TestForumModule::vote_on_poll(mock_origin(origin), forum_user_id, thread_id, index),
         result
     );
     if result.is_ok() {
         assert_eq!(
-            TestForumModule::thread_by_id(thread_id)
+            TestForumModule::thread_by_id(category_id, thread_id)
                 .poll
                 .unwrap()
                 .poll_alternatives[index as usize]
@@ -517,6 +518,7 @@ pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime
         category_by_id: vec![], // endowed_accounts.iter().cloned().map(|k|(k, 1 << 60)).collect(),
         next_category_id: 1,
         thread_by_id: vec![],
+        category_by_thread: vec![],
         next_thread_id: 1,
         post_by_id: vec![],
         next_post_id: 1,

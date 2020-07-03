@@ -503,7 +503,10 @@ decl_storage! {
         pub NextCategoryId get(next_category_id) config(): T::CategoryId;
 
         /// Map thread identifier to corresponding thread.
-        pub ThreadById get(thread_by_id) config(): map T::ThreadId => Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>;
+        pub ThreadById get(thread_by_id) config(): double_map T::CategoryId, blake2_256(T::ThreadId) => Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>;
+
+        // Map category to thread. Enables searching for threads in ThreadById without knowing to which category thread belongs to.
+        pub CategoryByThread get(category_by_thread) config(): map T::ThreadId => T::CategoryId;
 
         /// Thread identifier value to be used for next Thread in threadById.
         pub NextThreadId get(next_thread_id) config(): T::ThreadId;
@@ -769,14 +772,14 @@ decl_module! {
             Self::ensure_is_forum_user(origin, &forum_user_id)?;
 
             // Ensure forum user is author of the thread
-            Self::ensure_is_thread_author(&thread_id, &forum_user_id)?;
+            let thread = Self::ensure_is_thread_author(&thread_id, &forum_user_id)?;
 
             // Store the event
             Self::deposit_event(RawEvent::ThreadTitleUpdated(thread_id));
 
             // Update thread title
             let title_hash = T::calculate_hash(&new_title);
-            <ThreadById<T>>::mutate(thread_id, |thread| thread.title_hash = title_hash);
+            <ThreadById<T>>::mutate(thread.category_id, thread_id, |thread| thread.title_hash = title_hash);
 
             Ok(())
         }
@@ -811,7 +814,7 @@ decl_module! {
                 .collect();
 
             // Update thread with one object
-            <ThreadById<T>>::mutate(thread_id, |value| {
+            <ThreadById<T>>::mutate(thread.category_id, thread_id, |value| {
                 *value = Thread {
                     poll: Some( Poll {
                         poll_alternatives: new_poll_alternatives,
@@ -1031,7 +1034,10 @@ impl<T: Trait> Module<T> {
         };
 
         // Store thread
-        <ThreadById<T>>::mutate(new_thread_id, |value| *value = new_thread.clone());
+        <ThreadById<T>>::mutate(category_id, new_thread_id, |value| {
+            *value = new_thread.clone()
+        });
+        <CategoryByThread<T>>::mutate(new_thread_id, |value| *value = category_id);
 
         // Update next thread id
         <NextThreadId<T>>::mutate(|n| *n += One::one());
@@ -1151,24 +1157,26 @@ impl<T: Trait> Module<T> {
     fn ensure_thread_exists(
         thread_id: &T::ThreadId,
     ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>, &'static str> {
-        if <ThreadById<T>>::exists(thread_id) {
-            Ok(<ThreadById<T>>::get(thread_id))
-        } else {
-            Err(ERROR_THREAD_DOES_NOT_EXIST)
+        if !<CategoryByThread<T>>::exists(thread_id) {
+            return Err(ERROR_THREAD_DOES_NOT_EXIST);
         }
+
+        let category_id = <CategoryByThread<T>>::get(thread_id);
+
+        Ok(<ThreadById<T>>::get(category_id, thread_id))
     }
 
     fn ensure_is_thread_author(
         thread_id: &T::ThreadId,
         forum_user_id: &T::ForumUserId,
-    ) -> Result<(), &'static str> {
+    ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>, &'static str> {
         let thread = Self::ensure_thread_exists(&thread_id)?;
 
         if thread.author_id != *forum_user_id {
             return Err(ERROR_ACCOUNT_DOES_NOT_MATCH_THREAD_AUTHOR);
         }
 
-        Ok(())
+        Ok(thread)
     }
 
     /// Ensure forum user is lead
@@ -1371,7 +1379,7 @@ impl<T: Trait> Module<T> {
         );
 
         // Ensure thread belongs to the category
-        if <ThreadById<T>>::get(thread_id).category_id == category_id {
+        if <ThreadById<T>>::exists(category_id, thread_id) {
             Ok(())
         } else {
             Err(ERROR_THREAD_WITH_WRONG_CATEGORY_ID)

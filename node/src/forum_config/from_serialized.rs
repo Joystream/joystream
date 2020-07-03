@@ -12,7 +12,11 @@ use serde_json::Result;
 struct ForumData {
     categories: Vec<(CategoryId, Category<CategoryId, ThreadId, Hash>)>,
     posts: Vec<(PostId, Post<ForumUserId, ThreadId, Hash>)>,
-    threads: Vec<(ThreadId, Thread<ForumUserId, CategoryId, Moment, Hash>)>,
+    threads: Vec<(
+        CategoryId,
+        ThreadId,
+        Thread<ForumUserId, CategoryId, Moment, Hash>,
+    )>,
 }
 
 fn parse_forum_json() -> Result<ForumData> {
@@ -32,9 +36,16 @@ pub fn create() -> ForumConfig {
     let next_thread_id: ThreadId = forum_data.threads.last().map_or(1, |thread| thread.0 + 1);
     let next_post_id: PostId = forum_data.posts.last().map_or(1, |post| post.0 + 1);
 
+    let category_by_thread = forum_data
+        .threads
+        .iter()
+        .map(|(category_id, thread_id, _thread)| (*thread_id, *category_id))
+        .collect();
+
     ForumConfig {
         category_by_id: forum_data.categories,
         thread_by_id: forum_data.threads,
+        category_by_thread,
         post_by_id: forum_data.posts,
         next_category_id,
         next_thread_id,
