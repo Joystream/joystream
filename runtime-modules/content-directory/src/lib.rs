@@ -1303,7 +1303,7 @@ decl_module! {
             // Retrieve Class, Entity and ensure given have access to the Entity under given entity_id
             let (class, entity, _) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
-            // Ensure Class Schema under given index exist, return corresponding Schema
+            // Ensure Class Schema under given index exists, return corresponding Schema
             let schema = class.ensure_schema_exists(schema_id)?.to_owned();
 
             let class_properties = class.properties;
@@ -2038,7 +2038,7 @@ impl<T: Trait> Module<T> {
         // Ensure Entity under given id exists, retrieve corresponding one
         let entity = Self::ensure_known_entity_id(entity_id)?;
 
-        // Ensure Class under given id exists, retrieve corresponding one
+        // Retrieve corresponding Class
         let class = Self::class_by_id(entity.class_id);
 
         // Derive EntityAccessLevel for the actor, attempting to act.

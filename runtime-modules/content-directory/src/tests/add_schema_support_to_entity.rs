@@ -1,7 +1,7 @@
 use super::*;
 
 #[test]
-fn add_entity_schema_support_success() {
+fn add_schema_support_to_entity_success() {
     with_test_externalities(|| {
         // Add entity schemas support
         let (first_entity, second_entity) = add_entity_schemas_support();
