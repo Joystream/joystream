@@ -432,7 +432,13 @@ fn delete_thread() {
             Ok(()),
         );
 
-        set_moderator_category_mock(origin.clone(), moderators[0], category_id, true, Ok(()));
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id,
+            true,
+            Ok(()),
+        );
 
         // regular user will fail to delete the thread
         delete_thread_mock(
