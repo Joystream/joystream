@@ -784,7 +784,7 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            let thread = Self::ensure_is_thread_moderator(origin, &moderator_id, &category_id, &thread_id)?;
+            let thread = Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
 
             // Delete thread
             <ThreadById<T>>::remove(thread.category_id, thread_id);
@@ -1249,7 +1249,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Ensure moderator can manipulate thread.
-    fn ensure_is_thread_moderator(
+    fn ensure_can_moderate_thread(
         origin: T::Origin,
         moderator_id: &T::ModeratorId,
         category_id: &T::CategoryId,
