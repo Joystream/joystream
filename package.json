@@ -15,7 +15,9 @@
 		"types",
 		"pioneer",
 		"pioneer/packages/*",
-		"devops/eslint-config"
+		"devops/eslint-config",
+		"devops/prettier-config",
+		"devops/tsconfig"
 	],
 	"resolutions": {
 		"@polkadot/api": "^0.96.1",

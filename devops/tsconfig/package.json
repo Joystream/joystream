@@ -1,0 +1,22 @@
+{
+  "name": "@joystream/tsconfig",
+  "version": "1.0.0",
+  "description": "joystream shared tsconfig",
+  "main": "index.json",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joystream/joystream.git"
+  },
+  "author": "Joystream contributors",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/joystream/joystream/issues"
+  },
+  "homepage": "https://github.com/joystream/joystream#readme",
+  "peerDependencies": {
+    "typescript": ">= 3.7.2"
+  }
+}
