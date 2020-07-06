@@ -6,7 +6,7 @@
     "strict": true,
     "target": "esnext",
     "esModuleInterop": true,
-    "types" : [ "node" ],
+    "types": ["node"],
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true
   }

@@ -1,5 +1,5 @@
 const base = require('@polkadot/dev-react/config/eslint');
-console.log('Using eslintrc from pioneer folder')
+
 // add override for any (a metric ton of them, initial conversion)
 module.exports = {
   ...base,

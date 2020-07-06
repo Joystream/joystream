@@ -1,3 +1,5 @@
+// This config is used globally at the root of the repo, so it should be as thin
+// as possible with rules that we absolutely require across all projects.
 module.exports = {
   env: {
     es6: true

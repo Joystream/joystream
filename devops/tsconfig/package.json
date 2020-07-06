@@ -2,7 +2,7 @@
   "name": "@joystream/tsconfig",
   "version": "1.0.0",
   "description": "joystream shared tsconfig",
-  "main": "index.json",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
