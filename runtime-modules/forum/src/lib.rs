@@ -1458,8 +1458,7 @@ impl<T: Trait> Module<T> {
             // Get path from parent category to root
             let category_tree_path = Self::build_category_tree_path(&parent_category_id);
 
-            if Self::ensure_can_moderate_category_path(moderator_id, &category_tree_path).is_err()
-            {
+            if Self::ensure_can_moderate_category_path(moderator_id, &category_tree_path).is_err() {
                 return Err(ERROR_MODERATOR_CANT_DELETE_CATEGORY);
             }
 
