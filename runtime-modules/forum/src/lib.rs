@@ -337,6 +337,7 @@ const ERROR_MODERATOR_MODERATE_ORIGIN_CATEGORY: &str =
     "Moderator can't moderate category containing thread.";
 const ERROR_MODERATOR_MODERATE_DESTINATION_CATEGORY: &str =
     "Moderator can't moderate destination category.";
+const ERROR_THREAD_MOVE_INVALID: &str = "Origin is the same as the destination.";
 
 // Errors about post.
 const ERROR_POST_DOES_NOT_EXIST: &str = "Post does not exist.";
@@ -806,16 +807,15 @@ decl_module! {
             Ok(())
         }
 
-        fn move_thread_to_category(origin, moderator_id: T::ModeratorId, thread_id: T::ThreadId, new_category_id: T::CategoryId) -> dispatch::Result {
+        fn move_thread_to_category(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, thread_id: T::ThreadId, new_category_id: T::CategoryId) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
             // Make sure moderator move between selected categories
-            let (_, thread) = Self::ensure_can_move_thread(origin, &moderator_id, &thread_id, &new_category_id)?;
+            let (_, thread) = Self::ensure_can_move_thread(origin, &moderator_id, &category_id, &thread_id, &new_category_id)?;
 
             <ThreadById<T>>::remove(thread.category_id, thread_id);
-
-            // TODO:
+            <ThreadById<T>>::insert(new_category_id, thread_id, thread);
 
             // Store the event
             Self::deposit_event(RawEvent::ThreadMoved(thread_id, new_category_id));
@@ -989,7 +989,7 @@ decl_module! {
             Self::ensure_thread_exists(&category_id, &post.thread_id)?;
 
             // ensure the moderator can moderate the category
-            Self::ensure_can_moderate_category(&who, &moderator_id, category_id)?;
+            Self::ensure_can_moderate_category(&who, &moderator_id, &category_id)?;
 
             // Generate event
             Self::deposit_event(RawEvent::PostModerated(post_id));
@@ -1301,6 +1301,7 @@ impl<T: Trait> Module<T> {
     fn ensure_can_move_thread(
         origin: T::Origin,
         moderator_id: &T::ModeratorId,
+        category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
         new_category_id: &T::CategoryId,
     ) -> Result<
@@ -1310,7 +1311,9 @@ impl<T: Trait> Module<T> {
         ),
         &'static str,
     > {
-        let info = Self::ensure_is_thread_moderator(origin, moderator_id, thread_id);
+        ensure!(category_id != new_category_id, ERROR_THREAD_MOVE_INVALID,);
+
+        let info = Self::ensure_can_moderate_thread(origin, moderator_id, category_id, thread_id);
         if info.is_err() {
             return Err(ERROR_MODERATOR_MODERATE_ORIGIN_CATEGORY);
         }

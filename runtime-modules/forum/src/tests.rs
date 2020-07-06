@@ -486,7 +486,7 @@ fn delete_thread() {
 
 #[test]
 // test if moderator can move thread between two categories he moderates
-fn move_thread() {
+fn move_thread_moderator_permissions() {
     let moderators = [FORUM_MODERATOR_ORIGIN_ID, FORUM_MODERATOR_2_ORIGIN_ID];
     let origins = [FORUM_MODERATOR_ORIGIN, FORUM_MODERATOR_2_ORIGIN];
 
@@ -526,19 +526,34 @@ fn move_thread() {
         move_thread_mock(
             origins[0].clone(),
             moderators[0],
+            category_id_1,
             thread_id,
             category_id_2,
             Err(ERROR_MODERATOR_MODERATE_ORIGIN_CATEGORY),
         );
 
-        // set incomplete permissions
-        set_moderator_category_mock(origin.clone(), moderators[0], category_id_1, true, Ok(()));
-        set_moderator_category_mock(origin.clone(), moderators[1], category_id_2, true, Ok(()));
+        // set incomplete permissions for first user (only category 1)
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id_1,
+            true,
+            Ok(()),
+        );
+        // set incomplete permissions for second user (only category 2)
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[1],
+            category_id_2,
+            true,
+            Ok(()),
+        );
 
         // moderator associated only with the first category will fail to move thread
         move_thread_mock(
             origins[1].clone(),
             moderators[1],
+            category_id_1,
             thread_id,
             category_id_2,
             Err(ERROR_MODERATOR_MODERATE_ORIGIN_CATEGORY),
@@ -548,21 +563,75 @@ fn move_thread() {
         move_thread_mock(
             origins[0].clone(),
             moderators[0],
+            category_id_1,
             thread_id,
             category_id_2,
             Err(ERROR_MODERATOR_MODERATE_DESTINATION_CATEGORY),
         );
 
         // give the rest of necessary permissions to the first moderator
-        set_moderator_category_mock(origin.clone(), moderators[0], category_id_2, true, Ok(()));
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id_2,
+            true,
+            Ok(()),
+        );
 
-        // moderator associated only with the first category will fail to move thread
+        // moderator associated with both categories will succeed to move thread
         move_thread_mock(
-            origins[1].clone(),
-            moderators[1],
+            origins[0].clone(),
+            moderators[0],
+            category_id_1,
             thread_id,
             category_id_2,
             Ok(()),
+        );
+    });
+}
+
+fn move_thread_invalid_move() {
+    let moderators = [FORUM_MODERATOR_ORIGIN_ID];
+    let origins = [FORUM_MODERATOR_ORIGIN];
+
+    let config = default_genesis_config();
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    build_test_externalities(config).execute_with(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        // set permissions
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id,
+            true,
+            Ok(()),
+        );
+
+        move_thread_mock(
+            origins[0].clone(),
+            moderators[0],
+            category_id,
+            thread_id,
+            category_id,
+            Err(ERROR_THREAD_MOVE_INVALID),
         );
     });
 }
