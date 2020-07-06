@@ -86,7 +86,7 @@
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
     "version": "oclif-dev readme && git add README.md",
     "lint": "eslint ./src/ --quiet --ext .ts",
-    "prettier-write": "prettier --write ./src"
+    "prettier-write": "prettier --write ."
   },
   "types": "lib/index.d.ts"
 }
