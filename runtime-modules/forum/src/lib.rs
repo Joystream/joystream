@@ -1316,16 +1316,31 @@ impl<T: Trait> Module<T> {
         ensure!(category_id != new_category_id, ERROR_THREAD_MOVE_INVALID,);
 
         let info = Self::ensure_can_moderate_thread(origin, moderator_id, category_id, thread_id);
-        if info.is_err() {
-            return Err(ERROR_MODERATOR_MODERATE_ORIGIN_CATEGORY);
-        }
-        let (account_id, thread) = info.unwrap();
 
+        match info {
+            Err(_) => Err(ERROR_MODERATOR_MODERATE_ORIGIN_CATEGORY),
+            Ok((account_id, thread)) => {
+                Self::ensure_can_move_thread_to_destination(
+                    &account_id,
+                    moderator_id,
+                    new_category_id,
+                )?;
+
+                Ok((account_id, thread))
+            }
+        }
+    }
+
+    fn ensure_can_move_thread_to_destination(
+        account_id: &T::AccountId,
+        moderator_id: &T::ModeratorId,
+        new_category_id: &T::CategoryId,
+    ) -> Result<(), &'static str> {
         if Self::ensure_can_moderate_category(&account_id, moderator_id, new_category_id).is_err() {
             return Err(ERROR_MODERATOR_MODERATE_DESTINATION_CATEGORY);
         };
 
-        Ok((account_id, thread))
+        Ok(())
     }
 
     fn ensure_catgory_is_mutable(category_id: T::CategoryId) -> dispatch::Result {
