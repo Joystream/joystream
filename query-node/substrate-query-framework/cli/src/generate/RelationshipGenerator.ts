@@ -71,71 +71,88 @@ export class RelationshipGenerator {
     o2.relatedEntityImports.add(o1.name);
   }
 
+  listTypeWithNoDerivedDirective(field: Field, currentObject: ObjectType): void {
+    const relatedObject = this.model.lookupType(field.type);
+    const relatedFields = relatedObject.fields.filter(f => f.type === currentObject.name && f.isList);
+
+    if (relatedFields.length !== 1) {
+      throw new Error(`Incorrect ManyToMany relationship detected! ${currentObject.name} -> ${field.name}
+            found ${relatedFields.length} fields on ${relatedObject.name} of list type`);
+    }
+    if (!relatedFields[0].derivedFrom) {
+      throw new Error(`Incorrect ManyToMany relationship detected! @derived directive
+            for ${relatedObject.name}->${relatedFields[0].name} not found`);
+    }
+    this.addMany2Many(field, relatedFields[0], currentObject, relatedObject);
+  }
+
+  listTypeWithDerivedDirective(field: Field, currentObject: ObjectType): void {
+    const relatedObject = this.model.lookupType(field.type);
+    const relatedField = this.model.lookupField(field.type, field.derivedFrom.argument);
+
+    if (relatedField.derivedFrom) {
+      throw new Error(
+        `${relatedObject.name}->${relatedField.name} derived field can not reference to another derived field!`
+      );
+    }
+
+    relatedField.isList
+      ? this.addMany2Many(field, relatedField, currentObject, relatedObject)
+      : this.addOne2Many(field, relatedField, currentObject, relatedObject);
+  }
+
+  typeWithDerivedDirective(field: Field, currentObject: ObjectType): void {
+    const relatedObject = this.model.lookupType(field.type);
+    const relatedField = this.model.lookupField(field.type, field.derivedFrom.argument);
+
+    if (relatedField.derivedFrom) {
+      throw new Error(
+        `${relatedObject.name}->${relatedField.name} derived field can not reference to another derived field!`
+      );
+    }
+    if (relatedField.isList) {
+      throw new Error(`${relatedObject.name}->${relatedField.name} can not reference to another a list field`);
+    }
+    this.addOne2One(field, relatedField, currentObject, relatedObject);
+  }
+
+  typeWithNoDerivedDirective(field: Field, currentObject: ObjectType): void {
+    const relatedObject = this.model.lookupType(field.type);
+    const relatedFields = relatedObject.fields.filter(f => f.type === currentObject.name);
+
+    if (relatedFields.length === 0) {
+      return this.addMany2One(field, currentObject, relatedObject, {} as Field);
+    }
+    const derivedFields = relatedFields.filter(f => f.derivedFrom?.argument === field.name);
+    if (derivedFields.length === 1) {
+      return !derivedFields[0].isList
+        ? this.addOne2One(field, derivedFields[0], currentObject, relatedObject)
+        : this.addMany2One(field, currentObject, relatedObject, derivedFields[0]);
+    }
+    // Errors
+    throw derivedFields.length === 0
+      ? new Error(
+          `Incorrect relationship. '${relatedObject.name}' should have a derived field 
+        with @derivedFrom(field: "${field.name}") directive maybe?`
+        )
+      : new Error(`Found multiple derived fields with same argument -> @derivedField(field:"${field.name}")`);
+  }
+
   generate(): void {
+    const enumNames = this.model.enums.map(e => e.name);
+
     this.model.types.forEach(currentObject => {
       for (const field of currentObject.fields) {
-        if (this.isVisited(field, currentObject)) continue;
+        if (field.isBuildinType || this.isVisited(field, currentObject) || enumNames.includes(field.type)) continue;
 
-        // ============= Case 1 =============
-        if (!field.isBuildinType && field.derivedFrom) {
-          const relatedObject = this.model.lookupType(field.type);
-          const relatedField = this.model.lookupField(field.type, field.derivedFrom.argument);
-
-          if (relatedField.derivedFrom) {
-            throw new Error(
-              `${relatedObject.name}->${relatedField.name} derived field can not reference to another derived field!`
-            );
-          }
-
-          if (field.isList && relatedField.isList) {
-            return this.addMany2Many(field, relatedField, currentObject, relatedObject);
-          } else if (field.isList && !relatedField.isList) {
-            return this.addOne2Many(field, relatedField, currentObject, relatedObject);
-          }
-          return this.addOne2One(field, relatedField, currentObject, relatedObject);
-        }
-
-        if (!field.isScalar() && !field.derivedFrom) {
-          const relatedObject = this.model.lookupType(field.type);
-          const relatedFields = relatedObject.fields.filter(f => f.type === currentObject.name);
-
-          if (relatedFields.length === 0) {
-            return this.addMany2One(field, currentObject, relatedObject, {} as Field);
-          } else {
-            const derivedFields = relatedFields.filter(f => f.derivedFrom?.argument === field.name);
-            if (derivedFields.length === 0) {
-              throw new Error(
-                `Incorrect one to one relationship. '${relatedObject.name}' should have a derived field 
-                with @derivedFrom(field: "${field.name}") directive`
-              );
-            } else if (derivedFields.length === 1) {
-              if (!derivedFields[0].isList) {
-                return this.addOne2One(field, derivedFields[0], currentObject, relatedObject);
-              } else {
-                return this.addMany2One(field, currentObject, relatedObject, derivedFields[0]);
-              }
-            } else {
-              throw new Error(
-                `Found multiple derived fields with same argument -> @derivedField(field:"${field.name}")`
-              );
-            }
-          }
-        }
-
-        // ============= Case 3 =============
-        if (!field.isBuildinType && field.isList) {
-          const relatedObject = this.model.lookupType(field.type);
-          const relatedFields = relatedObject.fields.filter(f => f.type === currentObject.name && f.isList);
-
-          if (relatedFields.length !== 1) {
-            throw new Error(`Incorrect ManyToMany relationship detected! ${currentObject.name} -> ${field.name}
-            found ${relatedFields.length} fields on ${relatedObject.name} of list type`);
-          }
-          if (!relatedFields[0].derivedFrom) {
-            throw new Error(`Incorrect ManyToMany relationship detected! @derived directive
-            for ${relatedObject.name}->${relatedFields[0].name} not found`);
-          }
-          return this.addMany2Many(field, relatedFields[0], currentObject, relatedObject);
+        if (field.isList) {
+          return field.derivedFrom
+            ? this.listTypeWithDerivedDirective(field, currentObject)
+            : this.listTypeWithNoDerivedDirective(field, currentObject);
+        } else {
+          return field.derivedFrom
+            ? this.typeWithDerivedDirective(field, currentObject)
+            : this.typeWithNoDerivedDirective(field, currentObject);
         }
       }
     });
