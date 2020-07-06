@@ -11,6 +11,8 @@ import { WarthogModel, Field, ObjectType } from '../model';
 import Debug from 'debug';
 import { ENTITY_DIRECTIVE, UNIQUE_DIRECTIVE, VARIANT_DIRECTIVE } from './constant';
 import { FTSDirective, FULL_TEXT_SEARCHABLE_DIRECTIVE } from './FTSDirective';
+import { availableTypes } from '../model/ScalarTypes';
+import { ModelType } from '../model/WarthogModel';
 
 const debug = Debug('qnode-cli:model-generator');
 
@@ -32,7 +34,7 @@ export class WarthogModelBuilder {
    * Scalar types are also built-in
    */
   private _isBuildinType(type: string): boolean {
-    return !this._schemaParser.getTypeNames().includes(type);
+    return type in availableTypes;
   }
 
   private _listType(typeNode: ListTypeNode, fieldName: string): Field {
@@ -66,6 +68,18 @@ export class WarthogModelBuilder {
     const field = new Field(name, namedTypeNode.name.value);
     field.isBuildinType = this._isBuildinType(field.type);
 
+    let _type;
+
+    try {
+      _type = this._model.lookupType(field.type);
+    } catch (e) {
+      // FIXME: should never happen
+      debug(e);
+    }
+
+    field._isEnum = _type == ModelType.ENUM;
+    field._isUnion = _type == ModelType.UNION;
+
     return field;
   }
 
@@ -81,14 +95,6 @@ export class WarthogModelBuilder {
   private isVariant(o: TypeDefinitionNode): boolean {
     if (o.directives == undefined) {
       return false;
-    }
-
-    if (this.isEntity(o)) {
-      throw new Error('An entity cannot be marked as a variant type');
-    }
-
-    if (o.kind !== 'ObjectTypeDefinition') {
-      throw new Error('Only Object Types can be marked as a variant type');
     }
 
     return o.directives.findIndex(d => d.name.value === VARIANT_DIRECTIVE) >= 0;
@@ -171,6 +177,10 @@ export class WarthogModelBuilder {
 
     this._model.types.forEach(({ name, fields }) => {
       for (const field of fields) {
+        if (field.isUnion() || field.isEnum()) {
+          continue;
+        }
+
         if (!field.isBuildinType && field.isList) {
           const typeName = field.type;
           field.name = field.type.toLowerCase().concat('s');
@@ -205,9 +215,30 @@ export class WarthogModelBuilder {
   }
 
   private generateEntities() {
-    this._schemaParser.getObjectDefinations().map(o => {
-      const objType = this.generateTypeDefination(o);
-      this._model.addEntity(objType);
+    this._schemaParser
+      .getObjectDefinations()
+      .filter(o => this.isEntity(o))
+      .map(o => {
+        const objType = this.generateTypeDefination(o);
+        this._model.addEntity(objType);
+      });
+  }
+
+  private generateVariants() {
+    this._schemaParser
+      .getObjectDefinations()
+      .filter(o => this.isVariant(o))
+      .map(o => {
+        const objType = this.generateTypeDefination(o);
+        this._model.addVariant(objType);
+      });
+  }
+
+  private generateUnions() {
+    this._schemaParser.getUnionTypes().map(u => {
+      const types: string[] = [];
+      u.getTypes().map(s => types.push(s.name));
+      this._model.addUnion(u.name, types);
     });
   }
 
@@ -233,7 +264,9 @@ export class WarthogModelBuilder {
 
     this.generateEnums();
     this.generateInterfaces();
+    this.generateVariants();
     this.generateEntities();
+    this.generateUnions();
     this.generateSQLRelationships();
     this.genereateQueries();
 

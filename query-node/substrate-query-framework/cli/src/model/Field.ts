@@ -13,6 +13,10 @@ export class Field {
   isBuildinType: boolean;
   // Is field nullable or not
   nullable: boolean;
+  // If this field if of union type
+  _isUnion: boolean;
+  // If this field is of enum type
+  _isEnum: boolean;
   // Is field a list. eg: post: [Post]
   isList: boolean;
   // Description of the field will be shown in GrapqQL API
@@ -20,12 +24,14 @@ export class Field {
   // Make field as a unique column on database
   unique?: boolean;
 
-  constructor(name: string, type: string, nullable = true, isBuildinType = true, isList = false) {
+  constructor(name: string, type: string, nullable = true, isBuildinType = true, isList = false, isUnion = false, isEnum = false) {
     this.name = name;
     this.type = type;
     this.nullable = nullable;
     this.isBuildinType = isBuildinType;
     this.isList = isList;
+    this._isUnion = isUnion;
+    this._isEnum = isEnum;
   }
 
   columnType(): string {
@@ -45,6 +51,10 @@ export class Field {
   }
 
   isEnum(): boolean {
-    return !this.isBuildinType && !this.isRelationType();
+    return this._isEnum;
+  }
+  
+  isUnion(): boolean {
+    return this._isUnion;
   }
 }
