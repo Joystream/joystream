@@ -17,12 +17,6 @@ module.exports = {
     'new-cap': 'off',
     '@typescript-eslint/interface-name-prefix': 'off'
   },
-  extends: base.extends.concat([
-    // disable formatting rules - incase we decide to apply code style rules
-    // to our linter settings.
-    'prettier',
-    'prettier/@typescript-eslint',
-    'prettier/react',
-    'prettier/standard',
-  ])
+  // isolate pioneer from monorepo eslint rules
+  root: true
 };

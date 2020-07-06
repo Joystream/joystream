@@ -17,6 +17,6 @@
   },
   "homepage": "https://github.com/joystream/joystream#readme",
   "peerDependencies": {
-    "eslint": ">= 3"
+    "eslint": ">= 5"
   }
 }
