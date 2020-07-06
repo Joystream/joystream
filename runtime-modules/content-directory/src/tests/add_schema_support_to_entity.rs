@@ -13,3 +13,5 @@ fn add_schema_support_to_entity_success() {
         assert_eq!(second_entity, entity_by_id(SECOND_ENTITY_ID));
     })
 }
+
+

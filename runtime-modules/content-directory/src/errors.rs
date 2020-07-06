@@ -48,7 +48,7 @@ pub const ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_CLASS: &str =
 pub const ERROR_NO_PROPS_IN_CLASS_SCHEMA: &str =
     "Cannot add a class schema with an empty list of properties";
 pub const ERROR_ENTITY_NOT_FOUND: &str = "Entity was not found by id";
-pub const ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY: &str =
+pub const ERROR_SCHEMA_ALREADY_ADDED_TO_THE_ENTITY: &str =
     "Cannot add a schema that is already added to this entity";
 pub const ERROR_PROP_VALUE_DONT_MATCH_TYPE: &str =
     "Some of the provided property values don't match the expected property type";

@@ -54,6 +54,8 @@ pub fn add_entity_schemas_support() -> (Entity<Runtime>, Entity<Runtime>) {
     let second_property = Property::<Runtime>::with_name_and_type(
         (PropertyNameLengthConstraint::get().max() - 1) as usize,
         second_property_type,
+        true,
+        false,
     );
 
     // Add first Schema to the first Class
@@ -144,4 +146,181 @@ pub fn add_entity_schemas_support() -> (Entity<Runtime>, Entity<Runtime>) {
     );
 
     (first_entity, second_entity)
+}
+
+pub enum EntityAccessStateFailureType {
+    EntityNotFound,
+    LeadAuthFailed,
+    MemberAuthFailed,
+    CuratorGroupIsNotActive,
+    CuratorAuthFailed,
+    CuratorNotFoundInCuratorGroup,
+    EntityAccessDenied,
+}
+
+pub fn emulate_entity_access_state_for_failure_case(
+    entity_access_level_failure_type: EntityAccessStateFailureType,
+) -> Actor<Runtime> {
+    // Create class with default permissions
+    assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
+
+    match entity_access_level_failure_type {
+        EntityAccessStateFailureType::EntityNotFound => Actor::Lead,
+        EntityAccessStateFailureType::LeadAuthFailed => {
+            let actor = Actor::Lead;
+
+            // Create entity
+            assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
+            actor
+        }
+        EntityAccessStateFailureType::MemberAuthFailed => {
+            // Update class permissions to force any member be available to create entities
+            assert_ok!(update_class_permissions(
+                LEAD_ORIGIN,
+                FIRST_CLASS_ID,
+                Some(true),
+                None,
+                None,
+                None
+            ));
+
+            let actor = Actor::Member(FIRST_MEMBER_ID);
+
+            // Create entity
+            assert_ok!(create_entity(
+                FIRST_MEMBER_ORIGIN,
+                FIRST_CLASS_ID,
+                actor.clone()
+            ));
+            actor
+        }
+        EntityAccessStateFailureType::CuratorGroupIsNotActive => {
+            // Add curator group
+            assert_ok!(add_curator_group(LEAD_ORIGIN));
+
+            // Add curator to group
+            assert_ok!(add_curator_to_group(
+                LEAD_ORIGIN,
+                FIRST_CURATOR_GROUP_ID,
+                FIRST_CURATOR_ID,
+            ));
+
+            // Add curator group as class maintainer
+            assert_ok!(add_maintainer_to_class(
+                LEAD_ORIGIN,
+                FIRST_CLASS_ID,
+                FIRST_CURATOR_GROUP_ID
+            ));
+
+            // Make curator group active
+            assert_ok!(set_curator_group_status(
+                LEAD_ORIGIN,
+                FIRST_CURATOR_GROUP_ID,
+                true
+            ));
+
+            let actor = Actor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID);
+
+            // Create Entity
+            assert_ok!(create_entity(
+                FIRST_CURATOR_ORIGIN,
+                FIRST_CLASS_ID,
+                actor.clone()
+            ));
+
+            // Make curator group inactive to block it from any entity operations
+            assert_ok!(set_curator_group_status(
+                LEAD_ORIGIN,
+                FIRST_CURATOR_GROUP_ID,
+                false
+            ));
+            actor
+        }
+        EntityAccessStateFailureType::CuratorAuthFailed => {
+            // Add curator group
+            assert_ok!(add_curator_group(LEAD_ORIGIN));
+
+            // Add curator to group
+            assert_ok!(add_curator_to_group(
+                LEAD_ORIGIN,
+                FIRST_CURATOR_GROUP_ID,
+                FIRST_CURATOR_ID,
+            ));
+
+            // Add curator group as class maintainer
+            assert_ok!(add_maintainer_to_class(
+                LEAD_ORIGIN,
+                FIRST_CLASS_ID,
+                FIRST_CURATOR_GROUP_ID
+            ));
+
+            // Make curator group active
+            assert_ok!(set_curator_group_status(
+                LEAD_ORIGIN,
+                FIRST_CURATOR_GROUP_ID,
+                true
+            ));
+
+            let actor = Actor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID);
+
+            // Create Entity
+            assert_ok!(create_entity(
+                FIRST_CURATOR_ORIGIN,
+                FIRST_CLASS_ID,
+                actor.clone()
+            ));
+
+            actor
+        }
+        EntityAccessStateFailureType::CuratorNotFoundInCuratorGroup => {
+            // Add curator group
+            assert_ok!(add_curator_group(LEAD_ORIGIN));
+
+            // Add curator to group
+            assert_ok!(add_curator_to_group(
+                LEAD_ORIGIN,
+                FIRST_CURATOR_GROUP_ID,
+                FIRST_CURATOR_ID,
+            ));
+
+            // Make curator group active
+            assert_ok!(set_curator_group_status(
+                LEAD_ORIGIN,
+                FIRST_CURATOR_GROUP_ID,
+                true
+            ));
+
+            // Add curator group as class maintainer
+            assert_ok!(add_maintainer_to_class(
+                LEAD_ORIGIN,
+                FIRST_CLASS_ID,
+                FIRST_CURATOR_GROUP_ID
+            ));
+
+            // Create entity
+            assert_ok!(create_entity(
+                FIRST_CURATOR_ORIGIN,
+                FIRST_CLASS_ID,
+                Actor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID)
+            ));
+
+            Actor::Curator(FIRST_CURATOR_GROUP_ID, SECOND_CURATOR_ID)
+        }
+        EntityAccessStateFailureType::EntityAccessDenied => {
+            // Update class permissions to force any member be available to create entities
+            assert_ok!(update_class_permissions(
+                LEAD_ORIGIN,
+                FIRST_CLASS_ID,
+                Some(true),
+                None,
+                None,
+                None
+            ));
+
+            // Create entity
+            assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, Actor::Lead));
+
+            Actor::Member(SECOND_MEMBER_ID)
+        }
+    }
 }

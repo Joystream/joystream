@@ -12,6 +12,8 @@ fn transaction_success() {
         let property = Property::<Runtime>::with_name_and_type(
             PropertyNameLengthConstraint::get().max() as usize,
             PropertyType::Single(property_type_reference),
+            true,
+            false,
         );
 
         // Add Schema to the Class
