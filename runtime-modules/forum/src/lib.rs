@@ -790,6 +790,9 @@ decl_module! {
             <ThreadById<T>>::remove(thread.category_id, thread_id);
             <PostById<T>>::remove_prefix(thread_id);
 
+            // decrease category's thread counter
+            <CategoryById<T>>::mutate(category_id, |category| category.num_direct_threads -= 1);
+
             // Store the event
             Self::deposit_event(RawEvent::ThreadDeleted(thread_id));
 

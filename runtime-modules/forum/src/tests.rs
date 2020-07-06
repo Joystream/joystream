@@ -440,6 +440,12 @@ fn delete_thread() {
             Ok(()),
         );
 
+        // check number of category's threads match before delete
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id).num_direct_threads,
+            1
+        );
+
         // regular user will fail to delete the thread
         delete_thread_mock(
             origins[2].clone(),
@@ -469,6 +475,12 @@ fn delete_thread() {
 
         // check thread's post was deleted
         assert!(!<PostById<Runtime>>::exists(thread_id, post_id));
+
+        // check category's thread count was decreased
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id).num_direct_threads,
+            0
+        );
     });
 }
 
