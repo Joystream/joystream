@@ -20,7 +20,7 @@
 
 const debug = require('debug')('joystream:sync')
 
-async function sync_callback(api, storage) {
+async function syncCallback(api, storage) {
 	// The first step is to gather all data objects from chain.
 	// TODO: in future, limit to a configured tranche
 	// FIXME this isn't actually on chain yet, so we'll fake it.
@@ -89,22 +89,22 @@ async function sync_callback(api, storage) {
 	return Promise.all(allChecks)
 }
 
-async function sync_periodic(api, flags, storage) {
+async function syncPeriodic(api, flags, storage) {
 	try {
 		debug('Starting sync run...')
-		await sync_callback(api, storage)
+		await syncCallback(api, storage)
 		debug('sync run complete')
 	} catch (err) {
-		debug(`Error in sync_periodic ${err.stack}`)
+		debug(`Error in syncPeriodic ${err.stack}`)
 	}
 	// always try again
-	setTimeout(sync_periodic, flags.syncPeriod, api, flags, storage)
+	setTimeout(syncPeriodic, flags.syncPeriod, api, flags, storage)
 }
 
-function start_syncing(api, flags, storage) {
-	sync_periodic(api, flags, storage)
+function startSyncing(api, flags, storage) {
+	syncPeriodic(api, flags, storage)
 }
 
 module.exports = {
-	start_syncing,
+	startSyncing,
 }

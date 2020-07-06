@@ -242,8 +242,8 @@ async function start_colossus({ api, publicUrl, port, flags }) {
 	// TODO: check valid url, and valid port number
 	const store = get_storage(api)
 	banner()
-	const { start_syncing } = require('../lib/sync')
-	start_syncing(api, { syncPeriod: SYNC_PERIOD_MS }, store)
+	const { startSyncing } = require('../lib/sync')
+	startSyncing(api, { syncPeriod: SYNC_PERIOD_MS }, store)
 	announce_public_url(api, publicUrl)
 	return start_all_services({ store, api, port, flags }) // dont pass all flags only required values
 }

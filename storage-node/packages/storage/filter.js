@@ -91,7 +91,7 @@ function mimeMatchesAny(accept, reject, provided) {
  * @param {string} mimeType - expected MIME type
  * @return {object} HTTP status code and error message.
  **/
-function filter_func(config, headers, mimeType) {
+function filterFunc(config, headers, mimeType) {
 	const filter = configDefaults(config)
 
 	// Enforce maximum file upload size
@@ -125,4 +125,4 @@ function filter_func(config, headers, mimeType) {
 	}
 }
 
-module.exports = filter_func
+module.exports = filterFunc
