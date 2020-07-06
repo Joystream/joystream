@@ -3,16 +3,19 @@ import { css, Global } from "@emotion/core";
 import emotionNormalize from "emotion-normalize";
 import { theme } from "@joystream/components";
 
-type LayoutProps = { children: React.ReactNode };
-
 const globalStyles = css`
 	${emotionNormalize};
 
 	body {
-		box-sizing: border-box;
 		font-family: ${theme.typography.fonts.base};
 		background: ${theme.colors.black};
 		color: ${theme.colors.gray[500]};
+	}
+
+	*,
+	*::after,
+	*::before {
+		box-sizing: border-box;
 	}
 
 	h1,
@@ -25,11 +28,12 @@ const globalStyles = css`
 		color: ${theme.colors.white};
 	}
 `;
-export default function Layout({ children }: LayoutProps) {
-	return (
-		<>
-			<Global styles={globalStyles} />
-			{children}
-		</>
-	);
-}
+
+const Layout: React.FC = ({ children }) => (
+	<main>
+		<Global styles={globalStyles} />
+		{children}
+	</main>
+);
+
+export default Layout;

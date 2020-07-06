@@ -1,16 +1,16 @@
-import { typography, colors, spacing } from "../../theme"
-import { StyleFn, makeStyles } from "../../utils"
+import { colors, spacing, typography } from "../../theme";
+import { makeStyles, StyleFn } from "../../utils";
 
-export type TabsStyleProps = {}
+export type TabsStyleProps = {};
 
 const container: StyleFn = () => ({
 	fontFamily: typography.fonts.base,
-	color: colors.white
-})
+	color: colors.white,
+});
 
 const tabs: StyleFn = () => ({
-	display: "flex"
-})
+	display: "flex",
+});
 const tab: StyleFn = () => ({
 	flexBasis: "content",
 	padding: `${spacing.m} ${spacing.l}`,
@@ -18,18 +18,18 @@ const tab: StyleFn = () => ({
 	borderBottom: `3px solid ${colors.gray[900]}`,
 	minWidth: "100px",
 	colors: colors.gray[200],
-	textAlign: "center"
-})
+	textAlign: "center",
+});
 
 const activeTab: StyleFn = () => ({
-	...tab({}),
+	...tab({}, {}),
 	color: colors.white,
 	backgroundColor: "transparent",
-	borderBottom: `3px solid ${colors.blue[500]}`
-})
+	borderBottom: `3px solid ${colors.blue[500]}`,
+});
 export const useCSS = (props: TabsStyleProps) => ({
 	container: makeStyles([container])(props),
 	tabs: makeStyles([tabs])(props),
 	tab: makeStyles([tab])(props),
-	activeTab: makeStyles([activeTab])(props)
-})
+	activeTab: makeStyles([activeTab])(props),
+});
