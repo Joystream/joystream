@@ -408,8 +408,20 @@ fn delete_category_need_ancestor_moderation() {
             Ok(()),
         );
 
+        // check number of subcategories is correct
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_1).num_direct_subcategories,
+            1,
+        );
+
         // with permissions to moderate parent category, delete will work
         delete_category_mock(origins[0].clone(), moderators[0], category_id_2, Ok(()));
+
+        // check that subcategory count was decreased
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_1).num_direct_subcategories,
+            0,
+        );
     });
 }
 
