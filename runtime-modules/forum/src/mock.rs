@@ -138,8 +138,6 @@ pub const FORUM_MODERATOR_2_ORIGIN_ID: <Runtime as system::Trait>::AccountId = 1
 
 pub const FORUM_MODERATOR_2_ORIGIN: OriginType = OriginType::Signed(FORUM_MODERATOR_2_ORIGIN_ID);
 
-pub const NOT_REGISTER_MODERATOR_ID: <Runtime as Trait>::ModeratorId = 666;
-
 pub fn good_category_title() -> Vec<u8> {
     b"Great new category".to_vec()
 }
@@ -268,6 +266,7 @@ pub fn create_thread_mock(
 pub fn edit_thread_title_mock(
     origin: OriginType,
     forum_user_id: <Runtime as Trait>::ForumUserId,
+    category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::PostId,
     new_title: Vec<u8>,
     result: Result<(), &'static str>,
@@ -276,13 +275,13 @@ pub fn edit_thread_title_mock(
         TestForumModule::edit_thread_title(
             mock_origin(origin),
             forum_user_id,
+            category_id,
             thread_id,
             new_title.clone(),
         ),
         result
     );
     if result.is_ok() {
-        let category_id = TestForumModule::category_by_thread(thread_id);
         assert_eq!(
             TestForumModule::thread_by_id(category_id, thread_id).title_hash,
             Runtime::calculate_hash(new_title.as_slice()),
@@ -298,16 +297,20 @@ pub fn edit_thread_title_mock(
 pub fn delete_thread_mock(
     origin: OriginType,
     moderator_id: <Runtime as Trait>::ModeratorId,
+    category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::PostId,
     result: Result<(), &'static str>,
 ) {
-    let category_id = <CategoryByThread<Runtime>>::get(thread_id);
     assert_eq!(
-        TestForumModule::delete_thread(mock_origin(origin.clone()), moderator_id, thread_id,),
+        TestForumModule::delete_thread(
+            mock_origin(origin.clone()),
+            moderator_id,
+            category_id,
+            thread_id,
+        ),
         result
     );
     if result.is_ok() {
-        assert!(!<CategoryByThread<Runtime>>::exists(thread_id));
         assert!(!<ThreadById<Runtime>>::exists(category_id, thread_id));
         assert_eq!(
             System::events().last().unwrap().event,
@@ -319,13 +322,20 @@ pub fn delete_thread_mock(
 pub fn create_post_mock(
     origin: OriginType,
     forum_user_id: <Runtime as Trait>::ForumUserId,
+    category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     text: Vec<u8>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::PostId {
     let post_id = TestForumModule::next_post_id();
     assert_eq!(
-        TestForumModule::add_post(mock_origin(origin.clone()), forum_user_id, thread_id, text),
+        TestForumModule::add_post(
+            mock_origin(origin.clone()),
+            forum_user_id,
+            category_id,
+            thread_id,
+            text
+        ),
         result
     );
     if result.is_ok() {
@@ -341,6 +351,7 @@ pub fn create_post_mock(
 pub fn edit_post_text_mock(
     origin: OriginType,
     forum_user_id: <Runtime as Trait>::ForumUserId,
+    category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     post_id: <Runtime as Trait>::PostId,
     new_text: Vec<u8>,
@@ -350,6 +361,8 @@ pub fn edit_post_text_mock(
         TestForumModule::edit_post_text(
             mock_origin(origin),
             forum_user_id,
+            category_id,
+            thread_id,
             post_id,
             new_text.clone(),
         ),
@@ -420,14 +433,20 @@ pub fn set_moderator_category_mock(
 pub fn vote_on_poll_mock(
     origin: OriginType,
     forum_user_id: <Runtime as Trait>::ForumUserId,
+    category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     index: u32,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::ThreadId {
-    let category_id = TestForumModule::category_by_thread(thread_id);
     let thread = TestForumModule::thread_by_id(category_id, thread_id);
     assert_eq!(
-        TestForumModule::vote_on_poll(mock_origin(origin), forum_user_id, thread_id, index),
+        TestForumModule::vote_on_poll(
+            mock_origin(origin),
+            forum_user_id,
+            category_id,
+            thread_id,
+            index
+        ),
         result
     );
     if result.is_ok() {
@@ -473,11 +492,12 @@ pub fn update_category_archival_status_mock(
 pub fn moderate_thread_mock(
     origin: OriginType,
     moderator_id: <Runtime as Trait>::ModeratorId,
+    category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::ThreadId {
     assert_eq!(
-        TestForumModule::moderate_thread(mock_origin(origin), moderator_id, thread_id),
+        TestForumModule::moderate_thread(mock_origin(origin), moderator_id, category_id, thread_id),
         result
     );
     if result.is_ok() {
@@ -492,11 +512,19 @@ pub fn moderate_thread_mock(
 pub fn moderate_post_mock(
     origin: OriginType,
     moderator_id: <Runtime as Trait>::ModeratorId,
+    category_id: <Runtime as Trait>::CategoryId,
+    thread_id: <Runtime as Trait>::ThreadId,
     post_id: <Runtime as Trait>::PostId,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::PostId {
     assert_eq!(
-        TestForumModule::moderate_post(mock_origin(origin), moderator_id, post_id),
+        TestForumModule::moderate_post(
+            mock_origin(origin),
+            moderator_id,
+            category_id,
+            thread_id,
+            post_id
+        ),
         result
     );
     if result.is_ok() {
@@ -554,10 +582,8 @@ pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime
         category_by_id: vec![], // endowed_accounts.iter().cloned().map(|k|(k, 1 << 60)).collect(),
         next_category_id: 1,
         thread_by_id: vec![],
-        category_by_thread: vec![],
         next_thread_id: 1,
         post_by_id: vec![],
-        thread_by_post: vec![],
         next_post_id: 1,
 
         category_by_moderator: vec![],
