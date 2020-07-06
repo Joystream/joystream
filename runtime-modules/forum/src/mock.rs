@@ -11,7 +11,7 @@ use runtime_primitives::{
     traits::{BlakeTwo256, Hash, IdentityLookup},
     Perbill,
 };
-use srml_support::{impl_outer_event, impl_outer_origin, parameter_types, traits::Get};
+use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
 
 impl_outer_origin! {
     pub enum Origin for Runtime {}
