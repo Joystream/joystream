@@ -7,7 +7,7 @@
     "test": "tap --files ts-node/register src/constantinople/tests/proposals/*Test.ts",
     "test-migration": "tap --files src/rome/tests/romeRuntimeUpgradeTest.ts --files src/constantinople/tests/electingCouncilTest.ts",
     "lint": "eslint . --quiet --ext .ts",
-    "prettier": "prettier --write ./src"
+    "prettier-write": "prettier --write ./src"
   },
   "dependencies": {
     "@constantinople/types@npm:@joystream/types": "^0.10.0",
