@@ -20,7 +20,6 @@ export class RelationshipGenerator {
     };
     relatedField.relation = makeRelation('mtm', relatedField.type, field.name);
 
-    this.addRelatedImport(currentObject, relatedObject);
     this.addToVisited(...[currentObject.name.concat(field.name), relatedObject.name.concat(relatedField.name)]);
   }
 
@@ -28,7 +27,6 @@ export class RelationshipGenerator {
     field.relation = makeRelation('otm', field.type, relatedField.name);
     relatedField.relation = makeRelation('mto', relatedField.type, field.name);
 
-    this.addRelatedImport(currentObject, relatedObject);
     this.addToVisited(...[currentObject.name.concat(field.name), relatedObject.name.concat(relatedField.name)]);
   }
 
@@ -45,7 +43,6 @@ export class RelationshipGenerator {
 
     field.relation = makeRelation('mto', field.type, relatedField.name);
 
-    this.addRelatedImport(currentObject, relatedObject);
     this.addToVisited(...[currentObject.name.concat(field.name), relatedObject.name.concat(relatedField.name)]);
   }
 
@@ -54,7 +51,6 @@ export class RelationshipGenerator {
     field.relation.joinColumn = true;
     relatedField.relation = makeRelation('oto', relatedField.type, field.name);
 
-    this.addRelatedImport(currentObject, relatedObject);
     this.addToVisited(...[currentObject.name.concat(field.name), relatedObject.name.concat(relatedField.name)]);
   }
 
@@ -64,11 +60,6 @@ export class RelationshipGenerator {
 
   isVisited(f: Field, o: ObjectType): boolean {
     return this._visited.includes(o.name.concat(f.name));
-  }
-
-  addRelatedImport(o1: ObjectType, o2: ObjectType): void {
-    o1.relatedEntityImports.add(o2.name);
-    o2.relatedEntityImports.add(o1.name);
   }
 
   listTypeWithNoDerivedDirective(field: Field, currentObject: ObjectType): void {

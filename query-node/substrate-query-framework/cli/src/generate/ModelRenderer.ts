@@ -97,18 +97,21 @@ export class ModelRenderer extends AbstractRenderer {
   }
 
   withImportProps(): GeneratorContext {
-    const relatedEntityImports: string[] = [];
-    this.objType.relatedEntityImports.forEach(entityName => {
-      relatedEntityImports.push(
-        path.join(
-          `import { ${entityName} } from  '..`,
-          utils.kebabCase(entityName),
-          `${utils.kebabCase(entityName)}.model'`
+    const relatedEntityImports: Set<string> = new Set();
+
+    this.objType.fields
+      .filter(f => f.relation)
+      .forEach(f =>
+        relatedEntityImports.add(
+          path.join(
+            `import { ${f.relation?.columnType} } from  '..`,
+            utils.kebabCase(f.relation?.columnType),
+            `${utils.kebabCase(f.relation?.columnType)}.model'`
+          )
         )
       );
-    });
     return {
-      relatedEntityImports,
+      relatedEntityImports: Array.from(relatedEntityImports.values()),
     };
   }
 

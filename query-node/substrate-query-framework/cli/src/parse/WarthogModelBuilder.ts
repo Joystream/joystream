@@ -97,7 +97,6 @@ export class WarthogModelBuilder {
       description: o.description?.value,
       isInterface: o.kind === 'InterfaceTypeDefinition',
       interfaces: o.kind === 'ObjectTypeDefinition' ? this.getInterfaces(o) : [],
-      relatedEntityImports: new Set<string>(),
     } as ObjectType;
   }
 
