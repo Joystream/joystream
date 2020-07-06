@@ -8,14 +8,12 @@ import HomeView from "app/src/views/HomeView";
 
 export default function App() {
 	return (
-		<main>
-			<Provider store={store}>
-				<Layout>
-					<Router primary={false}>
-						<HomeView default />
-					</Router>
-				</Layout>
-			</Provider>
-		</main>
+		<Provider store={store}>
+			<Layout>
+				<Router primary={false}>
+					<HomeView default />
+				</Router>
+			</Layout>
+		</Provider>
 	);
 }

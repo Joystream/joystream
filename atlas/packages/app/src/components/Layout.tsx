@@ -1,13 +1,11 @@
 import React from "react";
 import { GlobalStyle } from "@joystream/components";
 
-type LayoutProps = { children: React.ReactNode };
+const Layout: React.FC = ({ children }) => (
+	<main>
+		<GlobalStyle />
+		{children}
+	</main>
+);
 
-export default function Layout({ children }: LayoutProps) {
-	return (
-		<>
-			<GlobalStyle />
-			{children}
-		</>
-	);
-}
+export default Layout;

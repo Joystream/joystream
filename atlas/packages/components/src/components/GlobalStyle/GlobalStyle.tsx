@@ -7,10 +7,15 @@ const globalStyles = css`
 	${emotionNormalize};
 
 	body {
-		box-sizing: border-box;
 		font-family: ${typography.fonts.base};
 		background: ${colors.black};
 		color: ${colors.gray[500]};
+	}
+
+	*,
+	*::after,
+	*::before {
+		box-sizing: border-box;
 	}
 
 	h1,

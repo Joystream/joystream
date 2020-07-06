@@ -1,4 +1,5 @@
 import * as theme from "./theme";
+import * as utils from "./utils";
 
 export { default as Button } from "./components/Button";
 export { default as Carousel } from "./components/Carousel";
@@ -19,6 +20,14 @@ export { default as VideoPreview } from "./components/VideoPreview";
 export { default as VideoPlayer } from "./components/VideoPlayer";
 export { default as SeriesPreview } from "./components/SeriesPreview";
 export { default as ChannelPreview } from "./components/ChannelPreview";
+export { default as HamburgerButton } from "./components/HamburgerButton";
 export { default as Gallery } from "./components/Gallery";
+export { default as BarsIcon } from "../assets/bars.svg";
+export { default as HomeIcon } from "../assets/home.svg";
+export { default as BinocularIcon } from "../assets/binocular.svg";
+export { default as BrowseIcon } from "../assets/browse.svg";
+export { default as BooksIcon } from "../assets/books.svg";
+export { default as Sidenav, SIDENAV_WIDTH, EXPANDED_SIDENAV_WIDTH, NavItem } from "./components/Sidenav";
 export { default as GlobalStyle } from "./components/GlobalStyle";
+export { utils };
 export { theme };

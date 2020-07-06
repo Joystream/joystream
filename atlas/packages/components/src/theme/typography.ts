@@ -16,7 +16,7 @@ export default {
 		h2: "2.5rem",
 		h3: "2rem",
 		h4: "1.5rem",
-		h5: "1.1rem",
+		h5: "1.25rem",
 		h6: "1rem",
 		subtitle1: "1.1rem",
 		subtitle2: "0.9rem",
