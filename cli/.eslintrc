@@ -1,7 +1,0 @@
-{
-  "extends": [
-    "@joystream/eslint-config",
-    "oclif",
-    "oclif-typescript"
-  ]
-}

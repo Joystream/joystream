@@ -1,5 +1,5 @@
 const base = require('@polkadot/dev-react/config/eslint');
-
+console.log('Using eslintrc from pioneer folder')
 // add override for any (a metric ton of them, initial conversion)
 module.exports = {
   ...base,
@@ -16,5 +16,13 @@ module.exports = {
     'react/prop-types': 'off',
     'new-cap': 'off',
     '@typescript-eslint/interface-name-prefix': 'off'
-  }
+  },
+  extends: base.extends.concat([
+    // disable formatting rules - incase we decide to apply code style rules
+    // to our linter settings.
+    'prettier',
+    'prettier/@typescript-eslint',
+    'prettier/react',
+    'prettier/standard',
+  ])
 };

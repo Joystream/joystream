@@ -17,14 +17,22 @@ module.exports = {
   extends: [
     'plugin:react/recommended',
     'standard',
-    'plugin:jsx-a11y/recommended',
-    // Disable formatting related es-linting rules
-    'plugin:prettier/recommended',
-    'prettier/react',
-    'prettier/standard',
+
+    // jsx-a11y conflicts with pioneer rules. At time of writing
+    // 84 problems -> We want to avoid as much as possible changing code in pioneer at least
+    // from polkadot-js code base to make it possible to pull from upstream as easily as possible.
+    // So Leaving out of for now. But it is recommended to add to all joystream react projects
+    // 'plugin:jsx-a11y/recommended',
+
+    // Turns off all rules that are unnecessary or might conflict with Prettier.
+    // Allows us to do formatting separately from linting.
+    // 'prettier',
+    // 'prettier/@typescript-eslint',
+    // 'prettier/react',
+    // 'prettier/standard',
   ],
   plugins: [],
   settings: {
     version: 'detect',
   },
-};
+}
