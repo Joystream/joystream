@@ -266,6 +266,89 @@ fn update_category_archival_status_category_exists() {
     });
 }
 
+#[test]
+// test category can be deleted
+fn delete_category() {
+    let config = default_genesis_config();
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    build_test_externalities(config).execute_with(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        assert!(<CategoryById<Runtime>>::exists(category_id));
+        delete_category_mock(origin.clone(), forum_lead, category_id, Ok(()));
+        assert!(!<CategoryById<Runtime>>::exists(category_id));
+    });
+}
+
+#[test]
+// test category can't be deleted when it has subcategories
+fn delete_category_non_empty_subcategories() {
+    let config = default_genesis_config();
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    build_test_externalities(config).execute_with(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        create_category_mock(
+            origin.clone(),
+            Some(category_id),
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        delete_category_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            Err(ERROR_CATEGORY_NOT_EMPTY_THREADS),
+        );
+    });
+}
+
+#[test]
+// test category can't be deleted when it contains threads
+fn delete_category_non_empty_threads() {
+    let config = default_genesis_config();
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    build_test_externalities(config).execute_with(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        delete_category_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            Err(ERROR_CATEGORY_NOT_EMPTY_CATEGORIES),
+        );
+    });
+}
+
 /*
  ** create_thread
  */

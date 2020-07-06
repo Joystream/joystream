@@ -351,6 +351,8 @@ const ERROR_ANCESTOR_CATEGORY_IMMUTABLE: &str =
     "Ancestor category immutable, i.e. deleted or archived";
 const ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED: &str = "Maximum valid category depth exceeded.";
 const ERROR_CATEGORY_DOES_NOT_EXIST: &str = "Category does not exist.";
+const ERROR_CATEGORY_NOT_EMPTY_THREADS: &str = "Category still contains some threads.";
+const ERROR_CATEGORY_NOT_EMPTY_CATEGORIES: &str = "Category still contains some subcategories.";
 
 // Errors about poll.
 const ERROR_POLL_ALTERNATIVES_TOO_SHORT: &str = "Poll items number too short.";
@@ -562,6 +564,9 @@ decl_event!(
         /// The second argument reflects the new archival status of the category.
         CategoryUpdated(CategoryId, bool),
 
+        // A category was deleted
+        CategoryDeleted(CategoryId),
+
         /// A thread with given id was created.
         ThreadCreated(ThreadId),
 
@@ -742,6 +747,21 @@ decl_module! {
 
             // Generate event
             Self::deposit_event(RawEvent::CategoryUpdated(category_id, new_archival_status));
+
+            Ok(())
+        }
+
+        fn delete_category(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
+            Self::ensure_can_delete_category(origin, &moderator_id, &category_id)?;
+
+            // Delete thread
+            <CategoryById<T>>::remove(category_id);
+
+            // Store the event
+            Self::deposit_event(RawEvent::CategoryDeleted(category_id));
 
             Ok(())
         }
@@ -1412,6 +1432,29 @@ impl<T: Trait> Module<T> {
 
             Self::_build_category_tree_path(&parent_category_id, path);
         }
+    }
+
+    fn ensure_can_delete_category(
+        origin: T::Origin,
+        moderator_id: &T::ModeratorId,
+        category_id: &T::CategoryId,
+    ) -> Result<(), &'static str> {
+        let who = Self::ensure_is_moderator(origin, moderator_id)?;
+
+        Self::ensure_can_moderate_category(&who, moderator_id, *category_id)?;
+
+        let category = <CategoryById<T>>::get(category_id);
+
+        ensure!(
+            category.num_direct_threads == 0,
+            ERROR_CATEGORY_NOT_EMPTY_THREADS,
+        );
+        ensure!(
+            category.num_direct_subcategories == 0,
+            ERROR_CATEGORY_NOT_EMPTY_CATEGORIES,
+        );
+
+        Ok(())
     }
 
     /// check if an account can moderate a category.
