@@ -216,7 +216,9 @@ use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 pub use runtime_io::clear_prefix;
 use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
-use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
+use srml_support::{
+    decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter,
+};
 
 mod mock;
 mod tests;
@@ -274,16 +276,7 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + From<u64>
         + Into<u64>;
 
-    type MaxCategoryDepth: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq
-        + From<u64>
-        + Into<u64>;
+    type MaxCategoryDepth: Get<u64>;
 
     fn is_lead(account_id: &<Self as system::Trait>::AccountId) -> bool;
     fn is_forum_member(
@@ -293,7 +286,6 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
     fn is_moderator(account_id: &Self::AccountId, moderator_id: &Self::ModeratorId) -> bool;
 
     fn calculate_hash(text: &[u8]) -> Self::Hash;
-    fn get_max_category_depth() -> Self::MaxCategoryDepth;
 }
 
 /*
@@ -1233,7 +1225,7 @@ impl<T: Trait> Module<T> {
         let category_tree_path =
             Self::ensure_valid_category_and_build_category_tree_path(parent_category_id)?;
 
-        let max_category_depth: u64 = T::get_max_category_depth().into();
+        let max_category_depth: u64 = T::MaxCategoryDepth::get();
 
         // Check if max depth reached
         if category_tree_path.len() as u64 >= max_category_depth {

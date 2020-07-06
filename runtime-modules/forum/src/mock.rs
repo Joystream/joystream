@@ -11,7 +11,7 @@ use runtime_primitives::{
     traits::{BlakeTwo256, Hash, IdentityLookup},
     Perbill,
 };
-use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use srml_support::{impl_outer_event, impl_outer_origin, parameter_types, traits::Get};
 
 impl_outer_origin! {
     pub enum Origin for Runtime {}
@@ -63,6 +63,10 @@ impl timestamp::Trait for Runtime {
     type MinimumPeriod = MinimumPeriod;
 }
 
+parameter_types! {
+    pub const MaxCategoryDepth: u64 = 20;
+}
+
 impl Trait for Runtime {
     type Event = TestEvent;
     type ForumUserId = u64;
@@ -70,7 +74,7 @@ impl Trait for Runtime {
     type CategoryId = u64;
     type ThreadId = u64;
     type PostId = u64;
-    type MaxCategoryDepth = u64;
+    type MaxCategoryDepth = MaxCategoryDepth;
 
     fn is_lead(account_id: &<Self as system::Trait>::AccountId) -> bool {
         *account_id == FORUM_LEAD_ORIGIN_ID
@@ -95,10 +99,6 @@ impl Trait for Runtime {
 
     fn calculate_hash(text: &[u8]) -> Self::Hash {
         Self::Hashing::hash(text)
-    }
-
-    fn get_max_category_depth() -> Self::MaxCategoryDepth {
-        5
     }
 }
 

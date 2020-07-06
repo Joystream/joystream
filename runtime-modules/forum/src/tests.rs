@@ -183,7 +183,7 @@ fn create_category_depth() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
     build_test_externalities(config).execute_with(|| {
-        let max_depth = <Runtime as Trait>::get_max_category_depth();
+        let max_depth = <Runtime as Trait>::MaxCategoryDepth::get();
         for i in 0..(max_depth + 1) {
             let parent_category_id = match i {
                 0 => None,
