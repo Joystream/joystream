@@ -6,6 +6,7 @@ import {
 	CoverDurationOverlay,
 	CoverHoverOverlay,
 	CoverImage,
+	CoverPlayIcon,
 	InfoContainer,
 	MetaText,
 	ProgressBar,
@@ -14,7 +15,6 @@ import {
 	TextContainer,
 	TitleHeader,
 } from "./VideoPreview.styles";
-import Play from "../../../assets/play.svg";
 
 type VideoPreviewProps = {
 	title: string;
@@ -78,7 +78,7 @@ const VideoPreview: React.FC<Partial<VideoPreviewProps>> = ({
 					</ProgressOverlay>
 				)}
 				<CoverHoverOverlay>
-					<Play />
+					<CoverPlayIcon />
 				</CoverHoverOverlay>
 			</CoverContainer>
 			<InfoContainer>

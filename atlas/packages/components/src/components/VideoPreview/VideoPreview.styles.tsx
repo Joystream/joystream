@@ -1,6 +1,7 @@
 import styled from "@emotion/styled";
 import { colors, spacing, typography } from "./../../theme";
 import Avatar from "components/Avatar";
+import Play from "../../../assets/play.svg";
 
 const HOVER_BORDER_SIZE = "2px";
 
@@ -47,10 +48,16 @@ export const CoverHoverOverlay = styled.div`
 	transition: opacity 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
 
 	border: ${HOVER_BORDER_SIZE} solid ${colors.white};
+	background: linear-gradient(180deg, #000000 0%, rgba(0, 0, 0, 0) 100%);
 
 	display: flex;
 	justify-content: center;
 	align-items: center;
+`;
+
+export const CoverPlayIcon = styled(Play)`
+	transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+	transform: translateY(40px);
 `;
 
 export const ProgressOverlay = styled.div`
@@ -86,6 +93,10 @@ export const Container = styled.div<ContainerProps>`
 
 					${CoverHoverOverlay} {
 						opacity: 1;
+					}
+					
+					${CoverPlayIcon} {
+						transform: translateY(0);
 					}
 
 					${ProgressOverlay} {
