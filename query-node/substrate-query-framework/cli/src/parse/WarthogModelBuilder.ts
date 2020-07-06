@@ -54,7 +54,6 @@ export class WarthogModelBuilder {
     }
 
     field.isList = true;
-    field.isBuildinType = this._isBuildinType(field.type);
     return field;
   }
 
@@ -190,7 +189,7 @@ export class WarthogModelBuilder {
     this.generateObjectTypes();
     this.genereateQueries();
 
-    DerivedFrom.validateDerivedFields(this._model); // Call it before generateSQLRelationships()
+    DerivedFrom.validateDerivedFields(this._model);
     new RelationshipGenerator(this._model).generate();
 
     return this._model;

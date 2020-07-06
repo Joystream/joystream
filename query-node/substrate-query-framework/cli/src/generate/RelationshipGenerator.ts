@@ -130,11 +130,11 @@ export class RelationshipGenerator {
   }
 
   generate(): void {
-    const enumNames = this.model.enums.map(e => e.name);
+    const entityNames = this.model.types.map(t => t.name);
 
     this.model.types.forEach(currentObject => {
       for (const field of currentObject.fields) {
-        if (field.isBuildinType || this.isVisited(field, currentObject) || enumNames.includes(field.type)) continue;
+        if (!entityNames.includes(field.type) || this.isVisited(field, currentObject)) continue;
 
         if (field.isList) {
           return field.derivedFrom

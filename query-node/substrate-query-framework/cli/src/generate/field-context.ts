@@ -89,7 +89,6 @@ export function withFieldTypeGuardProps(f: Field): GeneratorContext {
   const is: GeneratorContext = {};
   is['array'] = f.isArray();
   is['scalar'] = f.isScalar();
-  is['refType'] = f.isRelationType();
   is['enum'] = f.isEnum();
 
   ['mto', 'oto', 'otm', 'mtm'].map(s => (is[s] = f.relation?.type === s));
@@ -164,12 +163,6 @@ export function withImport(f: Field): GeneratorContext {
   return {
     className: f.type,
     ...withRelativePathForEnum(),
-  };
-}
-
-export function withEntityRelationImports(entity: ObjectType): GeneratorContext {
-  return {
-    relatedEntityImports: entity.relatedEntityImports,
   };
 }
 
