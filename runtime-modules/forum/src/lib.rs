@@ -333,7 +333,6 @@ const ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT: &str = "Moderator id not match its a
 // Errors about thread.
 const ERROR_ACCOUNT_DOES_NOT_MATCH_THREAD_AUTHOR: &str = "Thread not authored by the given user.";
 const ERROR_THREAD_DOES_NOT_EXIST: &str = "Thread does not exist";
-const ERROR_THREAD_WITH_WRONG_CATEGORY_ID: &str = "thread and its category not match.";
 
 // Errors about post.
 const ERROR_POST_DOES_NOT_EXIST: &str = "Post does not exist.";
@@ -503,13 +502,13 @@ decl_storage! {
         pub NextCategoryId get(next_category_id) config(): T::CategoryId;
 
         /// Map thread identifier to corresponding thread.
-        pub ThreadById get(thread_by_id) config(): map T::ThreadId => Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>;
+        pub ThreadById get(thread_by_id) config(): double_map T::CategoryId, blake2_256(T::ThreadId) => Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>;
 
         /// Thread identifier value to be used for next Thread in threadById.
         pub NextThreadId get(next_thread_id) config(): T::ThreadId;
 
         /// Map post identifier to corresponding post.
-        pub PostById get(post_by_id) config(): map T::PostId => Post<T::ForumUserId, T::ThreadId, T::Hash>;
+        pub PostById get(post_by_id) config(): double_map T::ThreadId, blake2_256(T::PostId) => Post<T::ForumUserId, T::ThreadId, T::Hash>;
 
         /// Post identifier value to be used for for next post created.
         pub NextPostId get(next_post_id) config(): T::PostId;
@@ -567,6 +566,9 @@ decl_event!(
         /// A thread with given id was moderated.
         ThreadTitleUpdated(ThreadId),
 
+        // A thread was deleted.
+        ThreadDeleted(ThreadId),
+
         /// Post with given id was created.
         PostAdded(PostId),
 
@@ -602,16 +604,13 @@ decl_module! {
             clear_prefix(b"Forum ForumUserById");
 
             // Not signed by forum LEAD
-            let who = Self::ensure_is_forum_lead(origin)?;
+            Self::ensure_is_forum_lead(origin)?;
 
             // ensure category exists.
             ensure!(
                 <CategoryById<T>>::exists(&category_id),
                 ERROR_CATEGORY_DOES_NOT_EXIST
             );
-
-            // Get moderator id.
-            Self::ensure_is_moderator_account(&who, &moderator_id)?;
 
             if new_value {
                 <CategoryByModerator<T>>::insert(category_id, moderator_id, ());
@@ -761,7 +760,7 @@ decl_module! {
             Ok(())
         }
 
-        fn edit_thread_title(origin, forum_user_id: T::ForumUserId, thread_id: T::ThreadId, new_title: Vec<u8>) -> dispatch::Result {
+        fn edit_thread_title(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, thread_id: T::ThreadId, new_title: Vec<u8>) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -769,20 +768,39 @@ decl_module! {
             Self::ensure_is_forum_user(origin, &forum_user_id)?;
 
             // Ensure forum user is author of the thread
-            Self::ensure_is_thread_author(&thread_id, &forum_user_id)?;
+            let thread = Self::ensure_is_thread_author(&category_id, &thread_id, &forum_user_id)?;
 
             // Store the event
             Self::deposit_event(RawEvent::ThreadTitleUpdated(thread_id));
 
             // Update thread title
             let title_hash = T::calculate_hash(&new_title);
-            <ThreadById<T>>::mutate(thread_id, |thread| thread.title_hash = title_hash);
+            <ThreadById<T>>::mutate(thread.category_id, thread_id, |thread| thread.title_hash = title_hash);
+
+            Ok(())
+        }
+
+        fn delete_thread(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, thread_id: T::ThreadId) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
+            let thread = Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
+
+            // Delete thread
+            <ThreadById<T>>::remove(thread.category_id, thread_id);
+            <PostById<T>>::remove_prefix(thread_id);
+
+            // decrease category's thread counter
+            <CategoryById<T>>::mutate(category_id, |category| category.num_direct_threads -= 1);
+
+            // Store the event
+            Self::deposit_event(RawEvent::ThreadDeleted(thread_id));
 
             Ok(())
         }
 
         /// submit a poll
-        fn vote_on_poll(origin, forum_user_id: T::ForumUserId, thread_id: T::ThreadId, index: u32) -> dispatch::Result {
+        fn vote_on_poll(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, thread_id: T::ThreadId, index: u32) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -790,7 +808,7 @@ decl_module! {
             Self::ensure_is_forum_user(origin, &forum_user_id)?;
 
             // Get thread
-            let thread = Self::ensure_thread_exists(&thread_id)?;
+            let thread = Self::ensure_thread_exists(&category_id, &thread_id)?;
 
             // Make sure poll exist
             Self::ensure_vote_is_valid(&thread, index)?;
@@ -811,7 +829,7 @@ decl_module! {
                 .collect();
 
             // Update thread with one object
-            <ThreadById<T>>::mutate(thread_id, |value| {
+            <ThreadById<T>>::mutate(thread.category_id, thread_id, |value| {
                 *value = Thread {
                     poll: Some( Poll {
                         poll_alternatives: new_poll_alternatives,
@@ -828,7 +846,7 @@ decl_module! {
         }
 
         /// Moderate thread
-        fn moderate_thread(origin, moderator_id: T::ModeratorId, thread_id: T::ThreadId) -> dispatch::Result {
+        fn moderate_thread(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, thread_id: T::ThreadId) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -836,7 +854,7 @@ decl_module! {
             let who = Self::ensure_is_moderator(origin, &moderator_id)?;
 
             // Get thread
-            let thread = Self::ensure_thread_exists(&thread_id)?;
+            let thread = Self::ensure_thread_exists(&category_id, &thread_id)?;
 
             // ensure origin can moderate category
             Self::ensure_can_moderate_category(&who, &moderator_id, thread.category_id)?;
@@ -857,7 +875,7 @@ decl_module! {
         }
 
         /// Edit post text
-        fn add_post(origin, forum_user_id: T::ForumUserId, thread_id: T::ThreadId, text: Vec<u8>) -> dispatch::Result {
+        fn add_post(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, thread_id: T::ThreadId, text: Vec<u8>) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -872,7 +890,7 @@ decl_module! {
             let next_post_id = <NextPostId<T>>::get();
 
             // Add new post
-            Self::add_new_post(thread_id, text.as_slice(), forum_user_id)?;
+            Self::add_new_post(category_id, thread_id, text.as_slice(), forum_user_id)?;
 
             // Generate event
             Self::deposit_event(RawEvent::PostAdded(next_post_id));
@@ -881,7 +899,7 @@ decl_module! {
         }
 
         /// like or unlike a post.
-        fn react_post(origin, forum_user_id: T::ForumUserId, post_id: T::PostId, react: PostReaction) -> dispatch::Result {
+        fn react_post(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId, react: PostReaction) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -889,7 +907,7 @@ decl_module! {
             Self::ensure_is_forum_user(origin, &forum_user_id)?;
 
             // Make sure there exists a mutable post with post id `post_id`
-            let _ = Self::ensure_post_is_mutable(&post_id)?;
+            let _ = Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?;
 
             // If react is meaningful
             if react == PostReaction::NonReacton {
@@ -909,7 +927,7 @@ decl_module! {
         }
 
         /// Edit post text
-        fn edit_post_text(origin, forum_user_id: T::ForumUserId, post_id: T::PostId, new_text: Vec<u8>) -> dispatch::Result {
+        fn edit_post_text(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId, new_text: Vec<u8>) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -917,14 +935,14 @@ decl_module! {
             Self::ensure_is_forum_user(origin, &forum_user_id)?;
 
             // Make sure there exists a mutable post with post id `post_id`
-            let post = Self::ensure_post_is_mutable(&post_id)?;
+            let post = Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?;
 
             // Signer does not match creator of post with identifier postId
             ensure!(post.author_id == forum_user_id, ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR);
 
             // Update post text
             let text_hash = T::calculate_hash(&new_text);
-            <PostById<T>>::mutate(post_id, |p| p.text_hash = text_hash);
+            <PostById<T>>::mutate(post.thread_id, post_id, |p| p.text_hash = text_hash);
 
             // Generate event
             Self::deposit_event(RawEvent::PostTextUpdated(post_id));
@@ -933,7 +951,7 @@ decl_module! {
         }
 
         /// Moderate post
-        fn moderate_post(origin, moderator_id: T::ModeratorId, post_id: T::PostId) -> dispatch::Result {
+        fn moderate_post(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -941,13 +959,13 @@ decl_module! {
             let who = Self::ensure_is_moderator(origin, &moderator_id)?;
 
             // Make sure post exists and is mutable
-            let post = Self::ensure_post_is_mutable(&post_id)?;
+            let post = Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?;
 
             // make sure origin can moderate the category
-            let thread = Self::ensure_thread_exists(&post.thread_id)?;
+            Self::ensure_thread_exists(&category_id, &post.thread_id)?;
 
             // ensure the moderator can moderate the category
-            Self::ensure_can_moderate_category(&who, &moderator_id, thread.category_id)?;
+            Self::ensure_can_moderate_category(&who, &moderator_id, category_id)?;
 
             // Generate event
             Self::deposit_event(RawEvent::PostModerated(post_id));
@@ -968,7 +986,7 @@ decl_module! {
 
             // Ensure all thread id valid and is under the category
             for item in &stickied_ids {
-                Self::ensure_thread_belongs_to_category(*item, category_id)?;
+                Self::ensure_thread_exists(&category_id, item)?;
             }
 
             // Update category
@@ -1020,7 +1038,7 @@ impl<T: Trait> Module<T> {
         let new_thread_id = <NextThreadId<T>>::get();
 
         // Add inital post to thread
-        let _ = Self::add_new_post(new_thread_id, text, author_id);
+        let _ = Self::add_new_post(category_id, new_thread_id, text, author_id);
 
         // Build a new thread
         let new_thread = Thread {
@@ -1031,7 +1049,9 @@ impl<T: Trait> Module<T> {
         };
 
         // Store thread
-        <ThreadById<T>>::mutate(new_thread_id, |value| *value = new_thread.clone());
+        <ThreadById<T>>::mutate(category_id, new_thread_id, |value| {
+            *value = new_thread.clone()
+        });
 
         // Update next thread id
         <NextThreadId<T>>::mutate(|n| *n += One::one());
@@ -1048,6 +1068,7 @@ impl<T: Trait> Module<T> {
     // Method not check the forum user. The extrinsic call it should check if forum id is valid.
     // If other module call it, could set the forum user id as zero, which not used by forum module.
     pub fn add_new_post(
+        category_id: T::CategoryId,
         thread_id: T::ThreadId,
         text: &[u8],
         author_id: T::ForumUserId,
@@ -1056,7 +1077,7 @@ impl<T: Trait> Module<T> {
         Self::ensure_data_migration_done()?;
 
         // Make sure thread exists and is mutable
-        let thread = Self::ensure_thread_is_mutable(&thread_id)?;
+        let thread = Self::ensure_thread_is_mutable(&category_id, &thread_id)?;
 
         // Get path from parent to root of category tree.
         let category_tree_path =
@@ -1076,7 +1097,7 @@ impl<T: Trait> Module<T> {
         };
 
         // Store post
-        <PostById<T>>::mutate(new_post_id, |value| *value = new_post.clone());
+        <PostById<T>>::mutate(thread_id, new_post_id, |value| *value = new_post.clone());
 
         // Update next post id
         <NextPostId<T>>::mutate(|n| *n += One::one());
@@ -1115,32 +1136,36 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_post_is_mutable(
+        category_id: &T::CategoryId,
+        thread_id: &T::ThreadId,
         post_id: &T::PostId,
     ) -> Result<Post<T::ForumUserId, T::ThreadId, T::Hash>, &'static str> {
         // Make sure post exists
-        let post = Self::ensure_post_exists(post_id)?;
+        let post = Self::ensure_post_exists(thread_id, post_id)?;
 
         // and make sure thread is mutable
-        Self::ensure_thread_is_mutable(&post.thread_id)?;
+        Self::ensure_thread_is_mutable(category_id, thread_id)?;
 
         Ok(post)
     }
 
     fn ensure_post_exists(
+        thread_id: &T::ThreadId,
         post_id: &T::PostId,
     ) -> Result<Post<T::ForumUserId, T::ThreadId, T::Hash>, &'static str> {
-        if <PostById<T>>::exists(post_id) {
-            Ok(<PostById<T>>::get(post_id))
-        } else {
-            Err(ERROR_POST_DOES_NOT_EXIST)
+        if !<PostById<T>>::exists(thread_id, post_id) {
+            return Err(ERROR_POST_DOES_NOT_EXIST);
         }
+
+        Ok(<PostById<T>>::get(thread_id, post_id))
     }
 
     fn ensure_thread_is_mutable(
+        category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
     ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>, &'static str> {
         // Make sure thread exists
-        let thread = Self::ensure_thread_exists(&thread_id)?;
+        let thread = Self::ensure_thread_exists(category_id, thread_id)?;
 
         // and corresponding category is mutable
         Self::ensure_catgory_is_mutable(thread.category_id)?;
@@ -1149,26 +1174,28 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_thread_exists(
+        category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
     ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>, &'static str> {
-        if <ThreadById<T>>::exists(thread_id) {
-            Ok(<ThreadById<T>>::get(thread_id))
-        } else {
-            Err(ERROR_THREAD_DOES_NOT_EXIST)
+        if !<ThreadById<T>>::exists(category_id, thread_id) {
+            return Err(ERROR_THREAD_DOES_NOT_EXIST);
         }
+
+        Ok(<ThreadById<T>>::get(category_id, thread_id))
     }
 
     fn ensure_is_thread_author(
+        category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
         forum_user_id: &T::ForumUserId,
-    ) -> Result<(), &'static str> {
-        let thread = Self::ensure_thread_exists(&thread_id)?;
+    ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>, &'static str> {
+        let thread = Self::ensure_thread_exists(category_id, thread_id)?;
 
         if thread.author_id != *forum_user_id {
             return Err(ERROR_ACCOUNT_DOES_NOT_MATCH_THREAD_AUTHOR);
         }
 
-        Ok(())
+        Ok(thread)
     }
 
     /// Ensure forum user is lead
@@ -1222,6 +1249,23 @@ impl<T: Trait> Module<T> {
 
         ensure!(is_moderator, ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT);
         Ok(())
+    }
+
+    // Ensure moderator can manipulate thread.
+    fn ensure_can_moderate_thread(
+        origin: T::Origin,
+        moderator_id: &T::ModeratorId,
+        category_id: &T::CategoryId,
+        thread_id: &T::ThreadId,
+    ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>, &'static str> {
+        // Check that account is forum member
+        let who = Self::ensure_is_moderator(origin, &moderator_id)?;
+
+        let thread = Self::ensure_thread_exists(category_id, thread_id)?;
+
+        Self::ensure_can_moderate_category(&who, moderator_id, thread.category_id)?;
+
+        Ok(thread)
     }
 
     fn ensure_catgory_is_mutable(category_id: T::CategoryId) -> dispatch::Result {
@@ -1353,28 +1397,6 @@ impl<T: Trait> Module<T> {
             } else {
                 Ok(())
             }
-        }
-    }
-
-    /// Check the thread and category exists and thread in the category
-    fn ensure_thread_belongs_to_category(
-        thread_id: T::ThreadId,
-        category_id: T::CategoryId,
-    ) -> Result<(), &'static str> {
-        // Ensure thread exists
-        Self::ensure_thread_exists(&thread_id)?;
-
-        // ensure category exists.
-        ensure!(
-            <CategoryById<T>>::exists(category_id),
-            ERROR_CATEGORY_DOES_NOT_EXIST
-        );
-
-        // Ensure thread belongs to the category
-        if <ThreadById<T>>::get(thread_id).category_id == category_id {
-            Ok(())
-        } else {
-            Err(ERROR_THREAD_WITH_WRONG_CATEGORY_ID)
         }
     }
 

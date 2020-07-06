@@ -88,48 +88,6 @@ fn update_category_membership_of_moderator_category() {
 }
 
 #[test]
-// test case for check if account id registered as moderator
-fn update_category_membership_of_moderator_account_id() {
-    let config = default_genesis_config();
-    let forum_lead = FORUM_LEAD_ORIGIN_ID;
-    let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(default_genesis_config()).execute_with(|| {
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-        update_category_membership_of_moderator_mock(
-            origin.clone(),
-            NOT_REGISTER_MODERATOR_ID,
-            category_id,
-            true,
-            Err(ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT),
-        );
-    });
-
-    build_test_externalities(config).execute_with(|| {
-        let moderator_id = forum_lead;
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-        update_category_membership_of_moderator_mock(
-            origin,
-            moderator_id,
-            category_id,
-            true,
-            Ok(()),
-        );
-    });
-}
-
-#[test]
 // test case for check if origin is forum lead
 fn create_category_origin() {
     let origins = vec![FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
@@ -411,6 +369,7 @@ fn edit_thread_title() {
         edit_thread_title_mock(
             origins[0].clone(),
             forum_users[0],
+            category_id,
             thread_id,
             good_thread_new_title(),
             Ok(()),
@@ -420,9 +379,107 @@ fn edit_thread_title() {
         edit_thread_title_mock(
             origins[1].clone(),
             forum_users[1],
+            category_id,
             thread_id,
             good_thread_new_title(),
             Err(ERROR_ACCOUNT_DOES_NOT_MATCH_THREAD_AUTHOR),
+        );
+    });
+}
+
+#[test]
+// test if moderator can delete thread
+fn delete_thread() {
+    let moderators = [
+        FORUM_MODERATOR_ORIGIN_ID,
+        FORUM_MODERATOR_2_ORIGIN_ID,
+        NOT_FORUM_LEAD_ORIGIN_ID,
+    ];
+    let origins = [
+        FORUM_MODERATOR_ORIGIN,
+        FORUM_MODERATOR_2_ORIGIN,
+        NOT_FORUM_LEAD_ORIGIN,
+    ];
+
+    let config = default_genesis_config();
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    build_test_externalities(config).execute_with(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        let post_id = create_post_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            thread_id,
+            good_post_text(),
+            Ok(()),
+        );
+
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id,
+            true,
+            Ok(()),
+        );
+
+        // check number of category's threads match before delete
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id).num_direct_threads,
+            1
+        );
+
+        // regular user will fail to delete the thread
+        delete_thread_mock(
+            origins[2].clone(),
+            moderators[2],
+            category_id,
+            thread_id,
+            Err(ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT),
+        );
+
+        // moderator not associated with thread will fail to delete it
+        delete_thread_mock(
+            origins[1].clone(),
+            moderators[1],
+            category_id,
+            thread_id,
+            Err(ERROR_MODERATOR_MODERATE_CATEGORY),
+        );
+
+        // moderator will delete thread
+        delete_thread_mock(
+            origins[0].clone(),
+            moderators[0],
+            category_id,
+            thread_id,
+            Ok(()),
+        );
+
+        // check thread's post was deleted
+        assert!(!<PostById<Runtime>>::exists(thread_id, post_id));
+
+        // check category's thread count was decreased
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id).num_direct_threads,
+            0
         );
     });
 }
@@ -463,6 +520,7 @@ fn vote_on_poll_origin() {
                 origins[index].clone(),
                 forum_lead,
                 thread_id,
+                category_id,
                 1,
                 results[index],
             );
@@ -497,6 +555,7 @@ fn vote_on_poll_exists() {
             origin.clone(),
             forum_lead,
             thread_id,
+            category_id,
             1,
             Err(ERROR_POLL_NOT_EXIST),
         );
@@ -532,6 +591,7 @@ fn vote_on_poll_expired() {
         vote_on_poll_mock(
             origin.clone(),
             forum_lead,
+            category_id,
             thread_id,
             1,
             Err(ERROR_POLL_COMMIT_EXPIRED),
@@ -574,7 +634,7 @@ fn moderate_thread_origin_ok() {
             None,
             Ok(()),
         );
-        moderate_thread_mock(origin, moderator_id, thread_id, Ok(()));
+        moderate_thread_mock(origin, moderator_id, category_id, thread_id, Ok(()));
     });
 }
 
@@ -612,6 +672,7 @@ fn add_post_origin() {
             create_post_mock(
                 origins[index].clone(),
                 forum_lead,
+                category_id,
                 thread_id,
                 good_post_text(),
                 results[index],
@@ -653,6 +714,7 @@ fn edit_post_text() {
         let post_id = create_post_mock(
             origins[0].clone(),
             forum_users[0],
+            category_id,
             thread_id,
             good_post_text(),
             Ok(()),
@@ -662,6 +724,8 @@ fn edit_post_text() {
         edit_post_text_mock(
             origins[0].clone(),
             forum_users[0],
+            category_id,
+            thread_id,
             post_id,
             good_post_new_text(),
             Ok(()),
@@ -671,6 +735,8 @@ fn edit_post_text() {
         edit_post_text_mock(
             origins[1].clone(),
             forum_users[1],
+            category_id,
+            thread_id,
             post_id,
             good_post_new_text(),
             Err(ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR),
@@ -716,6 +782,7 @@ fn react_post() {
             let post_id = create_post_mock(
                 origin.clone(),
                 forum_lead,
+                category_id,
                 thread_id,
                 good_post_text(),
                 Ok(()),
@@ -724,6 +791,8 @@ fn react_post() {
                 TestForumModule::react_post(
                     mock_origin(origin.clone()),
                     forum_lead,
+                    category_id,
+                    thread_id,
                     post_id,
                     new_values[index]
                 ),
@@ -780,6 +849,7 @@ fn moderate_post_origin() {
             let post_id = create_post_mock(
                 origin.clone(),
                 forum_lead,
+                category_id,
                 thread_id,
                 good_post_text(),
                 Ok(()),
@@ -787,6 +857,8 @@ fn moderate_post_origin() {
             moderate_post_mock(
                 origins[index].clone(),
                 moderator_id,
+                category_id,
+                thread_id,
                 post_id,
                 results[index],
             );
@@ -904,62 +976,6 @@ fn set_stickied_threads_thread_not_exists() {
 }
 
 #[test]
-fn set_stickied_threads_wrong_category() {
-    let config = default_genesis_config();
-    let forum_lead = FORUM_LEAD_ORIGIN_ID;
-    let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
-        let moderator_id = forum_lead;
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-        update_category_membership_of_moderator_mock(
-            origin.clone(),
-            moderator_id,
-            category_id,
-            true,
-            Ok(()),
-        );
-        let _ = create_thread_mock(
-            origin.clone(),
-            forum_lead,
-            category_id,
-            good_thread_title(),
-            good_thread_text(),
-            None,
-            Ok(()),
-        );
-        let category_id_2 = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-        let thread_id = create_thread_mock(
-            origin.clone(),
-            forum_lead,
-            category_id_2,
-            good_thread_title(),
-            good_thread_text(),
-            None,
-            Ok(()),
-        );
-        set_stickied_threads_mock(
-            origin,
-            moderator_id,
-            category_id,
-            vec![thread_id],
-            Err(ERROR_THREAD_WITH_WRONG_CATEGORY_ID),
-        );
-    });
-}
-
-#[test]
 fn test_migration_not_done() {
     let config = migration_not_done_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
@@ -997,6 +1013,7 @@ fn test_migration_not_done() {
             TestForumModule::add_post(
                 mock_origin(origin.clone()),
                 forum_user_id,
+                category_id,
                 thread_id,
                 good_post_text(),
             ),
@@ -1004,12 +1021,23 @@ fn test_migration_not_done() {
         );
 
         assert_eq!(
-            TestForumModule::moderate_thread(mock_origin(origin.clone()), moderator_id, thread_id,),
+            TestForumModule::moderate_thread(
+                mock_origin(origin.clone()),
+                moderator_id,
+                category_id,
+                thread_id,
+            ),
             Err(ERROR_DATA_MIGRATION_NOT_DONE),
         );
 
         assert_eq!(
-            TestForumModule::moderate_post(mock_origin(origin.clone()), moderator_id, post_id,),
+            TestForumModule::moderate_post(
+                mock_origin(origin.clone()),
+                moderator_id,
+                category_id,
+                thread_id,
+                post_id,
+            ),
             Err(ERROR_DATA_MIGRATION_NOT_DONE),
         );
     });
