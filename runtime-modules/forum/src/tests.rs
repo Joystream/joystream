@@ -578,6 +578,16 @@ fn move_thread_moderator_permissions() {
             Ok(()),
         );
 
+        // check counters of threads in category
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_1).num_direct_threads,
+            1,
+        );
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_2).num_direct_threads,
+            0,
+        );
+
         // moderator associated with both categories will succeed to move thread
         move_thread_mock(
             origins[0].clone(),
@@ -587,9 +597,21 @@ fn move_thread_moderator_permissions() {
             category_id_2,
             Ok(()),
         );
+
+        // check counters of threads in category
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_1).num_direct_threads,
+            0,
+        );
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_2).num_direct_threads,
+            1,
+        );
     });
 }
 
+#[test]
+// test if error is thrown when origin and destination category is the same
 fn move_thread_invalid_move() {
     let moderators = [FORUM_MODERATOR_ORIGIN_ID];
     let origins = [FORUM_MODERATOR_ORIGIN];

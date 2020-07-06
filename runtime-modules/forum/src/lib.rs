@@ -814,8 +814,10 @@ decl_module! {
             // Make sure moderator move between selected categories
             let (_, thread) = Self::ensure_can_move_thread(origin, &moderator_id, &category_id, &thread_id, &new_category_id)?;
 
-            <ThreadById<T>>::remove(thread.category_id, thread_id);
+            <ThreadById<T>>::remove(category_id, thread_id);
             <ThreadById<T>>::insert(new_category_id, thread_id, thread);
+            <CategoryById<T>>::mutate(category_id, |category| category.num_direct_threads -= 1);
+            <CategoryById<T>>::mutate(new_category_id, |category| category.num_direct_threads += 1);
 
             // Store the event
             Self::deposit_event(RawEvent::ThreadMoved(thread_id, new_category_id));
