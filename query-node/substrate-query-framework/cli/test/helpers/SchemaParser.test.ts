@@ -75,7 +75,7 @@ describe('SchemaParser', () => {
 
     it('should load file', () => {
         const parser = new GraphQLSchemaParser('test/fixtures/single-type.graphql');
-        expect(parser.getTypeNames()).length(1, "Should detect one type");
+        expect(parser.getObjectDefinations()).length(1, "Should detect one type");
         expect(parser.getFields(parser.getObjectDefinations()[0])).length(5, "Should detect fields");
     });
 

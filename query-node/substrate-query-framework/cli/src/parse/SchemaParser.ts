@@ -10,6 +10,8 @@ import {
   GraphQLEnumType,
   GraphQLInterfaceType,
   InterfaceTypeDefinitionNode,
+  GraphQLUnionType,
+  GraphQLNamedType,
 } from 'graphql';
 import * as fs from 'fs-extra';
 import Debug from 'debug';
@@ -22,10 +24,7 @@ const debug = Debug('qnode-cli:schema-parser');
 
 export const DIRECTIVES: SchemaDirective[] = [new FTSDirective()];
 
-export type SchemaNode =
-  | ObjectTypeDefinitionNode
-  | FieldDefinitionNode
-  | DirectiveNode;
+export type SchemaNode = ObjectTypeDefinitionNode | FieldDefinitionNode | DirectiveNode;
 
 export interface Visitor {
   /**
@@ -59,6 +58,7 @@ export class GraphQLSchemaParser {
   schema: GraphQLSchema;
   // List of the object types defined in schema
   private _objectTypeDefinations: ObjectTypeDefinitionNode[];
+  private namedTypes: GraphQLNamedType[];
 
   constructor(schemaPath: string) {
     if (!fs.existsSync(schemaPath)) {
@@ -66,9 +66,12 @@ export class GraphQLSchemaParser {
     }
     const contents = fs.readFileSync(schemaPath, 'utf8');
     this.schema = GraphQLSchemaParser.buildSchema(contents);
-    this._objectTypeDefinations = GraphQLSchemaParser.createObjectTypeDefinations(
-      this.schema
-    );
+    this.namedTypes = [
+      ...Object.values(this.schema.getTypeMap()).filter(
+        t => !t.name.startsWith('__') // filter out auxiliarry GraphQL types;
+      ),
+    ];
+    this._objectTypeDefinations = GraphQLSchemaParser.createObjectTypeDefinations(this.schema);
   }
 
   private static buildPreamble(): string {
@@ -100,27 +103,21 @@ export class GraphQLSchemaParser {
   }
 
   getEnumTypes(): GraphQLEnumType[] {
-    return [
-      ...Object.values(this.schema.getTypeMap()).filter(
-        t => !t.name.startsWith('__') && t instanceof GraphQLEnumType
-      ),
-    ] as GraphQLEnumType[];
+    return [...this.namedTypes.filter(t => t instanceof GraphQLEnumType)] as GraphQLEnumType[];
   }
 
   getInterfaceTypes(): GraphQLInterfaceType[] {
-    return [
-      ...Object.values(this.schema.getTypeMap()).filter(
-        t => !t.name.startsWith('__') && t instanceof GraphQLInterfaceType
-      ),
-    ] as GraphQLInterfaceType[];
+    return [...this.namedTypes.filter(t => t instanceof GraphQLInterfaceType)] as GraphQLInterfaceType[];
+  }
+
+  getUnionTypes(): GraphQLUnionType[] {
+    return [...this.namedTypes.filter(t => t instanceof GraphQLUnionType)] as GraphQLUnionType[];
   }
 
   /**
    * Get object type definations from the schema. Build-in and scalar types are excluded.
    */
-  static createObjectTypeDefinations(
-    schema: GraphQLSchema
-  ): ObjectTypeDefinitionNode[] {
+  static createObjectTypeDefinations(schema: GraphQLSchema): ObjectTypeDefinitionNode[] {
     return [
       ...Object.values(schema.getTypeMap())
         // eslint-disable-next-line @typescript-eslint/prefer-regexp-exec
@@ -129,30 +126,19 @@ export class GraphQLSchemaParser {
         .map(t => t.astNode),
     ]
       .filter(Boolean) // Remove undefineds and nulls
-      .filter(
-        typeDefinationNode =>
-          typeDefinationNode?.kind === 'ObjectTypeDefinition'
-      ) as ObjectTypeDefinitionNode[];
+      .filter(typeDefinationNode => typeDefinationNode?.kind === 'ObjectTypeDefinition') as ObjectTypeDefinitionNode[];
   }
 
   /**
    * Returns fields for a given GraphQL object
    * @param objDefinationNode ObjectTypeDefinitionNode
    */
-  getFields(
-    objDefinationNode: ObjectTypeDefinitionNode | InterfaceTypeDefinitionNode
-  ): FieldDefinitionNode[] {
+  getFields(objDefinationNode: ObjectTypeDefinitionNode | InterfaceTypeDefinitionNode): FieldDefinitionNode[] {
     if (objDefinationNode.fields) return [...objDefinationNode.fields];
     return [];
   }
 
-  /**
-   * Returns GraphQL object names
-   */
-  getTypeNames(): string[] {
-    return [...this._objectTypeDefinations.map(o => o.name.value), 
-      ...this.getEnumTypes().map(e => e.name)];
-  }
+  
 
   /**
    * Returns GraphQL object type definations
@@ -170,11 +156,7 @@ export class GraphQLSchemaParser {
       const path: SchemaNode[] = [];
       visit(objType, {
         enter: node => {
-          if (
-            node.kind !== 'Directive' &&
-            node.kind !== 'ObjectTypeDefinition' &&
-            node.kind !== 'FieldDefinition'
-          ) {
+          if (node.kind !== 'Directive' && node.kind !== 'ObjectTypeDefinition' && node.kind !== 'FieldDefinition') {
             // skip non-definition fields;
             return false;
           }
