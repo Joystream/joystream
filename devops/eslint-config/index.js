@@ -1,22 +1,22 @@
 module.exports = {
   env: {
-    es6: true,
+    es6: true
   },
   globals: {
     Atomics: 'readonly',
-    SharedArrayBuffer: 'readonly',
+    SharedArrayBuffer: 'readonly'
   },
   parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaFeatures: {
-      jsx: true,
+      jsx: true
     },
     ecmaVersion: 2019,
-    sourceType: 'module',
+    sourceType: 'module'
   },
   extends: [
     'plugin:react/recommended',
-    'standard',
+    'standard'
 
     // jsx-a11y conflicts with pioneer rules. At time of writing
     // 84 problems -> We want to avoid as much as possible changing code in pioneer at least
@@ -33,6 +33,6 @@ module.exports = {
   ],
   plugins: [],
   settings: {
-    version: 'detect',
-  },
+    version: 'detect'
+  }
 }
