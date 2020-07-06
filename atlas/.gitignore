@@ -80,7 +80,7 @@ typings/
 .cache/
 .now
 dist/
-
+storybook-static
 # Mac files
 .DS_Store
 
