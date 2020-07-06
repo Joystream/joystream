@@ -24,95 +24,95 @@ const path = require('path')
 const debug = require('debug')('joystream:util:fs:walk')
 
 class Walker {
-	constructor(archive, base, cb) {
-		this.archive = archive
-		this.base = base
-		this.slice_offset = this.base.length
-		if (this.base[this.slice_offset - 1] !== '/') {
-			this.slice_offset += 1
-		}
-		this.cb = cb
-		this.pending = 0
-	}
+  constructor(archive, base, cb) {
+    this.archive = archive
+    this.base = base
+    this.slice_offset = this.base.length
+    if (this.base[this.slice_offset - 1] !== '/') {
+      this.slice_offset += 1
+    }
+    this.cb = cb
+    this.pending = 0
+  }
 
-	/*
-	 * Check pending
-	 */
-	checkPending(name) {
-		// Decrease pending count again.
-		this.pending -= 1
-		debug('Finishing', name, 'decreases pending to', this.pending)
-		if (!this.pending) {
-			debug('No more pending.')
-			this.cb(null)
-		}
-	}
+  /*
+   * Check pending
+   */
+  checkPending(name) {
+    // Decrease pending count again.
+    this.pending -= 1
+    debug('Finishing', name, 'decreases pending to', this.pending)
+    if (!this.pending) {
+      debug('No more pending.')
+      this.cb(null)
+    }
+  }
 
-	/*
-	 * Helper function for walk; split out because it's used in two places.
-	 */
-	reportAndRecurse(relname, fname, lstat, linktarget) {
-		// First report the value
-		this.cb(null, relname, lstat, linktarget)
+  /*
+   * Helper function for walk; split out because it's used in two places.
+   */
+  reportAndRecurse(relname, fname, lstat, linktarget) {
+    // First report the value
+    this.cb(null, relname, lstat, linktarget)
 
-		// Recurse
-		if (lstat.isDirectory()) {
-			this.walk(fname)
-		}
+    // Recurse
+    if (lstat.isDirectory()) {
+      this.walk(fname)
+    }
 
-		this.checkPending(fname)
-	}
+    this.checkPending(fname)
+  }
 
-	walk(dir) {
-		// This is a little hacky - since readdir() may take a while, and we don't
-		// want the pending count to drop to zero before it's finished, we bump
-		// it up and down while readdir() does it's job.
-		// What this achieves is that when processing a parent directory finishes
-		// before walk() on a subdirectory could finish its readdir() call, the
-		// pending count still has a value.
-		// Note that in order not to hang on empty directories, we need to
-		// explicitly check the pending count in cases when there are no files.
-		this.pending += 1
-		this.archive.readdir(dir, (err, files) => {
-			if (err) {
-				this.cb(err)
-				return
-			}
+  walk(dir) {
+    // This is a little hacky - since readdir() may take a while, and we don't
+    // want the pending count to drop to zero before it's finished, we bump
+    // it up and down while readdir() does it's job.
+    // What this achieves is that when processing a parent directory finishes
+    // before walk() on a subdirectory could finish its readdir() call, the
+    // pending count still has a value.
+    // Note that in order not to hang on empty directories, we need to
+    // explicitly check the pending count in cases when there are no files.
+    this.pending += 1
+    this.archive.readdir(dir, (err, files) => {
+      if (err) {
+        this.cb(err)
+        return
+      }
 
-			// More pending data.
-			this.pending += files.length
-			debug('Reading', dir, 'bumps pending to', this.pending)
+      // More pending data.
+      this.pending += files.length
+      debug('Reading', dir, 'bumps pending to', this.pending)
 
-			files.forEach((name) => {
-				const fname = path.resolve(dir, name)
-				this.archive.lstat(fname, (err2, lstat) => {
-					if (err2) {
-						this.cb(err2)
-						return
-					}
+      files.forEach(name => {
+        const fname = path.resolve(dir, name)
+        this.archive.lstat(fname, (err2, lstat) => {
+          if (err2) {
+            this.cb(err2)
+            return
+          }
 
-					// The base is always prefixed, so a simple string slice should do.
-					const relname = fname.slice(this.slice_offset)
+          // The base is always prefixed, so a simple string slice should do.
+          const relname = fname.slice(this.slice_offset)
 
-					// We have a symbolic link? Resolve it.
-					if (lstat.isSymbolicLink()) {
-						this.archive.readlink(fname, (err3, linktarget) => {
-							if (err3) {
-								this.cb(err3)
-								return
-							}
+          // We have a symbolic link? Resolve it.
+          if (lstat.isSymbolicLink()) {
+            this.archive.readlink(fname, (err3, linktarget) => {
+              if (err3) {
+                this.cb(err3)
+                return
+              }
 
-							this.reportAndRecurse(relname, fname, lstat, linktarget)
-						})
-					} else {
-						this.reportAndRecurse(relname, fname, lstat)
-					}
-				})
-			})
+              this.reportAndRecurse(relname, fname, lstat, linktarget)
+            })
+          } else {
+            this.reportAndRecurse(relname, fname, lstat)
+          }
+        })
+      })
 
-			this.checkPending(dir)
-		})
-	}
+      this.checkPending(dir)
+    })
+  }
 }
 
 /*
@@ -127,13 +127,13 @@ class Walker {
  * The callback is invoked one last time without data to signal the end of data.
  */
 module.exports = function (base, archive, cb) {
-	// Archive is optional and defaults to fs, but cb is not.
-	if (!cb) {
-		cb = archive
-		archive = fs
-	}
+  // Archive is optional and defaults to fs, but cb is not.
+  if (!cb) {
+    cb = archive
+    archive = fs
+  }
 
-	const resolved = path.resolve(base)
-	const w = new Walker(archive, resolved, cb)
-	w.walk(resolved)
+  const resolved = path.resolve(base)
+  const w = new Walker(archive, resolved, cb)
+  w.walk(resolved)
 }

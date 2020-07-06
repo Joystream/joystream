@@ -18,7 +18,7 @@ const PUBLISH_KEY = 'self'
  * @returns {Buffer} returns buffer from UTF-8 json
  */
 function bufferFrom(data) {
-	return Buffer.from(JSON.stringify(data), 'utf-8')
+  return Buffer.from(JSON.stringify(data), 'utf-8')
 }
 
 /**
@@ -28,9 +28,9 @@ function bufferFrom(data) {
  * @returns {Buffer} return buffer.
  */
 function encodeServiceInfo(info) {
-	return bufferFrom({
-		serialized: JSON.stringify(info),
-	})
+  return bufferFrom({
+    serialized: JSON.stringify(info),
+  })
 }
 
 /**
@@ -41,48 +41,48 @@ function encodeServiceInfo(info) {
  * @returns {string} - the ipns id
  */
 async function publish(serviceInfo) {
-	const keys = await ipfs.key.list()
-	let servicesKey = keys.find((key) => key.name === PUBLISH_KEY)
+  const keys = await ipfs.key.list()
+  let servicesKey = keys.find(key => key.name === PUBLISH_KEY)
 
-	// An ipfs node will always have the self key.
-	// If the publish key is specified as anything else and it doesn't exist
-	// we create it.
-	if (PUBLISH_KEY !== 'self' && !servicesKey) {
-		debug('generating ipns services key')
-		servicesKey = await ipfs.key.gen(PUBLISH_KEY, {
-			type: 'rsa',
-			size: 2048,
-		})
-	}
+  // An ipfs node will always have the self key.
+  // If the publish key is specified as anything else and it doesn't exist
+  // we create it.
+  if (PUBLISH_KEY !== 'self' && !servicesKey) {
+    debug('generating ipns services key')
+    servicesKey = await ipfs.key.gen(PUBLISH_KEY, {
+      type: 'rsa',
+      size: 2048,
+    })
+  }
 
-	if (!servicesKey) {
-		throw new Error('No IPFS publishing key available!')
-	}
+  if (!servicesKey) {
+    throw new Error('No IPFS publishing key available!')
+  }
 
-	debug('adding service info file to node')
-	const files = await ipfs.add(encodeServiceInfo(serviceInfo))
+  debug('adding service info file to node')
+  const files = await ipfs.add(encodeServiceInfo(serviceInfo))
 
-	debug('publishing...')
-	const published = await ipfs.name.publish(files[0].hash, {
-		key: PUBLISH_KEY,
-		resolve: false,
-		// lifetime: // string - Time duration of the record. Default: 24h
-		// ttl:      // string - Time duration this record should be cached
-	})
+  debug('publishing...')
+  const published = await ipfs.name.publish(files[0].hash, {
+    key: PUBLISH_KEY,
+    resolve: false,
+    // lifetime: // string - Time duration of the record. Default: 24h
+    // ttl:      // string - Time duration this record should be cached
+  })
 
-	// The name and ipfs hash of the published service information file, eg.
-	// {
-	//   name: 'QmUNQCkaU1TRnc1WGixqEP3Q3fazM8guSdFRsdnSJTN36A',
-	//   value: '/ipfs/QmcSjtVMfDSSNYCxNAb9PxNpEigCw7h1UZ77gip3ghfbnA'
-	// }
-	// .. The name is equivalent to the key id that was used.
-	debug(published)
+  // The name and ipfs hash of the published service information file, eg.
+  // {
+  //   name: 'QmUNQCkaU1TRnc1WGixqEP3Q3fazM8guSdFRsdnSJTN36A',
+  //   value: '/ipfs/QmcSjtVMfDSSNYCxNAb9PxNpEigCw7h1UZ77gip3ghfbnA'
+  // }
+  // .. The name is equivalent to the key id that was used.
+  debug(published)
 
-	// Return the key id under which the content was published. Which is used
-	// to lookup the actual ipfs content id of the published service information
-	return servicesKey.id
+  // Return the key id under which the content was published. Which is used
+  // to lookup the actual ipfs content id of the published service information
+  return servicesKey.id
 }
 
 module.exports = {
-	publish,
+  publish,
 }

@@ -21,8 +21,8 @@
 const { RuntimeApi } = require('@joystream/storage-runtime-api')
 
 describe('RuntimeApi', () => {
-	it('can be created', async () => {
-		const api = await RuntimeApi.create()
-		api.disconnect()
-	})
+  it('can be created', async () => {
+    const api = await RuntimeApi.create()
+    api.disconnect()
+  })
 })

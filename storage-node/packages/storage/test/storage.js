@@ -31,192 +31,192 @@ const { Storage } = require('@joystream/storage-node-backend')
 const IPFS_CID_REGEX = /^Qm[1-9A-HJ-NP-Za-km-z]{44}$/
 
 function write(store, contentId, contents, callback) {
-	store
-		.open(contentId, 'w')
-		.then((stream) => {
-			stream.on('finish', () => {
-				stream.commit()
-			})
-			stream.on('committed', callback)
+  store
+    .open(contentId, 'w')
+    .then(stream => {
+      stream.on('finish', () => {
+        stream.commit()
+      })
+      stream.on('committed', callback)
 
-			if (!stream.write(contents)) {
-				stream.once('drain', () => stream.end())
-			} else {
-				process.nextTick(() => stream.end())
-			}
-		})
-		.catch((err) => {
-			expect.fail(err)
-		})
+      if (!stream.write(contents)) {
+        stream.once('drain', () => stream.end())
+      } else {
+        process.nextTick(() => stream.end())
+      }
+    })
+    .catch(err => {
+      expect.fail(err)
+    })
 }
 
 function readAll(stream) {
-	return new Promise((resolve, reject) => {
-		const chunks = []
-		stream.on('data', (chunk) => chunks.push(chunk))
-		stream.on('end', () => resolve(Buffer.concat(chunks)))
-		stream.on('error', (err) => reject(err))
-		stream.resume()
-	})
+  return new Promise((resolve, reject) => {
+    const chunks = []
+    stream.on('data', chunk => chunks.push(chunk))
+    stream.on('end', () => resolve(Buffer.concat(chunks)))
+    stream.on('error', err => reject(err))
+    stream.resume()
+  })
 }
 
 function createKnownObject(contentId, contents, callback) {
-	let hash
-	const store = Storage.create({
-		resolve_content_id: () => {
-			return hash
-		},
-	})
+  let hash
+  const store = Storage.create({
+    resolve_content_id: () => {
+      return hash
+    },
+  })
 
-	write(store, contentId, contents, (theHash) => {
-		hash = theHash
+  write(store, contentId, contents, theHash => {
+    hash = theHash
 
-		callback(store, hash)
-	})
+    callback(store, hash)
+  })
 }
 
 describe('storage/storage', () => {
-	let storage
-	before(async () => {
-		storage = await Storage.create({ timeout: 1900 })
-	})
+  let storage
+  before(async () => {
+    storage = await Storage.create({ timeout: 1900 })
+  })
 
-	describe('open()', () => {
-		it('can write a stream', (done) => {
-			write(storage, 'foobar', 'test-content', (hash) => {
-				expect(hash).to.not.be.undefined
-				expect(hash).to.match(IPFS_CID_REGEX)
-				done()
-			})
-		})
+  describe('open()', () => {
+    it('can write a stream', done => {
+      write(storage, 'foobar', 'test-content', hash => {
+        expect(hash).to.not.be.undefined
+        expect(hash).to.match(IPFS_CID_REGEX)
+        done()
+      })
+    })
 
-		// it('detects the MIME type of a write stream', (done) => {
-		// 	const contents = fs.readFileSync('../../storage-node_new.svg')
-		// 	storage
-		// 		.open('mime-test', 'w')
-		// 		.then((stream) => {
-		// 			let fileInfo
-		// 			stream.on('fileInfo', (info) => {
-		// 				// Could filter & abort here now, but we're just going to set this,
-		// 				// and expect it to be set later...
-		// 				fileInfo = info
-		// 			})
-		//
-		// 			stream.on('finish', () => {
-		// 				stream.commit()
-		// 			})
-		//
-		// 			stream.on('committed', () => {
-		// 				// ... if fileInfo is not set here, there's an issue.
-		// 				expect(fileInfo).to.have.property('mimeType', 'application/xml')
-		// 				expect(fileInfo).to.have.property('ext', 'xml')
-		// 				done()
-		// 			})
-		//
-		// 			if (!stream.write(contents)) {
-		// 				stream.once('drain', () => stream.end())
-		// 			} else {
-		// 				process.nextTick(() => stream.end())
-		// 			}
-		// 		})
-		// 		.catch((err) => {
-		// 			expect.fail(err)
-		// 		})
-		// })
+    // it('detects the MIME type of a write stream', (done) => {
+    // 	const contents = fs.readFileSync('../../storage-node_new.svg')
+    // 	storage
+    // 		.open('mime-test', 'w')
+    // 		.then((stream) => {
+    // 			let fileInfo
+    // 			stream.on('fileInfo', (info) => {
+    // 				// Could filter & abort here now, but we're just going to set this,
+    // 				// and expect it to be set later...
+    // 				fileInfo = info
+    // 			})
+    //
+    // 			stream.on('finish', () => {
+    // 				stream.commit()
+    // 			})
+    //
+    // 			stream.on('committed', () => {
+    // 				// ... if fileInfo is not set here, there's an issue.
+    // 				expect(fileInfo).to.have.property('mimeType', 'application/xml')
+    // 				expect(fileInfo).to.have.property('ext', 'xml')
+    // 				done()
+    // 			})
+    //
+    // 			if (!stream.write(contents)) {
+    // 				stream.once('drain', () => stream.end())
+    // 			} else {
+    // 				process.nextTick(() => stream.end())
+    // 			}
+    // 		})
+    // 		.catch((err) => {
+    // 			expect.fail(err)
+    // 		})
+    // })
 
-		it('can read a stream', (done) => {
-			const contents = 'test-for-reading'
-			createKnownObject('foobar', contents, (store) => {
-				store
-					.open('foobar', 'r')
-					.then(async (stream) => {
-						const data = await readAll(stream)
-						expect(Buffer.compare(data, Buffer.from(contents))).to.equal(0)
-						done()
-					})
-					.catch((err) => {
-						expect.fail(err)
-					})
-			})
-		})
+    it('can read a stream', done => {
+      const contents = 'test-for-reading'
+      createKnownObject('foobar', contents, store => {
+        store
+          .open('foobar', 'r')
+          .then(async stream => {
+            const data = await readAll(stream)
+            expect(Buffer.compare(data, Buffer.from(contents))).to.equal(0)
+            done()
+          })
+          .catch(err => {
+            expect.fail(err)
+          })
+      })
+    })
 
-		it('detects the MIME type of a read stream', (done) => {
-			const contents = fs.readFileSync('../../storage-node_new.svg')
-			createKnownObject('foobar', contents, (store) => {
-				store
-					.open('foobar', 'r')
-					.then(async (stream) => {
-						const data = await readAll(stream)
-						expect(contents.length).to.equal(data.length)
-						expect(Buffer.compare(data, contents)).to.equal(0)
-						expect(stream).to.have.property('fileInfo')
+    it('detects the MIME type of a read stream', done => {
+      const contents = fs.readFileSync('../../storage-node_new.svg')
+      createKnownObject('foobar', contents, store => {
+        store
+          .open('foobar', 'r')
+          .then(async stream => {
+            const data = await readAll(stream)
+            expect(contents.length).to.equal(data.length)
+            expect(Buffer.compare(data, contents)).to.equal(0)
+            expect(stream).to.have.property('fileInfo')
 
-						// application/xml+svg would be better, but this is good-ish.
-						expect(stream.fileInfo).to.have.property('mimeType', 'application/xml')
-						expect(stream.fileInfo).to.have.property('ext', 'xml')
-						done()
-					})
-					.catch((err) => {
-						expect.fail(err)
-					})
-			})
-		})
+            // application/xml+svg would be better, but this is good-ish.
+            expect(stream.fileInfo).to.have.property('mimeType', 'application/xml')
+            expect(stream.fileInfo).to.have.property('ext', 'xml')
+            done()
+          })
+          .catch(err => {
+            expect.fail(err)
+          })
+      })
+    })
 
-		it('provides default MIME type for read streams', (done) => {
-			const contents = 'test-for-reading'
-			createKnownObject('foobar', contents, (store) => {
-				store
-					.open('foobar', 'r')
-					.then(async (stream) => {
-						const data = await readAll(stream)
-						expect(Buffer.compare(data, Buffer.from(contents))).to.equal(0)
+    it('provides default MIME type for read streams', done => {
+      const contents = 'test-for-reading'
+      createKnownObject('foobar', contents, store => {
+        store
+          .open('foobar', 'r')
+          .then(async stream => {
+            const data = await readAll(stream)
+            expect(Buffer.compare(data, Buffer.from(contents))).to.equal(0)
 
-						expect(stream.fileInfo).to.have.property('mimeType', 'application/octet-stream')
-						expect(stream.fileInfo).to.have.property('ext', 'bin')
-						done()
-					})
-					.catch((err) => {
-						expect.fail(err)
-					})
-			})
-		})
-	})
+            expect(stream.fileInfo).to.have.property('mimeType', 'application/octet-stream')
+            expect(stream.fileInfo).to.have.property('ext', 'bin')
+            done()
+          })
+          .catch(err => {
+            expect.fail(err)
+          })
+      })
+    })
+  })
 
-	describe('stat()', () => {
-		it('times out for unknown content', async () => {
-			const content = Buffer.from('this-should-not-exist')
-			const x = await storage.ipfs.add(content, { onlyHash: true })
-			const hash = x[0].hash
+  describe('stat()', () => {
+    it('times out for unknown content', async () => {
+      const content = Buffer.from('this-should-not-exist')
+      const x = await storage.ipfs.add(content, { onlyHash: true })
+      const hash = x[0].hash
 
-			// Try to stat this entry, it should timeout.
-			expect(storage.stat(hash)).to.eventually.be.rejectedWith('timed out')
-		})
+      // Try to stat this entry, it should timeout.
+      expect(storage.stat(hash)).to.eventually.be.rejectedWith('timed out')
+    })
 
-		it('returns stats for a known object', (done) => {
-			const content = 'stat-test'
-			const expectedSize = content.length
-			createKnownObject('foobar', content, (store, hash) => {
-				expect(store.stat(hash)).to.eventually.have.property('size', expectedSize)
-				done()
-			})
-		})
-	})
+    it('returns stats for a known object', done => {
+      const content = 'stat-test'
+      const expectedSize = content.length
+      createKnownObject('foobar', content, (store, hash) => {
+        expect(store.stat(hash)).to.eventually.have.property('size', expectedSize)
+        done()
+      })
+    })
+  })
 
-	describe('size()', () => {
-		it('times out for unknown content', async () => {
-			const content = Buffer.from('this-should-not-exist')
-			const x = await storage.ipfs.add(content, { onlyHash: true })
-			const hash = x[0].hash
+  describe('size()', () => {
+    it('times out for unknown content', async () => {
+      const content = Buffer.from('this-should-not-exist')
+      const x = await storage.ipfs.add(content, { onlyHash: true })
+      const hash = x[0].hash
 
-			// Try to stat this entry, it should timeout.
-			expect(storage.size(hash)).to.eventually.be.rejectedWith('timed out')
-		})
+      // Try to stat this entry, it should timeout.
+      expect(storage.size(hash)).to.eventually.be.rejectedWith('timed out')
+    })
 
-		it('returns the size of a known object', (done) => {
-			createKnownObject('foobar', 'stat-test', (store, hash) => {
-				expect(store.size(hash)).to.eventually.equal(15)
-				done()
-			})
-		})
-	})
+    it('returns the size of a known object', done => {
+      createKnownObject('foobar', 'stat-test', (store, hash) => {
+        expect(store.size(hash)).to.eventually.equal(15)
+        done()
+      })
+    })
+  })
 })

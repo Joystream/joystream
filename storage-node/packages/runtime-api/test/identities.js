@@ -25,74 +25,74 @@ const temp = require('temp').track()
 const { RuntimeApi } = require('@joystream/storage-runtime-api')
 
 describe('Identities', () => {
-	let api
-	before(async () => {
-		api = await RuntimeApi.create({ canPromptForPassphrase: true })
-	})
+  let api
+  before(async () => {
+    api = await RuntimeApi.create({ canPromptForPassphrase: true })
+  })
 
-	it('imports keys', async () => {
-		// Unlocked keys can be imported without asking for a passphrase
-		await api.identities.loadUnlock('test/data/edwards_unlocked.json')
+  it('imports keys', async () => {
+    // Unlocked keys can be imported without asking for a passphrase
+    await api.identities.loadUnlock('test/data/edwards_unlocked.json')
 
-		// Edwards and schnorr keys should unlock
-		const passphraseStub = sinon.stub(api.identities, 'askForPassphrase').callsFake(() => 'asdf')
-		await api.identities.loadUnlock('test/data/edwards.json')
-		await api.identities.loadUnlock('test/data/schnorr.json')
-		passphraseStub.restore()
+    // Edwards and schnorr keys should unlock
+    const passphraseStub = sinon.stub(api.identities, 'askForPassphrase').callsFake(() => 'asdf')
+    await api.identities.loadUnlock('test/data/edwards.json')
+    await api.identities.loadUnlock('test/data/schnorr.json')
+    passphraseStub.restore()
 
-		// Except if the wrong passphrase is given
-		const passphraseStubBad = sinon.stub(api.identities, 'askForPassphrase').callsFake(() => 'bad')
-		expect(async () => {
-			await api.identities.loadUnlock('test/data/edwards.json')
-		}).to.throw
-		passphraseStubBad.restore()
-	})
+    // Except if the wrong passphrase is given
+    const passphraseStubBad = sinon.stub(api.identities, 'askForPassphrase').callsFake(() => 'bad')
+    expect(async () => {
+      await api.identities.loadUnlock('test/data/edwards.json')
+    }).to.throw
+    passphraseStubBad.restore()
+  })
 
-	it('knows about membership', async () => {
-		const key = await api.identities.loadUnlock('test/data/edwards_unlocked.json')
-		const addr = key.address
+  it('knows about membership', async () => {
+    const key = await api.identities.loadUnlock('test/data/edwards_unlocked.json')
+    const addr = key.address
 
-		// Without seeding the runtime with data, we can only verify that the API
-		// reacts well in the absence of membership
-		expect(await api.identities.isMember(addr)).to.be.false
-		const memberId = await api.identities.firstMemberIdOf(addr)
+    // Without seeding the runtime with data, we can only verify that the API
+    // reacts well in the absence of membership
+    expect(await api.identities.isMember(addr)).to.be.false
+    const memberId = await api.identities.firstMemberIdOf(addr)
 
-		expect(memberId).to.be.undefined
-	})
+    expect(memberId).to.be.undefined
+  })
 
-	it('exports keys', async () => {
-		const key = await api.identities.loadUnlock('test/data/edwards_unlocked.json')
+  it('exports keys', async () => {
+    const key = await api.identities.loadUnlock('test/data/edwards_unlocked.json')
 
-		const passphraseStub = sinon.stub(api.identities, 'askForPassphrase').callsFake(() => 'asdf')
-		const exported = await api.identities.exportKeyPair(key.address)
-		passphraseStub.restore()
+    const passphraseStub = sinon.stub(api.identities, 'askForPassphrase').callsFake(() => 'asdf')
+    const exported = await api.identities.exportKeyPair(key.address)
+    passphraseStub.restore()
 
-		expect(exported).to.have.property('address')
-		expect(exported.address).to.equal(key.address)
+    expect(exported).to.have.property('address')
+    expect(exported.address).to.equal(key.address)
 
-		expect(exported).to.have.property('encoding')
+    expect(exported).to.have.property('encoding')
 
-		expect(exported.encoding).to.have.property('version', '2')
+    expect(exported.encoding).to.have.property('version', '2')
 
-		expect(exported.encoding).to.have.property('content')
-		expect(exported.encoding.content).to.include('pkcs8')
-		expect(exported.encoding.content).to.include('ed25519')
+    expect(exported.encoding).to.have.property('content')
+    expect(exported.encoding.content).to.include('pkcs8')
+    expect(exported.encoding.content).to.include('ed25519')
 
-		expect(exported.encoding).to.have.property('type')
-		expect(exported.encoding.type).to.include('salsa20')
-	})
+    expect(exported.encoding).to.have.property('type')
+    expect(exported.encoding.type).to.include('salsa20')
+  })
 
-	it('writes key export files', async () => {
-		const prefix = temp.mkdirSync('joystream-runtime-api-test')
+  it('writes key export files', async () => {
+    const prefix = temp.mkdirSync('joystream-runtime-api-test')
 
-		const key = await api.identities.loadUnlock('test/data/edwards_unlocked.json')
+    const key = await api.identities.loadUnlock('test/data/edwards_unlocked.json')
 
-		const passphraseStub = sinon.stub(api.identities, 'askForPassphrase').callsFake(() => 'asdf')
-		const filename = await api.identities.writeKeyPairExport(key.address, prefix)
-		passphraseStub.restore()
+    const passphraseStub = sinon.stub(api.identities, 'askForPassphrase').callsFake(() => 'asdf')
+    const filename = await api.identities.writeKeyPairExport(key.address, prefix)
+    passphraseStub.restore()
 
-		const fs = require('fs')
-		const stat = fs.statSync(filename)
-		expect(stat.isFile()).to.be.true
-	})
+    const fs = require('fs')
+    const stat = fs.statSync(filename)
+    expect(stat.isFile()).to.be.true
+  })
 })

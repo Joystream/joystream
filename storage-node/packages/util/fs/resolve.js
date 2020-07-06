@@ -32,34 +32,34 @@ const debug = require('debug')('joystream:util:fs:resolve')
  * a base directory.
  */
 function resolve(base, name) {
-	debug('Resolving', name)
+  debug('Resolving', name)
 
-	// In a firs step, we strip leading slashes from the name, because they're
-	// just saying "relative to the base" in our use case.
-	let res = name.replace(/^\/+/, '')
-	debug('Stripped', res)
+  // In a firs step, we strip leading slashes from the name, because they're
+  // just saying "relative to the base" in our use case.
+  let res = name.replace(/^\/+/, '')
+  debug('Stripped', res)
 
-	// At this point resolving the path should stay within the base we specify.
-	// We do specify a base other than the file system root, because the file
-	// everything is always relative to the file system root.
-	const testBase = path.join(path.sep, 'test-base')
-	debug('Test base is', testBase)
-	res = path.resolve(testBase, res)
-	debug('Resolved', res)
+  // At this point resolving the path should stay within the base we specify.
+  // We do specify a base other than the file system root, because the file
+  // everything is always relative to the file system root.
+  const testBase = path.join(path.sep, 'test-base')
+  debug('Test base is', testBase)
+  res = path.resolve(testBase, res)
+  debug('Resolved', res)
 
-	// Ok, we can check for violations now.
-	if (res.slice(0, testBase.length) !== testBase) {
-		throw Error(`Name "${name}" cannot be resolved to a repo relative path, aborting!`)
-	}
+  // Ok, we can check for violations now.
+  if (res.slice(0, testBase.length) !== testBase) {
+    throw Error(`Name "${name}" cannot be resolved to a repo relative path, aborting!`)
+  }
 
-	// If we strip the base now, we have the relative name resolved.
-	res = res.slice(testBase.length + 1)
-	debug('Relative', res)
+  // If we strip the base now, we have the relative name resolved.
+  res = res.slice(testBase.length + 1)
+  debug('Relative', res)
 
-	// Finally we can join this relative name to the requested base.
-	res = path.join(base, res)
-	debug('Result', res)
-	return res
+  // Finally we can join this relative name to the requested base.
+  res = path.join(base, res)
+  debug('Result', res)
+  return res
 }
 
 module.exports = resolve

@@ -21,90 +21,90 @@
 const debug = require('debug')('joystream:sync')
 
 async function syncCallback(api, storage) {
-	// The first step is to gather all data objects from chain.
-	// TODO: in future, limit to a configured tranche
-	// FIXME this isn't actually on chain yet, so we'll fake it.
-	const knownContentIds = (await api.assets.getKnownContentIds()) || []
+  // The first step is to gather all data objects from chain.
+  // TODO: in future, limit to a configured tranche
+  // FIXME this isn't actually on chain yet, so we'll fake it.
+  const knownContentIds = (await api.assets.getKnownContentIds()) || []
 
-	const roleAddress = api.identities.key.address
-	const providerId = api.storageProviderId
+  const roleAddress = api.identities.key.address
+  const providerId = api.storageProviderId
 
-	// Iterate over all sync objects, and ensure they're synced.
-	const allChecks = knownContentIds.map(async (contentId) => {
-		/* eslint-disable prefer-const */
-		let { relationship, relationshipId } = await api.assets.getStorageRelationshipAndId(providerId, contentId)
+  // Iterate over all sync objects, and ensure they're synced.
+  const allChecks = knownContentIds.map(async contentId => {
+    /* eslint-disable prefer-const */
+    let { relationship, relationshipId } = await api.assets.getStorageRelationshipAndId(providerId, contentId)
 
-		// get the data object
-		// make sure the data object was Accepted by the liaison,
-		// don't just blindly attempt to fetch them
+    // get the data object
+    // make sure the data object was Accepted by the liaison,
+    // don't just blindly attempt to fetch them
 
-		let fileLocal
-		try {
-			// check if we have content or not
-			const stats = await storage.stat(contentId)
-			fileLocal = stats.local
-		} catch (err) {
-			// on error stating or timeout
-			debug(err.message)
-			// we don't have content if we can't stat it
-			fileLocal = false
-		}
+    let fileLocal
+    try {
+      // check if we have content or not
+      const stats = await storage.stat(contentId)
+      fileLocal = stats.local
+    } catch (err) {
+      // on error stating or timeout
+      debug(err.message)
+      // we don't have content if we can't stat it
+      fileLocal = false
+    }
 
-		if (!fileLocal) {
-			try {
-				await storage.synchronize(contentId)
-			} catch (err) {
-				// duplicate logging
-				// debug(err.message)
-				return
-			}
-			// why are we returning, if we synced the file
-			return
-		}
+    if (!fileLocal) {
+      try {
+        await storage.synchronize(contentId)
+      } catch (err) {
+        // duplicate logging
+        // debug(err.message)
+        return
+      }
+      // why are we returning, if we synced the file
+      return
+    }
 
-		if (!relationship) {
-			// create relationship
-			debug(`Creating new storage relationship for ${contentId.encode()}`)
-			try {
-				relationshipId = await api.assets.createAndReturnStorageRelationship(roleAddress, providerId, contentId)
-				await api.assets.toggleStorageRelationshipReady(roleAddress, providerId, relationshipId, true)
-			} catch (err) {
-				debug(`Error creating new storage relationship ${contentId.encode()}: ${err.stack}`)
-				return
-			}
-		} else if (!relationship.ready) {
-			debug(`Updating storage relationship to ready for ${contentId.encode()}`)
-			// update to ready. (Why would there be a relationship set to ready: false?)
-			try {
-				await api.assets.toggleStorageRelationshipReady(roleAddress, providerId, relationshipId, true)
-			} catch (err) {
-				debug(`Error setting relationship ready ${contentId.encode()}: ${err.stack}`)
-			}
-		} else {
-			// we already have content and a ready relationship set. No need to do anything
-			// debug(`content already stored locally ${contentId.encode()}`);
-		}
-	})
+    if (!relationship) {
+      // create relationship
+      debug(`Creating new storage relationship for ${contentId.encode()}`)
+      try {
+        relationshipId = await api.assets.createAndReturnStorageRelationship(roleAddress, providerId, contentId)
+        await api.assets.toggleStorageRelationshipReady(roleAddress, providerId, relationshipId, true)
+      } catch (err) {
+        debug(`Error creating new storage relationship ${contentId.encode()}: ${err.stack}`)
+        return
+      }
+    } else if (!relationship.ready) {
+      debug(`Updating storage relationship to ready for ${contentId.encode()}`)
+      // update to ready. (Why would there be a relationship set to ready: false?)
+      try {
+        await api.assets.toggleStorageRelationshipReady(roleAddress, providerId, relationshipId, true)
+      } catch (err) {
+        debug(`Error setting relationship ready ${contentId.encode()}: ${err.stack}`)
+      }
+    } else {
+      // we already have content and a ready relationship set. No need to do anything
+      // debug(`content already stored locally ${contentId.encode()}`);
+    }
+  })
 
-	return Promise.all(allChecks)
+  return Promise.all(allChecks)
 }
 
 async function syncPeriodic(api, flags, storage) {
-	try {
-		debug('Starting sync run...')
-		await syncCallback(api, storage)
-		debug('sync run complete')
-	} catch (err) {
-		debug(`Error in syncPeriodic ${err.stack}`)
-	}
-	// always try again
-	setTimeout(syncPeriodic, flags.syncPeriod, api, flags, storage)
+  try {
+    debug('Starting sync run...')
+    await syncCallback(api, storage)
+    debug('sync run complete')
+  } catch (err) {
+    debug(`Error in syncPeriodic ${err.stack}`)
+  }
+  // always try again
+  setTimeout(syncPeriodic, flags.syncPeriod, api, flags, storage)
 }
 
 function startSyncing(api, flags, storage) {
-	syncPeriodic(api, flags, storage)
+  syncPeriodic(api, flags, storage)
 }
 
 module.exports = {
-	startSyncing,
+  startSyncing,
 }

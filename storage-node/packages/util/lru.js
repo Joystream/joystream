@@ -26,92 +26,92 @@ const debug = require('debug')('joystream:util:lru')
  * Simple least recently used cache.
  */
 class LRUCache {
-	constructor(capacity = DEFAULT_CAPACITY) {
-		this.capacity = capacity
-		this.clear()
-	}
+  constructor(capacity = DEFAULT_CAPACITY) {
+    this.capacity = capacity
+    this.clear()
+  }
 
-	/*
-	 * Return the entry with the given key, and update it's usage.
-	 */
-	get(key) {
-		const val = this.store.get(key)
-		if (val) {
-			this.access.set(key, Date.now())
-		}
-		return val
-	}
+  /*
+   * Return the entry with the given key, and update it's usage.
+   */
+  get(key) {
+    const val = this.store.get(key)
+    if (val) {
+      this.access.set(key, Date.now())
+    }
+    return val
+  }
 
-	/*
-	 * Return true if the key is the cache, false otherwise.
-	 */
-	has(key) {
-		return this.store.has(key)
-	}
+  /*
+   * Return true if the key is the cache, false otherwise.
+   */
+  has(key) {
+    return this.store.has(key)
+  }
 
-	/*
-	 * Put a value into the cache.
-	 */
-	put(key, value) {
-		this.store.set(key, value)
-		this.access.set(key, Date.now())
-		this._prune()
-	}
+  /*
+   * Put a value into the cache.
+   */
+  put(key, value) {
+    this.store.set(key, value)
+    this.access.set(key, Date.now())
+    this._prune()
+  }
 
-	/*
-	 * Delete a value from the cache.
-	 */
-	del(key) {
-		this.store.delete(key)
-		this.access.delete(key)
-	}
+  /*
+   * Delete a value from the cache.
+   */
+  del(key) {
+    this.store.delete(key)
+    this.access.delete(key)
+  }
 
-	/*
-	 * Current size of the cache
-	 */
-	size() {
-		return this.store.size
-	}
+  /*
+   * Current size of the cache
+   */
+  size() {
+    return this.store.size
+  }
 
-	/*
-	 * Clear the LRU cache entirely.
-	 */
-	clear() {
-		this.store = new Map()
-		this.access = new Map()
-	}
+  /*
+   * Clear the LRU cache entirely.
+   */
+  clear() {
+    this.store = new Map()
+    this.access = new Map()
+  }
 
-	/*
-	 * Internal pruning function.
-	 */
-	_prune() {
-		debug('About to prune; have', this.store.size, 'and capacity is', this.capacity)
+  /*
+   * Internal pruning function.
+   */
+  _prune() {
+    debug('About to prune; have', this.store.size, 'and capacity is', this.capacity)
 
-		const sorted = Array.from(this.access.entries())
-		sorted.sort((first, second) => {
-			if (first[1] === second[1]) {
-				return 0
-			}
-			return first[1] < second[1] ? -1 : 1
-		})
-		debug('Sorted keys are:', sorted)
+    const sorted = Array.from(this.access.entries())
+    sorted.sort((first, second) => {
+      if (first[1] === second[1]) {
+        return 0
+      }
+      return first[1] < second[1] ? -1 : 1
+    })
+    debug('Sorted keys are:', sorted)
 
-		debug('Have to prune', this.store.size - this.capacity, 'items.')
-		let idx = 0
-		const toPrune = []
-		while (idx < sorted.length && toPrune.length < this.store.size - this.capacity) {
-			toPrune.push(sorted[idx][0])
-			++idx
-		}
+    debug('Have to prune', this.store.size - this.capacity, 'items.')
+    let idx = 0
+    const toPrune = []
+    while (idx < sorted.length && toPrune.length < this.store.size - this.capacity) {
+      toPrune.push(sorted[idx][0])
+      ++idx
+    }
 
-		toPrune.forEach((key) => {
-			this.store.delete(key)
-			this.access.delete(key)
-		})
-		debug('Size after pruning', this.store.size)
-	}
+    toPrune.forEach(key => {
+      this.store.delete(key)
+      this.access.delete(key)
+    })
+    debug('Size after pruning', this.store.size)
+  }
 }
 
 module.exports = {
-	LRUCache,
+  LRUCache,
 }

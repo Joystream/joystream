@@ -23,28 +23,28 @@ const expect = require('chai').expect
 const { RuntimeApi } = require('@joystream/storage-runtime-api')
 
 describe('Balances', () => {
-	let api
-	let key
-	before(async () => {
-		api = await RuntimeApi.create()
-		key = await api.identities.loadUnlock('test/data/edwards_unlocked.json')
-	})
+  let api
+  let key
+  before(async () => {
+    api = await RuntimeApi.create()
+    key = await api.identities.loadUnlock('test/data/edwards_unlocked.json')
+  })
 
-	it('returns free balance for an account', async () => {
-		const balance = await api.balances.freeBalance(key.address)
-		// Should be exactly zero
-		expect(balance.cmpn(0)).to.equal(0)
-	})
+  it('returns free balance for an account', async () => {
+    const balance = await api.balances.freeBalance(key.address)
+    // Should be exactly zero
+    expect(balance.cmpn(0)).to.equal(0)
+  })
 
-	it('checks whether a minimum balance exists', async () => {
-		// A minimum of 0 should exist, but no more.
-		expect(await api.balances.hasMinimumBalanceOf(key.address, 0)).to.be.true
-		expect(await api.balances.hasMinimumBalanceOf(key.address, 1)).to.be.false
-	})
+  it('checks whether a minimum balance exists', async () => {
+    // A minimum of 0 should exist, but no more.
+    expect(await api.balances.hasMinimumBalanceOf(key.address, 0)).to.be.true
+    expect(await api.balances.hasMinimumBalanceOf(key.address, 1)).to.be.false
+  })
 
-	it('returns the base transaction fee of the chain', async () => {
-		const fee = await api.balances.baseTransactionFee()
-		// >= 0 comparison works
-		expect(fee.cmpn(0)).to.be.at.least(0)
-	})
+  it('returns the base transaction fee of the chain', async () => {
+    const fee = await api.balances.baseTransactionFee()
+    // >= 0 comparison works
+    expect(fee.cmpn(0)).to.be.at.least(0)
+  })
 })

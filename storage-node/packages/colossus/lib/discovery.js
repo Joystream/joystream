@@ -34,37 +34,37 @@ const validateResponses = require('./middleware/validate_responses')
 
 // Configure app
 function create_app(projectRoot, runtime) {
-	const app = express()
-	app.use(cors())
-	app.use(bodyParser.json())
-	// FIXME app.use(bodyParser.urlencoded({ extended: true }));
+  const app = express()
+  app.use(cors())
+  app.use(bodyParser.json())
+  // FIXME app.use(bodyParser.urlencoded({ extended: true }));
 
-	// Load & extend/configure API docs
-	const api = yaml.safeLoad(fs.readFileSync(path.resolve(projectRoot, 'api-base.yml')))
-	api['x-express-openapi-additional-middleware'] = [validateResponses]
-	api['x-express-openapi-validation-strict'] = true
+  // Load & extend/configure API docs
+  const api = yaml.safeLoad(fs.readFileSync(path.resolve(projectRoot, 'api-base.yml')))
+  api['x-express-openapi-additional-middleware'] = [validateResponses]
+  api['x-express-openapi-validation-strict'] = true
 
-	openapi.initialize({
-		apiDoc: api,
-		app,
-		// paths: path.resolve(projectRoot, 'discovery_app_paths'),
-		paths: {
-			path: '/discover/v0/{id}',
-			module: require('../paths/discover/v0/{id}'),
-		},
-		docsPath: '/swagger.json',
-		dependencies: {
-			runtime,
-		},
-	})
+  openapi.initialize({
+    apiDoc: api,
+    app,
+    // paths: path.resolve(projectRoot, 'discovery_app_paths'),
+    paths: {
+      path: '/discover/v0/{id}',
+      module: require('../paths/discover/v0/{id}'),
+    },
+    docsPath: '/swagger.json',
+    dependencies: {
+      runtime,
+    },
+  })
 
-	// If no other handler gets triggered (errors), respond with the
-	// error serialized to JSON.
-	app.use(function (err, req, res) {
-		res.status(err.status).json(err)
-	})
+  // If no other handler gets triggered (errors), respond with the
+  // error serialized to JSON.
+  app.use(function (err, req, res) {
+    res.status(err.status).json(err)
+  })
 
-	return app
+  return app
 }
 
 module.exports = create_app

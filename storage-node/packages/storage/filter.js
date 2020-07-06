@@ -26,57 +26,57 @@ const DEFAULT_REJECT_TYPES = []
 
 // Configuration defaults
 function configDefaults(config) {
-	const filter = config.filter || {}
+  const filter = config.filter || {}
 
-	// We accept zero as switching this check off.
-	if (typeof filter.max_size === 'undefined') {
-		filter.max_size = DEFAULT_MAX_FILE_SIZE
-	}
+  // We accept zero as switching this check off.
+  if (typeof filter.max_size === 'undefined') {
+    filter.max_size = DEFAULT_MAX_FILE_SIZE
+  }
 
-	// Figure out mime types
-	filter.mime = filter.mime || []
-	filter.mime.accept = filter.mime.accept || DEFAULT_ACCEPT_TYPES
-	filter.mime.reject = filter.mime.reject || DEFAULT_REJECT_TYPES
+  // Figure out mime types
+  filter.mime = filter.mime || []
+  filter.mime.accept = filter.mime.accept || DEFAULT_ACCEPT_TYPES
+  filter.mime.reject = filter.mime.reject || DEFAULT_REJECT_TYPES
 
-	return filter
+  return filter
 }
 
 // Mime type matching
 function mimeMatches(acceptable, provided) {
-	if (acceptable.endsWith('*')) {
-		// Wildcard match
-		const prefix = acceptable.slice(0, acceptable.length - 1)
-		debug('wildcard matching', provided, 'against', acceptable, '/', prefix)
-		return provided.startsWith(prefix)
-	}
-	// Exact match
-	debug('exact matching', provided, 'against', acceptable)
-	return provided === acceptable
+  if (acceptable.endsWith('*')) {
+    // Wildcard match
+    const prefix = acceptable.slice(0, acceptable.length - 1)
+    debug('wildcard matching', provided, 'against', acceptable, '/', prefix)
+    return provided.startsWith(prefix)
+  }
+  // Exact match
+  debug('exact matching', provided, 'against', acceptable)
+  return provided === acceptable
 }
 
 function mimeMatchesAny(accept, reject, provided) {
-	// Pass accept
-	let accepted = false
-	for (const item of accept) {
-		if (mimeMatches(item, provided)) {
-			debug('Content type matches', item, 'which is acceptable.')
-			accepted = true
-			break
-		}
-	}
-	if (!accepted) {
-		return false
-	}
+  // Pass accept
+  let accepted = false
+  for (const item of accept) {
+    if (mimeMatches(item, provided)) {
+      debug('Content type matches', item, 'which is acceptable.')
+      accepted = true
+      break
+    }
+  }
+  if (!accepted) {
+    return false
+  }
 
-	// Don't pass reject
-	for (const item of reject) {
-		if (mimeMatches(item, provided)) {
-			debug('Content type matches', item, 'which is unacceptable.')
-			return false
-		}
-	}
+  // Don't pass reject
+  for (const item of reject) {
+    if (mimeMatches(item, provided)) {
+      debug('Content type matches', item, 'which is unacceptable.')
+      return false
+    }
+  }
 
-	return true
+  return true
 }
 
 /**
@@ -92,37 +92,37 @@ function mimeMatchesAny(accept, reject, provided) {
  * @return {object} HTTP status code and error message.
  **/
 function filterFunc(config, headers, mimeType) {
-	const filter = configDefaults(config)
+  const filter = configDefaults(config)
 
-	// Enforce maximum file upload size
-	if (filter.max_size) {
-		const size = parseInt(headers['content-length'], 10)
-		if (!size) {
-			return {
-				code: 411,
-				message: 'A Content-Length header is required.',
-			}
-		}
+  // Enforce maximum file upload size
+  if (filter.max_size) {
+    const size = parseInt(headers['content-length'], 10)
+    if (!size) {
+      return {
+        code: 411,
+        message: 'A Content-Length header is required.',
+      }
+    }
 
-		if (size > filter.max_size) {
-			return {
-				code: 413,
-				message: 'The provided Content-Length is too large.',
-			}
-		}
-	}
+    if (size > filter.max_size) {
+      return {
+        code: 413,
+        message: 'The provided Content-Length is too large.',
+      }
+    }
+  }
 
-	// Enforce mime type based filtering
-	if (!mimeMatchesAny(filter.mime.accept, filter.mime.reject, mimeType)) {
-		return {
-			code: 415,
-			message: 'Content has an unacceptable MIME type.',
-		}
-	}
+  // Enforce mime type based filtering
+  if (!mimeMatchesAny(filter.mime.accept, filter.mime.reject, mimeType)) {
+    return {
+      code: 415,
+      message: 'Content has an unacceptable MIME type.',
+    }
+  }
 
-	return {
-		code: 200,
-	}
+  return {
+    code: 200,
+  }
 }
 
 module.exports = filterFunc
