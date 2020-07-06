@@ -29,7 +29,7 @@ describe('ModelRenderer', () => {
     warthogModel.addField('Post', new Field('snake_case', 'String'));
     warthogModel.addField('Post', new Field('kebab-case', 'String'));
 
-    generator = new ModelRenderer(warthogModel, warthogModel.lookupType('Post'), enumCtxProvider);
+    generator = new ModelRenderer(warthogModel, warthogModel.lookupEntity('Post'), enumCtxProvider);
 
     const rendered = generator.render(modelTemplate);
 
@@ -48,7 +48,7 @@ describe('ModelRenderer', () => {
       fields: [new Field('a', 'String')],
     } as ObjectType);
 
-    generator = new ModelRenderer(warthogModel, warthogModel.lookupType('some_randomEntity'), enumCtxProvider);
+    generator = new ModelRenderer(warthogModel, warthogModel.lookupEntity('some_randomEntity'), enumCtxProvider);
 
     const rendered = generator.render(modelTemplate);
     debug(`rendered: ${JSON.stringify(rendered, null, 2)}`);
@@ -67,7 +67,7 @@ describe('ModelRenderer', () => {
     warthogModel.addField('Post', new Field('h', 'Bytes'));
     warthogModel.addField('Post', new Field('j', 'Boolean'));
 
-    generator = new ModelRenderer(warthogModel, warthogModel.lookupType('Post'), enumCtxProvider);
+    generator = new ModelRenderer(warthogModel, warthogModel.lookupEntity('Post'), enumCtxProvider);
 
     const rendered = generator.render(modelTemplate);
 
@@ -90,7 +90,7 @@ describe('ModelRenderer', () => {
       author: Author!
     }`);
 
-    generator = new ModelRenderer(model, model.lookupType('Author'), enumCtxProvider);
+    generator = new ModelRenderer(model, model.lookupEntity('Author'), enumCtxProvider);
 
     const rendered = generator.render(modelTemplate);
     debug(`rendered: ${JSON.stringify(rendered, null, 2)}`);
@@ -111,7 +111,7 @@ describe('ModelRenderer', () => {
       # FIXME: this causes a double field author: Author! 
     }`);
 
-    generator = new ModelRenderer(model, model.lookupType('Post'), enumCtxProvider);
+    generator = new ModelRenderer(model, model.lookupEntity('Post'), enumCtxProvider);
     const rendered = generator.render(modelTemplate);
     debug(`rendered: ${JSON.stringify(rendered, null, 2)}`);
 
@@ -131,7 +131,7 @@ describe('ModelRenderer', () => {
       posts: [String]
     }`);
 
-    generator = new ModelRenderer(model, model.lookupType('Author'), enumCtxProvider);
+    generator = new ModelRenderer(model, model.lookupEntity('Author'), enumCtxProvider);
 
     const rendered = generator.render(modelTemplate);
     debug(`rendered: ${JSON.stringify(rendered, null, 2)}`);
@@ -154,7 +154,7 @@ describe('ModelRenderer', () => {
         episode: Episode
       }`);
 
-    generator = new ModelRenderer(model, model.lookupType('Movie'), enumCtxProvider);
+    generator = new ModelRenderer(model, model.lookupEntity('Movie'), enumCtxProvider);
     const rendered = generator.render(modelTemplate);
     debug(`rendered: ${JSON.stringify(rendered, null, 2)}`);
 
@@ -180,7 +180,7 @@ describe('ModelRenderer', () => {
         episode: episode_Camel_Case
       }`);
 
-    generator = new ModelRenderer(model, model.lookupType('Movie'), enumCtxProvider);
+    generator = new ModelRenderer(model, model.lookupEntity('Movie'), enumCtxProvider);
     const rendered = generator.render(modelTemplate);
     debug(`rendered: ${JSON.stringify(rendered, null, 2)}`);
 
@@ -218,7 +218,7 @@ describe('ModelRenderer', () => {
         field1: enum1,
         field2: enum2
       }`);
-    generator = new ModelRenderer(model, model.lookupType('Movie'), enumCtxProvider);
+    generator = new ModelRenderer(model, model.lookupEntity('Movie'), enumCtxProvider);
     const rendered = generator.render(modelTemplate);
     debug(`rendered: ${JSON.stringify(rendered, null, 2)}`);
     expect(rendered).to.include(`import { enum1 } from '../enums/enums'`, 'Should import enum1');
@@ -242,12 +242,12 @@ describe('ModelRenderer', () => {
       type A @entity {
         field1: enum1,
       }`);
-    generator = new ModelRenderer(model, model.lookupType('A'), enumCtxProvider);
+    generator = new ModelRenderer(model, model.lookupEntity('A'), enumCtxProvider);
     let rendered = generator.render(modelTemplate);
     debug(`rendered A: ${JSON.stringify(rendered, null, 2)}`);
     expect(rendered).to.include('export { enum1 }', 'Should export enum1');
 
-    generator = new ModelRenderer(model, model.lookupType('B'), enumCtxProvider);
+    generator = new ModelRenderer(model, model.lookupEntity('B'), enumCtxProvider);
     rendered = generator.render(modelTemplate);
     debug(`rendered B: ${JSON.stringify(rendered, null, 2)}`);
     expect(rendered).to.not.include('export { enum1 }', 'B should not export enum1');
@@ -262,7 +262,7 @@ describe('ModelRenderer', () => {
             field1: String
             field2: String
     }`);
-    generator = new ModelRenderer(model, model.lookupType('A'), enumCtxProvider);
+    generator = new ModelRenderer(model, model.lookupEntity('A'), enumCtxProvider);
     const rendered = generator.render(modelTemplate);
     expect(rendered).to.include('extends IEntity');
     expect(rendered).to.include(`import { IEntity } from '../i-entity/i-entity.model'`, 'should import interface type');
@@ -277,7 +277,7 @@ describe('ModelRenderer', () => {
             field1: String
             field2: String
     }`);
-    generator = new ModelRenderer(model, model.lookupType('A'), enumCtxProvider);
+    generator = new ModelRenderer(model, model.lookupEntity('A'), enumCtxProvider);
     const rendered = generator.render(modelTemplate);
     expect(rendered).to.not.include('field1');
   });

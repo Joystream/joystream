@@ -2,20 +2,59 @@ import { FTSQuery } from './FTSQuery';
 import { Field } from './Field';
 import { GraphQLEnumType } from 'graphql';
 import Debug from 'debug';
+import { validateVariantField } from './validate';
+import { availableTypes } from './ScalarTypes';
 
 const debug = Debug('qnode-cli:model');
+
+export enum ModelType {
+  ENUM, 
+  VARIANT, 
+  ENTITY, 
+  UNION, 
+  INTERFACE,
+  SCALAR
+}
 
 export class WarthogModel {
   private _types: ObjectType[];
   private _ftsQueries: FTSQuery[];
   private _enums: GraphQLEnumType[] = [];
   private _interfaces: ObjectType[] = [];
+  private _variants: ObjectType[] = [];
+  private _unions: UnionType[] = [];
   private _name2query: { [key: string]: FTSQuery } = {};
   private _name2type: { [key: string]: ObjectType } = {};
 
   constructor() {
     this._types = [];
     this._ftsQueries = [];
+  }
+
+  addUnion(name: string, typeNames: string[]): void {
+    const types: ObjectType[] = [];
+    typeNames.map(t => types.push(this.lookupVariant(t)));
+    this._unions.push({
+      name,
+      types,
+    });
+  }
+
+  addVariant(type: ObjectType): void {
+    if (!type.isVariant) {
+      debug(`${type.name} is not an Entity`);
+      return;
+    }
+
+    if (type.isEntity) {
+      throw new Error('An entity cannot be a variant');
+    }
+
+    type.fields.forEach(f => {
+      validateVariantField(f);
+    });
+
+    this._variants.push(type);
   }
 
   addEntity(type: ObjectType): void {
@@ -76,7 +115,7 @@ export class WarthogModel {
    */
   addQueryClause(queryName: string, fieldName: string, typeName: string): void {
     const field = this.lookupField(typeName, fieldName);
-    const objType = this.lookupType(typeName);
+    const objType = this.lookupEntity(typeName);
     this._addQueryClause(queryName, field, objType);
   }
 
@@ -99,6 +138,12 @@ export class WarthogModel {
   lookupEnum(name: string): GraphQLEnumType {
     const e = this._enums.find(e => e.name === name);
     if (!e) throw new Error(`Cannot find enum with name ${name}`);
+    return e;
+  }
+
+  lookupVariant(name: string): ObjectType {
+    const e = this._variants.find(e => e.name === name);
+    if (!e) throw new Error(`Cannot find variant with name ${name}`);
     return e;
   }
 
@@ -131,7 +176,7 @@ export class WarthogModel {
    * @param name the name of the field
    */
   lookupField(objTypeName: string, name: string): Field {
-    const objType = this.lookupType(objTypeName);
+    const objType = this.lookupEntity(objTypeName);
     const field = objType.fields.find(f => f.name === name);
     if (!field) {
       throw new Error(`No field ${name} is found for object type ${objTypeName}`);
@@ -140,7 +185,7 @@ export class WarthogModel {
   }
 
   addField(entity: string, field: Field): void {
-    const objType = this.lookupType(entity);
+    const objType = this.lookupEntity(entity);
     objType.fields.push(field);
   }
 
@@ -149,12 +194,40 @@ export class WarthogModel {
    *
    * @param name ObjectTypeName as defined in the schema
    */
-  lookupType(name: string): ObjectType {
+  lookupEntity(name: string): ObjectType {
     if (!this._name2type[name]) {
       throw new Error(`No ObjectType ${name} found`);
     }
     return this._name2type[name];
   }
+
+  lookupType(name: string): ModelType {
+    if (name in availableTypes) {
+      return ModelType.SCALAR;
+    }
+
+    if (this._name2type[name]) {
+      return ModelType.ENTITY;
+    }
+
+    if (this._interfaces.find(i => i.name === name)) {
+      return ModelType.INTERFACE;
+    }
+
+    if (this._variants.find(v => v.name === name)) {
+      return ModelType.VARIANT;
+    }
+
+    if (this._unions.find(u => u.name === name)) {
+      return ModelType.UNION;
+    }
+
+    if (this._enums.find(e => e.name === name)) {
+      return ModelType.ENUM;
+    }
+    throw new Error(`Type ${name} is undefined`);
+  }
+
 }
 
 /**
@@ -169,4 +242,9 @@ export interface ObjectType {
   description?: string;
   isInterface?: boolean;
   interfaces?: ObjectType[]; //interface names
+}
+
+export interface UnionType {
+  name: string;
+  types: ObjectType[];
 }

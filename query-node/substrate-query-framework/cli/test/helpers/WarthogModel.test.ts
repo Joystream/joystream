@@ -10,10 +10,10 @@ describe('WarthogModel', () => {
   });
 
   it('Should lookup types', () => {
-    expect(warthogModel.lookupType('Thread')).eq(threadObjType, 'Should find Thread type');
-    expect(warthogModel.lookupType('Post')).eq(postObjType, 'Should find Post type');
+    expect(warthogModel.lookupEntity('Thread')).eq(threadObjType, 'Should find Thread type');
+    expect(warthogModel.lookupEntity('Post')).eq(postObjType, 'Should find Post type');
 
-    expect(() => warthogModel.lookupType('NoSuchType')).throw('No ObjectType');
+    expect(() => warthogModel.lookupEntity('NoSuchType')).throw('No ObjectType');
   });
 
   it('Should lookup fields', () => {
@@ -73,6 +73,6 @@ describe('WarthogModel', () => {
             field1: String
             field2: String
         }`);
-    expect(model.lookupType('A').interfaces).length(1, 'Should register the implemented interface');
+    expect(model.lookupEntity('A').interfaces).length(1, 'Should register the implemented interface');
   });
 });
