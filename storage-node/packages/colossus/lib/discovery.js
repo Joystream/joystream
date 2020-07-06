@@ -33,7 +33,7 @@ const path = require('path')
 const validateResponses = require('./middleware/validate_responses')
 
 // Configure app
-function create_app(projectRoot, runtime) {
+function createApp(projectRoot, runtime) {
   const app = express()
   app.use(cors())
   app.use(bodyParser.json())
@@ -67,4 +67,4 @@ function create_app(projectRoot, runtime) {
   return app
 }
 
-module.exports = create_app
+module.exports = createApp

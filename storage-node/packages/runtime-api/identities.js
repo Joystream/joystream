@@ -110,6 +110,9 @@ class IdentitiesApi {
   /*
    * Ask for a passphrase
    */
+
+  /* eslint-disable class-methods-use-this */
+  // Disable lint because the method used by a mocking library.
   askForPassphrase(address) {
     // Query for passphrase
     const prompt = require('password-prompt')

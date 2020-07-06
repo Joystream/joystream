@@ -234,6 +234,8 @@ class Storage {
    * that time.
    */
   async withSpecifiedTimeout(timeout, operation) {
+    // TODO: rewrite this method to async-await style
+    // eslint-disable-next-line  no-async-promise-executor
     return new Promise(async (resolve, reject) => {
       try {
         resolve(await new Promise(operation))

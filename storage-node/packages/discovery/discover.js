@@ -61,7 +61,7 @@ async function getIpnsIdentity(storageProviderId, runtimeApi) {
  * @param {string} gateway - optional ipfs http gateway url to perform ipfs queries
  * @returns { Promise<object> } - the published service information
  */
-async function discover_over_ipfs_http_gateway(storageProviderId, runtimeApi, gateway = 'http://localhost:8080') {
+async function discoverOverIpfsHttpGateway(storageProviderId, runtimeApi, gateway = 'http://localhost:8080') {
   storageProviderId = new BN(storageProviderId)
   const isProvider = await runtimeApi.workers.isStorageProvider(storageProviderId)
 
@@ -95,7 +95,7 @@ async function discover_over_ipfs_http_gateway(storageProviderId, runtimeApi, ga
  * @param {string} discoverApiEndpoint - url for a colossus discovery api endpoint
  * @returns { Promise<object> } - the published service information
  */
-async function discover_over_joystream_discovery_service(storageProviderId, runtimeApi, discoverApiEndpoint) {
+async function discoverOverJoystreamDiscoveryService(storageProviderId, runtimeApi, discoverApiEndpoint) {
   storageProviderId = new BN(storageProviderId)
   const isProvider = await runtimeApi.workers.isStorageProvider(storageProviderId)
 
@@ -137,7 +137,7 @@ async function discover_over_joystream_discovery_service(storageProviderId, runt
  * @param {RuntimeApi} runtimeApi - api instance to query the chain
  * @returns { Promise<object> } - the published service information
  */
-async function discover_over_local_ipfs_node(storageProviderId, runtimeApi) {
+async function discoverOverLocalIpfsNode(storageProviderId, runtimeApi) {
   storageProviderId = new BN(storageProviderId)
   const isProvider = await runtimeApi.workers.isStorageProvider(storageProviderId)
 
@@ -152,18 +152,18 @@ async function discover_over_local_ipfs_node(storageProviderId, runtimeApi) {
     throw new Error('no identity to resolve')
   }
 
-  const ipns_address = `/ipns/${identity}/`
+  const ipnsAddress = `/ipns/${identity}/`
 
   debug('resolved ipns to ipfs object')
   // Can this call hang forever!? can/should we set a timeout?
-  const ipfs_name = await ipfs.name.resolve(ipns_address, {
+  const ipfsName = await ipfs.name.resolve(ipnsAddress, {
     // don't recurse, there should only be one indirection to the service info file
     recursive: false,
     nocache: false,
   })
 
-  debug('getting ipfs object', ipfs_name)
-  const data = await ipfs.get(ipfs_name) // this can sometimes hang forever!?! can we set a timeout?
+  debug('getting ipfs object', ipfsName)
+  const data = await ipfs.get(ipfsName) // this can sometimes hang forever!?! can we set a timeout?
 
   // there should only be one file published under the resolved path
   const content = data[0].content
@@ -232,9 +232,9 @@ async function _discover(storageProviderId, runtimeApi) {
   let result
   try {
     if (inBrowser()) {
-      result = await discover_over_joystream_discovery_service(storageProviderId, runtimeApi)
+      result = await discoverOverJoystreamDiscoveryService(storageProviderId, runtimeApi)
     } else {
-      result = await discover_over_local_ipfs_node(storageProviderId, runtimeApi)
+      result = await discoverOverLocalIpfsNode(storageProviderId, runtimeApi)
     }
 
     debug(result)
@@ -266,7 +266,7 @@ async function _discover(storageProviderId, runtimeApi) {
 
 module.exports = {
   discover,
-  discover_over_joystream_discovery_service,
-  discover_over_ipfs_http_gateway,
-  discover_over_local_ipfs_node,
+  discoverOverJoystreamDiscoveryService,
+  discoverOverIpfsHttpGateway,
+  discoverOverLocalIpfsNode,
 }

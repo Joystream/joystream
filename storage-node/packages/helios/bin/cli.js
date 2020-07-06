@@ -61,7 +61,7 @@ async function main() {
   const endpoints = await Promise.all(
     providersStatuses.map(async ({ providerId }) => {
       try {
-        const serviceInfo = await discover.discover_over_joystream_discovery_service(providerId, runtime)
+        const serviceInfo = await discover.discoverOverJoystreamDiscoveryService(providerId, runtime)
 
         if (serviceInfo === null) {
           console.log(`provider ${providerId} has not published service information`)

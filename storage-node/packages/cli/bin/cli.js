@@ -63,7 +63,7 @@ function assertFile(name, filename) {
   assert(fs.statSync(filename).isFile(), `Path "${filename}" is not a file, aborting!`)
 }
 
-function load_identity(api, filename, passphrase) {
+function loadIdentity(api, filename, passphrase) {
   if (filename) {
     assertFile('keyfile', filename)
     api.identities.loadUnlock(filename, passphrase)
@@ -76,15 +76,13 @@ function load_identity(api, filename, passphrase) {
 const commands = {
   // add Alice well known account as storage provider
   'dev-init': async api => {
-    // dev accounts are automatically loaded, no need to add explicitly to keyring
-    // load_identity(api)
+    // dev accounts are automatically loaded, no need to add explicitly to keyring using loadIdentity(api)
     const dev = require('./dev')
     return dev.init(api)
   },
   // Checks that the setup done by dev-init command was successful.
   'dev-check': async api => {
-    // dev accounts are automatically loaded, no need to add explicitly to keyring
-    // load_identity(api)
+    // dev accounts are automatically loaded, no need to add explicitly to keyring using loadIdentity(api)
     const dev = require('./dev')
     return dev.check(api)
   },
@@ -93,7 +91,7 @@ const commands = {
   // resolve the ipns id to the asset put api url of the storage-node
   // before uploading..
   upload: async (api, url, filename, doTypeId, keyfile, passphrase) => {
-    load_identity(keyfile, passphrase)
+    loadIdentity(keyfile, passphrase)
     // Check parameters
     assertFile('file', filename)
 
@@ -234,7 +232,7 @@ async function main() {
     throw new Error('Need a command to run!')
   }
 
-  if (commands.hasOwnProperty(command)) {
+  if (Object.prototype.hasOwnProperty.call(commands, command)) {
     // Command recognized
     const args = _.clone(cli.input).slice(1)
     await commands[command](api, ...args)

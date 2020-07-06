@@ -183,6 +183,8 @@ class RuntimeApi {
       // If the nonce isn't available, get it from chain.
       if (!nonce) {
         // current nonce
+        // TODO: possible race condition here found by the linter
+        // eslint-disable-next-line require-atomic-updates
         nonce = await this.api.query.system.accountNonce(accountId)
         debug(`Got nonce for ${accountId} from chain: ${nonce}`)
       }
@@ -284,6 +286,8 @@ class RuntimeApi {
   async signAndSendThenGetEventResult(senderAccountId, tx, { eventModule, eventName, eventProperty }) {
     // event from a module,
     const subscribed = [[eventModule, eventName]]
+    // TODO: rewrite this method to async-await style
+    // eslint-disable-next-line  no-async-promise-executor
     return new Promise(async (resolve, reject) => {
       try {
         await this.signAndSend(senderAccountId, tx, 1, subscribed, events => {

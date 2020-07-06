@@ -130,6 +130,8 @@ class AssetsApi {
    */
   async createAndReturnStorageRelationship(providerAccountId, storageProviderId, contentId) {
     contentId = parseContentId(contentId)
+    // TODO: rewrite this method to async-await style
+    // eslint-disable-next-line  no-async-promise-executor
     return new Promise(async (resolve, reject) => {
       try {
         await this.createStorageRelationship(providerAccountId, storageProviderId, contentId, events => {

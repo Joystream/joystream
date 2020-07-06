@@ -104,19 +104,19 @@ function startExpressApp(app, port) {
 }
 
 // Start app
-function start_all_services({ store, api, port }) {
+function startAllServices({ store, api, port }) {
   const app = require('../lib/app')(PROJECT_ROOT, store, api) // reduce falgs to only needed values
   return startExpressApp(app, port)
 }
 
 // Start discovery service app only
-function start_discovery_service({ api, port }) {
+function startDiscoveryService({ api, port }) {
   const app = require('../lib/discovery')(PROJECT_ROOT, api) // reduce flags to only needed values
   return startExpressApp(app, port)
 }
 
 // Get an initialized storage instance
-function get_storage(runtimeApi) {
+function getStorage(runtimeApi) {
   // TODO at some point, we can figure out what backend-specific connection
   // options make sense. For now, just don't use any configuration.
   const { Storage } = require('@joystream/storage-node-backend')
@@ -136,7 +136,7 @@ function get_storage(runtimeApi) {
   return Storage.create(options)
 }
 
-async function init_api_production({ wsProvider, providerId, keyFile, passphrase }) {
+async function initApiProduction({ wsProvider, providerId, keyFile, passphrase }) {
   // Load key information
   const { RuntimeApi } = require('@joystream/storage-runtime-api')
 
@@ -166,7 +166,7 @@ async function init_api_production({ wsProvider, providerId, keyFile, passphrase
   return api
 }
 
-async function init_api_development() {
+async function initApiDevelopment() {
   // Load key information
   const { RuntimeApi } = require('@joystream/storage-runtime-api')
 
@@ -185,7 +185,7 @@ async function init_api_development() {
   return api
 }
 
-function get_service_information(publicUrl) {
+function getServiceInformation(publicUrl) {
   // For now assume we run all services on the same endpoint
   return {
     asset: {
@@ -199,17 +199,17 @@ function get_service_information(publicUrl) {
   }
 }
 
-async function announce_public_url(api, publicUrl) {
+async function announcePublicUrl(api, publicUrl) {
   // re-announce in future
   const reannounce = function (timeoutMs) {
-    setTimeout(announce_public_url, timeoutMs, api, publicUrl)
+    setTimeout(announcePublicUrl, timeoutMs, api, publicUrl)
   }
 
   debug('announcing public url')
   const { publish } = require('@joystream/service-discovery')
 
   try {
-    const serviceInformation = get_service_information(publicUrl)
+    const serviceInformation = getServiceInformation(publicUrl)
 
     const keyId = await publish.publish(serviceInformation)
 
@@ -238,14 +238,14 @@ if (!command) {
   command = 'server'
 }
 
-async function start_colossus({ api, publicUrl, port, flags }) {
+async function startColossus({ api, publicUrl, port, flags }) {
   // TODO: check valid url, and valid port number
-  const store = get_storage(api)
+  const store = getStorage(api)
   banner()
   const { startSyncing } = require('../lib/sync')
   startSyncing(api, { syncPeriod: SYNC_PERIOD_MS }, store)
-  announce_public_url(api, publicUrl)
-  return start_all_services({ store, api, port, flags }) // dont pass all flags only required values
+  announcePublicUrl(api, publicUrl)
+  return startAllServices({ store, api, port, flags }) // dont pass all flags only required values
 }
 
 const commands = {
@@ -254,16 +254,16 @@ const commands = {
 
     if (cli.flags.dev) {
       const dev = require('../../cli/bin/dev')
-      api = await init_api_development()
+      api = await initApiDevelopment()
       port = dev.developmentPort()
       publicUrl = `http://localhost:${port}/`
     } else {
-      api = await init_api_production(cli.flags)
+      api = await initApiProduction(cli.flags)
       publicUrl = cli.flags.publicUrl
       port = cli.flags.port
     }
 
-    return start_colossus({ api, publicUrl, port })
+    return startColossus({ api, publicUrl, port })
   },
   discovery: async () => {
     debug('Starting Joystream Discovery Service')
@@ -271,7 +271,7 @@ const commands = {
     const wsProvider = cli.flags.wsProvider
     const api = await RuntimeApi.create({ provider_url: wsProvider })
     const port = cli.flags.port
-    await start_discovery_service({ api, port })
+    await startDiscoveryService({ api, port })
   },
 }
 
@@ -282,7 +282,7 @@ async function main() {
     command = 'server'
   }
 
-  if (commands.hasOwnProperty(command)) {
+  if (Object.prototype.hasOwnProperty.call(commands, command)) {
     // Command recognized
     const args = _.clone(cli.input).slice(1)
     await commands[command](...args)

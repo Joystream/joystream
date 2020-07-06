@@ -31,7 +31,7 @@ async function syncCallback(api, storage) {
 
   // Iterate over all sync objects, and ensure they're synced.
   const allChecks = knownContentIds.map(async contentId => {
-    /* eslint-disable prefer-const */
+    // eslint-disable-next-line prefer-const
     let { relationship, relationshipId } = await api.assets.getStorageRelationshipAndId(providerId, contentId)
 
     // get the data object
