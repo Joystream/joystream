@@ -55,7 +55,8 @@ export const CoverHoverOverlay = styled.div`
 	align-items: center;
 `;
 
-export const CoverPlayIcon = styled(Play)`
+// Play icon is incorrectly typed as string
+export const CoverPlayIcon = styled(Play as any)`
 	transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
 	transform: translateY(40px);
 `;
