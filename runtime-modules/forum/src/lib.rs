@@ -353,6 +353,7 @@ const ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED: &str = "Maximum valid category de
 const ERROR_CATEGORY_DOES_NOT_EXIST: &str = "Category does not exist.";
 const ERROR_CATEGORY_NOT_EMPTY_THREADS: &str = "Category still contains some threads.";
 const ERROR_CATEGORY_NOT_EMPTY_CATEGORIES: &str = "Category still contains some subcategories.";
+const ERROR_MODERATOR_CANT_DELETE_CATEGORY: &str = "No permissions to delete category.";
 
 // Errors about poll.
 const ERROR_POLL_ALTERNATIVES_TOO_SHORT: &str = "Poll items number too short.";
@@ -1441,10 +1442,9 @@ impl<T: Trait> Module<T> {
     ) -> Result<(), &'static str> {
         let who = Self::ensure_is_moderator(origin, moderator_id)?;
 
-        Self::ensure_can_moderate_category(&who, moderator_id, *category_id)?;
-
         let category = <CategoryById<T>>::get(category_id);
 
+        // Ensure category is empty
         ensure!(
             category.num_direct_threads == 0,
             ERROR_CATEGORY_NOT_EMPTY_THREADS,
@@ -1454,7 +1454,24 @@ impl<T: Trait> Module<T> {
             ERROR_CATEGORY_NOT_EMPTY_CATEGORIES,
         );
 
-        Ok(())
+        if let Some(parent_category_id) = category.parent_category_id {
+            // Get path from parent category to root
+            let category_tree_path = Self::build_category_tree_path(&parent_category_id);
+
+            if Self::ensure_can_moderate_category_path(moderator_id, &category_tree_path).is_err()
+            {
+                return Err(ERROR_MODERATOR_CANT_DELETE_CATEGORY);
+            }
+
+            return Ok(());
+        }
+
+        // Allow forum lead to delete top-level category
+        if Self::ensure_is_forum_lead_account(&who).is_ok() {
+            return Ok(());
+        }
+
+        Err(ERROR_MODERATOR_CANT_DELETE_CATEGORY)
     }
 
     /// check if an account can moderate a category.
@@ -1463,18 +1480,28 @@ impl<T: Trait> Module<T> {
         moderator_id: &T::ModeratorId,
         category_id: &T::CategoryId,
     ) -> Result<(), &'static str> {
-        // Get path from category to root
-        let category_tree_path = Self::build_category_tree_path(category_id);
-
         // Ensure moderator account registered before
         Self::ensure_is_moderator_account(account_id, moderator_id)?;
 
-        // Iterate path, check all ancient category
+        // Get path from category to root
+        let category_tree_path = Self::build_category_tree_path(category_id);
+
+        Self::ensure_can_moderate_category_path(moderator_id, &category_tree_path)?;
+
+        Ok(())
+    }
+
+    // check that moderator is allowed to manipulate category in hierarchy
+    fn ensure_can_moderate_category_path(
+        moderator_id: &T::ModeratorId,
+        category_tree_path: &CategoryTreePathArg<T::CategoryId, T::ThreadId, T::Hash>,
+    ) -> Result<(), &'static str> {
         for item in category_tree_path {
             if <CategoryByModerator<T>>::exists(item.id, moderator_id) {
                 return Ok(());
             }
         }
+
         Err(ERROR_MODERATOR_MODERATE_CATEGORY)
     }
 

@@ -311,7 +311,7 @@ fn delete_category_non_empty_subcategories() {
             origin.clone(),
             forum_lead,
             category_id,
-            Err(ERROR_CATEGORY_NOT_EMPTY_THREADS),
+            Err(ERROR_CATEGORY_NOT_EMPTY_CATEGORIES),
         );
     });
 }
@@ -344,8 +344,72 @@ fn delete_category_non_empty_threads() {
             origin.clone(),
             forum_lead,
             category_id,
-            Err(ERROR_CATEGORY_NOT_EMPTY_CATEGORIES),
+            Err(ERROR_CATEGORY_NOT_EMPTY_THREADS),
         );
+    });
+}
+
+#[test]
+// test category can't be deleted by moderator only if he is moderating one of parent categories
+fn delete_category_need_ancestor_moderation() {
+    let moderators = [FORUM_MODERATOR_ORIGIN_ID];
+    let origins = [FORUM_MODERATOR_ORIGIN];
+
+    let config = default_genesis_config();
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    build_test_externalities(config).execute_with(|| {
+        let category_id_1 = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        let category_id_2 = create_category_mock(
+            origin.clone(),
+            Some(category_id_1),
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        // without any permissions, moderator can't delete category
+        delete_category_mock(
+            origins[0].clone(),
+            moderators[0],
+            category_id_2,
+            Err(ERROR_MODERATOR_CANT_DELETE_CATEGORY),
+        );
+
+        // give permision to moderate category itself
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id_2,
+            true,
+            Ok(()),
+        );
+
+        // without permissions to moderate only category itself, moderator can't delete category
+        delete_category_mock(
+            origins[0].clone(),
+            moderators[0],
+            category_id_2,
+            Err(ERROR_MODERATOR_CANT_DELETE_CATEGORY),
+        );
+
+        // give permision to moderate parent category
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id_1,
+            true,
+            Ok(()),
+        );
+
+        // with permissions to moderate parent category, delete will work
+        delete_category_mock(origins[0].clone(), moderators[0], category_id_2, Ok(()));
     });
 }
 
