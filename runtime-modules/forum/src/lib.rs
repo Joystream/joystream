@@ -598,7 +598,7 @@ decl_module! {
         fn deposit_event() = default;
 
         /// Enable a moderator can moderate a category and its sub categories.
-        fn set_moderator_category(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, new_value: bool) -> dispatch::Result {
+        fn update_category_membership_of_moderator(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, new_value: bool) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
             clear_prefix(b"Forum ForumUserById");
