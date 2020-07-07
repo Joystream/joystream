@@ -126,7 +126,7 @@ class Walker {
  *
  * The callback is invoked one last time without data to signal the end of data.
  */
-module.exports = function (base, archive, cb) {
+module.exports = function(base, archive, cb) {
   // Archive is optional and defaults to fs, but cb is not.
   if (!cb) {
     cb = archive

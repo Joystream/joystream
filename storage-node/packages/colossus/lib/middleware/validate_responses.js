@@ -21,7 +21,7 @@
 const debug = require('debug')('joystream:middleware:validate')
 
 // Function taken directly from https://github.com/kogosoftwarellc/open-api/tree/master/packages/express-openapi
-module.exports = function (req, res, next) {
+module.exports = function(req, res, next) {
   const strictValidation = !!req.apiDoc['x-express-openapi-validation-strict']
   if (typeof res.validateResponse === 'function') {
     const send = res.send

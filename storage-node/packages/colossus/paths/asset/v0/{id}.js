@@ -30,7 +30,7 @@ function errorHandler(response, err, code) {
   response.status(err.code || code || 500).send({ message: err.toString() })
 }
 
-module.exports = function (storage, runtime) {
+module.exports = function(storage, runtime) {
   const doc = {
     // parameters for all operations in this path
     parameters: [

@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-
 'use strict'
 
 const debug = require('debug')('joystream:storage-cli:dev')

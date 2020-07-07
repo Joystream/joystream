@@ -21,8 +21,8 @@
 const multer = require('multer')
 
 // Taken from express-openapi examples
-module.exports = function (req, res, next) {
-  multer().any()(req, res, function (err) {
+module.exports = function(req, res, next) {
+  multer().any()(req, res, function(err) {
     if (err) {
       return next(err)
     }

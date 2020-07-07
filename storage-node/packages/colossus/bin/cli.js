@@ -201,7 +201,7 @@ function getServiceInformation(publicUrl) {
 
 async function announcePublicUrl(api, publicUrl) {
   // re-announce in future
-  const reannounce = function (timeoutMs) {
+  const reannounce = function(timeoutMs) {
     setTimeout(announcePublicUrl, timeoutMs, api, publicUrl)
   }
 
