@@ -778,7 +778,14 @@ fn moderate_thread_origin_ok() {
             None,
             Ok(()),
         );
-        moderate_thread_mock(origin, moderator_id, category_id, thread_id, Ok(()));
+        moderate_thread_mock(
+            origin,
+            moderator_id,
+            category_id,
+            thread_id,
+            good_moderation_rationale(),
+            Ok(()),
+        );
     });
 }
 
@@ -1171,6 +1178,7 @@ fn test_migration_not_done() {
                 moderator_id,
                 category_id,
                 thread_id,
+                good_moderation_rationale(),
             ),
             Err(ERROR_DATA_MIGRATION_NOT_DONE),
         );
