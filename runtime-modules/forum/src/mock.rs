@@ -171,6 +171,10 @@ pub fn good_post_new_text() -> Vec<u8> {
     b"Changed post's text".to_vec()
 }
 
+pub fn good_moderation_rationale() -> Vec<u8> {
+    b"Moderation rationale".to_vec()
+}
+
 pub fn good_poll_description() -> Vec<u8> {
     b"poll description".to_vec()
 }
@@ -527,6 +531,7 @@ pub fn moderate_post_mock(
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     post_id: <Runtime as Trait>::PostId,
+    rationale: Vec<u8>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::PostId {
     assert_eq!(
@@ -535,14 +540,16 @@ pub fn moderate_post_mock(
             moderator_id,
             category_id,
             thread_id,
-            post_id
+            post_id,
+            rationale.clone(),
         ),
         result
     );
     if result.is_ok() {
+        let rationale_hash = Runtime::calculate_hash(rationale.clone().as_slice());
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::PostModerated(post_id,))
+            TestEvent::forum_mod(RawEvent::PostModerated(post_id, rationale_hash))
         );
     }
 
