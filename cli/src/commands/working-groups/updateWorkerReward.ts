@@ -1,7 +1,7 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase';
 import _ from 'lodash';
 import { apiModuleByGroup } from '../../Api';
-import { WorkerId } from '@joystream/types/lib/working-group';
+import { WorkerId } from '@joystream/types/working-group';
 import { formatBalance } from '@polkadot/util';
 import chalk from 'chalk';
 import { Reward } from '../../Types';
