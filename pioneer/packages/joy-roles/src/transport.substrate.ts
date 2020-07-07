@@ -26,8 +26,7 @@ import {
   Application as WGApplication,
   Opening as WGOpening,
   Worker, WorkerId,
-  RoleStakeProfile,
-  OpeningTypeKeys
+  RoleStakeProfile
 } from '@joystream/types/working-group';
 
 import { Application, Opening, OpeningId, ApplicationId, ActiveApplicationStage } from '@joystream/types/hiring';
@@ -288,8 +287,7 @@ export class Transport extends TransportBase implements ITransport {
         opening.is_active &&
         (
           groupOpening instanceof WGOpening
-            // TODO: Use JoyEnum for that later
-            ? (lead === (groupOpening.opening_type.type === OpeningTypeKeys.Leader))
+            ? (lead === groupOpening.opening_type.isOfType('Leader'))
             : !lead // Lead opening are never available for content working group currently
         )
       ) {

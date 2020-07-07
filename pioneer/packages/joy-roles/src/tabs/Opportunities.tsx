@@ -42,7 +42,6 @@ import { Loadable } from '@polkadot/joy-utils/index';
 import styled from 'styled-components';
 import _ from 'lodash';
 import { WorkingGroups, AvailableGroups, workerRoleNameByGroup } from '../working_groups';
-import { OpeningTypeKeys } from '@joystream/types/working-group';
 
 type OpeningStage = OpeningMetadataProps & {
   stage: OpeningStageClassification;
@@ -478,8 +477,7 @@ export const OpeningView = Loadable<OpeningViewProps>(
   ['opening', 'block_time_in_seconds'],
   props => {
     const text = props.opening.parse_human_readable_text_with_fallback();
-    // TODO: This will be handled with JoyEnum later
-    const isLeadOpening = props.meta.type?.type === OpeningTypeKeys.Leader;
+    const isLeadOpening = props.meta.type?.isOfType('Leader');
 
     return (
       <Container className={'opening ' + openingClass(props.stage.state)}>
@@ -547,8 +545,7 @@ export const OpeningsView = Loadable<OpeningsViewProps>(
     // Can assert "props.openings!" because we're using "Loadable" which prevents them from beeing undefined
     const filteredOpenings = props.openings!.filter(o =>
       (!group || o.meta.group === group) &&
-      // TODO: Adjust to use JoyEnum later
-      (!group || !o.meta.type || (lead === (o.meta.type.type === OpeningTypeKeys.Leader)))
+      (!group || !o.meta.type || (lead === o.meta.type.isOfType('Leader')))
     );
 
     return (

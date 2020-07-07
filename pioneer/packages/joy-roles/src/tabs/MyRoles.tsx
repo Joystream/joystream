@@ -21,8 +21,6 @@ import { u128 } from '@polkadot/types';
 import { Balance } from '@polkadot/types/interfaces';
 
 import { Loadable } from '@polkadot/joy-utils/index';
-
-import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema.typings';
 import { Opening } from '@joystream/types/hiring';
 
 import {
@@ -35,7 +33,7 @@ import {
 import { CancelledReason, OpeningStageClassification, OpeningState } from '../classifiers';
 import { OpeningMetadata } from '../OpeningMetadata';
 import { CuratorId } from '@joystream/types/content-working-group';
-import { WorkerId, OpeningTypeKeys } from '@joystream/types/working-group';
+import { WorkerId } from '@joystream/types/working-group';
 import _ from 'lodash';
 import styled from 'styled-components';
 import { WorkingGroups } from '../working_groups';
@@ -397,8 +395,7 @@ export function Application (props: ApplicationProps) {
 
   const application = props.opening.parse_human_readable_text_with_fallback();
   const appState = applicationState(props);
-  // TODO: Use JoyEnum here
-  const isLeadApplication = props.meta.type?.type === OpeningTypeKeys.Leader;
+  const isLeadApplication = props.meta.type?.isOfType('Leader');
 
   let CTA = null;
   if (appState === ApplicationState.Positive && props.stage.state !== OpeningState.Complete) {
