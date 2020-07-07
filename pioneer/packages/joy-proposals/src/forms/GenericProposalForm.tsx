@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { FormikProps, WithFormikConfig } from 'formik';
 import { Form, Icon, Button, Message } from 'semantic-ui-react';
 import { getFormErrorLabelsProps } from './errorHandling';
@@ -81,25 +81,42 @@ export const genericFormDefaultOptions: GenericFormDefaultOptions = {
 export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps> = props => {
   const {
     handleChange,
+    handleSubmit,
     errors,
     isSubmitting,
+    isValidating,
+    isValid,
     touched,
-    handleSubmit,
+    submitForm,
     children,
     handleReset,
     values,
     txMethod,
     submitParams,
-    isValid,
     setSubmitting,
     history,
     balances_totalIssuance,
     proposalType
   } = props;
   const errorLabelsProps = getFormErrorLabelsProps<GenericFormValues>(errors, touched);
+  const [afterSubmit, setAfterSubmit] = useState(null as (() => () => void) | null);
 
-  const onSubmit = (sendTx: () => void) => {
-    if (isValid) sendTx();
+  // After-submit effect
+  // (with current version of Formik, there seems to be no other viable way to use ie. for sendTx)
+  useEffect(() => {
+    if (!isValidating && afterSubmit) {
+      if (isValid) {
+        afterSubmit();
+      }
+      setAfterSubmit(null);
+      setSubmitting(false);
+    }
+  }, [isValidating, isValid, afterSubmit]);
+
+  // Replaces standard submit handler (in order to work with TxButton)
+  const onTxButtonClick = (sendTx: () => void) => {
+    submitForm();
+    setAfterSubmit(() => sendTx);
   };
 
   const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
@@ -128,7 +145,12 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
 
   return (
     <div className="Forms">
-      <Form className="proposal-form" onSubmit={handleSubmit}>
+      <Form
+        className="proposal-form"
+        onSubmit={txMethod
+          ? () => { /* Do nothing. Tx button uses custom submit handler - "onTxButtonClick" */ }
+          : handleSubmit
+        }>
         <InputFormField
           label="Title"
           help="The title of your proposal"
@@ -157,15 +179,15 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
         <div className="form-buttons">
           {txMethod ? (
             <TxButton
-              type="submit"
+              type="button" // Tx button uses custom submit handler - "onTxButtonClick"
               label="Submit proposal"
               icon="paper plane"
-              isDisabled={isSubmitting || !isValid}
+              isDisabled={isSubmitting}
               params={(submitParams || []).map(p => (p === '{STAKE}' ? requiredStake : p))}
               tx={`proposalsCodex.${txMethod}`}
-              onClick={onSubmit}
               txFailedCb={onTxFailed}
               txSuccessCb={onTxSuccess}
+              onClick={onTxButtonClick} // This replaces standard submit
             />
           ) : (
             <Button type="submit" color="blue" loading={isSubmitting}>

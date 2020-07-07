@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 
-export default function usePromise<T> (promise: () => Promise<T>, defaultValue: T): [T, any, boolean, () => Promise<void|null>] {
+export type UsePromiseReturnValues<T> = [T, any, boolean, () => Promise<void|null>];
+
+export default function usePromise<T> (promise: () => Promise<T>, defaultValue: T, dependsOn: any[] = []): UsePromiseReturnValues<T> {
   const [state, setState] = useState<{
     value: T;
     error: any;
@@ -19,7 +21,7 @@ export default function usePromise<T> (promise: () => Promise<T>, defaultValue: 
     return () => {
       isSubscribed = false;
     };
-  }, []);
+  }, dependsOn);
 
   const { value, error, isPending } = state;
   return [value, error, isPending, execute];
