@@ -4,6 +4,10 @@ module.exports = {
   env: {
     es6: true,
   },
+  globals: {
+    Atomics: 'readonly',
+    SharedArrayBuffer: 'readonly',
+  },
   // We are relying on version that comes with @polkadot/dev
   // Newest version is breaking pioneer!
   parser: '@typescript-eslint/parser',
@@ -16,15 +20,16 @@ module.exports = {
   },
   extends: [
     'eslint:recommended',
-    'plugin:react/recommended',
-    'plugin:@typescript-eslint/eslint-recommended',
     'plugin:@typescript-eslint/recommended',
+    'plugin:react/recommended',
+    'plugin:react-hooks/recommended',
 
     // jsx-a11y conflicts with pioneer rules. At time of writing
     // 84 problems -> We want to avoid as much as possible changing code in pioneer at least
     // from polkadot-js code base to make it possible to pull from upstream as easily as possible.
     // pioneer has an isolated linting config so its safe to enable here.
-    'plugin:jsx-a11y/recommended',
+    // Lets try to support an accessible web in future
+    // 'plugin:jsx-a11y/recommended',
 
     // Turns off all rules that are unnecessary or might conflict with Prettier.
     // Allows us to do formatting separately from linting.
@@ -41,5 +46,5 @@ module.exports = {
       version: 'detect',
     },
   },
-  plugins: ['@typescript-eslint'],
+  plugins: ['@typescript-eslint', 'react', 'react-hooks'],
 }
