@@ -830,6 +830,7 @@ fn moderate_post_origin() {
                 category_id,
                 thread_id,
                 post_id,
+                good_moderation_rationale(),
                 results[index],
             );
         });
@@ -1007,6 +1008,7 @@ fn test_migration_not_done() {
                 category_id,
                 thread_id,
                 post_id,
+                good_moderation_rationale(),
             ),
             Err(ERROR_DATA_MIGRATION_NOT_DONE),
         );
