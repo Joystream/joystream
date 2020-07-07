@@ -8,16 +8,16 @@ import { availableTypes } from './ScalarTypes';
 const debug = Debug('qnode-cli:model');
 
 export enum ModelType {
-  ENUM, 
-  VARIANT, 
-  ENTITY, 
-  UNION, 
+  ENUM,
+  VARIANT,
+  ENTITY,
+  UNION,
   INTERFACE,
-  SCALAR
+  SCALAR,
 }
 
 export class WarthogModel {
-  private _types: ObjectType[];
+  private _entities: ObjectType[];
   private _ftsQueries: FTSQuery[];
   private _enums: GraphQLEnumType[] = [];
   private _interfaces: ObjectType[] = [];
@@ -27,7 +27,7 @@ export class WarthogModel {
   private _name2type: { [key: string]: ObjectType } = {};
 
   constructor() {
-    this._types = [];
+    this._entities = [];
     this._ftsQueries = [];
   }
 
@@ -63,7 +63,7 @@ export class WarthogModel {
       return;
     }
 
-    this._types.push(type);
+    this._entities.push(type);
     this._name2type[type.name] = type;
   }
 
@@ -119,8 +119,8 @@ export class WarthogModel {
     this._addQueryClause(queryName, field, objType);
   }
 
-  get types(): ObjectType[] {
-    return this._types;
+  get entities(): ObjectType[] {
+    return this._entities;
   }
 
   get ftsQueries(): FTSQuery[] {
@@ -135,6 +135,32 @@ export class WarthogModel {
     return this._interfaces;
   }
 
+  get variants(): ObjectType[] {
+    return this._variants;
+  }
+
+  get unions(): UnionType[] {
+    return this._unions;
+  }
+
+  /**
+   * Lookup ObjectType by it's name (as defined in the schema file)
+   *
+   * @param name ObjectTypeName as defined in the schema
+   */
+  lookupEntity(name: string): ObjectType {
+    if (!this._name2type[name]) {
+      throw new Error(`Entity ${name} is undefined. Make sure the type definition is decorated with @entity.`);
+    }
+    return this._name2type[name];
+  }
+
+  lookupUnion(name: string): UnionType {
+    const u = this._unions.find(u => u.name === name);
+    if (!u) throw new Error(`Cannot find union type with name ${name}`);
+    return u;
+  }
+
   lookupEnum(name: string): GraphQLEnumType {
     const e = this._enums.find(e => e.name === name);
     if (!e) throw new Error(`Cannot find enum with name ${name}`);
@@ -143,7 +169,7 @@ export class WarthogModel {
 
   lookupVariant(name: string): ObjectType {
     const e = this._variants.find(e => e.name === name);
-    if (!e) throw new Error(`Cannot find variant with name ${name}`);
+    if (!e) throw new Error(`Variant ${name} is undefined. Make sure the type definition is decorated with @variant.`);
     return e;
   }
 
@@ -166,7 +192,7 @@ export class WarthogModel {
    * @param interfaceName Name of the interface
    */
   getSubclasses(interfaceName: string): ObjectType[] {
-    return this._types.filter(t => t.interfaces && t.interfaces.length > 0 && t.interfaces[0].name == interfaceName);
+    return this._entities.filter(t => t.interfaces && t.interfaces.length > 0 && t.interfaces[0].name == interfaceName);
   }
 
   /**
@@ -187,18 +213,6 @@ export class WarthogModel {
   addField(entity: string, field: Field): void {
     const objType = this.lookupEntity(entity);
     objType.fields.push(field);
-  }
-
-  /**
-   * Lookup ObjectType by it's name (as defined in the schema file)
-   *
-   * @param name ObjectTypeName as defined in the schema
-   */
-  lookupEntity(name: string): ObjectType {
-    if (!this._name2type[name]) {
-      throw new Error(`No ObjectType ${name} found`);
-    }
-    return this._name2type[name];
   }
 
   lookupType(name: string): ModelType {
@@ -227,7 +241,6 @@ export class WarthogModel {
     }
     throw new Error(`Type ${name} is undefined`);
   }
-
 }
 
 /**
