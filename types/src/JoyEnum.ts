@@ -8,7 +8,7 @@ export interface ExtendedEnum<Types extends Record<string, Constructor>> extends
 };
 
 export interface ExtendedEnumConstructor<Types extends Record<string, Constructor>> extends EnumConstructor<ExtendedEnum<Types>> {
-  create<TypeKey extends keyof Types>(typeKey: keyof Types, value: InstanceType<Types[TypeKey]>): ExtendedEnum<Types>;
+  create<TypeKey extends keyof Types>(typeKey: TypeKey, value: InstanceType<Types[TypeKey]>): ExtendedEnum<Types>;
 }
 
 // Helper for creating extended Enum type with TS-compatible isOfType and asType helpers
@@ -20,7 +20,7 @@ export function JoyEnum<Types extends Record<string, Constructor>>(types: Types)
   }
 
   return class JoyEnumObject extends Enum {
-    public static create<TypeKey extends keyof Types>(typeKey: keyof Types, value: InstanceType<Types[TypeKey]>) {
+    public static create<TypeKey extends keyof Types>(typeKey: TypeKey, value: InstanceType<Types[TypeKey]>) {
       return new JoyEnumObject({ [typeKey]: value });
     }
     constructor(value?: any, index?: number) {
