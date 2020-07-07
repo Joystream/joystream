@@ -562,7 +562,7 @@ decl_event!(
         ThreadCreated(ThreadId),
 
         /// A thread with given id was moderated.
-        ThreadModerated(ThreadId),
+        ThreadModerated(ThreadId, Hash),
 
         /// A thread with given id was moderated.
         ThreadTitleUpdated(ThreadId),
@@ -821,30 +821,21 @@ decl_module! {
         }
 
         /// Moderate thread
-        fn moderate_thread(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, thread_id: T::ThreadId) -> dispatch::Result {
+        fn moderate_thread(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, thread_id: T::ThreadId, rationale: Vec<u8>) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Ensure origin is medorator
-            let who = Self::ensure_is_moderator(origin, &moderator_id)?;
+            // Ensure moderator is allowed to moderate post
+            Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
 
-            // Get thread
-            let thread = Self::ensure_thread_exists(&category_id, &thread_id)?;
+            // Calculate rationale's hash
+            let rationale_hash = T::calculate_hash(rationale.as_slice());
 
-            // ensure origin can moderate category
-            Self::ensure_can_moderate_category(&who, &moderator_id, &thread.category_id)?;
-
-            // Can mutate in corresponding category
-            let path = Self::build_category_tree_path(&thread.category_id);
-
-            // Path must be non-empty, as category id is from thread in state
-            assert!(!path.is_empty());
-
-            // Path can be updated
-            Self::ensure_can_mutate_in_path_leaf(&path)?;
+            // Delete thread
+            <ThreadById<T>>::remove(category_id, thread_id);
 
             // Generate event
-            Self::deposit_event(RawEvent::ThreadModerated(thread_id));
+            Self::deposit_event(RawEvent::ThreadModerated(thread_id, rationale_hash));
 
             Ok(())
         }

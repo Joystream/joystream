@@ -483,16 +483,24 @@ pub fn moderate_thread_mock(
     moderator_id: <Runtime as Trait>::ModeratorId,
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
+    rationale: Vec<u8>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::ThreadId {
     assert_eq!(
-        TestForumModule::moderate_thread(mock_origin(origin), moderator_id, category_id, thread_id),
+        TestForumModule::moderate_thread(
+            mock_origin(origin),
+            moderator_id,
+            category_id,
+            thread_id,
+            rationale.clone(),
+        ),
         result
     );
     if result.is_ok() {
+        let rationale_hash = Runtime::calculate_hash(rationale.clone().as_slice());
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ThreadModerated(thread_id,))
+            TestEvent::forum_mod(RawEvent::ThreadModerated(thread_id, rationale_hash))
         );
     }
     thread_id
