@@ -18,7 +18,8 @@ module.exports = {
 		// Disabling Rules because of monorepo environment:
 		// https://github.com/benmosher/eslint-plugin-import/issues/1174
 		"import/no-extraneous-dependencies": "off",
-		"import/no-nodejs-modules": "off" // nodejs project
+		"import/no-nodejs-modules": "off", // nodejs project
+		"no-console": "off" // we use console in the project
 	},
 	"overrides": [
 		{
