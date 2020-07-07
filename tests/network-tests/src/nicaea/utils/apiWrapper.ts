@@ -310,6 +310,51 @@ export class ApiWrapper {
     );
   }
 
+  public estimateProposeCreateWorkingGroupLeaderOpening(): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
+        0,
+        'some long title for the purpose of testing',
+        'some long description for the purpose of testing',
+        0,
+        {
+          activate_at: 'CurrentBlock',
+          commitment: {
+            application_rationing_policy: { max_active_applicants: '32' },
+            max_review_period_length: 32,
+            application_staking_policy: {
+              amount: 0,
+              amount_mode: 'AtLeast',
+              crowded_out_unstaking_period_length: 0,
+              review_period_expired_unstaking_period_length: 0,
+            },
+            role_staking_policy: {
+              amount: 0,
+              amount_mode: 'AtLeast',
+              crowded_out_unstaking_period_length: 0,
+              review_period_expired_unstaking_period_length: 0,
+            },
+            role_slashing_terms: {
+              Slashable: {
+                max_count: 0,
+                max_percent_pts_per_time: 0,
+              },
+            },
+            fill_opening_successful_applicant_application_stake_unstaking_period: 0,
+            fill_opening_failed_applicant_application_stake_unstaking_period: 0,
+            fill_opening_failed_applicant_role_stake_unstaking_period: 0,
+            terminate_curator_application_stake_unstaking_period: 0,
+            terminate_curator_role_stake_unstaking_period: 0,
+            exit_curator_role_application_stake_unstaking_period: 0,
+            exit_curator_role_stake_unstaking_period: 0,
+          },
+          human_readable_text: 'Opening readable text',
+          working_group: 'Storage',
+        }
+      )
+    );
+  }
+
   public estimateProposeBeginWorkingGroupLeaderApplicationReview(): BN {
     return this.estimateTxFee(
       this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
@@ -790,6 +835,33 @@ export class ApiWrapper {
     await this.sender.signAndSend(
       this.api.tx.sudo.sudo(this.createAddOpeningTransaction(opening, module)),
       sudo,
+      false
+    );
+  }
+
+  public async proposeCreateWorkingGroupLeaderOpening(
+    account: KeyringPair,
+    title: string,
+    description: string,
+    proposalStake: BN,
+    opening: WorkingGroupOpening,
+    workingGroup: string
+  ): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0];
+    await this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
+        memberId,
+        title,
+        description,
+        proposalStake,
+        {
+          activate_at: opening.getActivateAt(),
+          commitment: opening.getCommitment(),
+          human_readable_text: opening.getText(),
+          working_group: workingGroup,
+        }
+      ),
+      account,
       false
     );
   }
