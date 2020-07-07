@@ -23,6 +23,7 @@ const debug = Debug('qnode-cli:model-generator');
 export class WarthogModelBuilder {
   private _schemaParser: GraphQLSchemaParser;
   private _model: WarthogModel;
+  private _fieldsToProcess: Field[] = [];
 
   constructor(schemaPath: string) {
     this._schemaParser = new GraphQLSchemaParser(schemaPath);
@@ -68,17 +69,7 @@ export class WarthogModelBuilder {
     const field = new Field(name, namedTypeNode.name.value);
     field.isBuildinType = this._isBuildinType(field.type);
 
-    let _type;
-
-    try {
-      _type = this._model.lookupType(field.type);
-    } catch (e) {
-      // FIXME: should never happen
-      debug(e);
-    }
-
-    field._isEnum = _type == ModelType.ENUM;
-    field._isUnion = _type == ModelType.UNION;
+    this._fieldsToProcess.push(field);
 
     return field;
   }
@@ -175,7 +166,7 @@ export class WarthogModelBuilder {
   generateSQLRelationships(): void {
     const additionalFields: { [key: string]: string | Field }[] = [];
 
-    this._model.types.forEach(({ name, fields }) => {
+    this._model.entities.forEach(({ name, fields }) => {
       for (const field of fields) {
         if (field.isUnion() || field.isEnum()) {
           continue;
@@ -184,19 +175,21 @@ export class WarthogModelBuilder {
         if (!field.isBuildinType && field.isList) {
           const typeName = field.type;
           field.name = field.type.toLowerCase().concat('s');
+          field.modelType = ModelType.ENTITY;
           field.type = 'otm'; // OneToMany
 
           const newField = new Field(field.type, field.type);
           newField.isBuildinType = false;
           newField.nullable = false;
           newField.type = 'mto'; // ManyToOne
+          newField.modelType = ModelType.ENTITY;
           newField.name = name.toLowerCase();
           additionalFields.push({ field: newField, name: typeName });
         }
       }
     });
 
-    for (const objType of this._model.types) {
+    for (const objType of this._model.entities) {
       for (const field of additionalFields) {
         if (objType.name === field.name) {
           objType.fields.push(field.field as Field);
@@ -259,14 +252,23 @@ export class WarthogModelBuilder {
     this._schemaParser.dfsTraversal(visitors);
   }
 
+  private postProcessFields() {
+    while (this._fieldsToProcess) {
+      const f = this._fieldsToProcess.pop();
+      if (!f) return;
+      f.modelType = this._model.lookupType(f.type);
+    }
+  }
+
   buildWarthogModel(): WarthogModel {
     this._model = new WarthogModel();
 
     this.generateEnums();
     this.generateInterfaces();
     this.generateVariants();
-    this.generateEntities();
     this.generateUnions();
+    this.generateEntities();
+    this.postProcessFields();
     this.generateSQLRelationships();
     this.genereateQueries();
 

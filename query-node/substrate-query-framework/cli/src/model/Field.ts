@@ -1,4 +1,5 @@
 import { availableTypes } from './ScalarTypes';
+import { ModelType } from './WarthogModel';
 
 /**
  * Reperenst GraphQL object type field
@@ -9,14 +10,12 @@ export class Field {
   name: string;
   // GraphQL field type
   type: string;
+  // type in the model (SCALAR, ENUM, INTERFACE, ENTITY, VARIANT)
+  modelType!: ModelType;
   // Is field type built-in or not
   isBuildinType: boolean;
   // Is field nullable or not
   nullable: boolean;
-  // If this field if of union type
-  _isUnion: boolean;
-  // If this field is of enum type
-  _isEnum: boolean;
   // Is field a list. eg: post: [Post]
   isList: boolean;
   // Description of the field will be shown in GrapqQL API
@@ -24,15 +23,17 @@ export class Field {
   // Make field as a unique column on database
   unique?: boolean;
 
-  constructor(name: string, type: string, nullable = true, isBuildinType = true, isList = false, isUnion = false, isEnum = false) {
+  constructor(name: string, type: string, nullable = true, isBuildinType = true, isList = false) {
     this.name = name;
     this.type = type;
     this.nullable = nullable;
     this.isBuildinType = isBuildinType;
     this.isList = isList;
-    this._isUnion = isUnion;
-    this._isEnum = isEnum;
   }
+
+  // get isBuiltInType(): boolean {
+  //   return this.modelType == ModelType.SCALAR
+  // }
 
   columnType(): string {
     return this.isBuildinType ? availableTypes[this.type] : this.type;
@@ -51,10 +52,10 @@ export class Field {
   }
 
   isEnum(): boolean {
-    return this._isEnum;
+    return this.modelType == ModelType.ENUM;
   }
-  
+
   isUnion(): boolean {
-    return this._isUnion;
+    return this.modelType == ModelType.UNION;
   }
 }
