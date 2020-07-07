@@ -115,38 +115,8 @@ fn clear_entity_property_vector_lead_auth_failed() {
             EntityAccessStateFailureType::LeadAuthFailed,
         );
 
-        // Create property
-        let property_type = PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, 5);
-
-        let property = Property::<Runtime>::with_name_and_type(
-            (PropertyNameLengthConstraint::get().max() - 1) as usize,
-            property_type,
-            true,
-            false,
-        );
-
-        // Add Schema to the Class
-        assert_ok!(add_class_schema(
-            LEAD_ORIGIN,
-            FIRST_CLASS_ID,
-            BTreeSet::new(),
-            vec![property]
-        ));
-
-        let schema_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
-
-        let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
-
-        // Add schema support to the entity
-        assert_ok!(add_schema_support_to_entity(
-            LEAD_ORIGIN,
-            actor.to_owned(),
-            FIRST_ENTITY_ID,
-            FIRST_SCHEMA_ID,
-            schema_property_values.clone()
-        ));
+        // Create class reference shema and add corresponding schema support to the Entity
+        add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
 
         // Runtime state before tested call
 
@@ -178,38 +148,8 @@ fn clear_entity_property_vector_member_auth_failed() {
             EntityAccessStateFailureType::MemberAuthFailed,
         );
 
-        // Create property
-        let property_type = PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, 5);
-
-        let property = Property::<Runtime>::with_name_and_type(
-            (PropertyNameLengthConstraint::get().max() - 1) as usize,
-            property_type,
-            true,
-            false,
-        );
-
-        // Add Schema to the Class
-        assert_ok!(add_class_schema(
-            LEAD_ORIGIN,
-            FIRST_CLASS_ID,
-            BTreeSet::new(),
-            vec![property]
-        ));
-
-        let schema_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
-
-        let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
-
-        // Add schema support to the entity
-        assert_ok!(add_schema_support_to_entity(
-            FIRST_MEMBER_ORIGIN,
-            actor.to_owned(),
-            FIRST_ENTITY_ID,
-            FIRST_SCHEMA_ID,
-            schema_property_values.clone()
-        ));
+        // Create class reference shema and add corresponding schema support to the Entity
+        add_class_reference_schema_and_entity_schema_support(&actor, FIRST_MEMBER_ORIGIN);
 
         // Runtime state before tested call
 
@@ -241,38 +181,8 @@ fn clear_entity_property_vector_curator_group_is_not_active() {
             EntityAccessStateFailureType::CuratorAuthFailed,
         );
 
-        // Create property
-        let property_type = PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, 5);
-
-        let property = Property::<Runtime>::with_name_and_type(
-            (PropertyNameLengthConstraint::get().max() - 1) as usize,
-            property_type,
-            true,
-            false,
-        );
-
-        // Add Schema to the Class
-        assert_ok!(add_class_schema(
-            LEAD_ORIGIN,
-            FIRST_CLASS_ID,
-            BTreeSet::new(),
-            vec![property]
-        ));
-
-        let schema_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
-
-        let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
-
-        // Add schema support to the entity
-        assert_ok!(add_schema_support_to_entity(
-            FIRST_CURATOR_ORIGIN,
-            actor.clone(),
-            FIRST_ENTITY_ID,
-            FIRST_SCHEMA_ID,
-            schema_property_values
-        ));
+        // Create class reference shema and add corresponding schema support to the Entity
+        add_class_reference_schema_and_entity_schema_support(&actor, FIRST_CURATOR_ORIGIN);
 
         // Make curator group inactive to block it from any entity operations
         assert_ok!(set_curator_group_status(
@@ -311,38 +221,8 @@ fn clear_entity_property_vector_curator_auth_failed() {
             EntityAccessStateFailureType::CuratorAuthFailed,
         );
 
-        // Create property
-        let property_type = PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, 5);
-
-        let property = Property::<Runtime>::with_name_and_type(
-            (PropertyNameLengthConstraint::get().max() - 1) as usize,
-            property_type,
-            true,
-            false,
-        );
-
-        // Add Schema to the Class
-        assert_ok!(add_class_schema(
-            LEAD_ORIGIN,
-            FIRST_CLASS_ID,
-            BTreeSet::new(),
-            vec![property]
-        ));
-
-        let schema_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
-
-        let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
-
-        // Add schema support to the entity
-        assert_ok!(add_schema_support_to_entity(
-            FIRST_CURATOR_ORIGIN,
-            actor.clone(),
-            FIRST_ENTITY_ID,
-            FIRST_SCHEMA_ID,
-            schema_property_values
-        ));
+        // Create class reference shema and add corresponding schema support to the Entity
+        add_class_reference_schema_and_entity_schema_support(&actor, FIRST_CURATOR_ORIGIN);
 
         // Runtime state before tested call
 
@@ -370,38 +250,11 @@ fn clear_entity_property_vector_curator_not_found_in_curator_group() {
             EntityAccessStateFailureType::CuratorNotFoundInCuratorGroup,
         );
 
-        // Create property
-        let property_type = PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, 5);
-
-        let property = Property::<Runtime>::with_name_and_type(
-            (PropertyNameLengthConstraint::get().max() - 1) as usize,
-            property_type,
-            true,
-            false,
-        );
-
-        // Add Schema to the Class
-        assert_ok!(add_class_schema(
-            LEAD_ORIGIN,
-            FIRST_CLASS_ID,
-            BTreeSet::new(),
-            vec![property]
-        ));
-
-        let schema_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
-
-        let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
-
-        // Add schema support to the entity
-        assert_ok!(add_schema_support_to_entity(
+        // Create class reference shema and add corresponding schema support to the Entity
+        add_class_reference_schema_and_entity_schema_support(
+            &Actor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
             FIRST_CURATOR_ORIGIN,
-            Actor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
-            FIRST_ENTITY_ID,
-            FIRST_SCHEMA_ID,
-            schema_property_values
-        ));
+        );
 
         // Runtime state before tested call
 
@@ -433,38 +286,8 @@ fn clear_entity_property_vector_entity_access_denied() {
             EntityAccessStateFailureType::EntityAccessDenied,
         );
 
-        // Create property
-        let property_type = PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, 5);
-
-        let property = Property::<Runtime>::with_name_and_type(
-            (PropertyNameLengthConstraint::get().max() - 1) as usize,
-            property_type,
-            true,
-            false,
-        );
-
-        // Add Schema to the Class
-        assert_ok!(add_class_schema(
-            LEAD_ORIGIN,
-            FIRST_CLASS_ID,
-            BTreeSet::new(),
-            vec![property]
-        ));
-
-        let schema_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
-
-        let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
-
-        // Add schema support to the entity
-        assert_ok!(add_schema_support_to_entity(
-            LEAD_ORIGIN,
-            Actor::Lead,
-            FIRST_ENTITY_ID,
-            FIRST_SCHEMA_ID,
-            schema_property_values
-        ));
+        // Create class reference shema and add corresponding schema support to the Entity
+        add_class_reference_schema_and_entity_schema_support(&Actor::Lead, LEAD_ORIGIN);
 
         // Runtime state before tested call
 
@@ -496,38 +319,8 @@ fn clear_entity_property_vector_values_locked_on_class_level() {
             EntityAccessStateFailureType::PropertyValuesLocked,
         );
 
-        // Create property
-        let property_type = PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, 5);
-
-        let property = Property::<Runtime>::with_name_and_type(
-            (PropertyNameLengthConstraint::get().max() - 1) as usize,
-            property_type,
-            true,
-            false,
-        );
-
-        // Add Schema to the Class
-        assert_ok!(add_class_schema(
-            LEAD_ORIGIN,
-            FIRST_CLASS_ID,
-            BTreeSet::new(),
-            vec![property]
-        ));
-
-        let schema_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
-
-        let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
-
-        // Add schema support to the entity
-        assert_ok!(add_schema_support_to_entity(
-            LEAD_ORIGIN,
-            Actor::Lead,
-            FIRST_ENTITY_ID,
-            FIRST_SCHEMA_ID,
-            schema_property_values
-        ));
+        // Create class reference shema and add corresponding schema support to the Entity
+        add_class_reference_schema_and_entity_schema_support(&Actor::Lead, LEAD_ORIGIN);
 
         // Runtime state before tested call
 

@@ -298,3 +298,38 @@ pub fn emulate_entity_access_state_for_failure_case(
         }
     }
 }
+
+pub fn add_class_reference_schema_and_entity_schema_support(actor: &Actor<Runtime>, origin: u64) {
+    // Create property
+    let property_type = PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, 5);
+
+    let property = Property::<Runtime>::with_name_and_type(
+        (PropertyNameLengthConstraint::get().max() - 1) as usize,
+        property_type,
+        true,
+        false,
+    );
+
+    // Add Schema to the Class
+    assert_ok!(add_class_schema(
+        LEAD_ORIGIN,
+        FIRST_CLASS_ID,
+        BTreeSet::new(),
+        vec![property]
+    ));
+
+    let schema_property_value =
+        PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
+
+    let mut schema_property_values = BTreeMap::new();
+    schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
+
+    // Add schema support to the entity
+    assert_ok!(add_schema_support_to_entity(
+        origin,
+        actor.to_owned(),
+        FIRST_ENTITY_ID,
+        FIRST_SCHEMA_ID,
+        schema_property_values.clone()
+    ));
+}
