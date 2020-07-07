@@ -216,7 +216,9 @@ use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 pub use runtime_io::clear_prefix;
 use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
-use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
+use srml_support::{
+    decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter,
+};
 
 mod mock;
 mod tests;
@@ -273,6 +275,8 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + PartialEq
         + From<u64>
         + Into<u64>;
+
+    type MaxCategoryDepth: Get<u64>;
 
     fn is_lead(account_id: &<Self as system::Trait>::AccountId) -> bool;
     fn is_forum_member(
@@ -346,7 +350,6 @@ const ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR: &str = "Account does not match p
 // Errors about category.
 const ERROR_CATEGORY_NOT_BEING_UPDATED: &str = "Category not being updated.";
 const ERROR_MODERATOR_MODERATE_CATEGORY: &str = "Moderator can not moderate category.";
-const ERROR_EXCEED_MAX_CATEGORY_DEPTH: &str = "Category exceed max depth.";
 const ERROR_ANCESTOR_CATEGORY_IMMUTABLE: &str =
     "Ancestor category immutable, i.e. deleted or archived";
 const ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED: &str = "Maximum valid category depth exceeded.";
@@ -518,9 +521,6 @@ decl_storage! {
         /// Post identifier value to be used for for next post created.
         pub NextPostId get(next_post_id) config(): T::PostId;
 
-        /// Max depth of category.
-        pub MaxCategoryDepth get(max_category_depth) config(): u8;
-
         /// Moderator set for each Category
         pub CategoryByModerator get(category_by_moderator) config(): double_map T::CategoryId, blake2_256(T::ModeratorId) => ();
 
@@ -593,9 +593,6 @@ decl_event!(
         /// Vote on poll
         VoteOnPoll(ThreadId, u32),
 
-        /// Max category depth updated
-        MaxCategoryDepthUpdated(u8),
-
         /// Sticky thread updated for category
         CategoryStickyThreadUpdate(CategoryId, Vec<ThreadId>),
     }
@@ -630,20 +627,6 @@ decl_module! {
             Ok(())
         }
 
-        /// Set max category depth.
-        fn set_max_category_depth(origin, max_category_depth: u8) -> dispatch::Result {
-            // Not signed by forum LEAD
-            Self::ensure_is_forum_lead(origin)?;
-
-            // Store new value into runtime
-            MaxCategoryDepth::mutate(|value| *value = max_category_depth );
-
-            // Store event into runtime
-            Self::deposit_event(RawEvent::MaxCategoryDepthUpdated(max_category_depth));
-
-            Ok(())
-        }
-
         /// Add a new category.
         fn create_category(origin, parent: Option<T::CategoryId>, title: Vec<u8>, description: Vec<u8>) -> dispatch::Result {
             // Ensure data migration is done
@@ -657,17 +640,8 @@ decl_module! {
 
             // If not root, then check that we can create in parent category
             if let Some(tmp_parent_category_id) = parent {
-
-                // Get the path from parent category to root
-                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(&tmp_parent_category_id)?;
-
-                // Check if max depth reached
-                if category_tree_path.len() >= MaxCategoryDepth::get() as usize {
-                    return Err(ERROR_EXCEED_MAX_CATEGORY_DEPTH);
-                }
-
                 // Can we mutate in this category?
-                Self::ensure_can_add_subcategory_path_leaf(&category_tree_path)?;
+                Self::ensure_can_add_subcategory_path_leaf(&tmp_parent_category_id)?;
 
                 // Increment number of subcategories to reflect this new category being
                 // added as a child
@@ -1295,7 +1269,7 @@ impl<T: Trait> Module<T> {
 
         let thread = Self::ensure_thread_exists(category_id, thread_id)?;
 
-        Self::ensure_can_moderate_category(&who, moderator_id, &thread.category_id)?;
+        Self::ensure_can_moderate_category(&who, moderator_id, category_id)?;
 
         Ok((who, thread))
     }
@@ -1346,17 +1320,20 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_can_add_subcategory_path_leaf(
-        category_tree_path: &CategoryTreePathArg<T::CategoryId, T::ThreadId, T::Hash>,
+        parent_category_id: &T::CategoryId,
     ) -> dispatch::Result {
-        Self::ensure_can_mutate_in_path_leaf(category_tree_path)?;
+        // Get the path from parent category to root
+        let category_tree_path =
+            Self::ensure_valid_category_and_build_category_tree_path(parent_category_id)?;
 
-        // Does adding a new category exceed maximum depth
-        let depth_of_new_category = 1 + 1 + category_tree_path.len();
+        let max_category_depth: u64 = T::MaxCategoryDepth::get();
 
-        ensure!(
-            depth_of_new_category <= MaxCategoryDepth::get() as usize,
-            ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED
-        );
+        // Check if max depth reached
+        if category_tree_path.len() as u64 >= max_category_depth {
+            return Err(ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED);
+        }
+
+        Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
 
         Ok(())
     }
@@ -1366,12 +1343,12 @@ impl<T: Trait> Module<T> {
         category_id: &T::CategoryId,
     ) -> Result<CategoryTreePath<T::CategoryId, T::ThreadId, T::Hash>, &'static str> {
         ensure!(
-            <CategoryById<T>>::exists(&category_id),
+            <CategoryById<T>>::exists(category_id),
             ERROR_CATEGORY_DOES_NOT_EXIST
         );
 
         // Get path from parent to root of category tree.
-        let category_tree_path = Self::build_category_tree_path(category_id);
+        let category_tree_path = Self::build_category_tree_path(&category_id);
 
         assert!(!category_tree_path.len() > 0);
 
@@ -1398,7 +1375,7 @@ impl<T: Trait> Module<T> {
         path: &mut CategoryTreePath<T::CategoryId, T::ThreadId, T::Hash>,
     ) {
         // Grab category
-        let category = <CategoryById<T>>::get(category_id);
+        let category = <CategoryById<T>>::get(*category_id);
 
         // Add category to path container
         path.push(category.clone());

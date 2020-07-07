@@ -63,6 +63,10 @@ impl timestamp::Trait for Runtime {
     type MinimumPeriod = MinimumPeriod;
 }
 
+parameter_types! {
+    pub const MaxCategoryDepth: u64 = 20;
+}
+
 impl Trait for Runtime {
     type Event = TestEvent;
     type ForumUserId = u64;
@@ -70,6 +74,7 @@ impl Trait for Runtime {
     type CategoryId = u64;
     type ThreadId = u64;
     type PostId = u64;
+    type MaxCategoryDepth = MaxCategoryDepth;
 
     fn is_lead(account_id: &<Self as system::Trait>::AccountId) -> bool {
         *account_id == FORUM_LEAD_ORIGIN_ID
@@ -412,26 +417,6 @@ pub fn change_current_time(diff: u64) -> () {
     Timestamp::set_timestamp(Timestamp::now() + diff);
 }
 
-pub fn set_max_category_depth_mock(
-    origin: OriginType,
-    max_category_depth: u8,
-    result: Result<(), &'static str>,
-) -> u8 {
-    assert_eq!(
-        TestForumModule::set_max_category_depth(mock_origin(origin), max_category_depth),
-        result
-    );
-    if result.is_ok() {
-        assert_eq!(TestForumModule::max_category_depth(), max_category_depth);
-        assert_eq!(
-            System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::MaxCategoryDepthUpdated(max_category_depth,))
-        );
-    };
-
-    max_category_depth
-}
-
 pub fn update_category_membership_of_moderator_mock(
     origin: OriginType,
     moderator_id: <Runtime as Trait>::ModeratorId,
@@ -614,7 +599,6 @@ pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime
         next_post_id: 1,
 
         category_by_moderator: vec![],
-        max_category_depth: 5,
         reaction_by_post: vec![],
 
         poll_desc_constraint: InputValidationLengthConstraint {

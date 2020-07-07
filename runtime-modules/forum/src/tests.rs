@@ -7,20 +7,6 @@ use crate::mock::*;
 /// second layer is each parameter of the specific method.
 
 /*
- * set_max_category_depth
- */
-#[test]
-// test set max category depth works
-fn set_max_category_depth() {
-    let config = default_genesis_config();
-    let origin = FORUM_LEAD_ORIGIN;
-    build_test_externalities(config).execute_with(|| {
-        set_max_category_depth_mock(NOT_FORUM_LEAD_ORIGIN, 1, Err(ERROR_ORIGIN_NOT_FORUM_LEAD));
-        set_max_category_depth_mock(origin, 1, Ok(()));
-    });
-}
-
-/*
  * update_category_membership_of_moderator_origin
  */
 #[test]
@@ -155,41 +141,25 @@ fn create_category_depth() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
     build_test_externalities(config).execute_with(|| {
-        create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-        create_category_mock(
-            origin.clone(),
-            Some(1),
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-        create_category_mock(
-            origin.clone(),
-            Some(2),
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-        create_category_mock(
-            origin.clone(),
-            Some(3),
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-        create_category_mock(
-            origin.clone(),
-            Some(4),
-            good_category_title(),
-            good_category_description(),
-            Err(ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED),
-        );
+        let max_depth = <Runtime as Trait>::MaxCategoryDepth::get();
+        for i in 0..(max_depth + 1) {
+            let parent_category_id = match i {
+                0 => None,
+                _ => Some(i),
+            };
+            let expected_result = match i {
+                _ if i >= max_depth => Err(ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED),
+                _ => Ok(()),
+            };
+
+            create_category_mock(
+                origin.clone(),
+                parent_category_id,
+                good_category_title(),
+                good_category_description(),
+                expected_result,
+            );
+        }
     });
 }
 
