@@ -2,7 +2,7 @@ import tap from 'tap';
 import { initConfig } from '../../utils/config';
 import { registerJoystreamTypes } from '@nicaea/types';
 import { closeApi } from '../impl/closeApi';
-import { ApiWrapper } from '../../utils/apiWrapper';
+import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper';
 import { WsProvider, Keyring } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { setTestTimeout } from '../../utils/setTestTimeout';
@@ -37,6 +37,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   const firstRewardInterval: BN = new BN(process.env.LONG_REWARD_INTERWAL!);
   const rewardInterval: BN = new BN(process.env.LONG_REWARD_INTERWAL!);
   const payoutAmount: BN = new BN(process.env.PAYOUT_AMOUNT!);
+  const unstakingPeriod: BN = new BN(process.env.STORAGE_WORKING_GROUP_UNSTAKING_PERIOD!);
   const durationInBlocks: number = 48;
   const openingActivationDelay: BN = new BN(0);
 
@@ -58,16 +59,38 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
         sudo,
         applicationStake,
         roleStake,
-        openingActivationDelay
+        openingActivationDelay,
+        WorkingGroups.storageWorkingGroup
       ))
   );
   tap.test(
     'Apply for lead opening',
-    async () => await applyForOpening(apiWrapper, leadKeyPair, sudo, applicationStake, roleStake, leadOpenignId, false)
+    async () =>
+      await applyForOpening(
+        apiWrapper,
+        leadKeyPair,
+        sudo,
+        applicationStake,
+        roleStake,
+        leadOpenignId,
+        WorkingGroups.storageWorkingGroup,
+        false
+      )
   );
-  tap.test('Begin lead application review', async () => beginLeaderApplicationReview(apiWrapper, sudo, leadOpenignId));
+  tap.test('Begin lead application review', async () =>
+    beginLeaderApplicationReview(apiWrapper, sudo, leadOpenignId, WorkingGroups.storageWorkingGroup)
+  );
   tap.test('Fill lead opening', async () =>
-    fillLeaderOpening(apiWrapper, leadKeyPair, sudo, leadOpenignId, firstRewardInterval, rewardInterval, payoutAmount)
+    fillLeaderOpening(
+      apiWrapper,
+      leadKeyPair,
+      sudo,
+      leadOpenignId,
+      firstRewardInterval,
+      rewardInterval,
+      payoutAmount,
+      WorkingGroups.storageWorkingGroup
+    )
   );
 
   let workerOpenignId: BN;
@@ -81,18 +104,41 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
         sudo,
         applicationStake,
         roleStake,
-        openingActivationDelay
+        openingActivationDelay,
+        unstakingPeriod,
+        WorkingGroups.storageWorkingGroup,
+        false
       ))
   );
   tap.test('Apply for worker opening', async () =>
-    applyForOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, workerOpenignId, false)
+    applyForOpening(
+      apiWrapper,
+      nKeyPairs,
+      sudo,
+      applicationStake,
+      roleStake,
+      workerOpenignId,
+      WorkingGroups.storageWorkingGroup,
+      false
+    )
   );
-  tap.test('Withdraw worker application', async () => withdrawApplicaiton(apiWrapper, nKeyPairs, sudo));
+  tap.test('Withdraw worker application', async () =>
+    withdrawApplicaiton(apiWrapper, nKeyPairs, sudo, WorkingGroups.storageWorkingGroup)
+  );
   tap.test('Apply for worker opening', async () =>
-    applyForOpening(apiWrapper, nKeyPairs, sudo, applicationStake, roleStake, workerOpenignId, false)
+    applyForOpening(
+      apiWrapper,
+      nKeyPairs,
+      sudo,
+      applicationStake,
+      roleStake,
+      workerOpenignId,
+      WorkingGroups.storageWorkingGroup,
+      false
+    )
   );
   tap.test('Begin application review', async () =>
-    beginApplicationReview(apiWrapper, leadKeyPair[0], sudo, workerOpenignId)
+    beginApplicationReview(apiWrapper, leadKeyPair[0], sudo, workerOpenignId, WorkingGroups.storageWorkingGroup)
   );
   tap.test('Fill worker opening', async () =>
     fillOpening(
@@ -103,11 +149,14 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       workerOpenignId,
       firstRewardInterval,
       rewardInterval,
-      payoutAmount
+      payoutAmount,
+      WorkingGroups.storageWorkingGroup
     )
   );
 
-  tap.test('Leaving lead role', async () => leaveRole(apiWrapper, leadKeyPair, sudo));
+  tap.test('Leaving lead role', async () =>
+    leaveRole(apiWrapper, leadKeyPair, sudo, WorkingGroups.storageWorkingGroup)
+  );
 
   closeApi(apiWrapper);
 });
