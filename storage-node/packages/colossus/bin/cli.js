@@ -1,299 +1,226 @@
 #!/usr/bin/env node
-'use strict';
+/* es-lint disable*/
+
+'use strict'
 
 // Node requires
-const path = require('path');
+const path = require('path')
 
 // npm requires
-const meow = require('meow');
-const configstore = require('configstore');
-const chalk = require('chalk');
-const figlet = require('figlet');
-const _ = require('lodash');
+const meow = require('meow')
+const chalk = require('chalk')
+const figlet = require('figlet')
+const _ = require('lodash')
 
-const debug = require('debug')('joystream:cli');
+const debug = require('debug')('joystream:colossus')
 
 // Project root
-const PROJECT_ROOT = path.resolve(__dirname, '..');
+const PROJECT_ROOT = path.resolve(__dirname, '..')
 
-// Configuration (default)
-const pkg = require(path.resolve(PROJECT_ROOT, 'package.json'));
-const default_config = new configstore(pkg.name);
+// Number of milliseconds to wait between synchronization runs.
+const SYNC_PERIOD_MS = 300000 // 5min
 
 // Parse CLI
 const FLAG_DEFINITIONS = {
   port: {
-    type: 'integer',
+    type: 'number',
     alias: 'p',
-    _default: 3000,
-  },
-  'syncPeriod': {
-    type: 'integer',
-    _default: 120000,
+    default: 3000
   },
   keyFile: {
     type: 'string',
+    isRequired: (flags, input) => {
+      return !flags.dev
+    }
   },
-  config: {
+  publicUrl: {
     type: 'string',
-    alias: 'c',
+    alias: 'u',
+    isRequired: (flags, input) => {
+      return !flags.dev
+    }
   },
-  'publicUrl': {
-    type: 'string',
-    alias: 'u'
-  },
-  'passphrase': {
+  passphrase: {
     type: 'string'
   },
-  'wsProvider': {
+  wsProvider: {
     type: 'string',
-    _default: 'ws://localhost:9944'
+    default: 'ws://localhost:9944'
+  },
+  providerId: {
+    type: 'number',
+    alias: 'i',
+    isRequired: (flags, input) => {
+      return !flags.dev
+    }
   }
-};
+}
 
 const cli = meow(`
   Usage:
-    $ colossus [command] [options]
+    $ colossus [command] [arguments]
 
   Commands:
-    server [default]  Run a server instance with the given configuration.
-    signup            Sign up as a storage provider. Requires that you provide
-                      a JSON account file of an account that is a member, and has
-                      sufficient balance for staking as a storage provider.
-                      Writes a new account file that should be used to run the
-                      storage node.
-    down              Signal to network that all services are down. Running
-                      the server will signal that services as online again.
-    discovery         Run the discovery service only.
+    server        Runs a production server instance. (discovery and storage services)
+                  This is the default command if not specified.
+    discovery     Run the discovery service only.
 
-  Options:
-    --config=PATH, -c PATH  Configuration file path. Defaults to
-                            "${default_config.path}".
+  Arguments (required for server. Ignored if running server with --dev option):
+    --provider-id ID, -i ID     StorageProviderId assigned to you in working group.
+    --key-file FILE             JSON key export file to use as the storage provider (role account).
+    --public-url=URL, -u URL    API Public URL to announce.
+
+  Arguments (optional):
+    --dev                   Runs server with developer settings.
+    --passphrase            Optional passphrase to use to decrypt the key-file.
     --port=PORT, -p PORT    Port number to listen on, defaults to 3000.
-    --sync-period           Number of milliseconds to wait between synchronization
-                            runs. Defaults to 30,000 (30s).
-    --key-file              JSON key export file to use as the storage provider.
-    --passphrase            Optional passphrase to use to decrypt the key-file (if its encrypted).
-    --public-url            API Public URL to announce. No URL will be announced if not specified.
-    --ws-provider           Joystream Node websocket provider url, eg: "ws://127.0.0.1:9944"
+    --ws-provider WS_URL    Joystream-node websocket provider, defaults to ws://localhost:9944
   `,
-  { flags: FLAG_DEFINITIONS });
-
-// Create configuration
-function create_config(pkgname, flags)
-{
-  // Create defaults from flag definitions
-  const defaults = {};
-  for (var key in FLAG_DEFINITIONS) {
-    const defs = FLAG_DEFINITIONS[key];
-    if (defs._default) {
-      defaults[key] = defs._default;
-    }
-  }
-
-  // Provide flags as defaults. Anything stored in the config overrides.
-  var config = new configstore(pkgname, defaults, { configPath: flags.config });
-
-  // But we want the flags to also override what's stored in the config, so
-  // set them all.
-  for (var key in flags) {
-    // Skip aliases and self-referential config flag
-    if (key.length == 1 || key === 'config') continue;
-    // Skip sensitive flags
-    if (key == 'passphrase') continue;
-    // Skip unset flags
-    if (!flags[key]) continue;
-    // Otherwise set.
-    config.set(key, flags[key]);
-  }
-
-  debug('Configuration at', config.path, config.all);
-  return config;
-}
+  { flags: FLAG_DEFINITIONS })
 
 // All-important banner!
-function banner()
-{
-  console.log(chalk.blue(figlet.textSync('joystream', 'Speed')));
+function banner () {
+  console.log(chalk.blue(figlet.textSync('joystream', 'Speed')))
 }
 
 function start_express_app(app, port) {
-  const http = require('http');
-  const server = http.createServer(app);
+  const http = require('http')
+  const server = http.createServer(app)
 
   return new Promise((resolve, reject) => {
-    server.on('error', reject);
+    server.on('error', reject)
     server.on('close', (...args) => {
-      console.log('Server closed, shutting down...');
-      resolve(...args);
-    });
+      console.log('Server closed, shutting down...')
+      resolve(...args)
+    })
     server.on('listening', () => {
-      console.log('API server started.', server.address());
-    });
-    server.listen(port, '::');
-    console.log('Starting API server...');
-  });
-}
-// Start app
-function start_all_services(store, api, config)
-{
-  const app = require('../lib/app')(PROJECT_ROOT, store, api, config);
-  const port = config.get('port');
-  return start_express_app(app, port);
+      console.log('API server started.', server.address())
+    })
+    server.listen(port, '::')
+    console.log('Starting API server...')
+  })
 }
 
-// Start discovery service app
-function start_discovery_service(api, config)
-{
-  const app = require('../lib/discovery')(PROJECT_ROOT, api, config);
-  const port = config.get('port');
-  return start_express_app(app, port);
+// Start app
+function start_all_services ({ store, api, port }) {
+  const app = require('../lib/app')(PROJECT_ROOT, store, api) // reduce falgs to only needed values
+  return start_express_app(app, port)
+}
+
+// Start discovery service app only
+function start_discovery_service ({ api, port }) {
+  const app = require('../lib/discovery')(PROJECT_ROOT, api) // reduce flags to only needed values
+  return start_express_app(app, port)
 }
 
 // Get an initialized storage instance
-function get_storage(runtime_api, config)
-{
+function get_storage (runtime_api) {
   // TODO at some point, we can figure out what backend-specific connection
   // options make sense. For now, just don't use any configuration.
-  const { Storage } = require('@joystream/storage');
+  const { Storage } = require('@joystream/storage-node-backend')
 
   const options = {
     resolve_content_id: async (content_id) => {
       // Resolve via API
-      const obj = await runtime_api.assets.getDataObject(content_id);
+      const obj = await runtime_api.assets.getDataObject(content_id)
       if (!obj || obj.isNone) {
-        return;
+        return
       }
+      // if obj.liaison_judgement !== Accepted .. throw ?
+      return obj.unwrap().ipfs_content_id.toString()
+    }
+  }
 
-      return obj.unwrap().ipfs_content_id.toString();
-    },
-  };
-
-  return Storage.create(options);
+  return Storage.create(options)
 }
 
-async function run_signup(account_file, provider_url)
-{
-  if (!account_file) {
-    console.log('Cannot proceed without keyfile');
-    return
-  }
-
-  const { RuntimeApi } = require('@joystream/runtime-api');
-  const api = await RuntimeApi.create({account_file, canPromptForPassphrase: true, provider_url});
-
-  if (!api.identities.key) {
-    console.log('Cannot proceed without a member account');
-    return
-  }
-
-  // Check there is an opening
-  let availableSlots = await api.roles.availableSlotsForRole(api.roles.ROLE_STORAGE);
-
-  if (availableSlots == 0) {
-    console.log(`
-      There are no open storage provider slots available at this time.
-      Please try again later.
-    `);
-    return;
-  } else {
-    console.log(`There are still ${availableSlots} slots available, proceeding`);
-  }
-
-  const member_address = api.identities.key.address;
-
-  // Check if account works
-  const min = await api.roles.requiredBalanceForRoleStaking(api.roles.ROLE_STORAGE);
-  console.log(`Account needs to be a member and have a minimum balance of ${min.toString()}`);
-  const check = await api.roles.checkAccountForStaking(member_address);
-  if (check) {
-    console.log('Account is working for staking, proceeding.');
-  }
-
-  // Create a role key
-  const role_key = await api.identities.createRoleKey(member_address);
-  const role_address = role_key.address;
-  console.log('Generated', role_address, '- this is going to be exported to a JSON file.\n',
-    ' You can provide an empty passphrase to make starting the server easier,\n',
-    ' but you must keep the file very safe, then.');
-  const filename = await api.identities.writeKeyPairExport(role_address);
-  console.log('Identity stored in', filename);
-
-  // Ok, transfer for staking.
-  await api.roles.transferForStaking(member_address, role_address, api.roles.ROLE_STORAGE);
-  console.log('Funds transferred.');
-
-  // Now apply for the role
-  await api.roles.applyForRole(role_address, api.roles.ROLE_STORAGE, member_address);
-  console.log('Role application sent.\nNow visit Roles > My Requests in the app.');
-}
-
-async function wait_for_role(config)
-{
+async function init_api_production ({ wsProvider, providerId, keyFile, passphrase }) {
   // Load key information
-  const { RuntimeApi } = require('@joystream/runtime-api');
-  const keyFile = config.get('keyFile');
+  const { RuntimeApi } = require('@joystream/storage-runtime-api')
+
   if (!keyFile) {
-    throw new Error("Must specify a key file for running a storage node! Sign up for the role; see `colussus --help' for details.");
+    throw new Error('Must specify a --key-file argument for running a storage node.')
   }
-  const wsProvider = config.get('wsProvider');
+
+  if (providerId === undefined) {
+    throw new Error('Must specify a --provider-id argument for running a storage node')
+  }
 
   const api = await RuntimeApi.create({
     account_file: keyFile,
-    passphrase: cli.flags.passphrase,
+    passphrase,
     provider_url: wsProvider,
-  });
+    storageProviderId: providerId
+  })
 
   if (!api.identities.key) {
-    throw new Error('Failed to unlock storage provider account');
+    throw new Error('Failed to unlock storage provider account')
   }
 
-  // Wait for the account role to be finalized
-  console.log('Waiting for the account to be staked as a storage provider role...');
-  const result = await api.roles.waitForRole(api.identities.key.address, api.roles.ROLE_STORAGE);
-  return [result, api];
+  if (!await api.workers.isRoleAccountOfStorageProvider(api.storageProviderId, api.identities.key.address)) {
+    throw new Error('storage provider role account and storageProviderId are not associated with a worker')
+  }
+
+  return api
 }
 
-function get_service_information(config) {
+async function init_api_development () {
+  // Load key information
+  const { RuntimeApi } = require('@joystream/storage-runtime-api')
+
+  const wsProvider = 'ws://localhost:9944'
+
+  const api = await RuntimeApi.create({
+    provider_url: wsProvider
+  })
+
+  const dev = require('../../cli/bin/dev')
+
+  api.identities.useKeyPair(dev.roleKeyPair(api))
+
+  api.storageProviderId = await dev.check(api)
+
+  return api
+}
+
+function get_service_information (publicUrl) {
   // For now assume we run all services on the same endpoint
   return({
     asset: {
       version: 1, // spec version
-      endpoint: config.get('publicUrl')
+      endpoint: publicUrl
     },
     discover: {
       version: 1, // spec version
-      endpoint: config.get('publicUrl')
+      endpoint: publicUrl
     }
   })
 }
 
-async function announce_public_url(api, config) {
+async function announce_public_url (api, publicUrl) {
   // re-announce in future
   const reannounce = function (timeoutMs) {
-    setTimeout(announce_public_url, timeoutMs, api, config);
+    setTimeout(announce_public_url, timeoutMs, api, publicUrl)
   }
 
   debug('announcing public url')
-  const { publish } = require('@joystream/discovery')
-
-  const accountId = api.identities.key.address
+  const { publish } = require('@joystream/service-discovery')
 
   try {
-    const serviceInformation = get_service_information(config)
+    const serviceInformation = get_service_information(publicUrl)
 
-    let keyId = await publish.publish(serviceInformation);
+    let keyId = await publish.publish(serviceInformation)
 
-    const expiresInBlocks = 600; // ~ 1 hour (6s block interval)
-    await api.discovery.setAccountInfo(accountId, keyId, expiresInBlocks);
+    await api.discovery.setAccountInfo(keyId)
 
     debug('publishing complete, scheduling next update')
 
 // >> sometimes after tx is finalized.. we are not reaching here!
 
-    // Reannounce before expiery
-    reannounce(50 * 60 * 1000); // in 50 minutes
-
+    // Reannounce before expiery. Here we are concerned primarily
+    // with keeping the account information refreshed and 'available' in
+    // the ipfs network. our record on chain is valid for 24hr
+    reannounce(50 * 60 * 1000) // in 50 minutes
   } catch (err) {
     debug(`announcing public url failed: ${err.stack}`)
 
@@ -303,95 +230,74 @@ async function announce_public_url(api, config) {
   }
 }
 
-function go_offline(api) {
-  return api.discovery.unsetAccountInfo(api.identities.key.address)
+function go_offline (api) {
+  return api.discovery.unsetAccountInfo()
 }
 
 // Simple CLI commands
-var command = cli.input[0];
+var command = cli.input[0]
 if (!command) {
-  command = 'server';
+  command = 'server'
+}
+
+async function start_colossus ({ api, publicUrl, port, flags }) {
+  // TODO: check valid url, and valid port number
+  const store = get_storage(api)
+  banner()
+  const { start_syncing } = require('../lib/sync')
+  start_syncing(api, { syncPeriod: SYNC_PERIOD_MS }, store)
+  announce_public_url(api, publicUrl)
+  return start_all_services({ store, api, port, flags }) // dont pass all flags only required values
 }
 
 const commands = {
   'server': async () => {
-    const cfg = create_config(pkg.name, cli.flags);
+    let publicUrl, port, api
 
-    // Load key information
-    const values = await wait_for_role(cfg);
-    const result = values[0]
-    const api = values[1];
-    if (!result) {
-      throw new Error(`Not staked as storage role.`);
-    }
-    console.log('Staked, proceeding.');
-
-    // Make sure a public URL is configured
-    if (!cfg.get('publicUrl')) {
-      throw new Error('publicUrl not configured')
+    if (cli.flags.dev) {
+      const dev = require('../../cli/bin/dev')
+      api = await init_api_development()
+      port = dev.developmentPort()
+      publicUrl = `http://localhost:${port}/`
+    } else {
+      api = await init_api_production(cli.flags)
+      publicUrl = cli.flags.publicUrl
+      port = cli.flags.port
     }
 
-    // Continue with server setup
-    const store = get_storage(api, cfg);
-    banner();
-
-    const { start_syncing } = require('../lib/sync');
-    start_syncing(api, cfg, store);
-
-    announce_public_url(api, cfg);
-    await start_all_services(store, api, cfg);
-  },
-  'signup': async (account_file) => {
-    const cfg = create_config(pkg.name, cli.flags);
-    await run_signup(account_file, cfg.get('wsProvider'));
-  },
-  'down': async () => {
-    const cfg = create_config(pkg.name, cli.flags);
-
-    const values = await wait_for_role(cfg);
-    const result = values[0]
-    const api = values[1];
-    if (!result) {
-      throw new Error(`Not staked as storage role.`);
-    }
-
-    await go_offline(api)
+    return start_colossus({ api, publicUrl, port })
   },
   'discovery': async () => {
-    debug("Starting Joystream Discovery Service")
-    const { RuntimeApi } = require('@joystream/runtime-api')
-    const cfg = create_config(pkg.name, cli.flags)
-    const wsProvider = cfg.get('wsProvider');
-    const api = await RuntimeApi.create({ provider_url: wsProvider });
-    await start_discovery_service(api, cfg)
+    debug('Starting Joystream Discovery Service')
+    const { RuntimeApi } = require('@joystream/storage-runtime-api')
+    const wsProvider = cli.flags.wsProvider
+    const api = await RuntimeApi.create({ provider_url: wsProvider })
+    const port = cli.flags.port
+    await start_discovery_service({ api, port })
   }
-};
+}
 
-
-async function main()
-{
+async function main () {
   // Simple CLI commands
-  var command = cli.input[0];
+  var command = cli.input[0]
   if (!command) {
-    command = 'server';
+    command = 'server'
   }
 
   if (commands.hasOwnProperty(command)) {
     // Command recognized
-    const args = _.clone(cli.input).slice(1);
-    await commands[command](...args);
-  }
-  else {
-    throw new Error(`Command "${command}" not recognized, aborting!`);
+    const args = _.clone(cli.input).slice(1)
+    await commands[command](...args)
+  } else {
+    throw new Error(`Command '${command}' not recognized, aborting!`)
   }
 }
 
 main()
   .then(() => {
-    console.log('Process exiting gracefully.');
-    process.exit(0);
+    process.exit(0)
   })
   .catch((err) => {
-    console.error(chalk.red(err.stack));
-    process.exit(-1);
-  });
+    console.error(chalk.red(err.stack))
+    process.exit(-1)
+  })

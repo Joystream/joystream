@@ -5,6 +5,7 @@ import { Codec } from "@polkadot/types/types";
 import moment from 'moment';
 import { JoyStruct } from './JoyStruct';
 export { JoyStruct } from './JoyStruct';
+export { JoyEnum } from './JoyEnum';
 
 // Treat a BTreeSet as a Vec since it is encoded in the same way
 export class BTreeSet<T extends Codec> extends Vec<T> {}

@@ -247,6 +247,24 @@ decl_error! {
 
         /// Working group size limit exceeded.
         MaxActiveWorkerNumberExceeded,
+
+        /// Add worker opening role stake cannot be zero.
+        AddWorkerOpeningRoleStakeCannotBeZero,
+
+        /// Add worker opening application stake cannot be zero.
+        AddWorkerOpeningApplicationStakeCannotBeZero,
+
+        /// Invalid OpeningPolicyCommitment parameter:
+        /// fill_opening_failed_applicant_application_stake_unstaking_period should be non-zero.
+        FillOpeningFailedApplicantApplicationStakeUnstakingPeriodIsZero,
+
+        /// Invalid OpeningPolicyCommitment parameter:
+        /// fill_opening_failed_applicant_role_stake_unstaking_period should be non-zero.
+        FillOpeningFailedApplicantRoleStakeUnstakingPeriodIsZero,
+
+        /// Invalid OpeningPolicyCommitment parameter:
+        /// fill_opening_successful_applicant_application_stake_unstaking_period should be non-zero.
+        FillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriodIsZero,
     }
 }
 
@@ -294,7 +312,7 @@ impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for Error {
             hiring::AddOpeningError::OpeningMustActivateInTheFuture => {
                 Error::AddWorkerOpeningActivatesInThePast
             }
-            hiring::AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(purpose) => {
+            hiring::AddOpeningError::StakeAmountLessThanMinimumStakeBalance(purpose) => {
                 match purpose {
                     hiring::StakePurpose::Role => Error::AddWorkerOpeningRoleStakeLessThanMinimum,
                     hiring::StakePurpose::Application => {
@@ -305,6 +323,12 @@ impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for Error {
             hiring::AddOpeningError::ApplicationRationingZeroMaxApplicants => {
                 Error::AddWorkerOpeningZeroMaxApplicantCount
             }
+            hiring::AddOpeningError::StakeAmountCannotBeZero(purpose) => match purpose {
+                hiring::StakePurpose::Role => Error::AddWorkerOpeningRoleStakeCannotBeZero,
+                hiring::StakePurpose::Application => {
+                    Error::AddWorkerOpeningApplicationStakeCannotBeZero
+                }
+            },
         }
     }
 }

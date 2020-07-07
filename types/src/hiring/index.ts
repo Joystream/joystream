@@ -1,7 +1,7 @@
 import { getTypeRegistry, Null, u128, u64, u32, Vec, Option, Text } from '@polkadot/types';
 import { Enum } from '@polkadot/types/codec';
 import { BlockNumber, Balance } from '@polkadot/types/interfaces';
-import { JoyStruct } from '../common';
+import { JoyStruct, JoyEnum } from '../common';
 import { StakeId } from '../stake';
 
 import { GenericJoyStreamRoleSchema } from './schemas/role.schema.typings'
@@ -139,6 +139,7 @@ export class WaitingToBeingOpeningStageVariant extends JoyStruct<WaitingToBeingO
   }
 };
 
+// TODO: Find usages and replace them with JoyEnum helpers
 export enum OpeningDeactivationCauseKeys {
   CancelledBeforeActivation = 'CancelledBeforeActivation',
   CancelledAcceptingApplications = 'CancelledAcceptingApplications',
@@ -147,19 +148,19 @@ export enum OpeningDeactivationCauseKeys {
   Filled = 'Filled',
 }
 
-export class OpeningDeactivationCause extends Enum {
-  constructor(value?: any, index?: number) {
-    super(
-      [
-        OpeningDeactivationCauseKeys.CancelledBeforeActivation,
-        OpeningDeactivationCauseKeys.CancelledAcceptingApplications,
-        OpeningDeactivationCauseKeys.CancelledInReviewPeriod,
-        OpeningDeactivationCauseKeys.ReviewPeriodExpired,
-        OpeningDeactivationCauseKeys.Filled,
-      ],
-      value, index);
-  }
-};
+class OpeningDeactivationCause_CancelledBeforeActivation extends Null { };
+class OpeningDeactivationCause_CancelledAcceptingApplications extends Null { };
+class OpeningDeactivationCause_CancelledInReviewPeriod extends Null { };
+class OpeningDeactivationCause_ReviewPeriodExpired extends Null { };
+class OpeningDeactivationCause_Filled extends Null { };
+
+export class OpeningDeactivationCause extends JoyEnum({
+  'CancelledBeforeActivation': OpeningDeactivationCause_CancelledBeforeActivation,
+  'CancelledAcceptingApplications': OpeningDeactivationCause_CancelledAcceptingApplications,
+  'CancelledInReviewPeriod': OpeningDeactivationCause_CancelledInReviewPeriod,
+  'ReviewPeriodExpired': OpeningDeactivationCause_ReviewPeriodExpired,
+  'Filled': OpeningDeactivationCause_Filled,
+} as const) { };
 
 export type IAcceptingApplications = {
   started_accepting_applicants_at_block: BlockNumber,
@@ -230,23 +231,14 @@ export class Deactivated extends JoyStruct<IDeactivated> {
   }
 };
 
+// TODO: Find usages and replace them with JoyEnum helpers
 export enum ActiveOpeningStageKeys {
   AcceptingApplications = 'AcceptingApplications',
   ReviewPeriod = 'ReviewPeriod',
   Deactivated = 'Deactivated',
 }
 
-export class ActiveOpeningStage extends Enum {
-  constructor(value?: any, index?: number) {
-    super(
-      {
-        [ActiveOpeningStageKeys.AcceptingApplications]: AcceptingApplications,
-        [ActiveOpeningStageKeys.ReviewPeriod]: ReviewPeriod,
-        [ActiveOpeningStageKeys.Deactivated]: Deactivated,
-      },
-      value, index);
-  }
-}
+export class ActiveOpeningStage extends JoyEnum({AcceptingApplications, ReviewPeriod, Deactivated} as const) { }
 
 export type ActiveOpeningStageVariantType = {
   stage: ActiveOpeningStage,
@@ -280,21 +272,16 @@ export class ActiveOpeningStageVariant extends JoyStruct<ActiveOpeningStageVaria
   }
 }
 
+// TODO: Find usages and replace them with JoyEnum helpers
 export enum OpeningStageKeys {
   WaitingToBegin = 'WaitingToBegin',
   Active = 'Active',
 }
 
-export class OpeningStage extends Enum {
-  constructor(value?: any, index?: number) {
-    super(
-      {
-        [OpeningStageKeys.WaitingToBegin]: WaitingToBeingOpeningStageVariant,
-        [OpeningStageKeys.Active]: ActiveOpeningStageVariant,
-      },
-      value, index);
-  }
-};
+export class OpeningStage extends JoyEnum({
+  'WaitingToBegin': WaitingToBeingOpeningStageVariant,
+  'Active': ActiveOpeningStageVariant
+} as const) { };
 
 export enum StakingAmountLimitModeKeys {
   AtLeast = 'AtLeast',
@@ -347,7 +334,7 @@ export class StakingPolicy extends JoyStruct<IStakingPolicy> {
 };
 
 import * as role_schema_json from './schemas/role.schema.json'
-export const schemaValidator = new ajv({ allErrors: true }).compile(role_schema_json)
+export const schemaValidator: ajv.ValidateFunction = new ajv({ allErrors: true }).compile(role_schema_json)
 
 export type IOpening = {
   created: BlockNumber,
@@ -386,8 +373,9 @@ export class Opening extends JoyStruct<IOpening> {
       if (schemaValidator(obj) === true) {
         return obj as unknown as GenericJoyStreamRoleSchema
       }
+      console.log("parse_human_readable_text JSON schema validation failed:", schemaValidator.errors);
     } catch (e) {
-      console.log("JSON schema validation failed:", e.toString())
+      console.log("parse_human_readable_text JSON schema validation failed:", e.toString())
     }
 
     return str
@@ -415,6 +403,10 @@ export class Opening extends JoyStruct<IOpening> {
 
   get role_staking_policy(): Option<StakingPolicy> {
     return this.getField<Option<StakingPolicy>>('role_staking_policy')
+  }
+
+  get human_readable_text(): Text {
+    return this.getField<Text>('human_readable_text');
   }
 
   get max_applicants(): number {
