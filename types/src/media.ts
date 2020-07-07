@@ -1,4 +1,4 @@
-import { Enum, Struct, Option, Vec as Vector, H256 } from '@polkadot/types';
+import { Enum, Struct, Option, Vec as Vector, H256, BTreeMap } from '@polkadot/types';
 import { getTypeRegistry, u64, bool, Text } from '@polkadot/types';
 import { BlockAndTime } from './common';
 import { MemberId } from './members';
@@ -127,11 +127,11 @@ export class DataObjectType extends Struct {
   }
 }
 
+export class DataObjectsMap extends BTreeMap.with(ContentId, DataObject) {}
+
 export function registerMediaTypes () {
   try {
     getTypeRegistry().register({
-      '::ContentId': ContentId,
-      '::DataObjectTypeId': DataObjectTypeId,
       ContentId,
       LiaisonJudgement,
       DataObject,
@@ -139,6 +139,7 @@ export function registerMediaTypes () {
       DataObjectStorageRelationship,
       DataObjectTypeId,
       DataObjectType,
+      DataObjectsMap
     });
   } catch (err) {
     console.error('Failed to register custom types of media module', err);
