@@ -1,5 +1,5 @@
 import { KeyringPair } from '@polkadot/keyring/types';
-import { ApiWrapper } from '../../../utils/apiWrapper';
+import { ApiWrapper, WorkingGroups } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN from 'bn.js';
 import { assert } from 'chai';
@@ -54,7 +54,9 @@ export async function createWorkingGroupLeaderOpening(
 export async function beginWorkingGroupLeaderApplicationReview(
   apiWrapper: ApiWrapper,
   m1KeyPairs: KeyringPair[],
-  sudo: KeyringPair
+  sudo: KeyringPair,
+  openingId: BN,
+  workingGroup: string
 ) {
   // Setup
   const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8);
@@ -73,7 +75,7 @@ export async function beginWorkingGroupLeaderApplicationReview(
     description,
     proposalStake,
     openingId,
-    WorkingGroups.storage
+    workingGroup
   );
   const proposalNumber: BN = await proposalPromise;
   return proposalNumber;

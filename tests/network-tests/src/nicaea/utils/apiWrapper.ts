@@ -310,6 +310,19 @@ export class ApiWrapper {
     );
   }
 
+  public estimateProposeBeginWorkingGroupLeaderApplicationReview(): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
+        0,
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        0,
+        0,
+        'Storage'
+      )
+    );
+  }
+
   private applyForCouncilElection(account: KeyringPair, amount: BN): Promise<void> {
     return this.sender.signAndSend(this.api.tx.councilElection.apply(amount), account, false);
   }
@@ -596,6 +609,29 @@ export class ApiWrapper {
         minCouncilStake,
         minVotingStake,
       ]),
+      account,
+      false
+    );
+  }
+
+  public async proposeBeginWorkingGroupLeaderApplicationReview(
+    account: KeyringPair,
+    title: string,
+    description: string,
+    stake: BN,
+    openingId: BN,
+    workingGroup: string
+  ) {
+    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn();
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
+        memberId,
+        title,
+        description,
+        stake,
+        openingId,
+        workingGroup
+      ),
       account,
       false
     );
