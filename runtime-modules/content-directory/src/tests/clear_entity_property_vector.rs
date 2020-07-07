@@ -175,6 +175,35 @@ fn clear_entity_property_vector_member_auth_failed() {
 }
 
 #[test]
+fn clear_entity_property_vector_curator_auth_failed() {
+    with_test_externalities(|| {
+        let actor = emulate_entity_access_state_for_failure_case(
+            EntityAccessStateFailureType::CuratorAuthFailed,
+        );
+
+        // Create class reference shema and add corresponding schema support to the Entity
+        add_class_reference_schema_and_entity_schema_support(&actor, FIRST_CURATOR_ORIGIN);
+
+        // Runtime state before tested call
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // Make an attempt to clear property_vector under given `entity_id` & `in_class_schema_property_id`
+        // using unknown origin and curator actor
+        let clear_entity_property_vector_result =
+            clear_entity_property_vector(UNKNOWN_ORIGIN, actor, FIRST_ENTITY_ID, FIRST_PROPERTY_ID);
+
+        // Failure checked
+        assert_failure(
+            clear_entity_property_vector_result,
+            ERROR_CURATOR_AUTH_FAILED,
+            number_of_events_before_call,
+        );
+    })
+}
+
+#[test]
 fn clear_entity_property_vector_curator_group_is_not_active() {
     with_test_externalities(|| {
         let actor = emulate_entity_access_state_for_failure_case(
@@ -209,35 +238,6 @@ fn clear_entity_property_vector_curator_group_is_not_active() {
         assert_failure(
             clear_entity_property_vector_result,
             ERROR_CURATOR_GROUP_IS_NOT_ACTIVE,
-            number_of_events_before_call,
-        );
-    })
-}
-
-#[test]
-fn clear_entity_property_vector_curator_auth_failed() {
-    with_test_externalities(|| {
-        let actor = emulate_entity_access_state_for_failure_case(
-            EntityAccessStateFailureType::CuratorAuthFailed,
-        );
-
-        // Create class reference shema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(&actor, FIRST_CURATOR_ORIGIN);
-
-        // Runtime state before tested call
-
-        // Events number before tested call
-        let number_of_events_before_call = System::events().len();
-
-        // Make an attempt to clear property_vector under given `entity_id` & `in_class_schema_property_id`
-        // using unknown origin and curator actor
-        let clear_entity_property_vector_result =
-            clear_entity_property_vector(UNKNOWN_ORIGIN, actor, FIRST_ENTITY_ID, FIRST_PROPERTY_ID);
-
-        // Failure checked
-        assert_failure(
-            clear_entity_property_vector_result,
-            ERROR_CURATOR_AUTH_FAILED,
             number_of_events_before_call,
         );
     })
