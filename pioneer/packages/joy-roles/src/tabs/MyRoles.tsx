@@ -395,7 +395,7 @@ export function Application (props: ApplicationProps) {
     countdown = <OpeningBodyReviewInProgress {...props.stage} />;
   }
 
-  const application = props.opening.parse_human_readable_text() as GenericJoyStreamRoleSchema;
+  const application = props.opening.parse_human_readable_text_with_fallback();
   const appState = applicationState(props);
 
   let CTA = null;
