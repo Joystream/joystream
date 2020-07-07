@@ -63,7 +63,7 @@ impl ContentIdExists<Test> for MockContent {
         which: &<Test as data_directory::Trait>::ContentId,
     ) -> Result<data_directory::DataObject<Test>, &'static str> {
         match *which {
-            TEST_MOCK_EXISTING_CID => Ok(data_directory::DataObject {
+            TEST_MOCK_EXISTING_CID => Ok(data_directory::DataObjectInternal {
                 type_id: 1,
                 size: 1234,
                 added_at: data_directory::BlockAndTime {
@@ -89,6 +89,7 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
+    pub const MaxObjectsPerInjection: u32 = 5;
 }
 
 impl system::Trait for Test {
@@ -166,6 +167,7 @@ impl data_directory::Trait for Test {
     type StorageProviderHelper = ();
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
     type MemberOriginValidator = ();
+    type MaxObjectsPerInjection = MaxObjectsPerInjection;
 }
 
 impl crate::data_directory::StorageProviderHelper<Test> for () {

@@ -3,8 +3,7 @@ import _ from 'lodash';
 import { OpeningStatus } from '../../Types';
 import { apiModuleByGroup } from '../../Api';
 import { OpeningId } from '@joystream/types/hiring';
-import { ApplicationIdSet } from '@joystream/types/working-group';
-import { RewardPolicy } from '@joystream/types/content-working-group';
+import { ApplicationIdSet, RewardPolicy } from '@joystream/types/working-group';
 import chalk from 'chalk';
 import { createParamOptions } from '../../helpers/promptOptions';
 

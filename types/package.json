@@ -16,7 +16,8 @@
     "@types/lodash": "^4.14.157",
     "@types/vfile": "^4.0.0",
     "ajv": "^6.11.0",
-    "lodash": "^4.17.15"
+    "lodash": "^4.17.15",
+    "moment": "^2.24.0"
   },
   "devDependencies": {
     "typescript": "^3.7.2"

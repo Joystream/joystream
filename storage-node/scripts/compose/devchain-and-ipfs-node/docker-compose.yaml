@@ -3,14 +3,18 @@ services:
   ipfs:
     image: ipfs/go-ipfs:latest
     ports:
-      - "5001:5001"
+      - "127.0.0.1:5001:5001"
     volumes:
-      - storage-node-shared-data:/data/ipfs
+      - ipfs-data:/data/ipfs
   chain:
-    image: joystream/node:2.1.2
+    image: joystream/node:latest
     ports:
-      - "9944:9944"
-    command: --dev --ws-external
+      - "127.0.0.1:9944:9944"
+    volumes:
+      - chain-data:/data
+    command: --dev --ws-external --base-path /data
 volumes:
-  storage-node-shared-data:
+  ipfs-data:
+    driver: local
+  chain-data:
     driver: local
