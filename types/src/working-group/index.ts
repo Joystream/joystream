@@ -1,6 +1,6 @@
 import { getTypeRegistry, Bytes, BTreeMap, Option, Enum } from '@polkadot/types';
 import { u16, Null } from '@polkadot/types/primitive';
-import { AccountId, BlockNumber } from '@polkadot/types/interfaces';
+import { AccountId, BlockNumber, Balance } from '@polkadot/types/interfaces';
 import { BTreeSet, JoyStruct } from '../common';
 import { MemberId, ActorId } from '../members';
 import { RewardRelationshipId } from '../recurring-rewards';
@@ -297,6 +297,23 @@ export class Opening extends JoyStruct<IOpening> {
   }
 }
 
+// Also defined in "content-working-group" runtime module, but those definitions are the consistent
+export type IRewardPolicy = {
+  amount_per_payout: Balance,
+  next_payment_at_block: BlockNumber,
+  payout_interval: Option<BlockNumber>,
+};
+
+export class RewardPolicy extends JoyStruct<IRewardPolicy> {
+  constructor (value?: IRewardPolicy) {
+    super({
+      amount_per_payout: 'Balance',
+      next_payment_at_block: 'BlockNumber',
+      payout_interval: 'Option<BlockNumber>',
+    }, value);
+  }
+};
+
 export function registerWorkingGroupTypes() {
   try {
     getTypeRegistry().register({
@@ -310,7 +327,10 @@ export function registerWorkingGroupTypes() {
       StorageProviderId,
       OpeningType,
       /// Alias used by the runtime working-group module
-      HiringApplicationId: ApplicationId
+      HiringApplicationId: ApplicationId,
+      RewardPolicy,
+      'working_group::OpeningId': OpeningId,
+      'working_group::WorkerId': WorkerId
     });
   } catch (err) {
     console.error('Failed to register custom types of working-group module', err);

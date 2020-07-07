@@ -1,6 +1,11 @@
-use crate::mock::*;
-use crate::test::*;
+use crate::mock::{build_test_externalities, Hiring, Test};
+use crate::test::{BlockNumber, OpeningId};
 use crate::StakingAmountLimitMode::Exact;
+use crate::*;
+use crate::{
+    ActivateOpeningAt, ActiveOpeningStage, AddOpeningError, ApplicationRationingPolicy, Opening,
+    OpeningStage, StakePurpose, StakingPolicy,
+};
 use rstd::collections::btree_set::BTreeSet;
 
 static FIRST_BLOCK_HEIGHT: <Test as system::Trait>::BlockNumber = 1;
@@ -143,6 +148,18 @@ fn add_opening_succeeds_or_fails_due_to_application_staking_policy() {
 
         opening_data.call_and_assert(Ok(0));
 
+        //Zero stake amount
+        opening_data.application_staking_policy = Some(StakingPolicy {
+            amount: 0,
+            amount_mode: Exact,
+            crowded_out_unstaking_period_length: None,
+            review_period_expired_unstaking_period_length: None,
+        });
+
+        opening_data.call_and_assert(Err(AddOpeningError::StakeAmountCannotBeZero(
+            StakePurpose::Application,
+        )));
+
         //Invalid stake amount
         opening_data.application_staking_policy = Some(StakingPolicy {
             amount: 1,
@@ -152,7 +169,7 @@ fn add_opening_succeeds_or_fails_due_to_application_staking_policy() {
         });
 
         opening_data.call_and_assert(Err(
-            AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(StakePurpose::Application),
+            AddOpeningError::StakeAmountLessThanMinimumStakeBalance(StakePurpose::Application),
         ));
     });
 }
@@ -171,6 +188,18 @@ fn add_opening_succeeds_or_fails_due_to_role_staking_policy() {
 
         opening_data.call_and_assert(Ok(0));
 
+        //Zero stake amount
+        opening_data.role_staking_policy = Some(StakingPolicy {
+            amount: 0,
+            amount_mode: Exact,
+            crowded_out_unstaking_period_length: None,
+            review_period_expired_unstaking_period_length: None,
+        });
+
+        opening_data.call_and_assert(Err(AddOpeningError::StakeAmountCannotBeZero(
+            StakePurpose::Role,
+        )));
+
         //Invalid stake amount
         opening_data.role_staking_policy = Some(StakingPolicy {
             amount: 1,
@@ -180,7 +209,7 @@ fn add_opening_succeeds_or_fails_due_to_role_staking_policy() {
         });
 
         opening_data.call_and_assert(Err(
-            AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(StakePurpose::Role),
+            AddOpeningError::StakeAmountLessThanMinimumStakeBalance(StakePurpose::Role),
         ));
     });
 }

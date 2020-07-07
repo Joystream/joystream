@@ -2,9 +2,6 @@
 
 This package contains an abstraction over the storage backend of colossus.
 
-Its main purpose is to allow testing the storage subsystem without having to
-run a blockchain node.
-
 In the current version, the storage is backed by IPFS. In order to run tests,
 you have to also run an [IPFS node](https://dist.ipfs.io/#go-ipfs).
 

@@ -535,11 +535,8 @@ export class AdminController extends Controller<State, ITransport> {
         )
       );
 
-      let title = 'unknown (JSON schema invalid)';
-      const hrt = baseOpening.value.parse_human_readable_text();
-      if (typeof hrt === 'object') {
-        title = (hrt).job.title;
-      }
+      const hrt = baseOpening.value.parse_human_readable_text_with_fallback();
+      const title = hrt.job.title;
 
       this.state.openings.set(i, {
         openingId: openingId.toNumber(),

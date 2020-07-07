@@ -477,13 +477,7 @@ type OpeningViewProps = WorkingGroupOpening & BlockTimeProps & MemberIdProps
 export const OpeningView = Loadable<OpeningViewProps>(
   ['opening', 'block_time_in_seconds'],
   props => {
-    const hrt = props.opening.parse_human_readable_text();
-
-    if (typeof hrt === 'undefined' || typeof hrt === 'string') {
-      return null;
-    }
-
-    const text = hrt;
+    const text = props.opening.parse_human_readable_text_with_fallback();
     // TODO: This will be handled with JoyEnum later
     const isLeadOpening = props.meta.type?.type === OpeningTypeKeys.Leader;
 

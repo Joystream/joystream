@@ -107,10 +107,7 @@ export class ApplyController extends Controller<State, ITransport> {
     )
       .then(
         ([opening, ranks]) => {
-          const hrt = opening.opening.parse_human_readable_text();
-          if (typeof hrt !== 'object') {
-            return this.onError('human_readable_text is not an object');
-          }
+          const hrt = opening.opening.parse_human_readable_text_with_fallback();
 
           this.state.role = hrt;
           this.state.applications = opening.applications;
