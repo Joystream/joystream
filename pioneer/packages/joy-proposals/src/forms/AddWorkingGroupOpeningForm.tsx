@@ -150,10 +150,14 @@ const StakeFields: React.FunctionComponent<StakeFieldsProps> = ({
 
 const valuesToAddOpeningParams = (values: FormValues): SimplifiedTypeInterface<IAddOpeningParameters> => {
   const commitment: SimplifiedTypeInterface<IWorkingGroupOpeningPolicyCommitment> = {
-    max_review_period_length: parseInt(values.maxReviewPeriodLength),
-    terminate_role_stake_unstaking_period: parseInt(values.terminateRoleUnstakingPeriod),
-    exit_role_stake_unstaking_period: parseInt(values.leaveRoleUnstakingPeriod)
+    max_review_period_length: parseInt(values.maxReviewPeriodLength)
   };
+  if (parseInt(values.terminateRoleUnstakingPeriod) > 0) {
+    commitment.terminate_role_stake_unstaking_period = parseInt(values.terminateRoleUnstakingPeriod);
+  }
+  if (parseInt(values.leaveRoleUnstakingPeriod) > 0) {
+    commitment.exit_role_stake_unstaking_period = parseInt(values.leaveRoleUnstakingPeriod);
+  }
   if (values.applicationsLimited) {
     const rationingPolicy: SimplifiedTypeInterface<IApplicationRationingPolicy> = {
       max_active_applicants: parseInt(values.maxApplications)
