@@ -333,6 +333,11 @@ const ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT: &str = "Moderator id not match its a
 // Errors about thread.
 const ERROR_ACCOUNT_DOES_NOT_MATCH_THREAD_AUTHOR: &str = "Thread not authored by the given user.";
 const ERROR_THREAD_DOES_NOT_EXIST: &str = "Thread does not exist";
+const ERROR_MODERATOR_MODERATE_ORIGIN_CATEGORY: &str =
+    "Moderator can't moderate category containing thread.";
+const ERROR_MODERATOR_MODERATE_DESTINATION_CATEGORY: &str =
+    "Moderator can't moderate destination category.";
+const ERROR_THREAD_MOVE_INVALID: &str = "Origin is the same as the destination.";
 
 // Errors about post.
 const ERROR_POST_DOES_NOT_EXIST: &str = "Post does not exist.";
@@ -569,6 +574,9 @@ decl_event!(
         // A thread was deleted.
         ThreadDeleted(ThreadId),
 
+        // A thread was moved to new category
+        ThreadMoved(ThreadId, CategoryId),
+
         /// Post with given id was created.
         PostAdded(PostId),
 
@@ -651,7 +659,7 @@ decl_module! {
             if let Some(tmp_parent_category_id) = parent {
 
                 // Get the path from parent category to root
-                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(tmp_parent_category_id)?;
+                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(&tmp_parent_category_id)?;
 
                 // Check if max depth reached
                 if category_tree_path.len() >= MaxCategoryDepth::get() as usize {
@@ -714,7 +722,7 @@ decl_module! {
 
             if let Some(tmp_parent_category_id) = parent_category_id {
                 // Get path from parent to root of category tree.
-                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(tmp_parent_category_id)?;
+                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(&tmp_parent_category_id)?;
 
                 if new_archival_status && Self::ensure_can_mutate_in_path_leaf(&category_tree_path).is_err() {
                     return Ok(())
@@ -784,7 +792,7 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            let thread = Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
+            let (_, thread) = Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
 
             // Delete thread
             <ThreadById<T>>::remove(thread.category_id, thread_id);
@@ -795,6 +803,24 @@ decl_module! {
 
             // Store the event
             Self::deposit_event(RawEvent::ThreadDeleted(thread_id));
+
+            Ok(())
+        }
+
+        fn move_thread_to_category(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, thread_id: T::ThreadId, new_category_id: T::CategoryId) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
+            // Make sure moderator move between selected categories
+            let (_, thread) = Self::ensure_can_move_thread(origin, &moderator_id, &category_id, &thread_id, &new_category_id)?;
+
+            <ThreadById<T>>::remove(category_id, thread_id);
+            <ThreadById<T>>::insert(new_category_id, thread_id, thread);
+            <CategoryById<T>>::mutate(category_id, |category| category.num_direct_threads -= 1);
+            <CategoryById<T>>::mutate(new_category_id, |category| category.num_direct_threads += 1);
+
+            // Store the event
+            Self::deposit_event(RawEvent::ThreadMoved(thread_id, new_category_id));
 
             Ok(())
         }
@@ -857,10 +883,10 @@ decl_module! {
             let thread = Self::ensure_thread_exists(&category_id, &thread_id)?;
 
             // ensure origin can moderate category
-            Self::ensure_can_moderate_category(&who, &moderator_id, thread.category_id)?;
+            Self::ensure_can_moderate_category(&who, &moderator_id, &thread.category_id)?;
 
             // Can mutate in corresponding category
-            let path = Self::build_category_tree_path(thread.category_id);
+            let path = Self::build_category_tree_path(&thread.category_id);
 
             // Path must be non-empty, as category id is from thread in state
             assert!(!path.is_empty());
@@ -965,7 +991,7 @@ decl_module! {
             Self::ensure_thread_exists(&category_id, &post.thread_id)?;
 
             // ensure the moderator can moderate the category
-            Self::ensure_can_moderate_category(&who, &moderator_id, category_id)?;
+            Self::ensure_can_moderate_category(&who, &moderator_id, &category_id)?;
 
             // Generate event
             Self::deposit_event(RawEvent::PostModerated(post_id));
@@ -982,7 +1008,7 @@ decl_module! {
             let who = Self::ensure_is_moderator(origin, &moderator_id)?;
 
             // ensure the moderator can moderate the category
-            Self::ensure_can_moderate_category(&who, &moderator_id, category_id)?;
+            Self::ensure_can_moderate_category(&who, &moderator_id, &category_id)?;
 
             // Ensure all thread id valid and is under the category
             for item in &stickied_ids {
@@ -1020,7 +1046,7 @@ impl<T: Trait> Module<T> {
 
         // Get path from parent to root of category tree.
         let category_tree_path =
-            Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
+            Self::ensure_valid_category_and_build_category_tree_path(&category_id)?;
 
         // No ancestor is blocking us doing mutation in this category
         Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
@@ -1081,7 +1107,7 @@ impl<T: Trait> Module<T> {
 
         // Get path from parent to root of category tree.
         let category_tree_path =
-            Self::ensure_valid_category_and_build_category_tree_path(thread.category_id)?;
+            Self::ensure_valid_category_and_build_category_tree_path(&thread.category_id)?;
 
         // No ancestor is blocking us doing mutation in this category
         Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
@@ -1257,19 +1283,50 @@ impl<T: Trait> Module<T> {
         moderator_id: &T::ModeratorId,
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
-    ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>, &'static str> {
+    ) -> Result<
+        (
+            T::AccountId,
+            Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>,
+        ),
+        &'static str,
+    > {
         // Check that account is forum member
         let who = Self::ensure_is_moderator(origin, &moderator_id)?;
 
         let thread = Self::ensure_thread_exists(category_id, thread_id)?;
 
-        Self::ensure_can_moderate_category(&who, moderator_id, thread.category_id)?;
+        Self::ensure_can_moderate_category(&who, moderator_id, &thread.category_id)?;
 
-        Ok(thread)
+        Ok((who, thread))
+    }
+
+    fn ensure_can_move_thread(
+        origin: T::Origin,
+        moderator_id: &T::ModeratorId,
+        category_id: &T::CategoryId,
+        thread_id: &T::ThreadId,
+        new_category_id: &T::CategoryId,
+    ) -> Result<
+        (
+            T::AccountId,
+            Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>,
+        ),
+        &'static str,
+    > {
+        ensure!(category_id != new_category_id, ERROR_THREAD_MOVE_INVALID,);
+
+        let (account_id, thread) =
+            Self::ensure_can_moderate_thread(origin, moderator_id, category_id, thread_id)
+                .map_err(|_| ERROR_MODERATOR_MODERATE_ORIGIN_CATEGORY)?;
+
+        Self::ensure_can_moderate_category(&account_id, moderator_id, new_category_id)
+            .map_err(|_| ERROR_MODERATOR_MODERATE_DESTINATION_CATEGORY)?;
+
+        Ok((account_id, thread))
     }
 
     fn ensure_catgory_is_mutable(category_id: T::CategoryId) -> dispatch::Result {
-        let category_tree_path = Self::build_category_tree_path(category_id);
+        let category_tree_path = Self::build_category_tree_path(&category_id);
 
         Self::ensure_can_mutate_in_path_leaf(&category_tree_path)
     }
@@ -1306,7 +1363,7 @@ impl<T: Trait> Module<T> {
 
     /// Build category tree path and validate them
     fn ensure_valid_category_and_build_category_tree_path(
-        category_id: T::CategoryId,
+        category_id: &T::CategoryId,
     ) -> Result<CategoryTreePath<T::CategoryId, T::ThreadId, T::Hash>, &'static str> {
         ensure!(
             <CategoryById<T>>::exists(&category_id),
@@ -1324,7 +1381,7 @@ impl<T: Trait> Module<T> {
     /// Builds path and populates in `path`.
     /// Requires that `category_id` is valid
     fn build_category_tree_path(
-        category_id: T::CategoryId,
+        category_id: &T::CategoryId,
     ) -> CategoryTreePath<T::CategoryId, T::ThreadId, T::Hash> {
         // Get path from parent to root of category tree.
         let mut category_tree_path = vec![];
@@ -1337,7 +1394,7 @@ impl<T: Trait> Module<T> {
     /// Builds path and populates in `path`.
     /// Requires that `category_id` is valid
     fn _build_category_tree_path(
-        category_id: T::CategoryId,
+        category_id: &T::CategoryId,
         path: &mut CategoryTreePath<T::CategoryId, T::ThreadId, T::Hash>,
     ) {
         // Grab category
@@ -1350,7 +1407,7 @@ impl<T: Trait> Module<T> {
         if let Some(parent_category_id) = category.parent_category_id {
             assert!(<CategoryById<T>>::exists(parent_category_id));
 
-            Self::_build_category_tree_path(parent_category_id, path);
+            Self::_build_category_tree_path(&parent_category_id, path);
         }
     }
 
@@ -1358,7 +1415,7 @@ impl<T: Trait> Module<T> {
     fn ensure_can_moderate_category(
         account_id: &T::AccountId,
         moderator_id: &T::ModeratorId,
-        category_id: T::CategoryId,
+        category_id: &T::CategoryId,
     ) -> Result<(), &'static str> {
         // Get path from category to root
         let category_tree_path = Self::build_category_tree_path(category_id);
