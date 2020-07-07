@@ -51,6 +51,34 @@ export async function createWorkingGroupLeaderOpening(
   return proposalNumber;
 }
 
+export async function beginWorkingGroupLeaderApplicationReview(
+  apiWrapper: ApiWrapper,
+  m1KeyPairs: KeyringPair[],
+  sudo: KeyringPair
+) {
+  // Setup
+  const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8);
+  const description: string = 'Testing begin working group lead application review proposal ' + uuid().substring(0, 8);
+
+  // Proposal stake calculation
+  const proposalStake: BN = new BN(100000);
+  const proposalFee: BN = apiWrapper.estimateProposeBeginWorkingGroupLeaderApplicationReview();
+  await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake));
+
+  // Proposal creation
+  const proposalPromise = apiWrapper.expectProposalCreated();
+  await apiWrapper.proposeBeginWorkingGroupLeaderApplicationReview(
+    m1KeyPairs[0],
+    proposalTitle,
+    description,
+    proposalStake,
+    openingId,
+    WorkingGroups.storage
+  );
+  const proposalNumber: BN = await proposalPromise;
+  return proposalNumber;
+}
+
 export async function voteForProposal(
   apiWrapper: ApiWrapper,
   m2KeyPairs: KeyringPair[],
