@@ -497,6 +497,8 @@ pub fn moderate_thread_mock(
         result
     );
     if result.is_ok() {
+        assert!(!<ThreadById<Runtime>>::exists(category_id, thread_id));
+
         let rationale_hash = Runtime::calculate_hash(rationale.clone().as_slice());
         assert_eq!(
             System::events().last().unwrap().event,
@@ -527,6 +529,8 @@ pub fn moderate_post_mock(
         result
     );
     if result.is_ok() {
+        assert!(!<PostById<Runtime>>::exists(thread_id, post_id));
+
         let rationale_hash = Runtime::calculate_hash(rationale.clone().as_slice());
         assert_eq!(
             System::events().last().unwrap().event,
