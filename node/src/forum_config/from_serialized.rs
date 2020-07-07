@@ -11,8 +11,12 @@ use serde_json::Result;
 #[derive(Deserialize)]
 struct ForumData {
     categories: Vec<(CategoryId, Category<CategoryId, ThreadId, Hash>)>,
-    posts: Vec<(PostId, Post<ForumUserId, ThreadId, Hash>)>,
-    threads: Vec<(ThreadId, Thread<ForumUserId, CategoryId, Moment, Hash>)>,
+    posts: Vec<(ThreadId, PostId, Post<ForumUserId, ThreadId, Hash>)>,
+    threads: Vec<(
+        CategoryId,
+        ThreadId,
+        Thread<ForumUserId, CategoryId, Moment, Hash>,
+    )>,
 }
 
 fn parse_forum_json() -> Result<ForumData> {
