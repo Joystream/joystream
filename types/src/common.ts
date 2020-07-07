@@ -1,8 +1,11 @@
-import { Struct, Option, Text, bool, Vec, u16, u32, u64, getTypeRegistry } from "@polkadot/types";
+import { Struct, Option, Text, bool, Vec, u16, u32, u64, getTypeRegistry, Enum, Null } from "@polkadot/types";
 import { BlockNumber, Moment } from '@polkadot/types/interfaces';
 import { Codec } from "@polkadot/types/types";
+// we get 'moment' because it is a dependency of @polkadot/util, via @polkadot/keyring
+import moment from 'moment';
 import { JoyStruct } from './JoyStruct';
 export { JoyStruct } from './JoyStruct';
+export { JoyEnum } from './JoyEnum';
 
 // Treat a BTreeSet as a Vec since it is encoded in the same way
 export class BTreeSet<T extends Codec> extends Vec<T> {}
@@ -38,6 +41,23 @@ export class BlockAndTime extends Struct {
     static newEmpty (): BlockAndTime {
         return new BlockAndTime({} as BlockAndTime);
     }
+
+    get momentDate (): moment.Moment {
+        const YEAR_2000_MILLISECONDS = 946684801000;
+
+        // overflowing in ~270,000 years
+        const timestamp = this.time.toNumber();
+
+        // TODO: remove once https://github.com/Joystream/joystream/issues/705 is resolved
+        // due to a bug, timestamp can be either in seconds or milliseconds
+        let timestampInMillis = timestamp;
+        if (timestamp < YEAR_2000_MILLISECONDS) {
+          // timestamp is in seconds
+          timestampInMillis = timestamp * 1000;
+        }
+
+        return moment(timestampInMillis);
+      }
 }
 
 export function getTextPropAsString(struct: Struct, fieldName: string): string {
@@ -88,6 +108,13 @@ export class InputValidationLengthConstraint extends JoyStruct<InputValidationLe
     }
 }
 
+// TODO: Replace with JoyEnum
+export const WorkingGroupDef = {
+  Storage: Null
+} as const;
+export type WorkingGroupKeys = keyof typeof WorkingGroupDef;
+export class WorkingGroup extends Enum.with(WorkingGroupDef) { };
+
 export function registerCommonTypes() {
     const typeRegistry = getTypeRegistry();
 
@@ -98,6 +125,7 @@ export function registerCommonTypes() {
       ThreadId,
       PostId,
       InputValidationLengthConstraint,
-      BTreeSet // Is this even necessary?
+      BTreeSet, // Is this even necessary?
+      WorkingGroup
     });
 }

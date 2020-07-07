@@ -32,11 +32,10 @@ const yaml = require('js-yaml');
 // Project requires
 const validateResponses = require('./middleware/validate_responses');
 const fileUploads = require('./middleware/file_uploads');
-const pagination = require('@joystream/util/pagination');
-const storage = require('@joystream/storage');
+const pagination = require('@joystream/storage-utils/pagination');
 
 // Configure app
-function create_app(project_root, storage, runtime, config)
+function create_app(project_root, storage, runtime)
 {
   const app = express();
   app.use(cors());
@@ -60,7 +59,6 @@ function create_app(project_root, storage, runtime, config)
       'multipart/form-data': fileUploads
     },
     dependencies: {
-      config: config,
       storage: storage,
       runtime: runtime,
     },

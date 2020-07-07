@@ -2,14 +2,13 @@ import { flags } from '@oclif/command';
 import { CLIError } from '@oclif/errors';
 import { displayNameValueTable } from '../../helpers/display';
 import { ApiPromise } from '@polkadot/api';
-import { getTypeDef } from '@polkadot/types';
-import { Codec, TypeDef, TypeDefInfo } from '@polkadot/types/types';
+import { Option } from '@polkadot/types';
+import { Codec } from '@polkadot/types/types';
 import { ConstantCodec } from '@polkadot/api-metadata/consts/types';
 import ExitCodes from '../../ExitCodes';
 import chalk from 'chalk';
 import { NameValueObj } from '../../Types';
-import inquirer from 'inquirer';
-import ApiCommandBase from '../../base/ApiCommandBase';
+import ApiCommandBase, { ApiMethodInputArg } from '../../base/ApiCommandBase';
 
 // Command flags type
 type ApiInspectFlags = {
@@ -29,12 +28,6 @@ const TYPES_AVAILABLE = [
 // String literals type based on TYPES_AVAILABLE const.
 // It works as if we specified: type ApiType = 'query' | 'consts'...;
 type ApiType = typeof TYPES_AVAILABLE[number];
-
-// Format of the api input args (as they are specified in the CLI)
-type ApiMethodInputSimpleArg = string;
-// This recurring type allows the correct handling of nested types like:
-// ((Type1, Type2), Option<Type3>) etc.
-type ApiMethodInputArg = ApiMethodInputSimpleArg | ApiMethodInputArg[];
 
 export default class ApiInspect extends ApiCommandBase {
     static description =
@@ -154,62 +147,19 @@ export default class ApiInspect extends ApiCommandBase {
         return { apiType, apiModule, apiMethod };
     }
 
-    // Prompt for simple value (string)
-    async promptForSimple(typeName: string): Promise<string> {
-        const userInput = await inquirer.prompt([{
-            name: 'providedValue',
-            message: `Provide value for ${ typeName }`,
-            type: 'input'
-        } ])
-        return <string> userInput.providedValue;
-    }
-
-    // Prompt for optional value (returns undefined if user refused to provide)
-    async promptForOption(typeDef: TypeDef): Promise<ApiMethodInputArg | undefined> {
-        const userInput = await inquirer.prompt([{
-            name: 'confirmed',
-            message: `Do you want to provide the optional ${ typeDef.type } parameter?`,
-            type: 'confirm'
-        } ]);
-
-        if (userInput.confirmed) {
-            const subtype = <TypeDef> typeDef.sub; // We assume that Opion always has a single subtype
-            let value = await this.promptForParam(subtype.type);
-            return value;
-        }
-    }
-
-    // Prompt for tuple - returns array of values
-    async promptForTuple(typeDef: TypeDef): Promise<(ApiMethodInputArg)[]> {
-        let result: ApiMethodInputArg[] = [];
-
-        if (!typeDef.sub) return [ await this.promptForSimple(typeDef.type) ];
-
-        const subtypes: TypeDef[] = Array.isArray(typeDef.sub) ? typeDef.sub : [ typeDef.sub ];
-
-        for (let subtype of subtypes) {
-            let inputParam = await this.promptForParam(subtype.type);
-            if (inputParam !== undefined) result.push(inputParam);
-        }
-
-        return result;
-    }
-
-    // Prompt for param based on "paramType" string (ie. Option<MemeberId>)
-    async promptForParam(paramType: string): Promise<ApiMethodInputArg | undefined> {
-        const typeDef: TypeDef = getTypeDef(paramType);
-        if (typeDef.info === TypeDefInfo.Option) return await this.promptForOption(typeDef);
-        else if (typeDef.info === TypeDefInfo.Tuple) return await this.promptForTuple(typeDef);
-        else return await this.promptForSimple(typeDef.type);
-    }
-
     // Request values for params using array of param types (strings)
     async requestParamsValues(paramTypes: string[]): Promise<ApiMethodInputArg[]> {
         let result: ApiMethodInputArg[] = [];
         for (let [key, paramType] of Object.entries(paramTypes)) {
             this.log(chalk.bold.white(`Parameter no. ${ parseInt(key)+1 } (${ paramType }):`));
             let paramValue = await this.promptForParam(paramType);
-            if (paramValue !== undefined) result.push(paramValue);
+            if (paramValue instanceof Option && paramValue.isSome) {
+                result.push(paramValue.unwrap());
+            }
+            else if (!(paramValue instanceof Option)) {
+                result.push(paramValue);
+            }
+            // In case of empty option we MUST NOT add anything to the array (otherwise it causes some error)
         }
 
         return result;
@@ -227,7 +177,7 @@ export default class ApiInspect extends ApiCommandBase {
 
             if (apiType === 'query') {
                 // Api query - call with (or without) arguments
-                let args: ApiMethodInputArg[] = flags.callArgs ? flags.callArgs.split(',') : [];
+                let args: (string | ApiMethodInputArg)[] = flags.callArgs ? flags.callArgs.split(',') : [];
                 const paramsTypes: string[] = this.getQueryMethodParamsTypes(apiModule, apiMethod);
                 if (args.length < paramsTypes.length) {
                     this.warn('Some parameters are missing! Please, provide the missing parameters:');
