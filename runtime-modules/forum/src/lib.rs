@@ -756,9 +756,7 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            Self::ensure_can_delete_category(origin, &moderator_id, &category_id)?;
-
-            let category = <CategoryById<T>>::get(category_id);
+            let category = Self::ensure_can_delete_category(origin, &moderator_id, &category_id)?;
 
             // Delete thread
             <CategoryById<T>>::remove(category_id);
@@ -1444,8 +1442,12 @@ impl<T: Trait> Module<T> {
         origin: T::Origin,
         moderator_id: &T::ModeratorId,
         category_id: &T::CategoryId,
-    ) -> Result<(), &'static str> {
+    ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, &'static str> {
         let who = Self::ensure_is_moderator(origin, moderator_id)?;
+
+        if !<CategoryById<T>>::exists(category_id) {
+            return Err(ERROR_CATEGORY_DOES_NOT_EXIST);
+        }
 
         let category = <CategoryById<T>>::get(category_id);
 
@@ -1467,12 +1469,12 @@ impl<T: Trait> Module<T> {
                 return Err(ERROR_MODERATOR_CANT_DELETE_CATEGORY);
             }
 
-            return Ok(());
+            return Ok(category);
         }
 
         // Allow forum lead to delete top-level category
         if Self::ensure_is_forum_lead_account(&who).is_ok() {
-            return Ok(());
+            return Ok(category);
         }
 
         Err(ERROR_MODERATOR_CANT_DELETE_CATEGORY)
