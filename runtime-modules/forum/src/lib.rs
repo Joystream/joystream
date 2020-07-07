@@ -337,6 +337,11 @@ const ERROR_MODERATOR_ID_NOT_MATCH_ACCOUNT: &str = "Moderator id not match its a
 // Errors about thread.
 const ERROR_ACCOUNT_DOES_NOT_MATCH_THREAD_AUTHOR: &str = "Thread not authored by the given user.";
 const ERROR_THREAD_DOES_NOT_EXIST: &str = "Thread does not exist";
+const ERROR_MODERATOR_MODERATE_ORIGIN_CATEGORY: &str =
+    "Moderator can't moderate category containing thread.";
+const ERROR_MODERATOR_MODERATE_DESTINATION_CATEGORY: &str =
+    "Moderator can't moderate destination category.";
+const ERROR_THREAD_MOVE_INVALID: &str = "Origin is the same as the destination.";
 
 // Errors about post.
 const ERROR_POST_DOES_NOT_EXIST: &str = "Post does not exist.";
@@ -569,6 +574,9 @@ decl_event!(
         // A thread was deleted.
         ThreadDeleted(ThreadId),
 
+        // A thread was moved to new category
+        ThreadMoved(ThreadId, CategoryId),
+
         /// Post with given id was created.
         PostAdded(PostId),
 
@@ -758,7 +766,7 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            let thread = Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
+            let (_, thread) = Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
 
             // Delete thread
             <ThreadById<T>>::remove(thread.category_id, thread_id);
@@ -769,6 +777,24 @@ decl_module! {
 
             // Store the event
             Self::deposit_event(RawEvent::ThreadDeleted(thread_id));
+
+            Ok(())
+        }
+
+        fn move_thread_to_category(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, thread_id: T::ThreadId, new_category_id: T::CategoryId) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
+            // Make sure moderator move between selected categories
+            let (_, thread) = Self::ensure_can_move_thread(origin, &moderator_id, &category_id, &thread_id, &new_category_id)?;
+
+            <ThreadById<T>>::remove(category_id, thread_id);
+            <ThreadById<T>>::insert(new_category_id, thread_id, thread);
+            <CategoryById<T>>::mutate(category_id, |category| category.num_direct_threads -= 1);
+            <CategoryById<T>>::mutate(new_category_id, |category| category.num_direct_threads += 1);
+
+            // Store the event
+            Self::deposit_event(RawEvent::ThreadMoved(thread_id, new_category_id));
 
             Ok(())
         }
@@ -1231,7 +1257,13 @@ impl<T: Trait> Module<T> {
         moderator_id: &T::ModeratorId,
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
-    ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>, &'static str> {
+    ) -> Result<
+        (
+            T::AccountId,
+            Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>,
+        ),
+        &'static str,
+    > {
         // Check that account is forum member
         let who = Self::ensure_is_moderator(origin, &moderator_id)?;
 
@@ -1239,7 +1271,32 @@ impl<T: Trait> Module<T> {
 
         Self::ensure_can_moderate_category(&who, moderator_id, category_id)?;
 
-        Ok(thread)
+        Ok((who, thread))
+    }
+
+    fn ensure_can_move_thread(
+        origin: T::Origin,
+        moderator_id: &T::ModeratorId,
+        category_id: &T::CategoryId,
+        thread_id: &T::ThreadId,
+        new_category_id: &T::CategoryId,
+    ) -> Result<
+        (
+            T::AccountId,
+            Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>,
+        ),
+        &'static str,
+    > {
+        ensure!(category_id != new_category_id, ERROR_THREAD_MOVE_INVALID,);
+
+        let (account_id, thread) =
+            Self::ensure_can_moderate_thread(origin, moderator_id, category_id, thread_id)
+                .map_err(|_| ERROR_MODERATOR_MODERATE_ORIGIN_CATEGORY)?;
+
+        Self::ensure_can_moderate_category(&account_id, moderator_id, new_category_id)
+            .map_err(|_| ERROR_MODERATOR_MODERATE_DESTINATION_CATEGORY)?;
+
+        Ok((account_id, thread))
     }
 
     fn ensure_catgory_is_mutable(category_id: T::CategoryId) -> dispatch::Result {
