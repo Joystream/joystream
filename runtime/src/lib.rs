@@ -560,6 +560,10 @@ impl memo::Trait for Runtime {
     type Event = Event;
 }
 
+parameter_types! {
+    pub const MaxObjectsPerInjection: u32 = 100;
+}
+
 impl storage::data_object_type_registry::Trait for Runtime {
     type Event = Event;
     type DataObjectTypeId = u64;
@@ -571,6 +575,7 @@ impl storage::data_directory::Trait for Runtime {
     type StorageProviderHelper = integration::storage::StorageProviderHelper;
     type IsActiveDataObjectType = DataObjectTypeRegistry;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type MaxObjectsPerInjection = MaxObjectsPerInjection;
 }
 
 impl storage::data_object_storage_registry::Trait for Runtime {

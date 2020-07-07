@@ -25,6 +25,7 @@ use codec::{Decode, Encode};
 use rstd::collections::btree_map::BTreeMap;
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member};
+use srml_support::traits::Get;
 use srml_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use system::{self, ensure_root};
 
@@ -57,6 +58,8 @@ pub trait Trait:
 
     /// Validates member id and origin combination.
     type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+
+    type MaxObjectsPerInjection: Get<u32>;
 }
 
 decl_error! {
@@ -77,8 +80,8 @@ decl_error! {
         /// Require root origin in extrinsics.
         RequireRootOrigin,
 
-        /// DataObject Injection Failed. Invalid Input
-        DataObjectsInjectionFailed
+        /// DataObject Injection Failed. Too Many DataObjects.
+        DataObjectsInjectionExceededLimit
     }
 }
 
@@ -204,6 +207,8 @@ decl_module! {
         /// Predefined errors.
         type Error = Error;
 
+        /// Maximum objects allowed per inject_data_objects() transaction
+        const MaxObjectsPerInjection: u32 = T::MaxObjectsPerInjection::get();
 
         /// Adds the content to the system. Member id should match its origin. The created DataObject
         /// awaits liaison to accept or reject it.
@@ -303,11 +308,8 @@ decl_module! {
         pub(crate) fn inject_data_objects(origin, objects: DataObjectsMap<T>) {
             ensure_root(origin)?;
 
-            // limit size - do some benchmarking to test how much we can allow per call.
-            const MAX_OBJECTS: usize = 20;
-
             // Must provide something to inject
-            ensure!(objects.len() <= MAX_OBJECTS, Error::DataObjectsInjectionFailed);
+            ensure!(objects.len() <= T::MaxObjectsPerInjection::get() as usize, Error::DataObjectsInjectionExceededLimit);
 
             for (id, object) in objects.into_iter() {
                 // append to known content ids
