@@ -964,6 +964,15 @@ impl EntityReferenceCounterSideEffect {
     }
 }
 
+impl PropertyLockingPolicy {
+    pub fn new(is_locked_from_maintainer: bool, is_locked_from_controller: bool) -> Self {
+        Self {
+            is_locked_from_maintainer,
+            is_locked_from_controller,
+        }
+    }
+}
+
 // Assign back to type variables so we can make dispatched calls of these modules later.
 pub type System = system::Module<Runtime>;
 pub type TestModule = Module<Runtime>;

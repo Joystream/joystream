@@ -118,8 +118,15 @@ fn remove_entity_member_auth_failed() {
 fn create_entity_curator_group_is_not_active() {
     with_test_externalities(|| {
         let actor = emulate_entity_access_state_for_failure_case(
-            EntityAccessStateFailureType::CuratorGroupIsNotActive,
+            EntityAccessStateFailureType::CuratorAuthFailed,
         );
+
+        // Make curator group inactive to block it from any entity operations
+        assert_ok!(set_curator_group_status(
+            LEAD_ORIGIN,
+            FIRST_CURATOR_GROUP_ID,
+            false
+        ));
 
         // Runtime state before tested call
 

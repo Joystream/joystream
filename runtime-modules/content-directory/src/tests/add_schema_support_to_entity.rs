@@ -156,8 +156,15 @@ fn add_schema_support_member_auth_failed() {
 fn add_schema_support_curator_group_is_not_active() {
     with_test_externalities(|| {
         let actor = emulate_entity_access_state_for_failure_case(
-            EntityAccessStateFailureType::CuratorGroupIsNotActive,
+            EntityAccessStateFailureType::CuratorAuthFailed,
         );
+
+        // Make curator group inactive to block it from any entity operations
+        assert_ok!(set_curator_group_status(
+            LEAD_ORIGIN,
+            FIRST_CURATOR_GROUP_ID,
+            false
+        ));
 
         // Create property
         let property = Property::<Runtime>::default_with_name(
