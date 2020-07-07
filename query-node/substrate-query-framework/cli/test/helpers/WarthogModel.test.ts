@@ -1,6 +1,7 @@
 import { createModel, threadObjType, postObjType, fromStringSchema } from './model';
 import { expect } from 'chai';
 import { WarthogModel } from '../../src/model';
+import { ModelType } from '../../src/model/WarthogModel';
 
 describe('WarthogModel', () => {
   let warthogModel: WarthogModel;
@@ -9,11 +10,11 @@ describe('WarthogModel', () => {
     warthogModel = createModel();
   });
 
-  it('Should lookup types', () => {
+  it('Should lookup entities', () => {
     expect(warthogModel.lookupEntity('Thread')).eq(threadObjType, 'Should find Thread type');
     expect(warthogModel.lookupEntity('Post')).eq(postObjType, 'Should find Post type');
 
-    expect(() => warthogModel.lookupEntity('NoSuchType')).throw('No ObjectType');
+    expect(() => warthogModel.lookupEntity('NoSuchType')).throw('NoSuchType is undefined');
   });
 
   it('Should lookup fields', () => {
@@ -53,7 +54,6 @@ describe('WarthogModel', () => {
     expect(model.interfaces).length(1, 'Should add an interface');
     expect(model.lookupInterface('IEntity').name).eq('IEntity', 'Should lookup by name');
     expect(model.lookupInterface('IEntity').isInterface).eq(true, 'Should be an interface');
-    
   });
 
   it('Should should ignore interfaces without @entity', () => {
@@ -74,5 +74,111 @@ describe('WarthogModel', () => {
             field2: String
         }`);
     expect(model.lookupEntity('A').interfaces).length(1, 'Should register the implemented interface');
+  });
+
+  it('Should lookup types', () => {
+    const model = fromStringSchema(`
+    union Poor = HappyPoor | Miserable
+    type HappyPoor @variant {
+      father: Poor!
+      mother: Poor!
+    }
+    
+    type Miserable @variant {
+      hates: String!
+    }
+    
+    type MyEntity @entity {
+      status: Poor!
+    }
+    
+    enum MyEnum {
+      A
+    }
+
+    interface MyInterface @entity {
+      xxx: String!
+    }
+    `);
+    expect(model.lookupType('MyEntity')).eq(ModelType.ENTITY, 'Should detect entities');
+    expect(model.lookupType('HappyPoor')).eq(ModelType.VARIANT, 'Should detect variants');
+    expect(model.lookupType('MyEnum')).eq(ModelType.ENUM, 'Should detect enums');
+    expect(model.lookupType('MyInterface')).eq(ModelType.INTERFACE, 'Should detect intefaces');
+    expect(model.lookupType('Poor')).eq(ModelType.UNION, 'Should detect unions');
+    expect(model.lookupType('String')).eq(ModelType.SCALAR, 'Should detect String as a scalar');
+    expect(model.lookupType('Boolean')).eq(ModelType.SCALAR, 'Should detect Boolean as a scalar');
+    expect(model.lookupType('BigInt')).eq(ModelType.SCALAR, 'Should detect BigInt as a scalar');
+    expect(model.lookupType('Bytes')).eq(ModelType.SCALAR, 'Should detect Bytes as a scalar');
+  });
+
+  it('Should add variants and unions', () => {
+    const model = fromStringSchema(`
+    union Poor = HappyPoor | Miserable
+    type HappyPoor @variant {
+      father: Poor!
+      mother: Poor!
+    }
+    
+    type Miserable @variant {
+      hates: String!
+    }`);
+    expect(model.lookupUnion('Poor').name).eq('Poor', 'Should look up a union');
+    expect(model.lookupUnion('Poor').types).length(2, 'Should find two variant types');
+    expect(model.variants).length(2, 'Should find two variant types');
+  });
+
+  it('Should throw on non-variant union', () => {
+    expect(() =>
+      fromStringSchema(`
+    union Poor = HappyPoor | Miserable
+    type HappyPoor @variant {
+      father: Poor!
+      mother: Poor!
+    }
+    
+    type Miserable @entity {
+      hates: String!
+    }`)
+    ).throw('Variant Miserable is undefined', 'Unions should allow only @variant types');
+  });
+
+  // TODO: Not yet implemented!
+  //
+  // it('Should throw on variant fields', () => {
+  //   expect(() => fromStringSchema(`
+  //   union Poor = HappyPoor | Miserable
+  //   type HappyPoor @variant {
+  //     father: Poor!
+  //     mother: Poor!
+  //   }
+
+  //   type Miserable @variant {
+  //     hates: String!
+  //   }
+
+  //   type MyEntity @entity {
+  //     status: Miserable!
+  //   }
+
+  //   `)).throw('The field MyEntity.status cannot be of variant type', 'Variant types are not allowed in entity fields');
+  // })
+
+  it('Should add a union field to an entity', () => {
+    const model = fromStringSchema(`
+    union Poor = HappyPoor | Miserable
+    type HappyPoor @variant {
+      father: String!
+      mother: String!
+    }
+    
+    type Miserable @variant {
+      hates: String!
+    }
+    
+    type MyEntity @entity {
+      status: Poor!
+    }`);
+
+    expect(model.lookupEntity('MyEntity').fields[0].isUnion(), 'Should have a single field of union type').to.be.true;
   });
 });
