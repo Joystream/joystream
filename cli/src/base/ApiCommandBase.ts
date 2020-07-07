@@ -67,7 +67,8 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         const providedValue = await this.simplePrompt({
             message: `Provide value for ${ this.paramName(typeDef) }`,
             type: 'input',
-            default: paramOptions?.value?.default?.toString(),
+            // If not default provided - show default value resulting from providing empty string
+            default: paramOptions?.value?.default?.toString() || createType(typeDef.type as any, '').toString(),
             validate: paramOptions?.validator
         });
         return createType(typeDef.type as any, providedValue);
