@@ -28,5 +28,6 @@ export { default as BinocularIcon } from "../assets/binocular.svg";
 export { default as BrowseIcon } from "../assets/browse.svg";
 export { default as BooksIcon } from "../assets/books.svg";
 export { default as Sidenav, SIDENAV_WIDTH, EXPANDED_SIDENAV_WIDTH, NavItem } from "./components/Sidenav";
+export { default as GlobalStyle } from "./components/GlobalStyle";
 export { utils };
 export { theme };

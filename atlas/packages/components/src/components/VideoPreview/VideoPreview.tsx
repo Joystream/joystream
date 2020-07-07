@@ -1,6 +1,20 @@
 import React from "react";
-import { makeStyles, VideoPreviewStyleProps } from "./VideoPreview.styles";
-import Avatar from "./../Avatar";
+import {
+	ChannelName,
+	Container,
+	CoverContainer,
+	CoverDurationOverlay,
+	CoverHoverOverlay,
+	CoverImage,
+	CoverPlayIcon,
+	InfoContainer,
+	MetaText,
+	ProgressBar,
+	ProgressOverlay,
+	StyledAvatar,
+	TextContainer,
+	TitleHeader,
+} from "./VideoPreview.styles";
 
 type VideoPreviewProps = {
 	title: string;
@@ -9,58 +23,90 @@ type VideoPreviewProps = {
 	showChannel: boolean;
 	showMeta: boolean;
 	createdAt: string;
+	duration?: string;
+	// video watch progress in percent (0-100)
+	progress?: number;
 	views: string;
 	poster: string;
-	onClick: (e: React.MouseEvent<HTMLElement>) => void;
 	imgRef: React.Ref<HTMLImageElement>;
-	onChannelClick: (e: React.MouseEvent<HTMLElement>) => void;
-} & VideoPreviewStyleProps;
+	onClick?: (e: React.MouseEvent<HTMLElement>) => void;
+	onChannelClick?: (e: React.MouseEvent<HTMLElement>) => void;
+};
 
 const VideoPreview: React.FC<Partial<VideoPreviewProps>> = ({
 	title,
 	channel,
 	channelImg,
-	showChannel,
-	showMeta,
+	showChannel = true,
+	showMeta = true,
 	createdAt,
+	duration,
+	progress = 0,
 	views,
 	imgRef,
 	poster,
-	onClick = () => {},
-	onChannelClick = () => {},
-	...styleProps
+	onClick,
+	onChannelClick,
 }) => {
-	let styles = makeStyles({ showChannel, poster, ...styleProps });
+	const clickable = !!onClick;
+	const channelClickable = !!onChannelClick;
+
+	const handleChannelClick = (e: React.MouseEvent<HTMLElement>) => {
+		if (!onChannelClick) {
+			return;
+		}
+		e.stopPropagation();
+		onChannelClick(e);
+	};
+
+	const handleClick = (e: React.MouseEvent<HTMLElement>) => {
+		if (!onClick) {
+			return;
+		}
+		e.stopPropagation();
+		onClick(e);
+	};
+
 	return (
-		<div css={styles.container} onClick={onClick}>
-			<div css={styles.coverContainer}>
-				<img src={poster} ref={imgRef} css={styles.cover} alt={`${title} by ${channel} thumbnail`} />
-			</div>
-			<div css={styles.infoContainer}>
+		<Container onClick={handleClick} clickable={clickable}>
+			<CoverContainer>
+				<CoverImage src={poster} ref={imgRef} alt={`${title} by ${channel} thumbnail`} />
+				{duration && <CoverDurationOverlay>{duration}</CoverDurationOverlay>}
+				{!!progress && (
+					<ProgressOverlay>
+						<ProgressBar style={{ width: `${progress}%` }} />
+					</ProgressOverlay>
+				)}
+				<CoverHoverOverlay>
+					<CoverPlayIcon />
+				</CoverHoverOverlay>
+			</CoverContainer>
+			<InfoContainer>
 				{showChannel && (
-					<Avatar
+					<StyledAvatar
 						size="small"
 						name={channel}
 						img={channelImg}
-						outerStyles={styles.avatar}
-						onClick={onChannelClick}
+						channelClickable={channelClickable}
+						onClick={handleChannelClick}
 					/>
 				)}
-				<div css={styles.textContainer}>
-					<h3 onClick={onClick}>{title}</h3>
+				<TextContainer>
+					<TitleHeader>{title}</TitleHeader>
 					{showChannel && (
-						<span css={styles.channel} onClick={onChannelClick}>
+						<ChannelName channelClickable={channelClickable} onClick={handleChannelClick}>
 							{channel}
-						</span>
+						</ChannelName>
 					)}
 					{showMeta && (
-						<span css={styles.meta}>
+						<MetaText>
 							{createdAt}・{views} views
-						</span>
+						</MetaText>
 					)}
-				</div>
-			</div>
-		</div>
+				</TextContainer>
+			</InfoContainer>
+		</Container>
 	);
 };
+
 export default VideoPreview;
