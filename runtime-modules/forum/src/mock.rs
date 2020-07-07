@@ -74,6 +74,7 @@ impl Trait for Runtime {
     type CategoryId = u64;
     type ThreadId = u64;
     type PostId = u64;
+    type PostReactionId = u64;
     type MaxCategoryDepth = MaxCategoryDepth;
 
     fn is_lead(account_id: &<Self as system::Trait>::AccountId) -> bool {

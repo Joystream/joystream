@@ -728,11 +728,7 @@ fn edit_post_text() {
 // test if post react take effect
 fn react_post() {
     // three reations to post, test them one by one.
-    let new_values = vec![
-        PostReaction::ThumbUp,
-        PostReaction::ThumbDown,
-        PostReaction::Like,
-    ];
+    let new_values = vec![0, 1, 2];
     for index in 0..new_values.len() {
         let config = default_genesis_config();
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
