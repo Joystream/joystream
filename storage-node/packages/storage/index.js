@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-'use strict';
+'use strict'
 
-const { Storage } = require('./storage');
+const { Storage } = require('./storage')
 
 module.exports = {
-  Storage: Storage,
-};
+  Storage,
+}

@@ -33,7 +33,8 @@ const FLAG_DEFINITIONS = {
   // TODO
 }
 
-const cli = meow(`
+const cli = meow(
+  `
   Usage:
     $ storage-cli command [arguments..] [key_file] [passphrase]
 
@@ -54,16 +55,17 @@ const cli = meow(`
     dev-init          Setup chain with Alice as lead and storage provider.
     dev-check         Check the chain is setup with Alice as lead and storage provider.
   `,
-  { flags: FLAG_DEFINITIONS })
+  { flags: FLAG_DEFINITIONS }
+)
 
-function assert_file (name, filename) {
+function assertFile(name, filename) {
   assert(filename, `Need a ${name} parameter to proceed!`)
   assert(fs.statSync(filename).isFile(), `Path "${filename}" is not a file, aborting!`)
 }
 
-function load_identity (api, filename, passphrase) {
+function loadIdentity(api, filename, passphrase) {
   if (filename) {
-    assert_file('keyfile', filename)
+    assertFile('keyfile', filename)
     api.identities.loadUnlock(filename, passphrase)
   } else {
     debug('Loading Alice as identity')
@@ -73,48 +75,45 @@ function load_identity (api, filename, passphrase) {
 
 const commands = {
   // add Alice well known account as storage provider
-  'dev-init': async (api) => {
-    // dev accounts are automatically loaded, no need to add explicitly to keyring
-    // load_identity(api)
-    let dev = require('./dev')
+  'dev-init': async api => {
+    // dev accounts are automatically loaded, no need to add explicitly to keyring using loadIdentity(api)
+    const dev = require('./dev')
     return dev.init(api)
   },
   // Checks that the setup done by dev-init command was successful.
-  'dev-check': async (api) => {
-    // dev accounts are automatically loaded, no need to add explicitly to keyring
-    // load_identity(api)
-    let dev = require('./dev')
+  'dev-check': async api => {
+    // dev accounts are automatically loaded, no need to add explicitly to keyring using loadIdentity(api)
+    const dev = require('./dev')
     return dev.check(api)
   },
   // The upload method is not correctly implemented
   // needs to get the liaison after creating a data object,
   // resolve the ipns id to the asset put api url of the storage-node
   // before uploading..
-  'upload': async (api, url, filename, do_type_id, keyfile, passphrase) => {
-    load_identity(keyfile, passphrase)
+  upload: async (api, url, filename, doTypeId, keyfile, passphrase) => {
+    loadIdentity(keyfile, passphrase)
     // Check parameters
-    assert_file('file', filename)
+    assertFile('file', filename)
 
     const size = fs.statSync(filename).size
     debug(`File "${filename}" is ${chalk.green(size)} Bytes.`)
 
-    if (!do_type_id) {
-      do_type_id = 1
+    if (!doTypeId) {
+      doTypeId = 1
     }
 
-    debug('Data Object Type ID is: ' + chalk.green(do_type_id))
+    debug('Data Object Type ID is: ' + chalk.green(doTypeId))
 
     // Generate content ID
     // FIXME this require path is like this because of
     // https://github.com/Joystream/apps/issues/207
     const { ContentId } = require('@joystream/types/media')
-    var cid = ContentId.generate()
+    let cid = ContentId.generate()
     cid = cid.encode().toString()
     debug('Generated content ID: ' + chalk.green(cid))
 
     // Create Data Object
-    const data_object = await api.assets.createDataObject(
-      api.identities.key.address, cid, do_type_id, size)
+    await api.assets.createDataObject(api.identities.key.address, cid, doTypeId, size)
     debug('Data object created.')
 
     // TODO in future, optionally contact liaison here?
@@ -124,12 +123,12 @@ const commands = {
 
     const f = fs.createReadStream(filename)
     const opts = {
-      url: url,
+      url,
       headers: {
         'content-type': '',
-        'content-length': `${size}`
+        'content-length': `${size}`,
       },
-      json: true
+      json: true,
     }
     return new Promise((resolve, reject) => {
       const r = request.put(opts, (error, response, body) => {
@@ -151,15 +150,15 @@ const commands = {
   // needs to be updated to take a content id and resolve it a potential set
   // of providers that has it, and select one (possibly try more than one provider)
   // to fetch it from the get api url of a provider..
-  'download': async (api, url, content_id, filename) => {
+  download: async (api, url, contentId, filename) => {
     const request = require('request')
-    url = `${url}asset/v0/${content_id}`
+    url = `${url}asset/v0/${contentId}`
     debug('Downloading URL', chalk.green(url), 'to', chalk.green(filename))
 
     const f = fs.createWriteStream(filename)
     const opts = {
-      url: url,
-      json: true
+      url,
+      json: true,
     }
     return new Promise((resolve, reject) => {
       const r = request.get(opts, (error, response, body) => {
@@ -168,9 +167,15 @@ const commands = {
           return
         }
 
-        debug('Downloading', chalk.green(response.headers['content-type']), 'of size', chalk.green(response.headers['content-length']), '...')
+        debug(
+          'Downloading',
+          chalk.green(response.headers['content-type']),
+          'of size',
+          chalk.green(response.headers['content-length']),
+          '...'
+        )
 
-        f.on('error', (err) => {
+        f.on('error', err => {
           reject(err)
         })
 
@@ -187,17 +192,17 @@ const commands = {
     })
   },
   // similar to 'download' function
-  'head': async (api, url, content_id) => {
+  head: async (api, url, contentId) => {
     const request = require('request')
-    url = `${url}asset/v0/${content_id}`
+    url = `${url}asset/v0/${contentId}`
     debug('Checking URL', chalk.green(url), '...')
 
     const opts = {
-      url: url,
-      json: true
+      url,
+      json: true,
     }
     return new Promise((resolve, reject) => {
-      const r = request.head(opts, (error, response, body) => {
+      request.head(opts, (error, response, body) => {
         if (error) {
           reject(error)
           return
@@ -208,17 +213,17 @@ const commands = {
           return
         }
 
-        for (var propname in response.headers) {
+        for (const propname in response.headers) {
           debug(`  ${chalk.yellow(propname)}: ${response.headers[propname]}`)
         }
 
         resolve()
       })
     })
-  }
+  },
 }
 
-async function main () {
+async function main() {
   const api = await RuntimeApi.create()
 
   // Simple CLI commands
@@ -227,7 +232,7 @@ async function main () {
     throw new Error('Need a command to run!')
   }
 
-  if (commands.hasOwnProperty(command)) {
+  if (Object.prototype.hasOwnProperty.call(commands, command)) {
     // Command recognized
     const args = _.clone(cli.input).slice(1)
     await commands[command](api, ...args)
@@ -240,7 +245,7 @@ main()
   .then(() => {
     process.exit(0)
   })
-  .catch((err) => {
+  .catch(err => {
     console.error(chalk.red(err.stack))
     process.exit(-1)
   })

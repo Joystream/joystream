@@ -16,25 +16,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-'use strict';
+'use strict'
 
-const path = require('path');
+const path = require('path')
 
-const debug = require('debug')('joystream:colossus:api:asset');
+const debug = require('debug')('joystream:colossus:api:asset')
 
-const util_ranges = require('@joystream/storage-utils/ranges');
-const filter = require('@joystream/storage-node-backend/filter');
+const utilRanges = require('@joystream/storage-utils/ranges')
+const filter = require('@joystream/storage-node-backend/filter')
 
-function error_handler(response, err, code)
-{
-  debug(err);
-  response.status((err.code || code) || 500).send({ message: err.toString() });
+function errorHandler(response, err, code) {
+  debug(err)
+  response.status(err.code || code || 500).send({ message: err.toString() })
 }
 
-
-module.exports = function(storage, runtime)
-{
-  var doc = {
+module.exports = function(storage, runtime) {
+  const doc = {
     // parameters for all operations in this path
     parameters: [
       {
@@ -49,203 +46,195 @@ module.exports = function(storage, runtime)
     ],
 
     // Head: report that ranges are OK
-    head: async function(req, res, _next)
-    {
-      const id = req.params.id;
+    async head(req, res) {
+      const id = req.params.id
 
       // Open file
       try {
-        const size = await storage.size(id);
-        const stream = await storage.open(id, 'r');
-        const type = stream.file_info.mime_type;
+        const size = await storage.size(id)
+        const stream = await storage.open(id, 'r')
+        const type = stream.fileInfo.mimeType
 
         // Close the stream; we don't need to fetch the file (if we haven't
         // already). Then return result.
-        stream.destroy();
+        stream.destroy()
 
-        res.status(200);
-        res.contentType(type);
-        res.header('Content-Disposition', 'inline');
-        res.header('Content-Transfer-Encoding', 'binary');
-        res.header('Accept-Ranges', 'bytes');
+        res.status(200)
+        res.contentType(type)
+        res.header('Content-Disposition', 'inline')
+        res.header('Content-Transfer-Encoding', 'binary')
+        res.header('Accept-Ranges', 'bytes')
         if (size > 0) {
-          res.header('Content-Length', size);
+          res.header('Content-Length', size)
         }
-        res.send();
+        res.send()
       } catch (err) {
-        error_handler(res, err, err.code);
+        errorHandler(res, err, err.code)
       }
     },
 
     // Put for uploads
-    put: async function(req, res, _next)
-    {
-      const id = req.params.id; // content id
+    async put(req, res) {
+      const id = req.params.id // content id
 
       // First check if we're the liaison for the name, otherwise we can bail
       // out already.
-      const role_addr = runtime.identities.key.address;
-      const providerId = runtime.storageProviderId;
-      let dataObject;
+      const roleAddress = runtime.identities.key.address
+      const providerId = runtime.storageProviderId
+      let dataObject
       try {
         debug('calling checkLiaisonForDataObject')
-        dataObject = await runtime.assets.checkLiaisonForDataObject(providerId, id);
+        dataObject = await runtime.assets.checkLiaisonForDataObject(providerId, id)
         debug('called checkLiaisonForDataObject')
       } catch (err) {
-        error_handler(res, err, 403);
-        return;
+        errorHandler(res, err, 403)
+        return
       }
 
       // We'll open a write stream to the backend, but reserve the right to
       // abort upload if the filters don't smell right.
-      var stream;
+      let stream
       try {
-        stream = await storage.open(id, 'w');
+        stream = await storage.open(id, 'w')
 
         // We don't know whether the filtering occurs before or after the
         // stream was finished, and can only commit if both passed.
-        var finished = false;
-        var accepted = false;
-        const possibly_commit = () => {
+        let finished = false
+        let accepted = false
+        const possiblyCommit = () => {
           if (finished && accepted) {
-            debug('Stream is finished and passed filters; committing.');
-            stream.commit();
+            debug('Stream is finished and passed filters; committing.')
+            stream.commit()
           }
-        };
+        }
 
-
-        stream.on('file_info', async (info) => {
+        stream.on('fileInfo', async info => {
           try {
-            debug('Detected file info:', info);
+            debug('Detected file info:', info)
 
             // Filter
-            const filter_result = filter({}, req.headers, info.mime_type);
-            if (200 != filter_result.code) {
-              debug('Rejecting content', filter_result.message);
-              stream.end();
-              res.status(filter_result.code).send({ message: filter_result.message });
+            const filterResult = filter({}, req.headers, info.mimeType)
+            if (200 !== filterResult.code) {
+              debug('Rejecting content', filterResult.message)
+              stream.end()
+              res.status(filterResult.code).send({ message: filterResult.message })
 
               // Reject the content
-              await runtime.assets.rejectContent(role_addr, providerId, id);
-              return;
+              await runtime.assets.rejectContent(roleAddress, providerId, id)
+              return
             }
-            debug('Content accepted.');
-            accepted = true;
+            debug('Content accepted.')
+            accepted = true
 
             // We may have to commit the stream.
-            possibly_commit();
+            possiblyCommit()
           } catch (err) {
-            error_handler(res, err);
+            errorHandler(res, err)
           }
-        });
+        })
 
         stream.on('finish', () => {
           try {
-            finished = true;
-            possibly_commit();
+            finished = true
+            possiblyCommit()
           } catch (err) {
-            error_handler(res, err);
+            errorHandler(res, err)
           }
-        });
+        })
 
-        stream.on('committed', async (hash) => {
+        stream.on('committed', async hash => {
           console.log('commited', dataObject)
           try {
             if (hash !== dataObject.ipfs_content_id.toString()) {
-              debug('Rejecting content. IPFS hash does not match value in objectId');
-              await runtime.assets.rejectContent(role_addr, providerId, id);
-              res.status(400).send({ message: "Uploaded content doesn't match IPFS hash" });
-              return;
+              debug('Rejecting content. IPFS hash does not match value in objectId')
+              await runtime.assets.rejectContent(roleAddress, providerId, id)
+              res.status(400).send({ message: "Uploaded content doesn't match IPFS hash" })
+              return
             }
 
             debug('accepting Content')
-            await runtime.assets.acceptContent(role_addr, providerId, id);
+            await runtime.assets.acceptContent(roleAddress, providerId, id)
 
             debug('creating storage relationship for newly uploaded content')
             // Create storage relationship and flip it to ready.
-            const dosr_id = await runtime.assets.createAndReturnStorageRelationship(role_addr, providerId, id);
+            const dosrId = await runtime.assets.createAndReturnStorageRelationship(roleAddress, providerId, id)
 
             debug('toggling storage relationship for newly uploaded content')
-            await runtime.assets.toggleStorageRelationshipReady(role_addr, providerId, dosr_id, true);
+            await runtime.assets.toggleStorageRelationshipReady(roleAddress, providerId, dosrId, true)
 
-            debug('Sending OK response.');
-            res.status(200).send({ message: 'Asset uploaded.' });
+            debug('Sending OK response.')
+            res.status(200).send({ message: 'Asset uploaded.' })
           } catch (err) {
-            debug(`${err.message}`);
-            error_handler(res, err);
+            debug(`${err.message}`)
+            errorHandler(res, err)
           }
-        });
+        })
 
-        stream.on('error', (err) => error_handler(res, err));
-        req.pipe(stream);
-
+        stream.on('error', err => errorHandler(res, err))
+        req.pipe(stream)
       } catch (err) {
-        error_handler(res, err);
-        return;
+        errorHandler(res, err)
+        return
       }
     },
 
     // Get content
-    get: async function(req, res, _next)
-    {
-      const id = req.params.id;
-      const download = req.query.download;
+    async get(req, res) {
+      const id = req.params.id
+      const download = req.query.download
 
       // Parse range header
-      var ranges;
+      let ranges
       if (!download) {
         try {
-          var range_header = req.headers['range'];
-          ranges = util_ranges.parse(range_header);
+          const rangeHeader = req.headers.range
+          ranges = utilRanges.parse(rangeHeader)
         } catch (err) {
           // Do nothing; it's ok to ignore malformed ranges and respond with the
           // full content according to https://www.rfc-editor.org/rfc/rfc7233.txt
         }
-        if (ranges && ranges.unit != 'bytes') {
+        if (ranges && ranges.unit !== 'bytes') {
           // Ignore ranges that are not byte units.
-          ranges = undefined;
+          ranges = undefined
         }
       }
-      debug('Requested range(s) is/are', ranges);
+      debug('Requested range(s) is/are', ranges)
 
       // Open file
       try {
-        const size = await storage.size(id);
-        const stream = await storage.open(id, 'r');
+        const size = await storage.size(id)
+        const stream = await storage.open(id, 'r')
 
         // Add a file extension to download requests if necessary. If the file
         // already contains an extension, don't add one.
-        var send_name = id;
-        const type = stream.file_info.mime_type;
+        let sendName = id
+        const type = stream.fileInfo.mimeType
         if (download) {
-          var ext = path.extname(send_name);
+          let ext = path.extname(sendName)
           if (!ext) {
-            ext = stream.file_info.ext;
+            ext = stream.fileInfo.ext
             if (ext) {
-              send_name = `${send_name}.${ext}`;
+              sendName = `${sendName}.${ext}`
             }
           }
         }
 
-        var opts = {
-          name: send_name,
-          type: type,
-          size: size,
-          ranges: ranges,
-          download: download,
-        };
-        util_ranges.send(res, stream, opts);
-
-
+        const opts = {
+          name: sendName,
+          type,
+          size,
+          ranges,
+          download,
+        }
+        utilRanges.send(res, stream, opts)
       } catch (err) {
-        error_handler(res, err, err.code);
+        errorHandler(res, err, err.code)
       }
-    }
-  };
+    },
+  }
 
   // OpenAPI specs
-  doc.get.apiDoc =
-  {
+  doc.get.apiDoc = {
     description: 'Download an asset.',
     operationId: 'assetData',
     tags: ['asset', 'data'],
@@ -279,16 +268,15 @@ module.exports = function(storage, runtime)
         content: {
           'application/json': {
             schema: {
-              '$ref': '#/components/schemas/Error'
+              $ref: '#/components/schemas/Error',
             },
           },
         },
       },
     },
-  };
+  }
 
-  doc.put.apiDoc =
-  {
+  doc.put.apiDoc = {
     description: 'Asset upload.',
     operationId: 'assetUpload',
     tags: ['asset', 'data'],
@@ -313,7 +301,7 @@ module.exports = function(storage, runtime)
               properties: {
                 message: {
                   type: 'string',
-                }
+                },
               },
             },
           },
@@ -324,17 +312,15 @@ module.exports = function(storage, runtime)
         content: {
           'application/json': {
             schema: {
-              '$ref': '#/components/schemas/Error'
+              $ref: '#/components/schemas/Error',
             },
           },
         },
       },
     },
-  };
+  }
 
-
-  doc.head.apiDoc =
-  {
+  doc.head.apiDoc = {
     description: 'Asset download information.',
     operationId: 'assetInfo',
     tags: ['asset', 'metadata'],
@@ -347,13 +333,13 @@ module.exports = function(storage, runtime)
         content: {
           'application/json': {
             schema: {
-              '$ref': '#/components/schemas/Error'
+              $ref: '#/components/schemas/Error',
             },
           },
         },
       },
     },
-  };
+  }
 
-  return doc;
-};
+  return doc
+}

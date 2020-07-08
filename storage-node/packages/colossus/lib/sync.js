@@ -16,99 +16,95 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-'use strict';
+'use strict'
 
-const debug = require('debug')('joystream:sync');
+const debug = require('debug')('joystream:sync')
 
-async function sync_callback(api, storage) {
+async function syncCallback(api, storage) {
   // The first step is to gather all data objects from chain.
   // TODO: in future, limit to a configured tranche
   // FIXME this isn't actually on chain yet, so we'll fake it.
-  const knownContentIds = await api.assets.getKnownContentIds() || [];
+  const knownContentIds = (await api.assets.getKnownContentIds()) || []
 
-  const role_addr = api.identities.key.address
+  const roleAddress = api.identities.key.address
   const providerId = api.storageProviderId
 
   // Iterate over all sync objects, and ensure they're synced.
-  const allChecks = knownContentIds.map(async (content_id) => {
-    let { relationship, relationshipId } = await api.assets.getStorageRelationshipAndId(providerId, content_id);
+  const allChecks = knownContentIds.map(async contentId => {
+    // eslint-disable-next-line prefer-const
+    let { relationship, relationshipId } = await api.assets.getStorageRelationshipAndId(providerId, contentId)
 
     // get the data object
     // make sure the data object was Accepted by the liaison,
     // don't just blindly attempt to fetch them
 
-    let fileLocal;
+    let fileLocal
     try {
       // check if we have content or not
-      let stats = await storage.stat(content_id);
-      fileLocal = stats.local;
+      const stats = await storage.stat(contentId)
+      fileLocal = stats.local
     } catch (err) {
       // on error stating or timeout
-      debug(err.message);
+      debug(err.message)
       // we don't have content if we can't stat it
-      fileLocal = false;
+      fileLocal = false
     }
 
     if (!fileLocal) {
       try {
-        await storage.synchronize(content_id);
+        await storage.synchronize(contentId)
       } catch (err) {
         // duplicate logging
         // debug(err.message)
         return
       }
       // why are we returning, if we synced the file
-      return;
+      return
     }
 
     if (!relationship) {
       // create relationship
-      debug(`Creating new storage relationship for ${content_id.encode()}`);
+      debug(`Creating new storage relationship for ${contentId.encode()}`)
       try {
-        relationshipId = await api.assets.createAndReturnStorageRelationship(role_addr, providerId, content_id);
-        await api.assets.toggleStorageRelationshipReady(role_addr, providerId, relationshipId, true);
+        relationshipId = await api.assets.createAndReturnStorageRelationship(roleAddress, providerId, contentId)
+        await api.assets.toggleStorageRelationshipReady(roleAddress, providerId, relationshipId, true)
       } catch (err) {
-        debug(`Error creating new storage relationship ${content_id.encode()}: ${err.stack}`);
-        return;
+        debug(`Error creating new storage relationship ${contentId.encode()}: ${err.stack}`)
+        return
       }
     } else if (!relationship.ready) {
-      debug(`Updating storage relationship to ready for ${content_id.encode()}`);
+      debug(`Updating storage relationship to ready for ${contentId.encode()}`)
       // update to ready. (Why would there be a relationship set to ready: false?)
       try {
-        await api.assets.toggleStorageRelationshipReady(role_addr, providerId, relationshipId, true);
-      } catch(err) {
-        debug(`Error setting relationship ready ${content_id.encode()}: ${err.stack}`);
+        await api.assets.toggleStorageRelationshipReady(roleAddress, providerId, relationshipId, true)
+      } catch (err) {
+        debug(`Error setting relationship ready ${contentId.encode()}: ${err.stack}`)
       }
     } else {
       // we already have content and a ready relationship set. No need to do anything
-      // debug(`content already stored locally ${content_id.encode()}`);
+      // debug(`content already stored locally ${contentId.encode()}`);
     }
-  });
+  })
 
-
-  return Promise.all(allChecks);
+  return Promise.all(allChecks)
 }
 
-
-async function sync_periodic(api, flags, storage)
-{
+async function syncPeriodic(api, flags, storage) {
   try {
     debug('Starting sync run...')
-    await sync_callback(api, storage)
+    await syncCallback(api, storage)
     debug('sync run complete')
   } catch (err) {
-    debug(`Error in sync_periodic ${err.stack}`);
+    debug(`Error in syncPeriodic ${err.stack}`)
   }
   // always try again
-  setTimeout(sync_periodic, flags.syncPeriod, api, flags, storage);
+  setTimeout(syncPeriodic, flags.syncPeriod, api, flags, storage)
 }
 
-
-function start_syncing(api, flags, storage)
-{
-  sync_periodic(api, flags, storage);
+function startSyncing(api, flags, storage) {
+  syncPeriodic(api, flags, storage)
 }
 
 module.exports = {
-  start_syncing: start_syncing,
+  startSyncing,
 }

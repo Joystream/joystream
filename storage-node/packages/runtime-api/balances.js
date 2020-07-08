@@ -16,75 +16,64 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-'use strict';
+'use strict'
 
-const debug = require('debug')('joystream:runtime:balances');
-
-const { IdentitiesApi } = require('@joystream/storage-runtime-api/identities');
+const debug = require('debug')('joystream:runtime:balances')
 
 /*
  * Bundle API calls related to account balances.
  */
-class BalancesApi
-{
-  static async create(base)
-  {
-    const ret = new BalancesApi();
-    ret.base = base;
-    await ret.init();
-    return ret;
+class BalancesApi {
+  static async create(base) {
+    const ret = new BalancesApi()
+    ret.base = base
+    await BalancesApi.init()
+    return ret
   }
 
-  async init(account_file)
-  {
-    debug('Init');
+  static async init() {
+    debug('Init')
   }
 
   /*
    * Return true/false if the account has the minimum balance given.
    */
-  async hasMinimumBalanceOf(accountId, min)
-  {
-    const balance = await this.freeBalance(accountId);
+  async hasMinimumBalanceOf(accountId, min) {
+    const balance = await this.freeBalance(accountId)
     if (typeof min === 'number') {
-      return balance.cmpn(min) >= 0;
+      return balance.cmpn(min) >= 0
     }
-    else {
-      return balance.cmp(min) >= 0;
-    }
+    return balance.cmp(min) >= 0
   }
 
   /*
    * Return the account's current free balance.
    */
-  async freeBalance(accountId)
-  {
-    const decoded = this.base.identities.keyring.decodeAddress(accountId, true);
-    return this.base.api.query.balances.freeBalance(decoded);
+  async freeBalance(accountId) {
+    const decoded = this.base.identities.keyring.decodeAddress(accountId, true)
+    return this.base.api.query.balances.freeBalance(decoded)
   }
 
   /*
    * Return the base transaction fee.
    */
-  baseTransactionFee()
-  {
-    return this.base.api.consts.transactionPayment.transactionBaseFee;
+  baseTransactionFee() {
+    return this.base.api.consts.transactionPayment.transactionBaseFee
   }
 
   /*
    * Transfer amount currency from one address to another. The sending
    * address must be an unlocked key pair!
    */
-  async transfer(from, to, amount)
-  {
-    const decode = require('@polkadot/keyring').decodeAddress;
-    const to_decoded = decode(to, true);
+  async transfer(from, to, amount) {
+    const decode = require('@polkadot/keyring').decodeAddress
+    const toDecoded = decode(to, true)
 
-    const tx = this.base.api.tx.balances.transfer(to_decoded, amount);
-    return this.base.signAndSend(from, tx);
+    const tx = this.base.api.tx.balances.transfer(toDecoded, amount)
+    return this.base.signAndSend(from, tx)
   }
 }
 
 module.exports = {
-  BalancesApi: BalancesApi,
+  BalancesApi,
 }
