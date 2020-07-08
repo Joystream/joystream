@@ -40,6 +40,9 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
   const lesserStake: BN = new BN(+process.env.COUNCIL_STAKE_LESSER_AMOUNT!);
   const applicationStake: BN = new BN(process.env.WORKING_GROUP_APPLICATION_STAKE!);
   const roleStake: BN = new BN(process.env.WORKING_GROUP_ROLE_STAKE!);
+  const firstRewardInterval: BN = new BN(process.env.LONG_REWARD_INTERVAL!);
+  const rewardInterval: BN = new BN(process.env.LONG_REWARD_INTERVAL!);
+  const payoutAmount: BN = new BN(process.env.PAYOUT_AMOUNT!);
   const durationInBlocks: number = 60;
 
   const provider = new WsProvider(nodeUrl);
@@ -109,13 +112,16 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
         m1KeyPairs,
         leadKeyPair[0].address,
         sudo,
+        firstRewardInterval,
+        rewardInterval,
+        payoutAmount,
         new BN(openingId),
         'Storage'
       ))
   );
   tap.test('Approve fill leader opening', async () => {
     voteForProposal(apiWrapper, m2KeyPairs, sudo, fillLeaderOpeningProposalId);
-    await expectLeaderSet(apiWrapper);
+    await expectLeaderSet(apiWrapper, leadKeyPair[0].address, WorkingGroups.storageWorkingGroup);
   });
 
   closeApi(apiWrapper);

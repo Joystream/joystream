@@ -228,6 +228,8 @@ export async function fillOpening(
     module
   );
   const applicationIdToWorkerIdMap: ApplicationIdToWorkerIdMap = await fillOpeningPromise;
+
+  // Assertions
   applicationIdToWorkerIdMap.forEach(async (workerId, applicationId) => {
     const worker: Worker = await apiWrapper.getWorkerById(workerId, module);
     const application: Application = await apiWrapper.getApplicationById(applicationId, module);
@@ -236,8 +238,6 @@ export async function fillOpening(
       `Role account ids does not match, worker account: ${worker.role_account_id}, application account ${application.role_account_id}`
     );
   });
-
-  // Assertions
   const openingWorkersAccounts: string[] = (await apiWrapper.getWorkers(module)).map(worker =>
     worker.role_account_id.toString()
   );
@@ -274,23 +274,17 @@ export async function fillLeaderOpening(
     payoutInterval,
     module
   );
+
+  // Assertions
   const applicationIdToWorkerIdMap: ApplicationIdToWorkerIdMap = await fillOpeningPromise;
   applicationIdToWorkerIdMap.forEach(async (workerId, applicationId) => {
     const worker: Worker = await apiWrapper.getWorkerById(workerId, module);
     const application: Application = await apiWrapper.getApplicationById(applicationId, module);
     assert(
       worker.role_account_id.toString() === application.role_account_id.toString(),
-      `Role account ids does not match, worker account: ${worker.role_account_id}, application account ${application.role_account_id}`
+      `Role account ids does not match, leader account: ${worker.role_account_id}, application account ${application.role_account_id}`
     );
   });
-
-  // Assertions
-  const openingWorkersAccounts: string[] = (await apiWrapper.getWorkers(module)).map(worker =>
-    worker.role_account_id.toString()
-  );
-  membersKeyPairs.forEach(keyPair =>
-    assert(openingWorkersAccounts.includes(keyPair.address), `Account ${keyPair.address} is not leader`)
-  );
 }
 
 export async function increaseStake(
@@ -514,10 +508,21 @@ export async function expectLeadOpeningAdded(apiWrapper: ApiWrapper): Promise<BN
   return apiWrapper.expectOpeningAdded();
 }
 
-export async function expectLeaderSet(apiWrapper: ApiWrapper): Promise<BN> {
-  return apiWrapper.expectLeaderSet();
+export async function expectLeaderSet(
+  apiWrapper: ApiWrapper,
+  leaderAddress: string,
+  module: WorkingGroups
+): Promise<BN> {
+  const leadWorkerId: BN = await apiWrapper.expectLeaderSet();
+  const worker: Worker = await apiWrapper.getWorkerById(leadWorkerId, module);
+  const leaderApplicationId = (await apiWrapper.getApplicationsIdsByRoleAccount(leaderAddress, module))[0];
+  const application: Application = await apiWrapper.getApplicationById(leaderApplicationId, module);
+  assert(
+    worker.role_account_id.toString() === application.role_account_id.toString(),
+    `Role account ids does not match, leader account: ${worker.role_account_id}, application account ${application.role_account_id}`
+  );
+  return leadWorkerId;
 }
-expectBeganApplicationReview;
 
 export async function expectBeganApplicationReview(apiWrapper: ApiWrapper): Promise<BN> {
   return apiWrapper.expectApplicationReviewBegan();
