@@ -1,6 +1,6 @@
 import React from "react";
 import { css } from "@emotion/core";
-import { Header, Button } from "@joystream/components";
+import { Button, Header } from "shared/components";
 
 type HeroProps = {
 	backgroundImg: string;

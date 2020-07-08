@@ -1,6 +1,6 @@
 import React from "react";
 import { css } from "@emotion/core";
-import { ChannelPreview, Gallery } from "@joystream/components";
+import { ChannelPreview, Gallery } from "shared/components";
 
 const channels = [
 	{

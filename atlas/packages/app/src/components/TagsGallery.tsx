@@ -1,5 +1,5 @@
 import React from "react";
-import { TagButton, Gallery } from "@joystream/components";
+import { Gallery, TagButton } from "shared/components";
 
 const tags = [
 	"finance",

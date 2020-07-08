@@ -1,0 +1,13 @@
+export { default as BarsIcon } from "./bars.svg";
+export { default as HomeIcon } from "./home.svg";
+export { default as BinocularIcon } from "./binocular.svg";
+export { default as BrowseIcon } from "./browse.svg";
+export { default as BooksIcon } from "./books.svg";
+export { default as BlockIcon } from "./block.svg";
+export { default as ChevronIconUp } from "./chevron-down-big.svg";
+export { default as ChevronIconDown } from "./chevron-up-big.svg";
+export { default as ChevronRightIcon } from "./chevron-right-big.svg";
+export { default as ChevronLeftIcon } from "./chevron-left-big.svg";
+export { default as CheckIcon } from "./check.svg";
+export { default as DashIcon } from "./dash.svg";
+export { default as Play } from "./play.svg";

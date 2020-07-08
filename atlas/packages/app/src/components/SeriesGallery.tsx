@@ -1,6 +1,6 @@
 import React from "react";
 import { css } from "@emotion/core";
-import { Gallery, SeriesPreview } from "@joystream/components";
+import { Gallery, SeriesPreview } from "shared/components";
 
 type SeriesGalleryProps = {
 	title: string;

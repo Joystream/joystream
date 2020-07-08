@@ -1,5 +1,5 @@
 import React from "react";
-import { GlobalStyle } from "@joystream/components";
+import { GlobalStyle } from "shared/components";
 
 const Layout: React.FC = ({ children }) => (
 	<main>

@@ -1,6 +1,6 @@
 import { css } from "@emotion/core";
 import React from "react";
-import { ChannelGallery, Hero, Main, SeriesGallery, TagsGallery, VideoGallery } from "../components";
+import { ChannelGallery, Hero, Main, SeriesGallery, TagsGallery, VideoGallery } from "components";
 import { RouteComponentProps } from "@reach/router";
 
 const backgroundImg =

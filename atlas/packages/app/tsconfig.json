@@ -2,8 +2,25 @@
 	"extends": "../../tsconfig.json",
 
 	"compilerOptions": {
+		"baseUrl": "./",
 		"declaration": true,
 		"declarationDir": "dist",
-		"lib": ["DOM", "ES2019"]
-	}
+		"lib": ["DOM", "ES2019"],
+		"paths": {
+			"components": ["src/components"],
+			"shared": ["src/shared"],
+			"shared/*": ["src/shared/*"],
+			"store": ["src/store"],
+			"theme": ["src/theme"],
+			"views": ["src/views"]
+		}
+	},
+
+	"exclude": [
+		"node_modules", "dist", "src/shared/stories"
+	],
+
+	"include": [
+		"src/shared/icons/types.d.ts"
+	]
 }
