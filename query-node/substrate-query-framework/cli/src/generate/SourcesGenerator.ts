@@ -10,11 +10,13 @@ import { EnumRenderer } from './EnumRenderer';
 import { kebabCase } from './utils';
 import { ConfigProvider } from './ConfigProvider';
 import { EnumContextProvider } from './EnumContextProvider';
+import { VariantsRenderer } from './VariantsRenderer';
 
 const debug = Debug('qnode-cli:sources-generator');
 
 export const QUERIES_FOLDER = 'queries';
 export const ENUMS_FOLDER = 'enums';
+export const VARIANTS_FOLDER = 'variants';
 export const INTERFACES_FOLDER = 'interfaces';
 
 /**
@@ -36,7 +38,7 @@ export class SourcesGenerator {
 
   generate(): void {
     this.generateEnums();
-    //this.genearateInterfaces();
+    this.generateVariants();
     this.generateModels();
     this.generateQueries();
   }
@@ -46,7 +48,7 @@ export class SourcesGenerator {
 
     const enumContextProvider = new EnumContextProvider();
 
-    const typesAndInterfaces: ObjectType[] = [...this.model.interfaces, ...this.model.types];
+    const typesAndInterfaces: ObjectType[] = [...this.model.interfaces, ...this.model.entities];
 
     typesAndInterfaces.map(objType => {
       const context = this.config.withGeneratedFolderRelPath(objType.name);
@@ -97,7 +99,23 @@ export class SourcesGenerator {
     });
   }
 
+  generateVariants(): void {
+    if (!this.model.unions) {
+      return;
+    }
+
+    const unionDir = this.config.getDestFolder(VARIANTS_FOLDER);
+    createDir(path.resolve(process.cwd(), unionDir), false, true);
+    const renderer = new VariantsRenderer(this.model);
+    const template = this.readTemplate('variants/variants.mst');
+    this.writeFile(path.join(unionDir, 'variants.model.ts'), renderer.render(template));
+  }
+
   generateEnums(): void {
+    if (!this.model.enums) {
+      return;
+    }
+
     const enumsDir = this.config.getDestFolder(ENUMS_FOLDER);
     createDir(path.resolve(process.cwd(), enumsDir), false, true);
 
