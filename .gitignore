@@ -21,9 +21,7 @@ yarn*
 # Vim
 .*.sw*
 
-# Making an exception here to fix eslint plugin issue
-# https://github.com/microsoft/vscode-eslint/issues/455
-# And allow for proper config to fix eslint and formatting on save
+# Visual Studio Code
 .vscode/
 
 # Compiled WASM code
