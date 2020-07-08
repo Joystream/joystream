@@ -12,4 +12,28 @@ export class {{className}}Service extends BaseService<{{className}}> {
   ) {
     super({{className}}, repository);
   }
+
+
+  async find(
+		where?: any,
+		orderBy?: string,
+		limit?: number,
+		offset?: number,
+		fields?: string[]
+	): Promise<{{className}}[]> {
+		let f = fields;
+		if (f == undefined) {
+			f = [];
+		}
+    {{#fields}}
+      {{#is.union}}
+        if (!f.includes('{{camelName}}')) {
+          f = [...f, '{{camelName}}'];
+        }
+      {{/is.union}}
+    {{/fields}}
+
+		return super.find(where, orderBy, limit, offset, f);
+	}
+
 }
