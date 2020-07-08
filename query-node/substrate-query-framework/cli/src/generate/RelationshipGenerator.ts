@@ -78,6 +78,9 @@ export class RelationshipGenerator {
   }
 
   listTypeWithDerivedDirective(field: Field, currentObject: ObjectType): void {
+    // Shoud never happen!
+    if (!field.derivedFrom) throw new Error(`No derivedFrom found on ${currentObject.name}->${field.name}`);
+
     const relatedObject = this.model.lookupType(field.type);
     const relatedField = this.model.lookupField(field.type, field.derivedFrom.argument);
 
@@ -93,6 +96,9 @@ export class RelationshipGenerator {
   }
 
   typeWithDerivedDirective(field: Field, currentObject: ObjectType): void {
+    // Shoud never happen!
+    if (!field.derivedFrom) throw new Error(`No derivedFrom found on ${currentObject.name}->${field.name}`);
+
     const relatedObject = this.model.lookupType(field.type);
     const relatedField = this.model.lookupField(field.type, field.derivedFrom.argument);
 
