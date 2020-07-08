@@ -18,7 +18,7 @@ import { ProposalType } from '@polkadot/joy-utils/types/proposals';
 import { formatBalance } from '@polkadot/util';
 import './forms.css';
 
-type FormValues = GenericFormValues & {
+export type FormValues = GenericFormValues & {
   capacity: string;
 };
 
@@ -70,7 +70,7 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
   }),
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    capacity: Validation.SetContentWorkingGroupMintCapacity.mintCapacity
+    ...Validation.SetContentWorkingGroupMintCapacity()
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: 'MintCapacityForm'

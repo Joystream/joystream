@@ -21,7 +21,7 @@ import { PromiseComponent } from '@polkadot/joy-utils/react/components';
 import _ from 'lodash';
 import './forms.css';
 
-type FormValues = GenericFormValues & {
+export type FormValues = GenericFormValues & {
   workingGroupLead: any;
 };
 
@@ -178,7 +178,7 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
   }),
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    workingGroupLead: Validation.SetLead.workingGroupLead
+    ...Validation.SetLead()
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: 'SetContentWorkingGroupLeadForm'

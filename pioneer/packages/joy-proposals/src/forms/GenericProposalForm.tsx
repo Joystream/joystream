@@ -66,10 +66,7 @@ export const genericFormDefaultOptions: GenericFormDefaultOptions = {
     ...(props.initialData || {})
   }),
   validationSchema: {
-
-    title: Validation.All.title,
-    rationale: Validation.All.rationale
-
+    ...Validation.All()
   },
   handleSubmit: (values, { setSubmitting, resetForm }) => {
     // This is handled via TxButton

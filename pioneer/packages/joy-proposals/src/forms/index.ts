@@ -8,3 +8,4 @@ export { default as SetContentWorkingGroupMintCapForm } from './SetContentWorkin
 export { default as SetCouncilMintCapForm } from './SetCouncilMintCapForm';
 export { default as SetMaxValidatorCountForm } from './SetMaxValidatorCountForm';
 export { default as AddWorkingGroupOpeningForm } from './AddWorkingGroupOpeningForm';
+export { default as SetWorkingGroupMintCapacityForm } from './SetWorkingGroupMintCapacityForm';

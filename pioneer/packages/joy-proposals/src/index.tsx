@@ -20,7 +20,8 @@ import {
   SetCouncilParamsForm,
   SetMaxValidatorCountForm,
   RuntimeUpgradeForm,
-  AddWorkingGroupOpeningForm
+  AddWorkingGroupOpeningForm,
+  SetWorkingGroupMintCapacityForm
 } from './forms';
 
 interface Props extends AppProps, I18nProps {}
@@ -68,6 +69,7 @@ function App (props: Props): React.ReactElement<Props> {
           />
           <Route exact path={`${basePath}/new/set-validator-count`} component={SetMaxValidatorCountForm} />
           <Route exact path={`${basePath}/new/add-working-group-leader-opening`} component={AddWorkingGroupOpeningForm} />
+          <Route exact path={`${basePath}/new/set-working-group-mint-capacity`} component={SetWorkingGroupMintCapacityForm} />
           <Route exact path={`${basePath}/active`} component={NotDone} />
           <Route exact path={`${basePath}/finalized`} component={NotDone} />
           <Route exact path={`${basePath}/:id`} component={ProposalFromId} />

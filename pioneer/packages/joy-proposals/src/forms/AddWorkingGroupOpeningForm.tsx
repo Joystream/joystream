@@ -29,7 +29,7 @@ import { withCalls } from '@polkadot/react-api';
 import { SimplifiedTypeInterface } from '@polkadot/joy-utils/types/common';
 import Validation from '../validationSchema';
 
-type FormValues = WGFormValues & {
+export type FormValues = WGFormValues & {
   activateAt: ActivateOpeningAtKey;
   activateAtBlock: string;
   maxReviewPeriodLength: string;

@@ -13,7 +13,8 @@ export const ProposalTypes = [
   'EvictStorageProvider',
   'SetValidatorCount',
   'SetStorageRoleParameters',
-  'AddWorkingGroupLeaderOpening'
+  'AddWorkingGroupLeaderOpening',
+  'SetWorkingGroupMintCapacity'
 ] as const;
 
 export type ProposalType = typeof ProposalTypes[number];

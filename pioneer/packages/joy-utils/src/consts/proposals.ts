@@ -92,6 +92,15 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
     approvalThreshold: 80,
     slashingQuorum: 60,
     slashingThreshold: 80
+  },
+  SetWorkingGroupMintCapacity: {
+    description: 'Set Working Group Mint Capacity Proposal',
+    category: 'Working Groups',
+    stake: 50000,
+    approvalQuorum: 60,
+    approvalThreshold: 75,
+    slashingQuorum: 60,
+    slashingThreshold: 80
   }
 };
 
@@ -131,6 +140,10 @@ export const apiMethods: { [k in ProposalType]?: ProposalsApiMethodNames } = {
   AddWorkingGroupLeaderOpening: {
     votingPeriod: 'addWorkingGroupOpeningProposalVotingPeriod',
     gracePeriod: 'addWorkingGroupOpeningProposalGracePeriod'
+  },
+  SetWorkingGroupMintCapacity: {
+    votingPeriod: 'setWorkingGroupMintCapacityProposalVotingPeriod',
+    gracePeriod: 'setWorkingGroupMintCapacityProposalGracePeriod'
   }
 } as const;
 

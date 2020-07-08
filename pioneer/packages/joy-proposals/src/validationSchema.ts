@@ -1,5 +1,16 @@
 import * as Yup from 'yup';
 import { schemaValidator, ActivateOpeningAtKeys } from '@joystream/types/hiring';
+import { ProposalTypes } from '@polkadot/joy-utils/types/proposals';
+import { GenericFormValues } from './forms/GenericProposalForm';
+import { FormValues as SignalFormValues } from './forms/SignalForm';
+import { FormValues as RuntimeUpgradeFormValues } from './forms/RuntimeUpgradeForm';
+import { FormValues as SetCouncilParamsFormValues } from './forms/SetCouncilParamsForm';
+import { FormValues as SpendingProposalFormValues } from './forms/SpendingProposalForm';
+import { FormValues as SetContentWorkingGroupLeadFormValues } from './forms/SetContentWorkingGroupLeadForm';
+import { FormValues as SetContentWorkingGroupMintCapacityFormValues } from './forms/MintCapacityForm';
+import { FormValues as SetMaxValidatorCountFormValues } from './forms/SetMaxValidatorCountForm';
+import { FormValues as AddWorkingGroupLeaderOpeningFormValues } from './forms/AddWorkingGroupOpeningForm';
+import { FormValues as SetWorkingGroupMintCapacityFormValues } from './forms/SetWorkingGroupMintCapacityForm';
 
 // TODO: If we really need this (currency unit) we can we make "Validation" a functiction that returns an object.
 // We could then "instantialize" it in "withFormContainer" where instead of passing
@@ -66,6 +77,11 @@ const TERMINATE_ROLE_UNSTAKING_MAX = 14 * 14400; // 14 days
 const LEAVE_ROLE_UNSTAKING_MIN = 0;
 const LEAVE_ROLE_UNSTAKING_MAX = 14 * 14400; // 14 days
 
+// Set Working Group Mint Capacity
+// TODO: Discuss the actual values
+const WG_MINT_CAP_MIN = 0;
+const WG_MINT_CAP_MAX = 1000000;
+
 function errorMessage (name: string, min?: number | string, max?: number | string, unit?: string): string {
   return `${name} should be at least ${min} and no more than ${max}${unit ? ` ${unit}.` : '.'}`;
 }
@@ -81,60 +97,33 @@ import Validation from 'path/to/validationSchema'
 ...
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    description: Validation.Text.description
+    ...Validation.Text()
   }),
 
 */
 
+type ProposalTypeKeys = typeof ProposalTypes[number];
+type OutdatedProposals = 'EvictStorageProvider' | 'SetStorageRoleParameters';
+type ValidationTypeKeys = Exclude<ProposalTypeKeys, OutdatedProposals> | 'All';
+
+type FormValuesByType<T extends ValidationTypeKeys> =
+  T extends 'All' ? GenericFormValues :
+  T extends 'Text' ? Omit<SignalFormValues, keyof GenericFormValues> :
+  T extends 'RuntimeUpgrade' ? Omit<RuntimeUpgradeFormValues, keyof GenericFormValues> :
+  T extends 'SetElectionParameters' ? Omit<SetCouncilParamsFormValues, keyof GenericFormValues> :
+  T extends 'Spending' ? Omit<SpendingProposalFormValues, keyof GenericFormValues> :
+  T extends 'SetLead' ? Omit<SetContentWorkingGroupLeadFormValues, keyof GenericFormValues> :
+  T extends 'SetContentWorkingGroupMintCapacity' ? Omit<SetContentWorkingGroupMintCapacityFormValues, keyof GenericFormValues> :
+  T extends 'SetValidatorCount' ? Omit<SetMaxValidatorCountFormValues, keyof GenericFormValues> :
+  T extends 'AddWorkingGroupLeaderOpening' ? Omit<AddWorkingGroupLeaderOpeningFormValues, keyof GenericFormValues> :
+  T extends 'SetWorkingGroupMintCapacity' ? Omit<SetWorkingGroupMintCapacityFormValues, keyof GenericFormValues> :
+  never;
+
 type ValidationType = {
-  All: {
-    title: Yup.StringSchema<string>;
-    rationale: Yup.StringSchema<string>;
-  };
-  Text: {
-    description: Yup.StringSchema<string>;
-  };
-  RuntimeUpgrade: {
-    WASM: Yup.MixedSchema<any>;
-  };
-  SetElectionParameters: {
-    announcingPeriod: Yup.NumberSchema<number>;
-    votingPeriod: Yup.NumberSchema<number>;
-    minVotingStake: Yup.NumberSchema<number>;
-    revealingPeriod: Yup.NumberSchema<number>;
-    minCouncilStake: Yup.NumberSchema<number>;
-    newTermDuration: Yup.NumberSchema<number>;
-    candidacyLimit: Yup.NumberSchema<number>;
-    councilSize: Yup.NumberSchema<number>;
-  };
-  Spending: {
-    tokens: Yup.NumberSchema<number>;
-    destinationAccount: Yup.StringSchema<string>;
-  };
-  SetLead: {
-    workingGroupLead: Yup.StringSchema<string>;
-  };
-  SetContentWorkingGroupMintCapacity: {
-    mintCapacity: Yup.NumberSchema<number>;
-  };
-  SetValidatorCount: {
-    maxValidatorCount: Yup.NumberSchema<number>;
-  };
-  AddWorkingGroupLeaderOpening: (currentBlock: number) => {
-    applicationsLimited: Yup.BooleanSchema<boolean>;
-    activateAt: Yup.StringSchema<string>;
-    activateAtBlock: Yup.NumberSchema<number>;
-    maxReviewPeriodLength: Yup.NumberSchema<number>;
-    maxApplications: Yup.NumberSchema<number>;
-    applicationStakeRequired: Yup.BooleanSchema<boolean>;
-    applicationStakeValue: Yup.NumberSchema<number>;
-    roleStakeRequired: Yup.BooleanSchema<boolean>;
-    roleStakeValue: Yup.NumberSchema<number>;
-    terminateRoleUnstakingPeriod: Yup.NumberSchema<number>;
-    leaveRoleUnstakingPeriod: Yup.NumberSchema<number>;
-    humanReadableText: Yup.StringSchema<string>;
-  };
-};
+  [validationTypeK in ValidationTypeKeys]: (
+    ((...injectedParams: any) => ({ [fieldK in keyof FormValuesByType<validationTypeK>]: Yup.Schema<any>; }))
+  )
+}
 
 // Helpers for common validation
 function minMaxInt (min: number, max: number, fieldName: string) {
@@ -146,26 +135,26 @@ function minMaxInt (min: number, max: number, fieldName: string) {
 }
 
 const Validation: ValidationType = {
-  All: {
+  All: () => ({
     title: Yup.string()
       .required('Title is required!')
       .max(TITLE_MAX_LENGTH, `Title should be under ${TITLE_MAX_LENGTH} characters.`),
     rationale: Yup.string()
       .required('Rationale is required!')
       .max(RATIONALE_MAX_LENGTH, `Rationale should be under ${RATIONALE_MAX_LENGTH} characters.`)
-  },
-  Text: {
+  }),
+  Text: () => ({
     description: Yup.string()
       .required('Description is required!')
       .max(DESCRIPTION_MAX_LENGTH, `Description should be under ${DESCRIPTION_MAX_LENGTH}`)
-  },
-  RuntimeUpgrade: {
+  }),
+  RuntimeUpgrade: () => ({
     WASM: Yup.mixed()
       .test('fileArrayBuffer', 'Unexpected data format, file cannot be processed.', value => typeof value.byteLength !== 'undefined')
       .test('fileSizeMin', `Minimum file size is ${FILE_SIZE_BYTES_MIN} bytes.`, value => value.byteLength >= FILE_SIZE_BYTES_MIN)
       .test('fileSizeMax', `Maximum file size is ${FILE_SIZE_BYTES_MAX} bytes.`, value => value.byteLength <= FILE_SIZE_BYTES_MAX)
-  },
-  SetElectionParameters: {
+  }),
+  SetElectionParameters: () => ({
     announcingPeriod: Yup.number()
       .required('All fields must be filled!')
       .integer('This field must be an integer.')
@@ -236,8 +225,8 @@ const Validation: ValidationType = {
       .integer('This field must be an integer.')
       .min(COUNCIL_SIZE_MIN, errorMessage('The council size', COUNCIL_SIZE_MIN, COUNCIL_SIZE_MAX))
       .max(COUNCIL_SIZE_MAX, errorMessage('The council size', COUNCIL_SIZE_MIN, COUNCIL_SIZE_MAX))
-  },
-  Spending: {
+  }),
+  Spending: () => ({
     tokens: Yup.number()
       .positive('The token amount should be positive.')
       .integer('This field must be an integer.')
@@ -245,19 +234,19 @@ const Validation: ValidationType = {
       .required('You need to specify an amount of tokens.'),
     destinationAccount: Yup.string()
       .required('Select a destination account!')
-  },
-  SetLead: {
+  }),
+  SetLead: () => ({
     workingGroupLead: Yup.string().required('Select a proposed lead!')
-  },
-  SetContentWorkingGroupMintCapacity: {
-    mintCapacity: Yup.number()
+  }),
+  SetContentWorkingGroupMintCapacity: () => ({
+    capacity: Yup.number()
       .positive('Mint capacity should be positive.')
       .integer('This field must be an integer.')
       .min(MINT_CAPACITY_MIN, errorMessage('Mint capacity', MINT_CAPACITY_MIN, MINT_CAPACITY_MAX, CURRENCY_UNIT))
       .max(MINT_CAPACITY_MAX, errorMessage('Mint capacity', MINT_CAPACITY_MIN, MINT_CAPACITY_MAX, CURRENCY_UNIT))
       .required('You need to specify a mint capacity.')
-  },
-  SetValidatorCount: {
+  }),
+  SetValidatorCount: () => ({
     maxValidatorCount: Yup.number()
       .required('Enter the max validator count')
       .integer('This field must be an integer.')
@@ -269,8 +258,9 @@ const Validation: ValidationType = {
         MAX_VALIDATOR_COUNT_MAX,
         errorMessage('The max validator count', MAX_VALIDATOR_COUNT_MIN, MAX_VALIDATOR_COUNT_MAX)
       )
-  },
+  }),
   AddWorkingGroupLeaderOpening: (currentBlock: number) => ({
+    workingGroup: Yup.string(),
     activateAt: Yup.string().required(),
     activateAtBlock: Yup.number()
       .when('activateAt', {
@@ -289,12 +279,14 @@ const Validation: ValidationType = {
         then: minMaxInt(MAX_APPLICATIONS_MIN, MAX_APPLICATIONS_MAX, 'Max. number of applications')
       }),
     applicationStakeRequired: Yup.boolean(),
+    applicationStakeMode: Yup.string(),
     applicationStakeValue: Yup.number()
       .when('applicationStakeRequired', {
         is: true,
         then: minMaxInt(APPLICATION_STAKE_VALUE_MIN, APPLICATION_STAKE_VALUE_MAX, 'Application stake value')
       }),
     roleStakeRequired: Yup.boolean(),
+    roleStakeMode: Yup.string(),
     roleStakeValue: Yup.number()
       .when('roleStakeRequired', {
         is: true,
@@ -332,6 +324,10 @@ const Validation: ValidationType = {
           return true;
         }
       )
+  }),
+  SetWorkingGroupMintCapacity: () => ({
+    workingGroup: Yup.string(),
+    capacity: minMaxInt(WG_MINT_CAP_MIN, WG_MINT_CAP_MAX, 'Mint capacity')
   })
 };
 

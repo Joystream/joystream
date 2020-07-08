@@ -166,6 +166,11 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
       // </required_to_prevent_sneaking>
       'Human readable text': <ParsedHRT>{ HRT }</ParsedHRT>
     };
+  },
+  SetWorkingGroupMintCapacity: ([capacity]) => {
+    return {
+      'Mint capacity': formatBalance(capacity)
+    }
   }
 };
 
