@@ -1,9 +1,13 @@
 import { KeyringPair } from '@polkadot/keyring/types';
+import { Balance } from '@polkadot/types/interfaces';
+import { u32, u64 } from '@polkadot/types';
 import { ApiWrapper, WorkingGroups } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN from 'bn.js';
 import { assert } from 'chai';
 import { WorkingGroupOpening } from '../../../dto/workingGroupOpening';
+import { RewardPolicy } from '@nicaea/types/working-group';
+import { FillOpeningParameters } from '../../../dto/fillOpeningParameters';
 
 export async function createWorkingGroupLeaderOpening(
   apiWrapper: ApiWrapper,
@@ -63,7 +67,7 @@ export async function beginWorkingGroupLeaderApplicationReview(
   sudo: KeyringPair,
   openingId: BN,
   workingGroup: string
-) {
+): Promise<BN> {
   // Setup
   const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8);
   const description: string = 'Testing begin working group lead application review proposal ' + uuid().substring(0, 8);
@@ -84,6 +88,57 @@ export async function beginWorkingGroupLeaderApplicationReview(
     workingGroup
   );
   const proposalNumber: BN = await proposalPromise;
+  return proposalNumber;
+}
+
+export async function fillLeaderOpeningProposal(
+  apiWrapper: ApiWrapper,
+  m1KeyPairs: KeyringPair[],
+  applicantRoleAccountAddress: string,
+  sudo: KeyringPair,
+  openingId: BN,
+  workingGroup: string
+): Promise<BN> {
+  // Setup
+  console.log('lead address: ' + applicantRoleAccountAddress);
+  const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8);
+  const description: string = 'Testing fill opening proposal ' + uuid().substring(0, 8);
+  console.log('================================= 1');
+
+  // Proposal stake calculation
+  const proposalStake: BN = new BN(50000);
+  const proposalFee: BN = apiWrapper.estimateProposeFillLeaderOpening();
+  await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake));
+  console.log('================================= 2');
+
+  // Proposal creation
+  const applicationId: BN = (
+    await apiWrapper.getActiveApplicationsIdsByRoleAccount(
+      applicantRoleAccountAddress,
+      WorkingGroups.storageWorkingGroup
+    )
+  )[0];
+  let fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters();
+  fillOpeningParameters.setAmountPerPayout(new BN(1));
+  fillOpeningParameters.setNextPaymentAtBlock(new BN(99999));
+  fillOpeningParameters.setPayoutInterval(new BN(99999));
+  fillOpeningParameters.setOpeningId(openingId);
+  fillOpeningParameters.setSuccessfulApplicationId(applicationId);
+  fillOpeningParameters.setWorkingGroup(workingGroup);
+
+  console.log('================================= 3');
+
+  const proposalPromise = apiWrapper.expectProposalCreated();
+  await apiWrapper.proposeFillLeaderOpening(
+    m1KeyPairs[0],
+    proposalTitle,
+    description,
+    proposalStake,
+    fillOpeningParameters
+  );
+  console.log('================================= 4');
+  const proposalNumber: BN = await proposalPromise;
+  console.log('================================= 5');
   return proposalNumber;
 }
 

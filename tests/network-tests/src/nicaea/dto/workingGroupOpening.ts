@@ -1,5 +1,4 @@
 import BN from 'bn.js';
-import { KeyringPair } from '@polkadot/keyring/types';
 
 export class WorkingGroupOpening {
   private activateAtBlock: BN | undefined;

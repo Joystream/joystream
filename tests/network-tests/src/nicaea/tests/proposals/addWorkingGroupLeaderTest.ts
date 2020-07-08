@@ -14,6 +14,7 @@ import {
   voteForProposal,
   beginWorkingGroupLeaderApplicationReview,
   expectLeadOpeningAdded,
+  fillLeaderOpeningProposal,
 } from './impl/proposalsModule';
 import { applyForOpening } from '../workingGroup/impl/workingGroupModule';
 
@@ -35,7 +36,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
   const lesserStake: BN = new BN(+process.env.COUNCIL_STAKE_LESSER_AMOUNT!);
   const applicationStake: BN = new BN(process.env.WORKING_GROUP_APPLICATION_STAKE!);
   const roleStake: BN = new BN(process.env.WORKING_GROUP_ROLE_STAKE!);
-  const durationInBlocks: number = 40;
+  const durationInBlocks: number = 60;
 
   const provider = new WsProvider(nodeUrl);
   const apiWrapper: ApiWrapper = await ApiWrapper.create(provider);
@@ -47,12 +48,12 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
   membershipTest(apiWrapper, leadKeyPair, keyring, 1, paidTerms, sudoUri);
   councilTest(apiWrapper, m1KeyPairs, m2KeyPairs, keyring, K, sudoUri, greaterStake, lesserStake);
 
-  let proposalId: BN;
+  let createOpeningProposalId: BN;
   let openingId: BN;
   tap.test(
     'Create leader opening',
     async () =>
-      (proposalId = await createWorkingGroupLeaderOpening(
+      (createOpeningProposalId = await createWorkingGroupLeaderOpening(
         apiWrapper,
         m1KeyPairs,
         sudo,
@@ -61,10 +62,11 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
         'Storage'
       ))
   );
-  tap.test('Approve proposal', async () => {
-    voteForProposal(apiWrapper, m2KeyPairs, sudo, proposalId);
+  tap.test('Approve add opening proposal', async () => {
+    voteForProposal(apiWrapper, m2KeyPairs, sudo, createOpeningProposalId);
     openingId = await expectLeadOpeningAdded(apiWrapper);
   });
+  let applicationId: BN;
   tap.test(
     'Apply for lead opening',
     async () =>
@@ -79,8 +81,36 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
         false
       )
   );
-  tap.test('Begin leader application review', async () =>
-    beginWorkingGroupLeaderApplicationReview(apiWrapper, m1KeyPairs, sudo, new BN(openingId), 'Storage')
+  let beginReviewProposalId: BN;
+  tap.test(
+    'Begin leader application review',
+    async () =>
+      (beginReviewProposalId = await beginWorkingGroupLeaderApplicationReview(
+        apiWrapper,
+        m1KeyPairs,
+        sudo,
+        new BN(openingId),
+        'Storage'
+      ))
+  );
+  tap.test('Approve begin review proposal', async () =>
+    voteForProposal(apiWrapper, m2KeyPairs, sudo, beginReviewProposalId)
+  );
+  let fillLeaderOpeningProposalId: BN;
+  tap.test(
+    'Fill leader opening',
+    async () =>
+      (fillLeaderOpeningProposalId = await fillLeaderOpeningProposal(
+        apiWrapper,
+        m1KeyPairs,
+        leadKeyPair[0].address,
+        sudo,
+        new BN(openingId),
+        'Storage'
+      ))
+  );
+  tap.test('Approve fill leaвer opening', async () =>
+    voteForProposal(apiWrapper, m2KeyPairs, sudo, fillLeaderOpeningProposalId)
   );
 
   closeApi(apiWrapper);

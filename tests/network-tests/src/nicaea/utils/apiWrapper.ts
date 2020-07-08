@@ -1,11 +1,18 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { Option, Vec, Bytes, u32 } from '@polkadot/types';
+import { Option, Vec, Bytes, u32, u64 } from '@polkadot/types';
 import { Codec } from '@polkadot/types/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { UserInfo, PaidMembershipTerms, MemberId } from '@nicaea/types/members';
 import { Mint, MintId } from '@nicaea/types/mint';
 import { Lead, LeadId } from '@nicaea/types/content-working-group';
-import { Application, WorkerId, Worker, ApplicationIdToWorkerIdMap, Opening } from '@nicaea/types/working-group';
+import {
+  Application,
+  WorkerId,
+  Worker,
+  ApplicationIdToWorkerIdMap,
+  Opening,
+  RewardPolicy,
+} from '@nicaea/types/working-group';
 import { Application as HiringApplication } from '@nicaea/types/hiring';
 import { RoleParameters } from '@nicaea/types/roles';
 import { Seat } from '@nicaea/types/lib/council';
@@ -18,6 +25,7 @@ import { Stake, StakedState } from '@nicaea/types/stake';
 import { RewardRelationship } from '@nicaea/types/recurring-rewards';
 import { Opening as HiringOpening, ApplicationId } from '@nicaea/types/hiring';
 import { WorkingGroupOpening } from '../dto/workingGroupOpening';
+import { FillOpeningParameters } from '../dto/fillOpeningParameters';
 
 export enum WorkingGroups {
   storageWorkingGroup = 'storageWorkingGroup',
@@ -364,6 +372,26 @@ export class ApiWrapper {
         0,
         0,
         'Storage'
+      )
+    );
+  }
+
+  public estimateProposeFillLeaderOpening(): BN {
+    let fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters();
+    fillOpeningParameters.setAmountPerPayout(new BN(1));
+    fillOpeningParameters.setNextPaymentAtBlock(new BN(99999));
+    fillOpeningParameters.setPayoutInterval(new BN(99999));
+    fillOpeningParameters.setOpeningId(new BN(0));
+    fillOpeningParameters.setSuccessfulApplicationId(new BN(0));
+    fillOpeningParameters.setWorkingGroup('Storage');
+
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createFillWorkingGroupLeaderOpeningProposal(
+        0,
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        0,
+        fillOpeningParameters.getFillOpeningParameters()
       )
     );
   }
@@ -828,11 +856,11 @@ export class ApiWrapper {
     module: WorkingGroups,
     expectFailure: boolean
   ): Promise<void> {
-    await this.sender.signAndSend(this.createAddOpeningTransaction(opening, module), leader, expectFailure);
+    return this.sender.signAndSend(this.createAddOpeningTransaction(opening, module), leader, expectFailure);
   }
 
   public async sudoAddOpening(sudo: KeyringPair, opening: WorkingGroupOpening, module: WorkingGroups): Promise<void> {
-    await this.sender.signAndSend(
+    return this.sender.signAndSend(
       this.api.tx.sudo.sudo(this.createAddOpeningTransaction(opening, module)),
       sudo,
       false
@@ -848,7 +876,7 @@ export class ApiWrapper {
     workingGroup: string
   ): Promise<void> {
     const memberId: BN = (await this.getMemberIds(account.address))[0];
-    await this.sender.signAndSend(
+    return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
         memberId,
         title,
@@ -860,6 +888,27 @@ export class ApiWrapper {
           human_readable_text: opening.getText(),
           working_group: workingGroup,
         }
+      ),
+      account,
+      false
+    );
+  }
+
+  public async proposeFillLeaderOpening(
+    account: KeyringPair,
+    title: string,
+    description: string,
+    proposalStake: BN,
+    fillOpeningParameters: FillOpeningParameters
+  ): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0];
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createFillWorkingGroupLeaderOpeningProposal(
+        memberId,
+        title,
+        description,
+        proposalStake,
+        fillOpeningParameters.getFillOpeningParameters()
       ),
       account,
       false
