@@ -1,7 +1,7 @@
 import { Service } from 'typedi';
 import { Repository } from 'typeorm';
 import { InjectRepository } from 'typeorm-typedi-extensions';
-import { BaseService } from 'warthog';
+import { BaseService, WhereInput } from 'warthog';
 
 import { {{className}} } from './{{kebabName}}.model';
 
@@ -14,7 +14,7 @@ export class {{className}}Service extends BaseService<{{className}}> {
   }
 
 
-  async find(
+  async find<W extends WhereInput>(
 		where?: any,
 		orderBy?: string,
 		limit?: number,
@@ -33,7 +33,7 @@ export class {{className}}Service extends BaseService<{{className}}> {
       {{/is.union}}
     {{/fields}}
 
-		return super.find(where, orderBy, limit, offset, f);
+		return super.find<W>(where, orderBy, limit, offset, f);
 	}
 
 }
