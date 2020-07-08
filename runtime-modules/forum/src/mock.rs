@@ -518,7 +518,7 @@ pub fn update_category_archival_status_mock(
 
 pub fn delete_category_mock(
     origin: OriginType,
-    moderator_id: <Runtime as Trait>::ModeratorId,
+    moderator_id: PrivilegedActor<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     result: Result<(), &'static str>,
 ) -> () {

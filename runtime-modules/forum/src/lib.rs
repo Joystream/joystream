@@ -493,6 +493,23 @@ pub struct Category<CategoryId, ThreadId, Hash> {
     pub sticky_thread_ids: Vec<ThreadId>,
 }
 
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+pub enum PrivilegedActor<T: Trait> {
+    Lead,
+    Moderator(T::ModeratorId),
+}
+
+impl<T: Trait> core::fmt::Debug for PrivilegedActor<T> {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            PrivilegedActor::Lead => write!(formatter, "PrivilegedActor {{ Lead }}"),
+            PrivilegedActor::Moderator(moderator_id) => {
+                write!(formatter, "PrivilegedActor {{ {:?} }}", moderator_id)
+            }
+        }
+    }
+}
+
 /// Represents a sequence of categories which have child-parent relatioonship
 /// where last element is final ancestor, or root, in the context of the category tree.
 type CategoryTreePath<CategoryId, ThreadId, Hash> = Vec<Category<CategoryId, ThreadId, Hash>>;
@@ -752,11 +769,11 @@ decl_module! {
             Ok(())
         }
 
-        fn delete_category(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId) -> dispatch::Result {
+        fn delete_category(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            let category = Self::ensure_can_delete_category(origin, &moderator_id, &category_id)?;
+            let category = Self::ensure_can_delete_category(origin, &actor, &category_id)?;
 
             // Delete thread
             <CategoryById<T>>::remove(category_id);
@@ -1440,10 +1457,21 @@ impl<T: Trait> Module<T> {
 
     fn ensure_can_delete_category(
         origin: T::Origin,
-        moderator_id: &T::ModeratorId,
+        actor: &PrivilegedActor<T>,
         category_id: &T::CategoryId,
     ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, &'static str> {
-        let who = Self::ensure_is_moderator(origin, moderator_id)?;
+        /*
+        let (who, is_lead, moderator_id) = match actor {
+            PrivilegedActor::Moderator(moderator_id) => (Self::ensure_is_moderator(origin, &moderator_id)?, false, moderator_id),
+            PrivilegedActor::Lead => (Self::ensure_is_forum_lead(origin)?, true, &T::ModeratorId::from(0)),
+        };
+        */
+        match actor {
+            PrivilegedActor::Lead => Self::ensure_is_forum_lead(origin)?,
+            PrivilegedActor::Moderator(moderator_id) => {
+                Self::ensure_is_moderator(origin, &moderator_id)?
+            }
+        };
 
         if !<CategoryById<T>>::exists(category_id) {
             return Err(ERROR_CATEGORY_DOES_NOT_EXIST);
@@ -1461,23 +1489,28 @@ impl<T: Trait> Module<T> {
             ERROR_CATEGORY_NOT_EMPTY_CATEGORIES,
         );
 
-        if let Some(parent_category_id) = category.parent_category_id {
-            // Get path from parent category to root
-            let category_tree_path = Self::build_category_tree_path(&parent_category_id);
+        let can_moderator_delete =
+            |moderator_id: &T::ModeratorId,
+             category: Category<T::CategoryId, T::ThreadId, T::Hash>| {
+                if let Some(parent_category_id) = category.parent_category_id {
+                    // Get path from parent category to root
+                    let category_tree_path = Self::build_category_tree_path(&parent_category_id);
 
-            if Self::ensure_can_moderate_category_path(moderator_id, &category_tree_path).is_err() {
-                return Err(ERROR_MODERATOR_CANT_DELETE_CATEGORY);
+                    Self::ensure_can_moderate_category_path(moderator_id, &category_tree_path)
+                        .map_err(|_| ERROR_MODERATOR_CANT_DELETE_CATEGORY)?;
+
+                    return Ok(category);
+                }
+
+                Err(ERROR_MODERATOR_CANT_DELETE_CATEGORY)
+            };
+
+        match actor {
+            PrivilegedActor::Lead => Ok(category),
+            PrivilegedActor::Moderator(moderator_id) => {
+                can_moderator_delete(moderator_id, category)
             }
-
-            return Ok(category);
         }
-
-        // Allow forum lead to delete top-level category
-        if Self::ensure_is_forum_lead_account(&who).is_ok() {
-            return Ok(category);
-        }
-
-        Err(ERROR_MODERATOR_CANT_DELETE_CATEGORY)
     }
 
     /// check if an account can moderate a category.
