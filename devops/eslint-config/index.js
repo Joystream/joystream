@@ -22,7 +22,7 @@ module.exports = {
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
     'plugin:react/recommended',
-    'plugin:react-hooks/recommended',
+    // 'plugin:react-hooks/recommended', // this is only in newer versions
 
     // jsx-a11y conflicts with pioneer rules. At time of writing
     // 84 problems -> We want to avoid as much as possible changing code in pioneer at least
@@ -45,6 +45,10 @@ module.exports = {
     react: {
       version: 'detect',
     },
+  },
+  rules: {
+    'react-hooks/rules-of-hooks': 'error',
+    'react-hooks/exhaustive-deps': 'warn',
   },
   plugins: ['@typescript-eslint', 'react', 'react-hooks'],
 }
