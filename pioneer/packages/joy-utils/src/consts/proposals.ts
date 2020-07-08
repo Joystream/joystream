@@ -3,12 +3,13 @@ import { ProposalType, ProposalMeta } from '../types/proposals';
 export const metadata: { [k in ProposalType]: ProposalMeta } = {
   EvictStorageProvider: {
     description: 'Evicting Storage Provider Proposal',
-    category: 'Storage',
+    category: 'Other',
     stake: 25000,
     approvalQuorum: 50,
     approvalThreshold: 75,
     slashingQuorum: 60,
-    slashingThreshold: 80
+    slashingThreshold: 80,
+    outdated: true
   },
   Text: {
     description: 'Signal Proposal',
@@ -21,12 +22,13 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
   },
   SetStorageRoleParameters: {
     description: 'Set Storage Role Params Proposal',
-    category: 'Storage',
+    category: 'Other',
     stake: 100000,
     approvalQuorum: 66,
     approvalThreshold: 80,
     slashingQuorum: 60,
-    slashingThreshold: 80
+    slashingThreshold: 80,
+    outdated: true
   },
   SetValidatorCount: {
     description: 'Set Max Validator Count Proposal',
@@ -84,7 +86,7 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
   },
   AddWorkingGroupLeaderOpening: {
     description: 'Add Working Group Leader Opening Proposal',
-    category: 'Other',
+    category: 'Working Groups',
     stake: 100000,
     approvalQuorum: 60,
     approvalThreshold: 80,
@@ -97,18 +99,10 @@ type ProposalsApiMethodNames = {
   votingPeriod: string;
   gracePeriod: string;
 }
-export const apiMethods: { [k in ProposalType]: ProposalsApiMethodNames } = {
-  EvictStorageProvider: {
-    votingPeriod: 'evictStorageProviderProposalVotingPeriod',
-    gracePeriod: 'evictStorageProviderProposalPeriod'
-  },
+export const apiMethods: { [k in ProposalType]?: ProposalsApiMethodNames } = {
   Text: {
     votingPeriod: 'textProposalVotingPeriod',
     gracePeriod: 'textProposalGracePeriod'
-  },
-  SetStorageRoleParameters: {
-    votingPeriod: 'setStorageRoleParametersProposalVotingPeriod',
-    gracePeriod: 'setStorageRoleParametersProposalGracePeriod'
   },
   SetValidatorCount: {
     votingPeriod: 'setValidatorCountProposalVotingPeriod',

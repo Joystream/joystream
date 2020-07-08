@@ -49,28 +49,6 @@ const MAX_VALIDATOR_COUNT_MAX = 100;
 const MINT_CAPACITY_MIN = 0;
 const MINT_CAPACITY_MAX = 1000000;
 
-// Set Storage Role Parameters
-const MIN_STAKE_MIN = 1;
-const MIN_STAKE_MAX = 10000000;
-const MIN_ACTORS_MIN = 0;
-const MIN_ACTORS_MAX = 1;
-const MAX_ACTORS_MIN = 2;
-const MAX_ACTORS_MAX = 99;
-const REWARD_MIN = 1;
-const REWARD_MAX = 99999;
-const REWARD_PERIOD_MIN = 600;
-const REWARD_PERIOD_MAX = 3600;
-const BONDING_PERIOD_MIN = 600;
-const BONDING_PERIOD_MAX = 28800;
-const UNBONDING_PERIOD_MIN = 600;
-const UNBONDING_PERIOD_MAX = 28800;
-const MIN_SERVICE_PERIOD_MIN = 600;
-const MIN_SERVICE_PERIOD_MAX = 28800;
-const STARTUP_GRACE_PERIOD_MIN = 600;
-const STARTUP_GRACE_PERIOD_MAX = 28800;
-const ENTRY_REQUEST_FEE_MIN = 1;
-const ENTRY_REQUEST_FEE_MAX = 100000;
-
 // Add Working Group Leader Opening Parameters
 // TODO: Discuss the actual values
 const MIN_EXACT_BLOCK_MINUS_CURRENT = 14400 * 5; // ~5 days
@@ -97,13 +75,13 @@ Validation is used to validate a proposal form.
 Each proposal type should validate the fields of his form, anything is valid as long as it fits in a Yup Schema.
 In a form, validation should be injected in the Yup Schema just by accessing it in this object.
 Ex:
-// EvictStorageProvider Form
+// Text Form
 
 import Validation from 'path/to/validationSchema'
 ...
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    storageProvider: Validation.EvictStorageProvider.storageProvider
+    description: Validation.Text.description
   }),
 
 */
@@ -139,23 +117,8 @@ type ValidationType = {
   SetContentWorkingGroupMintCapacity: {
     mintCapacity: Yup.NumberSchema<number>;
   };
-  EvictStorageProvider: {
-    storageProvider: Yup.StringSchema<string | null>;
-  };
   SetValidatorCount: {
     maxValidatorCount: Yup.NumberSchema<number>;
-  };
-  SetStorageRoleParameters: {
-    min_stake: Yup.NumberSchema<number>;
-    min_actors: Yup.NumberSchema<number>;
-    max_actors: Yup.NumberSchema<number>;
-    reward: Yup.NumberSchema<number>;
-    reward_period: Yup.NumberSchema<number>;
-    bonding_period: Yup.NumberSchema<number>;
-    unbonding_period: Yup.NumberSchema<number>;
-    min_service_period: Yup.NumberSchema<number>;
-    startup_grace_period: Yup.NumberSchema<number>;
-    entry_request_fee: Yup.NumberSchema<number>;
   };
   AddWorkingGroupLeaderOpening: (currentBlock: number) => {
     applicationsLimited: Yup.BooleanSchema<boolean>;
@@ -294,11 +257,6 @@ const Validation: ValidationType = {
       .max(MINT_CAPACITY_MAX, errorMessage('Mint capacity', MINT_CAPACITY_MIN, MINT_CAPACITY_MAX, CURRENCY_UNIT))
       .required('You need to specify a mint capacity.')
   },
-  EvictStorageProvider: {
-    storageProvider: Yup.string()
-      .nullable()
-      .required('Select a storage provider!')
-  },
   SetValidatorCount: {
     maxValidatorCount: Yup.number()
       .required('Enter the max validator count')
@@ -310,82 +268,6 @@ const Validation: ValidationType = {
       .max(
         MAX_VALIDATOR_COUNT_MAX,
         errorMessage('The max validator count', MAX_VALIDATOR_COUNT_MIN, MAX_VALIDATOR_COUNT_MAX)
-      )
-  },
-  SetStorageRoleParameters: {
-    min_stake: Yup.number()
-      .required('All parameters are required')
-      .positive('The minimum stake should be positive.')
-      .integer('This field must be an integer.')
-      .max(MIN_STAKE_MAX, errorMessage('Minimum stake', MIN_STAKE_MIN, MIN_STAKE_MAX, CURRENCY_UNIT)),
-    min_actors: Yup.number()
-      .required('All parameters are required')
-      .integer('This field must be an integer.')
-      .min(MIN_ACTORS_MIN, errorMessage('Minimum actors', MIN_ACTORS_MIN, MIN_ACTORS_MAX))
-      .max(MIN_ACTORS_MAX, errorMessage('Minimum actors', MIN_ACTORS_MIN, MIN_ACTORS_MAX)),
-    max_actors: Yup.number()
-      .required('All parameters are required')
-      .integer('This field must be an integer.')
-      .min(MAX_ACTORS_MIN, errorMessage('Max actors', MAX_ACTORS_MIN, MAX_ACTORS_MAX))
-      .max(MAX_ACTORS_MAX, errorMessage('Max actors', MAX_ACTORS_MIN, MAX_ACTORS_MAX)),
-    reward: Yup.number()
-      .required('All parameters are required')
-      .integer('This field must be an integer.')
-      .min(REWARD_MIN, errorMessage('Reward', REWARD_MIN, REWARD_MAX, CURRENCY_UNIT))
-      .max(REWARD_MAX, errorMessage('Reward', REWARD_MIN, REWARD_MAX, CURRENCY_UNIT)),
-    reward_period: Yup.number()
-      .required('All parameters are required')
-      .integer('This field must be an integer.')
-      .min(REWARD_PERIOD_MIN, errorMessage('The reward period', REWARD_PERIOD_MIN, REWARD_PERIOD_MAX, 'blocks'))
-      .max(REWARD_PERIOD_MAX, errorMessage('The reward period', REWARD_PERIOD_MIN, REWARD_PERIOD_MAX, 'blocks')),
-    bonding_period: Yup.number()
-      .required('All parameters are required')
-      .integer('This field must be an integer.')
-      .min(BONDING_PERIOD_MIN, errorMessage('The bonding period', BONDING_PERIOD_MIN, BONDING_PERIOD_MAX, 'blocks'))
-      .max(BONDING_PERIOD_MAX, errorMessage('The bonding period', BONDING_PERIOD_MIN, BONDING_PERIOD_MAX, 'blocks')),
-    unbonding_period: Yup.number()
-      .required('All parameters are required')
-      .integer('This field must be an integer.')
-      .min(
-        UNBONDING_PERIOD_MIN,
-        errorMessage('The unbonding period', UNBONDING_PERIOD_MIN, UNBONDING_PERIOD_MAX, 'blocks')
-      )
-      .max(
-        UNBONDING_PERIOD_MAX,
-        errorMessage('The unbonding period', UNBONDING_PERIOD_MIN, UNBONDING_PERIOD_MAX, 'blocks')
-      ),
-    min_service_period: Yup.number()
-      .required('All parameters are required')
-      .integer('This field must be an integer.')
-      .min(
-        MIN_SERVICE_PERIOD_MIN,
-        errorMessage('The minimum service period', MIN_SERVICE_PERIOD_MIN, MIN_SERVICE_PERIOD_MAX, 'blocks')
-      )
-      .max(
-        MIN_SERVICE_PERIOD_MAX,
-        errorMessage('The minimum service period', MIN_SERVICE_PERIOD_MIN, MIN_SERVICE_PERIOD_MAX, 'blocks')
-      ),
-    startup_grace_period: Yup.number()
-      .required('All parameters are required')
-      .integer('This field must be an integer.')
-      .min(
-        STARTUP_GRACE_PERIOD_MIN,
-        errorMessage('The startup grace period', STARTUP_GRACE_PERIOD_MIN, STARTUP_GRACE_PERIOD_MAX, 'blocks')
-      )
-      .max(
-        STARTUP_GRACE_PERIOD_MAX,
-        errorMessage('The startup grace period', STARTUP_GRACE_PERIOD_MIN, STARTUP_GRACE_PERIOD_MAX, 'blocks')
-      ),
-    entry_request_fee: Yup.number()
-      .required('All parameters are required')
-      .integer('This field must be an integer.')
-      .min(
-        ENTRY_REQUEST_FEE_MIN,
-        errorMessage('The entry request fee', ENTRY_REQUEST_FEE_MIN, ENTRY_REQUEST_FEE_MAX, CURRENCY_UNIT)
-      )
-      .max(
-        STARTUP_GRACE_PERIOD_MAX,
-        errorMessage('The entry request fee', ENTRY_REQUEST_FEE_MIN, ENTRY_REQUEST_FEE_MAX, CURRENCY_UNIT)
       )
   },
   AddWorkingGroupLeaderOpening: (currentBlock: number) => ({
