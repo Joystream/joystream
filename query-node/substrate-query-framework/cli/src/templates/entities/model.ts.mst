@@ -16,6 +16,17 @@ import {
   StringField
 } from 'warthog';  {{! we don't need extra twists here }}
 
+{{#has.union}}
+import { Column } from 'typeorm';
+import { Field } from 'type-graphql';
+import { WarthogField } from 'warthog';
+{{#fields}}
+  {{#is.union}}
+  import { {{tsType}} } from '../variants/variants.model';
+  {{/is.union}}
+{{/fields}}
+{{/has.union}}
+
 {{#isInterface}}
 import { InterfaceType } from 'type-graphql';
 {{/isInterface}}
@@ -91,5 +102,16 @@ export {{#isInterface}}abstract{{/isInterface}} class {{className}}
       {{#description}}description: `{{{description}}}`{{/description}} })
     {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}:{{tsType}} 
   {{/is.enum}}
+
+
+  {{#is.union}} 
+	@Column('jsonb')
+	@WarthogField('json')
+	@Field(type => {{tsType}}, {
+      {{^required}}nullable: true,{{/required}} 
+      {{#description}}description: `{{{description}}}`{{/description}} })
+	{{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: typeof {{tsType}}
+  {{/is.union}}
+
 {{/fields}}
 }
