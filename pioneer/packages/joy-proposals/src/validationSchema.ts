@@ -108,16 +108,16 @@ type ValidationTypeKeys = Exclude<ProposalTypeKeys, OutdatedProposals> | 'All';
 
 type FormValuesByType<T extends ValidationTypeKeys> =
   T extends 'All' ? GenericFormValues :
-  T extends 'Text' ? Omit<SignalFormValues, keyof GenericFormValues> :
-  T extends 'RuntimeUpgrade' ? Omit<RuntimeUpgradeFormValues, keyof GenericFormValues> :
-  T extends 'SetElectionParameters' ? Omit<SetCouncilParamsFormValues, keyof GenericFormValues> :
-  T extends 'Spending' ? Omit<SpendingProposalFormValues, keyof GenericFormValues> :
-  T extends 'SetLead' ? Omit<SetContentWorkingGroupLeadFormValues, keyof GenericFormValues> :
-  T extends 'SetContentWorkingGroupMintCapacity' ? Omit<SetContentWorkingGroupMintCapacityFormValues, keyof GenericFormValues> :
-  T extends 'SetValidatorCount' ? Omit<SetMaxValidatorCountFormValues, keyof GenericFormValues> :
-  T extends 'AddWorkingGroupLeaderOpening' ? Omit<AddWorkingGroupLeaderOpeningFormValues, keyof GenericFormValues> :
-  T extends 'SetWorkingGroupMintCapacity' ? Omit<SetWorkingGroupMintCapacityFormValues, keyof GenericFormValues> :
-  never;
+    T extends 'Text' ? Omit<SignalFormValues, keyof GenericFormValues> :
+      T extends 'RuntimeUpgrade' ? Omit<RuntimeUpgradeFormValues, keyof GenericFormValues> :
+        T extends 'SetElectionParameters' ? Omit<SetCouncilParamsFormValues, keyof GenericFormValues> :
+          T extends 'Spending' ? Omit<SpendingProposalFormValues, keyof GenericFormValues> :
+            T extends 'SetLead' ? Omit<SetContentWorkingGroupLeadFormValues, keyof GenericFormValues> :
+              T extends 'SetContentWorkingGroupMintCapacity' ? Omit<SetContentWorkingGroupMintCapacityFormValues, keyof GenericFormValues> :
+                T extends 'SetValidatorCount' ? Omit<SetMaxValidatorCountFormValues, keyof GenericFormValues> :
+                  T extends 'AddWorkingGroupLeaderOpening' ? Omit<AddWorkingGroupLeaderOpeningFormValues, keyof GenericFormValues> :
+                    T extends 'SetWorkingGroupMintCapacity' ? Omit<SetWorkingGroupMintCapacityFormValues, keyof GenericFormValues> :
+                      never;
 
 type ValidationType = {
   [validationTypeK in ValidationTypeKeys]: (

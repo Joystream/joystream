@@ -170,7 +170,7 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
   SetWorkingGroupMintCapacity: ([capacity]) => {
     return {
       'Mint capacity': formatBalance(capacity)
-    }
+    };
   }
 };
 
