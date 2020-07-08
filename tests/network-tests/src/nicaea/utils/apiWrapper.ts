@@ -791,12 +791,24 @@ export class ApiWrapper {
     });
   }
 
-  public expectApplicationReviewBegan(): Promise<void> {
+  public expectLeaderSet(): Promise<BN> {
+    return new Promise(async resolve => {
+      await this.api.query.system.events<Vec<EventRecord>>(events => {
+        events.forEach(record => {
+          if (record.event.method && record.event.method.toString() === 'LeaderSet') {
+            resolve((record.event.data as unknown) as BN);
+          }
+        });
+      });
+    });
+  }
+
+  public expectApplicationReviewBegan(): Promise<BN> {
     return new Promise(async resolve => {
       await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (record.event.method && record.event.method.toString() === 'BeganApplicationReview') {
-            resolve();
+            resolve((record.event.data as unknown) as BN);
           }
         });
       });

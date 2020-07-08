@@ -13,10 +13,14 @@ import {
   createWorkingGroupLeaderOpening,
   voteForProposal,
   beginWorkingGroupLeaderApplicationReview,
-  expectLeadOpeningAdded,
   fillLeaderOpeningProposal,
 } from './impl/proposalsModule';
-import { applyForOpening } from '../workingGroup/impl/workingGroupModule';
+import {
+  applyForOpening,
+  expectLeadOpeningAdded,
+  expectLeaderSet,
+  expectBeganApplicationReview,
+} from '../workingGroup/impl/workingGroupModule';
 
 tap.mocha.describe('Set lead proposal scenario', async () => {
   initConfig();
@@ -66,7 +70,6 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
     voteForProposal(apiWrapper, m2KeyPairs, sudo, createOpeningProposalId);
     openingId = await expectLeadOpeningAdded(apiWrapper);
   });
-  let applicationId: BN;
   tap.test(
     'Apply for lead opening',
     async () =>
@@ -93,9 +96,10 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
         'Storage'
       ))
   );
-  tap.test('Approve begin review proposal', async () =>
-    voteForProposal(apiWrapper, m2KeyPairs, sudo, beginReviewProposalId)
-  );
+  tap.test('Approve begin review proposal', async () => {
+    voteForProposal(apiWrapper, m2KeyPairs, sudo, beginReviewProposalId);
+    expectBeganApplicationReview(apiWrapper);
+  });
   let fillLeaderOpeningProposalId: BN;
   tap.test(
     'Fill leader opening',
@@ -109,9 +113,10 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
         'Storage'
       ))
   );
-  tap.test('Approve fill leaвer opening', async () =>
-    voteForProposal(apiWrapper, m2KeyPairs, sudo, fillLeaderOpeningProposalId)
-  );
+  tap.test('Approve fill leader opening', async () => {
+    voteForProposal(apiWrapper, m2KeyPairs, sudo, fillLeaderOpeningProposalId);
+    await expectLeaderSet(apiWrapper);
+  });
 
   closeApi(apiWrapper);
 });

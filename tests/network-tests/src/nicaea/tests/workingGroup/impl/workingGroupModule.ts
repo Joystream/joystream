@@ -180,7 +180,7 @@ export async function beginApplicationReview(
   await apiWrapper.transferBalance(sudo, lead.address, beginReviewFee);
 
   // Begin application review
-  const beginApplicantReviewPromise: Promise<void> = apiWrapper.expectApplicationReviewBegan();
+  const beginApplicantReviewPromise: Promise<BN> = apiWrapper.expectApplicationReviewBegan();
   await apiWrapper.beginApplicantReview(lead, openingId, module);
   await beginApplicantReviewPromise;
 }
@@ -508,4 +508,17 @@ export async function awaitPayout(apiWrapper: ApiWrapper, membersKeyPairs: Keyri
 
 export async function setMintCapacity(apiWrapper: ApiWrapper, sudo: KeyringPair, capacity: BN, module: WorkingGroups) {
   await apiWrapper.sudoSetWorkingGroupMintCapacity(sudo, capacity, module);
+}
+
+export async function expectLeadOpeningAdded(apiWrapper: ApiWrapper): Promise<BN> {
+  return apiWrapper.expectOpeningAdded();
+}
+
+export async function expectLeaderSet(apiWrapper: ApiWrapper): Promise<BN> {
+  return apiWrapper.expectLeaderSet();
+}
+expectBeganApplicationReview;
+
+export async function expectBeganApplicationReview(apiWrapper: ApiWrapper): Promise<BN> {
+  return apiWrapper.expectApplicationReviewBegan();
 }
