@@ -84,6 +84,7 @@ export function withFieldTypeGuardProps(f: Field): GeneratorContext {
   is['scalar'] = f.isScalar();
   is['refType'] = f.isRelationType();
   is['enum'] = f.isEnum();
+  is['union'] = f.isUnion();
 
   ['mto', 'oto', 'otm'].map(s => (is[s] = f.type === s));
   return {
