@@ -6,7 +6,7 @@ import QueryEventBlock from './QueryEventBlock';
 import IndexBuilder from './IndexBuilder';
 import QueryNode, { QueryNodeState } from './QueryNode';
 import QueryNodeManager from './QueryNodeManager';
-import { DatabaseManager, SavedEntityEvent, makeDatabaseManager } from './db';
+import { DatabaseManager, SavedEntityEvent, makeDatabaseManager, createDBConnection } from './db';
 import BootstrapPack, { BootstrapFunc } from './bootstrap/BootstrapPack';
 
 export {
@@ -26,4 +26,5 @@ export {
   SavedEntityEvent,
   BootstrapPack,
   BootstrapFunc,
+  createDBConnection,
 };

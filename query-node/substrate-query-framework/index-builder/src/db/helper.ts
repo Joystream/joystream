@@ -1,5 +1,7 @@
 import * as shortid from 'shortid';
-import { DeepPartial } from 'typeorm';
+import { DeepPartial, createConnection, Connection, getConnectionOptions } from 'typeorm';
+
+import { SnakeNamingStrategy } from './SnakeNamingStrategy';
 /**
  * Fixes compatibility between typeorm and warthog models.
  *
@@ -19,4 +21,9 @@ export function fillRequiredWarthogFields<T>(entity: DeepPartial<T>): DeepPartia
     version: 1,
   };
   return Object.assign(entity, requiredFields);
+}
+
+export async function createDBConnection(): Promise<Connection> {
+  const connectionOptions = await getConnectionOptions();
+  return createConnection(Object.assign(connectionOptions, { namingStrategy: new SnakeNamingStrategy() }));
 }

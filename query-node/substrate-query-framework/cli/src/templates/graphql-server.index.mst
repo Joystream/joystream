@@ -15,9 +15,6 @@ class CustomNamingStrategy extends SnakeNamingStrategy {
   tableName(className: string, customName?: string): string {
     return customName ? customName : `${snakeCase(className)}`;
   }
-  columnName(propertyName: string, customName?: string, embeddedPrefixes?: string[]): string {
-    return propertyName;
-  }
 }
 
 async function bootstrap() {

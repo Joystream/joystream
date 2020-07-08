@@ -19,6 +19,17 @@ export interface Relation {
   relatedTsProp?: string;
 }
 
+/**
+ * Field resolver for related fields
+ */
+export interface FieldResolver {
+  returnTypeFunc: string;
+  fieldName: string;
+  rootArgName: string;
+  rootArgType: string;
+  returnType: string;
+}
+
 export function makeRelation(type: string, columnType: string, relatedTsProp: string): Relation {
   return {
     type,

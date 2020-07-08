@@ -65,3 +65,12 @@ export function generateJoinColumnName(name: string): string {
 export function generateJoinTableName(table1: string, table2: string): string {
   return snakeCase(table1.concat('_', table2));
 }
+
+export function generateEntityImport(entityName: string): string {
+  const kebabName = kebabCase(entityName);
+  return `import {${entityName}} from '../${kebabName}/${kebabName}.model'`;
+}
+
+export function generateResolverReturnType(type: string, isList: boolean): string {
+  return `Promise<${type}${isList ? '[]' : ''}>`;
+}
