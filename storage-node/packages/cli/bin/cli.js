@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-const {main} = require('../dist/cli')
+const chalk = require('chalk')
+const { main } = require('../dist/cli')
 
 main()
   .then(() => {

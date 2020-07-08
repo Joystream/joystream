@@ -27,7 +27,7 @@
     "node": ">=10.15.3"
   },
   "scripts": {
-    "test": "mocha 'test/**/*.js'",
+    "test": "mocha 'dist/test/**/*.js'",
     "lint": "eslint 'paths/**/*.js' 'lib/**/*.js'"
   },
   "bin": {
