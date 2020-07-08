@@ -412,7 +412,7 @@ impl<T: Trait> VecPropertyValue<T> {
         index_in_property_vec: VecMaxLength,
     ) -> dispatch::Result {
         ensure!(
-            (index_in_property_vec as usize) < self.len(),
+            (index_in_property_vec as usize) <= self.len(),
             ERROR_ENTITY_PROP_VALUE_VECTOR_INDEX_IS_OUT_OF_RANGE
         );
 
