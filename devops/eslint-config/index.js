@@ -19,17 +19,12 @@ module.exports = {
     sourceType: 'module',
   },
   extends: [
+    'standard',
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
     'plugin:react/recommended',
-    // 'plugin:react-hooks/recommended', // this is only in newer versions
-
-    // jsx-a11y conflicts with pioneer rules. At time of writing
-    // 84 problems -> We want to avoid as much as possible changing code in pioneer at least
-    // from polkadot-js code base to make it possible to pull from upstream as easily as possible.
-    // pioneer has an isolated linting config so its safe to enable here.
-    // Lets try to support an accessible web in future
-    // 'plugin:jsx-a11y/recommended',
+    // this is only in newer versions of eslint-plugin-react-hooks
+    // 'plugin:react-hooks/recommended',
 
     // Turns off all rules that are unnecessary or might conflict with Prettier.
     // Allows us to do formatting separately from linting.
@@ -47,8 +42,9 @@ module.exports = {
     },
   },
   rules: {
+    // drop these when using newer versions of eslint-plugin-react-hooks
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': 'warn',
   },
-  plugins: ['@typescript-eslint', 'react', 'react-hooks'],
+  plugins: ['standard', '@typescript-eslint', 'react', 'react-hooks'],
 }

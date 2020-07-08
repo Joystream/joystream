@@ -1,3 +1,4 @@
+// At some point don't depend on @polkadot rules and use @joystream/eslint-config
 const base = require('@polkadot/dev-react/config/eslint');
 
 // add override for any (a metric ton of them, initial conversion)
