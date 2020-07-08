@@ -1,0 +1,10 @@
+{
+  // "editor.defaultFormatter": null,
+  "editor.formatOnSave": false,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  // == Avoid using prettier plugin to format ==
+  // "prettier.requireConfig": true,
+  // "editor.defaultFormatter": "esbenp.prettier-vscode",
+}
