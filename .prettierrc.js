@@ -1,3 +1,3 @@
 module.exports = {
-    ...require('@joystream/prettier-config')
+  ...require('@joystream/prettier-config'),
 }
