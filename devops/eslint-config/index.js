@@ -25,16 +25,10 @@ module.exports = {
     'plugin:react/recommended',
     // this is only in newer versions of eslint-plugin-react-hooks
     // 'plugin:react-hooks/recommended',
-
-    // Turns off all rules that are unnecessary or might conflict with Prettier.
-    // Allows us to do formatting separately from linting.
-    'prettier',
+    'plugin:prettier/recommended',
     'prettier/@typescript-eslint',
     'prettier/react',
     'prettier/standard',
-    // To Display prettier errors as ESLint errors, enable the following configuration,
-    // And make sure it is the last configuration in the extends array.
-    'plugin:prettier/recommended',
   ],
   settings: {
     react: {
@@ -46,5 +40,11 @@ module.exports = {
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': 'warn',
   },
-  plugins: ['standard', '@typescript-eslint', 'react', 'react-hooks'],
+  plugins: [
+    'standard',
+    '@typescript-eslint',
+    'react',
+    'react-hooks',
+    'prettier',
+  ],
 }
