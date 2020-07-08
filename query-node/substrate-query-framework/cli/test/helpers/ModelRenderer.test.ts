@@ -188,14 +188,8 @@ describe('ModelRenderer', () => {
     expect(rendered).to.include('export { episode_Camel_Case }', 'Should export enum');
     // this will be generated in ../enums/enum.ts
     //expect(rendered).to.include(`NEWHOPE = 'NEWHOPE'`, 'Should render enum values');
-    expect(rendered).to.include(
-      `'episode_Camel_Case', episode_Camel_Case,`,
-      'Should add enum decorator options'
-    );
-    expect(rendered).to.include(
-      `nullable: true`,
-      'Should add enum decorator options'
-    );
+    expect(rendered).to.include(`'episode_Camel_Case', episode_Camel_Case,`, 'Should add enum decorator options');
+    expect(rendered).to.include(`nullable: true`, 'Should add enum decorator options');
 
     expect(rendered).to.include(`episode?: episode_Camel_Case`, 'Should camelCase type');
   });
@@ -294,5 +288,29 @@ describe('ModelRenderer', () => {
     generator = new ModelRenderer(model, model.lookupInterface('IEntity'), enumCtxProvider);
     const rendered = generator.render(modelTemplate);
     expect(rendered).to.include('@InterfaceType');
+  });
+
+  it('should import unions', function () {
+    const model = fromStringSchema(`
+    union Poor = HappyPoor | Miserable
+    type HappyPoor @variant {
+      father: Poor!
+      mother: Poor!
+    }
+    
+    type Miserable @variant {
+      hates: String!
+    }
+    
+    type MyEntity @entity {
+      status: Poor!
+    }`);
+
+    generator = new ModelRenderer(model, model.lookupEntity('MyEntity'), enumCtxProvider);
+    const rendered = generator.render(modelTemplate);
+    expect(rendered).to.include(`import { Poor } from '../variants/variants.model'`);
+    // prettier put brackets aroung args
+    expect(rendered).to.include('(type) => Poor', 'Should render the correct union type');
+    expect(rendered).to.include('status!: typeof Poor', 'Should render the correct union type');
   });
 });
