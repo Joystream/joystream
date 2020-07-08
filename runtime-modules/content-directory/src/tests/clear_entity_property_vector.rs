@@ -67,23 +67,8 @@ fn clear_entity_property_vector_entity_not_found() {
             EntityAccessStateFailureType::EntityNotFound,
         );
 
-        // Create property
-        let property_type = PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, 5);
-
-        let property = Property::<Runtime>::with_name_and_type(
-            (PropertyNameLengthConstraint::get().max() - 1) as usize,
-            property_type,
-            true,
-            false,
-        );
-
-        // Add Schema to the Class
-        assert_ok!(add_class_schema(
-            LEAD_ORIGIN,
-            FIRST_CLASS_ID,
-            BTreeSet::new(),
-            vec![property]
-        ));
+        // Create class reference schema
+        add_class_reference_schema();
 
         // Runtime state before tested call
 
@@ -442,23 +427,8 @@ fn clear_entity_property_vector_unknown_entity_property_id() {
         // Create class with default permissions
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
-        // Create property
-        let property_type = PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, 5);
-
-        let property = Property::<Runtime>::with_name_and_type(
-            (PropertyNameLengthConstraint::get().max() - 1) as usize,
-            property_type,
-            true,
-            false,
-        );
-
-        // Add Schema to the Class
-        assert_ok!(add_class_schema(
-            LEAD_ORIGIN,
-            FIRST_CLASS_ID,
-            BTreeSet::new(),
-            vec![property]
-        ));
+        // Create class reference schema
+        add_class_reference_schema();
 
         let actor = Actor::Lead;
 
