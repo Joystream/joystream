@@ -12,7 +12,8 @@ import {
   BootstrapPack,
   BootstrapFunc,
   DatabaseManager,
-  SubstrateEvent
+  SubstrateEvent,
+  createDBConnection,
 } from "index-builder/lib";
 
 // Mappings use!
@@ -125,7 +126,8 @@ async function main() {
   
   // Required for warthog models.
   dotenv.config({ path: '../graphql-server/.env' });
-  await createConnection();
+
+  await createDBConnection();
 
   const node = new QueryNodeManager(process);
 

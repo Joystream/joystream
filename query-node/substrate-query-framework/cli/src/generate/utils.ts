@@ -1,4 +1,4 @@
-import { upperFirst, kebabCase, camelCase } from 'lodash';
+import { upperFirst, kebabCase, camelCase, snakeCase } from 'lodash';
 import { GeneratorContext } from './SourcesGenerator';
 import { ObjectType, Field } from '../model';
 import _ from 'lodash';
@@ -58,4 +58,20 @@ export function ownFields(o: ObjectType): Field[] {
 
   const intrFields = o.interfaces[0].fields || [];
   return _.differenceBy(o.fields, intrFields, 'name');
+}
+export function generateJoinColumnName(name: string): string {
+  return snakeCase(name.concat('_id'));
+}
+
+export function generateJoinTableName(table1: string, table2: string): string {
+  return snakeCase(table1.concat('_', table2));
+}
+
+export function generateEntityImport(entityName: string): string {
+  const kebabName = kebabCase(entityName);
+  return `import {${entityName}} from '../${kebabName}/${kebabName}.model'`;
+}
+
+export function generateResolverReturnType(type: string, isList: boolean): string {
+  return `Promise<${type}${isList ? '[]' : ''}>`;
 }

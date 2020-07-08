@@ -12,7 +12,8 @@ import Debug from 'debug';
 import { ENTITY_DIRECTIVE, UNIQUE_DIRECTIVE, VARIANT_DIRECTIVE } from './constant';
 import { FTSDirective, FULL_TEXT_SEARCHABLE_DIRECTIVE } from './FTSDirective';
 import { availableTypes } from '../model/ScalarTypes';
-import { ModelType } from '../model/WarthogModel';
+import * as DerivedFrom from './DerivedFromDirective';
+import { RelationshipGenerator } from '../generate/RelationshipGenerator';
 
 const debug = Debug('qnode-cli:model-generator');
 
@@ -55,7 +56,6 @@ export class WarthogModelBuilder {
     }
 
     field.isList = true;
-    field.isBuildinType = this._isBuildinType(field.type);
     return field;
   }
 
@@ -154,48 +154,11 @@ export class WarthogModelBuilder {
       }
       field.description = fieldNode.description?.value;
       field.unique = this.isUnique(fieldNode);
+      DerivedFrom.addDerivedFromIfy(fieldNode, field);
       return field;
     });
     debug(`Read and parsed fields: ${JSON.stringify(fields, null, 2)}`);
     return fields;
-  }
-
-  /**
-   * Add SQL OneToOne and ManyToOne relationship to object types if there is
-   */
-  generateSQLRelationships(): void {
-    const additionalFields: { [key: string]: string | Field }[] = [];
-
-    this._model.entities.forEach(({ name, fields }) => {
-      for (const field of fields) {
-        if (field.isUnion() || field.isEnum()) {
-          continue;
-        }
-
-        if (!field.isBuildinType && field.isList) {
-          const typeName = field.type;
-          field.name = field.type.toLowerCase().concat('s');
-          field.modelType = ModelType.ENTITY;
-          field.type = 'otm'; // OneToMany
-
-          const newField = new Field(field.type, field.type);
-          newField.isBuildinType = false;
-          newField.nullable = false;
-          newField.type = 'mto'; // ManyToOne
-          newField.modelType = ModelType.ENTITY;
-          newField.name = name.toLowerCase();
-          additionalFields.push({ field: newField, name: typeName });
-        }
-      }
-    });
-
-    for (const objType of this._model.entities) {
-      for (const field of additionalFields) {
-        if (objType.name === field.name) {
-          objType.fields.push(field.field as Field);
-        }
-      }
-    }
   }
 
   private generateInterfaces() {
@@ -269,8 +232,10 @@ export class WarthogModelBuilder {
     this.generateUnions();
     this.generateEntities();
     this.postProcessFields();
-    this.generateSQLRelationships();
     this.genereateQueries();
+
+    DerivedFrom.validateDerivedFields(this._model);
+    new RelationshipGenerator(this._model).generate();
 
     return this._model;
   }

@@ -1,5 +1,3 @@
-import { FTSQuery } from './FTSQuery';
-import { Field } from './Field';
 import { GraphQLEnumType } from 'graphql';
 import Debug from 'debug';
 import { validateVariantField } from './validate';
@@ -15,6 +13,8 @@ export enum ModelType {
   INTERFACE,
   SCALAR,
 }
+
+import { ObjectType, Field, FTSQuery } from '.';
 
 export class WarthogModel {
   private _entities: ObjectType[];
@@ -241,20 +241,6 @@ export class WarthogModel {
     }
     throw new Error(`Type ${name} is undefined`);
   }
-}
-
-/**
- * Reperesent GraphQL object type
- */
-export interface ObjectType {
-  name: string;
-  fields: Field[];
-  isEntity: boolean;
-  isVariant: boolean;
-  // Description of the field will be shown in GrapqQL API
-  description?: string;
-  isInterface?: boolean;
-  interfaces?: ObjectType[]; //interface names
 }
 
 export interface UnionType {

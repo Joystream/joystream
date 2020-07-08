@@ -22,7 +22,7 @@
     "mustache": "^4.0.1",
     "tslib": "1.11.2",
     "typeorm-model-generator": "^0.4.2",
-    "warthog": "^2.9"
+    "warthog": "https://github.com/metmirr/warthog/releases/download/v2.9.7/warthog-v2.9.7.tgz"
   },
   "devDependencies": {
     "@oclif/dev-cli": "^1",

@@ -9,8 +9,9 @@ import {
   {{#has.bytes}}BytesField,{{/has.bytes}}
   Model,
   {{#has.mto}}ManyToOne,{{/has.mto}}
+  {{#has.mtm}}ManyToMany,{{/has.mtm}}
   {{#has.otm}}OneToMany,{{/has.otm}}
-  {{#has.oto}}OneToOne, JoinColumn,{{/has.oto}}
+  {{#has.oto}}OneToOne, OneToOneJoin,{{/has.oto}}
   {{#has.array}}CustomField,{{/has.array}}
   {{#has.enum}}EnumField,{{/has.enum}}
   StringField
@@ -31,11 +32,11 @@ import { WarthogField } from 'warthog';
 import { InterfaceType } from 'type-graphql';
 {{/isInterface}}
 
-{{#fields}}
-  {{#is.refType}}
-  import { {{relClassName}} } from '{{{relPathForModel}}}'
-  {{/is.refType}}
-{{/fields}}
+{{#has.mtm}}import { JoinTable } from 'typeorm';{{/has.mtm}}
+
+{{#relatedEntityImports}}
+  {{{ . }}}
+{{/relatedEntityImports}}
 
 {{#enums}}
   import { {{name}} } from '../enums/enums';
@@ -59,24 +60,41 @@ export {{#isInterface}}abstract{{/isInterface}} class {{className}}
 
 {{#fields}}
   {{#is.otm}}
-    @OneToMany(() => {{relClassName}}, ({{relCamelName}}: {{relClassName}}) => {{relCamelName}}.{{relFieldName}})
-    {{camelNamePlural}}?: {{relClassName}}[];  
+    @OneToMany(() => {{relation.columnType}}, (param: {{relation.columnType}}) => param.{{relation.relatedTsProp}})
+    {{camelName}}?: {{relation.columnType}}[];  
   {{/is.otm}}
 
   {{#is.mto}}
-    @ManyToOne(() => {{relClassName}}, ({{relCamelName}}: {{relClassName}}) => {{relCamelName}}.{{relFieldNamePlural}}, { 
-      skipGraphQLField: true{{^required}},
-      nullable: true{{/required}} 
+    @ManyToOne(() => {{relation.columnType}},
+      {{#relation.relatedTsProp}}
+        (param: {{relation.columnType}}) => param.{{relation.relatedTsProp}},
+      {{/relation.relatedTsProp}}
+      { 
+        skipGraphQLField: true{{^required}},
+        nullable: true{{/required}} 
     })
-    {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{relClassName}};
+    {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{relation.columnType}};
   {{/is.mto}}
 
   {{#is.oto}}
-    @OneToOne(() => {{relClassName}})
-    @JoinColumn()
-    {{camelName}}?: {{relClassName}};
+    {{^relation.joinColumn}}@OneToOne{{/relation.joinColumn}}
+    {{#relation.joinColumn}}@OneToOneJoin{{/relation.joinColumn}}
+    (() => {{relation.columnType}},(param: {{relation.columnType}}) => param.{{relation.relatedTsProp}})
+    {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{relation.columnType}};
   {{/is.oto}}
 
+  {{#is.mtm}}
+    @ManyToMany(() => {{relation.columnType}}, (param: {{relation.columnType}}) => param.{{relation.relatedTsProp}})
+    {{#relation.joinTable}}
+      @JoinTable({
+        name: '{{relation.joinTable.tableName}}',
+        joinColumn: {name: '{{relation.joinTable.joinColumn}}' },
+        inverseJoinColumn: {name: '{{relation.joinTable.inverseJoinColumn}}' }
+      })
+    {{/relation.joinTable}}
+    {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{relation.columnType}}[];
+  {{/is.mtm}}
+  
   {{#is.array}}
     @CustomField({
       db: { type: '{{dbType}}', array: true,{{^required}}nullable: true,{{/required}} {{#unique}}unique: true,{{/unique}}}, 
