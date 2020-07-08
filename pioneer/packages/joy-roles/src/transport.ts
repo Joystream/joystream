@@ -16,22 +16,23 @@ export interface ITransport {
   storageGroup: () => Promise<WorkingGroupMembership>;
   currentOpportunities: () => Promise<Array<WorkingGroupOpening>>;
   groupOpening: (group: WorkingGroups, id: number) => Promise<WorkingGroupOpening>;
-  curationGroupOpening: (id: number) => Promise<WorkingGroupOpening>;
-  openingApplicationRanks: (openingId: number) => Promise<Balance[]>;
+  openingApplicationRanks: (group: WorkingGroups, openingId: number) => Promise<Balance[]>;
   expectedBlockTime: () => Promise<number>;
   blockHash: (height: number) => Promise<string>;
   blockTimestamp: (height: number) => Promise<Date>;
   transactionFee: () => Promise<Balance>;
   accounts: () => Subscribable<keyPairDetails[]>;
-  openingApplications: (address: string) => Promise<OpeningApplication[]>;
-  myCurationGroupRoles: (address: string) => Promise<ActiveRole[]>;
-  myStorageGroupRoles: () => Subscribable<ActiveRole[]>;
-  applyToCuratorOpening: (id: number,
+  openingApplicationsByAddress: (address: string) => Promise<OpeningApplication[]>;
+  myRoles: (address: string) => Promise<ActiveRole[]>;
+  applyToOpening: (
+    group: WorkingGroups,
+    id: number,
     roleAccountName: string,
     sourceAccount: string,
     appStake: Balance,
     roleStake: Balance,
-    applicationText: string) => Promise<number>;
-  leaveCurationRole: (sourceAccount: string, id: number, rationale: string) => void;
-  withdrawCuratorApplication: (sourceAccount: string, id: number) => void;
+    applicationText: string
+  ) => Promise<number>;
+  leaveRole: (group: WorkingGroups, sourceAccount: string, id: number, rationale: string) => void;
+  withdrawApplication: (group: WorkingGroups, sourceAccount: string, id: number) => void;
 }

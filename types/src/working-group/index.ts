@@ -6,6 +6,7 @@ import { MemberId, ActorId } from '../members';
 import { RewardRelationshipId } from '../recurring-rewards';
 import { StakeId } from '../stake';
 import { ApplicationId, OpeningId, ApplicationRationingPolicy, StakingPolicy } from '../hiring';
+import { JoyEnum } from '../JoyEnum';
 
 export class RationaleText extends Bytes { };
 
@@ -248,17 +249,12 @@ export enum OpeningTypeKeys {
   Worker = 'Worker'
 };
 
-export class OpeningType extends Enum {
-  constructor (value?: any, index?: number) {
-    super(
-      {
-        Leader: Null,
-        Worker: Null
-      },
-      value, index
-    );
-  }
-};
+export class OpeningType_Leader extends Null { };
+export class OpeningType_Worker extends Null { };
+export class OpeningType extends JoyEnum({
+  Leader: OpeningType_Leader,
+  Worker: OpeningType_Worker
+} as const) { };
 
 export type IOpening = {
   hiring_opening_id: OpeningId,

@@ -31,6 +31,7 @@ import {
 } from './Opportunities.stories';
 
 import { CuratorId } from '@joystream/types/content-working-group';
+import { WorkingGroups, workerRoleNameByGroup } from '../working_groups';
 
 export default {
   title: 'Roles / Components / My roles tab / Elements',
@@ -45,10 +46,11 @@ export function CurrentRolesFragment () {
   const props: CurrentRolesProps = {
     currentRoles: [
       {
-        curatorId: new CuratorId(1),
-        name: 'Storage provider',
+        workerId: new CuratorId(1),
+        name: workerRoleNameByGroup[WorkingGroups.StorageProviders],
         reward: new u128(321),
         stake: new u128(100),
+        group: WorkingGroups.StorageProviders,
         CTAs: [
           {
             title: 'Unstake',
@@ -57,11 +59,12 @@ export function CurrentRolesFragment () {
         ]
       },
       {
-        curatorId: new CuratorId(1),
+        workerId: new CuratorId(1),
         name: 'Some other role',
         url: 'some URL',
         reward: new u128(321),
         stake: new u128(12343200),
+        group: WorkingGroups.ContentCurators,
         CTAs: [
           {
             title: 'Leave role',
@@ -164,7 +167,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     id: 1,
     meta: {
       id: '1',
-      group: 'group-name'
+      group: WorkingGroups.ContentCurators
     },
     stage: {
       state: OpeningState.AcceptingApplications,
@@ -184,7 +187,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     id: 1,
     meta: {
       id: '1',
-      group: 'group-name'
+      group: WorkingGroups.ContentCurators
     },
     stage: {
       state: OpeningState.AcceptingApplications,
@@ -204,7 +207,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     id: 1,
     meta: {
       id: '1',
-      group: 'group-name'
+      group: WorkingGroups.ContentCurators
     },
     stage: {
       state: OpeningState.InReview,
@@ -226,7 +229,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     id: 1,
     meta: {
       id: '1',
-      group: 'group-name'
+      group: WorkingGroups.ContentCurators
     },
     stage: {
       state: OpeningState.InReview,
@@ -248,7 +251,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     id: 1,
     meta: {
       id: '1',
-      group: 'group-name'
+      group: WorkingGroups.ContentCurators
     },
     stage: {
       state: OpeningState.Complete,
@@ -268,7 +271,7 @@ const permutations: (ApplicationProps & TestProps)[] = [
     id: 1,
     meta: {
       id: '1',
-      group: 'group-name'
+      group: WorkingGroups.ContentCurators
     },
     stage: {
       state: OpeningState.Cancelled,
