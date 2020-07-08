@@ -1,6 +1,6 @@
-import { FTSQuery } from './FTSQuery';
-import { Field } from './Field';
 import { GraphQLEnumType } from 'graphql';
+
+import { ObjectType, Field, FTSQuery } from '.';
 
 export class WarthogModel {
   private _types: ObjectType[];
@@ -149,17 +149,4 @@ export class WarthogModel {
     }
     return this._name2type[name];
   }
-}
-
-/**
- * Reperesent GraphQL object type
- */
-export interface ObjectType {
-  name: string;
-  fields: Field[];
-  isEntity: boolean;
-  // Description of the field will be shown in GrapqQL API
-  description?: string;
-  isInterface?: boolean;
-  interfaces?: ObjectType[]; //interface names
 }

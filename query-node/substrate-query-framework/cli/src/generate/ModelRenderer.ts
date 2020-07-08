@@ -1,3 +1,4 @@
+import * as path from 'path';
 import { ObjectType, WarthogModel } from '../model';
 import Debug from 'debug';
 import { GeneratorContext } from './SourcesGenerator';
@@ -95,6 +96,25 @@ export class ModelRenderer extends AbstractRenderer {
     };
   }
 
+  withImportProps(): GeneratorContext {
+    const relatedEntityImports: Set<string> = new Set();
+
+    this.objType.fields
+      .filter(f => f.relation)
+      .forEach(f =>
+        relatedEntityImports.add(
+          path.join(
+            `import { ${f.relation?.columnType} } from  '..`,
+            utils.kebabCase(f.relation?.columnType),
+            `${utils.kebabCase(f.relation?.columnType)}.model'`
+          )
+        )
+      );
+    return {
+      relatedEntityImports: Array.from(relatedEntityImports.values()),
+    };
+  }
+
   transform(): GeneratorContext {
     return {
       ...this.context, //this.getGeneratedFolderRelativePath(objType.name),
@@ -105,6 +125,7 @@ export class ModelRenderer extends AbstractRenderer {
       ...this.withHasProps(),
       ...this.withSubclasses(),
       ...this.withDescription(),
+      ...this.withImportProps(),
       ...utils.withNames(this.objType.name),
     };
   }

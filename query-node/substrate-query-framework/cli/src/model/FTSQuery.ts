@@ -1,5 +1,4 @@
-import { ObjectType } from './WarthogModel';
-import { Field } from './Field';
+import { ObjectType, Field } from '.';
 
 /**
  * FTSQueryClause represents a single entity/field which
