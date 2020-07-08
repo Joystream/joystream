@@ -88,6 +88,8 @@ export class ModelRenderer extends AbstractRenderer {
     }
     has['array'] = this.objType.fields.some(f => f.isArray());
     has['enum'] = this.objType.fields.some(f => f.isEnum());
+    has['union'] = this.objType.fields.some(f => f.isUnion());
+
     debug(`ObjectType has: ${JSON.stringify(has, null, 2)}`);
 
     return {
