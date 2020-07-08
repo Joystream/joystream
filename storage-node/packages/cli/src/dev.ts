@@ -123,3 +123,11 @@ module.exports = {
   roleKeyPair,
   developmentPort,
 }
+
+export {
+  init,
+  check,
+  aliceKeyPair,
+  roleKeyPair,
+  developmentPort,
+};
