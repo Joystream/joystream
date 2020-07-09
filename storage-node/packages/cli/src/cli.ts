@@ -19,14 +19,16 @@
 
 'use strict'
 
-const fs = require('fs')
-const assert = require('assert')
-const { RuntimeApi } = require('@joystream/storage-runtime-api')
-const meow = require('meow')
-const chalk = require('chalk')
-const _ = require('lodash')
-const debug = require('debug')('joystream:storage-cli')
-const dev = require('./dev')
+import axios from "axios";
+import fs from "fs"
+import assert from "assert"
+import { RuntimeApi } from "@joystream/storage-runtime-api"
+import meow from "meow"
+import chalk from "chalk"
+import _ from "lodash"
+import * as dev from "./dev"
+import Debug from "debug";
+const debug = Debug('joystream:storage-cli');
 
 // Parse CLI
 const FLAG_DEFINITIONS = {
