@@ -1490,10 +1490,7 @@ impl<T: Trait> Module<T> {
             |moderator_id: &T::ModeratorId,
              category: Category<T::CategoryId, T::ThreadId, T::Hash>| {
                 if let Some(parent_category_id) = category.parent_category_id {
-                    // Get path from parent category to root
-                    let category_tree_path = Self::build_category_tree_path(&parent_category_id);
-
-                    Self::ensure_can_moderate_category_path(moderator_id, &category_tree_path)
+                    Self::ensure_can_moderate_category_path(moderator_id, &parent_category_id)
                         .map_err(|_| ERROR_MODERATOR_CANT_DELETE_CATEGORY)?;
 
                     return Ok(category);
@@ -1520,10 +1517,7 @@ impl<T: Trait> Module<T> {
         // Ensure moderator account registered before
         Self::ensure_is_moderator_account(account_id, moderator_id)?;
 
-        // Get path from category to root
-        let category_tree_path = Self::build_category_tree_path(category_id);
-
-        Self::ensure_can_moderate_category_path(moderator_id, &category_tree_path)?;
+        Self::ensure_can_moderate_category_path(moderator_id, category_id)?;
 
         Ok(())
     }
@@ -1531,8 +1525,11 @@ impl<T: Trait> Module<T> {
     // check that moderator is allowed to manipulate category in hierarchy
     fn ensure_can_moderate_category_path(
         moderator_id: &T::ModeratorId,
-        category_tree_path: &CategoryTreePathArg<T::CategoryId, T::ThreadId, T::Hash>,
+        category_id: &T::CategoryId,
     ) -> Result<(), &'static str> {
+        // Get path from category to root
+        let category_tree_path = Self::build_category_tree_path(category_id);
+
         for item in category_tree_path {
             if <CategoryByModerator<T>>::exists(item.id, moderator_id) {
                 return Ok(());
