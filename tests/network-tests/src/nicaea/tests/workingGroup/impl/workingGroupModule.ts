@@ -23,7 +23,7 @@ export async function addWorkerOpening(
   expectFailure: boolean
 ): Promise<BN> {
   // Worker opening construction
-  let opening = new WorkingGroupOpening();
+  const opening = new WorkingGroupOpening();
   const activateAtBlock: BN | undefined = activationDelay.eqn(0)
     ? undefined
     : (await apiWrapper.getBestBlock()).add(activationDelay);
@@ -75,7 +75,7 @@ export async function addLeaderOpening(
   const activateAtBlock: BN | undefined = activationDelay.eqn(0)
     ? undefined
     : (await apiWrapper.getBestBlock()).add(activationDelay);
-  let opening = new WorkingGroupOpening();
+  const opening = new WorkingGroupOpening();
   opening.setActivateAtBlock(activateAtBlock);
   opening.setMaxActiveApplicants(new BN(membersKeyPairs.length));
   opening.setMaxReviewPeriodLength(new BN(32));

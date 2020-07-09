@@ -182,10 +182,12 @@ export class WorkingGroupOpening {
     this.openingType = value;
   }
 
-  constructor() {}
+  constructor() {
+    return;
+  }
 
   public getActivateAt() {
-    return this.activateAtBlock == undefined ? 'CurrentBlock' : { ExactBlock: this.activateAtBlock };
+    return this.activateAtBlock === undefined ? 'CurrentBlock' : { ExactBlock: this.activateAtBlock };
   }
 
   public getCommitment() {

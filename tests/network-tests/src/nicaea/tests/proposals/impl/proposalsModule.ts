@@ -23,7 +23,7 @@ export async function createWorkingGroupLeaderOpening(
   await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake));
 
   // Opening construction
-  let opening = new WorkingGroupOpening();
+  const opening = new WorkingGroupOpening();
   opening.setMaxActiveApplicants(new BN(m1KeyPairs.length));
   opening.setMaxReviewPeriodLength(new BN(32));
   opening.setApplicationStakingPolicyAmount(new BN(applicationStake));
@@ -113,7 +113,7 @@ export async function fillLeaderOpeningProposal(
     await apiWrapper.getActiveApplicationsIdsByRoleAccount(applicantRoleAccountAddress, workingGroup)
   )[0];
   const now = await apiWrapper.getBestBlock();
-  let fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters();
+  const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters();
   fillOpeningParameters.setAmountPerPayout(payoutAmount);
   fillOpeningParameters.setNextPaymentAtBlock(now.add(firstRewardInterval));
   fillOpeningParameters.setPayoutInterval(rewardInterval);

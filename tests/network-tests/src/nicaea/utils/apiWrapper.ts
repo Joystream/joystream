@@ -379,7 +379,7 @@ export class ApiWrapper {
   }
 
   public estimateProposeFillLeaderOpening(): BN {
-    let fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters();
+    const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters();
     fillOpeningParameters.setAmountPerPayout(new BN(1));
     fillOpeningParameters.setNextPaymentAtBlock(new BN(99999));
     fillOpeningParameters.setPayoutInterval(new BN(99999));
@@ -977,8 +977,8 @@ export class ApiWrapper {
         proposalStake,
         {
           worker_id: leadWorkerId,
-          rationale: rationale,
-          slash: slash,
+          rationale,
+          slash,
           working_group: workingGroup,
         }
       ),
@@ -1319,7 +1319,7 @@ export class ApiWrapper {
   }
 
   public async getWorkerStakeAmount(workerId: BN, module: WorkingGroups): Promise<BN> {
-    let stakeId: BN = (await this.getWorkerById(workerId, module)).role_stake_profile.unwrap().stake_id;
+    const stakeId: BN = (await this.getWorkerById(workerId, module)).role_stake_profile.unwrap().stake_id;
     return (((await this.getStake(stakeId)).staking_status.value as unknown) as StakedState).staked_amount;
   }
 
@@ -1330,7 +1330,7 @@ export class ApiWrapper {
   }
 
   public async getWorkerRewardAccount(workerId: BN, module: WorkingGroups): Promise<string> {
-    let rewardRelationshipId: BN = (await this.getWorkerById(workerId, module)).reward_relationship.unwrap();
+    const rewardRelationshipId: BN = (await this.getWorkerById(workerId, module)).reward_relationship.unwrap();
     return (await this.getRewardRelationship(rewardRelationshipId)).getField('account').toString();
   }
 

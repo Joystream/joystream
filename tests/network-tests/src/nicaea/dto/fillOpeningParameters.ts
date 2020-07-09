@@ -56,7 +56,9 @@ export class FillOpeningParameters {
     this.workingGroup = value;
   }
 
-  constructor() {}
+  constructor() {
+    return;
+  }
 
   public getRewardPolicy() {
     return {
