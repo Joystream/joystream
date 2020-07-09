@@ -392,14 +392,6 @@ const ERROR_DATA_MIGRATION_NOT_DONE: &str = "data migration not done yet.";
 
 use system::ensure_signed;
 
-/// Represents a revision of the text of a Post
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct PostTextChange<Hash> {
-    /// Text that expired
-    pub text_hash: Hash,
-}
-
 /// Represents all poll alternatives and vote count for each one
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -539,20 +531,8 @@ decl_storage! {
         /// Each account 's reaction to a post.
         pub ReactionByPost get(reaction_by_post) config(): double_map T::PostId, blake2_256(T::ForumUserId) => T::PostReactionId;
 
-        /// Input constraints for description text of each item in poll.
-        pub PollDescConstraint get(poll_desc_constraint) config(): InputValidationLengthConstraint;
-
         /// Input constraints for number of items in poll.
         pub PollItemsConstraint get(poll_items_constraint) config(): InputValidationLengthConstraint;
-
-        /// Input constraints for user name.
-        pub UserNameConstraint get(user_name_constraint) config(): InputValidationLengthConstraint;
-
-        /// Input constraints for user introduction.
-        pub UserSelfIntroductionConstraint get(user_self_introduction_constraint) config(): InputValidationLengthConstraint;
-
-        /// Input constraints for post footer.
-        pub PostFooterConstraint get(post_footer_constraint) config(): InputValidationLengthConstraint;
 
         /// If data migration is done, set as configible for unit test purpose
         pub DataMigrationDone get(data_migration_done) config(): bool;

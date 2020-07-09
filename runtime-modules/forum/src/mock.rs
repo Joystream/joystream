@@ -671,25 +671,9 @@ pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime
         category_by_moderator: vec![],
         reaction_by_post: vec![],
 
-        poll_desc_constraint: InputValidationLengthConstraint {
-            min: 10,
-            max_min_diff: 200,
-        },
         poll_items_constraint: InputValidationLengthConstraint {
             min: 4,
             max_min_diff: 20,
-        },
-        user_name_constraint: InputValidationLengthConstraint {
-            min: 6,
-            max_min_diff: 20,
-        },
-        user_self_introduction_constraint: InputValidationLengthConstraint {
-            min: 10,
-            max_min_diff: 200,
-        },
-        post_footer_constraint: InputValidationLengthConstraint {
-            min: 10,
-            max_min_diff: 140,
         },
 
         // data migration part
