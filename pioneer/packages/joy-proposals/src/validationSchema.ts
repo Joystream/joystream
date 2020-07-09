@@ -337,7 +337,7 @@ const Validation: ValidationType = {
   }),
   BeginReviewWorkingGroupLeaderApplication: () => ({
     workingGroup: Yup.string(),
-    openingId: Yup.number()
+    openingId: Yup.number().required('Select an opening!')
   })
 };
 

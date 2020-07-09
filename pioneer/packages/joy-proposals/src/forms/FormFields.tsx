@@ -1,5 +1,5 @@
 import React from 'react';
-import { Form, FormInputProps, FormTextAreaProps } from 'semantic-ui-react';
+import { Form, FormInputProps, FormTextAreaProps, Label, LabelProps } from 'semantic-ui-react';
 import LabelWithHelp from './LabelWithHelp';
 
 /*
@@ -10,9 +10,10 @@ import LabelWithHelp from './LabelWithHelp';
  * and to easily switch the structure/display of a typical form field.
 */
 
-type InputFormFieldProps = FormInputProps & {
+type InputFormFieldProps = Omit<FormInputProps, 'error'> & {
   help?: string;
   unit?: string;
+  error?: LabelProps;
 };
 
 export function InputFormField (props: InputFormFieldProps) {
@@ -30,8 +31,9 @@ export function InputFormField (props: InputFormFieldProps) {
   );
 }
 
-type TextareaFormFieldProps = FormTextAreaProps & {
+type TextareaFormFieldProps = Omit<FormTextAreaProps, 'error'> & {
   help?: string;
+  error?: LabelProps;
 };
 
 export function TextareaFormField (props: TextareaFormFieldProps) {
@@ -43,17 +45,21 @@ export function TextareaFormField (props: TextareaFormFieldProps) {
   );
 }
 
-type FormFieldProps = InputFormFieldProps | TextareaFormFieldProps;
+type FormFieldProps = Omit<(InputFormFieldProps | TextareaFormFieldProps), 'error'> & {
+  error?: LabelProps;
+  showErrorMsg?: boolean;
+};
 
 export function FormField (props: React.PropsWithChildren<FormFieldProps>) {
-  const { error, label, help, children } = props;
+  const { error, showErrorMsg = false, label, help, children } = props;
   return (
-    <Form.Field error={Boolean(error)}>
+    <Form.Field error={!!error}>
       { (label && help)
         ? <LabelWithHelp text={ label.toString() } help={ help }/>
         : (label ? <label>{ label.toString() }</label> : null)
       }
       { children }
+      { Boolean(showErrorMsg && error) && <Label {...error} prompt/> }
     </Form.Field>
   );
 }

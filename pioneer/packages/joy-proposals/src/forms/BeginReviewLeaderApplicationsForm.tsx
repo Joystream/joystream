@@ -21,6 +21,7 @@ import Validation from '../validationSchema';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
 import { OpeningData } from '@polkadot/joy-utils/types/workingGroups';
 import { PromiseComponent } from '@polkadot/joy-utils/react/components';
+import { getFormErrorLabelsProps } from './errorHandling';
 
 export type FormValues = WGFormValues & {
   openingId: string;
@@ -37,7 +38,8 @@ type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
 const BeginReviewLeadeApplicationsForm: React.FunctionComponent<FormInnerProps> = props => {
-  const { handleChange, values, myMemberId } = props;
+  const { handleChange, values, myMemberId, errors, touched } = props;
+  const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const transport = useTransport();
   const [allOpenings, openingsError, openingsLoading] = usePromise(
     () => transport.workingGroups.allOpenings(values.workingGroup),
@@ -75,7 +77,9 @@ const BeginReviewLeadeApplicationsForm: React.FunctionComponent<FormInnerProps> 
     >
       <PromiseComponent error={openingsError} loading={openingsLoading} message="Fetching openings...">
         <FormField
-          label="Working Group Opening">
+          label="Working Group Opening"
+          error={errorLabelsProps.openingId}
+          showErrorMsg>
           <Dropdown
             onChange={handleChange}
             name={'openingId'}

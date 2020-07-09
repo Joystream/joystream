@@ -168,13 +168,15 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
       'Human readable text': <ParsedHRT>{ HRT }</ParsedHRT>
     };
   },
-  SetWorkingGroupMintCapacity: ([capacity]) => {
+  SetWorkingGroupMintCapacity: ([capacity, group]) => {
     return {
+      'Working group': (new WorkingGroup(group)).type,
       'Mint capacity': formatBalance(capacity)
     };
   },
   BeginReviewWorkingGroupLeaderApplication: ([id, group]) => {
     return {
+      'Working group': (new WorkingGroup(group)).type,
       // TODO: Adjust the links to work with multiple groups after working-groups are normalized!
       'Opening id': <Link to={`/working-groups/opportunities/storageProviders/${id}`}>#{id}</Link>
     };
