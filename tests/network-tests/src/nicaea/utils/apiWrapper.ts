@@ -5,14 +5,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { UserInfo, PaidMembershipTerms, MemberId } from '@nicaea/types/members';
 import { Mint, MintId } from '@nicaea/types/mint';
 import { Lead, LeadId } from '@nicaea/types/content-working-group';
-import {
-  Application,
-  WorkerId,
-  Worker,
-  ApplicationIdToWorkerIdMap,
-  Opening,
-  RewardPolicy,
-} from '@nicaea/types/working-group';
+import { Application, WorkerId, Worker, ApplicationIdToWorkerIdMap, Opening } from '@nicaea/types/working-group';
 import { Application as HiringApplication } from '@nicaea/types/hiring';
 import { RoleParameters } from '@nicaea/types/roles';
 import { Seat } from '@nicaea/types/lib/council';
@@ -47,6 +40,15 @@ export class ApiWrapper {
 
   public close() {
     this.api.disconnect();
+  }
+
+  public getWorkingGroupString(workingGroup: WorkingGroups): string {
+    switch (workingGroup) {
+      case WorkingGroups.storageWorkingGroup:
+        return 'Storage';
+      default:
+        return 'Undefined';
+    }
   }
 
   public async buyMembership(
@@ -392,6 +394,23 @@ export class ApiWrapper {
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         0,
         fillOpeningParameters.getFillOpeningParameters()
+      )
+    );
+  }
+
+  public estimateProposeTerminateLeaderRole(): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createTerminateWorkingGroupLeaderRoleProposal(
+        0,
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        0,
+        {
+          worker_id: 0,
+          rationale: 'Exceptionaly long and extraordinary descriptive rationale',
+          slash: true,
+          working_group: 'Storage',
+        }
       )
     );
   }
@@ -803,6 +822,18 @@ export class ApiWrapper {
     });
   }
 
+  public expectLeaderUnset(): Promise<void> {
+    return new Promise(async resolve => {
+      await this.api.query.system.events<Vec<EventRecord>>(events => {
+        events.forEach(record => {
+          if (record.event.method && record.event.method.toString() === 'LeaderUnset') {
+            resolve();
+          }
+        });
+      });
+    });
+  }
+
   public expectApplicationReviewBegan(): Promise<BN> {
     return new Promise(async resolve => {
       await this.api.query.system.events<Vec<EventRecord>>(events => {
@@ -921,6 +952,35 @@ export class ApiWrapper {
         description,
         proposalStake,
         fillOpeningParameters.getFillOpeningParameters()
+      ),
+      account,
+      false
+    );
+  }
+
+  public async proposeTerminateLeaderRole(
+    account: KeyringPair,
+    title: string,
+    description: string,
+    proposalStake: BN,
+    leadWorkerId: BN,
+    rationale: string,
+    slash: boolean,
+    workingGroup: string
+  ): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0];
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createTerminateWorkingGroupLeaderRoleProposal(
+        memberId,
+        title,
+        description,
+        proposalStake,
+        {
+          worker_id: leadWorkerId,
+          rationale: rationale,
+          slash: slash,
+          working_group: workingGroup,
+        }
       ),
       account,
       false
@@ -1272,5 +1332,9 @@ export class ApiWrapper {
   public async getWorkerRewardAccount(workerId: BN, module: WorkingGroups): Promise<string> {
     let rewardRelationshipId: BN = (await this.getWorkerById(workerId, module)).reward_relationship.unwrap();
     return (await this.getRewardRelationship(rewardRelationshipId)).getField('account').toString();
+  }
+
+  public async getLeadWorkerId(module: WorkingGroups): Promise<BN | undefined> {
+    return (await this.api.query[module].currentLead<Option<WorkerId>>()).unwrapOr(undefined);
   }
 }

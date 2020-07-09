@@ -527,3 +527,10 @@ export async function expectLeaderSet(
 export async function expectBeganApplicationReview(apiWrapper: ApiWrapper): Promise<BN> {
   return apiWrapper.expectApplicationReviewBegan();
 }
+
+export async function expectLeaderRoleTerminated(apiWrapper: ApiWrapper, module: WorkingGroups): Promise<void> {
+  await apiWrapper.expectLeaderUnset();
+  const leadWorkerId: BN | undefined = await apiWrapper.getLeadWorkerId(module);
+  assert(leadWorkerId === undefined, `Unexpected lead worker id: ${leadWorkerId}, expected none`);
+  return;
+}

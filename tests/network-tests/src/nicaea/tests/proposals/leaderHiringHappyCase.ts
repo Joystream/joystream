@@ -14,12 +14,14 @@ import {
   voteForProposal,
   beginWorkingGroupLeaderApplicationReview,
   fillLeaderOpeningProposal,
+  terminateLeaderRoleProposal,
 } from './impl/proposalsModule';
 import {
   applyForOpening,
   expectLeadOpeningAdded,
   expectLeaderSet,
   expectBeganApplicationReview,
+  expectLeaderRoleTerminated,
 } from '../workingGroup/impl/workingGroupModule';
 
 tap.mocha.describe('Set lead proposal scenario', async () => {
@@ -58,7 +60,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
   let createOpeningProposalId: BN;
   let openingId: BN;
   tap.test(
-    'Create leader opening',
+    'Propose create leader opening',
     async () =>
       (createOpeningProposalId = await createWorkingGroupLeaderOpening(
         apiWrapper,
@@ -73,6 +75,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
     voteForProposal(apiWrapper, m2KeyPairs, sudo, createOpeningProposalId);
     openingId = await expectLeadOpeningAdded(apiWrapper);
   });
+
   tap.test(
     'Apply for lead opening',
     async () =>
@@ -89,7 +92,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
   );
   let beginReviewProposalId: BN;
   tap.test(
-    'Begin leader application review',
+    'Propose begin leader application review',
     async () =>
       (beginReviewProposalId = await beginWorkingGroupLeaderApplicationReview(
         apiWrapper,
@@ -103,9 +106,10 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
     voteForProposal(apiWrapper, m2KeyPairs, sudo, beginReviewProposalId);
     expectBeganApplicationReview(apiWrapper);
   });
+
   let fillLeaderOpeningProposalId: BN;
   tap.test(
-    'Fill leader opening',
+    'Propose fill leader opening',
     async () =>
       (fillLeaderOpeningProposalId = await fillLeaderOpeningProposal(
         apiWrapper,
@@ -116,12 +120,30 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
         rewardInterval,
         payoutAmount,
         new BN(openingId),
-        'Storage'
+        WorkingGroups.storageWorkingGroup
       ))
   );
   tap.test('Approve fill leader opening', async () => {
     voteForProposal(apiWrapper, m2KeyPairs, sudo, fillLeaderOpeningProposalId);
     await expectLeaderSet(apiWrapper, leadKeyPair[0].address, WorkingGroups.storageWorkingGroup);
+  });
+
+  let terminateLeaderRoleProposalId: BN;
+  tap.test(
+    'Propose terminate leader role',
+    async () =>
+      (terminateLeaderRoleProposalId = await terminateLeaderRoleProposal(
+        apiWrapper,
+        m1KeyPairs,
+        leadKeyPair[0].address,
+        sudo,
+        false,
+        WorkingGroups.storageWorkingGroup
+      ))
+  );
+  tap.test('Approve leader role termination', async () => {
+    voteForProposal(apiWrapper, m2KeyPairs, sudo, terminateLeaderRoleProposalId);
+    await expectLeaderRoleTerminated(apiWrapper, WorkingGroups.storageWorkingGroup);
   });
 
   closeApi(apiWrapper);

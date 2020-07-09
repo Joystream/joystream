@@ -96,12 +96,12 @@ export async function fillLeaderOpeningProposal(
   rewardInterval: BN,
   payoutAmount: BN,
   openingId: BN,
-  workingGroup: string
+  workingGroup: WorkingGroups
 ): Promise<BN> {
   // Setup
-  console.log('lead address: ' + applicantRoleAccountAddress);
   const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8);
   const description: string = 'Testing fill opening proposal ' + uuid().substring(0, 8);
+  const workingGroupString: string = apiWrapper.getWorkingGroupString(workingGroup);
 
   // Proposal stake calculation
   const proposalStake: BN = new BN(50000);
@@ -110,10 +110,7 @@ export async function fillLeaderOpeningProposal(
 
   // Proposal creation
   const applicationId: BN = (
-    await apiWrapper.getActiveApplicationsIdsByRoleAccount(
-      applicantRoleAccountAddress,
-      WorkingGroups.storageWorkingGroup
-    )
+    await apiWrapper.getActiveApplicationsIdsByRoleAccount(applicantRoleAccountAddress, workingGroup)
   )[0];
   const now = await apiWrapper.getBestBlock();
   let fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters();
@@ -122,7 +119,7 @@ export async function fillLeaderOpeningProposal(
   fillOpeningParameters.setPayoutInterval(rewardInterval);
   fillOpeningParameters.setOpeningId(openingId);
   fillOpeningParameters.setSuccessfulApplicationId(applicationId);
-  fillOpeningParameters.setWorkingGroup(workingGroup);
+  fillOpeningParameters.setWorkingGroup(workingGroupString);
 
   const proposalPromise = apiWrapper.expectProposalCreated();
   await apiWrapper.proposeFillLeaderOpening(
@@ -136,12 +133,48 @@ export async function fillLeaderOpeningProposal(
   return proposalNumber;
 }
 
+export async function terminateLeaderRoleProposal(
+  apiWrapper: ApiWrapper,
+  m1KeyPairs: KeyringPair[],
+  leaderRoleAccountAddress: string,
+  sudo: KeyringPair,
+  slash: boolean,
+  workingGroup: WorkingGroups
+) {
+  // Setup
+  const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8);
+  const description: string = 'Testing begin working group lead application review proposal ' + uuid().substring(0, 8);
+  const rationale: string = 'Testing leader termination ' + uuid().substring(0, 8);
+  const workingGroupString: string = apiWrapper.getWorkingGroupString(workingGroup);
+  const workerId: BN = await apiWrapper.getWorkerIdByRoleAccount(leaderRoleAccountAddress, workingGroup);
+
+  // Proposal stake calculation
+  const proposalStake: BN = new BN(100000);
+  const proposalFee: BN = apiWrapper.estimateProposeTerminateLeaderRole();
+  await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake));
+
+  // Proposal creation
+  const proposalPromise = apiWrapper.expectProposalCreated();
+  await apiWrapper.proposeTerminateLeaderRole(
+    m1KeyPairs[0],
+    proposalTitle,
+    description,
+    proposalStake,
+    workerId,
+    rationale,
+    slash,
+    workingGroupString
+  );
+  const proposalNumber: BN = await proposalPromise;
+  return proposalNumber;
+}
+
 export async function voteForProposal(
   apiWrapper: ApiWrapper,
   m2KeyPairs: KeyringPair[],
   sudo: KeyringPair,
   proposalNumber: BN
-) {
+): Promise<void> {
   const proposalVoteFee: BN = apiWrapper.estimateVoteForProposalFee();
   await apiWrapper.transferBalanceToAccounts(sudo, m2KeyPairs, proposalVoteFee);
 
