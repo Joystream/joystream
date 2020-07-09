@@ -21,6 +21,7 @@
 
 import axios from "axios";
 import fs from "fs"
+import path from "path"
 import assert from "assert"
 import { RuntimeApi } from "@joystream/storage-runtime-api"
 import meow from "meow"
@@ -77,6 +78,25 @@ function loadIdentity(api, filename, passphrase) {
 
 function validateHeadParameters(url: string, contentId: string) : boolean {
   return url && url !== "" && contentId && contentId !=="";
+}
+
+function validateDownloadParameters(url: string, contentId: string, filePath: string) : boolean {
+  return url && url !== "" && contentId && contentId !=="" && filePath && filePath !== "";
+}
+
+function createAndLogAssetUrl(url: string, contentId: string) : string {
+  const assetUrl = `${url}/asset/v0/${contentId}`;
+  console.log(chalk.yellow('Asset URL:', assetUrl));
+
+  return assetUrl;
+}
+
+function showDownloadUsage() {
+  console.log(chalk.yellow(`
+        Invalid parameters for 'download' command.
+        Usage:   storage-cli download colossusURL contentID filePath
+        Example: storage-cli download http://localhost:3001 0x7a6ba7e9157e5fba190dc146fe1baa8180e29728a5c76779ed99655500cff795 ./movie.mp4
+      `));
 }
 
 function showHeadUsage() {
@@ -165,46 +185,38 @@ const commands = {
   // needs to be updated to take a content id and resolve it a potential set
   // of providers that has it, and select one (possibly try more than one provider)
   // to fetch it from the get api url of a provider..
-  download: async (api, url, contentId, filename) => {
-    // const request = require('request')
-    // url = `${url}asset/v0/${contentId}`
-    // debug('Downloading URL', chalk.green(url), 'to', chalk.green(filename))
-    //
-    // const f = fs.createWriteStream(filename)
-    // const opts = {
-    //   url,
-    //   json: true,
-    // }
-    // return new Promise((resolve, reject) => {
-    //   const r = request.get(opts, (error, response, body) => {
-    //     if (error) {
-    //       reject(error)
-    //       return
-    //     }
-    //
-    //     debug(
-    //       'Downloading',
-    //       chalk.green(response.headers['content-type']),
-    //       'of size',
-    //       chalk.green(response.headers['content-length']),
-    //       '...'
-    //     )
-    //
-    //     f.on('error', err => {
-    //       reject(err)
-    //     })
-    //
-    //     f.on('finish', () => {
-    //       if (response.statusCode / 100 !== 2) {
-    //         reject(new Error(`${response.statusCode}: ${body.message || 'unknown reason'}`))
-    //         return
-    //       }
-    //       debug('Download completed.')
-    //       resolve()
-    //     })
-    //   })
-    //   r.pipe(f)
-    // })
+  download: async (api, url, contentId, filePath) => {
+    if (!validateDownloadParameters(url, contentId, filePath)){
+      return showDownloadUsage();
+    }
+    const assetUrl = createAndLogAssetUrl(url, contentId);
+    console.log(chalk.yellow('File path:', filePath));
+
+    const writer = fs.createWriteStream(filePath);
+    writer.on('error', (err) => {
+      const message = `File write failed: ${err}`;
+      console.log(chalk.red(message));
+      process.exit(1);
+    });
+
+    try {
+      const response = await axios({
+        url: assetUrl,
+        method: 'GET',
+        responseType: 'stream'
+      });
+
+      response.data.pipe(writer);
+
+      return new Promise((resolve) => {
+        writer.on('finish', () => {
+          console.log("File downloaded.")
+          resolve();
+        });
+      });
+    } catch (err) {
+      console.log(chalk.red(`Colossus request failed: ${err.message}`));
+    }
   },
   // Shows asset information derived from request headers.
   // Accepts colossus URL and content ID.
@@ -212,9 +224,7 @@ const commands = {
     if (!validateHeadParameters(url, contentId)){
       return showHeadUsage();
     }
-
-    const assetUrl = `${url}/asset/v0/${contentId}`;
-    console.log(chalk.yellow('Asset URL:', assetUrl));
+    const assetUrl = createAndLogAssetUrl(url, contentId);
 
     try {
       const response = await axios.head(assetUrl);
