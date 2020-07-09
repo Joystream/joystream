@@ -218,7 +218,7 @@ pub fn create_category_mock(
     parent: Option<<Runtime as Trait>::CategoryId>,
     title: Vec<u8>,
     description: Vec<u8>,
-    result: Result<(), &'static str>,
+    result: Result<(), Error>,
 ) -> <Runtime as Trait>::CategoryId {
     let category_id = TestForumModule::next_category_id();
     assert_eq!(
@@ -249,7 +249,7 @@ pub fn create_thread_mock(
     poll_data: Option<
         Poll<<Runtime as timestamp::Trait>::Moment, <Runtime as system::Trait>::Hash>,
     >,
-    result: Result<(), &'static str>,
+    result: Result<(), Error>,
 ) -> <Runtime as Trait>::ThreadId {
     let thread_id = TestForumModule::next_thread_id();
     assert_eq!(
@@ -279,7 +279,7 @@ pub fn edit_thread_title_mock(
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::PostId,
     new_title: Vec<u8>,
-    result: Result<(), &'static str>,
+    result: Result<(), Error>,
 ) -> <Runtime as Trait>::PostId {
     assert_eq!(
         TestForumModule::edit_thread_title(
@@ -309,7 +309,7 @@ pub fn delete_thread_mock(
     moderator_id: <Runtime as Trait>::ModeratorId,
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::PostId,
-    result: Result<(), &'static str>,
+    result: Result<(), Error>,
 ) {
     assert_eq!(
         TestForumModule::delete_thread(
@@ -335,7 +335,7 @@ pub fn move_thread_mock(
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::PostId,
     new_category_id: <Runtime as Trait>::CategoryId,
-    result: Result<(), &'static str>,
+    result: Result<(), Error>,
 ) {
     assert_eq!(
         TestForumModule::move_thread_to_category(
@@ -362,7 +362,7 @@ pub fn update_thread_archival_status_mock(
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     new_archival_status: bool,
-    result: Result<(), &'static str>,
+    result: Result<(), Error>,
 ) {
     assert_eq!(
         TestForumModule::update_thread_archival_status(
@@ -388,7 +388,7 @@ pub fn create_post_mock(
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     text: Vec<u8>,
-    result: Result<(), &'static str>,
+    result: Result<(), Error>,
 ) -> <Runtime as Trait>::PostId {
     let post_id = TestForumModule::next_post_id();
     assert_eq!(
@@ -418,7 +418,7 @@ pub fn edit_post_text_mock(
     thread_id: <Runtime as Trait>::ThreadId,
     post_id: <Runtime as Trait>::PostId,
     new_text: Vec<u8>,
-    result: Result<(), &'static str>,
+    result: Result<(), Error>,
 ) -> <Runtime as Trait>::PostId {
     assert_eq!(
         TestForumModule::edit_post_text(
@@ -453,7 +453,7 @@ pub fn update_category_membership_of_moderator_mock(
     moderator_id: <Runtime as Trait>::ModeratorId,
     category_id: <Runtime as Trait>::CategoryId,
     new_value: bool,
-    result: Result<(), &'static str>,
+    result: Result<(), Error>,
 ) -> <Runtime as Trait>::CategoryId {
     assert_eq!(
         TestForumModule::update_category_membership_of_moderator(
@@ -479,7 +479,7 @@ pub fn vote_on_poll_mock(
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     index: u32,
-    result: Result<(), &'static str>,
+    result: Result<(), Error>,
 ) -> <Runtime as Trait>::ThreadId {
     let thread = TestForumModule::thread_by_id(category_id, thread_id);
     assert_eq!(
@@ -514,7 +514,7 @@ pub fn update_category_archival_status_mock(
     actor: PrivilegedActor<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     new_archival_status: bool,
-    result: Result<(), &'static str>,
+    result: Result<(), Error>,
 ) {
     assert_eq!(
         TestForumModule::update_category_archival_status(
@@ -537,7 +537,7 @@ pub fn delete_category_mock(
     origin: OriginType,
     moderator_id: PrivilegedActor<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
-    result: Result<(), &'static str>,
+    result: Result<(), Error>,
 ) -> () {
     assert_eq!(
         TestForumModule::delete_category(mock_origin(origin), moderator_id, category_id),
@@ -558,7 +558,7 @@ pub fn moderate_thread_mock(
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     rationale: Vec<u8>,
-    result: Result<(), &'static str>,
+    result: Result<(), Error>,
 ) -> <Runtime as Trait>::ThreadId {
     assert_eq!(
         TestForumModule::moderate_thread(
@@ -589,7 +589,7 @@ pub fn moderate_post_mock(
     thread_id: <Runtime as Trait>::ThreadId,
     post_id: <Runtime as Trait>::PostId,
     rationale: Vec<u8>,
-    result: Result<(), &'static str>,
+    result: Result<(), Error>,
 ) -> <Runtime as Trait>::PostId {
     assert_eq!(
         TestForumModule::moderate_post(
@@ -620,7 +620,7 @@ pub fn set_stickied_threads_mock(
     moderator_id: <Runtime as Trait>::ModeratorId,
     category_id: <Runtime as Trait>::CategoryId,
     stickied_ids: Vec<<Runtime as Trait>::ThreadId>,
-    result: Result<(), &'static str>,
+    result: Result<(), Error>,
 ) -> <Runtime as Trait>::CategoryId {
     assert_eq!(
         TestForumModule::set_stickied_threads(
