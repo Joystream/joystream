@@ -52,9 +52,9 @@ const BeginReviewLeadeApplicationsForm: React.FunctionComponent<FormInnerProps> 
     )
     // Map to options
     .map(od => {
-      const hrt = od.hiringOpening.parse_human_readable_text(); // TODO: With fallback!
+      const hrt = od.hiringOpening.parse_human_readable_text_with_fallback();
       return {
-        text: od.id.toString() + ': ' + (typeof hrt === 'object' ? hrt.headline + ` (${hrt.job.title})` : 'Unkown'),
+        text: `${od.id.toString()}: ${hrt.headline} (${hrt.job.title})`,
         value: od.id.toString()
       };
     });
