@@ -3,10 +3,12 @@ import BaseTransport from './base';
 import { ApiPromise } from '@polkadot/api';
 import MembersTransport from './members';
 import { SingleLinkedMapEntry } from '../index';
-import { Worker, WorkerId } from '@joystream/types/working-group';
+import { Worker, WorkerId, Opening as WGOpening } from '@joystream/types/working-group';
 import { apiModuleByGroup } from '../consts/workingGroups';
 import { WorkingGroupKeys } from '@joystream/types/common';
-import { LeadWithProfile } from '../types/workingGroups';
+import { LeadWithProfile, OpeningData } from '../types/workingGroups';
+import { OpeningId, Opening } from '@joystream/types/hiring';
+import { MultipleLinkedMapEntry } from '../LinkedMapEntry';
 
 export default class WorkingGroupsTransport extends BaseTransport {
   private membersT: MembersTransport;
@@ -43,5 +45,26 @@ export default class WorkingGroupsTransport extends BaseTransport {
       worker: leadWorker,
       profile: await this.membersT.expectedMemberProfile(leadWorker.member_id)
     };
+  }
+
+  public async allOpenings (group: WorkingGroupKeys): Promise<OpeningData[]> {
+    const nextId = (await this.queryByGroup(group).nextOpeningId()) as OpeningId;
+
+    if (nextId.eq(0)) {
+      return [];
+    }
+
+    const query = this.queryByGroup(group).openingById();
+    const result = new MultipleLinkedMapEntry(OpeningId, WGOpening, await query);
+
+    const openingsData: OpeningData[] = [];
+    for (const [index, opening] of Object.entries(result.linked_values.toArray())) {
+      const id = result.linked_keys[parseInt(index)];
+      const hiringId = opening.hiring_opening_id;
+      const hiringOpening = (new SingleLinkedMapEntry(Opening, await this.hiring.openingById(hiringId))).value;
+      openingsData.push({ id, opening, hiringOpening });
+    }
+
+    return openingsData;
   }
 }

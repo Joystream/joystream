@@ -101,6 +101,15 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
     approvalThreshold: 75,
     slashingQuorum: 60,
     slashingThreshold: 80
+  },
+  BeginReviewWorkingGroupLeaderApplication: {
+    description: 'Begin Working Group Leader Applications Review Proposal',
+    category: 'Working Groups',
+    stake: 25000,
+    approvalQuorum: 60,
+    approvalThreshold: 75,
+    slashingQuorum: 60,
+    slashingThreshold: 80
   }
 };
 
@@ -144,6 +153,10 @@ export const apiMethods: { [k in ProposalType]?: ProposalsApiMethodNames } = {
   SetWorkingGroupMintCapacity: {
     votingPeriod: 'setWorkingGroupMintCapacityProposalVotingPeriod',
     gracePeriod: 'setWorkingGroupMintCapacityProposalGracePeriod'
+  },
+  BeginReviewWorkingGroupLeaderApplication: {
+    votingPeriod: 'beginReviewWorkingGroupLeaderApplicationsProposalVotingPeriod',
+    gracePeriod: 'beginReviewWorkingGroupLeaderApplicationsProposalGracePeriod'
   }
 } as const;
 

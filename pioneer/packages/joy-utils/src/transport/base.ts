@@ -44,6 +44,10 @@ export default abstract class BaseTransport {
     return this.api.query.minting;
   }
 
+  protected get hiring () {
+    return this.api.query.hiring;
+  }
+
   protected queryMethodByName (name: string) {
     const [module, method] = name.split('.');
     return this.api.query[module][method];

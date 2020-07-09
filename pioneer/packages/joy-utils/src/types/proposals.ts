@@ -14,7 +14,8 @@ export const ProposalTypes = [
   'SetValidatorCount',
   'SetStorageRoleParameters',
   'AddWorkingGroupLeaderOpening',
-  'SetWorkingGroupMintCapacity'
+  'SetWorkingGroupMintCapacity',
+  'BeginReviewWorkingGroupLeaderApplication'
 ] as const;
 
 export type ProposalType = typeof ProposalTypes[number];

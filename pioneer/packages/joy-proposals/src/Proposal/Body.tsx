@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Card, Header, Button, Icon, Message } from 'semantic-ui-react';
 import { ProposalType } from '@polkadot/joy-utils/types/proposals';
 import { bytesToString } from '@polkadot/joy-utils/functions/misc';
@@ -170,6 +171,12 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
   SetWorkingGroupMintCapacity: ([capacity]) => {
     return {
       'Mint capacity': formatBalance(capacity)
+    };
+  },
+  BeginReviewWorkingGroupLeaderApplication: ([id, group]) => {
+    return {
+      // TODO: Adjust the links to work with multiple groups after working-groups are normalized!
+      'Opening id': <Link to={`/working-groups/opportunities/storageProviders/${id}`}>#{id}</Link>
     };
   }
 };

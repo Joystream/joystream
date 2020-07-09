@@ -11,6 +11,7 @@ import { FormValues as SetContentWorkingGroupMintCapacityFormValues } from './fo
 import { FormValues as SetMaxValidatorCountFormValues } from './forms/SetMaxValidatorCountForm';
 import { FormValues as AddWorkingGroupLeaderOpeningFormValues } from './forms/AddWorkingGroupOpeningForm';
 import { FormValues as SetWorkingGroupMintCapacityFormValues } from './forms/SetWorkingGroupMintCapacityForm';
+import { FormValues as BeginReviewLeaderApplicationsFormValues } from './forms/BeginReviewLeaderApplicationsForm';
 
 // TODO: If we really need this (currency unit) we can we make "Validation" a functiction that returns an object.
 // We could then "instantialize" it in "withFormContainer" where instead of passing
@@ -106,18 +107,23 @@ type ProposalTypeKeys = typeof ProposalTypes[number];
 type OutdatedProposals = 'EvictStorageProvider' | 'SetStorageRoleParameters';
 type ValidationTypeKeys = Exclude<ProposalTypeKeys, OutdatedProposals> | 'All';
 
+/* eslint-disable @typescript-eslint/indent */
+// /\ This prevents eslint from trying to make "stairs" out of those multiple conditions.
+// They are more readable when one is directly under the other (switch-case style)
 type FormValuesByType<T extends ValidationTypeKeys> =
   T extends 'All' ? GenericFormValues :
-    T extends 'Text' ? Omit<SignalFormValues, keyof GenericFormValues> :
-      T extends 'RuntimeUpgrade' ? Omit<RuntimeUpgradeFormValues, keyof GenericFormValues> :
-        T extends 'SetElectionParameters' ? Omit<SetCouncilParamsFormValues, keyof GenericFormValues> :
-          T extends 'Spending' ? Omit<SpendingProposalFormValues, keyof GenericFormValues> :
-            T extends 'SetLead' ? Omit<SetContentWorkingGroupLeadFormValues, keyof GenericFormValues> :
-              T extends 'SetContentWorkingGroupMintCapacity' ? Omit<SetContentWorkingGroupMintCapacityFormValues, keyof GenericFormValues> :
-                T extends 'SetValidatorCount' ? Omit<SetMaxValidatorCountFormValues, keyof GenericFormValues> :
-                  T extends 'AddWorkingGroupLeaderOpening' ? Omit<AddWorkingGroupLeaderOpeningFormValues, keyof GenericFormValues> :
-                    T extends 'SetWorkingGroupMintCapacity' ? Omit<SetWorkingGroupMintCapacityFormValues, keyof GenericFormValues> :
-                      never;
+  T extends 'Text' ? Omit<SignalFormValues, keyof GenericFormValues> :
+  T extends 'RuntimeUpgrade' ? Omit<RuntimeUpgradeFormValues, keyof GenericFormValues> :
+  T extends 'SetElectionParameters' ? Omit<SetCouncilParamsFormValues, keyof GenericFormValues> :
+  T extends 'Spending' ? Omit<SpendingProposalFormValues, keyof GenericFormValues> :
+  T extends 'SetLead' ? Omit<SetContentWorkingGroupLeadFormValues, keyof GenericFormValues> :
+  T extends 'SetContentWorkingGroupMintCapacity' ? Omit<SetContentWorkingGroupMintCapacityFormValues, keyof GenericFormValues> :
+  T extends 'SetValidatorCount' ? Omit<SetMaxValidatorCountFormValues, keyof GenericFormValues> :
+  T extends 'AddWorkingGroupLeaderOpening' ? Omit<AddWorkingGroupLeaderOpeningFormValues, keyof GenericFormValues> :
+  T extends 'SetWorkingGroupMintCapacity' ? Omit<SetWorkingGroupMintCapacityFormValues, keyof GenericFormValues> :
+  T extends 'BeginReviewWorkingGroupLeaderApplication' ? Omit<BeginReviewLeaderApplicationsFormValues, keyof GenericFormValues> :
+  never;
+/* eslint-enable @typescript-eslint/indent */
 
 type ValidationType = {
   [validationTypeK in ValidationTypeKeys]: (
@@ -328,6 +334,10 @@ const Validation: ValidationType = {
   SetWorkingGroupMintCapacity: () => ({
     workingGroup: Yup.string(),
     capacity: minMaxInt(WG_MINT_CAP_MIN, WG_MINT_CAP_MAX, 'Mint capacity')
+  }),
+  BeginReviewWorkingGroupLeaderApplication: () => ({
+    workingGroup: Yup.string(),
+    openingId: Yup.number()
   })
 };
 
