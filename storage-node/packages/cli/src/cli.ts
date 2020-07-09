@@ -73,6 +73,19 @@ function loadIdentity(api, filename, passphrase) {
   }
 }
 
+function validateHeadParameters(url: string, contentId: string) : boolean {
+  return url && url !== "" && contentId && contentId !=="";
+}
+
+function showHeadUsage() {
+  console.log(chalk.yellow(`
+        Invalid parameters for 'head' command.
+        Usage:   storage-cli head colossusURL contentID
+        Example: storage-cli head http://localhost:3001 0x7a6ba7e9157e5fba190dc146fe1baa8180e29728a5c76779ed99655500cff795
+      `));
+}
+
+
 const commands = {
   // add Alice well known account as storage provider
   'dev-init': async api => {
@@ -91,136 +104,126 @@ const commands = {
   // resolve the ipns id to the asset put api url of the storage-node
   // before uploading..
   upload: async (api, url, filename, doTypeId, keyfile, passphrase) => {
-    loadIdentity(api, keyfile, passphrase)
-    // Check parameters
-    assertFile('file', filename)
-
-    const size = fs.statSync(filename).size
-    debug(`File "${filename}" is ${chalk.green(size)} Bytes.`)
-
-    if (!doTypeId) {
-      doTypeId = 1
-    }
-
-    debug('Data Object Type ID is: ' + chalk.green(doTypeId))
-
-    // Generate content ID
-    // FIXME this require path is like this because of
-    // https://github.com/Joystream/apps/issues/207
-    const { ContentId } = require('@joystream/types/media')
-    let cid = ContentId.generate()
-    cid = cid.encode().toString()
-    debug('Generated content ID: ' + chalk.green(cid))
-
-    // Create Data Object
-    await api.assets.createDataObject(api.identities.key.address, cid, doTypeId, size)
-    debug('Data object created.')
-
-    // TODO in future, optionally contact liaison here?
-    const request = require('request')
-    url = `${url}asset/v0/${cid}`
-    debug('Uploading to URL', chalk.green(url))
-
-    const f = fs.createReadStream(filename)
-    const opts = {
-      url,
-      headers: {
-        'content-type': '',
-        'content-length': `${size}`,
-      },
-      json: true,
-    }
-    return new Promise((resolve, reject) => {
-      const r = request.put(opts, (error, response, body) => {
-        if (error) {
-          reject(error)
-          return
-        }
-
-        if (response.statusCode / 100 !== 2) {
-          reject(new Error(`${response.statusCode}: ${body.message || 'unknown reason'}`))
-          return
-        }
-        debug('Upload successful:', body.message)
-        resolve()
-      })
-      f.pipe(r)
-    })
+    // loadIdentity(api, keyfile, passphrase)
+    // // Check parameters
+    // assertFile('file', filename)
+    //
+    // const size = fs.statSync(filename).size
+    // debug(`File "${filename}" is ${chalk.green(size)} Bytes.`)
+    //
+    // if (!doTypeId) {
+    //   doTypeId = 1
+    // }
+    //
+    // debug('Data Object Type ID is: ' + chalk.green(doTypeId))
+    //
+    // // Generate content ID
+    // // FIXME this require path is like this because of
+    // // https://github.com/Joystream/apps/issues/207
+    // const { ContentId } = require('@joystream/types/media')
+    // let cid = ContentId.generate()
+    // cid = cid.encode().toString()
+    // debug('Generated content ID: ' + chalk.green(cid))
+    //
+    // // Create Data Object
+    // await api.assets.createDataObject(api.identities.key.address, cid, doTypeId, size)
+    // debug('Data object created.')
+    //
+    // // TODO in future, optionally contact liaison here?
+    // const request = require('request')
+    // url = `${url}asset/v0/${cid}`
+    // debug('Uploading to URL', chalk.green(url))
+    //
+    // const f = fs.createReadStream(filename)
+    // const opts = {
+    //   url,
+    //   headers: {
+    //     'content-type': '',
+    //     'content-length': `${size}`,
+    //   },
+    //   json: true,
+    // }
+    // return new Promise((resolve, reject) => {
+    //   const r = request.put(opts, (error, response, body) => {
+    //     if (error) {
+    //       reject(error)
+    //       return
+    //     }
+    //
+    //     if (response.statusCode / 100 !== 2) {
+    //       reject(new Error(`${response.statusCode}: ${body.message || 'unknown reason'}`))
+    //       return
+    //     }
+    //     debug('Upload successful:', body.message)
+    //     resolve()
+    //   })
+    //   f.pipe(r)
+    // })
   },
   // needs to be updated to take a content id and resolve it a potential set
   // of providers that has it, and select one (possibly try more than one provider)
   // to fetch it from the get api url of a provider..
   download: async (api, url, contentId, filename) => {
-    const request = require('request')
-    url = `${url}asset/v0/${contentId}`
-    debug('Downloading URL', chalk.green(url), 'to', chalk.green(filename))
-
-    const f = fs.createWriteStream(filename)
-    const opts = {
-      url,
-      json: true,
-    }
-    return new Promise((resolve, reject) => {
-      const r = request.get(opts, (error, response, body) => {
-        if (error) {
-          reject(error)
-          return
-        }
-
-        debug(
-          'Downloading',
-          chalk.green(response.headers['content-type']),
-          'of size',
-          chalk.green(response.headers['content-length']),
-          '...'
-        )
-
-        f.on('error', err => {
-          reject(err)
-        })
-
-        f.on('finish', () => {
-          if (response.statusCode / 100 !== 2) {
-            reject(new Error(`${response.statusCode}: ${body.message || 'unknown reason'}`))
-            return
-          }
-          debug('Download completed.')
-          resolve()
-        })
-      })
-      r.pipe(f)
-    })
+    // const request = require('request')
+    // url = `${url}asset/v0/${contentId}`
+    // debug('Downloading URL', chalk.green(url), 'to', chalk.green(filename))
+    //
+    // const f = fs.createWriteStream(filename)
+    // const opts = {
+    //   url,
+    //   json: true,
+    // }
+    // return new Promise((resolve, reject) => {
+    //   const r = request.get(opts, (error, response, body) => {
+    //     if (error) {
+    //       reject(error)
+    //       return
+    //     }
+    //
+    //     debug(
+    //       'Downloading',
+    //       chalk.green(response.headers['content-type']),
+    //       'of size',
+    //       chalk.green(response.headers['content-length']),
+    //       '...'
+    //     )
+    //
+    //     f.on('error', err => {
+    //       reject(err)
+    //     })
+    //
+    //     f.on('finish', () => {
+    //       if (response.statusCode / 100 !== 2) {
+    //         reject(new Error(`${response.statusCode}: ${body.message || 'unknown reason'}`))
+    //         return
+    //       }
+    //       debug('Download completed.')
+    //       resolve()
+    //     })
+    //   })
+    //   r.pipe(f)
+    // })
   },
-  // similar to 'download' function
-  head: async (api, url, contentId) => {
-    const request = require('request')
-    url = `${url}asset/v0/${contentId}`
-    debug('Checking URL', chalk.green(url), '...')
-
-    const opts = {
-      url,
-      json: true,
+  // Shows asset information derived from request headers.
+  // Accepts colossus URL and content ID.
+  head: async (api: any, url: string, contentId: string) => {
+    if (!validateHeadParameters(url, contentId)){
+      return showHeadUsage();
     }
-    return new Promise((resolve, reject) => {
-      request.head(opts, (error, response, body) => {
-        if (error) {
-          reject(error)
-          return
-        }
 
-        if (response.statusCode / 100 !== 2) {
-          reject(new Error(`${response.statusCode}: ${body.message || 'unknown reason'}`))
-          return
-        }
+    const assetUrl = `${url}/asset/v0/${contentId}`;
+    console.log(chalk.yellow('Asset URL:', assetUrl));
 
-        for (const propname in response.headers) {
-          debug(`  ${chalk.yellow(propname)}: ${response.headers[propname]}`)
-        }
+    try {
+      const response = await axios.head(assetUrl);
 
-        resolve()
-      })
-    })
-  },
+      console.log(chalk.green(`Content type: ${response.headers['content-type']}`));
+      console.log(chalk.green(`Content lenth: ${response.headers['content-length']}`));
+
+    } catch (err) {
+      console.log(chalk.red(`Colossus request failed: ${err.message}`));
+    }
+  }
 }
 
 export async function main() {
