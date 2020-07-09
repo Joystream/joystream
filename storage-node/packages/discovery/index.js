@@ -1,5 +1,4 @@
-
 module.exports = {
-    discover : require('./discover'),
-    publish : require('./publish'),
+  discover: require('./discover'),
+  publish: require('./publish'),
 }

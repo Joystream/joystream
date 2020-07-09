@@ -35,13 +35,13 @@ const { newExternallyControlledPromise } = require('@joystream/storage-utils/ext
  * Initialize runtime (substrate) API and keyring.
  */
 class RuntimeApi {
-  static async create (options) {
-    const runtime_api = new RuntimeApi()
-    await runtime_api.init(options || {})
-    return runtime_api
+  static async create(options) {
+    const runtimeApi = new RuntimeApi()
+    await runtimeApi.init(options || {})
+    return runtimeApi
   }
 
-  async init (options) {
+  async init(options) {
     debug('Init')
 
     options = options || {}
@@ -66,7 +66,7 @@ class RuntimeApi {
     this.identities = await IdentitiesApi.create(this, {
       account_file: options.account_file,
       passphrase: options.passphrase,
-      canPromptForPassphrase: options.canPromptForPassphrase
+      canPromptForPassphrase: options.canPromptForPassphrase,
     })
     this.balances = await BalancesApi.create(this)
     this.workers = await WorkersApi.create(this)
@@ -74,12 +74,12 @@ class RuntimeApi {
     this.discovery = await DiscoveryApi.create(this)
   }
 
-  disconnect () {
+  disconnect() {
     this.api.disconnect()
   }
 
-  executeWithAccountLock (account_id, func) {
-    return this.asyncLock.acquire(`${account_id}`, func)
+  executeWithAccountLock(accountId, func) {
+    return this.asyncLock.acquire(`${accountId}`, func)
   }
 
   /*
@@ -89,14 +89,14 @@ class RuntimeApi {
    * The result of the Promise is an array containing first the full event
    * name, and then the event fields as an object.
    */
-  async waitForEvent (module, name) {
+  async waitForEvent(module, name) {
     return this.waitForEvents([[module, name]])
   }
 
-  _matchingEvents(subscribed, events) {
+  static matchingEvents(subscribed, events) {
     debug(`Number of events: ${events.length} subscribed to ${subscribed}`)
 
-    const filtered = events.filter((record) => {
+    const filtered = events.filter(record => {
       const { event, phase } = record
 
       // Show what we are busy with
@@ -104,14 +104,14 @@ class RuntimeApi {
       debug(`\t\t${event.meta.documentation.toString()}`)
 
       // Skip events we're not interested in.
-      const matching = subscribed.filter((value) => {
+      const matching = subscribed.filter(value => {
         return event.section === value[0] && event.method === value[1]
       })
       return matching.length > 0
     })
     debug(`Filtered: ${filtered.length}`)
 
-    const mapped = filtered.map((record) => {
+    const mapped = filtered.map(record => {
       const { event } = record
       const types = event.typeDef
 
@@ -122,8 +122,8 @@ class RuntimeApi {
         payload[types[index].type] = data
       })
 
-      const full_name = `${event.section}.${event.method}`
-      return [full_name, payload]
+      const fullName = `${event.section}.${event.method}`
+      return [fullName, payload]
     })
     debug('Mapped', mapped)
 
@@ -137,10 +137,10 @@ class RuntimeApi {
    *
    * Returns the first matched event *only*.
    */
-  async waitForEvents (subscribed) {
-    return new Promise((resolve, reject) => {
-      this.api.query.system.events((events) => {
-        const matches = this._matchingEvents(subscribed, events)
+  async waitForEvents(subscribed) {
+    return new Promise(resolve => {
+      this.api.query.system.events(events => {
+        const matches = RuntimeApi.matchingEvents(subscribed, events)
         if (matches && matches.length) {
           resolve(matches)
         }
@@ -156,24 +156,26 @@ class RuntimeApi {
    * If the subscribed events are given, and a callback as well, then the
    * callback is invoked with matching events.
    */
-  async signAndSend (accountId, tx, attempts, subscribed, callback) {
+  async signAndSend(accountId, tx, attempts, subscribed, callback) {
     accountId = this.identities.keyring.encodeAddress(accountId)
 
     // Key must be unlocked
-    const from_key = this.identities.keyring.getPair(accountId)
-    if (from_key.isLocked) {
+    const fromKey = this.identities.keyring.getPair(accountId)
+    if (fromKey.isLocked) {
       throw new Error('Must unlock key before using it to sign!')
     }
 
     const finalizedPromise = newExternallyControlledPromise()
 
-    let unsubscribe = await this.executeWithAccountLock(accountId, async () => {
+    await this.executeWithAccountLock(accountId, async () => {
       // Try to get the next nonce to use
       let nonce = this.nonces[accountId]
 
       let incrementNonce = () => {
         // only increment once
-        incrementNonce = () => {} // turn it into a no-op
+        incrementNonce = () => {
+          /* turn it into a no-op */
+        }
         nonce = nonce.addn(1)
         this.nonces[accountId] = nonce
       }
@@ -181,6 +183,8 @@ class RuntimeApi {
       // If the nonce isn't available, get it from chain.
       if (!nonce) {
         // current nonce
+        // TODO: possible race condition here found by the linter
+        // eslint-disable-next-line require-atomic-updates
         nonce = await this.api.query.system.accountNonce(accountId)
         debug(`Got nonce for ${accountId} from chain: ${nonce}`)
       }
@@ -188,15 +192,16 @@ class RuntimeApi {
       return new Promise((resolve, reject) => {
         debug('Signing and sending tx')
         // send(statusUpdates) returns a function for unsubscribing from status updates
-        let unsubscribe = tx.sign(from_key, { nonce })
-          .send(({events = [], status}) => {
+        const unsubscribe = tx
+          .sign(fromKey, { nonce })
+          .send(({ events = [], status }) => {
             debug(`TX status: ${status.type}`)
 
             // Whatever events we get, process them if there's someone interested.
             // It is critical that this event handling doesn't prevent
             try {
               if (subscribed && callback) {
-                const matched = this._matchingEvents(subscribed, events)
+                const matched = RuntimeApi.matchingEvents(subscribed, events)
                 debug('Matching events:', matched)
                 if (matched.length) {
                   callback(matched)
@@ -238,7 +243,7 @@ class RuntimeApi {
             isInvalid
             */
           })
-          .catch((err) => {
+          .catch(err => {
             // 1014 error: Most likely you are sending transaction with the same nonce,
             // so it assumes you want to replace existing one, but the priority is too low to replace it (priority = fee = len(encoded_transaction) currently)
             // Remember this can also happen if in the past we sent a tx with a future nonce, and the current nonce
@@ -247,9 +252,11 @@ class RuntimeApi {
               const errstr = err.toString()
               // not the best way to check error code.
               // https://github.com/polkadot-js/api/blob/master/packages/rpc-provider/src/coder/index.ts#L52
-              if (errstr.indexOf('Error: 1014:') < 0 && // low priority
-                  errstr.indexOf('Error: 1010:') < 0) // bad transaction
-              {
+              if (
+                errstr.indexOf('Error: 1014:') < 0 && // low priority
+                errstr.indexOf('Error: 1010:') < 0
+              ) {
+                // bad transaction
                 // Error but not nonce related. (bad arguments maybe)
                 debug('TX error', err)
               } else {
@@ -276,13 +283,15 @@ class RuntimeApi {
    * Sign and send a transaction expect event from
    * module and return eventProperty from the event.
    */
-  async signAndSendThenGetEventResult (senderAccountId, tx, { eventModule, eventName, eventProperty }) {
+  async signAndSendThenGetEventResult(senderAccountId, tx, { eventModule, eventName, eventProperty }) {
     // event from a module,
     const subscribed = [[eventModule, eventName]]
+    // TODO: rewrite this method to async-await style
+    // eslint-disable-next-line  no-async-promise-executor
     return new Promise(async (resolve, reject) => {
       try {
-        await this.signAndSend(senderAccountId, tx, 1, subscribed, (events) => {
-          events.forEach((event) => {
+        await this.signAndSend(senderAccountId, tx, 1, subscribed, events => {
+          events.forEach(event => {
             // fix - we may not necessarily want the first event
             // if there are multiple events emitted,
             resolve(event[1][eventProperty])
@@ -293,9 +302,8 @@ class RuntimeApi {
       }
     })
   }
-
 }
 
 module.exports = {
-  RuntimeApi
+  RuntimeApi,
 }

@@ -16,57 +16,55 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-'use strict';
+'use strict'
 
 // npm requires
-const express = require('express');
-const openapi = require('express-openapi');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const yaml = require('js-yaml');
+const express = require('express')
+const openapi = require('express-openapi')
+const bodyParser = require('body-parser')
+const cors = require('cors')
+const yaml = require('js-yaml')
 
 // Node requires
-const fs = require('fs');
-const path = require('path');
+const fs = require('fs')
+const path = require('path')
 
 // Project requires
-const validateResponses = require('./middleware/validate_responses');
+const validateResponses = require('./middleware/validate_responses')
 
 // Configure app
-function create_app(project_root, runtime)
-{
-  const app = express();
-  app.use(cors());
-  app.use(bodyParser.json());
+function createApp(projectRoot, runtime) {
+  const app = express()
+  app.use(cors())
+  app.use(bodyParser.json())
   // FIXME app.use(bodyParser.urlencoded({ extended: true }));
 
   // Load & extend/configure API docs
-  var api = yaml.safeLoad(fs.readFileSync(
-    path.resolve(project_root, 'api-base.yml')));
-  api['x-express-openapi-additional-middleware'] = [validateResponses];
-  api['x-express-openapi-validation-strict'] = true;
+  const api = yaml.safeLoad(fs.readFileSync(path.resolve(projectRoot, 'api-base.yml')))
+  api['x-express-openapi-additional-middleware'] = [validateResponses]
+  api['x-express-openapi-validation-strict'] = true
 
   openapi.initialize({
     apiDoc: api,
-    app: app,
-    //paths: path.resolve(project_root, 'discovery_app_paths'),
+    app,
+    // paths: path.resolve(projectRoot, 'discovery_app_paths'),
     paths: {
       path: '/discover/v0/{id}',
-      module: require('../paths/discover/v0/{id}')
+      module: require('../paths/discover/v0/{id}'),
     },
     docsPath: '/swagger.json',
     dependencies: {
-      runtime: runtime,
+      runtime,
     },
-  });
+  })
 
   // If no other handler gets triggered (errors), respond with the
   // error serialized to JSON.
-  app.use(function(err, req, res, next) {
-    res.status(err.status).json(err);
-  });
+  app.use(function(err, req, res) {
+    res.status(err.status).json(err)
+  })
 
-  return app;
+  return app
 }
 
-module.exports = create_app;
+module.exports = createApp

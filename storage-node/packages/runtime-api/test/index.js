@@ -16,16 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-'use strict';
+'use strict'
 
-const mocha = require('mocha');
-const expect = require('chai').expect;
-
-const { RuntimeApi } = require('@joystream/storage-runtime-api');
+const { RuntimeApi } = require('@joystream/storage-runtime-api')
 
 describe('RuntimeApi', () => {
   it('can be created', async () => {
-    const api = await RuntimeApi.create();
-    api.disconnect();
-  });
-});
+    const api = await RuntimeApi.create()
+    api.disconnect()
+  })
+})

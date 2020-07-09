@@ -9,6 +9,7 @@ import Identicon from '@polkadot/react-identicon';
 import { IProfile, MemberId } from '@joystream/types/members';
 import { GenericAccountId } from '@polkadot/types';
 import { LeadRoleState } from '@joystream/types/content-working-group';
+import { WorkerId } from '@joystream/types/working-group';
 
 type BalanceProps = {
   balance?: Balance;
@@ -47,6 +48,7 @@ export type GroupMember = {
 
 export type GroupLead = {
   memberId: MemberId;
+  workerId?: WorkerId; // In case of "working-group" module
   roleAccount: GenericAccountId;
   profile: IProfile;
   title: string;

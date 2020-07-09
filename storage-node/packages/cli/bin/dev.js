@@ -1,28 +1,25 @@
-/* eslint-disable no-console */
-
 'use strict'
 
 const debug = require('debug')('joystream:storage-cli:dev')
-const assert = require('assert')
 
 // Derivation path appended to well known development seed used on
 // development chains
 const ALICE_URI = '//Alice'
 const ROLE_ACCOUNT_URI = '//Colossus'
 
-function aliceKeyPair (api) {
+function aliceKeyPair(api) {
   return api.identities.keyring.addFromUri(ALICE_URI, null, 'sr25519')
 }
 
-function roleKeyPair (api) {
+function roleKeyPair(api) {
   return api.identities.keyring.addFromUri(ROLE_ACCOUNT_URI, null, 'sr25519')
 }
 
-function developmentPort () {
+function developmentPort() {
   return 3001
 }
 
-const check = async (api) => {
+const check = async api => {
   const roleAccountId = roleKeyPair(api).address
   const providerId = await api.workers.findProviderIdByRoleAccount(roleAccountId)
 
@@ -43,7 +40,7 @@ const check = async (api) => {
 // Setup Alice account on a developement chain as
 // a member, storage lead, and a storage provider using a deterministic
 // development key for the role account
-const init = async (api) => {
+const init = async api => {
   try {
     await check(api)
     return
@@ -82,7 +79,7 @@ const init = async (api) => {
   if (aliceMemberId === undefined) {
     debug('Registering Alice as member..')
     aliceMemberId = await api.identities.registerMember(alice, {
-      handle: 'alice'
+      handle: 'alice',
     })
   } else {
     debug('Alice is already a member')
@@ -90,10 +87,10 @@ const init = async (api) => {
 
   // Make alice the storage lead
   debug('Making Alice the storage Lead')
-  const leadOpeningId = await api.workers.dev_addStorageLeadOpening()
-  const leadApplicationId = await api.workers.dev_applyOnOpening(leadOpeningId, aliceMemberId, alice, alice)
-  api.workers.dev_beginLeadOpeningReview(leadOpeningId)
-  await api.workers.dev_fillLeadOpening(leadOpeningId, leadApplicationId)
+  const leadOpeningId = await api.workers.devAddStorageLeadOpening()
+  const leadApplicationId = await api.workers.devApplyOnOpening(leadOpeningId, aliceMemberId, alice, alice)
+  api.workers.devBeginLeadOpeningReview(leadOpeningId)
+  await api.workers.devFillLeadOpening(leadOpeningId, leadApplicationId)
 
   const leadAccount = await api.workers.getLeadRoleAccount()
   if (!leadAccount.eq(alice)) {
@@ -103,16 +100,16 @@ const init = async (api) => {
   // Create a storage openinging, apply, start review, and fill opening
   debug(`Making ${ROLE_ACCOUNT_URI} account a storage provider`)
 
-  const openingId = await api.workers.dev_addStorageOpening()
+  const openingId = await api.workers.devAddStorageOpening()
   debug(`created new storage opening: ${openingId}`)
 
-  const applicationId = await api.workers.dev_applyOnOpening(openingId, aliceMemberId, alice, roleAccount)
+  const applicationId = await api.workers.devApplyOnOpening(openingId, aliceMemberId, alice, roleAccount)
   debug(`applied with application id: ${applicationId}`)
 
-  api.workers.dev_beginStorageOpeningReview(openingId)
+  api.workers.devBeginStorageOpeningReview(openingId)
 
   debug(`filling storage opening`)
-  const providerId = await api.workers.dev_fillStorageOpening(openingId, applicationId)
+  const providerId = await api.workers.devFillStorageOpening(openingId, applicationId)
 
   debug(`Assigned storage provider id: ${providerId}`)
 
@@ -124,5 +121,5 @@ module.exports = {
   check,
   aliceKeyPair,
   roleKeyPair,
-  developmentPort
+  developmentPort,
 }

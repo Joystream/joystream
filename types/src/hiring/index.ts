@@ -101,7 +101,7 @@ export class ApplicationStage extends Enum {
   constructor(value?: any, index?: number) {
     super(
       {
-        [ApplicationStageKeys.Active]: Null,
+        [ApplicationStageKeys.Active]: ActiveApplicationStage,
         [ApplicationStageKeys.Unstaking]: UnstakingApplicationStage,
         [ApplicationStageKeys.Inactive]: InactiveApplicationStage,
       },
@@ -334,7 +334,23 @@ export class StakingPolicy extends JoyStruct<IStakingPolicy> {
 };
 
 import * as role_schema_json from './schemas/role.schema.json'
-export const schemaValidator: ajv.ValidateFunction = new ajv({ allErrors: true }).compile(role_schema_json)
+export const schemaValidator: ajv.ValidateFunction = new ajv({ allErrors: true }).compile(role_schema_json);
+
+const OpeningHRTFallback: GenericJoyStreamRoleSchema = {
+  version: 1,
+  headline: "Unknown",
+  job: {
+    title: "Unknown",
+    description: "Unknown"
+  },
+  application: {},
+  reward: "Unknown",
+  creator: {
+    membership: {
+      handle: "Unknown"
+    }
+  }
+};
 
 export type IOpening = {
   created: BlockNumber,
@@ -379,6 +395,16 @@ export class Opening extends JoyStruct<IOpening> {
     }
 
     return str
+  }
+
+  parse_human_readable_text_with_fallback(): GenericJoyStreamRoleSchema {
+    const hrt = this.parse_human_readable_text();
+
+    if (typeof hrt !== 'object') {
+      return OpeningHRTFallback;
+    }
+
+    return hrt;
   }
 
   get created(): BlockNumber {

@@ -21,8 +21,6 @@ import { u128 } from '@polkadot/types';
 import { Balance } from '@polkadot/types/interfaces';
 
 import { Loadable } from '@polkadot/joy-utils/index';
-
-import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema.typings';
 import { Opening } from '@joystream/types/hiring';
 
 import {
@@ -35,6 +33,10 @@ import {
 import { CancelledReason, OpeningStageClassification, OpeningState } from '../classifiers';
 import { OpeningMetadata } from '../OpeningMetadata';
 import { CuratorId } from '@joystream/types/content-working-group';
+import { WorkerId } from '@joystream/types/working-group';
+import _ from 'lodash';
+import styled from 'styled-components';
+import { WorkingGroups } from '../working_groups';
 
 type CTACallback = (rationale: string) => void
 
@@ -102,9 +104,10 @@ function RoleName (props: NameAndURL) {
 }
 
 export interface ActiveRole extends NameAndURL {
-  curatorId: CuratorId;
+  workerId: CuratorId | WorkerId;
   reward: Balance;
   stake: Balance;
+  group: WorkingGroups;
 }
 
 export interface ActiveRoleWithCTAs extends ActiveRole {
@@ -379,14 +382,20 @@ function CancelButton (props: ApplicationProps) {
   );
 }
 
+const ApplicationLabel = styled(Label)`
+  margin-left: 1em !important;
+  border: 1px solid #999 !important;
+`;
+
 export function Application (props: ApplicationProps) {
   let countdown = null;
   if (props.stage.state === OpeningState.InReview) {
     countdown = <OpeningBodyReviewInProgress {...props.stage} />;
   }
 
-  const application = props.opening.parse_human_readable_text() as GenericJoyStreamRoleSchema;
+  const application = props.opening.parse_human_readable_text_with_fallback();
   const appState = applicationState(props);
+  const isLeadApplication = props.meta.type?.isOfType('Leader');
 
   let CTA = null;
   if (appState === ApplicationState.Positive && props.stage.state !== OpeningState.Complete) {
@@ -400,6 +409,9 @@ export function Application (props: ApplicationProps) {
         <Label.Detail className="right">
           {openingIcon(props.stage.state)}
           {openingDescription(props.stage.state)}
+          <ApplicationLabel>
+            {_.startCase(props.meta.group) + (isLeadApplication ? ' Lead' : '')}
+          </ApplicationLabel>
         </Label.Detail>
       </Label>
       <Grid columns="equal">

@@ -20,11 +20,9 @@
 
 const path = require('path')
 const fs = require('fs')
-// const readline = require('readline')
-
 const debug = require('debug')('joystream:runtime:identities')
 const { Keyring } = require('@polkadot/keyring')
-const util_crypto = require('@polkadot/util-crypto')
+const utilCrypto = require('@polkadot/util-crypto')
 
 /*
  * Add identity management to the substrate API.
@@ -32,14 +30,14 @@ const util_crypto = require('@polkadot/util-crypto')
  * This loosely groups: accounts, key management, and membership.
  */
 class IdentitiesApi {
-  static async create (base, {account_file, passphrase, canPromptForPassphrase}) {
+  static async create(base, { accountFile, passphrase, canPromptForPassphrase }) {
     const ret = new IdentitiesApi()
     ret.base = base
-    await ret.init(account_file, passphrase, canPromptForPassphrase)
+    await ret.init(accountFile, passphrase, canPromptForPassphrase)
     return ret
   }
 
-  async init (account_file, passphrase, canPromptForPassphrase) {
+  async init(accountFile, passphrase, canPromptForPassphrase) {
     debug('Init')
 
     // Creatre keyring
@@ -49,7 +47,7 @@ class IdentitiesApi {
 
     // Load account file, if possible.
     try {
-      this.key = await this.loadUnlock(account_file, passphrase)
+      this.key = await this.loadUnlock(accountFile, passphrase)
     } catch (err) {
       debug('Error loading account file:', err.message)
     }
@@ -58,8 +56,8 @@ class IdentitiesApi {
   /*
    * Load a key file and unlock it if necessary.
    */
-  async loadUnlock (account_file, passphrase) {
-    const fullname = path.resolve(account_file)
+  async loadUnlock(accountFile, passphrase) {
+    const fullname = path.resolve(accountFile)
     debug('Initializing key from', fullname)
     const key = this.keyring.addFromJson(require(fullname))
     await this.tryUnlock(key, passphrase)
@@ -71,7 +69,7 @@ class IdentitiesApi {
    * Try to unlock a key if it isn't already unlocked.
    * passphrase should be supplied as argument.
    */
-  async tryUnlock (key, passphrase) {
+  async tryUnlock(key, passphrase) {
     if (!key.isLocked) {
       debug('Key is not locked, not attempting to unlock')
       return
@@ -112,7 +110,10 @@ class IdentitiesApi {
   /*
    * Ask for a passphrase
    */
-  askForPassphrase (address) {
+
+  /* eslint-disable class-methods-use-this */
+  // Disable lint because the method used by a mocking library.
+  askForPassphrase(address) {
     // Query for passphrase
     const prompt = require('password-prompt')
     return prompt(`Enter passphrase for ${address}: `, { required: false })
@@ -121,7 +122,7 @@ class IdentitiesApi {
   /*
    * Return true if the account is a root account of a member
    */
-  async isMember (accountId) {
+  async isMember(accountId) {
     const memberIds = await this.memberIdsOf(accountId) // return array of member ids
     return memberIds.length > 0 // true if at least one member id exists for the acccount
   }
@@ -129,7 +130,7 @@ class IdentitiesApi {
   /*
    * Return all the member IDs of an account by the root account id
    */
-  async memberIdsOf (accountId) {
+  async memberIdsOf(accountId) {
     const decoded = this.keyring.decodeAddress(accountId)
     return this.base.api.query.members.memberIdsByRootAccountId(decoded)
   }
@@ -137,16 +138,16 @@ class IdentitiesApi {
   /*
    * Return the first member ID of an account, or undefined if not a member root account.
    */
-  async firstMemberIdOf (accountId) {
+  async firstMemberIdOf(accountId) {
     const decoded = this.keyring.decodeAddress(accountId)
-    let ids = await this.base.api.query.members.memberIdsByRootAccountId(decoded)
+    const ids = await this.base.api.query.members.memberIdsByRootAccountId(decoded)
     return ids[0]
   }
 
   /*
    * Export a key pair to JSON. Will ask for a passphrase.
    */
-  async exportKeyPair (accountId) {
+  async exportKeyPair(accountId) {
     const passphrase = await this.askForPassphrase(accountId)
 
     // Produce JSON output
@@ -157,12 +158,12 @@ class IdentitiesApi {
    * Export a key pair and write it to a JSON file with the account ID as the
    * name.
    */
-  async writeKeyPairExport (accountId, prefix) {
+  async writeKeyPairExport(accountId, prefix) {
     // Generate JSON
     const data = await this.exportKeyPair(accountId)
 
     // Write JSON
-    var filename = `${data.address}.json`
+    let filename = `${data.address}.json`
 
     if (prefix) {
       const path = require('path')
@@ -171,7 +172,7 @@ class IdentitiesApi {
 
     fs.writeFileSync(filename, JSON.stringify(data), {
       encoding: 'utf8',
-      mode: 0o600
+      mode: 0o600,
     })
 
     return filename
@@ -181,20 +182,20 @@ class IdentitiesApi {
    * Register account id with userInfo as a new member
    * using default policy 0, returns new member id
    */
-  async registerMember (accountId, userInfo) {
+  async registerMember(accountId, userInfo) {
     const tx = this.base.api.tx.members.buyMembership(0, userInfo)
 
     return this.base.signAndSendThenGetEventResult(accountId, tx, {
       eventModule: 'members',
       eventName: 'MemberRegistered',
-      eventProperty: 'MemberId'
+      eventProperty: 'MemberId',
     })
   }
 
   /*
    * Injects a keypair and sets it as the default identity
    */
-  useKeyPair (keyPair) {
+  useKeyPair(keyPair) {
     this.key = this.keyring.addPair(keyPair)
   }
 
@@ -202,11 +203,11 @@ class IdentitiesApi {
    * Create a new role key. If no name is given,
    * default to 'storage'.
    */
-  async createNewRoleKey (name) {
+  async createNewRoleKey(name) {
     name = name || 'storage-provider'
 
     // Generate new key pair
-    const keyPair = util_crypto.naclKeypairFromRandom()
+    const keyPair = utilCrypto.naclKeypairFromRandom()
 
     // Encode to an address.
     const addr = this.keyring.encodeAddress(keyPair.publicKey)
@@ -215,7 +216,7 @@ class IdentitiesApi {
     // Add to key wring. We set the meta to identify the account as
     // a role key.
     const meta = {
-      name: `${name} role account`
+      name: `${name} role account`,
     }
 
     const createPair = require('@polkadot/keyring/pair').default
@@ -232,5 +233,5 @@ class IdentitiesApi {
 }
 
 module.exports = {
-  IdentitiesApi
+  IdentitiesApi,
 }
