@@ -63,6 +63,10 @@ impl timestamp::Trait for Runtime {
     type MinimumPeriod = MinimumPeriod;
 }
 
+parameter_types! {
+    pub const MaxCategoryDepth: u64 = 20;
+}
+
 impl Trait for Runtime {
     type Event = TestEvent;
     type ForumUserId = u64;
@@ -70,6 +74,7 @@ impl Trait for Runtime {
     type CategoryId = u64;
     type ThreadId = u64;
     type PostId = u64;
+    type MaxCategoryDepth = MaxCategoryDepth;
 
     fn is_lead(account_id: &<Self as system::Trait>::AccountId) -> bool {
         *account_id == FORUM_LEAD_ORIGIN_ID
@@ -164,6 +169,10 @@ pub fn good_post_text() -> Vec<u8> {
 
 pub fn good_post_new_text() -> Vec<u8> {
     b"Changed post's text".to_vec()
+}
+
+pub fn good_moderation_rationale() -> Vec<u8> {
+    b"Moderation rationale".to_vec()
 }
 
 pub fn good_poll_description() -> Vec<u8> {
@@ -412,26 +421,6 @@ pub fn change_current_time(diff: u64) -> () {
     Timestamp::set_timestamp(Timestamp::now() + diff);
 }
 
-pub fn set_max_category_depth_mock(
-    origin: OriginType,
-    max_category_depth: u8,
-    result: Result<(), &'static str>,
-) -> u8 {
-    assert_eq!(
-        TestForumModule::set_max_category_depth(mock_origin(origin), max_category_depth),
-        result
-    );
-    if result.is_ok() {
-        assert_eq!(TestForumModule::max_category_depth(), max_category_depth);
-        assert_eq!(
-            System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::MaxCategoryDepthUpdated(max_category_depth,))
-        );
-    };
-
-    max_category_depth
-}
-
 pub fn update_category_membership_of_moderator_mock(
     origin: OriginType,
     moderator_id: <Runtime as Trait>::ModeratorId,
@@ -540,16 +529,26 @@ pub fn moderate_thread_mock(
     moderator_id: <Runtime as Trait>::ModeratorId,
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
+    rationale: Vec<u8>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::ThreadId {
     assert_eq!(
-        TestForumModule::moderate_thread(mock_origin(origin), moderator_id, category_id, thread_id),
+        TestForumModule::moderate_thread(
+            mock_origin(origin),
+            moderator_id,
+            category_id,
+            thread_id,
+            rationale.clone(),
+        ),
         result
     );
     if result.is_ok() {
+        assert!(!<ThreadById<Runtime>>::exists(category_id, thread_id));
+
+        let rationale_hash = Runtime::calculate_hash(rationale.clone().as_slice());
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ThreadModerated(thread_id,))
+            TestEvent::forum_mod(RawEvent::ThreadModerated(thread_id, rationale_hash))
         );
     }
     thread_id
@@ -561,6 +560,7 @@ pub fn moderate_post_mock(
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     post_id: <Runtime as Trait>::PostId,
+    rationale: Vec<u8>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::PostId {
     assert_eq!(
@@ -569,14 +569,18 @@ pub fn moderate_post_mock(
             moderator_id,
             category_id,
             thread_id,
-            post_id
+            post_id,
+            rationale.clone(),
         ),
         result
     );
     if result.is_ok() {
+        assert!(!<PostById<Runtime>>::exists(thread_id, post_id));
+
+        let rationale_hash = Runtime::calculate_hash(rationale.clone().as_slice());
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::PostModerated(post_id,))
+            TestEvent::forum_mod(RawEvent::PostModerated(post_id, rationale_hash))
         );
     }
 
@@ -633,7 +637,6 @@ pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime
         next_post_id: 1,
 
         category_by_moderator: vec![],
-        max_category_depth: 5,
         reaction_by_post: vec![],
 
         poll_desc_constraint: InputValidationLengthConstraint {

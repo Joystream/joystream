@@ -216,7 +216,9 @@ use codec::{Codec, Decode, Encode};
 use rstd::prelude::*;
 pub use runtime_io::clear_prefix;
 use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
-use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
+use srml_support::{
+    decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter,
+};
 
 mod mock;
 mod tests;
@@ -273,6 +275,8 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + PartialEq
         + From<u64>
         + Into<u64>;
+
+    type MaxCategoryDepth: Get<u64>;
 
     fn is_lead(account_id: &<Self as system::Trait>::AccountId) -> bool;
     fn is_forum_member(
@@ -346,7 +350,6 @@ const ERROR_ACCOUNT_DOES_NOT_MATCH_POST_AUTHOR: &str = "Account does not match p
 // Errors about category.
 const ERROR_CATEGORY_NOT_BEING_UPDATED: &str = "Category not being updated.";
 const ERROR_MODERATOR_MODERATE_CATEGORY: &str = "Moderator can not moderate category.";
-const ERROR_EXCEED_MAX_CATEGORY_DEPTH: &str = "Category exceed max depth.";
 const ERROR_ANCESTOR_CATEGORY_IMMUTABLE: &str =
     "Ancestor category immutable, i.e. deleted or archived";
 const ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED: &str = "Maximum valid category depth exceeded.";
@@ -538,9 +541,6 @@ decl_storage! {
         /// Post identifier value to be used for for next post created.
         pub NextPostId get(next_post_id) config(): T::PostId;
 
-        /// Max depth of category.
-        pub MaxCategoryDepth get(max_category_depth) config(): u8;
-
         /// Moderator set for each Category
         pub CategoryByModerator get(category_by_moderator) config(): double_map T::CategoryId, blake2_256(T::ModeratorId) => ();
 
@@ -574,6 +574,7 @@ decl_event!(
         <T as Trait>::ThreadId,
         <T as Trait>::PostId,
         <T as Trait>::ForumUserId,
+        <T as system::Trait>::Hash,
     {
         /// A category was introduced
         CategoryCreated(CategoryId),
@@ -589,7 +590,7 @@ decl_event!(
         ThreadCreated(ThreadId),
 
         /// A thread with given id was moderated.
-        ThreadModerated(ThreadId),
+        ThreadModerated(ThreadId, Hash),
 
         /// A thread with given id was moderated.
         ThreadTitleUpdated(ThreadId),
@@ -604,7 +605,7 @@ decl_event!(
         PostAdded(PostId),
 
         /// Post with givne id was moderated.
-        PostModerated(PostId),
+        PostModerated(PostId, Hash),
 
         /// Post with given id had its text updated.
         /// The second argument reflects the number of total edits when the text update occurs.
@@ -615,9 +616,6 @@ decl_event!(
 
         /// Vote on poll
         VoteOnPoll(ThreadId, u32),
-
-        /// Max category depth updated
-        MaxCategoryDepthUpdated(u8),
 
         /// Sticky thread updated for category
         CategoryStickyThreadUpdate(CategoryId, Vec<ThreadId>),
@@ -653,20 +651,6 @@ decl_module! {
             Ok(())
         }
 
-        /// Set max category depth.
-        fn set_max_category_depth(origin, max_category_depth: u8) -> dispatch::Result {
-            // Not signed by forum LEAD
-            Self::ensure_is_forum_lead(origin)?;
-
-            // Store new value into runtime
-            MaxCategoryDepth::mutate(|value| *value = max_category_depth );
-
-            // Store event into runtime
-            Self::deposit_event(RawEvent::MaxCategoryDepthUpdated(max_category_depth));
-
-            Ok(())
-        }
-
         /// Add a new category.
         fn create_category(origin, parent: Option<T::CategoryId>, title: Vec<u8>, description: Vec<u8>) -> dispatch::Result {
             // Ensure data migration is done
@@ -680,17 +664,8 @@ decl_module! {
 
             // If not root, then check that we can create in parent category
             if let Some(tmp_parent_category_id) = parent {
-
-                // Get the path from parent category to root
-                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(&tmp_parent_category_id)?;
-
-                // Check if max depth reached
-                if category_tree_path.len() >= MaxCategoryDepth::get() as usize {
-                    return Err(ERROR_EXCEED_MAX_CATEGORY_DEPTH);
-                }
-
                 // Can we mutate in this category?
-                Self::ensure_can_add_subcategory_path_leaf(&category_tree_path)?;
+                Self::ensure_can_add_subcategory_path_leaf(&tmp_parent_category_id)?;
 
                 // Increment number of subcategories to reflect this new category being
                 // added as a child
@@ -913,30 +888,21 @@ decl_module! {
         }
 
         /// Moderate thread
-        fn moderate_thread(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, thread_id: T::ThreadId) -> dispatch::Result {
+        fn moderate_thread(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, thread_id: T::ThreadId, rationale: Vec<u8>) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Ensure origin is medorator
-            let who = Self::ensure_is_moderator(origin, &moderator_id)?;
+            // Ensure moderator is allowed to moderate post
+            Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
 
-            // Get thread
-            let thread = Self::ensure_thread_exists(&category_id, &thread_id)?;
+            // Calculate rationale's hash
+            let rationale_hash = T::calculate_hash(rationale.as_slice());
 
-            // ensure origin can moderate category
-            Self::ensure_can_moderate_category(&who, &moderator_id, &thread.category_id)?;
-
-            // Can mutate in corresponding category
-            let path = Self::build_category_tree_path(&thread.category_id);
-
-            // Path must be non-empty, as category id is from thread in state
-            assert!(!path.is_empty());
-
-            // Path can be updated
-            Self::ensure_can_mutate_in_path_leaf(&path)?;
+            // Delete thread
+            <ThreadById<T>>::remove(category_id, thread_id);
 
             // Generate event
-            Self::deposit_event(RawEvent::ThreadModerated(thread_id));
+            Self::deposit_event(RawEvent::ThreadModerated(thread_id, rationale_hash));
 
             Ok(())
         }
@@ -1018,24 +984,21 @@ decl_module! {
         }
 
         /// Moderate post
-        fn moderate_post(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId) -> dispatch::Result {
+        fn moderate_post(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId, rationale: Vec<u8>) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Get moderator id.
-            let who = Self::ensure_is_moderator(origin, &moderator_id)?;
+            // Ensure moderator is allowed to moderate post
+            Self::ensure_can_moderate_post(origin, &moderator_id, &category_id, &thread_id, &post_id)?;
 
-            // Make sure post exists and is mutable
-            let post = Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?;
+            // Calculate rationale's hash
+            let rationale_hash = T::calculate_hash(rationale.as_slice());
 
-            // make sure origin can moderate the category
-            Self::ensure_thread_exists(&category_id, &post.thread_id)?;
-
-            // ensure the moderator can moderate the category
-            Self::ensure_can_moderate_category(&who, &moderator_id, &category_id)?;
+            // Delete post
+            <PostById<T>>::remove(thread_id, post_id);
 
             // Generate event
-            Self::deposit_event(RawEvent::PostModerated(post_id));
+            Self::deposit_event(RawEvent::PostModerated(post_id, rationale_hash));
 
             Ok(())
         }
@@ -1227,6 +1190,25 @@ impl<T: Trait> Module<T> {
         Ok(<PostById<T>>::get(thread_id, post_id))
     }
 
+    fn ensure_can_moderate_post(
+        origin: T::Origin,
+        moderator_id: &T::ModeratorId,
+        category_id: &T::CategoryId,
+        thread_id: &T::ThreadId,
+        post_id: &T::PostId,
+    ) -> dispatch::Result {
+        // Get moderator id.
+        let who = ensure_signed(origin)?;
+
+        // Make sure post exists and is mutable
+        Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?;
+
+        // ensure the moderator can moderate the category
+        Self::ensure_can_moderate_category(&who, &moderator_id, &category_id)?;
+
+        Ok(())
+    }
+
     fn ensure_thread_is_mutable(
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
@@ -1336,7 +1318,7 @@ impl<T: Trait> Module<T> {
 
         let thread = Self::ensure_thread_exists(category_id, thread_id)?;
 
-        Self::ensure_can_moderate_category(&who, moderator_id, &thread.category_id)?;
+        Self::ensure_can_moderate_category(&who, moderator_id, category_id)?;
 
         Ok((who, thread))
     }
@@ -1356,15 +1338,12 @@ impl<T: Trait> Module<T> {
     > {
         ensure!(category_id != new_category_id, ERROR_THREAD_MOVE_INVALID,);
 
-        let info = Self::ensure_can_moderate_thread(origin, moderator_id, category_id, thread_id);
-        if info.is_err() {
-            return Err(ERROR_MODERATOR_MODERATE_ORIGIN_CATEGORY);
-        }
-        let (account_id, thread) = info.unwrap();
+        let (account_id, thread) =
+            Self::ensure_can_moderate_thread(origin, moderator_id, category_id, thread_id)
+                .map_err(|_| ERROR_MODERATOR_MODERATE_ORIGIN_CATEGORY)?;
 
-        if Self::ensure_can_moderate_category(&account_id, moderator_id, new_category_id).is_err() {
-            return Err(ERROR_MODERATOR_MODERATE_DESTINATION_CATEGORY);
-        };
+        Self::ensure_can_moderate_category(&account_id, moderator_id, new_category_id)
+            .map_err(|_| ERROR_MODERATOR_MODERATE_DESTINATION_CATEGORY)?;
 
         Ok((account_id, thread))
     }
@@ -1390,17 +1369,20 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_can_add_subcategory_path_leaf(
-        category_tree_path: &CategoryTreePathArg<T::CategoryId, T::ThreadId, T::Hash>,
+        parent_category_id: &T::CategoryId,
     ) -> dispatch::Result {
-        Self::ensure_can_mutate_in_path_leaf(category_tree_path)?;
+        // Get the path from parent category to root
+        let category_tree_path =
+            Self::ensure_valid_category_and_build_category_tree_path(parent_category_id)?;
 
-        // Does adding a new category exceed maximum depth
-        let depth_of_new_category = 1 + 1 + category_tree_path.len();
+        let max_category_depth: u64 = T::MaxCategoryDepth::get();
 
-        ensure!(
-            depth_of_new_category <= MaxCategoryDepth::get() as usize,
-            ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED
-        );
+        // Check if max depth reached
+        if category_tree_path.len() as u64 >= max_category_depth {
+            return Err(ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED);
+        }
+
+        Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
 
         Ok(())
     }
@@ -1410,12 +1392,12 @@ impl<T: Trait> Module<T> {
         category_id: &T::CategoryId,
     ) -> Result<CategoryTreePath<T::CategoryId, T::ThreadId, T::Hash>, &'static str> {
         ensure!(
-            <CategoryById<T>>::exists(&category_id),
+            <CategoryById<T>>::exists(category_id),
             ERROR_CATEGORY_DOES_NOT_EXIST
         );
 
         // Get path from parent to root of category tree.
-        let category_tree_path = Self::build_category_tree_path(category_id);
+        let category_tree_path = Self::build_category_tree_path(&category_id);
 
         assert!(!category_tree_path.len() > 0);
 
@@ -1442,7 +1424,7 @@ impl<T: Trait> Module<T> {
         path: &mut CategoryTreePath<T::CategoryId, T::ThreadId, T::Hash>,
     ) {
         // Grab category
-        let category = <CategoryById<T>>::get(category_id);
+        let category = <CategoryById<T>>::get(*category_id);
 
         // Add category to path container
         path.push(category.clone());

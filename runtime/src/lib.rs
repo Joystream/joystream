@@ -53,7 +53,8 @@ pub use sr_primitives::BuildStorage;
 pub use sr_primitives::{Perbill, Permill};
 
 pub use srml_support::{
-    construct_runtime, parameter_types, traits::Currency, traits::Imbalance, traits::Randomness,
+    construct_runtime, parameter_types,
+    traits::{Currency, Get, Imbalance, Randomness},
     StorageLinkedMap, StorageMap, StorageValue,
 };
 pub use staking::StakerStatus;
@@ -208,7 +209,7 @@ impl system::Trait for Runtime {
     type AccountId = AccountId;
     /// The aggregated dispatch type that is available for extrinsics.
     type Call = Call;
-    /// The lookup mechanism to get account ID from whatever is passed in dispatchers.
+    /// The lookup mechanism to é account ID from whatever is passed in dispatchers.
     type Lookup = Indices;
     /// The index type for storing how many extrinsics an account has signed.
     type Index = Index;
@@ -803,6 +804,11 @@ impl forum::ForumUserRegistry<AccountId> for ShimMembershipRegistry {
     }
 }
 */
+
+parameter_types! {
+    pub const MaxCategoryDepth: u64 = 5;
+}
+
 impl forum::Trait for Runtime {
     type Event = Event;
     //type MembershipRegistry = ShimMembershipRegistry;
@@ -811,6 +817,7 @@ impl forum::Trait for Runtime {
     type ForumUserId = ForumUserId;
     type ModeratorId = ModeratorId;
     type CategoryId = u64;
+    type MaxCategoryDepth = MaxCategoryDepth;
 
     fn is_lead(_account_id: &AccountId) -> bool {
         true
