@@ -30,7 +30,8 @@
 		"typescript": "^3.7.2"
 	},
 	"devDependencies": {
-		"husky": "^4.2.5"
+		"husky": "^4.2.5",
+		"eslint-plugin-prettier": "^3.1.4"
 	},
 	"husky": {
 	  "hooks": {
