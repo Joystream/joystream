@@ -1460,12 +1460,7 @@ impl<T: Trait> Module<T> {
         actor: &PrivilegedActor<T>,
         category_id: &T::CategoryId,
     ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, &'static str> {
-        /*
-        let (who, is_lead, moderator_id) = match actor {
-            PrivilegedActor::Moderator(moderator_id) => (Self::ensure_is_moderator(origin, &moderator_id)?, false, moderator_id),
-            PrivilegedActor::Lead => (Self::ensure_is_forum_lead(origin)?, true, &T::ModeratorId::from(0)),
-        };
-        */
+        // Check actor's role
         match actor {
             PrivilegedActor::Lead => Self::ensure_is_forum_lead(origin)?,
             PrivilegedActor::Moderator(moderator_id) => {
@@ -1473,6 +1468,7 @@ impl<T: Trait> Module<T> {
             }
         };
 
+        // Ensure category exists
         if !<CategoryById<T>>::exists(category_id) {
             return Err(ERROR_CATEGORY_DOES_NOT_EXIST);
         }
@@ -1489,6 +1485,7 @@ impl<T: Trait> Module<T> {
             ERROR_CATEGORY_NOT_EMPTY_CATEGORIES,
         );
 
+        // Closure ensuring moderator can delete category
         let can_moderator_delete =
             |moderator_id: &T::ModeratorId,
              category: Category<T::CategoryId, T::ThreadId, T::Hash>| {
@@ -1505,6 +1502,7 @@ impl<T: Trait> Module<T> {
                 Err(ERROR_MODERATOR_CANT_DELETE_CATEGORY)
             };
 
+        // Decide if actor can delete category
         match actor {
             PrivilegedActor::Lead => Ok(category),
             PrivilegedActor::Moderator(moderator_id) => {
