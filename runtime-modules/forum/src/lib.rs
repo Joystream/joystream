@@ -353,6 +353,8 @@ const ERROR_MODERATOR_MODERATE_ORIGIN_CATEGORY: &str =
 const ERROR_MODERATOR_MODERATE_DESTINATION_CATEGORY: &str =
     "Moderator can't moderate destination category.";
 const ERROR_THREAD_MOVE_INVALID: &str = "Origin is the same as the destination.";
+const ERROR_THREAD_NOT_BEING_UPDATED: &str = "Thread not being updated.";
+const ERROR_THREAD_IMMUTABLE: &str = "Thread is immutable, i.e. archived.";
 
 // Errors about post.
 const ERROR_POST_DOES_NOT_EXIST: &str = "Post does not exist.";
@@ -449,6 +451,9 @@ pub struct Thread<ForumUserId, CategoryId, Moment, Hash> {
 
     /// Author of post.
     pub author_id: ForumUserId,
+
+    /// Whether thread is archived.
+    pub archived: bool,
 
     /// poll description.
     pub poll: Option<Poll<Moment, Hash>>,
@@ -580,6 +585,10 @@ decl_event!(
         /// A thread with given id was moderated.
         ThreadModerated(ThreadId, Hash),
 
+        /// A thread with given id was updated.
+        /// The second argument reflects the new archival status of the thread.
+        ThreadUpdated(ThreadId, bool),
+
         /// A thread with given id was moderated.
         ThreadTitleUpdated(ThreadId),
 
@@ -697,12 +706,6 @@ decl_module! {
             // Ensure actor can update category
             let category = Self::ensure_can_update_category_archival_status(origin, &actor, &category_id)?;
 
-            // Make sure category existed.
-            ensure!(
-                <CategoryById<T>>::exists(&category_id),
-                ERROR_CATEGORY_DOES_NOT_EXIST
-            );
-
             if let Some(tmp_parent_category_id) = category.parent_category_id {
                 // Get path from parent to root of category tree.
                 let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(&tmp_parent_category_id)?;
@@ -784,6 +787,38 @@ decl_module! {
 
             Ok(())
         }
+
+        /// Update category
+        fn update_thread_archival_status(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, thread_id: T::ThreadId, new_archival_status: bool) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
+            // Ensure actor can update category
+            let (category, thread) = Self::ensure_can_update_thread_archival_status(origin, &actor, &category_id, &thread_id)?;
+
+            if let Some(tmp_parent_category_id) = category.parent_category_id {
+                // Get path from parent to root of category tree.
+                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(&tmp_parent_category_id)?;
+
+                if new_archival_status && Self::ensure_can_mutate_in_path_leaf(&category_tree_path).is_err() {
+                    return Ok(())
+                }
+            }
+
+            // No change, invalid transaction
+            if new_archival_status == thread.archived {
+                return Err(ERROR_THREAD_NOT_BEING_UPDATED)
+            }
+
+            // Mutate thread, and set possible new change parameters
+            <ThreadById<T>>::mutate(category_id, thread_id, |c| c.archived = new_archival_status);
+
+            // Generate event
+            Self::deposit_event(RawEvent::ThreadUpdated(thread_id, new_archival_status));
+
+            Ok(())
+        }
+
 
         fn delete_thread(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, thread_id: T::ThreadId) -> dispatch::Result {
             // Ensure data migration is done
@@ -1051,6 +1086,7 @@ impl<T: Trait> Module<T> {
             category_id,
             title_hash: T::calculate_hash(title),
             author_id,
+            archived: false,
             poll: poll.clone(),
         };
 
@@ -1192,10 +1228,54 @@ impl<T: Trait> Module<T> {
         // Make sure thread exists
         let thread = Self::ensure_thread_exists(category_id, thread_id)?;
 
+        if thread.archived {
+            return Err(ERROR_THREAD_IMMUTABLE);
+        }
+
         // and corresponding category is mutable
         Self::ensure_category_is_mutable(thread.category_id)?;
 
         Ok(thread)
+    }
+
+    fn ensure_can_update_thread_archival_status(
+        origin: T::Origin,
+        actor: &PrivilegedActor<T>,
+        category_id: &T::CategoryId,
+        thread_id: &T::ThreadId,
+    ) -> Result<
+        (
+            Category<T::CategoryId, T::ThreadId, T::Hash>,
+            Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>,
+        ),
+        &'static str,
+    > {
+        // Check actor's role
+        match actor {
+            PrivilegedActor::Lead => Self::ensure_is_forum_lead(origin)?,
+            PrivilegedActor::Moderator(moderator_id) => {
+                Self::ensure_is_moderator(origin, &moderator_id)?
+            }
+        };
+
+        let thread = Self::ensure_thread_is_mutable(category_id, thread_id)?;
+        let category = <CategoryById<T>>::get(category_id);
+
+        // Closure ensuring moderator can delete category
+        let ensure_moderator_can_update = |moderator_id: &T::ModeratorId| -> dispatch::Result {
+            Self::ensure_can_moderate_category_path(moderator_id, &category_id)
+                .map_err(|_| ERROR_MODERATOR_CANT_UPDATE_CATEGORY)?;
+
+            Ok(())
+        };
+
+        // Decide if actor can delete category
+        match actor {
+            PrivilegedActor::Lead => (),
+            PrivilegedActor::Moderator(moderator_id) => ensure_moderator_can_update(moderator_id)?,
+        };
+
+        Ok((category, thread))
     }
 
     fn ensure_thread_exists(
