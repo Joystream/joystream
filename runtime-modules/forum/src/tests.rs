@@ -121,7 +121,13 @@ fn create_category_parent() {
                 good_category_description(),
                 Ok(()),
             );
-            update_category_archival_status_mock(origin.clone(), 2, true, Ok(()));
+            update_category_archival_status_mock(
+                origin.clone(),
+                PrivilegedActor::Lead,
+                2,
+                true,
+                Ok(()),
+            );
 
             create_category_mock(
                 origin.clone(),
@@ -184,7 +190,13 @@ fn update_category_archival_status_origin() {
                 good_category_description(),
                 Ok(()),
             );
-            update_category_archival_status_mock(origins[index].clone(), 1, true, results[index]);
+            update_category_archival_status_mock(
+                origins[index].clone(),
+                PrivilegedActor::Lead,
+                1,
+                true,
+                results[index],
+            );
         });
     }
 }
@@ -205,6 +217,7 @@ fn update_category_archival_status_no_change() {
         );
         update_category_archival_status_mock(
             origin,
+            PrivilegedActor::Lead,
             1,
             false,
             Err(ERROR_CATEGORY_NOT_BEING_UPDATED),
@@ -226,12 +239,152 @@ fn update_category_archival_status_category_exists() {
             good_category_description(),
             Ok(()),
         );
-        update_category_archival_status_mock(origin.clone(), 1, true, Ok(()));
         update_category_archival_status_mock(
             origin.clone(),
+            PrivilegedActor::Lead,
+            1,
+            true,
+            Ok(()),
+        );
+        update_category_archival_status_mock(
+            origin.clone(),
+            PrivilegedActor::Lead,
             2,
             true,
             Err(ERROR_CATEGORY_DOES_NOT_EXIST),
+        );
+    });
+}
+
+#[test]
+// test if moderator can archive category
+fn update_category_archival_status_moderator() {
+    let moderators = [FORUM_MODERATOR_ORIGIN_ID];
+    let origins = [FORUM_MODERATOR_ORIGIN];
+
+    let config = default_genesis_config();
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    build_test_externalities(config).execute_with(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        // unprivileged moderator will fail to update category
+        update_category_archival_status_mock(
+            origins[0].clone(),
+            PrivilegedActor::Moderator(moderators[0]),
+            category_id,
+            true,
+            Err(ERROR_MODERATOR_CANT_UPDATE_CATEGORY),
+        );
+
+        // give permision to moderate category itself
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id,
+            true,
+            Ok(()),
+        );
+
+        // moderator associated with category will succeed
+        update_category_archival_status_mock(
+            origins[0].clone(),
+            PrivilegedActor::Moderator(moderators[0]),
+            category_id,
+            true,
+            Ok(()),
+        );
+    });
+}
+
+#[test]
+// test if moderator can archive category
+fn update_category_archival_status_lock_works() {
+    let config = default_genesis_config();
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    build_test_externalities(config).execute_with(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        let post_id = create_post_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            thread_id,
+            good_post_text(),
+            Ok(()),
+        );
+
+        update_category_archival_status_mock(
+            origin.clone(),
+            PrivilegedActor::Lead,
+            1,
+            true,
+            Ok(()),
+        );
+
+        // can't add more threads
+        create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE),
+        );
+
+        // can't add more posts to thread inside category
+        create_post_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            thread_id,
+            good_post_text(),
+            Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE),
+        );
+
+        // can't update post
+        edit_post_text_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            thread_id,
+            post_id,
+            good_post_new_text(),
+            Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE),
+        );
+
+        // can't update thread
+        edit_thread_title_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            thread_id,
+            good_thread_new_title(),
+            Err(ERROR_ANCESTOR_CATEGORY_IMMUTABLE),
         );
     });
 }

@@ -485,6 +485,7 @@ pub fn vote_on_poll_mock(
 
 pub fn update_category_archival_status_mock(
     origin: OriginType,
+    moderator_id: PrivilegedActor<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     new_archival_status: bool,
     result: Result<(), &'static str>,
@@ -492,6 +493,7 @@ pub fn update_category_archival_status_mock(
     assert_eq!(
         TestForumModule::update_category_archival_status(
             mock_origin(origin),
+            moderator_id,
             category_id,
             new_archival_status
         ),

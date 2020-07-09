@@ -368,6 +368,7 @@ const ERROR_CATEGORY_DOES_NOT_EXIST: &str = "Category does not exist.";
 const ERROR_CATEGORY_NOT_EMPTY_THREADS: &str = "Category still contains some threads.";
 const ERROR_CATEGORY_NOT_EMPTY_CATEGORIES: &str = "Category still contains some subcategories.";
 const ERROR_MODERATOR_CANT_DELETE_CATEGORY: &str = "No permissions to delete category.";
+const ERROR_MODERATOR_CANT_UPDATE_CATEGORY: &str = "No permissions to update category.";
 
 // Errors about poll.
 const ERROR_POLL_ALTERNATIVES_TOO_SHORT: &str = "Poll items number too short.";
@@ -689,12 +690,12 @@ decl_module! {
         }
 
         /// Update category
-        fn update_category_archival_status(origin, category_id: T::CategoryId, new_archival_status: bool) -> dispatch::Result {
+        fn update_category_archival_status(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, new_archival_status: bool) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Not signed by forum LEAD
-            Self::ensure_is_forum_lead(origin)?;
+            // Ensure actor can update category
+            let category = Self::ensure_can_update_category_archival_status(origin, &actor, &category_id)?;
 
             // Make sure category existed.
             ensure!(
@@ -702,10 +703,7 @@ decl_module! {
                 ERROR_CATEGORY_DOES_NOT_EXIST
             );
 
-            // Get parent category
-            let parent_category_id = <CategoryById<T>>::get(&category_id).parent_category_id;
-
-            if let Some(tmp_parent_category_id) = parent_category_id {
+            if let Some(tmp_parent_category_id) = category.parent_category_id {
                 // Get path from parent to root of category tree.
                 let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(&tmp_parent_category_id)?;
 
@@ -775,11 +773,7 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Check that account is forum member
-            Self::ensure_is_forum_user(origin, &forum_user_id)?;
-
-            // Ensure forum user is author of the thread
-            let thread = Self::ensure_is_thread_author(&category_id, &thread_id, &forum_user_id)?;
+            let thread = Self::ensure_can_edit_thread_title(origin, &category_id, &thread_id, &forum_user_id)?;
 
             // Store the event
             Self::deposit_event(RawEvent::ThreadTitleUpdated(thread_id));
@@ -1199,7 +1193,7 @@ impl<T: Trait> Module<T> {
         let thread = Self::ensure_thread_exists(category_id, thread_id)?;
 
         // and corresponding category is mutable
-        Self::ensure_catgory_is_mutable(thread.category_id)?;
+        Self::ensure_category_is_mutable(thread.category_id)?;
 
         Ok(thread)
     }
@@ -1215,12 +1209,27 @@ impl<T: Trait> Module<T> {
         Ok(<ThreadById<T>>::get(category_id, thread_id))
     }
 
+    fn ensure_can_edit_thread_title(
+        origin: T::Origin,
+        category_id: &T::CategoryId,
+        thread_id: &T::ThreadId,
+        forum_user_id: &T::ForumUserId,
+    ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>, &'static str> {
+        // Check that account is forum member
+        Self::ensure_is_forum_user(origin, &forum_user_id)?;
+
+        // Ensure forum user is author of the thread
+        let thread = Self::ensure_is_thread_author(&category_id, &thread_id, &forum_user_id)?;
+
+        Ok(thread)
+    }
+
     fn ensure_is_thread_author(
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
         forum_user_id: &T::ForumUserId,
     ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>, &'static str> {
-        let thread = Self::ensure_thread_exists(category_id, thread_id)?;
+        let thread = Self::ensure_thread_is_mutable(category_id, thread_id)?;
 
         if thread.author_id != *forum_user_id {
             return Err(ERROR_ACCOUNT_DOES_NOT_MATCH_THREAD_AUTHOR);
@@ -1330,7 +1339,7 @@ impl<T: Trait> Module<T> {
         Ok((account_id, thread))
     }
 
-    fn ensure_catgory_is_mutable(category_id: T::CategoryId) -> dispatch::Result {
+    fn ensure_category_is_mutable(category_id: T::CategoryId) -> dispatch::Result {
         let category_tree_path = Self::build_category_tree_path(&category_id);
 
         Self::ensure_can_mutate_in_path_leaf(&category_tree_path)
@@ -1468,6 +1477,45 @@ impl<T: Trait> Module<T> {
             PrivilegedActor::Lead => Ok(category),
             PrivilegedActor::Moderator(moderator_id) => {
                 can_moderator_delete(moderator_id, category)
+            }
+        }
+    }
+
+    fn ensure_can_update_category_archival_status(
+        origin: T::Origin,
+        actor: &PrivilegedActor<T>,
+        category_id: &T::CategoryId,
+    ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, &'static str> {
+        // Check actor's role
+        match actor {
+            PrivilegedActor::Lead => Self::ensure_is_forum_lead(origin)?,
+            PrivilegedActor::Moderator(moderator_id) => {
+                Self::ensure_is_moderator(origin, &moderator_id)?
+            }
+        };
+
+        // Ensure category exists
+        if !<CategoryById<T>>::exists(category_id) {
+            return Err(ERROR_CATEGORY_DOES_NOT_EXIST);
+        }
+
+        let category = <CategoryById<T>>::get(category_id);
+
+        // Closure ensuring moderator can delete category
+        let can_moderator_update =
+            |moderator_id: &T::ModeratorId,
+             category: Category<T::CategoryId, T::ThreadId, T::Hash>| {
+                Self::ensure_can_moderate_category_path(moderator_id, &category_id)
+                    .map_err(|_| ERROR_MODERATOR_CANT_UPDATE_CATEGORY)?;
+
+                Ok(category)
+            };
+
+        // Decide if actor can delete category
+        match actor {
+            PrivilegedActor::Lead => Ok(category),
+            PrivilegedActor::Moderator(moderator_id) => {
+                can_moderator_update(moderator_id, category)
             }
         }
     }
