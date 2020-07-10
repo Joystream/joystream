@@ -379,7 +379,7 @@ export class AdminController extends Controller<State, ITransport> {
     this.updateState();
   }
 
-  onTxSuccess = () => { this.updateState() }
+  onTxSuccess = () => { this.updateState(); }
 
   newOpening (accountId: string, desc: openingDescriptor) {
     const tx = this.api.tx.contentWorkingGroup.addCuratorOpening(
@@ -543,7 +543,7 @@ type AdminContainerProps = {
   state: State;
   controller: AdminController;
 }
-const AdminContainer = ({state, controller}: AdminContainerProps) => {
+const AdminContainer = ({ state, controller }: AdminContainerProps) => {
   const address = useMyAccount().state.address;
   const containerRef = useRef<HTMLDivElement>(null);
   return (
@@ -570,7 +570,7 @@ const AdminContainer = ({state, controller}: AdminContainerProps) => {
               open={state.modalOpen}
               onClose={() => controller.closeModal()}
               mountNode={containerRef.current} // Prevent conflicts with tx-modal (after form values reset issue is fixed, see FIXME: above)
-              >
+            >
               <Modal.Content image>
                 <Modal.Description>
                   <NewOpening desc={state.currentDescriptor} fn={(desc) => address && controller.newOpening(address, desc)} />
@@ -585,13 +585,13 @@ const AdminContainer = ({state, controller}: AdminContainerProps) => {
         <br />
       </Container>
     </div>
-  )
-}
+  );
+};
 
 export const AdminView = View<AdminController, State>(
   (state, controller) => {
     return (
-        <AdminContainer state={state} controller={controller} />
+      <AdminContainer state={state} controller={controller} />
     );
   }
 );
