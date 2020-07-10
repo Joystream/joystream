@@ -19,16 +19,11 @@
 
 'use strict'
 
-import axios from "axios";
 import fs from "fs"
-import path from "path"
 import assert from "assert"
 import { RuntimeApi } from "@joystream/storage-runtime-api"
 import meow from "meow"
-import chalk from "chalk"
 import _ from "lodash"
-import ipfsHash from 'ipfs-only-hash';
-import FormData from "form-data"
 import Debug from "debug";
 const debug = Debug('joystream:storage-cli');
 
@@ -156,44 +151,14 @@ const commands = {
     //   f.pipe(r)
     // })
   },
-  // upload2: async (api, url, contentId, filePath___) => {
-  //   const filePath = './local.mp4';
-  //   // requesetType: 'stream' - same as download??
-  //   // Create file read stream and set error handler.
-  //   const file = fs.createReadStream(filePath)
-  //       .on('error', (err) => {
-  //         const message = `File read failed: ${err}`;
-  //         console.log(chalk.red(message));
-  //         process.exit(1);
-  //       });
-  //
-  //   try {
-  //     const formData = new FormData();
-  //     formData.append("file", file);
-  //
-  //     const config = {
-  //       headers: {
-  //         // TODO uncomment this once the issue fixed:
-  //         // https://github.com/Joystream/storage-node-joystream/issues/16
-  //         // 'Content-Type': file.type
-  //         'Content-Type': '' // <-- this is a temporary hack
-  //       },
-  //       url
-  //     };
-  //
-  //     await axios(config);
-  //   } catch (err) {
-  //     console.log(chalk.red(err));
-  //     process.exit(1);
-  //   }
-  // },
-  upload: async (api) => {
-    await uploadCommand.run(api)
+
+  upload: async (api: any, filePath: string) => {
+    await uploadCommand.run(api, filePath)
   },
   // needs to be updated to take a content id and resolve it a potential set
   // of providers that has it, and select one (possibly try more than one provider)
   // to fetch it from the get api url of a provider..
-  download: async (api, url, contentId, filePath) => {
+  download: async (api: any, url: string, contentId: string, filePath: string) => {
     await downloadCommand.run(api, url, contentId, filePath);
   },
   // Shows asset information derived from request headers.
