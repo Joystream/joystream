@@ -27,9 +27,17 @@ import { RuntimeApi } from "@joystream/storage-runtime-api"
 import meow from "meow"
 import chalk from "chalk"
 import _ from "lodash"
-import * as dev from "./dev"
+import ipfsHash from 'ipfs-only-hash';
+import FormData from "form-data"
 import Debug from "debug";
 const debug = Debug('joystream:storage-cli');
+
+// Commands
+import * as dev from "./commands/dev"
+import * as headCommand from "./commands/head";
+import * as downloadCommand from "./commands/download";
+import * as uploadCommand from "./commands/upload";
+
 
 // Parse CLI
 const FLAG_DEFINITIONS = {
@@ -76,56 +84,22 @@ function loadIdentity(api, filename, passphrase) {
   }
 }
 
-function validateHeadParameters(url: string, contentId: string) : boolean {
-  return url && url !== "" && contentId && contentId !=="";
-}
-
-function validateDownloadParameters(url: string, contentId: string, filePath: string) : boolean {
-  return url && url !== "" && contentId && contentId !=="" && filePath && filePath !== "";
-}
-
-function createAndLogAssetUrl(url: string, contentId: string) : string {
-  const assetUrl = `${url}/asset/v0/${contentId}`;
-  console.log(chalk.yellow('Asset URL:', assetUrl));
-
-  return assetUrl;
-}
-
-function showDownloadUsage() {
-  console.log(chalk.yellow(`
-        Invalid parameters for 'download' command.
-        Usage:   storage-cli download colossusURL contentID filePath
-        Example: storage-cli download http://localhost:3001 0x7a6ba7e9157e5fba190dc146fe1baa8180e29728a5c76779ed99655500cff795 ./movie.mp4
-      `));
-}
-
-function showHeadUsage() {
-  console.log(chalk.yellow(`
-        Invalid parameters for 'head' command.
-        Usage:   storage-cli head colossusURL contentID
-        Example: storage-cli head http://localhost:3001 0x7a6ba7e9157e5fba190dc146fe1baa8180e29728a5c76779ed99655500cff795
-      `));
-}
-
-
 const commands = {
   // add Alice well known account as storage provider
   'dev-init': async api => {
     // dev accounts are automatically loaded, no need to add explicitly to keyring using loadIdentity(api)
-    const dev = require('./dev')
     return dev.init(api)
   },
   // Checks that the setup done by dev-init command was successful.
   'dev-check': async api => {
     // dev accounts are automatically loaded, no need to add explicitly to keyring using loadIdentity(api)
-    const dev = require('./dev')
     return dev.check(api)
   },
   // The upload method is not correctly implemented
   // needs to get the liaison after creating a data object,
   // resolve the ipns id to the asset put api url of the storage-node
   // before uploading..
-  upload: async (api, url, filename, doTypeId, keyfile, passphrase) => {
+  upload_old: async (api, url, filename, doTypeId, keyfile, passphrase) => {
     // loadIdentity(api, keyfile, passphrase)
     // // Check parameters
     // assertFile('file', filename)
@@ -182,59 +156,50 @@ const commands = {
     //   f.pipe(r)
     // })
   },
+  // upload2: async (api, url, contentId, filePath___) => {
+  //   const filePath = './local.mp4';
+  //   // requesetType: 'stream' - same as download??
+  //   // Create file read stream and set error handler.
+  //   const file = fs.createReadStream(filePath)
+  //       .on('error', (err) => {
+  //         const message = `File read failed: ${err}`;
+  //         console.log(chalk.red(message));
+  //         process.exit(1);
+  //       });
+  //
+  //   try {
+  //     const formData = new FormData();
+  //     formData.append("file", file);
+  //
+  //     const config = {
+  //       headers: {
+  //         // TODO uncomment this once the issue fixed:
+  //         // https://github.com/Joystream/storage-node-joystream/issues/16
+  //         // 'Content-Type': file.type
+  //         'Content-Type': '' // <-- this is a temporary hack
+  //       },
+  //       url
+  //     };
+  //
+  //     await axios(config);
+  //   } catch (err) {
+  //     console.log(chalk.red(err));
+  //     process.exit(1);
+  //   }
+  // },
+  upload: async (api) => {
+    await uploadCommand.run(api)
+  },
   // needs to be updated to take a content id and resolve it a potential set
   // of providers that has it, and select one (possibly try more than one provider)
   // to fetch it from the get api url of a provider..
   download: async (api, url, contentId, filePath) => {
-    if (!validateDownloadParameters(url, contentId, filePath)){
-      return showDownloadUsage();
-    }
-    const assetUrl = createAndLogAssetUrl(url, contentId);
-    console.log(chalk.yellow('File path:', filePath));
-
-    const writer = fs.createWriteStream(filePath);
-    writer.on('error', (err) => {
-      const message = `File write failed: ${err}`;
-      console.log(chalk.red(message));
-      process.exit(1);
-    });
-
-    try {
-      const response = await axios({
-        url: assetUrl,
-        method: 'GET',
-        responseType: 'stream'
-      });
-
-      response.data.pipe(writer);
-
-      return new Promise((resolve) => {
-        writer.on('finish', () => {
-          console.log("File downloaded.")
-          resolve();
-        });
-      });
-    } catch (err) {
-      console.log(chalk.red(`Colossus request failed: ${err.message}`));
-    }
+    await downloadCommand.run(api, url, contentId, filePath);
   },
   // Shows asset information derived from request headers.
   // Accepts colossus URL and content ID.
   head: async (api: any, url: string, contentId: string) => {
-    if (!validateHeadParameters(url, contentId)){
-      return showHeadUsage();
-    }
-    const assetUrl = createAndLogAssetUrl(url, contentId);
-
-    try {
-      const response = await axios.head(assetUrl);
-
-      console.log(chalk.green(`Content type: ${response.headers['content-type']}`));
-      console.log(chalk.green(`Content lenth: ${response.headers['content-length']}`));
-
-    } catch (err) {
-      console.log(chalk.red(`Colossus request failed: ${err.message}`));
-    }
+    await headCommand.run(api, url, contentId);
   }
 }
 
