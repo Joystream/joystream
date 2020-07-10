@@ -365,7 +365,7 @@ fn add_schema_support_to_entity_schema_does_not_exist() {
         let mut schema_property_values = BTreeMap::new();
         schema_property_values.insert(FIRST_PROPERTY_ID, PropertyValue::default());
 
-        // Make an attempt to add schema support to entity, providing shema_id,
+        // Make an attempt to add schema support to entity, providing schema_id,
         // which corresponding Schema does not exist on Class level
         let add_schema_support_to_entity_result = add_schema_support_to_entity(
             LEAD_ORIGIN,

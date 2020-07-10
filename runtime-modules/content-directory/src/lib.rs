@@ -1291,7 +1291,7 @@ decl_module! {
             Ok(())
         }
 
-        /// Add schema support to entity under given `shema_id` and provided `property_values`
+        /// Add schema support to entity under given `schema_id` and provided `property_values`
         pub fn add_schema_support_to_entity(
             origin,
             actor: Actor<T>,
@@ -1428,7 +1428,7 @@ decl_module! {
 
                     // Create wrapper structure from new_property_values and their corresponding Class properties
                     let updated_values_for_existing_properties = ValuesForExistingProperties::from(
-                        &class_properties, &new_property_values
+                        &class_properties, &entity_property_values_updated
                     )?;
 
                     // Traverse all values_for_updated_properties to ensure unique option satisfied (if required)
@@ -2262,10 +2262,11 @@ impl<T: Trait> Module<T> {
         new_property_values
             .into_iter()
             .filter(|(id, new_property_value)| {
-                matches!(
-                    entity_property_values.get(id),
-                    Some(entity_property_value) if *entity_property_value != *new_property_value
-                )
+                if let Some(entity_property_value) = entity_property_values.get(id) {
+                    *entity_property_value != *new_property_value
+                } else {
+                    true
+                }
             })
             .collect()
     }

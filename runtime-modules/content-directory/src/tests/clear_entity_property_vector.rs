@@ -100,7 +100,7 @@ fn clear_entity_property_vector_lead_auth_failed() {
             EntityAccessStateFailureType::LeadAuthFailed,
         );
 
-        // Create class reference shema and add corresponding schema support to the Entity
+        // Create class reference schema and add corresponding schema support to the Entity
         add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
 
         // Runtime state before tested call
@@ -133,7 +133,7 @@ fn clear_entity_property_vector_member_auth_failed() {
             EntityAccessStateFailureType::MemberAuthFailed,
         );
 
-        // Create class reference shema and add corresponding schema support to the Entity
+        // Create class reference schema and add corresponding schema support to the Entity
         add_class_reference_schema_and_entity_schema_support(&actor, FIRST_MEMBER_ORIGIN);
 
         // Runtime state before tested call
@@ -166,7 +166,7 @@ fn clear_entity_property_vector_curator_auth_failed() {
             EntityAccessStateFailureType::CuratorAuthFailed,
         );
 
-        // Create class reference shema and add corresponding schema support to the Entity
+        // Create class reference schema and add corresponding schema support to the Entity
         add_class_reference_schema_and_entity_schema_support(&actor, FIRST_CURATOR_ORIGIN);
 
         // Runtime state before tested call
@@ -195,7 +195,7 @@ fn clear_entity_property_vector_curator_group_is_not_active() {
             EntityAccessStateFailureType::CuratorAuthFailed,
         );
 
-        // Create class reference shema and add corresponding schema support to the Entity
+        // Create class reference schema and add corresponding schema support to the Entity
         add_class_reference_schema_and_entity_schema_support(&actor, FIRST_CURATOR_ORIGIN);
 
         // Make curator group inactive to block it from any entity operations
@@ -235,7 +235,7 @@ fn clear_entity_property_vector_curator_not_found_in_curator_group() {
             EntityAccessStateFailureType::CuratorNotFoundInCuratorGroup,
         );
 
-        // Create class reference shema and add corresponding schema support to the Entity
+        // Create class reference schema and add corresponding schema support to the Entity
         add_class_reference_schema_and_entity_schema_support(
             &Actor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
             FIRST_CURATOR_ORIGIN,
@@ -271,7 +271,7 @@ fn clear_entity_property_vector_entity_access_denied() {
             EntityAccessStateFailureType::EntityAccessDenied,
         );
 
-        // Create class reference shema and add corresponding schema support to the Entity
+        // Create class reference schema and add corresponding schema support to the Entity
         add_class_reference_schema_and_entity_schema_support(&Actor::Lead, LEAD_ORIGIN);
 
         // Runtime state before tested call
@@ -304,7 +304,7 @@ fn clear_entity_property_vector_values_locked_on_class_level() {
             EntityAccessStateFailureType::PropertyValuesLocked,
         );
 
-        // Create class reference shema and add corresponding schema support to the Entity
+        // Create class reference schema and add corresponding schema support to the Entity
         add_class_reference_schema_and_entity_schema_support(&Actor::Lead, LEAD_ORIGIN);
 
         // Runtime state before tested call

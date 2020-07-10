@@ -116,7 +116,7 @@ fn insert_at_entity_property_vector_lead_auth_failed() {
             EntityAccessStateFailureType::LeadAuthFailed,
         );
 
-        // Create class reference shema and add corresponding schema support to the Entity
+        // Create class reference schema and add corresponding schema support to the Entity
         add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
 
         // Runtime state before tested call
@@ -156,7 +156,7 @@ fn insert_at_entity_property_vector_member_auth_failed() {
             EntityAccessStateFailureType::MemberAuthFailed,
         );
 
-        // Create class reference shema and add corresponding schema support to the Entity
+        // Create class reference schema and add corresponding schema support to the Entity
         add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
 
         // Runtime state before tested call
@@ -196,7 +196,7 @@ fn insert_at_entity_property_vector_curator_group_is_not_active() {
             EntityAccessStateFailureType::CuratorAuthFailed,
         );
 
-        // Create class reference shema and add corresponding schema support to the Entity
+        // Create class reference schema and add corresponding schema support to the Entity
         add_class_reference_schema_and_entity_schema_support(&actor, FIRST_CURATOR_ORIGIN);
 
         // Make curator group inactive to block it from any entity operations
@@ -243,8 +243,11 @@ fn insert_at_entity_property_vector_curator_auth_failed() {
             EntityAccessStateFailureType::CuratorAuthFailed,
         );
 
-        // Create class reference shema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(&actor, FIRST_CURATOR_ORIGIN);
+        // Create class reference schema and add corresponding schema support to the Entity
+        add_class_reference_schema_and_entity_schema_support(
+            &Actor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
+            FIRST_CURATOR_ORIGIN,
+        );
 
         // Runtime state before tested call
 
@@ -283,7 +286,7 @@ fn insert_at_entity_property_vector_curator_not_found_in_curator_group() {
             EntityAccessStateFailureType::CuratorNotFoundInCuratorGroup,
         );
 
-        // Create class reference shema and add corresponding schema support to the Entity
+        // Create class reference schema and add corresponding schema support to the Entity
         add_class_reference_schema_and_entity_schema_support(
             &Actor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
             FIRST_CURATOR_ORIGIN,
@@ -327,7 +330,7 @@ fn insert_at_entity_property_vector_access_denied() {
             EntityAccessStateFailureType::EntityAccessDenied,
         );
 
-        // Create class reference shema and add corresponding schema support to the Entity
+        // Create class reference schema and add corresponding schema support to the Entity
         add_class_reference_schema_and_entity_schema_support(&Actor::Lead, LEAD_ORIGIN);
 
         // Runtime state before tested call
@@ -368,7 +371,7 @@ fn insert_at_entity_property_vector_values_locked_on_class_level() {
             EntityAccessStateFailureType::PropertyValuesLocked,
         );
 
-        // Create class reference shema and add corresponding schema support to the Entity
+        // Create class reference schema and add corresponding schema support to the Entity
         add_class_reference_schema_and_entity_schema_support(&Actor::Lead, LEAD_ORIGIN);
 
         // Runtime state before tested call
@@ -645,7 +648,7 @@ fn insert_at_entity_property_vector_nonces_does_not_match() {
         // Create entity
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
-        // Create class reference shema and add corresponding schema support to the Entity
+        // Create class reference schema and add corresponding schema support to the Entity
         add_class_reference_schema_and_entity_schema_support(&Actor::Lead, LEAD_ORIGIN);
 
         // Runtime state before tested call
@@ -966,7 +969,7 @@ fn insert_at_entity_property_vector_referenced_entity_not_found() {
         // Create entity
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
-        // Create class reference shema and add corresponding schema support to the Entity
+        // Create class reference schema and add corresponding schema support to the Entity
         add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
 
         // Runtime state before tested call
@@ -1008,16 +1011,16 @@ fn insert_at_entity_property_vector_entity_can_not_be_referenced() {
 
         let actor = Actor::Lead;
 
-        // Create first Entity
+        // Create first Entity of first Class
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
-        // Create class reference shema and add corresponding schema support to the first  Entity
+        // Create class reference schema and add corresponding schema support to the first Entity
         add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
 
-        // Create second Entity
+        // Create second Entity of first Class
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
-        // Update entity permissions for chosen entity to forbid it from being referencable
+        // Update second entity permissions to forbid it from being referencable
         assert_ok!(update_entity_permissions(
             LEAD_ORIGIN,
             SECOND_ENTITY_ID,
@@ -1077,7 +1080,7 @@ fn insert_at_entity_property_vector_same_controller_constraint_violation() {
         // Create first Entity
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
-        // Create class reference shema and add corresponding schema support to the first  Entity
+        // Create class reference schema and add corresponding schema support to the first  Entity
         add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
 
         // Create second Entity

@@ -112,7 +112,7 @@ pub const ERROR_CLASS_ACCESS_DENIED: &str = "Class access denied";
 pub const ERROR_ENTITY_ACCESS_DENIED: &str = "Entity access denied";
 pub const ERROR_ENTITY_CAN_NOT_BE_REFERENCED: &str = "Given entity can`t be referenced";
 pub const ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR: &str =
-    "Given class property type is locked for updating";
+    "Given class property type is locked for given actor";
 pub const ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED: &str =
     "Class maintainers limit reached";
 pub const ERROR_NUMBER_OF_CURATORS_PER_GROUP_LIMIT_REACHED: &str =
