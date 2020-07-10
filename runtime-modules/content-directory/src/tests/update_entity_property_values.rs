@@ -946,8 +946,8 @@ fn update_entity_property_values_property_should_be_unique() {
 
         schema_new_property_values.insert(SECOND_PROPERTY_ID, schema_new_property_value);
 
-        // Make an attempt to update entity property values, providing new reference property value(s) in case,
-        // when corresponding Entity can only be referenced from Entity with the same controller.
+        // Make an attempt to update entity property values, providing property value(s), which are identical to thouse, 
+        // are already added to The Entity, though should be unique on Class Schema level
         let update_entity_property_values_result = update_entity_property_values(
             LEAD_ORIGIN,
             actor,
