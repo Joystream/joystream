@@ -38,20 +38,26 @@ interface AddContentParams {
     memberId: number
 }
 
-function getAccountId(api: any) : string {
-    const ALICE_URI = '//Alice'
-
-    return api.identities.keyring.addFromUri(ALICE_URI, null, 'sr25519').address
-}
-
 // Creates parameters for the AddContent runtime tx.
-async function getAddContentParams(api: any, filePath: string, dataObjectTypeIdString: string): Promise<AddContentParams> {
-    const memberId = 0; // alice
-    const accountId = getAccountId(api)
-    let dataObjectTypeId: number = parseInt(dataObjectTypeIdString);
+async function getAddContentParams(
+    api: any,
+    filePath: string,
+    dataObjectTypeIdString: string,
+    keyFile: string,
+    passPhrase: string,
+    memberIdString: string
+): Promise<AddContentParams> {
+    const identity = await loadIdentity(api, keyFile, passPhrase);
+    const accountId = identity.address;
 
+    let dataObjectTypeId: number = parseInt(dataObjectTypeIdString);
     if (isNaN(dataObjectTypeId)) {
         fail(`Cannot parse dataObjectTypeId: ${dataObjectTypeIdString}`);
+    }
+
+    let memberId: number = parseInt(memberIdString);
+    if (isNaN(dataObjectTypeId)) {
+        fail(`Cannot parse memberIdString: ${memberIdString}`);
     }
 
     return {
@@ -131,9 +137,28 @@ async function discoverStorageProviderEndpoint(api: any, storageProviderId: stri
     }
 }
 
+// Loads and unlocks the runtime identity using the key file and pass phrase.
+async function loadIdentity(api, filename, passphrase) : Promise<any> {
+    try {
+        await fs.promises.access(filename);
+    } catch (error) {
+        fail(`Cannot read file "${filename}".`)
+    }
+
+    return api.identities.loadUnlock(filename, passphrase);
+}
+
+
 // Command executor.
-export async function run(api: any, filePath: string, dataObjectTypeId: string){
-    let addContentParams = await getAddContentParams(api, filePath, dataObjectTypeId);
+export async function run(
+    api: any,
+    filePath: string,
+    dataObjectTypeId: string,
+    keyFile: string,
+    passPhrase: string,
+    memberId: string
+){
+    let addContentParams = await getAddContentParams(api, filePath, dataObjectTypeId, keyFile, passPhrase, memberId);
     debug(`AddContent Tx params: ${JSON.stringify(addContentParams)}`);
     debug(`Decoded CID: ${ContentId.decode(addContentParams.contentId).toString()}`);
 

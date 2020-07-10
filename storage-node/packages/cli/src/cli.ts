@@ -19,13 +19,9 @@
 
 'use strict'
 
-import fs from "fs"
-import assert from "assert"
 import { RuntimeApi } from "@joystream/storage-runtime-api"
 import meow from "meow"
 import _ from "lodash"
-import Debug from "debug";
-const debug = Debug('joystream:storage-cli');
 
 // Commands
 import * as dev from "./commands/dev"
@@ -63,21 +59,6 @@ const cli = meow(
   `,
   { flags: FLAG_DEFINITIONS }
 )
-
-function assertFile(name, filename) {
-  assert(filename, `Need a ${name} parameter to proceed!`)
-  assert(fs.statSync(filename).isFile(), `Path "${filename}" is not a file, aborting!`)
-}
-
-function loadIdentity(api, filename, passphrase) {
-  if (filename) {
-    assertFile('keyfile', filename)
-    api.identities.loadUnlock(filename, passphrase)
-  } else {
-    debug('Loading Alice as identity')
-    api.identities.useKeyPair(dev.aliceKeyPair(api))
-  }
-}
 
 const commands = {
   // add Alice well known account as storage provider
@@ -152,8 +133,8 @@ const commands = {
     // })
   },
 
-  upload: async (api: any, filePath: string, dataObjectTypeId: string) => {
-    await uploadCommand.run(api, filePath, dataObjectTypeId)
+  upload: async (api: any, filePath: string, dataObjectTypeId: string, keyFile: string, passPhrase: string, memberId: string) => {
+    await uploadCommand.run(api, filePath, dataObjectTypeId, keyFile, passPhrase, memberId)
   },
   // needs to be updated to take a content id and resolve it a potential set
   // of providers that has it, and select one (possibly try more than one provider)
