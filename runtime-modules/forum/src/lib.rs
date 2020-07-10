@@ -717,12 +717,6 @@ decl_module! {
             if let Some(tmp_parent_category_id) = parent {
                 // Can we mutate in this category?
                 Self::ensure_can_add_subcategory_path_leaf(&tmp_parent_category_id)?;
-
-                // Increment number of subcategories to reflect this new category being
-                // added as a child
-                <CategoryById<T>>::mutate(tmp_parent_category_id, |c| {
-                    c.num_direct_subcategories += 1;
-                });
             }
 
             //
@@ -749,6 +743,13 @@ decl_module! {
 
             // Update other next category id
             <NextCategoryId<T>>::mutate(|value| *value += One::one());
+
+            // If not root, increase parent's subcategories counter
+            if let Some(tmp_parent_category_id) = parent {
+                <CategoryById<T>>::mutate(tmp_parent_category_id, |c| {
+                    c.num_direct_subcategories += 1;
+                });
+            }
 
             // Generate event
             Self::deposit_event(RawEvent::CategoryCreated(next_category_id));
