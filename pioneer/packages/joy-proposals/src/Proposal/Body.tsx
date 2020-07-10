@@ -15,12 +15,13 @@ import { Option, Bytes } from '@polkadot/types/';
 import { formatBalance } from '@polkadot/util';
 import { PromiseComponent } from '@polkadot/joy-utils/react/components';
 import ReactMarkdown from 'react-markdown';
-import { WorkingGroupOpeningPolicyCommitment } from '@joystream/types/working-group';
+import { WorkingGroupOpeningPolicyCommitment, RewardPolicy } from '@joystream/types/working-group';
 import {
   ActivateOpeningAt,
   ActivateOpeningAtKeys
 } from '@joystream/types/hiring';
-import { WorkingGroup } from '@joystream/types/common';
+import { WorkingGroup, WorkingGroupKeys } from '@joystream/types/common';
+import { ApplicationsDetailsByOpening } from '@polkadot/joy-utils/react/components/working-groups/ApplicationDetails';
 
 type BodyProps = {
   title: string;
@@ -177,8 +178,29 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
   BeginReviewWorkingGroupLeaderApplication: ([id, group]) => {
     return {
       'Working group': (new WorkingGroup(group)).type,
-      // TODO: Adjust the links to work with multiple groups after working-groups are normalized!
+      // TODO: Adjust the link to work with multiple groups after working-groups are normalized!
       'Opening id': <Link to={`/working-groups/opportunities/storageProviders/${id}`}>#{id}</Link>
+    };
+  },
+  FillWorkingGroupLeaderOpening: ([params]) => {
+    const { opening_id, successful_application_id, reward_policy, working_group } = params;
+    const rp = reward_policy && new RewardPolicy(reward_policy);
+    return {
+      'Working group': (new WorkingGroup(working_group)).type,
+      // TODO: Adjust the link to work with multiple groups after working-groups are normalized!
+      'Opening id': <Link to={`/working-groups/opportunities/storageProviders/${opening_id}`}>#{opening_id}</Link>,
+      Result: (
+        <ApplicationsDetailsByOpening
+          openingId={opening_id}
+          acceptedIds={[successful_application_id]}
+          group={(new WorkingGroup(working_group)).type as WorkingGroupKeys}/>
+      ),
+      'Reward policy': rp
+        ? (
+          `${formatBalance(rp.amount_per_payout)}${rp.payout_interval.isSome ? ` / ${rp.payout_interval} blocks` : ''} ` +
+          `(Next payment: #${rp.next_payment_at_block})`
+        )
+        : 'NONE'
     };
   }
 };
@@ -187,17 +209,10 @@ const StyledProposalDescription = styled(Card.Description)`
   font-size: 1.15rem;
 `;
 const ProposalParams = styled.div`
-  display: grid;
-  font-weight: bold;
-  grid-template-columns: min-content 1fr;
-  grid-row-gap: 0.5rem;
   border: 1px solid rgba(0,0,0,.2);
-  padding: 1.5rem 1.5rem 1rem 1.25rem;
+  padding: 1.5rem 2rem 1rem 2rem;
   position: relative;
   margin-top: 1.7rem;
-  @media screen and (max-width: 767px) {
-    grid-template-columns: 1fr;
-  }
 `;
 const ParamsHeader = styled.h4`
   position: absolute;
@@ -208,20 +223,24 @@ const ParamsHeader = styled.h4`
   padding: 0.3rem;
   left: 0.5rem;
 `;
+const ProposalParam = styled.div`
+  margin-top: 1rem;
+  &:first-of-type {
+    margin-top: 0;
+  }
+`;
 const ProposalParamName = styled.div`
-  margin-right: 1rem;
-  white-space: nowrap;
+  font-size: 0.9rem;
+  font-weight: normal;
 `;
 const ProposalParamValue = styled.div`
   color: black;
   word-wrap: break-word;
   word-break: break-word;
   font-size: 1.15rem;
+  font-weight: bold;
   & .TextProposalContent {
     font-weight: normal;
-  }
-  @media screen and (max-width: 767px) {
-    margin-top: -0.25rem;
   }
 `;
 
@@ -250,10 +269,10 @@ export default function Body ({
         <ProposalParams>
           <ParamsHeader>Parameters:</ParamsHeader>
           { Object.entries(parsedParams).map(([paramName, paramValue]) => (
-            <React.Fragment key={paramName}>
+            <ProposalParam key={paramName}>
               <ProposalParamName>{paramName}:</ProposalParamName>
               <ProposalParamValue>{paramValue}</ProposalParamValue>
-            </React.Fragment>
+            </ProposalParam>
           ))}
         </ProposalParams>
         { iAmProposer && isCancellable && (<>

@@ -12,6 +12,7 @@ import { FormValues as SetMaxValidatorCountFormValues } from './forms/SetMaxVali
 import { FormValues as AddWorkingGroupLeaderOpeningFormValues } from './forms/AddWorkingGroupOpeningForm';
 import { FormValues as SetWorkingGroupMintCapacityFormValues } from './forms/SetWorkingGroupMintCapacityForm';
 import { FormValues as BeginReviewLeaderApplicationsFormValues } from './forms/BeginReviewLeaderApplicationsForm';
+import { FormValues as FillWorkingGroupLeaderOpeningFormValues } from './forms/FillWorkingGroupLeaderOpeningForm';
 
 // TODO: If we really need this (currency unit) we can we make "Validation" a functiction that returns an object.
 // We could then "instantialize" it in "withFormContainer" where instead of passing
@@ -83,6 +84,17 @@ const LEAVE_ROLE_UNSTAKING_MAX = 14 * 14400; // 14 days
 const WG_MINT_CAP_MIN = 0;
 const WG_MINT_CAP_MAX = 1000000;
 
+// Fill Working Group Leader Opening
+// TODO: Discuss the actual values
+const MIN_REWARD_AMOUNT = 1;
+const MAX_REWARD_AMOUNT = 100000;
+const MIN_REWARD_INTERVAL = 1;
+const MAX_REWARD_INTERVAL = 30 * 14400; // 30 days
+// 3 days margin (voting_period) to prevent FillOpeningInvalidNextPaymentBlock
+// Should we worry that much about it though?
+const MIN_NEXT_PAYMENT_BLOCK_MINUS_CURRENT = 3 * 14400;
+const MAX_NEXT_PAYMENT_BLOCK_MINUS_CURRENT = 30 * 14400; // 30 days
+
 function errorMessage (name: string, min?: number | string, max?: number | string, unit?: string): string {
   return `${name} should be at least ${min} and no more than ${max}${unit ? ` ${unit}.` : '.'}`;
 }
@@ -122,6 +134,7 @@ type FormValuesByType<T extends ValidationTypeKeys> =
   T extends 'AddWorkingGroupLeaderOpening' ? Omit<AddWorkingGroupLeaderOpeningFormValues, keyof GenericFormValues> :
   T extends 'SetWorkingGroupMintCapacity' ? Omit<SetWorkingGroupMintCapacityFormValues, keyof GenericFormValues> :
   T extends 'BeginReviewWorkingGroupLeaderApplication' ? Omit<BeginReviewLeaderApplicationsFormValues, keyof GenericFormValues> :
+  T extends 'FillWorkingGroupLeaderOpening' ? Omit<FillWorkingGroupLeaderOpeningFormValues, keyof GenericFormValues> :
   never;
 /* eslint-enable @typescript-eslint/indent */
 
@@ -338,6 +351,32 @@ const Validation: ValidationType = {
   BeginReviewWorkingGroupLeaderApplication: () => ({
     workingGroup: Yup.string(),
     openingId: Yup.number().required('Select an opening!')
+  }),
+  FillWorkingGroupLeaderOpening: (currentBlock: number) => ({
+    workingGroup: Yup.string(),
+    openingId: Yup.number().required('Select an opening!'),
+    successfulApplicant: Yup.number().required('Select a succesful applicant!'),
+    includeReward: Yup.boolean(),
+    rewardAmount: Yup.number()
+      .when('includeReward', {
+        is: true,
+        then: minMaxInt(MIN_REWARD_AMOUNT, MAX_REWARD_AMOUNT, 'Reward amount')
+      }),
+    rewardNextBlock: Yup.number()
+      .when('includeReward', {
+        is: true,
+        then: minMaxInt(
+          MIN_NEXT_PAYMENT_BLOCK_MINUS_CURRENT + currentBlock,
+          MAX_NEXT_PAYMENT_BLOCK_MINUS_CURRENT + currentBlock,
+          'Next payment block'
+        )
+      }),
+    rewardRecurring: Yup.boolean(),
+    rewardInterval: Yup.number()
+      .when(['includeReward', 'rewardRecurring'], {
+        is: true,
+        then: minMaxInt(MIN_REWARD_INTERVAL, MAX_REWARD_INTERVAL, 'Reward interval')
+      })
   })
 };
 

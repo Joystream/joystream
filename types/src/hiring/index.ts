@@ -91,23 +91,17 @@ export class InactiveApplicationStage extends JoyStruct<InactiveApplicationStage
 
 export class ActiveApplicationStage extends Null { };
 
+// TODO: Find usages and replace with "JoyEnum-standard"
 export enum ApplicationStageKeys {
   Active = 'Active',
   Unstaking = 'Unstaking',
   Inactive = 'Inactive',
 }
-
-export class ApplicationStage extends Enum {
-  constructor(value?: any, index?: number) {
-    super(
-      {
-        [ApplicationStageKeys.Active]: ActiveApplicationStage,
-        [ApplicationStageKeys.Unstaking]: UnstakingApplicationStage,
-        [ApplicationStageKeys.Inactive]: InactiveApplicationStage,
-      },
-      value, index);
-  }
-}
+export class ApplicationStage extends JoyEnum({
+  Active: ActiveApplicationStage,
+  Unstaking: UnstakingApplicationStage,
+  Inactive: InactiveApplicationStage
+} as const) { };
 
 export type IApplicationRationingPolicy = {
   max_active_applicants: u32,

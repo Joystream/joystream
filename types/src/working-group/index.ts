@@ -308,6 +308,15 @@ export class RewardPolicy extends JoyStruct<IRewardPolicy> {
       payout_interval: 'Option<BlockNumber>',
     }, value);
   }
+  get amount_per_payout(): Balance {
+    return this.getField<Balance>('amount_per_payout');
+  }
+  get next_payment_at_block(): BlockNumber {
+    return this.getField<BlockNumber>('next_payment_at_block');
+  }
+  get payout_interval(): Option<BlockNumber> {
+    return this.getField<Option<BlockNumber>>('payout_interval');
+  }
 };
 
 export function registerWorkingGroupTypes() {

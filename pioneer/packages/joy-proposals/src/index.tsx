@@ -22,7 +22,8 @@ import {
   RuntimeUpgradeForm,
   AddWorkingGroupOpeningForm,
   SetWorkingGroupMintCapacityForm,
-  BeginReviewLeaderApplicationsForm
+  BeginReviewLeaderApplicationsForm,
+  FillWorkingGroupLeaderOpeningForm
 } from './forms';
 
 interface Props extends AppProps, I18nProps {}
@@ -72,6 +73,7 @@ function App (props: Props): React.ReactElement<Props> {
           <Route exact path={`${basePath}/new/add-working-group-leader-opening`} component={AddWorkingGroupOpeningForm} />
           <Route exact path={`${basePath}/new/set-working-group-mint-capacity`} component={SetWorkingGroupMintCapacityForm} />
           <Route exact path={`${basePath}/new/begin-review-working-group-leader-application`} component={BeginReviewLeaderApplicationsForm} />
+          <Route exact path={`${basePath}/new/fill-working-group-leader-opening`} component={FillWorkingGroupLeaderOpeningForm} />
           <Route exact path={`${basePath}/active`} component={NotDone} />
           <Route exact path={`${basePath}/finalized`} component={NotDone} />
           <Route exact path={`${basePath}/:id`} component={ProposalFromId} />

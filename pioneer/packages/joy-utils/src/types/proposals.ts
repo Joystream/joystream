@@ -15,7 +15,8 @@ export const ProposalTypes = [
   'SetStorageRoleParameters',
   'AddWorkingGroupLeaderOpening',
   'SetWorkingGroupMintCapacity',
-  'BeginReviewWorkingGroupLeaderApplication'
+  'BeginReviewWorkingGroupLeaderApplication',
+  'FillWorkingGroupLeaderOpening'
 ] as const;
 
 export type ProposalType = typeof ProposalTypes[number];
