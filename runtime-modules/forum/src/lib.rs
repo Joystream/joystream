@@ -710,9 +710,6 @@ decl_module! {
             // Not signed by forum LEAD
             Self::ensure_is_forum_lead(origin)?;
 
-            // Set a temporal mutable variable
-            let parent_category_id = parent;
-
             // If not root, then check that we can create in parent category
             if let Some(tmp_parent_category_id) = parent {
                 // Can we mutate in this category?
@@ -734,7 +731,7 @@ decl_module! {
                 archived: false,
                 num_direct_subcategories: 0,
                 num_direct_threads: 0,
-                parent_category_id,
+                parent_category_id: parent,
                 sticky_thread_ids: vec![],
             };
 
