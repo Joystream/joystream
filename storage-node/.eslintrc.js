@@ -11,8 +11,8 @@ module.exports = {
     'import/no-extraneous-dependencies': 'off',
     'import/no-nodejs-modules': 'off', // nodejs project
     'no-console': 'off', // we use console in the project
-	'@typescript-eslint/no-var-requires': 'warn',
-	'@typescript-eslint/camelcase': 'warn',
+    '@typescript-eslint/no-var-requires': 'warn',
+    '@typescript-eslint/camelcase': 'warn',
   },
   overrides: [
     {
