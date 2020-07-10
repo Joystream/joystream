@@ -20,12 +20,13 @@ export default class Bootstrapper {
     static async create(
         ws_provider_endpoint_uri: string,
         bootstrapPack: BootstrapPack,
-        type_registrator: () => void): Promise<Bootstrapper> {
+    type_registrator?: () => void
+  ): Promise<Bootstrapper> {
         // Initialise the provider to connect to the local node
         const provider = new WsProvider(ws_provider_endpoint_uri);
 
         // Register types before creating the api
-        type_registrator();
+    type_registrator ? type_registrator() : null;
 
         // Create the API and wait until ready
         const api = await ApiPromise.create({ provider });
