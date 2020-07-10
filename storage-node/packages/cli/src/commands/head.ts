@@ -1,15 +1,9 @@
 import axios from "axios";
 import chalk from "chalk"
+import {fail, createAndLogAssetUrl} from "./common";
 
 function validateHeadParameters(url: string, contentId: string) : boolean {
     return url && url !== "" && contentId && contentId !=="";
-}
-
-function createAndLogAssetUrl(url: string, contentId: string) : string {
-    const assetUrl = `${url}/asset/v0/${contentId}`;
-    console.log(chalk.yellow('Asset URL:', assetUrl));
-
-    return assetUrl;
 }
 
 function showHeadUsage() {
@@ -33,7 +27,7 @@ export async function run(api: any, url: string, contentId: string) {
         console.log(chalk.green(`Content length: ${response.headers['content-length']}`));
 
     } catch (err) {
-        console.log(chalk.red(`Colossus request failed: ${err.message}`));
+        fail(`Colossus request failed: ${err.message}`);
     }
 }
 

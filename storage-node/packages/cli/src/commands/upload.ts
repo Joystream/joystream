@@ -8,15 +8,12 @@ import { Option } from '@polkadot/types/codec';
 import Debug from "debug";
 const debug = Debug('joystream:storage-cli:upload');
 
+import {fail, createAndLogAssetUrl} from "./common";
 
 // Defines maximum content length for the assets (files). Limits the upload.
 const MAX_CONTENT_LENGTH = 500 * 1024 * 1024; // 500Mb
 
-function fail(message: string) {
-    console.log(chalk.red(message));
-    process.exit(1);
-}
-
+// Reads the file from the filesystem and computes IPFS hash.
 async function computeIpfsHash(filePath: string): Promise<string> {
     const file = fs.createReadStream(filePath)
         .on('error', (err) => {
@@ -26,12 +23,13 @@ async function computeIpfsHash(filePath: string): Promise<string> {
     return await ipfsHash.of(file);
 }
 
+// Read the file size from the file system.
 function getFileSize(filePath: string): number {
     const stats = fs.statSync(filePath);
     return stats.size;
 }
 
-//
+// Defines the necessary parameters for the AddContent runtime tx.
 interface AddContentParams {
     accountId: string,
     ipfsCid: string,
@@ -41,14 +39,6 @@ interface AddContentParams {
     memberId: number
 }
 
-// Composes an asset URL and logs it to console.
-function createAndLogAssetUrl(url: string, contentId: string) : string {
-    const assetUrl = `${url}/asset/v0/${contentId}`;
-    console.log(chalk.yellow('Generated asset URL:', assetUrl));
-
-    return assetUrl;
-}
-
 function getAccountId(api: any) : string {
     const ALICE_URI = '//Alice'
 
@@ -56,10 +46,14 @@ function getAccountId(api: any) : string {
 }
 
 // Creates parameters for the AddContent runtime tx.
-async function getAddContentParams(api: any, filePath: string): Promise<AddContentParams> {
-    const dataObjectTypeId = 1;
+async function getAddContentParams(api: any, filePath: string, dataObjectTypeIdString: string): Promise<AddContentParams> {
     const memberId = 0; // alice
     const accountId = getAccountId(api)
+    let dataObjectTypeId: number = parseInt(dataObjectTypeIdString);
+
+    if (isNaN(dataObjectTypeId)) {
+        fail(`Cannot parse dataObjectTypeId: ${dataObjectTypeIdString}`);
+    }
 
     return {
         accountId,
@@ -94,9 +88,9 @@ async function createContent(api: any, p: AddContentParams) : Promise<DataObject
 }
 
 // Command executor.
-export async function run(api: any, filePath: string){
-    let addContentParams = await getAddContentParams(api, filePath);
-    debug(`AddContent Tx params: ${addContentParams}`); // debug
+export async function run(api: any, filePath: string, dataObjectTypeId: string){
+    let addContentParams = await getAddContentParams(api, filePath, dataObjectTypeId);
+    debug(`AddContent Tx params: ${JSON.stringify(addContentParams)}`); // debug
     debug(`Decoded CID: ${ContentId.decode(addContentParams.contentId).toString()}`);
 
     let dataObject = await createContent(api, addContentParams);

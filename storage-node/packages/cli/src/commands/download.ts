@@ -1,16 +1,10 @@
 import axios from "axios";
 import chalk from "chalk"
 import fs from "fs";
+import {fail, createAndLogAssetUrl} from "./common";
 
 function validateDownloadParameters(url: string, contentId: string, filePath: string) : boolean {
     return url && url !== "" && contentId && contentId !=="" && filePath && filePath !== "";
-}
-
-function createAndLogAssetUrl(url: string, contentId: string) : string {
-    const assetUrl = `${url}/asset/v0/${contentId}`;
-    console.log(chalk.yellow('Asset URL:', assetUrl));
-
-    return assetUrl;
 }
 
 function showDownloadUsage() {
@@ -32,9 +26,7 @@ export async function run(api: any, url: string, contentId: string, filePath: st
     // Create file write stream and set error handler.
     const writer = fs.createWriteStream(filePath)
         .on('error', (err) => {
-            const message = `File write failed: ${err}`;
-            console.log(chalk.red(message));
-            process.exit(1);
+            fail(`File write failed: ${err}`);
         });
 
     // Request file download.
@@ -54,6 +46,6 @@ export async function run(api: any, url: string, contentId: string, filePath: st
             });
         });
     } catch (err) {
-        console.log(chalk.red(`Colossus request failed: ${err.message}`));
+        fail(`Colossus request failed: ${err.message}`);
     }
 }

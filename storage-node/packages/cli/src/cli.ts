@@ -152,8 +152,8 @@ const commands = {
     // })
   },
 
-  upload: async (api: any, filePath: string) => {
-    await uploadCommand.run(api, filePath)
+  upload: async (api: any, filePath: string, dataObjectTypeId: string) => {
+    await uploadCommand.run(api, filePath, dataObjectTypeId)
   },
   // needs to be updated to take a content id and resolve it a potential set
   // of providers that has it, and select one (possibly try more than one provider)
