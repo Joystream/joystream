@@ -103,7 +103,7 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
   const formContainerRef = useRef<HTMLDivElement>(null);
 
   // After-submit effect
-  // (with current version of Formik, there seems to be no other viable way to use ie. for sendTx)
+  // With current version of Formik, there seems to be no other viable way to handle this (ie. for sendTx)
   useEffect(() => {
     if (!isValidating && afterSubmit) {
       if (isValid) {
