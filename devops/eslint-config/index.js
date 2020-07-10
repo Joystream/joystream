@@ -39,6 +39,10 @@ module.exports = {
     // drop these when using newer versions of eslint-plugin-react-hooks
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': 'warn',
+    // only cli projects should really have this rule, web apps
+    // should prefer using 'debug' package at least to allow control of
+    // output verbosity if logging to console.
+    'no-console': 'off',
   },
   plugins: [
     'standard',
