@@ -376,7 +376,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     }
 
     extrinsicArgsFromDraft(module: string, method: string, draftFilePath: string): ApiMethodNamedArgs {
-        let draftJSONObj, parsedArgs: ApiMethodNamedArgs = {};
+        let draftJSONObj, parsedArgs: ApiMethodNamedArgs = [];
         const extrinsicMethod = this.getOriginalApi().tx[module][method];
         try {
             draftJSONObj = require(draftFilePath);
@@ -394,7 +394,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
             const argName = arg.name.toString();
             const argType = arg.type.toString();
             try {
-                parsedArgs[argName] = createType(argType as any, draftJSONObj[parseInt(index)]);
+                parsedArgs.push({ name: argName, value: createType(argType as any, draftJSONObj[parseInt(index)]) });
             } catch (e) {
                 throw new CLIError(`Couldn't parse ${argName} value from draft at ${draftFilePath}!`, { exit: ExitCodes.InvalidFile });
             }

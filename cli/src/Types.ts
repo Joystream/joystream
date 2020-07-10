@@ -96,7 +96,7 @@ export const AvailableGroups: readonly WorkingGroups[] = [
 export type Reward = {
     totalRecieved: Balance;
     value: Balance;
-    interval: number; // 0 = reward is not really "recurring"
+    interval?: number;
     nextPaymentBlock: number; // 0 = no incoming payment
 }
 
@@ -341,6 +341,8 @@ export type ApiParamsOptions = {
 }
 
 export type ApiMethodArg = Codec;
-export type ApiMethodNamedArgs = {
-    [argName: string]: ApiMethodArg;
-}
+export type ApiMethodNamedArg = {
+    name: string;
+    value: ApiMethodArg;
+};
+export type ApiMethodNamedArgs = ApiMethodNamedArg[];

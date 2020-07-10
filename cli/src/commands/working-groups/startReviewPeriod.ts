@@ -26,8 +26,7 @@ export default class WorkingGroupsStartReviewPeriod extends WorkingGroupsCommand
         await this.getRequiredLead();
 
         const openingId = parseInt(args.wgOpeningId);
-        // We don't need the actual opening here, so this is just for validation purposes
-        await this.getOpeningForLeadAction(openingId, OpeningStatus.AcceptingApplications);
+        await this.validateOpeningForLeadAction(openingId, OpeningStatus.AcceptingApplications);
 
         await this.requestAccountDecoding(account);
 

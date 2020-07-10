@@ -171,6 +171,9 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
         return opening;
     }
 
+    // An alias for better code readibility in case we don't need the actual return value
+    validateOpeningForLeadAction = this.getOpeningForLeadAction
+
     async getApplicationForLeadAction(id: number, requiredStatus?: ApplicationStageKeys): Promise<GroupApplication> {
         const application = await this.getApi().groupApplication(this.group, id);
         const opening = await this.getApi().groupOpening(this.group, application.wgOpeningId);

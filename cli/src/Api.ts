@@ -229,7 +229,7 @@ export default class Api {
         return {
             totalRecieved: rewardRelationship.total_reward_received,
             value: rewardRelationship.amount_per_payout,
-            interval: rewardRelationship.payout_interval.unwrapOr(new BN(0)).toNumber(),
+            interval: rewardRelationship.payout_interval.unwrapOr(undefined)?.toNumber(),
             nextPaymentBlock: rewardRelationship.next_payment_at_block.unwrapOr(new BN(0)).toNumber()
         };
     }

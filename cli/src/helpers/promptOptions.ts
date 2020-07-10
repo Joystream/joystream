@@ -2,16 +2,17 @@ import { ApiParamsOptions, ApiMethodNamedArgs, ApiParamOptions, ApiMethodArg } f
 import { Validator } from 'inquirer';
 
 export function setDefaults(promptOptions: ApiParamsOptions, defaultValues: ApiMethodNamedArgs) {
-    for (const [paramName, defaultValue] of Object.entries(defaultValues)) {
+    for (const defaultValue of defaultValues) {
+        const { name: paramName, value: paramValue } = defaultValue;
         const paramOptions = promptOptions[paramName];
         if (paramOptions && paramOptions.value) {
-            paramOptions.value.default = defaultValue;
+            paramOptions.value.default = paramValue;
         }
         else if (paramOptions) {
-            promptOptions[paramName].value = { default: defaultValue };
+            promptOptions[paramName].value = { default: paramValue };
         }
         else {
-            promptOptions[paramName] = { value: { default: defaultValue } };
+            promptOptions[paramName] = { value: { default: paramValue } };
         }
     }
 }

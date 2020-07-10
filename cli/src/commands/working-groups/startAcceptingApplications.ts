@@ -26,8 +26,7 @@ export default class WorkingGroupsStartAcceptingApplications extends WorkingGrou
         await this.getRequiredLead();
 
         const openingId = parseInt(args.wgOpeningId);
-        // We don't need the actual opening here, so this is just for validation purposes
-        await this.getOpeningForLeadAction(openingId, OpeningStatus.WaitingToBegin);
+        await this.validateOpeningForLeadAction(openingId, OpeningStatus.WaitingToBegin);
 
         await this.requestAccountDecoding(account);
 
