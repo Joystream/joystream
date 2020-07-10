@@ -16,60 +16,54 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-'use strict';
+'use strict'
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('fs')
+const path = require('path')
 
-const debug = require('debug')('joystream:util:fs:walk');
+const debug = require('debug')('joystream:util:fs:walk')
 
-class Walker
-{
-  constructor(archive, base, cb)
-  {
-    this.archive = archive;
-    this.base = base;
-    this.slice_offset = this.base.length;
-    if (this.base[this.slice_offset - 1] != '/') {
-      this.slice_offset += 1;
+class Walker {
+  constructor(archive, base, cb) {
+    this.archive = archive
+    this.base = base
+    this.slice_offset = this.base.length
+    if (this.base[this.slice_offset - 1] !== '/') {
+      this.slice_offset += 1
     }
-    this.cb = cb;
-    this.pending = 0;
+    this.cb = cb
+    this.pending = 0
   }
 
   /*
    * Check pending
    */
-  check_pending(name)
-  {
+  checkPending(name) {
     // Decrease pending count again.
-    this.pending -= 1;
-    debug('Finishing', name, 'decreases pending to', this.pending);
+    this.pending -= 1
+    debug('Finishing', name, 'decreases pending to', this.pending)
     if (!this.pending) {
-      debug('No more pending.');
-      this.cb(null);
+      debug('No more pending.')
+      this.cb(null)
     }
   }
 
   /*
    * Helper function for walk; split out because it's used in two places.
    */
-  report_and_recurse(relname, fname, lstat, linktarget)
-  {
+  reportAndRecurse(relname, fname, lstat, linktarget) {
     // First report the value
-    this.cb(null, relname, lstat, linktarget);
+    this.cb(null, relname, lstat, linktarget)
 
     // Recurse
     if (lstat.isDirectory()) {
-      this.walk(fname);
+      this.walk(fname)
     }
 
-    this.check_pending(fname);
+    this.checkPending(fname)
   }
 
-
-  walk(dir)
-  {
+  walk(dir) {
     // This is a little hacky - since readdir() may take a while, and we don't
     // want the pending count to drop to zero before it's finished, we bump
     // it up and down while readdir() does it's job.
@@ -78,50 +72,48 @@ class Walker
     // pending count still has a value.
     // Note that in order not to hang on empty directories, we need to
     // explicitly check the pending count in cases when there are no files.
-    this.pending += 1;
+    this.pending += 1
     this.archive.readdir(dir, (err, files) => {
       if (err) {
-        this.cb(err);
-        return;
+        this.cb(err)
+        return
       }
 
       // More pending data.
-      this.pending += files.length;
-      debug('Reading', dir, 'bumps pending to', this.pending);
+      this.pending += files.length
+      debug('Reading', dir, 'bumps pending to', this.pending)
 
-      files.forEach((name) => {
-        const fname = path.resolve(dir, name);
+      files.forEach(name => {
+        const fname = path.resolve(dir, name)
         this.archive.lstat(fname, (err2, lstat) => {
           if (err2) {
-            this.cb(err2);
-            return;
+            this.cb(err2)
+            return
           }
 
           // The base is always prefixed, so a simple string slice should do.
-          const relname = fname.slice(this.slice_offset);
+          const relname = fname.slice(this.slice_offset)
 
           // We have a symbolic link? Resolve it.
           if (lstat.isSymbolicLink()) {
             this.archive.readlink(fname, (err3, linktarget) => {
               if (err3) {
-                this.cb(err3);
-                return;
+                this.cb(err3)
+                return
               }
 
-              this.report_and_recurse(relname, fname, lstat, linktarget);
-            });
+              this.reportAndRecurse(relname, fname, lstat, linktarget)
+            })
+          } else {
+            this.reportAndRecurse(relname, fname, lstat)
           }
-          else {
-            this.report_and_recurse(relname, fname, lstat);
-          }
-        });
-      });
+        })
+      })
 
-      this.check_pending(dir);
-    });
+      this.checkPending(dir)
+    })
   }
 }
-
 
 /*
  * Recursively walk a file system hierarchy (in undefined order), returning all
@@ -134,15 +126,14 @@ class Walker
  *
  * The callback is invoked one last time without data to signal the end of data.
  */
-module.exports = function(base, archive, cb)
-{
+module.exports = function(base, archive, cb) {
   // Archive is optional and defaults to fs, but cb is not.
   if (!cb) {
-    cb = archive;
-    archive = fs;
+    cb = archive
+    archive = fs
   }
 
-  const resolved = path.resolve(base);
-  const w = new Walker(archive, resolved, cb);
-  w.walk(resolved);
-};
+  const resolved = path.resolve(base)
+  const w = new Walker(archive, resolved, cb)
+  w.walk(resolved)
+}
