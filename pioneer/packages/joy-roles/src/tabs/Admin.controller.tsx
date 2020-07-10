@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { formatBalance } from '@polkadot/util';
 
@@ -7,8 +7,9 @@ import { GenericAccountId, Option, Text, Vec, u32, u128 } from '@polkadot/types'
 import { Balance } from '@polkadot/types/interfaces';
 
 import { SingleLinkedMapEntry, Controller, View } from '@polkadot/joy-utils/index';
-import { MyAccountProvider, useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
+import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
 import { SubmittableExtrinsic } from '@polkadot/api/promise/types';
+import { QueueTxExtrinsicAdd } from '@polkadot/react-components/Status/types';
 
 import {
   Accordion,
@@ -367,53 +368,35 @@ const newEmptyState = (): State => {
 };
 
 export class AdminController extends Controller<State, ITransport> {
-  api: ApiPromise
-  constructor (transport: ITransport, api: ApiPromise, initialState: State = newEmptyState()) {
+  api: ApiPromise;
+  queueExtrinsic: QueueTxExtrinsicAdd;
+
+  constructor (transport: ITransport, api: ApiPromise, queueExtrinsic: QueueTxExtrinsicAdd, initialState: State = newEmptyState()) {
     super(transport, initialState);
     this.api = api;
+    this.queueExtrinsic = queueExtrinsic;
     this.state.currentDescriptor = stockOpenings[0];
     this.updateState();
   }
 
-  newOpening (creatorAddress: string, desc: openingDescriptor) {
+  onTxSuccess = () => { this.updateState() }
+
+  newOpening (accountId: string, desc: openingDescriptor) {
     const tx = this.api.tx.contentWorkingGroup.addCuratorOpening(
       desc.start,
       desc.policy,
       desc.text
     ) as unknown as SubmittableExtrinsic;
 
-    // FIXME: That's a bad way to send extrinsic in Pioneer (without "queueExtrinsic" etc.)
-    // and probably the reason why it always appears as succesful
-    tx.signAndSend(creatorAddress, ({ events = [], status }) => {
-      if (status.isFinalized) {
-        this.updateState();
-        console.log('Successful transfer with hash ' + status.asFinalized.toHex());
-      } else {
-        console.log('Status of transfer: ' + status.type);
-      }
-
-      events.forEach(({ phase, event: { data, method, section } }) => {
-        console.log(phase.toString() + ' : ' + section + '.' + method + ' ' + data.toString());
-      });
-    });
+    // FIXME: Normally we would keep it open in case of errror, but due to bad design
+    // the values in the form are reset at this point anyway, so there is no point
+    this.closeModal();
+    this.queueExtrinsic({ extrinsic: tx, txSuccessCb: this.onTxSuccess, accountId });
   }
 
-  startAcceptingApplications (creatorAddress: string, id = 0) {
+  startAcceptingApplications (accountId: string, id = 0) {
     const tx = this.api.tx.contentWorkingGroup.acceptCuratorApplications(id);
-    // FIXME: That's a bad way to send extrinsic in Pioneer (without "queueExtrinsic" etc.)
-    // and probably the reason why it always appears as succesful
-    tx.signAndSend(creatorAddress, ({ events = [], status }) => {
-      if (status.isFinalized) {
-        this.updateState();
-        console.log('Successful transfer with hash ' + status.asFinalized.toHex());
-      } else {
-        console.log('Status of transfer: ' + status.type);
-      }
-
-      events.forEach(({ phase, event: { data, method, section } }) => {
-        console.log(phase.toString() + ' : ' + section + '.' + method + ' ' + data.toString());
-      });
-    });
+    this.queueExtrinsic({ extrinsic: tx, txSuccessCb: this.onTxSuccess, accountId });
   }
 
   async applyAsACurator (creatorAddress: string, openingId: number) {
@@ -430,60 +413,21 @@ export class AdminController extends Controller<State, ITransport> {
       new Option(u128, 400),
       new Text('This is my application')
     ) as unknown as SubmittableExtrinsic;
-    // FIXME: That's a bad way to send extrinsic in Pioneer (without "queueExtrinsic" etc.)
-    // and probably the reason why it always appears as succesful
-    tx.signAndSend(creatorAddress, ({ events = [], status }) => {
-      if (status.isFinalized) {
-        this.updateState();
-        console.log('Successful transfer with hash ' + status.asFinalized.toHex());
-      } else {
-        console.log('Status of transfer: ' + status.type);
-      }
-
-      events.forEach(({ phase, event: { data, method, section } }) => {
-        console.log(phase.toString() + ' : ' + section + '.' + method + ' ' + data.toString());
-      });
-    });
+    this.queueExtrinsic({ extrinsic: tx, txSuccessCb: this.onTxSuccess, accountId: creatorAddress });
   }
 
-  beginApplicantReview (creatorAddress: string, openingId: number) {
+  beginApplicantReview (accountId: string, openingId: number) {
     const tx = this.api.tx.contentWorkingGroup.beginCuratorApplicantReview(openingId);
-    // FIXME: That's a bad way to send extrinsic in Pioneer (without "queueExtrinsic" etc.)
-    // and probably the reason why it always appears as succesful
-    tx.signAndSend(creatorAddress, ({ events = [], status }) => {
-      if (status.isFinalized) {
-        this.updateState();
-        console.log('Successful transfer with hash ' + status.asFinalized.toHex());
-      } else {
-        console.log('Status of transfer: ' + status.type);
-      }
-
-      events.forEach(({ phase, event: { data, method, section } }) => {
-        console.log(phase.toString() + ' : ' + section + '.' + method + ' ' + data.toString());
-      });
-    });
+    this.queueExtrinsic({ extrinsic: tx, txSuccessCb: this.onTxSuccess, accountId });
   }
 
-  acceptCuratorApplications (creatorAddress: string, openingId: number, applications: Array<number>) {
+  acceptCuratorApplications (accountId: string, openingId: number, applications: Array<number>) {
     const tx = this.api.tx.contentWorkingGroup.fillCuratorOpening(
       openingId,
       applications,
       null
     ) as unknown as SubmittableExtrinsic;
-    // FIXME: That's a bad way to send extrinsic in Pioneer (without "queueExtrinsic" etc.)
-    // and probably the reason why it always appears as succesful
-    tx.signAndSend(creatorAddress, ({ events = [], status }) => {
-      if (status.isFinalized) {
-        this.updateState();
-        console.log('Successful transfer with hash ' + status.asFinalized.toHex());
-      } else {
-        console.log('Status of transfer: ' + status.type);
-      }
-
-      events.forEach(({ phase, event: { data, method, section } }) => {
-        console.log(phase.toString() + ' : ' + section + '.' + method + ' ' + data.toString());
-      });
-    });
+    this.queueExtrinsic({ extrinsic: tx, txSuccessCb: this.onTxSuccess, accountId });
   }
 
   protected async profile (id: MemberId): Promise<Option<Profile>> {
@@ -595,44 +539,59 @@ export class AdminController extends Controller<State, ITransport> {
   }
 }
 
+type AdminContainerProps = {
+  state: State;
+  controller: AdminController;
+}
+const AdminContainer = ({state, controller}: AdminContainerProps) => {
+  const address = useMyAccount().state.address;
+  const containerRef = useRef<HTMLDivElement>(null);
+  return (
+    <div ref={containerRef}>
+      <Container className="admin">
+        <Card fluid color='orange'>
+          <Card.Content>
+            <Dropdown text='Create new opening...'>
+              <Dropdown.Menu>
+                {
+                  stockOpenings.map((value, key) => {
+                    return (
+                      <Dropdown.Item
+                        key={value.title}
+                        text={value.title}
+                        onClick={() => controller.showNewOpeningModal(value)}
+                      />
+                    );
+                  })
+                }
+              </Dropdown.Menu>
+            </Dropdown>
+            <Modal
+              open={state.modalOpen}
+              onClose={() => controller.closeModal()}
+              mountNode={containerRef.current} // Prevent conflicts with tx-modal (after form values reset issue is fixed, see FIXME: above)
+              >
+              <Modal.Content image>
+                <Modal.Description>
+                  <NewOpening desc={state.currentDescriptor} fn={(desc) => address && controller.newOpening(address, desc)} />
+                </Modal.Description>
+              </Modal.Content>
+            </Modal>
+          </Card.Content>
+        </Card>
+        {
+          [...state.openings.keys()].map(key => <OpeningView key={key} opening={state.openings.get(key) as opening} controller={controller} />)
+        }
+        <br />
+      </Container>
+    </div>
+  )
+}
+
 export const AdminView = View<AdminController, State>(
   (state, controller) => {
-    const address = useMyAccount().state.address as string;
     return (
-      <MyAccountProvider>
-        <Container className="admin">
-          <Card fluid color='orange'>
-            <Card.Content>
-              <Dropdown text='Create new opening...'>
-                <Dropdown.Menu>
-                  {
-                    stockOpenings.map((value, key) => {
-                      return (
-                        <Dropdown.Item
-                          key={value.title}
-                          text={value.title}
-                          onClick={() => controller.showNewOpeningModal(value)}
-                        />
-                      );
-                    })
-                  }
-                </Dropdown.Menu>
-              </Dropdown>
-              <Modal open={state.modalOpen} onClose={() => controller.closeModal()}>
-                <Modal.Content image>
-                  <Modal.Description>
-                    <NewOpening desc={state.currentDescriptor} fn={(desc) => controller.newOpening(address, desc)} />
-                  </Modal.Description>
-                </Modal.Content>
-              </Modal>
-            </Card.Content>
-          </Card>
-          {
-            [...state.openings.keys()].map(key => <OpeningView key={key} opening={state.openings.get(key) as opening} controller={controller} />)
-          }
-          <br />
-        </Container>
-      </MyAccountProvider>
+        <AdminContainer state={state} controller={controller} />
     );
   }
 );
