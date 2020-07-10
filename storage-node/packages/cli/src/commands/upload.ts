@@ -1,14 +1,13 @@
 import axios, {AxiosRequestConfig} from "axios";
-import chalk from "chalk"
 import fs from "fs";
 import ipfsHash from "ipfs-only-hash";
 import { ContentId, DataObject } from '@joystream/types/media';
 import BN from "bn.js";
 import { Option } from '@polkadot/types/codec';
+import {fail, createAndLogAssetUrl} from "./common";
+import {discover} from "@joystream/service-discovery/discover";
 import Debug from "debug";
 const debug = Debug('joystream:storage-cli:upload');
-
-import {fail, createAndLogAssetUrl} from "./common";
 
 // Defines maximum content length for the assets (files). Limits the upload.
 const MAX_CONTENT_LENGTH = 500 * 1024 * 1024; // 500Mb
@@ -87,19 +86,6 @@ async function createContent(api: any, p: AddContentParams) : Promise<DataObject
     }
 }
 
-// Command executor.
-export async function run(api: any, filePath: string, dataObjectTypeId: string){
-    let addContentParams = await getAddContentParams(api, filePath, dataObjectTypeId);
-    debug(`AddContent Tx params: ${JSON.stringify(addContentParams)}`); // debug
-    debug(`Decoded CID: ${ContentId.decode(addContentParams.contentId).toString()}`);
-
-    let dataObject = await createContent(api, addContentParams);
-    debug(`Received data object: ${dataObject.toString()}`); // debug
-
-    let assetUrl = createAndLogAssetUrl("http://localhost:3001", addContentParams.contentId);
-    await uploadFile(assetUrl, filePath);
-}
-
 // Uploads file to given asset URL.
 async function uploadFile(assetUrl: string, filePath: string) {
     // Create file read stream and set error handler.
@@ -124,4 +110,39 @@ async function uploadFile(assetUrl: string, filePath: string) {
     } catch (err) {
         fail(err.toString());
     }
+}
+
+// Requests the runtime and obtains the storage node endpoint URL.
+async function discoverStorageProviderEndpoint(api: any, storageProviderId: string) : Promise<string> {
+    try {
+        const serviceInfo = await discover(storageProviderId, api);
+
+        if (serviceInfo === null) {
+            fail("Storage node discovery failed.");
+        }
+        debug(`Discovered service info object: ${serviceInfo}`);
+
+        const dataWrapper = JSON.parse(serviceInfo);
+        const assetWrapper = JSON.parse(dataWrapper.serialized);
+
+        return assetWrapper.asset.endpoint;
+    }catch (err) {
+        fail(`Could not get asset endpoint: ${err}`);
+    }
+}
+
+// Command executor.
+export async function run(api: any, filePath: string, dataObjectTypeId: string){
+    let addContentParams = await getAddContentParams(api, filePath, dataObjectTypeId);
+    debug(`AddContent Tx params: ${JSON.stringify(addContentParams)}`);
+    debug(`Decoded CID: ${ContentId.decode(addContentParams.contentId).toString()}`);
+
+    let dataObject = await createContent(api, addContentParams);
+    debug(`Received data object: ${dataObject.toString()}`);
+
+    let colossusEndpoint = await discoverStorageProviderEndpoint(api, dataObject.liaison.toString());
+    debug(`Discovered storage node endpoint: ${colossusEndpoint}`);
+
+    let assetUrl = createAndLogAssetUrl(colossusEndpoint, addContentParams.contentId);
+    await uploadFile(assetUrl, filePath);
 }
