@@ -688,6 +688,10 @@ decl_module! {
                 Error::CategoryDoesNotExist
             );
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             if new_value {
                 <CategoryByModerator<T>>::insert(category_id, moderator_id, ());
                 return Ok(());
@@ -720,6 +724,10 @@ decl_module! {
                     c.num_direct_subcategories += 1;
                 });
             }
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             // Get next category id
             let next_category_id = <NextCategoryId<T>>::get();
@@ -773,6 +781,10 @@ decl_module! {
                 return Err(Error::CategoryNotBeingUpdated)
             }
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             // Mutate category, and set possible new change parameters
             <CategoryById<T>>::mutate(category_id, |c| c.archived = new_archival_status);
 
@@ -787,6 +799,10 @@ decl_module! {
             Self::ensure_data_migration_done()?;
 
             let category = Self::ensure_can_delete_category(origin, &actor, &category_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             // Delete thread
             <CategoryById<T>>::remove(category_id);
@@ -810,6 +826,10 @@ decl_module! {
             // Check that account is forum member
             Self::ensure_is_forum_user(origin, &forum_user_id)?;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             // Keep next thread id
             let next_thread_id = <NextThreadId<T>>::get();
 
@@ -828,12 +848,16 @@ decl_module! {
 
             let thread = Self::ensure_can_edit_thread_title(origin, &category_id, &thread_id, &forum_user_id)?;
 
-            // Store the event
-            Self::deposit_event(RawEvent::ThreadTitleUpdated(thread_id));
+            //
+            // == MUTATION SAFE ==
+            //
 
             // Update thread title
             let title_hash = T::calculate_hash(&new_title);
             <ThreadById<T>>::mutate(thread.category_id, thread_id, |thread| thread.title_hash = title_hash);
+
+            // Store the event
+            Self::deposit_event(RawEvent::ThreadTitleUpdated(thread_id));
 
             Ok(())
         }
@@ -860,6 +884,10 @@ decl_module! {
                 return Err(Error::ThreadNotBeingUpdated);
             }
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             // Mutate thread, and set possible new change parameters
             <ThreadById<T>>::mutate(category_id, thread_id, |c| c.archived = new_archival_status);
 
@@ -875,6 +903,10 @@ decl_module! {
             Self::ensure_data_migration_done()?;
 
             let (_, thread) = Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             // Delete thread
             <ThreadById<T>>::remove(thread.category_id, thread_id);
@@ -895,6 +927,10 @@ decl_module! {
 
             // Make sure moderator move between selected categories
             let (_, thread) = Self::ensure_can_move_thread(origin, &moderator_id, &category_id, &thread_id, &new_category_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             <ThreadById<T>>::remove(category_id, thread_id);
             <ThreadById<T>>::insert(new_category_id, thread_id, thread);
@@ -920,6 +956,10 @@ decl_module! {
 
             // Make sure poll exist
             Self::ensure_vote_is_valid(&thread, index)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             // Store new poll alternative statistics
             let poll = thread.poll.unwrap();
@@ -961,6 +1001,10 @@ decl_module! {
             // Ensure moderator is allowed to moderate post
             Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             // Calculate rationale's hash
             let rationale_hash = T::calculate_hash(rationale.as_slice());
 
@@ -978,12 +1022,12 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            /*
-             * Update SPEC with new errors,
-             */
-
             // Check that account is forum member
             Self::ensure_is_forum_user(origin, &forum_user_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             // Keep next post id
             let next_post_id = <NextPostId<T>>::get();
@@ -1007,6 +1051,10 @@ decl_module! {
 
             // Make sure there exists a mutable post with post id `post_id`
             let _ = Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             // Get old value in map
             let old_value = <ReactionByPost::<T>>::get(post_id, forum_user_id);
@@ -1034,6 +1082,10 @@ decl_module! {
             // Signer does not match creator of post with identifier postId
             ensure!(post.author_id == forum_user_id, Error::AccountDoesNotMatchPostAuthor);
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             // Update post text
             let text_hash = T::calculate_hash(&new_text);
             <PostById<T>>::mutate(post.thread_id, post_id, |p| p.text_hash = text_hash);
@@ -1051,6 +1103,10 @@ decl_module! {
 
             // Ensure moderator is allowed to moderate post
             Self::ensure_can_moderate_post(origin, &moderator_id, &category_id, &thread_id, &post_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             // Calculate rationale's hash
             let rationale_hash = T::calculate_hash(rationale.as_slice());
@@ -1079,6 +1135,10 @@ decl_module! {
             for item in &stickied_ids {
                 Self::ensure_thread_exists(&category_id, item)?;
             }
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             // Update category
             <CategoryById<T>>::mutate(category_id, |category| category.sticky_thread_ids = stickied_ids.clone());
@@ -1124,6 +1184,10 @@ impl<T: Trait> Module<T> {
             // Check poll self information
             Self::ensure_poll_is_valid(&data)?;
         }
+
+        //
+        // == MUTATION SAFE ==
+        //
 
         // Create and add new thread
         let new_thread_id = <NextThreadId<T>>::get();
@@ -1177,6 +1241,10 @@ impl<T: Trait> Module<T> {
 
         // No ancestor is blocking us doing mutation in this category
         Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
+
+        //
+        // == MUTATION SAFE ==
+        //
 
         // Make and add initial post
         let new_post_id = <NextPostId<T>>::get();
