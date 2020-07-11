@@ -1,0 +1,15 @@
+{
+  "editor.formatOnSave": false,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": false,
+    "source.fixAll.eslint": true
+  },
+  "eslint.workingDirectories": [
+    "./cli",
+    "./pioneer",
+    "./tests/network-tests",
+    "./types",
+    "./storage-node",
+    "./atlas"
+  ]
+}
