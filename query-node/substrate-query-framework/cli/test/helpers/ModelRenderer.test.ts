@@ -162,7 +162,7 @@ describe('ModelRenderer', () => {
     // this will be generated in ../enums/enum.ts
     //expect(rendered).to.include(`NEWHOPE = 'NEWHOPE'`, 'Should render enum values');
     expect(rendered).to.include(`@EnumField`, 'Should decorate with @EnumField');
-    expect(rendered).to.include(`'Episode', Episode, { nullable: true }`, 'Should add enum decorator options');
+    expect(rendered).to.include(`'Episode', Episode, {\n    nullable: true,\n  }`, 'Should add enum decorator options');
     expect(rendered).to.include(`episode?:`, 'Should add nullable');
   });
 
@@ -187,7 +187,7 @@ describe('ModelRenderer', () => {
     // this will be generated in ../enums/enum.ts
     //expect(rendered).to.include(`NEWHOPE = 'NEWHOPE'`, 'Should render enum values');
     expect(rendered).to.include(
-      `'episode_Camel_Case', episode_Camel_Case, { nullable: true }`,
+      `'episode_Camel_Case', episode_Camel_Case, {\n    nullable: true,\n  }`,
       'Should add enum decorator options'
     );
     expect(rendered).to.include(`episode?: episode_Camel_Case`, 'Should camelCase type');
