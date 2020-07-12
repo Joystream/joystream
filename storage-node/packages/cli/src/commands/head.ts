@@ -2,32 +2,43 @@ import axios from "axios";
 import chalk from "chalk"
 import {fail, createAndLogAssetUrl} from "./common";
 
-function validateHeadParameters(url: string, contentId: string) : boolean {
-    return url && url !== "" && contentId && contentId !=="";
-}
+export class HeadCommand {
+    private readonly api: any;
+    private readonly storageNodeUrl: string;
+    private readonly contentId: string;
 
-function showHeadUsage() {
-    console.log(chalk.yellow(`
+    constructor(api: any, storageNodeUrl: string, contentId: string) {
+        this.api = api;
+        this.storageNodeUrl = storageNodeUrl;
+        this.contentId = contentId;
+    }
+
+    validateHeadParameters(url: string, contentId: string): boolean {
+        return url && url !== "" && contentId && contentId !== "";
+    }
+
+    showHeadUsage() {
+        console.log(chalk.yellow(`
         Invalid parameters for 'head' command.
         Usage:   storage-cli head colossusURL contentID
         Example: storage-cli head http://localhost:3001 0x7a6ba7e9157e5fba190dc146fe1baa8180e29728a5c76779ed99655500cff795
       `));
-}
-
-export async function run(api: any, url: string, contentId: string) {
-    if (!validateHeadParameters(url, contentId)){
-        return showHeadUsage();
     }
-    const assetUrl = createAndLogAssetUrl(url, contentId);
 
-    try {
-        const response = await axios.head(assetUrl);
+    async run() {
+        if (!this.validateHeadParameters(this.storageNodeUrl, this.contentId)) {
+            return this.showHeadUsage();
+        }
+        const assetUrl = createAndLogAssetUrl(this.storageNodeUrl, this.contentId);
 
-        console.log(chalk.green(`Content type: ${response.headers['content-type']}`));
-        console.log(chalk.green(`Content length: ${response.headers['content-length']}`));
+        try {
+            const response = await axios.head(assetUrl);
 
-    } catch (err) {
-        fail(`Colossus request failed: ${err.message}`);
+            console.log(chalk.green(`Content type: ${response.headers['content-type']}`));
+            console.log(chalk.green(`Content length: ${response.headers['content-length']}`));
+
+        } catch (err) {
+            fail(`Colossus request failed: ${err.message}`);
+        }
     }
 }
-

@@ -25,8 +25,8 @@ import _ from "lodash"
 
 // Commands
 import * as dev from "./commands/dev"
-import * as headCommand from "./commands/head";
-import * as downloadCommand from "./commands/download";
+import {HeadCommand} from "./commands/head";
+import {DownloadCommand} from "./commands/download";
 import * as uploadCommand from "./commands/upload";
 
 
@@ -140,12 +140,16 @@ const commands = {
   // of providers that has it, and select one (possibly try more than one provider)
   // to fetch it from the get api url of a provider..
   download: async (api: any, url: string, contentId: string, filePath: string) => {
-    await downloadCommand.run(api, url, contentId, filePath);
+    let downloadCmd = new DownloadCommand(api, url, contentId, filePath);
+
+    await downloadCmd.run();
   },
   // Shows asset information derived from request headers.
   // Accepts colossus URL and content ID.
-  head: async (api: any, url: string, contentId: string) => {
-    await headCommand.run(api, url, contentId);
+  head: async (api: any, storageNodeUrl: string, contentId: string) => {
+    let headCmd = new HeadCommand(api, storageNodeUrl, contentId);
+
+    await headCmd.run();
   }
 }
 
