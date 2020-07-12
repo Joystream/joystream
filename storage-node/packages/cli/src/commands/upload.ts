@@ -12,22 +12,6 @@ const debug = Debug('joystream:storage-cli:upload');
 // Defines maximum content length for the assets (files). Limits the upload.
 const MAX_CONTENT_LENGTH = 500 * 1024 * 1024; // 500Mb
 
-// Reads the file from the filesystem and computes IPFS hash.
-async function computeIpfsHash(filePath: string): Promise<string> {
-    const file = fs.createReadStream(filePath)
-        .on('error', (err) => {
-            fail(`File read failed: ${err}`);
-        });
-
-    return await ipfsHash.of(file);
-}
-
-// Read the file size from the file system.
-function getFileSize(filePath: string): number {
-    const stats = fs.statSync(filePath);
-    return stats.size;
-}
-
 // Defines the necessary parameters for the AddContent runtime tx.
 interface AddContentParams {
     accountId: string,
@@ -38,136 +22,162 @@ interface AddContentParams {
     memberId: number
 }
 
-// Creates parameters for the AddContent runtime tx.
-async function getAddContentParams(
-    api: any,
-    filePath: string,
-    dataObjectTypeIdString: string,
-    keyFile: string,
-    passPhrase: string,
-    memberIdString: string
-): Promise<AddContentParams> {
-    const identity = await loadIdentity(api, keyFile, passPhrase);
-    const accountId = identity.address;
+export class UploadCommand {
+    private readonly api: any;
+    private readonly mediaSourceFilePath: string;
+    private readonly dataObjectTypeId: string;
+    private readonly keyFile: string;
+    private readonly passPhrase: string;
+    private readonly memberId: string;
 
-    let dataObjectTypeId: number = parseInt(dataObjectTypeIdString);
-    if (isNaN(dataObjectTypeId)) {
-        fail(`Cannot parse dataObjectTypeId: ${dataObjectTypeIdString}`);
+    constructor(api: any,
+                mediaSourceFilePath: string,
+                dataObjectTypeId: string,
+                keyFile: string,
+                passPhrase: string,
+                memberId: string
+    ) {
+        this.api = api;
+        this.mediaSourceFilePath = mediaSourceFilePath;
+        this.dataObjectTypeId = dataObjectTypeId;
+        this.keyFile = keyFile;
+        this.passPhrase = passPhrase;
+        this.memberId = memberId;
     }
 
-    let memberId: number = parseInt(memberIdString);
-    if (isNaN(dataObjectTypeId)) {
-        fail(`Cannot parse memberIdString: ${memberIdString}`);
+    // Reads the file from the filesystem and computes IPFS hash.
+    async computeIpfsHash(): Promise<string> {
+        const file = fs.createReadStream(this.mediaSourceFilePath)
+            .on('error', (err) => {
+                fail(`File read failed: ${err}`);
+            });
+
+        return await ipfsHash.of(file);
     }
 
-    return {
-        accountId,
-        ipfsCid: await computeIpfsHash(filePath),
-        contentId: ContentId.generate().encode(),
-        fileSize: new BN(getFileSize(filePath)),
-        dataObjectTypeId,
-        memberId
-    };
-}
+    // Read the file size from the file system.
+    getFileSize(): number {
+        const stats = fs.statSync(this.mediaSourceFilePath);
+        return stats.size;
+    }
 
-// Creates the DataObject in the runtime.
-async function createContent(api: any, p: AddContentParams) : Promise<DataObject> {
-    try {
-        const dataObject: Option<DataObject> = await api.assets.createDataObject(
-            p.accountId,
-            p.memberId,
-            p.contentId,
-            p.dataObjectTypeId,
-            p.fileSize,
-            p.ipfsCid
-        );
+    // Creates parameters for the AddContent runtime tx.
+    async getAddContentParams(): Promise<AddContentParams> {
+        const identity = await this.loadIdentity();
+        const accountId = identity.address;
 
-        if (dataObject.isNone) {
-            fail("Cannot create data object: got None object");
+        let dataObjectTypeId: number = parseInt(this.dataObjectTypeId);
+        if (isNaN(dataObjectTypeId)) {
+            fail(`Cannot parse dataObjectTypeId: ${this.dataObjectTypeId}`);
         }
 
-        return dataObject.unwrap();
-    } catch (err) {
-        fail(`Cannot create data object: ${err}`);
-    }
-}
+        let memberId: number = parseInt(this.memberId);
+        if (isNaN(dataObjectTypeId)) {
+            fail(`Cannot parse memberIdString: ${this.memberId}`);
+        }
 
-// Uploads file to given asset URL.
-async function uploadFile(assetUrl: string, filePath: string) {
-    // Create file read stream and set error handler.
-    const file = fs.createReadStream(filePath)
-        .on('error', (err) => {
-            fail(`File read failed: ${err}`);
-        });
-
-    // Upload file from the stream.
-    try {
-        const fileSize = getFileSize(filePath);
-        const config: AxiosRequestConfig = {
-            headers: {
-                'Content-Type': '', // https://github.com/Joystream/storage-node-joystream/issues/16
-                'Content-Length': fileSize.toString()
-            },
-            'maxContentLength': MAX_CONTENT_LENGTH,
+        return {
+            accountId,
+            ipfsCid: await this.computeIpfsHash(),
+            contentId: ContentId.generate().encode(),
+            fileSize: new BN(this.getFileSize()),
+            dataObjectTypeId,
+            memberId
         };
-        await axios.put(assetUrl, file, config);
-
-        console.log("File uploaded.");
-    } catch (err) {
-        fail(err.toString());
     }
-}
 
-// Requests the runtime and obtains the storage node endpoint URL.
-async function discoverStorageProviderEndpoint(api: any, storageProviderId: string) : Promise<string> {
-    try {
-        const serviceInfo = await discover(storageProviderId, api);
+    // Creates the DataObject in the runtime.
+    async createContent(p: AddContentParams): Promise<DataObject> {
+        try {
+            const dataObject: Option<DataObject> = await this.api.assets.createDataObject(
+                p.accountId,
+                p.memberId,
+                p.contentId,
+                p.dataObjectTypeId,
+                p.fileSize,
+                p.ipfsCid
+            );
 
-        if (serviceInfo === null) {
-            fail("Storage node discovery failed.");
+            if (dataObject.isNone) {
+                fail("Cannot create data object: got None object");
+            }
+
+            return dataObject.unwrap();
+        } catch (err) {
+            fail(`Cannot create data object: ${err}`);
         }
-        debug(`Discovered service info object: ${serviceInfo}`);
-
-        const dataWrapper = JSON.parse(serviceInfo);
-        const assetWrapper = JSON.parse(dataWrapper.serialized);
-
-        return assetWrapper.asset.endpoint;
-    }catch (err) {
-        fail(`Could not get asset endpoint: ${err}`);
-    }
-}
-
-// Loads and unlocks the runtime identity using the key file and pass phrase.
-async function loadIdentity(api, filename, passphrase) : Promise<any> {
-    try {
-        await fs.promises.access(filename);
-    } catch (error) {
-        fail(`Cannot read file "${filename}".`)
     }
 
-    return api.identities.loadUnlock(filename, passphrase);
-}
+    // Uploads file to given asset URL.
+    async uploadFile(assetUrl: string) {
+        // Create file read stream and set error handler.
+        const file = fs.createReadStream(this.mediaSourceFilePath)
+            .on('error', (err) => {
+                fail(`File read failed: ${err}`);
+            });
+
+        // Upload file from the stream.
+        try {
+            const fileSize = this.getFileSize();
+            const config: AxiosRequestConfig = {
+                headers: {
+                    'Content-Type': '', // https://github.com/Joystream/storage-node-joystream/issues/16
+                    'Content-Length': fileSize.toString()
+                },
+                'maxContentLength': MAX_CONTENT_LENGTH,
+            };
+            await axios.put(assetUrl, file, config);
+
+            console.log("File uploaded.");
+        } catch (err) {
+            fail(err.toString());
+        }
+    }
+
+    // Requests the runtime and obtains the storage node endpoint URL.
+    async discoverStorageProviderEndpoint(storageProviderId: string): Promise<string> {
+        try {
+            const serviceInfo = await discover(storageProviderId, this.api);
+
+            if (serviceInfo === null) {
+                fail("Storage node discovery failed.");
+            }
+            debug(`Discovered service info object: ${serviceInfo}`);
+
+            const dataWrapper = JSON.parse(serviceInfo);
+            const assetWrapper = JSON.parse(dataWrapper.serialized);
+
+            return assetWrapper.asset.endpoint;
+        } catch (err) {
+            fail(`Could not get asset endpoint: ${err}`);
+        }
+    }
+
+    // Loads and unlocks the runtime identity using the key file and pass phrase.
+    async loadIdentity(): Promise<any> {
+        try {
+            await fs.promises.access(this.keyFile);
+        } catch (error) {
+            fail(`Cannot read file "${this.keyFile}".`)
+        }
+
+        return this.api.identities.loadUnlock(this.keyFile, this.passPhrase);
+    }
 
 
-// Command executor.
-export async function run(
-    api: any,
-    filePath: string,
-    dataObjectTypeId: string,
-    keyFile: string,
-    passPhrase: string,
-    memberId: string
-){
-    let addContentParams = await getAddContentParams(api, filePath, dataObjectTypeId, keyFile, passPhrase, memberId);
-    debug(`AddContent Tx params: ${JSON.stringify(addContentParams)}`);
-    debug(`Decoded CID: ${ContentId.decode(addContentParams.contentId).toString()}`);
+    // Command executor.
+    async run() {
+        let addContentParams = await this.getAddContentParams();
+        debug(`AddContent Tx params: ${JSON.stringify(addContentParams)}`);
+        debug(`Decoded CID: ${ContentId.decode(addContentParams.contentId).toString()}`);
 
-    let dataObject = await createContent(api, addContentParams);
-    debug(`Received data object: ${dataObject.toString()}`);
+        let dataObject = await this.createContent(addContentParams);
+        debug(`Received data object: ${dataObject.toString()}`);
 
-    let colossusEndpoint = await discoverStorageProviderEndpoint(api, dataObject.liaison.toString());
-    debug(`Discovered storage node endpoint: ${colossusEndpoint}`);
+        let colossusEndpoint = await this.discoverStorageProviderEndpoint(dataObject.liaison.toString());
+        debug(`Discovered storage node endpoint: ${colossusEndpoint}`);
 
-    let assetUrl = createAndLogAssetUrl(colossusEndpoint, addContentParams.contentId);
-    await uploadFile(assetUrl, filePath);
+        let assetUrl = createAndLogAssetUrl(colossusEndpoint, addContentParams.contentId);
+        await this.uploadFile(assetUrl);
+    }
 }

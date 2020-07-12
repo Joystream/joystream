@@ -27,7 +27,7 @@ import _ from "lodash"
 import * as dev from "./commands/dev"
 import {HeadCommand} from "./commands/head";
 import {DownloadCommand} from "./commands/download";
-import * as uploadCommand from "./commands/upload";
+import {UploadCommand} from "./commands/upload";
 
 
 // Parse CLI
@@ -134,7 +134,9 @@ const commands = {
   },
 
   upload: async (api: any, filePath: string, dataObjectTypeId: string, keyFile: string, passPhrase: string, memberId: string) => {
-    await uploadCommand.run(api, filePath, dataObjectTypeId, keyFile, passPhrase, memberId)
+    let uploadCmd = new UploadCommand(api, filePath, dataObjectTypeId, keyFile, passPhrase, memberId);
+
+    await uploadCmd.run();
   },
   // needs to be updated to take a content id and resolve it a potential set
   // of providers that has it, and select one (possibly try more than one provider)
