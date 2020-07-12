@@ -156,8 +156,15 @@ fn add_schema_support_member_auth_failed() {
 fn add_schema_support_curator_group_is_not_active() {
     with_test_externalities(|| {
         let actor = emulate_entity_access_state_for_failure_case(
-            EntityAccessStateFailureType::CuratorGroupIsNotActive,
+            EntityAccessStateFailureType::CuratorAuthFailed,
         );
+
+        // Make curator group inactive to block it from any entity operations
+        assert_ok!(set_curator_group_status(
+            LEAD_ORIGIN,
+            FIRST_CURATOR_GROUP_ID,
+            false
+        ));
 
         // Create property
         let property = Property::<Runtime>::default_with_name(
@@ -358,7 +365,7 @@ fn add_schema_support_to_entity_schema_does_not_exist() {
         let mut schema_property_values = BTreeMap::new();
         schema_property_values.insert(FIRST_PROPERTY_ID, PropertyValue::default());
 
-        // Make an attempt to add schema support to entity, providing shema_id,
+        // Make an attempt to add schema support to entity, providing schema_id,
         // which corresponding Schema does not exist on Class level
         let add_schema_support_to_entity_result = add_schema_support_to_entity(
             LEAD_ORIGIN,
@@ -926,13 +933,159 @@ fn add_schema_support_referenced_entity_does_not_exist() {
             actor.to_owned(),
             FIRST_ENTITY_ID,
             FIRST_SCHEMA_ID,
-            schema_property_values.clone(),
+            schema_property_values,
         );
 
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
             ERROR_ENTITY_NOT_FOUND,
+            number_of_events_before_call,
+        );
+    })
+}
+
+#[test]
+fn add_schema_support_entity_can_not_be_referenced() {
+    with_test_externalities(|| {
+        // Create first class with default permissions
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
+
+        let actor = Actor::Lead;
+
+        // Create first entity
+        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.to_owned()));
+
+        // Create second entity
+        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.to_owned()));
+
+        // Update second entity permissions to forbid it from being referencable
+        assert_ok!(update_entity_permissions(
+            LEAD_ORIGIN,
+            SECOND_ENTITY_ID,
+            None,
+            Some(false)
+        ));
+
+        // Create property
+        let property_type = PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, 5);
+
+        let property = Property::<Runtime>::with_name_and_type(
+            (PropertyNameLengthConstraint::get().max() - 1) as usize,
+            property_type,
+            true,
+            false,
+        );
+
+        // Add Schema to the Class
+        assert_ok!(add_class_schema(
+            LEAD_ORIGIN,
+            FIRST_CLASS_ID,
+            BTreeSet::new(),
+            vec![property]
+        ));
+
+        // Runtime state before tested call
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        let mut schema_property_values = BTreeMap::new();
+        let schema_property_value =
+            PropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
+
+        schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
+
+        // Make an attempt to add schema support to the first entity, when provided schema property value(s)
+        // refer(s) to Entity which can not be referenced
+        let add_schema_support_to_entity_result = add_schema_support_to_entity(
+            LEAD_ORIGIN,
+            actor.to_owned(),
+            FIRST_ENTITY_ID,
+            FIRST_SCHEMA_ID,
+            schema_property_values,
+        );
+
+        // Failure checked
+        assert_failure(
+            add_schema_support_to_entity_result,
+            ERROR_ENTITY_CAN_NOT_BE_REFERENCED,
+            number_of_events_before_call,
+        );
+    })
+}
+
+#[test]
+fn add_schema_support_same_controller_constraint_violation() {
+    with_test_externalities(|| {
+        // Create first class with default permissions
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
+
+        // Update class permissions to force any member be available to create Entities
+        assert_ok!(update_class_permissions(
+            LEAD_ORIGIN,
+            FIRST_CLASS_ID,
+            Some(true),
+            None,
+            None,
+            None
+        ));
+
+        let actor = Actor::Lead;
+
+        // Create first entity
+        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.to_owned()));
+
+        // Create second entity
+        assert_ok!(create_entity(
+            FIRST_MEMBER_ORIGIN,
+            FIRST_CLASS_ID,
+            Actor::Member(FIRST_MEMBER_ID)
+        ));
+
+        // Create property
+        let property_type = PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, 5);
+
+        let property = Property::<Runtime>::with_name_and_type(
+            (PropertyNameLengthConstraint::get().max() - 1) as usize,
+            property_type,
+            true,
+            false,
+        );
+
+        // Add Schema to the Class
+        assert_ok!(add_class_schema(
+            LEAD_ORIGIN,
+            FIRST_CLASS_ID,
+            BTreeSet::new(),
+            vec![property]
+        ));
+
+        // Runtime state before tested call
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        let mut schema_property_values = BTreeMap::new();
+        let schema_property_value =
+            PropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
+
+        schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
+
+        // Make an attempt to add schema support to the first entity, providing reference property value(s) in case,
+        // when corresponding Entity can only be referenced from Entity with the same controller.
+        let add_schema_support_to_entity_result = add_schema_support_to_entity(
+            LEAD_ORIGIN,
+            actor.to_owned(),
+            FIRST_ENTITY_ID,
+            FIRST_SCHEMA_ID,
+            schema_property_values,
+        );
+
+        // Failure checked
+        assert_failure(
+            add_schema_support_to_entity_result,
+            ERROR_SAME_CONTROLLER_CONSTRAINT_VIOLATION,
             number_of_events_before_call,
         );
     })
@@ -986,7 +1139,7 @@ fn add_schema_support_text_property_is_too_long() {
             actor.to_owned(),
             FIRST_ENTITY_ID,
             FIRST_SCHEMA_ID,
-            schema_property_values.clone(),
+            schema_property_values,
         );
 
         // Failure checked
@@ -1062,7 +1215,7 @@ fn add_schema_support_vec_property_is_too_long() {
             actor.to_owned(),
             FIRST_ENTITY_ID,
             FIRST_SCHEMA_ID,
-            schema_property_values.clone(),
+            schema_property_values,
         );
 
         // Failure checked
