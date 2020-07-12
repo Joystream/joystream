@@ -9,6 +9,7 @@
 		"build": "lerna run build",
 		"dev": "lerna run --parallel dev",
 		"storybook": "lerna run --scope @joystream/components --stream storybook",
+		"lint": "yarn run eslint . --ext .js,.jsx,.ts,.tsx",
 		"clean": "lerna clean && rm -rf node_modules",
 		"test": "jest"
 	},
