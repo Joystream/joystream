@@ -4,7 +4,7 @@ import ipfsHash from "ipfs-only-hash";
 import { ContentId, DataObject } from '@joystream/types/media';
 import BN from "bn.js";
 import { Option } from '@polkadot/types/codec';
-import {fail, createAndLogAssetUrl} from "./common";
+import {BaseCommand} from "./base";
 import {discover} from "@joystream/service-discovery/discover";
 import Debug from "debug";
 const debug = Debug('joystream:storage-cli:upload');
@@ -22,7 +22,8 @@ interface AddContentParams {
     memberId: number
 }
 
-export class UploadCommand {
+// Upload command class. Validates input parameters and uploads the asset to the storage node and runtime.
+export class UploadCommand extends BaseCommand{
     private readonly api: any;
     private readonly mediaSourceFilePath: string;
     private readonly dataObjectTypeId: string;
@@ -37,6 +38,8 @@ export class UploadCommand {
                 passPhrase: string,
                 memberId: string
     ) {
+        super();
+
         this.api = api;
         this.mediaSourceFilePath = mediaSourceFilePath;
         this.dataObjectTypeId = dataObjectTypeId;
@@ -49,7 +52,7 @@ export class UploadCommand {
     async computeIpfsHash(): Promise<string> {
         const file = fs.createReadStream(this.mediaSourceFilePath)
             .on('error', (err) => {
-                fail(`File read failed: ${err}`);
+                this.fail(`File read failed: ${err}`);
             });
 
         return await ipfsHash.of(file);
@@ -68,12 +71,12 @@ export class UploadCommand {
 
         let dataObjectTypeId: number = parseInt(this.dataObjectTypeId);
         if (isNaN(dataObjectTypeId)) {
-            fail(`Cannot parse dataObjectTypeId: ${this.dataObjectTypeId}`);
+            this.fail(`Cannot parse dataObjectTypeId: ${this.dataObjectTypeId}`);
         }
 
         let memberId: number = parseInt(this.memberId);
         if (isNaN(dataObjectTypeId)) {
-            fail(`Cannot parse memberIdString: ${this.memberId}`);
+            this.fail(`Cannot parse memberIdString: ${this.memberId}`);
         }
 
         return {
@@ -99,12 +102,12 @@ export class UploadCommand {
             );
 
             if (dataObject.isNone) {
-                fail("Cannot create data object: got None object");
+                this.fail("Cannot create data object: got None object");
             }
 
             return dataObject.unwrap();
         } catch (err) {
-            fail(`Cannot create data object: ${err}`);
+            this.fail(`Cannot create data object: ${err}`);
         }
     }
 
@@ -113,7 +116,7 @@ export class UploadCommand {
         // Create file read stream and set error handler.
         const file = fs.createReadStream(this.mediaSourceFilePath)
             .on('error', (err) => {
-                fail(`File read failed: ${err}`);
+                this.fail(`File read failed: ${err}`);
             });
 
         // Upload file from the stream.
@@ -130,7 +133,7 @@ export class UploadCommand {
 
             console.log("File uploaded.");
         } catch (err) {
-            fail(err.toString());
+            this.fail(err.toString());
         }
     }
 
@@ -140,7 +143,7 @@ export class UploadCommand {
             const serviceInfo = await discover(storageProviderId, this.api);
 
             if (serviceInfo === null) {
-                fail("Storage node discovery failed.");
+                this.fail("Storage node discovery failed.");
             }
             debug(`Discovered service info object: ${serviceInfo}`);
 
@@ -149,7 +152,7 @@ export class UploadCommand {
 
             return assetWrapper.asset.endpoint;
         } catch (err) {
-            fail(`Could not get asset endpoint: ${err}`);
+            this.fail(`Could not get asset endpoint: ${err}`);
         }
     }
 
@@ -158,7 +161,7 @@ export class UploadCommand {
         try {
             await fs.promises.access(this.keyFile);
         } catch (error) {
-            fail(`Cannot read file "${this.keyFile}".`)
+            this.fail(`Cannot read file "${this.keyFile}".`)
         }
 
         return this.api.identities.loadUnlock(this.keyFile, this.passPhrase);
@@ -177,7 +180,7 @@ export class UploadCommand {
         let colossusEndpoint = await this.discoverStorageProviderEndpoint(dataObject.liaison.toString());
         debug(`Discovered storage node endpoint: ${colossusEndpoint}`);
 
-        let assetUrl = createAndLogAssetUrl(colossusEndpoint, addContentParams.contentId);
+        let assetUrl = this.createAndLogAssetUrl(colossusEndpoint, addContentParams.contentId);
         await this.uploadFile(assetUrl);
     }
 }

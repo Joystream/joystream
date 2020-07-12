@@ -1,13 +1,16 @@
 import axios from "axios";
 import chalk from "chalk"
-import {fail, createAndLogAssetUrl} from "./common";
+import {BaseCommand} from "./base";
 
-export class HeadCommand {
+// Head command class. Validates input parameters and obtains the asset headers.
+export class HeadCommand extends BaseCommand{
     private readonly api: any;
     private readonly storageNodeUrl: string;
     private readonly contentId: string;
 
     constructor(api: any, storageNodeUrl: string, contentId: string) {
+        super();
+
         this.api = api;
         this.storageNodeUrl = storageNodeUrl;
         this.contentId = contentId;
@@ -29,7 +32,7 @@ export class HeadCommand {
         if (!this.validateHeadParameters(this.storageNodeUrl, this.contentId)) {
             return this.showHeadUsage();
         }
-        const assetUrl = createAndLogAssetUrl(this.storageNodeUrl, this.contentId);
+        const assetUrl = this.createAndLogAssetUrl(this.storageNodeUrl, this.contentId);
 
         try {
             const response = await axios.head(assetUrl);
@@ -38,7 +41,7 @@ export class HeadCommand {
             console.log(chalk.green(`Content length: ${response.headers['content-length']}`));
 
         } catch (err) {
-            fail(`Colossus request failed: ${err.message}`);
+            this.fail(`Colossus request failed: ${err.message}`);
         }
     }
 }

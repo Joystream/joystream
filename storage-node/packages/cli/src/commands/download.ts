@@ -1,15 +1,18 @@
 import axios from "axios";
 import chalk from "chalk"
 import fs from "fs";
-import {fail, createAndLogAssetUrl} from "./common";
+import {BaseCommand} from "./base";
 
-export class DownloadCommand {
+// Download command class. Validates input parameters and execute the logic for asset downloading.
+export class DownloadCommand extends BaseCommand{
     private readonly api: any;
     private readonly storageNodeUrl: string;
     private readonly contentId: string;
     private readonly filePath: string;
 
     constructor(api: any, storageNodeUrl: string, contentId: string, filePath: string) {
+        super();
+
         this.api = api;
         this.storageNodeUrl = storageNodeUrl;
         this.contentId = contentId;
@@ -33,13 +36,13 @@ export class DownloadCommand {
         if (!this.validateDownloadParameters(this.storageNodeUrl, this.contentId, this.filePath)) {
             return this.showDownloadUsage();
         }
-        const assetUrl = createAndLogAssetUrl(this.storageNodeUrl, this.contentId);
+        const assetUrl = this.createAndLogAssetUrl(this.storageNodeUrl, this.contentId);
         console.log(chalk.yellow('File path:', this.filePath));
 
         // Create file write stream and set error handler.
         const writer = fs.createWriteStream(this.filePath)
             .on('error', (err) => {
-                fail(`File write failed: ${err}`);
+                this.fail(`File write failed: ${err}`);
             });
 
         // Request file download.
@@ -59,7 +62,7 @@ export class DownloadCommand {
                 });
             });
         } catch (err) {
-            fail(`Colossus request failed: ${err.message}`);
+            this.fail(`Colossus request failed: ${err.message}`);
         }
     }
 }
