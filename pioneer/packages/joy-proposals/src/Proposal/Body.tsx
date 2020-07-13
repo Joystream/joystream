@@ -85,16 +85,27 @@ const ParsedHRT = styled.pre`
   white-space: pre-wrap;
 `;
 
+type ParsedParamValue = string | number | JSX.Element;
+class FullWidthParam {
+  value: ParsedParamValue;
+  constructor (value: ParsedParamValue) {
+    this.value = value;
+  }
+}
+type ParsedParams = { [paramName: string]: ParsedParamValue | FullWidthParam };
+
 // The methods for parsing params by Proposal type.
 // They take the params as array and return { LABEL: VALUE } object.
-const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: string | number | JSX.Element } } = {
+const paramParsers: { [x in ProposalType]: (params: any[]) => ParsedParams} = {
   Text: ([content]) => ({
-    Content: <ReactMarkdown className='TextProposalContent' source={content} linkTarget='_blank' />
+    Content: new FullWidthParam(
+      <ReactMarkdown className='TextProposalContent' source={content} linkTarget='_blank' />
+    )
   }),
   RuntimeUpgrade: ([wasm]) => {
     const buffer: Buffer = Buffer.from(wasm.replace('0x', ''), 'hex');
     return {
-      'Blake2b256 hash of WASM code': blake2AsHex(buffer, 256),
+      'Blake2b256 hash of WASM code': new FullWidthParam(blake2AsHex(buffer, 256)),
       'File size': buffer.length + ' bytes'
     };
   },
@@ -168,7 +179,7 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
       'Crowded out unstaking period (appl. stake)': ((aSP.isSome && aSP.unwrap().crowded_out_unstaking_period_length.unwrapOr(0)) || 0) + ' blocks',
       'Review period expierd unstaking period (appl. stake)': ((aSP.isSome && aSP.unwrap().review_period_expired_unstaking_period_length.unwrapOr(0)) || 0) + ' blocks',
       // </required_to_prevent_sneaking>
-      'Human readable text': <ParsedHRT>{ HRT }</ParsedHRT>
+      'Human readable text': new FullWidthParam(<ParsedHRT>{ HRT }</ParsedHRT>)
     };
   },
   SetWorkingGroupMintCapacity: ([capacity, group]) => {
@@ -191,13 +202,13 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
       'Working group': (new WorkingGroup(working_group)).type,
       // TODO: Adjust the link to work with multiple groups after working-groups are normalized!
       'Opening id': <Link to={`/working-groups/opportunities/storageProviders/${opening_id}`}>#{opening_id}</Link>,
-      Result: (
+      'Reward policy': rp ? formatReward(rp, true) : 'NONE',
+      Result: new FullWidthParam(
         <ApplicationsDetailsByOpening
           openingId={opening_id}
           acceptedIds={[successful_application_id]}
           group={(new WorkingGroup(working_group)).type as WorkingGroupKeys}/>
-      ),
-      'Reward policy': rp ? formatReward(rp, true) : 'NONE'
+      )
     };
   },
   SlashWorkingGroupLeaderStake: ([leadId, amount, group]) => ({
@@ -225,6 +236,13 @@ const ProposalParams = styled.div`
   padding: 1.5rem 2rem 1rem 2rem;
   position: relative;
   margin-top: 1.7rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-column-gap: 1rem;
+  grid-row-gap: 0.5rem;
+  @media screen and (max-width: 767px) {
+    grid-template-columns: 1fr;
+  }
 `;
 const ParamsHeader = styled.h4`
   position: absolute;
@@ -235,12 +253,12 @@ const ParamsHeader = styled.h4`
   padding: 0.3rem;
   left: 0.5rem;
 `;
-const ProposalParam = styled.div`
-  margin-top: 1rem;
-  &:first-of-type {
-    margin-top: 0;
-  }
-`;
+type ProposalParamProps = { fullWidth?: boolean };
+const ProposalParam = ({ fullWidth, children }: React.PropsWithChildren<ProposalParamProps>) => (
+  <div style={{ gridColumn: (fullWidth || undefined) && '1/3' }}>
+    { children }
+  </div>
+);
 const ProposalParamName = styled.div`
   font-size: 0.9rem;
   font-weight: normal;
@@ -281,9 +299,11 @@ export default function Body ({
         <ProposalParams>
           <ParamsHeader>Parameters:</ParamsHeader>
           { Object.entries(parsedParams).map(([paramName, paramValue]) => (
-            <ProposalParam key={paramName}>
+            <ProposalParam key={paramName} fullWidth={paramValue instanceof FullWidthParam}>
               <ProposalParamName>{paramName}:</ProposalParamName>
-              <ProposalParamValue>{paramValue}</ProposalParamValue>
+              <ProposalParamValue>
+                { paramValue instanceof FullWidthParam ? paramValue.value : paramValue}
+              </ProposalParamValue>
             </ProposalParam>
           ))}
         </ProposalParams>

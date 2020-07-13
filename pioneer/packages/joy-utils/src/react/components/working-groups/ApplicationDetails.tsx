@@ -88,7 +88,8 @@ type ApplicationsDetailsByOpeningProps = {
 export const ApplicationsDetailsByOpening = ({ group, openingId, acceptedIds }: ApplicationsDetailsByOpeningProps) => {
   const transport = useTransport();
   const [applications, error, loading] = usePromise<ParsedApplication[]>(
-    () => transport.workingGroups.openingActiveApplications(group, openingId),
+    // Cannot filter by active, otherwise the details will be broken once opening is filled!
+    () => transport.workingGroups.openingApplications(group, openingId),
     [],
     [openingId]
   );

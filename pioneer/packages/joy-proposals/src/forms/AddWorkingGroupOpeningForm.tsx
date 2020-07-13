@@ -50,7 +50,7 @@ const defaultValues: FormValues = {
   ...wgFromDefaultValues,
   activateAt: 'CurrentBlock',
   activateAtBlock: '',
-  maxReviewPeriodLength: '',
+  maxReviewPeriodLength: (14400 * 30).toString(), // 30 days
   applicationsLimited: false,
   maxApplications: '',
   applicationStakeRequired: false,
@@ -59,8 +59,8 @@ const defaultValues: FormValues = {
   roleStakeRequired: false,
   roleStakeMode: StakingAmountLimitModeKeys.Exact,
   roleStakeValue: '',
-  terminateRoleUnstakingPeriod: '',
-  leaveRoleUnstakingPeriod: '',
+  terminateRoleUnstakingPeriod: (14400 * 7).toString(), // 7 days
+  leaveRoleUnstakingPeriod: (14400 * 7).toString(), // 7 days
   humanReadableText: ''
 };
 
