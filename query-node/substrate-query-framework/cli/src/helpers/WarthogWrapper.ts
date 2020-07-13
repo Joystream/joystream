@@ -1,10 +1,9 @@
 import * as fs from 'fs-extra';
-import { execSync } from 'child_process';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
+import execa = require('execa');
 
 import Command from '@oclif/command';
-import { copyFileSync } from 'fs-extra';
 import { cli as warthogCli } from '../index';
 
 import { WarthogModelBuilder } from './../parse/WarthogModelBuilder';
@@ -25,7 +24,7 @@ export default class WarthogWrapper {
     this.schemaPath = schemaPath;
     this.schemaResolvedPath = path.resolve(process.cwd(), this.schemaPath);
     if (!fs.existsSync(this.schemaResolvedPath)) {
-      throw new Error(`Schema file is not found at ${this.schemaResolvedPath}`);
+      throw new Error(`Cannot open the schema file ${this.schemaResolvedPath}. Check if it exists.`);
     }
   }
 
@@ -33,29 +32,29 @@ export default class WarthogWrapper {
     // Order of calling functions is important!!!
     const tasks = new Listr([
       {
-        title: 'Set up a new project',
+        title: 'Set up a new Warthog project',
         task: async () => {
           await this.newProject();
-        }
+        },
       },
       {
-        title: 'Install dependencies',
-        task: () => {
-          this.installDependencies();
-        }
+        title: 'Install GraphQL server dependencies',
+        task: async () => {
+          await this.installDependencies();
+        },
       },
       {
-        title: 'Generate Warthog sources',
+        title: 'Generate server sources',
         task: () => {
           this.generateWarthogSources();
-        }
+        },
       },
       {
         title: 'Warthog codegen',
-        task: () => {
-          this.codegen();
-        }
-      }
+        task: async () => {
+          await this.codegen();
+        },
+      },
     ]);
 
     await tasks.run();
@@ -70,30 +69,30 @@ export default class WarthogWrapper {
             throw new Error('DB_NAME env variable is not set, check that .env file exists');
           }
           await this.createDB();
-        }
+        },
       },
       {
         title: 'Generate migrations',
-        task: () => {
-          this.createMigrations();
-        }
+        task: async () => {
+          await this.createMigrations();
+        },
       },
       {
         title: 'Run migrations',
-        task: () => {
-          this.runMigrations();
-        }
-      }
-    ]);  
+        task: async () => {
+          await this.runMigrations();
+        },
+      },
+    ]);
     await tasks.run();
   }
 
   async generateAPIPreview(): Promise<void> {
     // Order of calling functions is important!!!
     await this.newProject();
-    this.installDependencies();
+    await this.installDependencies();
     this.generateWarthogSources();
-    this.codegen();
+    await this.codegen();
   }
 
   async newProject(projectName = 'query_node'): Promise<void> {
@@ -102,10 +101,11 @@ export default class WarthogWrapper {
     // Override warthog's index.ts file for custom naming strategy
     fs.copyFileSync(getTemplatePath('graphql-server.index.mst'), path.resolve(process.cwd(), 'src/index.ts'));
 
-    this.updateDotenv();
+    await this.updateDotenv();
   }
 
-  installDependencies(): void {
+  async installDependencies(): Promise<void> {
+    
     if (!fs.existsSync('package.json')) {
       this.command.error('Could not found package.json file in the current working directory');
     }
@@ -116,11 +116,11 @@ export default class WarthogWrapper {
     pkgFile.scripts['db:sync'] = 'SYNC=true WARTHOG_DB_SYNCHRONIZE=true ts-node-dev --type-check src/index.ts';
     fs.writeFileSync('package.json', JSON.stringify(pkgFile, null, 2));
 
-    this.command.log('Installing graphql-server dependencies...');
-    execSync('yarn add lodash'); // add lodash dep
-    execSync('yarn install');
+    //this.command.log('Installing graphql-server dependencies...');
+    await execa('yarn', ['add', 'lodash']); // add lodash dep
+    await execa('yarn', ['install']);
 
-    this.command.log('done...');
+    //this.command.log('done...');
   }
 
   async createDB(): Promise<void> {
@@ -140,23 +140,26 @@ export default class WarthogWrapper {
     sourcesGenerator.generate();
   }
 
-  codegen(): void {
-    execSync('yarn warthog codegen && yarn dotenv:generate');
+  async codegen(): Promise<void> {
+    
+    await execa('yarn', ['warthog', 'codegen']);
+    await execa('yarn', ['dotenv:generate']);
+
   }
 
-  createMigrations(): void {
-    execSync('yarn sync');
+  async createMigrations(): Promise<void> {
+    await execa('yarn', ['db:sync']);
   }
 
-  runMigrations(): void {
+  async runMigrations(): Promise<void> {
     debug('performing migrations');
-    execSync('yarn db:migrate');
+    await execa('yarn', ['db:migrate']);
   }
 
-  updateDotenv(): void {
+  async updateDotenv(): Promise<void> {
     // copy dotnenvi env.yml file
     debug('Creating graphql-server/env.yml');
-    copyFileSync(getTemplatePath('warthog.env.yml'), path.resolve(process.cwd(), 'env.yml'));
+    await fs.copyFile(getTemplatePath('warthog.env.yml'), path.resolve(process.cwd(), 'env.yml'));
     const envConfig = dotenv.parse(fs.readFileSync('.env'));
 
     // Override DB_NAME, PORT, ...
@@ -170,6 +173,6 @@ export default class WarthogWrapper {
     const newEnvConfig = Object.keys(envConfig)
       .map(key => `${key}=${envConfig[key]}`)
       .join('\n');
-    fs.writeFileSync('.env', newEnvConfig);
+    await fs.writeFile('.env', newEnvConfig);
   }
 }
