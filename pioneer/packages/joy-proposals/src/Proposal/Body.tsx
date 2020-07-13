@@ -213,18 +213,18 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => ParsedParams} = {
   },
   SlashWorkingGroupLeaderStake: ([leadId, amount, group]) => ({
     'Working group': (new WorkingGroup(group)).type,
-    Lead: <LeadInfoFromId group={(new WorkingGroup(group).type as WorkingGroupKeys)} leadId={leadId}/>,
-    'Slash amount': formatBalance(amount)
+    'Slash amount': formatBalance(amount),
+    Lead: new FullWidthParam(<LeadInfoFromId group={(new WorkingGroup(group).type as WorkingGroupKeys)} leadId={leadId}/>)
   }),
   DecreaseWorkingGroupLeaderStake: ([leadId, amount, group]) => ({
     'Working group': (new WorkingGroup(group)).type,
-    Lead: <LeadInfoFromId group={(new WorkingGroup(group).type as WorkingGroupKeys)} leadId={leadId}/>,
-    'Decrease amount': formatBalance(amount)
+    'Decrease amount': formatBalance(amount),
+    Lead: new FullWidthParam(<LeadInfoFromId group={(new WorkingGroup(group).type as WorkingGroupKeys)} leadId={leadId}/>)
   }),
   SetWorkingGroupLeaderReward: ([leadId, amount, group]) => ({
     'Working group': (new WorkingGroup(group)).type,
-    Lead: <LeadInfoFromId group={(new WorkingGroup(group).type as WorkingGroupKeys)} leadId={leadId}/>,
-    'New reward amount': formatBalance(amount)
+    'New reward amount': formatBalance(amount),
+    Lead: new FullWidthParam(<LeadInfoFromId group={(new WorkingGroup(group).type as WorkingGroupKeys)} leadId={leadId}/>)
   })
 };
 
