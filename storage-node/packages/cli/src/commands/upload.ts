@@ -7,6 +7,7 @@ import { Option } from '@polkadot/types/codec';
 import {BaseCommand} from "./base";
 import {discover} from "@joystream/service-discovery/discover";
 import Debug from "debug";
+import chalk from "chalk";
 const debug = Debug('joystream:storage-cli:upload');
 
 // Defines maximum content length for the assets (files). Limits the upload.
@@ -48,8 +49,18 @@ export class UploadCommand extends BaseCommand{
         this.memberId = memberId;
     }
 
+    // Provides parameter validation. Overrides the abstract method from the base class.
+    protected validateParameters(): boolean {
+        return this.mediaSourceFilePath && this.mediaSourceFilePath !== ""
+            && this.dataObjectTypeId && this.dataObjectTypeId !== ""
+            && this.keyFile && this.keyFile !== ""
+            && this.passPhrase && this.passPhrase !== ""
+            && this.memberId && this.memberId !== ""
+
+    }
+
     // Reads the file from the filesystem and computes IPFS hash.
-    async computeIpfsHash(): Promise<string> {
+    private async computeIpfsHash(): Promise<string> {
         const file = fs.createReadStream(this.mediaSourceFilePath)
             .on('error', (err) => {
                 this.fail(`File read failed: ${err}`);
@@ -59,13 +70,13 @@ export class UploadCommand extends BaseCommand{
     }
 
     // Read the file size from the file system.
-    getFileSize(): number {
+    private getFileSize(): number {
         const stats = fs.statSync(this.mediaSourceFilePath);
         return stats.size;
     }
 
     // Creates parameters for the AddContent runtime tx.
-    async getAddContentParams(): Promise<AddContentParams> {
+    private async getAddContentParams(): Promise<AddContentParams> {
         const identity = await this.loadIdentity();
         const accountId = identity.address;
 
@@ -90,7 +101,7 @@ export class UploadCommand extends BaseCommand{
     }
 
     // Creates the DataObject in the runtime.
-    async createContent(p: AddContentParams): Promise<DataObject> {
+    private async createContent(p: AddContentParams): Promise<DataObject> {
         try {
             const dataObject: Option<DataObject> = await this.api.assets.createDataObject(
                 p.accountId,
@@ -112,7 +123,7 @@ export class UploadCommand extends BaseCommand{
     }
 
     // Uploads file to given asset URL.
-    async uploadFile(assetUrl: string) {
+    private async uploadFile(assetUrl: string) {
         // Create file read stream and set error handler.
         const file = fs.createReadStream(this.mediaSourceFilePath)
             .on('error', (err) => {
@@ -138,7 +149,7 @@ export class UploadCommand extends BaseCommand{
     }
 
     // Requests the runtime and obtains the storage node endpoint URL.
-    async discoverStorageProviderEndpoint(storageProviderId: string): Promise<string> {
+    private async discoverStorageProviderEndpoint(storageProviderId: string): Promise<string> {
         try {
             const serviceInfo = await discover(storageProviderId, this.api);
 
@@ -157,7 +168,7 @@ export class UploadCommand extends BaseCommand{
     }
 
     // Loads and unlocks the runtime identity using the key file and pass phrase.
-    async loadIdentity(): Promise<any> {
+    private async loadIdentity(): Promise<any> {
         try {
             await fs.promises.access(this.keyFile);
         } catch (error) {
@@ -167,9 +178,19 @@ export class UploadCommand extends BaseCommand{
         return this.api.identities.loadUnlock(this.keyFile, this.passPhrase);
     }
 
+    // Shows command usage. Overrides the abstract method from the base class.
+    protected showUsage() {
+        console.log(chalk.yellow(`
+        Usage:   storage-cli upload mediaSourceFilePath dataObjectTypeId keyFilePath passPhrase memberId
+        Example: storage-cli upload ./movie.mp4 1 ./keyFile.json secretPhrase 1
+      `));
+    }
 
     // Command executor.
     async run() {
+        // Checks for input parameters, shows usage if they are invalid.
+        if (!this.assertParameters()) return;
+
         let addContentParams = await this.getAddContentParams();
         debug(`AddContent Tx params: ${JSON.stringify(addContentParams)}`);
         debug(`Decoded CID: ${ContentId.decode(addContentParams.contentId).toString()}`);

@@ -19,23 +19,26 @@ export class DownloadCommand extends BaseCommand{
         this.filePath = filePath;
     }
 
-    validateDownloadParameters(url: string, contentId: string, filePath: string): boolean {
-        return url && url !== "" && contentId && contentId !== "" && filePath && filePath !== "";
+    // Provides parameter validation. Overrides the abstract method from the base class.
+    protected validateParameters(): boolean {
+        return this.storageNodeUrl && this.storageNodeUrl !== ""
+            && this.contentId && this.contentId !== ""
+            && this.filePath && this.filePath !== "";
     }
 
-    showDownloadUsage() {
+    // Shows command usage. Overrides the abstract method from the base class.
+    protected showUsage() {
         console.log(chalk.yellow(`
-        Invalid parameters for 'download' command.
         Usage:   storage-cli download colossusURL contentID filePath
         Example: storage-cli download http://localhost:3001 0x7a6ba7e9157e5fba190dc146fe1baa8180e29728a5c76779ed99655500cff795 ./movie.mp4
       `));
     }
 
+    // Command executor.
     async run() {
-        // Create, validate and show parameters.
-        if (!this.validateDownloadParameters(this.storageNodeUrl, this.contentId, this.filePath)) {
-            return this.showDownloadUsage();
-        }
+        // Checks for input parameters, shows usage if they are invalid.
+        if (!this.assertParameters()) return;
+
         const assetUrl = this.createAndLogAssetUrl(this.storageNodeUrl, this.contentId);
         console.log(chalk.yellow('File path:', this.filePath));
 

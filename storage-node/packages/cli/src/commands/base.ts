@@ -1,4 +1,3 @@
-// Composes an asset URL and logs it to console.
 import chalk from "chalk";
 import removeEndingForwardSlash from "@joystream/storage-utils/stripEndingSlash";
 
@@ -11,6 +10,25 @@ export abstract class BaseCommand {
         console.log(chalk.yellow('Generated asset URL:', assetUrl));
 
         return assetUrl;
+    }
+
+    // Abstract method to provide parameter validation.
+    protected abstract validateParameters() : boolean;
+
+    // Abstract method to show command usage.
+    protected abstract showUsage();
+
+    // Checks command parameters and shows the usage if necessary.
+    protected assertParameters() : boolean {
+        // Create, validate and show parameters.
+        if (!this.validateParameters()) {
+            console.log(chalk.yellow(`Invalid parameters for 'download' command:`));
+            this.showUsage();
+
+            return false;
+        }
+
+        return true;
     }
 
     // Shows the error message and ends the process with error code.

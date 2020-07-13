@@ -16,22 +16,24 @@ export class HeadCommand extends BaseCommand{
         this.contentId = contentId;
     }
 
-    validateHeadParameters(url: string, contentId: string): boolean {
-        return url && url !== "" && contentId && contentId !== "";
+    // Provides parameter validation. Overrides the abstract method from the base class.
+    protected validateParameters(): boolean {
+        return this.storageNodeUrl && this.storageNodeUrl !== "" && this.contentId && this.contentId !== "";
     }
 
-    showHeadUsage() {
+    // Shows command usage. Overrides the abstract method from the base class.
+    protected showUsage() {
         console.log(chalk.yellow(`
-        Invalid parameters for 'head' command.
         Usage:   storage-cli head colossusURL contentID
         Example: storage-cli head http://localhost:3001 0x7a6ba7e9157e5fba190dc146fe1baa8180e29728a5c76779ed99655500cff795
       `));
     }
 
+    // Command executor.
     async run() {
-        if (!this.validateHeadParameters(this.storageNodeUrl, this.contentId)) {
-            return this.showHeadUsage();
-        }
+        // Checks for input parameters, shows usage if they are invalid.
+        if (!this.assertParameters()) return;
+
         const assetUrl = this.createAndLogAssetUrl(this.storageNodeUrl, this.contentId);
 
         try {
