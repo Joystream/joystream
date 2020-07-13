@@ -1355,18 +1355,15 @@
     exec-sh "^0.3.2"
     minimist "^1.2.0"
 
-"@constantinople/types@npm:@joystream/types@^0.10.0", "@joystream/types@^0.10.0":
-  name "@constantinople/types"
+"@constantinople/types@npm:@joystream/types@^0.10.0":
   version "0.10.0"
   resolved "https://registry.yarnpkg.com/@joystream/types/-/types-0.10.0.tgz#7e98ef221410b26a7d952cfc3d1c03d28395ad69"
   integrity sha512-RDZizqGKWGYpLR5PnUWM4aGa7InpWNh2Txlr7Al3ROFYOHoyQf62/omPfEz29F6scwlFxysOdmEfQaLeVRaUxA==
   dependencies:
-    "@polkadot/keyring" "^1.7.0-beta.5"
     "@polkadot/types" "^0.96.1"
     "@types/vfile" "^4.0.0"
     ajv "^6.11.0"
     lodash "^4.17.15"
-    moment "^2.24.0"
 
 "@csstools/convert-colors@^1.4.0":
   version "1.4.0"
@@ -1739,7 +1736,6 @@
     "@types/istanbul-reports" "^1.1.1"
     "@types/yargs" "^13.0.0"
 
-<<<<<<< HEAD
 "@joystream/types@./types":
   version "0.11.0"
   dependencies:
@@ -1751,8 +1747,6 @@
     lodash "^4.17.15"
     moment "^2.24.0"
 
-=======
->>>>>>> b3a73b5e1fc0baba38887e4b9c2aae49073da7a0
 "@ledgerhq/devices@^4.78.0":
   version "4.78.0"
   resolved "https://registry.yarnpkg.com/@ledgerhq/devices/-/devices-4.78.0.tgz#149b572f0616096e2bd5eb14ce14d0061c432be6"
