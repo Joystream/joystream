@@ -2,7 +2,7 @@
 [package]
 name = "substrate-forum-module-fuzz"
 version = "0.0.0"
-authors = ["Automatically generated"]
+authors = ["Joystream contributors"]
 publish = false
 edition = "2018"
 
@@ -11,6 +11,31 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.3"
+
+serde = { version = '1.0.101', optional = true}
+serde_derive = { version = '1.0.101', optional = true }
+rstd = { package = 'sr-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
+runtime-primitives = { package = 'sr-primitives', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
+srml-support = { package = 'srml-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
+srml-support-procedural = { package = 'srml-support-procedural', git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
+system = { package = 'srml-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
+balances = { package = 'srml-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
+codec = { package = 'parity-scale-codec', version = '1.0.0', default-features = false, features = ['derive'] }
+primitives = { package = 'substrate-primitives', git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
+
+[dependencies.timestamp]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-timestamp'
+rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
+
+[dependencies.runtime-io]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'sr-io'
+rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
+
+
 
 [dependencies.substrate-forum-module]
 path = ".."

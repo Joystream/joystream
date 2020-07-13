@@ -1498,6 +1498,7 @@ dependencies = [
  "srml-support-procedural",
  "srml-system",
  "srml-timestamp",
+ "substrate-primitives",
 ]
 
 [[package]]
@@ -1505,7 +1506,19 @@ name = "substrate-forum-module-fuzz"
 version = "0.0.0"
 dependencies = [
  "libfuzzer-sys",
+ "parity-scale-codec",
+ "serde",
+ "serde_derive",
+ "sr-io",
+ "sr-primitives",
+ "sr-std",
+ "srml-balances",
+ "srml-support",
+ "srml-support-procedural",
+ "srml-system",
+ "srml-timestamp",
  "substrate-forum-module",
+ "substrate-primitives",
 ]
 
 [[package]]

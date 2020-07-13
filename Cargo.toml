@@ -7,6 +7,7 @@ members = [
 	"runtime-modules/common",
 	"runtime-modules/content-working-group",
 	"runtime-modules/forum",
+	"runtime-modules/forum/fuzzer",
 	"runtime-modules/governance",
 	"runtime-modules/hiring",
 	"runtime-modules/membership",

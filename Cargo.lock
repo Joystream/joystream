@@ -89,6 +89,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "arbitrary"
+version = "0.4.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7cb544f1057eaaff4b34f8c4dcf56fc3cd04debd291998405d135017a7c3c0f4"
+
+[[package]]
 name = "arc-swap"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1342,6 +1348,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "hfuzz"
+version = "0.1.0"
+dependencies = [
+ "hex-literal 0.1.4",
+ "honggfuzz",
+ "parity-scale-codec",
+ "serde",
+ "serde_derive",
+ "sr-io",
+ "sr-primitives",
+ "sr-std",
+ "srml-balances",
+ "srml-support",
+ "srml-support-procedural",
+ "srml-system",
+ "srml-timestamp",
+ "substrate-forum-module",
+ "substrate-primitives",
+]
+
+[[package]]
 name = "hmac"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1360,6 +1387,17 @@ dependencies = [
  "digest",
  "generic-array",
  "hmac",
+]
+
+[[package]]
+name = "honggfuzz"
+version = "0.5.49"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "832bac18a82ec7d6c21887daa8616b238fe90d5d5e762d0d4b9372cdaa9e097f"
+dependencies = [
+ "arbitrary",
+ "lazy_static",
+ "memmap",
 ]
 
 [[package]]
@@ -2397,6 +2435,16 @@ name = "memchr"
 version = "2.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3728d817d99e5ac407411fa471ff9800a778d88a24685968b36824eaf4bee400"
+
+[[package]]
+name = "memmap"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6585fd95e7bb50d6cc31e20d4cf9afb4e2ba16c5846fc76793f11218da9c475b"
+dependencies = [
+ "libc",
+ "winapi 0.3.8",
+]
 
 [[package]]
 name = "memoffset"

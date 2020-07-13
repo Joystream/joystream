@@ -220,7 +220,7 @@ use srml_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, traits::Get, Parameter,
 };
 
-mod mock;
+pub mod mock;
 mod tests;
 
 pub trait Trait: system::Trait + timestamp::Trait + Sized {
