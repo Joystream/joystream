@@ -23,9 +23,9 @@ const mockHttp = require('node-mocks-http')
 
 const pagination = require('@joystream/storage-utils/pagination')
 
-describe('util/pagination', function() {
-  describe('openapi()', function() {
-    it('should add parameters and definitions to an API spec', function() {
+describe('util/pagination', function () {
+  describe('openapi()', function () {
+    it('should add parameters and definitions to an API spec', function () {
       const api = pagination.openapi({})
 
       // Parameters
@@ -62,8 +62,8 @@ describe('util/pagination', function() {
     })
   })
 
-  describe('paginate()', function() {
-    it('should add pagination links to a response object', function() {
+  describe('paginate()', function () {
+    it('should add pagination links to a response object', function () {
       const req = mockHttp.createRequest({
         method: 'GET',
         url: '/foo?limit=10',
@@ -78,16 +78,14 @@ describe('util/pagination', function() {
 
       const res = pagination.paginate(req, {})
 
-      expect(res)
-        .to.have.property('pagination')
-        .that.has.all.keys('self', 'first', 'next')
+      expect(res).to.have.property('pagination').that.has.all.keys('self', 'first', 'next')
 
       expect(res.pagination.self).to.equal('http://localhost/foo?limit=10')
       expect(res.pagination.first).to.equal('http://localhost/foo?limit=10&offset=0')
       expect(res.pagination.next).to.equal('http://localhost/foo?limit=10&offset=10')
     })
 
-    it('should add a last pagination link when requested', function() {
+    it('should add a last pagination link when requested', function () {
       const req = mockHttp.createRequest({
         method: 'GET',
         url: '/foo?limit=10&offset=15',
@@ -103,9 +101,7 @@ describe('util/pagination', function() {
 
       const res = pagination.paginate(req, {}, 35)
 
-      expect(res)
-        .to.have.property('pagination')
-        .that.has.all.keys('self', 'first', 'next', 'prev', 'last')
+      expect(res).to.have.property('pagination').that.has.all.keys('self', 'first', 'next', 'prev', 'last')
 
       expect(res.pagination.self).to.equal('http://localhost/foo?limit=10&offset=15')
       expect(res.pagination.first).to.equal('http://localhost/foo?limit=10&offset=0')

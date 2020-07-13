@@ -134,8 +134,8 @@ class AssetsApi {
     // eslint-disable-next-line  no-async-promise-executor
     return new Promise(async (resolve, reject) => {
       try {
-        await this.createStorageRelationship(providerAccountId, storageProviderId, contentId, events => {
-          events.forEach(event => {
+        await this.createStorageRelationship(providerAccountId, storageProviderId, contentId, (events) => {
+          events.forEach((event) => {
             resolve(event[1].DataObjectStorageRelationshipId)
           })
         })

@@ -66,7 +66,7 @@ function createApp(projectRoot, storage, runtime) {
   // error serialized to JSON.
   // Disable lint because we need such function signature.
   // eslint-disable-next-line no-unused-vars
-  app.use(function(err, req, res, next) {
+  app.use(function (err, req, res, next) {
     res.status(err.status).json(err)
   })
 

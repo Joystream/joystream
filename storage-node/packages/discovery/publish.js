@@ -42,7 +42,7 @@ function encodeServiceInfo(info) {
  */
 async function publish(serviceInfo) {
   const keys = await ipfs.key.list()
-  let servicesKey = keys.find(key => key.name === PUBLISH_KEY)
+  let servicesKey = keys.find((key) => key.name === PUBLISH_KEY)
 
   // An ipfs node will always have the self key.
   // If the publish key is specified as anything else and it doesn't exist

@@ -29,14 +29,14 @@ const FLAG_DEFINITIONS = {
   },
   keyFile: {
     type: 'string',
-    isRequired: flags => {
+    isRequired: (flags) => {
       return !flags.dev
     },
   },
   publicUrl: {
     type: 'string',
     alias: 'u',
-    isRequired: flags => {
+    isRequired: (flags) => {
       return !flags.dev
     },
   },
@@ -50,7 +50,7 @@ const FLAG_DEFINITIONS = {
   providerId: {
     type: 'number',
     alias: 'i',
-    isRequired: flags => {
+    isRequired: (flags) => {
       return !flags.dev
     },
   },
@@ -122,7 +122,7 @@ function getStorage(runtimeApi) {
   const { Storage } = require('@joystream/storage-node-backend')
 
   const options = {
-    resolve_content_id: async contentId => {
+    resolve_content_id: async (contentId) => {
       // Resolve via API
       const obj = await runtimeApi.assets.getDataObject(contentId)
       if (!obj || obj.isNone) {
@@ -201,7 +201,7 @@ function getServiceInformation(publicUrl) {
 
 async function announcePublicUrl(api, publicUrl) {
   // re-announce in future
-  const reannounce = function(timeoutMs) {
+  const reannounce = function (timeoutMs) {
     setTimeout(announcePublicUrl, timeoutMs, api, publicUrl)
   }
 
@@ -295,7 +295,7 @@ main()
   .then(() => {
     process.exit(0)
   })
-  .catch(err => {
+  .catch((err) => {
     console.error(chalk.red(err.stack))
     process.exit(-1)
   })

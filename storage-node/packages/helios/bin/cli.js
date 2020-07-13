@@ -19,7 +19,7 @@ async function main() {
   console.log(`Found ${storageProviders.length} staked providers`)
 
   const storageProviderAccountInfos = await Promise.all(
-    storageProviders.map(async providerId => {
+    storageProviders.map(async (providerId) => {
       return {
         providerId,
         info: await runtime.discovery.getAccountInfo(providerId),
@@ -49,7 +49,7 @@ async function main() {
 
   console.log(
     '\n== Down Providers!\n',
-    downProviders.map(provider => {
+    downProviders.map((provider) => {
       return {
         providerId: provider.providerId,
       }
@@ -80,7 +80,7 @@ async function main() {
 
   console.log('\nChecking API Endpoints are online')
   await Promise.all(
-    endpoints.map(async provider => {
+    endpoints.map(async (provider) => {
       if (!provider.endpoint) {
         console.log('skipping', provider.address)
         return
@@ -103,7 +103,7 @@ async function main() {
 
   // Check which providers are reporting a ready relationship for each asset
   await Promise.all(
-    knownContentIds.map(async contentId => {
+    knownContentIds.map(async (contentId) => {
       const [relationshipsCount, judgement] = await assetRelationshipState(api, contentId, storageProviders)
       console.log(
         `${encodeAddress(contentId)} replication ${relationshipsCount}/${storageProviders.length} - ${judgement}`
@@ -180,7 +180,7 @@ async function assetRelationshipState(api, contentId, providers) {
 
   // how many relationships associated with active providers and in ready state
   const activeRelationships = await Promise.all(
-    relationshipIds.map(async id => {
+    relationshipIds.map(async (id) => {
       let relationship = await api.query.dataObjectStorageRegistry.relationships(id)
       relationship = relationship.unwrap()
       // only interested in ready relationships
@@ -188,11 +188,11 @@ async function assetRelationshipState(api, contentId, providers) {
         return undefined
       }
       // Does the relationship belong to an active provider ?
-      return providers.find(provider => relationship.storage_provider.eq(provider))
+      return providers.find((provider) => relationship.storage_provider.eq(provider))
     })
   )
 
-  return [activeRelationships.filter(active => active).length, dataObject.unwrap().liaison_judgement]
+  return [activeRelationships.filter((active) => active).length, dataObject.unwrap().liaison_judgement]
 }
 
 main()
