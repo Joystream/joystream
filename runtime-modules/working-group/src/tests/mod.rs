@@ -164,6 +164,17 @@ fn add_opening_fails_with_incorrect_unstaking_periods() {
         add_opening_fixture.call_and_assert(Err(
             Error::ApplicationStakingPolicyReviewPeriodUnstakingPeriodIsZero,
         ));
+
+        let add_opening_fixture =
+            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
+                application_rationing_policy: Some(hiring::ApplicationRationingPolicy {
+                    max_active_applicants: 0,
+                }),
+                ..OpeningPolicyCommitment::default()
+            });
+        add_opening_fixture.call_and_assert(Err(
+            Error::ApplicationRationingPolicyMaxActiveApplicantsIsZero,
+        ));
     });
 }
 

@@ -297,6 +297,10 @@ decl_error! {
         /// Invalid OpeningPolicyCommitment parameter (application_staking_policy):
         /// review_period_expired_unstaking_period_length should be non-zero.
         ApplicationStakingPolicyReviewPeriodUnstakingPeriodIsZero,
+
+        /// Invalid OpeningPolicyCommitment parameter (application_rationing_policy):
+        /// max_active_applicants should be non-zero.
+        ApplicationRationingPolicyMaxActiveApplicantsIsZero,
     }
 }
 

@@ -1073,6 +1073,15 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             Error::ApplicationStakingPolicyReviewPeriodUnstakingPeriodIsZero,
         )?;
 
+        if let Some(application_rationing_policy) =
+            policy_commitment.application_rationing_policy.clone()
+        {
+            ensure!(
+                application_rationing_policy.max_active_applicants > 0,
+                Error::ApplicationRationingPolicyMaxActiveApplicantsIsZero
+            );
+        }
+
         Ok(())
     }
 
