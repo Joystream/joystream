@@ -52,6 +52,10 @@ export default abstract class BaseTransport {
     return this.api.query.stake;
   }
 
+  protected get recurringRewards () {
+    return this.api.query.recurringRewards;
+  }
+
   protected queryMethodByName (name: string) {
     const [module, method] = name.split('.');
     return this.api.query[module][method];

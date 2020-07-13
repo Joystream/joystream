@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { getFormErrorLabelsProps } from './errorHandling';
 import * as Yup from 'yup';
 import {
@@ -36,27 +36,18 @@ type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormVal
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const DecreaseWorkingGroupLeadStakeForm: React.FunctionComponent<FormInnerProps> = props => {
-  const { handleChange, errors, touched, values, myMemberId, setFieldError } = props;
+const SetWorkingGroupLeadRewardForm: React.FunctionComponent<FormInnerProps> = props => {
+  const { handleChange, errors, touched, values, myMemberId } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const [lead, setLead] = useState<WorkerData | null>(null);
-
-  // Here we validate if stake <= current lead stake.
-  // Because it depends on selected working group,
-  // there's no easy way to do it using validationSchema
-  useEffect(() => {
-    if (lead && parseInt(values.amount) > (lead.stake || 0) && !errors.amount) {
-      setFieldError('amount', `The stake cannot exceed current leader's stake (${formatBalance(lead.stake)})`);
-    }
-  });
 
   return (
     <GenericWorkingGroupProposalForm
       {...props}
-      txMethod="createDecreaseWorkingGroupLeaderStakeProposal"
-      proposalType="DecreaseWorkingGroupLeaderStake"
+      txMethod="createSetWorkingGroupLeaderRewardProposal"
+      proposalType="SetWorkingGroupLeaderReward"
       leadRequired={true}
-      leadStakeRequired={true}
+      leadRewardRequired={true}
       onLeadChange={(lead: WorkerData | null) => setLead(lead)}
       submitParams={[
         myMemberId,
@@ -68,11 +59,11 @@ const DecreaseWorkingGroupLeadStakeForm: React.FunctionComponent<FormInnerProps>
         values.workingGroup
       ]}
     >
-      { (lead && lead.stake) && (
+      { (lead && lead.reward) && (
         <Grid columns="4" doubling stackable verticalAlign="bottom">
           <Grid.Column>
             <InputFormField
-              label="Amount to decrease"
+              label="New reward amount"
               onChange={handleChange}
               name="amount"
               error={errorLabelsProps.amount}
@@ -93,10 +84,10 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
   }),
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    ...Validation.DecreaseWorkingGroupLeaderStake()
+    ...Validation.SetWorkingGroupLeaderReward()
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
-  displayName: 'DecreaseWorkingGroupLeadStakeForm'
-})(DecreaseWorkingGroupLeadStakeForm);
+  displayName: 'SetWorkingGroupLeadRewardForm'
+})(SetWorkingGroupLeadRewardForm);
 
 export default withProposalFormData<FormContainerProps, ExportComponentProps>(FormContainer);

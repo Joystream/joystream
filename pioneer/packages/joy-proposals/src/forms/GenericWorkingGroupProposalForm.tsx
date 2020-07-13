@@ -15,7 +15,7 @@ import './forms.css';
 import { Dropdown, Message } from 'semantic-ui-react';
 import { usePromise, useTransport } from '@polkadot/joy-utils/react/hooks';
 import { PromiseComponent } from '@polkadot/joy-utils/react/components';
-import { LeadData } from '@polkadot/joy-utils/types/workingGroups';
+import { WorkerData } from '@polkadot/joy-utils/types/workingGroups';
 import { LeadInfo } from '@polkadot/joy-utils/react/components/working-groups/LeadInfo';
 
 export type FormValues = GenericFormValues & {
@@ -35,7 +35,8 @@ type FormAdditionalProps = {
   showLead?: boolean;
   leadRequired?: boolean;
   leadStakeRequired?: boolean;
-  onLeadChange?: (lead: LeadData | null) => void;
+  leadRewardRequired?: boolean;
+  onLeadChange?: (lead: WorkerData | null) => void;
 };
 
 // We don't exactly use "container" and "export" components here, but those types are useful for
@@ -45,7 +46,17 @@ type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 export type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
 export const GenericWorkingGroupProposalForm: React.FunctionComponent<FormInnerProps> = props => {
-  const { handleChange, errors, touched, values, showLead = true, leadRequired = false, leadStakeRequired = false, onLeadChange } = props;
+  const {
+    handleChange,
+    errors,
+    touched,
+    values,
+    showLead = true,
+    leadRequired = false,
+    leadStakeRequired = false,
+    leadRewardRequired = false,
+    onLeadChange
+  } = props;
   const transport = useTransport();
   const [lead, error, loading] = usePromise(
     () => transport.workingGroups.currentLead(values.workingGroup),
@@ -56,10 +67,11 @@ export const GenericWorkingGroupProposalForm: React.FunctionComponent<FormInnerP
   const leadRes = { lead, error, loading };
   const leadMissing = leadRequired && (!leadRes.loading && !leadRes.error) && !leadRes.lead;
   const stakeMissing = leadStakeRequired && (!leadRes.loading && !leadRes.error) && (leadRes.lead && !leadRes.lead.stake);
+  const rewardMissing = leadRewardRequired && (!leadRes.loading && !leadRes.error) && (leadRes.lead && !leadRes.lead.reward);
 
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
-    <GenericProposalForm {...props} disabled={leadMissing || stakeMissing || leadRes.error}>
+    <GenericProposalForm {...props} disabled={leadMissing || stakeMissing || rewardMissing || leadRes.error}>
       <FormField
         error={errorLabelsProps.workingGroup}
         label="Working group"
@@ -87,7 +99,13 @@ export const GenericWorkingGroupProposalForm: React.FunctionComponent<FormInnerP
       { stakeMissing && (
         <Message error visible>
           <Message.Header>No role stake</Message.Header>
-          Selected working group leader has no associated role stake, which is required to create this proposal.
+          Selected working group leader has no associated role stake, which is required in order to create this proposal.
+        </Message>
+      ) }
+      { rewardMissing && (
+        <Message error visible>
+          <Message.Header>No reward relationship</Message.Header>
+          Selected working group leader has no reward relationship, which is required in order to create this proposal.
         </Message>
       ) }
       { props.children }

@@ -12,7 +12,7 @@ import {
   FormValues as WGFormValues,
   defaultValues as wgFromDefaultValues
 } from './GenericWorkingGroupProposalForm';
-import { FormField, InputFormField } from './FormFields';
+import { FormField, RewardPolicyFields } from './FormFields';
 import { withFormContainer } from './FormContainer';
 import './forms.css';
 import { Dropdown, DropdownItemProps, Header, Checkbox } from 'semantic-ui-react';
@@ -26,7 +26,7 @@ import { withCalls } from '@polkadot/react-api';
 import { Option } from '@polkadot/types';
 import { BlockNumber } from '@polkadot/types/interfaces';
 import { u32 as U32, u128 as U128 } from '@polkadot/types/primitive';
-import { getFormErrorLabelsProps, FormErrorLabelsProps } from './errorHandling';
+import { getFormErrorLabelsProps } from './errorHandling';
 import { RewardPolicy } from '@joystream/types/working-group';
 import { FillOpeningParameters } from '@joystream/types/proposals';
 import { WorkingGroup } from '@joystream/types/common';
@@ -61,53 +61,6 @@ type FormContainerProps = ProposalFormContainerProps<ExportComponentProps> & {
 };
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-type RewardPolicyFieldsProps = Pick<FormInnerProps, 'values' | 'handleChange' | 'setFieldValue'> & {
-  errorLabelsProps: FormErrorLabelsProps<FormValues>;
-};
-const RewardPolicyFields: React.FunctionComponent<RewardPolicyFieldsProps> = ({
-  values,
-  errorLabelsProps,
-  handleChange,
-  setFieldValue
-}) => {
-  return (
-    <>
-      <InputFormField
-        label="Amount per payout"
-        unit={formatBalance.getDefaults().unit}
-        onChange={handleChange}
-        name={'rewardAmount'}
-        error={errorLabelsProps.rewardAmount}
-        value={values.rewardAmount}
-        placeholder={'ie. 100'}
-      />
-      <InputFormField
-        label="Next payment at block"
-        onChange={handleChange}
-        name={'rewardNextBlock'}
-        error={errorLabelsProps.rewardNextBlock}
-        value={values.rewardNextBlock}
-      />
-      <FormField>
-        <Checkbox
-          toggle
-          onChange={(e, data) => { setFieldValue('rewardRecurring', data.checked); }}
-          label={'Recurring'}
-          checked={values.rewardRecurring}/>
-      </FormField>
-      { values.rewardRecurring && (
-        <InputFormField
-          label="Reward interval"
-          onChange={handleChange}
-          name={'rewardInterval'}
-          error={errorLabelsProps.rewardInterval}
-          value={values.rewardInterval}
-          unit={'Blocks'}
-        />
-      ) }
-    </>
-  );
-};
 const valuesToFillOpeningParams = (values: FormValues): FillOpeningParameters => (
   new FillOpeningParameters({
     working_group: new WorkingGroup(values.workingGroup),

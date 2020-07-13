@@ -1,6 +1,9 @@
 import React from 'react';
-import { Form, FormInputProps, FormTextAreaProps, Label, LabelProps } from 'semantic-ui-react';
+import { Form, FormInputProps, FormTextAreaProps, Label, LabelProps, Checkbox } from 'semantic-ui-react';
+import { FormikProps } from 'formik';
 import LabelWithHelp from './LabelWithHelp';
+import { FormErrorLabelsProps } from './errorHandling';
+import { formatBalance } from '@polkadot/util';
 
 /*
  * Generic form field components
@@ -61,6 +64,61 @@ export function FormField (props: React.PropsWithChildren<FormFieldProps>) {
       { children }
       { Boolean(showErrorMsg && error) && <Label {...error} prompt/> }
     </Form.Field>
+  );
+}
+
+type ReawrdPolicyFieldsType = {
+  rewardAmount: string;
+  rewardNextBlock: string;
+  rewardRecurring: boolean;
+  rewardInterval: string;
+}
+type RewardPolicyFieldsProps<ValuesT extends ReawrdPolicyFieldsType> =
+  Pick<FormikProps<ValuesT>, 'values' | 'handleChange' | 'setFieldValue'> & {
+    errorLabelsProps: FormErrorLabelsProps<ValuesT>;
+  };
+export function RewardPolicyFields<ValuesT extends ReawrdPolicyFieldsType> ({
+  values,
+  errorLabelsProps,
+  handleChange,
+  setFieldValue
+}: RewardPolicyFieldsProps<ValuesT>) {
+  return (
+    <>
+      <InputFormField
+        label="Amount per payout"
+        unit={formatBalance.getDefaults().unit}
+        onChange={handleChange}
+        name={'rewardAmount'}
+        error={errorLabelsProps.rewardAmount}
+        value={values.rewardAmount}
+        placeholder={'ie. 100'}
+      />
+      <InputFormField
+        label="Next payment at block"
+        onChange={handleChange}
+        name={'rewardNextBlock'}
+        error={errorLabelsProps.rewardNextBlock}
+        value={values.rewardNextBlock}
+      />
+      <FormField>
+        <Checkbox
+          toggle
+          onChange={(e, data) => { setFieldValue('rewardRecurring', data.checked); }}
+          label={'Recurring'}
+          checked={values.rewardRecurring}/>
+      </FormField>
+      { values.rewardRecurring && (
+        <InputFormField
+          label="Reward interval"
+          onChange={handleChange}
+          name={'rewardInterval'}
+          error={errorLabelsProps.rewardInterval}
+          value={values.rewardInterval}
+          unit={'Blocks'}
+        />
+      ) }
+    </>
   );
 }
 

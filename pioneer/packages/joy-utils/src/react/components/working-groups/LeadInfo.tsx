@@ -1,19 +1,21 @@
 import React from 'react';
-import { LeadData } from '../../../types/workingGroups';
+import { WorkerData } from '../../../types/workingGroups';
 import { ProfilePreviewFromStruct as MemberPreview } from '../../../MemberProfilePreview';
 import { Label, Message } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
 import { WorkingGroupKeys } from '@joystream/types/common';
 import { useTransport, usePromise } from '../../hooks';
 import PromiseComponent from '../PromiseComponent';
+import { formatReward } from '@polkadot/joy-utils/functions/format';
 
 type LeadInfoProps = {
-  lead: LeadData | null;
+  lead: WorkerData | null;
   group?: WorkingGroupKeys;
   header?: boolean;
+  emptyMessage?: string;
 };
 
-export const LeadInfo = ({ lead, group, header = false }: LeadInfoProps) => (
+export const LeadInfo = ({ lead, group, header = false, emptyMessage = 'NONE' }: LeadInfoProps) => (
   <Message>
     <Message.Content>
       { header && <Message.Header>Current {group && `${group} `}Working Group lead:</Message.Header> }
@@ -21,9 +23,12 @@ export const LeadInfo = ({ lead, group, header = false }: LeadInfoProps) => (
         { lead
           ? (
             <MemberPreview profile={lead.profile}>
-              <Label>Role stake: { lead.stake ? formatBalance(lead.stake) : 'NONE'}</Label>
+              <div>
+                <Label>Role stake: <b>{ lead.stake ? formatBalance(lead.stake) : 'NONE'}</b></Label>
+                <Label>Reward: <b>{ lead.reward ? formatReward(lead.reward) : 'NONE' }</b></Label>
+              </div>
             </MemberPreview>
-          ) : 'NONE'
+          ) : emptyMessage
         }
       </div>
     </Message.Content>
@@ -33,20 +38,19 @@ export const LeadInfo = ({ lead, group, header = false }: LeadInfoProps) => (
 type LeadInfoFromIdProps = {
   leadId: number;
   group: WorkingGroupKeys;
-  header?: boolean;
 };
 
-export const LeadInfoFromId = ({ leadId, group, header }: LeadInfoFromIdProps) => {
+export const LeadInfoFromId = ({ leadId, group }: LeadInfoFromIdProps) => {
   const transport = useTransport();
-  const [lead, error, loading] = usePromise<LeadData | null>(
-    () => transport.workingGroups.currentLead(group),
+  const [lead, error, loading] = usePromise<WorkerData | null>(
+    () => transport.workingGroups.groupMemberById(group, leadId),
     null,
     [leadId]
   );
 
   return (
     <PromiseComponent error={error} loading={loading} message="Fetching current lead...">
-      <LeadInfo lead={lead} group={group} header={header}/>
+      <LeadInfo lead={lead} group={group} header={false} emptyMessage="Leader no longer active!"/>
     </PromiseComponent>
   );
 };

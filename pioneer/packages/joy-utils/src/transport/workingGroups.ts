@@ -7,10 +7,11 @@ import { SingleLinkedMapEntry } from '../index';
 import { Worker, WorkerId, Opening as WGOpening, Application as WGApplication } from '@joystream/types/working-group';
 import { apiModuleByGroup } from '../consts/workingGroups';
 import { WorkingGroupKeys } from '@joystream/types/common';
-import { LeadData, OpeningData, ParsedApplication } from '../types/workingGroups';
+import { WorkerData, OpeningData, ParsedApplication } from '../types/workingGroups';
 import { OpeningId, ApplicationId, Opening, Application } from '@joystream/types/hiring';
 import { MultipleLinkedMapEntry } from '../LinkedMapEntry';
 import { Stake, StakeId } from '@joystream/types/stake';
+import { RewardRelationshipId, RewardRelationship } from '@joystream/types/recurring-rewards';
 
 export default class WorkingGroupsTransport extends BaseTransport {
   private membersT: MembersTransport;
@@ -25,35 +26,40 @@ export default class WorkingGroupsTransport extends BaseTransport {
     return this.api.query[module];
   }
 
-  public async currentLead (group: WorkingGroupKeys): Promise<LeadData | null> {
+  public async groupMemberById (group: WorkingGroupKeys, workerId: number): Promise<WorkerData | null> {
+    const workerLink = new SingleLinkedMapEntry(
+      Worker,
+      await this.queryByGroup(group).workerById(workerId)
+    );
+    const worker = workerLink.value;
+
+    if (!worker.is_active) {
+      return null;
+    }
+
+    const stake = worker.role_stake_profile.isSome
+      ? (await this.stakeValue(worker.role_stake_profile.unwrap().stake_id)).toNumber()
+      : undefined;
+
+    const reward = worker.reward_relationship.isSome
+      ? (await this.rewardRelationship(worker.reward_relationship.unwrap()))
+      : undefined;
+
+    const profile = await this.membersT.expectedMemberProfile(worker.member_id);
+
+    return { group, workerId, worker, profile, stake, reward };
+  }
+
+  public async currentLead (group: WorkingGroupKeys): Promise<WorkerData | null> {
     const optLeadId = (await this.queryByGroup(group).currentLead()) as Option<WorkerId>;
 
     if (!optLeadId.isSome) {
       return null;
     }
 
-    const leadWorkerId = optLeadId.unwrap();
-    const leadWorkerLink = new SingleLinkedMapEntry(
-      Worker,
-      await this.queryByGroup(group).workerById(leadWorkerId)
-    );
-    const leadWorker = leadWorkerLink.value;
+    const leadWorkerId = optLeadId.unwrap().toNumber();
 
-    if (!leadWorker.is_active) {
-      return null;
-    }
-
-    const stake = leadWorker.role_stake_profile.isSome
-      ? (await this.stakeValue(leadWorker.role_stake_profile.unwrap().stake_id)).toNumber()
-      : undefined;
-
-    return {
-      group,
-      workerId: leadWorkerId,
-      worker: leadWorker,
-      profile: await this.membersT.expectedMemberProfile(leadWorker.member_id),
-      stake
-    };
+    return this.groupMemberById(group, leadWorkerId);
   }
 
   public async allOpenings (group: WorkingGroupKeys): Promise<OpeningData[]> {
@@ -102,6 +108,13 @@ export default class WorkingGroupsTransport extends BaseTransport {
       Stake,
       await this.stake.stakes(stakeId)
     ).value.value;
+  }
+
+  protected async rewardRelationship (relationshipId: RewardRelationshipId): Promise<RewardRelationship> {
+    return new SingleLinkedMapEntry(
+      RewardRelationship,
+      await this.recurringRewards.rewardRelationships(relationshipId)
+    ).value;
   }
 
   protected async parseApplication (wgApplicationId: number, wgApplication: WGApplication): Promise<ParsedApplication> {

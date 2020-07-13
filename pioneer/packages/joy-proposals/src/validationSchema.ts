@@ -15,6 +15,7 @@ import { FormValues as BeginReviewLeaderApplicationsFormValues } from './forms/B
 import { FormValues as FillWorkingGroupLeaderOpeningFormValues } from './forms/FillWorkingGroupLeaderOpeningForm';
 import { FormValues as DecreaseWorkingGroupLeadStakeFormValues } from './forms/DecreaseWorkingGroupLeadStakeForm';
 import { FormValues as SlashWorkingGroupLeadStakeFormValues } from './forms/SlashWorkingGroupLeadStakeForm';
+import { FormValues as SetWorkingGroupLeadRewardFormValues } from './forms/SetWorkingGroupLeadRewardForm';
 
 // TODO: If we really need this (currency unit) we can we make "Validation" a functiction that returns an object.
 // We could then "instantialize" it in "withFormContainer" where instead of passing
@@ -86,7 +87,7 @@ const LEAVE_ROLE_UNSTAKING_MAX = 14 * 14400; // 14 days
 const WG_MINT_CAP_MIN = 0;
 const WG_MINT_CAP_MAX = 1000000;
 
-// Fill Working Group Leader Opening
+// Fill Working Group Leader Opening / Set Working Group Lead Reward
 // TODO: Discuss the actual values
 const MIN_REWARD_AMOUNT = 1;
 const MAX_REWARD_AMOUNT = 100000;
@@ -144,6 +145,7 @@ type FormValuesByType<T extends ValidationTypeKeys> =
   T extends 'FillWorkingGroupLeaderOpening' ? Omit<FillWorkingGroupLeaderOpeningFormValues, keyof GenericFormValues> :
   T extends 'DecreaseWorkingGroupLeaderStake' ? Omit<DecreaseWorkingGroupLeadStakeFormValues, keyof GenericFormValues> :
   T extends 'SlashWorkingGroupLeaderStake' ? Omit<SlashWorkingGroupLeadStakeFormValues, keyof GenericFormValues> :
+  T extends 'SetWorkingGroupLeaderReward' ? Omit<SetWorkingGroupLeadRewardFormValues, keyof GenericFormValues> :
   never;
 /* eslint-enable @typescript-eslint/indent */
 
@@ -398,6 +400,10 @@ const Validation: ValidationType = {
     amount: Yup.number()
       .required('Amount is required!')
       .min(SLASH_LEAD_STAKE_MIN, `Amount must be greater than ${SLASH_LEAD_STAKE_MIN}`)
+  }),
+  SetWorkingGroupLeaderReward: () => ({
+    workingGroup: Yup.string(),
+    amount: minMaxInt(MIN_REWARD_AMOUNT, MAX_REWARD_AMOUNT, 'Reward amount')
   })
 };
 

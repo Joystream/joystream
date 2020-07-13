@@ -20,7 +20,7 @@ import { Grid } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
 import _ from 'lodash';
 import Validation from '../validationSchema';
-import { LeadData } from '@polkadot/joy-utils/types/workingGroups';
+import { WorkerData } from '@polkadot/joy-utils/types/workingGroups';
 
 export type FormValues = WGFormValues & {
   amount: string;
@@ -39,7 +39,7 @@ type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 const SlashWorkingGroupLeadStakeForm: React.FunctionComponent<FormInnerProps> = props => {
   const { handleChange, errors, touched, values, myMemberId, setFieldError } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
-  const [lead, setLead] = useState<LeadData | null>(null);
+  const [lead, setLead] = useState<WorkerData | null>(null);
   // Here we validate if stake <= current lead stake.
   // Because it depends on selected working group,
   // there's no easy way to do it using validationSchema
@@ -56,7 +56,7 @@ const SlashWorkingGroupLeadStakeForm: React.FunctionComponent<FormInnerProps> = 
       proposalType="SlashWorkingGroupLeaderStake"
       leadRequired={true}
       leadStakeRequired={true}
-      onLeadChange={(lead: LeadData | null) => setLead(lead)}
+      onLeadChange={(lead: WorkerData | null) => setLead(lead)}
       submitParams={[
         myMemberId,
         values.title,

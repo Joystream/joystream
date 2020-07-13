@@ -13,3 +13,4 @@ export { default as BeginReviewLeaderApplicationsForm } from './BeginReviewLeade
 export { default as FillWorkingGroupLeaderOpeningForm } from './FillWorkingGroupLeaderOpeningForm';
 export { default as DecreaseWorkingGroupLeadStakeFrom } from './DecreaseWorkingGroupLeadStakeForm';
 export { default as SlashWorkingGroupLeadStakeForm } from './SlashWorkingGroupLeadStakeForm';
+export { default as SetWorkingGroupLeadRewardForm } from './SetWorkingGroupLeadRewardForm';
