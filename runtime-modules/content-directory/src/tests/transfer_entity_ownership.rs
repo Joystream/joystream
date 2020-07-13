@@ -9,7 +9,7 @@ fn transfer_entity_ownership_success() {
         let actor = Actor::Lead;
 
         // Create entity
-        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
+        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor));
 
         // Runtime state before tested call
 
@@ -67,7 +67,7 @@ fn transfer_entity_ownership_lead_auth_failed() {
         let actor = Actor::Lead;
 
         // Create entity
-        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
+        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor));
 
         // Runtime state before tested call
 
@@ -134,7 +134,7 @@ fn transfer_entity_ownership_provided_entity_controller_is_equal_to_the_current_
         let actor = Actor::Lead;
 
         // Create entity
-        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
+        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor));
 
         // Runtime state before tested call
 
@@ -186,7 +186,7 @@ fn transfer_entity_ownership_inbound_same_owner_rc_does_not_equal_to_zero() {
         // Add schema support to the second Entity
         assert_ok!(add_schema_support_to_entity(
             LEAD_ORIGIN,
-            actor.to_owned(),
+            actor,
             SECOND_ENTITY_ID,
             FIRST_SCHEMA_ID,
             schema_property_values
@@ -254,7 +254,7 @@ fn transfer_entity_ownership_provided_property_value_ids_must_be_references_with
         // Add schema support to the second Entity
         assert_ok!(add_schema_support_to_entity(
             LEAD_ORIGIN,
-            actor.to_owned(),
+            actor,
             FIRST_ENTITY_ID,
             FIRST_SCHEMA_ID,
             schema_property_values
@@ -337,7 +337,7 @@ fn transfer_entity_ownership_provided_new_property_value_referencing_entity_that
         // Add schema support to the second Entity
         assert_ok!(add_schema_support_to_entity(
             LEAD_ORIGIN,
-            actor.to_owned(),
+            actor,
             FIRST_ENTITY_ID,
             FIRST_SCHEMA_ID,
             schema_property_values
@@ -417,7 +417,7 @@ fn transfer_entity_ownership_provided_new_property_value_referencing_non_existen
         // Add schema support to the second Entity
         assert_ok!(add_schema_support_to_entity(
             LEAD_ORIGIN,
-            actor.to_owned(),
+            actor,
             FIRST_ENTITY_ID,
             FIRST_SCHEMA_ID,
             schema_property_values
@@ -571,7 +571,7 @@ fn transfer_entity_ownership_required_property_was_not_provided() {
         // Add schema support to the second Entity
         assert_ok!(add_schema_support_to_entity(
             LEAD_ORIGIN,
-            actor.to_owned(),
+            actor,
             FIRST_ENTITY_ID,
             FIRST_SCHEMA_ID,
             schema_property_values
@@ -698,7 +698,7 @@ fn transfer_entity_ownership_unique_constraint_violation() {
         // Add second schema support to the first Entity
         assert_ok!(add_schema_support_to_entity(
             LEAD_ORIGIN,
-            actor.to_owned(),
+            actor,
             FIRST_ENTITY_ID,
             SECOND_SCHEMA_ID,
             schema_property_values

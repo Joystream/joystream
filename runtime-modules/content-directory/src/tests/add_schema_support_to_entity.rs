@@ -617,7 +617,7 @@ fn add_schema_support_is_not_active() {
         schema_property_values.insert(FIRST_PROPERTY_ID, PropertyValue::default());
 
         // Make an attempt to add schema support to Entity, providing schema id,
-        // which correspondin class Schema is not active
+        // which corresponding class Schema is not active
         let add_schema_support_to_entity_result = add_schema_support_to_entity(
             LEAD_ORIGIN,
             actor,
@@ -865,13 +865,13 @@ fn add_schema_support_referenced_entity_does_not_match_class() {
         schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
 
         // Make an attempt to add schema support to the Entity, when provided schema property value(s) refer(s) Entity, which Class
-        // does not match the class in corresponding Class Schema
+        // does not match the class in corresponding Class Property
         let add_schema_support_to_entity_result = add_schema_support_to_entity(
             LEAD_ORIGIN,
-            actor.to_owned(),
+            actor,
             FIRST_ENTITY_ID,
             FIRST_SCHEMA_ID,
-            schema_property_values.clone(),
+            schema_property_values,
         );
 
         // Failure checked
@@ -930,7 +930,7 @@ fn add_schema_support_referenced_entity_does_not_exist() {
         // which does not exist in runtime
         let add_schema_support_to_entity_result = add_schema_support_to_entity(
             LEAD_ORIGIN,
-            actor.to_owned(),
+            actor,
             FIRST_ENTITY_ID,
             FIRST_SCHEMA_ID,
             schema_property_values,
@@ -1000,7 +1000,7 @@ fn add_schema_support_entity_can_not_be_referenced() {
         // refer(s) to Entity which can not be referenced
         let add_schema_support_to_entity_result = add_schema_support_to_entity(
             LEAD_ORIGIN,
-            actor.to_owned(),
+            actor,
             FIRST_ENTITY_ID,
             FIRST_SCHEMA_ID,
             schema_property_values,
@@ -1076,7 +1076,7 @@ fn add_schema_support_same_controller_constraint_violation() {
         // when corresponding Entity can only be referenced from Entity with the same controller.
         let add_schema_support_to_entity_result = add_schema_support_to_entity(
             LEAD_ORIGIN,
-            actor.to_owned(),
+            actor,
             FIRST_ENTITY_ID,
             FIRST_SCHEMA_ID,
             schema_property_values,
@@ -1136,7 +1136,7 @@ fn add_schema_support_text_property_is_too_long() {
         // length exceeds TextMaxLengthConstraint.
         let add_schema_support_to_entity_result = add_schema_support_to_entity(
             LEAD_ORIGIN,
-            actor.to_owned(),
+            actor,
             FIRST_ENTITY_ID,
             FIRST_SCHEMA_ID,
             schema_property_values,
@@ -1212,7 +1212,7 @@ fn add_schema_support_vec_property_is_too_long() {
         // length exceeds VecMaxLengthConstraint.
         let add_schema_support_to_entity_result = add_schema_support_to_entity(
             LEAD_ORIGIN,
-            actor.to_owned(),
+            actor,
             FIRST_ENTITY_ID,
             FIRST_SCHEMA_ID,
             schema_property_values,

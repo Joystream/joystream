@@ -45,7 +45,7 @@ fn insert_at_entity_property_vector_success() {
 
         // Ensure reference counter of second entity updated succesfully
         let inbound_rc = InboundReferenceCounter::new(4, true);
-        *second_entity.get_reference_counter_mut() = inbound_rc.clone();
+        *second_entity.get_reference_counter_mut() = inbound_rc;
 
         assert_eq!(second_entity, entity_by_id(SECOND_ENTITY_ID));
 
@@ -487,7 +487,7 @@ fn insert_at_entity_property_vector_is_locked_for_given_actor() {
         // Add schema support to the entity
         assert_ok!(add_schema_support_to_entity(
             LEAD_ORIGIN,
-            Actor::Lead,
+            actor.clone(),
             FIRST_ENTITY_ID,
             FIRST_SCHEMA_ID,
             schema_property_values
@@ -649,7 +649,7 @@ fn insert_at_entity_property_vector_nonces_does_not_match() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         // Create class reference schema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(&Actor::Lead, LEAD_ORIGIN);
+        add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
 
         // Runtime state before tested call
 
@@ -708,7 +708,7 @@ fn insert_at_entity_property_vector_index_is_out_of_range() {
             actor.to_owned(),
             FIRST_ENTITY_ID,
             FIRST_SCHEMA_ID,
-            schema_property_values.clone()
+            schema_property_values
         ));
 
         // Runtime state before tested call
@@ -768,7 +768,7 @@ fn insert_at_entity_property_vector_is_too_long() {
             actor.to_owned(),
             FIRST_ENTITY_ID,
             FIRST_SCHEMA_ID,
-            schema_property_values.clone()
+            schema_property_values
         ));
 
         // Runtime state before tested call

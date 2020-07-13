@@ -41,7 +41,7 @@ fn update_entity_property_values_success() {
 
         // Ensure reference counter of second entity updated succesfully
         let inbound_rc = InboundReferenceCounter::new(2, true);
-        *second_entity.get_reference_counter_mut() = inbound_rc.clone();
+        *second_entity.get_reference_counter_mut() = inbound_rc;
 
         assert_eq!(second_entity, entity_by_id(SECOND_ENTITY_ID));
 
@@ -427,7 +427,7 @@ fn update_entity_property_values_is_locked_for_given_actor() {
         // Add schema support to the entity
         assert_ok!(add_schema_support_to_entity(
             LEAD_ORIGIN,
-            Actor::Lead,
+            actor.clone(),
             FIRST_ENTITY_ID,
             FIRST_SCHEMA_ID,
             schema_property_values
@@ -746,7 +746,7 @@ fn update_entity_property_values_referenced_entity_does_not_match_its_class() {
         schema_new_property_values.insert(FIRST_PROPERTY_ID, schema_new_property_value);
 
         // Make an attempt to update entity property values, when provided schema new property value(s)
-        // refer(s) Entity, which Class does not match the class in corresponding Class Schema
+        // refer(s) Entity, which Class does not match the class in corresponding Class Property
         let update_entity_property_values_result = update_entity_property_values(
             LEAD_ORIGIN,
             actor,
@@ -947,7 +947,7 @@ fn update_entity_property_values_property_should_be_unique() {
         schema_new_property_values.insert(SECOND_PROPERTY_ID, schema_new_property_value);
 
         // Make an attempt to update entity property values, providing property value(s), which are identical to thouse,
-        // are already added to The Entity, though should be unique on Class Schema level
+        // are already added to The Entity, though should be unique on Class Property level
         let update_entity_property_values_result = update_entity_property_values(
             LEAD_ORIGIN,
             actor,

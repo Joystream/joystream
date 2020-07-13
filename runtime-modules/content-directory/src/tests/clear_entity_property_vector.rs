@@ -77,12 +77,8 @@ fn clear_entity_property_vector_entity_not_found() {
 
         // Make an attempt to clear property_vector under given `entity_id` & `in_class_schema_property_id`
         // in case when corresponding Entity does not exist
-        let clear_entity_property_vector_result = clear_entity_property_vector(
-            LEAD_ORIGIN,
-            actor.clone(),
-            FIRST_ENTITY_ID,
-            FIRST_PROPERTY_ID,
-        );
+        let clear_entity_property_vector_result =
+            clear_entity_property_vector(LEAD_ORIGIN, actor, FIRST_ENTITY_ID, FIRST_PROPERTY_ID);
 
         // Failure checked
         assert_failure(
@@ -396,7 +392,7 @@ fn clear_entity_property_vector_is_locked_for_given_actor() {
         // Add schema support to the entity
         assert_ok!(add_schema_support_to_entity(
             LEAD_ORIGIN,
-            Actor::Lead,
+            actor.clone(),
             FIRST_ENTITY_ID,
             FIRST_SCHEMA_ID,
             schema_property_values

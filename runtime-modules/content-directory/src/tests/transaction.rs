@@ -94,8 +94,8 @@ fn transaction_limit_reached() {
 
         let actor = Actor::Lead;
 
-        // make an attempt to complete transaction with operations, which total number exceeds MaxNumberOfOperationsDuringAtomicBatching runtime constraint
-        let transaction_result = transaction(LEAD_ORIGIN, actor.clone(), operations);
+        // Make an attempt to complete transaction with operations, which total number exceeds MaxNumberOfOperationsDuringAtomicBatching runtime constraint
+        let transaction_result = transaction(LEAD_ORIGIN, actor, operations);
 
         // Failure checked
         assert_failure(
