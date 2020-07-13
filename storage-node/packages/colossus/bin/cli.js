@@ -176,7 +176,7 @@ async function initApiDevelopment() {
     provider_url: wsProvider,
   })
 
-  const dev = require('../../cli/dist/dev')
+  const dev = require('../../cli/dist/commands/dev')
 
   api.identities.useKeyPair(dev.roleKeyPair(api))
 
@@ -253,7 +253,7 @@ const commands = {
     let publicUrl, port, api
 
     if (cli.flags.dev) {
-      const dev = require('../../cli/dist/dev')
+      const dev = require('../../cli/dist/commands/dev')
       api = await initApiDevelopment()
       port = dev.developmentPort()
       publicUrl = `http://localhost:${port}/`

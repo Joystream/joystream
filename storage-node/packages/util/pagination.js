@@ -116,7 +116,9 @@ module.exports = {
 
     // Parse current url
     const url = require('url')
-    const reqUrl = new URL(req.protocol + '://' + req.get('host') + req.originalUrl)
+    // Disable lint because the code (and tests) relied upon obsolete UrlObject. Remove after migration to TypeScript.
+    // eslint-disable-next-line node/no-deprecated-api
+    const reqUrl = url.parse(req.protocol + '://' + req.get('host') + req.originalUrl)
     const params = new url.URLSearchParams(reqUrl.query)
 
     // Pagination object
