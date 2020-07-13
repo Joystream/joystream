@@ -96,7 +96,10 @@ export default class WarthogWrapper {
   }
 
   async newProject(projectName = 'query_node'): Promise<void> {
+    const consoleFn = console.log;
+    console.log = () => { return };
     await warthogCli.run(`new ${projectName}`);
+    console.log = consoleFn;
 
     // Override warthog's index.ts file for custom naming strategy
     fs.copyFileSync(getTemplatePath('graphql-server.index.mst'), path.resolve(process.cwd(), 'src/index.ts'));
