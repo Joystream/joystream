@@ -1,13 +1,13 @@
 ## Joystream Runtime
 
-![Joystream Runtime](./runtime/runtime-banner.svg)
+![Joystream Runtime](./runtime-banner.svg)
 
 
 The runtime is the code that defines the consensus rules of the Joystream protocol.
 It is compiled to WASM and lives on chain.
 Joystream node execute the code's logic to validate transactions and blocks on the blockchain.
 
-When building joystream-node as described abot with `cargo build --release`, in addition to the joystream-node binary being built the WASM blob artifact is produced in:
+When building joystream-node as described in [../node/README.md](../node/README.md) with `cargo build --release`, in addition to the joystream-node binary being built the WASM blob artifact is produced in:
 
 `target/release/wbuild/joystream-node-runtime/joystream_node_runtime.compact.wasm`
 
