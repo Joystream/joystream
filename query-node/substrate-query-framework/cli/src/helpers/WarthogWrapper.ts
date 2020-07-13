@@ -11,6 +11,7 @@ import { WarthogModelBuilder } from './../parse/WarthogModelBuilder';
 import { getTemplatePath } from '../utils/utils';
 import Debug from 'debug';
 import { SourcesGenerator } from '../generate/SourcesGenerator';
+import Listr = require('listr');
 
 const debug = Debug('qnode-cli:warthog-wrapper');
 
@@ -22,7 +23,6 @@ export default class WarthogWrapper {
   constructor(command: Command, schemaPath: string) {
     this.command = command;
     this.schemaPath = schemaPath;
-  }
     this.schemaResolvedPath = path.resolve(process.cwd(), this.schemaPath);
     if (!fs.existsSync(this.schemaResolvedPath)) {
       throw new Error(`Schema file is not found at ${this.schemaResolvedPath}`);
@@ -31,19 +31,61 @@ export default class WarthogWrapper {
 
   async run(): Promise<void> {
     // Order of calling functions is important!!!
-    await this.newProject();
+    const tasks = new Listr([
+      {
+        title: 'Set up a new project',
+        task: async () => {
+          await this.newProject();
+        }
+      },
+      {
+        title: 'Install dependencies',
+        task: () => {
+          this.installDependencies();
+        }
+      },
+      {
+        title: 'Generate Warthog sources',
+        task: () => {
+          this.generateWarthogSources();
+        }
+      },
+      {
+        title: 'Warthog codegen',
+        task: () => {
+          this.codegen();
+        }
+      }
+    ]);
 
-    this.installDependencies();
+    await tasks.run();
+  }
 
-    await this.createDB();
-
-    this.generateWarthogSources();
-
-    this.codegen();
-
-    this.createMigrations();
-
-    this.runMigrations();
+  async generateDB(): Promise<void> {
+    const tasks = new Listr([
+      {
+        title: 'Create database',
+        task: async () => {
+          if (!process.env.DB_NAME) {
+            throw new Error('DB_NAME env variable is not set, check that .env file exists');
+          }
+          await this.createDB();
+        }
+      },
+      {
+        title: 'Generate migrations',
+        task: () => {
+          this.createMigrations();
+        }
+      },
+      {
+        title: 'Run migrations',
+        task: () => {
+          this.runMigrations();
+        }
+      }
+    ]);  
+    await tasks.run();
   }
 
   async generateAPIPreview(): Promise<void> {
@@ -71,7 +113,7 @@ export default class WarthogWrapper {
     // Temporary tslib fix
     const pkgFile = JSON.parse(fs.readFileSync('package.json', 'utf8')) as Record<string, Record<string, unknown>>;
     pkgFile.resolutions['tslib'] = '1.11.2';
-    pkgFile.scripts['sync'] = 'SYNC=true WARTHOG_DB_SYNCHRONIZE=true ts-node-dev --type-check src/index.ts';
+    pkgFile.scripts['db:sync'] = 'SYNC=true WARTHOG_DB_SYNCHRONIZE=true ts-node-dev --type-check src/index.ts';
     fs.writeFileSync('package.json', JSON.stringify(pkgFile, null, 2));
 
     this.command.log('Installing graphql-server dependencies...');
@@ -91,8 +133,6 @@ export default class WarthogWrapper {
    *   - Fulltext search queries (migration/resolver/service)
    */
   generateWarthogSources(): void {
-    const schemaPath = path.resolve(process.cwd(), this.schemaPath);
-
     const modelBuilder = new WarthogModelBuilder(this.schemaResolvedPath);
     const model = modelBuilder.buildWarthogModel();
 
