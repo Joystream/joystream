@@ -116,7 +116,7 @@ module.exports = {
 
     // Parse current url
     const url = require('url')
-    const reqUrl = url.parse(req.protocol + '://' + req.get('host') + req.originalUrl)
+    const reqUrl = new URL(req.protocol + '://' + req.get('host') + req.originalUrl)
     const params = new url.URLSearchParams(reqUrl.query)
 
     // Pagination object
