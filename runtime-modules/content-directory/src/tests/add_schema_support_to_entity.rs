@@ -1299,11 +1299,11 @@ fn add_schema_support_property_should_be_unique() {
 
         second_schema_property_values.insert(SECOND_PROPERTY_ID, schema_property_value);
 
-        // Make an attempt to add schema support to the entity, providing property value(s), which are identical to thouse, are already added to The Entity,
-        // though should be unique on Class Schema level
+        // Make an attempt to add schema support to the entity, providing property value(s), which have duplicates or identical to thouse,
+        // are already added to The Entity, though should be unique on Class Property level
         let add_schema_support_to_entity_result = add_schema_support_to_entity(
             LEAD_ORIGIN,
-            actor.to_owned(),
+            actor,
             FIRST_ENTITY_ID,
             SECOND_SCHEMA_ID,
             second_schema_property_values,

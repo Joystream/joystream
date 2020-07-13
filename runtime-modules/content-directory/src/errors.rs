@@ -74,6 +74,8 @@ pub const ERROR_REFERENCED_ENTITY_DOES_NOT_MATCH_ITS_CLASS: &str
      = "Provided property references entity, which class_id is not equal to class_id, declared in corresponding property type";
 pub const ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO: &str =
     "Entity removal can`t be completed, as there are some property values pointing to given entity";
+pub const ERROR_ENTITY_SAME_OWNER_RC_DOES_NOT_EQUAL_TO_ZERO: &str =
+    "Entity removal can`t be completed, as there are some property value references with same owner flag set pointing to given entity";
 pub const ERROR_ENTITY_INBOUND_SAME_OWNER_RC_DOES_NOT_EQUAL_TO_ZERO: &str =
     "Entity ownership transfer can`t be completed, as there are some property values pointing to given entity with same owner flag set";
 pub const ERROR_CLASS_PROP_NOT_FOUND: &str = "Class property under given index not found";
@@ -81,9 +83,8 @@ pub const ERROR_CURATOR_GROUP_REMOVAL_FORBIDDEN: &str =
     "Curator group can`t be removed, as it currently maintains at least one class";
 pub const ERROR_PROVIDED_ENTITY_CONTROLLER_IS_EQUAL_TO_CURRENT_ONE: &str =
     "Provided entity controller is equal to the current one";
-pub const ERROR_ALL_PROVIDED_PROPERTY_VALUES_MUST_BE_REFERENCES_WITH_SAME_OWNER_FLAG_SET: &str =
-    "Each property value should be a reference with same owner flag set 
-    (to substitute old ones after entity ownership transfer performed)";
+pub const ERROR_ALL_PROVIDED_PROPERTY_VALUE_IDS_MUST_BE_REFERENCES_WITH_SAME_OWNER_FLAG_SET: &str =
+    "All ids of new property value references with same owner flag set should match their respective Properties defined on Class level";
 // Permission errors
 
 pub const ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL: &str =

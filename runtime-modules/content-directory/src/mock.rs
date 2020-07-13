@@ -50,6 +50,7 @@ pub const SECOND_CLASS_ID: ClassId = 2;
 
 pub const FIRST_ENTITY_ID: EntityId = 1;
 pub const SECOND_ENTITY_ID: EntityId = 2;
+pub const THIRD_ENTITY_ID: EntityId = 3;
 
 pub const UNKNOWN_CLASS_ID: ClassId = 111;
 pub const UNKNOWN_ENTITY_ID: EntityId = 222;
