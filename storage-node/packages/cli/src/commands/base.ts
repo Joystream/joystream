@@ -22,7 +22,7 @@ export abstract class BaseCommand {
     protected assertParameters() : boolean {
         // Create, validate and show parameters.
         if (!this.validateParameters()) {
-            console.log(chalk.yellow(`Invalid parameters for 'download' command:`));
+            console.log(chalk.yellow(`Invalid parameters for the command:`));
             this.showUsage();
 
             return false;

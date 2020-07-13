@@ -32,22 +32,17 @@ import {UploadCommand} from "./commands/upload";
 
 // Parse CLI
 const FLAG_DEFINITIONS = {
-  // TODO
+  // TODO: current version of meow doesn't support subcommands. We should consider a migration to yargs or oclif.
 }
 
-const cli = meow(
-  `
+const usage = `
   Usage:
-    $ storage-cli command [arguments..] [key_file] [passphrase]
-
-  Some commands require a key file as the last option holding the identity for
-  interacting with the runtime API.
+    $ storage-cli command [arguments..]
 
   Commands:
     upload            Upload a file to a Colossus storage node. Requires a
-                      storage node URL, and a local file name to upload. As
-                      an optional third parameter, you can provide a Data
-                      Object Type ID - this defaults to "1" if not provided.
+                      source file path to upload, data object ID, account key file,
+                      pass phrase to unlock it and a member ID.
     download          Retrieve a file. Requires a storage node URL and a content
                       ID, as well as an output filename.
     head              Send a HEAD request for a file, and print headers.
@@ -56,9 +51,11 @@ const cli = meow(
   Dev Commands:       Commands to run on a development chain.
     dev-init          Setup chain with Alice as lead and storage provider.
     dev-check         Check the chain is setup with Alice as lead and storage provider.
-  `,
-  { flags: FLAG_DEFINITIONS }
-)
+    
+  Type 'storage-cli command' for the exact command usage examples.
+  `;
+
+const cli = meow(usage, { flags: FLAG_DEFINITIONS });
 
 const commands = {
   // add Alice well known account as storage provider
@@ -71,68 +68,7 @@ const commands = {
     // dev accounts are automatically loaded, no need to add explicitly to keyring using loadIdentity(api)
     return dev.check(api)
   },
-  // The upload method is not correctly implemented
-  // needs to get the liaison after creating a data object,
-  // resolve the ipns id to the asset put api url of the storage-node
-  // before uploading..
-  upload_old: async (api, url, filename, doTypeId, keyfile, passphrase) => {
-    // loadIdentity(api, keyfile, passphrase)
-    // // Check parameters
-    // assertFile('file', filename)
-    //
-    // const size = fs.statSync(filename).size
-    // debug(`File "${filename}" is ${chalk.green(size)} Bytes.`)
-    //
-    // if (!doTypeId) {
-    //   doTypeId = 1
-    // }
-    //
-    // debug('Data Object Type ID is: ' + chalk.green(doTypeId))
-    //
-    // // Generate content ID
-    // // FIXME this require path is like this because of
-    // // https://github.com/Joystream/apps/issues/207
-    // const { ContentId } = require('@joystream/types/media')
-    // let cid = ContentId.generate()
-    // cid = cid.encode().toString()
-    // debug('Generated content ID: ' + chalk.green(cid))
-    //
-    // // Create Data Object
-    // await api.assets.createDataObject(api.identities.key.address, cid, doTypeId, size)
-    // debug('Data object created.')
-    //
-    // // TODO in future, optionally contact liaison here?
-    // const request = require('request')
-    // url = `${url}asset/v0/${cid}`
-    // debug('Uploading to URL', chalk.green(url))
-    //
-    // const f = fs.createReadStream(filename)
-    // const opts = {
-    //   url,
-    //   headers: {
-    //     'content-type': '',
-    //     'content-length': `${size}`,
-    //   },
-    //   json: true,
-    // }
-    // return new Promise((resolve, reject) => {
-    //   const r = request.put(opts, (error, response, body) => {
-    //     if (error) {
-    //       reject(error)
-    //       return
-    //     }
-    //
-    //     if (response.statusCode / 100 !== 2) {
-    //       reject(new Error(`${response.statusCode}: ${body.message || 'unknown reason'}`))
-    //       return
-    //     }
-    //     debug('Upload successful:', body.message)
-    //     resolve()
-    //   })
-    //   f.pipe(r)
-    // })
-  },
-
+  // Uploads the file to the system. Registers new data object in the runtime, obtains proper colossus instance URL.
   upload: async (api: any, filePath: string, dataObjectTypeId: string, keyFile: string, passPhrase: string, memberId: string) => {
     let uploadCmd = new UploadCommand(api, filePath, dataObjectTypeId, keyFile, passPhrase, memberId);
 
@@ -155,13 +91,14 @@ const commands = {
   }
 }
 
+// Entry point.
 export async function main() {
   const api = await RuntimeApi.create()
 
   // Simple CLI commands
   const command = cli.input[0]
   if (!command) {
-    throw new Error('Need a command to run!')
+    showUsageAndExit('Enter the command, please.');
   }
 
   if (Object.prototype.hasOwnProperty.call(commands, command)) {
@@ -169,6 +106,13 @@ export async function main() {
     const args = _.clone(cli.input).slice(1)
     await commands[command](api, ...args)
   } else {
-    throw new Error(`Command "${command}" not recognized, aborting!`)
+    showUsageAndExit(`Command "${command}" not recognized.`);
   }
+}
+
+// Shows a message, CLI general usage and exits.
+function showUsageAndExit(message: string) {
+  console.log(message);
+  console.log(usage);
+  process.exit(1);
 }
