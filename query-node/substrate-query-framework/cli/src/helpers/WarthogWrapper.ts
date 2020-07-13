@@ -97,7 +97,9 @@ export default class WarthogWrapper {
 
   async newProject(projectName = 'query_node'): Promise<void> {
     const consoleFn = console.log;
-    console.log = () => { return };
+    console.log = () => {
+      return;
+    };
     await warthogCli.run(`new ${projectName}`);
     console.log = consoleFn;
 
@@ -108,7 +110,6 @@ export default class WarthogWrapper {
   }
 
   async installDependencies(): Promise<void> {
-    
     if (!fs.existsSync('package.json')) {
       this.command.error('Could not found package.json file in the current working directory');
     }
@@ -116,7 +117,7 @@ export default class WarthogWrapper {
     // Temporary tslib fix
     const pkgFile = JSON.parse(fs.readFileSync('package.json', 'utf8')) as Record<string, Record<string, unknown>>;
     pkgFile.resolutions['tslib'] = '1.11.2';
-    pkgFile.scripts['db:sync'] = 'SYNC=true WARTHOG_DB_SYNCHRONIZE=true ts-node-dev --type-check src/index.ts';
+    pkgFile.scripts['db:sync'] = 'SYNC=true WARTHOG_DB_SYNCHRONIZE=true ts-node --type-check src/index.ts';
     fs.writeFileSync('package.json', JSON.stringify(pkgFile, null, 2));
 
     //this.command.log('Installing graphql-server dependencies...');
@@ -144,10 +145,8 @@ export default class WarthogWrapper {
   }
 
   async codegen(): Promise<void> {
-    
     await execa('yarn', ['warthog', 'codegen']);
     await execa('yarn', ['dotenv:generate']);
-
   }
 
   async createMigrations(): Promise<void> {

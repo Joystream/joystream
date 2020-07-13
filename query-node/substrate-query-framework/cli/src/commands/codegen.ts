@@ -4,7 +4,9 @@ import * as dotenv from 'dotenv';
 import * as Mustache from 'mustache';
 import { readFileSync, copyFileSync } from 'fs-extra';
 import { Command, flags } from '@oclif/command';
-import { execSync } from 'child_process';
+
+import cli from 'cli-ux';
+import execa = require('execa');
 
 import { createDir, getTemplatePath, createFile } from '../utils/utils';
 import { formatWithPrettier } from '../helpers/formatter';
@@ -21,9 +23,11 @@ export default class Codegen extends Command {
   static flags = {
     schema: flags.string({ char: 's', description: 'Schema path', default: '../../schema.graphql' }),
     // pass --no-indexer to skip indexer generation
-    indexer: flags.boolean({ char: 'i', allowNo: true, description: 'Generate indexer', default: true }),
+    indexer: flags.boolean({ char: 'i', allowNo: true, description: 'Generate Indexer', default: true }),
     // pass --no-graphql to skip graphql generation
     graphql: flags.boolean({ char: 'g', allowNo: true, description: 'Generate GraphQL server', default: true }),
+
+    dbschema: flags.boolean({ char: 'd', description: 'Create the DB schema (use with caution!)', default: false }),
   };
 
   async run(): Promise<void> {
@@ -32,7 +36,7 @@ export default class Codegen extends Command {
     const { flags } = this.parse(Codegen);
 
     const generatedFolderPath = path.resolve(process.cwd(), Codegen.generatedFolderName);
-    
+
     createDir(generatedFolderPath);
 
     // Change directory to generated
@@ -40,18 +44,20 @@ export default class Codegen extends Command {
 
     // Create warthog graphql server
     if (flags.graphql) {
-      debug('Generating GraphQL server');
-      await this.createGraphQLServer(flags.schema);
+      cli.action.start('Generating the GraphQL server');
+      await this.createGraphQLServer(flags.schema, flags.dbschema);
+      cli.action.stop();
     }
 
     // Create block indexer
     if (flags.indexer) {
-      debug('Generating indexer');
+      cli.action.start('Generating the indexer');
       await this.createBlockIndexer();
+      cli.action.stop();
     }
   }
 
-  async createGraphQLServer(schemaPath: string): Promise<void> {
+  async createGraphQLServer(schemaPath: string, syncdb: boolean): Promise<void> {
     const goBackDir = process.cwd();
 
     const warthogProjectName = 'graphql-server';
@@ -63,6 +69,10 @@ export default class Codegen extends Command {
 
     const warthogWrapper = new WarthogWrapper(this, schemaPath);
     await warthogWrapper.run();
+
+    if (syncdb) {
+      await warthogWrapper.generateDB();
+    }
 
     process.chdir(goBackDir);
   }
@@ -86,25 +96,26 @@ export default class Codegen extends Command {
     createFile(path.resolve('index.ts'), formatWithPrettier(indexFileContent));
 
     // Create package.json
-    copyFileSync(getTemplatePath('indexer.package.json'), path.resolve(process.cwd(), 'package.json'));
+    await fs.copyFile(getTemplatePath('indexer.package.json'), path.resolve(process.cwd(), 'package.json'));
 
     // Create .env file for typeorm database connection
-    fs.writeFileSync('.env', getTypeormConfig());
+    await fs.writeFile('.env', getTypeormConfig());
 
     // Create
-    copyFileSync(getTemplatePath('indexer.tsconfig.json'), path.resolve(process.cwd(), 'tsconfig.json'));
+    await fs.copyFile(getTemplatePath('indexer.tsconfig.json'), path.resolve(process.cwd(), 'tsconfig.json'));
 
-    this.log('Installing dependendies for indexer...');
-    execSync('yarn install');
-    if (process.env.TYPE_REGISTER_PACKAGE_NAME) execSync(`yarn add ${process.env.TYPE_REGISTER_PACKAGE_NAME}`);
-    this.log('done...');
+    cli.action.start('Installing dependendies for indexer...');
+    await execa('yarn', ['install']);
+    if (process.env.TYPE_REGISTER_PACKAGE_NAME) {
+      await execa('yarn', ['add', `${process.env.TYPE_REGISTER_PACKAGE_NAME}`]);
+    }
+    cli.action.stop();
 
-    this.log('Generating typeorm db entities...');
+    cli.action.start('Generating typeorm db entities...');
     await createSavedEntityEventTable();
-    execSync(getTypeormModelGeneratorConnectionConfig());
-    this.log('done...');
+    await execa(getTypeormModelGeneratorConnectionConfig());
+    cli.action.stop();
 
     process.chdir(goBackDir);
   }
-
 }
