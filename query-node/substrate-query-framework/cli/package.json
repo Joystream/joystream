@@ -57,7 +57,7 @@
     "/npm-shrinkwrap.json",
     "/oclif.manifest.json"
   ],
-  "homepage": "https://github.com/joystream/joystream/joystream-query-node/cli",
+  "homepage": "https://github.com/joystream/joystream/query-node/substrate-query-framework/cli",
   "keywords": [
     "oclif"
   ],
@@ -68,9 +68,12 @@
     "bin": "cli",
     "plugins": [
       "@oclif/plugin-help"
-    ]
+    ],
+    "macos" : {
+      "identifier": "org.joystream.hydra.cli"
+    }
   },
-  "repository": "joystream/joystream/joystream-query-node/cli",
+  "repository": "git@github.com:Joystream/joystream.git",
   "scripts": {
     "build": "rm -rf lib && tsc --build tsconfig.json",
     "postpack": "rm -f oclif.manifest.json",
