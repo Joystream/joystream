@@ -1,7 +1,8 @@
-## Validator
-![ Nodes for Joystream](./node/validator-node-banner.svg)
+## Joystream-Node - full node/validator
 
-Joystream node is the main server application that connects to the network, synchronizes the blockchain with other nodes and produces blocks if configured as a validator node.
+![ Nodes for Joystream](./validator-node-banner.svg)
+
+joystream-node is the main server application that connects to the network, synchronizes the blockchain with other nodes and produces blocks if configured as a validator node.
 
 To setup a full node and validator review the [advanced guide from the helpdesk](https://github.com/Joystream/helpdesk/tree/master/roles/validators).
 
@@ -9,7 +10,7 @@ To setup a full node and validator review the [advanced guide from the helpdesk]
 ###  Pre-built Binaries
 
 The latest pre-built binaries can be downloaded from the [releases](https://github.com/Joystream/joystream/releases) page.
-
+Generally these will be built from master branch and relevant to the current active testnet.
 
 ### Building from source
 
@@ -23,45 +24,59 @@ cd joystream/
 ./setup.sh
 ```
 
-### Building
+compile the node and runtime
 
 ```bash
 cargo build --release
 ```
+This produces the binary in `./target/release/joystream-node`
 
-
-### Installing a release build
-This will install the executable `joystream-node` to your `~/.cargo/bin` folder, which you would normally have in your `$PATH` environment.
-
-```bash
-cargo install joystream-node --path node/
-```
-
-Now you can run
+### Running Local development chain
 
 ```bash
-joystream-node --chain ./rome-testnet.json
+cargo run --release -- --dev
 ```
 
-### Local development
-
-This will build and run a fresh new local development chain purging existing one:
+If you repeatedly need to restart a new chain,
+This script will build and run a fresh new local development chain purging existing chain data:
 
 ```bash
 ./scripts/run-dev-chain.sh
 ```
 
-### Unit tests
+### Joystream public testnet
+
+Use the `--chain` argument, and specify the path to the genesis chain.json file for that public network. The joystream public networks are found in [../testnets/](../testnets/)
 
 ```bash
-cargo test
+cargo run --release -- --chain testnets/rome.json
 ```
 
-### Network tests
+### Tests and code quality
+
+Running unit tests
+
+```bash
+cargo test --all
+```
+
+Running full suite of checks.. tests, formatting and linting:
+
+```bash
+yarn cargo-checks
+```
+
+Always format your rust code with `cargo fmt` before commiting:
+
+```bash
+cargo fmt --all
+```
+
+### Integration tests
 
 ```bash
 ./scripts/run-test-chain.sh
-yarn test
+yarn workspace joystream-testing test
 ```
 
 To run the integration tests with a different chain, you can omit step running the local development chain and set the node URL using `NODE_URL` environment variable.
@@ -75,18 +90,17 @@ Ensure Rome node is up and running, and node URL is set using `NODE_URL` environ
 yarn test-migration
 ```
 
-## Coding style
+### Installing a release build
+If you are building a tagged release from master branch and want to install the executable to your path follow the step below.
 
-We use `cargo-fmt` to format the source code for consistency.
-
-It should be available on your machine if you ran the `setup.sh` script, otherwise install it with rustup:
+This will install the executable `joystream-node` to your `~/.cargo/bin` folder, which you would normally have in your `$PATH` environment.
 
 ```bash
-rustup component add rustfmt
+cargo install joystream-node --path node/
 ```
 
-Applying code formatting on all source files recursing subfolders:
+Now you can run and connect to the rome testnet:
 
-```
-cargo-fmt
+```bash
+joystream-node --chain rome.json
 ```
