@@ -1,10 +1,12 @@
-import { Struct, Option, Text, bool, Vec, u16, u32, u64, getTypeRegistry } from "@polkadot/types";
+import { Struct, Option, Text, bool, Vec, u16, u32, u64, getTypeRegistry, Null } from "@polkadot/types";
 import { BlockNumber, Moment } from '@polkadot/types/interfaces';
 import { Codec } from "@polkadot/types/types";
 // we get 'moment' because it is a dependency of @polkadot/util, via @polkadot/keyring
 import moment from 'moment';
 import { JoyStruct } from './JoyStruct';
 export { JoyStruct } from './JoyStruct';
+import { JoyEnum } from './JoyEnum';
+export { JoyEnum } from './JoyEnum';
 
 // Treat a BTreeSet as a Vec since it is encoded in the same way
 export class BTreeSet<T extends Codec> extends Vec<T> {}
@@ -107,6 +109,12 @@ export class InputValidationLengthConstraint extends JoyStruct<InputValidationLe
     }
 }
 
+export const WorkingGroupDef = {
+  Storage: Null
+} as const;
+export type WorkingGroupKeys = keyof typeof WorkingGroupDef;
+export class WorkingGroup extends JoyEnum(WorkingGroupDef) { };
+
 export function registerCommonTypes() {
     const typeRegistry = getTypeRegistry();
 
@@ -117,6 +125,7 @@ export function registerCommonTypes() {
       ThreadId,
       PostId,
       InputValidationLengthConstraint,
-      BTreeSet // Is this even necessary?
+      BTreeSet, // Is this even necessary?
+      WorkingGroup
     });
 }

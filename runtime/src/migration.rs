@@ -3,7 +3,10 @@
 
 use crate::VERSION;
 use rstd::prelude::*;
-use sr_primitives::{print, traits::Zero};
+use sr_primitives::{
+    print,
+    traits::{One, Zero},
+};
 use srml_support::{debug, decl_event, decl_module, decl_storage};
 
 impl<T: Trait> Module<T> {
@@ -21,8 +24,7 @@ impl<T: Trait> Module<T> {
 
         Self::initialize_storage_working_group_mint();
         Self::initialize_storage_working_group_text_constraints();
-        // temporary comment storage migration
-        //        Self::clear_storage_data();
+        Self::clear_storage_data();
     }
 }
 
@@ -98,28 +100,28 @@ impl<T: Trait> Module<T> {
         );
     }
 
-    // fn clear_storage_data() {
-    //     // Clear storage data object registry data.
-    //     for id in <storage::data_directory::Module<T>>::known_content_ids() {
-    //         <storage::data_object_storage_registry::RelationshipsByContentId<T>>::remove(id);
-    //     }
-    //
-    //     let mut potential_id = <T as storage::data_object_storage_registry::Trait>::DataObjectStorageRelationshipId::zero();
-    //     while potential_id
-    //         < storage::data_object_storage_registry::Module::<T>::next_relationship_id()
-    //     {
-    //         <storage::data_object_storage_registry::Relationships<T>>::remove(&potential_id);
-    //
-    //         potential_id += <T as storage::data_object_storage_registry::Trait>::DataObjectStorageRelationshipId::one();
-    //     }
-    //
-    //     storage::data_object_storage_registry::NextRelationshipId::<T>::kill();
-    //
-    //     // Clear storage data directory data.
-    //     for id in <storage::data_directory::Module<T>>::known_content_ids() {
-    //         <storage::data_directory::DataObjectByContentId<T>>::remove(id);
-    //     }
-    //
-    //     <storage::data_directory::KnownContentIds<T>>::kill();
-    // }
+    fn clear_storage_data() {
+        // Clear storage data object registry data.
+        for id in <storage::data_directory::Module<T>>::known_content_ids() {
+            <storage::data_object_storage_registry::RelationshipsByContentId<T>>::remove(id);
+        }
+
+        let mut potential_id = <T as storage::data_object_storage_registry::Trait>::DataObjectStorageRelationshipId::zero();
+        while potential_id
+            < storage::data_object_storage_registry::Module::<T>::next_relationship_id()
+        {
+            <storage::data_object_storage_registry::Relationships<T>>::remove(&potential_id);
+
+            potential_id += <T as storage::data_object_storage_registry::Trait>::DataObjectStorageRelationshipId::one();
+        }
+
+        storage::data_object_storage_registry::NextRelationshipId::<T>::kill();
+
+        // Clear storage data directory data.
+        for id in <storage::data_directory::Module<T>>::known_content_ids() {
+            <storage::data_directory::DataObjectByContentId<T>>::remove(id);
+        }
+
+        <storage::data_directory::KnownContentIds<T>>::kill();
+    }
 }
