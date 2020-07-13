@@ -49,6 +49,7 @@ type GenericProposalFormAdditionalProps = {
   txMethod?: string;
   submitParams?: any[];
   proposalType?: ProposalType;
+  disabled?: boolean;
 };
 
 type GenericFormContainerProps = ProposalFormContainerProps<
@@ -93,7 +94,8 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
     setSubmitting,
     history,
     balances_totalIssuance,
-    proposalType
+    proposalType,
+    disabled = false
   } = props;
   const errorLabelsProps = getFormErrorLabelsProps<GenericFormValues>(errors, touched);
   const [afterSubmit, setAfterSubmit] = useState(null as (() => () => void) | null);
@@ -179,7 +181,7 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
               type="button" // Tx button uses custom submit handler - "onTxButtonClick"
               label="Submit proposal"
               icon="paper plane"
-              isDisabled={isSubmitting}
+              isDisabled={disabled || isSubmitting}
               params={(submitParams || []).map(p => (p === '{STAKE}' ? requiredStake : p))}
               tx={`proposalsCodex.${txMethod}`}
               txFailedCb={onTxFailed}

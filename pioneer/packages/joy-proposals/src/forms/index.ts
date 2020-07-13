@@ -11,3 +11,5 @@ export { default as AddWorkingGroupOpeningForm } from './AddWorkingGroupOpeningF
 export { default as SetWorkingGroupMintCapacityForm } from './SetWorkingGroupMintCapacityForm';
 export { default as BeginReviewLeaderApplicationsForm } from './BeginReviewLeaderApplicationsForm';
 export { default as FillWorkingGroupLeaderOpeningForm } from './FillWorkingGroupLeaderOpeningForm';
+export { default as DecreaseWorkingGroupLeadStakeFrom } from './DecreaseWorkingGroupLeadStakeForm';
+export { default as SlashWorkingGroupLeadStakeForm } from './SlashWorkingGroupLeadStakeForm';

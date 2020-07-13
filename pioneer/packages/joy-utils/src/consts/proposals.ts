@@ -119,6 +119,24 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
     approvalThreshold: 75,
     slashingQuorum: 60,
     slashingThreshold: 80
+  },
+  DecreaseWorkingGroupLeaderStake: {
+    description: 'Decrease Working Group Leader Stake Proposal',
+    category: 'Working Groups',
+    stake: 50000,
+    approvalQuorum: 60,
+    approvalThreshold: 75,
+    slashingQuorum: 60,
+    slashingThreshold: 80
+  },
+  SlashWorkingGroupLeaderStake: {
+    description: 'Slash Working Group Leader Stake Proposal',
+    category: 'Working Groups',
+    stake: 50000,
+    approvalQuorum: 60,
+    approvalThreshold: 75,
+    slashingQuorum: 60,
+    slashingThreshold: 80
   }
 };
 
@@ -170,6 +188,14 @@ export const apiMethods: { [k in ProposalType]?: ProposalsApiMethodNames } = {
   FillWorkingGroupLeaderOpening: {
     votingPeriod: 'fillWorkingGroupLeaderOpeningProposalVotingPeriod',
     gracePeriod: 'fillWorkingGroupLeaderOpeningProposalGracePeriod'
+  },
+  DecreaseWorkingGroupLeaderStake: {
+    votingPeriod: 'decreaseWorkingGroupLeaderStakeProposalVotingPeriod',
+    gracePeriod: 'decreaseWorkingGroupLeaderStakeProposalGracePeriod'
+  },
+  SlashWorkingGroupLeaderStake: {
+    votingPeriod: 'slashWorkingGroupLeaderStakeProposalVotingPeriod',
+    gracePeriod: 'slashWorkingGroupLeaderStakeProposalGracePeriod'
   }
 } as const;
 

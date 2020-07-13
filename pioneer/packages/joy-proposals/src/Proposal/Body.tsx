@@ -22,6 +22,7 @@ import {
 } from '@joystream/types/hiring';
 import { WorkingGroup, WorkingGroupKeys } from '@joystream/types/common';
 import { ApplicationsDetailsByOpening } from '@polkadot/joy-utils/react/components/working-groups/ApplicationDetails';
+import { LeadInfoFromId } from '@polkadot/joy-utils/react/components/working-groups/LeadInfo';
 
 type BodyProps = {
   title: string;
@@ -202,7 +203,17 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => { [key: string]: s
         )
         : 'NONE'
     };
-  }
+  },
+  SlashWorkingGroupLeaderStake: ([leadId, amount, group]) => ({
+    'Working group': (new WorkingGroup(group)).type,
+    Lead: <LeadInfoFromId group={(new WorkingGroup(group).type as WorkingGroupKeys)} leadId={leadId}/>,
+    'Slash amount': formatBalance(amount)
+  }),
+  DecreaseWorkingGroupLeaderStake: ([leadId, amount, group]) => ({
+    'Working group': (new WorkingGroup(group)).type,
+    Lead: <LeadInfoFromId group={(new WorkingGroup(group).type as WorkingGroupKeys)} leadId={leadId}/>,
+    'Decrease amount': formatBalance(amount)
+  })
 };
 
 const StyledProposalDescription = styled(Card.Description)`

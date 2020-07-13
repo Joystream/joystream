@@ -13,6 +13,8 @@ import { FormValues as AddWorkingGroupLeaderOpeningFormValues } from './forms/Ad
 import { FormValues as SetWorkingGroupMintCapacityFormValues } from './forms/SetWorkingGroupMintCapacityForm';
 import { FormValues as BeginReviewLeaderApplicationsFormValues } from './forms/BeginReviewLeaderApplicationsForm';
 import { FormValues as FillWorkingGroupLeaderOpeningFormValues } from './forms/FillWorkingGroupLeaderOpeningForm';
+import { FormValues as DecreaseWorkingGroupLeadStakeFormValues } from './forms/DecreaseWorkingGroupLeadStakeForm';
+import { FormValues as SlashWorkingGroupLeadStakeFormValues } from './forms/SlashWorkingGroupLeadStakeForm';
 
 // TODO: If we really need this (currency unit) we can we make "Validation" a functiction that returns an object.
 // We could then "instantialize" it in "withFormContainer" where instead of passing
@@ -95,6 +97,11 @@ const MAX_REWARD_INTERVAL = 30 * 14400; // 30 days
 const MIN_NEXT_PAYMENT_BLOCK_MINUS_CURRENT = 3 * 14400;
 const MAX_NEXT_PAYMENT_BLOCK_MINUS_CURRENT = 30 * 14400; // 30 days
 
+// Decrease/Slash Working Group Leader Stake
+const DECREASE_LEAD_STAKE_MIN = 1;
+const SLASH_LEAD_STAKE_MIN = 1;
+// Max is validated in form component, because it depends on selected working group's leader stake
+
 function errorMessage (name: string, min?: number | string, max?: number | string, unit?: string): string {
   return `${name} should be at least ${min} and no more than ${max}${unit ? ` ${unit}.` : '.'}`;
 }
@@ -135,6 +142,8 @@ type FormValuesByType<T extends ValidationTypeKeys> =
   T extends 'SetWorkingGroupMintCapacity' ? Omit<SetWorkingGroupMintCapacityFormValues, keyof GenericFormValues> :
   T extends 'BeginReviewWorkingGroupLeaderApplication' ? Omit<BeginReviewLeaderApplicationsFormValues, keyof GenericFormValues> :
   T extends 'FillWorkingGroupLeaderOpening' ? Omit<FillWorkingGroupLeaderOpeningFormValues, keyof GenericFormValues> :
+  T extends 'DecreaseWorkingGroupLeaderStake' ? Omit<DecreaseWorkingGroupLeadStakeFormValues, keyof GenericFormValues> :
+  T extends 'SlashWorkingGroupLeaderStake' ? Omit<SlashWorkingGroupLeadStakeFormValues, keyof GenericFormValues> :
   never;
 /* eslint-enable @typescript-eslint/indent */
 
@@ -377,6 +386,18 @@ const Validation: ValidationType = {
         is: true,
         then: minMaxInt(MIN_REWARD_INTERVAL, MAX_REWARD_INTERVAL, 'Reward interval')
       })
+  }),
+  DecreaseWorkingGroupLeaderStake: () => ({
+    workingGroup: Yup.string(),
+    amount: Yup.number()
+      .required('Amount is required!')
+      .min(DECREASE_LEAD_STAKE_MIN, `Amount must be greater than ${DECREASE_LEAD_STAKE_MIN}`)
+  }),
+  SlashWorkingGroupLeaderStake: () => ({
+    workingGroup: Yup.string(),
+    amount: Yup.number()
+      .required('Amount is required!')
+      .min(SLASH_LEAD_STAKE_MIN, `Amount must be greater than ${SLASH_LEAD_STAKE_MIN}`)
   })
 };
 

@@ -7,7 +7,7 @@ import { SingleLinkedMapEntry } from '../index';
 import { Worker, WorkerId, Opening as WGOpening, Application as WGApplication } from '@joystream/types/working-group';
 import { apiModuleByGroup } from '../consts/workingGroups';
 import { WorkingGroupKeys } from '@joystream/types/common';
-import { LeadWithProfile, OpeningData, ParsedApplication } from '../types/workingGroups';
+import { LeadData, OpeningData, ParsedApplication } from '../types/workingGroups';
 import { OpeningId, ApplicationId, Opening, Application } from '@joystream/types/hiring';
 import { MultipleLinkedMapEntry } from '../LinkedMapEntry';
 import { Stake, StakeId } from '@joystream/types/stake';
@@ -25,7 +25,7 @@ export default class WorkingGroupsTransport extends BaseTransport {
     return this.api.query[module];
   }
 
-  public async currentLead (group: WorkingGroupKeys): Promise<LeadWithProfile | null> {
+  public async currentLead (group: WorkingGroupKeys): Promise<LeadData | null> {
     const optLeadId = (await this.queryByGroup(group).currentLead()) as Option<WorkerId>;
 
     if (!optLeadId.isSome) {
@@ -43,9 +43,16 @@ export default class WorkingGroupsTransport extends BaseTransport {
       return null;
     }
 
+    const stake = leadWorker.role_stake_profile.isSome
+      ? (await this.stakeValue(leadWorker.role_stake_profile.unwrap().stake_id)).toNumber()
+      : undefined;
+
     return {
+      group,
+      workerId: leadWorkerId,
       worker: leadWorker,
-      profile: await this.membersT.expectedMemberProfile(leadWorker.member_id)
+      profile: await this.membersT.expectedMemberProfile(leadWorker.member_id),
+      stake
     };
   }
 
