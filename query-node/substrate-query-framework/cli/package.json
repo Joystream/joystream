@@ -4,7 +4,7 @@
   "version": "0.0.1-alpha",
   "author": "metmirr @metmirr dzlzv @dzhelezov",
   "bin": {
-    "cli": "./bin/run"
+    "hydra-cli": "./bin/run"
   },
   "bugs": "https://github.com/joystream/joystream/joystream-query-node/cli/issues",
   "dependencies": {
@@ -65,7 +65,7 @@
   "main": "lib/index.js",
   "oclif": {
     "commands": "./lib/src/commands",
-    "bin": "cli",
+    "bin": "hydra-cli",
     "plugins": [
       "@oclif/plugin-help"
     ],
