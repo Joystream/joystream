@@ -17,10 +17,16 @@ const debug = Debug('qnode-cli:warthog-wrapper');
 export default class WarthogWrapper {
   private readonly command: Command;
   private readonly schemaPath: string;
+  private readonly schemaResolvedPath: string;
 
   constructor(command: Command, schemaPath: string) {
     this.command = command;
     this.schemaPath = schemaPath;
+  }
+    this.schemaResolvedPath = path.resolve(process.cwd(), this.schemaPath);
+    if (!fs.existsSync(this.schemaResolvedPath)) {
+      throw new Error(`Schema file is not found at ${this.schemaResolvedPath}`);
+    }
   }
 
   async run(): Promise<void> {
@@ -87,7 +93,7 @@ export default class WarthogWrapper {
   generateWarthogSources(): void {
     const schemaPath = path.resolve(process.cwd(), this.schemaPath);
 
-    const modelBuilder = new WarthogModelBuilder(schemaPath);
+    const modelBuilder = new WarthogModelBuilder(this.schemaResolvedPath);
     const model = modelBuilder.buildWarthogModel();
 
     const sourcesGenerator = new SourcesGenerator(model);
