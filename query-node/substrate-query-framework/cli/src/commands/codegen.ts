@@ -10,7 +10,7 @@ import { createDir, getTemplatePath, createFile } from '../utils/utils';
 import { formatWithPrettier } from '../helpers/formatter';
 import WarthogWrapper from '../helpers/WarthogWrapper';
 import { getTypeormConfig, getTypeormModelGeneratorConnectionConfig, createSavedEntityEventTable } from '../helpers/db';
-import Debug from "debug";
+import Debug from 'debug';
 
 const debug = Debug('qnode-cli:codegen');
 
@@ -24,7 +24,6 @@ export default class Codegen extends Command {
     indexer: flags.boolean({ char: 'i', allowNo: true, description: 'Generate indexer', default: true }),
     // pass --no-graphql to skip graphql generation
     graphql: flags.boolean({ char: 'g', allowNo: true, description: 'Generate GraphQL server', default: true }),
-    preview: flags.boolean({ char: 'p', allowNo: true, description: 'Generate GraphQL API preview', default: false }),
   };
 
   async run(): Promise<void> {
@@ -33,31 +32,23 @@ export default class Codegen extends Command {
     const { flags } = this.parse(Codegen);
 
     const generatedFolderPath = path.resolve(process.cwd(), Codegen.generatedFolderName);
-    const isGeneratedFolderPathExists = fs.existsSync(generatedFolderPath);
-
+    
     createDir(generatedFolderPath);
 
     // Change directory to generated
     process.chdir(generatedFolderPath);
 
-    if (flags.preview) {
-      debug('Generating GraphQL API preview');
-      await this.generateAPIPreview(flags.schema, generatedFolderPath, isGeneratedFolderPathExists);
-      return;
-    }
-
     // Create warthog graphql server
     if (flags.graphql) {
-        debug("Generating GraphQL server");
-        await this.createGraphQLServer(flags.schema);
+      debug('Generating GraphQL server');
+      await this.createGraphQLServer(flags.schema);
     }
-    
+
     // Create block indexer
     if (flags.indexer) {
-        debug("Generating indexer");
-        await this.createBlockIndexer();
+      debug('Generating indexer');
+      await this.createBlockIndexer();
     }
-    
   }
 
   async createGraphQLServer(schemaPath: string): Promise<void> {
@@ -69,7 +60,7 @@ export default class Codegen extends Command {
     createDir(warthogProjectPath);
 
     process.chdir(warthogProjectPath);
-    
+
     const warthogWrapper = new WarthogWrapper(this, schemaPath);
     await warthogWrapper.run();
 
@@ -90,7 +81,7 @@ export default class Codegen extends Command {
     let indexFileContent = readFileSync(getTemplatePath('index-builder-entry.mst'), 'utf8');
     indexFileContent = Mustache.render(indexFileContent, {
       packageName: process.env.TYPE_REGISTER_PACKAGE_NAME,
-      typeRegistrator: process.env.TYPE_REGISTER_FUNCTION
+      typeRegistrator: process.env.TYPE_REGISTER_FUNCTION,
     });
     createFile(path.resolve('index.ts'), formatWithPrettier(indexFileContent));
 
@@ -105,8 +96,7 @@ export default class Codegen extends Command {
 
     this.log('Installing dependendies for indexer...');
     execSync('yarn install');
-    if (process.env.TYPE_REGISTER_PACKAGE_NAME) 
-        execSync(`yarn add ${process.env.TYPE_REGISTER_PACKAGE_NAME}`);
+    if (process.env.TYPE_REGISTER_PACKAGE_NAME) execSync(`yarn add ${process.env.TYPE_REGISTER_PACKAGE_NAME}`);
     this.log('done...');
 
     this.log('Generating typeorm db entities...');
@@ -117,23 +107,4 @@ export default class Codegen extends Command {
     process.chdir(goBackDir);
   }
 
-  async generateAPIPreview(schemaPath: string, generatedFolderPath: string, isExists: boolean): Promise<void> {
-    const warthogProjectPath = path.resolve(process.cwd(), 'api-preview');
-
-    createDir(warthogProjectPath);
-    process.chdir(warthogProjectPath);
-
-    await new WarthogWrapper(this, schemaPath).generateAPIPreview();
-
-    fs.copyFileSync(
-      path.resolve(warthogProjectPath, Codegen.generatedFolderName, 'schema.graphql'),
-      path.resolve('../../apipreview.graphql')
-    );
-    // if 'generated' folder was already there dont delete it otherwise delete
-    if (!isExists) {
-      debug('Removing unused files...');
-      fs.removeSync(generatedFolderPath);
-      this.log('Generated API Preview file -> apipreview.graphql');
-    }
-  }
 }
