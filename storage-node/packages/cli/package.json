@@ -28,7 +28,8 @@
   },
   "scripts": {
     "test": "mocha 'dist/test/**/*.js'",
-    "lint": "eslint 'paths/**/*.js' 'lib/**/*.js'"
+    "lint": "eslint 'paths/**/*.js' 'lib/**/*.js'",
+    "build": "tsc --build"
   },
   "bin": {
     "storage-cli": "bin/cli.js"
