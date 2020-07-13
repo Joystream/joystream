@@ -2,6 +2,7 @@ import BN from 'bn.js';
 import { assert } from 'chai';
 import { ApiWrapper, WorkingGroups } from '../../../utils/apiWrapper';
 import { KeyringPair } from '@polkadot/keyring/types';
+import { Balance } from '@polkadot/types/interfaces';
 import { Keyring } from '@polkadot/api';
 import { v4 as uuid } from 'uuid';
 import { RewardRelationship } from '@nicaea/types/recurring-rewards';
@@ -529,8 +530,25 @@ export async function expectBeganApplicationReview(apiWrapper: ApiWrapper): Prom
 }
 
 export async function expectLeaderRoleTerminated(apiWrapper: ApiWrapper, module: WorkingGroups): Promise<void> {
-  await apiWrapper.expectLeaderUnset();
+  await apiWrapper.expectLeaderTerminated();
   const leadWorkerId: BN | undefined = await apiWrapper.getLeadWorkerId(module);
   assert(leadWorkerId === undefined, `Unexpected lead worker id: ${leadWorkerId}, expected none`);
+  return;
+}
+
+export async function expectLeaderRewardAmountUpdated(
+  apiWrapper: ApiWrapper,
+  expectedReward: BN,
+  module: WorkingGroups
+): Promise<void> {
+  await apiWrapper.expectWorkerRewardAmountUpdated();
+  const leadWorkerId: BN = (await apiWrapper.getLeadWorkerId(module))!;
+  const receivedReward: BN = (await apiWrapper.getRewardRelationship(leadWorkerId)).getField<Balance>(
+    'amount_per_payout'
+  );
+  assert(
+    receivedReward.eq(expectedReward),
+    `Unexpected reward amount for worker with id ${leadWorkerId}: ${receivedReward}, expected ${expectedReward}`
+  );
   return;
 }

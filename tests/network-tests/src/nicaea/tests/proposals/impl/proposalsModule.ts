@@ -169,6 +169,38 @@ export async function terminateLeaderRoleProposal(
   return proposalNumber;
 }
 
+export async function setLeaderRewardProposal(
+  apiWrapper: ApiWrapper,
+  m1KeyPairs: KeyringPair[],
+  sudo: KeyringPair,
+  payoutAmount: BN,
+  workingGroup: WorkingGroups
+): Promise<BN> {
+  // Setup
+  const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8);
+  const description: string = 'Testing set leader reward proposal ' + uuid().substring(0, 8);
+  const workingGroupString: string = apiWrapper.getWorkingGroupString(workingGroup);
+  const workerId: BN = (await apiWrapper.getLeadWorkerId(workingGroup))!;
+
+  // Proposal stake calculation
+  const proposalStake: BN = new BN(50000);
+  const proposalFee: BN = apiWrapper.estimateProposeLeaderReward();
+  await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake));
+
+  const proposalPromise = apiWrapper.expectProposalCreated();
+  await apiWrapper.proposeLeaderReward(
+    m1KeyPairs[0],
+    proposalTitle,
+    description,
+    proposalStake,
+    workerId,
+    payoutAmount,
+    workingGroupString
+  );
+  const proposalNumber: BN = await proposalPromise;
+  return proposalNumber;
+}
+
 export async function voteForProposal(
   apiWrapper: ApiWrapper,
   m2KeyPairs: KeyringPair[],
