@@ -7,9 +7,10 @@ const BN = require('bn.js')
 const { newExternallyControlledPromise } = require('@joystream/storage-utils/externalPromise')
 
 /**
- * Determines if code is running in a browser by testing for the global window object
+ * Determines if code is running in a browser by testing for the global window object.
+ * @return {boolean} returns result check.
  */
-function inBrowser () {
+function inBrowser() {
   return typeof window !== 'undefined'
 }
 
@@ -17,13 +18,13 @@ function inBrowser () {
  * Map storage-provider id to a Promise of a discovery result. The purpose
  * is to avoid concurrent active discoveries for the same provider.
  */
-var activeDiscoveries = {}
+const activeDiscoveries = {}
 
 /**
  * Map of storage provider id to string
  * Cache of past discovery lookup results
  */
-var accountInfoCache = {}
+const accountInfoCache = {}
 
 /**
  * After what period of time a cached record is considered stale, and would
@@ -38,17 +39,16 @@ const CACHE_TTL = 60 * 60 * 1000
  * @param { RuntimeApi } runtimeApi - api instance to query the chain
  * @returns { Promise<string | null> } - ipns multiformat address
  */
-async function getIpnsIdentity (storageProviderId, runtimeApi) {
+async function getIpnsIdentity(storageProviderId, runtimeApi) {
   storageProviderId = new BN(storageProviderId)
   // lookup ipns identity from chain corresponding to storageProviderId
   const info = await runtimeApi.discovery.getAccountInfo(storageProviderId)
 
-  if (info == null) {
+  if (info === null) {
     // no identity found on chain for account
     return null
-  } else {
-    return info.identity.toString()
   }
+  return info.identity.toString()
 }
 
 /**
@@ -61,11 +61,9 @@ async function getIpnsIdentity (storageProviderId, runtimeApi) {
  * @param {string} gateway - optional ipfs http gateway url to perform ipfs queries
  * @returns { Promise<object> } - the published service information
  */
-async function discover_over_ipfs_http_gateway (
-  storageProviderId, runtimeApi, gateway = 'http://localhost:8080') {
-
+async function discoverOverIpfsHttpGateway(storageProviderId, runtimeApi, gateway = 'http://localhost:8080') {
   storageProviderId = new BN(storageProviderId)
-  let isProvider = await runtimeApi.workers.isStorageProvider(storageProviderId)
+  const isProvider = await runtimeApi.workers.isStorageProvider(storageProviderId)
 
   if (!isProvider) {
     throw new Error('Cannot discover non storage providers')
@@ -73,7 +71,7 @@ async function discover_over_ipfs_http_gateway (
 
   const identity = await getIpnsIdentity(storageProviderId, runtimeApi)
 
-  if (identity == null) {
+  if (identity === null) {
     // dont waste time trying to resolve if no identity was found
     throw new Error('no identity to resolve')
   }
@@ -97,9 +95,9 @@ async function discover_over_ipfs_http_gateway (
  * @param {string} discoverApiEndpoint - url for a colossus discovery api endpoint
  * @returns { Promise<object> } - the published service information
  */
-async function discover_over_joystream_discovery_service (storageProviderId, runtimeApi, discoverApiEndpoint) {
+async function discoverOverJoystreamDiscoveryService(storageProviderId, runtimeApi, discoverApiEndpoint) {
   storageProviderId = new BN(storageProviderId)
-  let isProvider = await runtimeApi.workers.isStorageProvider(storageProviderId)
+  const isProvider = await runtimeApi.workers.isStorageProvider(storageProviderId)
 
   if (!isProvider) {
     throw new Error('Cannot discover non storage providers')
@@ -108,13 +106,13 @@ async function discover_over_joystream_discovery_service (storageProviderId, run
   const identity = await getIpnsIdentity(storageProviderId, runtimeApi)
 
   // dont waste time trying to resolve if no identity was found
-  if (identity == null) {
+  if (identity === null) {
     throw new Error('no identity to resolve')
   }
 
   if (!discoverApiEndpoint) {
     // Use bootstrap nodes
-    let discoveryBootstrapNodes = await runtimeApi.discovery.getBootstrapEndpoints()
+    const discoveryBootstrapNodes = await runtimeApi.discovery.getBootstrapEndpoints()
 
     if (discoveryBootstrapNodes.length) {
       discoverApiEndpoint = stripEndingSlash(discoveryBootstrapNodes[0].toString())
@@ -139,9 +137,9 @@ async function discover_over_joystream_discovery_service (storageProviderId, run
  * @param {RuntimeApi} runtimeApi - api instance to query the chain
  * @returns { Promise<object> } - the published service information
  */
-async function discover_over_local_ipfs_node (storageProviderId, runtimeApi) {
+async function discoverOverLocalIpfsNode(storageProviderId, runtimeApi) {
   storageProviderId = new BN(storageProviderId)
-  let isProvider = await runtimeApi.workers.isStorageProvider(storageProviderId)
+  const isProvider = await runtimeApi.workers.isStorageProvider(storageProviderId)
 
   if (!isProvider) {
     throw new Error('Cannot discover non storage providers')
@@ -149,26 +147,26 @@ async function discover_over_local_ipfs_node (storageProviderId, runtimeApi) {
 
   const identity = await getIpnsIdentity(storageProviderId, runtimeApi)
 
-  if (identity == null) {
+  if (identity === null) {
     // dont waste time trying to resolve if no identity was found
     throw new Error('no identity to resolve')
   }
 
-  const ipns_address = `/ipns/${identity}/`
+  const ipnsAddress = `/ipns/${identity}/`
 
   debug('resolved ipns to ipfs object')
   // Can this call hang forever!? can/should we set a timeout?
-  let ipfs_name = await ipfs.name.resolve(ipns_address, {
+  const ipfsName = await ipfs.name.resolve(ipnsAddress, {
     // don't recurse, there should only be one indirection to the service info file
     recursive: false,
-    nocache: false
+    nocache: false,
   })
 
-  debug('getting ipfs object', ipfs_name)
-  let data = await ipfs.get(ipfs_name) // this can sometimes hang forever!?! can we set a timeout?
+  debug('getting ipfs object', ipfsName)
+  const data = await ipfs.get(ipfsName) // this can sometimes hang forever!?! can we set a timeout?
 
   // there should only be one file published under the resolved path
-  let content = data[0].content
+  const content = data[0].content
 
   return JSON.parse(content)
 }
@@ -187,7 +185,7 @@ async function discover_over_local_ipfs_node (storageProviderId, runtimeApi) {
  * @param {number} maxCacheAge - maximum age of a cached query that triggers automatic re-discovery
  * @returns { Promise<object | null> } - the published service information
  */
-async function discover (storageProviderId, runtimeApi, useCachedValue = false, maxCacheAge = 0) {
+async function discover(storageProviderId, runtimeApi, useCachedValue = false, maxCacheAge = 0) {
   storageProviderId = new BN(storageProviderId)
   const id = storageProviderId.toNumber()
   const cached = accountInfoCache[id]
@@ -195,30 +193,29 @@ async function discover (storageProviderId, runtimeApi, useCachedValue = false, 
   if (cached && useCachedValue) {
     if (maxCacheAge > 0) {
       // get latest value
-      if (Date.now() > (cached.updated + maxCacheAge)) {
+      if (Date.now() > cached.updated + maxCacheAge) {
         return _discover(storageProviderId, runtimeApi)
       }
     }
     // refresh if cache if stale, new value returned on next cached query
-    if (Date.now() > (cached.updated + CACHE_TTL)) {
+    if (Date.now() > cached.updated + CACHE_TTL) {
       _discover(storageProviderId, runtimeApi)
     }
     // return best known value
     return cached.value
-  } else {
-    return _discover(storageProviderId, runtimeApi)
   }
+  return _discover(storageProviderId, runtimeApi)
 }
 
 /**
  * Internal method that handles concurrent discoveries and caching of results. Will
- * select the appropriate discovery protocol based on wether we are in a browser environemtn or not.
+ * select the appropriate discovery protocol based on whether we are in a browser environment or not.
  * If not in a browser it expects a local ipfs node to be running.
- * @param {number | BN | u64} storageProviderId
+ * @param {number | BN | u64} storageProviderId - ID of the storage provider
  * @param {RuntimeApi} runtimeApi - api instance for querying the chain
  * @returns { Promise<object | null> } - the published service information
  */
-async function _discover (storageProviderId, runtimeApi) {
+async function _discover(storageProviderId, runtimeApi) {
   storageProviderId = new BN(storageProviderId)
   const id = storageProviderId.toNumber()
 
@@ -235,16 +232,16 @@ async function _discover (storageProviderId, runtimeApi) {
   let result
   try {
     if (inBrowser()) {
-      result = await discover_over_joystream_discovery_service(storageProviderId, runtimeApi)
+      result = await discoverOverJoystreamDiscoveryService(storageProviderId, runtimeApi)
     } else {
-      result = await discover_over_local_ipfs_node(storageProviderId, runtimeApi)
+      result = await discoverOverLocalIpfsNode(storageProviderId, runtimeApi)
     }
 
     debug(result)
     result = JSON.stringify(result)
     accountInfoCache[id] = {
       value: result,
-      updated: Date.now()
+      updated: Date.now(),
     }
 
     deferredDiscovery.resolve(result)
@@ -269,7 +266,7 @@ async function _discover (storageProviderId, runtimeApi) {
 
 module.exports = {
   discover,
-  discover_over_joystream_discovery_service,
-  discover_over_ipfs_http_gateway,
-  discover_over_local_ipfs_node
+  discoverOverJoystreamDiscoveryService,
+  discoverOverIpfsHttpGateway,
+  discoverOverLocalIpfsNode,
 }

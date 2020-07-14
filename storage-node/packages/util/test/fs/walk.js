@@ -16,54 +16,52 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-'use strict';
+'use strict'
 
-const mocha = require('mocha');
-const expect = require('chai').expect;
-const temp = require('temp').track();
+const expect = require('chai').expect
+// Disabling the rule because of the 'temp' package API.
+// eslint-disable-next-line no-unused-vars
+const temp = require('temp').track()
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('fs')
+const path = require('path')
 
-const fswalk = require('@joystream/storage-utils/fs/walk');
+const fswalk = require('@joystream/storage-utils/fs/walk')
 
-function walktest(archive, base, done)
-{
-  var results = new Map();
+function walktest(archive, base, done) {
+  const results = new Map()
 
   fswalk(base, archive, (err, relname, stat, linktarget) => {
-    expect(err).to.be.null;
+    expect(err).to.be.null
 
     if (relname) {
-      results.set(relname, [stat, linktarget]);
-      return;
+      results.set(relname, [stat, linktarget])
+      return
     }
 
     // End of data, do testing
-    const entries = Array.from(results.keys());
-    expect(entries).to.include('foo');
-    expect(results.get('foo')[0].isDirectory()).to.be.true;
+    const entries = Array.from(results.keys())
+    expect(entries).to.include('foo')
+    expect(results.get('foo')[0].isDirectory()).to.be.true
 
-    expect(entries).to.include('bar');
-    expect(results.get('bar')[0].isFile()).to.be.true;
+    expect(entries).to.include('bar')
+    expect(results.get('bar')[0].isFile()).to.be.true
 
     if (archive === fs) {
-      expect(entries).to.include('quux');
-      expect(results.get('quux')[0].isSymbolicLink()).to.be.true;
-      expect(results.get('quux')[1]).to.equal('foo/baz');
+      expect(entries).to.include('quux')
+      expect(results.get('quux')[0].isSymbolicLink()).to.be.true
+      expect(results.get('quux')[1]).to.equal('foo/baz')
     }
 
-    expect(entries).to.include('foo/baz');
-    expect(results.get('foo/baz')[0].isFile()).to.be.true;
+    expect(entries).to.include('foo/baz')
+    expect(results.get('foo/baz')[0].isFile()).to.be.true
 
-    done();
-  });
+    done()
+  })
 }
 
-describe('util/fs/walk', function()
-{
-  it('reports all files in a file system hierarchy', function(done)
-  {
+describe('util/fs/walk', function() {
+  it('reports all files in a file system hierarchy', function(done) {
     walktest(fs, path.resolve(__dirname, '../data'), done)
-  });
-});
+  })
+})

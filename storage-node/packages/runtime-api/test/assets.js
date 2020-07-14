@@ -16,36 +16,33 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-'use strict';
+'use strict'
 
-const mocha = require('mocha');
-const expect = require('chai').expect;
-const sinon = require('sinon');
+const expect = require('chai').expect
 
-const { RuntimeApi } = require('@joystream/storage-runtime-api');
+const { RuntimeApi } = require('@joystream/storage-runtime-api')
 
 describe('Assets', () => {
-  var api;
-  var key;
+  let api
   before(async () => {
-    api = await RuntimeApi.create();
-    key = await api.identities.loadUnlock('test/data/edwards_unlocked.json');
-  });
+    api = await RuntimeApi.create()
+    await api.identities.loadUnlock('test/data/edwards_unlocked.json')
+  })
 
   it('returns DataObjects for a content ID', async () => {
-    const obj = await api.assets.getDataObject('foo');
-    expect(obj.isNone).to.be.true;
-  });
+    const obj = await api.assets.getDataObject('foo')
+    expect(obj.isNone).to.be.true
+  })
 
   it('can check the liaison for a DataObject', async () => {
-    expect(async _ => {
-      await api.assets.checkLiaisonForDataObject('foo', 'bar');
-    }).to.throw;
-  });
+    expect(async () => {
+      await api.assets.checkLiaisonForDataObject('foo', 'bar')
+    }).to.throw
+  })
 
   // Needs properly staked accounts
-  it('can accept content');
-  it('can reject content');
-  it('can create a storage relationship for content');
-  it('can toggle a storage relatsionship to ready state');
-});
+  it('can accept content')
+  it('can reject content')
+  it('can create a storage relationship for content')
+  it('can toggle a storage relationship to ready state')
+})

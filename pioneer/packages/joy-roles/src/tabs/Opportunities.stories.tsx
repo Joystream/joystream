@@ -7,11 +7,10 @@ import { Balance } from '@polkadot/types/interfaces';
 
 import {
   Opening,
-  AcceptingApplications,
-  ActiveOpeningStage,
   ApplicationRationingPolicy,
   StakingPolicy
 } from '@joystream/types/hiring';
+import { mockStage } from '../mocks';
 import {
   OpeningView,
   OpeningStakeAndApplicationStatus
@@ -27,6 +26,7 @@ import { OpeningMetadata } from '../OpeningMetadata';
 
 import 'semantic-ui-css/semantic.min.css';
 import '@polkadot/joy-roles/index.sass';
+import { WorkingGroups } from '../working_groups';
 
 export default {
   title: 'Roles / Components / Opportunities groups tab',
@@ -58,11 +58,7 @@ export function newMockHumanReadableText (obj: any) {
 
 export const opening = new Opening({
   created: new u32(100),
-  stage: new ActiveOpeningStage({
-    acceptingApplications: new AcceptingApplications({
-      started_accepting_applicants_at_block: new u32(100)
-    })
-  }),
+  stage: mockStage,
   max_review_period_length: new u32(100),
   application_rationing_policy: new Option(ApplicationRationingPolicy),
   application_staking_policy: new Option(StakingPolicy),
@@ -153,7 +149,7 @@ export function OpportunitySandbox () {
 
   const meta: OpeningMetadata = {
     id: '1',
-    group: 'group-name'
+    group: WorkingGroups.ContentCurators
   };
 
   return (

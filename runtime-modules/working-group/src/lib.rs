@@ -993,32 +993,92 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     fn ensure_opening_policy_commitment_is_valid(
         policy_commitment: &OpeningPolicyCommitment<T::BlockNumber, BalanceOf<T>>,
     ) -> Result<(), Error> {
-        // check fill_opening unstaking periods
-
-        if let Some(unstaking_period) =
-            policy_commitment.fill_opening_failed_applicant_application_stake_unstaking_period
-        {
-            ensure!(
-                unstaking_period != Zero::zero(),
-                Error::FillOpeningFailedApplicantApplicationStakeUnstakingPeriodIsZero
-            );
+        // Helper function. Ensures that unstaking period is None or non-zero.
+        fn check_unstaking_period<BlockNumber: PartialEq + Zero>(
+            unstaking_period: Option<BlockNumber>,
+            error: Error,
+        ) -> Result<(), Error> {
+            if let Some(unstaking_period) = unstaking_period {
+                ensure!(unstaking_period != Zero::zero(), error);
+            }
+            Ok(())
         }
 
-        if let Some(unstaking_period) =
-            policy_commitment.fill_opening_failed_applicant_role_stake_unstaking_period
-        {
-            ensure!(
-                unstaking_period != Zero::zero(),
-                Error::FillOpeningFailedApplicantRoleStakeUnstakingPeriodIsZero
-            );
+        // Helper function. Ensures that unstaking period is None or non-zero in the staking_policy.
+        fn check_staking_policy<Balance, BlockNumber: PartialEq + Zero>(
+            staking_policy: Option<hiring::StakingPolicy<Balance, BlockNumber>>,
+            crowded_out_unstaking_period_error: Error,
+            review_period_unstaking_period_error: Error,
+        ) -> Result<(), Error> {
+            if let Some(staking_policy) = staking_policy {
+                check_unstaking_period(
+                    staking_policy.crowded_out_unstaking_period_length,
+                    crowded_out_unstaking_period_error,
+                )?;
+
+                check_unstaking_period(
+                    staking_policy.review_period_expired_unstaking_period_length,
+                    review_period_unstaking_period_error,
+                )?;
+            }
+
+            Ok(())
         }
 
-        if let Some(unstaking_period) =
-            policy_commitment.fill_opening_successful_applicant_application_stake_unstaking_period
+        // Check all fill_opening unstaking periods.
+        check_unstaking_period(
+            policy_commitment.fill_opening_failed_applicant_role_stake_unstaking_period,
+            Error::FillOpeningFailedApplicantRoleStakeUnstakingPeriodIsZero,
+        )?;
+
+        check_unstaking_period(
+            policy_commitment.fill_opening_failed_applicant_application_stake_unstaking_period,
+            Error::FillOpeningFailedApplicantApplicationStakeUnstakingPeriodIsZero,
+        )?;
+
+        check_unstaking_period(
+            policy_commitment.fill_opening_successful_applicant_application_stake_unstaking_period,
+            Error::FillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriodIsZero,
+        )?;
+
+        check_unstaking_period(
+            policy_commitment.exit_role_stake_unstaking_period,
+            Error::ExitRoleStakeUnstakingPeriodIsZero,
+        )?;
+
+        check_unstaking_period(
+            policy_commitment.exit_role_application_stake_unstaking_period,
+            Error::ExitRoleApplicationStakeUnstakingPeriodIsZero,
+        )?;
+
+        check_unstaking_period(
+            policy_commitment.terminate_role_stake_unstaking_period,
+            Error::TerminateRoleStakeUnstakingPeriodIsZero,
+        )?;
+
+        check_unstaking_period(
+            policy_commitment.terminate_application_stake_unstaking_period,
+            Error::TerminateApplicationStakeUnstakingPeriodIsZero,
+        )?;
+
+        check_staking_policy(
+            policy_commitment.role_staking_policy.clone(),
+            Error::RoleStakingPolicyCrowdedOutUnstakingPeriodIsZero,
+            Error::RoleStakingPolicyReviewPeriodUnstakingPeriodIsZero,
+        )?;
+
+        check_staking_policy(
+            policy_commitment.application_staking_policy.clone(),
+            Error::ApplicationStakingPolicyCrowdedOutUnstakingPeriodIsZero,
+            Error::ApplicationStakingPolicyReviewPeriodUnstakingPeriodIsZero,
+        )?;
+
+        if let Some(application_rationing_policy) =
+            policy_commitment.application_rationing_policy.clone()
         {
             ensure!(
-                unstaking_period != Zero::zero(),
-                Error::FillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriodIsZero
+                application_rationing_policy.max_active_applicants > 0,
+                Error::ApplicationRationingPolicyMaxActiveApplicantsIsZero
             );
         }
 

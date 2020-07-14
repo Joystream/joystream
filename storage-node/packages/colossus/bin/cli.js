@@ -25,38 +25,39 @@ const FLAG_DEFINITIONS = {
   port: {
     type: 'number',
     alias: 'p',
-    default: 3000
+    default: 3000,
   },
   keyFile: {
     type: 'string',
-    isRequired: (flags, input) => {
+    isRequired: flags => {
       return !flags.dev
-    }
+    },
   },
   publicUrl: {
     type: 'string',
     alias: 'u',
-    isRequired: (flags, input) => {
+    isRequired: flags => {
       return !flags.dev
-    }
+    },
   },
   passphrase: {
-    type: 'string'
+    type: 'string',
   },
   wsProvider: {
     type: 'string',
-    default: 'ws://localhost:9944'
+    default: 'ws://localhost:9944',
   },
   providerId: {
     type: 'number',
     alias: 'i',
-    isRequired: (flags, input) => {
+    isRequired: flags => {
       return !flags.dev
-    }
-  }
+    },
+  },
 }
 
-const cli = meow(`
+const cli = meow(
+  `
   Usage:
     $ colossus [command] [arguments]
 
@@ -76,14 +77,15 @@ const cli = meow(`
     --port=PORT, -p PORT    Port number to listen on, defaults to 3000.
     --ws-provider WS_URL    Joystream-node websocket provider, defaults to ws://localhost:9944
   `,
-  { flags: FLAG_DEFINITIONS })
+  { flags: FLAG_DEFINITIONS }
+)
 
 // All-important banner!
-function banner () {
+function banner() {
   console.log(chalk.blue(figlet.textSync('joystream', 'Speed')))
 }
 
-function start_express_app(app, port) {
+function startExpressApp(app, port) {
   const http = require('http')
   const server = http.createServer(app)
 
@@ -102,39 +104,39 @@ function start_express_app(app, port) {
 }
 
 // Start app
-function start_all_services ({ store, api, port }) {
+function startAllServices({ store, api, port }) {
   const app = require('../lib/app')(PROJECT_ROOT, store, api) // reduce falgs to only needed values
-  return start_express_app(app, port)
+  return startExpressApp(app, port)
 }
 
 // Start discovery service app only
-function start_discovery_service ({ api, port }) {
+function startDiscoveryService({ api, port }) {
   const app = require('../lib/discovery')(PROJECT_ROOT, api) // reduce flags to only needed values
-  return start_express_app(app, port)
+  return startExpressApp(app, port)
 }
 
 // Get an initialized storage instance
-function get_storage (runtime_api) {
+function getStorage(runtimeApi) {
   // TODO at some point, we can figure out what backend-specific connection
   // options make sense. For now, just don't use any configuration.
   const { Storage } = require('@joystream/storage-node-backend')
 
   const options = {
-    resolve_content_id: async (content_id) => {
+    resolve_content_id: async contentId => {
       // Resolve via API
-      const obj = await runtime_api.assets.getDataObject(content_id)
+      const obj = await runtimeApi.assets.getDataObject(contentId)
       if (!obj || obj.isNone) {
         return
       }
       // if obj.liaison_judgement !== Accepted .. throw ?
       return obj.unwrap().ipfs_content_id.toString()
-    }
+    },
   }
 
   return Storage.create(options)
 }
 
-async function init_api_production ({ wsProvider, providerId, keyFile, passphrase }) {
+async function initApiProduction({ wsProvider, providerId, keyFile, passphrase }) {
   // Load key information
   const { RuntimeApi } = require('@joystream/storage-runtime-api')
 
@@ -150,28 +152,28 @@ async function init_api_production ({ wsProvider, providerId, keyFile, passphras
     account_file: keyFile,
     passphrase,
     provider_url: wsProvider,
-    storageProviderId: providerId
+    storageProviderId: providerId,
   })
 
   if (!api.identities.key) {
     throw new Error('Failed to unlock storage provider account')
   }
 
-  if (!await api.workers.isRoleAccountOfStorageProvider(api.storageProviderId, api.identities.key.address)) {
+  if (!(await api.workers.isRoleAccountOfStorageProvider(api.storageProviderId, api.identities.key.address))) {
     throw new Error('storage provider role account and storageProviderId are not associated with a worker')
   }
 
   return api
 }
 
-async function init_api_development () {
+async function initApiDevelopment() {
   // Load key information
   const { RuntimeApi } = require('@joystream/storage-runtime-api')
 
   const wsProvider = 'ws://localhost:9944'
 
   const api = await RuntimeApi.create({
-    provider_url: wsProvider
+    provider_url: wsProvider,
   })
 
   const dev = require('../../cli/bin/dev')
@@ -183,39 +185,39 @@ async function init_api_development () {
   return api
 }
 
-function get_service_information (publicUrl) {
+function getServiceInformation(publicUrl) {
   // For now assume we run all services on the same endpoint
-  return({
+  return {
     asset: {
       version: 1, // spec version
-      endpoint: publicUrl
+      endpoint: publicUrl,
     },
     discover: {
       version: 1, // spec version
-      endpoint: publicUrl
-    }
-  })
+      endpoint: publicUrl,
+    },
+  }
 }
 
-async function announce_public_url (api, publicUrl) {
+async function announcePublicUrl(api, publicUrl) {
   // re-announce in future
-  const reannounce = function (timeoutMs) {
-    setTimeout(announce_public_url, timeoutMs, api, publicUrl)
+  const reannounce = function(timeoutMs) {
+    setTimeout(announcePublicUrl, timeoutMs, api, publicUrl)
   }
 
   debug('announcing public url')
   const { publish } = require('@joystream/service-discovery')
 
   try {
-    const serviceInformation = get_service_information(publicUrl)
+    const serviceInformation = getServiceInformation(publicUrl)
 
-    let keyId = await publish.publish(serviceInformation)
+    const keyId = await publish.publish(serviceInformation)
 
     await api.discovery.setAccountInfo(keyId)
 
     debug('publishing complete, scheduling next update')
 
-// >> sometimes after tx is finalized.. we are not reaching here!
+    // >> sometimes after tx is finalized.. we are not reaching here!
 
     // Reannounce before expiery. Here we are concerned primarily
     // with keeping the account information refreshed and 'available' in
@@ -230,61 +232,57 @@ async function announce_public_url (api, publicUrl) {
   }
 }
 
-function go_offline (api) {
-  return api.discovery.unsetAccountInfo()
-}
-
 // Simple CLI commands
-var command = cli.input[0]
+let command = cli.input[0]
 if (!command) {
   command = 'server'
 }
 
-async function start_colossus ({ api, publicUrl, port, flags }) {
+async function startColossus({ api, publicUrl, port, flags }) {
   // TODO: check valid url, and valid port number
-  const store = get_storage(api)
+  const store = getStorage(api)
   banner()
-  const { start_syncing } = require('../lib/sync')
-  start_syncing(api, { syncPeriod: SYNC_PERIOD_MS }, store)
-  announce_public_url(api, publicUrl)
-  return start_all_services({ store, api, port, flags }) // dont pass all flags only required values
+  const { startSyncing } = require('../lib/sync')
+  startSyncing(api, { syncPeriod: SYNC_PERIOD_MS }, store)
+  announcePublicUrl(api, publicUrl)
+  return startAllServices({ store, api, port, flags }) // dont pass all flags only required values
 }
 
 const commands = {
-  'server': async () => {
+  server: async () => {
     let publicUrl, port, api
 
     if (cli.flags.dev) {
       const dev = require('../../cli/bin/dev')
-      api = await init_api_development()
+      api = await initApiDevelopment()
       port = dev.developmentPort()
       publicUrl = `http://localhost:${port}/`
     } else {
-      api = await init_api_production(cli.flags)
+      api = await initApiProduction(cli.flags)
       publicUrl = cli.flags.publicUrl
       port = cli.flags.port
     }
 
-    return start_colossus({ api, publicUrl, port })
+    return startColossus({ api, publicUrl, port })
   },
-  'discovery': async () => {
+  discovery: async () => {
     debug('Starting Joystream Discovery Service')
     const { RuntimeApi } = require('@joystream/storage-runtime-api')
     const wsProvider = cli.flags.wsProvider
     const api = await RuntimeApi.create({ provider_url: wsProvider })
     const port = cli.flags.port
-    await start_discovery_service({ api, port })
-  }
+    await startDiscoveryService({ api, port })
+  },
 }
 
-async function main () {
+async function main() {
   // Simple CLI commands
-  var command = cli.input[0]
+  let command = cli.input[0]
   if (!command) {
     command = 'server'
   }
 
-  if (commands.hasOwnProperty(command)) {
+  if (Object.prototype.hasOwnProperty.call(commands, command)) {
     // Command recognized
     const args = _.clone(cli.input).slice(1)
     await commands[command](...args)
@@ -297,7 +295,7 @@ main()
   .then(() => {
     process.exit(0)
   })
-  .catch((err) => {
+  .catch(err => {
     console.error(chalk.red(err.stack))
     process.exit(-1)
   })

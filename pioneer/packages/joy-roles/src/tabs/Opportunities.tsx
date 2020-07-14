@@ -4,7 +4,7 @@ import NumberFormat from 'react-number-format';
 import marked from 'marked';
 import CopyToClipboard from 'react-copy-to-clipboard';
 
-import { Link, useHistory } from 'react-router-dom';
+import { Link, useHistory, useLocation } from 'react-router-dom';
 import {
   Button,
   Card,
@@ -41,7 +41,7 @@ import {
 import { Loadable } from '@polkadot/joy-utils/index';
 import styled from 'styled-components';
 import _ from 'lodash';
-import { WorkingGroups, AvailableGroups } from '../working_groups';
+import { WorkingGroups, AvailableGroups, workerRoleNameByGroup } from '../working_groups';
 
 type OpeningStage = OpeningMetadataProps & {
   stage: OpeningStageClassification;
@@ -476,19 +476,16 @@ type OpeningViewProps = WorkingGroupOpening & BlockTimeProps & MemberIdProps
 export const OpeningView = Loadable<OpeningViewProps>(
   ['opening', 'block_time_in_seconds'],
   props => {
-    const hrt = props.opening.parse_human_readable_text();
-
-    if (typeof hrt === 'undefined' || typeof hrt === 'string') {
-      return null;
-    }
-
-    const text = hrt;
+    const text = props.opening.parse_human_readable_text_with_fallback();
+    const isLeadOpening = props.meta.type?.isOfType('Leader');
 
     return (
       <Container className={'opening ' + openingClass(props.stage.state)}>
         <OpeningTitle>
           {text.job.title}
-          <OpeningLabel>{ _.startCase(props.meta.group) }</OpeningLabel>
+          <OpeningLabel>
+            { _.startCase(props.meta.group) }{ isLeadOpening ? ' Lead' : '' }
+          </OpeningLabel>
         </OpeningTitle>
         <Card fluid className="container">
           <Card.Content className="header">
@@ -527,15 +524,28 @@ export type OpeningsViewProps = MemberIdProps & {
   openings?: Array<WorkingGroupOpening>;
   block_time_in_seconds?: number;
   group?: WorkingGroups;
+  lead?: boolean;
 }
 
 export const OpeningsView = Loadable<OpeningsViewProps>(
   ['openings', 'block_time_in_seconds'],
   props => {
     const history = useHistory();
-    const { group = '' } = props;
-    const onFilterChange: DropdownProps['onChange'] = (e, data) => (
-      data.value !== group && history.push(`/working-groups/opportunities/${data.value}`)
+    const location = useLocation();
+    const basePath = '/working-groups/opportunities';
+    const { group = null, lead = false } = props;
+    const onFilterChange: DropdownProps['onChange'] = (e, data) => {
+      const newPath = data.value || basePath;
+      if (newPath !== location.pathname) { history.push(newPath as string); }
+    };
+    const groupOption = (group: WorkingGroups | null, lead = false) => ({
+      value: `${basePath}${group ? `/${group}` : ''}${lead ? '/lead' : ''}`,
+      text: _.startCase(`${group || 'All opportuniries'}`) + (lead ? ' (Lead)' : '')
+    });
+    // Can assert "props.openings!" because we're using "Loadable" which prevents them from beeing undefined
+    const filteredOpenings = props.openings!.filter(o =>
+      (!group || o.meta.group === group) &&
+      (!group || !o.meta.type || (lead === o.meta.type.isOfType('Leader')))
     );
 
     return (
@@ -544,17 +554,32 @@ export const OpeningsView = Loadable<OpeningsViewProps>(
           <FilterOpportunitiesDropdown
             placeholder="All opportunities"
             options={
-              [{ value: '', text: 'All opportunities' }]
-                .concat(AvailableGroups.map(g => ({ value: g, text: _.startCase(g) })))
+              [groupOption(null, false)]
+                .concat(AvailableGroups.map(g => groupOption(g)))
+                // Currently we filter-out content curators, because they don't use the new working-group module yet
+                .concat(AvailableGroups.filter(g => g !== WorkingGroups.ContentCurators).map(g => groupOption(g, true)))
             }
-            value={group}
+            value={groupOption(group, lead).value}
             onChange={onFilterChange}
             selection
           />
         </FilterOpportunities>
-        {props.openings && props.openings.filter(o => !group || o.meta.group === group).map((opening, key) => (
-          <OpeningView key={key} {...opening} block_time_in_seconds={props.block_time_in_seconds as number} member_id={props.member_id} />
-        ))}
+        { (
+          filteredOpenings.length
+            ? filteredOpenings.map((opening, key) => (
+              <OpeningView
+                key={key}
+                {...opening}
+                block_time_in_seconds={props.block_time_in_seconds as number}
+                member_id={props.member_id} />
+            ))
+            : (
+              <h2>
+                No openings{group ? ` for ${workerRoleNameByGroup[group]}${lead ? ' Lead' : ''} role ` : ' '}
+                are currently available!
+              </h2>
+            )
+        ) }
       </Container>
     );
   }
