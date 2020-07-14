@@ -8,7 +8,7 @@ import { BaseCommand } from './base'
 import { discover } from '@joystream/service-discovery/discover'
 import Debug from 'debug'
 import chalk from 'chalk'
-import {aliceKeyPair} from './dev'
+import { aliceKeyPair } from './dev'
 const debug = Debug('joystream:storage-cli:upload')
 
 // Defines maximum content length for the assets (files). Limits the upload.
@@ -172,10 +172,10 @@ export class UploadCommand extends BaseCommand {
   // Loads and unlocks the runtime identity using the key file and pass phrase.
   private async loadIdentity(): Promise<any> {
     const noKeyFileProvided = !this.keyFile || this.keyFile === ''
-    const useAlice = noKeyFileProvided && await this.api.system.isDevelopmentChain()
+    const useAlice = noKeyFileProvided && (await this.api.system.isDevelopmentChain())
 
     if (useAlice) {
-      debug('Discovered \'development\' chain.')
+      debug("Discovered 'development' chain.")
       return aliceKeyPair(this.api)
     }
 
