@@ -40,5 +40,8 @@
 		"@babel/runtime": "^7.10.2",
 		"@emotion/core": "^10.0.28",
 		"react": "^16.13.1"
+	},
+	"devDependencies": {
+		"eslint-plugin-react": "^7.20.3"
 	}
 }
