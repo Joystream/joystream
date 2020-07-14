@@ -24,7 +24,7 @@ import { TerminateRoleParameters } from '@joystream/types/proposals';
 import { WorkerId } from '@joystream/types/working-group';
 import { Bytes } from '@polkadot/types';
 import { WorkingGroup, InputValidationLengthConstraint } from '@joystream/types/common';
-import { bool as Bool, u16 as U16 } from '@polkadot/types/primitive';
+import { bool as Bool } from '@polkadot/types/primitive';
 import { withCalls } from '@polkadot/react-api';
 
 export type FormValues = WGFormValues & {
@@ -100,11 +100,6 @@ const TerminateWorkingGroupLeaderForm: React.FunctionComponent<FormInnerProps> =
   );
 };
 
-const TERMINATION_RATIONALE_CONSTRAINT_FALLBACK = new InputValidationLengthConstraint({
-  min: new U16(1),
-  max_min_diff: new U16(65534) // max possible value that won't cause overflow
-});
-
 const FormContainer = withFormContainer<FormContainerProps, FormValues>({
   mapPropsToValues: (props: FormContainerProps) => ({
     ...defaultValues,
@@ -112,7 +107,9 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
   }),
   validationSchema: (props: FormContainerProps) => Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    ...Validation.TerminateWorkingGroupLeaderRole(props.terminationRationaleConstraint || TERMINATION_RATIONALE_CONSTRAINT_FALLBACK)
+    ...Validation.TerminateWorkingGroupLeaderRole(
+      props.terminationRationaleConstraint || InputValidationLengthConstraint.createWithMaxAllowed()
+    )
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: 'TerminateWorkingGroupLeaderForm'

@@ -96,6 +96,13 @@ export class InputValidationLengthConstraint extends JoyStruct<InputValidationLe
       }, value);
     }
 
+    static createWithMaxAllowed() {
+      return new InputValidationLengthConstraint({
+        min: new u16(1),
+        max_min_diff: new u16(65534) // Max allowed without causing u16 overflow
+      })
+    }
+
     get min (): u16 {
       return this.getField('min');
     }

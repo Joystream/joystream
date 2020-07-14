@@ -152,7 +152,7 @@ type FormValuesByType<T extends ValidationTypeKeys> =
   never;
 
 type ValidationSchemaFuncParamsByType<T extends ValidationTypeKeys> =
-  T extends 'AddWorkingGroupLeaderOpening' ? [number] :
+  T extends 'AddWorkingGroupLeaderOpening' ? [number, InputValidationLengthConstraint] :
   T extends 'FillWorkingGroupLeaderOpening' ? [number] :
   T extends 'TerminateWorkingGroupLeaderRole' ? [InputValidationLengthConstraint] :
   [];
@@ -303,7 +303,7 @@ const Validation: ValidationType = {
         errorMessage('The max validator count', MAX_VALIDATOR_COUNT_MIN, MAX_VALIDATOR_COUNT_MAX)
       )
   }),
-  AddWorkingGroupLeaderOpening: (currentBlock: number) => ({
+  AddWorkingGroupLeaderOpening: (currentBlock: number, { min: HRTMin, max: HRTMax }: InputValidationLengthConstraint) => ({
     workingGroup: Yup.string(),
     activateAt: Yup.string().required(),
     activateAtBlock: Yup.number()
@@ -368,6 +368,8 @@ const Validation: ValidationType = {
           return true;
         }
       )
+      .min(HRTMin.toNumber(), `human_readable_text must be at least ${HRTMin.toNumber()} character(s) long`)
+      .max(HRTMax.toNumber(), `human_readable_text cannot be more than ${HRTMax.toNumber()} character(s) long`)
   }),
   SetWorkingGroupMintCapacity: () => ({
     workingGroup: Yup.string(),
