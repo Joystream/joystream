@@ -8,6 +8,7 @@ import { BaseCommand } from './base'
 import { discover } from '@joystream/service-discovery/discover'
 import Debug from 'debug'
 import chalk from 'chalk'
+import {aliceKeyPair} from './dev'
 const debug = Debug('joystream:storage-cli:upload')
 
 // Defines maximum content length for the assets (files). Limits the upload.
@@ -57,10 +58,6 @@ export class UploadCommand extends BaseCommand {
       this.mediaSourceFilePath !== '' &&
       this.dataObjectTypeId &&
       this.dataObjectTypeId !== '' &&
-      this.keyFile &&
-      this.keyFile !== '' &&
-      this.passPhrase &&
-      this.passPhrase !== '' &&
       this.memberId &&
       this.memberId !== ''
     )
@@ -174,6 +171,14 @@ export class UploadCommand extends BaseCommand {
 
   // Loads and unlocks the runtime identity using the key file and pass phrase.
   private async loadIdentity(): Promise<any> {
+    const noKeyFileProvided = !this.keyFile || this.keyFile === ''
+    const useAlice = noKeyFileProvided && await this.api.system.isDevelopmentChain()
+
+    if (useAlice) {
+      debug('Discovered \'development\' chain.')
+      return aliceKeyPair(this.api)
+    }
+
     try {
       await fs.promises.access(this.keyFile)
     } catch (error) {
@@ -187,8 +192,9 @@ export class UploadCommand extends BaseCommand {
   protected showUsage() {
     console.log(
       chalk.yellow(`
-        Usage:   storage-cli upload mediaSourceFilePath dataObjectTypeId memberId keyFilePath passPhrase
-        Example: storage-cli upload ./movie.mp4 1 1 ./keyFile.json secretPhrase
+        Usage:       storage-cli upload mediaSourceFilePath dataObjectTypeId memberId [keyFilePath] [passPhrase]
+        Example:     storage-cli upload ./movie.mp4 1 1 ./keyFile.json secretPhrase
+        Development: storage-cli upload ./movie.mp4 1 0
       `)
     )
   }
