@@ -43,10 +43,6 @@ module.exports = {
 			],
 		});
 		config.resolve.extensions.push(".ts", ".tsx");
-		config.resolve.alias = {
-			...config.resolve.alias,
-			components: path.resolve(__dirname, "../src", "components"),
-		};
 		return config;
 	},
 };

@@ -9,12 +9,13 @@
 		"build": "lerna run build",
 		"dev": "lerna run --parallel dev",
 		"storybook": "lerna run --scope atlas-app --stream storybook",
+		"lint": "yarn run eslint . --ext .js,.jsx,.ts,.tsx",
 		"clean": "lerna clean && rm -rf node_modules",
 		"test": "jest"
 	},
 	"lint-staged": {
 		"*.{ts, tsx, js, jsx, json}": [
-			"prettier --no-semi --trailing-comma none --write"
+			"prettier --write"
 		]
 	},
 	"devDependencies": {
@@ -36,7 +37,7 @@
 		"@storybook/react": "^5.3.17",
 		"@storybook/theming": "^5.3.19",
 		"@svgr/webpack": "^5.4.0",
-		"@typescript-eslint/eslint-plugin": "^3.2.0",
+		"@typescript-eslint/eslint-plugin": "^3.5.0",
 		"@typescript-eslint/parser": "^3.2.0",
 		"babel-loader": "^8.0.6",
 		"concurrently": "^5.2.0",
@@ -47,6 +48,7 @@
 		"eslint-config-prettier": "^6.11.0",
 		"eslint-plugin-jsx-a11y": "^6.2.3",
 		"eslint-plugin-prettier": "^3.1.3",
+		"eslint-plugin-react": "^7.20.3",
 		"eslint-plugin-react-hooks": "^4.0.4",
 		"husky": "^4.2.5",
 		"jest": "^26.0.1",
