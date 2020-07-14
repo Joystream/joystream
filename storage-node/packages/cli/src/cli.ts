@@ -18,16 +18,15 @@
 
 'use strict'
 
-import { RuntimeApi } from "@joystream/storage-runtime-api"
-import meow from "meow"
-import _ from "lodash"
+import { RuntimeApi } from '@joystream/storage-runtime-api'
+import meow from 'meow'
+import _ from 'lodash'
 
 // Commands
-import * as dev from "./commands/dev"
-import {HeadCommand} from "./commands/head";
-import {DownloadCommand} from "./commands/download";
-import {UploadCommand} from "./commands/upload";
-
+import * as dev from './commands/dev'
+import { HeadCommand } from './commands/head'
+import { DownloadCommand } from './commands/download'
+import { UploadCommand } from './commands/upload'
 
 // Parse CLI
 const FLAG_DEFINITIONS = {
@@ -52,42 +51,56 @@ const usage = `
     dev-check         Check the chain is setup with Alice as lead and storage provider.
     
   Type 'storage-cli command' for the exact command usage examples.
-  `;
+  `
 
-const cli = meow(usage, { flags: FLAG_DEFINITIONS });
+const cli = meow(usage, { flags: FLAG_DEFINITIONS })
+
+// Shows a message, CLI general usage and exits.
+function showUsageAndExit(message: string) {
+  console.log(message)
+  console.log(usage)
+  process.exit(1)
+}
 
 const commands = {
   // add Alice well known account as storage provider
-  'dev-init': async api => {
+  'dev-init': async (api) => {
     // dev accounts are automatically loaded, no need to add explicitly to keyring using loadIdentity(api)
     return dev.init(api)
   },
   // Checks that the setup done by dev-init command was successful.
-  'dev-check': async api => {
+  'dev-check': async (api) => {
     // dev accounts are automatically loaded, no need to add explicitly to keyring using loadIdentity(api)
     return dev.check(api)
   },
   // Uploads the file to the system. Registers new data object in the runtime, obtains proper colossus instance URL.
-  upload: async (api: any, filePath: string, dataObjectTypeId: string, keyFile: string, passPhrase: string, memberId: string) => {
-    let uploadCmd = new UploadCommand(api, filePath, dataObjectTypeId, keyFile, passPhrase, memberId);
+  upload: async (
+    api: any,
+    filePath: string,
+    dataObjectTypeId: string,
+    keyFile: string,
+    passPhrase: string,
+    memberId: string
+  ) => {
+    const uploadCmd = new UploadCommand(api, filePath, dataObjectTypeId, keyFile, passPhrase, memberId)
 
-    await uploadCmd.run();
+    await uploadCmd.run()
   },
   // needs to be updated to take a content id and resolve it a potential set
   // of providers that has it, and select one (possibly try more than one provider)
   // to fetch it from the get api url of a provider..
   download: async (api: any, url: string, contentId: string, filePath: string) => {
-    let downloadCmd = new DownloadCommand(api, url, contentId, filePath);
+    const downloadCmd = new DownloadCommand(api, url, contentId, filePath)
 
-    await downloadCmd.run();
+    await downloadCmd.run()
   },
   // Shows asset information derived from response headers.
   // Accepts colossus URL and content ID.
   head: async (api: any, storageNodeUrl: string, contentId: string) => {
-    let headCmd = new HeadCommand(api, storageNodeUrl, contentId);
+    const headCmd = new HeadCommand(api, storageNodeUrl, contentId)
 
-    await headCmd.run();
-  }
+    await headCmd.run()
+  },
 }
 
 // Entry point.
@@ -97,7 +110,7 @@ export async function main() {
   // Simple CLI commands
   const command = cli.input[0]
   if (!command) {
-    showUsageAndExit('Enter the command, please.');
+    showUsageAndExit('Enter the command, please.')
   }
 
   if (Object.prototype.hasOwnProperty.call(commands, command)) {
@@ -105,13 +118,6 @@ export async function main() {
     const args = _.clone(cli.input).slice(1)
     await commands[command](api, ...args)
   } else {
-    showUsageAndExit(`Command "${command}" not recognized.`);
+    showUsageAndExit(`Command "${command}" not recognized.`)
   }
-}
-
-// Shows a message, CLI general usage and exits.
-function showUsageAndExit(message: string) {
-  console.log(message);
-  console.log(usage);
-  process.exit(1);
 }
