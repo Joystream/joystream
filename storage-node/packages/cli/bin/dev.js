@@ -19,6 +19,62 @@ function developmentPort() {
   return 3001
 }
 
+const dispatchCalls = async (runtimeApi, senderAddress, rawCalls, batched = false) => {
+  const api = runtimeApi.api
+  const numCalls = rawCalls.length
+
+  debug(`processing ${numCalls} transactions...`)
+  let lastCall
+
+  for (let i = 0; i < numCalls; i++) {
+    debug(`${i + 1}/${numCalls} processed.`)
+    const { methodName, sectionName, args } = rawCalls[i]
+    const tx = api.tx[sectionName][methodName](...args)
+    lastCall = runtimeApi.signAndSend(senderAddress, tx)
+    if (!batched) {
+      await lastCall
+    }
+  }
+
+  return lastCall
+}
+
+const initVstore = async (api, contentLead) => {
+  const firstClass = await api.api.rpc.state.getStorage(api.api.query.versionedStore.classById.key(1))
+
+  if (firstClass.isSome) {
+    debug('Skipping Initializing Content Directory, classes already exist')
+    return
+  }
+
+  const classes = require('../../../../devops/vstore/classes.json')
+  const entities = require('../../../../devops/vstore/entities.json')
+
+  debug('Initializing Content Directory')
+
+  // batch createClass calls into a single block
+  debug('creating classes...')
+
+  const createClasses = classes.filter(call => {
+    return call.methodName === 'createClass'
+  })
+
+  await dispatchCalls(api, contentLead, createClasses, true)
+
+  // batch addClassSchema calls into a single block
+  debug('adding schemas to classes...')
+  const addClassSchema = classes.filter(call => {
+    return call.methodName === 'addClassSchema'
+  })
+
+  await dispatchCalls(api, contentLead, addClassSchema, true)
+
+  debug('creating entities...')
+
+  // Will this not overload the node.. Might not be safe to do on production network
+  await dispatchCalls(api, contentLead, entities, true)
+}
+
 const check = async api => {
   const roleAccountId = roleKeyPair(api).address
   const providerId = await api.workers.findProviderIdByRoleAccount(roleAccountId)
@@ -62,17 +118,6 @@ const init = async api => {
 
   console.log('Running setup')
 
-  // set localhost colossus as discovery provider
-  // assuming pioneer dev server is running on port 3000 we should run
-  // the storage dev server on a different port than the default for colossus which is also
-  // 3000
-  debug('Setting Local development node as bootstrap endpoint')
-  await api.discovery.setBootstrapEndpoints(alice, [`http://localhost:${developmentPort()}/`])
-
-  debug('Transferring tokens to storage role account')
-  // Give role account some tokens to work with
-  api.balances.transfer(alice, roleAccount, 100000)
-
   debug('Ensuring Alice is as member..')
   let aliceMemberId = await api.identities.firstMemberIdOf(alice)
 
@@ -84,6 +129,22 @@ const init = async api => {
   } else {
     debug('Alice is already a member')
   }
+
+  debug('Setting Alice as content working group lead')
+  await api.signAndSend(alice, api.api.tx.sudo.sudo(api.api.tx.contentWorkingGroup.replaceLead([aliceMemberId, alice])))
+
+  await initVstore(api, alice)
+
+  // set localhost colossus as discovery provider
+  // assuming pioneer dev server is running on port 3000 we should run
+  // the storage dev server on a different port than the default for colossus which is also
+  // 3000
+  debug('Setting Local development node as bootstrap endpoint')
+  await api.discovery.setBootstrapEndpoints(alice, [`http://localhost:${developmentPort()}/`])
+
+  debug('Transferring tokens to storage role account')
+  // Give role account some tokens to work with
+  api.balances.transfer(alice, roleAccount, 100000)
 
   // Make alice the storage lead
   debug('Making Alice the storage Lead')
