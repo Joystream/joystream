@@ -15,7 +15,7 @@ members = [
 	"runtime-modules/service-discovery",
 	"runtime-modules/stake",
 	"runtime-modules/storage",
-	"runtime-modules/token-minting",
+#	"runtime-modules/token-minting",
 	"runtime-modules/versioned-store",
 	"runtime-modules/versioned-store-permissions",
 	"runtime-modules/working-group",
