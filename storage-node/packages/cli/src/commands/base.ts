@@ -1,12 +1,21 @@
 import chalk from 'chalk'
 import removeEndingForwardSlash from '@joystream/storage-utils/stripEndingSlash'
+import {ContentId} from "@joystream/types/media";
 
 // Commands base abstract class. Contains reusable methods.
 export abstract class BaseCommand {
   // Creates the Colossus asset URL and logs it.
-  protected createAndLogAssetUrl(url: string, contentId: string): string {
+  protected createAndLogAssetUrl(url: string, contentId: string | ContentId): string {
+    let normalizedContentId: string;
+
+    if (typeof contentId === "string") {
+      normalizedContentId = contentId
+    } else {
+      normalizedContentId = contentId.encode()
+    }
+
     const normalizedUrl = removeEndingForwardSlash(url)
-    const assetUrl = `${normalizedUrl}/asset/v0/${contentId}`
+    const assetUrl = `${normalizedUrl}/asset/v0/${normalizedContentId}`
     console.log(chalk.yellow('Generated asset URL:', assetUrl))
 
     return assetUrl

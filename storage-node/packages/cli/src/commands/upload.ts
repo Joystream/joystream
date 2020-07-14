@@ -18,7 +18,7 @@ const MAX_CONTENT_LENGTH = 500 * 1024 * 1024 // 500Mb
 interface AddContentParams {
   accountId: string
   ipfsCid: string
-  contentId: string
+  contentId: ContentId
   fileSize: BN
   dataObjectTypeId: number
   memberId: number
@@ -96,7 +96,7 @@ export class UploadCommand extends BaseCommand {
     return {
       accountId,
       ipfsCid: await this.computeIpfsHash(),
-      contentId: ContentId.generate().encode(),
+      contentId: ContentId.generate(),
       fileSize: new BN(this.getFileSize()),
       dataObjectTypeId,
       memberId,
@@ -206,7 +206,7 @@ export class UploadCommand extends BaseCommand {
 
     const addContentParams = await this.getAddContentParams()
     debug(`AddContent Tx params: ${JSON.stringify(addContentParams)}`)
-    debug(`Decoded CID: ${ContentId.decode(addContentParams.contentId).toString()}`)
+    debug(`Decoded CID: ${addContentParams.contentId.toString()}`)
 
     const dataObject = await this.createContent(addContentParams)
     debug(`Received data object: ${dataObject.toString()}`)
