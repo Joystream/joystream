@@ -2,6 +2,7 @@
 
 ### Install dependencies
 ```
+# needed by honggfuzz
 sudo apt install build-essential binutils-dev libunwind-dev libblocksruntime-dev liblzma-dev
 ```
 

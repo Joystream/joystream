@@ -10,7 +10,7 @@ edition = "2018"
 cargo-fuzz = true
 
 [dependencies]
-libfuzzer-sys = "0.3"
+libfuzzer-sys = { version = "^0.3", features = ["arbitrary-derive"]}
 
 serde = { version = '1.0.101', optional = true}
 serde_derive = { version = '1.0.101', optional = true }
@@ -22,6 +22,9 @@ system = { package = 'srml-system', default-features = false, git = 'https://git
 balances = { package = 'srml-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
 codec = { package = 'parity-scale-codec', version = '1.0.0', default-features = false, features = ['derive'] }
 primitives = { package = 'substrate-primitives', git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
+
+arbitrary = { version = "^0.4", features = ["derive"] }
+
 
 [dependencies.timestamp]
 default_features = false
@@ -39,6 +42,7 @@ rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
 [dependencies.substrate-forum-module]
 path = ".."
+features = ["arbitrary"]
 
 # Prevent this from interfering with workspaces
 [workspace]

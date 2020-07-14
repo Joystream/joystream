@@ -35,9 +35,21 @@ dependencies = [
 
 [[package]]
 name = "arbitrary"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "491d5e42b1a073ff1fc1e0a02744b3f8bee9cf4bfd552053cac36c64b879795d"
+dependencies = [
+ "derive_arbitrary 0.3.3",
+]
+
+[[package]]
+name = "arbitrary"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7cb544f1057eaaff4b34f8c4dcf56fc3cd04debd291998405d135017a7c3c0f4"
+dependencies = [
+ "derive_arbitrary 0.4.5",
+]
 
 [[package]]
 name = "arrayref"
@@ -246,6 +258,28 @@ dependencies = [
  "digest",
  "rand_core 0.3.1",
  "subtle 2.2.3",
+]
+
+[[package]]
+name = "derive_arbitrary"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dab2f0544254a47cabc58956cc7ebda74c3b796bb2761e3fe8f29fdde632ad95"
+dependencies = [
+ "proc-macro2 1.0.18",
+ "syn 1.0.34",
+ "synstructure",
+]
+
+[[package]]
+name = "derive_arbitrary"
+version = "0.4.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02b43185d3e7ce7dcd44a23ca761ec026359753ebf480283a571e6463853d2ef"
+dependencies = [
+ "proc-macro2 1.0.18",
+ "quote 1.0.7",
+ "syn 1.0.34",
 ]
 
 [[package]]
@@ -530,7 +564,7 @@ version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d718794b8e23533b9069bd2c4597d69e41cc7ab1c02700a502971aca0cdcf24"
 dependencies = [
- "arbitrary",
+ "arbitrary 0.4.5",
  "cc",
 ]
 
@@ -1486,6 +1520,7 @@ dependencies = [
 name = "substrate-forum-module"
 version = "1.1.0"
 dependencies = [
+ "arbitrary 0.3.3",
  "hex-literal",
  "parity-scale-codec",
  "serde",
@@ -1505,6 +1540,7 @@ dependencies = [
 name = "substrate-forum-module-fuzz"
 version = "0.0.0"
 dependencies = [
+ "arbitrary 0.4.5",
  "libfuzzer-sys",
  "parity-scale-codec",
  "serde",
