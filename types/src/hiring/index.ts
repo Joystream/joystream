@@ -225,14 +225,14 @@ export class Deactivated extends JoyStruct<IDeactivated> {
   }
 };
 
-// TODO: Find usages and replace them with JoyEnum helpers
-export enum ActiveOpeningStageKeys {
-  AcceptingApplications = 'AcceptingApplications',
-  ReviewPeriod = 'ReviewPeriod',
-  Deactivated = 'Deactivated',
-}
+export const ActiveOpeningStageDef = {
+  AcceptingApplications: AcceptingApplications,
+  ReviewPeriod: ReviewPeriod,
+  Deactivated: Deactivated
+} as const;
+export type ActiveOpeningStageKey = keyof typeof ActiveOpeningStageDef;
 
-export class ActiveOpeningStage extends JoyEnum({AcceptingApplications, ReviewPeriod, Deactivated} as const) { }
+export class ActiveOpeningStage extends JoyEnum(ActiveOpeningStageDef) { }
 
 export type ActiveOpeningStageVariantType = {
   stage: ActiveOpeningStage,
@@ -257,12 +257,7 @@ export class ActiveOpeningStageVariant extends JoyStruct<ActiveOpeningStageVaria
   }
 
   get is_active(): boolean {
-    switch (this.stage.type) {
-      case ActiveOpeningStageKeys.AcceptingApplications:
-        return true
-    }
-
-	  return false
+    return this.stage.isOfType('AcceptingApplications');
   }
 }
 

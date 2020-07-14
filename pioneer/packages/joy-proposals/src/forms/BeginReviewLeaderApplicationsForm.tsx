@@ -15,7 +15,7 @@ import {
 import FormField from './FormFields';
 import { withFormContainer } from './FormContainer';
 import './forms.css';
-import { Dropdown } from 'semantic-ui-react';
+import { Dropdown, Message } from 'semantic-ui-react';
 import _ from 'lodash';
 import Validation from '../validationSchema';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
@@ -42,16 +42,11 @@ const BeginReviewLeadeApplicationsForm: React.FunctionComponent<FormInnerProps> 
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const transport = useTransport();
   const [allOpenings, openingsError, openingsLoading] = usePromise(
-    () => transport.workingGroups.allOpenings(values.workingGroup),
+    () => transport.workingGroups.activeOpenings(values.workingGroup, 'AcceptingApplications'),
     [] as OpeningData[],
     [values.workingGroup]
   );
   const openingsOptions = allOpenings
-    // Filter by "Accepting applications" only
-    .filter(od =>
-      od.hiringOpening.stage.isOfType('Active') &&
-      od.hiringOpening.stage.asType('Active').stage.isOfType('AcceptingApplications')
-    )
     // Map to options
     .map(od => {
       const hrt = od.hiringOpening.parse_human_readable_text_with_fallback();
@@ -66,6 +61,7 @@ const BeginReviewLeadeApplicationsForm: React.FunctionComponent<FormInnerProps> 
       {...props}
       txMethod="createBeginReviewWorkingGroupLeaderApplicationsProposal"
       proposalType="BeginReviewWorkingGroupLeaderApplication"
+      disabled={!openingsOptions.length}
       submitParams={[
         myMemberId,
         values.title,
@@ -76,18 +72,31 @@ const BeginReviewLeadeApplicationsForm: React.FunctionComponent<FormInnerProps> 
       ]}
     >
       <PromiseComponent error={openingsError} loading={openingsLoading} message="Fetching openings...">
-        <FormField
-          label="Working Group Opening"
-          error={errorLabelsProps.openingId}
-          showErrorMsg>
-          <Dropdown
-            onChange={handleChange}
-            name={'openingId'}
-            selection
-            options={openingsOptions}
-            value={values.openingId}
-          />
-        </FormField>
+        { !openingsOptions.length
+          ? (
+            <Message error visible>
+              <Message.Header>No openings available!</Message.Header>
+              <Message.Content>
+                This proposal cannot be created, because no leader openings in <i>Accepting Applications</i> stage are currently available
+                in {values.workingGroup} Working Group.
+              </Message.Content>
+            </Message>
+          )
+          : (
+            <FormField
+              label="Working Group Opening"
+              error={errorLabelsProps.openingId}
+              showErrorMsg>
+              <Dropdown
+                onChange={handleChange}
+                name={'openingId'}
+                selection
+                options={openingsOptions}
+                value={values.openingId}
+              />
+            </FormField>
+          )
+        }
       </PromiseComponent>
     </GenericWorkingGroupProposalForm>
   );

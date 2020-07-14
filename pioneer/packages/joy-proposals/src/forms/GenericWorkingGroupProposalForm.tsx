@@ -37,6 +37,7 @@ type FormAdditionalProps = {
   leadStakeRequired?: boolean;
   leadRewardRequired?: boolean;
   onLeadChange?: (lead: WorkerData | null) => void;
+  disabled?: boolean;
 };
 
 // We don't exactly use "container" and "export" components here, but those types are useful for
@@ -55,7 +56,8 @@ export const GenericWorkingGroupProposalForm: React.FunctionComponent<FormInnerP
     leadRequired = false,
     leadStakeRequired = false,
     leadRewardRequired = false,
-    onLeadChange
+    onLeadChange,
+    disabled = false
   } = props;
   const transport = useTransport();
   const [lead, error, loading] = usePromise(
@@ -68,10 +70,11 @@ export const GenericWorkingGroupProposalForm: React.FunctionComponent<FormInnerP
   const leadMissing = leadRequired && (!leadRes.loading && !leadRes.error) && !leadRes.lead;
   const stakeMissing = leadStakeRequired && (!leadRes.loading && !leadRes.error) && (leadRes.lead && !leadRes.lead.stake);
   const rewardMissing = leadRewardRequired && (!leadRes.loading && !leadRes.error) && (leadRes.lead && !leadRes.lead.reward);
+  const isDisabled = disabled || leadMissing || stakeMissing || rewardMissing || leadRes.error;
 
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (
-    <GenericProposalForm {...props} disabled={leadMissing || stakeMissing || rewardMissing || leadRes.error}>
+    <GenericProposalForm {...props} disabled={isDisabled}>
       <FormField
         error={errorLabelsProps.workingGroup}
         label="Working group"
@@ -87,7 +90,7 @@ export const GenericWorkingGroupProposalForm: React.FunctionComponent<FormInnerP
       </FormField>
       { showLead && (
         <PromiseComponent message={'Fetching current lead...'} {...leadRes}>
-          <LeadInfo lead={leadRes.lead} header={true}/>
+          <LeadInfo lead={leadRes.lead} group={values.workingGroup} header={true}/>
         </PromiseComponent>
       ) }
       { leadMissing && (

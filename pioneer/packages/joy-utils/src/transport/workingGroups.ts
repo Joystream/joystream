@@ -8,7 +8,7 @@ import { Worker, WorkerId, Opening as WGOpening, Application as WGApplication } 
 import { apiModuleByGroup } from '../consts/workingGroups';
 import { WorkingGroupKeys } from '@joystream/types/common';
 import { WorkerData, OpeningData, ParsedApplication } from '../types/workingGroups';
-import { OpeningId, ApplicationId, Opening, Application } from '@joystream/types/hiring';
+import { OpeningId, ApplicationId, Opening, Application, ActiveOpeningStageKey } from '@joystream/types/hiring';
 import { MultipleLinkedMapEntry } from '../LinkedMapEntry';
 import { Stake, StakeId } from '@joystream/types/stake';
 import { RewardRelationshipId, RewardRelationship } from '@joystream/types/recurring-rewards';
@@ -81,6 +81,14 @@ export default class WorkingGroupsTransport extends BaseTransport {
     }
 
     return openingsData;
+  }
+
+  public async activeOpenings (group: WorkingGroupKeys, substage?: ActiveOpeningStageKey) {
+    return (await this.allOpenings(group))
+      .filter(od =>
+        od.hiringOpening.stage.isOfType('Active') &&
+        (!substage || od.hiringOpening.stage.asType('Active').stage.isOfType(substage))
+      );
   }
 
   async wgApplicationById (group: WorkingGroupKeys, wgApplicationId: number | ApplicationId): Promise<WGApplication> {

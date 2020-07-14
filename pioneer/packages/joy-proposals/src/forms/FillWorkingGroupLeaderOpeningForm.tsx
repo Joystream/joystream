@@ -15,7 +15,7 @@ import {
 import { FormField, RewardPolicyFields } from './FormFields';
 import { withFormContainer } from './FormContainer';
 import './forms.css';
-import { Dropdown, DropdownItemProps, Header, Checkbox } from 'semantic-ui-react';
+import { Dropdown, DropdownItemProps, Header, Checkbox, Message } from 'semantic-ui-react';
 import _ from 'lodash';
 import Validation from '../validationSchema';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
@@ -84,18 +84,12 @@ const FillWorkingGroupLeaderOpeningForm: React.FunctionComponent<FormInnerProps>
   const { handleChange, setFieldValue, values, myMemberId, errors, touched } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const transport = useTransport();
-  // TODO: Abstract this repetitive logic
   const [allOpenings, openingsError, openingsLoading] = usePromise<OpeningData[]>(
-    () => transport.workingGroups.allOpenings(values.workingGroup),
+    () => transport.workingGroups.activeOpenings(values.workingGroup, 'ReviewPeriod'),
     [],
     [values.workingGroup]
   );
   const openingsOptions: DropdownItemProps[] = allOpenings
-    // Filter by "ReviewPeriod" only
-    .filter(od =>
-      od.hiringOpening.stage.isOfType('Active') &&
-      od.hiringOpening.stage.asType('Active').stage.isOfType('ReviewPeriod')
-    )
     // Map to options
     .map(od => {
       const hrt = od.hiringOpening.parse_human_readable_text_with_fallback();
@@ -128,6 +122,7 @@ const FillWorkingGroupLeaderOpeningForm: React.FunctionComponent<FormInnerProps>
       {...props}
       txMethod="createFillWorkingGroupLeaderOpeningProposal"
       proposalType="FillWorkingGroupLeaderOpening"
+      disabled={!openingsOptions.length || !applicationsOptions.length}
       submitParams={[
         myMemberId,
         values.title,
@@ -137,52 +132,80 @@ const FillWorkingGroupLeaderOpeningForm: React.FunctionComponent<FormInnerProps>
       ]}
     >
       <PromiseComponent error={openingsError} loading={openingsLoading} message="Fetching openings...">
-        <FormField
-          label="Working Group Opening"
-          error={errorLabelsProps.openingId}>
-          <Dropdown
-            onChange={(...args) => {
-              setFieldValue('successfulApplicants', []);
-              // "as any" assert is required due to some invalid typing of Formik's "handleChange" function (it takes 2 args, not 1)
-              return (handleChange as any)(...args);
-            }}
-            placeholder={'Select an opening'}
-            name={'openingId'}
-            selection
-            options={openingsOptions}
-            value={values.openingId}
-          />
-        </FormField>
+        { !openingsOptions.length
+          ? (
+            <Message error visible>
+              <Message.Header>No openings available!</Message.Header>
+              <Message.Content>
+                This proposal cannot be created, because no leader openings in <i>Review Period</i> are currently available
+                in {values.workingGroup} Working Group.
+              </Message.Content>
+            </Message>
+          )
+          : (
+            <FormField
+              label="Working Group Opening"
+              error={errorLabelsProps.openingId}>
+              <Dropdown
+                onChange={(...args) => {
+                  setFieldValue('successfulApplicants', []);
+                  // "as any" assert is required due to some invalid typing of Formik's "handleChange" function (it takes 2 args, not 1)
+                  return (handleChange as any)(...args);
+                }}
+                placeholder={'Select an opening'}
+                name={'openingId'}
+                selection
+                options={openingsOptions}
+                value={values.openingId}
+              />
+            </FormField>
+          )
+        }
       </PromiseComponent>
       { values.openingId && (
         <PromiseComponent error={applError} loading={applLoading} message="Fetching applications...">
-          <FormField
-            label="Successful applicant"
-            error={errorLabelsProps.successfulApplicant}>
-            <Dropdown
-              placeholder="Select successful applicant"
-              fluid
-              selection
-              options={applicationsOptions}
-              value={values.successfulApplicant}
-              onChange={handleChange}
-              name="successfulApplicant"/>
-          </FormField>
-          {values.successfulApplicant && (<>
-            <Header as="h3">Selected applicant:</Header>
-            <ApplicationsDetails applications={
-              [activeApplications.find(a => a.wgApplicationId.toString() === values.successfulApplicant)!]
-            }/>
-            <Header as="h3">Reward policy:</Header>
-            <FormField>
-              <Checkbox
-                toggle
-                onChange={(e, data) => { setFieldValue('includeReward', data.checked); }}
-                label={'Include reward'}
-                checked={values.includeReward}/>
-            </FormField>
-            { values.includeReward && <RewardPolicyFields {...{ values, errorLabelsProps, handleChange, setFieldValue }}/> }
-          </>)}
+          { !applicationsOptions.length
+            ? (
+              <Message error visible>
+                <Message.Header>No applications available!</Message.Header>
+                <Message.Content>
+                  FillWorkingGroupLeaderOpening proposal cannot be created for this opening,
+                  because there are no active applications to select from.
+                </Message.Content>
+              </Message>
+            )
+            : (
+              <>
+                <FormField
+                  label="Successful applicant"
+                  error={errorLabelsProps.successfulApplicant}>
+                  <Dropdown
+                    placeholder="Select successful applicant"
+                    fluid
+                    selection
+                    options={applicationsOptions}
+                    value={values.successfulApplicant}
+                    onChange={handleChange}
+                    name="successfulApplicant"/>
+                </FormField>
+                {values.successfulApplicant && (<>
+                  <Header as="h3">Selected applicant:</Header>
+                  <ApplicationsDetails applications={
+                    [activeApplications.find(a => a.wgApplicationId.toString() === values.successfulApplicant)!]
+                  }/>
+                  <Header as="h3">Reward policy:</Header>
+                  <FormField>
+                    <Checkbox
+                      toggle
+                      onChange={(e, data) => { setFieldValue('includeReward', data.checked); }}
+                      label={'Include reward'}
+                      checked={values.includeReward}/>
+                  </FormField>
+                  { values.includeReward && <RewardPolicyFields {...{ values, errorLabelsProps, handleChange, setFieldValue }}/> }
+                </>)}
+              </>
+            )
+          }
         </PromiseComponent>
       ) }
     </GenericWorkingGroupProposalForm>

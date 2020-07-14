@@ -7,7 +7,7 @@ import {
   Application,
   AcceptingApplications, ReviewPeriod,
   WaitingToBeingOpeningStageVariant,
-  ActiveOpeningStageVariant, ActiveOpeningStageKeys,
+  ActiveOpeningStageVariant,
   Opening,
   OpeningStageKeys,
   Deactivated, OpeningDeactivationCauseKeys,
@@ -133,25 +133,24 @@ async function classifyActiveOpeningStage (
   queryer: IBlockQueryer,
   stage: ActiveOpeningStageVariant
 ): Promise<OpeningStageClassification> {
-  switch (stage.stage.type) {
-    case ActiveOpeningStageKeys.AcceptingApplications:
-      return classifyActiveOpeningStageAcceptingApplications(
-        queryer,
-        stage.stage.value as AcceptingApplications
-      );
-
-    case ActiveOpeningStageKeys.ReviewPeriod:
-      return classifyActiveOpeningStageReviewPeriod(
-        opening,
-        queryer,
-        stage.stage.value as ReviewPeriod
-      );
-
-    case ActiveOpeningStageKeys.Deactivated:
-      return classifyActiveOpeningStageDeactivated(
-        queryer,
-        stage.stage.value as Deactivated
-      );
+  if (stage.stage.isOfType('AcceptingApplications')) {
+    return classifyActiveOpeningStageAcceptingApplications(
+      queryer,
+      stage.stage.asType('AcceptingApplications')
+    );
+  }
+  if (stage.stage.isOfType('ReviewPeriod')) {
+    return classifyActiveOpeningStageReviewPeriod(
+      opening,
+      queryer,
+      stage.stage.asType('ReviewPeriod')
+    );
+  }
+  if (stage.stage.isOfType('Deactivated')) {
+    return classifyActiveOpeningStageDeactivated(
+      queryer,
+      stage.stage.value as Deactivated
+    );
   }
 
   throw new Error('Unknown active opening stage: ' + stage.stage.type);
