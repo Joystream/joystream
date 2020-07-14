@@ -224,7 +224,7 @@ macro_rules! new_full {
 			(true, false) => {
 				// start the full GRANDPA voter
 				let grandpa_config = grandpa::GrandpaParams {
-					config: config,
+					config,
 					link: grandpa_link,
 					network: service.network(),
 					inherent_data_providers: inherent_data_providers.clone(),

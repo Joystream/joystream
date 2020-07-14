@@ -154,7 +154,7 @@ decl_module! {
                         hiring::ActiveOpeningStage::Deactivated {
                             cause: hiring::OpeningDeactivationCause::ReviewPeriodExpired,
                             deactivated_at_block: now,
-                            started_accepting_applicants_at_block: started_accepting_applicants_at_block,
+                            started_accepting_applicants_at_block,
                             started_review_period_at_block: Some(started_review_period_at_block),
                     });
 
@@ -184,7 +184,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<T::OpeningId, AddOpeningError> {
         let current_block_height = <system::Module<T>>::block_number();
 
-        Opening::<BalanceOf<T>, T::BlockNumber, T::ApplicationId>::ensure_can_add_opening(
+        Self::ensure_can_add_opening(
             current_block_height,
             activate_at.clone(),
             T::Currency::minimum_balance(),
@@ -1405,6 +1405,69 @@ impl<T: Trait> Module<T> {
         } else {
             None
         }
+    }
+
+    /// Performs all necessary check before adding an opening
+    pub(crate) fn ensure_can_add_opening(
+        current_block_height: T::BlockNumber,
+        activate_at: ActivateOpeningAt<T::BlockNumber>,
+        minimum_stake_balance: BalanceOf<T>,
+        application_rationing_policy: Option<ApplicationRationingPolicy>,
+        application_staking_policy: Option<StakingPolicy<BalanceOf<T>, T::BlockNumber>>,
+        role_staking_policy: Option<StakingPolicy<BalanceOf<T>, T::BlockNumber>>,
+    ) -> Result<(), AddOpeningError> {
+        // Check that exact activation is actually in the future
+        ensure!(
+            match activate_at {
+                ActivateOpeningAt::ExactBlock(block_number) => block_number > current_block_height,
+                _ => true,
+            },
+            AddOpeningError::OpeningMustActivateInTheFuture
+        );
+
+        if let Some(app_rationing_policy) = application_rationing_policy {
+            ensure!(
+                app_rationing_policy.max_active_applicants > 0,
+                AddOpeningError::ApplicationRationingZeroMaxApplicants
+            );
+        }
+
+        // Check that staking amounts clear minimum balance required.
+        Self::ensure_amount_valid_in_opt_staking_policy(
+            application_staking_policy,
+            minimum_stake_balance,
+            StakePurpose::Application,
+        )?;
+
+        // Check that staking amounts clear minimum balance required.
+        Self::ensure_amount_valid_in_opt_staking_policy(
+            role_staking_policy,
+            minimum_stake_balance,
+            StakePurpose::Role,
+        )?;
+
+        Ok(())
+    }
+
+    /// Ensures that optional staking policy prescribes value that clears minimum balance requirement
+    pub(crate) fn ensure_amount_valid_in_opt_staking_policy(
+        opt_staking_policy: Option<StakingPolicy<BalanceOf<T>, T::BlockNumber>>,
+        minimum_stake_balance: BalanceOf<T>,
+        stake_purpose: StakePurpose,
+    ) -> Result<(), AddOpeningError> {
+        if let Some(ref staking_policy) = opt_staking_policy {
+            ensure!(
+                staking_policy.amount > Zero::zero(),
+                AddOpeningError::StakeAmountCannotBeZero(stake_purpose)
+            );
+
+            ensure!(
+                staking_policy.amount >= minimum_stake_balance,
+                AddOpeningError::StakeAmountLessThanMinimumStakeBalance(stake_purpose)
+            );
+        }
+
+        Ok(())
     }
 }
 

@@ -1,0 +1,39 @@
+name: joystream-cli
+on: [pull_request, push]
+
+jobs:
+  cli_build_ubuntu:
+    name: Ubuntu Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [12.x]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: build
+      run: |
+        yarn install --frozen-lockfile
+        yarn madge --circular types/
+        yarn workspace joystream-cli build
+
+  cli_build_osx:
+    name: MacOS Build
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        node-version: [12.x]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: build
+      run: |
+        yarn install --frozen-lockfile --network-timeout 120000
+        yarn madge --circular types/
+        yarn workspace joystream-cli build

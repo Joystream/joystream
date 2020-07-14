@@ -1,4 +1,4 @@
-import { cli } from 'cli-ux';
+import { cli, Table } from 'cli-ux';
 import chalk from 'chalk';
 import { NameValueObj } from '../Types';
 
@@ -21,6 +21,40 @@ export function displayNameValueTable(rows: NameValueObj[]) {
         },
         { 'no-header': true }
     );
+}
+
+export function displayCollapsedRow(row: { [k: string]: string | number }) {
+    const collapsedRow: NameValueObj[] = Object.keys(row).map(name => ({
+        name,
+        value: typeof row[name] === 'string' ? row[name] as string : row[name].toString()
+    }));
+
+    displayNameValueTable(collapsedRow);
+}
+
+export function displayCollapsedTable(rows: { [k: string]: string | number }[]) {
+    for (const row of rows) displayCollapsedRow(row);
+}
+
+export function displayTable(rows: { [k: string]: string | number }[], cellHorizontalPadding = 0) {
+    if (!rows.length) {
+        return;
+    }
+    const maxLength = (columnName: string) => rows.reduce(
+        (maxLength, row) => {
+            const val = row[columnName];
+            const valLength = typeof val === 'string' ? val.length : val.toString().length;
+            return Math.max(maxLength, valLength);
+        },
+        columnName.length
+    )
+    const columnDef = (columnName: string) => ({
+        get: (row: typeof rows[number])  => chalk.white(`${row[columnName]}`),
+        minWidth: maxLength(columnName) + cellHorizontalPadding
+    });
+    let columns: Table.table.Columns<{ [k: string]: string }> = {};
+    Object.keys(rows[0]).forEach(columnName => columns[columnName] = columnDef(columnName))
+    cli.table(rows, columns);
 }
 
 export function toFixedLength(text: string, length: number, spacesOnLeft = false): string {

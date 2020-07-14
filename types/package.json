@@ -1,0 +1,46 @@
+{
+  "name": "@joystream/types",
+  "version": "0.11.0",
+  "description": "Types for Joystream Substrate Runtime - nicaea release",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "prepublish": "npm run build",
+    "build": "tsc --build tsconfig.json"
+  },
+  "author": "Joystream contributors",
+  "maintainers": [],
+  "dependencies": {
+    "@polkadot/types": "^0.96.1",
+    "@polkadot/keyring": "^1.7.0-beta.5",
+    "@types/lodash": "^4.14.157",
+    "@types/vfile": "^4.0.0",
+    "ajv": "^6.11.0",
+    "lodash": "^4.17.15",
+    "moment": "^2.24.0"
+  },
+  "devDependencies": {
+    "typescript": "^3.7.2"
+  },
+  "engines": {
+    "node": ">=10.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Joystream/joystream.git"
+  },
+  "keywords": [
+    "substrate",
+    "joystream",
+    "runtime"
+  ],
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Joystream/joystream/issues"
+  },
+  "homepage": "https://github.com/Joystream/joystream"
+}

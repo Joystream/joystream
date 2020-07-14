@@ -1,11 +1,10 @@
-
 [package]
 authors = ['Joystream contributors']
 edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
-version = '6.13.0'
+version = '6.20.0'
 
 [features]
 default = ['std']
@@ -56,12 +55,12 @@ std = [
     'governance/std',
     'membership/std',
     'memo/std',
-    'roles/std',
     'service_discovery/std',
     'storage/std',
     'proposals_engine/std',
     'proposals_discussion/std',
     'proposals_codex/std',
+    'working-group/std',
 ]
 
 # [dependencies]
@@ -272,7 +271,7 @@ rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
 [build-dependencies.wasm-builder-runner]
 package = 'substrate-wasm-builder-runner'
-version = '1.0.4'
+version = '1.0.5'
 
 [dependencies.forum]
 default_features = false
@@ -339,23 +338,17 @@ package = 'substrate-memo-module'
 path = '../runtime-modules/memo'
 version = '1.0.0'
 
-[dependencies.roles]
-default_features = false
-package = 'substrate-roles-module'
-path = '../runtime-modules/roles'
-version = '1.0.0'
-
 [dependencies.service_discovery]
 default_features = false
 package = 'substrate-service-discovery-module'
 path = '../runtime-modules/service-discovery'
-version = '1.0.0'
+version = '2.0.0'
 
 [dependencies.storage]
 default_features = false
 package = 'substrate-storage-module'
 path = '../runtime-modules/storage'
-version = '1.0.0'
+version = '2.0.0'
 
 [dependencies.proposals_engine]
 default_features = false
@@ -374,3 +367,9 @@ default_features = false
 package = 'substrate-proposals-codex-module'
 path = '../runtime-modules/proposals/codex'
 version = '2.0.0'
+
+[dependencies.working-group]
+default_features = false
+package = 'substrate-working-group-module'
+path = '../runtime-modules/working-group'
+version = '1.0.0'

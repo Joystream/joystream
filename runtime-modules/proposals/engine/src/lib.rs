@@ -135,7 +135,7 @@ use srml_support::{
 use system::{ensure_root, RawOrigin};
 
 use crate::types::ApprovedProposalData;
-use common::origin_validator::ActorOriginValidator;
+use common::origin::ActorOriginValidator;
 use srml_support::dispatch::Dispatchable;
 
 type MemberId<T> = <T as membership::Trait>::MemberId;
@@ -352,7 +352,7 @@ decl_module! {
             // mutation
 
             <Proposals<T>>::insert(proposal_id, proposal);
-            <VoteExistsByProposalByVoter<T>>::insert( proposal_id, voter_id, vote.clone());
+            <VoteExistsByProposalByVoter<T>>::insert(proposal_id, voter_id, vote.clone());
             Self::deposit_event(RawEvent::Voted(voter_id, proposal_id, vote));
         }
 

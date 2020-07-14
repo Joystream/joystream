@@ -5,6 +5,7 @@ import { CLIError } from '@oclif/errors';
 import { DEFAULT_API_URI } from '../Api';
 import lockFile from 'proper-lockfile';
 import DefaultCommandBase from './DefaultCommandBase';
+import os from 'os';
 
 // Type for the state object (which is preserved as json in the state file)
 type StateObject = {
@@ -18,7 +19,7 @@ const DEFAULT_STATE: StateObject = {
     apiUri: DEFAULT_API_URI
 }
 
-// State file path (relative to this.config.dataDir)
+// State file path (relative to getAppDataPath())
 const STATE_FILE = '/state.json';
 
 // Possible data directory access errors
@@ -31,13 +32,28 @@ enum DataDirErrorType {
 /**
  * Abstract base class for commands that need to work with the preserved state.
  *
- * The preserved state is kept in a json file inside the data directory (this.config.dataDir, supplied by oclif).
+ * The preserved state is kept in a json file inside the data directory.
  * The state object contains all the information that needs to be preserved across sessions, ie. the default account
  * choosen by the user after executing account:choose command etc. (see "StateObject" type above).
  */
 export default abstract class StateAwareCommandBase extends DefaultCommandBase {
+    getAppDataPath(): string {
+        const systemAppDataPath =
+            process.env.APPDATA ||
+            (
+                process.platform === 'darwin'
+                    ? path.join(os.homedir(), '/Library/Application Support')
+                    : path.join(os.homedir(), '/.local/share')
+            );
+        const packageJson: { name?: string } = require('../../package.json');
+        if (!packageJson || !packageJson.name) {
+            throw new CLIError('Cannot get package name from package.json!');
+        }
+        return path.join(systemAppDataPath, packageJson.name);
+    }
+
     getStateFilePath(): string {
-        return path.join(this.config.dataDir, STATE_FILE);
+        return path.join(this.getAppDataPath(), STATE_FILE);
     }
 
     private createDataDirFsError(errorType: DataDirErrorType, specificPath: string = '') {
@@ -49,7 +65,7 @@ export default abstract class StateAwareCommandBase extends DefaultCommandBase {
 
         const errorMsg =
             `Unexpected error while trying to ${ actionStrs[errorType] } the data directory.`+
-            `(${ path.join(this.config.dataDir, specificPath) })! Permissions issue?`;
+            `(${ path.join(this.getAppDataPath(), specificPath) })! Permissions issue?`;
 
         return new CLIError(errorMsg, { exit: ExitCodes.FsOperationFailed });
     }
@@ -67,8 +83,8 @@ export default abstract class StateAwareCommandBase extends DefaultCommandBase {
     }
 
     private initStateFs(): void {
-        if (!fs.existsSync(this.config.dataDir)) {
-            fs.mkdirSync(this.config.dataDir);
+        if (!fs.existsSync(this.getAppDataPath())) {
+            fs.mkdirSync(this.getAppDataPath());
         }
         if (!fs.existsSync(this.getStateFilePath())) {
             fs.writeFileSync(this.getStateFilePath(), JSON.stringify(DEFAULT_STATE));

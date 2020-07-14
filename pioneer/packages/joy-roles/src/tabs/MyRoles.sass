@@ -1,0 +1,58 @@
+$opening-states: ( positive: green, neutral: olive, negative: red, cancelled: grey )
+
+.my-roles
+  .current-roles
+
+  .current-applications
+    h2
+      margin-top: 1.5em
+
+    .application
+      @each $name, $colour in $opening-states 
+        margin-bottom: 2em
+        &.status-#{$name}
+          .label
+            &.attached
+              +text-colour($colour, darker)
+              margin-bottom: 0em !important
+              +bg-colour($colour, trans)
+            &.ribbon.masthead
+              +bg-colour($colour)
+              padding-top: 1em
+              padding-bottom: 1em
+              padding-right: 2em
+              margin-bottom: 1.4em
+              margin-top: -1em
+              &:after
+                border-right-color: colour($colour, darker) !important
+              .statistic .label, .statistic .value
+                color: white !important
+          .summary
+            +text-colour($colour, darker)
+            +bg-colour($colour, trans)
+            padding: 1em
+            margin-left: -1em
+            border-top-right-radius: 2em
+            border-bottom-right-radius: 2em
+          table
+            width: auto !important
+            min-width: 50%
+            table-layout: auto !important
+
+            .sum
+              font-weight: bold
+              text-transform: uppercase
+
+      .label
+        .detail
+          float: right
+
+      .statistic
+        .label
+          text-align: left
+      
+      .cta
+        margin-top: 2em
+
+      .item
+        list-style: none

@@ -52,7 +52,7 @@ cargo build --release
 Run the node and connect to the public testnet.
 
 ```bash
-cargo run --release -- --chain ./rome-tesnet.json
+cargo run --release -- --chain ./rome-testnet.json
 ```
 
 The `rome-testnet.json` chain file can be obtained from the [releases page](https://github.com/Joystream/joystream/releases/tag/v6.8.0)
@@ -68,7 +68,7 @@ cargo install joystream-node --path node/
 Now you can run
 
 ```bash
-joystream-node --chain rome-testnet.json
+joystream-node --chain ./rome-testnet.json
 ```
 
 ### Local development
@@ -85,14 +85,23 @@ This will build and run a fresh new local development chain purging existing one
 cargo test
 ```
 
-### API integration tests
+### Network tests
 
 ```bash
-./scripts/run-dev-chain.sh
+./scripts/run-test-chain.sh
 yarn test
 ```
 
 To run the integration tests with a different chain, you can omit step running the local development chain and set the node URL using `NODE_URL` environment variable.
+Proposal grace periods should be set to 0, otherwise proposal network tests will fail.
+
+### Rome-Constantinople migration network test
+
+Ensure Rome node is up and running, and node URL is set using `NODE_URL` environment variable (default value is `localhost:9944`).
+
+```bash
+yarn test-migration
+```
 
 ## Joystream Runtime
 
@@ -140,15 +149,15 @@ cargo-fmt
 
 ## Contributing
 
-Please see our [contributing guidlines](https://github.com/Joystream/joystream#contribute) for details on our code of conduct, and the process for submitting pull requests to us.
+Please see our [contributing guidlines](./CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## Authors
 
-See also the list of [CONTRIBUTORS](./CONTRIBUTORS) who participated in this project.
+See also the list of [CONTRIBUTORS](https://github.com/Joystream/joystream/graphs/contributors) who participated in this project.
 
 ## License
 
-This project is licensed under the GPLv3 License - see the [LICENSE](LICENSE) file for details
+This project is licensed under the GPLv3 License - see the [LICENSE](./LICENSE) file for details
 
 ## Acknowledgments
 

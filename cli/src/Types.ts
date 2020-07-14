@@ -1,9 +1,29 @@
 import BN from 'bn.js';
-import { ElectionStage, Seat } from '@joystream/types';
-import { Option } from '@polkadot/types';
-import { BlockNumber, Balance } from '@polkadot/types/interfaces';
+import { ElectionStage, Seat } from '@joystream/types/council';
+import { Option, Text } from '@polkadot/types';
+import { Constructor } from '@polkadot/types/types';
+import { Struct, Vec } from '@polkadot/types/codec';
+import { u32 } from '@polkadot/types/primitive';
+import { BlockNumber, Balance, AccountId } from '@polkadot/types/interfaces';
 import { DerivedBalances } from '@polkadot/api-derive/types';
 import { KeyringPair } from '@polkadot/keyring/types';
+import { WorkerId } from '@joystream/types/working-group';
+import { Profile, MemberId } from '@joystream/types/members';
+import {
+    GenericJoyStreamRoleSchema,
+    JobSpecifics,
+    ApplicationDetails,
+    QuestionSections,
+    QuestionSection,
+    QuestionsFields,
+    QuestionField,
+    EntryInMembershipModuke,
+    HiringProcess,
+    AdditionalRolehiringProcessDetails,
+    CreatorDetails
+} from '@joystream/types/hiring/schemas/role.schema.typings';
+import ajv from 'ajv';
+import { Opening, StakingPolicy, ApplicationStageKeys } from '@joystream/types/hiring';
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -61,3 +81,238 @@ export function createCouncilInfoObj(
 // Total balance:   100 JOY
 // Free calance:     50 JOY
 export type NameValueObj = { name: string, value: string };
+
+// Working groups related types
+export enum WorkingGroups {
+    StorageProviders = 'storageProviders'
+}
+
+// In contrast to Pioneer, currently only StorageProviders group is available in CLI
+export const AvailableGroups: readonly WorkingGroups[] = [
+  WorkingGroups.StorageProviders
+] as const;
+
+// Compound working group types
+export type GroupMember = {
+    workerId: WorkerId;
+    memberId: MemberId;
+    roleAccount: AccountId;
+    profile: Profile;
+    stake: Balance;
+    earned: Balance;
+}
+
+export type GroupApplication = {
+    wgApplicationId: number;
+    applicationId: number;
+    member: Profile | null;
+    roleAccout: AccountId;
+    stakes: {
+        application: number;
+        role: number;
+    },
+    humanReadableText: string;
+    stage: ApplicationStageKeys;
+}
+
+export enum OpeningStatus {
+    WaitingToBegin = 'WaitingToBegin',
+    AcceptingApplications = 'AcceptingApplications',
+    InReview = 'InReview',
+    Complete = 'Complete',
+    Cancelled = 'Cancelled',
+    Unknown = 'Unknown'
+}
+
+export type GroupOpeningStage = {
+    status: OpeningStatus;
+    block?: number;
+    date?: Date;
+}
+
+export type GroupOpeningStakes = {
+    application?: StakingPolicy;
+    role?: StakingPolicy;
+}
+
+export type GroupOpening = {
+    wgOpeningId: number;
+    openingId: number;
+    stage: GroupOpeningStage;
+    opening: Opening;
+    stakes: GroupOpeningStakes;
+    applications: GroupApplication[];
+}
+
+// Some helper structs for generating human_readable_text in working group opening extrinsic
+// Note those types are not part of the runtime etc., we just use them to simplify prompting for values
+// (since there exists functionality that handles that for substrate types like: Struct, Vec etc.)
+interface WithJSONable<T> {
+    toJSON: () => T;
+}
+export class HRTJobSpecificsStruct extends Struct implements WithJSONable<JobSpecifics> {
+    constructor (value?: JobSpecifics) {
+        super({
+          title: "Text",
+          description: "Text",
+        }, value);
+    }
+    get title(): string {
+        return (this.get('title') as Text).toString();
+    }
+    get description(): string {
+        return (this.get('description') as Text).toString();
+    }
+    toJSON(): JobSpecifics {
+        const { title, description } = this;
+        return { title, description };
+    }
+}
+export class HRTEntryInMembershipModukeStruct extends Struct implements WithJSONable<EntryInMembershipModuke> {
+    constructor (value?: EntryInMembershipModuke) {
+        super({
+          handle: "Text",
+        }, value);
+    }
+    get handle(): string {
+        return (this.get('handle') as Text).toString();
+    }
+    toJSON(): EntryInMembershipModuke {
+        const { handle } = this;
+        return { handle };
+    }
+}
+export class HRTCreatorDetailsStruct extends Struct implements WithJSONable<CreatorDetails> {
+    constructor (value?: CreatorDetails) {
+        super({
+          membership: HRTEntryInMembershipModukeStruct,
+        }, value);
+    }
+    get membership(): EntryInMembershipModuke {
+        return (this.get('membership') as HRTEntryInMembershipModukeStruct).toJSON();
+    }
+    toJSON(): CreatorDetails {
+        const { membership } = this;
+        return { membership };
+    }
+}
+export class HRTHiringProcessStruct extends Struct implements WithJSONable<HiringProcess> {
+    constructor (value?: HiringProcess) {
+        super({
+          details: "Vec<Text>",
+        }, value);
+    }
+    get details(): AdditionalRolehiringProcessDetails {
+        return (this.get('details') as Vec<Text>).toArray().map(v => v.toString());
+    }
+    toJSON(): HiringProcess {
+        const { details } = this;
+        return { details };
+    }
+}
+export class HRTQuestionFieldStruct extends Struct implements WithJSONable<QuestionField> {
+    constructor (value?: QuestionField) {
+        super({
+            title: "Text",
+            type: "Text"
+        }, value);
+    }
+    get title(): string {
+        return (this.get('title') as Text).toString();
+    }
+    get type(): string {
+        return (this.get('type') as Text).toString();
+    }
+    toJSON(): QuestionField {
+        const { title, type } = this;
+        return { title, type };
+    }
+}
+class HRTQuestionsFieldsVec extends Vec.with(HRTQuestionFieldStruct) implements WithJSONable<QuestionsFields> {
+    toJSON(): QuestionsFields {
+        return this.toArray().map(v => v.toJSON());
+    }
+}
+export class HRTQuestionSectionStruct extends Struct implements WithJSONable<QuestionSection> {
+    constructor (value?: QuestionSection) {
+        super({
+            title: "Text",
+            questions: HRTQuestionsFieldsVec
+        }, value);
+    }
+    get title(): string {
+        return (this.get('title') as Text).toString();
+    }
+    get questions(): QuestionsFields {
+        return (this.get('questions') as HRTQuestionsFieldsVec).toJSON();
+    }
+    toJSON(): QuestionSection {
+        const { title, questions } = this;
+        return { title, questions };
+    }
+}
+export class HRTQuestionSectionsVec extends Vec.with(HRTQuestionSectionStruct) implements WithJSONable<QuestionSections> {
+    toJSON(): QuestionSections {
+        return this.toArray().map(v => v.toJSON());
+    }
+};
+export class HRTApplicationDetailsStruct extends Struct implements WithJSONable<ApplicationDetails> {
+    constructor (value?: ApplicationDetails) {
+        super({
+            sections: HRTQuestionSectionsVec
+        }, value);
+    }
+    get sections(): QuestionSections {
+        return (this.get('sections') as HRTQuestionSectionsVec).toJSON();
+    }
+    toJSON(): ApplicationDetails {
+        const { sections } = this;
+        return { sections };
+    }
+}
+export class HRTStruct extends Struct implements WithJSONable<GenericJoyStreamRoleSchema> {
+    constructor (value?: GenericJoyStreamRoleSchema) {
+        super({
+            version: "u32",
+            headline: "Text",
+            job: HRTJobSpecificsStruct,
+            application: HRTApplicationDetailsStruct,
+            reward: "Text",
+            creator: HRTCreatorDetailsStruct,
+            process: HRTHiringProcessStruct
+        }, value);
+    }
+    get version(): number {
+        return (this.get('version') as u32).toNumber();
+    }
+    get headline(): string {
+        return (this.get('headline') as Text).toString();
+    }
+    get job(): JobSpecifics {
+        return (this.get('job') as HRTJobSpecificsStruct).toJSON();
+    }
+    get application(): ApplicationDetails {
+        return (this.get('application') as HRTApplicationDetailsStruct).toJSON();
+    }
+    get reward(): string {
+        return (this.get('reward') as Text).toString();
+    }
+    get creator(): CreatorDetails {
+        return (this.get('creator') as HRTCreatorDetailsStruct).toJSON();
+    }
+    get process(): HiringProcess {
+        return (this.get('process') as HRTHiringProcessStruct).toJSON();
+    }
+    toJSON(): GenericJoyStreamRoleSchema {
+        const { version, headline, job, application, reward, creator, process } = this;
+        return { version, headline, job, application, reward, creator, process };
+    }
+};
+
+// A mapping of argName to json struct and schemaValidator
+// It is used to map arguments of type "Bytes" that are in fact a json string
+// (and can be validated against a schema)
+export type JSONArgsMapping = { [argName: string]: {
+    struct: Constructor<Struct>,
+    schemaValidator: ajv.ValidateFunction
+} };
