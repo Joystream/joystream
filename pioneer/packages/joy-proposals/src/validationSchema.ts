@@ -2,6 +2,7 @@ import * as Yup from 'yup';
 import { schemaValidator, ActivateOpeningAtKeys } from '@joystream/types/hiring';
 import { ProposalTypes } from '@polkadot/joy-utils/types/proposals';
 import { GenericFormValues } from './forms/GenericProposalForm';
+import { InputValidationLengthConstraint } from '@joystream/types/common';
 import { FormValues as SignalFormValues } from './forms/SignalForm';
 import { FormValues as RuntimeUpgradeFormValues } from './forms/RuntimeUpgradeForm';
 import { FormValues as SetCouncilParamsFormValues } from './forms/SetCouncilParamsForm';
@@ -16,6 +17,7 @@ import { FormValues as FillWorkingGroupLeaderOpeningFormValues } from './forms/F
 import { FormValues as DecreaseWorkingGroupLeadStakeFormValues } from './forms/DecreaseWorkingGroupLeadStakeForm';
 import { FormValues as SlashWorkingGroupLeadStakeFormValues } from './forms/SlashWorkingGroupLeadStakeForm';
 import { FormValues as SetWorkingGroupLeadRewardFormValues } from './forms/SetWorkingGroupLeadRewardForm';
+import { FormValues as TerminateWorkingGroupLeaderFormValues } from './forms/TerminateWorkingGroupLeaderForm';
 
 // TODO: If we really need this (currency unit) we can we make "Validation" a functiction that returns an object.
 // We could then "instantialize" it in "withFormContainer" where instead of passing
@@ -146,6 +148,7 @@ type FormValuesByType<T extends ValidationTypeKeys> =
   T extends 'DecreaseWorkingGroupLeaderStake' ? Omit<DecreaseWorkingGroupLeadStakeFormValues, keyof GenericFormValues> :
   T extends 'SlashWorkingGroupLeaderStake' ? Omit<SlashWorkingGroupLeadStakeFormValues, keyof GenericFormValues> :
   T extends 'SetWorkingGroupLeaderReward' ? Omit<SetWorkingGroupLeadRewardFormValues, keyof GenericFormValues> :
+  T extends 'TerminateWorkingGroupLeaderRole' ? Omit<TerminateWorkingGroupLeaderFormValues, keyof GenericFormValues> :
   never;
 /* eslint-enable @typescript-eslint/indent */
 
@@ -404,6 +407,14 @@ const Validation: ValidationType = {
   SetWorkingGroupLeaderReward: () => ({
     workingGroup: Yup.string(),
     amount: minMaxInt(MIN_REWARD_AMOUNT, MAX_REWARD_AMOUNT, 'Reward amount')
+  }),
+  TerminateWorkingGroupLeaderRole: ({ min, max }: InputValidationLengthConstraint) => ({
+    workingGroup: Yup.string(),
+    terminationRationale: Yup.string()
+      .required('Termination rationale is required')
+      .min(min.toNumber(), `Termination rationale must be at least ${min.toNumber()} character(s) long`)
+      .max(max.toNumber(), `Termination rationale cannot be more than ${max.toNumber()} character(s) long`),
+    slashStake: Yup.boolean()
   })
 };
 

@@ -26,7 +26,8 @@ import {
   FillWorkingGroupLeaderOpeningForm,
   DecreaseWorkingGroupLeadStakeFrom,
   SlashWorkingGroupLeadStakeForm,
-  SetWorkingGroupLeadRewardForm
+  SetWorkingGroupLeadRewardForm,
+  TerminateWorkingGroupLeaderForm
 } from './forms';
 
 interface Props extends AppProps, I18nProps {}
@@ -80,6 +81,7 @@ function App (props: Props): React.ReactElement<Props> {
           <Route exact path={`${basePath}/new/decrease-working-group-leader-stake`} component={DecreaseWorkingGroupLeadStakeFrom} />
           <Route exact path={`${basePath}/new/slash-working-group-leader-stake`} component={SlashWorkingGroupLeadStakeForm} />
           <Route exact path={`${basePath}/new/set-working-group-leader-reward`} component={SetWorkingGroupLeadRewardForm} />
+          <Route exact path={`${basePath}/new/terminate-working-group-leader-role`} component={TerminateWorkingGroupLeaderForm} />
           <Route exact path={`${basePath}/active`} component={NotDone} />
           <Route exact path={`${basePath}/finalized`} component={NotDone} />
           <Route exact path={`${basePath}/:id`} component={ProposalFromId} />

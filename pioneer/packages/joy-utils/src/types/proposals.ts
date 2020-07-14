@@ -19,7 +19,8 @@ export const ProposalTypes = [
   'FillWorkingGroupLeaderOpening',
   'SlashWorkingGroupLeaderStake',
   'DecreaseWorkingGroupLeaderStake',
-  'SetWorkingGroupLeaderReward'
+  'SetWorkingGroupLeaderReward',
+  'TerminateWorkingGroupLeaderRole'
 ] as const;
 
 export type ProposalType = typeof ProposalTypes[number];

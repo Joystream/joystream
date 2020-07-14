@@ -14,3 +14,4 @@ export { default as FillWorkingGroupLeaderOpeningForm } from './FillWorkingGroup
 export { default as DecreaseWorkingGroupLeadStakeFrom } from './DecreaseWorkingGroupLeadStakeForm';
 export { default as SlashWorkingGroupLeadStakeForm } from './SlashWorkingGroupLeadStakeForm';
 export { default as SetWorkingGroupLeadRewardForm } from './SetWorkingGroupLeadRewardForm';
+export { default as TerminateWorkingGroupLeaderForm } from './TerminateWorkingGroupLeaderForm';

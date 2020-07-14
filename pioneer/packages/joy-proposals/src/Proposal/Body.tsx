@@ -7,7 +7,7 @@ import { blake2AsHex } from '@polkadot/util-crypto';
 import styled from 'styled-components';
 import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import TxButton from '@polkadot/joy-utils/TxButton';
-import { ProposalId } from '@joystream/types/proposals';
+import { ProposalId, TerminateRoleParameters } from '@joystream/types/proposals';
 import { MemberId, Profile } from '@joystream/types/members';
 import ProfilePreview from '@polkadot/joy-utils/MemberProfilePreview';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
@@ -225,7 +225,17 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => ParsedParams} = {
     'Working group': (new WorkingGroup(group)).type,
     'New reward amount': formatBalance(amount),
     Lead: new FullWidthParam(<LeadInfoFromId group={(new WorkingGroup(group).type as WorkingGroupKeys)} leadId={leadId}/>)
-  })
+  }),
+  TerminateWorkingGroupLeaderRole: ([params]) => {
+    const paramsObj = new TerminateRoleParameters(params);
+    const { working_group: workingGroup, rationale, worker_id: leadId, slash } = paramsObj;
+    return {
+      'Working group': workingGroup.type,
+      Rationale: new FullWidthParam(bytesToString(rationale)),
+      'Slash stake': slash.isTrue ? 'YES' : 'NO',
+      Lead: new FullWidthParam(<LeadInfoFromId group={workingGroup.type as WorkingGroupKeys} leadId={leadId.toNumber()}/>)
+    };
+  }
 };
 
 const StyledProposalDescription = styled(Card.Description)`
