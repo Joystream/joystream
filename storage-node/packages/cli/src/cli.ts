@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /*
  * This file is part of the storage node for the Joystream project.
  * Copyright (C) 2019 Joystream Contributors
@@ -40,9 +39,9 @@ const usage = `
     $ storage-cli command [arguments..]
 
   Commands:
-    upload            Upload a file to a Colossus storage node. Requires a
-                      source file path to upload, data object ID, account key file,
-                      pass phrase to unlock it and a member ID.
+    upload            Upload a file to the Joystream Network. Requires a
+                      source file path to upload, data object ID, member ID and account key file with
+                      pass phrase to unlock it.
     download          Retrieve a file. Requires a storage node URL and a content
                       ID, as well as an output filename.
     head              Send a HEAD request for a file, and print headers.
@@ -82,7 +81,7 @@ const commands = {
 
     await downloadCmd.run();
   },
-  // Shows asset information derived from request headers.
+  // Shows asset information derived from response headers.
   // Accepts colossus URL and content ID.
   head: async (api: any, storageNodeUrl: string, contentId: string) => {
     let headCmd = new HeadCommand(api, storageNodeUrl, contentId);

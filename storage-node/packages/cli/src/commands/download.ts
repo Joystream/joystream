@@ -8,22 +8,22 @@ export class DownloadCommand extends BaseCommand{
     private readonly api: any;
     private readonly storageNodeUrl: string;
     private readonly contentId: string;
-    private readonly filePath: string;
+    private readonly outputFilePath: string;
 
-    constructor(api: any, storageNodeUrl: string, contentId: string, filePath: string) {
+    constructor(api: any, storageNodeUrl: string, contentId: string, outputFilePath: string) {
         super();
 
         this.api = api;
         this.storageNodeUrl = storageNodeUrl;
         this.contentId = contentId;
-        this.filePath = filePath;
+        this.outputFilePath = outputFilePath;
     }
 
     // Provides parameter validation. Overrides the abstract method from the base class.
     protected validateParameters(): boolean {
         return this.storageNodeUrl && this.storageNodeUrl !== ""
             && this.contentId && this.contentId !== ""
-            && this.filePath && this.filePath !== "";
+            && this.outputFilePath && this.outputFilePath !== "";
     }
 
     // Shows command usage. Overrides the abstract method from the base class.
@@ -40,10 +40,10 @@ export class DownloadCommand extends BaseCommand{
         if (!this.assertParameters()) return;
 
         const assetUrl = this.createAndLogAssetUrl(this.storageNodeUrl, this.contentId);
-        console.log(chalk.yellow('File path:', this.filePath));
+        console.log(chalk.yellow('File path:', this.outputFilePath));
 
         // Create file write stream and set error handler.
-        const writer = fs.createWriteStream(this.filePath)
+        const writer = fs.createWriteStream(this.outputFilePath)
             .on('error', (err) => {
                 this.fail(`File write failed: ${err}`);
             });

@@ -35,18 +35,18 @@ export class UploadCommand extends BaseCommand{
     constructor(api: any,
                 mediaSourceFilePath: string,
                 dataObjectTypeId: string,
+                memberId: string,
                 keyFile: string,
-                passPhrase: string,
-                memberId: string
+                passPhrase: string
     ) {
         super();
 
         this.api = api;
         this.mediaSourceFilePath = mediaSourceFilePath;
         this.dataObjectTypeId = dataObjectTypeId;
+        this.memberId = memberId;
         this.keyFile = keyFile;
         this.passPhrase = passPhrase;
-        this.memberId = memberId;
     }
 
     // Provides parameter validation. Overrides the abstract method from the base class.
@@ -181,8 +181,8 @@ export class UploadCommand extends BaseCommand{
     // Shows command usage. Overrides the abstract method from the base class.
     protected showUsage() {
         console.log(chalk.yellow(`
-        Usage:   storage-cli upload mediaSourceFilePath dataObjectTypeId keyFilePath passPhrase memberId
-        Example: storage-cli upload ./movie.mp4 1 ./keyFile.json secretPhrase 1
+        Usage:   storage-cli upload mediaSourceFilePath dataObjectTypeId memberId keyFilePath passPhrase
+        Example: storage-cli upload ./movie.mp4 1 1 ./keyFile.json secretPhrase
       `));
     }
 
