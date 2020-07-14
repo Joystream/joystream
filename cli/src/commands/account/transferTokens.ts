@@ -30,7 +30,7 @@ export default class AccountTransferTokens extends AccountsCommandBase {
   ]
 
   async run() {
-    const args: AccountTransferArgs = <AccountTransferArgs>this.parse(AccountTransferTokens).args
+    const args: AccountTransferArgs = this.parse(AccountTransferTokens).args as AccountTransferArgs
     const selectedAccount: NamedKeyringPair = await this.getRequiredSelectedAccount()
     const amountBN: BN = new BN(args.amount)
 

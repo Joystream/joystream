@@ -82,7 +82,7 @@ export default class ApiInspect extends ApiCommandBase {
       return this.getOriginalApi().query[apiModule][apiMethod].creator.meta
     } else {
       // Currently the only other optoin is api.consts
-      const method: ConstantCodec = <ConstantCodec>this.getOriginalApi().consts[apiModule][apiMethod]
+      const method: ConstantCodec = this.getOriginalApi().consts[apiModule][apiMethod] as ConstantCodec
       return method.meta
     }
   }
@@ -135,7 +135,7 @@ export default class ApiInspect extends ApiCommandBase {
       if (!availableTypes.includes(flags.type)) {
         throw new CLIError('Such type is not available', { exit: ExitCodes.InvalidInput })
       }
-      apiType = <ApiType>flags.type
+      apiType = flags.type as ApiType
       if (apiModule !== undefined) {
         if (!api[apiType][apiModule]) {
           throw new CLIError('Such module was not found', { exit: ExitCodes.InvalidInput })
@@ -168,7 +168,7 @@ export default class ApiInspect extends ApiCommandBase {
 
   async run() {
     const api: ApiPromise = this.getOriginalApi()
-    const flags: ApiInspectFlags = <ApiInspectFlags>this.parse(ApiInspect).flags
+    const flags: ApiInspectFlags = this.parse(ApiInspect).flags as ApiInspectFlags
     const availableTypes: readonly string[] = TYPES_AVAILABLE
     const { apiType, apiModule, apiMethod } = this.validateFlags(api, flags)
 

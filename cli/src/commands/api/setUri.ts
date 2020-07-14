@@ -16,7 +16,7 @@ export default class ApiSetUri extends StateAwareCommandBase {
   ]
 
   async run() {
-    const args: ApiSetUriArgs = <ApiSetUriArgs>this.parse(ApiSetUri).args
+    const args: ApiSetUriArgs = this.parse(ApiSetUri).args as ApiSetUriArgs
     try {
       new WsProvider(args.uri)
     } catch (e) {

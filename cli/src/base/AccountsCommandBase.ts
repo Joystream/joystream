@@ -83,7 +83,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     try {
       // Try adding and retrieving the keys in order to validate that the backup file is correct
       keyring.addFromJson(accountJsonObj)
-      account = <NamedKeyringPair>keyring.getPair(accountJsonObj.address) // We can be sure it's named, because we forced it before
+      account = keyring.getPair(accountJsonObj.address) as NamedKeyringPair // We can be sure it's named, because we forced it before
     } catch (e) {
       throw new CLIError('Provided backup file is not valid', { exit: ExitCodes.InvalidFile })
     }
@@ -106,16 +106,18 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     const accountDir = this.getAccountsDirPath()
     try {
       files = fs.readdirSync(accountDir)
-    } catch (e) {}
+    } catch (e) {
+      // Do nothing
+    }
 
     // We have to assert the type, because TS is not aware that we're filtering out the nulls at the end
-    return <NamedKeyringPair[]>files
+    return files
       .map((fileName) => {
         const filePath = path.join(accountDir, fileName)
         if (!includeSpecial && filePath.includes(SPECIAL_ACCOUNT_POSTFIX + '.')) return null
         return this.fetchAccountOrNullFromFile(filePath)
       })
-      .filter((accObj) => accObj !== null)
+      .filter((accObj) => accObj !== null) as NamedKeyringPair[]
   }
 
   getSelectedAccountFilename(): string {
@@ -200,7 +202,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
       },
     ])
 
-    return <NamedKeyringPair>accounts.find((acc) => this.generateAccountFilename(acc) === chosenAccountFilename)
+    return accounts.find((acc) => this.generateAccountFilename(acc) === chosenAccountFilename) as NamedKeyringPair
   }
 
   async requestAccountDecoding(account: NamedKeyringPair): Promise<void> {

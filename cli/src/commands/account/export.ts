@@ -43,8 +43,8 @@ export default class AccountExport extends AccountsCommandBase {
   }
 
   async run() {
-    const args: AccountExportArgs = <AccountExportArgs>this.parse(AccountExport).args
-    const flags: AccountExportFlags = <AccountExportFlags>this.parse(AccountExport).flags
+    const args: AccountExportArgs = this.parse(AccountExport).args as AccountExportArgs
+    const flags: AccountExportFlags = this.parse(AccountExport).flags as AccountExportFlags
     const accounts: NamedKeyringPair[] = this.fetchAccounts()
 
     if (!accounts.length) {

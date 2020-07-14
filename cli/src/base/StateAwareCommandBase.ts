@@ -43,6 +43,7 @@ export default abstract class StateAwareCommandBase extends DefaultCommandBase {
       (process.platform === 'darwin'
         ? path.join(os.homedir(), '/Library/Application Support')
         : path.join(os.homedir(), '/.local/share'))
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const packageJson: { name?: string } = require('../../package.json')
     if (!packageJson || !packageJson.name) {
       throw new CLIError('Cannot get package name from package.json!')
@@ -92,7 +93,7 @@ export default abstract class StateAwareCommandBase extends DefaultCommandBase {
   getPreservedState(): StateObject {
     let preservedState: StateObject
     try {
-      preservedState = <StateObject>require(this.getStateFilePath())
+      preservedState = require(this.getStateFilePath()) as StateObject
     } catch (e) {
       throw this.createDataReadError()
     }

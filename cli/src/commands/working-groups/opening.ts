@@ -33,8 +33,8 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
 
   formatStake(stake: StakingPolicy | undefined) {
     if (!stake) return 'NONE'
-    const { amount, amount_mode } = stake
-    return amount_mode.type === StakingAmountLimitModeKeys.AtLeast
+    const { amount, amount_mode: amountMode } = stake
+    return amountMode.type === StakingAmountLimitModeKeys.AtLeast
       ? `>= ${formatBalance(amount)}`
       : `== ${formatBalance(amount)}`
   }

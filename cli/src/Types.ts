@@ -40,12 +40,8 @@ export type AccountSummary = {
   balances: DerivedBalances
 }
 
-// Object/Tuple containing council/councilElection information (council:info).
-// The tuple is useful, because that's how api.queryMulti returns the results.
-export type CouncilInfoTuple = Parameters<typeof createCouncilInfoObj>
-export type CouncilInfoObj = ReturnType<typeof createCouncilInfoObj>
 // This function allows us to easily transform the tuple into the object
-// and simplifies the creation of consitent Object and Tuple types (seen above).
+// and simplifies the creation of consitent Object and Tuple types (seen below).
 export function createCouncilInfoObj(
   activeCouncil: Seat[],
   termEndsAt: BlockNumber,
@@ -77,6 +73,10 @@ export function createCouncilInfoObj(
     stage,
   }
 }
+// Object/Tuple containing council/councilElection information (council:info).
+// The tuple is useful, because that's how api.queryMulti returns the results.
+export type CouncilInfoTuple = Parameters<typeof createCouncilInfoObj>
+export type CouncilInfoObj = ReturnType<typeof createCouncilInfoObj>
 
 // Object with "name" and "value" properties, used for rendering simple CLI tables like:
 // Total balance:   100 JOY

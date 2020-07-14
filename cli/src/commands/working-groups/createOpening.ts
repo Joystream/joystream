@@ -41,8 +41,8 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
 
     const { flags } = this.parse(WorkingGroupsCreateOpening)
 
-    let promptOptions = new WorkerOpeningOptions(),
-      defaultValues: ApiMethodNamedArgs | undefined
+    const promptOptions = new WorkerOpeningOptions()
+    let defaultValues: ApiMethodNamedArgs | undefined
     if (flags.useDraft) {
       const draftName = flags.draftName || (await this.promptForOpeningDraft())
       defaultValues = await this.loadOpeningDraftParams(draftName)

@@ -26,12 +26,12 @@ export default class AccountCreate extends AccountsCommandBase {
   }
 
   async run() {
-    const args: AccountCreateArgs = <AccountCreateArgs>this.parse(AccountCreate).args
+    const args: AccountCreateArgs = this.parse(AccountCreate).args as AccountCreateArgs
     const keyring: Keyring = new Keyring()
     const mnemonic: string = mnemonicGenerate()
 
     keyring.addFromMnemonic(mnemonic, { name: args.name, whenCreated: Date.now() })
-    const keys: NamedKeyringPair = <NamedKeyringPair>keyring.pairs[0] // We assigned the name above
+    const keys: NamedKeyringPair = keyring.pairs[0] as NamedKeyringPair // We assigned the name above
 
     const password = await this.promptForPassword("Set your account's password")
     const password2 = await this.promptForPassword('Confirm your password')

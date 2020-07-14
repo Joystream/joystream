@@ -21,7 +21,7 @@ export default class AccountImport extends AccountsCommandBase {
   ]
 
   async run() {
-    const args: AccountImportArgs = <AccountImportArgs>this.parse(AccountImport).args
+    const args: AccountImportArgs = this.parse(AccountImport).args as AccountImportArgs
     const backupAcc: NamedKeyringPair = this.fetchAccountFromJsonFile(args.backupFilePath)
     const accountName: string = backupAcc.meta.name
     const accountAddress: string = backupAcc.address

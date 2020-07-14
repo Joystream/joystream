@@ -3,7 +3,7 @@ import {
   OpeningType,
   SlashingTerms,
   UnslashableTerms,
-  OpeningType_Worker,
+  OpeningType_Worker as OpeningTypeWorker,
   WorkingGroupOpeningPolicyCommitment,
 } from '@joystream/types/working-group'
 import { Bytes } from '@polkadot/types'
@@ -24,7 +24,7 @@ class AddWrokerOpeningOptions implements ApiParamsOptions {
   // Lock value for opening_type
   public opening_type: ApiParamOptions<OpeningType> = {
     value: {
-      default: OpeningType.create('Worker', new OpeningType_Worker()),
+      default: OpeningType.create('Worker', new OpeningTypeWorker()),
       locked: true,
     },
   }

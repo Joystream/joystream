@@ -79,7 +79,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
   // Prompt for Option<Codec> value
   async promptForOption(typeDef: TypeDef, paramOptions?: ApiParamOptions): Promise<Option<Codec>> {
-    const subtype = <TypeDef>typeDef.sub // We assume that Opion always has a single subtype
+    const subtype = typeDef.sub as TypeDef // We assume that Opion always has a single subtype
     const defaultValue = paramOptions?.value?.default as Option<Codec> | undefined
     const confirmed = await this.simplePrompt({
       message: `Do you want to provide the optional ${this.paramName(typeDef)} parameter?`,
@@ -378,10 +378,11 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
   }
 
   extrinsicArgsFromDraft(module: string, method: string, draftFilePath: string): ApiMethodNamedArgs {
-    let draftJSONObj,
-      parsedArgs: ApiMethodNamedArgs = []
+    let draftJSONObj
+    const parsedArgs: ApiMethodNamedArgs = []
     const extrinsicMethod = this.getOriginalApi().tx[module][method]
     try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       draftJSONObj = require(draftFilePath)
     } catch (e) {
       throw new CLIError(`Could not load draft from: ${draftFilePath}`, { exit: ExitCodes.InvalidFile })

@@ -137,7 +137,7 @@ export default class Api {
       round: this._api.query.councilElection.round,
       stage: this._api.query.councilElection.stage,
     }
-    const results: CouncilInfoTuple = <CouncilInfoTuple>await this.queryMultiOnce(Object.values(queries))
+    const results: CouncilInfoTuple = (await this.queryMultiOnce(Object.values(queries))) as CouncilInfoTuple
 
     return createCouncilInfoObj(...results)
   }

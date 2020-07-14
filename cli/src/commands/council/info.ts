@@ -25,9 +25,9 @@ export default class CouncilInfo extends ApiCommandBase {
       { name: 'Election round:', value: formatNumber(round) },
     ]
     if (stage && stage.isSome) {
-      const stageValue = <ElectionStage>stage.value
+      const stageValue = stage.value as ElectionStage
       const stageName: string = stageValue.type
-      const stageEndsAt = <BlockNumber>stageValue.value
+      const stageEndsAt = stageValue.value as BlockNumber
       electionTableRows.push({ name: 'Stage:', value: stageName })
       electionTableRows.push({ name: 'Stage ends at block:', value: `#${stageEndsAt}` })
     }
