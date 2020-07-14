@@ -20,7 +20,7 @@
 		"start": "parcel public/index.html",
 		"build": "parcel build public/index.html",
 		"dev": "parcel public/index.html",
-		"storybook": "start-storybook -p 6006 -c src/shared/.storybook",
+		"storybook": "start-storybook -p 6006 --quiet -c src/shared/.storybook",
 		"build-storybook": "build-storybook -c src/shared/.storybook",
 		"test": "echo \"Error: run tests from root\" && exit 1",
 		"chromatic": "chromatic --project-token=qq8aetz26u"
@@ -30,8 +30,8 @@
 	},
 	"dependencies": {
 		"@emotion/core": "^10.0.28",
-		"@parcel/transformer-svg-react": "^2.0.0-nightly.1739",
-		"@parcel/transformer-svgo": "^2.0.0-nightly.1739",
+		"@parcel/transformer-svg-react": "2.0.0-beta.1",
+		"@parcel/transformer-svgo": "2.0.0-beta.1",
 		"@reach/router": "^1.3.3",
 		"@types/reach__router": "^1.3.5",
 		"@types/react": "^16.9.36",
@@ -40,7 +40,7 @@
 		"@types/redux": "^3.6.0",
 		"chromatic": "^4.0.3",
 		"emotion-normalize": "^10.1.0",
-		"parcel": "^2.0.0-beta.1",
+		"parcel": "2.0.0-beta.1",
 		"react": "^16.13.1",
 		"react-dom": "^16.13.1",
 		"react-player": "^2.2.0",
