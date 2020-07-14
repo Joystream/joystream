@@ -150,13 +150,24 @@ type FormValuesByType<T extends ValidationTypeKeys> =
   T extends 'SetWorkingGroupLeaderReward' ? Omit<SetWorkingGroupLeadRewardFormValues, keyof GenericFormValues> :
   T extends 'TerminateWorkingGroupLeaderRole' ? Omit<TerminateWorkingGroupLeaderFormValues, keyof GenericFormValues> :
   never;
+
+type ValidationSchemaFuncParamsByType<T extends ValidationTypeKeys> =
+  T extends 'AddWorkingGroupLeaderOpening' ? [number] :
+  T extends 'FillWorkingGroupLeaderOpening' ? [number] :
+  T extends 'TerminateWorkingGroupLeaderRole' ? [InputValidationLengthConstraint] :
+  [];
+
 /* eslint-enable @typescript-eslint/indent */
 
+type ValidationSchemaFunc<FieldValuesT extends {}, ParamsT extends any[] = []> = (...params: ParamsT) =>
+({ [fieldK in keyof FieldValuesT]: Yup.Schema<any> });
+
 type ValidationType = {
-  [validationTypeK in ValidationTypeKeys]: (
-    ((...injectedParams: any) => ({ [fieldK in keyof FormValuesByType<validationTypeK>]: Yup.Schema<any>; }))
-  )
-}
+  [validationTypeK in ValidationTypeKeys]: ValidationSchemaFunc<
+  FormValuesByType<validationTypeK>,
+  ValidationSchemaFuncParamsByType<validationTypeK>
+  >
+};
 
 // Helpers for common validation
 function minMaxInt (min: number, max: number, fieldName: string) {
