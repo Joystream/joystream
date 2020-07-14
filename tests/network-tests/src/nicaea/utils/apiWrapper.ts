@@ -320,7 +320,7 @@ export class ApiWrapper {
     );
   }
 
-  public estimateProposeCreateWorkingGroupLeaderOpening(): BN {
+  public estimateProposeCreateWorkingGroupLeaderOpeningFee(): BN {
     return this.estimateTxFee(
       this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
         0,
@@ -365,7 +365,7 @@ export class ApiWrapper {
     );
   }
 
-  public estimateProposeBeginWorkingGroupLeaderApplicationReview(): BN {
+  public estimateProposeBeginWorkingGroupLeaderApplicationReviewFee(): BN {
     return this.estimateTxFee(
       this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
         0,
@@ -378,7 +378,7 @@ export class ApiWrapper {
     );
   }
 
-  public estimateProposeFillLeaderOpening(): BN {
+  public estimateProposeFillLeaderOpeningFee(): BN {
     const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters();
     fillOpeningParameters.setAmountPerPayout(new BN(1));
     fillOpeningParameters.setNextPaymentAtBlock(new BN(99999));
@@ -398,7 +398,7 @@ export class ApiWrapper {
     );
   }
 
-  public estimateProposeTerminateLeaderRole(): BN {
+  public estimateProposeTerminateLeaderRoleFee(): BN {
     return this.estimateTxFee(
       this.api.tx.proposalsCodex.createTerminateWorkingGroupLeaderRoleProposal(
         0,
@@ -415,9 +415,37 @@ export class ApiWrapper {
     );
   }
 
-  public estimateProposeLeaderReward(): BN {
+  public estimateProposeLeaderRewardFee(): BN {
     return this.estimateTxFee(
       this.api.tx.proposalsCodex.createSetWorkingGroupLeaderRewardProposal(
+        0,
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        0,
+        0,
+        0,
+        'Storage'
+      )
+    );
+  }
+
+  public estimateProposeDecreaseLeaderStakeFee(): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createDecreaseWorkingGroupLeaderStakeProposal(
+        0,
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        0,
+        0,
+        0,
+        'Storage'
+      )
+    );
+  }
+
+  public estimateProposeSlashLeaderStakeFee(): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createSlashWorkingGroupLeaderStakeProposal(
         0,
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
@@ -860,6 +888,30 @@ export class ApiWrapper {
     });
   }
 
+  public expectWorkerStakeDecreased(): Promise<void> {
+    return new Promise(async resolve => {
+      await this.api.query.system.events<Vec<EventRecord>>(events => {
+        events.forEach(record => {
+          if (record.event.method && record.event.method.toString() === 'StakeDecreased') {
+            resolve();
+          }
+        });
+      });
+    });
+  }
+
+  public expectWorkerStakeSlashed(): Promise<void> {
+    return new Promise(async resolve => {
+      await this.api.query.system.events<Vec<EventRecord>>(events => {
+        events.forEach(record => {
+          if (record.event.method && record.event.method.toString() === 'StakeSlashed') {
+            resolve();
+          }
+        });
+      });
+    });
+  }
+
   public expectApplicationReviewBegan(): Promise<BN> {
     return new Promise(async resolve => {
       await this.api.query.system.events<Vec<EventRecord>>(events => {
@@ -1025,6 +1077,56 @@ export class ApiWrapper {
     const memberId: BN = (await this.getMemberIds(account.address))[0];
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createSetWorkingGroupLeaderRewardProposal(
+        memberId,
+        title,
+        description,
+        proposalStake,
+        workerId,
+        rewardAmount,
+        workingGroup
+      ),
+      account,
+      false
+    );
+  }
+
+  public async proposeDecreaseLeaderStake(
+    account: KeyringPair,
+    title: string,
+    description: string,
+    proposalStake: BN,
+    workerId: BN,
+    rewardAmount: BN,
+    workingGroup: string
+  ): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0];
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createDecreaseWorkingGroupLeaderStakeProposal(
+        memberId,
+        title,
+        description,
+        proposalStake,
+        workerId,
+        rewardAmount,
+        workingGroup
+      ),
+      account,
+      false
+    );
+  }
+
+  public async proposeSlashLeaderStake(
+    account: KeyringPair,
+    title: string,
+    description: string,
+    proposalStake: BN,
+    workerId: BN,
+    rewardAmount: BN,
+    workingGroup: string
+  ): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0];
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createSlashWorkingGroupLeaderStakeProposal(
         memberId,
         title,
         description,

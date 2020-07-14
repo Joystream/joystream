@@ -16,6 +16,8 @@ import {
   fillLeaderOpeningProposal,
   terminateLeaderRoleProposal,
   setLeaderRewardProposal,
+  decreaseLeaderStakeProposal,
+  slashLeaderProposal,
 } from './impl/proposalsModule';
 import {
   applyForOpening,
@@ -24,6 +26,8 @@ import {
   expectBeganApplicationReview,
   expectLeaderRoleTerminated,
   expectLeaderRewardAmountUpdated,
+  expectLeaderStakeDecreased,
+  expectLeaderSlashed,
 } from '../workingGroup/impl/workingGroupModule';
 
 tap.mocha.describe('Set lead proposal scenario', async () => {
@@ -48,7 +52,9 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
   const rewardInterval: BN = new BN(process.env.LONG_REWARD_INTERVAL!);
   const payoutAmount: BN = new BN(process.env.PAYOUT_AMOUNT!);
   const alteredPayoutAmount: BN = new BN(process.env.ALTERED_PAYOUT_AMOUNT!);
-  const durationInBlocks: number = 60;
+  const stakeDecrement: BN = new BN(process.env.STAKE_DECREMENT!);
+  const slashAmount: BN = new BN(process.env.SLASH_AMOUNT!);
+  const durationInBlocks: number = 70;
 
   const provider = new WsProvider(nodeUrl);
   const apiWrapper: ApiWrapper = await ApiWrapper.create(provider);
@@ -146,6 +152,43 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
   tap.test('Approve new leader reward', async () => {
     voteForProposal(apiWrapper, m2KeyPairs, sudo, rewardProposalId);
     await expectLeaderRewardAmountUpdated(apiWrapper, alteredPayoutAmount, WorkingGroups.storageWorkingGroup);
+  });
+
+  let decreaseStakeProposalId: BN;
+  let newStake: BN;
+  tap.test(
+    'Propose decrease stake',
+    async () =>
+      (decreaseStakeProposalId = await decreaseLeaderStakeProposal(
+        apiWrapper,
+        m1KeyPairs,
+        sudo,
+        stakeDecrement,
+        WorkingGroups.storageWorkingGroup
+      ))
+  );
+  tap.test('Approve decreased leader stake', async () => {
+    newStake = applicationStake.sub(stakeDecrement);
+    voteForProposal(apiWrapper, m2KeyPairs, sudo, decreaseStakeProposalId);
+    await expectLeaderStakeDecreased(apiWrapper, newStake, WorkingGroups.storageWorkingGroup);
+  });
+
+  let slashProposalId: BN;
+  tap.test(
+    'Propose leader slash',
+    async () =>
+      (slashProposalId = await slashLeaderProposal(
+        apiWrapper,
+        m1KeyPairs,
+        sudo,
+        slashAmount,
+        WorkingGroups.storageWorkingGroup
+      ))
+  );
+  tap.test('Approve leader slash', async () => {
+    newStake = newStake.sub(slashAmount);
+    voteForProposal(apiWrapper, m2KeyPairs, sudo, slashProposalId);
+    await expectLeaderSlashed(apiWrapper, newStake, WorkingGroups.storageWorkingGroup);
   });
 
   let terminateLeaderRoleProposalId: BN;

@@ -552,3 +552,33 @@ export async function expectLeaderRewardAmountUpdated(
   );
   return;
 }
+
+export async function expectLeaderStakeDecreased(
+  apiWrapper: ApiWrapper,
+  expectedStake: BN,
+  module: WorkingGroups
+): Promise<void> {
+  await apiWrapper.expectWorkerStakeDecreased();
+  const leadWorkerId: BN = (await apiWrapper.getLeadWorkerId(module))!;
+  const receivedStake: BN = await apiWrapper.getWorkerStakeAmount(leadWorkerId, module);
+  assert(
+    receivedStake.eq(expectedStake),
+    `Unexpected stake amount for worker with id ${leadWorkerId}: ${receivedStake}, expected ${expectedStake}`
+  );
+  return;
+}
+
+export async function expectLeaderSlashed(
+  apiWrapper: ApiWrapper,
+  expectedStake: BN,
+  module: WorkingGroups
+): Promise<void> {
+  await apiWrapper.expectWorkerStakeSlashed();
+  const leadWorkerId: BN = (await apiWrapper.getLeadWorkerId(module))!;
+  const receivedStake: BN = await apiWrapper.getWorkerStakeAmount(leadWorkerId, module);
+  assert(
+    receivedStake.eq(expectedStake),
+    `Unexpected stake amount for worker with id after slash ${leadWorkerId}: ${receivedStake}, expected ${expectedStake}`
+  );
+  return;
+}

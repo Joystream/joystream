@@ -19,7 +19,7 @@ export async function createWorkingGroupLeaderOpening(
 
   // Proposal stake calculation
   const proposalStake: BN = new BN(100000);
-  const proposalFee: BN = apiWrapper.estimateProposeCreateWorkingGroupLeaderOpening();
+  const proposalFee: BN = apiWrapper.estimateProposeCreateWorkingGroupLeaderOpeningFee();
   await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake));
 
   // Opening construction
@@ -70,7 +70,7 @@ export async function beginWorkingGroupLeaderApplicationReview(
 
   // Proposal stake calculation
   const proposalStake: BN = new BN(25000);
-  const proposalFee: BN = apiWrapper.estimateProposeBeginWorkingGroupLeaderApplicationReview();
+  const proposalFee: BN = apiWrapper.estimateProposeBeginWorkingGroupLeaderApplicationReviewFee();
   await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake));
 
   // Proposal creation
@@ -105,7 +105,7 @@ export async function fillLeaderOpeningProposal(
 
   // Proposal stake calculation
   const proposalStake: BN = new BN(50000);
-  const proposalFee: BN = apiWrapper.estimateProposeFillLeaderOpening();
+  const proposalFee: BN = apiWrapper.estimateProposeFillLeaderOpeningFee();
   await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake));
 
   // Proposal creation
@@ -150,7 +150,7 @@ export async function terminateLeaderRoleProposal(
 
   // Proposal stake calculation
   const proposalStake: BN = new BN(100000);
-  const proposalFee: BN = apiWrapper.estimateProposeTerminateLeaderRole();
+  const proposalFee: BN = apiWrapper.estimateProposeTerminateLeaderRoleFee();
   await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake));
 
   // Proposal creation
@@ -184,9 +184,10 @@ export async function setLeaderRewardProposal(
 
   // Proposal stake calculation
   const proposalStake: BN = new BN(50000);
-  const proposalFee: BN = apiWrapper.estimateProposeLeaderReward();
+  const proposalFee: BN = apiWrapper.estimateProposeLeaderRewardFee();
   await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake));
 
+  // Proposal creation
   const proposalPromise = apiWrapper.expectProposalCreated();
   await apiWrapper.proposeLeaderReward(
     m1KeyPairs[0],
@@ -195,6 +196,72 @@ export async function setLeaderRewardProposal(
     proposalStake,
     workerId,
     payoutAmount,
+    workingGroupString
+  );
+  const proposalNumber: BN = await proposalPromise;
+  return proposalNumber;
+}
+
+export async function decreaseLeaderStakeProposal(
+  apiWrapper: ApiWrapper,
+  m1KeyPairs: KeyringPair[],
+  sudo: KeyringPair,
+  stakeDecrement: BN,
+  workingGroup: WorkingGroups
+): Promise<BN> {
+  // Setup
+  const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8);
+  const description: string = 'Testing decrease leader stake proposal ' + uuid().substring(0, 8);
+  const workingGroupString: string = apiWrapper.getWorkingGroupString(workingGroup);
+  const workerId: BN = (await apiWrapper.getLeadWorkerId(workingGroup))!;
+
+  // Proposal stake calculation
+  const proposalStake: BN = new BN(50000);
+  const proposalFee: BN = apiWrapper.estimateProposeDecreaseLeaderStakeFee();
+  await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake));
+
+  // Proposal creation
+  const proposalPromise = apiWrapper.expectProposalCreated();
+  await apiWrapper.proposeDecreaseLeaderStake(
+    m1KeyPairs[0],
+    proposalTitle,
+    description,
+    proposalStake,
+    workerId,
+    stakeDecrement,
+    workingGroupString
+  );
+  const proposalNumber: BN = await proposalPromise;
+  return proposalNumber;
+}
+
+export async function slashLeaderProposal(
+  apiWrapper: ApiWrapper,
+  m1KeyPairs: KeyringPair[],
+  sudo: KeyringPair,
+  slashAmount: BN,
+  workingGroup: WorkingGroups
+): Promise<BN> {
+  // Setup
+  const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8);
+  const description: string = 'Testing slash leader stake proposal ' + uuid().substring(0, 8);
+  const workingGroupString: string = apiWrapper.getWorkingGroupString(workingGroup);
+  const workerId: BN = (await apiWrapper.getLeadWorkerId(workingGroup))!;
+
+  // Proposal stake calculation
+  const proposalStake: BN = new BN(50000);
+  const proposalFee: BN = apiWrapper.estimateProposeSlashLeaderStakeFee();
+  await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake));
+
+  // Proposal creation
+  const proposalPromise = apiWrapper.expectProposalCreated();
+  await apiWrapper.proposeSlashLeaderStake(
+    m1KeyPairs[0],
+    proposalTitle,
+    description,
+    proposalStake,
+    workerId,
+    slashAmount,
     workingGroupString
   );
   const proposalNumber: BN = await proposalPromise;
