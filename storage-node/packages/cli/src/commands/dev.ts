@@ -19,24 +19,21 @@ function developmentPort() {
   return 3001
 }
 
-const dispatchCalls = async (runtimeApi, senderAddress, rawCalls, batched = false) => {
+// Sign and broadcast multiple transactions concurrently (so they may all be finalized in a single block)
+// Resolves when last transaction is finalized.
+const batchDispatchCalls = async (runtimeApi, senderAddress, rawCalls) => {
   const api = runtimeApi.api
-  const numCalls = rawCalls.length
 
-  debug(`processing ${numCalls} transactions...`)
-  let lastCall
+  debug(`dispatching ${rawCalls.length} transactions...`)
 
-  for (let i = 0; i < numCalls; i++) {
-    debug(`${i + 1}/${numCalls} processed.`)
-    const { methodName, sectionName, args } = rawCalls[i]
-    const tx = api.tx[sectionName][methodName](...args)
-    lastCall = runtimeApi.signAndSend(senderAddress, tx)
-    if (!batched) {
-      await lastCall
-    }
-  }
-
-  return lastCall
+  await rawCalls
+    .map((call) => {
+      const { methodName, sectionName, args } = call
+      const tx = api.tx[sectionName][methodName](...args)
+      return runtimeApi.signAndSend(senderAddress, tx)
+    })
+    .reverse()
+    .shift()
 }
 
 const initVstore = async (api, contentLead) => {
@@ -59,7 +56,7 @@ const initVstore = async (api, contentLead) => {
     return call.methodName === 'createClass'
   })
 
-  await dispatchCalls(api, contentLead, createClasses, true)
+  await batchDispatchCalls(api, contentLead, createClasses)
 
   // batch addClassSchema calls into a single block
   debug('adding schemas to classes...')
@@ -67,12 +64,12 @@ const initVstore = async (api, contentLead) => {
     return call.methodName === 'addClassSchema'
   })
 
-  await dispatchCalls(api, contentLead, addClassSchema, true)
+  await batchDispatchCalls(api, contentLead, addClassSchema)
 
   debug('creating entities...')
 
   // Will this not overload the node.. Might not be safe to do on production network
-  await dispatchCalls(api, contentLead, entities, true)
+  await batchDispatchCalls(api, contentLead, entities)
 }
 
 const check = async (api) => {
