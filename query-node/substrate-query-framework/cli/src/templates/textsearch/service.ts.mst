@@ -6,7 +6,7 @@ import { {{type}} } from '../{{model}}/{{model}}.model';
 import { InjectRepository } from 'typeorm-typedi-extensions';
 import { Repository, getConnection } from 'typeorm';
 
-import { {{query.typePrefix}}FTSOutput } from './{{query.typePrefix}}.resolver';
+import { {{query.typePrefix}}FTSOutput } from './{{query.name}}.resolver';
 
 interface RawSQLResult {
     origin_table: string,
