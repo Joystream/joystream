@@ -1533,6 +1533,7 @@ dependencies = [
  "srml-support-procedural",
  "srml-system",
  "srml-timestamp",
+ "substrate-forum-module-reflection",
  "substrate-primitives",
 ]
 
@@ -1554,7 +1555,16 @@ dependencies = [
  "srml-system",
  "srml-timestamp",
  "substrate-forum-module",
+ "substrate-forum-module-reflection",
  "substrate-primitives",
+]
+
+[[package]]
+name = "substrate-forum-module-reflection"
+version = "0.0.1"
+dependencies = [
+ "proc-macro2 1.0.18",
+ "syn 1.0.34",
 ]
 
 [[package]]

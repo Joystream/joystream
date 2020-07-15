@@ -44,6 +44,9 @@ rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 path = ".."
 features = ["arbitrary"]
 
+[dependencies.substrate-forum-module-reflection]
+path = "../reflection"
+
 # Prevent this from interfering with workspaces
 [workspace]
 members = ["."]

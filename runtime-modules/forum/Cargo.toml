@@ -18,6 +18,9 @@ codec = { package = 'parity-scale-codec', version = '1.0.0', default-features = 
 
 arbitrary = { version = "0.3.0", optional = true, features = ["derive"] }
 
+[dependencies.substrate-forum-module-reflection]
+path = "./reflection"
+
 [dependencies.timestamp]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'

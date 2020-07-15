@@ -666,7 +666,10 @@ decl_event!(
     }
 );
 
+use substrate_forum_module_reflection::*;
+
 decl_module! {
+    #[derive(FieldCount)]
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         /// Predefined errors
         type Error = Error;

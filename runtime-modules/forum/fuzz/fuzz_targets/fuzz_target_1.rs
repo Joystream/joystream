@@ -31,5 +31,31 @@ fuzz_target!(|texts: Texts| {
         );
 
         println!("category mock finished");
+
+
+        println!("{:?}", ReflectionTest {a: 1, b:2});
     })
 });
+
+//use crate::*;
+use substrate_forum_module_reflection::*;
+
+#[derive(FieldCount, Debug)]
+struct ReflectionTest {
+    a: u64,
+    b: u32,
+}
+
+
+type MyFunction = Fn(i32) -> i32;
+
+//fn retrieve_module_endpoints<T: Fn(i32) -> i32>(module: Runtime) -> T {
+fn retrieve_module_endpoints<T: Fn(i32) -> i32>(module: Runtime) -> () {
+//fn retrieve_module_endpoints<T>(module: Runtime) -> T where T: MyFunction {
+    //ReflectionTest::derive_field_count();
+
+}
+
+fn autowire_parameters_and_run<T: Fn(i32) -> i32>(function: T) -> () {
+
+}
