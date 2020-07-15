@@ -8,7 +8,7 @@ $ yarn install
 $ yarn start
 ```
 
-To start the app on `localhost:1234`, Storybook on `localhost:6006` and the bundler in watch mode.
+To start the app on `localhost:3000`, Storybook on `localhost:6006` and the bundler in watch mode.
 
 To build the app for distribution, run:
 
