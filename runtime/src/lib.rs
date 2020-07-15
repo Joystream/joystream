@@ -539,7 +539,6 @@ impl stake::Trait for Runtime {
 
 impl content_wg::Trait for Runtime {
     type Event = Event;
-    type ActorId = u64;
 }
 
 impl common::currency::GovernanceCurrency for Runtime {

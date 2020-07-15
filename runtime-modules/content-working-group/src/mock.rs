@@ -184,7 +184,6 @@ impl membership::Trait for Test {
 
 impl Trait for Test {
     type Event = TestEvent;
-    type ActorId = u64;
 }
 
 pub struct TestExternalitiesBuilder<T: Trait> {

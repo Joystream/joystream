@@ -168,7 +168,6 @@ impl governance::election::Trait for Test {
 
 impl content_working_group::Trait for Test {
     type Event = ();
-    type ActorId = u64;
 }
 
 impl recurring_rewards::Trait for Test {

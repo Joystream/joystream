@@ -19,15 +19,15 @@ pub mod genesis;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-use codec::{Codec, Decode, Encode};
+use codec::{Decode, Encode};
 use rstd::borrow::ToOwned;
 use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::convert::From;
 use rstd::prelude::*;
-use sr_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic, Zero};
+use sr_primitives::traits::{One, Zero};
 use srml_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
-use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
+use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure};
 use system::{self, ensure_root, ensure_signed};
 
 use common::constraints::InputValidationLengthConstraint;
@@ -46,20 +46,10 @@ pub trait Trait:
 
     /// The event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
-
-    type ActorId: Parameter
-        + Member
-        + SimpleArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq
-        + Ord;
 }
 
 /// Type constraint for identifer used for actors.
-pub type ActorId<T> = <T as Trait>::ActorId;
+pub type ActorId<T> = <T as membership::Trait>::ActorId;
 
 /// Type for identifier for channels.
 /// The ChannelId must be capable of behaving like an actor id for membership module,
