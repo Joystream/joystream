@@ -25,11 +25,9 @@ export default class WorkingGroupsTerminateApplication extends WorkingGroupsComm
         // Lead-only gate
         await this.getRequiredLead();
 
-        const application = await this.getApi().groupApplication(this.group, parseInt(args.wgApplicationId));
-
-        if (application.stage !== ApplicationStageKeys.Active) {
-            this.error('This application is not active!', { exit: ExitCodes.InvalidInput });
-        }
+        const applicationId = parseInt(args.wgApplicationId);
+        // We don't really need the application itself here, so this one is just for validation purposes
+        await this.getApplicationForLeadAction(applicationId, ApplicationStageKeys.Active);
 
         await this.requestAccountDecoding(account);
 
@@ -37,9 +35,9 @@ export default class WorkingGroupsTerminateApplication extends WorkingGroupsComm
             account,
             apiModuleByGroup[this.group],
             'terminateApplication',
-            [new ApplicationId(application.wgApplicationId)]
+            [new ApplicationId(applicationId)]
         );
 
-        this.log(chalk.green(`Application ${chalk.white(application.wgApplicationId)} has been succesfully terminated!`));
+        this.log(chalk.green(`Application ${chalk.white(applicationId)} has been succesfully terminated!`));
     }
 }

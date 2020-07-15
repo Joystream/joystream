@@ -1,11 +1,9 @@
 import ExitCodes from '../ExitCodes';
 import AccountsCommandBase from './AccountsCommandBase';
 import { flags } from '@oclif/command';
-import { WorkingGroups, AvailableGroups, NamedKeyringPair, GroupMember, GroupOpening } from '../Types';
+import { WorkingGroups, AvailableGroups, NamedKeyringPair, GroupMember, GroupOpening, ApiMethodArg, ApiMethodNamedArgs, OpeningStatus, GroupApplication } from '../Types';
 import { apiModuleByGroup } from '../Api';
 import { CLIError } from '@oclif/errors';
-import inquirer from 'inquirer';
-import { ApiMethodInputArg } from './ApiCommandBase';
 import fs from 'fs';
 import path from 'path';
 import _ from 'lodash';
@@ -60,18 +58,38 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
         }
     }
 
+    // Use when member controller access is required, but one of the associated roles is expected to be selected
+    async getRequiredWorkerByMemberController(): Promise<GroupMember> {
+        const selectedAccount: NamedKeyringPair = await this.getRequiredSelectedAccount();
+        const memberIds = await this.getApi().getMemberIdsByControllerAccount(selectedAccount.address);
+        const controlledWorkers = (await this.getApi().groupMembers(this.group))
+            .filter(groupMember => memberIds.some(memberId => groupMember.memberId.eq(memberId)));
+
+        if (!controlledWorkers.length) {
+            this.error(
+                `Member controller account with some associated ${this.group} group roles needs to be selected!`,
+                { exit: ExitCodes.AccessDenied }
+            );
+        }
+        else if (controlledWorkers.length === 1) {
+            return controlledWorkers[0];
+        }
+        else {
+            return await this.promptForWorker(controlledWorkers);
+        }
+    }
+
     async promptForWorker(groupMembers: GroupMember[]): Promise<GroupMember> {
-        const { choosenWorkerIndex } = await inquirer.prompt([{
-            name: 'chosenWorkerIndex',
-            message: 'Choose the worker to execute the command as',
+        const chosenWorkerIndex = await this.simplePrompt({
+            message: 'Choose the intended worker context:',
             type: 'list',
             choices: groupMembers.map((groupMember, index) => ({
                 name: `Worker ID ${ groupMember.workerId.toString() }`,
                 value: index
             }))
-        }]);
+        });
 
-        return groupMembers[choosenWorkerIndex];
+        return groupMembers[chosenWorkerIndex];
     }
 
     async promptForApplicationsToAccept(opening: GroupOpening): Promise<number[]> {
@@ -135,7 +153,68 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
         return selectedDraftName;
     }
 
-    loadOpeningDraftParams(draftName: string) {
+    async getOpeningForLeadAction(id: number, requiredStatus?: OpeningStatus): Promise<GroupOpening> {
+        const opening = await this.getApi().groupOpening(this.group, id);
+
+        if (!opening.type.isOfType('Worker')) {
+            this.error('A lead can only manage Worker openings!',  { exit: ExitCodes.AccessDenied });
+        }
+
+        if (requiredStatus && opening.stage.status !== requiredStatus) {
+            this.error(
+                `The opening needs to be in "${_.startCase(requiredStatus)}" stage! ` +
+                `This one is: "${_.startCase(opening.stage.status)}"`,
+                { exit: ExitCodes.InvalidInput }
+            );
+        }
+
+        return opening;
+    }
+
+    // An alias for better code readibility in case we don't need the actual return value
+    validateOpeningForLeadAction = this.getOpeningForLeadAction
+
+    async getApplicationForLeadAction(id: number, requiredStatus?: ApplicationStageKeys): Promise<GroupApplication> {
+        const application = await this.getApi().groupApplication(this.group, id);
+        const opening = await this.getApi().groupOpening(this.group, application.wgOpeningId);
+
+        if (!opening.type.isOfType('Worker')) {
+            this.error('A lead can only manage Worker opening applications!',  { exit: ExitCodes.AccessDenied });
+        }
+
+        if (requiredStatus && application.stage !== requiredStatus) {
+            this.error(
+                `The application needs to have "${_.startCase(requiredStatus)}" status! ` +
+                `This one has: "${_.startCase(application.stage)}"`,
+                { exit: ExitCodes.InvalidInput }
+            );
+        }
+
+        return application;
+    }
+
+    async getWorkerForLeadAction(id: number, requireStakeProfile: boolean = false) {
+        const groupMember = await this.getApi().groupMember(this.group, id);
+        const groupLead = await this.getApi().groupLead(this.group);
+
+        if (groupLead?.workerId.eq(groupMember.workerId)) {
+            this.error('A lead cannot manage his own role this way!', { exit: ExitCodes.AccessDenied });
+        }
+
+        if (requireStakeProfile && !groupMember.stake) {
+            this.error('This worker has no associated role stake profile!', { exit: ExitCodes.InvalidInput });
+        }
+
+        return groupMember;
+    }
+
+    // Helper for better TS handling.
+    // We could also use some magic with conditional types instead, but those don't seem be very well supported yet.
+    async getWorkerWithStakeForLeadAction(id: number) {
+        return (await this.getWorkerForLeadAction(id, true)) as (GroupMember & Required<Pick<GroupMember, 'stake'>>);
+    }
+
+    loadOpeningDraftParams(draftName: string): ApiMethodNamedArgs {
         const draftFilePath = this.getOpeningDraftPath(draftName);
         const params = this.extrinsicArgsFromDraft(
             apiModuleByGroup[this.group],
@@ -154,7 +233,7 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
         return path.join(this.getOpeingDraftsPath(), _.snakeCase(draftName)+'.json');
     }
 
-    saveOpeningDraft(draftName: string, params: ApiMethodInputArg[]) {
+    saveOpeningDraft(draftName: string, params: ApiMethodArg[]) {
         const paramsJson = JSON.stringify(
             params.map(p => p.toJSON()),
             null,
