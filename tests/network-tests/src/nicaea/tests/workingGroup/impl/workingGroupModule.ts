@@ -42,10 +42,10 @@ export async function addWorkerOpening(
   opening.setSuccessfulApplicantApplicationStakeUnstakingPeriod(unstakingPeriod);
   opening.setFailedApplicantApplicationStakeUnstakingPeriod(unstakingPeriod);
   opening.setFailedApplicantRoleStakeUnstakingPeriod(unstakingPeriod);
-  opening.setTerminateCuratorApplicationStakeUnstakingPeriod(unstakingPeriod);
-  opening.setTerminateCuratorRoleStakeUnstakingPeriod(unstakingPeriod);
-  opening.setExitCuratorRoleApplicationStakeUnstakingPeriod(unstakingPeriod);
-  opening.setExitCuratorRoleStakeUnstakingPeriod(unstakingPeriod);
+  opening.setTerminateApplicationStakeUnstakingPeriod(unstakingPeriod);
+  opening.setTerminateRoleStakeUnstakingPeriod(unstakingPeriod);
+  opening.setExitRoleApplicationStakeUnstakingPeriod(unstakingPeriod);
+  opening.setExitRoleStakeUnstakingPeriod(unstakingPeriod);
   opening.setText(uuid().substring(0, 8));
   opening.setOpeningType('Worker');
 
@@ -91,10 +91,10 @@ export async function addLeaderOpening(
   opening.setSuccessfulApplicantApplicationStakeUnstakingPeriod(new BN(1));
   opening.setFailedApplicantApplicationStakeUnstakingPeriod(new BN(1));
   opening.setFailedApplicantRoleStakeUnstakingPeriod(new BN(1));
-  opening.setTerminateCuratorApplicationStakeUnstakingPeriod(new BN(1));
-  opening.setTerminateCuratorRoleStakeUnstakingPeriod(new BN(1));
-  opening.setExitCuratorRoleApplicationStakeUnstakingPeriod(new BN(1));
-  opening.setExitCuratorRoleStakeUnstakingPeriod(new BN(1));
+  opening.setTerminateApplicationStakeUnstakingPeriod(new BN(1));
+  opening.setTerminateRoleStakeUnstakingPeriod(new BN(1));
+  opening.setExitRoleApplicationStakeUnstakingPeriod(new BN(1));
+  opening.setExitRoleStakeUnstakingPeriod(new BN(1));
   opening.setText(uuid().substring(0, 8));
   opening.setOpeningType('leader');
 

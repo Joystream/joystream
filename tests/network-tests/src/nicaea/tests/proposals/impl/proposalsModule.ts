@@ -37,10 +37,10 @@ export async function createWorkingGroupLeaderOpening(
   opening.setSuccessfulApplicantApplicationStakeUnstakingPeriod(new BN(1));
   opening.setFailedApplicantApplicationStakeUnstakingPeriod(new BN(1));
   opening.setFailedApplicantRoleStakeUnstakingPeriod(new BN(1));
-  opening.setTerminateCuratorApplicationStakeUnstakingPeriod(new BN(1));
-  opening.setTerminateCuratorRoleStakeUnstakingPeriod(new BN(1));
-  opening.setExitCuratorRoleApplicationStakeUnstakingPeriod(new BN(1));
-  opening.setExitCuratorRoleStakeUnstakingPeriod(new BN(1));
+  opening.setTerminateApplicationStakeUnstakingPeriod(new BN(1));
+  opening.setTerminateRoleStakeUnstakingPeriod(new BN(1));
+  opening.setExitRoleApplicationStakeUnstakingPeriod(new BN(1));
+  opening.setExitRoleStakeUnstakingPeriod(new BN(1));
   opening.setText(uuid().substring(0, 8));
 
   // Proposal creation
