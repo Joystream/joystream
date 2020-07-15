@@ -77,19 +77,13 @@ export class SourcesGenerator {
     const migrationsDir = this.config.getMigrationsFolder();
     fs.ensureDirSync(path.resolve(process.cwd(), migrationsDir));
 
-    //createDir(path.resolve(process.cwd(), migrationsDir), false, true);
-
     // create dir if the textsearch module
     const ftsDir = this.config.getDestFolder(QUERIES_FOLDER);
     fs.ensureDirSync(path.resolve(process.cwd(), ftsDir));
-    //createDir(path.resolve(process.cwd(), ftsDir), false, true);
 
     const queryRenderer = new FTSQueryRenderer();
 
     this.model.ftsQueries.map(query => {
-      //const render = (template: string) => queryRenderer.generate(template, query);
-      //const filePrefix = kebabCase(query.name);
-
       const tempateFile = (name: string) => this.readTemplate(`textsearch/${name}.ts.mst`);
       const destPath = {
         migration: path.join(migrationsDir, `${query.name}.migration.ts`),
@@ -99,6 +93,7 @@ export class SourcesGenerator {
 
       ['migration', 'resolver', 'service'].map(name => {
         const rendered = queryRenderer.generate(tempateFile(name), query);
+        debug(`Writing ${query.name} ${name} to ${destPath[name]}`);
         this.writeFile(destPath[name], rendered);
       });
     });
