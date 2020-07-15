@@ -27,11 +27,11 @@ export async function createWorkingGroupLeaderOpening(
   opening.setMaxActiveApplicants(new BN(m1KeyPairs.length));
   opening.setMaxReviewPeriodLength(new BN(32));
   opening.setApplicationStakingPolicyAmount(new BN(applicationStake));
-  opening.setApplicationCrowdedOutUnstakingPeriodLength(new BN(0));
-  opening.setApplicationExpiredUnstakingPeriodLength(new BN(0));
+  opening.setApplicationCrowdedOutUnstakingPeriodLength(new BN(1));
+  opening.setApplicationExpiredUnstakingPeriodLength(new BN(1));
   opening.setRoleStakingPolicyAmount(new BN(roleStake));
-  opening.setRoleCrowdedOutUnstakingPeriodLength(new BN(0));
-  opening.setRoleExpiredUnstakingPeriodLength(new BN(0));
+  opening.setRoleCrowdedOutUnstakingPeriodLength(new BN(1));
+  opening.setRoleExpiredUnstakingPeriodLength(new BN(1));
   opening.setSlashableMaxCount(new BN(1));
   opening.setSlashableMaxPercentPtsPerTime(new BN(100));
   opening.setSuccessfulApplicantApplicationStakeUnstakingPeriod(new BN(1));
