@@ -85,11 +85,14 @@
   },
   "scripts": {
     "postpack": "rm -f oclif.manifest.json",
-    "posttest": "eslint . --ext .ts --config .eslintrc",
+    "posttest": "yarn lint",
     "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
     "build": "tsc --build tsconfig.json",
-    "version": "oclif-dev readme && git add README.md"
+    "version": "oclif-dev readme && git add README.md",
+    "lint": "eslint ./src/ --quiet --ext .ts",
+    "checks": "yarn lint && tsc --noEmit --pretty && prettier ./ --check",
+    "format": "prettier ./ --write"
   },
   "types": "lib/index.d.ts"
 }

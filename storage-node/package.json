@@ -32,7 +32,9 @@
   ],
   "scripts": {
     "test": "wsrun --serial test",
-    "lint": "eslint --ignore-path .gitignore ."
+    "lint": "eslint --ignore-path .gitignore .",
+    "checks": "yarn lint && prettier . --check",
+    "format": "prettier ./ --write"
   },
   "devDependencies": {
     "eslint": "^5.16.0",
