@@ -9,6 +9,7 @@ subdirectory. See each individual package for details:
 - [storage-utils](./packages/util/README.md) - general utility functions.
 - [discovery](./packages/discovery/README.md) - service discovery using IPNS.
 - [storage-cli](./packages/cli/README.md) - cli for uploading and downloading content from the network
+- [helios](./packages/helios/README.md) - cli tool for getting status of storage network
 
 ## Installation
 
