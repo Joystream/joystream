@@ -525,11 +525,9 @@ pub fn moderate_thread_mock(
     );
     if result.is_ok() {
         assert!(!<ThreadById<Runtime>>::exists(category_id, thread_id));
-
-        let rationale_hash = Runtime::calculate_hash(rationale.clone().as_slice());
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ThreadModerated(thread_id, rationale_hash))
+            TestEvent::forum_mod(RawEvent::ThreadModerated(thread_id, rationale))
         );
     }
     thread_id
@@ -557,11 +555,9 @@ pub fn moderate_post_mock(
     );
     if result.is_ok() {
         assert!(!<PostById<Runtime>>::exists(thread_id, post_id));
-
-        let rationale_hash = Runtime::calculate_hash(rationale.clone().as_slice());
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::PostModerated(post_id, rationale_hash))
+            TestEvent::forum_mod(RawEvent::PostModerated(post_id, rationale))
         );
     }
 

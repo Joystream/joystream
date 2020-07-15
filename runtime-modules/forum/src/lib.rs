@@ -554,7 +554,6 @@ decl_event!(
         <T as Trait>::ThreadId,
         <T as Trait>::PostId,
         <T as Trait>::ForumUserId,
-        <T as system::Trait>::Hash,
     {
         /// A category was introduced
         CategoryCreated(CategoryId),
@@ -567,7 +566,7 @@ decl_event!(
         ThreadCreated(ThreadId),
 
         /// A thread with given id was moderated.
-        ThreadModerated(ThreadId, Hash),
+        ThreadModerated(ThreadId, Vec<u8>),
 
         /// A thread with given id was moderated.
         ThreadTitleUpdated(ThreadId),
@@ -582,7 +581,7 @@ decl_event!(
         PostAdded(PostId),
 
         /// Post with givne id was moderated.
-        PostModerated(PostId, Hash),
+        PostModerated(PostId, Vec<u8>),
 
         /// Post with given id had its text updated.
         /// The second argument reflects the number of total edits when the text update occurs.
@@ -854,14 +853,11 @@ decl_module! {
             // Ensure moderator is allowed to moderate post
             Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
 
-            // Calculate rationale's hash
-            let rationale_hash = T::calculate_hash(rationale.as_slice());
-
             // Delete thread
             <ThreadById<T>>::remove(category_id, thread_id);
 
             // Generate event
-            Self::deposit_event(RawEvent::ThreadModerated(thread_id, rationale_hash));
+            Self::deposit_event(RawEvent::ThreadModerated(thread_id, rationale));
 
             Ok(())
         }
@@ -950,14 +946,11 @@ decl_module! {
             // Ensure moderator is allowed to moderate post
             Self::ensure_can_moderate_post(origin, &moderator_id, &category_id, &thread_id, &post_id)?;
 
-            // Calculate rationale's hash
-            let rationale_hash = T::calculate_hash(rationale.as_slice());
-
             // Delete post
             <PostById<T>>::remove(thread_id, post_id);
 
             // Generate event
-            Self::deposit_event(RawEvent::PostModerated(post_id, rationale_hash));
+            Self::deposit_event(RawEvent::PostModerated(post_id, rationale));
 
             Ok(())
         }
