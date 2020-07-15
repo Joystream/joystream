@@ -19,21 +19,15 @@ export default class QueryNodeManager {
   async start(
     ws_provider_endpoint_uri: string,
     processing_pack: QueryEventProcessingPack,
-    type_registrator: () => void
+    type_registrator?: () => void
   ) {
-    
     if (this._query_node) throw Error('Cannot start the same manager multiple times.');
-    
+
     this._query_node = await QueryNode.create(ws_provider_endpoint_uri, processing_pack, type_registrator);
     await this._query_node.start();
-    
   }
 
-  async bootstrap(
-    ws_provider_endpoint_uri: string,
-    bootstrap_pack: BootstrapPack,
-    type_registrator: () => void,
-  ) {
+  async bootstrap(ws_provider_endpoint_uri: string, bootstrap_pack: BootstrapPack, type_registrator?: () => void) {
     let bootstrapper = await Bootstrapper.create(ws_provider_endpoint_uri, bootstrap_pack, type_registrator);
     await bootstrapper.bootstrap();
   }
