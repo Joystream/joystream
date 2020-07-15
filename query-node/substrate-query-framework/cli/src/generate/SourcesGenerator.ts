@@ -75,11 +75,14 @@ export class SourcesGenerator {
 
     // create migrations dir if not exists
     const migrationsDir = this.config.getMigrationsFolder();
-    createDir(path.resolve(process.cwd(), migrationsDir), false, true);
+    fs.ensureDirSync(path.resolve(process.cwd(), migrationsDir));
+
+    //createDir(path.resolve(process.cwd(), migrationsDir), false, true);
 
     // create dir if the textsearch module
     const ftsDir = this.config.getDestFolder(QUERIES_FOLDER);
-    createDir(path.resolve(process.cwd(), ftsDir), false, true);
+    fs.ensureDirSync(path.resolve(process.cwd(), ftsDir));
+    //createDir(path.resolve(process.cwd(), ftsDir), false, true);
 
     const queryRenderer = new FTSQueryRenderer();
 
@@ -88,11 +91,15 @@ export class SourcesGenerator {
       //const filePrefix = kebabCase(query.name);
 
       const tempateFile = (name: string) => this.readTemplate(`textsearch/${name}.ts.mst`);
-      const destPath = (name: string) => path.join(ftsDir, `${kebabCase(query.name)}.${name}.ts`);
+      const destPath = {
+        migration: path.join(migrationsDir, `${query.name}.migration.ts`),
+        resolver: path.join(ftsDir, `${query.name}.resolver.ts`),
+        service: path.join(ftsDir, `${query.name}.service.ts`),
+      } as { [key: string]: string };
 
       ['migration', 'resolver', 'service'].map(name => {
         const rendered = queryRenderer.generate(tempateFile(name), query);
-        this.writeFile(destPath(name), rendered);
+        this.writeFile(destPath[name], rendered);
       });
     });
   }
