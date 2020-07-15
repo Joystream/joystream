@@ -47,8 +47,8 @@ const initVstore = async (api, contentLead) => {
     return
   }
 
-  const classes = require('../../../../devops/vstore/classes.json')
-  const entities = require('../../../../devops/vstore/entities.json')
+  const classes = require('../../../../../devops/vstore/classes.json')
+  const entities = require('../../../../../devops/vstore/entities.json')
 
   debug('Initializing Content Directory')
 
