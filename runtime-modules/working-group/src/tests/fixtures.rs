@@ -464,7 +464,7 @@ pub fn setup_members(count: u8) {
         Membership::add_screened_member(
             RawOrigin::Signed(authority_account_id).into(),
             account_id,
-            membership::members::UserInfo {
+            membership::UserInfo {
                 handle: Some(handle.to_vec()),
                 avatar_uri: None,
                 about: None,

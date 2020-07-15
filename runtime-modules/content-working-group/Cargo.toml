@@ -15,7 +15,6 @@ std = [
     'primitives/std',
     'rstd/std',
     'membership/std',
-    'roles/std',
     'forum/std',
     'hiring/std',
     'stake/std',

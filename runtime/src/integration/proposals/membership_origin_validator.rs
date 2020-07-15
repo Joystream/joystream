@@ -47,7 +47,7 @@ mod tests {
     use super::MembershipOriginValidator;
     use crate::Runtime;
     use common::origin::ActorOriginValidator;
-    use membership::members::UserInfo;
+    use membership::UserInfo;
     use sr_primitives::AccountId32;
     use system::RawOrigin;
 

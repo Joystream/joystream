@@ -21,7 +21,7 @@ mod working_group_mod {
 }
 
 mod membership_mod {
-    pub use membership::members::Event;
+    pub use membership::Event;
 }
 
 mod discovery {
@@ -99,7 +99,7 @@ impl stake::Trait for Test {
     type SlashId = u64;
 }
 
-impl membership::members::Trait for Test {
+impl membership::Trait for Test {
     type Event = MetaEvent;
     type MemberId = u64;
     type PaidTermId = u64;

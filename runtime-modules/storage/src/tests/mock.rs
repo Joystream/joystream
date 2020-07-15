@@ -2,7 +2,7 @@
 
 pub use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
 pub use common::currency::GovernanceCurrency;
-use membership::members;
+use membership;
 pub use system;
 
 pub use primitives::{Blake2Hasher, H256};
@@ -190,7 +190,7 @@ impl data_object_storage_registry::Trait for Test {
     type ContentIdExists = MockContent;
 }
 
-impl members::Trait for Test {
+impl membership::Trait for Test {
     type Event = MetaEvent;
     type MemberId = u64;
     type SubscriptionId = u32;
@@ -277,7 +277,7 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
-        membership::members::GenesisConfig::<Test> {
+        membership::GenesisConfig::<Test> {
             default_paid_membership_fee: 0,
             members: vec![(1, "alice".into(), "".into(), "".into())],
         }

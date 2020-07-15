@@ -49,6 +49,17 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
         + MaybeSerialize
         + PartialEq;
 
+    /// Describes the common type for the working group members (workers).
+    type ActorId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq
+        + Ord;
+
     /// Initial balance of members created at genesis
     type InitialMembersBalance: Get<BalanceOf<Self>>;
 }

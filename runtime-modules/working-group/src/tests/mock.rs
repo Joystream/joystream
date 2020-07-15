@@ -21,7 +21,7 @@ mod working_group {
 }
 
 mod membership_mod {
-    pub use membership::members::Event;
+    pub use membership::Event;
 }
 
 impl_outer_event! {
@@ -87,7 +87,7 @@ impl stake::Trait for Test {
     type SlashId = u64;
 }
 
-impl membership::members::Trait for Test {
+impl membership::Trait for Test {
     type Event = TestEvent;
     type MemberId = u64;
     type PaidTermId = u64;
@@ -136,7 +136,7 @@ impl Trait<TestWorkingGroupInstance> for Test {
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
-pub type Membership = membership::members::Module<Test>;
+pub type Membership = membership::Module<Test>;
 
 pub type TestWorkingGroupInstance = crate::Instance1;
 pub type TestWorkingGroup = Module<Test, TestWorkingGroupInstance>;

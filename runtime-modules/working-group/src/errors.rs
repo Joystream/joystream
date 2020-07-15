@@ -1,7 +1,5 @@
 use srml_support::decl_error;
 
-use membership::members;
-
 decl_error! {
     /// Discussion module predefined errors
     pub enum Error {
@@ -493,16 +491,16 @@ impl rstd::convert::From<WrappedError<hiring::AddApplicationError>> for Error {
     }
 }
 
-impl rstd::convert::From<WrappedError<members::MemberControllerAccountDidNotSign>> for Error {
-    fn from(wrapper: WrappedError<members::MemberControllerAccountDidNotSign>) -> Self {
+impl rstd::convert::From<WrappedError<membership::MemberControllerAccountDidNotSign>> for Error {
+    fn from(wrapper: WrappedError<membership::MemberControllerAccountDidNotSign>) -> Self {
         match wrapper.error {
-            members::MemberControllerAccountDidNotSign::UnsignedOrigin => {
+            membership::MemberControllerAccountDidNotSign::UnsignedOrigin => {
                 Error::MembershipUnsignedOrigin
             }
-            members::MemberControllerAccountDidNotSign::MemberIdInvalid => {
+            membership::MemberControllerAccountDidNotSign::MemberIdInvalid => {
                 Error::MembershipInvalidMemberId
             }
-            members::MemberControllerAccountDidNotSign::SignerControllerAccountMismatch => {
+            membership::MemberControllerAccountDidNotSign::SignerControllerAccountMismatch => {
                 Error::ApplyOnWorkerOpeningSignerNotControllerAccount
             }
         }
