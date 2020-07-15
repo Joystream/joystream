@@ -268,6 +268,37 @@ export async function slashLeaderProposal(
   return proposalNumber;
 }
 
+export async function workingGroupMintCapacityProposal(
+  apiWrapper: ApiWrapper,
+  m1KeyPairs: KeyringPair[],
+  sudo: KeyringPair,
+  mintCapacity: BN,
+  workingGroup: WorkingGroups
+): Promise<BN> {
+  // Setup
+  const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8);
+  const description: string = 'Testing working group mint capacity proposal ' + uuid().substring(0, 8);
+  const workingGroupString: string = apiWrapper.getWorkingGroupString(workingGroup);
+
+  // Proposal stake calculation
+  const proposalStake: BN = new BN(50000);
+  const proposalFee: BN = apiWrapper.estimateProposeWorkingGroupMintCapacityFee();
+  await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake));
+
+  // Proposal creation
+  const proposalPromise = apiWrapper.expectProposalCreated();
+  await apiWrapper.proposeWorkingGroupMintCapacity(
+    m1KeyPairs[0],
+    proposalTitle,
+    description,
+    proposalStake,
+    mintCapacity,
+    workingGroupString
+  );
+  const proposalNumber: BN = await proposalPromise;
+  return proposalNumber;
+}
+
 export async function voteForProposal(
   apiWrapper: ApiWrapper,
   m2KeyPairs: KeyringPair[],

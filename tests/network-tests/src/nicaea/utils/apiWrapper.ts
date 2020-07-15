@@ -144,7 +144,12 @@ export class ApiWrapper {
     );
   }
 
-  public estimateProposeWorkingGroupMintCapacityFee(title: string, description: string, stake: BN, balance: BN): BN {
+  public estimateProposeContentWorkingGroupMintCapacityFee(
+    title: string,
+    description: string,
+    stake: BN,
+    balance: BN
+  ): BN {
     return this.estimateTxFee(
       this.api.tx.proposalsCodex.createSetContentWorkingGroupMintCapacityProposal(
         stake,
@@ -457,6 +462,19 @@ export class ApiWrapper {
     );
   }
 
+  public estimateProposeWorkingGroupMintCapacityFee(): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createSetWorkingGroupMintCapacityProposal(
+        0,
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        0,
+        0,
+        'Storage'
+      )
+    );
+  }
+
   private applyForCouncilElection(account: KeyringPair, amount: BN): Promise<void> {
     return this.sender.signAndSend(this.api.tx.councilElection.apply(amount), account, false);
   }
@@ -605,7 +623,7 @@ export class ApiWrapper {
     );
   }
 
-  public async proposeWorkingGroupMintCapacity(
+  public async proposeContentWorkingGroupMintCapacity(
     account: KeyringPair,
     title: string,
     description: string,
@@ -924,6 +942,18 @@ export class ApiWrapper {
     });
   }
 
+  public expectMintCapacityChanged(): Promise<BN> {
+    return new Promise(async resolve => {
+      await this.api.query.system.events<Vec<EventRecord>>(events => {
+        events.forEach(record => {
+          if (record.event.method && record.event.method.toString() === 'MintCapacityChanged') {
+            resolve((record.event.data[1] as unknown) as BN);
+          }
+        });
+      });
+    });
+  }
+
   public getTotalIssuance(): Promise<BN> {
     return this.api.query.balances.totalIssuance<Balance>();
   }
@@ -938,8 +968,15 @@ export class ApiWrapper {
     return this.api.query.proposalsEngine.proposalCount<u32>();
   }
 
-  public async getWorkingGroupMintCapacity(): Promise<BN> {
+  public async getContentWorkingGroupMintCapacity(): Promise<BN> {
     const mintId: MintId = await this.api.query.contentWorkingGroup.mint<MintId>();
+    const mintCodec = await this.api.query.minting.mints<Codec[]>(mintId);
+    const mint: Mint = (mintCodec[0] as unknown) as Mint;
+    return mint.getField<Balance>('capacity');
+  }
+
+  public async getWorkingGroupMintCapacity(module: WorkingGroups): Promise<BN> {
+    const mintId: MintId = await this.api.query[module].mint<MintId>();
     const mintCodec = await this.api.query.minting.mints<Codec[]>(mintId);
     const mint: Mint = (mintCodec[0] as unknown) as Mint;
     return mint.getField<Balance>('capacity');
@@ -1133,6 +1170,29 @@ export class ApiWrapper {
         proposalStake,
         workerId,
         rewardAmount,
+        workingGroup
+      ),
+      account,
+      false
+    );
+  }
+
+  public async proposeWorkingGroupMintCapacity(
+    account: KeyringPair,
+    title: string,
+    description: string,
+    proposalStake: BN,
+    mintCapacity: BN,
+    workingGroup: string
+  ): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0];
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createSetWorkingGroupMintCapacityProposal(
+        memberId,
+        title,
+        description,
+        proposalStake,
+        mintCapacity,
         workingGroup
       ),
       account,

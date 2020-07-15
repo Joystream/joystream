@@ -582,3 +582,12 @@ export async function expectLeaderSlashed(
   );
   return;
 }
+
+export async function expectMintCapacityChanged(apiWrapper: ApiWrapper, expectedMintCapacity: BN): Promise<void> {
+  const receivedMintCapacity = await apiWrapper.expectMintCapacityChanged();
+  assert(
+    receivedMintCapacity.eq(expectedMintCapacity),
+    `Unexpected mint capacity: ${receivedMintCapacity}, expected ${expectedMintCapacity}`
+  );
+  return;
+}
