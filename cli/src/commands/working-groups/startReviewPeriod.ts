@@ -1,5 +1,4 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
-import _ from 'lodash'
 import { OpeningStatus } from '../../Types'
 import { apiModuleByGroup } from '../../Api'
 import { OpeningId } from '@joystream/types/hiring'

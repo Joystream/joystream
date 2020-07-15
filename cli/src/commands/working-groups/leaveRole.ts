@@ -1,5 +1,4 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
-import _ from 'lodash'
 import { apiModuleByGroup } from '../../Api'
 import { minMaxStr } from '../../validators/common'
 import chalk from 'chalk'

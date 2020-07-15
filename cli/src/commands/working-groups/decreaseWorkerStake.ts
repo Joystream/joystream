@@ -1,12 +1,10 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
-import _ from 'lodash'
 import { apiModuleByGroup } from '../../Api'
 import { WorkerId } from '@joystream/types/working-group'
 import { Balance } from '@polkadot/types/interfaces'
 import { formatBalance } from '@polkadot/util'
 import { minMaxInt } from '../../validators/common'
 import chalk from 'chalk'
-import ExitCodes from '../../ExitCodes'
 import { createParamOptions } from '../../helpers/promptOptions'
 
 export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsCommandBase {

@@ -1,5 +1,4 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
-import _ from 'lodash'
 import { apiModuleByGroup } from '../../Api'
 import { Balance } from '@polkadot/types/interfaces'
 import { formatBalance } from '@polkadot/util'

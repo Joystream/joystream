@@ -1,5 +1,4 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
-import _ from 'lodash'
 import { apiModuleByGroup } from '../../Api'
 import { validateAddress } from '../../helpers/validation'
 import { GenericAccountId } from '@polkadot/types'

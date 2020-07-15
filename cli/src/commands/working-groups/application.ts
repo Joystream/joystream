@@ -1,6 +1,5 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { displayCollapsedRow, displayHeader } from '../../helpers/display'
-import _ from 'lodash'
 import chalk from 'chalk'
 
 export default class WorkingGroupsApplication extends WorkingGroupsCommandBase {
