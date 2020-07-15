@@ -1,18 +1,16 @@
 #![cfg(test)]
 
-// use crate::*;
 use crate::{Module, Trait};
 
-use primitives::H256;
-
 use balances;
+use frame_support::{impl_outer_origin, parameter_types};
 use minting;
-use runtime_primitives::{
+use sp_core::H256;
+use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use srml_support::{impl_outer_origin, parameter_types};
 
 mod status_handler;
 pub use status_handler::MockStatusHandler;
@@ -33,10 +31,11 @@ parameter_types! {
 }
 
 impl system::Trait for Test {
+    type BaseCallFilter = ();
     type Origin = Origin;
+    type Call = ();
     type Index = u64;
     type BlockNumber = u64;
-    type Call = ();
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;
@@ -45,9 +44,17 @@ impl system::Trait for Test {
     type Event = ();
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
+    type DbWeight = ();
+    type BlockExecutionWeight = ();
+    type ExtrinsicBaseWeight = ();
+    type MaximumExtrinsicWeight = ();
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
+    type ModuleToIndex = ();
+    type AccountData = balances::AccountData<u64>;
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
 }
 
 parameter_types! {
@@ -60,20 +67,11 @@ parameter_types! {
 }
 
 impl balances::Trait for Test {
-    /// The type for recording an account's balance.
     type Balance = u64;
-    /// What to do if an account's free balance gets zeroed.
-    type OnFreeBalanceZero = ();
-    /// What to do if a new account is created.
-    type OnNewAccount = ();
-    /// The ubiquitous event type.
-    type Event = ();
-
     type DustRemoval = ();
-    type TransferPayment = ();
+    type Event = ();
     type ExistentialDeposit = ExistentialDeposit;
-    type TransferFee = TransferFee;
-    type CreationFee = CreationFee;
+    type AccountStore = System;
 }
 
 impl Trait for Test {
@@ -87,7 +85,7 @@ impl minting::Trait for Test {
     type MintId = u64;
 }
 
-pub fn build_test_externalities() -> runtime_io::TestExternalities {
+pub fn build_test_externalities() -> sp_io::TestExternalities {
     MockStatusHandler::reset();
 
     let t = system::GenesisConfig::default()
