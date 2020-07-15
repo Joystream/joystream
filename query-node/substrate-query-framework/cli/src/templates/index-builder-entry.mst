@@ -2,6 +2,7 @@ import "reflect-metadata";
 import * as dotenv from "dotenv";
 import * as chalk from 'chalk';
 import * as figlet from 'figlet';
+import * as BN from 'bn.js';
 import { Command } from 'commander';
 import { configure, getLogger } from 'log4js';
 
@@ -107,12 +108,13 @@ function setUp(opts: any) {
 }
 
 async function doBootstrap(node: QueryNodeManager) {
-    await node.bootstrap(
-        process.env.WS_PROVIDER_ENDPOINT_URI as string,
-        getBootstrapPack(),
-        {{#typeRegistrator}} {{typeRegistrator}} {{/typeRegistrator}}
-    );
-    logger.info("Bootstrap done");
+  await node.bootstrap({
+    wsProviderURI: process.env.WS_PROVIDER_ENDPOINT_URI as string,
+    processingPack: getBootstrapPack(),
+    {{#typeRegistrator}}typeRegistrator: {{typeRegistrator}} {{/typeRegistrator}}
+  });
+
+  logger.info("Bootstrap done");
 }
 
 async function main() {
@@ -120,6 +122,7 @@ async function main() {
   setUp(command);
   
   const providerUri = process.env.WS_PROVIDER_ENDPOINT_URI;
+  const atBlock = process.env.BLOCK_HEIGHT;
 
   if (!providerUri) {
     throw new Error(
@@ -144,7 +147,12 @@ async function main() {
       process.exit(0);
   }
 
-  node.start(providerUri, getProcessingPack(), {{#typeRegistrator}} {{typeRegistrator}} {{/typeRegistrator}});
+  node.start({
+    wsProviderURI: providerUri,
+    processingPack: getProcessingPack(),
+    atBlock: atBlock && atBlock !== '0' ? new BN(atBlock) : undefined,
+    {{#typeRegistrator}}typeRegistrator: {{typeRegistrator}} {{/typeRegistrator}}
+  });
 }
 
 main().catch((e) => {

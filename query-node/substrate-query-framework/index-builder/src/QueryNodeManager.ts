@@ -1,7 +1,8 @@
 import QueryNode, { QueryNodeState } from './QueryNode';
 import { QueryEventProcessingPack } from '.';
 import { EventEmitter } from 'events';
-import { Bootstrapper, BootstrapPack } from './bootstrap';
+import { Bootstrapper } from './bootstrap';
+import { QueryNodeStartUpOptions } from '.';
 
 // Respondible for creating, starting up and shutting down the query node.
 // Currently this class is a bit thin, but it will almost certainly grow
@@ -16,19 +17,15 @@ export default class QueryNodeManager {
     process.on('exit', this._onProcessExit);
   }
 
-  async start(
-    ws_provider_endpoint_uri: string,
-    processing_pack: QueryEventProcessingPack,
-    type_registrator?: () => void
-  ) {
+  async start(options: QueryNodeStartUpOptions) {
     if (this._query_node) throw Error('Cannot start the same manager multiple times.');
 
-    this._query_node = await QueryNode.create(ws_provider_endpoint_uri, processing_pack, type_registrator);
+    this._query_node = await QueryNode.create(options);
     await this._query_node.start();
   }
 
-  async bootstrap(ws_provider_endpoint_uri: string, bootstrap_pack: BootstrapPack, type_registrator?: () => void) {
-    let bootstrapper = await Bootstrapper.create(ws_provider_endpoint_uri, bootstrap_pack, type_registrator);
+  async bootstrap(options: QueryNodeStartUpOptions) {
+    let bootstrapper = await Bootstrapper.create(options);
     await bootstrapper.bootstrap();
   }
 
