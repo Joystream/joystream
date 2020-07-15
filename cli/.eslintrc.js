@@ -1,4 +1,7 @@
 module.exports = {
+  env: {
+    mocha: true,
+  },
   extends: [
     // The oclif rules have some code-style/formatting rules which may conflict with
     // our prettier global settings. Disabling for now

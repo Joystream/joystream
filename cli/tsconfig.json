@@ -8,7 +8,7 @@
     "strict": true,
     "target": "es2017",
     "esModuleInterop": true,
-	"types" : [ "node" ]
+	  "types" : [ "node" ]
   },
   "include": [
     "src/**/*"

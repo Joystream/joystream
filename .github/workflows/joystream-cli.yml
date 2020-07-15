@@ -3,7 +3,7 @@ on: [pull_request, push]
 
 jobs:
   cli_build_ubuntu:
-    name: Ubuntu Build
+    name: Ubuntu Check
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -14,14 +14,14 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - name: build
+    - name: check
       run: |
         yarn install --frozen-lockfile
         yarn madge --circular types/
-        yarn workspace joystream-cli build
+        yarn workspace joystream-cli check
 
   cli_build_osx:
-    name: MacOS Build
+    name: MacOS Check
     runs-on: macos-latest
     strategy:
       matrix:
@@ -32,8 +32,8 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - name: build
+    - name: check
       run: |
         yarn install --frozen-lockfile --network-timeout 120000
         yarn madge --circular types/
-        yarn workspace joystream-cli build
+        yarn workspace joystream-cli check
