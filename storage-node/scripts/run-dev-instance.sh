@@ -36,5 +36,5 @@ DEBUG=joystream:storage-cli:dev yarn storage-cli dev-init
 # kill colossus and docker containers...
 # docker-compose -f ${SCRIPT_PATH}/compose/devchain-and-ipfs-node/docker-compose.yaml down -v
 
-# Run the server, without loggin ranges debug info, too verbose
+# Run the server, without logging ranges debug info, too verbose
 DEBUG=joystream:*,-joystream:util:ranges yarn colossus --dev
