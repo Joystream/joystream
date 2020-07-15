@@ -22,13 +22,14 @@ used in a browser environment, or the local ipfs node otherwise.
 There is a distinction in the discovery workflow:
 
 1. If run in the browser environment, a HTTP request to a participating node
-  is performed to discover nodes.
+   is performed to discover nodes.
 2. If run in a node.js process, instead:
-  - A trusted (local) IPFS node must be configured.
-  - The chain is queried to resolve a worker id to an IPNS id.
-  - The trusted IPFS node is used to resolve the IPNS id to an IPFS
-    file.
-  - The IPFS file is fetched; this contains the structured data.
+
+- A trusted (local) IPFS node must be configured.
+- The chain is queried to resolve a worker id to an IPNS id.
+- The trusted IPFS node is used to resolve the IPNS id to an IPFS
+  file.
+- The IPFS file is fetched; this contains the structured data.
 
 Web services providing the HTTP endpoint used in the first approach will
 themselves use the second approach for fulfilling queries.
@@ -61,8 +62,8 @@ use of the information.
 Additionally, some services may only provide an `endpoint` value, as defined
 here:
 
-* `version`: A numeric version identifier for the service info field.
-* `endpoint`: A publicly accessible base URL for a service API.
+- `version`: A numeric version identifier for the service info field.
+- `endpoint`: A publicly accessible base URL for a service API.
 
 The `endpoint` should include a scheme and full authority, such that appending
 `swagger.json` to the path resolves the OpenAPI definition of the API served
@@ -107,7 +108,7 @@ always `1`.
   "discovery": {
     "version": 1,
     "endpoint": "http://quux.io/"
-  },
+  }
 }
 ```
 

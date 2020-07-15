@@ -3,17 +3,16 @@
 This repository contains several Node packages, located under the `packages/`
 subdirectory. See each individual package for details:
 
-* [colossus](./packages/colossus/README.md) - the main colossus app.
-* [storage-node-backend](./packages/storage/README.md) - abstraction over the storage backend.
-* [storage-runtime-api](./packages/runtime-api/README.md) - convenience wrappers for the runtime API.
-* [storage-utils](./packages/util/README.md) - general utility functions.
-* [discovery](./packages/discovery/README.md) - service discovery using IPNS.
-* [storage-cli](./packages/cli/README.md) - cli for uploading and downloading content from the network
+- [colossus](./packages/colossus/README.md) - the main colossus app.
+- [storage-node-backend](./packages/storage/README.md) - abstraction over the storage backend.
+- [storage-runtime-api](./packages/runtime-api/README.md) - convenience wrappers for the runtime API.
+- [storage-utils](./packages/util/README.md) - general utility functions.
+- [discovery](./packages/discovery/README.md) - service discovery using IPNS.
+- [storage-cli](./packages/cli/README.md) - cli for uploading and downloading content from the network
 
-Installation
-------------
+## Installation
 
-*Requirements*
+_Requirements_
 
 This project uses [yarn](https://yarnpkg.com/) as Node package manager. It also
 uses some node packages with native components, so make sure to install your
@@ -31,7 +30,7 @@ On Mac OS (using [homebrew](https://brew.sh/)):
 $ brew install libtool automake autoconf
 ```
 
-*Building*
+_Building_
 
 ```bash
 $ yarn install
@@ -43,7 +42,7 @@ The command will install dependencies, and make a `colossus` executable availabl
 $ yarn colossus --help
 ```
 
-*Testing*
+_Testing_
 
 Run an ipfs node and a joystream-node development chain (in separate terminals)
 
@@ -77,7 +76,8 @@ yarn colossus --dev
 Start pioneer ui:
 ``sh
 yarn workspace pioneer start
-```
+
+````
 
 Browse pioneer on http://localhost:3000/
 You should find Alice account is the storage working group lead and is a storage provider
@@ -100,4 +100,4 @@ scripts/build-joystream-node-docker-image.sh
 # Run docker-compose to start an ipfs node, and joystream-node in development mode
 # initializes the chain with development settings, and start a storage-node
 storage-node/scripts/run-dev-instance.sh
-```
+````
