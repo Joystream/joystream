@@ -1,0 +1,3 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`VideoPreview component Should render Video Preview correctly 1`] = `ReactWrapper {}`;

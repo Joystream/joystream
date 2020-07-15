@@ -1,0 +1,5 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Button component Should render button correctly 1`] = `ReactWrapper {}`;
+
+exports[`Button component Should render custom button correctly 1`] = `ReactWrapper {}`;

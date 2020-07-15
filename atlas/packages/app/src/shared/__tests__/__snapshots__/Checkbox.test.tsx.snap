@@ -1,0 +1,3 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Checkbox component Should render checkbox correctly 1`] = `ReactWrapper {}`;

@@ -1,0 +1,3 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`RadioButton component Should render radio button correctly 1`] = `ReactWrapper {}`;
