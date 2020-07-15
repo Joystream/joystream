@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs-extra';
 import * as dotenv from 'dotenv';
 import * as Mustache from 'mustache';
-import { readFileSync, copyFileSync } from 'fs-extra';
+import { readFileSync } from 'fs-extra';
 import { Command, flags } from '@oclif/command';
 
 import cli from 'cli-ux';
@@ -12,9 +12,9 @@ import { createDir, getTemplatePath, createFile } from '../utils/utils';
 import { formatWithPrettier } from '../helpers/formatter';
 import WarthogWrapper from '../helpers/WarthogWrapper';
 import { getTypeormConfig, getTypeormModelGeneratorConnectionConfig, createSavedEntityEventTable } from '../helpers/db';
-import Debug from 'debug';
 
-const debug = Debug('qnode-cli:codegen');
+import Listr = require('listr');
+
 
 export default class Codegen extends Command {
   static description = 'Code generator';
@@ -87,34 +87,48 @@ export default class Codegen extends Command {
     createDir(indexerPath);
     process.chdir(indexerPath);
 
+    const generateFiles = {
+      title: 'Generate source files',
+      task: async () => {
+        let indexFileContent = readFileSync(getTemplatePath('index-builder-entry.mst'), 'utf8');
+        indexFileContent = Mustache.render(indexFileContent, {
+          packageName: process.env.TYPE_REGISTER_PACKAGE_NAME,
+          typeRegistrator: process.env.TYPE_REGISTER_FUNCTION,
+        });
+        createFile(path.resolve('index.ts'), formatWithPrettier(indexFileContent));
+
+        // Create package.json
+        await fs.copyFile(getTemplatePath('indexer.package.json'), path.resolve(process.cwd(), 'package.json'));
+
+        // Create .env file for typeorm database connection
+        await fs.writeFile('.env', getTypeormConfig());
+
+        // Create
+        await fs.copyFile(getTemplatePath('indexer.tsconfig.json'), path.resolve(process.cwd(), 'tsconfig.json'));
+      },
+    };
     // Create index.ts file
-    let indexFileContent = readFileSync(getTemplatePath('index-builder-entry.mst'), 'utf8');
-    indexFileContent = Mustache.render(indexFileContent, {
-      packageName: process.env.TYPE_REGISTER_PACKAGE_NAME,
-      typeRegistrator: process.env.TYPE_REGISTER_FUNCTION,
-    });
-    createFile(path.resolve('index.ts'), formatWithPrettier(indexFileContent));
 
-    // Create package.json
-    await fs.copyFile(getTemplatePath('indexer.package.json'), path.resolve(process.cwd(), 'package.json'));
+    const installDeps = {
+      title: 'Install dependendies for indexer',
+      task: async () => {
+        await execa('yarn', ['install']);
+        if (process.env.TYPE_REGISTER_PACKAGE_NAME) {
+          await execa('yarn', ['add', `${process.env.TYPE_REGISTER_PACKAGE_NAME}`]);
+        }
+      },
+    };
 
-    // Create .env file for typeorm database connection
-    await fs.writeFile('.env', getTypeormConfig());
+    const genEntities = {
+      title: 'Generate typeorm db entities',
+      task: async () => {
+        await createSavedEntityEventTable();
+        await execa('npx', getTypeormModelGeneratorConnectionConfig());
+      },
+    };
 
-    // Create
-    await fs.copyFile(getTemplatePath('indexer.tsconfig.json'), path.resolve(process.cwd(), 'tsconfig.json'));
-
-    cli.action.start('Installing dependendies for indexer...');
-    await execa('yarn', ['install']);
-    if (process.env.TYPE_REGISTER_PACKAGE_NAME) {
-      await execa('yarn', ['add', `${process.env.TYPE_REGISTER_PACKAGE_NAME}`]);
-    }
-    cli.action.stop();
-
-    cli.action.start('Generating typeorm db entities...');
-    await createSavedEntityEventTable();
-    await execa(getTypeormModelGeneratorConnectionConfig());
-    cli.action.stop();
+    const listr = new Listr([generateFiles, installDeps, genEntities]);
+    await listr.run();
 
     process.chdir(goBackDir);
   }
