@@ -1,10 +1,10 @@
-import React from "react";
-import { Provider } from "react-redux";
-import { Router } from "@reach/router";
+import React from 'react'
+import { Provider } from 'react-redux'
+import { Router } from '@reach/router'
 
-import store from "store";
-import { Layout } from "components";
-import { HomeView } from "views";
+import store from './store'
+import { Layout } from './components'
+import { HomeView } from './views'
 
 export default function App() {
 	return (
@@ -15,5 +15,5 @@ export default function App() {
 				</Router>
 			</Layout>
 		</Provider>
-	);
+	)
 }

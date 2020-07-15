@@ -4,7 +4,7 @@
 		"sourceMap": true,
 		"strict": true,
 		"esModuleInterop": true,
-		"jsx": "preserve"
+		"jsx": "react"
 	},
 	"exclude": ["node_modules", "dist"]
 }

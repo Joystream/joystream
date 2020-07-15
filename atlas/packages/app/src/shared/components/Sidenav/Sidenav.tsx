@@ -8,7 +8,7 @@ type NavSubitem = {
 	name: string;
 };
 
-export type NavItem = {
+type NavItem = {
 	subitems?: NavSubitem[];
 	icon: React.ReactNode;
 } & NavSubitem;
@@ -91,4 +91,4 @@ const NavItem: React.FC<NavItemProps> = ({ expanded, subitems, children }) => {
 	);
 };
 
-export default Sidenav;
+export { Sidenav as default, NavItem }
