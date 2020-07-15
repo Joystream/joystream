@@ -7,6 +7,8 @@
 function newExternallyControlledPromise() {
   let resolve, reject
 
+  // Disable lint until the migration to TypeScript.
+  // eslint-disable-next-line promise/param-names
   const promise = new Promise((res, rej) => {
     resolve = res
     reject = rej

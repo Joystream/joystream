@@ -55,7 +55,7 @@ const initVstore = async (api, contentLead) => {
   // batch createClass calls into a single block
   debug('creating classes...')
 
-  const createClasses = classes.filter(call => {
+  const createClasses = classes.filter((call) => {
     return call.methodName === 'createClass'
   })
 
@@ -63,7 +63,7 @@ const initVstore = async (api, contentLead) => {
 
   // batch addClassSchema calls into a single block
   debug('adding schemas to classes...')
-  const addClassSchema = classes.filter(call => {
+  const addClassSchema = classes.filter((call) => {
     return call.methodName === 'addClassSchema'
   })
 
@@ -75,7 +75,7 @@ const initVstore = async (api, contentLead) => {
   await dispatchCalls(api, contentLead, entities, true)
 }
 
-const check = async api => {
+const check = async (api) => {
   const roleAccountId = roleKeyPair(api).address
   const providerId = await api.workers.findProviderIdByRoleAccount(roleAccountId)
 
@@ -96,7 +96,7 @@ const check = async api => {
 // Setup Alice account on a developement chain as
 // a member, storage lead, and a storage provider using a deterministic
 // development key for the role account
-const init = async api => {
+const init = async (api) => {
   try {
     await check(api)
     return
@@ -184,3 +184,5 @@ module.exports = {
   roleKeyPair,
   developmentPort,
 }
+
+export { init, check, aliceKeyPair, roleKeyPair, developmentPort }

@@ -104,7 +104,7 @@ class LRUCache {
       ++idx
     }
 
-    toPrune.forEach(key => {
+    toPrune.forEach((key) => {
       this.store.delete(key)
       this.access.delete(key)
     })

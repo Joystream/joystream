@@ -265,6 +265,42 @@ decl_error! {
         /// Invalid OpeningPolicyCommitment parameter:
         /// fill_opening_successful_applicant_application_stake_unstaking_period should be non-zero.
         FillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriodIsZero,
+
+        /// Invalid OpeningPolicyCommitment parameter:
+        /// exit_role_stake_unstaking_period should be non-zero.
+        ExitRoleStakeUnstakingPeriodIsZero,
+
+        /// Invalid OpeningPolicyCommitment parameter:
+        /// exit_role_application_stake_unstaking_period should be non-zero.
+        ExitRoleApplicationStakeUnstakingPeriodIsZero,
+
+        /// Invalid OpeningPolicyCommitment parameter:
+        /// terminate_role_stake_unstaking_period should be non-zero.
+        TerminateRoleStakeUnstakingPeriodIsZero,
+
+        /// Invalid OpeningPolicyCommitment parameter:
+        /// terminate_application_stake_unstaking_period should be non-zero.
+        TerminateApplicationStakeUnstakingPeriodIsZero,
+
+        /// Invalid OpeningPolicyCommitment parameter (role_staking_policy):
+        /// crowded_out_unstaking_period_length should be non-zero.
+        RoleStakingPolicyCrowdedOutUnstakingPeriodIsZero,
+
+        /// Invalid OpeningPolicyCommitment parameter (role_staking_policy):
+        /// review_period_expired_unstaking_period_length should be non-zero.
+        RoleStakingPolicyReviewPeriodUnstakingPeriodIsZero,
+
+        /// Invalid OpeningPolicyCommitment parameter (application_staking_policy):
+        /// crowded_out_unstaking_period_length should be non-zero.
+        ApplicationStakingPolicyCrowdedOutUnstakingPeriodIsZero,
+
+        /// Invalid OpeningPolicyCommitment parameter (application_staking_policy):
+        /// review_period_expired_unstaking_period_length should be non-zero.
+        ApplicationStakingPolicyReviewPeriodUnstakingPeriodIsZero,
+
+        /// Invalid OpeningPolicyCommitment parameter (application_rationing_policy):
+        /// max_active_applicants should be non-zero.
+        ApplicationRationingPolicyMaxActiveApplicantsIsZero,
     }
 }
 

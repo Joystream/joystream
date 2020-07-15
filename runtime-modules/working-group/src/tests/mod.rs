@@ -87,6 +87,94 @@ fn add_opening_fails_with_incorrect_unstaking_periods() {
         add_opening_fixture.call_and_assert(Err(
             Error::FillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriodIsZero,
         ));
+
+        let add_opening_fixture =
+            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
+                exit_role_stake_unstaking_period: Some(0),
+                ..OpeningPolicyCommitment::default()
+            });
+        add_opening_fixture.call_and_assert(Err(Error::ExitRoleStakeUnstakingPeriodIsZero));
+
+        let add_opening_fixture =
+            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
+                exit_role_application_stake_unstaking_period: Some(0),
+                ..OpeningPolicyCommitment::default()
+            });
+        add_opening_fixture
+            .call_and_assert(Err(Error::ExitRoleApplicationStakeUnstakingPeriodIsZero));
+
+        let add_opening_fixture =
+            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
+                terminate_role_stake_unstaking_period: Some(0),
+                ..OpeningPolicyCommitment::default()
+            });
+        add_opening_fixture.call_and_assert(Err(Error::TerminateRoleStakeUnstakingPeriodIsZero));
+
+        let add_opening_fixture =
+            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
+                terminate_application_stake_unstaking_period: Some(0),
+                ..OpeningPolicyCommitment::default()
+            });
+        add_opening_fixture
+            .call_and_assert(Err(Error::TerminateApplicationStakeUnstakingPeriodIsZero));
+
+        let add_opening_fixture =
+            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
+                role_staking_policy: Some(hiring::StakingPolicy {
+                    crowded_out_unstaking_period_length: Some(0),
+                    ..Default::default()
+                }),
+                ..OpeningPolicyCommitment::default()
+            });
+        add_opening_fixture
+            .call_and_assert(Err(Error::RoleStakingPolicyCrowdedOutUnstakingPeriodIsZero));
+
+        let add_opening_fixture =
+            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
+                role_staking_policy: Some(hiring::StakingPolicy {
+                    review_period_expired_unstaking_period_length: Some(0),
+                    ..Default::default()
+                }),
+                ..OpeningPolicyCommitment::default()
+            });
+        add_opening_fixture.call_and_assert(Err(
+            Error::RoleStakingPolicyReviewPeriodUnstakingPeriodIsZero,
+        ));
+
+        let add_opening_fixture =
+            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
+                application_staking_policy: Some(hiring::StakingPolicy {
+                    crowded_out_unstaking_period_length: Some(0),
+                    ..Default::default()
+                }),
+                ..OpeningPolicyCommitment::default()
+            });
+        add_opening_fixture.call_and_assert(Err(
+            Error::ApplicationStakingPolicyCrowdedOutUnstakingPeriodIsZero,
+        ));
+
+        let add_opening_fixture =
+            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
+                application_staking_policy: Some(hiring::StakingPolicy {
+                    review_period_expired_unstaking_period_length: Some(0),
+                    ..Default::default()
+                }),
+                ..OpeningPolicyCommitment::default()
+            });
+        add_opening_fixture.call_and_assert(Err(
+            Error::ApplicationStakingPolicyReviewPeriodUnstakingPeriodIsZero,
+        ));
+
+        let add_opening_fixture =
+            AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
+                application_rationing_policy: Some(hiring::ApplicationRationingPolicy {
+                    max_active_applicants: 0,
+                }),
+                ..OpeningPolicyCommitment::default()
+            });
+        add_opening_fixture.call_and_assert(Err(
+            Error::ApplicationRationingPolicyMaxActiveApplicantsIsZero,
+        ));
     });
 }
 

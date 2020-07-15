@@ -2,7 +2,6 @@ import ExitCodes from '../ExitCodes';
 import { CLIError } from '@oclif/errors';
 import StateAwareCommandBase from './StateAwareCommandBase';
 import Api from '../Api';
-import { JSONArgsMapping } from '../Types';
 import { getTypeDef, createType, Option, Tuple, Bytes } from '@polkadot/types';
 import { Codec, TypeDef, TypeDefInfo, Constructor } from '@polkadot/types/types';
 import { Vec, Struct, Enum } from '@polkadot/types/codec';
@@ -11,8 +10,8 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import chalk from 'chalk';
 import { SubmittableResultImpl } from '@polkadot/api/types';
 import ajv from 'ajv';
-
-export type ApiMethodInputArg = Codec;
+import { ApiMethodArg, ApiMethodNamedArgs, ApiParamsOptions, ApiParamOptions } from '../Types';
+import { createParamOptions } from '../helpers/promptOptions';
 
 class ExtrinsicFailedError extends Error { };
 
@@ -61,18 +60,24 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     }
 
     // Prompt for simple/plain value (provided as string) of given type
-    async promptForSimple(typeDef: TypeDef, defaultValue?: Codec): Promise<Codec> {
+    async promptForSimple(
+        typeDef: TypeDef,
+        paramOptions?: ApiParamOptions
+    ): Promise<Codec> {
         const providedValue = await this.simplePrompt({
             message: `Provide value for ${ this.paramName(typeDef) }`,
             type: 'input',
-            default: defaultValue?.toString()
+            // If not default provided - show default value resulting from providing empty string
+            default: paramOptions?.value?.default?.toString() || createType(typeDef.type as any, '').toString(),
+            validate: paramOptions?.validator
         });
         return createType(typeDef.type as any, providedValue);
     }
 
     // Prompt for Option<Codec> value
-    async promptForOption(typeDef: TypeDef, defaultValue?: Option<Codec>): Promise<Option<Codec>> {
+    async promptForOption(typeDef: TypeDef, paramOptions?: ApiParamOptions): Promise<Option<Codec>> {
         const subtype = <TypeDef> typeDef.sub; // We assume that Opion always has a single subtype
+        const defaultValue = paramOptions?.value?.default as Option<Codec> | undefined;
         const confirmed = await this.simplePrompt({
             message: `Do you want to provide the optional ${ this.paramName(typeDef) } parameter?`,
             type: 'confirm',
@@ -81,7 +86,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
         if (confirmed) {
             this.openIndentGroup();
-            const value = await this.promptForParam(subtype.type, subtype.name, defaultValue?.unwrapOr(undefined));
+            const value = await this.promptForParam(subtype.type, createParamOptions(subtype.name, defaultValue?.unwrapOr(undefined)));
             this.closeIndentGroup();
             return new Option(subtype.type as any, value);
         }
@@ -91,16 +96,18 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
     // Prompt for Tuple
     // TODO: Not well tested yet
-    async promptForTuple(typeDef: TypeDef, defaultValue: Tuple): Promise<Tuple> {
+    async promptForTuple(typeDef: TypeDef, paramOptions?: ApiParamOptions): Promise<Tuple> {
         console.log(chalk.grey(`Providing values for ${ this.paramName(typeDef) } tuple:`));
 
         this.openIndentGroup();
-        const result: ApiMethodInputArg[] = [];
+        const result: ApiMethodArg[] = [];
         // We assume that for Tuple there is always at least 1 subtype (pethaps it's even always an array?)
         const subtypes: TypeDef[] = Array.isArray(typeDef.sub) ? typeDef.sub! : [ typeDef.sub! ];
+        const defaultValue = paramOptions?.value?.default as Tuple | undefined;
 
         for (const [index, subtype] of Object.entries(subtypes)) {
-            const inputParam = await this.promptForParam(subtype.type, subtype.name, defaultValue[parseInt(index)]);
+            const entryDefaultVal = defaultValue && defaultValue[parseInt(index)];
+            const inputParam = await this.promptForParam(subtype.type, createParamOptions(subtype.name, entryDefaultVal));
             result.push(inputParam);
         }
         this.closeIndentGroup();
@@ -109,7 +116,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     }
 
     // Prompt for Struct
-    async promptForStruct(typeDef: TypeDef, defaultValue?: Struct): Promise<ApiMethodInputArg> {
+    async promptForStruct(typeDef: TypeDef, paramOptions?: ApiParamOptions): Promise<ApiMethodArg> {
         console.log(chalk.grey(`Providing values for ${ this.paramName(typeDef) } struct:`));
 
         this.openIndentGroup();
@@ -117,11 +124,18 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         const rawTypeDef = this.getRawTypeDef(structType);
         // We assume struct typeDef always has array of typeDefs inside ".sub"
         const structSubtypes = rawTypeDef.sub as TypeDef[];
+        const structDefault = paramOptions?.value?.default as Struct | undefined;
 
-        const structValues: { [key: string]: ApiMethodInputArg } = {};
+        const structValues: { [key: string]: ApiMethodArg } = {};
         for (const subtype of structSubtypes) {
-            structValues[subtype.name!] =
-                await this.promptForParam(subtype.type, subtype.name, defaultValue && defaultValue.get(subtype.name!));
+            const fieldOptions = paramOptions?.nestedOptions && paramOptions.nestedOptions[subtype.name!];
+            const fieldDefaultValue = fieldOptions?.value?.default || (structDefault && structDefault.get(subtype.name!));
+            const finalFieldOptions: ApiParamOptions = {
+                ...fieldOptions,
+                forcedName: subtype.name,
+                value: fieldDefaultValue && { ...fieldOptions?.value, default: fieldDefaultValue }
+            }
+            structValues[subtype.name!] = await this.promptForParam(subtype.type, finalFieldOptions);
         }
         this.closeIndentGroup();
 
@@ -129,12 +143,13 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     }
 
     // Prompt for Vec
-    async promptForVec(typeDef: TypeDef, defaultValue?: Vec<Codec>): Promise<Vec<Codec>> {
+    async promptForVec(typeDef: TypeDef, paramOptions?: ApiParamOptions): Promise<Vec<Codec>> {
         console.log(chalk.grey(`Providing values for ${ this.paramName(typeDef) } vector:`));
 
         this.openIndentGroup();
         // We assume Vec always has one TypeDef as ".sub"
         const subtype = typeDef.sub as TypeDef;
+        const defaultValue = paramOptions?.value?.default as Vec<Codec> | undefined;
         let entries: Codec[] = [];
         let addAnother = false;
         do {
@@ -145,7 +160,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
             });
             const defaultEntryValue = defaultValue && defaultValue[entries.length];
             if (addAnother) {
-                entries.push(await this.promptForParam(subtype.type, subtype.name, defaultEntryValue));
+                entries.push(await this.promptForParam(subtype.type, createParamOptions(subtype.name, defaultEntryValue)));
             }
         } while (addAnother);
         this.closeIndentGroup();
@@ -154,11 +169,12 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     }
 
     // Prompt for Enum
-    async promptForEnum(typeDef: TypeDef, defaultValue?: Enum): Promise<Enum> {
+    async promptForEnum(typeDef: TypeDef, paramOptions?: ApiParamOptions): Promise<Enum> {
         const enumType = typeDef.type;
         const rawTypeDef = this.getRawTypeDef(enumType);
         // We assume enum always has array on TypeDefs inside ".sub"
         const enumSubtypes = rawTypeDef.sub as TypeDef[];
+        const defaultValue = paramOptions?.value?.default as Enum | undefined;
 
         const enumSubtypeName = await this.simplePrompt({
             message: `Choose value for ${this.paramName(typeDef)}:`,
@@ -173,9 +189,10 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         const enumSubtype = enumSubtypes.find(st => st.name === enumSubtypeName)!;
 
         if (enumSubtype.type !== 'Null') {
+            const subtypeOptions = createParamOptions(enumSubtype.name, defaultValue?.value);
             return createType(
                 enumType as any,
-                { [enumSubtype.name!]: await this.promptForParam(enumSubtype.type, enumSubtype.name, defaultValue?.value) }
+                { [enumSubtype.name!]: await this.promptForParam(enumSubtype.type, subtypeOptions) }
             );
         }
 
@@ -184,31 +201,48 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
     // Prompt for param based on "paramType" string (ie. Option<MemeberId>)
     // TODO: This may not yet work for all possible types
-    async promptForParam(paramType: string, forcedName?: string, defaultValue?: ApiMethodInputArg): Promise<ApiMethodInputArg> {
+    async promptForParam(
+        paramType: string,
+        paramOptions?: ApiParamOptions // TODO: This is not fully implemented for all types yet
+    ): Promise<ApiMethodArg> {
         const typeDef = getTypeDef(paramType);
         const rawTypeDef = this.getRawTypeDef(paramType);
 
-        if (forcedName) {
-            typeDef.name = forcedName;
+        if (paramOptions?.forcedName) {
+            typeDef.name = paramOptions.forcedName;
+        }
+
+        if (paramOptions?.value?.locked) {
+            return paramOptions.value.default;
+        }
+
+        if (paramOptions?.jsonSchema) {
+            const { struct, schemaValidator } = paramOptions.jsonSchema;
+            return await this.promptForJsonBytes(
+                struct,
+                typeDef.name,
+                paramOptions.value?.default as Bytes | undefined,
+                schemaValidator
+            );
         }
 
         if (rawTypeDef.info === TypeDefInfo.Option) {
-            return await this.promptForOption(typeDef, defaultValue as Option<Codec>);
+            return await this.promptForOption(typeDef, paramOptions);
         }
         else if (rawTypeDef.info === TypeDefInfo.Tuple) {
-            return await this.promptForTuple(typeDef, defaultValue as Tuple);
+            return await this.promptForTuple(typeDef, paramOptions);
         }
         else if (rawTypeDef.info === TypeDefInfo.Struct) {
-            return await this.promptForStruct(typeDef, defaultValue as Struct);
+            return await this.promptForStruct(typeDef, paramOptions);
         }
         else if (rawTypeDef.info === TypeDefInfo.Enum) {
-            return await this.promptForEnum(typeDef, defaultValue as Enum);
+            return await this.promptForEnum(typeDef, paramOptions);
         }
         else if (rawTypeDef.info === TypeDefInfo.Vec) {
-            return await this.promptForVec(typeDef, defaultValue as Vec<Codec>);
+            return await this.promptForVec(typeDef, paramOptions);
         }
         else {
-            return await this.promptForSimple(typeDef, defaultValue);
+            return await this.promptForSimple(typeDef, paramOptions);
         }
     }
 
@@ -231,7 +265,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
         let isValid: boolean = true, jsonText: string;
         do {
-            const structVal = await this.promptForStruct(typeDef, defaultStruct);
+            const structVal = await this.promptForStruct(typeDef, createParamOptions(typeDef.name, defaultStruct));
             jsonText = JSON.stringify(structVal.toJSON());
             if (schemaValidator) {
                 isValid = Boolean(schemaValidator(JSON.parse(jsonText)));
@@ -253,24 +287,20 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     async promptForExtrinsicParams(
         module: string,
         method: string,
-        jsonArgs?: JSONArgsMapping,
-        defaultValues?: ApiMethodInputArg[]
-    ): Promise<ApiMethodInputArg[]> {
+        paramsOptions?: ApiParamsOptions
+    ): Promise<ApiMethodArg[]> {
         const extrinsicMethod = this.getOriginalApi().tx[module][method];
-        let values: ApiMethodInputArg[] = [];
+        let values: ApiMethodArg[] = [];
 
         this.openIndentGroup();
-        for (const [index, arg] of Object.entries(extrinsicMethod.meta.args.toArray())) {
+        for (const arg of extrinsicMethod.meta.args.toArray()) {
             const argName = arg.name.toString();
             const argType = arg.type.toString();
-            const defaultValue = defaultValues && defaultValues[parseInt(index)];
-            if (jsonArgs && jsonArgs[argName]) {
-                const { struct, schemaValidator } = jsonArgs[argName];
-                values.push(await this.promptForJsonBytes(struct, argName, defaultValue as Bytes, schemaValidator));
+            let argOptions = paramsOptions && paramsOptions[argName];
+            if (!argOptions?.forcedName) {
+                argOptions = { ...argOptions, forcedName: argName };
             }
-            else {
-                values.push(await this.promptForParam(argType, argName, defaultValue));
-            }
+            values.push(await this.promptForParam(argType, argOptions));
         };
         this.closeIndentGroup();
 
@@ -336,18 +366,17 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         account: KeyringPair,
         module: string,
         method: string,
-        jsonArgs?: JSONArgsMapping, // Special JSON arguments (ie. human_readable_text of working group opening)
-        defaultValues?: ApiMethodInputArg[],
+        paramsOptions: ApiParamsOptions,
         warnOnly: boolean = false // If specified - only warning will be displayed (instead of error beeing thrown)
-    ): Promise<ApiMethodInputArg[]> {
-        const params = await this.promptForExtrinsicParams(module, method, jsonArgs, defaultValues);
+    ): Promise<ApiMethodArg[]> {
+        const params = await this.promptForExtrinsicParams(module, method, paramsOptions);
         await this.sendAndFollowExtrinsic(account, module, method, params, warnOnly);
 
         return params;
     }
 
-    extrinsicArgsFromDraft(module: string, method: string, draftFilePath: string): ApiMethodInputArg[] {
-        let draftJSONObj, parsedArgs: ApiMethodInputArg[] = [];
+    extrinsicArgsFromDraft(module: string, method: string, draftFilePath: string): ApiMethodNamedArgs {
+        let draftJSONObj, parsedArgs: ApiMethodNamedArgs = [];
         const extrinsicMethod = this.getOriginalApi().tx[module][method];
         try {
             draftJSONObj = require(draftFilePath);
@@ -365,7 +394,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
             const argName = arg.name.toString();
             const argType = arg.type.toString();
             try {
-                parsedArgs.push(createType(argType as any, draftJSONObj[parseInt(index)]));
+                parsedArgs.push({ name: argName, value: createType(argType as any, draftJSONObj[parseInt(index)]) });
             } catch (e) {
                 throw new CLIError(`Couldn't parse ${argName} value from draft at ${draftFilePath}!`, { exit: ExitCodes.InvalidFile });
             }
