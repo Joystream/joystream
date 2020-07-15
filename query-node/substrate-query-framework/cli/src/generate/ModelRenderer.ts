@@ -2,7 +2,7 @@ import * as path from 'path';
 import { ObjectType, WarthogModel, FieldResolver } from '../model';
 import Debug from 'debug';
 import { GeneratorContext } from './SourcesGenerator';
-import { buildFieldContext, TYPE_FIELDS } from './field-context';
+import { buildFieldContext } from './field-context';
 import * as utils from './utils';
 import { GraphQLEnumType } from 'graphql';
 import { AbstractRenderer } from './AbstractRenderer';
@@ -83,9 +83,10 @@ export class ModelRenderer extends AbstractRenderer {
 
   withHasProps(): GeneratorContext {
     const has: GeneratorContext = {};
-    for (const key in TYPE_FIELDS) {
-      const _key: string = key === 'numeric' ? 'numeric' || 'decimal' : key;
-      has[key] = this.objType.fields.some(f => f.columnType() === _key);
+    for (const field of this.objType.fields) {
+      let ct = field.columnType();
+      if (ct === 'numeric' || ct === 'decimal') ct = 'numeric';
+      has[ct] = true;
     }
     has['array'] = this.objType.fields.some(f => f.isArray());
     has['enum'] = this.objType.fields.some(f => f.isEnum());
