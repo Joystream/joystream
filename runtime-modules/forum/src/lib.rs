@@ -766,14 +766,10 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            let (_, thread) = Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
+            Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
 
             // Delete thread
-            <ThreadById<T>>::remove(thread.category_id, thread_id);
-            <PostById<T>>::remove_prefix(thread_id);
-
-            // decrease category's thread counter
-            <CategoryById<T>>::mutate(category_id, |category| category.num_direct_threads -= 1);
+            Self::delete_thread_inner(category_id, thread_id);
 
             // Store the event
             Self::deposit_event(RawEvent::ThreadDeleted(thread_id));
@@ -854,7 +850,7 @@ decl_module! {
             Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
 
             // Delete thread
-            <ThreadById<T>>::remove(category_id, thread_id);
+            Self::delete_thread_inner(category_id, thread_id);
 
             // Generate event
             Self::deposit_event(RawEvent::ThreadModerated(thread_id, rationale));
@@ -1085,6 +1081,17 @@ impl<T: Trait> Module<T> {
         <NextPostId<T>>::mutate(|n| *n += One::one());
 
         Ok(new_post)
+    }
+
+    fn delete_thread_inner(category_id: T::CategoryId, thread_id: T::ThreadId) {
+        // Delete thread
+        <ThreadById<T>>::remove(category_id, thread_id);
+
+        // Delete all thread's posts
+        <PostById<T>>::remove_prefix(thread_id);
+
+        // decrease category's thread counter
+        <CategoryById<T>>::mutate(category_id, |category| category.num_direct_threads -= 1);
     }
 
     // Ensure poll is valid

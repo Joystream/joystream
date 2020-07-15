@@ -310,6 +310,10 @@ pub fn delete_thread_mock(
     thread_id: <Runtime as Trait>::PostId,
     result: Result<(), &'static str>,
 ) {
+    let num_direct_threads = match <CategoryById<Runtime>>::exists(category_id) {
+        true => <CategoryById<Runtime>>::get(category_id).num_direct_threads,
+        false => 0,
+    };
     assert_eq!(
         TestForumModule::delete_thread(
             mock_origin(origin.clone()),
@@ -321,6 +325,10 @@ pub fn delete_thread_mock(
     );
     if result.is_ok() {
         assert!(!<ThreadById<Runtime>>::exists(category_id, thread_id));
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id).num_direct_threads,
+            num_direct_threads - 1,
+        );
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ThreadDeleted(thread_id))
