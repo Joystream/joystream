@@ -23,6 +23,10 @@ mod working_group_mod {
     pub use working_group::Event;
 }
 
+mod members {
+    pub use membership::Event;
+}
+
 impl_outer_origin! {
     pub enum Origin for Test {}
 }
