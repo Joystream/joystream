@@ -18,7 +18,7 @@ import { {{className}}Service } from './{{kebabName}}.service';
   {{{.}}}
 {{/fieldResolverImports}}
 
-@Resolver()
+@Resolver({{className}})
 export class {{className}}Resolver {
   constructor(@Inject('{{className}}Service') public readonly service: {{className}}Service) {}
 
