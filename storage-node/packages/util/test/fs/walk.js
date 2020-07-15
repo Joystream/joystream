@@ -60,8 +60,8 @@ function walktest(archive, base, done) {
   })
 }
 
-describe('util/fs/walk', function() {
-  it('reports all files in a file system hierarchy', function(done) {
+describe('util/fs/walk', function () {
+  it('reports all files in a file system hierarchy', function (done) {
     walktest(fs, path.resolve(__dirname, '../data'), done)
   })
 })

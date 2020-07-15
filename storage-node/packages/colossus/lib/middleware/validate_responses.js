@@ -21,7 +21,7 @@
 const debug = require('debug')('joystream:middleware:validate')
 
 // Function taken directly from https://github.com/kogosoftwarellc/open-api/tree/master/packages/express-openapi
-module.exports = function(req, res, next) {
+module.exports = function (req, res, next) {
   const strictValidation = !!req.apiDoc['x-express-openapi-validation-strict']
   if (typeof res.validateResponse === 'function') {
     const send = res.send
@@ -42,7 +42,7 @@ module.exports = function(req, res, next) {
       }
       if (validation.errors) {
         const errorList = Array.from(validation.errors)
-          .map(_ => _.message)
+          .map((_) => _.message)
           .join(',')
         validationMessage = `Invalid response for status code ${res.statusCode}: ${errorList}`
         debug(validationMessage)

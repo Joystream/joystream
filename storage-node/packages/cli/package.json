@@ -27,11 +27,12 @@
     "node": ">=10.15.3"
   },
   "scripts": {
-    "test": "mocha 'test/**/*.js'",
-    "lint": "eslint 'paths/**/*.js' 'lib/**/*.js'"
+    "test": "mocha 'dist/test/**/*.js'",
+    "lint": "eslint --ext .ts,.tsx . && tsc --noEmit --pretty",
+    "build": "tsc --build"
   },
   "bin": {
-    "storage-cli": "bin/cli.js"
+    "storage-cli": "./bin/cli.js"
   },
   "devDependencies": {
     "chai": "^4.2.0",
@@ -41,9 +42,13 @@
   },
   "dependencies": {
     "@joystream/storage-runtime-api": "^0.1.0",
+    "@joystream/service-discovery": "^0.1.0",
+    "@joystream/storage-utils": "^0.1.0",
+    "@joystream/types": "^0.11.0",
+    "axios": "^0.19.2",
     "chalk": "^2.4.2",
     "lodash": "^4.17.11",
     "meow": "^5.0.0",
-    "request": "^2.88.0"
+    "ipfs-only-hash": "^1.0.2"
   }
 }

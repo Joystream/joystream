@@ -28,6 +28,7 @@ const { BalancesApi } = require('@joystream/storage-runtime-api/balances')
 const { WorkersApi } = require('@joystream/storage-runtime-api/workers')
 const { AssetsApi } = require('@joystream/storage-runtime-api/assets')
 const { DiscoveryApi } = require('@joystream/storage-runtime-api/discovery')
+const { SystemApi } = require('@joystream/storage-runtime-api/system')
 const AsyncLock = require('async-lock')
 const { newExternallyControlledPromise } = require('@joystream/storage-utils/externalPromise')
 
@@ -72,6 +73,7 @@ class RuntimeApi {
     this.workers = await WorkersApi.create(this)
     this.assets = await AssetsApi.create(this)
     this.discovery = await DiscoveryApi.create(this)
+    this.system = await SystemApi.create(this)
   }
 
   disconnect() {
@@ -96,7 +98,7 @@ class RuntimeApi {
   static matchingEvents(subscribed, events) {
     debug(`Number of events: ${events.length} subscribed to ${subscribed}`)
 
-    const filtered = events.filter(record => {
+    const filtered = events.filter((record) => {
       const { event, phase } = record
 
       // Show what we are busy with
@@ -104,14 +106,14 @@ class RuntimeApi {
       debug(`\t\t${event.meta.documentation.toString()}`)
 
       // Skip events we're not interested in.
-      const matching = subscribed.filter(value => {
+      const matching = subscribed.filter((value) => {
         return event.section === value[0] && event.method === value[1]
       })
       return matching.length > 0
     })
     debug(`Filtered: ${filtered.length}`)
 
-    const mapped = filtered.map(record => {
+    const mapped = filtered.map((record) => {
       const { event } = record
       const types = event.typeDef
 
@@ -138,8 +140,8 @@ class RuntimeApi {
    * Returns the first matched event *only*.
    */
   async waitForEvents(subscribed) {
-    return new Promise(resolve => {
-      this.api.query.system.events(events => {
+    return new Promise((resolve) => {
+      this.api.query.system.events((events) => {
         const matches = RuntimeApi.matchingEvents(subscribed, events)
         if (matches && matches.length) {
           resolve(matches)
@@ -243,7 +245,7 @@ class RuntimeApi {
             isInvalid
             */
           })
-          .catch(err => {
+          .catch((err) => {
             // 1014 error: Most likely you are sending transaction with the same nonce,
             // so it assumes you want to replace existing one, but the priority is too low to replace it (priority = fee = len(encoded_transaction) currently)
             // Remember this can also happen if in the past we sent a tx with a future nonce, and the current nonce
@@ -290,8 +292,8 @@ class RuntimeApi {
     // eslint-disable-next-line  no-async-promise-executor
     return new Promise(async (resolve, reject) => {
       try {
-        await this.signAndSend(senderAccountId, tx, 1, subscribed, events => {
-          events.forEach(event => {
+        await this.signAndSend(senderAccountId, tx, 1, subscribed, (events) => {
+          events.forEach((event) => {
             // fix - we may not necessarily want the first event
             // if there are multiple events emitted,
             resolve(event[1][eventProperty])

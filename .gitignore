@@ -22,7 +22,7 @@ yarn*
 .*.sw*
 
 # Visual Studio Code
-.vscode
+.vscode/
 
 # Compiled WASM code
 *.wasm

@@ -1,4 +1,4 @@
-import { getTypeRegistry, Bytes, BTreeMap, Option, Enum } from '@polkadot/types';
+import { getTypeRegistry, Bytes, BTreeMap, Option} from '@polkadot/types';
 import { u16, Null } from '@polkadot/types/primitive';
 import { AccountId, BlockNumber, Balance } from '@polkadot/types/interfaces';
 import { BTreeSet, JoyStruct } from '../common';
@@ -139,17 +139,13 @@ export class SlashableTerms extends JoyStruct<ISlashableTerms> {
   }
 };
 
+export class UnslashableTerms extends Null { };
+
 // This type is also defined in /content-working-group (as above)
-export class SlashingTerms extends Enum {
-  constructor (value?: any, index?: number) {
-    super(
-      {
-        Unslashable: Null,
-        Slashable: SlashableTerms,
-      },
-      value, index);
-  }
-};
+export class SlashingTerms extends JoyEnum({
+  Unslashable: UnslashableTerms,
+  Slashable: SlashableTerms
+} as const) { };
 
 export type IWorkingGroupOpeningPolicyCommitment = {
   application_rationing_policy: Option<ApplicationRationingPolicy>,
@@ -244,10 +240,6 @@ export class WorkingGroupOpeningPolicyCommitment extends JoyStruct<IWorkingGroup
   }
 };
 
-export enum OpeningTypeKeys {
-  Leader = 'Leader',
-  Worker = 'Worker'
-};
 
 export class OpeningType_Leader extends Null { };
 export class OpeningType_Worker extends Null { };

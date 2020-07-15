@@ -47,7 +47,7 @@ export class RewardRelationship extends JoyStruct<IRewardRelationship> {
       next_payment_at_block: Option.with('BlockNumber'),
       payout_interval: Option.with('BlockNumber'),
       total_reward_received: 'Balance',
-      total_reward_missed: 'Balance'
+      total_reward_missed: 'Balance',
     }, value);
   }
 

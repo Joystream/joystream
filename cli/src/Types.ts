@@ -1,13 +1,13 @@
 import BN from 'bn.js';
 import { ElectionStage, Seat } from '@joystream/types/council';
 import { Option, Text } from '@polkadot/types';
-import { Constructor } from '@polkadot/types/types';
+import { Constructor, Codec } from '@polkadot/types/types';
 import { Struct, Vec } from '@polkadot/types/codec';
 import { u32 } from '@polkadot/types/primitive';
 import { BlockNumber, Balance, AccountId } from '@polkadot/types/interfaces';
 import { DerivedBalances } from '@polkadot/api-derive/types';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { WorkerId } from '@joystream/types/working-group';
+import { WorkerId, OpeningType } from '@joystream/types/working-group';
 import { Profile, MemberId } from '@joystream/types/members';
 import {
     GenericJoyStreamRoleSchema,
@@ -24,6 +24,7 @@ import {
 } from '@joystream/types/hiring/schemas/role.schema.typings';
 import ajv from 'ajv';
 import { Opening, StakingPolicy, ApplicationStageKeys } from '@joystream/types/hiring';
+import { Validator } from 'inquirer';
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -92,19 +93,27 @@ export const AvailableGroups: readonly WorkingGroups[] = [
   WorkingGroups.StorageProviders
 ] as const;
 
+export type Reward = {
+    totalRecieved: Balance;
+    value: Balance;
+    interval?: number;
+    nextPaymentBlock: number; // 0 = no incoming payment
+}
+
 // Compound working group types
 export type GroupMember = {
     workerId: WorkerId;
     memberId: MemberId;
     roleAccount: AccountId;
     profile: Profile;
-    stake: Balance;
-    earned: Balance;
+    stake?: Balance;
+    reward?: Reward;
 }
 
 export type GroupApplication = {
     wgApplicationId: number;
     applicationId: number;
+    wgOpeningId: number;
     member: Profile | null;
     roleAccout: AccountId;
     stakes: {
@@ -142,6 +151,7 @@ export type GroupOpening = {
     opening: Opening;
     stakes: GroupOpeningStakes;
     applications: GroupApplication[];
+    type: OpeningType;
 }
 
 // Some helper structs for generating human_readable_text in working group opening extrinsic
@@ -309,10 +319,30 @@ export class HRTStruct extends Struct implements WithJSONable<GenericJoyStreamRo
     }
 };
 
-// A mapping of argName to json struct and schemaValidator
-// It is used to map arguments of type "Bytes" that are in fact a json string
-// (and can be validated against a schema)
-export type JSONArgsMapping = { [argName: string]: {
-    struct: Constructor<Struct>,
-    schemaValidator: ajv.ValidateFunction
-} };
+// Api-related
+
+// Additional options that can be passed to ApiCommandBase.promptForParam in order to override
+// its default behaviour, change param name, add validation etc.
+export type ApiParamOptions<ParamType = Codec> = {
+    forcedName?: string,
+    value?: {
+        default: ParamType;
+        locked?: boolean;
+    }
+    jsonSchema?: {
+        struct: Constructor<Struct>;
+        schemaValidator: ajv.ValidateFunction;
+    }
+    validator?: Validator,
+    nestedOptions?: ApiParamsOptions // For more complex params, like structs
+};
+export type ApiParamsOptions = {
+    [paramName: string]: ApiParamOptions;
+}
+
+export type ApiMethodArg = Codec;
+export type ApiMethodNamedArg = {
+    name: string;
+    value: ApiMethodArg;
+};
+export type ApiMethodNamedArgs = ApiMethodNamedArg[];
