@@ -6,7 +6,10 @@ import { Command } from 'commander';
 import { configure, getLogger } from 'log4js';
 
 import { createConnection } from "typeorm";
+{{#typeRegistrator}}
 import { {{typeRegistrator}} } from '{{{packageName}}}';
+{{/typeRegistrator}}
+
 import {
   QueryNodeManager,
   BootstrapPack,
@@ -107,7 +110,7 @@ async function doBootstrap(node: QueryNodeManager) {
     await node.bootstrap(
         process.env.WS_PROVIDER_ENDPOINT_URI as string,
         getBootstrapPack(),
-        {{typeRegistrator}}
+        {{#typeRegistrator}} {{typeRegistrator}} {{/typeRegistrator}}
     );
     logger.info("Bootstrap done");
 }
@@ -141,7 +144,7 @@ async function main() {
       process.exit(0);
   }
 
-  node.start(providerUri, getProcessingPack(), {{typeRegistrator}});
+  node.start(providerUri, getProcessingPack(), {{#typeRegistrator}} {{typeRegistrator}} {{/typeRegistrator}});
 }
 
 main().catch((e) => {
