@@ -348,3 +348,42 @@ impl Default for ProposalsConfigParameters {
         }
     }
 }
+
+impl ProposalsConfigParameters {
+    /// Development chain config. No grace period,
+    /// proposals executed immediatly. Short voting period.
+    pub fn development() -> Self {
+        ProposalsConfigParameters {
+            set_validator_count_proposal_voting_period: 200u32,
+            set_validator_count_proposal_grace_period: 0u32,
+            runtime_upgrade_proposal_voting_period: 200u32,
+            runtime_upgrade_proposal_grace_period: 0u32,
+            text_proposal_voting_period: 200u32,
+            text_proposal_grace_period: 0u32,
+            set_election_parameters_proposal_voting_period: 200u32,
+            set_election_parameters_proposal_grace_period: 0u32,
+            set_content_working_group_mint_capacity_proposal_voting_period: 200u32,
+            set_content_working_group_mint_capacity_proposal_grace_period: 0u32,
+            set_lead_proposal_voting_period: 200u32,
+            set_lead_proposal_grace_period: 0u32,
+            spending_proposal_voting_period: 200u32,
+            spending_proposal_grace_period: 0u32,
+            add_working_group_opening_proposal_voting_period: 200u32,
+            add_working_group_opening_proposal_grace_period: 0u32,
+            begin_review_working_group_leader_applications_proposal_voting_period: 200u32,
+            begin_review_working_group_leader_applications_proposal_grace_period: 0u32,
+            fill_working_group_leader_opening_proposal_voting_period: 200u32,
+            fill_working_group_leader_opening_proposal_grace_period: 0u32,
+            set_working_group_mint_capacity_proposal_voting_period: 200u32,
+            set_working_group_mint_capacity_proposal_grace_period: 0u32,
+            decrease_working_group_leader_stake_proposal_voting_period: 200u32,
+            decrease_working_group_leader_stake_proposal_grace_period: 0u32,
+            slash_working_group_leader_stake_proposal_voting_period: 200u32,
+            slash_working_group_leader_stake_proposal_grace_period: 0u32,
+            set_working_group_leader_reward_proposal_voting_period: 200u32,
+            set_working_group_leader_reward_proposal_grace_period: 0u32,
+            terminate_working_group_leader_role_proposal_voting_period: 200u32,
+            terminate_working_group_leader_role_proposal_grace_period: 0u32,
+        }
+    }
+}
