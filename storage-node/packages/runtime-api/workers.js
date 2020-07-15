@@ -23,6 +23,34 @@ const BN = require('bn.js')
 const { Worker } = require('@joystream/types/working-group')
 
 /*
+ * Finds assigned worker id corresponding to the application id from the resulting
+ * ApplicationIdToWorkerIdMap map in the OpeningFilled event. Expects map to
+ * contain at least one entry.
+ */
+function getWorkerIdFromApplicationIdToWorkerIdMap(filledMap, applicationId) {
+  if (filledMap.size === 0) {
+    throw new Error('Expected opening to be filled!')
+  }
+
+  let ourApplicationIdKey
+
+  for (const key of filledMap.keys()) {
+    if (key.eq(applicationId)) {
+      ourApplicationIdKey = key
+      break
+    }
+  }
+
+  if (!ourApplicationIdKey) {
+    throw new Error('Expected application id to have been filled!')
+  }
+
+  const workerId = filledMap.get(ourApplicationIdKey)
+
+  return workerId
+}
+
+/*
  * Add worker related functionality to the substrate API.
  */
 class WorkersApi {
@@ -264,34 +292,6 @@ class WorkersApi {
       eventProperty: 'ApplicationIdToWorkerIdMap',
     })
   }
-}
-
-/*
- * Finds assigned worker id corresponding to the application id from the resulting
- * ApplicationIdToWorkerIdMap map in the OpeningFilled event. Expects map to
- * contain at least one entry.
- */
-function getWorkerIdFromApplicationIdToWorkerIdMap(filledMap, applicationId) {
-  if (filledMap.size === 0) {
-    throw new Error('Expected opening to be filled!')
-  }
-
-  let ourApplicationIdKey
-
-  for (const key of filledMap.keys()) {
-    if (key.eq(applicationId)) {
-      ourApplicationIdKey = key
-      break
-    }
-  }
-
-  if (!ourApplicationIdKey) {
-    throw new Error('Expected application id to have been filled!')
-  }
-
-  const workerId = filledMap.get(ourApplicationIdKey)
-
-  return workerId
 }
 
 module.exports = {

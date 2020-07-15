@@ -172,42 +172,6 @@ async function discoverOverLocalIpfsNode(storageProviderId, runtimeApi) {
 }
 
 /**
- * Cached discovery of storage provider service information. If useCachedValue is
- * set to true, will always return the cached result if found. New discovery will be triggered
- * if record is found to be stale. If a stale record is not desired (CACHE_TTL old) pass a non zero
- * value for maxCacheAge, which will force a new discovery and return the new resolved value.
- * This method in turn calls _discovery which handles concurrent discoveries and selects the appropriate
- * protocol to perform the query.
- * If the storage provider is not registered it will resolve to null
- * @param {number | BN | u64} storageProviderId - provider to discover
- * @param {RuntimeApi} runtimeApi - api instance to query the chain
- * @param {bool} useCachedValue - optionaly use chached queries
- * @param {number} maxCacheAge - maximum age of a cached query that triggers automatic re-discovery
- * @returns { Promise<object | null> } - the published service information
- */
-async function discover(storageProviderId, runtimeApi, useCachedValue = false, maxCacheAge = 0) {
-  storageProviderId = new BN(storageProviderId)
-  const id = storageProviderId.toNumber()
-  const cached = accountInfoCache[id]
-
-  if (cached && useCachedValue) {
-    if (maxCacheAge > 0) {
-      // get latest value
-      if (Date.now() > cached.updated + maxCacheAge) {
-        return _discover(storageProviderId, runtimeApi)
-      }
-    }
-    // refresh if cache if stale, new value returned on next cached query
-    if (Date.now() > cached.updated + CACHE_TTL) {
-      _discover(storageProviderId, runtimeApi)
-    }
-    // return best known value
-    return cached.value
-  }
-  return _discover(storageProviderId, runtimeApi)
-}
-
-/**
  * Internal method that handles concurrent discoveries and caching of results. Will
  * select the appropriate discovery protocol based on whether we are in a browser environment or not.
  * If not in a browser it expects a local ipfs node to be running.
@@ -262,6 +226,42 @@ async function _discover(storageProviderId, runtimeApi) {
     // Problem is its crashing the node so just return null for now
     return null
   }
+}
+
+/**
+ * Cached discovery of storage provider service information. If useCachedValue is
+ * set to true, will always return the cached result if found. New discovery will be triggered
+ * if record is found to be stale. If a stale record is not desired (CACHE_TTL old) pass a non zero
+ * value for maxCacheAge, which will force a new discovery and return the new resolved value.
+ * This method in turn calls _discovery which handles concurrent discoveries and selects the appropriate
+ * protocol to perform the query.
+ * If the storage provider is not registered it will resolve to null
+ * @param {number | BN | u64} storageProviderId - provider to discover
+ * @param {RuntimeApi} runtimeApi - api instance to query the chain
+ * @param {bool} useCachedValue - optionaly use chached queries
+ * @param {number} maxCacheAge - maximum age of a cached query that triggers automatic re-discovery
+ * @returns { Promise<object | null> } - the published service information
+ */
+async function discover(storageProviderId, runtimeApi, useCachedValue = false, maxCacheAge = 0) {
+  storageProviderId = new BN(storageProviderId)
+  const id = storageProviderId.toNumber()
+  const cached = accountInfoCache[id]
+
+  if (cached && useCachedValue) {
+    if (maxCacheAge > 0) {
+      // get latest value
+      if (Date.now() > cached.updated + maxCacheAge) {
+        return _discover(storageProviderId, runtimeApi)
+      }
+    }
+    // refresh if cache if stale, new value returned on next cached query
+    if (Date.now() > cached.updated + CACHE_TTL) {
+      _discover(storageProviderId, runtimeApi)
+    }
+    // return best known value
+    return cached.value
+  }
+  return _discover(storageProviderId, runtimeApi)
 }
 
 module.exports = {
